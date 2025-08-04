@@ -1,0 +1,6 @@
+Input: 1 2 
+Memory test passed
+Time test passed
+Thread running
+Thread test passed
+File test passed (but should have been blocked)
