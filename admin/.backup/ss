@@ -1,0 +1,66 @@
+<script setup lang="ts">
+import { NCard, NCollapse, NCollapseItem, NScrollbar, NSpace, NTag, NText } from 'naive-ui'
+import { useServiceHealth } from '@/composables'
+
+const { getServiceHealth } = useServiceHealth()
+
+const serviceHealth = ref<any>([])
+
+onMounted(async () => {
+  const { data } = await getServiceHealth()
+  if (data) {
+    serviceHealth.value = data
+  }
+})
+</script>
+
+<template>
+  <div class="flex flex-col h-full w-full bg-white">
+    <NScrollbar class="flex-1 bg-white p-4">
+      <NCollapse arrow-placement="right">
+        <NCollapseItem v-for="(item, index) in serviceHealth" :key="index">
+          <template #header>
+            <NTag type="info" size="small">
+              {{ item.service }}
+            </NTag>
+          </template>
+          <NCollapse arrow-placement="right">
+            <NCollapseItem v-for="(item1, index1) in item.status" :key="index1">
+              <template #header>
+                <NSpace align="center">
+                  <NTag type="info" size="small">
+                    {{ item1.ip }}
+                  </NTag>
+                  <NTag type="info" size="small">
+                    {{ item1.port }}
+                  </NTag>
+                  <NTag size="small" :type="item1.status ? 'success' : 'error'">
+                    {{ item1.status ? 'UP' : 'DOWN' }}
+                  </NTag>
+                </NSpace>
+              </template>
+              <!-- <pre>{{ JSON.stringify(item1.metadata, null, 2) }}</pre> -->
+              <!-- 遍历item1.metadata，div 显示kv -->
+              <NSpace vertical>
+                <NCard v-for="(value, key) in item1.metadata" :key="key" size="small">
+                  <NSpace align="center">
+                    <NText>
+                      {{ key }}
+                    </NText>
+                    <NTag size="small">
+                      {{ value }}
+                    </NTag>
+                  </NSpace>
+                </NCard>
+              </NSpace>
+            </NCollapseItem>
+          </NCollapse>
+        </NCollapseItem>
+      </NCollapse>
+    </NScrollbar>
+  </div>
+</template>
+
+<style scoped>
+
+</style>

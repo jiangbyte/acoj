@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.charlie.app.core.modular.set.ranking.mapper.SetRankingMapper">
+
+    <resultMap id="RankingResultMap" type="io.charlie.app.core.modular.set.ranking.entity.SetRanking">
+        <id property="setId" column="set_id"/>
+        <result property="title" column="title"/>
+        <result property="cover" column="cover"/>
+        <result property="participantCount" column="participant_count"/>
+        <result property="acceptanceRate" column="acceptance_rate"/>
+        <result property="submissionCount" column="submission_count"/>
+        <result property="executionCount" column="execution_count"/>
+        <result property="totalSubmissionCount" column="total_submission_count"/>
+        <result property="ranking" column="ranking"/>
+    </resultMap>
+
+    <select id="rankingPage" resultMap="RankingResultMap">
+        WITH problem_stats AS (
+            SELECT
+                p.id AS set_id,
+                p.title AS title,
+                p.cover AS cover,
+                COUNT(DISTINCT s.user_id) AS participant_count,
+                CASE
+                    WHEN COUNT(DISTINCT s.id) = 0 THEN 0
+                    ELSE ROUND(COUNT(DISTINCT CASE WHEN sb.solved = 1 THEN s.user_id END) * 100.0 / COUNT(DISTINCT s.user_id), 2)
+                    END AS acceptance_rate,
+                SUM(CASE WHEN s.submit_type = 1 THEN 1 ELSE 0 END) AS submission_count,
+                SUM(CASE WHEN s.submit_type = 0 THEN 1 ELSE 0 END) AS execution_count,
+                COUNT(s.id) AS total_submission_count
+            FROM
+                pro_set p
+                    LEFT JOIN
+                pro_set_submit s ON p.id = s.problem_id AND s.deleted = 0
+                    LEFT JOIN
+                pro_set_solved sb ON s.problem_id = sb.problem_id AND s.user_id = sb.user_id AND sb.deleted = 0
+            WHERE
+                p.deleted = 0
+            GROUP BY
+                p.id, p.title, p.cover
+        ),
+             ranked_problems AS (
+                 SELECT
+                     set_id,
+                     title,
+                     cover,
+                     participant_count,
+                     acceptance_rate,
+                     submission_count,
+                     execution_count,
+                     total_submission_count,
+                     ROW_NUMBER() OVER (ORDER BY participant_count DESC, acceptance_rate DESC) AS ranking
+                 FROM
+                     problem_stats
+             )
+        SELECT
+            ranking,
+            set_id,
+            title,
+            cover,
+            participant_count,
+            acceptance_rate,
+            submission_count,
+            execution_count,
+            total_submission_count
+        FROM
+            ranked_problems
+                ${ew.customSqlSegment}
+    </select>
+
+</mapper>
