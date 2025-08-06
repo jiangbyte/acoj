@@ -10,27 +10,26 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.app.core.modular.problem.judge.service.ProblemJudgeMessageService;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
 import io.charlie.app.core.modular.problem.problem.mapper.ProProblemMapper;
-import io.charlie.app.core.modular.problem.problem.service.ProProblemService;
+import io.charlie.app.core.modular.problem.solved.entity.ProSolved;
+import io.charlie.app.core.modular.problem.solved.mapper.ProSolvedMapper;
 import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
 import io.charlie.app.core.modular.problem.submit.enums.JudgeStatus;
 import io.charlie.app.core.modular.problem.submit.param.*;
 import io.charlie.app.core.modular.problem.submit.mapper.ProSubmitMapper;
 import io.charlie.app.core.modular.problem.submit.service.ProSubmitService;
-import io.charlie.app.core.modular.set.set.entity.ProSet;
 import io.charlie.app.core.modular.sys.user.entity.SysUser;
 import io.charlie.app.core.modular.sys.user.mapper.SysUserMapper;
-import io.charlie.app.core.modular.sys.user.service.SysUserService;
-import io.charlie.app.core.mq.problem.PReqMQConfig;
-import io.charlie.app.core.mq.problem.dto.ProJudgeSubmitDto;
+import io.charlie.app.core.modular.problem.judge.config.ProblemJudgeMQConfig;
+import io.charlie.app.core.modular.problem.judge.dto.ProJudgeSubmitDto;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.galaxy.utils.GaStringUtil;
-import org.springframework.amqp.core.AmqpTemplate;
-import org.springframework.amqp.core.MessageDeliveryMode;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,9 +49,8 @@ import java.util.*;
 public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit> implements ProSubmitService {
     private final ProProblemMapper proProblemMapper;
     private final SysUserMapper sysUserMapper;
-
-    // 在类中添加以下依赖
-    private final AmqpTemplate amqpTemplate;
+    private final ProSolvedMapper proSolvedMapper;
+    private final ProblemJudgeMessageService problemJudgeMessageService;
 
     @Override
     public Page<ProSubmit> page(ProSubmitPageParam proSubmitPageParam) {
@@ -148,8 +146,11 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
         ProSubmit proSubmit = buildSubmitRecord(proSubmitExecuteParam, proProblem);
         this.save(proSubmit);
 
+        ProSolved proSolved = buildSubmitRecord(proSubmitExecuteParam, proProblem, proSubmit);
+        proSolvedMapper.insert(proSolved);
+
         // 发送判题消息
-//        sendJudgeMessage(proSubmit, proSubmitExecuteParam, proProblem);
+        sendJudgeMessage(proSubmit, proSubmitExecuteParam, proProblem);
 
         return proSubmit.getId();
     }
@@ -221,17 +222,28 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
         return submit;
     }
 
+    private ProSolved buildSubmitRecord(ProSubmitExecuteParam param, ProProblem problem, ProSubmit submit) {
+        ProSolved solved = BeanUtil.toBean(param, ProSolved.class);
+        solved.setSolved(false);
+        solved.setUserId(StpUtil.getLoginIdAsString());
+        solved.setProblemId(problem.getId());
+        solved.setSubmitId(submit.getId());
+        return solved;
+    }
+
     private void sendJudgeMessage(ProSubmit submit, ProSubmitExecuteParam param, ProProblem problem) {
         try {
             ProJudgeSubmitDto message = new ProJudgeSubmitDto();
+            // ======================= 任务参数 =======================
             message.setId(submit.getId());
-            message.setProblemId(param.getProblemId());
-            message.setLanguage(param.getLanguage());
-            message.setSubmitType(param.getSubmitType());
+            // ======================= 题目参数 =======================
             message.setMaxTime(problem.getMaxTime());
             message.setMaxMemory(problem.getMaxMemory());
             message.setTestCase(problem.getTestCase());
-
+            // ======================= 用户提交参数 =======================
+            message.setProblemId(param.getProblemId());
+            message.setLanguage(param.getLanguage());
+            message.setSubmitType(param.getSubmitType());
             // 处理代码模板
             if (problem.getUseTemplate()) {
                 problem.getCodeTemplate().stream()
@@ -244,16 +256,7 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
                         });
             }
 
-            // 发送消息
-            amqpTemplate.convertAndSend(
-                    PReqMQConfig.EXCHANGE,
-                    PReqMQConfig.ROUTING_KEY,
-                    message,
-                    msg -> {
-                        msg.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-                        return msg;
-                    }
-            );
+            problemJudgeMessageService.sendJudgeRequest(message);
 
             log.info("题目提交消息已发送到队列，提交ID: {}", submit.getId());
         } catch (Exception e) {

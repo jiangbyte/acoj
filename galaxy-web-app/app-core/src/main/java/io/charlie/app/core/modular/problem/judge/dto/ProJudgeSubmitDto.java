@@ -1,7 +1,5 @@
-package io.charlie.app.core.mq.problem.dto;
+package io.charlie.app.core.modular.problem.judge.dto;
 
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import io.charlie.app.core.modular.problem.problem.entity.TestCase;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
