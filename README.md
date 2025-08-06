@@ -214,6 +214,46 @@ Astro Code OJ 是一个基于 Java 的在线评测系统，支持题目管理、
 详见 Swagger 接口文档：
 - `http://localhost:29093/doc.html`
 
+## 预览
+
+**首页**
+
+![img.png](/doc/img_0.png)
+
+**题库**
+
+![img.png](/doc/img_1.png)
+
+**题集**
+
+![img.png](/doc/img_7.png)
+
+**排行榜**
+
+![img_2.png](/doc/img_2.png)
+
+**提交状态**
+
+![img_3.png](/doc/img_3.png)
+
+**管理后台**
+
+![img_4.png](/doc/img_4.png)
+
+**题目编辑**
+
+![img_5.png](/doc/img_5.png)
+
+**字典管理**
+
+![img_6.png](/doc/img_6.png)
+
+**提交页**
+
+![img.png](/doc/img_8.png)
+
+![img.png](/doc/img_9.png)
+
 ## 贡献指南
 
 欢迎贡献代码，请遵循以下流程：
