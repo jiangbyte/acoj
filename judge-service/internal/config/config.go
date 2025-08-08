@@ -6,6 +6,7 @@ import (
 
 type LanguageConfig struct {
 	Name       string   `json:"name"`       // 语言名称，如 "go", "python"
+	SourceFile string   `json:"sourceFile"` // 源文件名，如 "main", "Main"
 	Extension  string   `json:"extension"`  // 文件扩展名，如 ".go", ".py"
 	CompileCmd []string `json:"compileCmd"` // 编译命令模板，如 ["go", "build", "-o", "{output}", "{source}"]
 	RunCmd     []string `json:"runCmd"`     // 运行命令模板，如 ["./{output}"] 或 ["python3", "{source}"]
@@ -14,6 +15,7 @@ type LanguageConfig struct {
 // 配置队列
 type Config struct {
 	rest.RestConf
+	Workspace string
 	Languages []LanguageConfig `json:"languages"` // 支持的语言配置
 	RabbitMQ  struct {
 		Host        string // 主机地址

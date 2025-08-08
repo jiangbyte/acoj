@@ -3,8 +3,6 @@ package logic
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"judge-service/internal/config"
 	"judge-service/internal/dto"
 	"judge-service/internal/logic/judge"
 	"judge-service/internal/svc"
@@ -61,47 +59,55 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 		}
 	}()
 
-	var request dto.JudgeSubmitDto
-	if err := json.Unmarshal(delivery.Body, &request); err != nil {
+	var judgeSubmit dto.JudgeSubmitDto
+	if err := json.Unmarshal(delivery.Body, &judgeSubmit); err != nil {
 		l.Errorf("解码 JSON 出错: %v", err)
 		return
 	}
 
-	l.Infof("收到消息: %+v", request)
+	l.Infof("收到消息: %+v", judgeSubmit)
 
-	// 查找语言配置
-	var langConfig config.LanguageConfig
-	found := false
-	for _, lc := range l.svcCtx.Config.Languages {
-		if lc.Name == request.Language {
-			langConfig = lc
-			found = true
-			break
+	// 工作空间准备
+	workspace, workspaceResultDto := judge.NewWorkspace(l.ctx, l.svcCtx.Config, judgeSubmit)
+	// 如果resultDto不为空，则返回结果
+	if workspaceResultDto != nil {
+		err := l.sendResultToMQ(workspaceResultDto)
+		if err != nil {
+			l.Errorf("发送结果到MQ失败: %v", err)
 		}
 	}
 
-	// 如果语言不支持，创建默认错误结果并发送
-	if !found {
-		l.Errorf("不支持的语言: %s", request.Language)
-		result := dto.ConvertSubmitToResult(request)
-		result.Status = dto.StatusSystemError
-		result.Message = fmt.Sprintf("不支持的语言: %s", request.Language)
-
-		// 发送错误结果到MQ
-		if err := l.sendResultToMQ(&result); err != nil {
-			l.Errorf("发送不支持语言的结果到MQ失败: %v", err)
+	// 保存源代码
+	SourceCodeResultDto := workspace.SaveSourceCode()
+	if SourceCodeResultDto != nil {
+		err := l.sendResultToMQ(SourceCodeResultDto)
+		if err != nil {
+			l.Errorf("发送结果到MQ失败: %v", err)
 		}
-		return
 	}
 
-	// 处理判题请求
-	sandbox := judge.NewSandbox(l.ctx, langConfig)
-	result := sandbox.ProcessSubmission(&request)
+	// 执行
+	RunResultDto := workspace.Execute()
+	if RunResultDto != nil {
+		err := l.sendResultToMQ(RunResultDto)
+		if err != nil {
+			l.Errorf("发送结果到MQ失败: %v", err)
+		}
+	}
 
-	// 发送结果到MQ
-	err := l.sendResultToMQ(result)
+	// 结果汇总
+	EvaluateResultDto := workspace.Evaluate()
+	if EvaluateResultDto != nil {
+		err := l.sendResultToMQ(EvaluateResultDto)
+		if err != nil {
+			l.Errorf("发送结果到MQ失败: %v", err)
+		}
+	}
+
+	// 删除工作空间
+	err := workspace.Cleanup()
 	if err != nil {
-		l.Errorf("发送结果到MQ失败: %v", err)
+		l.Errorf("删除工作空间失败: %v", err)
 	}
 }
 
