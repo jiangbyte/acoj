@@ -52,10 +52,10 @@
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-redis-jackson</artifactId>
         </dependency>
-        <dependency>
-            <groupId>cn.dev33</groupId>
-            <artifactId>sa-token-dubbo</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>cn.dev33</groupId>-->
+<!--            <artifactId>sa-token-dubbo</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>cn.dev33</groupId>
             <artifactId>sa-token-alone-redis</artifactId>

@@ -1,4 +1,4 @@
-package io.charlie.app.core.modular.problem.judge.dto;
+package io.charlie.app.core.modular.judge.dto;
 
 import io.charlie.app.core.modular.problem.submit.entity.SubmitTestCase;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,17 +12,20 @@ import java.util.List;
  * @author Charlie Zhang
  * @version v1.0
  * @date 25/07/2025
- * @description 题目判题提交参数
+ * @description 题集判题提交参数
  */
 @Data
-public class ProJudgeSubmitResultDto implements Serializable {
+public class JudgeResultDto implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    // 用户 提交参数
+    // 提交参数
 
     @Schema(description = "题目ID")
     private String problemId;
+
+    @Schema(description = "题集ID")
+    private String problemSetId;
 
     @Schema(description = "语言")
     private String language;
@@ -32,6 +35,9 @@ public class ProJudgeSubmitResultDto implements Serializable {
 
     @Schema(description = "执行类型")
     private Boolean submitType;
+
+    @Schema(description = "是否是题集")
+    private Boolean isSet;
 
     // 题目参数
 

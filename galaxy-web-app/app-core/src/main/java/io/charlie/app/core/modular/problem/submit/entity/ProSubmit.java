@@ -3,6 +3,7 @@ package io.charlie.app.core.modular.problem.submit.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
 import io.charlie.app.core.modular.sys.group.entity.SysGroup;
 import io.charlie.app.core.modular.sys.user.entity.SysUser;
@@ -28,7 +29,7 @@ import org.dromara.core.trans.constant.TransType;
 */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("pro_submit")
+@TableName(value = "pro_submit", autoResultMap = true)
 @Schema(name = "ProSubmit", description = "提交表")
 public class ProSubmit extends CommonEntity {
     @Serial
@@ -87,7 +88,8 @@ public class ProSubmit extends CommonEntity {
     private String message;
 
     @Schema(description = "测试用例结果")
-    private List<SubmitTestCase> testCases;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<SubmitTestCase> testCase;
 
     @Schema(description = "执行状态")
     @Trans(type = TransType.DICTIONARY, key = "JUDGE_STATUS", ref = "statusName")

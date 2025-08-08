@@ -10,26 +10,24 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.app.core.modular.judge.dto.JudgeSubmitDto;
 import io.charlie.app.core.modular.problem.judge.service.ProblemJudgeMessageService;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
 import io.charlie.app.core.modular.problem.problem.mapper.ProProblemMapper;
 import io.charlie.app.core.modular.problem.solved.entity.ProSolved;
 import io.charlie.app.core.modular.problem.solved.mapper.ProSolvedMapper;
 import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
-import io.charlie.app.core.modular.problem.submit.enums.JudgeStatus;
+import io.charlie.app.core.modular.problem.judge.enums.JudgeStatus;
 import io.charlie.app.core.modular.problem.submit.param.*;
 import io.charlie.app.core.modular.problem.submit.mapper.ProSubmitMapper;
 import io.charlie.app.core.modular.problem.submit.service.ProSubmitService;
 import io.charlie.app.core.modular.sys.user.entity.SysUser;
 import io.charlie.app.core.modular.sys.user.mapper.SysUserMapper;
-import io.charlie.app.core.modular.problem.judge.config.ProblemJudgeMQConfig;
-import io.charlie.app.core.modular.problem.judge.dto.ProJudgeSubmitDto;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.galaxy.utils.GaStringUtil;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -90,6 +88,8 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
                     true,
                     proSubmitPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(proSubmitPageParam.getSortField()));
+        } else {
+            queryWrapper.lambda().orderByDesc(ProSubmit::getCreateTime);
         }
 
         return this.page(CommonPageRequest.Page(
@@ -233,9 +233,10 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
 
     private void sendJudgeMessage(ProSubmit submit, ProSubmitExecuteParam param, ProProblem problem) {
         try {
-            ProJudgeSubmitDto message = new ProJudgeSubmitDto();
+            JudgeSubmitDto message = new JudgeSubmitDto();
             // ======================= 任务参数 =======================
             message.setId(submit.getId());
+            message.setIsSet(false);
             // ======================= 题目参数 =======================
             message.setMaxTime(problem.getMaxTime());
             message.setMaxMemory(problem.getMaxMemory());
@@ -254,6 +255,8 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
                                 message.setCode(template.getPrefix() + param.getCode() + template.getSuffix());
                             }
                         });
+            } else {
+                message.setCode(param.getCode());
             }
 
             problemJudgeMessageService.sendJudgeRequest(message);

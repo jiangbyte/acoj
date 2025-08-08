@@ -24,7 +24,7 @@ CREATE TABLE pro_submit
     max_memory  INT         NOT NULL DEFAULT 0 COMMENT '最大内存使用',
 
     message     TEXT                 DEFAULT NULL COMMENT '执行结果消息',
-    test_cases  JSON                 DEFAULT NULL COMMENT '测试用例结果',
+    test_case  JSON                 DEFAULT NULL COMMENT '测试用例结果',
     status      VARCHAR(32)          DEFAULT NULL COMMENT '执行状态',
 
     -- 查重结果

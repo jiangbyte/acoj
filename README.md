@@ -250,7 +250,11 @@ Astro Code OJ 是一个基于 Java 的在线评测系统，支持题目管理、
 
 **提交页**
 
+代码提交
+
 ![img.png](/doc/img_8.png)
+
+测评结果
 
 ![img.png](/doc/img_9.png)
 
