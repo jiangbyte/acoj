@@ -45,6 +45,10 @@ public class ProSet extends CommonEntity {
     @TableField(exist = false)
     private String setTypeName;
 
+    @Schema(description = "限时题集是否正在进行")
+    @TableField(exist = false)
+    private Boolean isRunning;
+
     @Schema(description = "标题")
     private String title;
 

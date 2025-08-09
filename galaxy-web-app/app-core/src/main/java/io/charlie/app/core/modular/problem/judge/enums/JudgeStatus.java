@@ -11,6 +11,7 @@ public enum JudgeStatus implements ILabelEnum<String> {
     PENDING("PENDING", "等待判题"),
     JUDGING("JUDGING", "判题中"),
     COMPILING("COMPILING", "编译中"),
+    COMPILED_OK("COMPILED_OK", "编译成功"),
     RUNNING("RUNNING", "运行中"),
 
     // 结果状态

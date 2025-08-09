@@ -87,6 +87,17 @@ export const routes: RouteRecordRaw[] = [
         //   }
         // },
       },
+      {
+        path: '/notice',
+        name: 'notice_detail',
+        component: () => import('@/views/notice/notice.vue'),
+        meta: { title: '公开公告' },
+        beforeEnter: (to) => {
+          if (!to.query.notice) {
+            return '/'
+          }
+        },
+      },
     ],
   },
   // 提交布局路由（独立布局，无菜单）

@@ -5,11 +5,14 @@ import (
 )
 
 type LanguageConfig struct {
-	Name       string   `json:"name"`       // 语言名称，如 "go", "python"
-	SourceFile string   `json:"sourceFile"` // 源文件名，如 "main", "Main"
-	Extension  string   `json:"extension"`  // 文件扩展名，如 ".go", ".py"
-	CompileCmd []string `json:"compileCmd"` // 编译命令模板，如 ["go", "build", "-o", "{output}", "{source}"]
-	RunCmd     []string `json:"runCmd"`     // 运行命令模板，如 ["./{output}"] 或 ["python3", "{source}"]
+	Name               string   `json:"name"`               // 语言名称，如 "go", "python"
+	SourceFile         string   `json:"sourceFile"`         // 源文件名，如 "main", "Main"
+	CompileFile        string   `json:"compileFile"`        // 编译文件名，如 "main", "Main"
+	DefaultCompileTime int64    `json:"defaultCompileTime"` // 默认编译时间，单位毫秒
+	DefaultExecTime    int64    `json:"defaultExecTime"`    // 默认运行时间，单位毫秒
+	Extension          string   `json:"extension"`          // 文件扩展名，如 ".go", ".py"
+	CompileCmd         []string `json:"compileCmd"`         // 编译命令模板，如 ["go", "build", "-o", "{output}", "{source}"]
+	RunCmd             []string `json:"runCmd"`             // 运行命令模板，如 ["./{output}"] 或 ["python3", "{source}"]
 }
 
 // 配置队列

@@ -246,8 +246,6 @@
                 <version>${easy-trans.version}</version>
             </dependency>
 
-
-
         </dependencies>
     </dependencyManagement>
 

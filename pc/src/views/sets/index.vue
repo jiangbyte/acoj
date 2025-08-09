@@ -95,7 +95,7 @@ function handleClick(item: any) {
     <n-grid cols="12 m:24" :x-gap="16" :y-gap="16" responsive="screen">
       <!-- 左侧筛选区域 -->
       <n-gi span="12 m:6">
-        <n-space vertical>
+        <n-space vertical class=" sticky top-22">
           <n-card title="筛选条件" class="content-card" size="small">
             <n-space vertical>
               <n-input
@@ -208,35 +208,21 @@ function handleClick(item: any) {
                     preview-disabled
                   />
                 </n-flex>
-                <n-flex align="center">
+                <n-flex align="center" class="flex-1">
                   <div class="flex flex-col h-full w-full">
                     <n-flex align="center" :size="8">
+                      <NTag size="small">
+                        {{ item.setTypeName }}
+                      </NTag>
                       <h4 class="text-lg font-medium mt-2">
                         <NEllipsis line-clamp="1">
                           {{ item.title }}
                         </NEllipsis>
                       </h4>
+                      <NTag v-if="item.startTime && item.endTime" size="small" type="warning">
+                        {{ item.isRunning ? '进行中' : '已结束' }}
+                      </NTag>
                     </n-flex>
-                    <div v-if="item.startTime && item.endTime">
-                      <n-progress
-                        type="line"
-                        :percentage="
-                          new Date() > new Date(item.endTime)
-                            ? 100
-                            : new Date() < new Date(item.startTime)
-                              ? 0
-                              : ((new Date().getTime() - new Date(item.startTime).getTime())
-                                / (new Date(item.endTime).getTime() - new Date(item.startTime).getTime())) * 100"
-                      />
-                      <n-flex vertical :size="0">
-                        <NText depth="3">
-                          开始: <NTime :time="item.startTime" />
-                        </NText>
-                        <NText depth="3">
-                          结束: <NTime :time="item.endTime" />
-                        </NText>
-                      </n-flex>
-                    </div>
                     <NEllipsis line-clamp="2" :tooltip="false" class="text-gray-500 dark:text-gray-400 mb-1">
                       {{ item.description }}
                     </NEllipsis>
@@ -292,4 +278,13 @@ function handleClick(item: any) {
 </template>
 
 <style scoped>
+/* :deep(div.n-progress-icon.n-progress-icon--as-text) {
+color: red;
+} */
+
+/* :deep(.n-split-pane) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+} */
 </style>

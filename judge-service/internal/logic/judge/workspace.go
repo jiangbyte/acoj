@@ -9,33 +9,39 @@ import (
 	"judge-service/internal/dto"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 type Workspace struct {
 	ctx         context.Context
 	logger      logx.Logger
 	config      config.Config
+	startTime   time.Time
 	langConfig  config.LanguageConfig
 	judgeSubmit dto.JudgeSubmitDto
-	RootPath    string
-	SourcePath  string
-	SourceFile  string
-	BuildPath   string
+	RootPath    string // 工作空间根目录
+	SourcePath  string // 源代码目录
+	SourceFile  string // 源代码文件
+	BuildPath   string // 编译目录
+	BuildFile   string // 编译文件
 	RunsPath    string
 }
 
 // NewWorkspace 创建工作空间
 func NewWorkspace(ctx context.Context, config config.Config, judgeSubmitDto dto.JudgeSubmitDto) (*Workspace, *dto.JudgeResultDto) {
 	workUuid := uuid.New()
-	workId, _ := workUuid.MarshalText()
-	submissionID := string(workId)
+	submissionID := strings.ReplaceAll(workUuid.String(), "-", "")
+
 	workDir := config.Workspace
 	root := filepath.Join(workDir, submissionID)
+
 	ws := &Workspace{
-		ctx:         ctx,                   // 使用传入的ctx
-		logger:      logx.WithContext(ctx), // 使用传入的ctx创建logger
-		config:      config,                // 系统配置
-		judgeSubmit: judgeSubmitDto,
+		ctx:         ctx,                           // 使用传入的ctx
+		logger:      logx.WithContext(ctx),         // 使用传入的ctx创建logger
+		startTime:   time.Now(),                    // 记录开始时间，用来计算任务总耗时
+		config:      config,                        // 系统配置
+		judgeSubmit: judgeSubmitDto,                // 提交信息
 		RootPath:    root,                          // 根目录
 		SourcePath:  filepath.Join(root, "source"), // 源代码目录
 		BuildPath:   filepath.Join(root, "build"),  // 编译目录
@@ -100,6 +106,7 @@ func (w *Workspace) SaveSourceCode() *dto.JudgeResultDto {
 		return &result
 	}
 	w.SourceFile = filePath
+	w.BuildFile = filepath.Join(w.BuildPath, w.langConfig.CompileFile)
 	return nil
 }
 
@@ -122,6 +129,13 @@ func (w *Workspace) Execute() *dto.JudgeResultDto {
 
 	// 运行
 	runResult := sandbox.Run()
+	if runResult != nil {
+		return runResult
+	}
+
+	result := dto.ConvertSubmitToResult(w.judgeSubmit)
+	result.Status = dto.StatusSystemError
+	result.Message = fmt.Sprintf("执行错误")
 	return runResult
 }
 

@@ -383,6 +383,12 @@ onUnmounted(() => {
                       <n-text class="text-gray-500 dark:text-gray-400" depth="3">
                         提交了问题 {{ resultTaskData?.problemIdName }}
                       </n-text>
+                      <n-text class="block text-gray-400 text-sm mt-1">
+                        提交时间:  <n-time :time="detailData?.createTime" />
+                      </n-text>
+                      <n-text class="block text-gray-400 text-sm mt-1">
+                        更新时间:  <n-time :time="detailData?.updateTime" />
+                      </n-text>
                     </div>
                   </div>
 
@@ -442,12 +448,16 @@ onUnmounted(() => {
                         代码相似度
                       </n-text>
                       <n-progress
+                        v-if="resultTaskData?.similarity"
                         type="circle"
                         :percentage="resultTaskData?.similarity"
                         :indicator-text="`${resultTaskData?.similarity}%`"
                         :height="60"
                         :show-indicator="true"
                       />
+                      <n-text v-else>
+                        未检测
+                      </n-text>
                     </div>
                   </n-card>
 

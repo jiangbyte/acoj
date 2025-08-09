@@ -1,5 +1,6 @@
 package io.charlie.app.core.modular.auth.service;
 
+import io.charlie.app.core.modular.auth.param.PasswordChangeParam;
 import io.charlie.app.core.modular.auth.param.UsernamePasswordLoginParam;
 import io.charlie.app.core.modular.auth.param.UsernamePasswordEmailRegisterParam;
 import io.charlie.app.core.modular.auth.result.CaptchaResult;
@@ -21,4 +22,6 @@ public interface AuthService {
     void doLogout();
 
     LoginUser getLoginUser();
+
+    void changePassword(PasswordChangeParam passwordChangeParam);
 }

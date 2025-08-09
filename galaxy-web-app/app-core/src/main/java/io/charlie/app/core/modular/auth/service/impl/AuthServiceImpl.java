@@ -8,6 +8,7 @@ import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.*;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.charlie.app.core.modular.auth.enums.PlatformEnum;
+import io.charlie.app.core.modular.auth.param.PasswordChangeParam;
 import io.charlie.app.core.modular.auth.param.UsernamePasswordLoginParam;
 import io.charlie.app.core.modular.auth.service.AuthService;
 import io.charlie.app.core.modular.auth.param.UsernamePasswordEmailRegisterParam;
@@ -176,8 +177,29 @@ public class AuthServiceImpl implements AuthService {
         LoginUser loginUser = new LoginUser();
         BeanUtils.copyProperties(sysUser, loginUser);
         // 手机号，邮箱脱敏
-        loginUser.setTelephone(DesensitizedUtil.mobilePhone(sysUser.getTelephone()));
-        loginUser.setEmail(DesensitizedUtil.email(sysUser.getEmail()));
+//        loginUser.setTelephone(DesensitizedUtil.mobilePhone(sysUser.getTelephone()));
+//        loginUser.setEmail(DesensitizedUtil.email(sysUser.getEmail()));
         return loginUser;
+    }
+
+    @Override
+    public void changePassword(PasswordChangeParam passwordChangeParam) {
+        String loginIdAsString = StpUtil.getLoginIdAsString();
+        // 获取用户信息
+        SysUser sysUser = sysUserMapper.selectById(loginIdAsString);
+
+        // 验证旧密码
+        if (!BCrypt.checkpw(passwordChangeParam.getOldPassword(), sysUser.getPassword())) {
+            throw new BusinessException("旧密码错误");
+        }
+
+        // 新密码是否两次一样
+        if (!passwordChangeParam.getNewPassword().equals(passwordChangeParam.getConfirmPassword())) {
+            throw new BusinessException("新密码不一样");
+        }
+
+        sysUser.setPassword(BCrypt.hashpw(passwordChangeParam.getNewPassword()));
+
+        sysUserMapper.updateById(sysUser);
     }
 }

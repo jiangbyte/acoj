@@ -21,10 +21,6 @@ const columns: DataTableColumns<any> = [
     key: 'languageName',
   },
   {
-    title: '源代码',
-    key: 'code',
-  },
-  {
     title: '执行类型',
     key: 'submitTypeName',
   },

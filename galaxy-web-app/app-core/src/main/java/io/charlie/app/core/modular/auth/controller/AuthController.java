@@ -1,5 +1,6 @@
 package io.charlie.app.core.modular.auth.controller;
 
+import io.charlie.app.core.modular.auth.param.PasswordChangeParam;
 import io.charlie.app.core.modular.auth.param.UsernamePasswordLoginParam;
 import io.charlie.app.core.modular.auth.service.AuthService;
 import io.charlie.app.core.modular.auth.param.UsernamePasswordEmailRegisterParam;
@@ -56,5 +57,12 @@ public class AuthController {
     @GetMapping("/sys/user/profile")
     public Result<?> profile() {
         return Result.success(authService.getLoginUser());
+    }
+
+    @Operation(summary = "修改密码")
+    @PostMapping("/sys/user/password/change")
+    public Result<?> changePassword(@RequestBody @Valid PasswordChangeParam passwordChangeParam) {
+        authService.changePassword(passwordChangeParam);
+        return Result.success();
     }
 }

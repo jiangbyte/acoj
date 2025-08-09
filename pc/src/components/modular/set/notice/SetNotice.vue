@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { useSysNoticeFetch } from '@/composables'
-import { AesCrypto } from '@/utils'
 
 const listData = ref()
 const loading = ref(true)
@@ -19,15 +18,6 @@ async function loadData() {
 }
 
 loadData()
-
-const router = useRouter()
-function goNotice(id: string) {
-  console.log(id)
-  router.push({
-    name: 'notice_detail',
-    query: { notice: AesCrypto.encrypt(id) },
-  })
-}
 </script>
 
 <template>
@@ -37,17 +27,6 @@ function goNotice(id: string) {
         <div>
           最新公告
         </div>
-        <!-- <n-button
-          text
-          round
-        >
-          <n-space align="center" size="small">
-            更多
-            <n-icon>
-              <icon-park-outline-more />
-            </n-icon>
-          </n-space>
-        </n-button> -->
       </n-space>
     </template>
 
@@ -60,20 +39,8 @@ function goNotice(id: string) {
       <n-list-item
         v-for="item in listData"
         :key="item.id"
-        @click="goNotice(item.id)"
       >
         <n-flex align="center" :wrap="false">
-          <n-flex align="center">
-            <n-image
-              width="110"
-              height="110"
-              object-fit="cover"
-              :src="item.cover"
-              fallback-src="#"
-              class="rounded-lg"
-              preview-disabled
-            />
-          </n-flex>
           <n-flex align="center">
             <div class="flex flex-col">
               <h4>

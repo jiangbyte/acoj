@@ -8,6 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.judge.dto.JudgeSubmitDto;
@@ -147,7 +148,22 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
         this.save(proSubmit);
 
         ProSolved proSolved = buildSubmitRecord(proSubmitExecuteParam, proProblem, proSubmit);
-        proSolvedMapper.insert(proSolved);
+        // 判断是否存在
+        if (proSolvedMapper.exists(new LambdaQueryWrapper<ProSolved>()
+                .eq(ProSolved::getUserId, proSubmit.getUserId())
+                .eq(ProSolved::getProblemId, proSubmit.getProblemId())
+        )) {
+            // 存在则更新提交ID
+            proSolvedMapper.update(new LambdaUpdateWrapper<ProSolved>()
+                    .eq(ProSolved::getUserId, proSubmit.getUserId())
+                    .eq(ProSolved::getProblemId, proSubmit.getProblemId())
+                    .set(ProSolved::getSubmitId, proSubmit.getId())
+                    .set(ProSolved::getUpdateTime, proSubmit.getUpdateTime())
+            );
+        } else {
+            // 不存在则插入
+            proSolvedMapper.insert(proSolved);
+        }
 
         // 发送判题消息
         sendJudgeMessage(proSubmit, proSubmitExecuteParam, proProblem);
@@ -185,6 +201,8 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
                     true,
                     proUserSubmitPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(proUserSubmitPageParam.getSortField()));
+        } else {
+            queryWrapper.lambda().orderByDesc(ProSubmit::getCreateTime);
         }
 
         return this.page(CommonPageRequest.Page(

@@ -112,7 +112,6 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 }
 
 func (l *ProblemLogic) sendResultToMQ(result *dto.JudgeResultDto) error {
-	l.Infof("发送激活")
 	body, err := json.Marshal(result)
 	if err != nil {
 		return err
@@ -132,7 +131,5 @@ func (l *ProblemLogic) sendResultToMQ(result *dto.JudgeResultDto) error {
 			Timestamp:   time.Now(),
 		},
 	)
-
-	l.Infof("结果发送OK")
 	return err
 }

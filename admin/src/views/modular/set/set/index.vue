@@ -27,10 +27,6 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '描述',
-    key: 'description',
-  },
-  {
     title: '分类',
     key: 'categoryName',
   },

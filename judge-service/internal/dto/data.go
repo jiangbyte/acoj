@@ -4,10 +4,11 @@ type JudgeStatus string
 
 const (
 	// Basic states
-	StatusPending   JudgeStatus = "PENDING"
-	StatusJudging   JudgeStatus = "JUDGING"
-	StatusCompiling JudgeStatus = "COMPILING"
-	StatusRunning   JudgeStatus = "RUNNING"
+	StatusPending    JudgeStatus = "PENDING"
+	StatusJudging    JudgeStatus = "JUDGING"
+	StatusCompiling  JudgeStatus = "COMPILING"
+	StatusCompiledOK JudgeStatus = "COMPILED_OK"
+	StatusRunning    JudgeStatus = "RUNNING"
 
 	// Result states
 	StatusAccepted            JudgeStatus = "ACCEPTED"

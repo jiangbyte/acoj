@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
 import io.charlie.app.core.modular.set.set.entity.ProSet;
+import io.charlie.app.core.modular.set.set.enums.SetTypeEnum;
 import io.charlie.app.core.modular.set.set.param.ProSetAddParam;
 import io.charlie.app.core.modular.set.set.param.ProSetEditParam;
 import io.charlie.app.core.modular.set.set.param.ProSetIdParam;
@@ -63,12 +64,21 @@ public class ProSetServiceImpl extends ServiceImpl<ProSetMapper, ProSet> impleme
                     StrUtil.toUnderlineCase(proSetPageParam.getSortField()));
         }
 
-        return this.page(CommonPageRequest.Page(
+        Page<ProSet> page = this.page(CommonPageRequest.Page(
                         Optional.ofNullable(proSetPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(proSetPageParam.getSize()).orElse(20),
                         null
                 ),
                 queryWrapper);
+        page.getRecords().forEach(proSet -> {
+            // 如果是限时题集，判断是否正在运行
+            if (Objects.equals(proSet.getSetType(), SetTypeEnum.LIMIT_TIME_SET.getValue())) {
+                proSet.setIsRunning(new Date().after(proSet.getStartTime()) && new Date().before(proSet.getEndTime()));
+            } else {
+                proSet.setIsRunning(false);
+            }
+        });
+        return page;
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -148,7 +148,7 @@ function rowProps(row: any) {
     <n-grid cols="12 m:24" :x-gap="16" :y-gap="16" responsive="screen">
       <!-- 左侧筛选区域 -->
       <n-gi span="12 m:6">
-        <NSpace vertical>
+        <NSpace vertical class=" sticky top-22">
           <n-card title="筛选条件" class="content-card" size="small">
             <NSpace vertical>
               <n-input
