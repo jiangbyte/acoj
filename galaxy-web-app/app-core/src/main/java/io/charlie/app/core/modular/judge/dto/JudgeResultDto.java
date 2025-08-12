@@ -21,6 +21,9 @@ public class JudgeResultDto implements Serializable {
 
     // 提交参数
 
+    @Schema(description = "用户ID")
+    private String userId;
+
     @Schema(description = "题目ID")
     private String problemId;
 

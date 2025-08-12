@@ -38,25 +38,6 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 public class ChatController {
     private final ChatClient client;
 
-//    @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-//    public Flux<String> stream(
-//            @RequestParam(defaultValue = "你好，你是谁？") String message,
-//            @RequestParam(required = false) String problemId,
-//            @RequestParam @NotNull String conversantId
-//    ) {
-//        log.info("开始处理问题 ID 为 {} 的请求，会话ID {} 消息 {}", problemId, conversantId, message);
-//        PromptTemplate systemPromptTemplate = new SystemPromptTemplate("正在处理问题 ID 为 {question_id} 的请求");
-//        Message systemMessage = systemPromptTemplate.createMessage(Map.of("question_id", problemId));
-//        return client.prompt()
-//                // 添加系统消息
-//                .messages(systemMessage)
-//                .user(message)
-//                .advisors(spec -> spec.param(CONVERSATION_ID, conversantId))
-//                .stream()
-//                .content();
-//    }
-
-
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -99,3 +80,23 @@ public class ChatController {
         return emitter;
     }
 }
+
+
+
+//    @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+//    public Flux<String> stream(
+//            @RequestParam(defaultValue = "你好，你是谁？") String message,
+//            @RequestParam(required = false) String problemId,
+//            @RequestParam @NotNull String conversantId
+//    ) {
+//        log.info("开始处理问题 ID 为 {} 的请求，会话ID {} 消息 {}", problemId, conversantId, message);
+//        PromptTemplate systemPromptTemplate = new SystemPromptTemplate("正在处理问题 ID 为 {question_id} 的请求");
+//        Message systemMessage = systemPromptTemplate.createMessage(Map.of("question_id", problemId));
+//        return client.prompt()
+//                // 添加系统消息
+//                .messages(systemMessage)
+//                .user(message)
+//                .advisors(spec -> spec.param(CONVERSATION_ID, conversantId))
+//                .stream()
+//                .content();
+//    }

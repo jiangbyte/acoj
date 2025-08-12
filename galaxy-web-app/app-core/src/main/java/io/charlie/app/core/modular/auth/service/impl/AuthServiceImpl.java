@@ -98,6 +98,13 @@ public class AuthServiceImpl implements AuthService {
         return StpUtil.getTokenValue();
     }
 
+
+
+
+
+
+
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String doRegister(UsernamePasswordEmailRegisterParam usernamePasswordEmailRegisterParam) {

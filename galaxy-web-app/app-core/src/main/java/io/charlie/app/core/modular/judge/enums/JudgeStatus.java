@@ -1,4 +1,4 @@
-package io.charlie.app.core.modular.problem.judge.enums;
+package io.charlie.app.core.modular.judge.enums;
 
 import io.charlie.galaxy.enums.ILabelEnum;
 import lombok.AllArgsConstructor;
@@ -46,7 +46,12 @@ public enum JudgeStatus implements ILabelEnum<String> {
     CHECKER_ERROR("CHECKER_ERROR", "检查器错误"),
     IDLENESS_LIMIT_EXCEEDED("IDLENESS_LIMIT_EXCEEDED", "空闲时间超出限制"),
     SECURITY_VIOLATION("SECURITY_VIOLATION", "安全违规"),
-    IGNORED("IGNORED", "被忽略");
+    IGNORED("IGNORED", "被忽略"),
+
+    // 代码相似状态
+    SIMILARITY_SUSPICIOUS("SIMILARITY_SUSPICIOUS", "可疑提交"),
+    SIMILARITY_ACCEPTED("SIMILARITY_ACCEPTED", "通过"),
+    ;
 
     private final String value;
     private final String label;

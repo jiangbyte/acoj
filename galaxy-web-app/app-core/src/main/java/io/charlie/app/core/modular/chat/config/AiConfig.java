@@ -46,9 +46,7 @@ public class AiConfig {
                 // 从resource目录下加载
                 .defaultSystem(systemMessageResource)
                 .defaultAdvisors(
-                        // 实现 Logger 的 Advisor
                         new SimpleLoggerAdvisor(),
-                        // 实现 ChatMemory 的 Advisor
                         MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder()
                                         .chatMemoryRepository(new InMemoryChatMemoryRepository())
                                         .maxMessages(100)
@@ -56,7 +54,6 @@ public class AiConfig {
                                 .build(),
                         new DocumentRetrievalAdvisor(retriever)
                 )
-                // 设置 ChatClient 中 ChatModel 的 Options 参数
                 .defaultOptions(
                         DashScopeChatOptions.builder()
                                 .withTopP(0.7)

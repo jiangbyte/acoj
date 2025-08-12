@@ -1,23 +1,20 @@
-package io.charlie.app.core.modular.problem.judge.service.impl;
+package io.charlie.app.core.modular.judge.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.charlie.app.core.modular.judge.config.ProblemJudgeMQConfig;
-import io.charlie.app.core.modular.judge.config.ProblemResultMQConfig;
+import io.charlie.app.core.modular.judge.config.ProblemJudgeResultMQConfig;
 import io.charlie.app.core.modular.judge.dto.JudgeResultDto;
 import io.charlie.app.core.modular.judge.dto.JudgeSubmitDto;
-import io.charlie.app.core.modular.problem.judge.dto.ProJudgeSubmitDto;
-import io.charlie.app.core.modular.problem.judge.dto.ProJudgeSubmitResultDto;
-import io.charlie.app.core.modular.problem.judge.enums.JudgeStatus;
-import io.charlie.app.core.modular.problem.judge.service.ProblemJudgeMessageService;
+import io.charlie.app.core.modular.judge.enums.JudgeStatus;
+import io.charlie.app.core.modular.judge.service.ProblemJudgeMessageService;
 import io.charlie.app.core.modular.problem.solved.entity.ProSolved;
 import io.charlie.app.core.modular.problem.solved.mapper.ProSolvedMapper;
 import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
 import io.charlie.app.core.modular.problem.submit.mapper.ProSubmitMapper;
-import io.charlie.app.core.modular.problem.submit.service.ProSubmitService;
+import io.charlie.app.core.modular.similarity.dto.SimilaritySubmitDto;
+import io.charlie.app.core.modular.similarity.service.ProblemSimilarityMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -41,6 +38,8 @@ public class ProblemJudgeMessageServiceImpl implements ProblemJudgeMessageServic
     private final ProSubmitMapper proSubmitMapper;
     private final ProSolvedMapper proSolvedMapper;
 
+    private final ProblemSimilarityMessageService problemSimilarityMessageService;
+
     @Override
     public void sendJudgeRequest(JudgeSubmitDto judgeSubmitDto) {
         log.info("发送消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
@@ -62,7 +61,7 @@ public class ProblemJudgeMessageServiceImpl implements ProblemJudgeMessageServic
     }
 
     @Transactional
-    @RabbitListener(queues = ProblemResultMQConfig.QUEUE, concurrency = "5-10")
+    @RabbitListener(queues = ProblemJudgeResultMQConfig.QUEUE, concurrency = "5-10")
     @Override
     public void handleJudgeResult(JudgeResultDto judgeResultDto) {
         if (judgeResultDto.getIsSet()) {
@@ -85,6 +84,9 @@ public class ProblemJudgeMessageServiceImpl implements ProblemJudgeMessageServic
                     .eq(ProSolved::getSubmitId, bean.getId())
                     .set(ProSolved::getSolved, true)
             );
+
+            SimilaritySubmitDto similaritySubmitDto = BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class);
+            problemSimilarityMessageService.sendSimilarityRequest(similaritySubmitDto);
         } else if (bean.getStatus().equals(JudgeStatus.WRONG_ANSWER.getValue())) {
             proSolvedMapper.update(new LambdaUpdateWrapper<ProSolved>()
                     .eq(ProSolved::getUserId, bean.getUserId())
