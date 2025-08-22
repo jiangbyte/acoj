@@ -187,6 +187,20 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 		logx.Infof("最大内存: %d", testCase.MaxMemory)
 		logx.Infof("消息: %s", testCase.Message)
 		logx.Infof("当前状态: %s", testCase.Status)
+
+		// 规范化输出和用户输出
+		normalizedExcept := normalizeLineEndings(testCase.Except)
+		normalizedUser := normalizeLineEndings(testCase.Output)
+
+		// 去除末尾空行后再比较
+		trimmedExpected := strings.TrimRight(normalizedExcept, "\n")
+		trimmedUser := strings.TrimRight(normalizedUser, "\n")
+
+		if trimmedExpected == trimmedUser {
+			result.Status = dto.StatusAccepted
+		} else {
+			result.Status = dto.StatusWrongAnswer
+		}
 	}
 
 	return &result, nil
@@ -215,4 +229,13 @@ func (s *Executor) initCgroupWithLimits(cgroupPath string, maxTime, maxMemory in
 
 	logx.Infof("已设置资源限制 - 最大内存: %d KB, 最大时间: %d ms", maxMemory, maxTime)
 	return nil
+}
+
+// normalizeLineEndings 将不同风格的换行符统一为\n
+func normalizeLineEndings(str string) string {
+	// 将\r\n替换为\n
+	str = strings.ReplaceAll(str, "\r\n", "\n")
+	// 将单独的\r也替换为\n（处理Mac OS旧格式）
+	str = strings.ReplaceAll(str, "\r", "\n")
+	return str
 }
