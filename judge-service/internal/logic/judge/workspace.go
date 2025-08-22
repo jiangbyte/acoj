@@ -75,7 +75,8 @@ func (w *Workspace) createDirs() error {
 
 // Cleanup 删除工作空间
 func (w *Workspace) Cleanup() error {
-	return os.RemoveAll(w.RootPath)
+	// return os.RemoveAll(w.RootPath)
+	return nil
 }
 
 // getLanguageConfig 查找并返回语言配置
