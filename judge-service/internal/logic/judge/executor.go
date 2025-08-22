@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"judge-service/internal/dto"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -21,6 +18,7 @@ type Executor struct {
 	Sandbox Sandbox
 }
 
+// 创建执行器，传入上下文，沙箱
 func NewExecutor(ctx context.Context, sandbox Sandbox) *Executor {
 	return &Executor{
 		ctx:     ctx,
@@ -29,58 +27,72 @@ func NewExecutor(ctx context.Context, sandbox Sandbox) *Executor {
 	}
 }
 
+// 实际执行
 func (e *Executor) Execute() *dto.JudgeResultDto {
+	// 转换提交
 	result := dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
 
-	// 创建临时cgroup
-	cgroupName := "judge_" + strconv.Itoa(os.Getpid()) + "_" + strconv.Itoa(time.Now().Nanosecond())
-	cgroupPath := filepath.Join("/sys/fs/cgroup", cgroupName)
-	if err := os.Mkdir(cgroupPath, 0755); err != nil {
-		result.Status = dto.StatusSystemError
-		result.Message = fmt.Sprintf("CGroup 创建失败: %v", err)
-		return &result
-	}
-	defer os.RemoveAll(cgroupPath)
-
-	// 初始化cgroup并设置资源限制
-	if err := e.initCgroupWithLimits(cgroupPath, e.Sandbox.Workspace.judgeSubmit.MaxTime, e.Sandbox.Workspace.judgeSubmit.MaxMemory); err != nil {
-		result.Status = dto.StatusSystemError
-		result.Message = fmt.Sprintf("CGroup 资源设置失败: %v", err)
-		return &result
-	}
-
-	// 获得执行命令
-	config := e.Sandbox.Workspace.langConfig
-	runCmd := make([]string, len(config.RunCmd))
+	// ==================================== 获得执行命令 ====================================
+	config := e.Sandbox.Workspace.langConfig // 获取语言配置
+	runCmd := make([]string, len(config.RunCmd)) // 创建执行命令
 	for i, part := range config.RunCmd {
-		runCmd[i] = strings.ReplaceAll(part, "{source}", e.Sandbox.Workspace.SourceFile)
-		runCmd[i] = strings.ReplaceAll(runCmd[i], "{exec}", e.Sandbox.Workspace.BuildFile)
+		runCmd[i] = strings.ReplaceAll(part, "{exec}", e.Sandbox.Workspace.BuildFile)
 	}
+	logx.Infof("得到编译命令: %s", runCmd)
 
-	// 设置运行超时上下文
-	timeout := time.Duration(e.Sandbox.Workspace.judgeSubmit.MaxTime)*time.Millisecond + 500*time.Millisecond // 额外500ms缓冲
-	if timeout > 10*time.Second {
-		timeout = 10 * time.Second // 最大10秒超时
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
 
-	// 创建命令
-	var cmd *exec.Cmd
-	if len(runCmd) == 1 {
-		cmd = exec.CommandContext(ctx, runCmd[0])
-	} else {
-		cmd = exec.CommandContext(ctx, runCmd[0], runCmd[1:]...)
-	}
-	cmd.Dir = e.Sandbox.Workspace.RunsPath
 
-	// 设置进程隔离命名空间
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWNS | syscall.CLONE_NEWUTS |
-			syscall.CLONE_NEWPID | syscall.CLONE_NEWNET |
-			syscall.CLONE_NEWIPC,
-		Unshareflags: syscall.CLONE_NEWNS,
-	}
+	// result := dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
+
+	// // 创建临时cgroup
+	// cgroupName := "judge_" + strconv.Itoa(os.Getpid()) + "_" + strconv.Itoa(time.Now().Nanosecond())
+	// cgroupPath := filepath.Join("/sys/fs/cgroup", cgroupName)
+	// if err := os.Mkdir(cgroupPath, 0755); err != nil {
+	// 	result.Status = dto.StatusSystemError
+	// 	result.Message = fmt.Sprintf("CGroup 创建失败: %v", err)
+	// 	return &result
+	// }
+	// defer os.RemoveAll(cgroupPath)
+
+	// // 初始化cgroup并设置资源限制
+	// if err := e.initCgroupWithLimits(cgroupPath, e.Sandbox.Workspace.judgeSubmit.MaxTime, e.Sandbox.Workspace.judgeSubmit.MaxMemory); err != nil {
+	// 	result.Status = dto.StatusSystemError
+	// 	result.Message = fmt.Sprintf("CGroup 资源设置失败: %v", err)
+	// 	return &result
+	// }
+
+	// // 获得执行命令
+	// config := e.Sandbox.Workspace.langConfig
+	// runCmd := make([]string, len(config.RunCmd))
+	// for i, part := range config.RunCmd {
+	// 	runCmd[i] = strings.ReplaceAll(part, "{source}", e.Sandbox.Workspace.SourceFile)
+	// 	runCmd[i] = strings.ReplaceAll(runCmd[i], "{exec}", e.Sandbox.Workspace.BuildFile)
+	// }
+
+	// // 设置运行超时上下文
+	// timeout := time.Duration(e.Sandbox.Workspace.judgeSubmit.MaxTime)*time.Millisecond + 500*time.Millisecond // 额外500ms缓冲
+	// if timeout > 10*time.Second {
+	// 	timeout = 10 * time.Second // 最大10秒超时
+	// }
+	// ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	// defer cancel()
+
+	// // 创建命令
+	// var cmd *exec.Cmd
+	// if len(runCmd) == 1 {
+	// 	cmd = exec.CommandContext(ctx, runCmd[0])
+	// } else {
+	// 	cmd = exec.CommandContext(ctx, runCmd[0], runCmd[1:]...)
+	// }
+	// cmd.Dir = e.Sandbox.Workspace.RunsPath
+
+	// // 设置进程隔离命名空间
+	// cmd.SysProcAttr = &syscall.SysProcAttr{
+	// 	Cloneflags: syscall.CLONE_NEWNS | syscall.CLONE_NEWUTS |
+	// 		syscall.CLONE_NEWPID | syscall.CLONE_NEWNET |
+	// 		syscall.CLONE_NEWIPC,
+	// 	Unshareflags: syscall.CLONE_NEWNS,
+	// }
 
 	// 测试用例遍历运行
 	// testCases := e.Sandbox.Workspace.judgeSubmit.TestCase
