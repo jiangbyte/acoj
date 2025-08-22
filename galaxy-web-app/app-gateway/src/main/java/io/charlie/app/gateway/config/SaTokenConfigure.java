@@ -1,6 +1,12 @@
 package io.charlie.app.gateway.config;
 
+import cn.dev33.satoken.reactor.filter.SaReactorFilter;
+import cn.dev33.satoken.router.SaRouter;
+import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.json.JSONUtil;
+import io.charlie.app.gateway.config.properties.SecurityProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -12,6 +18,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @Slf4j
 public class SaTokenConfigure {
+
+    @Bean
+    public SaReactorFilter getSaReactorFilter(SecurityProperties properties) {
+        return new SaReactorFilter()
+                .addInclude("/**")
+                .setAuth(obj -> {
+                            SaRouter.match("/**")
+                                    .notMatch(properties.getIgnore().getUrls())
+                                    .check(r -> StpUtil.checkLogin());
+                        }
+                )
+                .setError(Throwable::getMessage);
+    }
 
     /**
      * 注册 [Sa-Token全局过滤器]

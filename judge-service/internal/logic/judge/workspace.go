@@ -133,9 +133,6 @@ func (w *Workspace) Execute() *dto.JudgeResultDto {
 		return runResult
 	}
 
-	result := dto.ConvertSubmitToResult(w.judgeSubmit)
-	result.Status = dto.StatusSystemError
-	result.Message = fmt.Sprintf("执行错误")
 	return runResult
 }
 
@@ -143,6 +140,6 @@ func (w *Workspace) Execute() *dto.JudgeResultDto {
 func (w *Workspace) Evaluate() *dto.JudgeResultDto {
 	result := dto.ConvertSubmitToResult(w.judgeSubmit)
 	result.Status = dto.StatusSystemError
-	result.Message = fmt.Sprintf("评估步骤")
+	result.Message = fmt.Sprintf("评估步骤 OK")
 	return &result
 }

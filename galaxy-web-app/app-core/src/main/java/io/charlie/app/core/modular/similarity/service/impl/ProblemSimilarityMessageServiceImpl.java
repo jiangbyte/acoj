@@ -53,15 +53,44 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
     @RabbitListener(queues = ProblemSimilarityMQConfig.QUEUE, concurrency = "5-10")
     @Override
     public void handleSimilarityRequest(SimilaritySubmitDto similaritySubmitDto) {
-
         SimilarityResultDto bean = BeanUtil.toBean(similaritySubmitDto, SimilarityResultDto.class);
 
-        // 获得样本集
-        List<ProSubmit> proSubmits = proSubmitMapper.selectList(new LambdaQueryWrapper<ProSubmit>()
+        // 配置参数
+        final int MIN_SAMPLE_SIZE = 50; // 最低样本数量限制
+        final int RECENT_SAMPLE_SIZE = 100; // 想要获取的近期样本数量
+
+        LambdaQueryWrapper<ProSubmit> queryWrapper  = new LambdaQueryWrapper<ProSubmit>()
                 .eq(ProSubmit::getProblemId, similaritySubmitDto.getProblemId()) // 这个ID的提交
                 .eq(ProSubmit::getSubmitType, true) // 正式提交
-                .eq(ProSubmit::getStatus, JudgeStatus.ACCEPTED) // 只有通过的才收入样本集
-        );
+                .eq(ProSubmit::getStatus, JudgeStatus.ACCEPTED);// 只有通过的才收入样本集
+
+        // 先查询总数量
+        long totalCount = proSubmitMapper.selectCount(queryWrapper);
+
+        List<ProSubmit> proSubmits;
+
+        if (totalCount > MIN_SAMPLE_SIZE) {
+            // 如果总数超过最低限制，优先获取最近的RECENT_SAMPLE_SIZE条记录
+            queryWrapper.orderByDesc(ProSubmit::getCreateTime)
+                    .last("LIMIT " + RECENT_SAMPLE_SIZE);
+            proSubmits = proSubmitMapper.selectList(queryWrapper);
+
+            // 如果获取的近期样本不足最低限制，补充旧样本
+            if (proSubmits.size() < MIN_SAMPLE_SIZE) {
+                queryWrapper.clear();
+                queryWrapper.eq(ProSubmit::getProblemId, similaritySubmitDto.getProblemId())
+                        .eq(ProSubmit::getSubmitType, true)
+                        .eq(ProSubmit::getStatus, JudgeStatus.ACCEPTED)
+                        .orderByAsc(ProSubmit::getCreateTime)
+                        .last("LIMIT " + (MIN_SAMPLE_SIZE - proSubmits.size()));
+                List<ProSubmit> additionalSubmits = proSubmitMapper.selectList(queryWrapper);
+                proSubmits.addAll(additionalSubmits);
+            }
+        } else {
+            // 如果总数不足最低限制，获取全部
+            proSubmits = proSubmitMapper.selectList(queryWrapper);
+        }
+
         // 空直接忽略
         if (ObjectUtil.isEmpty(proSubmits)) {
             return;

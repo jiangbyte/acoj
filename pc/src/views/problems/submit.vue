@@ -461,13 +461,25 @@ onUnmounted(() => {
                     </div>
                   </n-card>
 
+                  <!-- 返回消息 -->
+                  <n-card embedded size="small" class="mt-4 rounded-lg">
+                    <n-code
+                        :code="resultTaskData?.message"
+                        :language="resultTaskData?.language.toLowerCase()"
+                        show-line-numbers
+                        class="rounded-md overflow-x-scroll"
+                    />
+                  </n-card>
+
                   <!-- 代码展示 -->
-                  <n-code
-                    :code="resultTaskData?.code"
-                    :language="resultTaskData?.language.toLowerCase()"
-                    show-line-numbers
-                    class="rounded-md mt-4"
-                  />
+                  <n-card embedded size="small" class="mt-4 rounded-lg">
+                    <n-code
+                        :code="resultTaskData?.code"
+                        :language="resultTaskData?.language.toLowerCase()"
+                        show-line-numbers
+                        class="rounded-md overflow-x-scroll"
+                    />
+                  </n-card>
                   <!-- <n-collapse :default-expanded-names="['code']" class="mt-4">
                     <n-collapse-item title="查看相似检测" name="code">
                     </n-collapse-item>

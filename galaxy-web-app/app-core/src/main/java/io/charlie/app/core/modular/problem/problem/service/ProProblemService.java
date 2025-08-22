@@ -33,3 +33,4 @@ public interface ProProblemService extends IService<ProProblem> {
 
     List<ProProblem> latestN(int n);
 }
+

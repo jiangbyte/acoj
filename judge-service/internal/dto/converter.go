@@ -3,6 +3,7 @@ package dto
 // ConvertSubmitToResult 将 JudgeSubmitDto 转换为 JudgeResultDto
 func ConvertSubmitToResult(submit JudgeSubmitDto) JudgeResultDto {
 	result := JudgeResultDto{
+		UserId:       submit.UserId,
 		ProblemId:    submit.ProblemId,
 		Language:     submit.Language,
 		ProblemSetId: submit.ProblemSetId,

@@ -81,9 +81,27 @@ func (e *Executor) Execute() *dto.JudgeResultDto {
 		Unshareflags: syscall.CLONE_NEWNS,
 	}
 
-	// 测试用例遍历运行
+	// TODO 测试用例遍历运行
+	// 转换并遍历所有测试用例
+	submitTestCases := make([]dto.SubmitTestCase, len(e.Sandbox.Workspace.judgeSubmit.TestCase))
+	for i, testCase := range e.Sandbox.Workspace.judgeSubmit.TestCase {
+		submitTestCase := dto.SubmitTestCase{
+			Input:     testCase.Input,
+			Output:    "",                // 将在执行后填充
+			Except:    testCase.Output,   // 原TestCase.Output对应SubmitTestCase.Except
+			MaxTime:   0,                 // 初始时间为空
+			MaxMemory: 0,                 // 初始值为空
+			Status:    dto.StatusPending, // 等待
+			Message:   "",                // 默认为空
+		}
 
-	return nil
+		submitTestCases[i] = submitTestCase
+	}
+
+	// 汇总结果
+	result.TestCase = submitTestCases
+
+	return &result
 }
 
 // initCgroupWithLimits 初始化cgroup并设置资源限制

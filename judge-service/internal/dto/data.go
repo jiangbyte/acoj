@@ -47,6 +47,7 @@ const (
 
 /* 提交题目 */
 type JudgeSubmitDto struct {
+	UserId       string     `json:"userId"`
 	ProblemId    string     `json:"problemId"`
 	ProblemSetId string     `json:"problemSetId"`
 	Language     string     `json:"language"`
@@ -60,6 +61,7 @@ type JudgeSubmitDto struct {
 }
 
 type JudgeResultDto struct {
+	UserId       string           `json:"userId"`
 	ProblemId    string           `json:"problemId"`
 	Language     string           `json:"language"`
 	ProblemSetId string           `json:"problemSetId"`
