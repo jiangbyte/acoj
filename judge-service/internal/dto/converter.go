@@ -9,11 +9,11 @@ func ConvertSubmitToResult(submit JudgeSubmitDto) JudgeResultDto {
 		ProblemSetId: submit.ProblemSetId,
 		Code:         submit.Code,
 		SubmitType:   submit.SubmitType,
-		MaxTime:      submit.MaxTime,
-		MaxMemory:    submit.MaxMemory,
+		MaxTime:      0,
+		MaxMemory:    0,
 		ID:           submit.ID,
 		IsSet:        submit.IsSet,
-		Status:       StatusWrongAnswer, // 初始状态为空，等待判题结果
+		Status:       StatusPending, // 初始状态为空，等待判题结果
 		Message:      "",                // 初始消息为空
 	}
 
@@ -27,7 +27,7 @@ func ConvertSubmitToResult(submit JudgeSubmitDto) JudgeResultDto {
 			MaxTime:   0,
 			MaxMemory: 0,
 			Message:   "",                // 初始消息为空
-			Status:    StatusWrongAnswer, // 初始状态为空
+			Status:    StatusPending, // 初始状态为空
 		}
 	}
 
