@@ -74,7 +74,7 @@ public class ProSetController {
     }
 
     @Operation(summary = "C端-获取最新N题集")
-    @GetMapping("/pro/set/latest10")
+    @GetMapping("/pro/set/latest")
     public Result<?> latest10() {
         return Result.success(proSetService.latestN(10));
     }

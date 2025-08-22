@@ -62,5 +62,55 @@
             ranked_problems
                 ${ew.customSqlSegment}
     </select>
+    <select id="selectTopN" resultType="io.charlie.app.core.modular.problem.ranking.entity.ProblemRanking">
+        WITH problem_stats AS (
+            SELECT
+                p.id AS problem_id,
+                p.title AS title,
+                COUNT(DISTINCT s.user_id) AS participant_count,
+                CASE
+                    WHEN COUNT(DISTINCT s.id) = 0 THEN 0
+                    ELSE ROUND(COUNT(DISTINCT CASE WHEN sb.solved = 1 THEN s.user_id END) * 100.0 / COUNT(DISTINCT s.user_id), 2)
+                    END AS acceptance_rate,
+                SUM(CASE WHEN s.submit_type = 1 THEN 1 ELSE 0 END) AS submission_count,
+                SUM(CASE WHEN s.submit_type = 0 THEN 1 ELSE 0 END) AS execution_count,
+                COUNT(s.id) AS total_submission_count
+            FROM
+                pro_problem p
+                    LEFT JOIN
+                pro_submit s ON p.id = s.problem_id AND s.deleted = 0
+                    LEFT JOIN
+                pro_solved sb ON s.problem_id = sb.problem_id AND s.user_id = sb.user_id AND sb.deleted = 0
+            WHERE
+                p.deleted = 0
+            GROUP BY
+                p.id, p.title
+        ),
+             ranked_problems AS (
+                 SELECT
+                     problem_id,
+                     title,
+                     participant_count,
+                     acceptance_rate,
+                     submission_count,
+                     execution_count,
+                     total_submission_count,
+                     ROW_NUMBER() OVER (ORDER BY participant_count DESC, acceptance_rate DESC) AS ranking
+                 FROM
+                     problem_stats
+             )
+        SELECT
+            ranking,
+            problem_id,
+            title,
+            participant_count,
+            acceptance_rate,
+            submission_count,
+            execution_count,
+            total_submission_count
+        FROM
+            ranked_problems
+         <![CDATA[WHERE ranking <= #{n}]]>
+    </select>
 
 </mapper>

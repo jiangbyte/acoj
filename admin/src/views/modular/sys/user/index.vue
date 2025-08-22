@@ -40,6 +40,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '签名',
     key: 'quote',
+    ellipsis: true,
   },
   {
     title: '性别',
@@ -57,6 +58,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '邮箱',
     key: 'email',
+    ellipsis: true,
   },
   {
     title: '电话',
@@ -65,6 +67,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
+    width: 200,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {

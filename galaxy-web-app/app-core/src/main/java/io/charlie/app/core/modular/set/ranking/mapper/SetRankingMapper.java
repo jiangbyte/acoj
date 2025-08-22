@@ -8,6 +8,8 @@ import io.charlie.app.core.modular.set.ranking.entity.SetRanking;
 import io.charlie.app.core.modular.set.ranking.entity.SetUserRanking;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+
 /**
  * @author Charlie Zhang
  * @version v1.0
@@ -18,4 +20,6 @@ import org.apache.ibatis.annotations.Mapper;
 //@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface SetRankingMapper extends BaseMapper<SetRanking> {
     IPage<SetRanking> rankingPage(IPage<SetRanking> page, Wrapper<SetRanking> ew);
+
+    List<SetRanking> selectTopN(Integer n);
 }

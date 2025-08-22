@@ -43,6 +43,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '题目',
     key: 'problemIdName',
+    ellipsis: true,
   },
   {
     title: '编程语言',
@@ -83,10 +84,13 @@ const columns: DataTableColumns<any> = [
   {
     title: '检测任务',
     key: 'taskId',
+    ellipsis: true,
   },
   {
     title: '操作',
     key: 'action',
+    width: 200,
+    fixed: 'right',
     width: 200,
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [

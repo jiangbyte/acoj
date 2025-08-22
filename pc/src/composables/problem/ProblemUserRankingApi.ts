@@ -103,5 +103,12 @@ export function useProblemUserRankingFetch() {
         },
       })
     },
+
+    /**
+     * 获取Top排行榜
+     */
+    problemUserRankingTop() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/ranking/top`,)
+    },
   }
 }

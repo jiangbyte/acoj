@@ -14,6 +14,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '标题',
     key: 'title',
+    ellipsis: true,
   },
   {
     title: '横幅',
@@ -25,10 +26,12 @@ const columns: DataTableColumns<any> = [
   {
     title: '按钮文字',
     key: 'buttonText',
+    ellipsis: true,
   },
   {
     title: '链接',
     key: 'toUrl',
+    ellipsis: true,
   },
   {
     title: '排序',
@@ -37,10 +40,13 @@ const columns: DataTableColumns<any> = [
   {
     title: '子标题',
     key: 'subtitle',
+    ellipsis: true,
   },
   {
     title: '操作',
     key: 'action',
+    width: 200,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {

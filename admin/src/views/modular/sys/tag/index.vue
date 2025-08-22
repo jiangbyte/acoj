@@ -18,6 +18,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
+    width: 200,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {

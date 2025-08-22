@@ -14,18 +14,22 @@ const columns: DataTableColumns<any> = [
   {
     title: '分类',
     key: 'categoryName',
+    ellipsis: true,
   },
   {
     title: '标题',
     key: 'title',
+    ellipsis: true,
   },
   {
     title: '来源',
     key: 'source',
+    ellipsis: true,
   },
   {
     title: '链接',
     key: 'url',
+    ellipsis: true,
   },
   {
     title: '时间限制',
@@ -35,10 +39,10 @@ const columns: DataTableColumns<any> = [
     title: '内存限制',
     key: 'maxMemory',
   },
-  // {
-  //   title: '描述',
-  //   key: 'description',
-  // },
+  {
+    title: '阈值',
+    key: 'threshold',
+  },
   // {
   //   title: '用例',
   //   key: 'testCase',
@@ -66,6 +70,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
+    width: 200,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {

@@ -229,6 +229,16 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
                     template.setSuffix(null);
                 });
             }
+
+            try {
+                String loginIdAsString = StpUtil.getLoginIdAsString();
+                ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
+                        .eq(ProSolved::getUserId, loginIdAsString)
+                        .eq(ProSolved::getProblemId, item.getId()));
+                item.setCurrentUserSolved(proSolved.getSolved());
+            } catch (Exception ignored) {
+                item.setCurrentUserSolved(false);
+            }
         });
         return list;
     }

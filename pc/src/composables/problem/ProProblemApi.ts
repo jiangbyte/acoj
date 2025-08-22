@@ -25,6 +25,7 @@ export function useProProblemFetch() {
     useTemplate: false,
     codeTemplate: [],
     solved: 0,
+    passRate: 0,
     createTime: '',
     createUser: '',
     updateTime: '',
@@ -77,6 +78,9 @@ export function useProProblemFetch() {
           ...data,
         },
       })
+    },
+    proProblemLatest10() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/latest`)
     },
   }
 }

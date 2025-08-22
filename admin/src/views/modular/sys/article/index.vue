@@ -14,10 +14,12 @@ const columns: DataTableColumns<any> = [
   {
     title: '标题',
     key: 'title',
+    ellipsis: true,
   },
   {
     title: '子标题',
     key: 'subtitle',
+    ellipsis: true,
   },
   {
     title: '封面',
@@ -29,6 +31,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '作者',
     key: 'author',
+    ellipsis: true,
   },
   // {
   //   title: '摘要',
@@ -41,10 +44,12 @@ const columns: DataTableColumns<any> = [
   {
     title: '链接',
     key: 'toUrl',
+    ellipsis: true,
   },
   {
     title: '父级',
     key: 'parentIdName',
+    ellipsis: true,
   },
   {
     title: '类型',
@@ -53,10 +58,13 @@ const columns: DataTableColumns<any> = [
   {
     title: '分类',
     key: 'category',
+    ellipsis: true,
   },
   {
     title: '操作',
     key: 'action',
+    width: 200,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {

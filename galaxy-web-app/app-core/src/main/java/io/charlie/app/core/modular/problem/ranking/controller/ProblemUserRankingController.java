@@ -77,4 +77,11 @@ public class ProblemUserRankingController {
     public Result<?> dailyRankingByUserId(@RequestParam @NotEmpty String userId) {
         return Result.success(problemSubmitRankingService.dailyRankingByUserId(userId));
     }
+
+    @Operation(summary = "获取排行榜前N")
+    //@SaCheckPermission("/pro/problem/page")
+    @GetMapping("/pro/problem/user/ranking/top")
+    public Result<?> top10() {
+        return Result.success(problemSubmitRankingService.topN(10));
+    }
 }

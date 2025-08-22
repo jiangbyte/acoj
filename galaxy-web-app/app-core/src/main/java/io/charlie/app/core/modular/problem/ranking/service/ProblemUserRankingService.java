@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.problem.ranking.entity.ProblemUserRanking;
 import io.charlie.app.core.modular.problem.ranking.param.ProblemUserRankingPageParam;
 
+import java.util.List;
+
 /**
  * @author Charlie Zhang
  * @version v1.0
@@ -26,4 +28,6 @@ public interface ProblemUserRankingService {
     ProblemUserRanking weeklyRankingByUserId(String userId);
 
     ProblemUserRanking dailyRankingByUserId(String userId);
+
+    List<ProblemUserRanking> topN(Integer n);
 }

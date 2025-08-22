@@ -22,6 +22,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '描述',
     key: 'description',
+    ellipsis: true,
   },
   {
     title: '角色层级',
@@ -30,6 +31,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
+    width: 200,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {

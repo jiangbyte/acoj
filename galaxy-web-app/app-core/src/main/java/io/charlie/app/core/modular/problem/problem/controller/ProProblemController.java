@@ -90,8 +90,8 @@ public class ProProblemController {
         return Result.success(proProblemService.pageC(proProblemPageParam));
     }
 
-    @Operation(summary = "C端-获取最新N道题目")
-    @GetMapping("/pro/problem/latest10")
+    @Operation(summary = "C端-获取最新10道题目")
+    @GetMapping("/pro/problem/latest")
     public Result<?> latest10() {
         return Result.success(proProblemService.latestN(10));
     }

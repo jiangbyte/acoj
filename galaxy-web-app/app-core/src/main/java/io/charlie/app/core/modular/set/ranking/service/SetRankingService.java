@@ -6,6 +6,8 @@ import io.charlie.app.core.modular.problem.ranking.param.ProblemRankingPageParam
 import io.charlie.app.core.modular.set.ranking.entity.SetRanking;
 import io.charlie.app.core.modular.set.ranking.param.SetRankingPageParam;
 
+import java.util.List;
+
 /**
  * @author Charlie Zhang
  * @version v1.0
@@ -14,4 +16,6 @@ import io.charlie.app.core.modular.set.ranking.param.SetRankingPageParam;
  */
 public interface SetRankingService {
     Page<SetRanking> rankingPage(SetRankingPageParam setRankingPageParam);
+
+    List<SetRanking> topN(Integer n);
 }

@@ -107,7 +107,7 @@ defineExpose({
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" placement="right" resizable :default-width="1200" @after-leave="doClose">
     <NDrawerContent :title="isEdit ? '编辑' : '新增'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
         <!-- 输入框 -->
@@ -166,10 +166,10 @@ defineExpose({
           <!-- <NDatePicker type="datetime" v-model:value="formData.endTime" /> -->
           <n-date-picker v-model:value="formData.startTime" type="datetime" clearable />
         </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="配置信息" path="config">
-          <NInput v-model:value="formData.config" placeholder="请输入配置信息" />
-        </NFormItem>
+<!--        &lt;!&ndash; 输入框 &ndash;&gt;-->
+<!--        <NFormItem label="配置信息" path="config">-->
+<!--          <NInput v-model:value="formData.config" placeholder="请输入配置信息" />-->
+<!--        </NFormItem>-->
       </NForm>
       <template #footer>
         <NSpace align="center" justify="end">

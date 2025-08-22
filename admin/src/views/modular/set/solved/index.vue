@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { DataTableColumns } from 'naive-ui'
+import {DataTableColumns, NAvatar, NText} from 'naive-ui'
 import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
 import { useProSetSolvedFetch } from '@/composables'
 import Form from './form.vue'
@@ -10,22 +10,53 @@ const detailRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
-  },
-  {
+  },  {
     title: '用户',
-    key: 'userIdName',
+    key: 'user',
+    width: 140,
+    render(row: any) {
+      return h(
+          NSpace,
+          { align: 'center', size: 'small' },
+          {
+            default: () => [
+              h(
+                  NAvatar,
+                  {
+                    size: 'small',
+                    round: true,
+                    src: row.userAvatar,
+                  },
+                  {},
+              ),
+              h(
+                  NText,
+                  {},
+                  { default: () => row.userIdName },
+              ),
+            ],
+          },
+      )
+    },
   },
+  // {
+  //   title: '用户',
+  //   key: 'userIdName',
+  // },
   {
     title: '题目',
     key: 'problemIdName',
+    ellipsis: true,
   },
   {
     title: '题单',
     key: 'problemSetIdName',
+    ellipsis: true,
   },
   {
     title: '提交ID',
     key: 'submitId',
+    ellipsis: true,
   },
   {
     title: '是否解决',
@@ -34,6 +65,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
+    width: 200,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {

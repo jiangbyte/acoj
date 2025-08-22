@@ -24,7 +24,7 @@ CREATE TABLE pro_submit
     max_memory  INT         NOT NULL DEFAULT 0 COMMENT '最大内存使用',
 
     message     TEXT                 DEFAULT NULL COMMENT '执行结果消息',
-    test_case  JSON                 DEFAULT NULL COMMENT '测试用例结果',
+    test_case   JSON                 DEFAULT NULL COMMENT '测试用例结果',
     status      VARCHAR(32)          DEFAULT NULL COMMENT '执行状态',
 
     -- 查重结果
@@ -113,33 +113,35 @@ CREATE TABLE pro_similarity_result
 DROP TABLE IF EXISTS pro_problem;
 CREATE TABLE pro_problem
 (
-    id                VARCHAR(32)  NOT NULL COMMENT '主键',
-    category_id       VARCHAR(32) DEFAULT 0 COMMENT '分类',
+    id                VARCHAR(32)             NOT NULL COMMENT '主键',
+    category_id       VARCHAR(32)                  DEFAULT 0 COMMENT '分类',
 
-    title             VARCHAR(255) NOT NULL COMMENT '标题',
+    title             VARCHAR(255)            NOT NULL COMMENT '标题',
     source            VARCHAR(255) COMMENT '来源',
     url               VARCHAR(255) COMMENT '链接',
-    max_time          INT         DEFAULT 0 COMMENT '时间限制',
-    max_memory        INT         DEFAULT 0 COMMENT '内存限制',
+    max_time          INT                          DEFAULT 0 COMMENT '时间限制',
+    max_memory        INT                          DEFAULT 0 COMMENT '内存限制',
 
     description       TEXT COMMENT '描述',
 
     test_case         JSON COMMENT '用例',
     allowed_languages JSON COMMENT '开放语言',
 
-    difficulty        INT         DEFAULT 1 COMMENT '难度',
+    difficulty        INT                          DEFAULT 1 COMMENT '难度',
 
-    use_template      TINYINT(1)  DEFAULT 0 COMMENT '使用模板',
+    threshold         DECIMAL(10, 2) UNSIGNED NULL DEFAULT 0.5 COMMENT '阈值',
+
+    use_template      TINYINT(1)                   DEFAULT 0 COMMENT '使用模板',
     code_template     JSON COMMENT '模板代码',
 
     -- 统计
-    solved            BIGINT      DEFAULT 0 COMMENT '解决',
+    solved            BIGINT                       DEFAULT 0 COMMENT '解决',
     # ------------------------------------------------
-    deleted           TINYINT(1)  DEFAULT 0 COMMENT '删除状态',
-    create_time       DATETIME    DEFAULT NULL COMMENT '创建时间戳',
-    create_user       VARCHAR(32) DEFAULT NULL COMMENT '创建者',
-    update_time       DATETIME    DEFAULT NULL COMMENT '更新时间戳',
-    update_user       VARCHAR(32) DEFAULT NULL COMMENT '更新者',
+    deleted           TINYINT(1)                   DEFAULT 0 COMMENT '删除状态',
+    create_time       DATETIME                     DEFAULT NULL COMMENT '创建时间戳',
+    create_user       VARCHAR(32)                  DEFAULT NULL COMMENT '创建者',
+    update_time       DATETIME                     DEFAULT NULL COMMENT '更新时间戳',
+    update_user       VARCHAR(32)                  DEFAULT NULL COMMENT '更新者',
     -- 添加索引
     PRIMARY KEY (id)
 ) ENGINE = InnoDB
@@ -285,7 +287,7 @@ CREATE TABLE pro_set_submit
     id          VARCHAR(32) NOT NULL COMMENT '主键',
     user_id     VARCHAR(32) NOT NULL COMMENT '用户ID',
     problem_id  VARCHAR(32) NOT NULL COMMENT '题目ID',
-    set_id    VARCHAR(32) NULL COMMENT '题集ID',
+    set_id      VARCHAR(32) NULL COMMENT '题集ID',
     language    VARCHAR(64) NOT NULL COMMENT '编程语言',
     code        TEXT        NOT NULL COMMENT '源代码',
 
@@ -325,7 +327,7 @@ CREATE TABLE pro_set_similarity_task
     id             VARCHAR(32) NOT NULL COMMENT '主键',
     user_id        VARCHAR(32) NOT NULL COMMENT '用户ID',
     problem_id     VARCHAR(32) NOT NULL COMMENT '题目ID',
-    set_id    VARCHAR(32) NULL COMMENT '题集ID',
+    set_id         VARCHAR(32) NULL COMMENT '题集ID',
 
     status         VARCHAR(32)    DEFAULT '' COMMENT '任务状态',
     compare_range  VARCHAR(32)    DEFAULT 'RECENT' COMMENT '比较范围', -- RECENT:近期,ALL:全部

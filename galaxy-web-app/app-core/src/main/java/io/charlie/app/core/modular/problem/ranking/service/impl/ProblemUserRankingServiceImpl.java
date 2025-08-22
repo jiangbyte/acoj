@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -133,5 +134,10 @@ public class ProblemUserRankingServiceImpl extends ServiceImpl<ProblemUserRankin
     @Override
     public ProblemUserRanking dailyRankingByUserId(String userId) {
         return this.baseMapper.selectDailyRankingByUserId(userId);
+    }
+
+    @Override
+    public List<ProblemUserRanking> topN(Integer n) {
+        return this.baseMapper.selectTopN(n);
     }
 }

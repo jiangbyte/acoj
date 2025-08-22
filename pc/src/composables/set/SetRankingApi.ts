@@ -15,5 +15,11 @@ export function useSetRankingFetch() {
         },
       })
     },
+    /**
+     * 获取Top排行榜
+     */
+    setRankingTop() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/set/ranking/top`,)
+    },
   }
 }

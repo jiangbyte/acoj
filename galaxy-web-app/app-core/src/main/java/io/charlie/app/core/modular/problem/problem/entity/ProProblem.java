@@ -7,6 +7,7 @@ import io.charlie.app.core.modular.sys.category.entity.SysCategory;
 import io.charlie.galaxy.pojo.CommonEntity;
 
 import java.io.Serial;
+import java.math.BigDecimal;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -101,5 +102,16 @@ public class ProProblem extends CommonEntity {
     @Schema(description = "当前用户是否已解决")
     @TableField(exist = false)
     private Boolean currentUserSolved;
+
+    @Schema(description = "阈值")
+    private BigDecimal threshold;
+
+    @Schema(description = "通过率")
+    @TableField(exist = false)
+    private BigDecimal passRate;
+
+    @Schema(description = "参与人数")
+    @TableField(exist = false)
+    private String participantCount;
 
 }

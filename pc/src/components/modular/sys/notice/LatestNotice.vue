@@ -2,19 +2,18 @@
 import { useSysNoticeFetch } from '@/composables'
 import { AesCrypto } from '@/utils'
 
-const listData = ref()
-const loading = ref(true)
+const noticeListData = ref()
+const noticeLoading = ref(true)
 
 const { sysNoticeLatest10 } = useSysNoticeFetch()
 
-// 模拟获取公告数据
 async function loadData() {
-  loading.value = true
+  noticeLoading.value = true
   const { data } = await sysNoticeLatest10()
   if (data) {
-    listData.value = data
-    listData.value = listData.value.sort((a: any, b: any) => (a.sort || 0) - (b.sort || 0))
-    loading.value = false
+    noticeListData.value = data
+    noticeListData.value = noticeListData.value.sort((a: any, b: any) => (a.sort || 0) - (b.sort || 0))
+    noticeLoading.value = false
   }
 }
 
@@ -51,14 +50,14 @@ function goNotice(id: string) {
       </n-space>
     </template>
 
-    <div v-if="loading" class="flex flex-col gap-2">
+    <div v-if="noticeLoading" class="flex flex-col gap-2">
       <n-skeleton height="25px" width="33%" />
       <n-skeleton height="15px" text :repeat="2" />
     </div>
 
     <n-list v-else hoverable>
       <n-list-item
-        v-for="item in listData"
+        v-for="item in noticeListData"
         :key="item.id"
         @click="goNotice(item.id)"
       >

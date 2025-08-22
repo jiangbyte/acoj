@@ -47,6 +47,9 @@ defineExpose({
         <NDescriptionsItem label="内存限制">
           {{ formData.maxMemory }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="阈值">
+          {{ formData.threshold }}
+        </NDescriptionsItem>
         <NDescriptionsItem label="描述">
           <MDViewer :model-value="formData.description" />
         </NDescriptionsItem>

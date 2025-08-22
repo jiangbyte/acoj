@@ -38,12 +38,16 @@ public class ProSetSolved extends CommonEntity {
     private String id;
 
     @Schema(description = "用户ID")
-    @Trans(type = TransType.SIMPLE, target = SysUser.class, fields = "nickname", ref = "userIdName")
+    @Trans(type = TransType.SIMPLE, target = SysUser.class, fields = {"nickname", "avatar"}, refs = {"userIdName", "userAvatar"})
     private String userId;
 
     @Schema(description = "用户名称")
     @TableField(exist = false)
     private String userIdName;
+
+    @Schema(description = "用户头像")
+    @TableField(exist = false)
+    private String userAvatar;
 
     @Schema(description = "题目ID")
     @Trans(type = TransType.SIMPLE, target = ProProblem.class, fields = "title", ref = "problemIdName")

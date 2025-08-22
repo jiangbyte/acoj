@@ -19,6 +19,7 @@ export function useProProblemFetch() {
     maxTime: 0,
     maxMemory: 0,
     description: '',
+    threshold: 0.0,
     testCase: [],
     allowedLanguages: [],
     difficulty: 1,

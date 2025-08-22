@@ -6,6 +6,7 @@ import io.charlie.app.core.modular.problem.problem.entity.CodeTemplate;
 import io.charlie.app.core.modular.problem.problem.entity.TestCase;
 import io.charlie.galaxy.pojo.CommonEntity;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -67,5 +68,8 @@ public class ProProblemEditParam implements Serializable {
     @Schema(description = "标签ID")
     @TableField(exist = false)
     private List<String> tagIds;
+
+    @Schema(description = "阈值")
+    private BigDecimal threshold;
 
 }

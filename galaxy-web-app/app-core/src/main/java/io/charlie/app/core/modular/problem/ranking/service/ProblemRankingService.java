@@ -6,6 +6,8 @@ import io.charlie.app.core.modular.problem.ranking.entity.ProblemUserRanking;
 import io.charlie.app.core.modular.problem.ranking.param.ProblemRankingPageParam;
 import io.charlie.app.core.modular.problem.ranking.param.ProblemUserRankingPageParam;
 
+import java.util.List;
+
 /**
  * @author Charlie Zhang
  * @version v1.0
@@ -14,4 +16,6 @@ import io.charlie.app.core.modular.problem.ranking.param.ProblemUserRankingPageP
  */
 public interface ProblemRankingService {
     Page<ProblemRanking> rankingPage(ProblemRankingPageParam rankingPageParam);
+
+    List<ProblemRanking> topN(Integer n);
 }

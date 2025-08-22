@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.charlie.app.core.modular.problem.ranking.entity.ProblemUserRanking;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+
 /**
 * @author Charlie Zhang
 * @version v1.0
@@ -24,4 +26,6 @@ public interface ProblemUserRankingMapper extends BaseMapper<ProblemUserRanking>
     ProblemUserRanking selectMonthlyRankingByUserId(String userId);
     ProblemUserRanking selectWeeklyRankingByUserId(String userId);
     ProblemUserRanking selectDailyRankingByUserId(String userId);
+
+    List<ProblemUserRanking> selectTopN(Integer n);
 }

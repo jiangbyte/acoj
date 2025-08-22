@@ -7,6 +7,8 @@ import io.charlie.app.core.modular.problem.ranking.entity.ProblemRanking;
 import io.charlie.app.core.modular.problem.ranking.entity.ProblemUserRanking;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+
 /**
  * @author Charlie Zhang
  * @version v1.0
@@ -17,4 +19,6 @@ import org.apache.ibatis.annotations.Mapper;
 //@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface ProblemRankingMapper extends BaseMapper<ProblemRanking> {
     IPage<ProblemRanking> rankingPage(IPage<ProblemRanking> page, Wrapper<ProblemRanking> ew);
+
+    List<ProblemRanking> selectTopN(Integer n);
 }

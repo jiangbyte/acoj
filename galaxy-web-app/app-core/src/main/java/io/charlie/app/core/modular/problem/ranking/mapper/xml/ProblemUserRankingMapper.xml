@@ -412,4 +412,49 @@
         FROM ranked_users
         WHERE user_id = #{userId}
     </select>
+    <select id="selectTopN" resultType="io.charlie.app.core.modular.problem.ranking.entity.ProblemUserRanking">
+        WITH user_stats AS (SELECT u.id                                                         AS user_id,
+                                   u.nickname                                                   AS nickname,
+                                   u.avatar                                                     AS avatar,
+                                   COUNT(DISTINCT CASE WHEN s.solved = 1 THEN s.problem_id END) AS solved_count,
+                                   COUNT(DISTINCT s.problem_id)                                 AS attempted_count,
+                                   CASE
+                                       WHEN COUNT(DISTINCT s.problem_id) = 0 THEN 0
+                                       ELSE ROUND(COUNT(DISTINCT CASE WHEN s.solved = 1 THEN s.problem_id END) * 100.0 / COUNT(DISTINCT s.problem_id), 2)
+                                       END                                                      AS acceptance_rate,
+                                   SUM(CASE WHEN sb.submit_type = 1 THEN 1 ELSE 0 END)          AS submission_count,
+                                   SUM(CASE WHEN sb.submit_type = 0 THEN 1 ELSE 0 END)          AS execution_count,
+                                   COUNT(sb.id)                                                 AS total_submission_count,
+                                   MAX(sb.create_time)                                          AS last_solved_time
+                            FROM sys_user u
+                                     LEFT JOIN
+                                 pro_solved s ON u.id = s.user_id AND s.deleted = 0
+                                     LEFT JOIN
+                                 pro_submit sb ON u.id = sb.user_id AND sb.deleted = 0
+                            WHERE u.deleted = 0
+                            GROUP BY u.id, u.username, u.nickname, u.avatar),
+             ranked_users AS (SELECT user_id,
+                                     nickname,
+                                     avatar,
+                                     solved_count,
+                                     attempted_count,
+                                     acceptance_rate,
+                                     submission_count,
+                                     execution_count,
+                                     total_submission_count,
+                                     ROW_NUMBER() OVER (ORDER BY solved_count DESC, acceptance_rate DESC) AS ranking
+                              FROM user_stats)
+        SELECT user_id,
+               nickname,
+               avatar,
+               solved_count,
+               attempted_count,
+               acceptance_rate,
+               submission_count,
+               execution_count,
+               total_submission_count,
+               ranking
+        FROM ranked_users
+ <![CDATA[WHERE ranking <= #{n}]]>
+    </select>
 </mapper>

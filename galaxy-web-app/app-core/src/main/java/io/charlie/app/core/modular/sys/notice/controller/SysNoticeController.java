@@ -76,6 +76,6 @@ public class SysNoticeController {
     @Operation(summary = "获取最新N条公告")
     @GetMapping("/sys/notice/latest")
     public Result<?> latest10() {
-        return Result.success(sysNoticeService.latestN(10));
+        return Result.success(sysNoticeService.latestN(4));
     }
 }

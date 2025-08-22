@@ -14,10 +14,12 @@ const columns: DataTableColumns<any> = [
   {
     title: '标题',
     key: 'title',
+    ellipsis: true,
   },
   {
     title: '题集类型',
     key: 'setTypeName',
+    ellipsis: true,
   },
   {
     title: '封面',
@@ -29,6 +31,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '分类',
     key: 'categoryName',
+    ellipsis: true,
   },
   {
     title: '难度',
@@ -51,6 +54,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
+    width: 200,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {

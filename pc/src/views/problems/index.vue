@@ -3,8 +3,9 @@ import { useSysCategoryFetch, useProProblemFetch, useSysTagFetch, useSysDictFetc
 import type { DataTableColumns } from 'naive-ui'
 import { NIcon, NSpace, NTag, NText } from 'naive-ui'
 import {
-  CheckmarkDone,
-} from '@vicons/ionicons5'
+  icons,
+} from '@iconify-json/icon-park-outline'
+import { Icon } from '@iconify/vue'
 import { AesCrypto } from '@/utils'
 
 const { proProblemPage } = useProProblemFetch()
@@ -66,8 +67,15 @@ const columns: DataTableColumns<any> = [
     width: 60,
     render: (row: any) => {
       return row.currentUserSolved
-        ? h(NIcon, { component: CheckmarkDone, color: '#18A058', size: 20 })
-        : null
+          ? h(Icon, {
+            icon: 'icon-park-outline:check-one',
+            style: {
+              fontSize: '20px',
+              color: '#52c41a',
+              verticalAlign: 'middle'
+            }
+          })
+          : null
     },
   },
   {

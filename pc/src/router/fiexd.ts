@@ -21,6 +21,13 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/views/problems/index.vue'),
         meta: { title: '题库', icon: 'book' },
       },
+      // 题库
+      {
+        path: 'groups',
+        name: 'groups',
+        component: () => import('@/views/groups/index.vue'),
+        meta: { title: '群组', icon: 'book' },
+      },
       // 排行榜
       {
         path: 'ranking',

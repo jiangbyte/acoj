@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { DataTableColumns } from 'naive-ui'
+import {DataTableColumns, NAvatar, NText} from 'naive-ui'
 import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
 import { useProSetSubmitFetch } from '@/composables'
 import Form from './form.vue'
@@ -10,27 +10,57 @@ const detailRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
-  },
-  {
+  },  {
     title: '用户',
-    key: 'userIdName',
+    key: 'user',
+    width: 140,
+    render(row: any) {
+      return h(
+          NSpace,
+          { align: 'center', size: 'small' },
+          {
+            default: () => [
+              h(
+                  NAvatar,
+                  {
+                    size: 'small',
+                    round: true,
+                    src: row.userAvatar,
+                  },
+                  {},
+              ),
+              h(
+                  NText,
+                  {},
+                  { default: () => row.userIdName },
+              ),
+            ],
+          },
+      )
+    },
   },
+  // {
+  //   title: '用户',
+  //   key: 'userIdName',
+  // },
   {
     title: '题目',
     key: 'problemIdName',
+    ellipsis: true,
   },
   {
     title: '题集',
     key: 'setIdName',
+    ellipsis: true,
   },
   {
     title: '编程语言',
     key: 'languageName',
   },
-  {
-    title: '源代码',
-    key: 'code',
-  },
+  // {
+  //   title: '源代码',
+  //   key: 'code',
+  // },
   {
     title: '执行类型',
     key: 'submitTypeName',
@@ -43,14 +73,14 @@ const columns: DataTableColumns<any> = [
     title: '最大内存使用',
     key: 'maxMemory',
   },
-  {
-    title: '执行结果消息',
-    key: 'message',
-  },
-  {
-    title: '测试用例结果',
-    key: 'testCases',
-  },
+  // {
+  //   title: '执行结果消息',
+  //   key: 'message',
+  // },
+  // {
+  //   title: '测试用例结果',
+  //   key: 'testCases',
+  // },
   {
     title: '执行状态',
     key: 'status',
@@ -62,10 +92,13 @@ const columns: DataTableColumns<any> = [
   {
     title: '相似检测任务ID',
     key: 'taskId',
+    ellipsis: true,
   },
   {
     title: '操作',
     key: 'action',
+    width: 200,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {

@@ -30,4 +30,11 @@ public class SetRankingController {
     public Result<?> rankingPage(@ParameterObject SetRankingPageParam setRankingPageParam) {
         return Result.success(setRankingService.rankingPage(setRankingPageParam));
     }
+
+    @Operation(summary = "获取排行榜前N")
+    //@SaCheckPermission("/pro/problem/page")
+    @GetMapping("/pro/set/set/ranking/top")
+    public Result<?> top10() {
+        return Result.success(setRankingService.topN(10));
+    }
 }

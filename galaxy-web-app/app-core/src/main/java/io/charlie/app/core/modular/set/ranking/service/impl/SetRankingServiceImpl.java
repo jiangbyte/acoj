@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -50,5 +51,10 @@ public class SetRankingServiceImpl extends ServiceImpl<SetRankingMapper, SetRank
                 Optional.ofNullable(setRankingPageParam.getSize()).orElse(20),
                 null
         ), queryWrapper);
+    }
+
+    @Override
+    public List<SetRanking> topN(Integer n) {
+        return this.baseMapper.selectTopN(n);
     }
 }

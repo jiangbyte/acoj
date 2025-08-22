@@ -50,7 +50,7 @@ public class ProSetEditParam implements Serializable {
     @Schema(description = "结束时间")
     private Date endTime;
 
-    @Schema(description = "配置信息")
-    private String config;
+//    @Schema(description = "配置信息")
+//    private String config;
 
 }

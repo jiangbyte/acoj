@@ -74,5 +74,8 @@ export function useProSetFetch() {
         },
       })
     },
+    proSetLatest10() {
+    return $alova.Get<IResult<any>>(`${pathPrefix + table}/latest`)
+  },
   }
 }

@@ -45,6 +45,9 @@ const rules = {
   difficulty: [
     { required: true, message: '请输入难度', type: 'number', trigger: ['input', 'blur'] },
   ],
+  threshold: [
+    { required: true, message: '请输入阈值', type: 'number', trigger: ['input', 'blur'] },
+  ],
   codeTemplate: [
     // { required: true, message: '请输入模板代码', trigger: ['input', 'blur'] },
   ],
@@ -162,6 +165,10 @@ defineExpose({
         <!-- 数字输入 -->
         <NFormItem label="内存限制" path="maxMemory">
           <NInputNumber v-model:value="formData.maxMemory" :min="0" :max="10000" placeholder="请输入内存限制" />
+        </NFormItem>
+        <!-- 阈值输入 -->
+        <NFormItem label="阈值" path="threshold">
+          <NInputNumber v-model:value="formData.threshold" :min="0" :max="1.0" placeholder="请输入阈值" :step="0.1" :precision="1" />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="描述" path="description">

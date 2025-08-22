@@ -30,4 +30,11 @@ public class ProblemRankingController {
     public Result<?> rankingPage(@ParameterObject ProblemRankingPageParam rankingPageParam) {
         return Result.success(problemRankingService.rankingPage(rankingPageParam));
     }
+
+    @Operation(summary = "获取排行榜前N")
+    //@SaCheckPermission("/pro/problem/page")
+    @GetMapping("/pro/problem/problem/ranking/top")
+    public Result<?> top10() {
+        return Result.success(problemRankingService.topN(10));
+    }
 }
