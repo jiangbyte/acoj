@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { useProCategoryFetch, useProSetFetch, useSysDictFetch } from '@/composables'
+import { useSysCategoryFetch, useProSetFetch, useSysDictFetch } from '@/composables'
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
 import MDEditor from '@/components/common/editor/md/Editor.vue'
 
 const emit = defineEmits(['close', 'submit'])
-const { proCategoryOptions } = useProCategoryFetch()
+const { sysCategoryOptions } = useSysCategoryFetch()
 const { sysDictOptions } = useSysDictFetch()
 
 const categoryOptions = ref()
@@ -78,7 +78,7 @@ async function doOpen(row: any = null, edit: boolean = false) {
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
 
-  const { data: catgoryData } = await proCategoryOptions({})
+  const { data: catgoryData } = await sysCategoryOptions({})
   if (catgoryData) {
     categoryOptions.value = catgoryData
   }

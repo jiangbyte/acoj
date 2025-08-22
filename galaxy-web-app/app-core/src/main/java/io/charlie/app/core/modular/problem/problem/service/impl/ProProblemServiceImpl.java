@@ -20,7 +20,7 @@ import io.charlie.app.core.modular.problem.problem.service.ProProblemService;
 import io.charlie.app.core.modular.problem.relation.service.ProProblemTagService;
 import io.charlie.app.core.modular.problem.solved.entity.ProSolved;
 import io.charlie.app.core.modular.problem.solved.mapper.ProSolvedMapper;
-import io.charlie.app.core.modular.tag.entity.ProTag;
+import io.charlie.app.core.modular.sys.tag.entity.SysTag;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
@@ -85,10 +85,10 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
                 ),
                 queryWrapper);
         page.getRecords().forEach(item -> {
-            List<ProTag> tagsById = proProblemTagService.getTagsById(item.getId());
+            List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());
             if (ObjectUtil.isNotEmpty(tagsById)) {
-                item.setTagIds(tagsById.stream().map(ProTag::getId).distinct().toList());
-                item.setTagNames(tagsById.stream().map(ProTag::getName).distinct().toList());
+                item.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
+                item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
             }
 
             try {
@@ -146,10 +146,10 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
         if (ObjectUtil.isEmpty(proProblem)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
-        List<ProTag> tagsById = proProblemTagService.getTagsById(proProblemIdParam.getId());
+        List<SysTag> tagsById = proProblemTagService.getTagsById(proProblemIdParam.getId());
         if (ObjectUtil.isNotEmpty(tagsById)) {
-            proProblem.setTagIds(tagsById.stream().map(ProTag::getId).distinct().toList());
-            proProblem.setTagNames(tagsById.stream().map(ProTag::getName).distinct().toList());
+            proProblem.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
+            proProblem.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
         }
         return proProblem;
     }
@@ -168,10 +168,10 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
                 template.setSuffix(null);
             });
         }
-        List<ProTag> tagsById = proProblemTagService.getTagsById(proProblemIdParam.getId());
+        List<SysTag> tagsById = proProblemTagService.getTagsById(proProblemIdParam.getId());
         if (ObjectUtil.isNotEmpty(tagsById)) {
-            proProblem.setTagIds(tagsById.stream().map(ProTag::getId).distinct().toList());
-            proProblem.setTagNames(tagsById.stream().map(ProTag::getName).distinct().toList());
+            proProblem.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
+            proProblem.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
         }
         return proProblem;
     }
@@ -197,10 +197,10 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
                 ),
                 queryWrapper);
         page.getRecords().forEach(item -> {
-            List<ProTag> tagsById = proProblemTagService.getTagsById(item.getId());
+            List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());
             if (ObjectUtil.isNotEmpty(tagsById)) {
-                item.setTagIds(tagsById.stream().map(ProTag::getId).distinct().toList());
-                item.setTagNames(tagsById.stream().map(ProTag::getName).distinct().toList());
+                item.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
+                item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
             }
             item.setTestCase(List.of());
             if (ObjectUtil.isNotEmpty(item.getCodeTemplate())) {
@@ -217,10 +217,10 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
     public List<ProProblem> latestN(int n) {
         List<ProProblem> list = this.list(new QueryWrapper<ProProblem>().checkSqlInjection().lambda().orderByDesc(ProProblem::getCreateTime).last("LIMIT " + n));
         list.forEach(item -> {
-            List<ProTag> tagsById = proProblemTagService.getTagsById(item.getId());
+            List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());
             if (ObjectUtil.isNotEmpty(tagsById)) {
-                item.setTagIds(tagsById.stream().map(ProTag::getId).distinct().toList());
-                item.setTagNames(tagsById.stream().map(ProTag::getName).distinct().toList());
+                item.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
+                item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
             }
             item.setTestCase(List.of());
             if (ObjectUtil.isNotEmpty(item.getCodeTemplate())) {

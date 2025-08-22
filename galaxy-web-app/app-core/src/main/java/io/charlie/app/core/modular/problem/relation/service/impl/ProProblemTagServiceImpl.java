@@ -3,12 +3,11 @@ package io.charlie.app.core.modular.problem.relation.service.impl;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
 import io.charlie.app.core.modular.problem.relation.entity.ProProblemTag;
 import io.charlie.app.core.modular.problem.relation.mapper.ProProblemTagMapper;
 import io.charlie.app.core.modular.problem.relation.service.ProProblemTagService;
-import io.charlie.app.core.modular.tag.entity.ProTag;
-import io.charlie.app.core.modular.tag.mapper.ProTagMapper;
+import io.charlie.app.core.modular.sys.tag.entity.SysTag;
+import io.charlie.app.core.modular.sys.tag.mapper.SysTagMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,10 +25,10 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ProProblemTagServiceImpl extends ServiceImpl<ProProblemTagMapper, ProProblemTag> implements ProProblemTagService {
-    private final ProTagMapper proTagMapper;
+    private final SysTagMapper proTagMapper;
 
     @Override
-    public List<ProTag> getTagsById(String problemId) {
+    public List<SysTag> getTagsById(String problemId) {
         if (ObjectUtil.isEmpty(problemId)) {
             return List.of();
         }
@@ -43,8 +42,8 @@ public class ProProblemTagServiceImpl extends ServiceImpl<ProProblemTagMapper, P
         // 过滤出单独的ID
         List<String> list1 = list.stream().map(ProProblemTag::getTagId).distinct().toList();
         // 查询标签
-        QueryWrapper<ProTag> queryWrapper1 = new QueryWrapper<ProTag>().checkSqlInjection();
-        queryWrapper1.lambda().in(ProTag::getId, list1);
+        QueryWrapper<SysTag> queryWrapper1 = new QueryWrapper<SysTag>().checkSqlInjection();
+        queryWrapper1.lambda().in(SysTag::getId, list1);
         return proTagMapper.selectList(queryWrapper1);
     }
 

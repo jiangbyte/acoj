@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useProCategoryFetch, useProProblemFetch, useProTagFetch, useSysDictFetch } from '@/composables'
+import { useSysCategoryFetch, useProProblemFetch, useSysTagFetch, useSysDictFetch } from '@/composables'
 import MDEditor from '@/components/common/editor/md/Editor.vue'
 import CodeEditor from '@/components/common/editor/code/Editor.vue'
 
@@ -9,9 +9,9 @@ const show = ref(false)
 const loading = ref(false)
 const formRef = ref()
 const { proProblemDefaultData, proProblemAdd, proProblemEdit } = useProProblemFetch()
-const { proCategoryOptions } = useProCategoryFetch()
+const { sysCategoryOptions } = useSysCategoryFetch()
 const { sysDictOptions } = useSysDictFetch()
-const { proTagOptions } = useProTagFetch()
+const { sysTagOptions } = useSysTagFetch()
 
 const formData = ref<any>({ ...proProblemDefaultData })
 const rules = {
@@ -109,12 +109,12 @@ async function doOpen(row: any = null, edit: boolean = false) {
     allowLanguageOptions.value = allowLanguageData
   }
 
-  const { data: catgoryData } = await proCategoryOptions({})
+  const { data: catgoryData } = await sysCategoryOptions({})
   if (catgoryData) {
     categoryOptions.value = catgoryData
   }
 
-  const { data: tagData } = await proTagOptions({})
+  const { data: tagData } = await sysTagOptions({})
   if (tagData) {
     tagOptions.value = tagData
   }

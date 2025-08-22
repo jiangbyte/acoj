@@ -41,7 +41,7 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
 
     @Override
     public void sendSimilarityRequest(SimilaritySubmitDto similaritySubmitDto) {
-        log.info("发送消息：{}", JSONUtil.toJsonStr(similaritySubmitDto));
+        log.info("代码克隆检测 -> 发送消息：{}", JSONUtil.toJsonStr(similaritySubmitDto));
         rabbitTemplate.convertAndSend(
                 ProblemSimilarityMQConfig.EXCHANGE,
                 ProblemSimilarityMQConfig.ROUTING_KEY,
@@ -53,6 +53,8 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
     @RabbitListener(queues = ProblemSimilarityMQConfig.QUEUE, concurrency = "5-10")
     @Override
     public void handleSimilarityRequest(SimilaritySubmitDto similaritySubmitDto) {
+        log.info("代码克隆检测 -> 接收检测消息：{}", JSONUtil.toJsonStr(similaritySubmitDto));
+
         SimilarityResultDto bean = BeanUtil.toBean(similaritySubmitDto, SimilarityResultDto.class);
 
         // 配置参数
@@ -88,11 +90,13 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
             }
         } else {
             // 如果总数不足最低限制，获取全部
+            log.info("总数不足最低限制，获取全部数据构建检测库");
             proSubmits = proSubmitMapper.selectList(queryWrapper);
         }
 
         // 空直接忽略
         if (ObjectUtil.isEmpty(proSubmits)) {
+            log.info("代码克隆检测 -> 忽略空数据");
             return;
         }
 

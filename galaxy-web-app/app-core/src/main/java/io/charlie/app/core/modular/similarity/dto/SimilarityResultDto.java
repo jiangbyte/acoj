@@ -34,9 +34,6 @@ public class SimilarityResultDto implements Serializable {
     @Schema(description = "代码")
     private String code;
 
-    @Schema(description = "执行类型")
-    private Boolean submitType;
-
     @Schema(description = "是否是题集")
     private Boolean isSet;
 
@@ -44,9 +41,6 @@ public class SimilarityResultDto implements Serializable {
 
     @Schema(description = "主键")
     private String id;
-
-    @Schema(description = "状态")
-    private String status;
 
     @Schema(description = "克隆检测结果")
     private SimilarityResult result;

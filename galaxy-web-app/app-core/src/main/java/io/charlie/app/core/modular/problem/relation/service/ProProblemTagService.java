@@ -2,7 +2,7 @@ package io.charlie.app.core.modular.problem.relation.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.app.core.modular.problem.relation.entity.ProProblemTag;
-import io.charlie.app.core.modular.tag.entity.ProTag;
+import io.charlie.app.core.modular.sys.tag.entity.SysTag;
 
 import java.util.List;
 
@@ -14,7 +14,7 @@ import java.util.List;
  */
 public interface ProProblemTagService extends IService<ProProblemTag> {
     // 获取某个题目的标签
-    List<ProTag> getTagsById(String problemId);
+    List<SysTag> getTagsById(String problemId);
 
     List<String> getTagIdsById(String problemId);
 

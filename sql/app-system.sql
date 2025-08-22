@@ -436,3 +436,62 @@ INSERT INTO sys_dict_type(id, type_name, type_code, is_system, create_time, crea
 VALUES (78, '测试类型', 'config_type1', 1, NOW(), 1, NOW(), 1);
 INSERT INTO sys_dict_type(id, parent_id, type_name, type_code, is_system, create_time, create_user, update_time, update_user)
 VALUES (79, 78, '测试类型', 'config_type2', 1, NOW(), 1, NOW(), 1);
+
+
+
+-- ----------------------------
+-- 分类表
+-- ----------------------------
+DROP TABLE IF EXISTS sys_category;
+CREATE TABLE sys_category
+(
+    id          VARCHAR(32)  NOT NULL COMMENT '主键',
+    name        VARCHAR(255) NOT NULL COMMENT '名称',
+    # ------------------------------------------------
+    deleted     TINYINT(1)  DEFAULT 0 COMMENT '删除状态',
+    create_time DATETIME    DEFAULT NULL COMMENT '创建时间戳',
+    create_user VARCHAR(32) DEFAULT NULL COMMENT '创建者',
+    update_time DATETIME    DEFAULT NULL COMMENT '更新时间戳',
+    update_user VARCHAR(32) DEFAULT NULL COMMENT '更新者',
+    -- 添加索引
+    PRIMARY KEY (id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci
+    COMMENT '分类表';
+
+INSERT INTO sys_category (id, name)
+VALUES (1, '分类1'),
+       (2, '分类2'),
+       (3, '分类3');
+
+-- ----------------------------
+-- 标签表
+-- ----------------------------
+DROP TABLE IF EXISTS sys_tag;
+CREATE TABLE sys_tag
+(
+    id          VARCHAR(32)  NOT NULL COMMENT '主键',
+    name        VARCHAR(255) NOT NULL COMMENT '名称',
+    # ------------------------------------------------
+    deleted     TINYINT(1)  DEFAULT 0 COMMENT '删除状态',
+    create_time DATETIME    DEFAULT NULL COMMENT '创建时间戳',
+    create_user VARCHAR(32) DEFAULT NULL COMMENT '创建者',
+    update_time DATETIME    DEFAULT NULL COMMENT '更新时间戳',
+    update_user VARCHAR(32) DEFAULT NULL COMMENT '更新者',
+    -- 添加索引
+    PRIMARY KEY (id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci
+    COMMENT '标签表';
+
+INSERT INTO sys_tag (id, name)
+VALUES (1, '标签1'),
+       (2, '标签2'),
+       (3, '标签3'),
+       (4, '标签4'),
+       (5, '标签5'),
+       (6, '标签6'),
+       (7, '标签7'),
+       (8, '标签8');

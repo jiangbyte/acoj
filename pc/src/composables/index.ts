@@ -12,9 +12,9 @@ export * from './sys/SysRoleApi'
 export * from './sys/SysUserApi'
 export * from './sys/SysDictApi'
 
-export * from './category/ProCategoryApi'
+export * from './sys/SysCategoryApi.ts'
 
-export * from './tag/ProTagApi'
+export * from './sys/SysTagApi.ts'
 
 export * from './problem/ProProblemApi'
 export * from './problem/ProSubmitApi'

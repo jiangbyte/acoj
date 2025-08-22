@@ -2,15 +2,11 @@ package io.charlie.app.core.modular.problem.problem.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
-import io.charlie.app.core.modular.category.entity.ProCategory;
+import io.charlie.app.core.modular.sys.category.entity.SysCategory;
 import io.charlie.galaxy.pojo.CommonEntity;
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.io.Serial;
-import java.util.Date;
 import java.util.List;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,7 +34,7 @@ public class ProProblem extends CommonEntity {
     private String id;
 
     @Schema(description = "分类")
-    @Trans(type = TransType.SIMPLE, target = ProCategory.class, fields = "name", ref = "categoryName")
+    @Trans(type = TransType.SIMPLE, target = SysCategory.class, fields = "name", ref = "categoryName")
     private String categoryId;
 
     @Schema(description = "分类名称")

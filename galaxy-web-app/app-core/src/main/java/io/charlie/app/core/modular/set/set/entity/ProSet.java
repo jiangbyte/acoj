@@ -2,15 +2,13 @@ package io.charlie.app.core.modular.set.set.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.charlie.app.core.modular.category.entity.ProCategory;
+import io.charlie.app.core.modular.sys.category.entity.SysCategory;
 import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
 import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
-import java.io.Serializable;
-import java.time.LocalDateTime;
+
 import java.io.Serial;
 import java.util.Date;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -59,7 +57,7 @@ public class ProSet extends CommonEntity {
     private String description;
 
     @Schema(description = "分类")
-    @Trans(type = TransType.SIMPLE, target = ProCategory.class, fields = "name", ref = "categoryName")
+    @Trans(type = TransType.SIMPLE, target = SysCategory.class, fields = "name", ref = "categoryName")
     private String categoryId;
 
     @Schema(description = "分类名称")

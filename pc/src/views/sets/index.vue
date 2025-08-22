@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { useProCategoryFetch, useProSetFetch, useSysDictFetch } from '@/composables'
+import { useSysCategoryFetch, useProSetFetch, useSysDictFetch } from '@/composables'
 import { NButton, NEllipsis, NIcon, NTag, NText, NTime } from 'naive-ui'
 import { AesCrypto } from '@/utils'
 
 const { proSetPage } = useProSetFetch()
-const { proCategoryOptions } = useProCategoryFetch()
+const { sysCategoryOptions } = useSysCategoryFetch()
 const { sysDictOptions } = useSysDictFetch()
 
 const categoryOptions = ref()
@@ -32,7 +32,7 @@ async function loadData() {
     pageData.value = data
   }
 
-  const { data: catgoryData } = await proCategoryOptions({})
+  const { data: catgoryData } = await sysCategoryOptions({})
   if (catgoryData) {
     categoryOptions.value = catgoryData
   }

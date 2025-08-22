@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useProCategoryFetch, useProProblemFetch, useProTagFetch, useSysDictFetch } from '@/composables'
+import { useSysCategoryFetch, useProProblemFetch, useSysTagFetch, useSysDictFetch } from '@/composables'
 import type { DataTableColumns } from 'naive-ui'
 import { NIcon, NSpace, NTag, NText } from 'naive-ui'
 import {
@@ -8,9 +8,9 @@ import {
 import { AesCrypto } from '@/utils'
 
 const { proProblemPage } = useProProblemFetch()
-const { proCategoryOptions } = useProCategoryFetch()
+const { sysCategoryOptions } = useSysCategoryFetch()
 const { sysDictOptions } = useSysDictFetch()
-const { proTagOptions } = useProTagFetch()
+const { sysTagOptions } = useSysTagFetch()
 
 const categoryOptions = ref()
 const difficultyOptions = ref()
@@ -35,7 +35,7 @@ async function loadData() {
     pageData.value = data
   }
 
-  const { data: catgoryData } = await proCategoryOptions({})
+  const { data: catgoryData } = await sysCategoryOptions({})
   if (catgoryData) {
     categoryOptions.value = catgoryData
   }
@@ -52,7 +52,7 @@ async function loadData() {
     })
   }
 
-  const { data: tagData } = await proTagOptions({})
+  const { data: tagData } = await sysTagOptions({})
   if (tagData) {
     tagOptions.value = tagData
   }

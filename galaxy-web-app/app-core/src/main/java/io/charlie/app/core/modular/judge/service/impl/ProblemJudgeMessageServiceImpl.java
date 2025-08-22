@@ -69,12 +69,11 @@ public class ProblemJudgeMessageServiceImpl implements ProblemJudgeMessageServic
             return;
         }
 
-        System.out.println(JSONUtil.toJsonPrettyStr(judgeResultDto));
-
         log.info("接收到消息：{}", JSONUtil.toJsonStr(judgeResultDto));
 
         ProSubmit bean = BeanUtil.toBean(judgeResultDto, ProSubmit.class);
         bean.setUpdateTime(new Date());
+        bean.setUpdateUser(bean.getUserId());
         proSubmitMapper.updateById(bean);
 
         if (bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue())) {
@@ -85,9 +84,11 @@ public class ProblemJudgeMessageServiceImpl implements ProblemJudgeMessageServic
                     .set(ProSolved::getSolved, true)
             );
 
-            SimilaritySubmitDto similaritySubmitDto = BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class);
-            problemSimilarityMessageService.sendSimilarityRequest(similaritySubmitDto);
-        } else if (bean.getStatus().equals(JudgeStatus.WRONG_ANSWER.getValue())) {
+            // 正式执行才会计算相似度
+            if (judgeResultDto.getSubmitType()) {
+                problemSimilarityMessageService.sendSimilarityRequest(BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class));
+            }
+        } else {
             proSolvedMapper.update(new LambdaUpdateWrapper<ProSolved>()
                     .eq(ProSolved::getUserId, bean.getUserId())
                     .eq(ProSolved::getProblemId, bean.getProblemId())
