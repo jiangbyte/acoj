@@ -98,9 +98,9 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 	}
 
 	// ==================================== 执行源代码 ====================================
-	RunResultDto := workspace.Execute()
+	RunResultDto, err := workspace.Execute()
 	// 如果 RunResultDto 不为空（说明执行源代码里面有错误），则返回结果到队列
-	if RunResultDto != nil {
+	if err != nil {
 		err := l.sendResultToMQ(RunResultDto)
 		// 发送结果到MQ失败（err 不为空就是发送结果到MQ失败）
 		if err != nil {
@@ -126,7 +126,7 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 	}
 
 	// ==================================== 删除工作空间 ====================================
-	err := workspace.Cleanup()
+	err = workspace.Cleanup()
 	// 删除工作空间失败（err 不为空就是删除工作空间失败）
 	if err != nil {
 		l.Errorf("删除工作空间失败: %v", err)

@@ -3,14 +3,15 @@ package judge
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/zeromicro/go-zero/core/logx"
 	"judge-service/internal/config"
 	"judge-service/internal/dto"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type Workspace struct {
@@ -34,7 +35,7 @@ func NewWorkspace(ctx context.Context, config config.Config, judgeSubmitDto dto.
 	workUuid := uuid.New()
 	submissionID := strings.ReplaceAll(workUuid.String(), "-", "") // 替换-为空，生成没有连字符的UUID
 
-	workDir := config.Workspace // 工作空间根目录
+	workDir := config.Workspace                  // 工作空间根目录
 	root := filepath.Join(workDir, submissionID) // 本次工作空间根目录
 
 	ws := &Workspace{
@@ -104,7 +105,7 @@ func (w *Workspace) SaveSourceCode() *dto.JudgeResultDto {
 	w.langConfig = *langConfig
 
 	fileName := w.langConfig.Name + w.langConfig.Extension // 设置源代码文件名
-	filePath := filepath.Join(w.SourcePath, fileName) // 源文件路径
+	filePath := filepath.Join(w.SourcePath, fileName)      // 源文件路径
 	// 写入文件
 	if err := os.WriteFile(filePath, []byte(w.judgeSubmit.Code), 0644); err != nil {
 		w.logger.Errorf("写入源代码文件失败: %v", err)
@@ -128,25 +129,21 @@ func (w *Workspace) SaveSourceCode() *dto.JudgeResultDto {
 // }
 
 // 执行代码
-func (w *Workspace) Execute() *dto.JudgeResultDto {
+func (w *Workspace) Execute() (*dto.JudgeResultDto, error) {
 	// 构建沙箱，传入工作空间上下文，工作空间实例
 	sandbox := NewSandbox(w.ctx, *w)
 	// 沙箱编译
 	compileResult, err := sandbox.Compile()
 	if err != nil {
 		// compileResult 不为空，返回编译结果给上级
-		return compileResult
+		return compileResult, err
 	}
 
 	// 沙箱运行
-	runResult := sandbox.Run()
-	if runResult != nil {
-		// runResult 不为空，返回运行结果给上级
-		return runResult
-	}
+	runResult, err := sandbox.Run()
 
 	// 运行成功，返回运行结果给上级
-	return runResult
+	return runResult, err
 }
 
 // 结果汇总

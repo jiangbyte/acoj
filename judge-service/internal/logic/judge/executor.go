@@ -28,9 +28,9 @@ func NewExecutor(ctx context.Context, sandbox Sandbox) *Executor {
 }
 
 // 实际执行
-func (e *Executor) Execute() *dto.JudgeResultDto {
+func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 	// 转换提交
-	dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
+	result := dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
 
 	// ==================================== 获得执行命令 ====================================
 	config := e.Sandbox.Workspace.langConfig // 获取语言配置
@@ -102,7 +102,7 @@ func (e *Executor) Execute() *dto.JudgeResultDto {
 
 	// }
 
-	return nil
+	return &result, nil
 }
 
 // initCgroupWithLimits 初始化cgroup并设置资源限制

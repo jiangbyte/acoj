@@ -29,7 +29,7 @@ func (s *Sandbox) Compile() (*dto.JudgeResultDto, error) {
 }
 
 // 执行，返回执行结果
-func (s *Sandbox) Run() *dto.JudgeResultDto {
+func (s *Sandbox) Run() (*dto.JudgeResultDto, error) {
 	s.logger.Info("开始执行")
 	r := NewExecutor(s.ctx, *s)
 	return r.Execute()
