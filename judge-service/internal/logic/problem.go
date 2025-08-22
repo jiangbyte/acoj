@@ -112,17 +112,10 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 	}
 
 	// ==================================== 结果汇总 ====================================
-	EvaluateResultDto := workspace.Evaluate(*SourceCodeResultDto)
-	// 如果 EvaluateResultDto 不为空（说明结果汇总里面有错误），则返回结果到队列
-	if EvaluateResultDto != nil {
-		err := l.sendResultToMQ(EvaluateResultDto)
-		// 发送结果到MQ失败（err 不为空就是发送结果到MQ失败）
-		if err != nil {
-			l.Errorf("发送结果到MQ失败: %v", err)
-		}
-		// 至今结束本次逻辑
-		workspace.Cleanup()
-		return
+	EvaluateResultDto := workspace.Evaluate(SourceCodeResultDto)
+	err = l.sendResultToMQ(EvaluateResultDto)
+	if err != nil {
+		l.Errorf("发送结果到MQ失败: %v", err)
 	}
 
 	// ==================================== 删除工作空间 ====================================

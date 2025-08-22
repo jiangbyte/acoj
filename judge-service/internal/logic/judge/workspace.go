@@ -148,8 +148,8 @@ func (w *Workspace) Execute() (*dto.JudgeResultDto, error) {
 }
 
 // 结果汇总
-func (w *Workspace) Evaluate(submit dto.JudgeResultDto) *dto.JudgeResultDto {
+func (w *Workspace) Evaluate(submit *dto.JudgeResultDto) *dto.JudgeResultDto {
 	submit.Status = dto.StatusSystemError
 	submit.Message = "评估步骤执行可以"
-	return &submit
+	return submit
 }
