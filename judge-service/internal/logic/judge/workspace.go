@@ -147,24 +147,22 @@ func (w *Workspace) Execute() (*dto.JudgeResultDto, error) {
 	return runResult, err
 }
 
-// 结果汇总
 func (w *Workspace) Evaluate(submit *dto.JudgeResultDto) *dto.JudgeResultDto {
-	// submit.Status = dto.StatusSystemError
-	// submit.Message = "评估步骤执行可以"
-
 	maxTime := 0
 	maxMemory := 0
 
-	// 使用range遍历（获取索引和值）
+	// 使用索引遍历，这样可以修改原始数据
 	for _, testCase := range submit.TestCase {
-		if maxTime > testCase.MaxTime {
+		// 计算最大值
+		if testCase.MaxTime > maxTime {
 			maxTime = testCase.MaxTime
 		}
-		if maxMemory > testCase.MaxMemory {
+		if testCase.MaxMemory > maxMemory {
 			maxMemory = testCase.MaxMemory
 		}
 	}
 
+	// 设置最终的最大值
 	submit.MaxTime = maxTime
 	submit.MaxMemory = maxMemory
 
