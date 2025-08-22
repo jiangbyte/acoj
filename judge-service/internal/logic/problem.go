@@ -79,15 +79,7 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 			// 发送结果到MQ失败（err 不为空就是发送结果到MQ失败）
 			l.Errorf("发送结果到MQ失败: %v", err)
 		}
-<<<<<<< HEAD
-		// 删除工作空间
-		err1 := workspace.Cleanup()
-		if err1 != nil {
-			l.Errorf("删除工作空间失败: %v", err)
-		}
-=======
 		// 至今结束本次逻辑
->>>>>>> 1fc0e6376371bc50a23523eb111ccbc6ad59915f
 		return
 	}
 
@@ -100,16 +92,8 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 		if err != nil {
 			l.Errorf("发送结果到MQ失败: %v", err)
 		}
-<<<<<<< HEAD
-		// 删除工作空间
-		err1 := workspace.Cleanup()
-		if err1 != nil {
-			l.Errorf("删除工作空间失败: %v", err)
-		}
-=======
 		// 至今结束本次逻辑
 		workspace.Cleanup()
->>>>>>> 1fc0e6376371bc50a23523eb111ccbc6ad59915f
 		return
 	}
 
@@ -122,16 +106,8 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 		if err != nil {
 			l.Errorf("发送结果到MQ失败: %v", err)
 		}
-<<<<<<< HEAD
-		// 删除工作空间
-		err1 := workspace.Cleanup()
-		if err1 != nil {
-			l.Errorf("删除工作空间失败: %v", err)
-		}
-=======
 		// 至今结束本次逻辑
 		workspace.Cleanup()
->>>>>>> 1fc0e6376371bc50a23523eb111ccbc6ad59915f
 		return
 	}
 
@@ -144,15 +120,6 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 		if err != nil {
 			l.Errorf("发送结果到MQ失败: %v", err)
 		}
-<<<<<<< HEAD
-		// 删除工作空间
-		err1 := workspace.Cleanup()
-		if err1 != nil {
-			l.Errorf("删除工作空间失败: %v", err)
-		}
-	}
-
-=======
 		// 至今结束本次逻辑
 		workspace.Cleanup()
 		return
@@ -164,7 +131,6 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 	if err != nil {
 		l.Errorf("删除工作空间失败: %v", err)
 	}
->>>>>>> 1fc0e6376371bc50a23523eb111ccbc6ad59915f
 }
 
 func (l *ProblemLogic) sendResultToMQ(result *dto.JudgeResultDto) error {

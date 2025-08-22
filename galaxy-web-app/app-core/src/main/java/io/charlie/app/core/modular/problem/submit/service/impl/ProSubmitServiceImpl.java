@@ -253,6 +253,7 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
         try {
             JudgeSubmitDto message = new JudgeSubmitDto();
             // ======================= 任务参数 =======================
+            message.setUserId(submit.getUserId());
             message.setId(submit.getId());
             message.setIsSet(false);
             // ======================= 题目参数 =======================

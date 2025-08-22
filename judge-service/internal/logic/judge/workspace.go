@@ -145,10 +145,7 @@ func (w *Workspace) Execute() *dto.JudgeResultDto {
 		return runResult
 	}
 
-<<<<<<< HEAD
-=======
 	// 运行成功，返回运行结果给上级
->>>>>>> 1fc0e6376371bc50a23523eb111ccbc6ad59915f
 	return runResult
 }
 
@@ -156,10 +153,6 @@ func (w *Workspace) Execute() *dto.JudgeResultDto {
 func (w *Workspace) Evaluate() *dto.JudgeResultDto {
 	result := dto.ConvertSubmitToResult(w.judgeSubmit)
 	result.Status = dto.StatusSystemError
-<<<<<<< HEAD
-	result.Message = fmt.Sprintf("评估步骤 OK")
-=======
 	result.Message = "评估步骤执行可以"
->>>>>>> 1fc0e6376371bc50a23523eb111ccbc6ad59915f
 	return &result
 }
