@@ -180,9 +180,9 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 			endPeak/1024)
 
 		logx.Infof("开始测试第 %d/%d 个测试用例", i+1, len(result.TestCase))
-		logx.Infof("输入内容: %s", strings.Replace(testCase.Input, "\n", "\\n", -1))
-		logx.Infof("期望输出: %s", strings.Replace(testCase.Except, "\n", "\\n", -1))
-		logx.Infof("用户输出: %s", strings.Replace(testCase.Output, "\n", "\\n", -1))
+		logx.Infof("输入内容: %s", testCase.Input)
+		logx.Infof("期望输出: %s", testCase.Except)
+		logx.Infof("用户输出: %s", testCase.Output)
 		logx.Infof("最大时间: %d", testCase.MaxTime)
 		logx.Infof("最大内存: %d", testCase.MaxMemory)
 		logx.Infof("消息: %s", testCase.Message)
@@ -195,6 +195,9 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 		// 去除末尾空行后再比较
 		trimmedExpected := strings.TrimRight(normalizedExcept, "\n")
 		trimmedUser := strings.TrimRight(normalizedUser, "\n")
+
+		logx.Infof("格式化 期望输出: %s", trimmedExpected)
+		logx.Infof("格式化 用户输出: %s", trimmedUser)
 
 		if trimmedExpected == trimmedUser {
 			result.Status = dto.StatusAccepted
