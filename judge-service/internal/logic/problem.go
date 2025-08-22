@@ -112,7 +112,7 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 	}
 
 	// ==================================== 结果汇总 ====================================
-	EvaluateResultDto := workspace.Evaluate()
+	EvaluateResultDto := workspace.Evaluate(*SourceCodeResultDto)
 	// 如果 EvaluateResultDto 不为空（说明结果汇总里面有错误），则返回结果到队列
 	if EvaluateResultDto != nil {
 		err := l.sendResultToMQ(EvaluateResultDto)

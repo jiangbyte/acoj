@@ -45,8 +45,9 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 	logx.Infof("得到运行命令: %s", runCmd)
 
 	for i := range result.TestCase {
+		// 获取当前测试用例的指针
 		testCase := &result.TestCase[i]
-		
+
 		logx.Infof("开始测试第 %d 个测试用例, 输入 %s 输出 %s", i+1, testCase.Input, testCase.Except)
 
 		// ==================================== 设置运行超时上下文 ====================================
