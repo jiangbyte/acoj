@@ -179,15 +179,6 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 			startPeak/1024,
 			endPeak/1024)
 
-		logx.Infof("开始测试第 %d/%d 个测试用例", i+1, len(result.TestCase))
-		logx.Infof("输入内容: %s", testCase.Input)
-		logx.Infof("期望输出: %s", testCase.Except)
-		logx.Infof("用户输出: %s", testCase.Output)
-		logx.Infof("最大时间: %d", testCase.MaxTime)
-		logx.Infof("最大内存: %d", testCase.MaxMemory)
-		logx.Infof("消息: %s", testCase.Message)
-		logx.Infof("当前状态: %s", testCase.Status)
-
 		// 规范化输出和用户输出
 		normalizedExcept := normalizeLineEndings(testCase.Except)
 		normalizedUser := normalizeLineEndings(testCase.Output)
