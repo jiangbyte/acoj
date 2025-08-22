@@ -18,6 +18,7 @@ type ProblemLogic struct {
 	svcCtx *svc.ServiceContext
 }
 
+// 题目逻辑
 func NewProblemLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ProblemLogic {
 	return &ProblemLogic{
 		Logger: logx.WithContext(ctx),
@@ -26,6 +27,7 @@ func NewProblemLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ProblemLo
 	}
 }
 
+// 开始消费者
 func (l *ProblemLogic) StartConsumer() {
 	// 声明队列（确保存在）
 	_, err := l.svcCtx.ProblemChannel.QueueDeclare(
@@ -67,59 +69,82 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 
 	l.Infof("收到消息: %+v", judgeSubmit)
 
-	// 工作空间准备
+	// ==================================== 工作空间准备 ====================================
+	// 创建工作空间，传入上下文Context/系统配置/提交信息
 	workspace, workspaceResultDto := judge.NewWorkspace(l.ctx, l.svcCtx.Config, judgeSubmit)
-	// 如果resultDto不为空，则返回结果
+	// 如果 workspaceResultDto 不为空（说明工作空间里面有错误），则返回结果到队列
 	if workspaceResultDto != nil {
 		err := l.sendResultToMQ(workspaceResultDto)
 		if err != nil {
+			// 发送结果到MQ失败（err 不为空就是发送结果到MQ失败）
 			l.Errorf("发送结果到MQ失败: %v", err)
 		}
+<<<<<<< HEAD
 		// 删除工作空间
 		err1 := workspace.Cleanup()
 		if err1 != nil {
 			l.Errorf("删除工作空间失败: %v", err)
 		}
+=======
+		// 至今结束本次逻辑
+>>>>>>> 1fc0e6376371bc50a23523eb111ccbc6ad59915f
 		return
 	}
 
-	// 保存源代码
+	// ==================================== 保存源代码 ====================================
 	SourceCodeResultDto := workspace.SaveSourceCode()
+	// 如果 SourceCodeResultDto 不为空（说明保存源代码里面有错误），则返回结果到队列
 	if SourceCodeResultDto != nil {
 		err := l.sendResultToMQ(SourceCodeResultDto)
+		// 发送结果到MQ失败（err 不为空就是发送结果到MQ失败）
 		if err != nil {
 			l.Errorf("发送结果到MQ失败: %v", err)
 		}
+<<<<<<< HEAD
 		// 删除工作空间
 		err1 := workspace.Cleanup()
 		if err1 != nil {
 			l.Errorf("删除工作空间失败: %v", err)
 		}
+=======
+		// 至今结束本次逻辑
+		workspace.Cleanup()
+>>>>>>> 1fc0e6376371bc50a23523eb111ccbc6ad59915f
 		return
 	}
 
-	// 执行
+	// ==================================== 执行源代码 ====================================
 	RunResultDto := workspace.Execute()
+	// 如果 RunResultDto 不为空（说明执行源代码里面有错误），则返回结果到队列
 	if RunResultDto != nil {
 		err := l.sendResultToMQ(RunResultDto)
+		// 发送结果到MQ失败（err 不为空就是发送结果到MQ失败）
 		if err != nil {
 			l.Errorf("发送结果到MQ失败: %v", err)
 		}
+<<<<<<< HEAD
 		// 删除工作空间
 		err1 := workspace.Cleanup()
 		if err1 != nil {
 			l.Errorf("删除工作空间失败: %v", err)
 		}
+=======
+		// 至今结束本次逻辑
+		workspace.Cleanup()
+>>>>>>> 1fc0e6376371bc50a23523eb111ccbc6ad59915f
 		return
 	}
 
-	// 结果汇总
+	// ==================================== 结果汇总 ====================================
 	EvaluateResultDto := workspace.Evaluate()
+	// 如果 EvaluateResultDto 不为空（说明结果汇总里面有错误），则返回结果到队列
 	if EvaluateResultDto != nil {
 		err := l.sendResultToMQ(EvaluateResultDto)
+		// 发送结果到MQ失败（err 不为空就是发送结果到MQ失败）
 		if err != nil {
 			l.Errorf("发送结果到MQ失败: %v", err)
 		}
+<<<<<<< HEAD
 		// 删除工作空间
 		err1 := workspace.Cleanup()
 		if err1 != nil {
@@ -127,6 +152,19 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 		}
 	}
 
+=======
+		// 至今结束本次逻辑
+		workspace.Cleanup()
+		return
+	}
+
+	// ==================================== 删除工作空间 ====================================
+	err := workspace.Cleanup()
+	// 删除工作空间失败（err 不为空就是删除工作空间失败）
+	if err != nil {
+		l.Errorf("删除工作空间失败: %v", err)
+	}
+>>>>>>> 1fc0e6376371bc50a23523eb111ccbc6ad59915f
 }
 
 func (l *ProblemLogic) sendResultToMQ(result *dto.JudgeResultDto) error {

@@ -12,6 +12,7 @@ type Sandbox struct {
 	Workspace Workspace
 }
 
+// 创建沙盒，传入上下文，工作空间
 func NewSandbox(ctx context.Context, workspace Workspace) *Sandbox {
 	return &Sandbox{
 		ctx:       ctx,
@@ -20,14 +21,14 @@ func NewSandbox(ctx context.Context, workspace Workspace) *Sandbox {
 	}
 }
 
-// 编译
+// 编译，返回编译结果
 func (s *Sandbox) Compile() *dto.JudgeResultDto {
 	s.logger.Info("开始编译")
 	c := NewCompiler(s.ctx, *s)
 	return c.Execute()
 }
 
-// 执行
+// 执行，返回执行结果
 func (s *Sandbox) Run() *dto.JudgeResultDto {
 	s.logger.Info("开始执行")
 	r := NewExecutor(s.ctx, *s)

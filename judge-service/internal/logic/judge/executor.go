@@ -3,7 +3,6 @@ package judge
 import (
 	"context"
 	"fmt"
-	"github.com/zeromicro/go-zero/core/logx"
 	"judge-service/internal/dto"
 	"os"
 	"os/exec"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type Executor struct {
@@ -51,7 +52,7 @@ func (e *Executor) Execute() *dto.JudgeResultDto {
 	// 获得执行命令
 	config := e.Sandbox.Workspace.langConfig
 	runCmd := make([]string, len(config.RunCmd))
-	for i, part := range config.CompileCmd {
+	for i, part := range config.RunCmd {
 		runCmd[i] = strings.ReplaceAll(part, "{source}", e.Sandbox.Workspace.SourceFile)
 		runCmd[i] = strings.ReplaceAll(runCmd[i], "{exec}", e.Sandbox.Workspace.BuildFile)
 	}
@@ -81,6 +82,7 @@ func (e *Executor) Execute() *dto.JudgeResultDto {
 		Unshareflags: syscall.CLONE_NEWNS,
 	}
 
+<<<<<<< HEAD
 	// TODO 测试用例遍历运行
 	// 转换并遍历所有测试用例
 	submitTestCases := make([]dto.SubmitTestCase, len(e.Sandbox.Workspace.judgeSubmit.TestCase))
@@ -94,6 +96,15 @@ func (e *Executor) Execute() *dto.JudgeResultDto {
 			Status:    dto.StatusPending, // 等待
 			Message:   "",                // 默认为空
 		}
+=======
+	// 测试用例遍历运行
+	// testCases := e.Sandbox.Workspace.judgeSubmit.TestCase
+	// caseResults := make([]dto.SubmitTestCase, 0, len(testCases))
+
+	// for i, testCase := range testCases {
+		
+	// }
+>>>>>>> 1fc0e6376371bc50a23523eb111ccbc6ad59915f
 
 		submitTestCases[i] = submitTestCase
 	}
