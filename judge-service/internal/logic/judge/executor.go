@@ -55,7 +55,7 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 			timeout = 10 * time.Millisecond
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		defer cancel() // 30秒超时
+		defer cancel()
 
 		var cmd *exec.Cmd
 		if len(runCmd) == 1 {
@@ -94,7 +94,7 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 		startTime := time.Now()
 		startMem, startPeak := getCgroupMemoryUsage(cgroupPath)
 		logx.Infof("运行开始 - 时间: %v, 初始内存: %d KB, 初始峰值内存: %d KB",
-			startTime,
+			startTime.Format("2006-01-02 15:04:05.000"),
 			startMem/1024,
 			startPeak/1024)
 
@@ -134,6 +134,12 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 			cmd.Process.Kill()
 		case err := <-done:
 			if err != nil {
+				if exitErr, ok := err.(*exec.ExitError); ok {
+					// 处理进程退出错误
+					testCase.Status = dto.StatusRuntimeError
+					testCase.Message = fmt.Sprintf("进程异常退出: %v", exitErr)
+					return &result, nil
+				}
 			}
 		}
 
