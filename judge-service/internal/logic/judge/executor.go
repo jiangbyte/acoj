@@ -30,7 +30,7 @@ func NewExecutor(ctx context.Context, sandbox Sandbox) *Executor {
 // 实际执行
 func (e *Executor) Execute() *dto.JudgeResultDto {
 	// 转换提交
-	result := dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
+	dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
 
 	// ==================================== 获得执行命令 ====================================
 	config := e.Sandbox.Workspace.langConfig // 获取语言配置
