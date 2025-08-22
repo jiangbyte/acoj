@@ -3,6 +3,7 @@ package judge
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"judge-service/internal/dto"
 	"os"
@@ -32,7 +33,7 @@ func NewCompiler(ctx context.Context, sandbox Sandbox) *Compiler {
 }
 
 // 实际执行编译
-func (e *Compiler) Execute() *dto.JudgeResultDto {
+func (e *Compiler) Execute() (*dto.JudgeResultDto, error) {
 	// 转换提交
 	result := dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
 
@@ -76,7 +77,7 @@ func (e *Compiler) Execute() *dto.JudgeResultDto {
 	if err := os.Mkdir(cgroupPath, 0755); err != nil {
 		result.Status = dto.StatusSystemError
 		result.Message = fmt.Sprintf("CGroup 创建失败: %v", err)
-		return &result
+		return &result, err
 	}
 	defer os.RemoveAll(cgroupPath)                          // 结束时删除cgroup
 	startMem, startPeak := getCgroupMemoryUsage(cgroupPath) // 获取进程开始 内存使用量 峰值
@@ -85,7 +86,7 @@ func (e *Compiler) Execute() *dto.JudgeResultDto {
 	if err := cmd.Start(); err != nil {
 		result.Status = dto.StatusCompilationError
 		result.Message = fmt.Sprintf("启动编译进程失败: %v", err)
-		return &result
+		return &result, err
 	}
 
 	// ==================================== 添加进程到cgroup ====================================
@@ -94,7 +95,7 @@ func (e *Compiler) Execute() *dto.JudgeResultDto {
 		// 编译失败
 		result.Status = dto.StatusCompilationError
 		result.Message = fmt.Sprintf("%v\n%s", err, output.String())
-		return &result
+		return &result, err
 	}
 	logx.Infof("进程已加入cgroup - PID: %d, cgroup路径: %s", cmd.Process.Pid, cgroupPath)
 
@@ -110,13 +111,13 @@ func (e *Compiler) Execute() *dto.JudgeResultDto {
 		cmd.Process.Kill()
 		result.Status = dto.StatusCompilationError
 		result.Message = "编译超时(30秒)"
-		return &result
+		return &result, errors.New("编译超时")
 	case err := <-done:
 		if err != nil {
 			// 编译失败
 			result.Status = dto.StatusCompilationError
 			result.Message = fmt.Sprintf("%v\n%s", err, output.String())
-			return &result
+			return &result, fmt.Errorf("%v\n%s", err, output.String())
 		}
 	}
 
@@ -137,7 +138,7 @@ func (e *Compiler) Execute() *dto.JudgeResultDto {
 	result.MaxMemory = int(memUsed / 1024) // 返回内存(kb)
 	result.Status = dto.StatusCompiledOK
 	result.Message = "编译成功"
-	return &result
+	return &result, nil
 }
 
 // addProcessToCgroup 将进程添加到 cgroup

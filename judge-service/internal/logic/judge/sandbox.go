@@ -22,7 +22,7 @@ func NewSandbox(ctx context.Context, workspace Workspace) *Sandbox {
 }
 
 // 编译，返回编译结果
-func (s *Sandbox) Compile() *dto.JudgeResultDto {
+func (s *Sandbox) Compile() (*dto.JudgeResultDto, error) {
 	s.logger.Info("开始编译")
 	c := NewCompiler(s.ctx, *s)
 	return c.Execute()

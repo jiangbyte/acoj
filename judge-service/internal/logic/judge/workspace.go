@@ -132,16 +132,16 @@ func (w *Workspace) Execute() *dto.JudgeResultDto {
 	// 构建沙箱，传入工作空间上下文，工作空间实例
 	sandbox := NewSandbox(w.ctx, *w)
 	// 沙箱编译
-	compileResult := sandbox.Compile()
-	if compileResult != nil {
-		// compileResult 不为空，说明编译失败，返回编译结果给上级
+	compileResult, err := sandbox.Compile()
+	if err != nil {
+		// compileResult 不为空，返回编译结果给上级
 		return compileResult
 	}
 
 	// 沙箱运行
 	runResult := sandbox.Run()
 	if runResult != nil {
-		// runResult 不为空，说明运行失败，返回运行结果给上级
+		// runResult 不为空，返回运行结果给上级
 		return runResult
 	}
 
