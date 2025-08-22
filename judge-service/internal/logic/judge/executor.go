@@ -33,14 +33,18 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 	result := dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
 
 	// ==================================== 获得执行命令 ====================================
-	config := e.Sandbox.Workspace.langConfig // 获取语言配置
+	config := e.Sandbox.Workspace.langConfig     // 获取语言配置
 	runCmd := make([]string, len(config.RunCmd)) // 创建执行命令
 	for i, part := range config.RunCmd {
 		runCmd[i] = strings.ReplaceAll(part, "{exec}", e.Sandbox.Workspace.BuildFile)
 	}
-	logx.Infof("得到编译命令: %s", runCmd)
+	logx.Infof("得到运行命令: %s", runCmd)
 
+	testCases := result.TestCase
 
+	for i, testCase := range testCases {
+		logx.Infof("开始测试第 %d 个测试用例, 输入 %s 输出 %s", i+1, testCase.Input, testCase.Output)
+	}
 
 	// result := dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
 
