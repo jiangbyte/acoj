@@ -25,16 +25,17 @@ type Workspace struct {
 	SourceFile  string // 源代码文件
 	BuildPath   string // 编译目录
 	BuildFile   string // 编译文件
-	RunsPath    string
+	RunsPath    string // 运行目录
 }
 
-// NewWorkspace 创建工作空间
+// NewWorkspace 创建工作空间,上下文/配置/提交信息,返回 工作空间实例 和 提交信息
 func NewWorkspace(ctx context.Context, config config.Config, judgeSubmitDto dto.JudgeSubmitDto) (*Workspace, *dto.JudgeResultDto) {
+	// 生成工作空间ID
 	workUuid := uuid.New()
-	submissionID := strings.ReplaceAll(workUuid.String(), "-", "")
+	submissionID := strings.ReplaceAll(workUuid.String(), "-", "") // 替换-为空，生成没有连字符的UUID
 
-	workDir := config.Workspace
-	root := filepath.Join(workDir, submissionID)
+	workDir := config.Workspace // 工作空间根目录
+	root := filepath.Join(workDir, submissionID) // 本次工作空间根目录
 
 	ws := &Workspace{
 		ctx:         ctx,                           // 使用传入的ctx
@@ -47,7 +48,10 @@ func NewWorkspace(ctx context.Context, config config.Config, judgeSubmitDto dto.
 		BuildPath:   filepath.Join(root, "build"),  // 编译目录
 		RunsPath:    filepath.Join(root, "runs"),   // 运行目录
 	}
+
+	// 创建目录
 	if err := ws.createDirs(); err != nil {
+		// err 不为空，说明创建目录失败，返回错误信息
 		result := dto.ConvertSubmitToResult(judgeSubmitDto)
 		result.Status = dto.StatusSystemError
 		result.Message = fmt.Sprintf("创建工作空间失败: %v", err)
@@ -88,6 +92,7 @@ func (w *Workspace) SaveSourceCode() *dto.JudgeResultDto {
 	// 判断语言是否支持
 	langConfig, err := w.getLanguageConfig()
 	if err != nil {
+		// err 不为空，说明不支持的语言
 		w.logger.Errorf(err.Error())
 		result := dto.ConvertSubmitToResult(w.judgeSubmit)
 		result.Status = dto.StatusSystemError
@@ -95,9 +100,12 @@ func (w *Workspace) SaveSourceCode() *dto.JudgeResultDto {
 		return &result
 	}
 
+	// 设置工作空间语言配置
 	w.langConfig = *langConfig
-	fileName := w.langConfig.Name + w.langConfig.Extension
-	filePath := filepath.Join(w.SourcePath, fileName)
+
+	fileName := w.langConfig.Name + w.langConfig.Extension // 设置源代码文件名
+	filePath := filepath.Join(w.SourcePath, fileName) // 源文件路径
+	// 写入文件
 	if err := os.WriteFile(filePath, []byte(w.judgeSubmit.Code), 0644); err != nil {
 		w.logger.Errorf("写入源代码文件失败: %v", err)
 		result := dto.ConvertSubmitToResult(w.judgeSubmit)
@@ -105,37 +113,39 @@ func (w *Workspace) SaveSourceCode() *dto.JudgeResultDto {
 		result.Message = fmt.Sprintf("写入源代码文件失败：%v", err)
 		return &result
 	}
+	// 设置工作空间源代码文件路径（编译用）和编译文件路径（执行用）
 	w.SourceFile = filePath
 	w.BuildFile = filepath.Join(w.BuildPath, w.langConfig.CompileFile)
 	return nil
 }
 
-func (w *Workspace) CreateTestCaseDir(testCaseID string) (string, error) {
-	caseDir := filepath.Join(w.RunsPath, testCaseID)
-	if err := os.MkdirAll(caseDir, 0755); err != nil {
-		return "", fmt.Errorf("创建测试用例目录失败: %v", err)
-	}
-	return caseDir, nil
-}
+// func (w *Workspace) CreateTestCaseDir(testCaseID string) (string, error) {
+// 	caseDir := filepath.Join(w.RunsPath, testCaseID)
+// 	if err := os.MkdirAll(caseDir, 0755); err != nil {
+// 		return "", fmt.Errorf("创建测试用例目录失败: %v", err)
+// 	}
+// 	return caseDir, nil
+// }
 
 // 执行代码
 func (w *Workspace) Execute() *dto.JudgeResultDto {
+	// 构建沙箱，传入工作空间上下文，工作空间实例
 	sandbox := NewSandbox(w.ctx, *w)
-	// 编译
+	// 沙箱编译
 	compileResult := sandbox.Compile()
 	if compileResult != nil {
+		// compileResult 不为空，说明编译失败，返回编译结果给上级
 		return compileResult
 	}
 
-	// 运行
+	// 沙箱运行
 	runResult := sandbox.Run()
 	if runResult != nil {
+		// runResult 不为空，说明运行失败，返回运行结果给上级
 		return runResult
 	}
 
-	result := dto.ConvertSubmitToResult(w.judgeSubmit)
-	result.Status = dto.StatusSystemError
-	result.Message = fmt.Sprintf("执行错误")
+	// 运行成功，返回运行结果给上级
 	return runResult
 }
 
@@ -143,6 +153,6 @@ func (w *Workspace) Execute() *dto.JudgeResultDto {
 func (w *Workspace) Evaluate() *dto.JudgeResultDto {
 	result := dto.ConvertSubmitToResult(w.judgeSubmit)
 	result.Status = dto.StatusSystemError
-	result.Message = fmt.Sprintf("评估步骤")
+	result.Message = "评估步骤执行可以"
 	return &result
 }

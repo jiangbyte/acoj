@@ -3,7 +3,6 @@ package judge
 import (
 	"context"
 	"fmt"
-	"github.com/zeromicro/go-zero/core/logx"
 	"judge-service/internal/dto"
 	"os"
 	"os/exec"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type Executor struct {
@@ -51,7 +52,7 @@ func (e *Executor) Execute() *dto.JudgeResultDto {
 	// 获得执行命令
 	config := e.Sandbox.Workspace.langConfig
 	runCmd := make([]string, len(config.RunCmd))
-	for i, part := range config.CompileCmd {
+	for i, part := range config.RunCmd {
 		runCmd[i] = strings.ReplaceAll(part, "{source}", e.Sandbox.Workspace.SourceFile)
 		runCmd[i] = strings.ReplaceAll(runCmd[i], "{exec}", e.Sandbox.Workspace.BuildFile)
 	}
@@ -82,6 +83,12 @@ func (e *Executor) Execute() *dto.JudgeResultDto {
 	}
 
 	// 测试用例遍历运行
+	// testCases := e.Sandbox.Workspace.judgeSubmit.TestCase
+	// caseResults := make([]dto.SubmitTestCase, 0, len(testCases))
+
+	// for i, testCase := range testCases {
+		
+	// }
 
 	return nil
 }
