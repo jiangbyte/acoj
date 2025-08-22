@@ -112,7 +112,7 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 	}
 
 	// ==================================== 结果汇总 ====================================
-	EvaluateResultDto := workspace.Evaluate(SourceCodeResultDto)
+	EvaluateResultDto := workspace.Evaluate(RunResultDto)
 	err = l.sendResultToMQ(EvaluateResultDto)
 	if err != nil {
 		l.Errorf("发送结果到MQ失败: %v", err)
