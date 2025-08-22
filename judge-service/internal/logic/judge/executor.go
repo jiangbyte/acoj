@@ -63,7 +63,7 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 		} else {
 			cmd = exec.CommandContext(ctx, runCmd[0], runCmd[1:]...)
 		}
-		cmd.Dir = filepath.Join(e.Sandbox.Workspace.RunsPath, fmt.Sprint(i+1))
+		// cmd.Dir = filepath.Join(e.Sandbox.Workspace.RunsPath, fmt.Sprint(i+1))
 
 		// ==================================== 设置进程隔离命名空间 ====================================
 		cmd.SysProcAttr = &syscall.SysProcAttr{
