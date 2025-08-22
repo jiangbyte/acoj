@@ -1,13 +1,17 @@
 package judge
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"judge-service/internal/dto"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -40,106 +44,132 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 	}
 	logx.Infof("得到运行命令: %s", runCmd)
 
-	testCases := result.TestCase
-
-	for i, testCase := range testCases {
+	for i, testCase := range result.TestCase {
 		logx.Infof("开始测试第 %d 个测试用例, 输入 %s 输出 %s", i+1, testCase.Input, testCase.Except)
 
-		// // ==================================== 创建命令 ====================================
-		// ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		// defer cancel() // 30秒超时
+		// ==================================== 设置运行超时上下文 ====================================
+		timeout := time.Duration(e.Sandbox.Workspace.judgeSubmit.MaxTime)*time.Millisecond + 500*time.Millisecond // 额外500ms缓冲
+		if timeout > 10*time.Second {
+			timeout = 10 * time.Second // 最大10秒超时
+		} else if timeout < 10*time.Millisecond {
+			timeout = 10 * time.Millisecond
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel() // 30秒超时
 
-		// var cmd *exec.Cmd
-		// if len(runCmd) == 1 {
-		// 	cmd = exec.CommandContext(ctx, runCmd[0])
-		// } else {
-		// 	cmd = exec.CommandContext(ctx, runCmd[0], runCmd[1:]...)
-		// }
-		// cmd.Dir = filepath.Join(e.Sandbox.Workspace.RunsPath, fmt.Sprint(i+1))
+		var cmd *exec.Cmd
+		if len(runCmd) == 1 {
+			cmd = exec.CommandContext(ctx, runCmd[0])
+		} else {
+			cmd = exec.CommandContext(ctx, runCmd[0], runCmd[1:]...)
+		}
+		cmd.Dir = filepath.Join(e.Sandbox.Workspace.RunsPath, fmt.Sprint(i+1))
 
-		// // ==================================== 设置进程隔离命名空间 ====================================
-		// cmd.SysProcAttr = &syscall.SysProcAttr{
-		// 	Cloneflags: syscall.CLONE_NEWNS | syscall.CLONE_NEWUTS |
-		// 		syscall.CLONE_NEWPID | syscall.CLONE_NEWNET |
-		// 		syscall.CLONE_NEWIPC,
-		// 	Unshareflags: syscall.CLONE_NEWNS,
-		// }
+		// ==================================== 设置进程隔离命名空间 ====================================
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Cloneflags: syscall.CLONE_NEWNS |
+				syscall.CLONE_NEWUTS |
+				syscall.CLONE_NEWPID |
+				syscall.CLONE_NEWNET |
+				syscall.CLONE_NEWIPC,
+			Unshareflags: syscall.CLONE_NEWNS,
+		}
 
-		// // ==================================== 输入，输出，错误重定向 ====================================
-		// // 重定向标准输入
-		// cmd.Stdin = strings.NewReader(testCase.Input)
-		// // 创建输出缓冲区
-		// var stdoutBuf, stderrBuf bytes.Buffer
-		// cmd.Stdout = &stdoutBuf
-		// cmd.Stderr = &stderrBuf
+		// ==================================== 创建临时cgroup ====================================
+		cgroupName := "judge_" + strconv.Itoa(os.Getpid()) + "_" + strconv.Itoa(time.Now().Nanosecond())
+		cgroupPath := filepath.Join("/sys/fs/cgroup", cgroupName)
+		if err := os.Mkdir(cgroupPath, 0755); err != nil {
+			testCase.Status = dto.StatusSystemError
+			testCase.Message = fmt.Sprintf("CGroup 创建失败: %v", err)
+			return &result, err
+		}
+		defer os.RemoveAll(cgroupPath)
 
-		// // ==================================== 创建临时cgroup ====================================
-		// cgroupName := "judge_" + strconv.Itoa(os.Getpid()) + "_" + strconv.Itoa(time.Now().Nanosecond())
-		// cgroupPath := filepath.Join("/sys/fs/cgroup", cgroupName)
-		// if err := os.Mkdir(cgroupPath, 0755); err != nil {
-		// 	testCase.Status = dto.StatusSystemError
-		// 	testCase.Message = fmt.Sprintf("CGroup 创建失败: %v", err)
-		// 	return &result, err
-		// }
-		// defer os.RemoveAll(cgroupPath)                          // 结束时删除cgroup
-		// startMem, startPeak := getCgroupMemoryUsage(cgroupPath) // 获取进程开始 内存使用量 峰值
+		// 初始化cgroup并设置资源限制
+		if err := e.initCgroupWithLimits(cgroupPath, e.Sandbox.Workspace.judgeSubmit.MaxTime, e.Sandbox.Workspace.judgeSubmit.MaxMemory); err != nil {
+			return &result, err
+		}
 
-		// // ==================================== 启动进程 ====================================
-		// if err := cmd.Start(); err != nil {
-		// 	testCase.Status = dto.StatusRuntimeError
-		// 	testCase.Message = fmt.Sprintf("启动执行进程失败: %v", err)
-		// 	return &result, err
-		// }
+		// 记录开始时间和资源状态
+		startTime := time.Now()
+		startMem, startPeak := getCgroupMemoryUsage(cgroupPath)
+		logx.Infof("运行开始 - 时间: %v, 初始内存: %d KB, 初始峰值内存: %d KB",
+			startTime,
+			startMem/1024,
+			startPeak/1024)
 
-		// // ==================================== 添加进程到cgroup ====================================
-		// if err := addProcessToCgroup(cgroupPath, cmd.Process.Pid); err != nil {
-		// 	cmd.Process.Kill()
-		// 	// 执行失败
-		// 	testCase.Status = dto.StatusRuntimeError
-		// 	testCase.Message = fmt.Sprintf("%v\n%s", err, stderrBuf.String())
-		// 	return &result, err
-		// }
-		// logx.Infof("进程已加入cgroup - PID: %d, cgroup路径: %s", cmd.Process.Pid, cgroupPath)
+		// ==================================== 输入，输出，错误重定向 ====================================
+		// 重定向标准输入
+		cmd.Stdin = strings.NewReader(testCase.Input)
+		// 创建输出缓冲区
+		var stdoutBuf, stderrBuf bytes.Buffer
+		cmd.Stdout = &stdoutBuf
+		cmd.Stderr = &stderrBuf
 
-		// // ==================================== 等待完成 ====================================
-		// done := make(chan error, 1)
-		// go func() {
-		// 	done <- cmd.Wait()
-		// }()
+		// ==================================== 启动进程 ====================================
+		if err := cmd.Start(); err != nil {
+			testCase.Status = dto.StatusRuntimeError
+			testCase.Message = fmt.Sprintf("启动执行进程失败: %v", err)
+			return &result, err
+		}
 
-		// select {
-		// // case <-ctx.Done():
-		// // 	// 超时处理
-		// // 	cmd.Process.Kill()
-		// // 	result.Status = dto.StatusCompilationError
-		// // 	result.Message = "编译超时(30秒)"
-		// // 	return &result, errors.New("编译超时")
-		// case err := <-done:
-		// 	if err != nil {
-		// 		// 编译失败
-		// 		testCase.Status = dto.StatusCompilationError
-		// 		testCase.Message = fmt.Sprintf("%v\n%s", err, stderrBuf.String())
-		// 		return &result, fmt.Errorf("%v\n%s", err, stderrBuf.String())
-		// 	}
-		// }
+		// ==================================== 添加进程到cgroup ====================================
+		if err := addProcessToCgroup(cgroupPath, cmd.Process.Pid); err != nil {
+			cmd.Process.Kill()
+			// 执行失败
+			testCase.Status = dto.StatusRuntimeError
+			testCase.Message = fmt.Sprintf("%v\n%s", err, stderrBuf.String())
+			return &result, err
+		}
+		logx.Infof("进程已加入cgroup - PID: %d, cgroup路径: %s", cmd.Process.Pid, cgroupPath)
 
-		// // ==================================== 结果返回 ====================================
+		// ==================================== 等待完成 ====================================
+		done := make(chan error, 1)
+		go func() {
+			done <- cmd.Wait()
+		}()
 
-		// endMem, endPeak := getCgroupMemoryUsage(cgroupPath)                  // 获取进程结束 内存使用量 峰值
-		// memUsed := max(endMem-startMem, 0)                                   // 计算实际使用内存
-		// timeUsed := time.Since(e.Sandbox.Workspace.startTime).Milliseconds() // 计算用时
-		// logx.Infof("编译成功, 用时: %d ms 起始: %d KB, 结束: %d KB, 差值: %d KB 起始峰值: %d KB, 结束峰值: %d KB",
-		// 	timeUsed,
-		// 	startMem/1024,
-		// 	endMem/1024,
-		// 	memUsed/1024,
-		// 	startPeak/1024,
-		// 	endPeak/1024)
+		select {
+		case <-ctx.Done():
+			cmd.Process.Kill()
+		case err := <-done:
+			if err != nil {
+			}
+		}
 
-		testCase.Status = dto.StatusRejudging
-		testCase.Message = "执行成功"
+		// 获取资源使用情况
+		endMem, endPeak := getCgroupMemoryUsage(cgroupPath)
+		memUsed := endPeak // 使用峰值内存作为内存使用量
+		// 计算用时
+		timeUsed := int(time.Since(startTime).Milliseconds())
+		// 检查资源限制（时间检查）
+		if timeUsed > e.Sandbox.Workspace.judgeSubmit.MaxTime {
+			testCase.Status = dto.StatusTimeLimitExceeded
+			testCase.Message = fmt.Sprintf("用时超出限制: %d ms", timeUsed)
+			return &result, nil
+		}
+		if memUsed > uint64(e.Sandbox.Workspace.judgeSubmit.MaxMemory)*1024 {
+			testCase.Status = dto.StatusMemoryLimitExceeded
+			testCase.Message = fmt.Sprintf("内存超出限制: %d KB", memUsed/1024)
+			return &result, nil
+		}
 
-		logx.Infof("开始测试第 %d/%d 个测试用例", i+1, len(testCases))
+		// 读取用户输出
+		testCase.Output = stdoutBuf.String()
+		logx.Infof("用户输出结果: %s", stdoutBuf.String())
+
+		testCase.MaxTime = timeUsed
+		testCase.MaxMemory = int(endMem / 1024) // 转换为KB
+
+		logx.Infof("执行成功, 用时: %d ms 起始: %d KB, 结束: %d KB, 差值: %d KB 起始峰值: %d KB, 结束峰值: %d KB",
+			timeUsed,
+			startMem/1024,
+			endMem/1024,
+			memUsed/1024,
+			startPeak/1024,
+			endPeak/1024)
+
+		logx.Infof("开始测试第 %d/%d 个测试用例", i+1, len(result.TestCase))
 		logx.Infof("输入内容: %s", strings.Replace(testCase.Input, "\n", "\\n", -1))
 		logx.Infof("期望输出: %s", strings.Replace(testCase.Except, "\n", "\\n", -1))
 		logx.Infof("最大时间: %d", testCase.MaxTime)
@@ -147,66 +177,6 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 		logx.Infof("消息: %s", testCase.Message)
 		logx.Infof("当前状态: %s", testCase.Status)
 	}
-
-	// result := dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
-
-	// // 创建临时cgroup
-	// cgroupName := "judge_" + strconv.Itoa(os.Getpid()) + "_" + strconv.Itoa(time.Now().Nanosecond())
-	// cgroupPath := filepath.Join("/sys/fs/cgroup", cgroupName)
-	// if err := os.Mkdir(cgroupPath, 0755); err != nil {
-	// 	result.Status = dto.StatusSystemError
-	// 	result.Message = fmt.Sprintf("CGroup 创建失败: %v", err)
-	// 	return &result
-	// }
-	// defer os.RemoveAll(cgroupPath)
-
-	// // 初始化cgroup并设置资源限制
-	// if err := e.initCgroupWithLimits(cgroupPath, e.Sandbox.Workspace.judgeSubmit.MaxTime, e.Sandbox.Workspace.judgeSubmit.MaxMemory); err != nil {
-	// 	result.Status = dto.StatusSystemError
-	// 	result.Message = fmt.Sprintf("CGroup 资源设置失败: %v", err)
-	// 	return &result
-	// }
-
-	// // 获得执行命令
-	// config := e.Sandbox.Workspace.langConfig
-	// runCmd := make([]string, len(config.RunCmd))
-	// for i, part := range config.RunCmd {
-	// 	runCmd[i] = strings.ReplaceAll(part, "{source}", e.Sandbox.Workspace.SourceFile)
-	// 	runCmd[i] = strings.ReplaceAll(runCmd[i], "{exec}", e.Sandbox.Workspace.BuildFile)
-	// }
-
-	// // 设置运行超时上下文
-	// timeout := time.Duration(e.Sandbox.Workspace.judgeSubmit.MaxTime)*time.Millisecond + 500*time.Millisecond // 额外500ms缓冲
-	// if timeout > 10*time.Second {
-	// 	timeout = 10 * time.Second // 最大10秒超时
-	// }
-	// ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	// defer cancel()
-
-	// // 创建命令
-	// var cmd *exec.Cmd
-	// if len(runCmd) == 1 {
-	// 	cmd = exec.CommandContext(ctx, runCmd[0])
-	// } else {
-	// 	cmd = exec.CommandContext(ctx, runCmd[0], runCmd[1:]...)
-	// }
-	// cmd.Dir = e.Sandbox.Workspace.RunsPath
-
-	// // 设置进程隔离命名空间
-	// cmd.SysProcAttr = &syscall.SysProcAttr{
-	// 	Cloneflags: syscall.CLONE_NEWNS | syscall.CLONE_NEWUTS |
-	// 		syscall.CLONE_NEWPID | syscall.CLONE_NEWNET |
-	// 		syscall.CLONE_NEWIPC,
-	// 	Unshareflags: syscall.CLONE_NEWNS,
-	// }
-
-	// 测试用例遍历运行
-	// testCases := e.Sandbox.Workspace.judgeSubmit.TestCase
-	// caseResults := make([]dto.SubmitTestCase, 0, len(testCases))
-
-	// for i, testCase := range testCases {
-
-	// }
 
 	return &result, nil
 }
