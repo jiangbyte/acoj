@@ -43,7 +43,7 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 	testCases := result.TestCase
 
 	for i, testCase := range testCases {
-		logx.Infof("开始测试第 %d 个测试用例, 输入 %s 输出 %s", i+1, testCase.Input, testCase.Output)
+		logx.Infof("开始测试第 %d 个测试用例, 输入 %s 输出 %s", i+1, testCase.Input, testCase.Except)
 	}
 
 	// result := dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
