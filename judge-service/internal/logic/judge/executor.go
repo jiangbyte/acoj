@@ -115,6 +115,7 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 			return &result, err
 		}
 
+		logx.Infof("============= 启动进程 =============")
 		// ==================================== 添加进程到cgroup ====================================
 		if err := addProcessToCgroup(cgroupPath, cmd.Process.Pid); err != nil {
 			cmd.Process.Kill()
