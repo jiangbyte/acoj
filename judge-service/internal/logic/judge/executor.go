@@ -106,6 +106,8 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 		cmd.Stdout = &stdoutBuf
 		cmd.Stderr = &stderrBuf
 
+		logx.Infof("============= 输入，输出，错误重定向 =============")
+
 		// ==================================== 启动进程 ====================================
 		if err := cmd.Start(); err != nil {
 			testCase.Status = dto.StatusRuntimeError
