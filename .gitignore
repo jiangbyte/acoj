@@ -89,4 +89,4 @@ build/
 # 忽略任意层级的 application-local.yaml 文件
 **/application-local.yaml
 
-**/judge-service/JudgeService
+/judge-service/JudgeService
