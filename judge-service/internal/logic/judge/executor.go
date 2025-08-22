@@ -44,7 +44,9 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 	}
 	logx.Infof("得到运行命令: %s", runCmd)
 
-	for i, testCase := range result.TestCase {
+	for i := range result.TestCase {
+		testCase := &result.TestCase[i]
+		
 		logx.Infof("开始测试第 %d 个测试用例, 输入 %s 输出 %s", i+1, testCase.Input, testCase.Except)
 
 		// ==================================== 设置运行超时上下文 ====================================
@@ -179,6 +181,7 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 		logx.Infof("开始测试第 %d/%d 个测试用例", i+1, len(result.TestCase))
 		logx.Infof("输入内容: %s", strings.Replace(testCase.Input, "\n", "\\n", -1))
 		logx.Infof("期望输出: %s", strings.Replace(testCase.Except, "\n", "\\n", -1))
+		logx.Infof("用户输出: %s", strings.Replace(testCase.Output, "\n", "\\n", -1))
 		logx.Infof("最大时间: %d", testCase.MaxTime)
 		logx.Infof("最大内存: %d", testCase.MaxMemory)
 		logx.Infof("消息: %s", testCase.Message)
