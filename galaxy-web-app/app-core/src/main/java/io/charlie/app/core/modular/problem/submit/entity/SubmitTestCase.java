@@ -37,4 +37,6 @@ public class SubmitTestCase implements Serializable {
     @Schema(description = "信息")
     private String message;
 
+    @Schema(description = "状态")
+    private String status;
 }
