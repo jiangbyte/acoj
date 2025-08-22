@@ -142,6 +142,14 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 
 		testCase.Status = dto.StatusRejudging
 		testCase.Message = "执行成功"
+
+		logx.Infof("开始测试第 %d/%d 个测试用例", i+1, len(testCases))
+		logx.Infof("输入内容: %s", strings.Replace(testCase.Input, "\n", "\\n", -1))
+		logx.Infof("期望输出: %s", strings.Replace(testCase.Except, "\n", "\\n", -1))
+		logx.Infof("最大时间: %d", testCase.MaxTime)
+		logx.Infof("最大内存: %d", testCase.MaxMemory)
+		logx.Infof("消息: %s", testCase.Message)
+		logx.Infof("当前状态: %s", testCase.Status)
 	}
 
 	// result := dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
