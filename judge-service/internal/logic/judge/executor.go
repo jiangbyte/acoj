@@ -200,9 +200,9 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 		logx.Infof("格式化 用户输出: %s", trimmedUser)
 
 		if trimmedExpected == trimmedUser {
-			result.Status = dto.StatusAccepted
+			testCase.Status = dto.StatusAccepted
 		} else {
-			result.Status = dto.StatusWrongAnswer
+			testCase.Status = dto.StatusWrongAnswer
 		}
 	}
 
