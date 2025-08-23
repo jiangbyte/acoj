@@ -96,4 +96,15 @@ public enum JudgeStatus implements ILabelEnum<String> {
         }
         return UNKNOWN_ERROR;
     }
+
+    // 根据枚举获取显示名称
+    public static String getDisplayName(String status) {
+        for (JudgeStatus sta : values()) {
+            if (sta.value.equalsIgnoreCase(status)) {
+                return sta.label;
+            }
+        }
+
+        return "";
+    }
 }

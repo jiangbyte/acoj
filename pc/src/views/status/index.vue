@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { useProSubmitFetch, useSysDictFetch } from '@/composables'
 import type { DataTableColumns } from 'naive-ui'
-import { NAvatar, NSpace, NText, NTime } from 'naive-ui'
+import { NAvatar, NSpace, NTag, NText, NTime } from 'naive-ui'
 import { AesCrypto } from '@/utils'
 
-const { proSubmitPage } = useProSubmitFetch()
+const { proSubmitPage, problemUserSubmitStatusCount } = useProSubmitFetch()
 const { sysDictOptions } = useSysDictFetch()
 
 const languageOptions = ref()
@@ -13,7 +13,7 @@ const statusOptions = ref()
 
 const pageParam = ref({
   current: 1,
-  size: 20,
+  size: 10,
   sortField: null,
   sortOrder: null,
   keyword: '',
@@ -24,6 +24,8 @@ const pageParam = ref({
 })
 
 const pageData = ref()
+
+const statusCount = ref()
 
 async function loadData() {
   const { data } = await proSubmitPage(pageParam.value)
@@ -46,10 +48,28 @@ async function loadData() {
   if (statusData) {
     statusOptions.value = statusData
   }
+
+  problemUserSubmitStatusCount().then(({ data }) => {
+    if (data) {
+      statusCount.value = data
+    }
+    console.log(data)
+  })
 }
 loadData()
 
 const columns: DataTableColumns<any> = [
+  {
+    title: 'ID',
+    key: 'id',
+    width: 80,
+    ellipsis: true,
+  },
+  {
+    title: '题目',
+    key: 'problemIdName',
+    ellipsis: true,
+  },
   {
     title: '用户',
     key: 'user',
@@ -79,32 +99,43 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '题目',
-    key: 'problemIdName',
+    title: '状态',
+    key: 'statusName',
+    width: 100,
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.statusName)
+    },
   },
   {
     title: '编程语言',
     key: 'languageName',
+    width: 80,
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.languageName)
+    },
   },
   {
     title: '执行类型',
     key: 'submitTypeName',
+    width: 90,
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.submitTypeName)
+    },
   },
   {
-    title: '最大耗时',
+    title: '耗时',
     key: 'maxTime',
+    width: 80,
   },
   {
-    title: '最大内存使用',
+    title: '内存',
     key: 'maxMemory',
-  },
-  {
-    title: '状态',
-    key: 'statusName',
+    width: 80,
   },
   {
     title: '相似度',
     key: 'similarity',
+    width: 80,
   },
   {
     title: '检测任务',
@@ -125,19 +156,9 @@ const columns: DataTableColumns<any> = [
     },
   },
 ]
-const columnSortFieldOptions = computed<any[]>(() => {
-  return [
-    { label: 'ID', value: 'id' },
-    { label: '创建时间', value: 'createTime' },
-    { label: '更新时间', value: 'updateTime' },
-  ]
-})
-const sortOrderOptions = computed(() => [
-  { label: '升序', value: 'ASCEND' },
-  { label: '降序', value: 'DESCEND' },
-])
 function resetHandle() {
   pageParam.value.keyword = ''
+  pageParam.value.problem = ''
   loadData()
 }
 
@@ -157,149 +178,169 @@ function rowProps(row: any) {
 </script>
 
 <template>
-  <div class="max-w-1400px mx-auto flex flex-col gap-4">
-    <n-grid cols="12 m:24" :x-gap="16" :y-gap="16" responsive="screen">
-      <!-- 左侧筛选区域 -->
-      <n-gi span="12 m:6">
-        <NSpace vertical class=" sticky top-22">
-          <n-card title="筛选条件" class="content-card" size="small">
-            <NSpace vertical>
-              <n-input
-                v-model:value="pageParam.keyword"
-                placeholder="搜索用户"
-                clearable
-                @keyup.enter="loadData"
-                @clear="resetHandle"
-              />
-              <n-input
-                v-model:value="pageParam.problem"
-                placeholder="搜索题目"
-                clearable
-                @keyup.enter="loadData"
-                @clear="resetHandle"
-              />
-              <n-select
-                v-model:value="pageParam.language"
-                placeholder="选择语言"
-                clearable
-                :options="languageOptions"
-                @clear="resetHandle"
-              />
-              <n-select
-                v-model:value="pageParam.submitType"
-                placeholder="选择执行类型"
-                clearable
-                :options="submitTypeOptions"
-                @clear="resetHandle"
-              />
-              <n-select
-                v-model:value="pageParam.status"
-                placeholder="选择判题状态"
-                clearable
-                :options="statusOptions"
-                @clear="resetHandle"
-              />
-              <n-button
-                type="primary"
-                block
-                @click="loadData"
-              >
-                搜索
-              </n-button>
+  <main class="container mx-auto px-4 py-8">
+    <!-- 页面标题和统计信息 -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold mb-2">
+        提交状态
+      </h1>
+      <p class="text-gray-600 dark:text-gray-400">
+        最近 <span class="text-blue-600 dark:text-blue-400 font-medium">
+          {{ pageData?.total }}
+        </span> 次提交
+      </p>
+    </div>
 
-              <n-button
-                secondary
-                block
-                @click="resetHandle"
-              >
-                重置
-              </n-button>
-            </NSpace>
-          </n-card>
-        </NSpace>
-      </n-gi>
+    <!-- 提交状态统计概览 -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+      <div v-for="(item, index) in statusCount" :key="index" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
+        <div class="font-bold">
+          {{ item.status }}
+        </div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          {{ item.statusName }}
+        </div>
+        <div class="mt-1 font-semibold">
+          {{ item.count }}
+        </div>
+      </div>
+    </div>
 
-      <!-- 右侧题目列表区域 -->
-      <n-gi span="12 m:18">
-        <n-card
-          hoverable
-          class="content-card"
-          size="small"
-        >
-          <template #header>
-            <n-flex
-              align="center"
-              justify="space-between"
-            >
-              <div>
-                状态列表
-              </div>
-              <n-flex
-                align="center"
-                :size="12"
-              >
-                <NText depth="3">
-                  共 {{ pageData?.total }} 次提交
-                </NText>
-                <NPopselect
-                  v-model:value="pageParam.sortField"
-                  :options="columnSortFieldOptions"
-                  @update:value="loadData"
-                >
-                  <NButton text>
-                    <template #icon>
-                      <IconParkOutlineSortOne />
-                    </template>
-                  </NButton>
-                </NPopselect>
-                <NPopselect
-                  v-model:value="pageParam.sortOrder"
-                  :options="sortOrderOptions"
-                  @update:value="loadData"
-                >
-                  <NButton text>
-                    <template #icon>
-                      <IconParkOutlineSort />
-                    </template>
-                  </NButton>
-                </NPopselect>
-              </n-flex>
-            </n-flex>
-          </template>
-
-          <!-- 题目表格 -->
-          <n-data-table
-            :columns="columns"
-            :data="pageData?.records"
-            :bordered="false"
-            :row-key="(row: any) => row.id"
-            :row-props="rowProps"
-            scroll-x="1400"
-            class="flex-1 h-full"
+    <!-- 高级筛选区 -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 题目筛选 -->
+        <div>
+          <label class="block text-sm font-medium mb-2">题目</label>
+          <n-input
+            v-model:value="pageParam.problem"
+            placeholder="搜索题目"
+            clearable
+            @keyup.enter="loadData"
+            @clear="resetHandle"
           />
+        </div>
 
-          <!-- 分页 -->
-          <template #footer>
-            <n-flex justify="center">
-              <n-pagination
-                v-model:page="pageParam.current"
-                v-model:page-size="pageParam.size"
-                show-size-picker
-                :page-count="pageData ? Number(pageData.pages) : 0"
-                :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                  label: `${(i + 1) * 10} 每页`,
-                  value: (i + 1) * 10,
-                }))"
-                @update:page="loadData"
-                @update:page-size="loadData"
+        <!-- 用户筛选 -->
+        <div>
+          <label class="block text-sm font-medium mb-2">用户</label>
+          <n-input
+            v-model:value="pageParam.keyword"
+            placeholder="搜索用户"
+            clearable
+            @keyup.enter="loadData"
+            @clear="resetHandle"
+          />
+        </div>
+
+        <!-- 语言筛选 -->
+        <div>
+          <label class="block text-sm font-medium mb-2">编程语言</label>
+          <n-select
+            v-model:value="pageParam.language"
+            placeholder="选择语言"
+            clearable
+            :options="languageOptions"
+            @clear="resetHandle"
+          />
+        </div>
+
+        <!-- 状态筛选 -->
+        <div>
+          <label class="block text-sm font-medium mb-2">提交状态</label>
+          <n-select
+            v-model:value="pageParam.status"
+            placeholder="选择提交状态"
+            clearable
+            :options="statusOptions"
+            @clear="resetHandle"
+          />
+        </div>
+      </div>
+
+      <!-- 时间范围筛选 -->
+      <!-- <div class="mt-4">
+        <label class="block text-sm font-medium mb-2">时间范围</label>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="relative">
+            <input
+              type="date"
+              class="w-full pl-4 pr-10 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            >
+          </div>
+          <div class="relative">
+            <input
+              type="date"
+              class="w-full pl-4 pr-10 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            >
+          </div>
+        </div>
+      </div> -->
+
+      <!-- 筛选按钮 -->
+      <div class="mt-6 flex justify-end space-x-3">
+        <n-button type="warning" @click="resetHandle">
+          重置筛选
+        </n-button>
+        <n-button type="primary" @click="loadData">
+          应用筛选
+        </n-button>
+      </div>
+    </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+              <h3 class="font-semibold text-lg">
+                提交状态
+              </h3>
+            </div>
+            <div class="divide-y divide-gray-100 dark:divide-gray-700">
+              <n-data-table
+                :columns="columns"
+                :data="pageData?.records"
+                :bordered="false"
+                :row-key="(row: any) => row.userId"
+                class="flex-1 h-full"
               />
-            </n-flex>
-          </template>
-        </n-card>
-      </n-gi>
-    </n-grid>
-  </div>
+            </div>
+            <n-pagination
+              v-model:page="pageParam.current"
+              v-model:page-size="pageParam.size"
+              show-size-picker
+              :page-count="pageData ? Number(pageData.pages) : 0"
+              :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+                label: `${(i + 1) * 10} 每页`,
+                value: (i + 1) * 10,
+              }))"
+              class="flex justify-center items-center p-6"
+              @update:page="loadData"
+              @update:page-size="loadData"
+            />
+          </div>
+        </div>
+  </main>
 </template>
 
 <style scoped>
+/* 基础样式补充 */
+html {
+  scroll-behavior: smooth;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* 解决select下拉箭头在部分浏览器不显示的问题 */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* 表格行悬停效果 */
+tbody tr {
+  transition: background-color 0.2s ease;
+}
 </style>

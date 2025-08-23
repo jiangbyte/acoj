@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Charlie Zhang
@@ -211,6 +212,38 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
                         null
                 ),
                 queryWrapper);
+    }
+
+    @Override
+    public  List<StatusCount> countStatusStatistics() {
+        List<JudgeStatusCountDTO> countList = this.baseMapper.countByStatus();
+        return countList.stream()
+                .map(dto -> {
+                    StatusCount statusCount = new StatusCount();
+                    statusCount.setStatus(dto.getStatus());
+                    statusCount.setStatusName(JudgeStatus.getDisplayName(dto.getStatus()));
+                    statusCount.setCount(String.valueOf(dto.getCount()));
+                    return statusCount;
+                })
+                .toList();
+    }
+
+    /**
+     * 将统计列表转换为Map，包含所有可能的状态（即使数量为0）
+     */
+    private Map<String, Long> convertToMap(List<JudgeStatusCountDTO> countList) {
+        // 先创建一个包含所有状态且数量为0的Map
+        Map<String, Long> resultMap = Arrays.stream(JudgeStatus.values())
+                .collect(Collectors.toMap(JudgeStatus::getValue, status -> 0L));
+
+        // 用实际查询结果更新Map
+        for (JudgeStatusCountDTO dto : countList) {
+            if (dto.getStatus() != null) {
+                resultMap.put(dto.getStatus(), dto.getCount());
+            }
+        }
+
+        return resultMap;
     }
 
     private ProProblem validateSubmission(ProSubmitExecuteParam param) {

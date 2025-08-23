@@ -464,20 +464,20 @@ onUnmounted(() => {
                   <!-- 返回消息 -->
                   <n-card embedded size="small" class="mt-4 rounded-lg">
                     <n-code
-                        :code="resultTaskData?.message"
-                        :language="resultTaskData?.language.toLowerCase()"
-                        show-line-numbers
-                        class="rounded-md overflow-x-scroll"
+                      :code="resultTaskData?.message"
+                      :language="resultTaskData?.language.toLowerCase()"
+                      show-line-numbers
+                      class="rounded-md overflow-x-scroll"
                     />
                   </n-card>
 
                   <!-- 代码展示 -->
                   <n-card embedded size="small" class="mt-4 rounded-lg">
                     <n-code
-                        :code="resultTaskData?.code"
-                        :language="resultTaskData?.language.toLowerCase()"
-                        show-line-numbers
-                        class="rounded-md overflow-x-scroll"
+                      :code="resultTaskData?.code"
+                      :language="resultTaskData?.language.toLowerCase()"
+                      show-line-numbers
+                      class="rounded-md overflow-x-scroll"
                     />
                   </n-card>
                   <!-- <n-collapse :default-expanded-names="['code']" class="mt-4">

@@ -95,5 +95,8 @@ export function useProSubmitFetch() {
     proSubmitExecute(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/execute`, data)
     },
+    problemUserSubmitStatusCount() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/status/count`)
+    },
   }
 }

@@ -19,7 +19,7 @@ export function useProblemRankingFetch() {
      * 获取Top排行榜
      */
     problemRankingTop() {
-      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problem/ranking/top`,)
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problem/ranking/top`)
     },
   }
 }

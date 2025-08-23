@@ -37,7 +37,7 @@ const userRankingColumns = [
         { align: 'center' },
         {
           default: () => [
-            h(NAvatar, { src: row.avatar, size: 'small' }),
+            h(NAvatar, { src: row.avatar, size: 'small', round: true }),
             h(NText, { depth: 3 }, row.nickname),
           ],
         },
@@ -90,7 +90,7 @@ const userRankingColumns = [
         label: `${(i + 1) * 10} 每页`,
         value: (i + 1) * 10,
       }))"
-      class="flex justify-center items-center"
+      class="flex justify-center items-center mt-2"
       @update:page="loadData"
       @update:page-size="loadData"
     />

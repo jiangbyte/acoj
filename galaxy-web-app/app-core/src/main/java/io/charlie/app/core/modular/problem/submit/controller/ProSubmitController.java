@@ -83,4 +83,11 @@ public class ProSubmitController {
     public Result<?> problemUserSubmitPage(@ParameterObject ProUserSubmitPageParam proUserSubmitPageParam) {
         return Result.success(proSubmitService.problemUserSubmitPage(proUserSubmitPageParam));
     }
+
+    @Operation(summary = "获取状态统计")
+    //@SaCheckPermission("/pro/submit/page")
+    @GetMapping("/pro/submit/status/count")
+    public Result<?> problemUserSubmitStatusCount() {
+        return Result.success(proSubmitService.countStatusStatistics());
+    }
 }

@@ -54,30 +54,30 @@ const menuOptions = [
   },
   {
     label: () =>
-        h(
-            RouterLink,
-            {
-              to: {
-                path: '/sets',
-              },
-            },
-            { default: () => '题集' },
-        ),
+      h(
+        RouterLink,
+        {
+          to: {
+            path: '/sets',
+          },
+        },
+        { default: () => '题集' },
+      ),
     key: 'sets',
   },
-  {
-    label: () =>
-        h(
-            RouterLink,
-            {
-              to: {
-                path: '/groups',
-              },
-            },
-            { default: () => '群组' },
-        ),
-    key: 'groups',
-  },
+  // {
+  //   label: () =>
+  //     h(
+  //       RouterLink,
+  //       {
+  //         to: {
+  //           path: '/groups',
+  //         },
+  //       },
+  //       { default: () => '群组' },
+  //     ),
+  //   key: 'groups',
+  // },
   {
     label: () =>
       h(

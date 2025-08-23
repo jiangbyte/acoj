@@ -6,6 +6,7 @@ import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
 import io.charlie.app.core.modular.problem.submit.param.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
 * @author Charlie Zhang
@@ -27,4 +28,9 @@ public interface ProSubmitService extends IService<ProSubmit> {
     String execute(ProSubmitExecuteParam proSubmitExecuteParam);
 
     Page<ProSubmit> problemUserSubmitPage(ProUserSubmitPageParam proUserSubmitPageParam);
+
+    /**
+     * 统计所有提交的状态分布
+     */
+    List<StatusCount> countStatusStatistics();
 }

@@ -108,7 +108,7 @@ public class ProProblem extends CommonEntity {
 
     @Schema(description = "通过率")
     @TableField(exist = false)
-    private BigDecimal passRate;
+    private BigDecimal acceptance;
 
     @Schema(description = "参与人数")
     @TableField(exist = false)

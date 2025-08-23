@@ -22,7 +22,7 @@ export function useSysCategoryFetch() {
     /*
     * 分类 默认数据
     */
-    sysCategoryDefaultData: sysCategoryDefaultData,
+    sysCategoryDefaultData,
 
     /*
      * 分类 分页接口
