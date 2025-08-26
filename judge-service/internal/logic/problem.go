@@ -126,6 +126,16 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 	}
 }
 
+
+
+
+
+
+
+
+
+
+
 func (l *ProblemLogic) sendResultToMQ(result *dto.JudgeResultDto) error {
 	body, err := json.Marshal(result)
 	if err != nil {

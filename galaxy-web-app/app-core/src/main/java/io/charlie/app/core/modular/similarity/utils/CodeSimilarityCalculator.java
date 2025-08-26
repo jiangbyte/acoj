@@ -34,7 +34,6 @@ public class CodeSimilarityCalculator {
      */
     public double calculateSimilarity(String language, String code1, String code2, int minMatchLength) {
         languageStrategy = languageStrategyFactory.languageStrategy(language);
-
         if (code1 == null || code2 == null) {
             return 0.0;
         }
@@ -52,8 +51,9 @@ public class CodeSimilarityCalculator {
         int matches = greedyStringTiling(tokens1, tokens2, minMatchLength);
 
         // 计算相似度百分比
-        int maxLength = Math.max(tokens1.size(), tokens2.size());
-        double similarity = (double) matches / maxLength;
+//        int maxLength = Math.max(tokens1.size(), tokens2.size());
+//        double similarity = (double) (matches) / maxLength;
+        double similarity = (double) (matches * 2) / (tokens1.size() + tokens2.size());
 
         DecimalFormat df = new DecimalFormat("0.00");
         return Double.parseDouble(df.format(similarity));

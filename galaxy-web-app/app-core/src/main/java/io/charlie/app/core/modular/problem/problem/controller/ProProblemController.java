@@ -79,7 +79,7 @@ public class ProProblemController {
     @GetMapping("/pro/problem/detail/client")
     @UserActivity(type = "client_problem_detail_view")
     public Result<?> detailC(@ParameterObject @Valid ProProblemIdParam proProblemIdParam) {
-        return Result.success(proProblemService.detailC(proProblemIdParam));
+        return Result.success(proProblemService.appDetail(proProblemIdParam));
     }
 
     @Operation(summary = "C端-获取题目分页")
@@ -87,7 +87,7 @@ public class ProProblemController {
     @GetMapping("/pro/problem/page/client")
     @UserActivity(type = "client_problem_page_view")
     public Result<?> pageC(@ParameterObject @Valid ProProblemPageParam proProblemPageParam) {
-        return Result.success(proProblemService.pageC(proProblemPageParam));
+        return Result.success(proProblemService.appPage(proProblemPageParam));
     }
 
     @Operation(summary = "C端-获取最新10道题目")

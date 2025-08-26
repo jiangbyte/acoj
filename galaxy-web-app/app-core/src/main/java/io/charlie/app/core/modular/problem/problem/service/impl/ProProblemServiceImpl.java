@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
+import io.charlie.app.core.modular.problem.problem.entity.TestCase;
 import io.charlie.app.core.modular.problem.problem.param.ProProblemAddParam;
 import io.charlie.app.core.modular.problem.problem.param.ProProblemEditParam;
 import io.charlie.app.core.modular.problem.problem.param.ProProblemIdParam;
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author Charlie Zhang
@@ -155,7 +157,7 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
     }
 
     @Override
-    public ProProblem detailC(ProProblemIdParam proProblemIdParam) {
+    public ProProblem appDetail(ProProblemIdParam proProblemIdParam) {
         ProProblem proProblem = this.getById(proProblemIdParam.getId());
         if (ObjectUtil.isEmpty(proProblem)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
@@ -176,8 +178,11 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
         return proProblem;
     }
 
+
+
+
     @Override
-    public Page<ProProblem> pageC(ProProblemPageParam proProblemPageParam) {
+    public Page<ProProblem> appPage(ProProblemPageParam proProblemPageParam) {
         QueryWrapper<ProProblem> queryWrapper = new QueryWrapper<ProProblem>().checkSqlInjection();
         // 关键字
         if (ObjectUtil.isNotEmpty(proProblemPageParam.getKeyword())) {
@@ -197,21 +202,37 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
                 ),
                 queryWrapper);
         page.getRecords().forEach(item -> {
+            // 缓存取出标签列表
             List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());
             if (ObjectUtil.isNotEmpty(tagsById)) {
                 item.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
                 item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
             }
+            // 测试用例脱敏
             item.setTestCase(List.of());
+            // 模板脱敏
             if (ObjectUtil.isNotEmpty(item.getCodeTemplate())) {
                 item.getCodeTemplate().forEach(template -> {
                     template.setPrefix(null);
                     template.setSuffix(null);
                 });
             }
+            // 解决记录
+            try {
+                String loginIdAsString = StpUtil.getLoginIdAsString();
+                // 缓存取出解决记录
+                ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
+                        .eq(ProSolved::getUserId, loginIdAsString)
+                        .eq(ProSolved::getProblemId, item.getId()));
+                item.setCurrentUserSolved(proSolved.getSolved());
+            } catch (Exception ignored) {
+                item.setCurrentUserSolved(false);
+            }
         });
         return page;
     }
+
+
 
     @Override
     public List<ProProblem> latestN(int n) {
@@ -241,6 +262,38 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
             }
         });
         return list;
+    }
+
+    @Override
+    public String getDescription(String problemId) {
+        return this.getById(problemId).getDescription();
+    }
+
+    @Override
+    public String getTestCase(String problemId) {
+        try {
+            List<TestCase> testCases = this.getById(problemId).getTestCase();
+
+            if (testCases == null || testCases.isEmpty()) {
+                return "该题目暂无测试用例";
+            }
+
+            // 随机选择一个测试用例
+            TestCase selectedCase = testCases.get(ThreadLocalRandom.current().nextInt(testCases.size()));
+
+            return String.format("""
+                            输入:
+                            %s
+
+                            预期输出:
+                            %s
+                            """,
+                    selectedCase.getInput(),
+                    selectedCase.getOutput());
+        } catch (Exception e) {
+            log.error("获取测试用例失败，题目ID: {}", problemId, e);
+            return "无法获取测试用例";
+        }
     }
 
 }

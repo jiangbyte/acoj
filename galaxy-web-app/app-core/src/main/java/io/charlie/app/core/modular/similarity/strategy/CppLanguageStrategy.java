@@ -44,8 +44,6 @@ public class CppLanguageStrategy implements LanguageStrategy {
 
         CPP14Parser.TranslationUnitContext tree = parser.translationUnit();
 
-        // 收集AST中的所有Token
-        // 获取语法分析后的AST Token序列
         List<Integer> astTokens = new ArrayList<>();
         traverseAST(tree, astTokens);
 
