@@ -302,6 +302,7 @@ function rowProps(row: any) {
                 :bordered="false"
                 :row-key="(row: any) => row.userId"
                 class="flex-1 h-full"
+                :row-props="rowProps"
               />
             </div>
             <n-pagination

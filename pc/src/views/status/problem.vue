@@ -170,15 +170,15 @@ loadData()
                 <span class="font-medium">测试用例 #{{ index + 1 }}</span>
                 <span class="text-green-600 dark:text-green-400 text-sm">{{ testCase.status }}</span>
               </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                输入: {{ testCase.input }}
-              </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                输出:   {{ testCase.output }}
-              </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">
-                预期: {{ testCase.except }}
-              </div>
+<!--              <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">-->
+<!--                输入: {{ testCase.input }}-->
+<!--              </div>-->
+<!--              <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">-->
+<!--                输出:   {{ testCase.output }}-->
+<!--              </div>-->
+<!--              <div class="text-xs text-gray-500 dark:text-gray-400">-->
+<!--                预期: {{ testCase.except }}-->
+<!--              </div>-->
               <div class="flex justify-end mt-2 text-xs text-gray-500 dark:text-gray-400">
                 <span>耗时: {{ testCase.maxTime }} ms</span>
                 <span class="mx-2">|</span>
