@@ -234,6 +234,9 @@ async function deleteBatchHandle() {
       </NSpace>
     </NCard>
     <NCard size="small" class="flex-1">
+      <n-alert type="warning" class="mb-3">
+        请勿随意修改角色层级，否则会造成角色权限异常！请谨慎操作！角色层级越大权限越高。
+      </n-alert>
       <NDataTable
         v-model:checked-row-keys="checkedRowKeys"
         :columns="filteredColumns"

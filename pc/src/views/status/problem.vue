@@ -46,21 +46,21 @@ loadData()
       </div>
 
       <!-- 判题结果统计 -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+      <div class="grid grid-cols-3 md:grid-cols-3 gap-4">
+        <!-- <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
           <div class="text-sm text-gray-500 dark:text-gray-400">
             测试用例通过
           </div>
           <div class="text-2xl font-bold text-green-600 dark:text-green-400">
             10/10
           </div>
-        </div>
+        </div> -->
         <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
           <div class="text-sm text-gray-500 dark:text-gray-400">
             代码长度
           </div>
           <div class="text-2xl font-bold">
-            856 B
+            {{ detailData?.codeLength }} B
           </div>
         </div>
         <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
@@ -170,15 +170,15 @@ loadData()
                 <span class="font-medium">测试用例 #{{ index + 1 }}</span>
                 <span class="text-green-600 dark:text-green-400 text-sm">{{ testCase.status }}</span>
               </div>
-<!--              <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">-->
-<!--                输入: {{ testCase.input }}-->
-<!--              </div>-->
-<!--              <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">-->
-<!--                输出:   {{ testCase.output }}-->
-<!--              </div>-->
-<!--              <div class="text-xs text-gray-500 dark:text-gray-400">-->
-<!--                预期: {{ testCase.except }}-->
-<!--              </div>-->
+              <!--              <div class="text-xs text-gray-500 dark:text-gray-400 mb-1"> -->
+              <!--                输入: {{ testCase.input }} -->
+              <!--              </div> -->
+              <!--              <div class="text-xs text-gray-500 dark:text-gray-400 mb-1"> -->
+              <!--                输出:   {{ testCase.output }} -->
+              <!--              </div> -->
+              <!--              <div class="text-xs text-gray-500 dark:text-gray-400"> -->
+              <!--                预期: {{ testCase.except }} -->
+              <!--              </div> -->
               <div class="flex justify-end mt-2 text-xs text-gray-500 dark:text-gray-400">
                 <span>耗时: {{ testCase.maxTime }} ms</span>
                 <span class="mx-2">|</span>

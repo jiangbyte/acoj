@@ -33,6 +33,7 @@ declare module 'vue' {
     IconParkOutlineUser: typeof import('~icons/icon-park-outline/user')['default']
     Logo: typeof import('./../components/site/Logo.vue')['default']
     NaiveProvider: typeof import('./../components/provider/NaiveProvider.vue')['default']
+    NAlert: typeof import('naive-ui')['NAlert']
     NBreadcrumb: typeof import('naive-ui')['NBreadcrumb']
     NBreadcrumbItem: typeof import('naive-ui')['NBreadcrumbItem']
     NButton: typeof import('naive-ui')['NButton']

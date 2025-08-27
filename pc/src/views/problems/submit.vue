@@ -383,20 +383,115 @@ onUnmounted(() => {
                       <n-text class="text-gray-500 dark:text-gray-400" depth="3">
                         提交了问题 {{ resultTaskData?.problemIdName }}
                       </n-text>
-                      <n-text class="block text-gray-400 text-sm mt-1">
-                        提交时间:  <n-time :time="detailData?.createTime" />
-                      </n-text>
-                      <n-text class="block text-gray-400 text-sm mt-1">
-                        更新时间:  <n-time :time="detailData?.updateTime" />
-                      </n-text>
+                      <n-flex align="center">
+                        <n-text class="block text-gray-400 text-sm mt-1">
+                          提交:  <n-time :time="detailData?.createTime" />
+                        </n-text>
+                      </n-flex>
+                    </div>
+                  </div>
+                  <!-- 判题结果详情 -->
+                  <n-divider class="!my-4" />
+                  <div class="grid grid-cols-3 md:grid-cols-3 gap-4">
+                    <!-- <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            测试用例通过
+          </div>
+          <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+            10/10
+          </div>
+        </div> -->
+
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                      <div class="text-sm text-gray-500 dark:text-gray-400">
+                        代码长度
+                      </div>
+                      <div class="text-2xl font-bold">
+                        {{ resultTaskData?.codeLength ? resultTaskData?.codeLength : 0 }} B
+                      </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                      <div class="text-sm text-gray-500 dark:text-gray-400">
+                        运行时间
+                      </div>
+                      <div class="text-2xl font-bold">
+                        {{ resultTaskData?.maxTime }} ms
+                      </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                      <div class="text-sm text-gray-500 dark:text-gray-400">
+                        内存消耗
+                      </div>
+                      <div class="text-2xl font-bold">
+                        {{ resultTaskData?.maxMemory }} KB
+                      </div>
                     </div>
                   </div>
 
-                  <!-- 判题结果详情 -->
-                  <n-divider class="!my-4" />
+                  <div class="bg-white dark:bg-gray-800 rounded-xl p-y-6 ">
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
+                      <div class="col-span-1 md:col-span-1">
+                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                          <div class="flex justify-between items-center mb-2">
+                            <span class="font-medium">代码相似度</span>
+                            <n-tag size="small" :bordered="false" type="info">
+                              28%
+                            </n-tag>
+                          </div>
+                          <n-progress
+                            type="line"
+                            :show-indicator="false"
+                            :percentage="20"
+                          />
 
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- 语言和提交类型 -->
+                          <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            您的代码与平台上已有代码存在28%的相似度，未达到抄袭阈值(50%)
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-medium">检测结果</span>
+            <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+              未发现抄袭
+            </span>
+          </div>
+          <div class="text-sm text-gray-600 dark:text-gray-300">
+            代码通过克隆检测，未发现高度相似的已有提交
+          </div>
+        </div> -->
+                    </div>
+
+                    <div class="text-sm text-gray-500 dark:text-gray-400 italic">
+                      <i class="fa fa-info-circle mr-1" /> 代码克隆检测用于辅助判断代码相似度，结果仅供参考，最终判定由人工审核决定
+                    </div>
+                  </div>
+
+                  <div class="lg:col-span-2">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+                      <!-- <CodeEditor v-if="resultTaskData?.code"
+            :model-value="resultTaskData?.code"
+            :language="resultTaskData?.language"
+            width="100%"
+            height="400px"
+            :options="{
+              readOnly: true,
+            }"
+          /> -->
+                      <CodeEditor
+                        v-if="resultTaskData?.message"
+                        :model-value="resultTaskData?.message"
+                        width="100%"
+                        height="400px"
+                        :options="{
+                          readOnly: true,
+                        }"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <n-card embedded size="small" class="rounded-lg">
                       <div class="space-y-2">
                         <div class="flex items-center justify-between">
@@ -418,7 +513,6 @@ onUnmounted(() => {
                       </div>
                     </n-card>
 
-                    <!-- 资源消耗 -->
                     <n-card embedded size="small" class="rounded-lg">
                       <div class="space-y-2">
                         <div class="flex items-center justify-between">
@@ -439,10 +533,10 @@ onUnmounted(() => {
                         </div>
                       </div>
                     </n-card>
-                  </div>
+                  </div> -->
 
                   <!-- 代码相似度 -->
-                  <n-card embedded size="small" class="mt-4 rounded-lg">
+                  <!-- <n-card embedded size="small" class="mt-4 rounded-lg">
                     <div class="flex items-center justify-between">
                       <n-text class="text-gray-500 dark:text-gray-400">
                         代码相似度
@@ -459,27 +553,27 @@ onUnmounted(() => {
                         未检测
                       </n-text>
                     </div>
-                  </n-card>
+                  </n-card> -->
 
                   <!-- 返回消息 -->
-                  <n-card embedded size="small" class="mt-4 rounded-lg">
+                  <!-- <n-card embedded size="small" class="mt-4 rounded-lg">
                     <n-code
                       :code="resultTaskData?.message"
                       :language="resultTaskData?.language.toLowerCase()"
                       show-line-numbers
                       class="rounded-md overflow-x-scroll"
                     />
-                  </n-card>
+                  </n-card> -->
 
                   <!-- 代码展示 -->
-                  <n-card embedded size="small" class="mt-4 rounded-lg">
+                  <!-- <n-card embedded size="small" class="mt-4 rounded-lg">
                     <n-code
                       :code="resultTaskData?.code"
                       :language="resultTaskData?.language.toLowerCase()"
                       show-line-numbers
                       class="rounded-md overflow-x-scroll"
                     />
-                  </n-card>
+                  </n-card> -->
                   <!-- <n-collapse :default-expanded-names="['code']" class="mt-4">
                     <n-collapse-item title="查看相似检测" name="code">
                     </n-collapse-item>

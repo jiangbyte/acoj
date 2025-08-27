@@ -90,12 +90,12 @@ defineExpose({
           <NInput v-model:value="formData.value" placeholder="请输入值" />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="组件类型" path="componentType">
-          <NInput v-model:value="formData.componentType" placeholder="请输入组件类型" />
-        </NFormItem>
+<!--        <NFormItem label="组件类型" path="componentType">-->
+<!--          <NInput v-model:value="formData.componentType" placeholder="请输入组件类型" />-->
+<!--        </NFormItem>-->
         <!-- 输入框 -->
         <NFormItem label="描述" path="description">
-          <NInput v-model:value="formData.description" placeholder="请输入描述" />
+          <NInput type="textarea" v-model:value="formData.description" placeholder="请输入描述" />
         </NFormItem>
       </NForm>
       <template #footer>

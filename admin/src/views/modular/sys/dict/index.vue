@@ -295,6 +295,9 @@ async function deleteBatchHandle() {
             </NSpace>
           </NCard>
           <NCard size="small" class="flex-1">
+            <n-alert type="warning" class="mb-3">
+              请勿随意修改业务字典，否则可能会导致系统异常！请谨慎修改！
+            </n-alert>
             <NDataTable
               v-model:checked-row-keys="checkedRowKeys"
               :columns="filteredColumns"

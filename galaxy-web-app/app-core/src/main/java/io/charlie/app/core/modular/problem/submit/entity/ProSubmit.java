@@ -70,6 +70,9 @@ public class ProSubmit extends CommonEntity {
     @Schema(description = "源代码")
     private String code;
 
+    @Schema(description = "源代码长度")
+    private Integer codeLength;
+
     @Schema(description = "执行类型")
     @Trans(type = TransType.DICTIONARY, key = "SUBMIT_TYPE", ref = "submitTypeName")
     private Boolean submitType;

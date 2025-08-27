@@ -72,4 +72,16 @@ public class ProSolvedController {
     public Result<?> detail(@ParameterObject @Valid ProSolvedIdParam proSolvedIdParam) {
         return Result.success(proSolvedService.detail(proSolvedIdParam));
     }
+
+    @Operation(summary = "获取用户已解决题目")
+    @GetMapping("/pro/solved/usersolvedproblem")
+    public Result<?> getUserSolvedProblem() {
+        return Result.success(proSolvedService.getUserSolvedProblem());
+    }
+
+    @Operation(summary = "获取平均通过率")
+    @GetMapping("/pro/solved/averagepassrate")
+    public Result<?> getAveragePassRate() {
+        return Result.success(proSolvedService.getAveragePassRate());
+    }
 }

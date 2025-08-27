@@ -8,6 +8,7 @@ import io.charlie.app.core.modular.problem.solved.param.ProSolvedEditParam;
 import io.charlie.app.core.modular.problem.solved.param.ProSolvedIdParam;
 import io.charlie.app.core.modular.problem.solved.param.ProSolvedPageParam;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -27,4 +28,9 @@ public interface ProSolvedService extends IService<ProSolved> {
 
     ProSolved detail(ProSolvedIdParam proSolvedIdParam);
 
+    // 获取用户已解决题目
+    String getUserSolvedProblem();
+
+    // 获得平均通过率
+    BigDecimal getAveragePassRate();
 }

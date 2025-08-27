@@ -110,5 +110,11 @@ export function useProblemUserRankingFetch() {
     problemUserRankingTop() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/ranking/top`)
     },
+    /**
+     * 获取Top排行榜
+     */
+    problemActiveUsersTop() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/ranking/active/top10`)
+    },
   }
 }

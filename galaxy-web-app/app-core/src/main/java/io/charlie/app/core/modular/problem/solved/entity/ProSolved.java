@@ -24,7 +24,7 @@ import org.dromara.core.trans.constant.TransType;
 */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("pro_solved")
+@TableName(value = "pro_solved", autoResultMap = true)
 @Schema(name = "ProSolved", description = "用户解决表")
 public class ProSolved extends CommonEntity {
     @Serial
@@ -64,4 +64,5 @@ public class ProSolved extends CommonEntity {
     @Schema(description = "是否解决名称")
     @TableField(exist = false)
     private String solvedName;
+
 }

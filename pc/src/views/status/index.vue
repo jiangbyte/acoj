@@ -69,10 +69,12 @@ const columns: DataTableColumns<any> = [
     title: '题目',
     key: 'problemIdName',
     ellipsis: true,
+    width: 120,
   },
   {
     title: '用户',
     key: 'user',
+    width: 150,
     render(row: any) {
       return h(
         NSpace,
@@ -115,6 +117,14 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
+    title: '代码长度',
+    key: 'codeLength',
+    width: 80,
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.codeLength)
+    },
+  },
+  {
     title: '执行类型',
     key: 'submitTypeName',
     width: 90,
@@ -126,24 +136,35 @@ const columns: DataTableColumns<any> = [
     title: '耗时',
     key: 'maxTime',
     width: 80,
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.maxTime)
+    },
   },
   {
     title: '内存',
     key: 'maxMemory',
     width: 80,
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.maxMemory)
+    },
   },
   {
     title: '相似度',
     key: 'similarity',
     width: 80,
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.similarity)
+    },
   },
-  {
-    title: '检测任务',
-    key: 'taskId',
-  },
+  // {
+  //   title: '检测任务',
+  //   key: 'taskId',
+  //   width: 80,
+  // },
   {
     title: '提交时间',
     key: 'createTime',
+    width: 120,
     render(row: any) {
       return h(NTime, { time: row.createTime, type: 'relative' })
     },
@@ -151,6 +172,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '更新时间',
     key: 'updateTime',
+    width: 120,
     render(row: any) {
       return h(NTime, { time: row.createTime, type: 'relative' })
     },
@@ -288,38 +310,39 @@ function rowProps(row: any) {
       </div>
     </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-            <div class="p-5 border-b border-gray-100 dark:border-gray-700">
-              <h3 class="font-semibold text-lg">
-                提交状态
-              </h3>
-            </div>
-            <div class="divide-y divide-gray-100 dark:divide-gray-700">
-              <n-data-table
-                :columns="columns"
-                :data="pageData?.records"
-                :bordered="false"
-                :row-key="(row: any) => row.userId"
-                class="flex-1 h-full"
-                :row-props="rowProps"
-              />
-            </div>
-            <n-pagination
-              v-model:page="pageParam.current"
-              v-model:page-size="pageParam.size"
-              show-size-picker
-              :page-count="pageData ? Number(pageData.pages) : 0"
-              :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                label: `${(i + 1) * 10} 每页`,
-                value: (i + 1) * 10,
-              }))"
-              class="flex justify-center items-center p-6"
-              @update:page="loadData"
-              @update:page-size="loadData"
-            />
-          </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+          <h3 class="font-semibold text-lg">
+            提交状态
+          </h3>
         </div>
+        <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          <n-data-table
+            :columns="columns"
+            :data="pageData?.records"
+            :bordered="false"
+            :row-key="(row: any) => row.userId"
+            class="flex-1 h-full"
+            :row-props="rowProps"
+            :scroll-x="1400"
+          />
+        </div>
+        <n-pagination
+          v-model:page="pageParam.current"
+          v-model:page-size="pageParam.size"
+          show-size-picker
+          :page-count="pageData ? Number(pageData.pages) : 0"
+          :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+            label: `${(i + 1) * 10} 每页`,
+            value: (i + 1) * 10,
+          }))"
+          class="flex justify-center items-center p-6"
+          @update:page="loadData"
+          @update:page-size="loadData"
+        />
+      </div>
+    </div>
   </main>
 </template>
 

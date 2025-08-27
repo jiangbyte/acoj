@@ -144,7 +144,7 @@ onUnmounted(() => {
 
 <template>
   <header
-    class="header"
+    class="header z-9999"
     :class="{ 'header-shadow': scrollY > 10 }"
   >
     <div class="flex items-center justify-between w-full h-full p-x-5 flex-1 mx-auto" :class="props.className">

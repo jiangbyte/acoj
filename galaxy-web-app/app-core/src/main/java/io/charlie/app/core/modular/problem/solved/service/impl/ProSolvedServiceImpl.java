@@ -1,5 +1,6 @@
 package io.charlie.app.core.modular.problem.solved.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -25,14 +26,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-06-23
-* @description 用户解决表 服务实现类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-06-23
+ * @description 用户解决表 服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -51,7 +54,7 @@ public class ProSolvedServiceImpl extends ServiceImpl<ProSolvedMapper, ProSolved
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(proSolvedPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(proSolvedPageParam.getSize()).orElse(20),
-                null
+                        null
                 ),
                 queryWrapper);
     }
@@ -90,6 +93,36 @@ public class ProSolvedServiceImpl extends ServiceImpl<ProSolvedMapper, ProSolved
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
         return proSolved;
+    }
+
+    @Override
+    public String getUserSolvedProblem() {
+        long count;
+        try {
+            String loginIdAsString = StpUtil.getLoginIdAsString();
+            count = this.count(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getUserId, loginIdAsString).eq(ProSolved::getSolved, true));
+        } catch (Exception ignored) {
+            count = 0;
+        }
+        return String.valueOf(count);
+    }
+
+    @Override
+    public BigDecimal getAveragePassRate() {
+        // 总成功次数
+        long totalSuccessCount = this.count(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getSolved, true));
+        if (totalSuccessCount == 0) {
+            return BigDecimal.ZERO;
+        }
+        // 总尝试次数
+        long totalTryCount = this.count();
+        if (totalTryCount == 0) {
+            return BigDecimal.ZERO;
+        }
+        // 平均通过率
+        return new BigDecimal(totalSuccessCount)
+                .multiply(new BigDecimal(100))
+                .divide(new BigDecimal(totalTryCount), 2, RoundingMode.DOWN);
     }
 
 }

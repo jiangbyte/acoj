@@ -28,4 +28,9 @@ public @interface UserActivity {
      * 过期时间（天），默认30天
      */
     int expireDays() default 30;
+
+    /**
+     * 全局排行榜键名
+     */
+    String globalRankKey() default "user:activity:global:rank";
 }

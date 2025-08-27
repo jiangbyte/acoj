@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useProProblemFetch, useSysCategoryFetch, useSysDictFetch, useSysTagFetch } from '@/composables'
+import { useProblemRankingFetch, useProProblemFetch, useProSolvedFetch, useSysCategoryFetch, useSysDictFetch, useSysTagFetch } from '@/composables'
 import type { DataTableColumns } from 'naive-ui'
 import { Icon } from '@iconify/vue'
-import { NSpace, NTag, NText } from 'naive-ui'
+import { NSpace, NTag } from 'naive-ui'
 import { AesCrypto } from '@/utils'
 
 const columns: DataTableColumns<any> = [
@@ -56,13 +56,16 @@ const columns: DataTableColumns<any> = [
     title: '通过率',
     key: 'acceptance',
     width: 120,
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.acceptance)
+    },
   },
   {
     title: '解决',
     key: 'solved',
     width: 100,
-    render: (row: any) => {
-      return h(NText, { depth: 3 }, row.solved)
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.solved)
     },
   },
 ]
@@ -83,16 +86,59 @@ const difficultyOptions = ref()
 const tagOptions = ref()
 
 const pageData = ref()
+const difficultyDistribution = ref()
+const problemcountandpercentage = ref()
+const userSolvedProblems = ref()
+const averagepassrate = ref()
+const problemcount = ref()
+const problemRankingListData = ref()
 
 async function loadData() {
-  const { proProblemPage } = useProProblemFetch()
+  const { proProblemPage, proProblemDifficultyDistribution, proProblemTodayProblemCount, proProblemProblemCountAndPercentage } = useProProblemFetch()
   const { sysCategoryOptions } = useSysCategoryFetch()
   const { sysDictOptions } = useSysDictFetch()
   const { sysTagOptions } = useSysTagFetch()
+  const { proSolvedUserSolvedProblem, proSolvedAveragePassRate } = useProSolvedFetch()
+  const { problemRankingTop } = useProblemRankingFetch()
 
   proProblemPage(pageParam.value).then(({ data }) => {
     if (data) {
       pageData.value = data
+    }
+  })
+
+  // 获取Top10排行榜
+  problemRankingTop().then(({ data }) => {
+    problemRankingListData.value = data
+  })
+
+  proSolvedAveragePassRate().then(({ data }) => {
+    if (data) {
+      averagepassrate.value = data
+    }
+  })
+
+  proProblemTodayProblemCount().then(({ data }) => {
+    if (data) {
+      problemcount.value = data
+    }
+  })
+
+  proSolvedUserSolvedProblem().then(({ data }) => {
+    if (data) {
+      userSolvedProblems.value = data
+    }
+  })
+
+  proProblemDifficultyDistribution().then(({ data }) => {
+    if (data) {
+      difficultyDistribution.value = data
+    }
+  })
+
+  proProblemProblemCountAndPercentage().then(({ data }) => {
+    if (data) {
+      problemcountandpercentage.value = data
     }
   })
 
@@ -169,14 +215,15 @@ function resetHandle() {
               总题目数
             </p>
             <h3 class="text-2xl font-bold mt-1">
-              1,256
+              {{ problemcountandpercentage?.count }}
             </h3>
             <p class="text-green-600 dark:text-green-400 text-xs mt-2 flex items-center">
-              <i class="fa fa-arrow-up mr-1" /> 较上月增长 5.2%
+              <icon-park-outline-arrow-up class="mr-1" />
+              较上月增长 {{ problemcountandpercentage?.increasedPercentage }} %
             </p>
           </div>
           <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-            <i class="fa fa-book" />
+            <icon-park-outline-book />
           </div>
         </div>
       </div>
@@ -187,14 +234,15 @@ function resetHandle() {
               已解决题目
             </p>
             <h3 class="text-2xl font-bold mt-1">
-              0/1,256
+              {{ userSolvedProblems ? userSolvedProblems : 0 }} / {{ problemcountandpercentage?.count }}
             </h3>
             <p class="text-gray-500 dark:text-gray-400 text-xs mt-2 flex items-center">
-              <i class="fa fa-user mr-1" /> 登录后可跟踪进度
+              <icon-park-outline-user class="mr-1" />
+              登录后可跟踪进度
             </p>
           </div>
           <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
-            <i class="fa fa-check-circle" />
+            <icon-park-outline-check />
           </div>
         </div>
       </div>
@@ -205,14 +253,14 @@ function resetHandle() {
               平均通过率
             </p>
             <h3 class="text-2xl font-bold mt-1">
-              58.7%
+              {{ averagepassrate }} %
             </h3>
             <p class="text-gray-500 dark:text-gray-400 text-xs mt-2">
               所有题目的平均提交通过率
             </p>
           </div>
           <div class="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
-            <i class="fa fa-line-chart" />
+            <icon-park-outline-chart-line />
           </div>
         </div>
       </div>
@@ -223,14 +271,15 @@ function resetHandle() {
               今日新增
             </p>
             <h3 class="text-2xl font-bold mt-1">
-              8
+              {{ problemcount?.todayProblemCount ? problemcount?.todayProblemCount : 0 }}
             </h3>
             <p class="text-blue-600 dark:text-blue-400 text-xs mt-2 flex items-center">
-              <i class="fa fa-calendar-check-o mr-1" /> 最新更新于 2小时前
+              <icon-park-outline-calendar class="mr-1" />
+              最新更新于 <n-time :time="problemcount?.latestCreateTime" type="relative" />
             </p>
           </div>
           <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-            <i class="fa fa-plus-circle" />
+            <icon-park-outline-add />
           </div>
         </div>
       </div>
@@ -347,31 +396,51 @@ function resetHandle() {
             难度分布
           </h3>
           <div class="space-y-4">
-            <div>
+            <div v-for="item in difficultyDistribution" :key="item.difficulty">
               <div class="flex justify-between mb-1">
-                <span class="text-sm">简单</span>
-                <span class="text-sm font-medium">428 题 (34.1%)</span>
+                <span class="text-sm">{{ item.difficultyName }}</span>
+                <span class="text-sm font-medium">{{ item.count }} 题 ({{ item.percentage }}%)</span>
               </div>
               <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                <div class="bg-green-600 h-2.5 rounded-full" style="width: 34%" />
+                <div class="bg-green-600 h-2.5 rounded-full" :style="{ width: `${item.percentage}%` }" />
               </div>
             </div>
-            <div>
-              <div class="flex justify-between mb-1">
-                <span class="text-sm">中等</span>
-                <span class="text-sm font-medium">576 题 (45.8%)</span>
-              </div>
-              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                <div class="bg-yellow-600 h-2.5 rounded-full" style="width: 46%" />
-              </div>
-            </div>
-            <div>
-              <div class="flex justify-between mb-1">
-                <span class="text-sm">困难</span>
-                <span class="text-sm font-medium">252 题 (20.1%)</span>
-              </div>
-              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                <div class="bg-red-600 h-2.5 rounded-full" style="width: 20%" />
+          </div>
+        </div>
+
+        <!-- 榜单：最受欢迎 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+          <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+            <h3 class="font-semibold text-lg">
+              热门题目
+            </h3>
+          </div>
+          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+            <!-- 排名1 -->
+            <div
+              v-for="item in problemRankingListData" :key="item.ranking" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+                name: 'problem_submit',
+                query: { problem: AesCrypto.encrypt(item.problemId) },
+              })"
+            >
+              <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center text-yellow-600 dark:text-yellow-300 font-bold mr-4">
+                  {{ item.ranking }}
+                </div>
+                <div class="flex-1">
+                  <n-button text class="mb-2">
+                    <h4 class="font-medium">
+                      {{ item.title }}
+                    </h4>
+                  </n-button>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    12,540人学习
+                  </p>
+                </div>
+                <div class="flex items-center text-yellow-500">
+                  <i class="fa fa-star mr-1" />
+                  <span>4.8</span>
+                </div>
               </div>
             </div>
           </div>

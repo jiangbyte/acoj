@@ -270,6 +270,7 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
         ProSubmit submit = BeanUtil.toBean(param, ProSubmit.class);
         submit.setUserId(StpUtil.getLoginIdAsString());
         submit.setStatus(JudgeStatus.PENDING.getValue());
+        submit.setCodeLength(param.getCode().length());
         return submit;
     }
 

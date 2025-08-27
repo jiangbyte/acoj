@@ -69,5 +69,17 @@ export function useProSolvedFetch() {
         },
       })
     },
+    /*
+     * 获取用户已解决题目 分页接口
+     */
+    proSolvedUserSolvedProblem() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/usersolvedproblem`)
+    },
+    /*
+     * 获取平均通过率
+     */
+    proSolvedAveragePassRate() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/averagepassrate`)
+    },
   }
 }

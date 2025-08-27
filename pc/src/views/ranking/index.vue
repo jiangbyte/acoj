@@ -3,9 +3,10 @@
 import { useProblemUserRankingFetch } from '@/composables'
 import { NAvatar, NSpace, NText } from 'naive-ui'
 
-const { problemUserTotalRankingPage: problemTotalRankingPage } = useProblemUserRankingFetch()
+const { problemUserTotalRankingPage: problemTotalRankingPage, problemActiveUsersTop } = useProblemUserRankingFetch()
 
 const totalRankingPageData = ref()
+const activeUsersTop = ref()
 
 const totalRankingPageParam = ref({
   current: 1,
@@ -20,6 +21,12 @@ async function loadData() {
   if (totalRankingPage) {
     totalRankingPageData.value = totalRankingPage
   }
+
+  problemActiveUsersTop().then(({ data }) => {
+    if (data) {
+      activeUsersTop.value = data
+    }
+  })
 }
 loadData()
 
@@ -28,10 +35,12 @@ const userRankingColumns = [
   {
     title: '排名',
     key: 'ranking',
+    width: 80,
   },
   {
     title: '用户',
     key: 'user',
+    width: 150,
     render: (row: any) => {
       return h(
         NSpace,
@@ -48,26 +57,32 @@ const userRankingColumns = [
   {
     title: '解决题目数',
     key: 'solvedCount',
+    width: 100,
   },
   {
     title: '提交题目数',
     key: 'attemptedCount',
+    width: 100,
   },
   {
     title: '通过率',
     key: 'acceptanceRate',
+    width: 100,
   },
   {
     title: '提交数',
     key: 'submissionCount',
+    width: 100,
   },
   {
     title: '运行数',
     key: 'executionCount',
+    width: 100,
   },
   {
     title: '总提交数',
     key: 'totalSubmissionCount',
+    width: 100,
   },
 ]
 
@@ -101,11 +116,11 @@ const rankingOptions = [
         排行榜
       </h1>
       <p class="text-gray-600 dark:text-gray-400">
-        查看平台上最活跃的用户、最受欢迎的题目和最热门的题集
+        查看平台上用户解题排行榜、活跃的用户等
       </p>
     </div>
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div class="lg:col-span-2 space-y-8">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div class="lg:col-span-3 space-y-8">
         <!-- 排行榜标签页 -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
@@ -144,25 +159,22 @@ const rankingOptions = [
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div class="p-5 border-b border-gray-100 dark:border-gray-700">
             <h3 class="font-semibold text-lg">
-              最新上线
+              30天活跃用户
             </h3>
           </div>
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 最新1 -->
-            <div class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div v-for="item in activeUsersTop" :key="item.userId" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <div class="flex items-center">
-                <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-green-600 dark:text-green-300 font-bold mr-4">
-                  <i class="fa fa-clock-o" />
-                </div>
+                <NAvatar :src="item.avatar" round :size="40" class="mr-3" />
                 <div class="flex-1">
-                  <h4 class="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                    <a href="#">机器学习算法基础</a>
-                  </h4>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    3天前 • 60题
-                  </p>
+                  <div class="font-medium">
+                    {{ item.nickname }}
+                  </div>
+                <!-- <div class="text-xs text-gray-500 dark:text-gray-400">
+                  解题: {{ item.solvedCount }}
+                </div> -->
                 </div>
-                <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">新</span>
               </div>
             </div>
           </div>

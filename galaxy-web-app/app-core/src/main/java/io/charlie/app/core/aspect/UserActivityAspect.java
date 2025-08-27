@@ -47,18 +47,41 @@ public class UserActivityAspect {
                 String userId = StpUtil.getLoginIdAsString();
                 String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
                 log.info("用户 {} 访问 {}", userId, joinPoint.getSignature().getName());
-                // 构建Redis key
-                String key = userActivity.keyPrefix() + userId + ":" + today;
-                
-                // 记录活跃度分数
+
+                // 构建每日key
+                String dailyKey = userActivity.keyPrefix() + userId + ":" + today;
+                String globalRankKey = userActivity.globalRankKey();
+
+                // 记录每日活跃度
                 redisTemplate.opsForZSet().incrementScore(
-                    key, 
-                    userActivity.type(), 
-                    userActivity.score()
+                        dailyKey,
+                        userActivity.type(),
+                        userActivity.score()
                 );
-                
-                // 设置过期时间
-                redisTemplate.expire(key, userActivity.expireDays(), TimeUnit.DAYS);
+                redisTemplate.expire(dailyKey, userActivity.expireDays(), TimeUnit.DAYS);
+
+                // 同时更新全局排行榜（30天累计）
+                redisTemplate.opsForZSet().incrementScore(
+                        globalRankKey,
+                        userId,
+                        userActivity.score()
+                );
+
+                // 设置全局排行榜的过期时间
+                redisTemplate.expire(globalRankKey, userActivity.expireDays() + 1, TimeUnit.DAYS);
+
+//                // 构建Redis key
+//                String key = userActivity.keyPrefix() + userId + ":" + today;
+//
+//                // 记录活跃度分数
+//                redisTemplate.opsForZSet().incrementScore(
+//                    key,
+//                    userActivity.type(),
+//                    userActivity.score()
+//                );
+//
+//                // 设置过期时间
+//                redisTemplate.expire(key, userActivity.expireDays(), TimeUnit.DAYS);
             }
         } catch (Exception e) {
             // 活跃度记录失败不应影响主流程

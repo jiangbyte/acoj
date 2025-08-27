@@ -2,6 +2,8 @@ package io.charlie.app.core.modular.problem.relation.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import io.charlie.app.core.modular.problem.relation.entity.ProProblemTag;
+import io.charlie.galaxy.cache.MybatisPlusRedisCache;
+import org.apache.ibatis.annotations.CacheNamespace;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -11,7 +13,7 @@ import org.apache.ibatis.annotations.Mapper;
  * @description 题目-标签 关联表(1-N) Mapper 接口
  */
 @Mapper
-//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface ProProblemTagMapper extends BaseMapper<ProProblemTag> {
 
 }

@@ -3,10 +3,7 @@ package io.charlie.app.core.modular.problem.problem.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemAddParam;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemEditParam;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemIdParam;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemPageParam;
+import io.charlie.app.core.modular.problem.problem.param.*;
 
 import java.util.List;
 
@@ -46,4 +43,13 @@ public interface ProProblemService extends IService<ProProblem> {
 
     // 获得题目的测试用例（随机一例）
     String getTestCase(String problemId);
+
+    // 难度分布
+    List<DifficultyDistribution> difficultyDistribution();
+
+    // 获取题目的题目数以及本月相比上个月增加了几个百分比题目
+    ProblemCountAndIncreasedPercentage getProblemCountAndPercentage();
+
+    // 获得今日题目增长数量
+    TodayProblemCount getTodayProblemCount();
 }

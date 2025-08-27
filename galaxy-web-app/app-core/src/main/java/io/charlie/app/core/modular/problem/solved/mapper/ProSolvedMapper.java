@@ -2,6 +2,8 @@ package io.charlie.app.core.modular.problem.solved.mapper;
 
 import io.charlie.app.core.modular.problem.solved.entity.ProSolved;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import io.charlie.galaxy.cache.MybatisPlusRedisCache;
+import org.apache.ibatis.annotations.CacheNamespace;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -11,7 +13,7 @@ import org.apache.ibatis.annotations.Mapper;
 * @description 用户解决表 Mapper 接口
 */
 @Mapper
-//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface ProSolvedMapper extends BaseMapper<ProSolved> {
 
 }

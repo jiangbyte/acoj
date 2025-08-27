@@ -1,5 +1,6 @@
 package io.charlie.app.core.modular.problem.submit.controller;
 
+import io.charlie.app.core.annotation.UserActivity;
 import io.charlie.app.core.modular.problem.submit.param.*;
 import io.charlie.galaxy.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -73,6 +74,7 @@ public class ProSubmitController {
     @Operation(summary = "执行提交")
     //@SaCheckPermission("/pro/submit/execute")
     @PostMapping("/pro/submit/execute")
+    @UserActivity
     public Result<?> execute(@RequestBody @Valid ProSubmitExecuteParam proSubmitExecuteParam) {
         return Result.success(proSubmitService.execute(proSubmitExecuteParam));
     }

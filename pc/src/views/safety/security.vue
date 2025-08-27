@@ -51,7 +51,7 @@
               <i class="fa fa-trash mr-2" />
               <span>注销账户</span>
             </button> -->
-              <!-- <n-button type="error" block>
+            <!-- <n-button type="error" block>
                   注销账号
                 </n-button> -->
           </div>
@@ -82,11 +82,11 @@
                   <img src="https://picsum.photos/seed/user123/200/200" alt="当前头像" class="w-full h-full object-cover">
                 </div>
                 <div class="flex flex-col gap-3">
-<div>
+                  <div>
                     <n-button type="primary">
-                  上传新头像
-                </n-button>
-</div>
+                      上传新头像
+                    </n-button>
+                  </div>
                   <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md">
                     推荐尺寸: 200x200像素，支持JPG、PNG格式，文件大小不超过2MB
                   </p>
@@ -101,10 +101,10 @@
               </h3>
               <div class="relative h-40 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
                 <img src="https://picsum.photos/seed/codepattern/1200/400" alt="当前封面背景" class="w-full h-full object-cover">
-                
-                <n-button  class="absolute right-3 bottom-3 px-3 py-1.5 backdrop-blur-sm text-white rounded-lg text-sm transition-colors">
-              更换封面
-            </n-button>
+
+                <n-button class="absolute right-3 bottom-3 px-3 py-1.5 backdrop-blur-sm text-white rounded-lg text-sm transition-colors">
+                  更换封面
+                </n-button>
               </div>
               <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md">
                 推荐尺寸: 1920x500像素，支持JPG、PNG格式，文件大小不超过5MB
@@ -129,7 +129,7 @@
 
               <div>
                 <label for="displayName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">显示名称</label>
-             <n-input />
+                <n-input />
                 <!-- <input
                   id="displayName"
                   type="text"
@@ -140,7 +140,7 @@
 
               <div>
                 <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">电子邮箱</label>
-                 <n-input />
+                <n-input />
                 <!-- <input
                   id="email"
                   type="email"
@@ -176,7 +176,7 @@
 
               <div>
                 <label for="location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">所在地</label>
-              <n-input />
+                <n-input />
                 <!-- <input
                   id="location"
                   type="text"
@@ -187,7 +187,7 @@
 
               <div>
                 <label for="website" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">个人网站</label>
-             <n-input />
+                <n-input />
                 <!-- <input
                   id="website"
                   type="url"
@@ -200,7 +200,7 @@
             <!-- 个人简介 -->
             <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
               <label for="bio" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">个人简介</label>
-               <n-input type="textarea" />
+              <n-input type="textarea" />
               <!-- <textarea
                 id="bio"
                 rows="4"
@@ -221,7 +221,7 @@
                   <label for="github" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                     <i class="fa fa-github mr-2" /> GitHub
                   </label>
-                <n-input />
+                  <n-input />
                   <!-- <input
                     id="github"
                     type="url"
@@ -247,7 +247,7 @@
                   <label for="linkedin" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                     <i class="fa fa-linkedin mr-2" /> LinkedIn
                   </label>
-                   <n-input />
+                  <n-input />
                   <!-- <input
                     id="linkedin"
                     type="url"
@@ -273,12 +273,12 @@
 
             <!-- 保存按钮 -->
             <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <n-button>
-              取消
-            </n-button>
-            <n-button type="primary">
-              保存更改
-            </n-button>
+              <n-button>
+                取消
+              </n-button>
+              <n-button type="primary">
+                保存更改
+              </n-button>
               <!-- <button type="button" class="px-6 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
                 取消
               </button>
@@ -336,7 +336,6 @@
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>

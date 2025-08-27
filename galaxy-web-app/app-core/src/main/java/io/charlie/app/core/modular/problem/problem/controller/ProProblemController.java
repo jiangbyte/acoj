@@ -77,7 +77,7 @@ public class ProProblemController {
     @Operation(summary = "C端-获取题目详情")
     //@SaCheckPermission("/pro/problem/detail/client")
     @GetMapping("/pro/problem/detail/client")
-    @UserActivity(type = "client_problem_detail_view")
+    @UserActivity
     public Result<?> detailC(@ParameterObject @Valid ProProblemIdParam proProblemIdParam) {
         return Result.success(proProblemService.appDetail(proProblemIdParam));
     }
@@ -85,7 +85,7 @@ public class ProProblemController {
     @Operation(summary = "C端-获取题目分页")
     //@SaCheckPermission("/pro/problem/detail/client")
     @GetMapping("/pro/problem/page/client")
-    @UserActivity(type = "client_problem_page_view")
+    @UserActivity
     public Result<?> pageC(@ParameterObject @Valid ProProblemPageParam proProblemPageParam) {
         return Result.success(proProblemService.appPage(proProblemPageParam));
     }
@@ -94,5 +94,23 @@ public class ProProblemController {
     @GetMapping("/pro/problem/latest")
     public Result<?> latest10() {
         return Result.success(proProblemService.latestN(10));
+    }
+
+    @Operation(summary = "C端-难度分布")
+    @GetMapping("/pro/problem/difficulty/distribution")
+    public Result<?> difficultyDistribution() {
+        return Result.success(proProblemService.difficultyDistribution());
+    }
+
+    @Operation(summary = "C端-获取题目统计和增长百分比")
+    @GetMapping("/pro/problem/problemcountandpercentage")
+    public Result<?> getProblemCountAndPercentage() {
+        return Result.success(proProblemService.getProblemCountAndPercentage());
+    }
+
+    @Operation(summary = "C端-获取今日题目数量")
+    @GetMapping("/pro/problem/today/problemcount")
+    public Result<?> getTodayProblemCount() {
+        return Result.success(proProblemService.getTodayProblemCount());
     }
 }

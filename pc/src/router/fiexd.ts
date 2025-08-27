@@ -73,6 +73,12 @@ export const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'notices',
+        name: 'notices',
+        component: () => import('@/views/notice/index.vue'),
+        meta: { title: '公告中心', icon: 'list' },
+      },
+      {
         path: '/profile',
         name: 'mine_profile',
         component: () => import('@/views/mine/profile.vue'),
@@ -82,6 +88,17 @@ export const routes: RouteRecordRaw[] = [
         //     return '/'
         //   }
         // },
+      },
+      {
+        path: '/user',
+        name: 'user',
+        component: () => import('@/views/user/index.vue'),
+        meta: { title: '用户主页' },
+        beforeEnter: (to) => {
+          if (!to.query.userId) {
+            return '/'
+          }
+        },
       },
       {
         path: '/security',

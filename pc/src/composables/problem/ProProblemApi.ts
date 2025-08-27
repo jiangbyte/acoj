@@ -41,7 +41,7 @@ export function useProProblemFetch() {
      * 题目 分页接口
      */
     proProblemPage(data: any) {
-      return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/page/client`, {
         params: {
           ...data,
         },
@@ -73,7 +73,7 @@ export function useProProblemFetch() {
      * 题目 详情接口
      */
     proProblemDetail(data: any) {
-      return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail/client`, {
         params: {
           ...data,
         },
@@ -81,6 +81,15 @@ export function useProProblemFetch() {
     },
     proProblemLatest10() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/latest`)
+    },
+    proProblemDifficultyDistribution() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/difficulty/distribution`)
+    },
+    proProblemProblemCountAndPercentage() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problemcountandpercentage`)
+    },
+    proProblemTodayProblemCount() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/today/problemcount`)
     },
   }
 }

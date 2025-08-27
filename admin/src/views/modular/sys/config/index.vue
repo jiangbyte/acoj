@@ -25,10 +25,10 @@ const columns: DataTableColumns<any> = [
     key: 'value',
     ellipsis: true,
   },
-  {
-    title: '组件类型',
-    key: 'componentType',
-  },
+  // {
+  //   title: '组件类型',
+  //   key: 'componentType',
+  // },
   // {
   //   title: '描述',
   //   key: 'description',
@@ -239,6 +239,9 @@ async function deleteBatchHandle() {
       </NSpace>
     </NCard>
     <NCard size="small" class="flex-1">
+      <n-alert type="warning" class="mb-3">
+        若非熟悉系统参数，请勿删除系统参数！
+      </n-alert>
       <NDataTable
         v-model:checked-row-keys="checkedRowKeys"
         :columns="filteredColumns"

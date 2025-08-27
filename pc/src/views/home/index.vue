@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useProblemRankingFetch, useProblemUserRankingFetch, useProProblemFetch, useProSetFetch, useSetRankingFetch, useSysBannerFetch, useSysNoticeFetch } from '@/composables'
 
-import { AesCrypto } from '@/utils'
+import { AesCrypto, CleanMarkdown } from '@/utils'
 
 // 列表数据
 const bannerListData = ref()
@@ -13,31 +13,8 @@ const problemRankingListData = ref()
 const setRankingListData = ref()
 const noticeLoading = ref(true)
 
-const router = useRouter()
-
-function goNotice(id: string) {
-  router.push({
-    name: 'notice_detail',
-    query: { notice: AesCrypto.encrypt(id) },
-  })
-}
-
 function openLink(url: string) {
   window.open(url, '_blank')
-}
-
-function goProblem(id: string) {
-  router.push({
-    name: 'problem_submit',
-    query: { problem: AesCrypto.encrypt(id) },
-  })
-}
-
-function goSet(id: string) {
-  router.push({
-    name: 'proset_detail',
-    query: { set: AesCrypto.encrypt(id) },
-  })
 }
 
 // 获取列表数据
@@ -151,7 +128,7 @@ loadData()
             <h2 class="text-2xl font-bold">
               全站公告
             </h2>
-            <n-button text>
+            <n-button text @click="$router.push({ path: '/notices' })">
               查看全部
             </n-button>
           </div>
@@ -159,7 +136,10 @@ loadData()
           <div class="space-y-4">
             <div
               v-for="item in noticeListData" :key="item.id"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow " @click="goNotice(item.id)"
+              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow " @click="$router.push({
+                name: 'notice_detail',
+                query: { notice: AesCrypto.encrypt(item.id) },
+              })"
             >
               <div class="md:flex">
                 <div class="md:w-1/3 h-48 md:h-auto relative">
@@ -182,7 +162,7 @@ loadData()
                     </h3>
                   </n-button>
                   <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
-                    {{ item.content }}
+                    {{ CleanMarkdown(item.content) }}
                   </p>
                   <n-button text>
                     阅读详情
@@ -199,7 +179,7 @@ loadData()
             <h2 class="text-2xl font-bold">
               最新题目
             </h2>
-            <n-button text>
+            <n-button text @click="$router.push({ path: '/problems' })">
               查看全部
             </n-button>
           </div>
@@ -249,14 +229,19 @@ loadData()
             <h2 class="text-2xl font-bold">
               最新题集
             </h2>
-            <n-button text>
+            <n-button text @click="$router.push({ path: '/sets' })">
               查看全部
             </n-button>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- 题集项 -->
-            <div v-for="item in setListData" :key="item.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+            <div
+              v-for="item in setListData" :key="item.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow" @click="$router.push({
+                name: 'proset_detail',
+                query: { set: AesCrypto.encrypt(item.id) },
+              })"
+            >
               <div class="h-40 relative">
                 <img :src="item.cover" class="absolute inset-0 w-full h-full object-cover">
               </div>
@@ -273,7 +258,7 @@ loadData()
                   </h3>
                 </n-button>
                 <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
-                  {{ item.description }}
+                  {{ CleanMarkdown(item.description) }}
                 </p>
                 <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                   <span>分类: {{ item.categoryName }}</span>
@@ -296,7 +281,12 @@ loadData()
           </div>
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 排行榜项 -->
-            <div v-for="item in problemUserRankingListData" :key="item.ranking" class="p-4 flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div
+              v-for="item in problemUserRankingListData" :key="item.ranking" class="p-4 flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+                name: 'user',
+                query: { userId: AesCrypto.encrypt(item.userId) },
+              })"
+            >
               <div v-if="item.ranking === 1" class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center text-yellow-600 dark:text-yellow-300 font-bold mr-3">
                 {{ item.ranking }}
               </div>
@@ -320,7 +310,7 @@ loadData()
               </div>
             </div>
           </div>
-          <n-button text class="text-center w-full p-4">
+          <n-button text class="text-center w-full p-4" @click="$router.push({ path: '/ranking' })">
             查看完整排行榜
           </n-button>
         </section>
@@ -334,7 +324,12 @@ loadData()
           </div>
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 题目排行项 -->
-            <div v-for="item in problemRankingListData" :key="item.ranking" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div
+              v-for="item in problemRankingListData" :key="item.ranking" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+                name: 'problem_submit',
+                query: { problem: AesCrypto.encrypt(item.problemId) },
+              })"
+            >
               <div class="flex items-start">
                 <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-bold mr-3 mt-0.5">
                   {{ item.ranking }}
@@ -373,7 +368,12 @@ loadData()
           </div>
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 题集排行项 -->
-            <div v-for="item in setRankingListData" :key="item.ranking" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div
+              v-for="item in setRankingListData" :key="item.ranking" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+                name: 'proset_detail',
+                query: { set: AesCrypto.encrypt(item.setId) },
+              })"
+            >
               <div class="flex items-start">
                 <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-bold mr-3 mt-0.5">
                   {{ item.ranking }}

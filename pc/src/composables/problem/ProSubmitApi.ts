@@ -16,6 +16,7 @@ export function useProSubmitFetch() {
     problemId: '',
     language: '',
     code: '',
+    codeLength: 0,
     submitType: false,
     maxTime: 0,
     maxMemory: 0,

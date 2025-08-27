@@ -84,4 +84,10 @@ public class ProblemUserRankingController {
     public Result<?> top10() {
         return Result.success(problemSubmitRankingService.topN(10));
     }
+
+    @Operation(summary = "获取活跃用户Top10")
+    @GetMapping("/pro/problem/user/ranking/active/top10")
+    public Result<?> getActiveUsersTop10() {
+        return Result.success(problemSubmitRankingService.getActiveUsersTopN(10));
+    }
 }

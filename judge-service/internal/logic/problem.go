@@ -69,44 +69,32 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 
 	l.Infof("收到消息: %+v", judgeSubmit)
 
-	// ==================================== 工作空间准备 ====================================
-	// 创建工作空间，传入上下文Context/系统配置/提交信息
+	// ==================================== 工作空间准备、保存源代码 ====================================
 	workspace, workspaceResultDto := judge.NewWorkspace(l.ctx, l.svcCtx.Config, judgeSubmit)
-	// 如果 workspaceResultDto 不为空（说明工作空间里面有错误），则返回结果到队列
 	if workspaceResultDto != nil {
 		err := l.sendResultToMQ(workspaceResultDto)
 		if err != nil {
-			// 发送结果到MQ失败（err 不为空就是发送结果到MQ失败）
 			l.Errorf("发送结果到MQ失败: %v", err)
 		}
-		// 至今结束本次逻辑
 		return
 	}
-
-	// ==================================== 保存源代码 ====================================
 	SourceCodeResultDto := workspace.SaveSourceCode()
-	// 如果 SourceCodeResultDto 不为空（说明保存源代码里面有错误），则返回结果到队列
 	if SourceCodeResultDto != nil {
 		err := l.sendResultToMQ(SourceCodeResultDto)
-		// 发送结果到MQ失败（err 不为空就是发送结果到MQ失败）
 		if err != nil {
 			l.Errorf("发送结果到MQ失败: %v", err)
 		}
-		// 至今结束本次逻辑
 		workspace.Cleanup()
 		return
 	}
 
 	// ==================================== 执行源代码 ====================================
 	RunResultDto, err := workspace.Execute()
-	// 如果 RunResultDto 不为空（说明执行源代码里面有错误），则返回结果到队列
 	if err != nil {
 		err := l.sendResultToMQ(RunResultDto)
-		// 发送结果到MQ失败（err 不为空就是发送结果到MQ失败）
 		if err != nil {
 			l.Errorf("发送结果到MQ失败: %v", err)
 		}
-		// 至今结束本次逻辑
 		workspace.Cleanup()
 		return
 	}
@@ -120,7 +108,6 @@ func (l *ProblemLogic) processMessage(delivery amqp.Delivery) {
 
 	// ==================================== 删除工作空间 ====================================
 	err = workspace.Cleanup()
-	// 删除工作空间失败（err 不为空就是删除工作空间失败）
 	if err != nil {
 		l.Errorf("删除工作空间失败: %v", err)
 	}

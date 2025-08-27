@@ -3,6 +3,7 @@ package io.charlie.app.core.modular.problem.problem.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -12,10 +13,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
 import io.charlie.app.core.modular.problem.problem.entity.TestCase;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemAddParam;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemEditParam;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemIdParam;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemPageParam;
+import io.charlie.app.core.modular.problem.problem.param.*;
 import io.charlie.app.core.modular.problem.problem.mapper.ProProblemMapper;
 import io.charlie.app.core.modular.problem.problem.service.ProProblemService;
 import io.charlie.app.core.modular.problem.relation.service.ProProblemTagService;
@@ -32,6 +30,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -93,15 +93,34 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
                 item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
             }
 
+            // 解决记录
             try {
                 String loginIdAsString = StpUtil.getLoginIdAsString();
+                // 缓存取出解决记录
                 ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
                         .eq(ProSolved::getUserId, loginIdAsString)
                         .eq(ProSolved::getProblemId, item.getId()));
-                item.setCurrentUserSolved(proSolved.getSolved());
+                if (proSolved.getSolved()) {
+                    item.setCurrentUserSolved(true);
+                } else {
+                    item.setCurrentUserSolved(false);
+                }
             } catch (Exception ignored) {
                 item.setCurrentUserSolved(false);
             }
+
+            // 通过率计算（缓存读取）
+            Long proSolvedCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()).eq(ProSolved::getSolved, true));
+            Long proSolvedTotalCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()));
+            if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
+                item.setAcceptance(BigDecimal.ZERO);
+            } else {
+                item.setAcceptance(new BigDecimal(proSolvedCount)
+                        .multiply(new BigDecimal(100))
+                        .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
+            }
+            // 参与人数
+            item.setParticipantCount(String.valueOf(proSolvedTotalCount));
         });
 
         return page;
@@ -153,6 +172,16 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
             proProblem.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
             proProblem.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
         }
+        // 通过率计算（缓存读取）
+        Long proSolvedCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, proProblem.getId()).eq(ProSolved::getSolved, true));
+        Long proSolvedTotalCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, proProblem.getId()));
+        if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
+            proProblem.setAcceptance(BigDecimal.ZERO);
+        } else {
+            proProblem.setAcceptance(new BigDecimal(proSolvedCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
+        }
         return proProblem;
     }
 
@@ -175,11 +204,19 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
             proProblem.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
             proProblem.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
         }
+
+        // 通过率计算（缓存读取）
+        Long proSolvedCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, proProblem.getId()).eq(ProSolved::getSolved, true));
+        Long proSolvedTotalCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, proProblem.getId()));
+        if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
+            proProblem.setAcceptance(BigDecimal.ZERO);
+        } else {
+            proProblem.setAcceptance(new BigDecimal(proSolvedCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
+        }
         return proProblem;
     }
-
-
-
 
     @Override
     public Page<ProProblem> appPage(ProProblemPageParam proProblemPageParam) {
@@ -224,14 +261,33 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
                 ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
                         .eq(ProSolved::getUserId, loginIdAsString)
                         .eq(ProSolved::getProblemId, item.getId()));
-                item.setCurrentUserSolved(proSolved.getSolved());
-            } catch (Exception ignored) {
+              if (ObjectUtil.isNotNull(proSolved)) {
+                  if (proSolved.getSolved()) {
+                      item.setCurrentUserSolved(true);
+                  } else {
+                      item.setCurrentUserSolved(false);
+                  }
+              }
+            } catch (Exception e) {
                 item.setCurrentUserSolved(false);
+                e.printStackTrace();
             }
+
+            // 通过率计算（缓存读取）
+            Long proSolvedCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()).eq(ProSolved::getSolved, true));
+            Long proSolvedTotalCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()));
+            if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
+                item.setAcceptance(BigDecimal.ZERO);
+            } else {
+                item.setAcceptance(new BigDecimal(proSolvedCount)
+                        .multiply(new BigDecimal(100))
+                        .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
+            }
+            // 参与人数
+            item.setParticipantCount(String.valueOf(proSolvedTotalCount));
         });
         return page;
     }
-
 
 
     @Override
@@ -294,6 +350,89 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
             log.error("获取测试用例失败，题目ID: {}", problemId, e);
             return "无法获取测试用例";
         }
+    }
+
+    @Override
+    public List<DifficultyDistribution> difficultyDistribution() {
+        long totalCount = this.count();
+
+        // 统计难度分布-简单
+        long simpleCount = this.count(new LambdaQueryWrapper<ProProblem>().eq(ProProblem::getDifficulty, 1));
+        DifficultyDistribution simple = new DifficultyDistribution();
+        simple.setDifficulty(1);
+        simple.setCount(simpleCount);
+        simple.setDifficultyName("简单");
+        if (totalCount == 0) {
+            simple.setPercentage(BigDecimal.ZERO);
+        } else {
+            simple.setPercentage(new BigDecimal(simpleCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+        }
+
+        // 统计难度分布-中等
+        long mediumCount = this.count(new LambdaQueryWrapper<ProProblem>().eq(ProProblem::getDifficulty, 2));
+        DifficultyDistribution medium = new DifficultyDistribution();
+        medium.setDifficulty(2);
+        medium.setCount(mediumCount);
+        medium.setDifficultyName("中等");
+        if (totalCount == 0) {
+            medium.setPercentage(BigDecimal.ZERO);
+        } else {
+            medium.setPercentage(new BigDecimal(mediumCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+        }
+
+        // 统计难度分布-困难
+        long hardCount = this.count(new LambdaQueryWrapper<ProProblem>().eq(ProProblem::getDifficulty, 3));
+        DifficultyDistribution hard = new DifficultyDistribution();
+        hard.setDifficulty(3);
+        hard.setCount(hardCount);
+        hard.setDifficultyName("困难");
+        if (totalCount == 0) {
+            hard.setPercentage(BigDecimal.ZERO);
+        } else {
+            hard.setPercentage(new BigDecimal(hardCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+        }
+
+        return List.of(simple, medium, hard);
+    }
+
+    @Override
+    public ProblemCountAndIncreasedPercentage getProblemCountAndPercentage() {
+        ProblemCountAndIncreasedPercentage problemCountAndIncreasedPercentage = new ProblemCountAndIncreasedPercentage();
+        problemCountAndIncreasedPercentage.setCount(String.valueOf(this.count()));
+        // 相比上个月增长了题目占用百分比
+        long count = this.count(new QueryWrapper<ProProblem>().checkSqlInjection().lambda().gt(ProProblem::getCreateTime, DateUtil.offsetMonth(new Date(), -1)));
+        if (count == 0) {
+            problemCountAndIncreasedPercentage.setIncreasedPercentage("0.00");
+        } else {
+            problemCountAndIncreasedPercentage.setIncreasedPercentage(String.valueOf(new BigDecimal(count)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(this.count()), 2, RoundingMode.DOWN)));
+        }
+        return problemCountAndIncreasedPercentage;
+    }
+
+    @Override
+    public TodayProblemCount getTodayProblemCount() {
+        TodayProblemCount todayProblemCount = new TodayProblemCount();
+        todayProblemCount.setTodayProblemCount(String.valueOf(this.count(new QueryWrapper<ProProblem>().checkSqlInjection().lambda().gt(ProProblem::getCreateTime, DateUtil.beginOfDay(new Date())))));
+        // 最近新增题目的时间
+        ProProblem latestProblem = this.getOne(new QueryWrapper<ProProblem>()
+                .checkSqlInjection()
+                .lambda()
+                .orderByDesc(ProProblem::getCreateTime)
+                .last("LIMIT 1"));
+        if (ObjectUtil.isNotEmpty(latestProblem)) {
+            todayProblemCount.setLatestCreateTime(latestProblem.getCreateTime());
+        } else {
+            todayProblemCount.setLatestCreateTime(null);
+        }
+        return todayProblemCount;
     }
 
 }

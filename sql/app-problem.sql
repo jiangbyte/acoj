@@ -17,11 +17,13 @@ CREATE TABLE pro_submit
     problem_id  VARCHAR(32) NOT NULL COMMENT '题目ID',
     language    VARCHAR(64) NOT NULL COMMENT '编程语言',
     code        TEXT        NOT NULL COMMENT '源代码',
+    code_length INT         NOT NULL DEFAULT 0 COMMENT '源代码长度',
 
     submit_type TINYINT(1)           DEFAULT 0 COMMENT '执行类型',
 
     max_time    INT         NOT NULL DEFAULT 0 COMMENT '最大耗时',
     max_memory  INT         NOT NULL DEFAULT 0 COMMENT '最大内存使用',
+
 
     message     TEXT                 DEFAULT NULL COMMENT '执行结果消息',
     test_case   JSON                 DEFAULT NULL COMMENT '测试用例结果',
@@ -290,6 +292,7 @@ CREATE TABLE pro_set_submit
     set_id      VARCHAR(32) NULL COMMENT '题集ID',
     language    VARCHAR(64) NOT NULL COMMENT '编程语言',
     code        TEXT        NOT NULL COMMENT '源代码',
+    code_length INT         NOT NULL DEFAULT 0 COMMENT '源代码长度',
 
     submit_type TINYINT(1)           DEFAULT 0 COMMENT '执行类型',
 
