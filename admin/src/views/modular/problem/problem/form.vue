@@ -49,8 +49,14 @@ const rules = {
     { required: true, message: '请输入阈值', type: 'number', trigger: ['input', 'blur'] },
   ],
   codeTemplate: [
-    // { required: true, message: '请输入模板代码', trigger: ['input', 'blur'] },
+    { required: true, message: '请输入模板代码', trigger: ['input', 'blur'] },
   ],
+  // useTemplate: [
+  //   { required: true, message: '请选择是否使用模板', trigger: ['change'] },
+  // ],
+  // isPublic: [
+  //   { required: true, message: '请选择是否公开', trigger: ['change'] },
+  // ],
 }
 function doClose() {
   emit('close')
@@ -243,6 +249,16 @@ defineExpose({
         <!-- Boolean 选择框 -->
         <NFormItem label="使用模板" path="useTemplate">
           <NRadioGroup v-model:value="formData.useTemplate">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
+        </NFormItem>
+        <NFormItem label="公开" path="isPublic">
+          <NRadioGroup v-model:value="formData.isPublic">
             <NRadio :value="true">
               是
             </NRadio>

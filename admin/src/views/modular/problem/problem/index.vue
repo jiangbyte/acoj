@@ -56,6 +56,10 @@ const columns: DataTableColumns<any> = [
     key: 'difficultyName',
   },
   {
+    title: '公开',
+    key: 'isPublic',
+  },
+  {
     title: '使用模板',
     key: 'useTemplateName',
   },

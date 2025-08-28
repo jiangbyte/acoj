@@ -72,4 +72,7 @@ public class ProProblemEditParam implements Serializable {
     @Schema(description = "阈值")
     private BigDecimal threshold;
 
+    @Schema(description = "是否公开")
+    private Boolean isPublic;
+
 }

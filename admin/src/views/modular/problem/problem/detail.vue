@@ -50,6 +50,9 @@ defineExpose({
         <NDescriptionsItem label="阈值">
           {{ formData.threshold }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="公开">
+          {{ formData.isPublic }}
+        </NDescriptionsItem>
         <NDescriptionsItem label="描述">
           <MDViewer :model-value="formData.description" />
         </NDescriptionsItem>

@@ -60,6 +60,7 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
     @Override
     public Page<ProProblem> page(ProProblemPageParam proProblemPageParam) {
         QueryWrapper<ProProblem> queryWrapper = new QueryWrapper<ProProblem>().checkSqlInjection();
+        queryWrapper.lambda().eq(ProProblem::getIsPublic, true);
         // 关键字
         if (ObjectUtil.isNotEmpty(proProblemPageParam.getKeyword())) {
             queryWrapper.lambda().like(ProProblem::getTitle, proProblemPageParam.getKeyword());
@@ -172,7 +173,10 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
 
     @Override
     public ProProblem detail(ProProblemIdParam proProblemIdParam) {
-        ProProblem proProblem = this.getById(proProblemIdParam.getId());
+        QueryWrapper<ProProblem> queryWrapper = new QueryWrapper<ProProblem>().checkSqlInjection();
+        queryWrapper.lambda().eq(ProProblem::getIsPublic, true);
+        queryWrapper.lambda().eq(ProProblem::getId, proProblemIdParam.getId());
+        ProProblem proProblem = this.getOne(queryWrapper);
         if (ObjectUtil.isEmpty(proProblem)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
@@ -196,7 +200,10 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
 
     @Override
     public ProProblem appDetail(ProProblemIdParam proProblemIdParam) {
-        ProProblem proProblem = this.getById(proProblemIdParam.getId());
+        QueryWrapper<ProProblem> queryWrapper = new QueryWrapper<ProProblem>().checkSqlInjection();
+        queryWrapper.lambda().eq(ProProblem::getIsPublic, true);
+        queryWrapper.lambda().eq(ProProblem::getId, proProblemIdParam.getId());
+        ProProblem proProblem = this.getOne(queryWrapper);
         if (ObjectUtil.isEmpty(proProblem)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
@@ -230,6 +237,7 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
     @Override
     public Page<ProProblem> appPage(ProProblemPageParam proProblemPageParam) {
         QueryWrapper<ProProblem> queryWrapper = new QueryWrapper<ProProblem>().checkSqlInjection();
+        queryWrapper.lambda().eq(ProProblem::getIsPublic, true);
         // 关键字
         if (ObjectUtil.isNotEmpty(proProblemPageParam.getKeyword())) {
             queryWrapper.lambda().like(ProProblem::getTitle, proProblemPageParam.getKeyword());
@@ -447,6 +455,7 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
     @Override
     public Page<ProProblem> userRecentSolvedPage(UserProblemPageParam userProblemPageParam) {
         QueryWrapper<ProProblem> queryWrapper = new QueryWrapper<ProProblem>().checkSqlInjection();
+        queryWrapper.lambda().eq(ProProblem::getIsPublic, true);
         // 关键字
         if (ObjectUtil.isNotEmpty(userProblemPageParam.getKeyword())) {
             queryWrapper.lambda().like(ProProblem::getTitle, userProblemPageParam.getKeyword());

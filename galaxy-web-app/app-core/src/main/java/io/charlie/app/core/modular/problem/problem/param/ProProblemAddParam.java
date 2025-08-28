@@ -10,6 +10,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import org.dromara.core.trans.anno.Trans;
+import org.dromara.core.trans.constant.TransType;
+
 import java.io.Serial;
 import java.util.List;
 
@@ -68,5 +71,8 @@ public class ProProblemAddParam implements Serializable {
 
     @Schema(description = "阈值")
     private BigDecimal threshold;
+
+    @Schema(description = "是否公开")
+    private Boolean isPublic;
 
 }

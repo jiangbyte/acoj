@@ -133,4 +133,12 @@ public class ProProblem extends CommonEntity {
     @Schema(description = "题集用 是否是最后一个题目")
     @TableField(exist = false)
     private Boolean isLastProblem;
+
+    @Schema(description = "是否公开")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO", ref = "isPublicName")
+    private Boolean isPublic;
+
+    @Schema(description = "是否公开名称")
+    @TableField(exist = false)
+    private String isPublicName;
 }

@@ -24,6 +24,7 @@ export function useProProblemFetch() {
     allowedLanguages: [],
     difficulty: 1,
     useTemplate: false,
+    isPublic: false,
     codeTemplate: [],
     solved: 0,
     createTime: '',

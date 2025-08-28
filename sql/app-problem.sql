@@ -136,6 +136,8 @@ CREATE TABLE pro_problem
     use_template      TINYINT(1)                   DEFAULT 0 COMMENT '使用模板',
     code_template     JSON COMMENT '模板代码',
 
+    is_public         TINYINT(1)                   DEFAULT 0 COMMENT '是否公开',
+
     -- 统计
     solved            BIGINT                       DEFAULT 0 COMMENT '解决',
     # ------------------------------------------------
