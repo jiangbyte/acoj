@@ -70,5 +70,12 @@ export function useProSetSolvedFetch() {
         },
       })
     },
+    proSetSolvedUserPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/user/page`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

@@ -7,15 +7,14 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.set.solved.entity.ProSetSolved;
-import io.charlie.app.core.modular.set.solved.param.ProSetSolvedAddParam;
-import io.charlie.app.core.modular.set.solved.param.ProSetSolvedEditParam;
-import io.charlie.app.core.modular.set.solved.param.ProSetSolvedIdParam;
-import io.charlie.app.core.modular.set.solved.param.ProSetSolvedPageParam;
+import io.charlie.app.core.modular.set.solved.param.*;
 import io.charlie.app.core.modular.set.solved.mapper.ProSetSolvedMapper;
 import io.charlie.app.core.modular.set.solved.service.ProSetSolvedService;
+import io.charlie.app.core.modular.sys.user.entity.SysUser;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
@@ -28,11 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-06-23
-* @description 用户题集解决记录表 服务实现类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-06-23
+ * @description 用户题集解决记录表 服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -51,7 +50,7 @@ public class ProSetSolvedServiceImpl extends ServiceImpl<ProSetSolvedMapper, Pro
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(proSetSolvedPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(proSetSolvedPageParam.getSize()).orElse(20),
-                null
+                        null
                 ),
                 queryWrapper);
     }
@@ -90,6 +89,24 @@ public class ProSetSolvedServiceImpl extends ServiceImpl<ProSetSolvedMapper, Pro
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
         return proSetSolved;
+    }
+
+    @Override
+    public Page<SysUser> userPage(ProSetUserPageParam proSetUserPageParam) {
+        QueryWrapper<SysUser> queryWrapper = new QueryWrapper<SysUser>().checkSqlInjection();
+        if (ObjectUtil.isAllNotEmpty(proSetUserPageParam.getSortField(), proSetUserPageParam.getSortOrder()) && ISortOrderEnum.isValid(proSetUserPageParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    proSetUserPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(proSetUserPageParam.getSortField()));
+        }
+
+        Page<SysUser> page = (Page<SysUser>) this.baseMapper.selectSetUsers(CommonPageRequest.Page(
+                Optional.ofNullable(proSetUserPageParam.getCurrent()).orElse(1),
+                Optional.ofNullable(proSetUserPageParam.getSize()).orElse(20),
+                null
+        ), queryWrapper, proSetUserPageParam.getSetId());
+        return page;
     }
 
 }

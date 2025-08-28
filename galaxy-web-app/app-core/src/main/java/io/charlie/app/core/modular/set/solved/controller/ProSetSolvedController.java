@@ -1,10 +1,7 @@
 package io.charlie.app.core.modular.set.solved.controller;
 
+import io.charlie.app.core.modular.set.solved.param.*;
 import io.charlie.galaxy.result.Result;
-import io.charlie.app.core.modular.set.solved.param.ProSetSolvedPageParam;
-import io.charlie.app.core.modular.set.solved.param.ProSetSolvedAddParam;
-import io.charlie.app.core.modular.set.solved.param.ProSetSolvedEditParam;
-import io.charlie.app.core.modular.set.solved.param.ProSetSolvedIdParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -71,5 +68,12 @@ public class ProSetSolvedController {
     @GetMapping("/pro/set/solved/detail")
     public Result<?> detail(@ParameterObject @Valid ProSetSolvedIdParam proSetSolvedIdParam) {
         return Result.success(proSetSolvedService.detail(proSetSolvedIdParam));
+    }
+
+    @Operation(summary = "获取用户题集解决记录用户分页")
+    //@SaCheckPermission("/pro/set/solved/user/page")
+    @GetMapping("/pro/set/solved/user/page")
+    public Result<?> userPage(@ParameterObject ProSetUserPageParam proSetUserPageParam) {
+        return Result.success(proSetSolvedService.userPage(proSetUserPageParam));
     }
 }

@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { AesCrypto } from '@/utils'
 import MdViewer from '@/components/common/editor/md/Viewer.vue'
-import { useProSetFetch, useProSetSubmitFetch } from '@/composables'
-import { DataTableColumns, NAvatar, NSpace, NTag, NText, NTime } from 'naive-ui'
+import { useProSetFetch, useProSetSubmitFetch, useProSetSolvedFetch } from '@/composables'
+import { DataTableColumns, NAvatar, NImage, NSpace, NTag, NText, NTime } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 
 const route = useRoute()
@@ -10,6 +10,7 @@ const detailData = ref()
 const originalId = AesCrypto.decrypt(route.query.set as string)
 const setProblemPageData = ref()
 const submitPageData = ref()
+const proSetSolvedUserData = ref()
 const setProblemPageParam = ref({
   current: 1,
   size: 20,
@@ -32,6 +33,17 @@ const submitPageParam = ref({
   submitType: null,
   status: null,
 })
+const proSetSolvedUserDataParam = ref({
+  current: 1,
+  size: 20,
+  sortField: null,
+  sortOrder: null,
+  keyword: '',
+  tagId: null,
+  categoryId: null,
+  difficulty: null,
+  setId: originalId,
+})
 async function loadData() {
   try {
     const { proSetDetail, proSetProblemPage } = useProSetFetch()
@@ -48,6 +60,12 @@ async function loadData() {
     const { proSetSubmitPage } = useProSetSubmitFetch()
     proSetSubmitPage(submitPageParam.value).then(({ data }) => {
       submitPageData.value = data
+    })
+
+    const { proSetSolvedUserPage } = useProSetSolvedFetch()
+    proSetSolvedUserPage(proSetSolvedUserDataParam.value).then(({ data }) => {
+      proSetSolvedUserData.value = data
+      console.log(data)
     })
   }
   catch {
@@ -238,6 +256,68 @@ const submitColumns: DataTableColumns<any> = [
     },
   },
 ]
+const userColumns: DataTableColumns<any> = [
+  {
+    title: '用户组',
+    key: 'groupIdName',
+    width: 150,
+  },
+  {
+    title: '用户',
+    key: 'user',
+    width: 150,
+    render(row: any) {
+      return h(
+        NSpace,
+        { align: 'center', size: 'small' },
+        {
+          default: () => [
+            h(
+              NAvatar,
+              {
+                size: 'small',
+                round: true,
+                src: row.avatar,
+              },
+              {},
+            ),
+            h(
+              NText,
+              {},
+              { default: () => row.nickname },
+            ),
+          ],
+        },
+      )
+    },
+  },
+  {
+    title: '签名',
+    key: 'quote',
+    ellipsis: true,
+    width: 200,
+  },
+  {
+    title: '性别',
+    key: 'gender',
+    width: 100,
+    render: (value) => {
+      if (value.gender === 1) {
+        return '男'
+      }
+      else if (value.gender === 2) {
+        return '女'
+      }
+      return '未知'
+    },
+  },
+  {
+    title: '邮箱',
+    key: 'email',
+    ellipsis: true,
+    width: 150,
+  }
+]
 const router = useRouter()
 function rowProps(row: any) {
   // return {
@@ -377,6 +457,7 @@ function rowProps(row: any) {
                 :row-key="(row: any) => row.userId"
                 class="flex-1 h-full"
                 :row-props="rowProps"
+              :scroll-x="1400"
               />
             </div>
             <n-pagination
@@ -423,7 +504,29 @@ function rowProps(row: any) {
           />
         </n-tab-pane>
         <n-tab-pane name="users" tab="用户">
-          七里香
+          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+              <n-data-table
+                :columns="userColumns"
+                :data="proSetSolvedUserData?.records"
+                :bordered="false"
+                :row-key="(row: any) => row.userId"
+                class="flex-1 h-full"
+              :scroll-x="1400"
+              />
+            </div>
+            <n-pagination
+              v-model:page="proSetSolvedUserDataParam.current"
+              v-model:page-size="proSetSolvedUserDataParam.size"
+              show-size-picker
+              :page-count="proSetSolvedUserData ? Number(proSetSolvedUserData.pages) : 0"
+              :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+                label: `${(i + 1) * 10} 每页`,
+                value: (i + 1) * 10,
+              }))"
+              class="flex justify-center items-center pt-6"
+              @update:page="loadData"
+              @update:page-size="loadData"
+            />
         </n-tab-pane>
       </n-tabs>
     </div>

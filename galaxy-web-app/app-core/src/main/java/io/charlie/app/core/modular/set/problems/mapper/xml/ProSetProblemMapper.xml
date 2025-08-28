@@ -15,5 +15,6 @@
         <if test="ew != null and ew.sqlSegment != null">
             ${ew.sqlSegment}
         </if>
+        ORDER BY psp.sort DESC
     </select>
 </mapper>
