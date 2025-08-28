@@ -39,4 +39,7 @@ WantedBy=multi-user.target
 sudo systemctl daemon-reload
 sudo systemctl start vue-server
 sudo systemctl enable vue-server
+
+sudo systemctl restart vue-server
+sudo systemctl stop vue-server
 ```

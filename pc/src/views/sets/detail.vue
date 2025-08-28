@@ -44,34 +44,7 @@ const proSetSolvedUserDataParam = ref({
   difficulty: null,
   setId: originalId,
 })
-async function loadData() {
-  try {
-    const { proSetDetail, proSetProblemPage } = useProSetFetch()
-    const { data } = await proSetDetail({ id: originalId })
 
-    if (data) {
-      detailData.value = data
-    }
-
-    proSetProblemPage(setProblemPageParam.value).then(({ data }) => {
-      setProblemPageData.value = data
-    })
-
-    const { proSetSubmitPage } = useProSetSubmitFetch()
-    proSetSubmitPage(submitPageParam.value).then(({ data }) => {
-      submitPageData.value = data
-    })
-
-    const { proSetSolvedUserPage } = useProSetSolvedFetch()
-    proSetSolvedUserPage(proSetSolvedUserDataParam.value).then(({ data }) => {
-      proSetSolvedUserData.value = data
-      console.log(data)
-    })
-  }
-  catch {
-  }
-}
-loadData()
 const columns: DataTableColumns<any> = [
   {
     title: '状态',
@@ -318,6 +291,96 @@ const userColumns: DataTableColumns<any> = [
     width: 150,
   }
 ]
+
+const processColumns: DataTableColumns<any> = [
+  {
+    title: '用户',
+    key: 'user',
+    width: 150,
+    render(row: any) {
+      return h(
+        NSpace,
+        { align: 'center', size: 'small' },
+        {
+          default: () => [
+            h(
+              NAvatar,
+              {
+                size: 'small',
+                round: true,
+                src: row.avatar,
+              },
+              {},
+            ),
+            h(
+              NText,
+              {},
+              { default: () => row.nickname },
+            ),
+          ],
+        },
+      )
+    },
+  },
+  {
+    title: '已解决题目数',
+    key: 'solvedCount',
+    width: 90,
+  },
+  {
+    title: '总提交数',
+    key: 'submitCount',
+    width: 90,
+  },
+  {
+    title: '通过率',
+    key: 'passRate',
+    width: 90,
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, '0')
+    },
+  },
+]
+async function loadData() {
+  try {
+    const { proSetDetail, proSetProblemPage } = useProSetFetch()
+    const { data } = await proSetDetail({ id: originalId })
+
+    if (data) {
+      detailData.value = data
+    }
+
+    proSetProblemPage(setProblemPageParam.value).then(({ data }) => {
+      setProblemPageData.value = data
+      // processColumns.push({
+      //   title: '操作',
+      //   key: 'action',
+      //   width: 150,
+      // })
+      // 获得setProblemPageData.value里面的records的title，以id为key，title为title，增加到processColumns
+      setProblemPageData.value.records.forEach((item: any) => {
+        processColumns.push({
+          title: item.title,
+          key: item.id,
+          width: 100,
+        })
+      })
+    })
+
+    const { proSetSubmitPage } = useProSetSubmitFetch()
+    proSetSubmitPage(submitPageParam.value).then(({ data }) => {
+      submitPageData.value = data
+    })
+
+    const { proSetSolvedUserPage } = useProSetSolvedFetch()
+    proSetSolvedUserPage(proSetSolvedUserDataParam.value).then(({ data }) => {
+      proSetSolvedUserData.value = data
+    })
+  }
+  catch {
+  }
+}
+loadData()
 const router = useRouter()
 function rowProps(row: any) {
   // return {
@@ -457,7 +520,7 @@ function rowProps(row: any) {
                 :row-key="(row: any) => row.userId"
                 class="flex-1 h-full"
                 :row-props="rowProps"
-              :scroll-x="1400"
+                :scroll-x="1400"
               />
             </div>
             <n-pagination
@@ -476,7 +539,29 @@ function rowProps(row: any) {
           </div>
         </n-tab-pane>
         <n-tab-pane name="progress" tab="进度">
-          Hey Jude
+          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+            <n-data-table
+              :columns="processColumns"
+              :data="submitPageData?.records"
+              :bordered="false"
+              :row-key="(row: any) => row.userId"
+              class="flex-1 h-full"
+              :scroll-x="1400"
+            />
+          </div>
+          <n-pagination
+            v-model:page="submitPageParam.current"
+            v-model:page-size="submitPageParam.size"
+            show-size-picker
+            :page-count="submitPageData ? Number(submitPageData.pages) : 0"
+            :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+              label: `${(i + 1) * 10} 每页`,
+              value: (i + 1) * 10,
+            }))"
+            class="flex justify-center items-center pt-6"
+            @update:page="loadData"
+            @update:page-size="loadData"
+          />
         </n-tab-pane>
         <n-tab-pane name="submissions" tab="提交">
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
