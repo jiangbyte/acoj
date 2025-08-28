@@ -2,6 +2,7 @@
 import { useTokenStore } from '@/stores'
 import { RouterLink } from 'vue-router'
 import { useSysUserFetch } from '@/composables'
+import { iconRender } from '@/utils'
 
 // 定义props
 const props = defineProps({
@@ -38,6 +39,7 @@ const menuOptions = [
         { default: () => '首页' },
       ),
     key: 'home',
+    icon: iconRender('icon-park-outline:home'),
   },
   {
     label: () =>
@@ -51,6 +53,7 @@ const menuOptions = [
         { default: () => '题库' },
       ),
     key: 'problems',
+    icon: iconRender('icon-park-outline:book'),
   },
   {
     label: () =>
@@ -64,6 +67,7 @@ const menuOptions = [
         { default: () => '题集' },
       ),
     key: 'sets',
+    icon: iconRender('icon-park-outline:folder-open'),
   },
   // {
   //   label: () =>
@@ -90,6 +94,7 @@ const menuOptions = [
         { default: () => '排行榜' },
       ),
     key: 'ranking',
+    icon: iconRender('icon-park-outline:ranking'),
   },
   {
     label: () =>
@@ -103,6 +108,7 @@ const menuOptions = [
         { default: () => '状态' },
       ),
     key: 'status',
+    icon: iconRender('icon-park-outline:hourglass'),
   },
 ]
 
@@ -214,13 +220,22 @@ onUnmounted(() => {
         closable
         @close="doClose"
       >
+        <template #header>
+          <n-flex justify="start">
+            <Logo />
+          </n-flex>
+        </template>
+        <!-- <n-space v-if="useTokenStore().isLogined" align="center" justify="center">
+          <UserAvatar />
+        </n-space> -->
+
         <n-menu
           :options="menuOptions"
           responsive
         />
 
-        <n-divider />
-        <div class="mobile-auth-actions">
+        <n-divider v-if="!useTokenStore().isLogined" />
+        <div v-if="!useTokenStore().isLogined" class="mobile-auth-actions">
           <n-button
             type="primary"
             size="large"
@@ -240,6 +255,7 @@ onUnmounted(() => {
             注册
           </n-button>
         </div>
+        <Dropdown v-if="useTokenStore().isLogined" :dropdown="false" class="w-full" />
       </n-drawer-content>
     </n-drawer>
   </header>

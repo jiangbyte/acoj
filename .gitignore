@@ -88,5 +88,6 @@ build/
 ### Local Configuration ###
 # 忽略任意层级的 application-local.yaml 文件
 **/application-local.yaml
+**/application-cloud.yaml
 
 /judge-service/JudgeService

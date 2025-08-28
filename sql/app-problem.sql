@@ -274,7 +274,8 @@ DROP TABLE IF EXISTS pro_set_problem;
 CREATE TABLE pro_set_problem
 (
     problem_set_id VARCHAR(32) NOT NULL COMMENT '题单ID',
-    problem_id     VARCHAR(32) NOT NULL COMMENT '题目ID'
+    problem_id     VARCHAR(32) NOT NULL COMMENT '题目ID',
+    sort           INT         NOT NULL DEFAULT 0 COMMENT '排序'
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci

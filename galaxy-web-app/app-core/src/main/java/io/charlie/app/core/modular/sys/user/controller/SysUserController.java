@@ -81,4 +81,29 @@ public class SysUserController {
     public Result<?> detailC(@ParameterObject @Valid SysUserIdParam sysUserIdParam) {
         return Result.success(sysUserService.appDetail(sysUserIdParam));
     }
+
+    @Operation(summary = "C端-更新用户")
+    @PostMapping("/sys/user/update/profile")
+    public Result<?> updateProfile(@RequestBody @Valid SysUserUpdateAppParam sysUserUpdateAppParam) {
+        sysUserService.updateApp(sysUserUpdateAppParam);
+        return Result.success();
+    }
+
+    @Operation(summary = "C端-更新头像")
+    @PostMapping("/sys/user/update/avatar")
+    public Result<?> updateAvatar(@RequestBody @Valid SysUserUpdateImageParam sysUserUpdateImageParam) {
+        return Result.success(sysUserService.updateAvatar(sysUserUpdateImageParam));
+    }
+
+    @Operation(summary = "C端-更新背景")
+    @PostMapping("/sys/user/update/background")
+    public Result<?> updateBackground(@RequestBody @Valid SysUserUpdateImageParam sysUserUpdateImageParam) {
+        return Result.success(sysUserService.updateBackground(sysUserUpdateImageParam));
+    }
+
+    @Operation(summary = "C端-修改密码")
+    @PostMapping("/sys/user/update/password")
+    public Result<?> updatePassword(@RequestBody @Valid SysUserPasswordUpdateParam sysUserPasswordUpdateParam) {
+        return Result.success(sysUserService.updatePassword(sysUserPasswordUpdateParam));
+    }
 }

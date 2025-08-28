@@ -84,5 +84,12 @@ export function useProSetFetch() {
         },
       })
     },
+    proSetProblemPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problems/page`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

@@ -116,10 +116,10 @@ function rowProps(row: any) {
 <template>
   <!-- 用户背景Banner -->
   <div class="relative h-64 md:h-80 overflow-hidden">
-    <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700 opacity-90" />
+    <div class="absolute" />
     <img
       :src="detailData?.background"
-      class="absolute inset-0 w-full h-full object-cover mix-blend-overlay"
+      class="absolute inset-0 w-full h-full object-cover object-top "
     >
     <!-- 编辑Banner按钮 - 仅当前用户可见 -->
     <!-- <button class="absolute right-4 bottom-4 px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-lg text-sm transition-colors">

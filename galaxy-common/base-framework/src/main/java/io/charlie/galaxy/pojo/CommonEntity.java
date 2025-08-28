@@ -46,8 +46,14 @@ public class CommonEntity implements Serializable, TransPojo {
      * 创建者ID
      */
     @TableField(fill = FieldFill.INSERT)
-    @Trans(type = TransType.SIMPLE, targetClassName = "io.charlie.app.core.modular.sys.user.entity.SysUser", fields = "nickname", ref = "createUserName")
+    @Trans(type = TransType.SIMPLE, targetClassName = "io.charlie.app.core.modular.sys.user.entity.SysUser", fields = {"avatar", "nickname"}, refs = {"createUserAvatar", "createUserName"})
     private String createUser;
+
+    /**
+     * 头像
+     */
+    @TableField(exist = false)
+    private String createUserAvatar;
 
     /**
      * 创建者名称
@@ -67,8 +73,14 @@ public class CommonEntity implements Serializable, TransPojo {
      * 记录最后更新的用户ID
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    @Trans(type = TransType.SIMPLE, targetClassName = "io.charlie.app.core.modular.sys.user.entity.SysUser", fields = "nickname", ref = "updateUserName")
+    @Trans(type = TransType.SIMPLE, targetClassName = "io.charlie.app.core.modular.sys.user.entity.SysUser", fields = {"avatar", "nickname"}, refs = {"updateUserAvatar", "updateUserName"})
     private String updateUser;
+
+    /**
+     * 头像
+     */
+    @TableField(exist = false)
+    private String updateUserAvatar;
 
     /**
      * 更新者名称

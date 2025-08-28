@@ -1,14 +1,153 @@
-<script setup>
-// 注意：按照要求，这里不实现交互功能
-// 所有数据都直接在模板中硬编码，方便后续修改
+<script setup lang="ts">
+import { useSysUserFetch } from '@/composables'
+import type { FormInst, FormItemRule } from 'naive-ui'
+
+const { getProfile, sysUserDefaultData, sysUserUpdateProfile, sysUserUpdateAvatar, sysUserUpdateBackground, sysUserUpdatePassword } = useSysUserFetch()
+const formRef = ref<FormInst | null>(null)
+const passwordFormRef = ref<FormInst | null>(null)
+const profileData = ref(sysUserDefaultData)
+const isEdit = ref(false)
+async function loadData() {
+  getProfile().then(({ data }) => {
+    if (data) {
+      profileData.value = data
+    }
+  })
+}
+loadData()
+
+function updateProfile() {
+  if (formRef.value) {
+    formRef.value.validate().then((valid) => {
+      if (valid) {
+        sysUserUpdateProfile(profileData.value).then(() => {
+          loadData()
+        })
+        isEdit.value = false
+        window.$message.success('个人资料更新成功')
+      }
+    })
+  }
+}
+
+function updateAvatar(url: string) {
+  sysUserUpdateAvatar({
+    id: profileData.value.id,
+    img: url,
+  }).then(({ data }) => {
+    if (data) {
+      window.$message.success('头像更新成功')
+    }
+  })
+}
+function updateBackground(url: string) {
+  sysUserUpdateBackground({
+    id: profileData.value.id,
+    img: url,
+  }).then(({ data }) => {
+    if (data) {
+      window.$message.success('背景图更新成功')
+    }
+  })
+}
+
+const showPasswordModal = ref(false)
+const passwordData = ref({
+  id: '',
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+
+function updatePassword() {
+  passwordData.value.id = profileData.value.id
+  sysUserUpdatePassword(passwordData.value).then(({ data }) => {
+    // window.$message.success('密码更新成功')
+    if (data) {
+      window.$message.success('密码更新成功')
+      updatePasswordReset()
+    }
+  })
+}
+function updatePasswordReset() {
+  passwordData.value = {
+    id: '',
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  }
+  showPasswordModal.value = false
+}
+function validatePasswordSame(rule: FormItemRule, value: string): boolean {
+  return value === passwordData.value.newPassword
+}
+function validatePasswordStartWith(
+  rule: FormItemRule,
+  value: string,
+): boolean {
+  return (
+    !!passwordData.value.newPassword
+    && passwordData.value.newPassword.startsWith(value)
+    && passwordData.value.newPassword.length >= value.length
+  )
+}
+const passwordRules = {
+  oldPassword: [
+    {
+      required: true,
+      message: '请输入旧密码',
+      trigger: ['input', 'blur'],
+    },
+  ],
+  newPassword: [
+    {
+      required: true,
+      validator: validatePasswordStartWith,
+      message: '两次密码输入不一致',
+      trigger: ['input', 'blur'],
+    },
+  ],
+  confirmPassword: [
+    {
+      required: true,
+      validator: validatePasswordSame,
+      message: '两次密码输入不一致',
+      trigger: ['blur', 'password-input'],
+    },
+  ],
+}
+
+const profileRules = {
+  nickname: [
+    {
+      required: true,
+      message: '请输入昵称',
+      trigger: ['input', 'blur'],
+    },
+  ],
+  email: [
+    {
+      required: true,
+      message: '请输入邮箱',
+      trigger: ['input', 'blur'],
+    },
+  ],
+  quote: [
+    {
+      required: true,
+      message: '请输入个性签名',
+      trigger: ['input', 'blur'],
+    },
+  ],
+}
 </script>
 
 <template>
   <!-- 主内容区 -->
   <div class="container mx-auto px-4 py-8">
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-1 gap-8">
       <!-- 侧边导航 -->
-      <div class="lg:col-span-1">
+      <!-- <div class="lg:col-span-1">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden sticky top-24">
           <div class="p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-xl font-bold">
@@ -45,21 +184,12 @@
               <span>关联账号</span>
             </a>
           </nav>
-
-          <div class="p-4 border-t border-gray-200 dark:border-gray-700">
-            <!-- <button class="w-full flex items-center justify-center px-4 py-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors">
-              <i class="fa fa-trash mr-2" />
-              <span>注销账户</span>
-            </button> -->
-            <!-- <n-button type="error" block>
-                  注销账号
-                </n-button> -->
-          </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- 主要设置内容 -->
-      <div class="lg:col-span-3 space-y-8">
+      <!-- <div class="lg:col-span-3 space-y-8"> -->
+      <div class="lg:col-span-1 space-y-8">
         <!-- 个人资料设置 -->
         <div id="profile" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
@@ -79,14 +209,10 @@
               </h3>
               <div class="flex flex-wrap items-center gap-6">
                 <div class="w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-                  <img src="https://picsum.photos/seed/user123/200/200" alt="当前头像" class="w-full h-full object-cover">
+                  <img :src="profileData?.avatar" alt="当前头像" class="w-full h-full object-cover">
                 </div>
                 <div class="flex flex-col gap-3">
-                  <div>
-                    <n-button type="primary">
-                      上传新头像
-                    </n-button>
-                  </div>
+                  <FileUploadButton v-model="profileData.avatar" :is-image="true" buttontext="上传新头像" @success="updateAvatar" />
                   <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md">
                     推荐尺寸: 200x200像素，支持JPG、PNG格式，文件大小不超过2MB
                   </p>
@@ -100,11 +226,10 @@
                 封面背景
               </h3>
               <div class="relative h-40 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-                <img src="https://picsum.photos/seed/codepattern/1200/400" alt="当前封面背景" class="w-full h-full object-cover">
-
-                <n-button class="absolute right-3 bottom-3 px-3 py-1.5 backdrop-blur-sm text-white rounded-lg text-sm transition-colors">
-                  更换封面
-                </n-button>
+                <img :src="profileData?.background" class="w-full h-full object-cover">
+                <div class="absolute right-3 bottom-3 px-3 py-1.5 text-sm transition-colors">
+                  <FileUploadButton v-model="profileData.background" :is-image="true" buttontext="更换封面" @success="updateBackground" />
+                </div>
               </div>
               <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md">
                 推荐尺寸: 1920x500像素，支持JPG、PNG格式，文件大小不超过5MB
@@ -112,179 +237,59 @@
             </div>
 
             <!-- 基本信息 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div>
-                <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">用户名</label>
-                <n-input />
-                <!-- <input
-                  id="username"
-                  type="text"
-                  value="code_warrior"
-                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                >
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  用户名只能包含字母、数字和下划线，修改后需要重新登录
-                </p> -->
-              </div>
-
-              <div>
-                <label for="displayName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">显示名称</label>
-                <n-input />
-                <!-- <input
-                  id="displayName"
-                  type="text"
-                  value="代码战士"
-                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                > -->
-              </div>
-
-              <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">电子邮箱</label>
-                <n-input />
-                <!-- <input
-                  id="email"
-                  type="email"
-                  value="code@example.com"
-                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                >
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  用于登录和接收通知
-                </p> -->
-              </div>
-
-              <div>
-                <label for="gender" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">性别</label>
-                <n-select />
-                <!-- <select
-                  id="gender"
-                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                >
-                  <option value="male">
-                    男
-                  </option>
-                  <option value="female">
-                    女
-                  </option>
-                  <option value="other">
-                    其他
-                  </option>
-                  <option value="hidden">
-                    不公开
-                  </option>
-                </select> -->
-              </div>
-
-              <div>
-                <label for="location" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">所在地</label>
-                <n-input />
-                <!-- <input
-                  id="location"
-                  type="text"
-                  value="上海，中国"
-                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                > -->
-              </div>
-
-              <div>
-                <label for="website" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">个人网站</label>
-                <n-input />
-                <!-- <input
-                  id="website"
-                  type="url"
-                  value="https://codewarrior.dev"
-                  class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                > -->
-              </div>
-            </div>
-
-            <!-- 个人简介 -->
-            <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-              <label for="bio" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">个人简介</label>
-              <n-input type="textarea" />
-              <!-- <textarea
-                id="bio"
-                rows="4"
-                class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              >热爱编程与算法，享受解决问题的乐趣。主要研究方向包括动态规划、图论和分布式系统。欢迎交流学习经验和技术心得！</textarea>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                最多可输入500个字符，支持Markdown格式
-              </p> -->
-            </div>
-
-            <!-- 社交媒体链接 -->
-            <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-              <h3 class="text-lg font-medium mb-4">
-                社交媒体
-              </h3>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label for="github" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                    <i class="fa fa-github mr-2" /> GitHub
-                  </label>
-                  <n-input />
-                  <!-- <input
-                    id="github"
-                    type="url"
-                    value="https://github.com/codewarrior"
-                    class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  > -->
-                </div>
-
-                <div>
-                  <label for="twitter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                    <i class="fa fa-twitter mr-2" /> Twitter
-                  </label>
-                  <n-input />
-                  <!-- <input
-                    id="twitter"
-                    type="url"
-                    value="https://twitter.com/codewarrior"
-                    class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  > -->
-                </div>
-
-                <div>
-                  <label for="linkedin" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                    <i class="fa fa-linkedin mr-2" /> LinkedIn
-                  </label>
-                  <n-input />
-                  <!-- <input
-                    id="linkedin"
-                    type="url"
-                    value="https://linkedin.com/in/codewarrior"
-                    class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  > -->
-                </div>
-
-                <div>
-                  <label for="blog" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-                    <i class="fa fa-globe mr-2" /> 个人博客
-                  </label>
-                  <n-input />
-                  <!-- <input
-                    id="blog"
-                    type="url"
-                    value=""
-                    class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  > -->
-                </div>
-              </div>
-            </div>
+            <n-form
+              ref="formRef"
+              inline
+              :label-width="80"
+              :model="profileData"
+              :rules="profileRules"
+            >
+              <n-grid cols="12 m:24" :x-gap="24" responsive="screen">
+                <n-form-item-gi :span="12" label="用户名" path="username">
+                  <n-input v-model:value="profileData.username" placeholder="请输入用户名" :disabled="!isEdit" />
+                </n-form-item-gi>
+                <n-form-item-gi :span="12" label="昵称" path="nickname">
+                  <n-input v-model:value="profileData.nickname" placeholder="请输入昵称" :disabled="!isEdit" />
+                </n-form-item-gi>
+                <n-form-item-gi :span="12" label="电子邮箱" path="email">
+                  <n-input v-model:value="profileData.email" placeholder="请输入电子邮箱" :disabled="!isEdit" />
+                </n-form-item-gi>
+                <n-form-item-gi :span="12" label="手机号" path="telephone">
+                  <n-input v-model:value="profileData.telephone" placeholder="请输入手机号" :disabled="!isEdit" />
+                </n-form-item-gi>
+                <n-form-item-gi :span="12" label="性别" path="gender">
+                  <!-- <n-select v-model:value="profileData.gender" placeholder="请选择性别" /> -->
+                  <n-radio-group v-model:value="profileData.gender" :disabled="!isEdit">
+                    <n-space>
+                      <n-radio :key="0" :value="0">
+                        未知
+                      </n-radio>
+                      <n-radio :key="1" :value="1">
+                        男
+                      </n-radio>
+                      <n-radio :key="2" :value="2">
+                        女
+                      </n-radio>
+                    </n-space>
+                  </n-radio-group>
+                </n-form-item-gi>
+                <n-form-item-gi span="12 m:24" label="个人签名" path="quote">
+                  <n-input v-model:value="profileData.quote" type="textarea" placeholder="请输入个人签名" :disabled="!isEdit" />
+                </n-form-item-gi>
+              </n-grid>
+            </n-form>
 
             <!-- 保存按钮 -->
-            <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <n-button>
+            <div class="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
+              <n-button v-if="isEdit" @click="isEdit = false">
                 取消
               </n-button>
-              <n-button type="primary">
+              <n-button v-if="!isEdit" type="primary" @click="isEdit = true">
+                编辑
+              </n-button>
+              <n-button v-if="isEdit" type="primary" @click="updateProfile">
                 保存更改
               </n-button>
-              <!-- <button type="button" class="px-6 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
-                取消
-              </button>
-              <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                保存更改
-              </button> -->
             </div>
           </form>
         </div>
@@ -303,43 +308,64 @@
           <div class="p-6 space-y-6">
             <!-- 密码修改 -->
             <div class="p-5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <div class="flex flex-wrap justify-between items-start gap-4">
+              <div class="flex flex-wrap justify-between items-center gap-4">
                 <div>
                   <h3 class="font-medium">
                     密码
                   </h3>
                   <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    上次更新于 2023-01-15，建议定期更换密码以保证账户安全
+                    建议定期更换密码以保证账户安全
                   </p>
                 </div>
-                <n-button>
+                <n-button @click="showPasswordModal = true">
                   修改密码
                 </n-button>
-              </div>
-            </div>
-
-            <!-- 两步验证 -->
-            <div class="p-5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <div class="flex flex-wrap justify-between items-start gap-4">
-                <div>
-                  <h3 class="font-medium">
-                    两步验证
-                  </h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    开启后，登录时需要输入密码和验证码，提高账户安全性
-                  </p>
-                </div>
-                <div class="relative inline-block w-12 h-6">
-                  <n-switch />
-                  <!-- <input id="twoFactor" type="checkbox" class="opacity-0 w-0 h-0">
-                  <label for="twoFactor" class="absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-300 dark:bg-gray-600 rounded-full transition-colors after:absolute after:content-[''] after:h-5 after:w-5 after:left-0.5 after:bottom-0.5 after:bg-white after:rounded-full after:transition-all" /> -->
-                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <n-modal
+      v-model:show="showPasswordModal"
+      :mask-closable="false"
+      preset="card"
+      style="width: 400px;"
+      title="密码修改"
+      @negative-click="() => { showPasswordModal = false }"
+      @update:show="updatePasswordReset"
+    >
+      <n-flex vertical>
+        <n-form
+          ref="passwordFormRef"
+          inline
+          :label-width="80"
+          :model="passwordData"
+          :rules="passwordRules"
+        >
+          <n-grid :cols="12" :x-gap="24">
+            <n-form-item-gi :span="12" label="旧密码" path="oldPassword">
+              <n-input v-model:value="passwordData.oldPassword" placeholder="请输入旧密码" show-password-on="click" type="password" />
+            </n-form-item-gi>
+            <n-form-item-gi :span="12" label="新密码" path="newPassword">
+              <n-input v-model:value="passwordData.newPassword" placeholder="请输入新密码" show-password-on="click" type="password" />
+            </n-form-item-gi>
+            <n-form-item-gi :span="12" label="确认密码" path="confirmPassword">
+              <n-input v-model:value="passwordData.confirmPassword" placeholder="请确认新密码" show-password-on="click" type="password" />
+            </n-form-item-gi>
+          </n-grid>
+        </n-form>
+        <n-flex justify="end" align="center">
+          <n-button @click="updatePasswordReset">
+            取消
+          </n-button>
+          <n-button type="primary" @click="updatePassword">
+            确认修改
+          </n-button>
+        </n-flex>
+      </n-flex>
+    </n-modal>
   </div>
 </template>
 

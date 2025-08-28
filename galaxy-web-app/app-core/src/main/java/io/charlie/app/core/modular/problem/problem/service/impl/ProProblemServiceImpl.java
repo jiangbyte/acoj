@@ -21,6 +21,9 @@ import io.charlie.app.core.modular.problem.solved.entity.ProSolved;
 import io.charlie.app.core.modular.problem.solved.mapper.ProSolvedMapper;
 import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
 import io.charlie.app.core.modular.problem.submit.mapper.ProSubmitMapper;
+import io.charlie.app.core.modular.set.problems.entity.ProSetProblem;
+import io.charlie.app.core.modular.set.problems.mapper.ProSetProblemMapper;
+import io.charlie.app.core.modular.set.solved.mapper.ProSetSolvedMapper;
 import io.charlie.app.core.modular.sys.tag.entity.SysTag;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
@@ -50,6 +53,9 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
     private final ProProblemTagService proProblemTagService;
     private final ProSolvedMapper proSolvedMapper;
     private final ProSubmitMapper proSubmitMapper;
+
+    private final ProSetSolvedMapper proSetSolvedMapper;
+    private final ProSetProblemMapper proSetProblemMapper;
 
     @Override
     public Page<ProProblem> page(ProProblemPageParam proProblemPageParam) {

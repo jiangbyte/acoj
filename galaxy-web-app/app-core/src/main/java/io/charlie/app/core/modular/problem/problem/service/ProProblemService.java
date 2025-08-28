@@ -55,5 +55,4 @@ public interface ProProblemService extends IService<ProProblem> {
 
     // 获得某个用户最近解题记录
     Page<ProProblem> userRecentSolvedPage(UserProblemPageParam userProblemPageParam);
-
 }

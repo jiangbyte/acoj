@@ -3,11 +3,18 @@ import { NDropdown, useDialog } from 'naive-ui'
 import { useTokenStore, useUserStore } from '@/stores'
 import { AesCrypto, iconRender } from '@/utils'
 
+const props = defineProps({
+  dropdown: {
+    type: Boolean,
+    default: true,
+  },
+})
+
 const useToken = useTokenStore()
 const router = useRouter()
 const dialog = useDialog()
 const useUser = useUserStore()
-function handleSelect(key: string | number) {
+function handleSelect(key: string) {
   if (key === 'logout') {
     dialog.info({
       title: '登出',
@@ -20,11 +27,12 @@ function handleSelect(key: string | number) {
     })
   }
   else if (key === 'profile') {
+    console.log(key)
     const userId = useUser.getUserId
-    // router.push('/profile')
+    console.log(userId)
     router.push({
       name: 'user',
-      query: { userId: AesCrypto.encrypt(String(userId)) },
+      query: { userId: AesCrypto.encrypt(userId) },
     })
   }
   else if (key === 'security') {
@@ -34,7 +42,7 @@ function handleSelect(key: string | number) {
 
 const options = [
   {
-    label: '个人信息',
+    label: '个人空间',
     key: 'profile',
     icon: iconRender('icon-park-outline:id-card-h'),
   },
@@ -52,13 +60,22 @@ const options = [
 </script>
 
 <template>
-  <NDropdown
-    trigger="click"
-    :options="options"
-    @select="handleSelect"
-  >
-    <slot name="avatar" />
-  </NDropdown>
+  <template v-if="props.dropdown">
+    <NDropdown
+      trigger="click"
+      :options="options"
+      @select="handleSelect"
+    >
+      <slot name="avatar" />
+    </NDropdown>
+  </template>
+  <template v-else>
+    <n-menu
+      :options="options"
+      responsive
+      @update:value="handleSelect"
+    />
+  </template>
 </template>
 
 <style>

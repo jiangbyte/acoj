@@ -428,6 +428,14 @@ img.loaded {
   opacity: 1;
 }
 
+/* img {
+  transition: transform 0.3s ease;
+}
+
+img:hover {
+  transform: scale(1.03);
+} */
+
 .my-section {
   border-radius: 0.5rem;
   overflow: hidden;

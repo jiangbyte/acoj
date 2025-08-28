@@ -29,4 +29,15 @@ public interface SysUserService extends IService<SysUser> {
 
     SysUser appDetail(SysUserIdParam sysUserIdParam);
 
+    // 客户端更新个人资料
+    void updateApp(SysUserUpdateAppParam sysUserUpdateAppParam);
+
+    // 更新头像
+    Boolean updateAvatar(SysUserUpdateImageParam sysUserUpdateImageParam);
+
+    // 更新背景图片
+    Boolean updateBackground(SysUserUpdateImageParam sysUserUpdateImageParam);
+
+    // 更新密码
+    Boolean updatePassword(SysUserPasswordUpdateParam sysUserPasswordUpdateParam);
 }

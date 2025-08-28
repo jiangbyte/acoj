@@ -102,5 +102,30 @@ export function useSysUserFetch() {
         },
       })
     },
+    /*
+     * 用户
+     */
+    sysUserUpdateProfile(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/profile`, data)
+    },
+    /*
+     * 用户
+     */
+    sysUserUpdateAvatar(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/avatar`, data)
+    },
+    /*
+     * 用户
+     */
+    sysUserUpdateBackground(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/background`, data)
+    },
+    /*
+     * 用户
+     */
+    sysUserUpdatePassword(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/password`, data)
+    },
+
   }
 }

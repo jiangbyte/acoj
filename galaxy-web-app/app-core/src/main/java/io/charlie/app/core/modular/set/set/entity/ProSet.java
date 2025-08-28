@@ -10,6 +10,7 @@ import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 
 import java.io.Serial;
+import java.math.BigDecimal;
 import java.util.Date;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -84,4 +85,23 @@ public class ProSet extends CommonEntity {
 
     @Schema(description = "配置信息")
     private String config;
+
+    // 题目数量
+    @Schema(description = "题目数量")
+    @TableField(exist = false)
+    private String problemCount;
+
+    // 总提交次数
+    @Schema(description = "总提交次数")
+    @TableField(exist = false)
+    private String submitCount;
+
+    // 平均通过率
+    @Schema(description = "平均通过率")
+    @TableField(exist = false)
+    private BigDecimal avgPassRate;
+
+    @Schema(description = "参与人数")
+    @TableField(exist = false)
+    private String participantCount;
 }

@@ -1,11 +1,11 @@
 export const useUserStore = defineStore('userStore', {
   state: () => {
     return {
-      id: null as string | null,
+      id: '',
     }
   },
   getters: {
-    getUserId(state): string | null {
+    getUserId(state): string {
       return state.id
     },
   },

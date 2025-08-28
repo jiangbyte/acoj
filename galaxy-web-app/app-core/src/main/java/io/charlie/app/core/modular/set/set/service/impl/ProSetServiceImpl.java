@@ -11,6 +11,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
 import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
+import io.charlie.app.core.modular.set.problems.entity.ProSetProblem;
+import io.charlie.app.core.modular.set.problems.mapper.ProSetProblemMapper;
 import io.charlie.app.core.modular.set.set.entity.ProSet;
 import io.charlie.app.core.modular.set.set.enums.SetTypeEnum;
 import io.charlie.app.core.modular.set.set.param.*;
@@ -18,6 +20,8 @@ import io.charlie.app.core.modular.set.set.mapper.ProSetMapper;
 import io.charlie.app.core.modular.set.set.service.ProSetService;
 import io.charlie.app.core.modular.set.solved.entity.ProSetSolved;
 import io.charlie.app.core.modular.set.solved.mapper.ProSetSolvedMapper;
+import io.charlie.app.core.modular.set.submit.entity.ProSetSubmit;
+import io.charlie.app.core.modular.set.submit.mapper.ProSetSubmitMapper;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
@@ -28,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 /**
@@ -41,6 +46,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ProSetServiceImpl extends ServiceImpl<ProSetMapper, ProSet> implements ProSetService {
     private final ProSetSolvedMapper proSetSolvedMapper;
+    private final ProSetProblemMapper proSetProblemMapper;
+    private final ProSetSubmitMapper proSetSubmitMapper;
 
     @Override
     public Page<ProSet> page(ProSetPageParam proSetPageParam) {
@@ -78,6 +85,21 @@ public class ProSetServiceImpl extends ServiceImpl<ProSetMapper, ProSet> impleme
             } else {
                 proSet.setIsRunning(false);
             }
+
+            // 计算题目数量
+            Long l = proSetProblemMapper.selectCount(new LambdaQueryWrapper<ProSetProblem>().eq(ProSetProblem::getProblemSetId, proSet.getId()));
+            proSet.setProblemCount(String.valueOf(l));
+
+            // 总提交次数
+            Long l1 = proSetSubmitMapper.selectCount(new QueryWrapper<ProSetSubmit>().lambda().eq(ProSetSubmit::getSetId, proSet.getId()));
+            proSet.setSubmitCount(String.valueOf(l1));
+
+            // TODO 平均通过率
+            proSet.setAvgPassRate(BigDecimal.ZERO);
+
+            // 参与人数
+            Long l2 = proSetSolvedMapper.selectCount(new QueryWrapper<ProSetSolved>().lambda().eq(ProSetSolved::getProblemSetId, proSet.getId()));
+            proSet.setParticipantCount(String.valueOf(l2));
         });
         return page;
     }
@@ -115,6 +137,20 @@ public class ProSetServiceImpl extends ServiceImpl<ProSetMapper, ProSet> impleme
         if (ObjectUtil.isEmpty(proSet)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
+        // 计算题目数量
+        Long l = proSetProblemMapper.selectCount(new LambdaQueryWrapper<ProSetProblem>().eq(ProSetProblem::getProblemSetId, proSet.getId()));
+        proSet.setProblemCount(String.valueOf(l));
+
+        // 总提交次数
+        Long l1 = proSetSubmitMapper.selectCount(new QueryWrapper<ProSetSubmit>().lambda().eq(ProSetSubmit::getSetId, proSet.getId()));
+        proSet.setSubmitCount(String.valueOf(l1));
+
+        // TODO 平均通过率
+        proSet.setAvgPassRate(BigDecimal.ZERO);
+
+        // 参与人数
+        Long l2 = proSetSolvedMapper.selectCount(new QueryWrapper<ProSetSolved>().lambda().eq(ProSetSolved::getProblemSetId, proSet.getId()));
+        proSet.setParticipantCount(String.valueOf(l2));
         return proSet;
     }
 

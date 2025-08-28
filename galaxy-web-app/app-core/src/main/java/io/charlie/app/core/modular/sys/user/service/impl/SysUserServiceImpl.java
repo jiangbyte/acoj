@@ -8,6 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.problem.ranking.param.UserActivityRank;
@@ -145,6 +146,54 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         Long l1 = proSetSolvedMapper.selectCount(new LambdaQueryWrapper<ProSetSolved>().eq(ProSetSolved::getUserId, sysUser.getId()));
         sysUser.setParticipatedSet(String.valueOf(l1));
         return sysUser;
+    }
+
+    @Override
+    public void updateApp(SysUserUpdateAppParam sysUserUpdateAppParam) {
+        if (!this.exists(new LambdaQueryWrapper<SysUser>().eq(SysUser::getId, sysUserUpdateAppParam.getId()))) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+        SysUser bean = BeanUtil.toBean(sysUserUpdateAppParam, SysUser.class);
+        BeanUtil.copyProperties(sysUserUpdateAppParam, bean);
+        this.updateById(bean);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Boolean updateAvatar(SysUserUpdateImageParam sysUserUpdateImageParam) {
+        if (!this.exists(new LambdaQueryWrapper<SysUser>().eq(SysUser::getId, sysUserUpdateImageParam.getId()))) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+        return this.update(new LambdaUpdateWrapper<SysUser>()
+                .eq(SysUser::getId, sysUserUpdateImageParam.getId())
+                .set(SysUser::getAvatar, sysUserUpdateImageParam.getImg())
+        );
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Boolean updateBackground(SysUserUpdateImageParam sysUserUpdateImageParam) {
+        if (!this.exists(new LambdaQueryWrapper<SysUser>().eq(SysUser::getId, sysUserUpdateImageParam.getId()))) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+        return this.update(new LambdaUpdateWrapper<SysUser>()
+                .eq(SysUser::getId, sysUserUpdateImageParam.getId())
+                .set(SysUser::getBackground, sysUserUpdateImageParam.getImg())
+        );
+    }
+
+    @Override
+    public Boolean updatePassword(SysUserPasswordUpdateParam sysUserPasswordUpdateParam) {
+        // 新密码和确认密码是否一致
+        if (!sysUserPasswordUpdateParam.getNewPassword().equals(sysUserPasswordUpdateParam.getConfirmPassword())) {
+            throw new BusinessException("新密码不一致");
+        }
+        SysUser sysUser = this.getById(sysUserPasswordUpdateParam.getId());
+        if (!BCrypt.checkpw(sysUserPasswordUpdateParam.getOldPassword(), sysUser.getPassword())) {
+            throw new BusinessException("旧密码错误");
+        }
+        sysUser.setPassword(BCrypt.hashpw(sysUserPasswordUpdateParam.getNewPassword()));
+        return this.updateById(sysUser);
     }
 
 }

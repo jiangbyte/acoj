@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { useProSetFetch, useSetRankingFetch, useSysCategoryFetch, useSysDictFetch } from '@/composables'
-import { NButton, NTag } from 'naive-ui'
+import { DataTableColumns, NButton, NSpace, NTag } from 'naive-ui'
 import { AesCrypto, CleanMarkdown } from '@/utils'
+import { Icon } from '@iconify/vue'
 
 const categoryOptions = ref()
 const difficultyOptions = ref()
@@ -86,6 +87,7 @@ function handleClick(item: any) {
     query: { set: AesCrypto.encrypt(item.id) },
   })
 }
+
 </script>
 
 <template>
@@ -310,13 +312,11 @@ select {
   appearance: none;
 }
 
-/* 图片加载效果 */
 img {
-  opacity: 1;
-  transition: opacity 0.3s ease-in-out;
+  transition: transform 0.3s ease;
 }
 
-img.loading {
-  opacity: 0.5;
+img:hover {
+  transform: scale(1.03);
 }
 </style>
