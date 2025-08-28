@@ -1,10 +1,7 @@
 package io.charlie.app.core.modular.set.set.controller;
 
+import io.charlie.app.core.modular.set.set.param.*;
 import io.charlie.galaxy.result.Result;
-import io.charlie.app.core.modular.set.set.param.ProSetPageParam;
-import io.charlie.app.core.modular.set.set.param.ProSetAddParam;
-import io.charlie.app.core.modular.set.set.param.ProSetEditParam;
-import io.charlie.app.core.modular.set.set.param.ProSetIdParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -77,5 +74,11 @@ public class ProSetController {
     @GetMapping("/pro/set/latest")
     public Result<?> latest10() {
         return Result.success(proSetService.latestN(10));
+    }
+
+    @Operation(summary = "用户端-获取最近做题题集")
+    @GetMapping("/pro/set/user/recent/solved")
+    public Result<?> userRecentSolvedPage(@ParameterObject @Valid UserSetPageParam userSetPageParam) {
+        return Result.success(proSetService.userRecentSolvedPage(userSetPageParam));
     }
 }

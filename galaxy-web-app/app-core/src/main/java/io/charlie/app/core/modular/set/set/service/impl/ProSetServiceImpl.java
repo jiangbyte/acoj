@@ -10,14 +10,14 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
+import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
 import io.charlie.app.core.modular.set.set.entity.ProSet;
 import io.charlie.app.core.modular.set.set.enums.SetTypeEnum;
-import io.charlie.app.core.modular.set.set.param.ProSetAddParam;
-import io.charlie.app.core.modular.set.set.param.ProSetEditParam;
-import io.charlie.app.core.modular.set.set.param.ProSetIdParam;
-import io.charlie.app.core.modular.set.set.param.ProSetPageParam;
+import io.charlie.app.core.modular.set.set.param.*;
 import io.charlie.app.core.modular.set.set.mapper.ProSetMapper;
 import io.charlie.app.core.modular.set.set.service.ProSetService;
+import io.charlie.app.core.modular.set.solved.entity.ProSetSolved;
+import io.charlie.app.core.modular.set.solved.mapper.ProSetSolvedMapper;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
@@ -40,6 +40,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class ProSetServiceImpl extends ServiceImpl<ProSetMapper, ProSet> implements ProSetService {
+    private final ProSetSolvedMapper proSetSolvedMapper;
 
     @Override
     public Page<ProSet> page(ProSetPageParam proSetPageParam) {
@@ -120,6 +121,62 @@ public class ProSetServiceImpl extends ServiceImpl<ProSetMapper, ProSet> impleme
     @Override
     public List<ProSet> latestN(int n) {
         return this.list(new QueryWrapper<ProSet>().checkSqlInjection().lambda().orderByDesc(ProSet::getCreateTime).last("LIMIT " + n));
+    }
+
+    @Override
+    public Page<ProSet> userRecentSolvedPage(UserSetPageParam userSetPageParam) {
+        QueryWrapper<ProSet> queryWrapper = new QueryWrapper<ProSet>().checkSqlInjection();
+        // 关键字
+        if (ObjectUtil.isNotEmpty(userSetPageParam.getKeyword())) {
+            queryWrapper.lambda().like(ProSet::getTitle, userSetPageParam.getKeyword());
+        }
+        if (GaStringUtil.isNotEmpty(userSetPageParam.getCategoryId())) {
+            queryWrapper.lambda().eq(ProSet::getCategoryId, userSetPageParam.getCategoryId());
+        }
+        if (GaStringUtil.isNotEmpty(userSetPageParam.getDifficulty())) {
+            queryWrapper.lambda().eq(ProSet::getDifficulty, userSetPageParam.getDifficulty());
+        }
+        if (GaStringUtil.isNotEmpty(userSetPageParam.getSetType())) {
+            queryWrapper.lambda().eq(ProSet::getSetType, userSetPageParam.getSetType());
+        }
+        if (ObjectUtil.isAllNotEmpty(userSetPageParam.getSortField(), userSetPageParam.getSortOrder()) && ISortOrderEnum.isValid(userSetPageParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    userSetPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(userSetPageParam.getSortField()));
+        }
+
+        // 用户提交记录查询
+        List<String> setIds = proSetSolvedMapper.selectList(new LambdaQueryWrapper<ProSetSolved>()
+                        .eq(ProSetSolved::getUserId, userSetPageParam.getUserId())
+                        // 按时间倒序
+                        .orderByDesc(ProSetSolved::getCreateTime)
+                )
+                .stream()
+                .map(ProSetSolved::getProblemSetId)
+                .distinct()
+                .toList();
+        if (ObjectUtil.isNotEmpty(setIds)) {
+            queryWrapper.lambda().in(ProSet::getId, setIds);
+        } else {
+            queryWrapper.lambda().eq(ProSet::getId, "-1"); // 确保查询不到结果
+        }
+
+        Page<ProSet> page = this.page(CommonPageRequest.Page(
+                        Optional.ofNullable(userSetPageParam.getCurrent()).orElse(1),
+                        Optional.ofNullable(userSetPageParam.getSize()).orElse(20),
+                        null
+                ),
+                queryWrapper);
+        page.getRecords().forEach(proSet -> {
+            // 如果是限时题集，判断是否正在运行
+            if (Objects.equals(proSet.getSetType(), SetTypeEnum.LIMIT_TIME_SET.getValue())) {
+                proSet.setIsRunning(new Date().after(proSet.getStartTime()) && new Date().before(proSet.getEndTime()));
+            } else {
+                proSet.setIsRunning(false);
+            }
+        });
+        return page;
     }
 
 }

@@ -79,17 +79,6 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '公告中心', icon: 'list' },
       },
       {
-        path: '/profile',
-        name: 'mine_profile',
-        component: () => import('@/views/mine/profile.vue'),
-        meta: { title: '用户主页' },
-        // beforeEnter: (to) => {
-        //   if (!to.query.user) {
-        //     return '/'
-        //   }
-        // },
-      },
-      {
         path: '/user',
         name: 'user',
         component: () => import('@/views/user/index.vue'),

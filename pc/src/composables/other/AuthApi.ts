@@ -20,5 +20,8 @@ export function useAuthFetch() {
     getProfile() {
       return $alova.Get<IResult<any>>(`${pathPrefix}sys/user/profile`)
     },
+    getProfileNoe() {
+      return $alova.Get<IResult<any>>(`${pathPrefix}sys/user/profile/noe`)
+    },
   }
 }

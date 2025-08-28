@@ -2,11 +2,10 @@ package io.charlie.app.core.modular.set.set.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
+import io.charlie.app.core.modular.problem.problem.param.UserProblemPageParam;
 import io.charlie.app.core.modular.set.set.entity.ProSet;
-import io.charlie.app.core.modular.set.set.param.ProSetAddParam;
-import io.charlie.app.core.modular.set.set.param.ProSetEditParam;
-import io.charlie.app.core.modular.set.set.param.ProSetIdParam;
-import io.charlie.app.core.modular.set.set.param.ProSetPageParam;
+import io.charlie.app.core.modular.set.set.param.*;
 
 import java.util.List;
 
@@ -28,4 +27,8 @@ public interface ProSetService extends IService<ProSet> {
     ProSet detail(ProSetIdParam proSetIdParam);
 
     List<ProSet> latestN(int n);
+
+    // 获得某个用户最近参与记录
+    Page<ProSet> userRecentSolvedPage(UserSetPageParam userSetPageParam);
+
 }

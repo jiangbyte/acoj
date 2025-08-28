@@ -77,5 +77,12 @@ export function useProSetFetch() {
     proSetLatest10() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/latest`)
     },
+    proSetRecentSolvedPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/user/recent/solved`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

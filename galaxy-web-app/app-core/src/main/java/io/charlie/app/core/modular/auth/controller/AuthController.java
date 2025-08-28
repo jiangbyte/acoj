@@ -2,6 +2,7 @@ package io.charlie.app.core.modular.auth.controller;
 
 import io.charlie.app.core.modular.auth.param.PasswordChangeParam;
 import io.charlie.app.core.modular.auth.param.UsernamePasswordLoginParam;
+import io.charlie.app.core.modular.auth.result.LoginUser;
 import io.charlie.app.core.modular.auth.service.AuthService;
 import io.charlie.app.core.modular.auth.param.UsernamePasswordEmailRegisterParam;
 import io.charlie.galaxy.result.Result;
@@ -57,6 +58,14 @@ public class AuthController {
     @GetMapping("/sys/user/profile")
     public Result<?> profile() {
         return Result.success(authService.getLoginUser());
+    }
+
+    @Operation(summary = "获取登录用户信息")
+    @GetMapping("/sys/user/profile/noe")
+    public Result<?> profileNoe() {
+        LoginUser loginUser = authService.getLoginUser();
+        loginUser.setTelephone(null);
+        return Result.success(loginUser);
     }
 
     @Operation(summary = "修改密码")

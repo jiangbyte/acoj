@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.problem.ranking.entity.ProblemUserRanking;
 import io.charlie.app.core.modular.problem.ranking.param.ActiveUser;
 import io.charlie.app.core.modular.problem.ranking.param.ProblemUserRankingPageParam;
+import io.charlie.app.core.modular.problem.ranking.param.UserActivityRank;
+import io.charlie.app.core.modular.problem.ranking.service.impl.ProblemUserRankingServiceImpl;
 
 import java.util.List;
 
@@ -35,4 +37,6 @@ public interface ProblemUserRankingService {
     List<String> getActiveUsersTop10();
 
     List<ActiveUser> getActiveUsersTopN(int n);
+
+    UserActivityRank getUserActivityRank(String userId);
 }

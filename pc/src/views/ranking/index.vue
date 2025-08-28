@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // 当前活跃标签
 import { useProblemUserRankingFetch } from '@/composables'
+import { AesCrypto } from '@/utils'
 import { NAvatar, NSpace, NText } from 'naive-ui'
 
 const { problemUserTotalRankingPage: problemTotalRankingPage, problemActiveUsersTop } = useProblemUserRankingFetch()
@@ -106,6 +107,18 @@ const rankingOptions = [
     value: 'daily',
   },
 ]
+const router = useRouter()
+function rowProps(row: any) {
+  return {
+    style: 'cursor: pointer;',
+    onClick: () => {
+      router.push({
+        name: 'user',
+        query: { userId: AesCrypto.encrypt(row.userId) },
+      })
+    },
+  }
+}
 </script>
 
 <template>
@@ -135,6 +148,7 @@ const rankingOptions = [
                 :data="totalRankingPageData?.records"
                 :bordered="false"
                 :row-key="(row: any) => row.userId"
+                :row-props="rowProps"
                 class="flex-1 h-full"
               />
             </div>
@@ -164,16 +178,21 @@ const rankingOptions = [
           </div>
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 最新1 -->
-            <div v-for="item in activeUsersTop" :key="item.userId" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div
+              v-for="item in activeUsersTop" :key="item.userId" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+                name: 'user',
+                query: { userId: AesCrypto.encrypt(item.userId) },
+              })"
+            >
               <div class="flex items-center">
                 <NAvatar :src="item.avatar" round :size="40" class="mr-3" />
                 <div class="flex-1">
                   <div class="font-medium">
                     {{ item.nickname }}
                   </div>
-                <!-- <div class="text-xs text-gray-500 dark:text-gray-400">
-                  解题: {{ item.solvedCount }}
-                </div> -->
+                  <div class="text-xs text-gray-500 dark:text-gray-400">
+                    活跃指数: {{ item.score }}
+                  </div>
                 </div>
               </div>
             </div>

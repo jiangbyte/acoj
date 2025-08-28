@@ -74,4 +74,16 @@ public class SysUser extends CommonEntity {
 
     @Schema(description = "登录时间")
     private Date loginTime;
+
+    @Schema(description = "活跃指数")
+    @TableField(exist = false)
+    private String activeScore;
+
+    @Schema(description = "已解决题目")
+    @TableField(exist = false)
+    private String solvedProblem;
+
+    @Schema(description = "参与题集")
+    @TableField(exist = false)
+    private String participatedSet;
 }

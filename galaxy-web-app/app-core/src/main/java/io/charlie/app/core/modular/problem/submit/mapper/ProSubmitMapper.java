@@ -4,7 +4,9 @@ import io.charlie.app.core.modular.analyse.entity.SubmitTrend;
 import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import io.charlie.app.core.modular.problem.submit.param.JudgeStatusCountDTO;
+import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.galaxy.option.NameOption;
+import org.apache.ibatis.annotations.CacheNamespace;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -17,7 +19,7 @@ import java.util.List;
 * @description 提交表 Mapper 接口
 */
 @Mapper
-//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface ProSubmitMapper extends BaseMapper<ProSubmit> {
     List<NameOption<Long>> getLanguageDistribution();
 

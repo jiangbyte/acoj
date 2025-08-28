@@ -9,6 +9,7 @@ import io.charlie.app.core.modular.problem.ranking.entity.ProblemUserRanking;
 import io.charlie.app.core.modular.problem.ranking.mapper.ProblemUserRankingMapper;
 import io.charlie.app.core.modular.problem.ranking.param.ActiveUser;
 import io.charlie.app.core.modular.problem.ranking.param.ProblemUserRankingPageParam;
+import io.charlie.app.core.modular.problem.ranking.param.UserActivityRank;
 import io.charlie.app.core.modular.problem.ranking.service.ProblemUserRankingService;
 import io.charlie.app.core.modular.sys.user.entity.SysUser;
 import io.charlie.app.core.modular.sys.user.service.SysUserService;
@@ -233,6 +234,7 @@ public class ProblemUserRankingServiceImpl extends ServiceImpl<ProblemUserRankin
     /**
      * 获取指定用户的活跃度排名和分数
      */
+    @Override
     public UserActivityRank getUserActivityRank(String userId) {
         String globalRankKey = "user:activity:global:rank";
 
@@ -247,35 +249,5 @@ public class ProblemUserRankingServiceImpl extends ServiceImpl<ProblemUserRankin
         return result;
     }
 
-    // 排名结果类
-    class UserActivityRank {
-        private String userId;
-        private Long rank;
-        private Double score;
 
-        // getter和setter方法
-        public String getUserId() {
-            return userId;
-        }
-
-        public void setUserId(String userId) {
-            this.userId = userId;
-        }
-
-        public Long getRank() {
-            return rank;
-        }
-
-        public void setRank(Long rank) {
-            this.rank = rank;
-        }
-
-        public Double getScore() {
-            return score;
-        }
-
-        public void setScore(Double score) {
-            this.score = score;
-        }
-    }
 }

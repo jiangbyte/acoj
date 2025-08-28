@@ -1,11 +1,8 @@
 package io.charlie.app.core.modular.problem.problem.controller;
 
 import io.charlie.app.core.annotation.UserActivity;
+import io.charlie.app.core.modular.problem.problem.param.*;
 import io.charlie.galaxy.result.Result;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemPageParam;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemAddParam;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemEditParam;
-import io.charlie.app.core.modular.problem.problem.param.ProProblemIdParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -112,5 +109,11 @@ public class ProProblemController {
     @GetMapping("/pro/problem/today/problemcount")
     public Result<?> getTodayProblemCount() {
         return Result.success(proProblemService.getTodayProblemCount());
+    }
+
+    @Operation(summary = "C端-获取用户最近提交过的题目")
+    @GetMapping("/pro/problem/user/recent/solved")
+    public Result<?> userRecentSolvedPage(@ParameterObject @Valid UserProblemPageParam userProblemPageParam) {
+        return Result.success(proProblemService.userRecentSolvedPage(userProblemPageParam));
     }
 }

@@ -10,6 +10,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.app.core.modular.problem.ranking.param.UserActivityRank;
+import io.charlie.app.core.modular.problem.ranking.service.ProblemUserRankingService;
+import io.charlie.app.core.modular.problem.solved.entity.ProSolved;
+import io.charlie.app.core.modular.problem.solved.mapper.ProSolvedMapper;
+import io.charlie.app.core.modular.set.solved.entity.ProSetSolved;
+import io.charlie.app.core.modular.set.solved.mapper.ProSetSolvedMapper;
 import io.charlie.app.core.modular.sys.group.entity.SysGroup;
 import io.charlie.app.core.modular.sys.user.entity.SysUser;
 import io.charlie.app.core.modular.sys.user.param.*;
@@ -21,6 +27,7 @@ import io.charlie.galaxy.option.LabelOption;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import org.dromara.core.trans.anno.RpcTrans;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +47,9 @@ import java.util.stream.Collectors;
 @RpcTrans
 @RequiredArgsConstructor
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
+    private final ProSolvedMapper proSolvedMapper;
+    private final ProSetSolvedMapper proSetSolvedMapper;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public Page<SysUser> page(SysUserPageParam sysUserPageParam) {
@@ -94,6 +104,15 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (ObjectUtil.isEmpty(sysUser)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
+        // 获得活跃指数
+        Double score = redisTemplate.opsForZSet().score("user:activity:global:rank", sysUser.getId());
+        sysUser.setActiveScore(String.valueOf(score));
+        // 获得解决题目数
+        Long l = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getUserId, sysUser.getId()));
+        sysUser.setSolvedProblem(String.valueOf(l));
+        // 获得参与题集数
+        Long l1 = proSetSolvedMapper.selectCount(new LambdaQueryWrapper<ProSetSolved>().eq(ProSetSolved::getUserId, sysUser.getId()));
+        sysUser.setParticipatedSet(String.valueOf(l1));
         return sysUser;
     }
 
@@ -106,6 +125,26 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             queryWrapper.lambda().or().like(SysUser::getUsername, sysUserOptionParam.getKeyword());
         }
         return this.list(queryWrapper).stream().map(sysUser -> new LabelOption<>(sysUser.getId(), sysUser.getNickname())).toList();
+    }
+
+    @Override
+    public SysUser appDetail(SysUserIdParam sysUserIdParam) {
+        SysUser sysUser = this.getById(sysUserIdParam.getId());
+        if (ObjectUtil.isEmpty(sysUser)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+        sysUser.setPassword(null);
+        sysUser.setTelephone(null);
+        // 获得活跃指数
+        Double score = redisTemplate.opsForZSet().score("user:activity:global:rank", sysUser.getId());
+        sysUser.setActiveScore(String.valueOf(score));
+        // 获得解决题目数
+        Long l = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getUserId, sysUser.getId()).eq(ProSolved::getSolved, true));
+        sysUser.setSolvedProblem(String.valueOf(l));
+        // 获得参与题集数
+        Long l1 = proSetSolvedMapper.selectCount(new LambdaQueryWrapper<ProSetSolved>().eq(ProSetSolved::getUserId, sysUser.getId()));
+        sysUser.setParticipatedSet(String.valueOf(l1));
+        return sysUser;
     }
 
 }

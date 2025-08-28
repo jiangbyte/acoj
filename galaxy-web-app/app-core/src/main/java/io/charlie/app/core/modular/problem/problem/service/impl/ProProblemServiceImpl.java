@@ -19,6 +19,8 @@ import io.charlie.app.core.modular.problem.problem.service.ProProblemService;
 import io.charlie.app.core.modular.problem.relation.service.ProProblemTagService;
 import io.charlie.app.core.modular.problem.solved.entity.ProSolved;
 import io.charlie.app.core.modular.problem.solved.mapper.ProSolvedMapper;
+import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
+import io.charlie.app.core.modular.problem.submit.mapper.ProSubmitMapper;
 import io.charlie.app.core.modular.sys.tag.entity.SysTag;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
@@ -47,6 +49,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProblem> implements ProProblemService {
     private final ProProblemTagService proProblemTagService;
     private final ProSolvedMapper proSolvedMapper;
+    private final ProSubmitMapper proSubmitMapper;
 
     @Override
     public Page<ProProblem> page(ProProblemPageParam proProblemPageParam) {
@@ -261,13 +264,13 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
                 ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
                         .eq(ProSolved::getUserId, loginIdAsString)
                         .eq(ProSolved::getProblemId, item.getId()));
-              if (ObjectUtil.isNotNull(proSolved)) {
-                  if (proSolved.getSolved()) {
-                      item.setCurrentUserSolved(true);
-                  } else {
-                      item.setCurrentUserSolved(false);
-                  }
-              }
+                if (ObjectUtil.isNotNull(proSolved)) {
+                    if (proSolved.getSolved()) {
+                        item.setCurrentUserSolved(true);
+                    } else {
+                        item.setCurrentUserSolved(false);
+                    }
+                }
             } catch (Exception e) {
                 item.setCurrentUserSolved(false);
                 e.printStackTrace();
@@ -433,6 +436,102 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
             todayProblemCount.setLatestCreateTime(null);
         }
         return todayProblemCount;
+    }
+
+    @Override
+    public Page<ProProblem> userRecentSolvedPage(UserProblemPageParam userProblemPageParam) {
+        QueryWrapper<ProProblem> queryWrapper = new QueryWrapper<ProProblem>().checkSqlInjection();
+        // 关键字
+        if (ObjectUtil.isNotEmpty(userProblemPageParam.getKeyword())) {
+            queryWrapper.lambda().like(ProProblem::getTitle, userProblemPageParam.getKeyword());
+        }
+        if (GaStringUtil.isNotEmpty(userProblemPageParam.getCategoryId())) {
+            queryWrapper.lambda().eq(ProProblem::getCategoryId, userProblemPageParam.getCategoryId());
+        }
+        if (GaStringUtil.isNotEmpty(userProblemPageParam.getDifficulty())) {
+            queryWrapper.lambda().eq(ProProblem::getDifficulty, userProblemPageParam.getDifficulty());
+        }
+
+        // 用户提交记录查询
+        List<String> problemIds = proSubmitMapper.selectList(new LambdaQueryWrapper<ProSubmit>()
+                        .eq(ProSubmit::getUserId, userProblemPageParam.getUserId())
+                        // 按时间倒序
+                        .orderByDesc(ProSubmit::getCreateTime)
+                )
+                .stream()
+                .map(ProSubmit::getProblemId)
+                .distinct()
+                .toList();
+        if (ObjectUtil.isNotEmpty(problemIds)) {
+            queryWrapper.lambda().in(ProProblem::getId, problemIds);
+            // 结果的顺序和用户提交记录的顺序一致
+//            queryWrapper.lambda().orderBy(true, false, submit -> problemIds.indexOf(submit.getId()));
+        } else {
+            queryWrapper.lambda().eq(ProProblem::getId, "-1"); // 确保查询不到结果
+        }
+
+        // 标签查询
+        if (GaStringUtil.isNotEmpty(userProblemPageParam.getTagId())) {
+            List<String> idsByTagId = proProblemTagService.getIdsByTagId(userProblemPageParam.getTagId());
+            // 如果TagId有值但关联的ID列表为空，则设置一个不可能满足的条件
+            if (ObjectUtil.isEmpty(idsByTagId)) {
+                queryWrapper.lambda().eq(ProProblem::getId, "-1"); // 确保查询不到结果
+            } else {
+                queryWrapper.lambda().in(ProProblem::getId, idsByTagId);
+            }
+        }
+
+        if (ObjectUtil.isAllNotEmpty(userProblemPageParam.getSortField(), userProblemPageParam.getSortOrder()) && ISortOrderEnum.isValid(userProblemPageParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    userProblemPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(userProblemPageParam.getSortField()));
+        }
+
+        Page<ProProblem> page = this.page(CommonPageRequest.Page(
+                        Optional.ofNullable(userProblemPageParam.getCurrent()).orElse(1),
+                        Optional.ofNullable(userProblemPageParam.getSize()).orElse(20),
+                        null
+                ),
+                queryWrapper);
+        page.getRecords().forEach(item -> {
+            List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());
+            if (ObjectUtil.isNotEmpty(tagsById)) {
+                item.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
+                item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
+            }
+
+            // 解决记录
+            try {
+                String loginIdAsString = StpUtil.getLoginIdAsString();
+                // 缓存取出解决记录
+                ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
+                        .eq(ProSolved::getUserId, loginIdAsString)
+                        .eq(ProSolved::getProblemId, item.getId()));
+                if (proSolved.getSolved()) {
+                    item.setCurrentUserSolved(true);
+                } else {
+                    item.setCurrentUserSolved(false);
+                }
+            } catch (Exception ignored) {
+                item.setCurrentUserSolved(false);
+            }
+
+            // 通过率计算（缓存读取）
+            Long proSolvedCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()).eq(ProSolved::getSolved, true));
+            Long proSolvedTotalCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()));
+            if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
+                item.setAcceptance(BigDecimal.ZERO);
+            } else {
+                item.setAcceptance(new BigDecimal(proSolvedCount)
+                        .multiply(new BigDecimal(100))
+                        .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
+            }
+            // 参与人数
+            item.setParticipantCount(String.valueOf(proSolvedTotalCount));
+        });
+
+        return page;
     }
 
 }

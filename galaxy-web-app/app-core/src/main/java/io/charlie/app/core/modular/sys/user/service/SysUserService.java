@@ -27,4 +27,6 @@ public interface SysUserService extends IService<SysUser> {
 
     List<LabelOption<String>> options(SysUserOptionParam sysUserOptionParam);
 
+    SysUser appDetail(SysUserIdParam sysUserIdParam);
+
 }

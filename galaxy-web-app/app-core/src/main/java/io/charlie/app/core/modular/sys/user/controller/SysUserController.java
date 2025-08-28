@@ -75,4 +75,10 @@ public class SysUserController {
     public Result<?> options(@ParameterObject SysUserOptionParam sysUserOptionParam) {
         return Result.success(sysUserService.options(sysUserOptionParam));
     }
+
+    @Operation(summary = "C端-获取用户详情")
+    @GetMapping("/sys/user/detail/client")
+    public Result<?> detailC(@ParameterObject @Valid SysUserIdParam sysUserIdParam) {
+        return Result.success(sysUserService.appDetail(sysUserIdParam));
+    }
 }

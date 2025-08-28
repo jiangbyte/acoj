@@ -91,5 +91,12 @@ export function useProProblemFetch() {
     proProblemTodayProblemCount() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/today/problemcount`)
     },
+    proProblemUserRecentSolvedPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/user/recent/solved`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

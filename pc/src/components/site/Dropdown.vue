@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 import { NDropdown, useDialog } from 'naive-ui'
-import { useTokenStore } from '@/stores'
-import { iconRender } from '@/utils'
+import { useTokenStore, useUserStore } from '@/stores'
+import { AesCrypto, iconRender } from '@/utils'
 
 const useToken = useTokenStore()
 const router = useRouter()
 const dialog = useDialog()
+const useUser = useUserStore()
 function handleSelect(key: string | number) {
   if (key === 'logout') {
     dialog.info({
@@ -19,7 +20,12 @@ function handleSelect(key: string | number) {
     })
   }
   else if (key === 'profile') {
-    router.push('/profile')
+    const userId = useUser.getUserId
+    // router.push('/profile')
+    router.push({
+      name: 'user',
+      query: { userId: AesCrypto.encrypt(String(userId)) },
+    })
   }
   else if (key === 'security') {
     router.push('/security')

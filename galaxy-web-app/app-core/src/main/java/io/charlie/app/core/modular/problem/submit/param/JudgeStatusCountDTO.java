@@ -2,8 +2,14 @@ package io.charlie.app.core.modular.problem.submit.param;
 
 import lombok.Data;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 @Data
-public class JudgeStatusCountDTO {
+public class JudgeStatusCountDTO implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private String status;
     private Long count;
     

@@ -92,5 +92,15 @@ export function useSysUserFetch() {
     getProfile() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/profile`)
     },
+    /*
+     * 用户 信息接口
+     */
+    getUserDetail(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail/client`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }
