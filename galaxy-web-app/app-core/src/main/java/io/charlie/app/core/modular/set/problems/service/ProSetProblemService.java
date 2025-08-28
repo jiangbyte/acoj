@@ -3,9 +3,13 @@ package io.charlie.app.core.modular.set.problems.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
+import io.charlie.app.core.modular.problem.problem.param.SetProblemListParam;
 import io.charlie.app.core.modular.problem.problem.param.SetProblemPageParam;
 import io.charlie.app.core.modular.set.problems.entity.ProSetProblem;
+import io.charlie.app.core.modular.set.problems.param.ProSetProblemIdParam;
 import io.charlie.app.core.modular.set.submit.entity.ProSetSubmit;
+
+import java.util.List;
 
 /**
  * @author ZhangJiangHu
@@ -16,4 +20,8 @@ import io.charlie.app.core.modular.set.submit.entity.ProSetSubmit;
 public interface ProSetProblemService extends IService<ProSetProblem> {
     // 获得某个用户最近解题记录
     Page<ProProblem> setProblemPage(SetProblemPageParam setProblemPageParam);
+
+    List<ProProblem> setProblemList(SetProblemListParam setProblemListParam);
+
+    ProProblem getSetProblemDetail(ProSetProblemIdParam proSetProblemIdParam);
 }

@@ -114,4 +114,23 @@ public class ProProblem extends CommonEntity {
     @TableField(exist = false)
     private String participantCount;
 
+    @Schema(description = "题集用 上一个题目ID")
+    @TableField(exist = false)
+    private String previousProblemId;
+
+    @Schema(description = "题集用 下一个题目ID")
+    @TableField(exist = false)
+    private String nextProblemId;
+
+    @Schema(description = "题集用 当前题目位次")
+    @TableField(exist = false)
+    private Integer sort;
+
+    @Schema(description = "题集用 总题目数")
+    @TableField(exist = false)
+    private Integer totalProblemCount;
+
+    @Schema(description = "题集用 是否是最后一个题目")
+    @TableField(exist = false)
+    private Boolean isLastProblem;
 }

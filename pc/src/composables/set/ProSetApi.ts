@@ -91,5 +91,19 @@ export function useProSetFetch() {
         },
       })
     },
+    proSetProblemList(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problems/list`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    proSetProblemDetail(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problems/detail`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

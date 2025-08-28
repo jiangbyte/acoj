@@ -1,6 +1,8 @@
 package io.charlie.app.core.modular.set.problems.controller;
 
+import io.charlie.app.core.modular.problem.problem.param.SetProblemListParam;
 import io.charlie.app.core.modular.problem.problem.param.SetProblemPageParam;
+import io.charlie.app.core.modular.set.problems.param.ProSetProblemIdParam;
 import io.charlie.app.core.modular.set.problems.service.ProSetProblemService;
 import io.charlie.app.core.modular.set.set.param.ProSetPageParam;
 import io.charlie.app.core.modular.set.set.service.ProSetService;
@@ -36,4 +38,19 @@ public class ProSetProblemController {
     public Result<?> page(@ParameterObject SetProblemPageParam setProblemPageParam) {
         return Result.success(proSetProblemService.setProblemPage(setProblemPageParam));
     }
+
+    @Operation(summary = "获取题集题目分页")
+    //@SaCheckPermission("/pro/set/problems/page")
+    @GetMapping("/pro/set/problems/list")
+    public Result<?> list(@ParameterObject SetProblemListParam setProblemListParam) {
+        return Result.success(proSetProblemService.setProblemList(setProblemListParam));
+    }
+
+    @Operation(summary = "获取题集题目详情")
+    //@SaCheckPermission("/pro/set/problems/detail")
+    @GetMapping("/pro/set/problems/detail")
+    public Result<?> detail(@Validated ProSetProblemIdParam proSetProblemIdParam) {
+        return Result.success(proSetProblemService.getSetProblemDetail(proSetProblemIdParam));
+    }
+
 }

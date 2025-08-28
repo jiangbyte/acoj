@@ -15,6 +15,22 @@
         <if test="ew != null and ew.sqlSegment != null">
             ${ew.sqlSegment}
         </if>
-        ORDER BY psp.sort DESC
+        ORDER BY psp.sort ASC
+    </select>
+
+    <select id="selectSetProblemList"
+            resultType="io.charlie.app.core.modular.problem.problem.entity.ProProblem">
+        SELECT
+        pp.*
+        FROM
+        pro_problem pp
+        INNER JOIN
+        pro_set_problem psp ON pp.id = psp.problem_id
+        WHERE
+        psp.problem_set_id = #{setId}
+        <if test="ew != null and ew.sqlSegment != null">
+            ${ew.sqlSegment}
+        </if>
+        ORDER BY psp.sort ASC
     </select>
 </mapper>

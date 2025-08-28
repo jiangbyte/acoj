@@ -7,7 +7,11 @@ import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
 import io.charlie.app.core.modular.problem.ranking.entity.ProblemUserRanking;
 import io.charlie.app.core.modular.set.problems.entity.ProSetProblem;
 import io.charlie.app.core.modular.set.submit.entity.ProSetSubmit;
+import io.charlie.galaxy.cache.MybatisPlusRedisCache;
+import org.apache.ibatis.annotations.CacheNamespace;
 import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
 
 /**
  * @author ZhangJiangHu
@@ -16,7 +20,9 @@ import org.apache.ibatis.annotations.Mapper;
  * @description TODO
  */
 @Mapper
-//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface ProSetProblemMapper extends BaseMapper<ProSetProblem> {
     IPage<ProProblem> selectSetProblemPage(IPage<ProProblem> page, Wrapper<ProProblem> ew, String setId);
+
+    List<ProProblem> selectSetProblemList(Wrapper<ProProblem> ew, String setId);
 }

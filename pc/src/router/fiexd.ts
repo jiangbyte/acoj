@@ -134,10 +134,10 @@ export const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'set_submit',
-        component: () => import('@/views/problems/submit.vue'),
+        component: () => import('@/views/sets/submit.vue'),
         meta: { title: '提交代码' },
         beforeEnter: (to) => {
-          if (!to.query.set) {
+          if (!to.query.setId || !to.query.problemId) {
             return '/'
           }
         },

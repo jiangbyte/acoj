@@ -1,8 +1,7 @@
 <script lang="ts" setup>
 import { useProSetFetch, useSetRankingFetch, useSysCategoryFetch, useSysDictFetch } from '@/composables'
-import { DataTableColumns, NButton, NSpace, NTag } from 'naive-ui'
+import { NButton, NTag } from 'naive-ui'
 import { AesCrypto, CleanMarkdown } from '@/utils'
-import { Icon } from '@iconify/vue'
 
 const categoryOptions = ref()
 const difficultyOptions = ref()
@@ -87,7 +86,6 @@ function handleClick(item: any) {
     query: { set: AesCrypto.encrypt(item.id) },
   })
 }
-
 </script>
 
 <template>

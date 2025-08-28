@@ -1,8 +1,9 @@
 <script lang="ts" setup>
 import { AesCrypto } from '@/utils'
 import MdViewer from '@/components/common/editor/md/Viewer.vue'
-import { useProSetFetch, useProSetSubmitFetch, useProSetSolvedFetch } from '@/composables'
-import { DataTableColumns, NAvatar, NImage, NSpace, NTag, NText, NTime } from 'naive-ui'
+import { useProSetFetch, useProSetSolvedFetch, useProSetSubmitFetch } from '@/composables'
+import type { DataTableColumns } from 'naive-ui'
+import { NAvatar, NButton, NSpace, NTag, NText, NTime } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 
 const route = useRoute()
@@ -11,6 +12,7 @@ const originalId = AesCrypto.decrypt(route.query.set as string)
 const setProblemPageData = ref()
 const submitPageData = ref()
 const proSetSolvedUserData = ref()
+const router = useRouter()
 const setProblemPageParam = ref({
   current: 1,
   size: 20,
@@ -106,6 +108,22 @@ const columns: DataTableColumns<any> = [
     width: 100,
     render: (row) => {
       return h(NTag, { size: 'small', bordered: false }, row.solved)
+    },
+  },
+  {
+    title: '操作',
+    key: 'action',
+    width: 100,
+    render: (row) => {
+      return h(NButton, {
+        size: 'small',
+        onClick: () => {
+          router.push({
+            name: 'set_submit',
+            query: { setId: AesCrypto.encrypt(originalId), problemId: AesCrypto.encrypt(row.id) },
+          })
+        },
+      }, '开始')
     },
   },
 ]
@@ -289,7 +307,7 @@ const userColumns: DataTableColumns<any> = [
     key: 'email',
     ellipsis: true,
     width: 150,
-  }
+  },
 ]
 
 const processColumns: DataTableColumns<any> = [
@@ -343,14 +361,31 @@ const processColumns: DataTableColumns<any> = [
 ]
 async function loadData() {
   try {
-    const { proSetDetail, proSetProblemPage } = useProSetFetch()
+    const { proSetDetail, proSetProblemPage, proSetProblemList } = useProSetFetch()
     const { data } = await proSetDetail({ id: originalId })
 
     if (data) {
       detailData.value = data
     }
 
-    proSetProblemPage(setProblemPageParam.value).then(({ data }) => {
+    // proSetProblemPage(setProblemPageParam.value).then(({ data }) => {
+    //   setProblemPageData.value = data
+    //   // processColumns.push({
+    //   //   title: '操作',
+    //   //   key: 'action',
+    //   //   width: 150,
+    //   // })
+    //   // 获得setProblemPageData.value里面的records的title，以id为key，title为title，增加到processColumns
+    //   setProblemPageData.value.records.forEach((item: any) => {
+    //     processColumns.push({
+    //       title: item.title,
+    //       key: item.id,
+    //       width: 100,
+    //     })
+    //   })
+    // })
+
+    proSetProblemList(setProblemPageParam.value).then(({ data }) => {
       setProblemPageData.value = data
       // processColumns.push({
       //   title: '操作',
@@ -358,7 +393,7 @@ async function loadData() {
       //   width: 150,
       // })
       // 获得setProblemPageData.value里面的records的title，以id为key，title为title，增加到processColumns
-      setProblemPageData.value.records.forEach((item: any) => {
+      setProblemPageData.value.forEach((item: any) => {
         processColumns.push({
           title: item.title,
           key: item.id,
@@ -381,7 +416,6 @@ async function loadData() {
   }
 }
 loadData()
-const router = useRouter()
 function rowProps(row: any) {
   // return {
   //   style: 'cursor: pointer;',
@@ -402,7 +436,7 @@ function rowProps(row: any) {
       <div class="md:flex items-center">
         <!-- 题集封面图 -->
         <div class="md:w-1/3 lg:w-1/4">
-          <img :src="detailData?.cover" class="w-full h-69 object-cover rounded-br-xl">
+          <img :src="detailData?.cover" class="w-full h-69 object-cover rounded-xl">
         </div>
 
         <!-- 题集基本信息 -->
@@ -467,13 +501,13 @@ function rowProps(row: any) {
 
           <!-- 题集作者信息 -->
           <div class="flex items-center">
-            <n-avatar :src="detailData?.createUserAvatar" round :size="40" class="mr-3" />
+            <NAvatar :src="detailData?.createUserAvatar" round :size="40" class="mr-3" />
             <div>
               <div class="font-medium">
                 {{ detailData?.createUserName }}
               </div>
               <div class="text-sm text-gray-500 dark:text-gray-400">
-                发布于 <n-time :time="detailData?.createTime" /> · 最后更新 <n-time :time="detailData?.updateTime" />
+                发布于 <NTime :time="detailData?.createTime" /> · 最后更新 <NTime :time="detailData?.updateTime" />
               </div>
             </div>
           </div>
@@ -492,15 +526,15 @@ function rowProps(row: any) {
           <div class="bg-white p-y-2">
             <div class="flex flex-col md:flex-row gap-4 mb-4">
               <div class="flex flex-wrap gap-2">
-                <n-button>
+                <NButton>
                   全部题目
-                </n-button>
-                <n-button>
+                </NButton>
+                <NButton>
                   未完成
-                </n-button>
-                <n-button>
+                </NButton>
+                <NButton>
                   已完成
-                </n-button>
+                </NButton>
               </div>
 
               <div class="flex-grow relative">
@@ -515,15 +549,14 @@ function rowProps(row: any) {
             <div class="divide-y divide-gray-100 dark:divide-gray-700">
               <n-data-table
                 :columns="columns"
-                :data="setProblemPageData?.records"
+                :data="setProblemPageData"
                 :bordered="false"
-                :row-key="(row: any) => row.userId"
+                :row-key="(row: any) => row.id"
                 class="flex-1 h-full"
-                :row-props="rowProps"
                 :scroll-x="1400"
               />
             </div>
-            <n-pagination
+          <!-- <n-pagination
               v-model:page="setProblemPageParam.current"
               v-model:page-size="setProblemPageParam.size"
               show-size-picker
@@ -535,7 +568,7 @@ function rowProps(row: any) {
               class="flex justify-center items-center pt-6"
               @update:page="loadData"
               @update:page-size="loadData"
-            />
+            /> -->
           </div>
         </n-tab-pane>
         <n-tab-pane name="progress" tab="进度">
@@ -590,28 +623,28 @@ function rowProps(row: any) {
         </n-tab-pane>
         <n-tab-pane name="users" tab="用户">
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
-              <n-data-table
-                :columns="userColumns"
-                :data="proSetSolvedUserData?.records"
-                :bordered="false"
-                :row-key="(row: any) => row.userId"
-                class="flex-1 h-full"
+            <n-data-table
+              :columns="userColumns"
+              :data="proSetSolvedUserData?.records"
+              :bordered="false"
+              :row-key="(row: any) => row.userId"
+              class="flex-1 h-full"
               :scroll-x="1400"
-              />
-            </div>
-            <n-pagination
-              v-model:page="proSetSolvedUserDataParam.current"
-              v-model:page-size="proSetSolvedUserDataParam.size"
-              show-size-picker
-              :page-count="proSetSolvedUserData ? Number(proSetSolvedUserData.pages) : 0"
-              :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                label: `${(i + 1) * 10} 每页`,
-                value: (i + 1) * 10,
-              }))"
-              class="flex justify-center items-center pt-6"
-              @update:page="loadData"
-              @update:page-size="loadData"
             />
+          </div>
+          <n-pagination
+            v-model:page="proSetSolvedUserDataParam.current"
+            v-model:page-size="proSetSolvedUserDataParam.size"
+            show-size-picker
+            :page-count="proSetSolvedUserData ? Number(proSetSolvedUserData.pages) : 0"
+            :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+              label: `${(i + 1) * 10} 每页`,
+              value: (i + 1) * 10,
+            }))"
+            class="flex justify-center items-center pt-6"
+            @update:page="loadData"
+            @update:page-size="loadData"
+          />
         </n-tab-pane>
       </n-tabs>
     </div>
