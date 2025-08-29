@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useSysCategoryFetch, useProSetFetch, useSysDictFetch } from '@/composables'
+import { useProSetFetch, useSysCategoryFetch, useSysDictFetch } from '@/composables'
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
 import MDEditor from '@/components/common/editor/md/Editor.vue'
 
@@ -166,10 +166,10 @@ defineExpose({
           <!-- <NDatePicker type="datetime" v-model:value="formData.endTime" /> -->
           <n-date-picker v-model:value="formData.startTime" type="datetime" clearable />
         </NFormItem>
-<!--        &lt;!&ndash; 输入框 &ndash;&gt;-->
-<!--        <NFormItem label="配置信息" path="config">-->
-<!--          <NInput v-model:value="formData.config" placeholder="请输入配置信息" />-->
-<!--        </NFormItem>-->
+        <!--        &lt;!&ndash; 输入框 &ndash;&gt; -->
+        <!--        <NFormItem label="配置信息" path="config"> -->
+        <!--          <NInput v-model:value="formData.config" placeholder="请输入配置信息" /> -->
+        <!--        </NFormItem> -->
       </NForm>
       <template #footer>
         <NSpace align="center" justify="end">

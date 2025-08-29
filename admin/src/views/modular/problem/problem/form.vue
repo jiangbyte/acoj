@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysCategoryFetch, useProProblemFetch, useSysTagFetch, useSysDictFetch } from '@/composables'
+import { useProProblemFetch, useSysCategoryFetch, useSysDictFetch, useSysTagFetch } from '@/composables'
 import MDEditor from '@/components/common/editor/md/Editor.vue'
 import CodeEditor from '@/components/common/editor/code/Editor.vue'
 

@@ -3,10 +3,7 @@ package io.charlie.app.core.modular.set.progress.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.app.core.modular.set.progress.entity.ProSetProgress;
-import io.charlie.app.core.modular.set.progress.param.ProSetProgressAddParam;
-import io.charlie.app.core.modular.set.progress.param.ProSetProgressEditParam;
-import io.charlie.app.core.modular.set.progress.param.ProSetProgressIdParam;
-import io.charlie.app.core.modular.set.progress.param.ProSetProgressPageParam;
+import io.charlie.app.core.modular.set.progress.param.*;
 
 import java.util.List;
 

@@ -44,4 +44,5 @@ public class ProSetProgress extends CommonEntity {
 
     @Schema(description = "完成时间")
     private LocalDateTime completedAt;
+
 }

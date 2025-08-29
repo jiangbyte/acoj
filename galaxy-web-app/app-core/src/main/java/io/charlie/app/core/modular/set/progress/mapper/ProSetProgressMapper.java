@@ -1,9 +1,7 @@
 package io.charlie.app.core.modular.set.progress.mapper;
 
-import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.app.core.modular.set.progress.entity.ProSetProgress;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.apache.ibatis.annotations.CacheNamespace;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

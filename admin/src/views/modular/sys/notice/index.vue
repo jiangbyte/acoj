@@ -14,7 +14,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '标题',
     key: 'title',
-    ellipsis: true
+    ellipsis: true,
   },
   {
     title: '封面',
@@ -26,7 +26,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '链接',
     key: 'url',
-    ellipsis: true
+    ellipsis: true,
   },
   {
     title: '排序',

@@ -22,7 +22,7 @@ export function useSysTagFetch() {
     /*
     * 标签 默认数据
     */
-    sysTagDefaultData: sysTagDefaultData,
+    sysTagDefaultData,
 
     /*
      * 标签 分页接口

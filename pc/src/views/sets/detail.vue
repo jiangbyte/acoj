@@ -387,19 +387,15 @@ async function loadData() {
 
     proSetProblemList(setProblemPageParam.value).then(({ data }) => {
       setProblemPageData.value = data
-      // processColumns.push({
-      //   title: '操作',
-      //   key: 'action',
-      //   width: 150,
-      // })
-      // 获得setProblemPageData.value里面的records的title，以id为key，title为title，增加到processColumns
-      setProblemPageData.value.forEach((item: any) => {
-        processColumns.push({
-          title: item.title,
-          key: item.id,
-          width: 100,
+      if (data) {
+        data.forEach((item: any) => {
+          processColumns.push({
+            title: item.title,
+            key: item.id,
+            width: 100,
+          })
         })
-      })
+      }
     })
 
     const { proSetSubmitPage } = useProSetSubmitFetch()

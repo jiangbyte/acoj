@@ -91,7 +91,6 @@ const columns: DataTableColumns<any> = [
     key: 'action',
     width: 200,
     fixed: 'right',
-    width: 200,
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {

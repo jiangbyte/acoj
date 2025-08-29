@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import {DataTableColumns, NAvatar, NText} from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import type { DataTableColumns } from 'naive-ui'
+import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText } from 'naive-ui'
+
 import { useProSetSubmitFetch } from '@/composables'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -10,32 +11,33 @@ const detailRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
-  },  {
+  },
+  {
     title: '用户',
     key: 'user',
     width: 140,
     render(row: any) {
       return h(
-          NSpace,
-          { align: 'center', size: 'small' },
-          {
-            default: () => [
-              h(
-                  NAvatar,
-                  {
-                    size: 'small',
-                    round: true,
-                    src: row.userAvatar,
-                  },
-                  {},
-              ),
-              h(
-                  NText,
-                  {},
-                  { default: () => row.userIdName },
-              ),
-            ],
-          },
+        NSpace,
+        { align: 'center', size: 'small' },
+        {
+          default: () => [
+            h(
+              NAvatar,
+              {
+                size: 'small',
+                round: true,
+                src: row.userAvatar,
+              },
+              {},
+            ),
+            h(
+              NText,
+              {},
+              { default: () => row.userIdName },
+            ),
+          ],
+        },
       )
     },
   },
