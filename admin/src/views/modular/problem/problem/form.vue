@@ -48,9 +48,9 @@ const rules = {
   threshold: [
     { required: true, message: '请输入阈值', type: 'number', trigger: ['input', 'blur'] },
   ],
-  codeTemplate: [
-    { required: true, message: '请输入模板代码', trigger: ['input', 'blur'] },
-  ],
+  // codeTemplate: [
+  //   { required: true, message: '请输入模板代码', trigger: ['input', 'blur'] },
+  // ],
   // useTemplate: [
   //   { required: true, message: '请选择是否使用模板', trigger: ['change'] },
   // ],

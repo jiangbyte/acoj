@@ -35,9 +35,9 @@ const submitParam = ref({
 })
 // 获取语言选项
 const languageOptions = computed(() => {
-  if (!detailData.value?.codeTemplate)
-    return []
-  return detailData.value.allowedLanguages.map((language: any) => ({
+  // if (!detailData.value?.codeTemplate)
+  //   return []
+  return detailData.value?.allowedLanguages.map((language: any) => ({
     label: language.toUpperCase(),
     value: language,
   }))

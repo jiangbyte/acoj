@@ -213,6 +213,12 @@ async function deleteBatchHandle() {
               </template>
               创建
             </NButton>
+            <NButton type="primary">
+              <template #icon>
+                <IconParkOutlinePlus />
+              </template>
+              导入
+            </NButton>
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除

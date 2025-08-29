@@ -116,6 +116,7 @@ DROP TABLE IF EXISTS pro_problem;
 CREATE TABLE pro_problem
 (
     id                VARCHAR(32)             NOT NULL COMMENT '主键',
+    display_id        VARCHAR(32) COMMENT '展示ID',
     category_id       VARCHAR(32)                  DEFAULT 0 COMMENT '分类',
 
     title             VARCHAR(255)            NOT NULL COMMENT '标题',

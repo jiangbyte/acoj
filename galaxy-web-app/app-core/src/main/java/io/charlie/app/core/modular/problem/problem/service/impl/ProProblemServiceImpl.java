@@ -60,7 +60,6 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
     @Override
     public Page<ProProblem> page(ProProblemPageParam proProblemPageParam) {
         QueryWrapper<ProProblem> queryWrapper = new QueryWrapper<ProProblem>().checkSqlInjection();
-        queryWrapper.lambda().eq(ProProblem::getIsPublic, true);
         // 关键字
         if (ObjectUtil.isNotEmpty(proProblemPageParam.getKeyword())) {
             queryWrapper.lambda().like(ProProblem::getTitle, proProblemPageParam.getKeyword());

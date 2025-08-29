@@ -32,6 +32,9 @@ public class ProProblemAddParam implements Serializable {
     @Schema(description = "分类")
     private String categoryId;
 
+    @Schema(description = "显示ID")
+    private String displayId;
+
     @Schema(description = "标题")
     private String title;
 

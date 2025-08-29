@@ -2,6 +2,7 @@ package io.charlie.app.core.modular.problem.problem.controller;
 
 import io.charlie.app.core.annotation.UserActivity;
 import io.charlie.app.core.modular.problem.problem.param.*;
+import io.charlie.app.core.modular.problem.problem.service.ProblemImportService;
 import io.charlie.galaxy.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.charlie.app.core.modular.problem.problem.service.ProProblemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -32,6 +34,8 @@ import java.util.List;
 @Validated
 public class ProProblemController {
     private final ProProblemService proProblemService;
+    private final ProblemImportService problemImportService;
+
 
     @Operation(summary = "获取题目分页")
     //@SaCheckPermission("/pro/problem/page")
@@ -115,5 +119,24 @@ public class ProProblemController {
     @GetMapping("/pro/problem/user/recent/solved")
     public Result<?> userRecentSolvedPage(@ParameterObject @Valid UserProblemPageParam userProblemPageParam) {
         return Result.success(proProblemService.userRecentSolvedPage(userProblemPageParam));
+    }
+
+
+    @Operation(summary = "导入题目")
+    @PostMapping("/import")
+    public Result<?> importProblems(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                return Result.failure("请选择要上传的文件");
+            }
+            if (!file.getOriginalFilename().toLowerCase().endsWith(".zip")) {
+                return Result.failure("请选择有效的ZIP格式的压缩包");
+            }
+            problemImportService.importProblems(file);
+            return Result.success("问题导入成功");
+        } catch (Exception e) {
+            log.error("导入失败", e);
+            return Result.failure("导入失败: " + e.getMessage());
+        }
     }
 }

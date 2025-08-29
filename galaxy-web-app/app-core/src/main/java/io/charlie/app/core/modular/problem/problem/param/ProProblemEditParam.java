@@ -29,6 +29,9 @@ public class ProProblemEditParam implements Serializable {
     @Schema(description = "主键")
     private String id;
 
+    @Schema(description = "显示ID")
+    private String displayId;
+
     @Schema(description = "分类")
     private String categoryId;
 

@@ -19,7 +19,7 @@ import java.util.List;
 * @description 提交表 Mapper 接口
 */
 @Mapper
-@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface ProSubmitMapper extends BaseMapper<ProSubmit> {
     List<NameOption<Long>> getLanguageDistribution();
 
@@ -32,6 +32,6 @@ public interface ProSubmitMapper extends BaseMapper<ProSubmit> {
     /**
      * 按状态统计提交数量
      */
-    @Select("SELECT status, COUNT(*) as count FROM pro_submit GROUP BY status")
+    @Select("SELECT status, COUNT(*) as count FROM pro_submit WHERE deleted = 0 GROUP BY status")
     List<JudgeStatusCountDTO> countByStatus();
 }
