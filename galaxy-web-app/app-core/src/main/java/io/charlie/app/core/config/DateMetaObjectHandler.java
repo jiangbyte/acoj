@@ -51,7 +51,7 @@ public class DateMetaObjectHandler implements MetaObjectHandler {
             return StpUtil.getLoginIdAsString();
         } catch (Exception e) {
             // 0 为系统（含脱离了上下文的）
-            log.warn("无法获取当前登录用户，使用系统默认值");
+//            log.warn("无法获取当前登录用户，使用系统默认值");
             return "0";
         }
     }

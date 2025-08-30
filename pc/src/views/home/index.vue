@@ -128,9 +128,9 @@ loadData()
             <h2 class="text-2xl font-bold">
               全站公告
             </h2>
-            <n-button text @click="$router.push({ path: '/notices' })">
+            <!-- <n-button text @click="$router.push({ path: '/notices' })">
               查看全部
-            </n-button>
+            </n-button> -->
           </div>
 
           <div class="space-y-4">
@@ -142,14 +142,14 @@ loadData()
               })"
             >
               <div class="md:flex">
-                <div class="md:w-1/3 h-48 md:h-auto relative">
+                <div class="md:w-1/3 h-32 md:h-auto relative">
                   <img :src="item.cover" :alt="item.title" class="absolute inset-0 w-full h-full object-cover">
                 </div>
-                <div class="md:w-2/3 p-6">
+                <div class="md:w-2/3 p-x-6 pt-6 pb-1">
                   <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-                    <n-tag size="small" :bordered="false" type="info" class="mr-3">
+                    <!-- <n-tag size="small" :bordered="false" type="info" class="mr-3">
                       重要
-                    </n-tag>
+                    </n-tag> -->
                     <n-time :time="item.createTime" />
                     <span class="mx-2">•</span>
                     <n-text>
@@ -164,9 +164,9 @@ loadData()
                   <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
                     {{ CleanMarkdown(item.content) }}
                   </p>
-                  <n-button text>
+                  <!-- <n-button text>
                     阅读详情
-                  </n-button>
+                  </n-button> -->
                 </div>
               </div>
             </div>
@@ -250,7 +250,7 @@ loadData()
                   <n-tag size="small" :bordered="false" type="info" class="mr-3">
                     {{ item.setTypeName }}
                   </n-tag>
-                  <span class="text-sm text-gray-500 dark:text-gray-400">10道题</span>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">{{ item.problemCount }}道题</span>
                 </div>
                 <n-button text class="mb-2">
                   <h3 class="text-xl font-semibold">

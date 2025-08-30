@@ -70,5 +70,12 @@ export function useProSetProgressFetch() {
         },
       })
     },
+    proSetProgressDataPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/datapage`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

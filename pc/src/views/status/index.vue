@@ -59,12 +59,12 @@ async function loadData() {
 loadData()
 
 const columns: DataTableColumns<any> = [
-  {
-    title: 'ID',
-    key: 'id',
-    width: 80,
-    ellipsis: true,
-  },
+  // {
+  //   title: 'ID',
+  //   key: 'id',
+  //   width: 80,
+  //   ellipsis: true,
+  // },
   {
     title: '题目',
     key: 'problemIdName',

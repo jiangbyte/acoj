@@ -424,7 +424,7 @@ function resetHandle() {
               })"
             >
               <div class="flex items-center">
-                <div class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center text-yellow-600 dark:text-yellow-300 font-bold mr-4">
+                <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-yellow-900 flex items-center justify-center font-bold mr-4">
                   {{ item.ranking }}
                 </div>
                 <div class="flex-1">
@@ -434,13 +434,12 @@ function resetHandle() {
                     </h4>
                   </n-button>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
-                    12,540人学习
+                    {{ item.participantCount }}人解题
                   </p>
                 </div>
-                <div class="flex items-center text-yellow-500">
-                  <i class="fa fa-star mr-1" />
-                  <span>4.8</span>
-                </div>
+                <!-- <div class="flex items-center text-yellow-500">
+                  <span>{{ item.acceptance ? item.acceptance : 0 }}</span>
+                </div> -->
               </div>
             </div>
           </div>

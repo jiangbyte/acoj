@@ -188,12 +188,15 @@ onUnmounted(() => {
           </n-space>
         </template>
         <template v-else>
-          <n-avatar
-            v-if="useTokenStore().isLogined"
-            round
-            :src="profile?.avatar"
-            @click="doOpen"
-          />
+          <n-space v-if="useTokenStore().isLogined" align="center" @click="doOpen">
+            <n-avatar
+              round
+              :src="profile?.avatar"
+            />
+            <n-text strong>
+              {{ profile?.nickname }}
+            </n-text>
+          </n-space>
           <n-button
             v-else
             text

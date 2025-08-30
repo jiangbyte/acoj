@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { AesCrypto } from '@/utils'
 import MdViewer from '@/components/common/editor/md/Viewer.vue'
-import { useProSetFetch, useProSetSolvedFetch, useProSetSubmitFetch } from '@/composables'
+import { useProSetFetch, useProSetSolvedFetch, useProSetSubmitFetch, useProSetProgressFetch } from '@/composables'
 import type { DataTableColumns } from 'naive-ui'
 import { NAvatar, NButton, NSpace, NTag, NText, NTime } from 'naive-ui'
 import { Icon } from '@iconify/vue'
@@ -326,14 +326,14 @@ const processColumns: DataTableColumns<any> = [
               {
                 size: 'small',
                 round: true,
-                src: row.avatar,
+                src: row.userAvatar,
               },
               {},
             ),
             h(
               NText,
               {},
-              { default: () => row.nickname },
+              { default: () => row.userName },
             ),
           ],
         },
@@ -359,57 +359,68 @@ const processColumns: DataTableColumns<any> = [
     },
   },
 ]
+const progressPageData = ref()
+const progressPageParam = ref({
+  current: 1,
+  size: 10,
+  sortField: null,
+  sortOrder: null,
+  keyword: '',
+  problemSetId: originalId,
+})
+
 async function loadData() {
-  try {
-    const { proSetDetail, proSetProblemPage, proSetProblemList } = useProSetFetch()
-    const { data } = await proSetDetail({ id: originalId })
+  const { proSetDetail, proSetProblemPage, proSetProblemList } = useProSetFetch()
+  const { data } = await proSetDetail({ id: originalId })
 
+  if (data) {
+    detailData.value = data
+  }
+
+  // proSetProblemPage(setProblemPageParam.value).then(({ data }) => {
+  //   setProblemPageData.value = data
+  //   // processColumns.push({
+  //   //   title: '操作',
+  //   //   key: 'action',
+  //   //   width: 150,
+  //   // })
+  //   // 获得setProblemPageData.value里面的records的title，以id为key，title为title，增加到processColumns
+  //   setProblemPageData.value.records.forEach((item: any) => {
+  //     processColumns.push({
+  //       title: item.title,
+  //       key: item.id,
+  //       width: 100,
+  //     })
+  //   })
+  // })
+
+  proSetProblemList(setProblemPageParam.value).then(({ data }) => {
+    setProblemPageData.value = data
     if (data) {
-      detailData.value = data
-    }
-
-    // proSetProblemPage(setProblemPageParam.value).then(({ data }) => {
-    //   setProblemPageData.value = data
-    //   // processColumns.push({
-    //   //   title: '操作',
-    //   //   key: 'action',
-    //   //   width: 150,
-    //   // })
-    //   // 获得setProblemPageData.value里面的records的title，以id为key，title为title，增加到processColumns
-    //   setProblemPageData.value.records.forEach((item: any) => {
-    //     processColumns.push({
-    //       title: item.title,
-    //       key: item.id,
-    //       width: 100,
-    //     })
-    //   })
-    // })
-
-    proSetProblemList(setProblemPageParam.value).then(({ data }) => {
-      setProblemPageData.value = data
-      if (data) {
-        data.forEach((item: any) => {
-          processColumns.push({
-            title: item.title,
-            key: item.id,
-            width: 100,
-          })
+      data.forEach((item: any) => {
+        processColumns.push({
+          title: item.title,
+          key: item.id,
+          width: 100,
         })
-      }
-    })
+      })
+    }
+  })
 
-    const { proSetSubmitPage } = useProSetSubmitFetch()
-    proSetSubmitPage(submitPageParam.value).then(({ data }) => {
-      submitPageData.value = data
-    })
+  const { proSetSubmitPage } = useProSetSubmitFetch()
+  proSetSubmitPage(submitPageParam.value).then(({ data }) => {
+    submitPageData.value = data
+  })
 
-    const { proSetSolvedUserPage } = useProSetSolvedFetch()
-    proSetSolvedUserPage(proSetSolvedUserDataParam.value).then(({ data }) => {
-      proSetSolvedUserData.value = data
-    })
-  }
-  catch {
-  }
+  const { proSetSolvedUserPage } = useProSetSolvedFetch()
+  proSetSolvedUserPage(proSetSolvedUserDataParam.value).then(({ data }) => {
+    proSetSolvedUserData.value = data
+  })
+
+  const { proSetProgressDataPage } = useProSetProgressFetch()
+  proSetProgressDataPage(progressPageParam.value).then(({ data }) => {
+    progressPageData.value = data
+  })
 }
 loadData()
 function rowProps(row: any) {
@@ -571,7 +582,7 @@ function rowProps(row: any) {
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <n-data-table
               :columns="processColumns"
-              :data="submitPageData?.records"
+              :data="progressPageData?.records"
               :bordered="false"
               :row-key="(row: any) => row.userId"
               class="flex-1 h-full"

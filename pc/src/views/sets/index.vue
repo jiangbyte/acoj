@@ -75,6 +75,9 @@ loadData()
 
 function resetHandle() {
   pageParam.value.keyword = ''
+  pageParam.value.categoryId = null
+  pageParam.value.difficulty = null
+  pageParam.value.setType = null
   loadData()
 }
 
@@ -116,7 +119,19 @@ function handleClick(item: any) {
       </div>
 
       <!-- 高级筛选区 - 分类、难度 -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- 难度筛选 -->
+        <div>
+          <label class="block text-sm font-medium mb-2">题集类型</label>
+          <n-select
+            v-model:value="pageParam.setType"
+            placeholder="选择题集类型"
+            clearable
+            :options="setTypeOptions"
+            @clear="resetHandle"
+          />
+        </div>
+
         <!-- 分类筛选 -->
         <div>
           <label class="block text-sm font-medium mb-2">题集分类</label>
@@ -193,9 +208,8 @@ function handleClick(item: any) {
               <!--            <span class="bg-gray-100 dark:bg-gray-700 text-xs px-2 py-1 rounded">贪心</span> -->
               <!--          </div> -->
               <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span><i class="fa fa-question-circle mr-1" /> 100题</span>
-                <span><i class="fa fa-user mr-1" /> 12,540人学习</span>
-                <span><i class="fa fa-star mr-1" /> 4.8</span>
+                <span><i class="fa fa-question-circle mr-1" /> {{ item.problemCount }}题</span>
+                <span><i class="fa fa-user mr-1" /> {{ item.participantCount }}人参与</span>
               </div>
             </div>
           </div>
@@ -232,7 +246,7 @@ function handleClick(item: any) {
               })"
             >
               <div class="flex items-center">
-                <div class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center text-yellow-600 dark:text-yellow-300 font-bold mr-4">
+                <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-yellow-900 flex items-center justify-center font-bold mr-4">
                   {{ item.ranking }}
                 </div>
                 <div class="flex-1">
@@ -242,13 +256,13 @@ function handleClick(item: any) {
                     </h4>
                   </NButton>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
-                    12,540人学习
+                    {{ item.participantCount }}人参与
                   </p>
                 </div>
-                <div class="flex items-center text-yellow-500">
+                <!-- <div class="flex items-center text-yellow-500">
                   <i class="fa fa-star mr-1" />
                   <span>4.8</span>
-                </div>
+                </div> -->
               </div>
             </div>
           </div>
@@ -280,7 +294,7 @@ function handleClick(item: any) {
                     </h4>
                   </NButton>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
-                    3天前 • 60题
+                    <n-time :time="item.createTime" type="relative" /> • {{ item.problemCount }}题
                   </p>
                 </div>
                 <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">新</span>

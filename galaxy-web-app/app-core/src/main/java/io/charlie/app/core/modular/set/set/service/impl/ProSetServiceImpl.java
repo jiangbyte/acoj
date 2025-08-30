@@ -156,7 +156,28 @@ public class ProSetServiceImpl extends ServiceImpl<ProSetMapper, ProSet> impleme
 
     @Override
     public List<ProSet> latestN(int n) {
-        return this.list(new QueryWrapper<ProSet>().checkSqlInjection().lambda().orderByDesc(ProSet::getCreateTime).last("LIMIT " + n));
+        List<ProSet> list = this.list(new QueryWrapper<ProSet>().checkSqlInjection()
+                .lambda()
+                .orderByAsc(ProSet::getCreateTime)
+                .last("LIMIT " + n)
+        );
+        for (ProSet proSet : list) {
+            // 计算题目数量
+            Long l = proSetProblemMapper.selectCount(new LambdaQueryWrapper<ProSetProblem>().eq(ProSetProblem::getProblemSetId, proSet.getId()));
+            proSet.setProblemCount(String.valueOf(l));
+
+            // 总提交次数
+            Long l1 = proSetSubmitMapper.selectCount(new QueryWrapper<ProSetSubmit>().lambda().eq(ProSetSubmit::getSetId, proSet.getId()));
+            proSet.setSubmitCount(String.valueOf(l1));
+
+            // TODO 平均通过率
+            proSet.setAvgPassRate(BigDecimal.ZERO);
+
+            // 参与人数
+            Long l2 = proSetSolvedMapper.selectCount(new QueryWrapper<ProSetSolved>().lambda().eq(ProSetSolved::getProblemSetId, proSet.getId()));
+            proSet.setParticipantCount(String.valueOf(l2));
+        }
+        return list;
     }
 
     @Override
@@ -211,6 +232,21 @@ public class ProSetServiceImpl extends ServiceImpl<ProSetMapper, ProSet> impleme
             } else {
                 proSet.setIsRunning(false);
             }
+
+            // 计算题目数量
+            Long l = proSetProblemMapper.selectCount(new LambdaQueryWrapper<ProSetProblem>().eq(ProSetProblem::getProblemSetId, proSet.getId()));
+            proSet.setProblemCount(String.valueOf(l));
+
+            // 总提交次数
+            Long l1 = proSetSubmitMapper.selectCount(new QueryWrapper<ProSetSubmit>().lambda().eq(ProSetSubmit::getSetId, proSet.getId()));
+            proSet.setSubmitCount(String.valueOf(l1));
+
+            // TODO 平均通过率
+            proSet.setAvgPassRate(BigDecimal.ZERO);
+
+            // 参与人数
+            Long l2 = proSetSolvedMapper.selectCount(new QueryWrapper<ProSetSolved>().lambda().eq(ProSetSolved::getProblemSetId, proSet.getId()));
+            proSet.setParticipantCount(String.valueOf(l2));
         });
         return page;
     }

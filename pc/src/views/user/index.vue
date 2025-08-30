@@ -136,7 +136,7 @@ function rowProps(row: any) {
       </div>
 
       <!-- 用户基本信息 -->
-      <div class="flex-grow">
+      <div class="flex-grow w-full">
         <div class="flex flex-wrap items-start justify-between gap-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 w-full">
           <div>
             <h1 class="text-2xl md:text-3xl font-bold mb-4">
