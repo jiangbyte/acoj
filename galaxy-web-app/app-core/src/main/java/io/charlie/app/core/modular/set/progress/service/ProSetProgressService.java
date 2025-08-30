@@ -3,6 +3,7 @@ package io.charlie.app.core.modular.set.progress.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.app.core.modular.set.progress.entity.ProSetProgress;
+import io.charlie.app.core.modular.set.progress.entity.ProSetProgressData;
 import io.charlie.app.core.modular.set.progress.param.*;
 
 import java.util.List;
@@ -24,4 +25,5 @@ public interface ProSetProgressService extends IService<ProSetProgress> {
 
     ProSetProgress detail(ProSetProgressIdParam proSetProgressIdParam);
 
+    Page<ProSetProgressData> progressDataPage(ProSetProgressDataPageParam proSetProgressDataPageParam);
 }

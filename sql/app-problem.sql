@@ -230,7 +230,9 @@ CREATE TABLE pro_set_progress
     id             VARCHAR(32) NOT NULL COMMENT '主键',
     user_id        VARCHAR(32) NOT NULL COMMENT '用户ID',
     problem_set_id VARCHAR(32) NOT NULL COMMENT '题单ID',
-    progress       JSON        NOT NULL COMMENT '进度信息',
+    problem_id     VARCHAR(32) NOT NULL COMMENT '题目ID',
+    status         VARCHAR(32) NULL COMMENT '状态',
+    extra_json     JSON        NULL COMMENT '额外信息',
     completed      TINYINT(1)  DEFAULT 0 COMMENT '是否完成',
     completed_at   DATETIME    DEFAULT NULL COMMENT '完成时间',
     # ------------------------------------------------

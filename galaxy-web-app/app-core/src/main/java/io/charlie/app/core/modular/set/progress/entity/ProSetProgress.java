@@ -36,13 +36,23 @@ public class ProSetProgress extends CommonEntity {
     @Schema(description = "题单ID")
     private String problemSetId;
 
-    @Schema(description = "进度信息")
-    private String progress;
+    @Schema(description = "题目ID")
+    private String problemId;
+
+    @Schema(description = "题目ID")
+    @TableField(exist = false)
+    private String problemName;
+
+    @Schema(description = "状态")
+    private String status;
+
+    @Schema(description = "额外信息")
+    private Object extraJson;
 
     @Schema(description = "是否完成")
     private Boolean completed;
 
     @Schema(description = "完成时间")
-    private LocalDateTime completedAt;
+    private Date completedAt;
 
 }

@@ -1,10 +1,7 @@
 package io.charlie.app.core.modular.set.progress.controller;
 
+import io.charlie.app.core.modular.set.progress.param.*;
 import io.charlie.galaxy.result.Result;
-import io.charlie.app.core.modular.set.progress.param.ProSetProgressPageParam;
-import io.charlie.app.core.modular.set.progress.param.ProSetProgressAddParam;
-import io.charlie.app.core.modular.set.progress.param.ProSetProgressEditParam;
-import io.charlie.app.core.modular.set.progress.param.ProSetProgressIdParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -71,5 +68,12 @@ public class ProSetProgressController {
     @GetMapping("/pro/set/progress/detail")
     public Result<?> detail(@ParameterObject @Valid ProSetProgressIdParam proSetProgressIdParam) {
         return Result.success(proSetProgressService.detail(proSetProgressIdParam));
+    }
+
+    @Operation(summary = "获取题集进度进度数据分页")
+    //@SaCheckPermission("/pro/set/progress/datapage")
+    @GetMapping("/pro/set/progress/datapage")
+    public Result<?> progressDataPage(@ParameterObject @Valid ProSetProgressDataPageParam proSetProgressDataPageParam) {
+        return Result.success(proSetProgressService.progressDataPage(proSetProgressDataPageParam));
     }
 }

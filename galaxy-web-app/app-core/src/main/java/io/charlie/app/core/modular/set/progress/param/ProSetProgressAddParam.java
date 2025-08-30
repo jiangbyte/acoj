@@ -28,8 +28,11 @@ public class ProSetProgressAddParam implements Serializable {
     @Schema(description = "题单ID")
     private String problemSetId;
 
-    @Schema(description = "进度信息")
-    private String progress;
+    @Schema(description = "题目ID")
+    private String problemId;
+
+    @Schema(description = "状态")
+    private Integer status;
 
     @Schema(description = "是否完成")
     private Boolean completed;

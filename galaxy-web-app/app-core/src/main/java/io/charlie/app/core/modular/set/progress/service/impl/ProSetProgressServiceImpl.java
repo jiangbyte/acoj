@@ -7,9 +7,11 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.set.progress.entity.ProSetProgress;
+import io.charlie.app.core.modular.set.progress.entity.ProSetProgressData;
 import io.charlie.app.core.modular.set.progress.param.*;
 import io.charlie.app.core.modular.set.progress.mapper.ProSetProgressMapper;
 import io.charlie.app.core.modular.set.progress.service.ProSetProgressService;
@@ -26,11 +28,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-06-23
-* @description 题集进度表 服务实现类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-06-23
+ * @description 题集进度表 服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -49,7 +51,7 @@ public class ProSetProgressServiceImpl extends ServiceImpl<ProSetProgressMapper,
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(proSetProgressPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(proSetProgressPageParam.getSize()).orElse(20),
-                null
+                        null
                 ),
                 queryWrapper);
     }
@@ -88,6 +90,17 @@ public class ProSetProgressServiceImpl extends ServiceImpl<ProSetProgressMapper,
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
         return proSetProgress;
+    }
+
+    @Override
+    public Page<ProSetProgressData> progressDataPage(ProSetProgressDataPageParam proSetProgressDataPageParam) {
+        QueryWrapper<ProSetProgressData> queryWrapper = new QueryWrapper<ProSetProgressData>().checkSqlInjection();
+
+        Page<ProSetProgressData> page = (Page<ProSetProgressData>) this.baseMapper.selectProgressDataPage(CommonPageRequest.Page(
+                Optional.ofNullable(proSetProgressDataPageParam.getCurrent()).orElse(1),
+                Optional.ofNullable(proSetProgressDataPageParam.getSize()).orElse(20), null), queryWrapper, proSetProgressDataPageParam);
+
+        return page;
     }
 
 }
