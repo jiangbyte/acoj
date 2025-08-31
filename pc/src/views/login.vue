@@ -11,7 +11,7 @@ const formData = ref({
   password: '123456789',
   captchaCode: '',
   uuid: '',
-  platform: 'ADMIN',
+  platform: 'CLIENT',
 })
 const formRules = {
   username: {
