@@ -7,8 +7,8 @@ import { useAuthFetch, useSysConfigFetch } from '@/composables'
 // 表单数据
 const formRef = ref<FormInst | null>(null)
 const formData = ref({
-  username: 'super',
-  password: '123456789',
+  username: '',
+  password: '',
   captchaCode: '',
   uuid: '',
   platform: 'CLIENT',
