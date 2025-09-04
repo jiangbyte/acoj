@@ -78,4 +78,7 @@ public class ProProblemAddParam implements Serializable {
     @Schema(description = "是否公开")
     private Boolean isPublic;
 
+    @Schema(description = "是否 LLM 增强")
+    private Boolean isLlmEnhanced;
+
 }

@@ -1,10 +1,12 @@
-package io.charlie.app.core.modular.chat.config;
+package io.charlie.app.core.modular.llm.config;
 
 import com.alibaba.cloud.ai.advisor.DocumentRetrievalAdvisor;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetriever;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
+import io.charlie.app.core.modular.sys.config.service.SysConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -34,7 +36,9 @@ public class AiConfig {
 
     @Bean
     public DashScopeApi dashScopeApi() {
+//        String valueByCode = sysConfigService.getValueByCode("DASHSCOPE_API_KEY");
         return DashScopeApi.builder().apiKey(env.getProperty("spring.ai.dashscope.api-key")).build();
+//        return DashScopeApi.builder().apiKey(valueByCode).build();
     }
 
     @Bean

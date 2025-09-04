@@ -59,6 +59,28 @@ public class ProblemUserRankingServiceImpl extends ServiceImpl<ProblemUserRankin
     }
 
     @Override
+    public Page<ProblemUserRanking> totalRankingPageWithParam(ProblemUserRankingPageParam problemRankingPageParam) {
+        QueryWrapper<ProblemUserRanking> queryWrapper = new QueryWrapper<ProblemUserRanking>().checkSqlInjection();
+        // 关键字
+        if (ObjectUtil.isNotEmpty(problemRankingPageParam.getKeyword())) {
+            queryWrapper.lambda().like(ProblemUserRanking::getNickname, problemRankingPageParam.getKeyword());
+        }
+
+        if (ObjectUtil.isAllNotEmpty(problemRankingPageParam.getSortField(), problemRankingPageParam.getSortOrder()) && ISortOrderEnum.isValid(problemRankingPageParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    problemRankingPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(problemRankingPageParam.getSortField()));
+        }
+
+        return (Page<ProblemUserRanking>) this.baseMapper.selectTotalRankingPageWithParam(CommonPageRequest.Page(
+                Optional.ofNullable(problemRankingPageParam.getCurrent()).orElse(1),
+                Optional.ofNullable(problemRankingPageParam.getSize()).orElse(20),
+                null
+        ), queryWrapper, problemRankingPageParam);
+    }
+
+    @Override
     public Page<ProblemUserRanking> monthlyRankingPage(ProblemUserRankingPageParam problemRankingPageParam) {
         QueryWrapper<ProblemUserRanking> queryWrapper = new QueryWrapper<ProblemUserRanking>().checkSqlInjection();
         // 关键字

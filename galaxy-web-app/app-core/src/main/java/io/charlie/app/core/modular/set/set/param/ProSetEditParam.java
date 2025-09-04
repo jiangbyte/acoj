@@ -53,4 +53,8 @@ public class ProSetEditParam implements Serializable {
 //    @Schema(description = "配置信息")
 //    private String config;
 
+
+    @Schema(description = "是否 LLM 增强")
+    private Boolean isLlmEnhanced;
+
 }

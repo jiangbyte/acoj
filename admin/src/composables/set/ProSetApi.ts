@@ -18,6 +18,7 @@ export function useProSetFetch() {
     description: '',
     categoryId: null,
     difficulty: null,
+    isLlmEnhanced: false,
     startTime: new Date(),
     endTime: new Date(),
     config: '',
@@ -69,6 +70,20 @@ export function useProSetFetch() {
      */
     proSetDetail(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    proSetProblemPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problems/page`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    proSetProblemList(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problems/list`, {
         params: {
           ...data,
         },

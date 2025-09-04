@@ -9,10 +9,10 @@ const dialog = useDialog()
 function handleSelect(key: string | number) {
   if (key === 'logout') {
     dialog.info({
-      title: 'Logout',
-      content: 'Are you sure you want to log out?',
-      positiveText: 'Confirm',
-      negativeText: 'Cancel',
+      title: '登出',
+      content: '你确定要登出吗？',
+      positiveText: '登出',
+      negativeText: '取消',
       onPositiveClick: async () => {
         useToken.logoutAndRedirect()
       },
@@ -28,17 +28,17 @@ function handleSelect(key: string | number) {
 
 const options = [
   {
-    label: 'Profile',
+    label: '个人信息',
     key: 'profile',
     icon: iconRender('icon-park-outline:id-card-h'),
   },
   {
-    label: 'Security',
+    label: '账户安全',
     key: 'security',
     icon: iconRender('icon-park-outline:people-safe'),
   },
   {
-    label: 'Logout',
+    label: '登出',
     key: 'logout',
     icon: iconRender('icon-park-outline:logout'),
   },

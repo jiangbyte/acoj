@@ -104,4 +104,12 @@ public class ProSet extends CommonEntity {
     @Schema(description = "参与人数")
     @TableField(exist = false)
     private String participantCount;
+
+    @Schema(description = "是否 LLM 增强")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO", ref = "isLlmEnhancedName")
+    private Boolean isLlmEnhanced;
+
+    @Schema(description = "是否 LLM 增强名称")
+    @TableField(exist = false)
+    private String isLlmEnhancedName;
 }

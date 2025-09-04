@@ -37,9 +37,9 @@ defineExpose({
         <NDescriptionsItem label="值">
           {{ formData.value }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="组件类型">
+        <!-- <NDescriptionsItem label="组件类型">
           {{ formData.componentType }}
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="描述">
           {{ formData.description }}
         </NDescriptionsItem>

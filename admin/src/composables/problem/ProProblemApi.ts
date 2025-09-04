@@ -25,6 +25,7 @@ export function useProProblemFetch() {
     difficulty: 1,
     useTemplate: false,
     isPublic: false,
+    isLlmEnhanced: false,
     codeTemplate: [],
     solved: 0,
     createTime: '',

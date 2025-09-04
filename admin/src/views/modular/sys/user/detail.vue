@@ -63,6 +63,9 @@ function getGenderText(gender: 0 | 1 | 2) {
         <NDescriptionsItem label="电话">
           {{ formData.telephone }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="学号">
+          {{ formData.studentNumber }}
+        </NDescriptionsItem>
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>

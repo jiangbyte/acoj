@@ -11,7 +11,7 @@ async function loadData() {
   const [appConfig, logoConfig, adminShowConfig] = await Promise.all([
     getValueByCode({ code: 'APP_NAME' }),
     getValueByCode({ code: 'APP_LOGO' }),
-    getValueByCode({ code: 'APP_ADMIN_SHOW_APP_NAME' }),
+    getValueByCode({ code: 'APP_PC_SHOW_APP_NAME' }),
   ])
 
   // 处理配置项

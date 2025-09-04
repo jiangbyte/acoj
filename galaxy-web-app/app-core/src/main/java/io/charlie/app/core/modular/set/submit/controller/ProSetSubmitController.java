@@ -76,4 +76,11 @@ public class ProSetSubmitController {
     public Result<?> execute(@RequestBody @Valid ProSetSubmitExecuteParam proSetSubmitExecuteParam) {
         return Result.success(proSetSubmitService.execute(proSetSubmitExecuteParam));
     }
+
+    @Operation(summary = "获取题单提交用户提交分页")
+    //@SaCheckPermission("/pro/set/submit/problemUserSubmitPage")
+    @GetMapping("/pro/set/submit/problemUserSubmitPage")
+    public Result<?> problemUserSubmitPage(@ParameterObject @Valid ProSetUserSubmitPageParam proSetUserSubmitPageParam) {
+        return Result.success(proSetSubmitService.problemUserSubmitPage(proSetUserSubmitPageParam));
+    }
 }

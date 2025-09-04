@@ -17,6 +17,7 @@ import java.util.List;
  */
 public interface ProblemUserRankingService {
     Page<ProblemUserRanking> totalRankingPage(ProblemUserRankingPageParam problemRankingPageParam);
+    Page<ProblemUserRanking> totalRankingPageWithParam(ProblemUserRankingPageParam problemRankingPageParam);
 
     Page<ProblemUserRanking> monthlyRankingPage(ProblemUserRankingPageParam problemRankingPageParam);
 

@@ -40,6 +40,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '开始时间',
     key: 'startTime',
+    width: 180,
     render: (row) => {
       return h(NTime, { time: row.startTime })
     },
@@ -47,14 +48,19 @@ const columns: DataTableColumns<any> = [
   {
     title: '结束时间',
     key: 'endTime',
+    width: 180,
     render: (row) => {
       return h(NTime, { time: row.endTime })
     },
   },
   {
+    title: 'LLM启用',
+    key: 'isLlmEnhancedName',
+  },
+  {
     title: '操作',
     key: 'action',
-    width: 200,
+    width: 280,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -64,6 +70,11 @@ const columns: DataTableColumns<any> = [
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
+        h(NButton, {
+          type: 'warning',
+          size: 'small',
+          onClick: () => {},
+        }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {

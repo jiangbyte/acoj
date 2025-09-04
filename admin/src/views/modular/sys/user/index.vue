@@ -56,6 +56,11 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
+    title: '学号',
+    key: 'studentNumber',
+    ellipsis: true,
+  },
+  {
     title: '邮箱',
     key: 'email',
     ellipsis: true,

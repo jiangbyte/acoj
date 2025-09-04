@@ -1,4 +1,4 @@
-package io.charlie.app.core.modular.chat.controller;
+package io.charlie.app.core.modular.llm.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotNull;
@@ -35,7 +35,7 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 @RequestMapping("/api/v1")
 @RestController
 @Validated
-public class ChatController {
+public class LLMController {
     private final ChatClient client;
 
     private final ExecutorService executor = Executors.newCachedThreadPool();

@@ -110,4 +110,7 @@ public class ProSetSubmit extends CommonEntity {
     @Schema(description = "相似检测任务ID")
     private String taskId;
 
+    @Schema(description = "是否完成")
+    private Boolean isFinish;
+
 }

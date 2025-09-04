@@ -1,13 +1,14 @@
 <script lang="ts" setup>
-import { NAvatar, NSpace, NText } from 'naive-ui'
-// import { useSysUser } from '@/composables'
+import { useSysUserFetch } from '@/composables'
 
-// const { getProfile } = useSysUser()
+const { getProfile } = useSysUserFetch()
 
 const response = ref<IResult<any>>()
-onMounted(async () => {
-  // response.value = await getProfile() || { data: { nickname: 'No Data', avatar: '#' } }
-})
+async function loadData() {
+  response.value = await getProfile() || { data: { nickname: 'No Data', avatar: '#' } }
+  console.log(response.value)
+}
+loadData()
 </script>
 
 <template>
@@ -21,7 +22,3 @@ onMounted(async () => {
     </NText>
   </NSpace>
 </template>
-
-<style>
-
-</style>

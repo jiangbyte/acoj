@@ -40,6 +40,9 @@ public class SysUserUpdateAppParam implements Serializable {
     @Schema(description = "签名")
     private String quote;
 
+    @Schema(description = "学号")
+    private String studentNumber;
+
     @Schema(description = "性别")
     private Boolean gender;
 

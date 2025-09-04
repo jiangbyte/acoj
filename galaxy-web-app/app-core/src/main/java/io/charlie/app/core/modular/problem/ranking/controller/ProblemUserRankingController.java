@@ -26,7 +26,7 @@ public class ProblemUserRankingController {
     //@SaCheckPermission("/pro/problem/page")
     @GetMapping("/pro/problem/user/ranking/page/total")
     public Result<?> totalRankingPage(@ParameterObject ProblemUserRankingPageParam problemRankingPageParam) {
-        return Result.success(problemSubmitRankingService.totalRankingPage(problemRankingPageParam));
+        return Result.success(problemSubmitRankingService.totalRankingPageWithParam(problemRankingPageParam));
     }
 
     @Operation(summary = "获取用户总排行榜")

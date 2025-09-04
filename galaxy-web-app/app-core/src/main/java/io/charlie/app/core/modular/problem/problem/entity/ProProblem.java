@@ -144,4 +144,12 @@ public class ProProblem extends CommonEntity {
     @Schema(description = "是否公开名称")
     @TableField(exist = false)
     private String isPublicName;
+
+    @Schema(description = "是否 LLM 增强")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO", ref = "isLlmEnhancedName")
+    private Boolean isLlmEnhanced;
+
+    @Schema(description = "是否 LLM 增强名称")
+    @TableField(exist = false)
+    private String isLlmEnhancedName;
 }

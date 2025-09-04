@@ -146,6 +146,10 @@ public class ProSetProblemServiceImpl extends ServiceImpl<ProSetProblemMapper, P
 
         List<ProProblem> proProblemList = this.baseMapper.selectSetProblemList(queryWrapper, setProblemListParam.getSetId());
 
+        if (ObjectUtil.isEmpty(proProblemList)) {
+            return List.of();
+        }
+
         proProblemList.forEach(item -> {
             // 缓存取出标签列表
             List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());

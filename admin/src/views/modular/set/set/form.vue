@@ -38,6 +38,9 @@ const rules = {
   config: [
     // { required: true, message: '请输入配置信息', trigger: ['input', 'blur'] },
   ],
+  // isLlmEnhanced: [
+  //   { required: true, message: '请选择是否LLM解析增强', trigger: ['change'] },
+  // ],
 }
 function doClose() {
   emit('close')
@@ -155,6 +158,16 @@ defineExpose({
             clearable
             remote
           />
+        </NFormItem>
+        <NFormItem label="LLM解析增强" path="isLlmEnhanced">
+          <NRadioGroup v-model:value="formData.isLlmEnhanced">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
         </NFormItem>
         <!-- 日期选择 -->
         <NFormItem label="开始时间" path="startTime">

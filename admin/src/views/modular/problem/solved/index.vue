@@ -8,6 +8,7 @@ import Detail from './detail.vue'
 
 const formRef = ref()
 const detailRef = ref()
+const problemDataModalRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -62,16 +63,21 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 200,
+    width: 220,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          onClick: () => formRef.value.doOpen(row, true),
-        }, () => '编辑'),
+        // h(NButton, {
+        //   type: 'primary',
+        //   size: 'small',
+        //   onClick: () => formRef.value.doOpen(row, true),
+        // }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
+        h(NButton, {
+          type: 'warning',
+          size: 'small',
+          onClick: () => {},
+        }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {
@@ -126,10 +132,14 @@ const pageParam = ref({
   sortField: null,
   sortOrder: null,
   keyword: '',
+  problemId: '',
 })
 
+const selectProblemTitle = ref('')
 function resetHandle() {
   pageParam.value.keyword = ''
+  pageParam.value.problemId = ''
+  selectProblemTitle.value = ''
   loadData()
 }
 
@@ -177,6 +187,17 @@ async function deleteBatchHandle() {
             <NFormItem :show-feedback="false" label="关键词" label-placement="left">
               <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" />
             </NFormItem>
+            <NFormItem :show-feedback="false" label="题目" label-placement="left">
+              <SingleProblemModal
+                ref="problemDataModalRef"
+                v-model:value="pageParam.problemId"
+                v-model:title="selectProblemTitle"
+                @update:select="loadData()"
+              />
+              <NButton @click="problemDataModalRef.doOpen()">
+                {{ selectProblemTitle ? selectProblemTitle : '未选择题目' }}
+              </NButton>
+            </NFormItem>
             <NSpace align="center">
               <NButton type="primary" @click="loadData">
                 <template #icon>
@@ -195,12 +216,12 @@ async function deleteBatchHandle() {
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
-            <NButton type="primary" @click="formRef.doOpen(null, false)">
+            <!-- <NButton type="primary" @click="formRef.doOpen(null, false)">
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
               创建
-            </NButton>
+            </NButton> -->
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除

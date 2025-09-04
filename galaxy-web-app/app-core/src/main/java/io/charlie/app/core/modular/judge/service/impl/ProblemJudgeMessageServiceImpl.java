@@ -76,7 +76,7 @@ public class ProblemJudgeMessageServiceImpl implements ProblemJudgeMessageServic
         bean.setUpdateUser(bean.getUserId());
         proSubmitMapper.updateById(bean);
 
-        if (bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue())) {
+        if (bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue()) && judgeResultDto.getSubmitType()) {
             proSolvedMapper.update(new LambdaUpdateWrapper<ProSolved>()
                     .eq(ProSolved::getUserId, bean.getUserId())
                     .eq(ProSolved::getProblemId, bean.getProblemId())
@@ -88,7 +88,8 @@ public class ProblemJudgeMessageServiceImpl implements ProblemJudgeMessageServic
             if (judgeResultDto.getSubmitType()) {
                 problemSimilarityMessageService.sendSimilarityRequest(BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class));
             }
-        } else {
+        }
+        if (!bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue()) && judgeResultDto.getSubmitType()) {
             proSolvedMapper.update(new LambdaUpdateWrapper<ProSolved>()
                     .eq(ProSolved::getUserId, bean.getUserId())
                     .eq(ProSolved::getProblemId, bean.getProblemId())

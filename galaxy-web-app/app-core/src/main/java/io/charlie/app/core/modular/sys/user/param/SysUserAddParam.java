@@ -46,6 +46,9 @@ public class SysUserAddParam implements Serializable {
     @Schema(description = "性别")
     private Boolean gender;
 
+    @Schema(description = "学号")
+    private String studentNumber;
+
     @Schema(description = "邮箱")
     private String email;
 

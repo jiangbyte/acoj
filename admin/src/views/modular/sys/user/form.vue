@@ -40,6 +40,9 @@ const rules = {
   telephone: [
     { required: true, message: '请输入电话', trigger: ['input', 'blur'] },
   ],
+  // studentNumber: [
+  //   { required: true, message: '请输入学号', trigger: ['input', 'blur'] },
+  // ],
 }
 function doClose() {
   emit('close')
@@ -114,6 +117,9 @@ async function handleGroupSearch(query: string) {
         <NFormItem v-if="isEdit" label="主键" path="id">
           <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
         </NFormItem>
+        <NFormItem label="学号" path="studentNumber">
+          <NInput v-model:value="formData.studentNumber" placeholder="请输入学号" />
+        </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="用户组" path="groupId">
           <!-- <NInput v-model:value="formData.groupId" placeholder="请输入用户组" /> -->
@@ -146,7 +152,7 @@ async function handleGroupSearch(query: string) {
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="签名" path="quote">
-          <NInput v-model:value="formData.quote" placeholder="请输入签名" />
+          <NInput v-model:value="formData.quote" type="textarea" placeholder="请输入签名" />
         </NFormItem>
         <!-- Boolean 选择框 -->
         <NFormItem label="性别" path="gender">

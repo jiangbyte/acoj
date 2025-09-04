@@ -17,6 +17,7 @@ import io.charlie.app.core.modular.problem.solved.param.ProSolvedIdParam;
 import io.charlie.app.core.modular.problem.solved.param.ProSolvedPageParam;
 import io.charlie.app.core.modular.problem.solved.mapper.ProSolvedMapper;
 import io.charlie.app.core.modular.problem.solved.service.ProSolvedService;
+import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
@@ -49,6 +50,10 @@ public class ProSolvedServiceImpl extends ServiceImpl<ProSolvedMapper, ProSolved
                     true,
                     proSolvedPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(proSolvedPageParam.getSortField()));
+        }
+
+        if (ObjectUtil.isNotEmpty(proSolvedPageParam.getProblemId())) {
+            queryWrapper.lambda().eq(ProSolved::getProblemId, proSolvedPageParam.getProblemId());
         }
 
         return this.page(CommonPageRequest.Page(

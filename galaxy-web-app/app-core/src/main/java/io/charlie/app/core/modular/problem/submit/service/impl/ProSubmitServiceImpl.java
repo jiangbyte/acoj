@@ -75,6 +75,9 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
                 queryWrapper.lambda().eq(ProSubmit::getProblemId, "-1");
             }
         }
+        if (ObjectUtil.isNotEmpty(proSubmitPageParam.getProblemId())) {
+            queryWrapper.lambda().eq(ProSubmit::getProblemId, proSubmitPageParam.getProblemId());
+        }
         if (GaStringUtil.isNotEmpty(proSubmitPageParam.getLanguage())) {
             queryWrapper.lambda().eq(ProSubmit::getLanguage, proSubmitPageParam.getLanguage());
         }

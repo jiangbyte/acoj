@@ -39,25 +39,26 @@ CREATE TABLE sys_group
 DROP TABLE IF EXISTS sys_user;
 CREATE TABLE sys_user
 (
-    id          VARCHAR(32)  NOT NULL COMMENT '主键',
-    group_id    VARCHAR(32) COMMENT '用户组',
-    username    VARCHAR(64)  NOT NULL COMMENT '用户名',
-    password    VARCHAR(100) NOT NULL COMMENT '密码',
-    nickname    VARCHAR(128) NOT NULL COMMENT '昵称',
-    avatar      VARCHAR(255) NULL COMMENT '头像',
-    background  VARCHAR(255) NULL COMMENT '背景图片',
-    quote       VARCHAR(255) NULL COMMENT '签名',
-    gender      TINYINT(1)  DEFAULT 0 COMMENT '性别',
-    email       VARCHAR(128) NOT NULL COMMENT '邮箱',
-    telephone   VARCHAR(20)  NULL COMMENT '电话',
+    id             VARCHAR(32)  NOT NULL COMMENT '主键',
+    group_id       VARCHAR(32) COMMENT '用户组',
+    username       VARCHAR(64)  NOT NULL COMMENT '用户名',
+    password       VARCHAR(100) NOT NULL COMMENT '密码',
+    nickname       VARCHAR(128) NOT NULL COMMENT '昵称',
+    avatar         VARCHAR(255) NULL COMMENT '头像',
+    background     VARCHAR(255) NULL COMMENT '背景图片',
+    quote          VARCHAR(255) NULL COMMENT '签名',
+    gender         TINYINT(1)  DEFAULT 0 COMMENT '性别',
+    email          VARCHAR(128) NOT NULL COMMENT '邮箱',
+    student_number VARCHAR(20)  NULL COMMENT '学号',
+    telephone      VARCHAR(20)  NULL COMMENT '电话',
     -- 登录时间
-    login_time  DATETIME    DEFAULT NULL COMMENT '登录时间',
+    login_time     DATETIME    DEFAULT NULL COMMENT '登录时间',
     # ------------------------------------------------
-    deleted     TINYINT(1)  DEFAULT 0 COMMENT '删除状态',
-    create_time DATETIME    DEFAULT NULL COMMENT '创建时间戳',
-    create_user VARCHAR(32) DEFAULT NULL COMMENT '创建者',
-    update_time DATETIME    DEFAULT NULL COMMENT '更新时间戳',
-    update_user VARCHAR(32) DEFAULT NULL COMMENT '更新者',
+    deleted        TINYINT(1)  DEFAULT 0 COMMENT '删除状态',
+    create_time    DATETIME    DEFAULT NULL COMMENT '创建时间戳',
+    create_user    VARCHAR(32) DEFAULT NULL COMMENT '创建者',
+    update_time    DATETIME    DEFAULT NULL COMMENT '更新时间戳',
+    update_user    VARCHAR(32) DEFAULT NULL COMMENT '更新者',
     -- 添加索引
     PRIMARY KEY (id),
     INDEX idx_username (username),
@@ -360,19 +361,26 @@ VALUES (1, '超级管理员', 'super', '超级管理员', 1),
        (4, '用户组管理员', 'group', '用户组管理员', 4),
        (5, '普通用户', 'user', '普通用户', 5);
 
+-- 初始化用户组
+INSERT INTO sys_group(id, code, name, description, parent_id, create_time, create_user, update_time, update_user)
+VALUES (1, 'SUPER_GROUP', '超级管理员组', '超级管理员组', 0, NOW(), 1, NOW(), 1);
+INSERT INTO sys_group(id, code, name, description, parent_id, create_time, create_user, update_time, update_user)
+VALUES (2, 'ADMIN_GROUP', '管理员组', '管理员组', 1, NOW(), 1, NOW(), 1);
+INSERT INTO sys_group(id, code, name, description, parent_id, create_time, create_user, update_time, update_user)
+VALUES (0, 'USER_GROUP', '默认用户组', '默认用户组', 2, NOW(), 1, NOW(), 1);
 
 -- 初始化用户数据
-INSERT INTO sys_user(id, username, password, nickname, email, telephone, create_time, create_user, update_time, update_user)
-VALUES (1, 'super', '$2a$10$TePd3nIT3FJguI2Vp4BdfuqWONoa6xnIyK5QnHak.s3DT/8N9CXSS', '超级管理员', 'super@example.com', '13800000000', NOW(), 1, NOW(), 1),
-       (2, 'admin', '$2a$10$TePd3nIT3FJguI2Vp4BdfuqWONoa6xnIyK5QnHak.s3DT/8N9CXSS', '管理员', 'admin@example.com', '13800000001', NOW(), 1, NOW(), 1);
+INSERT INTO sys_user(id, group_id, username, password, nickname, email, telephone, create_time, create_user, update_time, update_user)
+VALUES (1, 0, 'super', '$2a$10$TePd3nIT3FJguI2Vp4BdfuqWONoa6xnIyK5QnHak.s3DT/8N9CXSS', '超级管理员', 'super@example.com', '13800000000', NOW(), 1, NOW(), 1),
+       (2, 0, 'admin', '$2a$10$TePd3nIT3FJguI2Vp4BdfuqWONoa6xnIyK5QnHak.s3DT/8N9CXSS', '管理员', 'admin@example.com', '13800000001', NOW(), 1, NOW(), 1);
 
-# INSERT INTO sys_user_role(user_id, role_id)
-# VALUES (1, 1),
-#        (1, 2),
-#        (1, 3),
-#        (2, 2),
-#        (2, 3),
-#        (3, 3);
+INSERT INTO sys_user_role(user_id, role_id)
+VALUES (1, 1),
+       (1, 2),
+       (1, 3),
+       (2, 2),
+       (2, 3),
+       (3, 3);
 # -- 其他用户统一分配普通用户角色
 # INSERT INTO sys_user_role(user_id, role_id)
 # SELECT id, 3

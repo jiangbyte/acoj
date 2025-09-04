@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import io.charlie.app.core.modular.problem.ranking.entity.ProblemUserRanking;
+import io.charlie.app.core.modular.problem.ranking.param.ProblemUserRankingPageParam;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -18,6 +19,9 @@ import java.util.List;
 //@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface ProblemUserRankingMapper extends BaseMapper<ProblemUserRanking> {
     IPage<ProblemUserRanking> selectTotalRankingPage(IPage<ProblemUserRanking> page, Wrapper<ProblemUserRanking> ew);
+
+    IPage<ProblemUserRanking> selectTotalRankingPageWithParam(IPage<ProblemUserRanking> page, Wrapper<ProblemUserRanking> ew, ProblemUserRankingPageParam param);
+
     IPage<ProblemUserRanking> selectMonthlyRankingPage(IPage<ProblemUserRanking> page, Wrapper<ProblemUserRanking> ew);
     IPage<ProblemUserRanking> selectWeeklyRankingPage(IPage<ProblemUserRanking> page, Wrapper<ProblemUserRanking> ew);
     IPage<ProblemUserRanking> selectDailyRankingPage(IPage<ProblemUserRanking> page, Wrapper<ProblemUserRanking> ew);

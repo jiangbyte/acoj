@@ -46,6 +46,9 @@ defineExpose({
         <NDescriptionsItem label="难度">
           {{ formData.difficultyName }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="LLM解析增强">
+          {{ formData.isLlmEnhancedName }}
+        </NDescriptionsItem>
         <NDescriptionsItem label="开始时间">
           <NTime :time="Number(formData.startTime)" />
         </NDescriptionsItem>

@@ -10,11 +10,14 @@
             pro_problem pp
         INNER JOIN
             pro_set_problem psp ON pp.id = psp.problem_id
-        WHERE
+        <where>
             psp.problem_set_id = #{setId}
-        <if test="ew != null and ew.sqlSegment != null">
-            ${ew.sqlSegment}
-        </if>
+            <if test="ew != null">
+                <if test="ew.sqlSegment != null and ew.sqlSegment != ''">
+                    AND ${ew.sqlSegment}
+                </if>
+            </if>
+        </where>
         ORDER BY psp.sort ASC
     </select>
 
@@ -26,11 +29,14 @@
         pro_problem pp
         INNER JOIN
         pro_set_problem psp ON pp.id = psp.problem_id
-        WHERE
-        psp.problem_set_id = #{setId}
-        <if test="ew != null and ew.sqlSegment != null">
-            ${ew.sqlSegment}
-        </if>
+        <where>
+            psp.problem_set_id = #{setId}
+            <if test="ew != null">
+                <if test="ew.sqlSegment != null and ew.sqlSegment != ''">
+                    AND ${ew.sqlSegment}
+                </if>
+            </if>
+        </where>
         ORDER BY psp.sort ASC
     </select>
 </mapper>

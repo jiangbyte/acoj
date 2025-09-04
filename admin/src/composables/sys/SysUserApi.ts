@@ -21,6 +21,7 @@ export function useSysUserFetch() {
     quote: '',
     gender: 0,
     email: '',
+    studentNumber: '',
     telephone: '',
     createTime: '',
     createUser: '',
@@ -85,6 +86,12 @@ export function useSysUserFetch() {
           ...data,
         },
       })
+    },
+    /*
+     * 用户 信息接口
+     */
+    getProfile() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/profile`)
     },
   }
 }

@@ -2,6 +2,8 @@ package io.charlie.app.core.modular.set.submit.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
+import io.charlie.app.core.modular.problem.submit.param.ProUserSubmitPageParam;
 import io.charlie.app.core.modular.set.submit.entity.ProSetSubmit;
 import io.charlie.app.core.modular.set.submit.param.*;
 
@@ -24,5 +26,8 @@ public interface ProSetSubmitService extends IService<ProSetSubmit> {
 
     ProSetSubmit detail(ProSetSubmitIdParam proSetSubmitIdParam);
 
+    Page<ProSetSubmit> problemUserSubmitPage(ProSetUserSubmitPageParam proSetUserSubmitPageParam);
+
     String execute(ProSetSubmitExecuteParam proSetSubmitExecuteParam);
+
 }

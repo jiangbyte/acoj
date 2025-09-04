@@ -44,6 +44,9 @@ public class ProSubmitPageParam implements Serializable {
     @Schema(description = "题目")
     private String problem;
 
+    @Schema(description = "题目")
+    private String problemId;
+
     @Schema(description = "编程语言")
     private String language;
 

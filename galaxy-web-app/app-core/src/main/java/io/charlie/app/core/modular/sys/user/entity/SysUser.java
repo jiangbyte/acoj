@@ -72,6 +72,9 @@ public class SysUser extends CommonEntity {
     @Schema(description = "电话")
     private String telephone;
 
+    @Schema(description = "学号")
+    private String studentNumber;
+
     @Schema(description = "登录时间")
     private Date loginTime;
 

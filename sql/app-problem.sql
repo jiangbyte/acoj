@@ -29,6 +29,8 @@ CREATE TABLE pro_submit
     test_case   JSON                 DEFAULT NULL COMMENT '测试用例结果',
     status      VARCHAR(32)          DEFAULT NULL COMMENT '执行状态',
 
+    is_finish   TINYINT(1)           DEFAULT 0 COMMENT '是否完成',
+
     -- 查重结果
     similarity  DECIMAL(10, 2)       DEFAULT 0 COMMENT '相似度',
     task_id     VARCHAR(32)          DEFAULT NULL COMMENT '相似检测任务ID',
@@ -246,6 +248,8 @@ CREATE TABLE pro_set_submit
     message     TEXT                 DEFAULT NULL COMMENT '执行结果消息',
     test_cases  JSON                 DEFAULT NULL COMMENT '测试用例结果',
     status      VARCHAR(32)          DEFAULT NULL COMMENT '执行状态',
+
+    is_finish   TINYINT(1)           DEFAULT 0 COMMENT '是否完成',
 
     -- 查重结果
     similarity  DECIMAL(10, 2)       DEFAULT 0 COMMENT '相似度',

@@ -21,9 +21,9 @@ const rules = {
   componentType: [
     // { required: true, message: '请输入组件类型', trigger: ['input', 'blur'] },
   ],
-  description: [
-    { required: true, message: '请输入描述', trigger: ['input', 'blur'] },
-  ],
+  // description: [
+  //   { required: true, message: '请输入描述', trigger: ['input', 'blur'] },
+  // ],
 }
 function doClose() {
   emit('close')
@@ -87,7 +87,7 @@ defineExpose({
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="值" path="value">
-          <NInput v-model:value="formData.value" placeholder="请输入值" />
+          <NInput type="textarea" v-model:value="formData.value" placeholder="请输入值" />
         </NFormItem>
         <!-- 输入框 -->
         <!--        <NFormItem label="组件类型" path="componentType"> -->

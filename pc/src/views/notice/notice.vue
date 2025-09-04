@@ -23,7 +23,6 @@ loadData()
 
 <template>
   <main class="container mx-auto px-4 py-8">
-
     <!-- 公告内容 -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mx-auto">
       <!-- 公告封面图 -->

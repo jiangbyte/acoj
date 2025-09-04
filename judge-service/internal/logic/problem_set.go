@@ -6,7 +6,9 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/zeromicro/go-zero/core/logx"
 	"judge-service/internal/dto"
+	"judge-service/internal/logic/judge"
 	"judge-service/internal/svc"
+	"time"
 )
 
 type ProblemSetLogic struct {
@@ -56,11 +58,76 @@ func (l *ProblemSetLogic) processMessage(delivery amqp.Delivery) {
 		}
 	}()
 
-	var request dto.JudgeSubmitDto
-	if err := json.Unmarshal(delivery.Body, &request); err != nil {
-		l.Errorf("解码题目 JSON 出错: %v", err)
+	var judgeSubmit dto.JudgeSubmitDto
+	if err := json.Unmarshal(delivery.Body, &judgeSubmit); err != nil {
+		l.Errorf("解码 JSON 出错: %v", err)
 		return
 	}
 
-	l.Infof("成功处理的题目提交 ID: %d", request.ID)
+	l.Infof("收到消息: %+v", judgeSubmit)
+	// ==================================== 工作空间准备、保存源代码 ====================================
+	workspace, workspaceResultDto := judge.NewWorkspace(l.ctx, l.svcCtx.Config, judgeSubmit)
+	if workspaceResultDto != nil {
+		err := l.sendResultToMQ(workspaceResultDto)
+		if err != nil {
+			l.Errorf("发送结果到MQ失败: %v", err)
+		}
+		return
+	}
+	SourceCodeResultDto := workspace.SaveSourceCode()
+	if SourceCodeResultDto != nil {
+		err := l.sendResultToMQ(SourceCodeResultDto)
+		if err != nil {
+			l.Errorf("发送结果到MQ失败: %v", err)
+		}
+		workspace.Cleanup()
+		return
+	}
+
+	// ==================================== 执行源代码 ====================================
+	RunResultDto, err := workspace.Execute()
+	if err != nil {
+		err := l.sendResultToMQ(RunResultDto)
+		if err != nil {
+			l.Errorf("发送结果到MQ失败: %v", err)
+		}
+		workspace.Cleanup()
+		return
+	}
+
+	// ==================================== 结果汇总 ====================================
+	EvaluateResultDto := workspace.Evaluate(RunResultDto)
+	err = l.sendResultToMQ(EvaluateResultDto)
+	if err != nil {
+		l.Errorf("发送结果到MQ失败: %v", err)
+	}
+
+	// ==================================== 删除工作空间 ====================================
+	err = workspace.Cleanup()
+	if err != nil {
+		l.Errorf("删除工作空间失败: %v", err)
+	}
+}
+
+func (l *ProblemSetLogic) sendResultToMQ(result *dto.JudgeResultDto) error {
+	body, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+
+	exchange := l.svcCtx.Config.RabbitMQ.Sets.ResultExchange
+	routingKey := l.svcCtx.Config.RabbitMQ.Sets.ResultRoutingKey
+
+	err = l.svcCtx.ProblemSetChannel.Publish(
+		exchange,
+		routingKey,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+			Timestamp:   time.Now(),
+		},
+	)
+	return err
 }

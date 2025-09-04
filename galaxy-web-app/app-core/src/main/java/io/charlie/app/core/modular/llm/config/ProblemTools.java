@@ -1,6 +1,5 @@
-package io.charlie.app.core.modular.chat.config;
+package io.charlie.app.core.modular.llm.config;
 
-import io.charlie.app.core.modular.problem.problem.entity.TestCase;
 import io.charlie.app.core.modular.problem.problem.service.ProProblemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +7,6 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Random;
 
 /**

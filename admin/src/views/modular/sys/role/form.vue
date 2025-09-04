@@ -80,7 +80,7 @@ defineExpose({
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="编码" path="code">
-          <NInput v-model:value="formData.code" placeholder="请输入编码" />
+          <NInput v-model:value="formData.code" placeholder="请输入编码" :disabled="formData.code !== ''" />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="描述" path="description">

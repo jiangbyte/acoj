@@ -35,4 +35,16 @@ public class ProSetSubmitPageParam implements Serializable {
 
     @Schema(description = "关键词")
     private String keyword;
+
+    @Schema(description = "题目")
+    private String problem;
+
+    @Schema(description = "编程语言")
+    private String language;
+
+    @Schema(description = "执行类型")
+    private Boolean submitType;
+
+    @Schema(description = "执行状态")
+    private String status;
 }

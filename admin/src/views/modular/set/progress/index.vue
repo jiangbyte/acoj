@@ -34,13 +34,14 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
+    width: 150,
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          onClick: () => formRef.value.doOpen(row, true),
-        }, () => '编辑'),
+        // h(NButton, {
+        //   type: 'primary',
+        //   size: 'small',
+        //   onClick: () => formRef.value.doOpen(row, true),
+        // }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
@@ -165,12 +166,12 @@ async function deleteBatchHandle() {
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
-            <NButton type="primary" @click="formRef.doOpen(null, false)">
+            <!-- <NButton type="primary" @click="formRef.doOpen(null, false)">
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
               创建
-            </NButton>
+            </NButton> -->
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除

@@ -57,6 +57,9 @@ const rules = {
   // isPublic: [
   //   { required: true, message: '请选择是否公开', trigger: ['change'] },
   // ],
+  // isLlmEnhanced: [
+  //   { required: true, message: '请选择是否LLM解析增强', trigger: ['change'] },
+  // ],
 }
 function doClose() {
   emit('close')
@@ -259,6 +262,16 @@ defineExpose({
         </NFormItem>
         <NFormItem label="公开" path="isPublic">
           <NRadioGroup v-model:value="formData.isPublic">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
+        </NFormItem>
+        <NFormItem label="LLM解析增强" path="isLlmEnhanced">
+          <NRadioGroup v-model:value="formData.isLlmEnhanced">
             <NRadio :value="true">
               是
             </NRadio>

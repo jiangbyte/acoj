@@ -58,7 +58,7 @@ async function loadData() {
   await loadCaptcha()
   const [appConfig, bgConfig] = await Promise.all([
     getValueByCode({ code: 'APP_NAME' }),
-    getValueByCode({ code: 'APP_ADMIN_LOGIN_BACKGROUND' }),
+    getValueByCode({ code: 'APP_PC_LOGIN_BACKGROUND' }),
   ])
 
   // 处理配置项

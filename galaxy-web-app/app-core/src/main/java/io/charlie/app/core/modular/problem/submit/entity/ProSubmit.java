@@ -98,6 +98,9 @@ public class ProSubmit extends CommonEntity {
     @Trans(type = TransType.DICTIONARY, key = "JUDGE_STATUS", ref = "statusName")
     private String status;
 
+    @Schema(description = "是否完成")
+    private Boolean isFinish;
+
     @Schema(description = "执行状态名称")
     @TableField(exist = false)
     private String statusName;

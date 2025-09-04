@@ -57,7 +57,11 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '公开',
-    key: 'isPublic',
+    key: 'isPublicName',
+  },
+  {
+    title: 'LLM启用',
+    key: 'isLlmEnhancedName',
   },
   {
     title: '使用模板',
@@ -74,7 +78,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 200,
+    width: 280,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -84,6 +88,11 @@ const columns: DataTableColumns<any> = [
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
+        h(NButton, {
+          type: 'warning',
+          size: 'small',
+          onClick: () => {},
+        }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {
