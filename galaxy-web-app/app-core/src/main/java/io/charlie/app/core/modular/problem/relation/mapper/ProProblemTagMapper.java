@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Mapper;
  * @description 题目-标签 关联表(1-N) Mapper 接口
  */
 @Mapper
-@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface ProProblemTagMapper extends BaseMapper<ProProblemTag> {
 
 }

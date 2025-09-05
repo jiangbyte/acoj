@@ -277,7 +277,7 @@ fragment COMMENT: '#' ~[\r\n\f]*;
 
 fragment LINE_JOINING: '\\' SPACES? ( '\r'? '\n' | '\r' | '\f');
 
-// TODO: ANTLR seems lack of some Unicode property support...
+//  ANTLR seems lack of some Unicode property support...
 //$ curl https://www.unicode.org/Public/13.0.0/ucd/PropList.txt | grep Other_ID_
 //1885..1886    ; Other_ID_Start # Mn   [2] MONGOLIAN LETTER ALI GALI BALUDA..MONGOLIAN LETTER ALI GALI THREE BALUDA
 //2118          ; Other_ID_Start # Sm       SCRIPT CAPITAL P

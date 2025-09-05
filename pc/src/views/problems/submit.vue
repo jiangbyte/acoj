@@ -385,7 +385,10 @@ onUnmounted(() => {
                       </n-text>
                       <n-flex align="center">
                         <n-text class="block text-gray-400 text-sm mt-1">
-                          提交:  <n-time :time="detailData?.createTime" />
+                          提交:  <n-time :time="resultTaskData?.createTime" />
+                        </n-text>
+                        <n-text class="block text-gray-400 text-sm mt-1">
+                          更新:  <n-time :time="resultTaskData?.updateTime" />
                         </n-text>
                       </n-flex>
                     </div>
@@ -435,17 +438,17 @@ onUnmounted(() => {
                           <div class="flex justify-between items-center mb-2">
                             <span class="font-medium">代码相似度</span>
                             <n-tag size="small" :bordered="false" type="info">
-                              28%
+                              {{ resultTaskData?.similarity * 100 }} %
                             </n-tag>
                           </div>
                           <n-progress
                             type="line"
                             :show-indicator="false"
-                            :percentage="20"
+                            :percentage="resultTaskData?.similarity * 100"
                           />
 
                           <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                            您的代码与平台上已有代码存在28%的相似度，未达到抄袭阈值(50%)
+                            您的代码与平台上已有代码存在{{ resultTaskData?.similarity * 100 }}%的相似度，为 {{ resultTaskData?.similarityBehaviorName }}
                           </div>
                         </div>
                       </div>

@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * @author ZhangJiangHu
@@ -41,5 +42,13 @@ public class SimilaritySubmitDto implements Serializable {
 
     @Schema(description = "主键")
     private String id;
+
+    @Schema(description = "任务ID")
+    private String taskId;
+
+    @Schema(description = "手动")
+    private Boolean taskType;
+
+    private Date createTime;
 
 }

@@ -117,7 +117,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '代码长度',
+    title: '长度(byte)',
     key: 'codeLength',
     width: 80,
     render: (row) => {
@@ -133,7 +133,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '耗时',
+    title: '耗时(ms)',
     key: 'maxTime',
     width: 80,
     render: (row) => {
@@ -141,7 +141,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '内存',
+    title: '内存(Kb)',
     key: 'maxMemory',
     width: 80,
     render: (row) => {
@@ -149,22 +149,31 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '相似度',
+    title: '相似度(%)',
     key: 'similarity',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.similarity)
+      return h(NTag, { size: 'small', bordered: false }, row.similarity * 100)
     },
   },
-  // {
-  //   title: '检测任务',
-  //   key: 'taskId',
-  //   width: 80,
-  // },
+  {
+    title: '行为标记',
+    key: 'similarityBehaviorName',
+    ellipsis: true,
+    width: 80,
+  },
+  {
+    title: '检测任务',
+    key: 'taskId',
+    ellipsis: {
+      tooltip: true,
+    },
+    width: 80,
+  },
   {
     title: '提交时间',
     key: 'createTime',
-    width: 120,
+    width: 80,
     render(row: any) {
       return h(NTime, { time: row.createTime, type: 'relative' })
     },
@@ -172,7 +181,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '更新时间',
     key: 'updateTime',
-    width: 120,
+    width: 80,
     render(row: any) {
       return h(NTime, { time: row.createTime, type: 'relative' })
     },

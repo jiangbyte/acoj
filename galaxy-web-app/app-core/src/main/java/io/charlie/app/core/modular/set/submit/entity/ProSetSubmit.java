@@ -110,6 +110,14 @@ public class ProSetSubmit extends CommonEntity {
     @Schema(description = "相似检测任务ID")
     private String taskId;
 
+    @Schema(description = "相似度行为")
+    @Trans(type = TransType.DICTIONARY, key = "CLONE_LEVEL", ref = "similarityBehaviorName")
+    private String similarityBehavior;
+
+    @Schema(description = "相似度行为名称")
+    @TableField(exist = false)
+    private String similarityBehaviorName;
+
     @Schema(description = "是否完成")
     private Boolean isFinish;
 

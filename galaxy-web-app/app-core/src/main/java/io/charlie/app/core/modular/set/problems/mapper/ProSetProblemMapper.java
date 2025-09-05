@@ -20,7 +20,7 @@ import java.util.List;
  * @description TODO
  */
 @Mapper
-@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface ProSetProblemMapper extends BaseMapper<ProSetProblem> {
     IPage<ProProblem> selectSetProblemPage(IPage<ProProblem> page, Wrapper<ProProblem> ew, String setId);
 

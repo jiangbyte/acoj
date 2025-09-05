@@ -160,6 +160,7 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
             // 存在则更新提交ID
             proSolvedMapper.update(new LambdaUpdateWrapper<ProSolved>()
                     .eq(ProSolved::getUserId, proSubmit.getUserId())
+//                    .set(ProSolved::getSolved, false)
                     .eq(ProSolved::getProblemId, proSubmit.getProblemId())
                     .set(ProSolved::getSubmitId, proSubmit.getId())
                     .set(ProSolved::getUpdateTime, proSubmit.getUpdateTime())
@@ -218,7 +219,7 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
     }
 
     @Override
-    public  List<StatusCount> countStatusStatistics() {
+    public List<StatusCount> countStatusStatistics() {
         List<JudgeStatusCountDTO> countList = this.baseMapper.countByStatus();
         return countList.stream()
                 .map(dto -> {

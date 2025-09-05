@@ -14,16 +14,25 @@ const columns: DataTableColumns<any> = [
   {
     title: '名称',
     key: 'name',
+    width: 250,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '编码',
     key: 'code',
-    ellipsis: true,
+    width: 250,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '值',
     key: 'value',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   // {
   //   title: '组件类型',

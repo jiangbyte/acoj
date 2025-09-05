@@ -12,34 +12,35 @@ use
 DROP TABLE IF EXISTS pro_submit;
 CREATE TABLE pro_submit
 (
-    id          VARCHAR(32) NOT NULL COMMENT '主键',
-    user_id     VARCHAR(32) NOT NULL COMMENT '用户ID',
-    problem_id  VARCHAR(32) NOT NULL COMMENT '题目ID',
-    language    VARCHAR(64) NOT NULL COMMENT '编程语言',
-    code        TEXT        NOT NULL COMMENT '源代码',
-    code_length INT         NOT NULL DEFAULT 0 COMMENT '源代码长度',
+    id                  VARCHAR(32) NOT NULL COMMENT '主键',
+    user_id             VARCHAR(32) NOT NULL COMMENT '用户ID',
+    problem_id          VARCHAR(32) NOT NULL COMMENT '题目ID',
+    language            VARCHAR(64) NOT NULL COMMENT '编程语言',
+    code                TEXT        NOT NULL COMMENT '源代码',
+    code_length         INT         NOT NULL DEFAULT 0 COMMENT '源代码长度',
 
-    submit_type TINYINT(1)           DEFAULT 0 COMMENT '执行类型',
+    submit_type         TINYINT(1)           DEFAULT 0 COMMENT '执行类型',
 
-    max_time    INT         NOT NULL DEFAULT 0 COMMENT '最大耗时',
-    max_memory  INT         NOT NULL DEFAULT 0 COMMENT '最大内存使用',
+    max_time            INT         NOT NULL DEFAULT 0 COMMENT '最大耗时',
+    max_memory          INT         NOT NULL DEFAULT 0 COMMENT '最大内存使用',
 
 
-    message     TEXT                 DEFAULT NULL COMMENT '执行结果消息',
-    test_case   JSON                 DEFAULT NULL COMMENT '测试用例结果',
-    status      VARCHAR(32)          DEFAULT NULL COMMENT '执行状态',
+    message             TEXT                 DEFAULT NULL COMMENT '执行结果消息',
+    test_case           JSON                 DEFAULT NULL COMMENT '测试用例结果',
+    status              VARCHAR(32)          DEFAULT NULL COMMENT '执行状态',
 
-    is_finish   TINYINT(1)           DEFAULT 0 COMMENT '是否完成',
+    is_finish           TINYINT(1)           DEFAULT 0 COMMENT '是否完成',
 
     -- 查重结果
-    similarity  DECIMAL(10, 2)       DEFAULT 0 COMMENT '相似度',
-    task_id     VARCHAR(32)          DEFAULT NULL COMMENT '相似检测任务ID',
+    similarity          DECIMAL(10, 2)       DEFAULT 0 COMMENT '相似度',
+    task_id             VARCHAR(32)          DEFAULT NULL COMMENT '相似检测任务ID',
+    similarity_behavior VARCHAR(32)          DEFAULT NULL COMMENT '行为标记',
     # ------------------------------------------------
-    deleted     TINYINT(1)           DEFAULT 0 COMMENT '删除状态',
-    create_time DATETIME             DEFAULT NULL COMMENT '创建时间戳',
-    create_user VARCHAR(32)          DEFAULT NULL COMMENT '创建者',
-    update_time DATETIME             DEFAULT NULL COMMENT '更新时间戳',
-    update_user VARCHAR(32)          DEFAULT NULL COMMENT '更新者',
+    deleted             TINYINT(1)           DEFAULT 0 COMMENT '删除状态',
+    create_time         DATETIME             DEFAULT NULL COMMENT '创建时间戳',
+    create_user         VARCHAR(32)          DEFAULT NULL COMMENT '创建者',
+    update_time         DATETIME             DEFAULT NULL COMMENT '更新时间戳',
+    update_user         VARCHAR(32)          DEFAULT NULL COMMENT '更新者',
     -- 添加索引
     PRIMARY KEY (id),
     INDEX (problem_id, user_id),
@@ -232,34 +233,35 @@ CREATE TABLE pro_set_problem
 DROP TABLE IF EXISTS pro_set_submit;
 CREATE TABLE pro_set_submit
 (
-    id          VARCHAR(32) NOT NULL COMMENT '主键',
-    user_id     VARCHAR(32) NOT NULL COMMENT '用户ID',
-    problem_id  VARCHAR(32) NOT NULL COMMENT '题目ID',
-    set_id      VARCHAR(32) NULL COMMENT '题集ID',
-    language    VARCHAR(64) NOT NULL COMMENT '编程语言',
-    code        TEXT        NOT NULL COMMENT '源代码',
-    code_length INT         NOT NULL DEFAULT 0 COMMENT '源代码长度',
+    id                  VARCHAR(32) NOT NULL COMMENT '主键',
+    user_id             VARCHAR(32) NOT NULL COMMENT '用户ID',
+    problem_id          VARCHAR(32) NOT NULL COMMENT '题目ID',
+    set_id              VARCHAR(32) NULL COMMENT '题集ID',
+    language            VARCHAR(64) NOT NULL COMMENT '编程语言',
+    code                TEXT        NOT NULL COMMENT '源代码',
+    code_length         INT         NOT NULL DEFAULT 0 COMMENT '源代码长度',
 
-    submit_type TINYINT(1)           DEFAULT 0 COMMENT '执行类型',
+    submit_type         TINYINT(1)           DEFAULT 0 COMMENT '执行类型',
 
-    max_time    INT         NOT NULL DEFAULT 0 COMMENT '最大耗时',
-    max_memory  INT         NOT NULL DEFAULT 0 COMMENT '最大内存使用',
+    max_time            INT         NOT NULL DEFAULT 0 COMMENT '最大耗时',
+    max_memory          INT         NOT NULL DEFAULT 0 COMMENT '最大内存使用',
 
-    message     TEXT                 DEFAULT NULL COMMENT '执行结果消息',
-    test_cases  JSON                 DEFAULT NULL COMMENT '测试用例结果',
-    status      VARCHAR(32)          DEFAULT NULL COMMENT '执行状态',
+    message             TEXT                 DEFAULT NULL COMMENT '执行结果消息',
+    test_cases          JSON                 DEFAULT NULL COMMENT '测试用例结果',
+    status              VARCHAR(32)          DEFAULT NULL COMMENT '执行状态',
 
-    is_finish   TINYINT(1)           DEFAULT 0 COMMENT '是否完成',
+    is_finish           TINYINT(1)           DEFAULT 0 COMMENT '是否完成',
 
     -- 查重结果
-    similarity  DECIMAL(10, 2)       DEFAULT 0 COMMENT '相似度',
-    task_id     VARCHAR(32)          DEFAULT NULL COMMENT '相似检测任务ID',
+    similarity          DECIMAL(10, 2)       DEFAULT 0 COMMENT '相似度',
+    task_id             VARCHAR(32)          DEFAULT NULL COMMENT '相似检测任务ID',
+    similarity_behavior VARCHAR(32)          DEFAULT NULL COMMENT '行为标记',
     # ------------------------------------------------
-    deleted     TINYINT(1)           DEFAULT 0 COMMENT '删除状态',
-    create_time DATETIME             DEFAULT NULL COMMENT '创建时间戳',
-    create_user VARCHAR(32)          DEFAULT NULL COMMENT '创建者',
-    update_time DATETIME             DEFAULT NULL COMMENT '更新时间戳',
-    update_user VARCHAR(32)          DEFAULT NULL COMMENT '更新者',
+    deleted             TINYINT(1)           DEFAULT 0 COMMENT '删除状态',
+    create_time         DATETIME             DEFAULT NULL COMMENT '创建时间戳',
+    create_user         VARCHAR(32)          DEFAULT NULL COMMENT '创建者',
+    update_time         DATETIME             DEFAULT NULL COMMENT '更新时间戳',
+    update_user         VARCHAR(32)          DEFAULT NULL COMMENT '更新者',
     -- 添加索引
     PRIMARY KEY (id),
     INDEX (problem_id, user_id),

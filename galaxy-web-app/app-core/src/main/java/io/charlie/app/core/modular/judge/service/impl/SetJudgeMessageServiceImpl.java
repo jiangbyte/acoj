@@ -9,6 +9,8 @@ import io.charlie.app.core.modular.judge.dto.JudgeResultDto;
 import io.charlie.app.core.modular.judge.dto.JudgeSubmitDto;
 import io.charlie.app.core.modular.judge.enums.JudgeStatus;
 import io.charlie.app.core.modular.judge.service.SetJudgeMessageService;
+import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
+import io.charlie.app.core.modular.set.sample.service.ProSetSampleLibraryService;
 import io.charlie.app.core.modular.set.solved.entity.ProSetSolved;
 import io.charlie.app.core.modular.set.solved.mapper.ProSetSolvedMapper;
 import io.charlie.app.core.modular.set.submit.entity.ProSetSubmit;
@@ -39,6 +41,8 @@ public class SetJudgeMessageServiceImpl implements SetJudgeMessageService {
     private final ProSetSolvedMapper proSetSolvedMapper;
 
     private final SetSimilarityMessageService setSimilarityMessageService;
+
+    private final ProSetSampleLibraryService proSetSampleLibraryService;
 
     @Override
     public void sendJudgeRequest(JudgeSubmitDto judgeSubmitDto) {
@@ -76,26 +80,33 @@ public class SetJudgeMessageServiceImpl implements SetJudgeMessageService {
         bean.setUpdateUser(bean.getUserId());
         proSetSubmitMapper.updateById(bean);
 
-        if (bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue()) && judgeResultDto.getSubmitType()) {
-            proSetSolvedMapper.update(new LambdaUpdateWrapper<ProSetSolved>()
-                    .eq(ProSetSolved::getUserId, bean.getUserId())
-                    .eq(ProSetSolved::getProblemId, bean.getProblemId())
-                    .eq(ProSetSolved::getSubmitId, bean.getId())
-                    .set(ProSetSolved::getSolved, true)
-            );
+        if (judgeResultDto.getSubmitType()) {
+            if (bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue())) {
+                // 正式执行才会更新已解决
+                proSetSolvedMapper.update(new LambdaUpdateWrapper<ProSetSolved>()
+                        .eq(ProSetSolved::getUserId, bean.getUserId())
+                        .eq(ProSetSolved::getProblemId, bean.getProblemId())
+                        .eq(ProSetSolved::getSubmitId, bean.getId())
+                        .set(ProSetSolved::getSolved, true)
+                );
 
-            // 正式执行才会计算相似度
-            if (judgeResultDto.getSubmitType()) {
+                // 提交样本库
+                // 先查询这次的提交
+                ProSetSubmit proSetSubmit = proSetSubmitMapper.selectById(judgeResultDto.getId());
+                // 增加到库
+                proSetSampleLibraryService.addLibrary(proSetSubmit);
+
+                // 正式执行才会计算相似度
                 setSimilarityMessageService.sendSimilarityRequest(BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class));
             }
-        }
-        if (!bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue()) && judgeResultDto.getSubmitType()) {
-            proSetSolvedMapper.update(new LambdaUpdateWrapper<ProSetSolved>()
-                    .eq(ProSetSolved::getUserId, bean.getUserId())
-                    .eq(ProSetSolved::getProblemId, bean.getProblemId())
-                    .eq(ProSetSolved::getSubmitId, bean.getId())
-                    .set(ProSetSolved::getSolved, false)
-            );
+            if (!bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue())) {
+                proSetSolvedMapper.update(new LambdaUpdateWrapper<ProSetSolved>()
+                        .eq(ProSetSolved::getUserId, bean.getUserId())
+                        .eq(ProSetSolved::getProblemId, bean.getProblemId())
+                        .eq(ProSetSolved::getSubmitId, bean.getId())
+                        .set(ProSetSolved::getSolved, false)
+                );
+            }
         }
 
         log.info("接收到消息 更新成功：{}", JSONUtil.toJsonStr(judgeResultDto));

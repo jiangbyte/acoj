@@ -72,25 +72,32 @@ public class SystemCodeGenerator {
 //        modules.add(new Module("problem","io.charlie.app.problem.modular.set.solved", List.of("pro_set_solved")));
 //        modules.add(new Module("problem","io.charlie.app.problem.modular.set.progress", List.of("pro_set_progress")));
 
-        modules.add(new Module("core", "io.charlie.app.core.modular.banner", List.of("sys_banner")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.user", List.of("sys_user")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.role", List.of("sys_role")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.dict", List.of("sys_dict_data", "sys_dict_type")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.group", List.of("sys_group")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.notice", List.of("sys_notice")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.notice", List.of("sys_notice")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.config", List.of("sys_config")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.article", List.of("sys_article")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.banner", List.of("sys_banner")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.user", List.of("sys_user")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.role", List.of("sys_role")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.dict", List.of("sys_dict_data", "sys_dict_type")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.group", List.of("sys_group")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.notice", List.of("sys_notice")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.notice", List.of("sys_notice")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.config", List.of("sys_config")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.article", List.of("sys_article")));
+//
+//        modules.add(new Module("core", "io.charlie.app.core.modular.category", List.of("pro_category")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.tag", List.of("pro_tag")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.problem", List.of("pro_problem")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.problem.submit", List.of("pro_submit")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.problem.solved", List.of("pro_solved")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.set", List.of("pro_set")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.set.submit", List.of("pro_set_submit")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.set.solved", List.of("pro_set_solved")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.set.progress", List.of("pro_set_progress")));
 
-        modules.add(new Module("core", "io.charlie.app.core.modular.category", List.of("pro_category")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.tag", List.of("pro_tag")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.problem", List.of("pro_problem")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.problem.submit", List.of("pro_submit")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.problem.solved", List.of("pro_solved")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.set", List.of("pro_set")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.set.submit", List.of("pro_set_submit")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.set.solved", List.of("pro_set_solved")));
-        modules.add(new Module("core", "io.charlie.app.core.modular.set.progress", List.of("pro_set_progress")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.problem.sample", List.of("pro_sample_library")));
+//        modules.add(new Module("core", "io.charlie.app.core.modular.set.sample", List.of("pro_set_sample_library")));
+
+        modules.add(new Module("core", "io.charlie.app.core.modular.problem.similarity", List.of("pro_similarity_detail")));
+        modules.add(new Module("core", "io.charlie.app.core.modular.set.similarity", List.of("pro_set_similarity_detail")));
+
 
         for (Module module : modules) {
             FastAutoGenerator.create(datasourceBuilder)

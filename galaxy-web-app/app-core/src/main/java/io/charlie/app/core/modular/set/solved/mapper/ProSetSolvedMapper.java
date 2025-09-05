@@ -17,7 +17,7 @@ import org.apache.ibatis.annotations.Mapper;
 * @description 用户题集解决记录表 Mapper 接口
 */
 @Mapper
-@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface ProSetSolvedMapper extends BaseMapper<ProSetSolved> {
     IPage<SysUser> selectSetUsers(IPage<SysUser> page, Wrapper<SysUser> ew, String setId);
 }

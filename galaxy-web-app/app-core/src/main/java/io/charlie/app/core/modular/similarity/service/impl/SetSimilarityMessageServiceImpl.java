@@ -128,7 +128,7 @@ public class SetSimilarityMessageServiceImpl implements SetSimilarityMessageServ
         similarityResult.setMaxSimilarity(maxSimilarityDetail.get());
         similarityResult.setSimilarityDetails(similarityDetails);
 
-        bean.setResult(similarityResult);
+//        bean.setResult(similarityResult);
 
         this.sendSimilarityResult(bean);
     }

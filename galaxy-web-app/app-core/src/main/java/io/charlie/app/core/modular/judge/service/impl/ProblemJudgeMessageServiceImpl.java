@@ -1,6 +1,7 @@
 package io.charlie.app.core.modular.judge.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.charlie.app.core.modular.judge.config.ProblemJudgeMQConfig;
@@ -9,6 +10,8 @@ import io.charlie.app.core.modular.judge.dto.JudgeResultDto;
 import io.charlie.app.core.modular.judge.dto.JudgeSubmitDto;
 import io.charlie.app.core.modular.judge.enums.JudgeStatus;
 import io.charlie.app.core.modular.judge.service.ProblemJudgeMessageService;
+import io.charlie.app.core.modular.problem.sample.entity.ProSampleLibrary;
+import io.charlie.app.core.modular.problem.sample.service.ProSampleLibraryService;
 import io.charlie.app.core.modular.problem.solved.entity.ProSolved;
 import io.charlie.app.core.modular.problem.solved.mapper.ProSolvedMapper;
 import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
@@ -37,6 +40,8 @@ public class ProblemJudgeMessageServiceImpl implements ProblemJudgeMessageServic
     private final RabbitTemplate rabbitTemplate;
     private final ProSubmitMapper proSubmitMapper;
     private final ProSolvedMapper proSolvedMapper;
+
+    private final ProSampleLibraryService problemSampleLibraryService;
 
     private final ProblemSimilarityMessageService problemSimilarityMessageService;
 
@@ -76,26 +81,41 @@ public class ProblemJudgeMessageServiceImpl implements ProblemJudgeMessageServic
         bean.setUpdateUser(bean.getUserId());
         proSubmitMapper.updateById(bean);
 
-        if (bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue()) && judgeResultDto.getSubmitType()) {
-            proSolvedMapper.update(new LambdaUpdateWrapper<ProSolved>()
-                    .eq(ProSolved::getUserId, bean.getUserId())
-                    .eq(ProSolved::getProblemId, bean.getProblemId())
-                    .eq(ProSolved::getSubmitId, bean.getId())
-                    .set(ProSolved::getSolved, true)
-            );
+        if (judgeResultDto.getSubmitType()) {
+            if (bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue())) {
+                // 正式执行才会更新已解决
+                proSolvedMapper.update(new LambdaUpdateWrapper<ProSolved>()
+                        .eq(ProSolved::getUserId, bean.getUserId())
+                        .eq(ProSolved::getProblemId, bean.getProblemId())
+                        .eq(ProSolved::getSubmitId, bean.getId())
+                        .set(ProSolved::getSolved, true)
+                );
 
-            // 正式执行才会计算相似度
-            if (judgeResultDto.getSubmitType()) {
-                problemSimilarityMessageService.sendSimilarityRequest(BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class));
+                // 提交样本库
+                // 先查询这次的提交
+                ProSubmit proSubmit = proSubmitMapper.selectById(judgeResultDto.getId());
+                // 增加到库
+                problemSampleLibraryService.addLibrary(proSubmit);
+
+                String snowflakeNextIdStr = IdUtil.getSnowflakeNextIdStr();
+                proSubmit.setTaskId(snowflakeNextIdStr);
+                proSubmitMapper.updateById(proSubmit);
+
+                SimilaritySubmitDto bean1 = BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class);
+                bean1.setTaskId(snowflakeNextIdStr);
+                bean1.setTaskType(false);
+                bean1.setCreateTime(proSubmit.getCreateTime());
+                // 正式执行才会计算相似度
+                problemSimilarityMessageService.sendSimilarityRequest(bean1);
             }
-        }
-        if (!bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue()) && judgeResultDto.getSubmitType()) {
-            proSolvedMapper.update(new LambdaUpdateWrapper<ProSolved>()
-                    .eq(ProSolved::getUserId, bean.getUserId())
-                    .eq(ProSolved::getProblemId, bean.getProblemId())
-                    .eq(ProSolved::getSubmitId, bean.getId())
-                    .set(ProSolved::getSolved, false)
-            );
+            if (!bean.getStatus().equals(JudgeStatus.ACCEPTED.getValue())) {
+                proSolvedMapper.update(new LambdaUpdateWrapper<ProSolved>()
+                        .eq(ProSolved::getUserId, bean.getUserId())
+                        .eq(ProSolved::getProblemId, bean.getProblemId())
+                        .eq(ProSolved::getSubmitId, bean.getId())
+                        .set(ProSolved::getSolved, false)
+                );
+            }
         }
 
         log.info("接收到消息 更新成功：{}", JSONUtil.toJsonStr(judgeResultDto));

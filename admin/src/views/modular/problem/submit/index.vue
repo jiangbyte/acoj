@@ -84,7 +84,7 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '行为标记',
-    key: 'behaviorMark',
+    key: 'similarityBehaviorName',
     ellipsis: true,
   },
   {

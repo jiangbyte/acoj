@@ -23,7 +23,7 @@ import java.util.Map;
  * @Date: 2025/2/17
  * @Description: 代码生成器
  */
-public class SystemCodeGenerator1 {
+public class SystemCodeGeneratorBackup {
 
     public static List<Module> getModuleList() {
         List<Module> modules = new ArrayList<>();
