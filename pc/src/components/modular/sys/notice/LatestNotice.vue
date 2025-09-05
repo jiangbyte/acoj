@@ -1,0 +1,110 @@
+<script lang="ts" setup>
+import { useSysNoticeFetch } from '@/composables'
+import { AesCrypto } from '@/utils'
+
+const noticeListData = ref()
+const noticeLoading = ref(true)
+
+const { sysNoticeLatest10 } = useSysNoticeFetch()
+
+async function loadData() {
+  noticeLoading.value = true
+  const { data } = await sysNoticeLatest10()
+  if (data) {
+    noticeListData.value = data
+    noticeListData.value = noticeListData.value.sort((a: any, b: any) => (a.sort || 0) - (b.sort || 0))
+    noticeLoading.value = false
+  }
+}
+
+loadData()
+
+const router = useRouter()
+function goNotice(id: string) {
+  console.log(id)
+  router.push({
+    name: 'notice_detail',
+    query: { notice: AesCrypto.encrypt(id) },
+  })
+}
+</script>
+
+<template>
+  <n-card hoverable class="content-card" size="small">
+    <template #header>
+      <n-space align="center" justify="start">
+        <div>
+          最新公告
+        </div>
+        <!-- <n-button
+          text
+          round
+        >
+          <n-space align="center" size="small">
+            更多
+            <n-icon>
+              <icon-park-outline-more />
+            </n-icon>
+          </n-space>
+        </n-button> -->
+      </n-space>
+    </template>
+
+    <div v-if="noticeLoading" class="flex flex-col gap-2">
+      <n-skeleton height="25px" width="33%" />
+      <n-skeleton height="15px" text :repeat="2" />
+    </div>
+
+    <n-list v-else hoverable>
+      <n-list-item
+        v-for="item in noticeListData"
+        :key="item.id"
+        @click="goNotice(item.id)"
+      >
+        <n-flex align="center" :wrap="false">
+          <n-flex align="center">
+            <n-image
+              width="110"
+              height="110"
+              object-fit="cover"
+              :src="item.cover"
+              fallback-src="#"
+              class="rounded-lg"
+              preview-disabled
+            />
+          </n-flex>
+          <n-flex align="center">
+            <div class="flex flex-col">
+              <h4>
+                <n-ellipsis line-clamp="1">
+                  {{ item.title }}
+                </n-ellipsis>
+              </h4>
+              <n-ellipsis line-clamp="2" :tooltip="false">
+                {{ item.content }}
+              </n-ellipsis>
+              <n-space align="center" justify="space-between" class="mt-2">
+                <n-tag size="small" type="info" round>
+                  最新
+                </n-tag>
+                <n-space align="center">
+                  <n-icon class="mt-1.2">
+                    <icon-park-outline-time />
+                  </n-icon>
+                  <n-time :time="item.createTime" />
+                </n-space>
+              </n-space>
+            </div>
+          </n-flex>
+        </n-flex>
+      </n-list-item>
+    </n-list>
+  </n-card>
+</template>
+
+<style scoped>
+.notice-cover {
+  border-radius: 6px;
+  overflow: hidden;
+}
+</style>

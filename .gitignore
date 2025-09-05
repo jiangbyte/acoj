@@ -1,0 +1,94 @@
+# 忽略所有名为 target/ 的目录（通常是 Maven 构建输出目录）
+target/
+
+# 不忽略 Maven wrapper 的 jar 文件（虽然排除了所有 target/ 目录，但这里特别保留这个文件）
+!.mvn/wrapper/maven-wrapper.jar
+
+# 不忽略源代码目录下的 target/ 目录（可能是某些特殊情况需要保留）
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+
+### IntelliJ IDEA ###
+# 忽略 IntelliJ IDEA 的特定文件和目录
+       # 项目模块配置文件
+.idea/modules.xml
+# jar 仓库配置
+.idea/jarRepositories.xml
+  # 编译器配置
+.idea/compiler.xml
+        # 库文件目录
+.idea/libraries/
+     # IntelliJ 工作区设置文件
+*.iws
+                   # IntelliJ 模块文件
+*.iml
+    # IntelliJ 项目文件
+*.ipr
+
+
+### Eclipse ###
+# 忽略 Eclipse 的特定文件和目录
+         # 注解处理器生成的文件
+.apt_generated
+            # Eclipse 类路径文件
+.classpath
+            # Eclipse 工厂路径文件
+.factorypath
+         # Eclipse 项目文件
+.project
+               # Eclipse 设置目录
+.settings
+         # Spring Beans 相关文件
+.springBeans
+     # Spring Tool Suite 4 缓存
+.sts4-cache
+
+
+### NetBeans ###
+# 忽略 NetBeans 的特定文件和目录
+ # NetBeans 私有配置
+/nbproject/private/
+# NetBeans 构建目录
+/nbbuild/
+  # 分发目录
+/dist/
+  # NetBeans 分发目录
+/nbdist/
+ # NetBeans Gradle 相关文件
+/.nb-gradle/
+ # 构建目录（通常是 Gradle 构建输出）
+build/
+
+# 不忽略源代码目录下的 build/ 目录
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+
+### VS Code ###
+# 忽略 VS Code 的配置目录
+# VS Code 的配置文件目录
+.vscode/
+
+
+### Mac OS ###
+# 忽略 Mac OS 的特定文件
+# Mac OS 的文件夹元数据文件
+.DS_Store
+
+### Node.js ###
+# 忽略任意层级的 node_modules 目录
+**/node_modules/
+
+# 忽略备份目录
+**/backup/
+**/.backup/
+**/.idea/
+**/gen/
+
+### Local Configuration ###
+# 忽略任意层级的 application-local.yaml 文件
+**/application-local.yaml
+**/application-cloud.yaml
+
+/judge-service/JudgeService

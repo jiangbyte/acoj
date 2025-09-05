@@ -1,0 +1,51 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+body {
+  background: #f5f6f7;
+  min-width: 400px;
+}
+
+
+body .n-modal-mask {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+
+.page-enter-active,
+.page-leave-active {
+transition: all 0.2s;
+}
+.page-enter-from {
+opacity: 0;
+}
+.page-leave-to {
+opacity: 0;
+}
+
+.layout-enter-active,
+.layout-leave-active {
+transition: all 0.4s;
+}
+
+.layout-enter-from,
+.layout-leave-to {
+filter: grayscale(1);
+}

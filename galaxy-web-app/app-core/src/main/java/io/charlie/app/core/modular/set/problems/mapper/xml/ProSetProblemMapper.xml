@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.charlie.app.core.modular.set.problems.mapper.ProSetProblemMapper">
+
+    <select id="selectSetProblemPage"
+            resultType="io.charlie.app.core.modular.problem.problem.entity.ProProblem">
+        SELECT
+            pp.*
+        FROM
+            pro_problem pp
+        INNER JOIN
+            pro_set_problem psp ON pp.id = psp.problem_id
+        <where>
+            psp.problem_set_id = #{setId}
+            <if test="ew != null">
+                <if test="ew.sqlSegment != null and ew.sqlSegment != ''">
+                    AND ${ew.sqlSegment}
+                </if>
+            </if>
+        </where>
+        ORDER BY psp.sort ASC
+    </select>
+
+    <select id="selectSetProblemList"
+            resultType="io.charlie.app.core.modular.problem.problem.entity.ProProblem">
+        SELECT
+        pp.*
+        FROM
+        pro_problem pp
+        INNER JOIN
+        pro_set_problem psp ON pp.id = psp.problem_id
+        <where>
+            psp.problem_set_id = #{setId}
+            <if test="ew != null">
+                <if test="ew.sqlSegment != null and ew.sqlSegment != ''">
+                    AND ${ew.sqlSegment}
+                </if>
+            </if>
+        </where>
+        ORDER BY psp.sort ASC
+    </select>
+</mapper>
