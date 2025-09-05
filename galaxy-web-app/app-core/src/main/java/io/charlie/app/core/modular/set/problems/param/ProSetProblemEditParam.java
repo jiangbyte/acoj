@@ -11,7 +11,7 @@ import java.io.Serializable;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 28/08/2025
- * @description TODO
+ * @description 编辑题单题目参数
  */
 @Data
 public class ProSetProblemEditParam implements Serializable {

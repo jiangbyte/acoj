@@ -13,7 +13,7 @@ import java.util.List;
  * @author Charlie Zhang
  * @version v1.0
  * @date 03/08/2025
- * @description TODO
+ * @description 题目排行榜Mapper
  */
 @Mapper
 //@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)

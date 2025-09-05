@@ -10,7 +10,7 @@ import java.io.Serializable;
  * @author Charlie Zhang
  * @version v1.0
  * @date 02/08/2025
- * @description TODO
+ * @description 分页参数
  */
 @Data
 public class ProblemRankingPageParam implements Serializable {

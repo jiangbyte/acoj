@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * @author Charlie Zhang
  * @version v1.0
  * @date 02/08/2025
- * @description TODO
+ * @description Mapper测试类
  */
 @SpringBootTest(classes = CoreApplication.class)
 public class MapperTest {

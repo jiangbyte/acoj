@@ -10,7 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 11/08/2025
- * @description TODO
+ * @description 代码相似度测试
  */
 @SpringBootTest(classes = CoreApplication.class)
 public class CodeSimilarityTest {

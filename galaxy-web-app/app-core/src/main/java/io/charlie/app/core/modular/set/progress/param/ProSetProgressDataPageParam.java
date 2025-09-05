@@ -10,7 +10,7 @@ import java.io.Serializable;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 30/08/2025
- * @description TODO
+ * @description 题集进度数据分页参数
  */
 @Data
 public class ProSetProgressDataPageParam implements Serializable {

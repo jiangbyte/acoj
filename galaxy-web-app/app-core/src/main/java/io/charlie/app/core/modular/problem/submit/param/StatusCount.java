@@ -6,7 +6,7 @@ import lombok.Data;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 23/08/2025
- * @description TODO
+ * @description 提交状态统计
  */
 @Data
 public class StatusCount {

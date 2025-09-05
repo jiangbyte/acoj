@@ -8,12 +8,12 @@ import lombok.Getter;
  * @author Charlie Zhang
  * @version v1.0
  * @date 25/07/2025
- * @description TODO
+ * @description 系统组枚举
  */
 @Getter
 @AllArgsConstructor
 public enum SysGroupEnums implements ILabelEnum<String> {
-    DEFAULT_GROUP("1", "默认组"),
+    DEFAULT_GROUP("0", "默认组"),
     ;
 
     private final String value;

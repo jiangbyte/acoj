@@ -7,7 +7,7 @@ import lombok.Getter;
  * @author Charlie Zhang
  * @version v1.0
  * @date 22/07/2025
- * @description TODO
+ * @description 排序枚举
  */
 @Getter
 @AllArgsConstructor

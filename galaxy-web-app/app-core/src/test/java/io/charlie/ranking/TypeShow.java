@@ -4,7 +4,7 @@ package io.charlie.ranking;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 07/08/2025
- * @description TODO
+ * @description 测试
  */
 public class TypeShow {
     public int arraySum(int[] arr) {
