@@ -3,10 +3,7 @@ package io.charlie.app.core.modular.problem.similarity.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.app.core.modular.problem.similarity.entity.ProSimilarityDetail;
-import io.charlie.app.core.modular.problem.similarity.param.ProSimilarityDetailAddParam;
-import io.charlie.app.core.modular.problem.similarity.param.ProSimilarityDetailEditParam;
-import io.charlie.app.core.modular.problem.similarity.param.ProSimilarityDetailIdParam;
-import io.charlie.app.core.modular.problem.similarity.param.ProSimilarityDetailPageParam;
+import io.charlie.app.core.modular.problem.similarity.param.*;
 
 import java.util.List;
 
@@ -27,4 +24,8 @@ public interface ProSimilarityDetailService extends IService<ProSimilarityDetail
 
     ProSimilarityDetail detail(ProSimilarityDetailIdParam proSimilarityDetailIdParam);
 
+    /**
+     * 获取题目检测结果报告
+     */
+    void problemSimilarityReport(ProblemReportConfig config);
 }

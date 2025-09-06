@@ -131,7 +131,7 @@ const version = import.meta.env.VITE_VERSION
         >
           <NInput
             v-model:value="formData.email"
-            placeholder="请输入用户名"
+            placeholder="请输入邮箱"
           />
         </NFormItem>
         <NFormItem

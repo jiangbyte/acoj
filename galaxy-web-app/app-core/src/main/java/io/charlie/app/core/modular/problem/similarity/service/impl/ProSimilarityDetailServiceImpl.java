@@ -10,10 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.app.core.modular.problem.similarity.entity.ProSimilarityDetail;
-import io.charlie.app.core.modular.problem.similarity.param.ProSimilarityDetailAddParam;
-import io.charlie.app.core.modular.problem.similarity.param.ProSimilarityDetailEditParam;
-import io.charlie.app.core.modular.problem.similarity.param.ProSimilarityDetailIdParam;
-import io.charlie.app.core.modular.problem.similarity.param.ProSimilarityDetailPageParam;
+import io.charlie.app.core.modular.problem.similarity.param.*;
 import io.charlie.app.core.modular.problem.similarity.mapper.ProSimilarityDetailMapper;
 import io.charlie.app.core.modular.problem.similarity.service.ProSimilarityDetailService;
 import io.charlie.galaxy.enums.ISortOrderEnum;
@@ -90,6 +87,11 @@ public class ProSimilarityDetailServiceImpl extends ServiceImpl<ProSimilarityDet
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
         return proSimilarityDetail;
+    }
+
+    @Override
+    public void problemSimilarityReport(ProblemReportConfig config) {
+
     }
 
 }

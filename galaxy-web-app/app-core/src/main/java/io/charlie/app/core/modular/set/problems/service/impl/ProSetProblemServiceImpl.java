@@ -92,7 +92,9 @@ public class ProSetProblemServiceImpl extends ServiceImpl<ProSetProblemMapper, P
             try {
                 String loginIdAsString = StpUtil.getLoginIdAsString();
                 // 缓存取出解决记录
-                ProSetSolved proSolved = proSetSolvedMapper.selectOne(new QueryWrapper<ProSetSolved>().lambda()
+                ProSetSolved proSolved = proSetSolvedMapper.selectOne(new QueryWrapper<ProSetSolved>()
+//                        .select("DISTINCT problem__id")
+                        .lambda()
                         .eq(ProSetSolved::getUserId, loginIdAsString)
                         .eq(ProSetSolved::getProblemSetId, setProblemPageParam.getSetId())
                         .eq(ProSetSolved::getProblemId, item.getId()));
@@ -109,8 +111,12 @@ public class ProSetProblemServiceImpl extends ServiceImpl<ProSetProblemMapper, P
             }
 
             // 通过率计算（缓存读取）
-            Long proSolvedCount = proSetSolvedMapper.selectCount(new LambdaQueryWrapper<ProSetSolved>().eq(ProSetSolved::getProblemId, item.getId()).eq(ProSetSolved::getSolved, true));
-            Long proSolvedTotalCount = proSetSolvedMapper.selectCount(new LambdaQueryWrapper<ProSetSolved>().eq(ProSetSolved::getProblemId, item.getId()));
+            Long proSolvedCount = proSetSolvedMapper.selectCount(new QueryWrapper<ProSetSolved>()
+                    .lambda()
+                    .eq(ProSetSolved::getProblemId, item.getId()).eq(ProSetSolved::getSolved, true));
+            Long proSolvedTotalCount = proSetSolvedMapper.selectCount(new QueryWrapper<ProSetSolved>()
+                    .lambda()
+                    .eq(ProSetSolved::getProblemId, item.getId()));
             if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
                 item.setAcceptance(BigDecimal.ZERO);
             } else {
@@ -187,8 +193,12 @@ public class ProSetProblemServiceImpl extends ServiceImpl<ProSetProblemMapper, P
             }
 
             // 通过率计算（缓存读取）
-            Long proSolvedCount = proSetSolvedMapper.selectCount(new LambdaQueryWrapper<ProSetSolved>().eq(ProSetSolved::getProblemId, item.getId()).eq(ProSetSolved::getSolved, true));
-            Long proSolvedTotalCount = proSetSolvedMapper.selectCount(new LambdaQueryWrapper<ProSetSolved>().eq(ProSetSolved::getProblemId, item.getId()));
+            Long proSolvedCount = proSetSolvedMapper.selectCount(new QueryWrapper<ProSetSolved>()
+                    .lambda()
+                    .eq(ProSetSolved::getProblemId, item.getId()).eq(ProSetSolved::getSolved, true));
+            Long proSolvedTotalCount = proSetSolvedMapper.selectCount(new QueryWrapper<ProSetSolved>()
+                    .lambda()
+                    .eq(ProSetSolved::getProblemId, item.getId()));
             if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
                 item.setAcceptance(BigDecimal.ZERO);
             } else {
@@ -263,8 +273,12 @@ public class ProSetProblemServiceImpl extends ServiceImpl<ProSetProblemMapper, P
         }
 
         // 通过率计算（缓存读取）
-        Long proSolvedCount = proSetSolvedMapper.selectCount(new LambdaQueryWrapper<ProSetSolved>().eq(ProSetSolved::getProblemId, proProblem.getId()).eq(ProSetSolved::getSolved, true));
-        Long proSolvedTotalCount = proSetSolvedMapper.selectCount(new LambdaQueryWrapper<ProSetSolved>().eq(ProSetSolved::getProblemId, proProblem.getId()));
+        Long proSolvedCount = proSetSolvedMapper.selectCount(new QueryWrapper<ProSetSolved>()
+                .lambda()
+                .eq(ProSetSolved::getProblemId, proProblem.getId()).eq(ProSetSolved::getSolved, true));
+        Long proSolvedTotalCount = proSetSolvedMapper.selectCount(new QueryWrapper<ProSetSolved>()
+                .lambda()
+                .eq(ProSetSolved::getProblemId, proProblem.getId()));
         if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
             proProblem.setAcceptance(BigDecimal.ZERO);
         } else {

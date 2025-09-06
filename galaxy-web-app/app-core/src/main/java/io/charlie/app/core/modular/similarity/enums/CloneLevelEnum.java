@@ -17,6 +17,7 @@ public enum CloneLevelEnum implements ILabelEnum<String> {
     MEDIUM_SUSPECTED("MEDIUM_SUSPECTED", "中度可疑"),
     LOW_SUSPECTED("LOW_SUSPECTED", "轻度可疑"),
     NOT_REACHED("NOT_REACHED", "未达阈值"),
+    NOT_DETECTED("NOT_DETECTED", "未检测"),
     ;
 
     private final String value;

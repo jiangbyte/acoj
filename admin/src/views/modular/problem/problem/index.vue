@@ -4,9 +4,11 @@ import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'na
 import { useProProblemFetch } from '@/composables'
 import Form from './form.vue'
 import Detail from './detail.vue'
+import Report from './report.vue'
 
 const formRef = ref()
 const detailRef = ref()
+const reportRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -14,30 +16,38 @@ const columns: DataTableColumns<any> = [
   {
     title: '分类',
     key: 'categoryName',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '标题',
     key: 'title',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '来源',
     key: 'source',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
   },
+  // {
+  //   title: '链接',
+  //   key: 'url',
+  //   ellipsis: true,
+  // },
   {
-    title: '链接',
-    key: 'url',
-    ellipsis: true,
-  },
-  {
-    title: '时间限制',
+    title: '时间限制(ms)',
     key: 'maxTime',
+    width: 110,
   },
   {
-    title: '内存限制',
+    title: '内存限制(KB)',
     key: 'maxMemory',
+    width: 110,
   },
   {
     title: '阈值',
@@ -60,7 +70,7 @@ const columns: DataTableColumns<any> = [
     key: 'isPublicName',
   },
   {
-    title: 'LLM启用',
+    title: 'AI辅助',
     key: 'isLlmEnhancedName',
   },
   {
@@ -89,9 +99,10 @@ const columns: DataTableColumns<any> = [
         }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NButton, {
-          type: 'warning',
+          type: 'primary',
           size: 'small',
-          onClick: () => {},
+          disabled: row.canUseSimilarReport !== true,
+          onClick: () => { reportRef.value.doOpen(row) },
         }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
@@ -238,6 +249,9 @@ async function deleteBatchHandle() {
                 </NButton>
               </template>
             </NPopconfirm>
+            <n-text depth="3">
+              注：使用导入功能请从 FPS 题库下载标准题库压缩包(.zip)导入！
+            </n-text>
           </NSpace>
           <NSpace align="center">
             <NFormItem :show-feedback="false" label-placement="left">
@@ -326,6 +340,7 @@ async function deleteBatchHandle() {
 
     <Form ref="formRef" @submit="loadData" />
     <Detail ref="detailRef" @submit="loadData" />
+    <Report ref="reportRef" />
   </div>
 </template>
 

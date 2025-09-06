@@ -119,4 +119,8 @@ public class ProSubmit extends CommonEntity {
     @TableField(exist = false)
     private String similarityBehaviorName;
 
+    @Schema(description = "是否可以使用相似报告")
+    @TableField(exist = false)
+    private Boolean canUseSimilarReport;
+
 }

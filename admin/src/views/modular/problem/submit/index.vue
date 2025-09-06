@@ -81,6 +81,10 @@ const columns: DataTableColumns<any> = [
   {
     title: '相似度',
     key: 'similarity',
+    render: (row) => {
+      // return h(NTag, { size: 'small', bordered: false }, row.similarity * 100)
+      return row.similarity * 100
+    },
   },
   {
     title: '行为标记',
@@ -106,8 +110,9 @@ const columns: DataTableColumns<any> = [
         // }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NButton, {
-          type: 'warning',
+          type: 'primary',
           size: 'small',
+          disabled: row.canUseSimilarReport !== true,
           onClick: () => {},
         }, () => '相似报告'),
         h(NPopconfirm, {

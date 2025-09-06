@@ -19,9 +19,7 @@ import io.charlie.app.core.modular.problem.problem.service.ProProblemService;
 import io.charlie.app.core.modular.problem.relation.service.ProProblemTagService;
 import io.charlie.app.core.modular.problem.solved.entity.ProSolved;
 import io.charlie.app.core.modular.problem.solved.mapper.ProSolvedMapper;
-import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
 import io.charlie.app.core.modular.problem.submit.mapper.ProSubmitMapper;
-import io.charlie.app.core.modular.set.problems.entity.ProSetProblem;
 import io.charlie.app.core.modular.set.problems.mapper.ProSetProblemMapper;
 import io.charlie.app.core.modular.set.solved.mapper.ProSetSolvedMapper;
 import io.charlie.app.core.modular.sys.tag.entity.SysTag;
@@ -56,6 +54,140 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
 
     private final ProSetSolvedMapper proSetSolvedMapper;
     private final ProSetProblemMapper proSetProblemMapper;
+
+    private void buildProProblem(ProProblem item) {
+        List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());
+        if (ObjectUtil.isNotEmpty(tagsById)) {
+            item.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
+            item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
+        }
+
+        // 解决记录
+        try {
+            String loginIdAsString = StpUtil.getLoginIdAsString();
+            // 缓存取出解决记录
+            ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
+                    .eq(ProSolved::getUserId, loginIdAsString)
+                    .eq(ProSolved::getProblemId, item.getId()));
+            if (proSolved.getSolved()) {
+                item.setCurrentUserSolved(true);
+            } else {
+                item.setCurrentUserSolved(false);
+            }
+        } catch (Exception ignored) {
+            item.setCurrentUserSolved(false);
+        }
+
+        // 通过率计算（缓存读取）
+        Long proSolvedCount = proSolvedMapper.selectCount(new QueryWrapper<ProSolved>()
+                .select("DISTINCT user_id")
+                .lambda()
+                .eq(ProSolved::getProblemId, item.getId())
+                .eq(ProSolved::getSolved, true));
+        item.setCanUseSimilarReport(proSolvedCount > 0);
+        Long proSolvedTotalCount = proSolvedMapper.selectCount(new QueryWrapper<ProSolved>()
+                .select("DISTINCT user_id")
+                .lambda()
+                .eq(ProSolved::getProblemId, item.getId()));
+        if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
+            item.setAcceptance(BigDecimal.ZERO);
+        } else {
+            item.setAcceptance(new BigDecimal(proSolvedCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
+        }
+        // 参与人数
+        item.setParticipantCount(String.valueOf(proSolvedTotalCount));
+    }
+
+    private void buildProProblemNE(ProProblem item) {
+        // 缓存取出标签列表
+        List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());
+        if (ObjectUtil.isNotEmpty(tagsById)) {
+            item.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
+            item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
+        }
+        // 测试用例脱敏
+        item.setTestCase(List.of());
+        // 模板脱敏
+        if (ObjectUtil.isNotEmpty(item.getCodeTemplate())) {
+            item.getCodeTemplate().forEach(template -> {
+                template.setPrefix(null);
+                template.setSuffix(null);
+            });
+        }
+        // 解决记录
+        try {
+            String loginIdAsString = StpUtil.getLoginIdAsString();
+            // 缓存取出解决记录
+            ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>()
+//                        .select("DISTINCT problem_id")
+                    .lambda()
+                    .eq(ProSolved::getUserId, loginIdAsString)
+                    .eq(ProSolved::getProblemId, item.getId()));
+            if (ObjectUtil.isNotNull(proSolved)) {
+                if (proSolved.getSolved()) {
+                    item.setCurrentUserSolved(true);
+                } else {
+                    item.setCurrentUserSolved(false);
+                }
+            }
+        } catch (Exception e) {
+            item.setCurrentUserSolved(false);
+            e.printStackTrace();
+        }
+
+        // 通过率计算（缓存读取）
+        Long proSolvedCount = proSolvedMapper.selectCount(new QueryWrapper<ProSolved>()
+                .select("DISTINCT user_id")
+                .lambda()
+                .eq(ProSolved::getProblemId, item.getId())
+                .eq(ProSolved::getSolved, true));
+        item.setCanUseSimilarReport(proSolvedCount > 0);
+        Long proSolvedTotalCount = proSolvedMapper.selectCount(new QueryWrapper<ProSolved>()
+                .select("DISTINCT user_id")
+                .lambda().eq(ProSolved::getProblemId, item.getId()));
+        if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
+            item.setAcceptance(BigDecimal.ZERO);
+        } else {
+            item.setAcceptance(new BigDecimal(proSolvedCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
+        }
+        // 参与人数
+        item.setParticipantCount(String.valueOf(proSolvedTotalCount));
+    }
+
+    private void buildProProblemDetail(ProProblem proProblem, ProProblemIdParam proProblemIdParam) {
+        proProblem.setTestCase(List.of());
+        if (ObjectUtil.isNotEmpty(proProblem.getCodeTemplate())) {
+            proProblem.getCodeTemplate().forEach(template -> {
+                template.setPrefix(null);
+                template.setSuffix(null);
+            });
+        }
+        List<SysTag> tagsById = proProblemTagService.getTagsById(proProblemIdParam.getId());
+        if (ObjectUtil.isNotEmpty(tagsById)) {
+            proProblem.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
+            proProblem.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
+        }
+
+        // 通过率计算（缓存读取）
+        Long proSolvedCount = proSolvedMapper.selectCount(new QueryWrapper<ProSolved>()
+                .select("DISTINCT user_id")
+                .lambda().eq(ProSolved::getProblemId, proProblem.getId()).eq(ProSolved::getSolved, true));
+        proProblem.setCanUseSimilarReport(proSolvedCount > 0);
+        Long proSolvedTotalCount = proSolvedMapper.selectCount(new QueryWrapper<ProSolved>()
+                .select("DISTINCT user_id")
+                .lambda().eq(ProSolved::getProblemId, proProblem.getId()));
+        if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
+            proProblem.setAcceptance(BigDecimal.ZERO);
+        } else {
+            proProblem.setAcceptance(new BigDecimal(proSolvedCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
+        }
+    }
 
     @Override
     public Page<ProProblem> page(ProProblemPageParam proProblemPageParam) {
@@ -95,42 +227,8 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
                         null
                 ),
                 queryWrapper);
-        page.getRecords().forEach(item -> {
-            List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());
-            if (ObjectUtil.isNotEmpty(tagsById)) {
-                item.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
-                item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
-            }
 
-            // 解决记录
-            try {
-                String loginIdAsString = StpUtil.getLoginIdAsString();
-                // 缓存取出解决记录
-                ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
-                        .eq(ProSolved::getUserId, loginIdAsString)
-                        .eq(ProSolved::getProblemId, item.getId()));
-                if (proSolved.getSolved()) {
-                    item.setCurrentUserSolved(true);
-                } else {
-                    item.setCurrentUserSolved(false);
-                }
-            } catch (Exception ignored) {
-                item.setCurrentUserSolved(false);
-            }
-
-            // 通过率计算（缓存读取）
-            Long proSolvedCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()).eq(ProSolved::getSolved, true));
-            Long proSolvedTotalCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()));
-            if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
-                item.setAcceptance(BigDecimal.ZERO);
-            } else {
-                item.setAcceptance(new BigDecimal(proSolvedCount)
-                        .multiply(new BigDecimal(100))
-                        .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
-            }
-            // 参与人数
-            item.setParticipantCount(String.valueOf(proSolvedTotalCount));
-        });
+        page.getRecords().forEach(this::buildProProblem);
 
         return page;
     }
@@ -185,8 +283,12 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
             proProblem.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
         }
         // 通过率计算（缓存读取）
-        Long proSolvedCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, proProblem.getId()).eq(ProSolved::getSolved, true));
-        Long proSolvedTotalCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, proProblem.getId()));
+        Long proSolvedCount = proSolvedMapper.selectCount(new QueryWrapper<ProSolved>()
+                .select("DISTINCT user_id")
+                .lambda().eq(ProSolved::getProblemId, proProblem.getId()).eq(ProSolved::getSolved, true));
+        Long proSolvedTotalCount = proSolvedMapper.selectCount(new QueryWrapper<ProSolved>()
+                .select("DISTINCT user_id")
+                .lambda().eq(ProSolved::getProblemId, proProblem.getId()));
         if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
             proProblem.setAcceptance(BigDecimal.ZERO);
         } else {
@@ -206,30 +308,7 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
         if (ObjectUtil.isEmpty(proProblem)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
-
-        proProblem.setTestCase(List.of());
-        if (ObjectUtil.isNotEmpty(proProblem.getCodeTemplate())) {
-            proProblem.getCodeTemplate().forEach(template -> {
-                template.setPrefix(null);
-                template.setSuffix(null);
-            });
-        }
-        List<SysTag> tagsById = proProblemTagService.getTagsById(proProblemIdParam.getId());
-        if (ObjectUtil.isNotEmpty(tagsById)) {
-            proProblem.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
-            proProblem.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
-        }
-
-        // 通过率计算（缓存读取）
-        Long proSolvedCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, proProblem.getId()).eq(ProSolved::getSolved, true));
-        Long proSolvedTotalCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, proProblem.getId()));
-        if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
-            proProblem.setAcceptance(BigDecimal.ZERO);
-        } else {
-            proProblem.setAcceptance(new BigDecimal(proSolvedCount)
-                    .multiply(new BigDecimal(100))
-                    .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
-        }
+        buildProProblemDetail(proProblem, proProblemIdParam);
         return proProblem;
     }
 
@@ -272,54 +351,7 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
                         null
                 ),
                 queryWrapper);
-        page.getRecords().forEach(item -> {
-            // 缓存取出标签列表
-            List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());
-            if (ObjectUtil.isNotEmpty(tagsById)) {
-                item.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
-                item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
-            }
-            // 测试用例脱敏
-            item.setTestCase(List.of());
-            // 模板脱敏
-            if (ObjectUtil.isNotEmpty(item.getCodeTemplate())) {
-                item.getCodeTemplate().forEach(template -> {
-                    template.setPrefix(null);
-                    template.setSuffix(null);
-                });
-            }
-            // 解决记录
-            try {
-                String loginIdAsString = StpUtil.getLoginIdAsString();
-                // 缓存取出解决记录
-                ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
-                        .eq(ProSolved::getUserId, loginIdAsString)
-                        .eq(ProSolved::getProblemId, item.getId()));
-                if (ObjectUtil.isNotNull(proSolved)) {
-                    if (proSolved.getSolved()) {
-                        item.setCurrentUserSolved(true);
-                    } else {
-                        item.setCurrentUserSolved(false);
-                    }
-                }
-            } catch (Exception e) {
-                item.setCurrentUserSolved(false);
-                e.printStackTrace();
-            }
-
-            // 通过率计算（缓存读取）
-            Long proSolvedCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()).eq(ProSolved::getSolved, true));
-            Long proSolvedTotalCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()));
-            if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
-                item.setAcceptance(BigDecimal.ZERO);
-            } else {
-                item.setAcceptance(new BigDecimal(proSolvedCount)
-                        .multiply(new BigDecimal(100))
-                        .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
-            }
-            // 参与人数
-            item.setParticipantCount(String.valueOf(proSolvedTotalCount));
-        });
+        page.getRecords().forEach(this::buildProProblemNE);
         return page;
     }
 
@@ -327,64 +359,7 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
     @Override
     public List<ProProblem> latestN(int n) {
         List<ProProblem> list = this.list(new QueryWrapper<ProProblem>().checkSqlInjection().lambda().orderByDesc(ProProblem::getCreateTime).last("LIMIT " + n));
-        list.forEach(item -> {
-            List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());
-            if (ObjectUtil.isNotEmpty(tagsById)) {
-                item.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
-                item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
-            }
-            item.setTestCase(List.of());
-            if (ObjectUtil.isNotEmpty(item.getCodeTemplate())) {
-                item.getCodeTemplate().forEach(template -> {
-                    template.setPrefix(null);
-                    template.setSuffix(null);
-                });
-            }
-
-//            try {
-//                String loginIdAsString = StpUtil.getLoginIdAsString();
-//                ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
-//                        .eq(ProSolved::getUserId, loginIdAsString)
-//                        .eq(ProSolved::getProblemId, item.getId()));
-//                item.setCurrentUserSolved(proSolved.getSolved());
-//            } catch (Exception ignored) {
-//                item.setCurrentUserSolved(false);
-//            }
-
-
-
-            // 解决记录
-            try {
-                String loginIdAsString = StpUtil.getLoginIdAsString();
-                // 缓存取出解决记录
-                ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
-                        .eq(ProSolved::getUserId, loginIdAsString)
-                        .eq(ProSolved::getProblemId, item.getId()));
-                if (ObjectUtil.isNotNull(proSolved)) {
-                    if (proSolved.getSolved()) {
-                        item.setCurrentUserSolved(true);
-                    } else {
-                        item.setCurrentUserSolved(false);
-                    }
-                }
-            } catch (Exception e) {
-                item.setCurrentUserSolved(false);
-                e.printStackTrace();
-            }
-
-            // 通过率计算（缓存读取）
-            Long proSolvedCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()).eq(ProSolved::getSolved, true));
-            Long proSolvedTotalCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()));
-            if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
-                item.setAcceptance(BigDecimal.ZERO);
-            } else {
-                item.setAcceptance(new BigDecimal(proSolvedCount)
-                        .multiply(new BigDecimal(100))
-                        .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
-            }
-            // 参与人数
-            item.setParticipantCount(String.valueOf(proSolvedTotalCount));
-        });
+        list.forEach(this::buildProProblemNE);
         return list;
     }
 
@@ -519,13 +494,21 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
         }
 
         // 用户提交记录查询
-        List<String> problemIds = proSubmitMapper.selectList(new LambdaQueryWrapper<ProSubmit>()
-                        .eq(ProSubmit::getUserId, userProblemPageParam.getUserId())
+//        List<String> problemIds = proSubmitMapper.selectList(new LambdaQueryWrapper<ProSubmit>()
+//                        .eq(ProSubmit::getUserId, userProblemPageParam.getUserId())
+//                        // 按时间倒序
+//                        .orderByDesc(ProSubmit::getCreateTime)
+//                )
+//                .stream()
+//                .map(ProSubmit::getProblemId)
+//                .distinct()
+//                .toList();
+        List<String> problemIds = proSolvedMapper.selectList(new LambdaQueryWrapper<ProSolved>()
+                        .eq(ProSolved::getUserId, userProblemPageParam.getUserId())
                         // 按时间倒序
-                        .orderByDesc(ProSubmit::getCreateTime)
-                )
+                        .orderByDesc(ProSolved::getUpdateTime))
                 .stream()
-                .map(ProSubmit::getProblemId)
+                .map(ProSolved::getProblemId)
                 .distinct()
                 .toList();
         if (ObjectUtil.isNotEmpty(problemIds)) {
@@ -560,42 +543,8 @@ public class ProProblemServiceImpl extends ServiceImpl<ProProblemMapper, ProProb
                         null
                 ),
                 queryWrapper);
-        page.getRecords().forEach(item -> {
-            List<SysTag> tagsById = proProblemTagService.getTagsById(item.getId());
-            if (ObjectUtil.isNotEmpty(tagsById)) {
-                item.setTagIds(tagsById.stream().map(SysTag::getId).distinct().toList());
-                item.setTagNames(tagsById.stream().map(SysTag::getName).distinct().toList());
-            }
 
-            // 解决记录
-            try {
-                String loginIdAsString = StpUtil.getLoginIdAsString();
-                // 缓存取出解决记录
-                ProSolved proSolved = proSolvedMapper.selectOne(new QueryWrapper<ProSolved>().lambda()
-                        .eq(ProSolved::getUserId, loginIdAsString)
-                        .eq(ProSolved::getProblemId, item.getId()));
-                if (proSolved.getSolved()) {
-                    item.setCurrentUserSolved(true);
-                } else {
-                    item.setCurrentUserSolved(false);
-                }
-            } catch (Exception ignored) {
-                item.setCurrentUserSolved(false);
-            }
-
-            // 通过率计算（缓存读取）
-            Long proSolvedCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()).eq(ProSolved::getSolved, true));
-            Long proSolvedTotalCount = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getProblemId, item.getId()));
-            if (proSolvedTotalCount == null || proSolvedTotalCount == 0) {
-                item.setAcceptance(BigDecimal.ZERO);
-            } else {
-                item.setAcceptance(new BigDecimal(proSolvedCount)
-                        .multiply(new BigDecimal(100))
-                        .divide(new BigDecimal(proSolvedTotalCount), 2, RoundingMode.DOWN));
-            }
-            // 参与人数
-            item.setParticipantCount(String.valueOf(proSolvedTotalCount));
-        });
+        page.getRecords().forEach(this::buildProProblemNE);
 
         return page;
     }

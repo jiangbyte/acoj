@@ -97,12 +97,22 @@ public class ProSubmitServiceImpl extends ServiceImpl<ProSubmitMapper, ProSubmit
             queryWrapper.lambda().orderByDesc(ProSubmit::getCreateTime);
         }
 
-        return this.page(CommonPageRequest.Page(
+        Page<ProSubmit> page = this.page(CommonPageRequest.Page(
                         Optional.ofNullable(proSubmitPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(proSubmitPageParam.getSize()).orElse(20),
                         null
                 ),
                 queryWrapper);
+        page.getRecords().forEach(item -> {
+            // 通过率计算（缓存读取）
+            Long proSolvedCount = proSolvedMapper.selectCount(new QueryWrapper<ProSolved>()
+                    .select("DISTINCT user_id")
+                    .lambda()
+                    .eq(ProSolved::getProblemId, item.getProblemId())
+                    .eq(ProSolved::getSolved, true));
+            item.setCanUseSimilarReport(proSolvedCount > 0 && item.getTaskId() != null);
+        });
+        return page;
     }
 
     @Transactional(rollbackFor = Exception.class)

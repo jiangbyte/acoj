@@ -105,7 +105,11 @@ public class ProSolvedServiceImpl extends ServiceImpl<ProSolvedMapper, ProSolved
         long count;
         try {
             String loginIdAsString = StpUtil.getLoginIdAsString();
-            count = this.count(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getUserId, loginIdAsString).eq(ProSolved::getSolved, true));
+            count = this.count(new QueryWrapper<ProSolved>()
+                    .select("DISTINCT problem_id")
+                    .lambda()
+                    .eq(ProSolved::getUserId, loginIdAsString)
+                    .eq(ProSolved::getSolved, true));
         } catch (Exception ignored) {
             count = 0;
         }
@@ -115,12 +119,17 @@ public class ProSolvedServiceImpl extends ServiceImpl<ProSolvedMapper, ProSolved
     @Override
     public BigDecimal getAveragePassRate() {
         // 总成功次数
-        long totalSuccessCount = this.count(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getSolved, true));
+        long totalSuccessCount = this.count(new QueryWrapper<ProSolved>()
+                .select("DISTINCT problem_id")
+                .lambda()
+                .eq(ProSolved::getSolved, true));
         if (totalSuccessCount == 0) {
             return BigDecimal.ZERO;
         }
         // 总尝试次数
-        long totalTryCount = this.count();
+        long totalTryCount = this.count(new QueryWrapper<ProSolved>()
+                .select("DISTINCT problem_id")
+        );
         if (totalTryCount == 0) {
             return BigDecimal.ZERO;
         }

@@ -9,7 +9,7 @@ import cn.hutool.core.util.RandomUtil;
  * @description 默认 数据
  */
 public interface DefaultUserData {
-    String USER_DEFAULT_NICKNAME = "用户-" + RandomUtil.randomString(3);
+    String USER_DEFAULT_NICKNAME = "用户-" + RandomUtil.randomString(5);
     String USER_DEFAULT_AVATAR = "https://cdn.jsdelivr.net/gh/charlie-zhang-cn/cdn/img/avatar.png";
     String USER_DEFAULT_BACKGROUND = "https://cdn.jsdelivr.net/gh/charlie-zhang-cn/cdn/img/background.png";
     String USER_DEFAULT_QUOTE = "Hello World!";

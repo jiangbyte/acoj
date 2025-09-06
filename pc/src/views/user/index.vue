@@ -176,13 +176,21 @@ function rowProps(row: any) {
     </div>
 
     <!-- 统计数据卡片 -->
-    <div class="grid grid-cols-3 md:grid-cols-3 gap-4 mb-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
         <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
           {{ detailData?.solvedProblem ? detailData?.solvedProblem : 0 }}
         </div>
         <div class="text-sm text-gray-500 dark:text-gray-400">
           已解决题目
+        </div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
+        <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
+          {{ detailData?.tryProblem ? detailData?.tryProblem : 0 }}
+        </div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          总尝试题目
         </div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">

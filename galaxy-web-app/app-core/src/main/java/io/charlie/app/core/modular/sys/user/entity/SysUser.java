@@ -86,6 +86,10 @@ public class SysUser extends CommonEntity {
     @TableField(exist = false)
     private String solvedProblem;
 
+    @Schema(description = "尝试题目数")
+    @TableField(exist = false)
+    private String tryProblem;
+
     @Schema(description = "参与题集")
     @TableField(exist = false)
     private String participatedSet;

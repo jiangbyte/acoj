@@ -87,7 +87,7 @@ defineExpose({
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="值" path="value">
-          <NInput type="textarea" v-model:value="formData.value" placeholder="请输入值" />
+          <NInput v-model:value="formData.value" type="textarea" placeholder="请输入值" />
         </NFormItem>
         <!-- 输入框 -->
         <!--        <NFormItem label="组件类型" path="componentType"> -->

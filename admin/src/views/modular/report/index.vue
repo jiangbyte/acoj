@@ -1,78 +1,106 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText } from 'naive-ui'
-
-import { useProSolvedFetch } from '@/composables'
-import Form from './form.vue'
-import Detail from './detail.vue'
+import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { useProProblemFetch } from '@/composables'
 
 const formRef = ref()
 const detailRef = ref()
-const problemDataModalRef = ref()
+const reportRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
   },
   {
-    title: '用户',
-    key: 'user',
-    width: 150,
-    render(row: any) {
-      return h(
-        NSpace,
-        { align: 'center', size: 'small' },
-        {
-          default: () => [
-            h(
-              NAvatar,
-              {
-                size: 'small',
-                round: true,
-                src: row.userAvatar,
-              },
-              {},
-            ),
-            h(
-              NText,
-              {},
-              { default: () => row.userIdName },
-            ),
-          ],
-        },
-      )
+    title: '分类',
+    key: 'categoryName',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '标题',
+    key: 'title',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '来源',
+    key: 'source',
+    ellipsis: {
+      tooltip: true,
     },
   },
   // {
-  //   title: '用户',
-  //   key: 'userIdName',
+  //   title: '链接',
+  //   key: 'url',
+  //   ellipsis: true,
   // },
   {
-    title: '题目',
-    key: 'problemIdName',
-    ellipsis: true,
+    title: '时间限制(ms)',
+    key: 'maxTime',
+    width: 110,
   },
   {
-    title: '提交ID',
-    key: 'submitId',
-    ellipsis: true,
+    title: '内存限制(KB)',
+    key: 'maxMemory',
+    width: 110,
   },
   {
-    title: '是否解决',
-    key: 'solvedName',
+    title: '阈值',
+    key: 'threshold',
+  },
+  // {
+  //   title: '用例',
+  //   key: 'testCase',
+  // },
+  // {
+  //   title: '开放语言',
+  //   key: 'allowedLanguages',
+  // },
+  {
+    title: '难度',
+    key: 'difficultyName',
+  },
+  {
+    title: '公开',
+    key: 'isPublicName',
+  },
+  {
+    title: 'AI辅助',
+    key: 'isLlmEnhancedName',
+  },
+  {
+    title: '使用模板',
+    key: 'useTemplateName',
+  },
+  // {
+  //   title: '模板代码',
+  //   key: 'codeTemplate',
+  // },
+  {
+    title: '解决',
+    key: 'solved',
   },
   {
     title: '操作',
     key: 'action',
-    width: 140,
+    width: 280,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
-        // h(NButton, {
-        //   type: 'primary',
-        //   size: 'small',
-        //   onClick: () => formRef.value.doOpen(row, true),
-        // }, () => '编辑'),
+        h(NButton, {
+          type: 'primary',
+          size: 'small',
+          onClick: () => formRef.value.doOpen(row, true),
+        }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
+        h(NButton, {
+          type: 'primary',
+          size: 'small',
+          disabled: row.canUseSimilarReport !== true,
+          onClick: () => { reportRef.value.doOpen(row) },
+        }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {
@@ -127,22 +155,18 @@ const pageParam = ref({
   sortField: null,
   sortOrder: null,
   keyword: '',
-  problemId: '',
 })
 
-const selectProblemTitle = ref('')
 function resetHandle() {
   pageParam.value.keyword = ''
-  pageParam.value.problemId = ''
-  selectProblemTitle.value = ''
   loadData()
 }
 
-const { proSolvedPage, proSolvedDelete } = useProSolvedFetch()
+const { proProblemPage, proProblemDelete } = useProProblemFetch()
 const loading = ref(false)
 async function loadData() {
   loading.value = true
-  const { data } = await proSolvedPage(pageParam.value)
+  const { data } = await proProblemPage(pageParam.value)
   if (data) {
     pageData.value = data
     loading.value = false
@@ -155,7 +179,7 @@ async function deleteHandle(row: any) {
   const param = [{
     id: row.id,
   }]
-  const { success } = await proSolvedDelete(param)
+  const { success } = await proProblemDelete(param)
   if (success) {
     window.$message.success('删除成功')
     await loadData()
@@ -164,7 +188,7 @@ async function deleteHandle(row: any) {
 const checkedRowKeys = ref<string[]>([])
 async function deleteBatchHandle() {
   const param = checkedRowKeys.value.map(id => ({ id }))
-  const { success } = await proSolvedDelete(param)
+  const { success } = await proProblemDelete(param)
   if (success) {
     window.$message.success('删除成功')
     await loadData()
@@ -181,17 +205,6 @@ async function deleteBatchHandle() {
           <NSpace align="center">
             <NFormItem :show-feedback="false" label="关键词" label-placement="left">
               <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" />
-            </NFormItem>
-            <NFormItem :show-feedback="false" label="题目" label-placement="left">
-              <SingleProblemModal
-                ref="problemDataModalRef"
-                v-model:value="pageParam.problemId"
-                v-model:title="selectProblemTitle"
-                @update:select="loadData()"
-              />
-              <NButton @click="problemDataModalRef.doOpen()">
-                {{ selectProblemTitle ? selectProblemTitle : '未选择题目' }}
-              </NButton>
             </NFormItem>
             <NSpace align="center">
               <NButton type="primary" @click="loadData">
@@ -211,12 +224,12 @@ async function deleteBatchHandle() {
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
-            <!-- <NButton type="primary" @click="formRef.doOpen(null, false)">
+            <NButton type="primary" @click="formRef.doOpen(null, false)">
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
               创建
-            </NButton> -->
+            </NButton>
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除
@@ -312,9 +325,6 @@ async function deleteBatchHandle() {
         </NSpace>
       </template>
     </NCard>
-
-    <Form ref="formRef" @submit="loadData" />
-    <Detail ref="detailRef" @submit="loadData" />
   </div>
 </template>
 

@@ -141,6 +141,10 @@ public class ProProblem extends CommonEntity {
     @Trans(type = TransType.DICTIONARY, key = "YES_NO", ref = "isPublicName")
     private Boolean isPublic;
 
+    @Schema(description = "是否可以使用相似报告")
+    @TableField(exist = false)
+    private Boolean canUseSimilarReport;
+
     @Schema(description = "是否公开名称")
     @TableField(exist = false)
     private String isPublicName;

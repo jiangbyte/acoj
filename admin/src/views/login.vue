@@ -111,7 +111,7 @@ const version = import.meta.env.VITE_VERSION
         >
           <NInput
             v-model:value="formData.username"
-            placeholder="Please enter a username"
+            placeholder="请输入用户名"
           />
         </NFormItem>
         <NFormItem
@@ -121,7 +121,7 @@ const version = import.meta.env.VITE_VERSION
           <NInput
             v-model:value="formData.password"
             type="password"
-            placeholder="Please enter a password"
+            placeholder="请输入密码"
           />
         </NFormItem>
         <NFormItem

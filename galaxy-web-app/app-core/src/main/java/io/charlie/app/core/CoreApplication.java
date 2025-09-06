@@ -9,8 +9,16 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Charlie Zhang
@@ -31,12 +39,14 @@ public class CoreApplication {
                                                 \s
                          -------------------------------------------------
                              Application is running! Access URLs:
-                             Local:    http://localhost:{}
-                             Doc:      http://localhost:{}/doc.html
+                             Local:    http://localhost:{}{}
+                             Doc:      http://localhost:{}{}/doc.html
                          -------------------------------------------------
                         \s""",
                 env.getProperty("server.port"),
-                env.getProperty("server.port")
+                env.getProperty("server.servlet.context-path"),
+                env.getProperty("server.port"),
+                env.getProperty("server.servlet.context-path")
         );
     }
 
@@ -49,5 +59,6 @@ public class CoreApplication {
         public String index() {
             return "UP";
         }
+
     }
 }

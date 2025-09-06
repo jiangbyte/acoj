@@ -1,22 +1,50 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText } from 'naive-ui'
-
-import { useProSolvedFetch } from '@/composables'
+import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText, NTime } from 'naive-ui'
+import { useProSimilarityDetailFetch } from '@/composables'
 import Form from './form.vue'
 import Detail from './detail.vue'
 
 const formRef = ref()
 const detailRef = ref()
-const problemDataModalRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
   },
   {
+    title: '任务ID',
+    key: 'taskId',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '手动',
+    key: 'taskTypeName',
+  },
+  {
+    title: '题目',
+    key: 'problemIdName',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '编程语言',
+    key: 'languageName',
+  },
+  {
+    title: '相似度',
+    key: 'similarity',
+    render: (row) => {
+      // return h(NTag, { size: 'small', bordered: false }, row.similarity * 100)
+      return row.similarity * 100
+    },
+  },
+  {
     title: '用户',
-    key: 'user',
-    width: 150,
+    key: 'submitUser',
+    width: 140,
     render(row: any) {
       return h(
         NSpace,
@@ -28,14 +56,14 @@ const columns: DataTableColumns<any> = [
               {
                 size: 'small',
                 round: true,
-                src: row.userAvatar,
+                src: row.submitUserAvatar,
               },
               {},
             ),
             h(
               NText,
               {},
-              { default: () => row.userIdName },
+              { default: () => row.submitUserName },
             ),
           ],
         },
@@ -43,23 +71,96 @@ const columns: DataTableColumns<any> = [
     },
   },
   // {
-  //   title: '用户',
-  //   key: 'userIdName',
+  //   title: '源代码',
+  //   key: 'submitCode',
   // },
   {
-    title: '题目',
-    key: 'problemIdName',
-    ellipsis: true,
+    title: '源代码长度',
+    key: 'submitCodeLength',
   },
   {
     title: '提交ID',
     key: 'submitId',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
-    title: '是否解决',
-    key: 'solvedName',
+    title: '提交时间',
+    key: 'submitTime',
+    width: 180,
+    render(row: any) {
+      return h(NTime, { time: row.submitTime })
+    },
   },
+  // {
+  //   title: '提交用户Token名称',
+  //   key: 'submitTokenName',
+  // },
+  // {
+  //   title: '提交用户Token内容',
+  //   key: 'submitTokenTexts',
+  // },
+  {
+    title: '样本用户',
+    key: 'originUser',
+    width: 140,
+    render(row: any) {
+      return h(
+        NSpace,
+        { align: 'center', size: 'small' },
+        {
+          default: () => [
+            h(
+              NAvatar,
+              {
+                size: 'small',
+                round: true,
+                src: row.originUserAvatar,
+              },
+              {},
+            ),
+            h(
+              NText,
+              {},
+              { default: () => row.originUserName },
+            ),
+          ],
+        },
+      )
+    },
+  },
+  // {
+  //   title: '样本源代码',
+  //   key: 'originCode',
+  // },
+  {
+    title: '样本源代码长度',
+    key: 'originCodeLength',
+  },
+  {
+    title: '样本提交ID',
+    key: 'originId',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '样本提交时间',
+    key: 'originTime',
+    width: 180,
+    render(row: any) {
+      return h(NTime, { time: row.originTime })
+    },
+  },
+  // {
+  //   title: '样本用户Token名称',
+  //   key: 'originTokenName',
+  // },
+  // {
+  //   title: '样本用户Token内容',
+  //   key: 'originTokenTexts',
+  // },
   {
     title: '操作',
     key: 'action',
@@ -127,22 +228,18 @@ const pageParam = ref({
   sortField: null,
   sortOrder: null,
   keyword: '',
-  problemId: '',
 })
 
-const selectProblemTitle = ref('')
 function resetHandle() {
   pageParam.value.keyword = ''
-  pageParam.value.problemId = ''
-  selectProblemTitle.value = ''
   loadData()
 }
 
-const { proSolvedPage, proSolvedDelete } = useProSolvedFetch()
+const { proSimilarityDetailPage, proSimilarityDetailDelete } = useProSimilarityDetailFetch()
 const loading = ref(false)
 async function loadData() {
   loading.value = true
-  const { data } = await proSolvedPage(pageParam.value)
+  const { data } = await proSimilarityDetailPage(pageParam.value)
   if (data) {
     pageData.value = data
     loading.value = false
@@ -155,7 +252,7 @@ async function deleteHandle(row: any) {
   const param = [{
     id: row.id,
   }]
-  const { success } = await proSolvedDelete(param)
+  const { success } = await proSimilarityDetailDelete(param)
   if (success) {
     window.$message.success('删除成功')
     await loadData()
@@ -164,7 +261,7 @@ async function deleteHandle(row: any) {
 const checkedRowKeys = ref<string[]>([])
 async function deleteBatchHandle() {
   const param = checkedRowKeys.value.map(id => ({ id }))
-  const { success } = await proSolvedDelete(param)
+  const { success } = await proSimilarityDetailDelete(param)
   if (success) {
     window.$message.success('删除成功')
     await loadData()
@@ -181,17 +278,6 @@ async function deleteBatchHandle() {
           <NSpace align="center">
             <NFormItem :show-feedback="false" label="关键词" label-placement="left">
               <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" />
-            </NFormItem>
-            <NFormItem :show-feedback="false" label="题目" label-placement="left">
-              <SingleProblemModal
-                ref="problemDataModalRef"
-                v-model:value="pageParam.problemId"
-                v-model:title="selectProblemTitle"
-                @update:select="loadData()"
-              />
-              <NButton @click="problemDataModalRef.doOpen()">
-                {{ selectProblemTitle ? selectProblemTitle : '未选择题目' }}
-              </NButton>
             </NFormItem>
             <NSpace align="center">
               <NButton type="primary" @click="loadData">
@@ -289,6 +375,7 @@ async function deleteBatchHandle() {
         :row-key="(row: any) => row.id"
         :loading="loading"
         flex-height
+        :scroll-x="1800"
         class="flex-1 h-full"
       />
       <template #action>

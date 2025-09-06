@@ -98,6 +98,13 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
         // 如果数量其中一个为0或者都为0，则忽略
         if (MIN_SAMPLE_SIZE <= 0 || RECENT_SAMPLE_SIZE <= 0 || MIN_MATCH_LENGTH <= 0) {
             log.info("代码克隆检测 -> 忽略空数据");
+            ProSubmit proSubmit = proSubmitMapper.selectById(similaritySubmitDto.getId());
+            if (proSubmit == null) {
+                return;
+            }
+            proSubmit.setSimilarity(BigDecimal.ZERO);
+            proSubmit.setSimilarityBehavior(CloneLevelEnum.NOT_DETECTED.getValue());
+            proSubmitMapper.updateById(proSubmit);
             return;
         }
 
@@ -136,11 +143,21 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
         // 空直接忽略
         if (ObjectUtil.isEmpty(proSampleLibraries)) {
             log.info("代码克隆检测 -> 忽略空数据");
+            ProSubmit proSubmit = proSubmitMapper.selectById(similaritySubmitDto.getId());
+            if (proSubmit == null) {
+                return;
+            }
+            proSubmit.setSimilarity(BigDecimal.ZERO);
+            proSubmit.setSimilarityBehavior(CloneLevelEnum.NOT_DETECTED.getValue());
+            proSubmitMapper.updateById(proSubmit);
             return;
         }
 
         List<ProSimilarityDetail> proSimilarityDetails = new ArrayList<>();
         proSampleLibraries.forEach(proSampleLibrary -> {
+            // 使用一次样本库，那么样本库的访问次数加1
+            proSampleLibrary.setAccessCount(proSampleLibrary.getAccessCount() + 1);
+
             CodeSimilarityCalculator.SimilarityDetail similarityDetail = codeSimilarityCalculator.getSimilarityDetail(
                     similaritySubmitDto.getLanguage().toLowerCase(),
                     proSampleLibrary.getCode(),
@@ -175,6 +192,8 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
 
             proSimilarityDetails.add(proSimilarityDetail);
         });
+        proSampleLibraryMapper.updateById(proSampleLibraries); // 更新访问次数
+
         proSimilarityDetailMapper.insert(proSimilarityDetails);
 
         this.sendSimilarityResult(bean);

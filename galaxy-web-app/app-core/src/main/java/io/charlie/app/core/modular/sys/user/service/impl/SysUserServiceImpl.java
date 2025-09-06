@@ -142,8 +142,15 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         // 获得解决题目数
         Long l = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getUserId, sysUser.getId()).eq(ProSolved::getSolved, true));
         sysUser.setSolvedProblem(String.valueOf(l));
+        // 尝试题目数
+        Long l2 = proSolvedMapper.selectCount(new LambdaQueryWrapper<ProSolved>().eq(ProSolved::getUserId, sysUser.getId()));
+        sysUser.setTryProblem(String.valueOf(l2));
         // 获得参与题集数
-        Long l1 = proSetSolvedMapper.selectCount(new LambdaQueryWrapper<ProSetSolved>().eq(ProSetSolved::getUserId, sysUser.getId()));
+        Long l1 = proSetSolvedMapper.selectCount(new QueryWrapper<ProSetSolved>()
+                .select("DISTINCT problem_set_id")
+                .lambda()
+                .eq(ProSetSolved::getUserId, sysUser.getId())
+        );
         sysUser.setParticipatedSet(String.valueOf(l1));
         return sysUser;
     }
