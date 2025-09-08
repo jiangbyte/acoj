@@ -8,6 +8,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.charlie.app.core.modular.judge.enums.JudgeStatus;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
 import io.charlie.app.core.modular.problem.problem.mapper.ProProblemMapper;
+import io.charlie.app.core.modular.problem.reports.entity.ProSimilarityReports;
+import io.charlie.app.core.modular.problem.reports.mapper.ProSimilarityReportsMapper;
 import io.charlie.app.core.modular.problem.sample.entity.ProSampleLibrary;
 import io.charlie.app.core.modular.problem.sample.mapper.ProSampleLibraryMapper;
 import io.charlie.app.core.modular.problem.sample.service.ProSampleLibraryService;
@@ -21,6 +23,7 @@ import io.charlie.app.core.modular.similarity.dto.SimilarityResult;
 import io.charlie.app.core.modular.similarity.dto.SimilarityResultDto;
 import io.charlie.app.core.modular.similarity.dto.SimilaritySubmitDto;
 import io.charlie.app.core.modular.similarity.enums.CloneLevelEnum;
+import io.charlie.app.core.modular.similarity.enums.ReportTypeEnum;
 import io.charlie.app.core.modular.similarity.service.ProblemSimilarityMessageService;
 import io.charlie.app.core.modular.similarity.utils.CodeSimilarityCalculator;
 import io.charlie.app.core.modular.similarity.utils.DynamicCloneLevelDetector;
@@ -34,10 +37,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.math.RoundingMode;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * @author ZhangJiangHu
@@ -56,6 +59,7 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
     private final ProSampleLibraryMapper proSampleLibraryMapper;
     private final ProProblemMapper proProblemMapper;
     private final ProSimilarityDetailMapper proSimilarityDetailMapper;
+    private final ProSimilarityReportsMapper proSimilarityReportsMapper;
 
     @Override
     public void sendSimilarityRequest(SimilaritySubmitDto similaritySubmitDto) {
@@ -154,6 +158,8 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
         }
 
         List<ProSimilarityDetail> proSimilarityDetails = new ArrayList<>();
+        AtomicReference<ProSimilarityDetail> maxProSimilarityDetailRef = new AtomicReference<>();
+
         proSampleLibraries.forEach(proSampleLibrary -> {
             // 使用一次样本库，那么样本库的访问次数加1
             proSampleLibrary.setAccessCount(proSampleLibrary.getAccessCount() + 1);
@@ -191,56 +197,193 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
             proSimilarityDetail.setOriginTokenTexts(similarityDetail.getTokenTexts2());
 
             proSimilarityDetails.add(proSimilarityDetail);
+
+            // 使用原子引用更新
+            maxProSimilarityDetailRef.updateAndGet(currentMax -> {
+                if (currentMax == null) {
+                    return proSimilarityDetail;
+                } else {
+                    BigDecimal currentSimilarity = BigDecimal.valueOf(similarityDetail.getSimilarity());
+                    return currentSimilarity.compareTo(currentMax.getSimilarity()) > 0
+                            ? proSimilarityDetail
+                            : currentMax;
+                }
+            });
         });
         proSampleLibraryMapper.updateById(proSampleLibraries); // 更新访问次数
 
+        // 任务详情记录
         proSimilarityDetailMapper.insert(proSimilarityDetails);
 
-        this.sendSimilarityResult(bean);
-    }
+        // 任务ID和题目ID
+        String taskId = similaritySubmitDto.getTaskId();
+        String problemId = similaritySubmitDto.getProblemId();
+        // 任务详情做分析，这里的报告类型是单次提交报告
+        ProSimilarityDetail maxProSimilarityDetail = maxProSimilarityDetailRef.get(); // 原子获取
+        // 样本数
+        int sampleCount = proSampleLibraries.size();
 
-    @Override
-    public void sendSimilarityResult(SimilarityResultDto similarityResultDto) {
-        log.info("发送消息：{}", JSONUtil.toJsonStr(similarityResultDto));
-        rabbitTemplate.convertAndSend(
-                ProblemSimilarityResultMQConfig.EXCHANGE,
-                ProblemSimilarityResultMQConfig.ROUTING_KEY,
-                similarityResultDto
-        );
-    }
-
-    @Transactional
-    @RabbitListener(queues = ProblemSimilarityResultMQConfig.QUEUE, concurrency = "5-10")
-    @Override
-    public void handleSimilarityResult(SimilarityResultDto similarityResultDto) {
-        log.info("handleSimilarityResult: {}", similarityResultDto);
-        // 在任务中找到相似度最大的任务
-        ProSimilarityDetail proSimilarityDetail = proSimilarityDetailMapper.selectOne(
-                new QueryWrapper<ProSimilarityDetail>().lambda()
-                        .eq(ProSimilarityDetail::getTaskId, similarityResultDto.getTaskId())
-                        .orderByDesc(ProSimilarityDetail::getSimilarity)
-                        .last("LIMIT 1")
-        );
-        if (proSimilarityDetail == null) {
-            return;
-        }
-        ProProblem proProblem = proProblemMapper.selectById(similarityResultDto.getProblemId());
+        ProProblem proProblem = proProblemMapper.selectById(similaritySubmitDto.getProblemId());
         if (proProblem == null) {
             return;
         }
-        ProSubmit proSubmit = proSubmitMapper.selectById(similarityResultDto.getId());
+
+        ProSimilarityReports reports = new ProSimilarityReports();
+        reports.setReportType(ReportTypeEnum.SINGLE_SUBMIT.getValue());
+        reports.setTaskId(taskId);
+        reports.setProblemId(problemId);
+        reports.setSampleCount(sampleCount);
+        //相似组数
+        reports.setAvgSimilarity(calculateAverageSimilarity(proSimilarityDetails));
+        reports.setMaxSimilarity(maxProSimilarityDetail.getSimilarity());
+        reports.setThreshold(proProblem.getThreshold());
+        reports.setSimilarityDistribution(calculateSimilarityDistribution(proSimilarityDetails));
+        DynamicCloneLevelDetector dynamicCloneLevelDetector = new DynamicCloneLevelDetector(proProblem.getThreshold());
+        List<DynamicCloneLevelDetector.CloneLevel> levels = dynamicCloneLevelDetector.getLevels();
+        reports.setDegreeStatistics(calculateSimilarityDegreeStatistics(proSimilarityDetails, levels));
+
+        proSimilarityReportsMapper.insert(reports);
+
+        ProSubmit proSubmit = proSubmitMapper.selectById(similaritySubmitDto.getId());
         if (proSubmit == null) {
             return;
         }
-        // 获取阈值
-        BigDecimal threshold = proProblem.getThreshold();
         // 比较阈值和相似度,划分等级
-        DynamicCloneLevelDetector dynamicCloneLevelDetector = new DynamicCloneLevelDetector(threshold);
-        BigDecimal similarity = proSimilarityDetail.getSimilarity();
+        BigDecimal similarity = maxProSimilarityDetail.getSimilarity();
         proSubmit.setSimilarity(similarity);
         CloneLevelEnum detect = dynamicCloneLevelDetector.detect(similarity);
         proSubmit.setSimilarityBehavior(detect.getValue());
+        proSubmit.setReportId(reports.getId());
         proSubmitMapper.updateById(proSubmit);
-        log.info("更新成功：{}", JSONUtil.toJsonStr(similarityResultDto));
+        log.info("更新成功");
+
+//        this.sendSimilarityResult(bean);
+    }
+
+    /**
+     * 计算相似度分布
+     *
+     * @param proSimilarityDetails 相似度详情列表
+     * @return 分布结果列表
+     */
+    private List<Integer> calculateSimilarityDistribution(List<ProSimilarityDetail> proSimilarityDetails) {
+        int[] distribution = new int[10];
+        int totalCount = proSimilarityDetails.size();
+
+        for (ProSimilarityDetail detail : proSimilarityDetails) {
+            double similarity = detail.getSimilarity().doubleValue();
+            int index = Math.min((int) (similarity * 10), 9);
+            distribution[index]++;
+        }
+
+//        String[] ranges = {"0-10%", "10-20%", "20-30%", "30-40%", "40-50%",
+//                "50-60%", "60-70%", "70-80%", "80-90%", "90-100%"};
+
+        List<Integer> result = new ArrayList<>();
+        for (int i = 0; i < distribution.length; i++) {
+//                result.add(String.format("%s: %d个样本", ranges[i], distribution[i]));
+            result.add(distribution[i]);
+        }
+
+        return result;
+    }
+
+    /**
+     * 计算平均相似度
+     *
+     * @param proSimilarityDetails 相似度详情列表
+     * @return 平均相似度，保留4位小数
+     */
+    private BigDecimal calculateAverageSimilarity(List<ProSimilarityDetail> proSimilarityDetails) {
+        if (proSimilarityDetails == null || proSimilarityDetails.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        double totalSimilarity = 0.0;
+
+        for (ProSimilarityDetail detail : proSimilarityDetails) {
+            totalSimilarity += detail.getSimilarity().doubleValue();
+        }
+
+        return BigDecimal.valueOf(totalSimilarity / proSimilarityDetails.size())
+                .setScale(4, RoundingMode.HALF_UP);
+    }
+
+    private List<DynamicCloneLevelDetector.CloneLevel> calculateSimilarityDegreeStatistics(List<ProSimilarityDetail> proSimilarityDetails, List<DynamicCloneLevelDetector.CloneLevel> levels) {
+        if (proSimilarityDetails == null || proSimilarityDetails.isEmpty() || levels == null || levels.isEmpty()) {
+            return levels;
+        }
+
+        // 按相似度阈值从高到低排序，确保正确的范围匹配
+        List<DynamicCloneLevelDetector.CloneLevel> sortedLevels = levels.stream()
+                .sorted((l1, l2) -> l2.getSimilarity().compareTo(l1.getSimilarity()))
+                .collect(Collectors.toList());
+
+        // 初始化各级别计数器
+        int[] counts = new int[sortedLevels.size()];
+        Arrays.fill(counts, 0);
+
+        // 统计各个级别的数量
+        for (ProSimilarityDetail detail : proSimilarityDetails) {
+            BigDecimal similarity = detail.getSimilarity();
+            if (similarity != null) {
+                boolean matched = false;
+                // 从最高级别开始检查
+                for (int i = 0; i < sortedLevels.size(); i++) {
+                    DynamicCloneLevelDetector.CloneLevel currentLevel = sortedLevels.get(i);
+                    DynamicCloneLevelDetector.CloneLevel nextLevel = (i < sortedLevels.size() - 1) ? sortedLevels.get(i + 1) : null;
+
+                    // 如果是最高级别（第一个），只需要大于等于该阈值
+                    if (i == 0 && similarity.compareTo(currentLevel.getSimilarity()) >= 0) {
+                        counts[i]++;
+                        matched = true;
+                        break;
+                    }
+                    // 如果是中间级别，需要大于等于当前阈值但小于上一级阈值
+                    else if (i > 0 && nextLevel != null) {
+                        if (similarity.compareTo(currentLevel.getSimilarity()) >= 0 &&
+                                similarity.compareTo(sortedLevels.get(i - 1).getSimilarity()) < 0) {
+                            counts[i]++;
+                            matched = true;
+                            break;
+                        }
+                    }
+                    // 如果是最低级别（最后一个），只需要小于上一级阈值
+                    else if (i == sortedLevels.size() - 1) {
+                        if (similarity.compareTo(currentLevel.getSimilarity()) >= 0 &&
+                                similarity.compareTo(sortedLevels.get(i - 1).getSimilarity()) < 0) {
+                            counts[i]++;
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+
+                // 如果没有匹配任何级别，分配到最低级别
+                if (!matched) {
+                    counts[counts.length - 1]++;
+                }
+            }
+        }
+
+        // 计算总数
+        int totalCount = proSimilarityDetails.size();
+
+        // 更新levels中的count和percentage
+        for (int i = 0; i < sortedLevels.size(); i++) {
+            DynamicCloneLevelDetector.CloneLevel level = sortedLevels.get(i);
+            level.setCount(counts[i]);
+
+            if (totalCount > 0) {
+                BigDecimal percentage = new BigDecimal(counts[i])
+                        .divide(new BigDecimal(totalCount), 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal(100));
+                level.setPercentage(percentage);
+            } else {
+                level.setPercentage(BigDecimal.ZERO);
+            }
+        }
+
+        return sortedLevels;
     }
 }

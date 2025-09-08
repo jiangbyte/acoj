@@ -123,4 +123,7 @@ public class ProSubmit extends CommonEntity {
     @TableField(exist = false)
     private Boolean canUseSimilarReport;
 
+    @Schema(description = "报告ID")
+    private String reportId;
+
 }

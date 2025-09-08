@@ -16,11 +16,4 @@ public interface ProblemSimilarityMessageService {
     void sendSimilarityRequest(SimilaritySubmitDto similaritySubmitDto);
 
     void handleSimilarityRequest(SimilaritySubmitDto similaritySubmitDto);
-
-    void sendSimilarityResult(SimilarityResultDto similarityResultDto);
-
-    /**
-     * 处理克隆检测结果消息
-     */
-    void handleSimilarityResult(SimilarityResultDto similarityResultDto);
 }

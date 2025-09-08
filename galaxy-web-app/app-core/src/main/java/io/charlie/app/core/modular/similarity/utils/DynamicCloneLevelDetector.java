@@ -3,7 +3,10 @@ package io.charlie.app.core.modular.similarity.utils;
 import io.charlie.app.core.modular.similarity.enums.CloneLevelEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -28,7 +31,7 @@ import java.util.List;
  * 3. 方法：接收相似度检测结果，返回对应的CloneLevel枚举值
  */
 @Data
-public class DynamicCloneLevelDetector {
+public class DynamicCloneLevelDetector implements Serializable {
     private BigDecimal baseThreshold;
     private BigDecimal highlySuspectedThreshold;
     private BigDecimal mediumSuspectedThreshold;
@@ -47,15 +50,15 @@ public class DynamicCloneLevelDetector {
         BigDecimal oneMinusBase = BigDecimal.ONE.subtract(baseThreshold);
 
         this.highlySuspectedThreshold = baseThreshold.add(
-                oneMinusBase.multiply(new BigDecimal("0.5"))
+                oneMinusBase.multiply(new BigDecimal("0.7"))
         ).setScale(4, RoundingMode.HALF_UP);
 
         this.mediumSuspectedThreshold = baseThreshold.add(
-                oneMinusBase.multiply(new BigDecimal("0.25"))
+                oneMinusBase.multiply(new BigDecimal("0.5"))
         ).setScale(4, RoundingMode.HALF_UP);
 
         this.lowSuspectedThreshold = baseThreshold.add(
-                oneMinusBase.multiply(new BigDecimal("0.1"))
+                oneMinusBase.multiply(new BigDecimal("0.2"))
         ).setScale(4, RoundingMode.HALF_UP);
     }
 
@@ -84,9 +87,13 @@ public class DynamicCloneLevelDetector {
      */
     @AllArgsConstructor
     @Data
-    public static class CloneLevel {
-        private CloneLevelEnum cloneLevel;
+    @RequiredArgsConstructor
+    public static class CloneLevel implements Serializable {
+        private String cloneLevel;
+        private String cloneLevelName;
         private BigDecimal similarity;
+        private Integer count;
+        private BigDecimal percentage; // 相似度占比
     }
 
     /**
@@ -96,10 +103,10 @@ public class DynamicCloneLevelDetector {
      */
     public List<CloneLevel> getLevels() {
         List<CloneLevel> levels = new ArrayList<>();
-        levels.add(new CloneLevel(CloneLevelEnum.HIGHLY_SUSPECTED, highlySuspectedThreshold));
-        levels.add(new CloneLevel(CloneLevelEnum.MEDIUM_SUSPECTED, mediumSuspectedThreshold));
-        levels.add(new CloneLevel(CloneLevelEnum.LOW_SUSPECTED, lowSuspectedThreshold));
-        levels.add(new CloneLevel(CloneLevelEnum.NOT_REACHED, baseThreshold));
+        levels.add(new CloneLevel(CloneLevelEnum.HIGHLY_SUSPECTED.getValue(), CloneLevelEnum.HIGHLY_SUSPECTED.getLabel(), highlySuspectedThreshold, 0, BigDecimal.ZERO));
+        levels.add(new CloneLevel(CloneLevelEnum.MEDIUM_SUSPECTED.getValue(), CloneLevelEnum.MEDIUM_SUSPECTED.getLabel(), mediumSuspectedThreshold, 0, BigDecimal.ZERO));
+        levels.add(new CloneLevel(CloneLevelEnum.LOW_SUSPECTED.getValue(), CloneLevelEnum.LOW_SUSPECTED.getLabel(), lowSuspectedThreshold, 0, BigDecimal.ZERO));
+        levels.add(new CloneLevel(CloneLevelEnum.NOT_REACHED.getValue(), CloneLevelEnum.NOT_REACHED.getLabel(), baseThreshold, 0, BigDecimal.ZERO));
         return levels;
     }
 

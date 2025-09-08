@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
+import io.charlie.app.core.modular.sys.group.entity.SysGroup;
 import io.charlie.app.core.modular.sys.user.entity.SysUser;
 import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
 import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
@@ -23,7 +24,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.dromara.core.trans.anno.Trans;
+import org.dromara.core.trans.anno.UnTrans;
 import org.dromara.core.trans.constant.TransType;
+import org.dromara.core.trans.constant.UnTransType;
 
 /**
  * @author Charlie Zhang

@@ -34,7 +34,9 @@ CREATE TABLE pro_submit
     -- 查重结果
     similarity          DECIMAL(10, 2)       DEFAULT 0 COMMENT '相似度',
     task_id             VARCHAR(32)          DEFAULT NULL COMMENT '相似检测任务ID',
+    report_id           VARCHAR(32)          DEFAULT NULL COMMENT '报告ID',
     similarity_behavior VARCHAR(32)          DEFAULT NULL COMMENT '行为标记',
+
     # ------------------------------------------------
     deleted             TINYINT(1)           DEFAULT 0 COMMENT '删除状态',
     create_time         DATETIME             DEFAULT NULL COMMENT '创建时间戳',
@@ -255,6 +257,7 @@ CREATE TABLE pro_set_submit
     -- 查重结果
     similarity          DECIMAL(10, 2)       DEFAULT 0 COMMENT '相似度',
     task_id             VARCHAR(32)          DEFAULT NULL COMMENT '相似检测任务ID',
+    report_id           VARCHAR(32)          DEFAULT NULL COMMENT '报告ID',
     similarity_behavior VARCHAR(32)          DEFAULT NULL COMMENT '行为标记',
     # ------------------------------------------------
     deleted             TINYINT(1)           DEFAULT 0 COMMENT '删除状态',

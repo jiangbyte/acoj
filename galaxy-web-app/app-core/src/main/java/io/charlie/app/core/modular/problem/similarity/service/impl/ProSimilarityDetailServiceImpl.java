@@ -44,6 +44,9 @@ public class ProSimilarityDetailServiceImpl extends ServiceImpl<ProSimilarityDet
                     proSimilarityDetailPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(proSimilarityDetailPageParam.getSortField()));
         }
+        if (ObjectUtil.isNotEmpty(proSimilarityDetailPageParam.getTaskId())) {
+            queryWrapper.lambda().eq(ProSimilarityDetail::getTaskId, proSimilarityDetailPageParam.getTaskId());
+        }
 
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(proSimilarityDetailPageParam.getCurrent()).orElse(1),

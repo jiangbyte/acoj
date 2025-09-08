@@ -1,4 +1,4 @@
-package io.charlie.app.core.modular.problem.similarity.param;
+package io.charlie.app.core.modular.set.reports.param;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.charlie.galaxy.pojo.CommonEntity;
@@ -12,12 +12,12 @@ import java.io.Serial;
 /**
 * @author Charlie Zhang
 * @version v1.0
-* @date 2025-09-05
-* @description 题目检测结果任务库 分页参数
+* @date 2025-09-08
+* @description 题库题目报告库 分页参数
 */
 @Data
-@Schema(name = "ProSimilarityDetail", description = "题目检测结果任务库 分页参数")
-public class ProSimilarityDetailPageParam implements Serializable {
+@Schema(name = "ProSetSimilarityReports", description = "题库题目报告库 分页参数")
+public class ProSetSimilarityReportsPageParam implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -35,7 +35,4 @@ public class ProSimilarityDetailPageParam implements Serializable {
 
     @Schema(description = "关键词")
     private String keyword;
-
-    @Schema(description = "任务ID")
-    private String taskId;
 }

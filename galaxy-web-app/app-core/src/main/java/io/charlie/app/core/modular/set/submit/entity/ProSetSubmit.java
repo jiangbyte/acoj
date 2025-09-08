@@ -121,4 +121,7 @@ public class ProSetSubmit extends CommonEntity {
     @Schema(description = "是否完成")
     private Boolean isFinish;
 
+    @Schema(description = "报告ID")
+    private String reportId;
+
 }

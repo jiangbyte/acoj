@@ -869,6 +869,22 @@ export const rawMenus: SiteRoute.RowRoute[] = [
     menuType: '0',
   },
 
+  
+  {
+    id: '7870',
+    pid: '0',
+    name: 'report',
+    path: '/problem/submit/report/:reportId/task/:taskId',
+    componentPath: '/modular/problem/submit/report.vue',
+    title: '检测报告详情',
+    icon: 'icon-park-outline:info',
+    keepAlive: false,
+    visible: false,
+    sort: '9',
+    pined: false,
+    menuType: '1',
+  },
+
   // 关于页面
   {
     id: '700',
@@ -881,6 +897,36 @@ export const rawMenus: SiteRoute.RowRoute[] = [
     keepAlive: false,
     visible: true,
     sort: '8',
+    pined: false,
+    menuType: '1',
+  },
+
+  // 测试页面
+  {
+    id: '800',
+    pid: '0',
+    name: 'test-1',
+    path: '/test-1',
+    componentPath: '/modular/test/test1.vue',
+    title: 'Test-1',
+    icon: 'icon-park-outline:info',
+    keepAlive: false,
+    visible: true,
+    sort: '9',
+    pined: false,
+    menuType: '1',
+  },
+  {
+    id: '801',
+    pid: '0',
+    name: 'test-2',
+    path: '/test-2',
+    componentPath: '/modular/test/test2.vue',
+    title: 'Test-2',
+    icon: 'icon-park-outline:info',
+    keepAlive: false,
+    visible: true,
+    sort: '9',
     pined: false,
     menuType: '1',
   },

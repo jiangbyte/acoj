@@ -8,6 +8,7 @@ import Detail from './detail.vue'
 const formRef = ref()
 const problemDataModalRef = ref()
 const detailRef = ref()
+const router = useRouter()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -112,8 +113,13 @@ const columns: DataTableColumns<any> = [
         h(NButton, {
           type: 'primary',
           size: 'small',
-          disabled: row.canUseSimilarReport !== true,
-          onClick: () => {},
+          disabled: !row.reportId,
+          onClick: () => {
+            router.push({
+              path: `/problem/submit/report/${row.reportId}/task/${row.taskId}`,
+              
+            })
+          },
         }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
