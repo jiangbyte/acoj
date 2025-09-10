@@ -168,6 +168,10 @@ func getCgroupMemoryUsage(cgroupPath string) (uint64, uint64) {
 	}
 	peak, _ := strconv.ParseUint(strings.TrimSpace(string(data)), 10, 64)
 
+	maxData, _ := os.ReadFile(filepath.Join(cgroupPath, "memory.stat"))
+	// 打印测试
+	logx.Debugf("内存使用量: %s", string(maxData))
+
 	// 返回内存使用量和峰值
 	return usage, peak
 }
