@@ -93,6 +93,14 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 			return &result, err
 		}
 
+		// 记录开始时间和资源状态
+		startTime := time.Now()
+		// startMem, startPeak := getCgroupMemoryUsage(cgroupPath)
+		// logx.Infof("运行开始 - 时间: %v, 初始内存: %d KB, 初始峰值内存: %d KB",
+		// 	startTime.Format("2006-01-02 15:04:05.000"),
+		// 	startMem/1024,
+		// 	startPeak/1024)
+
 		// ==================================== 输入，输出，错误重定向 ====================================
 		// 重定向标准输入
 		cmd.Stdin = strings.NewReader(testCase.Input)
@@ -119,16 +127,6 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 		}
 		logx.Infof("进程已加入cgroup - PID: %d, cgroup路径: %s", cmd.Process.Pid, cgroupPath)
 
-		// ==================================== 录开始时间和资源状态 ====================================
-		// 等待cgroup统计初始化
-		// time.Sleep(5 * time.Millisecond)
-		// 记录开始时间和资源状态
-		startTime := time.Now()
-		startMem, startPeak := getCgroupMemoryUsage(cgroupPath)
-		logx.Infof("运行开始 - 时间: %v, 初始内存: %d KB, 初始峰值内存: %d KB",
-			startTime.Format("2006-01-02 15:04:05.000"),
-			startMem/1024,
-			startPeak/1024)
 		// ==================================== 等待完成 ====================================
 		done := make(chan error, 1)
 		go func() {
@@ -173,12 +171,17 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 		testCase.MaxTime = timeUsed
 		testCase.MaxMemory = int(endMem / 1024) // 转换为KB
 
-		logx.Infof("执行成功, 用时: %d ms 起始: %d KB, 结束: %d KB, 差值: %d KB 起始峰值: %d KB, 结束峰值: %d KB",
+		// logx.Infof("执行成功, 用时: %d ms 起始: %d KB, 结束: %d KB, 差值: %d KB 起始峰值: %d KB, 结束峰值: %d KB",
+		// 	timeUsed,
+		// 	startMem/1024,
+		// 	endMem/1024,
+		// 	memUsed/1024,
+		// 	startPeak/1024,
+		// 	endPeak/1024)
+		logx.Infof("执行成功, 用时: %d ms 结束: %d KB, 差值: %d KB 结束峰值: %d KB",
 			timeUsed,
-			startMem/1024,
 			endMem/1024,
 			memUsed/1024,
-			startPeak/1024,
 			endPeak/1024)
 
 		// 规范化输出和用户输出
