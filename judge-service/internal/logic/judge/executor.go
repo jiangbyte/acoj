@@ -147,8 +147,9 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 			}
 		}
 
+		time.Sleep(5 * time.Millisecond)  // 等待内核更新统计
 		// 获取资源使用情况
-		endMem, endPeak := getCgroupMemoryUsage(cgroupPath)
+		endMem, endPeak := getCgroupMemoryUsageWithRetry(cgroupPath)
 		memUsed := endPeak // 使用峰值内存作为内存使用量
 		// 计算用时
 		timeUsed := int(time.Since(startTime).Milliseconds())
@@ -237,4 +238,15 @@ func normalizeLineEndings(str string) string {
 	// 将单独的\r也替换为\n（处理Mac OS旧格式）
 	str = strings.ReplaceAll(str, "\r", "\n")
 	return str
+}
+
+func getCgroupMemoryUsageWithRetry(cgroupPath string) (uint64, uint64) {
+    for i := 0; i < 3; i++ {
+        usage, peak := getCgroupMemoryUsage(cgroupPath)
+        if usage > 0 || peak > 0 {
+            return usage, peak
+        }
+        time.Sleep(2 * time.Millisecond)
+    }
+    return 0, 0
 }
