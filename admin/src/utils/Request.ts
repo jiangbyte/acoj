@@ -90,6 +90,18 @@ const alovaInstance = createAlova({
 
   responded: onResponseRefreshToken({
     onSuccess: async (response, method) => {
+      // 对SSE单独处理
+      const url = String(method.url || '')
+      const sseApiPattern = /\/api\/.*?sse/
+      const isMatch = sseApiPattern.test(url)
+      const hasApi = url.includes('/api/')
+      const hasSse = url.includes('/sse')
+      const isMatch2 = hasApi && hasSse
+      if (isMatch || isMatch2) {
+        return response
+      }
+
+      // 其他正常请求
       const { status } = response
 
       // 获取json数据

@@ -5,6 +5,7 @@ export * from './TabStore.ts'
 export * from './RouterStore.ts'
 export * from './TokenStore.ts'
 export * from './SiteStore.ts'
+export * from './ClientStore.ts'
 
 export function setupPinia(app: App) {
   const pinia = createPinia()

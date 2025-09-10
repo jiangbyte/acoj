@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DataTableColumns } from 'naive-ui'
 import { NAvatar, NButton, NSpace, NTag, NText, NTime } from 'naive-ui'
-import { useProSimilarityReportsFetch, useProSimilarityDetailFetch } from '@/composables'
+import { useProSimilarityDetailFetch, useProSimilarityReportsFetch } from '@/composables'
 
 const route = useRoute()
 const reportId = route.params.reportId // 获取 reportId
@@ -97,7 +97,7 @@ const pageParam = ref({
   tagId: null,
   categoryId: null,
   difficulty: null,
-  taskId: taskId
+  taskId,
 })
 const pageData = ref({
   total: 0,
@@ -115,7 +115,8 @@ async function loadData() {
         const value = typeof item === 'object' ? (item.value || 0) : (item || 0)
         return sum + value
       }, 0)
-    } else {
+    }
+    else {
       totalSimilarGroups.value = 0
     }
   })
@@ -186,7 +187,7 @@ loadData()
                   </p>
                   <p class="font-medium">
                     发现 {{ totalSimilarGroups }} 组疑似克隆
-                    </p>
+                  </p>
                 </NSpace>
                 <!-- <NSpace :size="1" vertical>
                   <p class="font-medium">
@@ -206,12 +207,12 @@ loadData()
               </n-icon>
               <NSpace class="w-full" justify="space-between">
                 <NSpace :size="1" vertical>
-                     <p class="font-medium">
-                        平均相似度：{{ detailData?.avgSimilarity * 100 }}%
-                      </p>
-                      <p class="font-medium">
-                        最高相似度：{{ detailData?.maxSimilarity * 100 }}%
-                      </p>
+                  <p class="font-medium">
+                    平均相似度：{{ detailData?.avgSimilarity * 100 }}%
+                  </p>
+                  <p class="font-medium">
+                    最高相似度：{{ detailData?.maxSimilarity * 100 }}%
+                  </p>
                 </NSpace>
                 <!-- <NSpace :size="1" vertical>
                   <p class="font-medium">
@@ -245,7 +246,7 @@ loadData()
                     </div>
                     <n-progress
                       type="line"
-                    indicator-placement="inside"
+                      indicator-placement="inside"
                       :percentage="item.percentage"
                     />
                   </div>

@@ -117,7 +117,7 @@ const columns: DataTableColumns<any> = [
           onClick: () => {
             router.push({
               path: `/problem/submit/report/${row.reportId}/task/${row.taskId}`,
-              
+
             })
           },
         }, () => '相似报告'),

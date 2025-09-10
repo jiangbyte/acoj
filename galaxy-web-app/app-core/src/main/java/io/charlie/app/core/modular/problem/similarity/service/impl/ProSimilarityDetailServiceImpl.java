@@ -48,6 +48,9 @@ public class ProSimilarityDetailServiceImpl extends ServiceImpl<ProSimilarityDet
             queryWrapper.lambda().eq(ProSimilarityDetail::getTaskId, proSimilarityDetailPageParam.getTaskId());
         }
 
+        // 按时间从新到旧
+        queryWrapper.lambda().orderByDesc(ProSimilarityDetail::getCreateTime);
+
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(proSimilarityDetailPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(proSimilarityDetailPageParam.getSize()).orElse(20),
@@ -90,11 +93,6 @@ public class ProSimilarityDetailServiceImpl extends ServiceImpl<ProSimilarityDet
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
         return proSimilarityDetail;
-    }
-
-    @Override
-    public void problemSimilarityReport(ProblemReportConfig config) {
-
     }
 
 }

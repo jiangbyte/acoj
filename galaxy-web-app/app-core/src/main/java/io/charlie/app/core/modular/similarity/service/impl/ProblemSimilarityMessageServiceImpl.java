@@ -1,6 +1,7 @@
 package io.charlie.app.core.modular.similarity.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -17,6 +18,8 @@ import io.charlie.app.core.modular.problem.similarity.entity.ProSimilarityDetail
 import io.charlie.app.core.modular.problem.similarity.mapper.ProSimilarityDetailMapper;
 import io.charlie.app.core.modular.problem.submit.entity.ProSubmit;
 import io.charlie.app.core.modular.problem.submit.mapper.ProSubmitMapper;
+import io.charlie.app.core.modular.reports.entity.DataReports;
+import io.charlie.app.core.modular.reports.mapper.DataReportsMapper;
 import io.charlie.app.core.modular.similarity.config.ProblemSimilarityMQConfig;
 import io.charlie.app.core.modular.similarity.config.ProblemSimilarityResultMQConfig;
 import io.charlie.app.core.modular.similarity.dto.SimilarityResult;
@@ -24,6 +27,7 @@ import io.charlie.app.core.modular.similarity.dto.SimilarityResultDto;
 import io.charlie.app.core.modular.similarity.dto.SimilaritySubmitDto;
 import io.charlie.app.core.modular.similarity.enums.CloneLevelEnum;
 import io.charlie.app.core.modular.similarity.enums.ReportTypeEnum;
+import io.charlie.app.core.modular.similarity.param.ProblemReportConfigParam;
 import io.charlie.app.core.modular.similarity.service.ProblemSimilarityMessageService;
 import io.charlie.app.core.modular.similarity.utils.CodeSimilarityCalculator;
 import io.charlie.app.core.modular.similarity.utils.DynamicCloneLevelDetector;
@@ -60,6 +64,7 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
     private final ProProblemMapper proProblemMapper;
     private final ProSimilarityDetailMapper proSimilarityDetailMapper;
     private final ProSimilarityReportsMapper proSimilarityReportsMapper;
+    private final DataReportsMapper dataReportsMapper;
 
     @Override
     public void sendSimilarityRequest(SimilaritySubmitDto similaritySubmitDto) {
@@ -258,6 +263,225 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
         log.info("更新成功");
 
 //        this.sendSimilarityResult(bean);
+    }
+
+    @Override
+    public void problemSimilarityReport(ProblemReportConfigParam problemReportConfigParam) {
+        String taskId = IdUtil.getSnowflakeNextIdStr();
+        log.info("开始生成题目报告 任务ID {}", taskId);
+
+        // 获取配置参数
+        String problemId = problemReportConfigParam.getProblemId();
+
+        int MIN_MATCH_LENGTH;
+        SysConfig sysConfig = sysConfigMapper.selectOne(new LambdaQueryWrapper<SysConfig>().eq(SysConfig::getCode, "APP_DEFAULT_MATCH_LENGTH"));
+        if (ObjectUtil.isNotEmpty(sysConfig)) {
+            MIN_MATCH_LENGTH = Integer.parseInt(sysConfig.getValue());
+        } else {
+            MIN_MATCH_LENGTH = 0;
+        }
+
+
+        // 抽取样本库
+        LambdaQueryWrapper<ProSampleLibrary> queryWrapper = new LambdaQueryWrapper<ProSampleLibrary>()
+                .eq(ProSampleLibrary::getProblemId, problemId);
+
+        // 先查询总数量
+        long totalCount = 0L;
+
+        if (problemReportConfigParam.getUseAllSample()) {
+            totalCount = proSampleLibraryMapper.selectCount(queryWrapper);
+        } else {
+            totalCount = problemReportConfigParam.getSampleCount();
+        }
+
+        List<ProSampleLibrary> proSampleLibraries;
+
+        queryWrapper.orderByDesc(ProSampleLibrary::getSubmitTime)
+                .last("LIMIT " + totalCount);
+        proSampleLibraries = proSampleLibraryMapper.selectList(queryWrapper);
+
+        // 空直接忽略
+        if (ObjectUtil.isEmpty(proSampleLibraries)) {
+            log.info("代码克隆检测 -> 忽略空数据");
+            return;
+        }
+
+        List<ProSimilarityDetail> proSimilarityDetails = new ArrayList<>();
+        AtomicReference<ProSimilarityDetail> maxProSimilarityDetailRef = new AtomicReference<>();
+
+        // 使用迭代器实现单向检测
+        Iterator<ProSampleLibrary> outerIterator = proSampleLibraries.iterator();
+        int outerIndex = 0;
+
+        while (outerIterator.hasNext()) {
+            ProSampleLibrary baseSampleLibrary = outerIterator.next();
+
+            // 创建内层迭代器，从当前外层元素的下一个开始
+            Iterator<ProSampleLibrary> innerIterator = proSampleLibraries.listIterator(outerIndex + 1);
+
+            while (innerIterator.hasNext()) {
+                ProSampleLibrary compareSampleLibrary = innerIterator.next();
+
+                // 忽略样本用户自身之间的比较
+                if (baseSampleLibrary.getUserId().equals(compareSampleLibrary.getUserId())) {
+                    continue;
+                }
+
+                // 使用一次样本库，那么样本库的访问次数加1
+                compareSampleLibrary.setAccessCount(compareSampleLibrary.getAccessCount() + 1);
+
+                CodeSimilarityCalculator.SimilarityDetail similarityDetail = codeSimilarityCalculator.getSimilarityDetail(
+                        baseSampleLibrary.getLanguage().toLowerCase(),
+                        compareSampleLibrary.getCode(),
+                        baseSampleLibrary.getCode(),
+                        MIN_MATCH_LENGTH
+                );
+
+                ProSimilarityDetail proSimilarityDetail = new ProSimilarityDetail();
+                // 基础信息
+                proSimilarityDetail.setTaskId(taskId);
+                proSimilarityDetail.setTaskType(true);
+                proSimilarityDetail.setProblemId(problemId);
+                proSimilarityDetail.setLanguage(baseSampleLibrary.getLanguage());
+                proSimilarityDetail.setSimilarity(BigDecimal.valueOf(similarityDetail.getSimilarity()));
+                // 提交用户
+                proSimilarityDetail.setSubmitUser(baseSampleLibrary.getUserId());
+                proSimilarityDetail.setSubmitCode(baseSampleLibrary.getCode());
+                proSimilarityDetail.setSubmitCodeLength(baseSampleLibrary.getCode().length());
+                proSimilarityDetail.setSubmitId(baseSampleLibrary.getSubmitId());
+                proSimilarityDetail.setSubmitTime(baseSampleLibrary.getCreateTime());
+                proSimilarityDetail.setSubmitTokenName(similarityDetail.getTokenNames1());
+                proSimilarityDetail.setSubmitTokenTexts(similarityDetail.getTokenTexts1());
+
+                // 样本信息
+                proSimilarityDetail.setOriginUser(compareSampleLibrary.getUserId());
+                proSimilarityDetail.setOriginCode(compareSampleLibrary.getCode());
+                proSimilarityDetail.setOriginCodeLength(compareSampleLibrary.getCodeLength());
+                proSimilarityDetail.setOriginId(compareSampleLibrary.getSubmitId());
+                proSimilarityDetail.setOriginTime(compareSampleLibrary.getCreateTime());
+                proSimilarityDetail.setOriginTokenName(similarityDetail.getTokenNames2());
+                proSimilarityDetail.setOriginTokenTexts(similarityDetail.getTokenTexts2());
+
+                proSimilarityDetails.add(proSimilarityDetail);
+
+                // 使用原子引用更新
+                maxProSimilarityDetailRef.updateAndGet(currentMax -> {
+                    if (currentMax == null) {
+                        return proSimilarityDetail;
+                    } else {
+                        BigDecimal currentSimilarity = BigDecimal.valueOf(similarityDetail.getSimilarity());
+                        return currentSimilarity.compareTo(currentMax.getSimilarity()) > 0
+                                ? proSimilarityDetail
+                                : currentMax;
+                    }
+                });
+            }
+
+            outerIndex++;
+        }
+
+
+
+//            // proSampleLibraries
+//        for (ProSampleLibrary baseSampleLibrary : proSampleLibraries) {
+//            for (ProSampleLibrary compareSampleLibrary : proSampleLibraries) {
+//                // 忽略样本用户自身之间的比较
+//                if (baseSampleLibrary.getUserId().equals(compareSampleLibrary.getUserId())) {
+//                    continue;
+//                }
+//
+//                // 使用一次样本库，那么样本库的访问次数加1
+//                compareSampleLibrary.setAccessCount(compareSampleLibrary.getAccessCount() + 1);
+//
+//                CodeSimilarityCalculator.SimilarityDetail similarityDetail = codeSimilarityCalculator.getSimilarityDetail(
+//                        baseSampleLibrary.getLanguage().toLowerCase(),
+//                        compareSampleLibrary.getCode(),
+//                        baseSampleLibrary.getCode(),
+//                        MIN_MATCH_LENGTH
+//                );
+//
+//                ProSimilarityDetail proSimilarityDetail = new ProSimilarityDetail();
+//                // 基础信息
+//                proSimilarityDetail.setTaskId(taskId);
+//                proSimilarityDetail.setTaskType(true);
+//                proSimilarityDetail.setProblemId(problemId);
+//                proSimilarityDetail.setLanguage(baseSampleLibrary.getLanguage());
+//                proSimilarityDetail.setSimilarity(BigDecimal.valueOf(similarityDetail.getSimilarity()));
+//                // 提交用户
+//                proSimilarityDetail.setSubmitUser(baseSampleLibrary.getUserId());
+//                proSimilarityDetail.setSubmitCode(baseSampleLibrary.getCode());
+//                proSimilarityDetail.setSubmitCodeLength(baseSampleLibrary.getCode().length());
+//                proSimilarityDetail.setSubmitId(baseSampleLibrary.getSubmitId());
+//                proSimilarityDetail.setSubmitTime(baseSampleLibrary.getCreateTime());
+//                proSimilarityDetail.setSubmitTokenName(similarityDetail.getTokenNames1());
+//                proSimilarityDetail.setSubmitTokenTexts(similarityDetail.getTokenTexts1());
+//
+//                // 样本信息
+//                proSimilarityDetail.setOriginUser(compareSampleLibrary.getUserId());
+//                proSimilarityDetail.setOriginCode(compareSampleLibrary.getCode());
+//                proSimilarityDetail.setOriginCodeLength(compareSampleLibrary.getCodeLength());
+//                proSimilarityDetail.setOriginId(compareSampleLibrary.getSubmitId());
+//                proSimilarityDetail.setOriginTime(compareSampleLibrary.getCreateTime());
+//                proSimilarityDetail.setOriginTokenName(similarityDetail.getTokenNames2());
+//                proSimilarityDetail.setOriginTokenTexts(similarityDetail.getTokenTexts2());
+//
+//                proSimilarityDetails.add(proSimilarityDetail);
+//
+//                // 使用原子引用更新
+//                maxProSimilarityDetailRef.updateAndGet(currentMax -> {
+//                    if (currentMax == null) {
+//                        return proSimilarityDetail;
+//                    } else {
+//                        BigDecimal currentSimilarity = BigDecimal.valueOf(similarityDetail.getSimilarity());
+//                        return currentSimilarity.compareTo(currentMax.getSimilarity()) > 0
+//                                ? proSimilarityDetail
+//                                : currentMax;
+//                    }
+//                });
+//            }
+//        }
+
+        proSampleLibraryMapper.updateById(proSampleLibraries); // 更新访问次数
+
+        // 任务详情记录
+        proSimilarityDetailMapper.insert(proSimilarityDetails);
+
+        // 任务详情做分析，这里的报告类型是单次提交报告
+        ProSimilarityDetail maxProSimilarityDetail = maxProSimilarityDetailRef.get(); // 原子获取
+        // 样本数
+        int sampleCount = proSampleLibraries.size();
+
+        ProProblem proProblem = proProblemMapper.selectById(problemId);
+        if (proProblem == null) {
+            return;
+        }
+
+        ProSimilarityReports reports = new ProSimilarityReports();
+        reports.setReportType(ReportTypeEnum.PROBLEM_SUBMIT.getValue());
+        reports.setTaskId(taskId);
+        reports.setProblemId(problemId);
+        reports.setSampleCount(sampleCount);
+        //相似组数
+        reports.setAvgSimilarity(calculateAverageSimilarity(proSimilarityDetails));
+        reports.setMaxSimilarity(maxProSimilarityDetail.getSimilarity());
+        reports.setThreshold(proProblem.getThreshold());
+        reports.setSimilarityDistribution(calculateSimilarityDistribution(proSimilarityDetails));
+        DynamicCloneLevelDetector dynamicCloneLevelDetector = new DynamicCloneLevelDetector(proProblem.getThreshold());
+        List<DynamicCloneLevelDetector.CloneLevel> levels = dynamicCloneLevelDetector.getLevels();
+        reports.setDegreeStatistics(calculateSimilarityDegreeStatistics(proSimilarityDetails, levels));
+
+        proSimilarityReportsMapper.insert(reports);
+
+        log.info("代码克隆检测 -> 检测完成");
+
+        DataReports dataReports = new DataReports();
+        dataReports.setTaskId(taskId);
+        dataReports.setReportType(ReportTypeEnum.PROBLEM_SUBMIT.getValue());
+        dataReports.setIsSet(false);
+        dataReports.setReportId(reports.getId());
+
+        dataReportsMapper.insert(dataReports);
     }
 
     /**

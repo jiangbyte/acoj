@@ -64,7 +64,10 @@ public class LLMController {
                 flux.subscribe(
                         content -> {
                             try {
-                                emitter.send(SseEmitter.event().data(content));
+                                emitter.send(SseEmitter.event()
+                                        .name("chat")
+                                        .data(content)
+                                );
                             } catch (Exception e) {
                                 emitter.completeWithError(e);
                             }
@@ -80,7 +83,6 @@ public class LLMController {
         return emitter;
     }
 }
-
 
 
 //    @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

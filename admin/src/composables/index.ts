@@ -2,6 +2,8 @@ export * from './other/AuthApi'
 export * from './other/MonitorApi'
 export * from './other/FileApi'
 export * from './other/AnalyseApi'
+export * from './other/DataReportsApi'
+export * from './other/ClientStatusApi'
 
 export * from './sys/SysArticleApi'
 export * from './sys/SysBannerApi'

@@ -3,10 +3,8 @@ package io.charlie.app.core.modular.problem.reports.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.app.core.modular.problem.reports.entity.ProSimilarityReports;
-import io.charlie.app.core.modular.problem.reports.param.ProSimilarityReportsAddParam;
-import io.charlie.app.core.modular.problem.reports.param.ProSimilarityReportsEditParam;
-import io.charlie.app.core.modular.problem.reports.param.ProSimilarityReportsIdParam;
-import io.charlie.app.core.modular.problem.reports.param.ProSimilarityReportsPageParam;
+import io.charlie.app.core.modular.problem.reports.param.*;
+import io.charlie.app.core.modular.similarity.param.ProblemReportConfigParam;
 
 import java.util.List;
 

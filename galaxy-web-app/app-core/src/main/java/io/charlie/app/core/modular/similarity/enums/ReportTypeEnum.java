@@ -14,6 +14,7 @@ import lombok.Getter;
 @Getter
 public enum ReportTypeEnum implements ILabelEnum<Integer> {
     SINGLE_SUBMIT(1, "单提交"),
+    PROBLEM_SUBMIT(2, "题目提交"),
     ;
 
     private final Integer value;

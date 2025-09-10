@@ -24,8 +24,5 @@ public interface ProSimilarityDetailService extends IService<ProSimilarityDetail
 
     ProSimilarityDetail detail(ProSimilarityDetailIdParam proSimilarityDetailIdParam);
 
-    /**
-     * 获取题目检测结果报告
-     */
-    void problemSimilarityReport(ProblemReportConfig config);
+
 }

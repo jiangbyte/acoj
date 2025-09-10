@@ -1,16 +1,21 @@
 package io.charlie.galaxy.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import io.charlie.galaxy.result.Result;
 import io.charlie.galaxy.result.ResultCode;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * @author charlie-zhang-code
@@ -88,5 +93,42 @@ public class GlobalExceptionHandler {
         log.error("参数校验异常：{}", errorMsg);
         e.printStackTrace();
         return Result.failure(ResultCode.PARAM_ERROR, errorMsg);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public Object handleException(Exception e, HttpServletRequest request) {
+        // 检查是否是SSE请求
+        if (isSseRequest(request)) {
+            log.error("SSE请求异常: {}", e.getMessage());
+            // 对于SSE请求，返回SseEmitter错误
+            SseEmitter emitter = new SseEmitter();
+            emitter.completeWithError(e);
+            e.printStackTrace();
+            return emitter;
+        }
+
+        // 普通请求返回Result对象
+        log.error("系统异常: {}", e.getMessage(), e);
+        return Result.failure("系统异常: " + e.getMessage());
+    }
+
+    private boolean isSseRequest(HttpServletRequest request) {
+        String acceptHeader = request.getHeader("Accept");
+        String uri = request.getRequestURI();
+        return (acceptHeader != null && acceptHeader.contains(MediaType.TEXT_EVENT_STREAM_VALUE))
+                || uri.contains("/api/sse/");
+    }
+
+    // 专门处理SSE相关的异常
+    @ExceptionHandler(AsyncRequestTimeoutException.class)
+    public void handleAsyncRequestTimeoutException(AsyncRequestTimeoutException e,
+                                                   HttpServletRequest request,
+                                                   HttpServletResponse response) {
+        if (isSseRequest(request)) {
+            log.info("SSE连接超时: {}", e.getMessage());
+            response.setStatus(HttpStatus.NO_CONTENT.value());
+        } else {
+            log.warn("异步请求超时: {}", e.getMessage());
+        }
     }
 }

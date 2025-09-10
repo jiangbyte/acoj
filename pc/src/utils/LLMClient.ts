@@ -19,7 +19,7 @@ export class LLMClient {
   /**
    * 创建并处理服务器发送事件 (SSE) 流
    */
-    async chatStream(options: ChatStreamOptions): Promise<void> {
+  async chatStream(options: ChatStreamOptions): Promise<void> {
     const {
       message = '你好，你是谁？',
       problemId,
@@ -68,18 +68,20 @@ export class LLMClient {
           const { done, value } = await reader.read()
 
           if (done) {
-            if (onComplete) onComplete()
+            if (onComplete)
+              onComplete()
             break
           }
 
           buffer += decoder.decode(value, { stream: true })
-          
+
           // 改进的SSE解析逻辑
           let position = 0
           while (position < buffer.length) {
             // 查找下一个换行符
             const lineEnd = buffer.indexOf('\n', position)
-            if (lineEnd === -1) break // 没有完整的行
+            if (lineEnd === -1)
+              break // 没有完整的行
 
             const line = buffer.slice(position, lineEnd).trim()
             position = lineEnd + 1
@@ -91,14 +93,16 @@ export class LLMClient {
               }
             }
           }
-          
+
           // 保留未处理的部分
           buffer = buffer.slice(position)
         }
-      } finally {
+      }
+      finally {
         reader.releaseLock()
       }
-    } catch (error) {
+    }
+    catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         // 请求被取消，不触发onError
         return
@@ -115,7 +119,7 @@ export class LLMClient {
   }> {
     let content = ''
     let isCancelled = false
-    
+
     const promise = new Promise<{ content: string }>((resolve, reject) => {
       this.chatStream({
         ...options,

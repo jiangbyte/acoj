@@ -1,5 +1,7 @@
 package io.charlie.app.core.modular.problem.reports.controller;
 
+import io.charlie.app.core.modular.similarity.param.ProblemReportConfigParam;
+import io.charlie.app.core.modular.similarity.service.ProblemSimilarityMessageService;
 import io.charlie.galaxy.result.Result;
 import io.charlie.app.core.modular.problem.reports.param.ProSimilarityReportsPageParam;
 import io.charlie.app.core.modular.problem.reports.param.ProSimilarityReportsAddParam;
@@ -34,6 +36,7 @@ import java.util.List;
 @Validated
 public class ProSimilarityReportsController {
     private final ProSimilarityReportsService proSimilarityReportsService;
+    private final ProblemSimilarityMessageService problemSimilarityMessageService;
 
     @Operation(summary = "获取题目报告库分页")
     //@SaCheckPermission("/pro/similarity/reports/page")
@@ -71,5 +74,12 @@ public class ProSimilarityReportsController {
     @GetMapping("/pro/similarity/reports/detail")
     public Result<?> detail(@ParameterObject @Valid ProSimilarityReportsIdParam proSimilarityReportsIdParam) {
         return Result.success(proSimilarityReportsService.detail(proSimilarityReportsIdParam));
+    }
+
+    @Operation(summary = "题目报告生成")
+    @PostMapping("/pro/similarity/reports/generate")
+    public Result<?> generate(@RequestBody @Valid ProblemReportConfigParam problemReportConfigParam) {
+        problemSimilarityMessageService.problemSimilarityReport(problemReportConfigParam);
+        return Result.success();
     }
 }

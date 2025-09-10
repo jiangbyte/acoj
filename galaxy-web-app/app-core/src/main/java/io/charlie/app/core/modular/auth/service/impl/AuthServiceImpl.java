@@ -78,6 +78,26 @@ public class AuthServiceImpl implements AuthService {
 
         // 登录逻辑
         String username = usernamePasswordLoginParam.getUsername();
+        if (ObjectUtil.isEmpty(username)) {
+            throw new BusinessException("用户名不能为空");
+        }
+
+        // 校验长度
+        if (username.length() < 6 || username.length() > 20) {
+            throw new BusinessException("用户名长度必须在6-20位之间");
+        }
+
+        // 校验必须以字母开头
+        if (!Character.isLetter(username.charAt(0))) {
+            throw new BusinessException("用户名必须以字母开头");
+        }
+
+        // 校验只能包含字母、数字、下划线
+        String usernamePattern = "^[a-zA-Z0-9_]+$";
+        if (!username.matches(usernamePattern)) {
+            throw new BusinessException("用户名只能包含字母、数字和下划线");
+        }
+
         String password = usernamePasswordLoginParam.getPassword();
 
         // 数据库用户名是否存在
@@ -122,11 +142,34 @@ public class AuthServiceImpl implements AuthService {
         if (!captchaCode.equals(usernamePasswordEmailRegisterParam.getCaptchaCode())) {
             throw new BusinessException("验证码错误");
         }
+
+        // 用户名校验，必须是字母开头，长度6-20位，只能包含字母、数字、下划线
+        String username = usernamePasswordEmailRegisterParam.getUsername();
+        if (ObjectUtil.isEmpty(username)) {
+            throw new BusinessException("用户名不能为空");
+        }
+
+        // 校验长度
+        if (username.length() < 6 || username.length() > 20) {
+            throw new BusinessException("用户名长度必须在6-20位之间");
+        }
+
+        // 校验必须以字母开头
+        if (!Character.isLetter(username.charAt(0))) {
+            throw new BusinessException("用户名必须以字母开头");
+        }
+
+        // 校验只能包含字母、数字、下划线
+        String usernamePattern = "^[a-zA-Z0-9_]+$";
+        if (!username.matches(usernamePattern)) {
+            throw new BusinessException("用户名只能包含字母、数字和下划线");
+        }
+
         // 到这里验证码校验通过，删除验证码
         redisTemplate.delete("captcha:" + usernamePasswordEmailRegisterParam.getUuid());
 
         // 注册逻辑
-        String username = usernamePasswordEmailRegisterParam.getUsername();
+//        String username = usernamePasswordEmailRegisterParam.getUsername();
         String password = usernamePasswordEmailRegisterParam.getPassword();
         String email = usernamePasswordEmailRegisterParam.getEmail();
 

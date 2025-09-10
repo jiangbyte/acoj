@@ -1,4 +1,4 @@
-package io.charlie.app.core.modular.problem.similarity.param;
+package io.charlie.app.core.modular.similarity.param;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -13,7 +13,7 @@ import java.util.List;
  * @description 题目相似度报告配置参数
  */
 @Data
-public class ProblemReportConfig {
+public class ProblemReportConfigParam {
     @Schema(description = "题目ID")
     private String problemId;
 
@@ -41,4 +41,6 @@ public class ProblemReportConfig {
     @Schema(description = "样本数")
     private Integer sampleCount;
 
+    @Schema(description = "使用全部样本")
+    private Boolean useAllSample;
 }

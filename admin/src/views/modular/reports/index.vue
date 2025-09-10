@@ -1,92 +1,35 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
-import { useProProblemFetch } from '@/composables'
+import { useDataReportsFetch } from '@/composables'
+import Form from './form.vue'
+import Detail from './detail.vue'
 
 const formRef = ref()
 const detailRef = ref()
-const reportRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
   },
   {
-    title: '分类',
-    key: 'categoryName',
-    ellipsis: {
-      tooltip: true,
-    },
+    title: '报告类型',
+    key: 'reportType',
   },
   {
-    title: '标题',
-    key: 'title',
-    ellipsis: {
-      tooltip: true,
-    },
+    title: '任务ID',
+    key: 'taskId',
   },
   {
-    title: '来源',
-    key: 'source',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  // {
-  //   title: '链接',
-  //   key: 'url',
-  //   ellipsis: true,
-  // },
-  {
-    title: '时间限制(ms)',
-    key: 'maxTime',
-    width: 110,
+    title: '是否是题单报告',
+    key: 'isSet',
   },
   {
-    title: '内存限制(KB)',
-    key: 'maxMemory',
-    width: 110,
-  },
-  {
-    title: '阈值',
-    key: 'threshold',
-  },
-  // {
-  //   title: '用例',
-  //   key: 'testCase',
-  // },
-  // {
-  //   title: '开放语言',
-  //   key: 'allowedLanguages',
-  // },
-  {
-    title: '难度',
-    key: 'difficultyName',
-  },
-  {
-    title: '公开',
-    key: 'isPublicName',
-  },
-  {
-    title: 'AI辅助',
-    key: 'isLlmEnhancedName',
-  },
-  {
-    title: '使用模板',
-    key: 'useTemplateName',
-  },
-  // {
-  //   title: '模板代码',
-  //   key: 'codeTemplate',
-  // },
-  {
-    title: '解决',
-    key: 'solved',
+    title: '报告ID',
+    key: 'reportId',
   },
   {
     title: '操作',
     key: 'action',
-    width: 280,
-    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {
@@ -95,12 +38,6 @@ const columns: DataTableColumns<any> = [
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          disabled: row.canUseSimilarReport !== true,
-          onClick: () => { reportRef.value.doOpen(row) },
-        }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {
@@ -162,11 +99,11 @@ function resetHandle() {
   loadData()
 }
 
-const { proProblemPage, proProblemDelete } = useProProblemFetch()
+const { dataReportsPage, dataReportsDelete } = useDataReportsFetch()
 const loading = ref(false)
 async function loadData() {
   loading.value = true
-  const { data } = await proProblemPage(pageParam.value)
+  const { data } = await dataReportsPage(pageParam.value)
   if (data) {
     pageData.value = data
     loading.value = false
@@ -179,7 +116,7 @@ async function deleteHandle(row: any) {
   const param = [{
     id: row.id,
   }]
-  const { success } = await proProblemDelete(param)
+  const { success } = await dataReportsDelete(param)
   if (success) {
     window.$message.success('删除成功')
     await loadData()
@@ -188,7 +125,7 @@ async function deleteHandle(row: any) {
 const checkedRowKeys = ref<string[]>([])
 async function deleteBatchHandle() {
   const param = checkedRowKeys.value.map(id => ({ id }))
-  const { success } = await proProblemDelete(param)
+  const { success } = await dataReportsDelete(param)
   if (success) {
     window.$message.success('删除成功')
     await loadData()
@@ -325,6 +262,9 @@ async function deleteBatchHandle() {
         </NSpace>
       </template>
     </NCard>
+
+    <Form ref="formRef" @submit="loadData" />
+    <Detail ref="detailRef" @submit="loadData" />
   </div>
 </template>
 

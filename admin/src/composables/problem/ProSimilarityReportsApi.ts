@@ -76,5 +76,12 @@ export function useProSimilarityReportsFetch() {
         },
       })
     },
+
+    /*
+     * 题目报告库 删除接口
+     */
+    proSimilarityReportsGenerate(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/generate`, data)
+    },
   }
 }

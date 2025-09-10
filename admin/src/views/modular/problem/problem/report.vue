@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useProSimilarityReportsFetch } from '@/composables'
+
 // 定义 props 和 emits
 const props = defineProps<{
   value?: string // 接收父组件传递的值
@@ -51,6 +53,7 @@ const problemReportConfigData = ref({
   useSingleSubmitUser: true,
   useGlobalSubmitUser: true,
   submitUsers: [],
+  useAllSample: false,
   sampleCount: 0,
 })
 function doOpen(row: any = null) {
@@ -86,16 +89,25 @@ function toggleShow(show: boolean) {
       useSingleSubmitUser: true,
       useGlobalSubmitUser: true,
       submitUsers: [],
+      useAllSample: false,
       sampleCount: 0,
     }
   }
 }
 
+const { proSimilarityReportsGenerate } = useProSimilarityReportsFetch()
 function handleSubmit() {
   if (current.value === 3) {
     return
   }
-  current.value++
+
+  proSimilarityReportsGenerate(problemReportConfigData.value).then(({ success }) => {
+    if (success) {
+      current.value++
+      console.log('success')
+    }
+  })
+
 //   if (checkedRowKeys.value.length > 0) {
 //     emit('update:value', checkedRowKeys.value[0]) // 发送更新事件
 //     emit('update:select', checkedRowKeys.value[0]) // 发送更新事件
@@ -170,31 +182,34 @@ function handleNext() {
           </n-space>
           <!-- <n-input :disabled="true" :value="rowData.id" placeholder="请输入题目ID" /> -->
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="是否使用题目自身阈值" path="useProblemThreshold">
+        <n-form-item-gi :span="6" label="是否使用题目自身阈值" path="useProblemThreshold">
           <n-switch v-model:value="problemReportConfigData.useProblemThreshold" />
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="阈值" path="threshold">
+        <n-form-item-gi :span="6" label="阈值" path="threshold">
           <n-input-number v-if="!problemReportConfigData.useProblemThreshold" v-model:value="problemReportConfigData.threshold" :min="0" :max="1.0" placeholder="请输入阈值" :step="0.1" :precision="1" />
 
           <n-input-number v-if="problemReportConfigData.useProblemThreshold" :value="rowData.threshold" :disabled="true" />
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="使用单种编程语言" path="useSingleLanguage">
+        <n-form-item-gi :span="6" label="使用单种编程语言" path="useSingleLanguage">
           <n-switch v-model:value="problemReportConfigData.useSingleLanguage" />
         </n-form-item-gi>
-        <n-form-item-gi :span="12" label="编程语言" path="languages">
+        <n-form-item-gi :span="6" label="编程语言" path="languages">
           <n-select v-model:value="problemReportConfigData.languages" :options="languageOptions" :multiple="!problemReportConfigData.useSingleLanguage" placeholder="请选择编程语言" />
         </n-form-item-gi>
         <n-form-item-gi :span="6" label="是否对全局用户进行检测" path="useGlobalSubmitUser">
           <n-switch v-model:value="problemReportConfigData.useGlobalSubmitUser" />
         </n-form-item-gi>
-        <n-form-item-gi v-if="!problemReportConfigData.useGlobalSubmitUser" :span="6" label="使用单种提交用户" path="useSingleSubmitUser">
-          <n-switch v-model:value="problemReportConfigData.useSingleSubmitUser" />
+        <n-form-item-gi :span="6" label="使用单种提交用户" path="useSingleSubmitUser">
+          <n-switch v-model:value="problemReportConfigData.useSingleSubmitUser" :disabled="problemReportConfigData.useGlobalSubmitUser" />
         </n-form-item-gi>
-        <n-form-item-gi v-if="!problemReportConfigData.useGlobalSubmitUser" :span="12" label="通过提交的用户" path="submitUsers">
-          <n-select v-model:value="problemReportConfigData.submitUsers" :multiple="!problemReportConfigData.useSingleSubmitUser && !problemReportConfigData.useGlobalSubmitUser" placeholder="请选择编程语言" />
+        <n-form-item-gi :span="12" label="通过提交的用户" path="submitUsers">
+          <n-select v-model:value="problemReportConfigData.submitUsers" :disabled="problemReportConfigData.useGlobalSubmitUser" :multiple="!problemReportConfigData.useSingleSubmitUser && !problemReportConfigData.useGlobalSubmitUser" placeholder="请选择编程语言" />
         </n-form-item-gi>
-        <n-form-item-gi :span="24" label="样本数" path="sampleCount">
-          <n-input-number v-model:value="problemReportConfigData.sampleCount" placeholder="样本数" />
+        <n-form-item-gi :span="6" label="使用全部样本" path="useAllSample">
+          <n-switch v-model:value="problemReportConfigData.useAllSample" />
+        </n-form-item-gi>
+        <n-form-item-gi :span="6" label="样本数" path="sampleCount">
+          <n-input-number v-model:value="problemReportConfigData.sampleCount" placeholder="样本数" :disabled="problemReportConfigData.useAllSample" />
         </n-form-item-gi>
       </n-grid>
     </n-form>

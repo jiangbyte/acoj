@@ -2,6 +2,7 @@ package io.charlie.app.core.modular.similarity.service;
 
 import io.charlie.app.core.modular.similarity.dto.SimilarityResultDto;
 import io.charlie.app.core.modular.similarity.dto.SimilaritySubmitDto;
+import io.charlie.app.core.modular.similarity.param.ProblemReportConfigParam;
 
 /**
  * @author ZhangJiangHu
@@ -16,4 +17,9 @@ public interface ProblemSimilarityMessageService {
     void sendSimilarityRequest(SimilaritySubmitDto similaritySubmitDto);
 
     void handleSimilarityRequest(SimilaritySubmitDto similaritySubmitDto);
+
+    /**
+     * 获取题目检测结果报告
+     */
+    void problemSimilarityReport(ProblemReportConfigParam problemReportConfigParam);
 }

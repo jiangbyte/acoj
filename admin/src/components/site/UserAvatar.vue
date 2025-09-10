@@ -6,7 +6,6 @@ const { getProfile } = useSysUserFetch()
 const response = ref<IResult<any>>()
 async function loadData() {
   response.value = await getProfile() || { data: { nickname: 'No Data', avatar: '#' } }
-  console.log(response.value)
 }
 loadData()
 </script>

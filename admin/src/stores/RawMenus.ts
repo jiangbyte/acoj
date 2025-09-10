@@ -700,7 +700,7 @@ export const rawMenus: SiteRoute.RowRoute[] = [
     name: 'problem_similarity_task',
     path: '/problem/similarity/task',
     componentPath: '/modular/problem/similarity/index.vue',
-    title: '检测任务',
+    title: '检测执行详情',
     icon: 'icon-park-outline:accept-email',
     keepAlive: false,
     visible: true,
@@ -841,9 +841,9 @@ export const rawMenus: SiteRoute.RowRoute[] = [
   {
     id: '500',
     pid: '0',
-    name: 'report',
-    path: '/report',
-    componentPath: '/modular/report/index.vue',
+    name: 'reports',
+    path: '/reports',
+    componentPath: '/modular/reports/index.vue',
     title: '检测报告',
     icon: 'icon-park-outline:database-download',
     keepAlive: false,
@@ -869,7 +869,6 @@ export const rawMenus: SiteRoute.RowRoute[] = [
     menuType: '0',
   },
 
-  
   {
     id: '7870',
     pid: '0',
