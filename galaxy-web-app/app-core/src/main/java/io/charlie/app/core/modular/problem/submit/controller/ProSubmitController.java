@@ -2,6 +2,7 @@ package io.charlie.app.core.modular.problem.submit.controller;
 
 import io.charlie.app.core.annotation.UserActivity;
 import io.charlie.app.core.modular.problem.submit.param.*;
+import io.charlie.app.core.sse.utils.SseUtil;
 import io.charlie.galaxy.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -77,6 +78,13 @@ public class ProSubmitController {
     @UserActivity
     public Result<?> execute(@RequestBody @Valid ProSubmitExecuteParam proSubmitExecuteParam) {
         return Result.success(proSubmitService.execute(proSubmitExecuteParam));
+    }
+
+    @Operation(summary = "获取提交详情")
+    @GetMapping("/pro/submit/detail/connect/{submitId}")
+    public Result<?> detailConnect(@PathVariable @Valid String submitId) {
+
+        return Result.success();
     }
 
     @Operation(summary = "获取用户提交分页")
