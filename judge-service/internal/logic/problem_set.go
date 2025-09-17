@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"judge-service/internal/dto"
-	"judge-service/internal/logic/judge"
+	"judge-service/internal/judge"
 	"judge-service/internal/svc"
 	"sync"
 	"time"

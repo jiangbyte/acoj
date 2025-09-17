@@ -64,4 +64,7 @@ public class JudgeResultDto implements Serializable {
     @Schema(description = "状态")
     private String status;
 
+    @Schema(description = "退出码")
+    private Integer exitCode;
+
 }

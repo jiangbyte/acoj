@@ -74,6 +74,7 @@ type JudgeResultDto struct {
 	ID           string           `json:"id"`
 	IsSet        bool             `json:"isSet"`
 	Status       JudgeStatus      `json:"status"`
+	ExitCode     int              `json:"exitCode"` // 程序退出码
 }
 
 /* 测试用例 */
@@ -91,4 +92,5 @@ type SubmitTestCase struct {
 	MaxMemory int         `json:"maxMemory"` // kb
 	Message   string      `json:"message"`
 	Status    JudgeStatus `json:"status"`
+	ExitCode  int         `json:"exitCode"` // 程序退出码
 }

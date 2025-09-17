@@ -109,6 +109,7 @@ func (e *Compiler) Execute() (*dto.JudgeResultDto, error) {
 			result.Message = stderr
 			result.Status = dto.StatusCompilationError
 		}
+		result.ExitCode = -1 // 或者使用其他特殊值表示超时
 
 		logx.Errorf("超时杀死整个进程组，运行时间: %v ms 时间限制 %v ms", elapsed, e.Sandbox.Workspace.judgeSubmit.MaxTime)
 		return &result, err
@@ -117,17 +118,46 @@ func (e *Compiler) Execute() (*dto.JudgeResultDto, error) {
 		memoryUsed, _ := grutil.GetMemoryUsage(cgroupPath)
 		result.MaxMemory = int(grutil.FormatBytesKB(memoryUsed))
 		result.MaxTime = int(elapsed.Microseconds())
+
+		// 获取退出码
+		exitCode := 0
+		if err != nil {
+			if exitError, ok := err.(*exec.ExitError); ok {
+				// 获取进程退出状态
+				if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
+					exitCode = status.ExitStatus()
+				} else {
+					// 如果无法获取详细的退出状态，使用通用错误码
+					exitCode = -1
+				}
+			} else {
+				// 非退出错误，设置特殊错误码
+				exitCode = -2
+			}
+		}
+		result.ExitCode = exitCode
+
 		stderr := stderrBuf.String()
 		if strings.TrimSpace(stderr) != "" {
-			result.Message = stderr
 			result.Status = dto.StatusCompilationError
+			result.Message = stderr
 			grutil.CleanupCgroup(cgroupPath)
+			// 根据退出码设置状态（如果需要）
+			if exitCode != 0 {
+				result.Status = dto.StatusRuntimeError
+				result.Message = fmt.Sprintf("程序异常退出，退出码: %d", exitCode)
+			}
 			return &result, err
 		}
 
 		logx.Infof("编译完成, 内存使用: %d bytes (峰值), 程序退出状态: %v", memoryUsed, err)
 		result.Status = dto.StatusCompiledOK
 		grutil.CleanupCgroup(cgroupPath)
+		// 根据退出码设置状态（如果需要）
+		if exitCode != 0 {
+			result.Status = dto.StatusRuntimeError
+			result.Message = fmt.Sprintf("程序异常退出，退出码: %d", exitCode)
+		}
 		return &result, err
 	}
 }
