@@ -2,7 +2,6 @@ package io.charlie.app.core.modular.problem.problem.controller;
 
 import io.charlie.app.core.annotation.UserActivity;
 import io.charlie.app.core.modular.problem.problem.param.*;
-import io.charlie.app.core.modular.problem.problem.service.ProblemImportService;
 import io.charlie.galaxy.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,7 +33,6 @@ import java.util.List;
 @Validated
 public class ProProblemController {
     private final ProProblemService proProblemService;
-    private final ProblemImportService problemImportService;
 
 
     @Operation(summary = "获取题目分页")
@@ -132,7 +130,7 @@ public class ProProblemController {
             if (!file.getOriginalFilename().toLowerCase().endsWith(".zip")) {
                 return Result.failure("请选择有效的ZIP格式的压缩包");
             }
-            problemImportService.importProblems(file);
+            proProblemService.importProblems(file);
             return Result.success("问题导入成功");
         } catch (Exception e) {
             log.error("导入失败", e);

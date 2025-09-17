@@ -14,19 +14,16 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class LanguageStrategyFactory {
-    private final Map<String, LanguageStrategy> strategyMap;
-
+    private final Map<String, LanguageStrategy> languageStrategyMap;
     public LanguageStrategy languageStrategy(String language) {
         String strategyKey = language.toLowerCase() + "LanguageStrategy";
-        if (!strategyMap.containsKey(strategyKey)) {
+        if (!languageStrategyMap.containsKey(strategyKey)) {
             throw new IllegalArgumentException("No language strategy found for: " + language);
         }
-        return strategyMap.get(strategyKey);
+        return languageStrategyMap.get(strategyKey);
     }
-
     public boolean hasLanguageStrategy(String language) {
         String strategyKey = language.toLowerCase() + "LanguageStrategy";
-        return strategyMap.containsKey(strategyKey);
+        return languageStrategyMap.containsKey(strategyKey);
     }
-
 }

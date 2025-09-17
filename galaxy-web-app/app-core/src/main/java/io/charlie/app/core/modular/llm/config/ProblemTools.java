@@ -20,25 +20,28 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class ProblemTools {
     private final ProProblemService proProblemService;
-    private final Random random = new Random();
-
     @Tool(description = "通过题目id获取题目描述")
     public String getProblemDescriptionById(@ToolParam(description = "题目ID") String id) {
         try {
             return proProblemService.getDescription(id);
         } catch (Exception e) {
-            log.error("获取题目描述失败，题目ID: {}", id, e);
             return "无法获取题目描述";
         }
     }
-
     @Tool(description = "通过题目id随机获取一个测试用例（包含输入和输出）")
     public String getProblemTestCaseById(@ToolParam(description = "题目ID") String id) {
         try {
             return proProblemService.getTestCase(id);
         } catch (Exception e) {
-            log.error("获取测试用例失败，题目ID: {}", id, e);
             return "无法获取测试用例";
+        }
+    }
+    @Tool(description = "通过题目id获取题目约束条件")
+    public String getProblemConstraintsById(@ToolParam(description = "题目ID") String id) {
+        try {
+            return proProblemService.getConstraints(id);
+        } catch (Exception e) {
+            return "无法获取题目约束条件";
         }
     }
 }

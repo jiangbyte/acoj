@@ -2,6 +2,8 @@ package io.charlie.app.core.modular.problem.reports.controller;
 
 import io.charlie.app.core.modular.similarity.param.ProblemReportConfigParam;
 import io.charlie.app.core.modular.similarity.service.ProblemSimilarityMessageService;
+import io.charlie.app.core.sse.enums.SseTypeEnums;
+import io.charlie.app.core.sse.utils.SseUtil;
 import io.charlie.galaxy.result.Result;
 import io.charlie.app.core.modular.problem.reports.param.ProSimilarityReportsPageParam;
 import io.charlie.app.core.modular.problem.reports.param.ProSimilarityReportsAddParam;
@@ -19,15 +21,16 @@ import org.springframework.web.bind.annotation.RestController;
 import io.charlie.app.core.modular.problem.reports.service.ProSimilarityReportsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-09-08
-* @description 题目报告库表 控制器
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-09-08
+ * @description 题目报告库表 控制器
+ */
 @Tag(name = "题目报告库表控制器")
 @Slf4j
 @RequiredArgsConstructor
@@ -35,6 +38,7 @@ import java.util.List;
 @RestController
 @Validated
 public class ProSimilarityReportsController {
+    private final SseUtil sseUtil;
     private final ProSimilarityReportsService proSimilarityReportsService;
     private final ProblemSimilarityMessageService problemSimilarityMessageService;
 
@@ -79,7 +83,12 @@ public class ProSimilarityReportsController {
     @Operation(summary = "题目报告生成")
     @PostMapping("/pro/similarity/reports/generate")
     public Result<?> generate(@RequestBody @Valid ProblemReportConfigParam problemReportConfigParam) {
-        problemSimilarityMessageService.problemSimilarityReport(problemReportConfigParam);
-        return Result.success();
+        return Result.success(problemSimilarityMessageService.problemSimilarityReport(problemReportConfigParam));
+    }
+
+    @Operation(summary = "题目报告生成SSE状态")
+    @GetMapping("/pro/similarity/reports/generate/sse")
+    public SseEmitter generateSSE(@RequestParam @NotBlank(message = "报告ID不能为空") String reportId) {
+        return sseUtil.connect(SseTypeEnums.PROBLEM_REPORT_GENERATE, reportId);
     }
 }

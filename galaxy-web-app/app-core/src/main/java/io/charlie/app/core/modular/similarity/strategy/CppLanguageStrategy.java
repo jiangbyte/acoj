@@ -44,16 +44,13 @@ public class CppLanguageStrategy implements LanguageStrategy {
 
         CPP14Parser.TranslationUnitContext tree = parser.translationUnit();
 
-        List<Integer> astTokens = new ArrayList<>();
-        traverseAST(tree, astTokens);
+        List<Integer> tokens1 = new ArrayList<>();
+        traverse(tree, tokens1);
 
-        return astTokens;
+        return tokens1;
     }
 
-    /**
-     * 遍历AST收集Token
-     */
-    private void traverseAST(ParseTree tree, List<Integer> tokens) {
+    private void traverse(ParseTree tree, List<Integer> tokens) {
         if (tree instanceof TerminalNode) {
             Token token = ((TerminalNode) tree).getSymbol();
             if (token.getType() != Token.EOF) {
@@ -61,7 +58,7 @@ public class CppLanguageStrategy implements LanguageStrategy {
             }
         } else {
             for (int i = 0; i < tree.getChildCount(); i++) {
-                traverseAST(tree.getChild(i), tokens);
+                traverse(tree.getChild(i), tokens);
             }
         }
     }

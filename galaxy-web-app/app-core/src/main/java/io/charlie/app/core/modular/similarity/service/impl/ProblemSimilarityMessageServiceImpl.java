@@ -6,6 +6,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.charlie.app.core.modular.judge.enums.JudgeStatus;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
 import io.charlie.app.core.modular.problem.problem.mapper.ProProblemMapper;
@@ -255,18 +256,20 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
         }
         // 比较阈值和相似度,划分等级
         BigDecimal similarity = maxProSimilarityDetail.getSimilarity();
-        proSubmit.setSimilarity(similarity);
         CloneLevelEnum detect = dynamicCloneLevelDetector.detect(similarity);
-        proSubmit.setSimilarityBehavior(detect.getValue());
-        proSubmit.setReportId(reports.getId());
-        proSubmitMapper.updateById(proSubmit);
+        proSubmitMapper.update(new LambdaUpdateWrapper<ProSubmit>()
+                .eq(ProSubmit::getId, proSubmit.getId())
+                .set(ProSubmit::getSimilarity, similarity)
+                .set(ProSubmit::getSimilarityBehavior, detect.getValue())
+                .set(ProSubmit::getReportId, reports.getId())
+        );
         log.info("更新成功");
 
 //        this.sendSimilarityResult(bean);
     }
 
     @Override
-    public void problemSimilarityReport(ProblemReportConfigParam problemReportConfigParam) {
+    public String problemSimilarityReport(ProblemReportConfigParam problemReportConfigParam) {
         String taskId = IdUtil.getSnowflakeNextIdStr();
         log.info("开始生成题目报告 任务ID {}", taskId);
 
@@ -304,7 +307,7 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
         // 空直接忽略
         if (ObjectUtil.isEmpty(proSampleLibraries)) {
             log.info("代码克隆检测 -> 忽略空数据");
-            return;
+            return null;
         }
 
         List<ProSimilarityDetail> proSimilarityDetails = new ArrayList<>();
@@ -454,7 +457,7 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
 
         ProProblem proProblem = proProblemMapper.selectById(problemId);
         if (proProblem == null) {
-            return;
+            return null;
         }
 
         ProSimilarityReports reports = new ProSimilarityReports();
@@ -482,6 +485,8 @@ public class ProblemSimilarityMessageServiceImpl implements ProblemSimilarityMes
         dataReports.setReportId(reports.getId());
 
         dataReportsMapper.insert(dataReports);
+
+        return dataReports.getId();
     }
 
     /**

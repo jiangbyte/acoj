@@ -21,5 +21,5 @@ public interface ProblemSimilarityMessageService {
     /**
      * 获取题目检测结果报告
      */
-    void problemSimilarityReport(ProblemReportConfigParam problemReportConfigParam);
+    String problemSimilarityReport(ProblemReportConfigParam problemReportConfigParam);
 }

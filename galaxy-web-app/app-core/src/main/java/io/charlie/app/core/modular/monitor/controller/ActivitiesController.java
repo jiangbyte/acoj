@@ -1,9 +1,11 @@
-package io.charlie.app.core.activity;
+package io.charlie.app.core.modular.monitor.controller;
 
 import io.charlie.app.core.sse.entity.SseEvent;
 import io.charlie.app.core.sse.enums.EventEnums;
+import io.charlie.app.core.sse.enums.SseTypeEnums;
 import io.charlie.app.core.sse.utils.SseUtil;
 import io.charlie.galaxy.result.Result;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,23 +25,32 @@ public class ActivitiesController {
      * 建立SSE连接
      */
 //    @GetMapping(value = "/connect/{clientId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "建立心跳SSE连接")
     @GetMapping("/connect/{clientId}")
     public SseEmitter connect(@PathVariable String clientId) {
-        return sseUtil.connection(clientId);
+        return sseUtil.connect(SseTypeEnums.HEARTBEAT, clientId);
+    }
+
+    @Operation(summary = "建立SSE连接")
+    @GetMapping("/connect/s/{type}/{id}")
+    public SseEmitter connect(@PathVariable String type, @PathVariable String id) {
+        return sseUtil.connect(type, id);
     }
 
     /**
      * 发送消息到指定客户端
      */
+    @Operation(summary = "发送消息到指定客户端")
     @PostMapping("/message/{clientId}")
     public Result<Void> sendMessage(@PathVariable String clientId, @RequestParam String message) {
-        sseUtil.message(clientId, new SseEvent<String>(EventEnums.MESSAGE.getValue(), message));
+        sseUtil.sendMessage(clientId, new SseEvent<String>(EventEnums.MESSAGE.getValue(), message));
         return Result.success();
     }
 
     /**
      * 广播消息到所有客户端
      */
+    @Operation(summary = "广播消息到所有客户端")
     @PostMapping("/broadcast")
     public Result<Void> broadcast(@RequestParam String message) {
         sseUtil.broadcast(new SseEvent<String>(EventEnums.BROADCAST.getValue(), message));
@@ -49,18 +60,30 @@ public class ActivitiesController {
     /**
      * 关闭指定客户端连接
      */
+    @Operation(summary = "关闭指定客户端连接")
     @PostMapping("/disconnect/{clientId}")
     public Result<Void> disconnect(@PathVariable String clientId) {
-        sseUtil.close(clientId);
+        sseUtil.closeConnection(clientId);
         return Result.success();
     }
 
     /**
      * 处理心跳响应
      */
+    @Operation(summary = "处理心跳响应")
     @PostMapping("/heartbeat/{clientId}")
     public Result<Void> heartbeat(@PathVariable String clientId) {
-        sseUtil.clientHeartbeat(clientId);
+        sseUtil.handleClientHeartbeat(SseTypeEnums.HEARTBEAT, clientId);
+        return Result.success();
+    }
+
+    /**
+     * 处理心跳响应
+     */
+    @Operation(summary = "处理心跳响应")
+    @PostMapping("/heartbeat/s/{type}/{id}")
+    public Result<Void> heartbeatS(@PathVariable String type, @PathVariable String id) {
+        sseUtil.handleClientHeartbeat(type, id);
         return Result.success();
     }
 }

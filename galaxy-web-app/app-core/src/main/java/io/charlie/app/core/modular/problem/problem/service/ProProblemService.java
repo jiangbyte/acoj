@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.app.core.modular.problem.problem.entity.ProProblem;
 import io.charlie.app.core.modular.problem.problem.param.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -44,6 +45,9 @@ public interface ProProblemService extends IService<ProProblem> {
     // 获得题目的测试用例（随机一例）
     String getTestCase(String problemId);
 
+    // 获得题目的约束条件
+    String getConstraints(String problemId);
+
     // 难度分布
     List<DifficultyDistribution> difficultyDistribution();
 
@@ -55,4 +59,6 @@ public interface ProProblemService extends IService<ProProblem> {
 
     // 获得某个用户最近解题记录
     Page<ProProblem> userRecentSolvedPage(UserProblemPageParam userProblemPageParam);
+
+    void importProblems(MultipartFile file);
 }

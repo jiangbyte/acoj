@@ -1,5 +1,6 @@
 package io.charlie.app.core.modular.similarity.utils;
 
+import cn.hutool.core.util.StrUtil;
 import io.charlie.app.core.modular.judge.enums.JudgeStatus;
 import io.charlie.app.core.modular.similarity.factory.LanguageStrategy;
 import io.charlie.app.core.modular.similarity.factory.LanguageStrategyFactory;
@@ -33,30 +34,14 @@ public class CodeSimilarityCalculator {
      * @return 相似度百分比 (0.0 - 1.0)
      */
     public double calculateSimilarity(String language, String code1, String code2, int minMatchLength) {
+        if (StrUtil.isBlank(code1) || StrUtil.isBlank(code2)) return 0.0;
         languageStrategy = languageStrategyFactory.languageStrategy(language);
-        if (code1 == null || code2 == null) {
-            return 0.0;
-        }
-
-        // 获取两个代码的Token序列
         List<Integer> tokens1 = languageStrategy.getTokenInfo(code1);
         List<Integer> tokens2 = languageStrategy.getTokenInfo(code2);
-
-        // 如果任一Token序列为空，返回0相似度
-        if (tokens1.isEmpty() || tokens2.isEmpty()) {
-            return 0.0;
-        }
-
-        // 使用贪婪字符串匹配算法计算相似度
+        if (tokens1.isEmpty() || tokens2.isEmpty()) return 0.0;
         int matches = greedyStringTiling(tokens1, tokens2, minMatchLength);
-
-        // 计算相似度百分比
-//        int maxLength = Math.max(tokens1.size(), tokens2.size());
-//        double similarity = (double) (matches) / maxLength;
         double similarity = (double) (matches * 2) / (tokens1.size() + tokens2.size());
-
-        DecimalFormat df = new DecimalFormat("0.00");
-        return Double.parseDouble(df.format(similarity));
+        return Double.parseDouble(new DecimalFormat("0.00").format(similarity));
     }
 
     /**
@@ -171,6 +156,7 @@ public class CodeSimilarityCalculator {
         private List<String> tokenNames2;
         private List<String> tokenTexts1;
         private List<String> tokenTexts2;
+
         public SimilarityDetail() {
 
         }

@@ -1,7 +1,9 @@
 package io.charlie.app.core.sse.utils;
 
+import cn.hutool.core.util.IdUtil;
 import io.charlie.app.core.sse.entity.SseEvent;
 import io.charlie.app.core.sse.enums.EventEnums;
+import io.charlie.app.core.sse.enums.SseTypeEnums;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -11,116 +13,190 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author ZhangJiangHu
  * @version v1.0
  * @date 10/09/2025
- * @description SSE 工具
+ * @description 通用 SSE 工具
  */
 @Slf4j
 @Component
 public class SseUtil {
     // 存储活跃连接的映射
-    private final Map<String, SseEmitter> connections = new ConcurrentHashMap<>();
+    private final Map<String, SseEmitter> sseEmitterMap = new ConcurrentHashMap<>();
     // 存储客户端最后活动时间
     private final Map<String, Long> lastActivityMap = new ConcurrentHashMap<>();
     // 存储客户端心跳计数
     private final Map<String, AtomicLong> heartbeatCountMap = new ConcurrentHashMap<>();
-    // 心跳调度器
-    private final ScheduledExecutorService heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
-    // 使用更细粒度的锁
-    private final Map<String, Object> clientLocks = new ConcurrentHashMap<>();
-
+    // 客户端专用锁
+    private final Map<String, ReentrantLock> clientLocks = new ConcurrentHashMap<>();
     // 连接超时时间（毫秒）
-    private static final long CONNECTION_TIMEOUT = 30 * 60 * 1000L; // 30分钟
+    private static final long CONNECTION_TIMEOUT = 30 * 60 * 1000L;
     // 心跳间隔时间（秒）
     private static final long HEARTBEAT_INTERVAL = 5L;
     // 客户端不活跃超时时间（毫秒）
-    private static final long CLIENT_INACTIVE_TIMEOUT = 2 * 60 * 1000L; // 2分钟
+    private static final long CLIENT_INACTIVE_TIMEOUT = 2 * 60 * 1000L;
     // 最大允许的心跳丢失次数
     private static final int MAX_MISSED_HEARTBEATS = 3;
+    // 心跳调度器
+    private final ScheduledExecutorService heartbeatScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread thread = new Thread(r, "sse-heartbeat-thread");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     public SseUtil() {
-        // 启动心跳任务
         startHeartbeatTask();
     }
 
-    public SseEmitter connection(String clientId) {
-        log.info("为客户端建立 SSE 连接: {}", clientId);
-
-        synchronized (getClientLock(clientId)) {
-            try {
-                // 如果已存在连接，先尝试优雅关闭
-                SseEmitter existingEmitter = connections.get(clientId);
-                if (existingEmitter != null) {
-                    log.info("Closing existing connection for client: {}", clientId);
-                    try {
-                        // 不发送消息，直接完成，避免IO异常
-                        existingEmitter.complete();
-                    } catch (Exception e) {
-                        log.info("Existing connection already closed for client: {}", clientId);
-                    } finally {
-                        // 立即清理资源，不等待回调
-                        removeClientImmediately(clientId);
-                    }
-                }
-
-                // 创建新的SSE发射器
-                SseEmitter emitter = new SseEmitter(0L);
-                connections.put(clientId, emitter);
-                lastActivityMap.put(clientId, System.currentTimeMillis());
-                heartbeatCountMap.put(clientId, new AtomicLong(0));
-
-                // 简化回调处理
-                emitter.onCompletion(() -> {
-                    log.info("SSE connection completed for client: {}", clientId);
-                    removeClientIfExists(clientId);
-                });
-
-                emitter.onTimeout(() -> {
-                    log.warn("SSE connection timeout for client: {}", clientId);
-                    removeClientIfExists(clientId);
-                });
-
-                emitter.onError((ex) -> {
-                    // 忽略客户端中止连接的异常
-                    if (!isClientAbortException(ex)) {
-                        log.error("SSE connection error for client: {}", clientId, ex);
-                    } else {
-                        log.info("Client aborted connection: {}", clientId);
-                    }
-                    removeClientIfExists(clientId);
-                });
-
-                // 异步发送初始数据，避免阻塞连接建立
-                asyncSendInitialData(clientId);
-
-                log.info("SSE connection established for client: {}", clientId);
-                return emitter;
-
-            } catch (Exception e) {
-                log.error("Failed to establish connection for client: {}", clientId, e);
-                removeClientIfExists(clientId);
-                throw new RuntimeException("Failed to establish SSE connection", e);
-            }
+    /**
+     * 生成连接ID
+     */
+    public String generateConnectId(SseTypeEnums sseType, String id) {
+        if (sseType == null) {
+            return "default_" + id;
+        } else {
+            return sseType.getValue() + "_" + id;
         }
     }
 
     /**
-     * 安全的移除客户端（如果存在）
+     * 建立SSE连接
      */
-    public void removeClientIfExists(String clientId) {
-        synchronized (getClientLock(clientId)) {
-            if (connections.containsKey(clientId)) {
-                removeClientImmediately(clientId);
-                clientLocks.remove(clientId); // 清理锁
+    public SseEmitter connect(SseTypeEnums sseType, String clientId) {
+        String connectId = generateConnectId(sseType, clientId);
+        ReentrantLock lock = getClientLock(connectId);
+
+        lock.lock();
+        try {
+            log.info("Establishing SSE connection for client: {}", connectId);
+
+            // 清理现有连接
+            cleanupExistingConnection(connectId);
+
+            // 创建新的SSE发射器
+            SseEmitter emitter = createSseEmitter(connectId);
+
+            // 存储连接信息
+            storeConnectionInfo(connectId, emitter);
+
+            // 异步发送初始数据
+            sendInitialDataAsync(connectId);
+
+            log.info("SSE connection established for client: {}", connectId);
+            return emitter;
+
+        } catch (Exception e) {
+            log.error("Failed to establish connection for client: {}", connectId, e);
+            removeClientIfExists(connectId);
+            throw new RuntimeException("Failed to establish SSE connection", e);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public SseEmitter connect(String sseType, String clientId) {
+        String connectId = generateConnectId(SseTypeEnums.fromValue(sseType), clientId);
+        ReentrantLock lock = getClientLock(connectId);
+
+        lock.lock();
+        try {
+            log.info("Establishing SSE connection for client: {}", connectId);
+
+            // 清理现有连接
+            cleanupExistingConnection(connectId);
+
+            // 创建新的SSE发射器
+            SseEmitter emitter = createSseEmitter(connectId);
+
+            // 存储连接信息
+            storeConnectionInfo(connectId, emitter);
+
+            // 异步发送初始数据
+            sendInitialDataAsync(connectId);
+
+            log.info("SSE connection established for client: {}", connectId);
+            return emitter;
+
+        } catch (Exception e) {
+            log.error("Failed to establish connection for client: {}", connectId, e);
+            removeClientIfExists(connectId);
+            throw new RuntimeException("Failed to establish SSE connection", e);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+
+    /**
+     * 清理现有连接
+     */
+    private void cleanupExistingConnection(String connectId) {
+        SseEmitter existingEmitter = sseEmitterMap.get(connectId);
+        if (existingEmitter != null) {
+            log.info("Closing existing connection for client: {}", connectId);
+            completeEmitterSilently(existingEmitter);
+            removeClientImmediately(connectId);
+        }
+    }
+
+    /**
+     * 创建SSE发射器
+     */
+    private SseEmitter createSseEmitter(String connectId) {
+        SseEmitter emitter = new SseEmitter(CONNECTION_TIMEOUT);
+
+        emitter.onCompletion(() -> {
+            log.info("SSE connection completed for client: {}", connectId);
+            removeClientIfExists(connectId);
+        });
+
+        emitter.onTimeout(() -> {
+            log.warn("SSE connection timeout for client: {}", connectId);
+            removeClientIfExists(connectId);
+        });
+
+        emitter.onError(ex -> {
+            if (!isClientAbortException(ex)) {
+                log.error("SSE connection error for client: {}", connectId, ex);
+            } else {
+                log.info("Client aborted connection: {}", connectId);
+            }
+            removeClientIfExists(connectId);
+        });
+
+        return emitter;
+    }
+
+    /**
+     * 存储连接信息
+     */
+    private void storeConnectionInfo(String connectId, SseEmitter emitter) {
+        sseEmitterMap.put(connectId, emitter);
+        lastActivityMap.put(connectId, System.currentTimeMillis());
+        heartbeatCountMap.put(connectId, new AtomicLong(0));
+    }
+
+    /**
+     * 安全移除客户端
+     */
+    public void removeClientIfExists(String connectId) {
+        ReentrantLock lock = getClientLock(connectId);
+        lock.lock();
+        try {
+            if (sseEmitterMap.containsKey(connectId)) {
+                removeClientImmediately(connectId);
+            }
+        } finally {
+            lock.unlock();
+            // 谨慎清理锁，避免内存泄漏
+            if (!sseEmitterMap.containsKey(connectId)) {
+                clientLocks.remove(connectId);
             }
         }
     }
@@ -128,201 +204,347 @@ public class SseUtil {
     /**
      * 立即移除客户端资源
      */
-    public void removeClientImmediately(String clientId) {
+    private void removeClientImmediately(String connectId) {
         try {
-            SseEmitter emitter = connections.remove(clientId);
+            SseEmitter emitter = sseEmitterMap.remove(connectId);
             if (emitter != null) {
-                try {
-                    emitter.complete();
-                } catch (Exception e) {
-                    // 忽略完成时的异常
-                }
+                completeEmitterSilently(emitter);
             }
         } finally {
-            lastActivityMap.remove(clientId);
-            heartbeatCountMap.remove(clientId);
-            log.info("Client resources cleaned up: {}", clientId);
+            lastActivityMap.remove(connectId);
+            heartbeatCountMap.remove(connectId);
+            log.info("Client resources cleaned up: {}", connectId);
+        }
+    }
+
+    /**
+     * 安全完成发射器
+     */
+    private void completeEmitterSilently(SseEmitter emitter) {
+        try {
+            emitter.complete();
+        } catch (Exception e) {
+            // 忽略完成时的异常
         }
     }
 
     /**
      * 异步发送初始数据
      */
-    public void asyncSendInitialData(String clientId) {
+    private void sendInitialDataAsync(String connectId) {
         CompletableFuture.runAsync(() -> {
             try {
-                Thread.sleep(100); // 短暂延迟，确保连接稳定
-                SseEvent<String> initialEvent = new SseEvent<>(EventEnums.INITIAL_DATA.getValue(), "Welcome! Connection established at " + LocalDateTime.now());
-                sendEventSafely(clientId, initialEvent);
+                Thread.sleep(100);
+                SseEvent<String> initialEvent = new SseEvent<>(
+                        EventEnums.INITIAL_DATA.getValue(),
+                        "Connection established at " + LocalDateTime.now()
+                );
+                sendEventSafely(connectId, initialEvent);
             } catch (Exception e) {
-                log.info("Failed to send initial data to client: {}", clientId, e);
+                log.debug("Failed to send initial data to client: {}", connectId);
             }
         });
     }
 
     /**
-     * 安全发送事件（处理客户端中止）
+     * 安全发送事件
      */
-    public void sendEventSafely(String clientId, SseEvent<?> event) {
-        SseEmitter emitter = connections.get(clientId);
+    public void sendEventSafely(String connectId, SseEvent<?> event) {
+        SseEmitter emitter = sseEmitterMap.get(connectId);
         if (emitter != null) {
             try {
                 sendEventToEmitter(emitter, event);
+                updateClientActivity(connectId);
             } catch (Exception e) {
                 if (isClientAbortException(e)) {
-                    log.info("Client aborted during event sending: {}", clientId);
-                    removeClientIfExists(clientId);
+                    log.info("Client aborted during event sending: {}", connectId);
+                    removeClientIfExists(connectId);
                 } else {
-                    log.error("Failed to send event to client: {}", clientId, e);
+                    log.error("Failed to send event to client: {}", connectId, e);
                 }
             }
         }
     }
 
     /**
-     * 获取客户端专用的锁对象
+     * 更新客户端活动时间
      */
-    private Object getClientLock(String clientId) {
-        return clientLocks.computeIfAbsent(clientId, k -> new Object());
+    private void updateClientActivity(String connectId) {
+        lastActivityMap.put(connectId, System.currentTimeMillis());
     }
 
-    public void close(String clientId) {
-        SseEmitter emitter = connections.get(clientId);
-        if (emitter != null) {
-            try {
-                // 发送连接关闭事件
-                SseEvent<String> closeEvent = new SseEvent<>(EventEnums.CONNECTION_CLOSED.getValue(), "Connection closed by server due to inactivity");
-                sendEventToEmitter(emitter, closeEvent);
+    /**
+     * 获取客户端锁
+     */
+    private ReentrantLock getClientLock(String connectId) {
+        return clientLocks.computeIfAbsent(connectId, k -> new ReentrantLock());
+    }
 
-                emitter.complete();
-            } catch (Exception e) {
-                log.warn("Error while closing connection for client: {}", clientId, e);
-            } finally {
-                removeClient(clientId);
-                log.info("SSE connection closed for client: {}", clientId);
+    /**
+     * 关闭连接
+     */
+    public void closeConnection(String connectId) {
+        ReentrantLock lock = getClientLock(connectId);
+        lock.lock();
+        try {
+            SseEmitter emitter = sseEmitterMap.get(connectId);
+            if (emitter != null) {
+                try {
+                    SseEvent<String> closeEvent = new SseEvent<>(
+                            EventEnums.CONNECTION_CLOSED.getValue(),
+                            "Connection closed by server"
+                    );
+                    sendEventToEmitter(emitter, closeEvent);
+                    emitter.complete();
+                } catch (Exception e) {
+                    log.warn("Error while closing connection for client: {}", connectId, e);
+                } finally {
+                    removeClientImmediately(connectId);
+                    log.info("SSE connection closed for client: {}", connectId);
+                }
             }
+        } finally {
+            lock.unlock();
         }
     }
 
-    public void message(String clientId, SseEvent<?> event) {
-        SseEmitter emitter = connections.get(clientId);
+    /**
+     * 发送消息
+     */
+    public void sendMessage(String connectId, SseEvent<?> event) {
+        SseEmitter emitter = sseEmitterMap.get(connectId);
         if (emitter != null) {
             try {
                 sendEventToEmitter(emitter, event);
-                log.info("Message sent to client: {}, event: {}", clientId, event.getEventType());
+                updateClientActivity(connectId);
+                log.debug("Message sent to client: {}, event: {}", connectId, event.getEventType());
             } catch (Exception e) {
-                log.error("Failed to send message to client: {}", clientId, e);
-                close(clientId);
+                log.error("Failed to send message to client: {}", connectId, e);
+                closeConnection(connectId);
             }
         } else {
-            log.warn("Client not found: {}", clientId);
+            log.warn("Client not found: {}", connectId);
         }
     }
 
-    public void broadcast(SseEvent<?> event) {
-        log.info("Broadcasting event: {}", event.getEventType());
-        connections.forEach((clientId, emitter) -> {
+
+    /**
+     * 发送消息
+     */
+    public void sendMessage(SseTypeEnums sseType, String id, SseEvent<?> event) {
+        String connectId = generateConnectId(sseType, id);
+        SseEmitter emitter = sseEmitterMap.get(connectId);
+        if (emitter != null) {
             try {
                 sendEventToEmitter(emitter, event);
+                updateClientActivity(connectId);
+                log.debug("Message sent to client: {}, event: {}", connectId, event.getEventType());
             } catch (Exception e) {
-                log.error("Failed to broadcast to client: {}", clientId, e);
-                close(clientId);
+                log.error("Failed to send message to client: {}", connectId, e);
+                closeConnection(connectId);
+            }
+        } else {
+            log.warn("Client not found: {}", connectId);
+        }
+    }
+
+    /**
+     * 广播消息
+     */
+    public void broadcast(SseEvent<?> event) {
+        log.info("Broadcasting event: {} to {} clients", event.getEventType(), sseEmitterMap.size());
+
+        List<String> failedClients = new ArrayList<>();
+        sseEmitterMap.forEach((connectId, emitter) -> {
+            try {
+                sendEventToEmitter(emitter, event);
+                updateClientActivity(connectId);
+            } catch (Exception e) {
+                log.error("Failed to broadcast to client: {}", connectId, e);
+                failedClients.add(connectId);
             }
         });
+
+        // 清理失败的连接
+        failedClients.forEach(this::closeConnection);
     }
 
-    public Map<String, SseEmitter> getActiveConnections() {
-        return Map.copyOf(connections);
+    /**
+     * 广播消息
+     */
+    public void broadcast(SseTypeEnums sseType, SseEvent<?> event) {
+        log.info("Broadcasting event: {} to {} clients", event.getEventType(), sseEmitterMap.size());
+
+        List<String> failedClients = new ArrayList<>();
+        sseEmitterMap.forEach((connectId, emitter) -> {
+            // 如果不是当前sseType的sseType，则跳过
+            if (!connectId.startsWith(sseType.getValue())) {
+                return;
+            }
+
+            try {
+                sendEventToEmitter(emitter, event);
+                updateClientActivity(connectId);
+            } catch (Exception e) {
+                log.error("Failed to broadcast to client: {}", connectId, e);
+                failedClients.add(connectId);
+            }
+        });
+
+        // 清理失败的连接
+        failedClients.forEach(this::closeConnection);
     }
 
-    public boolean isClientActive(String clientId) {
-        return connections.containsKey(clientId);
+    /**
+     * 发送事件到发射器
+     */
+    private void sendEventToEmitter(SseEmitter emitter, SseEvent<?> event) throws IOException {
+        try {
+            SseEmitter.SseEventBuilder eventBuilder = SseEmitter.event()
+                    .name(event.getEventType())
+                    .data(event.getData(), MediaType.APPLICATION_JSON)
+                    .id(UUID.randomUUID().toString())
+                    .reconnectTime(5000L);
+
+            emitter.send(eventBuilder);
+        } catch (IllegalStateException e) {
+            throw new IOException("Connection already closed", e);
+        }
     }
 
-    public void serverHeartbeat() {
-        long timeMillis = System.currentTimeMillis();
+    /**
+     * 服务器心跳
+     */
+    public void sendServerHeartbeat() {
+        long currentTime = System.currentTimeMillis();
+        int successCount = 0;
+        int failureCount = 0;
 
-        // 广播心跳并更新计数
-        connections.forEach((clientId, emitter) -> {
-            Map<String, Object> heartbeatData = new HashMap<>();
-            heartbeatData.put("timestamp", timeMillis);
-            heartbeatData.put("missedHeartbeats", heartbeatCountMap.getOrDefault(clientId, new AtomicLong(0)).get());
-            heartbeatData.put("lastActivity", lastActivityMap.getOrDefault(clientId, 0L));
-            heartbeatData.put("clientId", clientId);
-            heartbeatData.put("serverTime", System.currentTimeMillis());
+        for (Map.Entry<String, SseEmitter> entry : sseEmitterMap.entrySet()) {
+            String connectId = entry.getKey();
+            SseEmitter emitter = entry.getValue();
 
-            SseEvent<Map<String, Object>> heartbeatEvent = new SseEvent<>(EventEnums.HEARTBEAT.getValue(), heartbeatData);
+            Map<String, Object> heartbeatData = createHeartbeatData(connectId, currentTime);
+            SseEvent<Map<String, Object>> heartbeatEvent = new SseEvent<>(
+                    EventEnums.HEARTBEAT.getValue(),
+                    heartbeatData
+            );
 
             try {
                 sendEventToEmitter(emitter, heartbeatEvent);
-                // 增加心跳计数（客户端需要在下次心跳时重置）
-                AtomicLong heartbeatCount = heartbeatCountMap.get(clientId);
-                if (heartbeatCount != null) {
-                    long currentCount = heartbeatCount.incrementAndGet();
-                    if (currentCount > MAX_MISSED_HEARTBEATS) {
-                        log.warn("Client {} has missed too many heartbeats: {}", clientId, currentCount);
-                    }
-                }
+                incrementHeartbeatCount(connectId);
+                successCount++;
             } catch (Exception e) {
-                log.error("Failed to send heartbeat to client: {}", clientId, e);
-                close(clientId);
+                log.error("Failed to send heartbeat to client: {}", connectId, e);
+                failureCount++;
+                closeConnection(connectId);
             }
-        });
-
-        log.info("Server heartbeat sent to {} clients", connections.size());
-    }
-
-    public void clientHeartbeat(String clientId) {
-        log.info("Received heartbeat from client: {}", clientId);
-
-        if (!connections.containsKey(clientId)) {
-            log.warn("Heartbeat received from non-existent client: {}", clientId);
-            return;
         }
 
-        // 更新最后活动时间
-        lastActivityMap.put(clientId, System.currentTimeMillis());
-
-        // 重置心跳计数
-        AtomicLong heartbeatCount = heartbeatCountMap.get(clientId);
-        if (heartbeatCount != null) {
-            heartbeatCount.set(0);
+        if (successCount > 0 || failureCount > 0) {
+            log.debug("Heartbeat sent: {} success, {} failures", successCount, failureCount);
         }
-
-        // 发送心跳确认响应
-        SseEvent<String> ackEvent = new SseEvent<>(EventEnums.HEARTBEAT_ACK.getValue(), "heartbeat_acknowledged");
-        message(clientId, ackEvent);
-
-        log.info("Heartbeat processed for client: {}", clientId);
-    }
-
-    public void sendInitialData(String clientId) {
-        SseEvent<String> initialEvent = new SseEvent<>(EventEnums.INITIAL_DATA.getValue(), "Welcome! Connection established at " + System.currentTimeMillis());
-        message(clientId, initialEvent);
     }
 
     /**
-     * 修改sendEventToEmitter方法，添加异常处理
+     * 创建心跳数据
      */
-    public void sendEventToEmitter(SseEmitter emitter, SseEvent<?> event) throws IOException {
-        try {
-            SseEmitter.SseEventBuilder eventBuilder = SseEmitter.event().name(event.getEventType()).data(event.getData(), MediaType.APPLICATION_JSON).id(String.valueOf(System.currentTimeMillis())).reconnectTime(5000L);
+    private Map<String, Object> createHeartbeatData(String connectId, long timestamp) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("timestamp", timestamp);
+        data.put("missedHeartbeats", getMissedHeartbeatCount(connectId));
+        data.put("lastActivity", lastActivityMap.getOrDefault(connectId, 0L));
+        data.put("connectId", connectId);
+        data.put("serverTime", System.currentTimeMillis());
+        return data;
+    }
 
-            emitter.send(eventBuilder);
-        } catch (Exception e) {
-            // 连接已关闭的异常
-            throw new IOException("Connection already closed", e);
+    /**
+     * 增加心跳计数
+     */
+    private void incrementHeartbeatCount(String connectId) {
+        AtomicLong heartbeatCount = heartbeatCountMap.get(connectId);
+        if (heartbeatCount != null) {
+            long currentCount = heartbeatCount.incrementAndGet();
+            if (currentCount > MAX_MISSED_HEARTBEATS) {
+                log.warn("Client {} has missed too many heartbeats: {}", connectId, currentCount);
+            }
+        }
+    }
+
+    /**
+     * 获取丢失的心跳计数
+     */
+    private long getMissedHeartbeatCount(String connectId) {
+        AtomicLong heartbeatCount = heartbeatCountMap.get(connectId);
+        return heartbeatCount != null ? heartbeatCount.get() : 0;
+    }
+
+    /**
+     * 处理客户端心跳
+     */
+    public void handleClientHeartbeat(SseTypeEnums sseType, String id) {
+        String connectId = generateConnectId(sseType, id);
+        log.debug("Received heartbeat from client: {}", connectId);
+
+        if (!sseEmitterMap.containsKey(connectId)) {
+            log.warn("Heartbeat received from non-existent client: {}", connectId);
+            return;
+        }
+
+        updateClientActivity(connectId);
+        resetHeartbeatCount(connectId);
+
+        SseEvent<String> ackEvent = new SseEvent<>(
+                EventEnums.HEARTBEAT_ACK.getValue(),
+                "heartbeat_acknowledged"
+        );
+        sendMessage(connectId, ackEvent);
+
+        log.debug("Heartbeat processed for client: {}", connectId);
+    }
+
+    /**
+     * 处理客户端心跳
+     */
+    public void handleClientHeartbeat(String sseType, String id) {
+        String connectId = generateConnectId(SseTypeEnums.fromValue(sseType), id);
+        log.debug("Received heartbeat from client: {}", connectId);
+
+        if (!sseEmitterMap.containsKey(connectId)) {
+            log.warn("Heartbeat received from non-existent client: {}", connectId);
+            return;
+        }
+
+        updateClientActivity(connectId);
+        resetHeartbeatCount(connectId);
+
+        SseEvent<String> ackEvent = new SseEvent<>(
+                EventEnums.HEARTBEAT_ACK.getValue(),
+                "heartbeat_acknowledged"
+        );
+        sendMessage(connectId, ackEvent);
+
+        log.debug("Heartbeat processed for client: {}", connectId);
+    }
+
+    /**
+     * 重置心跳计数
+     */
+    private void resetHeartbeatCount(String connectId) {
+        AtomicLong heartbeatCount = heartbeatCountMap.get(connectId);
+        if (heartbeatCount != null) {
+            heartbeatCount.set(0);
         }
     }
 
     /**
      * 启动心跳任务
      */
-    public void startHeartbeatTask() {
+    private void startHeartbeatTask() {
         heartbeatScheduler.scheduleAtFixedRate(() -> {
             try {
-                serverHeartbeat();
-                log.info("Server heartbeat sent to all clients");
+                sendServerHeartbeat();
             } catch (Exception e) {
                 log.error("Error in heartbeat task", e);
             }
@@ -330,132 +552,110 @@ public class SseUtil {
     }
 
     /**
-     * 清理不活跃的连接
+     * 清理不活跃连接
      */
-    @Scheduled(fixedRate = 60 * 1000) // 每1分钟检查一次
+    @Scheduled(fixedRate = 60 * 1000)
     public void cleanupInactiveConnections() {
         long currentTime = System.currentTimeMillis();
         int cleanedCount = 0;
-        int totalConnections = connections.size();
 
-        log.info("Checking for inactive connections, current active: {}", totalConnections);
+        for (String connectId : new ArrayList<>(sseEmitterMap.keySet())) {
+            Long lastActivityTime = lastActivityMap.get(connectId);
+            if (lastActivityTime == null) continue;
 
-        // 检查不活跃的连接
-        for (Map.Entry<String, Long> entry : lastActivityMap.entrySet()) {
-            String clientId = entry.getKey();
-            long lastActivityTime = entry.getValue();
+            long inactiveTime = currentTime - lastActivityTime;
+            long missedHeartbeats = getMissedHeartbeatCount(connectId);
 
-            // 检查是否超时
-            if (currentTime - lastActivityTime > CLIENT_INACTIVE_TIMEOUT) {
-                log.warn("Client {} inactive for {} ms, closing connection", clientId, currentTime - lastActivityTime);
-                close(clientId);
+            if (inactiveTime > CLIENT_INACTIVE_TIMEOUT) {
+                log.warn("Client {} inactive for {}ms, closing connection", connectId, inactiveTime);
+                closeConnection(connectId);
                 cleanedCount++;
-                continue;
-            }
-
-            // 检查心跳丢失情况
-            AtomicLong missedHeartbeats = heartbeatCountMap.get(clientId);
-            if (missedHeartbeats != null && missedHeartbeats.get() >= MAX_MISSED_HEARTBEATS) {
-                log.warn("Client {} missed {} heartbeats, closing connection", clientId, missedHeartbeats.get());
-                close(clientId);
+            } else if (missedHeartbeats >= MAX_MISSED_HEARTBEATS) {
+                log.warn("Client {} missed {} heartbeats, closing connection", connectId, missedHeartbeats);
+                closeConnection(connectId);
                 cleanedCount++;
             }
         }
 
         if (cleanedCount > 0) {
-            log.info("Cleaned up {} inactive connections. Remaining active: {}", cleanedCount, connections.size());
-        }
-
-        // 记录连接统计信息
-        logConnectionStats();
-    }
-
-    /**
-     * 记录连接统计信息
-     */
-    public void logConnectionStats() {
-        if (!connections.isEmpty()) {
-            StringBuilder stats = new StringBuilder("Connection statistics: ");
-            connections.keySet().forEach(clientId -> {
-                Long lastActivity = lastActivityMap.get(clientId);
-                AtomicLong missedHeartbeats = heartbeatCountMap.get(clientId);
-                long inactiveTime = lastActivity != null ? (System.currentTimeMillis() - lastActivity) / 1000 : -1;
-
-                stats.append(String.format("[%s: inactive %ds, missed %d heartbeats], ", clientId, inactiveTime, missedHeartbeats != null ? missedHeartbeats.get() : -1));
-            });
-            log.info(stats.toString());
+            log.info("Cleaned up {} inactive connections", cleanedCount);
         }
     }
 
     /**
-     * 应用关闭时清理资源
+     * 检查客户端中止异常
      */
-    @PreDestroy
-    public void cleanup() {
-        log.info("Cleaning up SSE service resources");
-        heartbeatScheduler.shutdown();
-        // 关闭所有连接
-        connections.keySet().forEach(this::close);
-    }
-
-    /**
-     * 线程安全的客户端移除
-     */
-    public void removeClient(String clientId) {
-        synchronized (getClientLock(clientId)) {
-            SseEmitter emitter = connections.get(clientId);
-            if (emitter != null) {
-                connections.remove(clientId);
-            }
-            lastActivityMap.remove(clientId);
-            heartbeatCountMap.remove(clientId);
-            log.info("Client {} completely removed from SSE service", clientId);
-        }
-    }
-
-    /**
-     * 检查异常是否表示客户端中止
-     */
-    public boolean isClientAbortException(Throwable ex) {
+    private boolean isClientAbortException(Throwable ex) {
         if (ex == null) return false;
 
-        // 检查IOException及其原因
+        // 检查常见的客户端中止异常
         if (ex instanceof IOException) {
             String message = ex.getMessage();
-            if (message != null && (message.contains("中止") || message.contains("aborted") || message.contains("broken pipe") || message.contains("Connection reset"))) {
+            if (message != null && (message.contains("Broken pipe") ||
+                    message.contains("Connection reset") ||
+                    message.contains("aborted"))) {
                 return true;
             }
         }
 
-        // 检查Spring的AsyncRequestNotUsableException
-        if (ex instanceof org.springframework.web.context.request.async.AsyncRequestNotUsableException) {
+        // 检查特定的异常类
+        String className = ex.getClass().getName();
+        if (className.contains("ClientAbortException") ||
+                className.contains("AsyncRequestNotUsableException")) {
             return true;
         }
 
-        // 检查Tomcat的ClientAbortException
-        if (ex.getClass().getName().contains("ClientAbortException")) {
-            return true;
-        }
-
-        // 递归检查cause
+        // 递归检查原因
         return isClientAbortException(ex.getCause());
     }
 
+    /**
+     * 应用关闭时清理
+     */
+    @PreDestroy
+    public void shutdown() {
+        log.info("Shutting down SSE service");
+
+        // 关闭心跳调度器
+        heartbeatScheduler.shutdown();
+        try {
+            if (!heartbeatScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                heartbeatScheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            heartbeatScheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        // 关闭所有连接
+        new ArrayList<>(sseEmitterMap.keySet()).forEach(this::closeConnection);
+
+        log.info("SSE service shutdown completed");
+    }
+
+    // ========== 监控和统计方法 ==========
+
     public int getActiveConnectionCount() {
-        return connections.size();
+        return sseEmitterMap.size();
     }
 
     public Set<String> getConnectedClients() {
-        return Collections.unmodifiableSet(connections.keySet());
+        return Collections.unmodifiableSet(sseEmitterMap.keySet());
     }
 
     public Map<String, Long> getConnectionDurations() {
         Map<String, Long> durations = new HashMap<>();
         long now = System.currentTimeMillis();
-        lastActivityMap.forEach((clientId, lastActivity) -> {
-            durations.put(clientId, now - lastActivity);
+        lastActivityMap.forEach((connectId, lastActivity) -> {
+            durations.put(connectId, now - lastActivity);
         });
         return durations;
     }
 
+    public Map<String, Object> getConnectionStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("activeConnections", getActiveConnectionCount());
+        stats.put("connectionDurations", getConnectionDurations());
+        return stats;
+    }
 }
