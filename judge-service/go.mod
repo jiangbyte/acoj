@@ -10,6 +10,8 @@ require (
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 )
 
+require github.com/elastic/go-seccomp-bpf v1.6.0 // indirect
+
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect

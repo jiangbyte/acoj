@@ -2,8 +2,9 @@ package judge
 
 import (
 	"context"
-	"github.com/zeromicro/go-zero/core/logx"
 	"judge-service/internal/dto"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type Sandbox struct {
@@ -32,5 +33,12 @@ func (s *Sandbox) Compile() (*dto.JudgeResultDto, error) {
 func (s *Sandbox) Run() (*dto.JudgeResultDto, error) {
 	s.logger.Info("开始执行")
 	r := NewExecutor(s.ctx, *s)
+	return r.Execute()
+}
+
+// 评估
+func (s *Sandbox) Evaluater(resultData *dto.JudgeResultDto) (*dto.JudgeResultDto, error) {
+	s.logger.Info("开始评估")
+	r := NewEvaluater(s.ctx, *s, resultData)
 	return r.Execute()
 }

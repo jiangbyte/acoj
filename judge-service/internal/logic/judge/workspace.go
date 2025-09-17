@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"judge-service/internal/config"
 	"judge-service/internal/dto"
+	"judge-service/internal/grutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -105,8 +106,8 @@ func (w *Workspace) SaveSourceCode() *dto.JudgeResultDto {
 	// 设置工作空间语言配置
 	w.langConfig = *langConfig
 
-	fileName := w.langConfig.Name + w.langConfig.Extension // 设置源代码文件名
-	filePath := filepath.Join(w.SourcePath, fileName)      // 源文件路径
+	fileName := w.langConfig.SourceFile + w.langConfig.Extension // 设置源代码文件名
+	filePath := filepath.Join(w.SourcePath, fileName)            // 源文件路径
 	// 写入文件
 	if err := os.WriteFile(filePath, []byte(w.judgeSubmit.Code), 0644); err != nil {
 		w.logger.Errorf("写入源代码文件失败: %v", err)
@@ -121,108 +122,28 @@ func (w *Workspace) SaveSourceCode() *dto.JudgeResultDto {
 	return nil
 }
 
-// func (w *Workspace) CreateTestCaseDir(testCaseID string) (string, error) {
-// 	caseDir := filepath.Join(w.RunsPath, testCaseID)
-// 	if err := os.MkdirAll(caseDir, 0755); err != nil {
-// 		return "", fmt.Errorf("创建测试用例目录失败: %v", err)
-// 	}
-// 	return caseDir, nil
-// }
-
 // 执行代码
 func (w *Workspace) Execute() (*dto.JudgeResultDto, error) {
-	// 构建沙箱，传入工作空间上下文，工作空间实例
 	sandbox := NewSandbox(w.ctx, *w)
+
 	// 沙箱编译
 	compileResult, err := sandbox.Compile()
 	if err != nil {
-		// compileResult 不为空，返回编译结果给上级
+		if compileResult.Message != "" {
+			compileResult.Message = grutil.FilterFilePath(compileResult.Message)
+		}
 		return compileResult, err
 	}
 
 	// 沙箱运行
-	runResult, err := sandbox.Run()
+	runResult, _ := sandbox.Run()
+
+	// 结果评估
+	evaluateResult, _ := sandbox.Evaluater(runResult)
+	if evaluateResult.Message != "" {
+		evaluateResult.Message = grutil.FilterFilePath(evaluateResult.Message)
+	}
 
 	// 运行成功，返回运行结果给上级
-	return runResult, err
-}
-
-// func (w *Workspace) Evaluate(submit *dto.JudgeResultDto) *dto.JudgeResultDto {
-// 	maxTime := 0
-// 	maxMemory := 0
-// 	acCount := 0
-
-// 	// 使用索引遍历，这样可以修改原始数据
-// 	for _, testCase := range submit.TestCase {
-// 		// 计算最大值
-// 		if testCase.MaxTime > maxTime {
-// 			maxTime = testCase.MaxTime
-// 		}
-// 		if testCase.MaxMemory > maxMemory {
-// 			maxMemory = testCase.MaxMemory
-// 		}
-
-// 		if testCase.Status == dto.StatusAccepted {
-// 			acCount += 1
-// 		}
-// 	}
-
-// 	// 设置最终的最大值
-// 	submit.MaxTime = maxTime
-// 	submit.MaxMemory = maxMemory
-
-// 	if acCount == len(submit.TestCase) {
-// 		submit.Status = dto.StatusAccepted
-// 	} else {
-// 		submit.Status = dto.StatusPartialAccepted
-// 	}
-
-// 	return submit
-// }
-
-func (w *Workspace) Evaluate(submit *dto.JudgeResultDto) *dto.JudgeResultDto {
-	maxTime := 0
-	maxMemory := 0
-	acCount := 0
-	waCount := 0
-
-	for _, testCase := range submit.TestCase {
-		// 计算最大值
-		if testCase.MaxTime > maxTime {
-			maxTime = testCase.MaxTime
-		}
-		if testCase.MaxMemory > maxMemory {
-			maxMemory = testCase.MaxMemory
-		}
-
-		// 统计通过和错误的数量
-		if testCase.Status == dto.StatusAccepted {
-			acCount += 1
-		} else if testCase.Status != dto.StatusSkipped &&
-			testCase.Status != dto.StatusPending {
-			// 如果不是跳过或待判状态，则认为是错误
-			waCount += 1
-		}
-	}
-
-	// 设置最终的最大值
-	submit.MaxTime = maxTime
-	submit.MaxMemory = maxMemory
-
-	// 根据通过情况设置最终状态
-	if acCount == len(submit.TestCase) {
-		// 全部通过
-		submit.Status = dto.StatusAccepted
-	} else if waCount == len(submit.TestCase) {
-		// 全部错误（没有任何一个通过，且所有测试用例都有错误结果）
-		submit.Status = dto.StatusWrongAnswer
-	} else if acCount > 0 {
-		// 部分通过
-		submit.Status = dto.StatusPartialAccepted
-	} else {
-		// 其他情况（可能都是跳过或待判状态）
-		submit.Status = dto.StatusPending
-	}
-
-	return submit
+	return evaluateResult, err
 }
