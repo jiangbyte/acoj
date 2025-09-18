@@ -1,4 +1,4 @@
-package io.charlie.ranking;
+package io.charlie.ast;
 
 import io.charlie.app.core.modular.similarity.language.java.Java20Lexer;
 import io.charlie.app.core.modular.similarity.language.java.Java20Parser;

@@ -1,4 +1,4 @@
-package io.charlie.ranking;
+package io.charlie.ast;
 
 import io.charlie.app.core.CoreApplication;
 import io.charlie.app.core.modular.similarity.utils.CodeSimilarityCalculator;

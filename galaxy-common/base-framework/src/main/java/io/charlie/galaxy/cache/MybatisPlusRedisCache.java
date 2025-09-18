@@ -1,6 +1,7 @@
 package io.charlie.galaxy.cache;
 
 import cn.hutool.extra.spring.SpringUtil;
+import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.cache.Cache;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -26,24 +27,25 @@ public class MybatisPlusRedisCache implements Cache {
 
     @Override
     public String getId() {
-        log.debug("获取缓存ID {}", this.id);
+        log.info("获取缓存ID {}", this.id);
         return this.id;
     }
 
     @Override
     public void putObject(Object key, Object value) {
-        log.debug("缓存 {}", key);
+        log.info("缓存 {} {}", key, value);
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
         if (value != null) {
+            System.out.println(value);
             redisTemplate.opsForValue().set(key.toString(), value, 1, TimeUnit.HOURS);
         }
     }
 
     @Override
     public Object getObject(Object key) {
-        log.debug("获取缓存 {}", key);
+        log.info("获取缓存 {}", key);
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
@@ -52,14 +54,15 @@ public class MybatisPlusRedisCache implements Cache {
                 return redisTemplate.opsForValue().get(key.toString());
             }
         } catch (Exception e) {
-            log.error("缓存出错 {}", e.getMessage());
+            log.error("缓存获取出错 {}", e.getMessage());
+            redisTemplate.delete(key.toString());
         }
         return null;
     }
 
     @Override
     public Object removeObject(Object key) {
-        log.debug("删除缓存 {}", key);
+        log.info("删除缓存 {}", key);
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
@@ -71,7 +74,7 @@ public class MybatisPlusRedisCache implements Cache {
 
     @Override
     public void clear() {
-        log.debug("清空缓存");
+        log.info("清空缓存");
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }

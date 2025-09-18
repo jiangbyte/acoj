@@ -43,6 +43,16 @@ public class Result<T> implements Serializable {
             pageData.setPages(page.getPages());
             return pageData;
         }
+
+        public static <T> PageData<T> from(List<T> records, Long total, Long size, Long current) {
+            PageData<T> pageData = new PageData<>();
+            pageData.setRecords(records);
+            pageData.setTotal(total);
+            pageData.setSize(size);
+            pageData.setCurrent(current);
+            pageData.setPages((total + size - 1) / size);
+            return pageData;
+        }
     }
 
     private static <T> Result<T> result(String code, T data, String message, Boolean success) {

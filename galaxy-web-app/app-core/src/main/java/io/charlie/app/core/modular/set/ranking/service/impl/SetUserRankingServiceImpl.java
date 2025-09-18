@@ -11,7 +11,7 @@ import io.charlie.app.core.modular.set.ranking.param.SetUserRankingPageParam;
 import io.charlie.app.core.modular.set.ranking.service.SetUserRankingService;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.pojo.CommonPageRequest;
-import io.charlie.galaxy.utils.GaStringUtil;
+import io.charlie.galaxy.utils.str.GaStringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

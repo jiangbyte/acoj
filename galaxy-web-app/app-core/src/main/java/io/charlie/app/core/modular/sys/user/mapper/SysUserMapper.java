@@ -1,7 +1,10 @@
 package io.charlie.app.core.modular.sys.user.mapper;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import io.charlie.app.core.modular.sys.user.entity.SysUser;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import io.charlie.galaxy.cache.MybatisPlusRedisCache;
+import org.apache.ibatis.annotations.CacheNamespace;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

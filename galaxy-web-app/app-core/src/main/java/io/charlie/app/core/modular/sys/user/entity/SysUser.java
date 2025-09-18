@@ -2,11 +2,14 @@ package io.charlie.app.core.modular.sys.user.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.charlie.app.core.modular.sys.group.entity.SysGroup;
 import io.charlie.galaxy.pojo.CommonEntity;
 
 import java.io.Serial;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -25,6 +28,7 @@ import org.dromara.core.trans.constant.TransType;
 @TableName("sys_user")
 @Schema(name = "SysUser", description = "用户表")
 public class SysUser extends CommonEntity {
+
     @Serial
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

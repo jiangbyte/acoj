@@ -1,4 +1,4 @@
-package io.charlie.galaxy.utils;
+package io.charlie.galaxy.utils.str;
 
 /**
  * @author Charlie Zhang

@@ -1,5 +1,6 @@
 package io.charlie.app.core.modular.sys.user.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.app.core.modular.sys.user.param.*;
 import io.charlie.galaxy.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,14 +34,14 @@ public class SysUserController {
     private final SysUserService sysUserService;
 
     @Operation(summary = "获取用户分页")
-    //@SaCheckPermission("/sys/user/page")
+    @SaCheckPermission("/sys/user/page")
     @GetMapping("/sys/user/page")
     public Result<?> page(@ParameterObject SysUserPageParam sysUserPageParam) {
         return Result.success(sysUserService.page(sysUserPageParam));
     }
 
     @Operation(summary = "添加用户")
-    //@SaCheckPermission("/sys/user/add")
+    @SaCheckPermission("/sys/user/add")
     @PostMapping("/sys/user/add")
     public Result<?> add(@RequestBody @Valid SysUserAddParam sysUserAddParam) {
         sysUserService.add(sysUserAddParam);
@@ -48,7 +49,7 @@ public class SysUserController {
     }
 
     @Operation(summary = "编辑用户")
-    //@SaCheckPermission("/sys/user/edit")
+    @SaCheckPermission("/sys/user/edit")
     @PostMapping("/sys/user/edit")
     public Result<?> edit(@RequestBody @Valid SysUserEditParam sysUserEditParam) {
         sysUserService.edit(sysUserEditParam);
@@ -56,7 +57,7 @@ public class SysUserController {
     }
 
     @Operation(summary = "删除用户")
-    //@SaCheckPermission("/sys/user/delete")
+    @SaCheckPermission("/sys/user/delete")
     @PostMapping("/sys/user/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysUserIdParam> sysUserIdParam) {
         sysUserService.delete(sysUserIdParam);
@@ -64,7 +65,7 @@ public class SysUserController {
     }
 
     @Operation(summary = "获取用户详情")
-    //@SaCheckPermission("/sys/user/detail")
+    @SaCheckPermission("/sys/user/detail")
     @GetMapping("/sys/user/detail")
     public Result<?> detail(@ParameterObject @Valid SysUserIdParam sysUserIdParam) {
         return Result.success(sysUserService.detail(sysUserIdParam));
