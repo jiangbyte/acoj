@@ -77,11 +77,10 @@ async function handleLogin() {
     if (useToken.isLogined) {
       router.push('/')
     }
+    getProfileNoe().then(({ data }) => {
+      useUser.setUserId(data.id)
+    })
   }
-
-  getProfileNoe().then(({ data }) => {
-    useUser.setUserId(data.id)
-  })
 }
 
 const version = import.meta.env.VITE_VERSION

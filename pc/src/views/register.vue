@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { NButton, NCard, NForm, NFormItem, NInput, NText } from 'naive-ui'
 import type { FormInst } from 'naive-ui'
-import { useTokenStore } from '@/stores'
+import { useTokenStore, useUserStore } from '@/stores'
 import { useAuthFetch, useSysConfigFetch } from '@/composables'
 
 // 表单数据
@@ -38,7 +38,7 @@ const formRules = {
 }
 
 // 请求处理
-const { doRegister, captcha } = useAuthFetch()
+const { doRegister, captcha, getProfileNoe } = useAuthFetch()
 const { getValueByCode } = useSysConfigFetch()
 const captchaRef = ref({
   captcha: '',
@@ -75,6 +75,7 @@ loadData()
 
 const router = useRouter()
 const useToken = useTokenStore()
+const useUser = useUserStore()
 async function handleRegister() {
   const { data: token } = await doRegister(formData.value) || { data: null }
   if (token) {
@@ -82,6 +83,9 @@ async function handleRegister() {
     if (useToken.isLogined) {
       router.push('/')
     }
+    getProfileNoe().then(({ data }) => {
+      useUser.setUserId(data.id)
+    })
   }
 }
 

@@ -14,6 +14,9 @@ import reactor.core.publisher.Mono;
  * @date 2025/4/13
  * @description 全局过滤器，为请求添加 Same-Token
  */
+/**
+ * 全局过滤器，为请求添加 Same-Token
+ */
 @Component
 public class ForwardAuthFilter implements GlobalFilter {
     @Override
@@ -28,3 +31,4 @@ public class ForwardAuthFilter implements GlobalFilter {
         return chain.filter(newExchange);
     }
 }
+

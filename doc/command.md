@@ -1,0 +1,1 @@
+docker start redis-dev rabbitmq-dev nacos-dev mysql8-dev
