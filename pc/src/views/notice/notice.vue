@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useSysNoticeFetch } from '@/composables'
+import { useSysNoticeFetch } from '@/composables/v1'
 import { AesCrypto } from '@/utils'
 import MdViewer from '@/components/common/editor/md/Viewer.vue'
 
@@ -7,16 +7,9 @@ const route = useRoute()
 const detailData = ref()
 const originalId = AesCrypto.decrypt(route.query.notice as string)
 async function loadData() {
-  try {
-    const { sysNoticeDetail } = useSysNoticeFetch()
-    const { data } = await sysNoticeDetail({ id: originalId })
-
-    if (data) {
-      detailData.value = data
-    }
-  }
-  catch {
-  }
+  useSysNoticeFetch().sysNoticeDetail({ id: originalId }).then(({ data }) => {
+    detailData.value = data
+  })
 }
 loadData()
 </script>

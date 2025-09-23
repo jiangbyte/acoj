@@ -130,8 +130,8 @@ func (e *Executor) executeTestCase(testCase *dto.SubmitTestCase, index int, runC
 			testCase.Message = stderr
 			testCase.Status = dto.StatusRuntimeError
 		}
-		// 超时情况下退出码通常不可用，设置为特定值
-		testCase.ExitCode = -1 // 或者使用其他特殊值表示超时
+		// // 超时情况下退出码通常不可用，设置为特定值
+		// testCase.ExitCode = -1 // 或者使用其他特殊值表示超时
 
 		logx.Errorf("超时杀死整个进程组，运行时间: %v ms 时间限制 %v ms", elapsed, e.Sandbox.Workspace.judgeSubmit.MaxTime)
 	case err := <-done:
@@ -141,23 +141,23 @@ func (e *Executor) executeTestCase(testCase *dto.SubmitTestCase, index int, runC
 		testCase.MaxMemory = int(grutil.FormatBytesKB(memoryUsed))
 		testCase.MaxTime = int(elapsed.Microseconds())
 
-		// 获取退出码
-		exitCode := 0
-		if err != nil {
-			if exitError, ok := err.(*exec.ExitError); ok {
-				// 获取进程退出状态
-				if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
-					exitCode = status.ExitStatus()
-				} else {
-					// 如果无法获取详细的退出状态，使用通用错误码
-					exitCode = -1
-				}
-			} else {
-				// 非退出错误，设置特殊错误码
-				exitCode = -2
-			}
-		}
-		testCase.ExitCode = exitCode
+		// // 获取退出码
+		// exitCode := 0
+		// if err != nil {
+		// 	if exitError, ok := err.(*exec.ExitError); ok {
+		// 		// 获取进程退出状态
+		// 		if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
+		// 			exitCode = status.ExitStatus()
+		// 		} else {
+		// 			// 如果无法获取详细的退出状态，使用通用错误码
+		// 			exitCode = -1
+		// 		}
+		// 	} else {
+		// 		// 非退出错误，设置特殊错误码
+		// 		exitCode = -2
+		// 	}
+		// }
+		// testCase.ExitCode = exitCode
 
 		// 检查是否发生内存溢出
 		if grutil.CheckOOMEvent(cgroupPath) {
@@ -171,13 +171,13 @@ func (e *Executor) executeTestCase(testCase *dto.SubmitTestCase, index int, runC
 			testCase.Status = dto.StatusRuntimeError
 		}
 
-		// 根据退出码设置状态（如果需要）
-		if exitCode != 0 {
-			testCase.Status = dto.StatusRuntimeError
-			testCase.Message = fmt.Sprintf("程序异常退出，退出码: %d", exitCode)
-		}
+		// // 根据退出码设置状态（如果需要）
+		// if exitCode != 0 {
+		// 	testCase.Status = dto.StatusRuntimeError
+		// 	testCase.Message = fmt.Sprintf("程序异常退出，退出码: %d", exitCode)
+		// }
 
-		logx.Infof("测试用例 %d 完成, 退出码: %d, 内存使用: %d bytes (峰值), 程序退出状态: %v", index, exitCode, memoryUsed, err)
+		logx.Infof("测试用例 %d 完成, 内存使用: %d bytes (峰值), 程序退出状态: %v", index, memoryUsed, err)
 		logx.Infof("测试用例 %d 内存使用: %v KB", index, grutil.FormatBytesKB(memoryUsed))
 	}
 

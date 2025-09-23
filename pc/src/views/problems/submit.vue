@@ -6,7 +6,7 @@ import {
   HardwareChipOutline,
   TimeOutline,
 } from '@vicons/ionicons5'
-import { useProProblemFetch, useProSubmitFetch } from '@/composables'
+import { useDataProblemFetch, useDataSubmitFetch } from '@/composables/v1'
 import { AesCrypto } from '@/utils'
 
 const route = useRoute()
@@ -15,8 +15,8 @@ const detailData = ref()
 const originalId = AesCrypto.decrypt(route.query.problem as string)
 async function loadData() {
   try {
-    const { proProblemDetail } = useProProblemFetch()
-    const { data } = await proProblemDetail({ id: originalId })
+    const { dataProblemClientDetail } = useDataProblemFetch()
+    const { data } = await dataProblemClientDetail({ id: originalId })
 
     if (data) {
       detailData.value = data
@@ -57,7 +57,7 @@ function handleLanguageChange(lang: string) {
     window.$message.warning('当前语言没有模板代码')
   }
 }
-const { proSubmitExecute, proSubmitDetail } = useProSubmitFetch()
+const { dataSubmitDetail, dataSubmitExecute } = useDataSubmitFetch()
 const executeTaskId = ref(null)
 async function execute(type: boolean) {
   if (!submitParam.value.language) {
@@ -70,7 +70,7 @@ async function execute(type: boolean) {
   }
   if (type) {
     submitParam.value.submitType = true as any
-    const { data } = await proSubmitExecute(submitParam.value)
+    const { data } = await dataSubmitExecute(submitParam.value)
     if (data) {
       executeTaskId.value = data
       startPolling() // 开始轮询
@@ -80,7 +80,7 @@ async function execute(type: boolean) {
   }
   else {
     submitParam.value.submitType = false as any
-    const { data } = await proSubmitExecute(submitParam.value)
+    const { data } = await dataSubmitExecute(submitParam.value)
     if (data) {
       executeTaskId.value = data
       startPolling() // 开始轮询
@@ -108,7 +108,7 @@ function clearPolling() {
 // 获取结果详情
 async function refreshResult() {
   try {
-    const { data } = await proSubmitDetail({ id: executeTaskId.value })
+    const { data } = await dataSubmitDetail({ id: executeTaskId.value })
     if (data) {
       resultTaskData.value = data
       // 如果任务完成，停止轮询

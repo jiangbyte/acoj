@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
-import { useSysBannerFetch } from '@/composables'
+import { useSysBannerFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close'])
 const show = ref(false)
@@ -51,6 +51,9 @@ defineExpose({
         </NDescriptionsItem>
         <NDescriptionsItem label="创建者">
           {{ formData.createUserName }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="是否可见">
+          {{ formData.isVisibleName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="更新时间">
           <NTime :time="Number(formData.updateTime)" />

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useSysUserFetch } from '@/composables'
+import { useSysUserFetch } from '@/composables/v1'
 
 const { getProfile } = useSysUserFetch()
 

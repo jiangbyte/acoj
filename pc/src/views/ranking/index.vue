@@ -1,10 +1,7 @@
 <script setup lang="ts">
-// 当前活跃标签
-import { useProblemUserRankingFetch } from '@/composables'
+import { useUserRankingFetch } from '@/composables/v1'
 import { AesCrypto } from '@/utils'
 import { NAvatar, NSpace, NText } from 'naive-ui'
-
-const { problemUserTotalRankingPage: problemTotalRankingPage, problemActiveUsersTop } = useProblemUserRankingFetch()
 
 const totalRankingPageData = ref()
 const activeUsersTop = ref()
@@ -18,12 +15,13 @@ const totalRankingPageParam = ref({
 })
 
 async function loadData() {
-  const { data: totalRankingPage } = await problemTotalRankingPage(totalRankingPageParam.value)
-  if (totalRankingPage) {
-    totalRankingPageData.value = totalRankingPage
-  }
+  useUserRankingFetch().useUserRankingPage(totalRankingPageParam.value).then(({ data }) => {
+    if (data) {
+      totalRankingPageData.value = data
+    }
+  })
 
-  problemActiveUsersTop().then(({ data }) => {
+  useUserRankingFetch().useUserActiveTop().then(({ data }) => {
     if (data) {
       activeUsersTop.value = data
     }
@@ -35,7 +33,7 @@ loadData()
 const userRankingColumns = [
   {
     title: '排名',
-    key: 'ranking',
+    key: 'rank',
     width: 80,
   },
   {
@@ -57,56 +55,36 @@ const userRankingColumns = [
   },
   {
     title: '解决题目数',
-    key: 'solvedCount',
+    key: 'score',
     width: 100,
   },
-  {
-    title: '提交题目数',
-    key: 'attemptedCount',
-    width: 100,
-  },
-  {
-    title: '通过率',
-    key: 'acceptanceRate',
-    width: 100,
-  },
+  // {
+  //   title: '提交题目数',
+  //   key: 'submitCount',
+  //   width: 100,
+  // },
+  // {
+  //   title: '通过率',
+  //   key: 'acceptanceRate',
+  //   width: 100,
+  // },
   {
     title: '提交数',
-    key: 'submissionCount',
+    key: 'submitCount',
     width: 100,
   },
-  {
-    title: '运行数',
-    key: 'executionCount',
-    width: 100,
-  },
-  {
-    title: '总提交数',
-    key: 'totalSubmissionCount',
-    width: 100,
-  },
+  // {
+  //   title: '运行数',
+  //   key: 'executionCount',
+  //   width: 100,
+  // },
+  // {
+  //   title: '总提交数',
+  //   key: 'totalSubmissionCount',
+  //   width: 100,
+  // },
 ]
 
-const activeTab = ref('total')
-const rankingType = ref('total')
-const rankingOptions = [
-  {
-    label: '总排行榜',
-    value: 'total',
-  },
-  {
-    label: '月排行榜',
-    value: 'monthly',
-  },
-  {
-    label: '周排行榜',
-    value: 'weekly',
-  },
-  {
-    label: '日排行榜',
-    value: 'daily',
-  },
-]
 const router = useRouter()
 function rowProps(row: any) {
   return {
@@ -114,7 +92,7 @@ function rowProps(row: any) {
     onClick: () => {
       router.push({
         name: 'user',
-        query: { userId: AesCrypto.encrypt(row.userId) },
+        query: { userId: AesCrypto.encrypt(row.id) },
       })
     },
   }
@@ -179,9 +157,9 @@ function rowProps(row: any) {
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 最新1 -->
             <div
-              v-for="item in activeUsersTop" :key="item.userId" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+              v-for="item in activeUsersTop" :key="item.id" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
                 name: 'user',
-                query: { userId: AesCrypto.encrypt(item.userId) },
+                query: { userId: AesCrypto.encrypt(item.id) },
               })"
             >
               <div class="flex items-center">
@@ -191,7 +169,7 @@ function rowProps(row: any) {
                     {{ item.nickname }}
                   </div>
                   <div class="text-xs text-gray-500 dark:text-gray-400">
-                    活跃指数: {{ item.score }}
+                    活跃指数: {{ Number(item.score).toFixed(1) }}
                   </div>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysNoticeFetch } from '@/composables'
+import { useSysNoticeFetch } from '@/composables/v1'
 import MDEditor from '@/components/common/editor/md/Editor.vue'
 
 const emit = defineEmits(['close', 'submit'])
@@ -71,7 +71,7 @@ defineExpose({
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" placement="right" :default-width="1200" resizable @after-leave="doClose">
     <NDrawerContent :title="isEdit ? '编辑' : '新增'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
         <!-- 输入框 -->
@@ -87,9 +87,9 @@ defineExpose({
           <FileUpload v-model="formData.cover" :is-image="true" />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="链接" path="url">
+        <!-- <NFormItem label="链接" path="url">
           <NInput v-model:value="formData.url" placeholder="请输入链接" />
-        </NFormItem>
+        </NFormItem> -->
         <!-- 数字输入 -->
         <NFormItem label="排序" path="sort">
           <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />
@@ -97,6 +97,17 @@ defineExpose({
         <!-- 输入框 -->
         <NFormItem label="内容" path="content">
           <MDEditor v-model="formData.content" />
+        </NFormItem>
+        <!-- Boolean 选择框 -->
+        <NFormItem label="是否可见" path="isVisible">
+          <NRadioGroup v-model:value="formData.isVisible">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
         </NFormItem>
       </NForm>
       <template #footer>

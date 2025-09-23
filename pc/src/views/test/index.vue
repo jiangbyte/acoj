@@ -1,115 +1,197 @@
 <script lang="ts" setup>
-// import { useProSubmitFetch } from '@/composables'
+import { Client } from '@stomp/stompjs'
+import SockJS from 'sockjs-client'
+import { useTokenStore, useUserStore } from '@/stores'
+import { v4 as uuidv4 } from 'uuid'
 
-// // 使用示例
-// async function exampleUsage() {
-//   const { proSubmitDetail } = useProSubmitFetch()
-//   const apiCallTask = async () => {
-//     proSubmitDetail({ id: '1961409364998406146' }).then(({ data }) => {
-//       console.log('获取到的数据:', data)
-//     })
-//   }
-//   // 创建轮询工具实例，每3秒执行一次
-//   const poller = new PollingTool(apiCallTask, 1000)
-//   // 启动轮询
-//   poller.start()
+const tokenStore = useTokenStore()
+const userStore = useUserStore()
 
-//   // 10秒后暂停
-//   setTimeout(() => {
-//     poller.pause()
-//     console.log('已暂停，状态:', poller.getStatus())
-//   }, 10000)
+const stompClient = ref<Client | null>(null)
+const isConnected = ref(false)
+const subscription = ref<any>(null)
 
-//   // 15秒后恢复
-//   setTimeout(() => {
-//     poller.resume()
-//     console.log('已恢复，状态:', poller.getStatus())
-//   }, 15000)
+const submitParam = ref({
+  problemId: '1958869993346752514',
+  setId: null,
+  language: 'cpp',
+  code: '#include <iostream>\nusing namespace std;\n\nint main() {\n    int a, b;\n    cin >> a >> b;\n    cout << a + b;\n    return 0;\n}',
+  submitType: false,
+  judgeTaskId: '',
+  userId: userStore.getUserId,
+})
+const judgeResult = ref({})
 
-//   // 20秒后更新间隔为5秒
-//   setTimeout(() => {
-//     poller.updateInterval(5000)
-//     console.log('已更新间隔，状态:', poller.getStatus())
-//   }, 20000)
+function executeCode() {
+  if (isConnected.value) {
+    console.warn('WebSocket 已连接，不能重复连接')
+    return
+  }
 
-//   // 30秒后停止
-//   setTimeout(() => {
-//     poller.stop()
-//     console.log('已停止，状态:', poller.getStatus())
-//   }, 30000)
-// }
+  // 任务ID生成
+  submitParam.value.judgeTaskId = `task-${uuidv4()}`
+  const socket = new SockJS('/oj/ws/judge/status')
 
-// const message = ref('')
-// const gateway = import.meta.env.VITE_GATEWAY
-// const client = new LLMClient(gateway, 'rUkInWFE4p7H0FxJMPmC3YQ9jdKkwphVWqiUDulOiiRu1LMzfDnf4PQI0Wbq1AA7')
-// async function sendMessage() {
+  // 添加连接错误事件监听
+  socket.onerror = (error) => {
+    console.error('SockJS 连接失败:', error)
+    // 可以在这里添加重试逻辑或其他错误处理
+  }
 
-// }
+  // 添加连接关闭事件监听
+  socket.onclose = (event) => {
+    console.warn('SockJS 连接关闭:', event)
+    isConnected.value = false
+  }
+
+  stompClient.value = new Client({
+    webSocketFactory: () => socket,
+    reconnectDelay: 5000,
+    heartbeatIncoming: 4000,
+    heartbeatOutgoing: 4000,
+    connectHeaders: {
+      Authorization: tokenStore.getToken || '',
+    },
+
+    onConnect: (frame) => {
+      console.log('STOMP 连接成功:', frame)
+      isConnected.value = true
+
+      const topic = `/topic/judge/status/${submitParam.value.judgeTaskId}`
+
+      subscription.value = stompClient.value?.subscribe(topic, (message) => {
+        // 接收到关闭连接的消息
+        if (message.body === 'CLOSE_CONNECTION') {
+          disconnectWebSocket()
+          return
+        }
+
+        // 如果不是关闭连接的消息，则解析JSON结果
+        try {
+          judgeResult.value = JSON.parse(message.body)
+        }
+        catch (error) {
+          console.error('解析 JSON 错误:', error)
+        }
+      }, {
+        Authorization: tokenStore.getToken || '',
+      })
+
+      // 发送连接消息到服务端
+      const destination = `/app/judge/status/${submitParam.value.judgeTaskId}`
+      stompClient.value?.publish({
+        destination,
+        body: JSON.stringify(submitParam.value),
+        headers: {
+          Authorization: tokenStore.getToken || '',
+        },
+      })
+    },
+
+    onStompError: (frame) => {
+      console.error('STOMP 协议错误:', frame)
+    },
+
+    onWebSocketError: (event) => {
+      console.error('WebSocket 底层错误:', event)
+    },
+
+  })
+
+  // 激活连接
+  stompClient.value.activate()
+}
+
+function disconnectWebSocket() {
+  if (stompClient.value) {
+    // 取消订阅
+    if (subscription.value) {
+      subscription.value.unsubscribe()
+      subscription.value = null
+    }
+
+    stompClient.value.deactivate()
+    stompClient.value = null
+    isConnected.value = false
+    console.log('WebSocket 连接已断开')
+  }
+}
+
+// 在组件卸载时断开连接
+onUnmounted(() => {
+  disconnectWebSocket()
+})
+
+// 格式化JSON显示
+const formattedSubmitParam = computed(() => {
+  try {
+    return JSON.stringify(submitParam.value, null, 2)
+  }
+  // eslint-disable-next-line unused-imports/no-unused-vars
+  catch (e) {
+    return JSON.stringify(submitParam.value)
+  }
+})
+
+const formattedJudgeResult = computed(() => {
+  if (!judgeResult.value)
+    return '暂无结果'
+
+  try {
+    if (typeof judgeResult.value === 'string') {
+      // 尝试解析字符串形式的JSON
+      const parsed = JSON.parse(judgeResult.value)
+      return JSON.stringify(parsed, null, 2)
+    }
+    return JSON.stringify(judgeResult.value, null, 2)
+  }
+  // eslint-disable-next-line unused-imports/no-unused-vars
+  catch (e) {
+    return judgeResult.value
+  }
+})
 </script>
 
 <template>
   <div>
-    <!-- <n-button @click="exampleUsage">
-      开始提交轮询
-    </n-button> -->
-    <!-- <n-input v-model="message" />
-    <n-button @click="sendMessage">
-      发送消息
-    </n-button> -->
+    <n-flex vertical>
+      <n-input v-model:value="submitParam.problemId" placeholder="请输入problemId" />
+      <n-input v-model:value="submitParam.setId" placeholder="请输入setId" />
+      <n-input v-model:value="submitParam.language" placeholder="请输入语言" />
+      <n-input v-model:value="submitParam.code" type="textarea" placeholder="请输入代码" />
+      <n-switch v-model:value="submitParam.submitType">
+        <template #checked>
+          提交类型: 测试运行
+        </template>
+        <template #unchecked>
+          提交类型: 正式提交
+        </template>
+      </n-switch>
+      <n-button :disabled="isConnected" type="primary" @click="executeCode">
+        {{ isConnected ? '执行中...' : '执行代码' }}
+      </n-button>
+      <n-card title="提交内容" size="small">
+        <pre class="json-display">{{ formattedSubmitParam }}</pre>
+      </n-card>
+      <n-card title="连接状态" size="small">
+        <n-tag :type="isConnected ? 'success' : 'default'">
+          {{ isConnected ? '已连接' : '未连接' }}
+        </n-tag>
+        <div v-if="submitParam.judgeTaskId" class="task-info">
+          任务ID: {{ submitParam.judgeTaskId }}
+        </div>
+      </n-card>
+      <n-card title="判题结果" size="small">
+        <div v-if="judgeResult">
+          <pre class="json-display">{{ formattedJudgeResult }}</pre>
+        </div>
+        <div v-else class="no-result">
+          暂无结果
+        </div>
+      </n-card>
+    </n-flex>
   </div>
 </template>
 
 <style scoped>
-.chat-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.history-section {
-  margin-bottom: 20px;
-}
-
-.message {
-  margin-bottom: 12px;
-  padding: 12px;
-  border-radius: 8px;
-}
-
-.message.user {
-  background: #e6f7ff;
-  border-left: 4px solid #1890ff;
-}
-
-.message.assistant {
-  background: #f6ffed;
-  border-left: 4px solid #52c41a;
-}
-
-.current-response {
-  padding: 12px;
-  background: #fff2e8;
-  border-left: 4px solid #fa8c16;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  min-height: 20px;
-}
-
-.input-section {
-  margin-bottom: 20px;
-}
-
-.button-group {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.error-message {
-  color: #ff4d4f;
-  background: #fff2f0;
-  padding: 10px;
-  border-radius: 4px;
-  border: 1px solid #ffccc7;
-}
 </style>

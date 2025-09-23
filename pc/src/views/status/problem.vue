@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useProSubmitFetch } from '@/composables'
+import { useDataSubmitFetch } from '@/composables/v1'
 import { AesCrypto } from '@/utils'
 import CodeEditor from '@/components/common/editor/code/Editor.vue'
 
@@ -8,8 +8,8 @@ const detailData = ref()
 const originalId = AesCrypto.decrypt(route.query.submit as string)
 async function loadData() {
   try {
-    const { proSubmitDetail } = useProSubmitFetch()
-    const { data } = await proSubmitDetail({ id: originalId })
+    const { dataSubmitDetail } = useDataSubmitFetch()
+    const { data } = await dataSubmitDetail({ id: originalId })
 
     if (data) {
       detailData.value = data

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysBannerFetch } from '@/composables'
+import { useSysBannerFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
@@ -103,6 +103,17 @@ defineExpose({
         <!-- 输入框 -->
         <NFormItem label="子标题" path="subtitle">
           <NInput v-model:value="formData.subtitle" placeholder="请输入子标题" />
+        </NFormItem>
+        <!-- Boolean 选择框 -->
+        <NFormItem label="是否可见" path="isVisible">
+          <NRadioGroup v-model:value="formData.isVisible">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
         </NFormItem>
       </NForm>
       <template #footer>

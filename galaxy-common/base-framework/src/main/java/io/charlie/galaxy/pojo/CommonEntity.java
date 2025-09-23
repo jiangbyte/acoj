@@ -3,6 +3,7 @@ package io.charlie.galaxy.pojo;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -24,6 +25,7 @@ import java.util.Date;
  * @description 基础实体类
  */
 @Data
+@JsonIgnoreProperties(value = "transMap") // Easy-Trans 会添加 transMap 属性，避免反序列化报错
 public class CommonEntity implements Serializable, TransPojo {
     @Serial
     @TableField(exist = false)
@@ -47,7 +49,7 @@ public class CommonEntity implements Serializable, TransPojo {
      * 创建者ID
      */
     @TableField(fill = FieldFill.INSERT)
-    @Trans(type = TransType.SIMPLE, targetClassName = "io.charlie.app.core.modular.sys.user.entity.SysUser", fields = {"avatar", "nickname"}, refs = {"createUserAvatar", "createUserName"})
+    @Trans(type = TransType.SIMPLE, targetClassName = "io.charlie.web.oj.modular.sys.user.entity.SysUser", fields = {"avatar", "nickname"}, refs = {"createUserAvatar", "createUserName"})
     private String createUser;
 
     /**
@@ -74,7 +76,7 @@ public class CommonEntity implements Serializable, TransPojo {
      * 记录最后更新的用户ID
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    @Trans(type = TransType.SIMPLE, targetClassName = "io.charlie.app.core.modular.sys.user.entity.SysUser", fields = {"avatar", "nickname"}, refs = {"updateUserAvatar", "updateUserName"})
+    @Trans(type = TransType.SIMPLE, targetClassName = "io.charlie.web.oj.modular.sys.user.entity.SysUser", fields = {"avatar", "nickname"}, refs = {"updateUserAvatar", "updateUserName"})
     private String updateUser;
 
     /**

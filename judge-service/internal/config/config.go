@@ -41,5 +41,13 @@ type Config struct {
 			ResultQueue      string
 			ResultRoutingKey string
 		}
+		Common struct {
+			JudgeExchange    string
+			JudgeQueue       string
+			JudgeRoutingKey  string
+			ResultExchange   string
+			ResultQueue      string
+			ResultRoutingKey string
+		}
 	}
 }

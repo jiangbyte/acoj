@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useProblemRankingFetch, useProProblemFetch, useProSolvedFetch, useSysCategoryFetch, useSysDictFetch, useSysTagFetch } from '@/composables'
+import { useDataProblemFetch, useSysCategoryFetch, useSysDictFetch, useSysTagFetch } from '@/composables/v1'
 import type { DataTableColumns } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { NSpace, NTag } from 'naive-ui'
@@ -87,58 +87,28 @@ const tagOptions = ref()
 
 const pageData = ref()
 const difficultyDistribution = ref()
-const problemcountandpercentage = ref()
-const userSolvedProblems = ref()
-const averagepassrate = ref()
 const problemcount = ref()
 const problemRankingListData = ref()
 
 async function loadData() {
-  const { proProblemPage, proProblemDifficultyDistribution, proProblemTodayProblemCount, proProblemProblemCountAndPercentage } = useProProblemFetch()
+  const { dataProblemPage, dataProblemCount } = useDataProblemFetch()
   const { sysCategoryOptions } = useSysCategoryFetch()
   const { sysDictOptions } = useSysDictFetch()
   const { sysTagOptions } = useSysTagFetch()
-  const { proSolvedUserSolvedProblem, proSolvedAveragePassRate } = useProSolvedFetch()
-  const { problemRankingTop } = useProblemRankingFetch()
+  // 获取Top10排行榜
+  useDataProblemFetch().dataProblemHot().then(({ data }) => {
+    problemRankingListData.value = data
+  })
 
-  proProblemPage(pageParam.value).then(({ data }) => {
+  dataProblemPage(pageParam.value).then(({ data }) => {
     if (data) {
       pageData.value = data
     }
   })
 
-  // 获取Top10排行榜
-  problemRankingTop().then(({ data }) => {
-    problemRankingListData.value = data
-  })
-
-  proSolvedAveragePassRate().then(({ data }) => {
-    if (data) {
-      averagepassrate.value = data
-    }
-  })
-
-  proProblemTodayProblemCount().then(({ data }) => {
+  dataProblemCount().then(({ data }) => {
     if (data) {
       problemcount.value = data
-    }
-  })
-
-  proSolvedUserSolvedProblem().then(({ data }) => {
-    if (data) {
-      userSolvedProblems.value = data
-    }
-  })
-
-  proProblemDifficultyDistribution().then(({ data }) => {
-    if (data) {
-      difficultyDistribution.value = data
-    }
-  })
-
-  proProblemProblemCountAndPercentage().then(({ data }) => {
-    if (data) {
-      problemcountandpercentage.value = data
     }
   })
 
@@ -215,11 +185,11 @@ function resetHandle() {
               总题目数
             </p>
             <h3 class="text-2xl font-bold mt-1">
-              {{ problemcountandpercentage?.count }}
+              {{ problemcount?.total }}
             </h3>
             <p class="text-green-600 dark:text-green-400 text-xs mt-2 flex items-center">
               <icon-park-outline-arrow-up class="mr-1" />
-              较上月增长 {{ problemcountandpercentage?.increasedPercentage }} %
+              较上月增长 {{ problemcount?.growthRate }} %
             </p>
           </div>
           <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -234,7 +204,7 @@ function resetHandle() {
               已解决题目
             </p>
             <h3 class="text-2xl font-bold mt-1">
-              {{ userSolvedProblems ? userSolvedProblems : 0 }} / {{ problemcountandpercentage?.count }}
+              {{ problemcount?.solved ? problemcount.solved : 0 }} / {{ problemcount?.total }}
             </h3>
             <p class="text-gray-500 dark:text-gray-400 text-xs mt-2 flex items-center">
               <icon-park-outline-user class="mr-1" />
@@ -253,7 +223,7 @@ function resetHandle() {
               平均通过率
             </p>
             <h3 class="text-2xl font-bold mt-1">
-              {{ averagepassrate }} %
+              {{ problemcount?.avgPassRate ? problemcount?.avgPassRate : 0 }} %
             </h3>
             <p class="text-gray-500 dark:text-gray-400 text-xs mt-2">
               所有题目的平均提交通过率
@@ -271,11 +241,11 @@ function resetHandle() {
               今日新增
             </p>
             <h3 class="text-2xl font-bold mt-1">
-              {{ problemcount?.todayProblemCount ? problemcount?.todayProblemCount : 0 }}
+              {{ problemcount?.monthAdd ? problemcount?.monthAdd : 0 }}
             </h3>
             <p class="text-blue-600 dark:text-blue-400 text-xs mt-2 flex items-center">
               <icon-park-outline-calendar class="mr-1" />
-              最新更新于 <n-time :time="problemcount?.latestCreateTime" type="relative" />
+              最新更新于  <n-time :time="problemcount?.lastAddTime" type="relative" />
             </p>
           </div>
           <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
@@ -418,14 +388,14 @@ function resetHandle() {
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 排名1 -->
             <div
-              v-for="item in problemRankingListData" :key="item.ranking" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+              v-for="item in problemRankingListData" :key="item.rank" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
                 name: 'problem_submit',
-                query: { problem: AesCrypto.encrypt(item.problemId) },
+                query: { problem: AesCrypto.encrypt(item.id) },
               })"
             >
               <div class="flex items-center">
                 <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-yellow-900 flex items-center justify-center font-bold mr-4">
-                  {{ item.ranking }}
+                  {{ item.rank }}
                 </div>
                 <div class="flex-1">
                   <n-button text class="mb-2">

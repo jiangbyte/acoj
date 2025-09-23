@@ -12,8 +12,8 @@
     <artifactId>galaxy-web-app</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>app-gateway</module>
-        <module>app-core</module>
+        <module>galaxy-gateway</module>
+        <module>galaxy-oj</module>
     </modules>
 
     <properties>

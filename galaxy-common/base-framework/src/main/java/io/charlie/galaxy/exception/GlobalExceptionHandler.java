@@ -16,6 +16,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import io.charlie.galaxy.result.Result;
 import io.charlie.galaxy.result.ResultCode;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * @author charlie-zhang-code
@@ -43,6 +44,13 @@ public class GlobalExceptionHandler {
     public <T> Result<T> processException(NoHandlerFoundException e) {
         log.error("请求地址不存在：{}", e.getMessage());
         e.printStackTrace();
+        return Result.failure(ResultCode.NOT_FOUND, e.getMessage());
+    }
+
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(NoResourceFoundException.class)
+    public <T> Result<T> processNoResourceFoundException(NoResourceFoundException e) {
+        log.error("请求地址不存在：{}", e.getMessage());
         return Result.failure(ResultCode.NOT_FOUND, e.getMessage());
     }
 

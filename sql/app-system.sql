@@ -123,6 +123,7 @@ CREATE TABLE sys_notice
     url         VARCHAR(255) NULL COMMENT '链接',
     sort        TINYINT     DEFAULT 99 COMMENT '排序',
     content     TEXT         NULL COMMENT '内容',
+    is_visible  TINYINT(1)  DEFAULT 1 COMMENT '是否可见',
     # ------------------------------------------------
     deleted     TINYINT(1)  DEFAULT 0 COMMENT '删除状态',
     create_time DATETIME    DEFAULT NULL COMMENT '创建时间戳',
@@ -149,6 +150,7 @@ CREATE TABLE sys_banner
     to_url      VARCHAR(255) NULL COMMENT '链接',
     sort        TINYINT     DEFAULT 99 COMMENT '排序',
     subtitle    VARCHAR(255) NOT NULL COMMENT '子标题',
+    is_visible  TINYINT(1)  DEFAULT 1 COMMENT '是否可见',
     # ------------------------------------------------
     deleted     TINYINT(1)  DEFAULT 0 COMMENT '删除状态',
     create_time DATETIME    DEFAULT NULL COMMENT '创建时间戳',
@@ -161,7 +163,6 @@ CREATE TABLE sys_banner
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT '横幅表';
-
 
 -- ----------------------------
 -- 字典类型表

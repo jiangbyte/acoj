@@ -47,34 +47,36 @@ const (
 
 /* 提交题目 */
 type JudgeSubmitDto struct {
-	UserId       string     `json:"userId"`
-	ProblemId    string     `json:"problemId"`
-	ProblemSetId string     `json:"problemSetId"`
-	Language     string     `json:"language"`
-	Code         string     `json:"code"`
-	SubmitType   bool       `json:"submitType"`
-	MaxTime      int        `json:"maxTime"`   // ms
-	MaxMemory    int        `json:"maxMemory"` // kb
-	TestCase     []TestCase `json:"testCase"`
-	ID           string     `json:"id"`
-	IsSet        bool       `json:"isSet"`
+	UserId     string     `json:"userId"`
+	ProblemId  string     `json:"problemId"`
+	SetId      string     `json:"setId"`
+	Language   string     `json:"language"`
+	Code       string     `json:"code"`
+	SubmitType bool       `json:"submitType"`
+	MaxTime    int        `json:"maxTime"`   // ms
+	MaxMemory  int        `json:"maxMemory"` // kb
+	TestCase   []TestCase `json:"testCase"`
+	ID         string     `json:"id"`
+	IsSet      bool       `json:"isSet"`
+	JudgeTaskId      string     `json:"judgeTaskId"`
 }
 
 type JudgeResultDto struct {
-	UserId       string           `json:"userId"`
-	ProblemId    string           `json:"problemId"`
-	Language     string           `json:"language"`
-	ProblemSetId string           `json:"problemSetId"`
-	Code         string           `json:"code"`
-	SubmitType   bool             `json:"submitType"`
-	MaxTime      int              `json:"maxTime"`   // ms
-	MaxMemory    int              `json:"maxMemory"` // kb
-	TestCase     []SubmitTestCase `json:"testCase"`
-	Message      string           `json:"message"`
-	ID           string           `json:"id"`
-	IsSet        bool             `json:"isSet"`
-	Status       JudgeStatus      `json:"status"`
-	ExitCode     int              `json:"exitCode"` // 程序退出码
+	UserId     string           `json:"userId"`
+	ProblemId  string           `json:"problemId"`
+	Language   string           `json:"language"`
+	SetId      string           `json:"setId"`
+	Code       string           `json:"code"`
+	SubmitType bool             `json:"submitType"`
+	MaxTime    int              `json:"maxTime"`   // ms
+	MaxMemory  int              `json:"maxMemory"` // kb
+	TestCase   []SubmitTestCase `json:"testCase"`
+	Message    string           `json:"message"`
+	ID         string           `json:"id"`
+	IsSet      bool             `json:"isSet"`
+	Status     JudgeStatus      `json:"status"`
+	ExitCode   int              `json:"exitCode"` // 程序退出码
+	JudgeTaskId      string     `json:"judgeTaskId"`
 }
 
 /* 测试用例 */

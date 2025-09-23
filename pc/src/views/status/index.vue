@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { useProSubmitFetch, useSysDictFetch } from '@/composables'
+import { useDataSubmitFetch, useSysDictFetch } from '@/composables/v1'
 import type { DataTableColumns } from 'naive-ui'
 import { NAvatar, NSpace, NTag, NText, NTime } from 'naive-ui'
 import { AesCrypto } from '@/utils'
 
-const { proSubmitPage, problemUserSubmitStatusCount } = useProSubmitFetch()
+const { dataSubmitProblemPage } = useDataSubmitFetch()
 const { sysDictOptions } = useSysDictFetch()
 
 const languageOptions = ref()
@@ -28,7 +28,7 @@ const pageData = ref()
 const statusCount = ref()
 
 async function loadData() {
-  const { data } = await proSubmitPage(pageParam.value)
+  const { data } = await dataSubmitProblemPage(pageParam.value)
   if (data) {
     pageData.value = data
   }
@@ -49,12 +49,12 @@ async function loadData() {
     statusOptions.value = statusData
   }
 
-  problemUserSubmitStatusCount().then(({ data }) => {
-    if (data) {
-      statusCount.value = data
-    }
-    console.log(data)
-  })
+  // problemUserSubmitStatusCount().then(({ data }) => {
+  //   if (data) {
+  //     statusCount.value = data
+  //   }
+  //   console.log(data)
+  // })
 }
 loadData()
 

@@ -1,7 +1,8 @@
 import { resolve } from 'node:path'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
+import process from 'node:process'
 // import vueDevTools from 'vite-plugin-vue-devtools'
 
 import UnoCSS from 'unocss/vite'
@@ -12,7 +13,9 @@ import AutoImport from 'unplugin-auto-import/vite'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vite.dev/config/
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+
   return {
     plugins: [
       vue(),
@@ -59,9 +62,20 @@ export default defineConfig(() => {
     server: {
       host: '0.0.0.0',
       port: 3010,
+      proxy: {
+        '/oj': {
+          target: env.VITE_GATEWAY,
+          changeOrigin: true,
+          ws: true,
+        },
+      },
+    },
+    define: {
+      global: 'window',
     },
     optimizeDeps: {
       include: [
+        'sockjs-client',
         `monaco-editor/esm/vs/language/json/json.worker`,
         `monaco-editor/esm/vs/language/css/css.worker`,
         `monaco-editor/esm/vs/language/html/html.worker`,

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useProblemRankingFetch, useProblemUserRankingFetch, useProProblemFetch, useProSetFetch, useSetRankingFetch, useSysBannerFetch, useSysNoticeFetch } from '@/composables'
+import { useDataProblemFetch, useSysBannerFetch, useSysNoticeFetch, useUserRankingFetch } from '@/composables/v1'
 
 import { AesCrypto, CleanMarkdown } from '@/utils'
 
@@ -19,57 +19,39 @@ function openLink(url: string) {
 
 // 获取列表数据
 async function loadData() {
-  const { sysBannerLatest10 } = useSysBannerFetch()
-  const { sysNoticeLatest10 } = useSysNoticeFetch()
-  const { proProblemLatest10 } = useProProblemFetch()
-  const { proSetLatest10 } = useProSetFetch()
-  const { problemUserRankingTop } = useProblemUserRankingFetch()
-  const { problemRankingTop } = useProblemRankingFetch()
-  const { setRankingTop } = useSetRankingFetch()
-
-  // 获取横幅数据
-  sysBannerLatest10().then(({ data }) => {
-    bannerListData.value = data
-    if (data) {
-      bannerListData.value = data
-    }
-    else {
-      bannerListData.value = []
-    }
+  useSysBannerFetch().sysBannerLatest().then(({ data }) => {
+    bannerListData.value = data ?? []
   })
 
-  // 获取最新公告数据
-  noticeLoading.value = true
-  sysNoticeLatest10().then(({ data }) => {
-    noticeListData.value = data
-    noticeListData.value = noticeListData.value.sort((a: any, b: any) => (a.sort || 0) - (b.sort || 0))
-    noticeLoading.value = false
+  useSysNoticeFetch().sysNoticeLatest().then(({ data }) => {
+    noticeListData.value = data ?? []
   })
 
   // 获取最新题目数据
-  proProblemLatest10().then(({ data }) => {
+  useDataProblemFetch().dataProblemLatest().then(({ data }) => {
     problemListData.value = data
   })
 
-  // 获取最新题集数据
-  proSetLatest10().then(({ data }) => {
-    setListData.value = data
-  })
+  // // 获取最新题集数据
+  // proSetLatest10().then(({ data }) => {
+  //   setListData.value = data
+  // })
 
   // 获取Top10排行榜
-  problemUserRankingTop().then(({ data }) => {
+  useUserRankingFetch().useUserRankingTop().then(({ data }) => {
     problemUserRankingListData.value = data
+    console.log(data)
   })
 
   // 获取Top10排行榜
-  problemRankingTop().then(({ data }) => {
+  useDataProblemFetch().dataProblemHot().then(({ data }) => {
     problemRankingListData.value = data
   })
 
-  // 获取Top10排行榜
-  setRankingTop().then(({ data }) => {
-    setRankingListData.value = data
-  })
+  // // 获取Top10排行榜
+  // setRankingTop().then(({ data }) => {
+  //   setRankingListData.value = data
+  // })
 }
 
 loadData()
@@ -282,22 +264,22 @@ loadData()
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 排行榜项 -->
             <div
-              v-for="item in problemUserRankingListData" :key="item.ranking" class="p-4 flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+              v-for="item in problemUserRankingListData" :key="item.rank" class="p-4 flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
                 name: 'user',
-                query: { userId: AesCrypto.encrypt(item.userId) },
+                query: { userId: AesCrypto.encrypt(item.id) },
               })"
             >
-              <div v-if="item.ranking === 1" class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center text-yellow-600 dark:text-yellow-300 font-bold mr-3">
-                {{ item.ranking }}
+              <div v-if="item.rank === 1" class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center text-yellow-600 dark:text-yellow-300 font-bold mr-3">
+                {{ item.rank }}
               </div>
-              <div v-else-if="item.ranking === 2" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold mr-3">
-                {{ item.ranking }}
+              <div v-else-if="item.rank === 2" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold mr-3">
+                {{ item.rank }}
               </div>
-              <div v-else-if="item.ranking === 3" class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-orange-600 dark:text-orange-300 font-bold mr-3">
-                {{ item.ranking }}
+              <div v-else-if="item.rank === 3" class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-orange-600 dark:text-orange-300 font-bold mr-3">
+                {{ item.rank }}
               </div>
               <div v-else class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold mr-3">
-                {{ item.ranking }}
+                {{ item.rank }}
               </div>
               <n-avatar :src="item.avatar" round :size="40" class="mr-3" />
               <div class="flex-1">
@@ -305,7 +287,7 @@ loadData()
                   {{ item.nickname }}
                 </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">
-                  解题: {{ item.solvedCount }}
+                  解题: {{ item.score }}
                 </div>
               </div>
             </div>
@@ -325,14 +307,14 @@ loadData()
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 题目排行项 -->
             <div
-              v-for="item in problemRankingListData" :key="item.ranking" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+              v-for="item in problemRankingListData" :key="item.rank" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
                 name: 'problem_submit',
-                query: { problem: AesCrypto.encrypt(item.problemId) },
+                query: { problem: AesCrypto.encrypt(item.id) },
               })"
             >
               <div class="flex items-start">
                 <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-bold mr-3 mt-0.5">
-                  {{ item.ranking }}
+                  {{ item.rank }}
                 </div>
                 <div class="flex-1">
                   <n-button text class="mb-2">

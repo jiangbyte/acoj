@@ -4,7 +4,8 @@ import { request as $alova } from '@/utils'
 * ${table.comment?replace('表', '')} API请求
 */
 export function use${entity}Fetch() {
-  const pathPrefix = '/${GModule}/api/v1/'
+    const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
+    const pathPrefix = context + '/api/v1/'
   const table = '${table.name?replace('_', '/')}'
 
     /*

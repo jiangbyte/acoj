@@ -1,9 +1,10 @@
 package svc
 
 import (
+	"judge-service/internal/config"
+
 	"github.com/streadway/amqp"
 	"github.com/zeromicro/go-zero/core/logx"
-	"judge-service/internal/config"
 )
 
 type ServiceContext struct {
@@ -12,6 +13,7 @@ type ServiceContext struct {
 	// 两个通道分别处理题目和题集
 	ProblemChannel    *amqp.Channel
 	ProblemSetChannel *amqp.Channel
+	CommonChannel     *amqp.Channel
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -24,17 +26,24 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		panic(err)
 	}
 
-	// 创建题目通道
-	problemCh, err := conn.Channel()
-	if err != nil {
-		logx.Errorf("无法打开题目通道: %v", err)
-		panic(err)
-	}
+	// // 创建题目通道
+	// problemCh, err := conn.Channel()
+	// if err != nil {
+	// 	logx.Errorf("无法打开题目通道: %v", err)
+	// 	panic(err)
+	// }
 
-	// 创建题集通道
-	problemSetCh, err := conn.Channel()
+	// // 创建题集通道
+	// problemSetCh, err := conn.Channel()
+	// if err != nil {
+	// 	logx.Errorf("无法打开题集通道: %v", err)
+	// 	panic(err)
+	// }
+
+	// 常规通道
+	commonCh, err := conn.Channel()
 	if err != nil {
-		logx.Errorf("无法打开题集通道: %v", err)
+		logx.Errorf("无法打开通道: %v", err)
 		panic(err)
 	}
 
@@ -42,7 +51,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:   c,
 		RabbitMQ: conn,
 
-		ProblemChannel:    problemCh,
-		ProblemSetChannel: problemSetCh,
+		// ProblemChannel:    problemCh,
+		// ProblemSetChannel: problemSetCh,
+		CommonChannel:     commonCh,
 	}
 }

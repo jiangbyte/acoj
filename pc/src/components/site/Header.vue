@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTokenStore } from '@/stores'
 import { RouterLink } from 'vue-router'
-import { useSysUserFetch } from '@/composables'
+import { useSysUserFetch } from '@/composables/v1'
 import { iconRender } from '@/utils'
 
 // 定义props

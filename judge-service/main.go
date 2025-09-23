@@ -36,11 +36,14 @@ func main() {
 
 	fmt.Println("Shutting down server...")
 	// 关闭通道和连接
-	if err := ctx.ProblemChannel.Close(); err != nil {
-		logx.Errorf("Error closing ProblemChannel RabbitMQ connection: %v", err)
-	}
-	if err := ctx.ProblemSetChannel.Close(); err != nil {
-		logx.Errorf("Error closing ProblemSetChannel RabbitMQ connection: %v", err)
+	// if err := ctx.ProblemChannel.Close(); err != nil {
+	// 	logx.Errorf("Error closing ProblemChannel RabbitMQ connection: %v", err)
+	// }
+	// if err := ctx.ProblemSetChannel.Close(); err != nil {
+	// 	logx.Errorf("Error closing ProblemSetChannel RabbitMQ connection: %v", err)
+	// }
+	if err := ctx.CommonChannel.Close(); err != nil {
+		logx.Errorf("Error closing CommonChannel RabbitMQ connection: %v", err)
 	}
 	if err := ctx.RabbitMQ.Close(); err != nil {
 		logx.Errorf("Error closing RabbitMQ connection: %v", err)

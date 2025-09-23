@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { NUpload } from 'naive-ui'
 import type { UploadCustomRequestOptions, UploadFileInfo } from 'naive-ui'
-import { useFileFetch } from '@/composables'
+import { useFileFetch } from '@/composables/v1'
 import { watch } from 'vue'
 
 const props = defineProps<{

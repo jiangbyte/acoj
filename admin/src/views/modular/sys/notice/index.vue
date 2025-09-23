@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace } from 'naive-ui'
-import { useSysNoticeFetch } from '@/composables'
+import { useSysNoticeFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
 
@@ -23,14 +23,18 @@ const columns: DataTableColumns<any> = [
       return h(NImage, { src: row.cover, width: 50, height: 50, objectFit: 'cover' })
     },
   },
-  {
-    title: '链接',
-    key: 'url',
-    ellipsis: true,
-  },
+  // {
+  //   title: '链接',
+  //   key: 'url',
+  //   ellipsis: true,
+  // },
   {
     title: '排序',
     key: 'sort',
+  },
+  {
+    title: '上架',
+    key: 'isVisibleName',
   },
   {
     title: '操作',
@@ -106,15 +110,16 @@ function resetHandle() {
   loadData()
 }
 
-const { sysNoticePage, sysNoticeDelete } = useSysNoticeFetch()
+const { sysNoticeDelete } = useSysNoticeFetch()
 const loading = ref(false)
 async function loadData() {
   loading.value = true
-  const { data } = await sysNoticePage(pageParam.value)
-  if (data) {
-    pageData.value = data
-    loading.value = false
-  }
+  useSysNoticeFetch().sysNoticePage(pageParam.value).then(({ data }) => {
+    if (data) {
+      pageData.value = data
+      loading.value = false
+    }
+  })
 }
 
 loadData()

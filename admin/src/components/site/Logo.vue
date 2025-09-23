@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useSysConfigFetch } from '@/composables'
+import { useSysConfigFetch } from '@/composables/v1'
 import { NSpace, NText } from 'naive-ui'
 
 const { getValueByCode } = useSysConfigFetch()

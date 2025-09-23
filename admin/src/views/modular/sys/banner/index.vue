@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace } from 'naive-ui'
-import { useSysBannerFetch } from '@/composables'
+import { useSysBannerFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
 
@@ -41,6 +41,10 @@ const columns: DataTableColumns<any> = [
     title: '子标题',
     key: 'subtitle',
     ellipsis: true,
+  },
+  {
+    title: '上架',
+    key: 'isVisibleName',
   },
   {
     title: '操作',
@@ -116,15 +120,16 @@ function resetHandle() {
   loadData()
 }
 
-const { sysBannerPage, sysBannerDelete } = useSysBannerFetch()
+const { sysBannerDelete } = useSysBannerFetch()
 const loading = ref(false)
 async function loadData() {
   loading.value = true
-  const { data } = await sysBannerPage(pageParam.value)
-  if (data) {
-    pageData.value = data
-    loading.value = false
-  }
+  useSysBannerFetch().sysBannerPage(pageParam.value).then(({ data }) => {
+    if (data) {
+      pageData.value = data
+      loading.value = false
+    }
+  })
 }
 
 loadData()

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
-import { useSysNoticeFetch } from '@/composables'
+import { useSysNoticeFetch } from '@/composables/v1'
 import MDViewer from '@/components/common/editor/md/Viewer.vue'
 
 const emit = defineEmits(['close'])
@@ -35,14 +35,17 @@ defineExpose({
         <NDescriptionsItem label="封面">
           <NImage :src="formData.cover" width="100" height="100" object-fit="cover" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="链接">
+        <!-- <NDescriptionsItem label="链接">
           {{ formData.url }}
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="排序">
           {{ formData.sort }}
         </NDescriptionsItem>
         <NDescriptionsItem label="内容">
           <MDViewer :model-value="formData.content" />
+        </NDescriptionsItem>
+        <NDescriptionsItem label="是否可见">
+          {{ formData.isVisibleName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />
