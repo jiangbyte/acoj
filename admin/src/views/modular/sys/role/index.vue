@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
-import { useSysRoleFetch } from '@/composables'
+import { useSysRoleFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
 
@@ -31,7 +31,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 200,
+    width: 280,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -40,6 +40,7 @@ const columns: DataTableColumns<any> = [
           size: 'small',
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
+        h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => '授权'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),

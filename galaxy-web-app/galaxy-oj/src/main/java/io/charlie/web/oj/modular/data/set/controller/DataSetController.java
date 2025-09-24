@@ -1,10 +1,7 @@
 package io.charlie.web.oj.modular.data.set.controller;
 
 import io.charlie.galaxy.result.Result;
-import io.charlie.web.oj.modular.data.set.param.DataSetPageParam;
-import io.charlie.web.oj.modular.data.set.param.DataSetAddParam;
-import io.charlie.web.oj.modular.data.set.param.DataSetEditParam;
-import io.charlie.web.oj.modular.data.set.param.DataSetIdParam;
+import io.charlie.web.oj.modular.data.set.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -77,5 +74,23 @@ public class DataSetController {
     @GetMapping("/data/set/latest")
     public Result<?> latest10() {
         return Result.success(dataSetService.latestN(4));
+    }
+
+    @Operation(summary = "C端-获取题集题目")
+    @GetMapping("/data/set/problem")
+    public Result<?> getSetProblem(@ParameterObject @Valid DataSetProblemParam dataSetProblemParam) {
+        return Result.success(dataSetService.getSetProblem(dataSetProblemParam));
+    }
+
+    @Operation(summary = "C端-获取题集题目详情")
+    @GetMapping("/data/set/problem/detail")
+    public Result<?> getSetProblemDetail(@ParameterObject @Valid DataSetProblemDetailParam dataSetProblemDetailParam) {
+        return Result.success(dataSetService.getSetProblemDetail(dataSetProblemDetailParam));
+    }
+
+    @Operation(summary = "C端-获取最热10个题集")
+    @GetMapping("/data/set/hot")
+    public Result<?> getHot() {
+        return Result.success(dataSetService.getHotN(10));
     }
 }

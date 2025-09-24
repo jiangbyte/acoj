@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useDataSubmitFetch } from '@/composables/v1'
-import { AesCrypto } from '@/utils'
+import { AesCrypto, LanguageColorUtil, StatusColorUtil, StatusUtils, SubmitTypeColorUtil } from '@/utils'
 import CodeEditor from '@/components/common/editor/code/Editor.vue'
 
 const route = useRoute()
@@ -27,21 +27,56 @@ loadData()
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 class="text-2xl font-bold mb-2">
-            {{ detailData?.problemIdName }}
-          </h1>
+          <n-flex>
+            <NTag
+              :bordered="false"
+              :color="{ color: SubmitTypeColorUtil.getColor(detailData?.submitType), textColor: '#fff' }"
+            >
+              {{ detailData?.submitTypeName }}
+            </NTag>
+            <h1 class="text-2xl font-bold mb-2">
+              {{ detailData?.problemIdName }}
+            </h1>
+          </n-flex>
           <div class="flex flex-wrap items-center gap-3 text-sm">
-            <span>提交时间:  <n-time :time="detailData?.createTime" /></span>
-            <span>语言:  {{ detailData?.languageName }}</span>
-            <span>耗时: {{ detailData?.maxTime }} ms</span>
-            <span>内存: {{ detailData?.maxMemory }} KB</span>
+            <span>提交时间  <n-time :time="detailData?.createTime" /></span>
+            <span>语言
+              <NTag
+                class="ml-1"
+                size="small"
+                :bordered="false"
+                :color="{ color: LanguageColorUtil.getColor(detailData?.language), textColor: '#fff' }"
+              >
+                {{ detailData?.languageName }}
+              </NTag>
+            </span>
+            <span>最大耗时
+              <NTag
+                class="ml-1"
+                size="small"
+                :bordered="false"
+              >
+                {{ detailData?.maxTime }}
+              </NTag> ms</span>
+            <span>最大内存
+              <NTag
+                class="ml-1"
+                size="small"
+                :bordered="false"
+              >
+                {{ detailData?.maxMemory }}
+              </NTag> KB
+            </span>
           </div>
         </div>
 
         <div class="flex items-center">
-          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 mr-4">
-            {{ detailData?.status }}
-          </span>
+          <NTag
+            :bordered="false"
+            :color="{ color: StatusColorUtil.getColor(detailData?.status), textColor: '#fff' }"
+          >
+            {{ detailData?.statusName }}
+          </NTag>
         </div>
       </div>
 
@@ -167,8 +202,20 @@ loadData()
               class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
             >
               <div class="flex justify-between items-center mb-2">
-                <span class="font-medium">测试用例 #{{ index + 1 }}</span>
-                <span class="text-green-600 dark:text-green-400 text-sm">{{ testCase.status }}</span>
+                <span class="font-medium">测试用例 <NTag
+                  class="ml-1"
+                  size="small"
+                  :bordered="false"
+                >
+                  #{{ index + 1 }}
+                </NTag></span>
+                <!-- <span class="text-green-600 dark:text-green-400 text-sm">{{ testCase.status }}</span> -->
+                <NTag
+                  :bordered="false"
+                  :color="{ color: StatusColorUtil.getColor(testCase.status), textColor: '#fff' }"
+                >
+                  {{ StatusUtils.getStatusText(testCase.status) }}
+                </NTag>
               </div>
               <!--              <div class="text-xs text-gray-500 dark:text-gray-400 mb-1"> -->
               <!--                输入: {{ testCase.input }} -->
@@ -180,9 +227,24 @@ loadData()
               <!--                预期: {{ testCase.except }} -->
               <!--              </div> -->
               <div class="flex justify-end mt-2 text-xs text-gray-500 dark:text-gray-400">
-                <span>耗时: {{ testCase.maxTime }} ms</span>
-                <span class="mx-2">|</span>
-                <span>内存: {{ testCase.maxMemory ? testCase.maxMemory : 0 }} KB</span>
+                <span>耗时
+                  <NTag
+                    class="ml-1"
+                    size="small"
+                    :bordered="false"
+                  >
+                    {{ testCase.maxTime ? testCase.maxTime : 0 }}
+                  </NTag> ms</span>
+                <span class="mx-1" />
+                <span>内存
+                  <NTag
+                    class="ml-1"
+                    size="small"
+                    :bordered="false"
+                  >
+                    {{ testCase.maxMemory ? testCase.maxMemory : 0 }}
+                  </NTag> KB
+                </span>
               </div>
             </div>
           </div>

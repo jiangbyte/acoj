@@ -4,10 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblemCount;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemAddParam;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemEditParam;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemIdParam;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemPageParam;
+import io.charlie.web.oj.modular.data.problem.param.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -33,4 +31,36 @@ public interface DataProblemService extends IService<DataProblem> {
     DataProblemCount getProblemCount();
 
     List<DataProblem> getHotN(int n);
+
+    List<DifficultyDistribution> difficultyDistribution();
+
+    void importProblems(MultipartFile file);
+
+    // LLM 工具调用接口
+    // 获取题目描述
+    String llmGetDescription(String id);
+
+    // 获取题目测试用例（随机一个）
+    String llmGetTestCase(String id);
+
+    // 获取题目约束条件
+    String llmGetConstraints(String id);
+
+    // 获取题目示例（第一个测试用例）
+    String llmGetExample(String id);
+
+    // 获取题目难度
+    String getDifficulty(String id);
+
+    // 获取题目来源
+    String llmGetSource(String id);
+
+    // 获取题目标签
+    String llmGetTags(String id);
+
+    // 获取题目分类
+    String llmGetCategory(String id);
+
+    // 获取题目支持语言
+    String llmGetOpenLanguage(String id);
 }

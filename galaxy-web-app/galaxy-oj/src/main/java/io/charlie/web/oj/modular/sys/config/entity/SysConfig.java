@@ -30,6 +30,9 @@ public class SysConfig extends CommonEntity {
     @Schema(description = "主键")
     private String id;
 
+    @Schema(description = "配置类型")
+    private String configType;
+
     @Schema(description = "名称")
     private String name;
 

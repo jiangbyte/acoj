@@ -21,6 +21,7 @@ export * from './sys/SysNoticeApi'
 export * from './sys/SysRoleApi'
 export * from './sys/SysTagApi'
 export * from './sys/SysUserApi'
+export * from './sys/AuthApi'
 
 // 导出 ranking 目录下的所有 API
 export * from './ranking/UserRankingApi'

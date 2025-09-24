@@ -75,5 +75,25 @@ export function useDataSetFetch() {
         },
       })
     },
+    dataSetProblem(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problem`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    dataSetLatest() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/latest`)
+    },
+    dataSetHot() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/hot`)
+    },
+    dataSetProblemDetail(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problem/detail`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

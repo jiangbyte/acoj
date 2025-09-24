@@ -84,6 +84,7 @@ public enum RankingEnums implements ILabelEnum<String> {
     SET_ACCEPT("rank:set:accept", "通过排行榜"),
 
     HOT_SET_PROBLEM("rank:hot:set:problem", "热门题目排行榜"),
+    HOT_SET("rank:hot:set", "热门题集排行榜"),
     HOT_PROBLEM("rank:hot:problem", "热门题目排行榜"),
     ;
     private final String value;

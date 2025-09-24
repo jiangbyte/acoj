@@ -1,16 +1,12 @@
 <script lang="ts" setup>
-import type { SelectOption } from 'naive-ui'
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysArticleFetch } from '@/composables'
-import MDEditor from '@/components/common/editor/md/Editor.vue'
+import { useSysArticleFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
 const loading = ref(false)
 const formRef = ref()
-const { sysArticleDefaultData, sysArticleAdd, sysArticleEdit, sysArticleOptions } = useSysArticleFetch()
-const articleOptionsLoading = ref(false)
-const articleOptions = ref<SelectOption[]>([])
+const { sysArticleDefaultData, sysArticleAdd, sysArticleEdit } = useSysArticleFetch()
 const formData = ref<any>({ ...sysArticleDefaultData })
 const rules = {
   title: [
@@ -35,7 +31,7 @@ const rules = {
     { required: true, message: '请输入链接', trigger: ['input', 'blur'] },
   ],
   parentId: [
-    // { required: true, message: '请输入父级', trigger: ['input', 'blur'] },
+    { required: true, message: '请输入父级', trigger: ['input', 'blur'] },
   ],
   type: [
     { required: true, message: '请输入类型', trigger: ['input', 'blur'] },
@@ -85,31 +81,10 @@ function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
-
-  // 如果编辑模式且已有parentId，则初始化显示名称
-  if (edit && row?.parentId && row?.parentIdName) {
-    articleOptions.value = [{
-      value: row.parentId,
-      label: row.parentIdName,
-    }]
-  }
 }
 defineExpose({
   doOpen,
 })
-async function handleArticleSearch(query: string) {
-  if (!query.length) {
-    articleOptions.value = []
-    return
-  }
-  articleOptionsLoading.value = true
-
-  const { data } = await sysArticleOptions({ keyword: query })
-  if (data) {
-    articleOptions.value = data
-    articleOptionsLoading.value = false
-  }
-}
 </script>
 
 <template>
@@ -130,7 +105,7 @@ async function handleArticleSearch(query: string) {
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="封面" path="cover">
-          <FileUpload v-model="formData.cover" :is-image="true" />
+          <NInput v-model:value="formData.cover" placeholder="请输入封面" />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="作者" path="author">
@@ -150,16 +125,7 @@ async function handleArticleSearch(query: string) {
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="父级" path="parentId">
-          <NSelect
-            v-model:value="formData.parentId"
-            filterable
-            placeholder="搜索父级文章"
-            :options="articleOptions"
-            :loading="articleOptionsLoading"
-            clearable
-            remote
-            @search="handleArticleSearch"
-          />
+          <NInput v-model:value="formData.parentId" placeholder="请输入父级" />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="类型" path="type">
@@ -171,7 +137,7 @@ async function handleArticleSearch(query: string) {
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="内容" path="content">
-          <MDEditor v-model="formData.content" />
+          <NInput v-model:value="formData.content" placeholder="请输入内容" />
         </NFormItem>
       </NForm>
       <template #footer>

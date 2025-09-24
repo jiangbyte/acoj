@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 /**
  * @author Charlie Zhang
@@ -29,10 +30,10 @@ public class SubmitTestCase implements Serializable {
     private String except;
 
     @Schema(description = "时间资源")
-    private Integer maxTime;
+    private BigDecimal maxTime;
 
     @Schema(description = "内存资源")
-    private Integer maxMemory;
+    private BigDecimal maxMemory;
 
     @Schema(description = "信息")
     private String message;

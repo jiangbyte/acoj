@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -44,10 +45,10 @@ public class JudgeResultDto implements Serializable {
     // 题目参数
 
     @Schema(description = "时间限制")
-    private Integer maxTime;
+    private BigDecimal maxTime;
 
     @Schema(description = "内存限制")
-    private Integer maxMemory;
+    private BigDecimal maxMemory;
 
     @Schema(description = "用例")
     private List<SubmitTestCase> testCase;

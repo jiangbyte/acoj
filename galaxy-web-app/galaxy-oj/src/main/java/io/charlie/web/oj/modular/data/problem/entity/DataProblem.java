@@ -58,10 +58,10 @@ public class DataProblem extends CommonEntity {
     private String url;
 
     @Schema(description = "时间限制")
-    private Integer maxTime;
+    private BigDecimal maxTime;
 
     @Schema(description = "内存限制")
-    private Integer maxMemory;
+    private BigDecimal maxMemory;
 
     @Schema(description = "描述")
     private String description;

@@ -1,5 +1,7 @@
 <script lang="ts" setup>
-import { useProSubmitFetch } from '@/composables'
+import { useDataSubmitFetch } from '@/composables/v1'
+import { LanguageColorUtil, StatusColorUtil, SubmitTypeColorUtil } from '@/utils'
+import { NTag } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
 
 const props = defineProps({
@@ -9,41 +11,66 @@ const props = defineProps({
   },
 })
 
-const { proUserSubmitPage } = useProSubmitFetch()
+const { dataSubmitProblemPage } = useDataSubmitFetch()
 
 const columns: DataTableColumns<any> = [
-  {
-    title: '题目',
-    key: 'problemIdName',
-  },
+  // {
+  //   title: '题目',
+  //   key: 'problemIdName',
+  // },
   {
     title: '编程语言',
     key: 'languageName',
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false, color: { color: LanguageColorUtil.getColor(row.language), textColor: '#fff' } }, row.languageName)
+    },
   },
   {
     title: '执行类型',
     key: 'submitTypeName',
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false, color: { color: SubmitTypeColorUtil.getColor(row.submitType), textColor: '#fff' } }, row.submitTypeName)
+    },
   },
   {
-    title: '最大耗时',
+    title: '长度',
+    key: 'codeLength',
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.codeLength)
+    },
+  },
+  {
+    title: '耗时',
     key: 'maxTime',
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.maxTime)
+    },
   },
   {
-    title: '最大内存使用',
+    title: '内存',
     key: 'maxMemory',
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.maxMemory)
+    },
   },
   {
     title: '执行状态',
     key: 'statusName',
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false, color: { color: StatusColorUtil.getColor(row.status), textColor: '#fff' } }, row.statusName)
+    },
   },
   {
     title: '相似度',
     key: 'similarity',
+    render: (row) => {
+      return h(NTag, { size: 'small', bordered: false }, row.similarity * 100)
+    },
   },
-  {
-    title: '检测任务',
-    key: 'taskId',
-  },
+  // {
+  //   title: '检测任务',
+  //   key: 'taskId',
+  // },
 ]
 
 const pageData = ref()
@@ -52,10 +79,10 @@ const pageParam = ref({
   size: 20,
   sortField: null,
   sortOrder: null,
-  problem: props.problem,
+  problemId: props.problem,
 })
 async function loadData() {
-  const { data } = await proUserSubmitPage(pageParam.value)
+  const { data } = await dataSubmitProblemPage(pageParam.value)
   pageData.value = data
   console.log(data)
 }
@@ -128,7 +155,7 @@ function rowProps(row: any) {
       :bordered="false"
       :row-key="(row: any) => row.id"
       :row-props="rowProps"
-      scroll-x="1000"
+      scroll-x="700"
       class="flex-1 h-full"
     />
     <n-flex justify="center">

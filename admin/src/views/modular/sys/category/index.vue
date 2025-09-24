@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
-import { useSysCategoryFetch } from '@/composables'
+import { useSysCategoryFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
 

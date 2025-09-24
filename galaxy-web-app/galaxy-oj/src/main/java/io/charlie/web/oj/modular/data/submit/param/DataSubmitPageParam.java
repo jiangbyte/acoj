@@ -1,10 +1,7 @@
 package io.charlie.web.oj.modular.data.submit.param;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import io.charlie.galaxy.pojo.CommonEntity;
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.io.Serial;
@@ -35,4 +32,19 @@ public class DataSubmitPageParam implements Serializable {
 
     @Schema(description = "关键词")
     private String keyword;
+
+    @Schema(description = "题目")
+    private String problemId;
+
+    @Schema(description = "题集")
+    private String setId;
+
+    @Schema(description = "编程语言")
+    private String language;
+
+    @Schema(description = "执行类型")
+    private Boolean submitType;
+
+    @Schema(description = "执行状态")
+    private String status;
 }

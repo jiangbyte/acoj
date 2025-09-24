@@ -62,4 +62,8 @@ public class DataSet extends CommonEntity {
 
     @Schema(description = "额外的信息")
     private String exJson;
+
+    @Schema(description = "排行")
+    @TableField(exist = false)
+    private Long rank;
 }

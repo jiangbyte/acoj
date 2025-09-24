@@ -6,8 +6,19 @@ import {
   HardwareChipOutline,
   TimeOutline,
 } from '@vicons/ionicons5'
-import { useDataProblemFetch, useDataSubmitFetch } from '@/composables/v1'
-import { AesCrypto } from '@/utils'
+import { useDataProblemFetch } from '@/composables/v1'
+import { AesCrypto, DifficultyColorUtil, RandomColorUtil } from '@/utils'
+import { useTokenStore, useUserStore } from '@/stores'
+import { Client } from '@stomp/stompjs'
+import { v4 as uuidv4 } from 'uuid'
+import SockJS from 'sockjs-client'
+
+const tokenStore = useTokenStore()
+const userStore = useUserStore()
+
+const stompClient = ref<Client | null>(null)
+const isConnected = ref(false)
+const subscription = ref<any>(null)
 
 const route = useRoute()
 const activeTab = ref('description')
@@ -20,6 +31,7 @@ async function loadData() {
 
     if (data) {
       detailData.value = data
+      console.log(data)
     }
   }
   catch {
@@ -29,140 +41,124 @@ loadData()
 
 const submitParam = ref({
   problemId: originalId,
+  setId: null,
   language: null,
   code: '',
   submitType: null,
+  judgeTaskId: '',
+  userId: userStore.getUserId,
 })
+const resultTaskData = ref()
+
+function executeCode(type: boolean) {
+  activeTab.value = 'result'
+  submitParam.value.submitType = type as any
+  if (isConnected.value) {
+    return
+  }
+
+  // 任务ID生成
+  submitParam.value.judgeTaskId = `task-${uuidv4()}`
+  const socket = new SockJS('/oj/ws/judge/status')
+
+  // 添加连接关闭事件监听
+  socket.onclose = () => {
+    isConnected.value = false
+  }
+
+  stompClient.value = new Client({
+    webSocketFactory: () => socket,
+    reconnectDelay: 5000,
+    heartbeatIncoming: 4000,
+    heartbeatOutgoing: 4000,
+    connectHeaders: {
+      Authorization: tokenStore.getToken || '',
+    },
+
+    onConnect: () => {
+      isConnected.value = true
+
+      const topic = `/topic/judge/status/${submitParam.value.judgeTaskId}`
+
+      subscription.value = stompClient.value?.subscribe(topic, (message) => {
+        if (message.body === 'CLOSE_CONNECTION') {
+          disconnectWebSocket()
+          return
+        }
+
+        // 如果不是关闭连接的消息，则解析JSON结果
+        try {
+          const res = JSON.parse(message.body)
+          resultTaskData.value = res?.data
+          console.log(res)
+        }
+        catch (error) {
+          console.error('解析 JSON 错误:', error)
+        }
+      }, {
+        Authorization: tokenStore.getToken || '',
+      })
+
+      // 发送连接消息到服务端
+      const destination = `/app/judge/status/${submitParam.value.judgeTaskId}`
+      stompClient.value?.publish({
+        destination,
+        body: JSON.stringify(submitParam.value),
+        headers: {
+          Authorization: tokenStore.getToken || '',
+        },
+      })
+    },
+  })
+
+  // 激活连接
+  stompClient.value.activate()
+}
+function disconnectWebSocket() {
+  if (stompClient.value) {
+    // 取消订阅
+    if (subscription.value) {
+      subscription.value.unsubscribe()
+      subscription.value = null
+    }
+
+    stompClient.value.deactivate()
+    stompClient.value = null
+    isConnected.value = false
+    console.log('WebSocket 连接已断开')
+  }
+}
+
+// 在组件卸载时断开连接
+onUnmounted(() => {
+  disconnectWebSocket()
+})
+
 // 获取语言选项
 const languageOptions = computed(() => {
   // if (!detailData.value?.codeTemplate)
   //   return []
   return detailData.value?.allowedLanguages.map((language: any) => ({
-    label: language.toUpperCase(),
+    label: language.charAt(0).toUpperCase() + language.slice(1),
     value: language,
   }))
 })
 
 // 语言切换处理
 function handleLanguageChange(lang: string) {
+  // 首字母大写
+  window.$message.success(`已切换至 ${lang.charAt(0).toUpperCase() + lang.slice(1)} 语言`)
   if (!detailData.value?.codeTemplate)
     return
   const selectedTemplate = detailData.value.codeTemplate.find((t: { language: string }) => t.language === lang)
   if (selectedTemplate) {
     submitParam.value.code = selectedTemplate.template
-    window.$message.success(`已切换至 ${lang.toUpperCase()} 模板`)
   }
   else {
     submitParam.value.code = ''
-    window.$message.warning('当前语言没有模板代码')
-  }
-}
-const { dataSubmitDetail, dataSubmitExecute } = useDataSubmitFetch()
-const executeTaskId = ref(null)
-async function execute(type: boolean) {
-  if (!submitParam.value.language) {
-    window.$message.warning('请选择语言')
-    return
-  }
-  if (!submitParam.value.code) {
-    window.$message.warning('请输入代码')
-    return
-  }
-  if (type) {
-    submitParam.value.submitType = true as any
-    const { data } = await dataSubmitExecute(submitParam.value)
-    if (data) {
-      executeTaskId.value = data
-      startPolling() // 开始轮询
-      window.$message.success('提交成功')
-    }
-    activeTab.value = 'result'
-  }
-  else {
-    submitParam.value.submitType = false as any
-    const { data } = await dataSubmitExecute(submitParam.value)
-    if (data) {
-      executeTaskId.value = data
-      startPolling() // 开始轮询
-      window.$message.success('提交成功')
-    }
-    activeTab.value = 'result'
-  }
-}
-// =============== 结果轮询 开始 =================
-const resultTaskData = ref()
-const pollingInterval = ref<NodeJS.Timeout | null>(null)
-const maxPollingAttempts = 30 // 最大轮询次数
-const pollingIntervalTime = 1000 // 轮询间隔时间(毫秒)
-let pollingAttempts = 0
-
-// 清除轮询
-function clearPolling() {
-  if (pollingInterval.value) {
-    clearInterval(pollingInterval.value)
-    pollingInterval.value = null
-  }
-  pollingAttempts = 0
-}
-
-// 获取结果详情
-async function refreshResult() {
-  try {
-    const { data } = await dataSubmitDetail({ id: executeTaskId.value })
-    if (data) {
-      resultTaskData.value = data
-      // 如果任务完成，停止轮询
-      if (data.status !== 'PENDING' && data.status !== 'JUDGING') {
-        clearPolling()
-        // 根据结果显示不同消息
-        if (data.status === 'ACCEPTED') {
-          window.$message.success('提交通过!')
-        }
-        else if (data.status === 'COMPILATION_ERROR') {
-          window.$message.error('编译错误')
-        }
-        else if (data.status === 'RUNTIME_ERROR') {
-          window.$message.error('运行时错误')
-        }
-        else if (data.status === 'TIME_LIMIT_EXCEEDED') {
-          window.$message.error('时间超出限制')
-        }
-        else if (data.status === 'MEMORY_LIMIT_EXCEEDED') {
-          window.$message.error('内存超出限制')
-        }
-        else if (data.status === 'WRONG_ANSWER') {
-          window.$message.error('答案错误')
-        }
-      }
-    }
-  }
-  catch (error) {
-    clearPolling()
-    window.$message.error('获取结果失败')
   }
 }
 
-// 开始轮询
-function startPolling() {
-  clearPolling() // 先清除已有的轮询
-  // 立即获取一次结果
-  refreshResult()
-  // 设置定时轮询
-  pollingInterval.value = setInterval(() => {
-    pollingAttempts++
-    if (pollingAttempts >= maxPollingAttempts) {
-      clearPolling()
-      window.$message.warning('获取结果超时，请手动刷新')
-      return
-    }
-    refreshResult()
-  }, pollingIntervalTime)
-}
-
-// 在组件卸载时清除轮询
-onUnmounted(() => {
-  clearPolling()
-})
 // =============== 结果轮询 结束 =================
 const isMobile = ref(false)
 function checkIfMobile() {
@@ -191,17 +187,16 @@ onUnmounted(() => {
           <NTabPane name="description" tab="题目描述">
             <n-space vertical>
               <n-space align="center">
-                <n-tag round size="small">
+                <n-tag :bordered="false" :color="{ color: RandomColorUtil.generate(), textColor: '#fff' }">
                   {{ detailData?.categoryName }}
                 </n-tag>
-                <n-tag round size="small">
+                <n-tag :bordered="false" :color="{ color: DifficultyColorUtil.getColor(detailData?.difficulty), textColor: '#fff' }">
                   {{ detailData?.difficultyName }}
                 </n-tag>
                 <n-h3 style="margin: 0;">
                   {{ detailData?.title }}
                 </n-h3>
               </n-space>
-
               <n-space align="center">
                 <NTag
                   v-for="tag in detailData?.tagNames"
@@ -209,7 +204,7 @@ onUnmounted(() => {
                   size="small"
                   :bordered="false"
                   round
-                  :color="{ color: '#E6F2FF', textColor: '#176DF2', borderColor: '#176DF2' }"
+                  :color="{ color: RandomColorUtil.generate(), textColor: '#fff' }"
                 >
                   {{ tag }}
                 </NTag>
@@ -280,14 +275,16 @@ onUnmounted(() => {
                     align="center"
                   >
                     <n-tag
-                      round
                       size="small"
+                      :bordered="false"
+                      :color="{ color: RandomColorUtil.generate(), textColor: '#fff' }"
                     >
                       {{ detailData?.categoryName }}
                     </n-tag>
                     <n-tag
-                      round
                       size="small"
+                      :bordered="false"
+                      :color="{ color: DifficultyColorUtil.getColor(detailData?.difficulty), textColor: '#fff' }"
                     >
                       {{ detailData?.difficultyName }}
                     </n-tag>
@@ -303,7 +300,7 @@ onUnmounted(() => {
                       size="small"
                       :bordered="false"
                       round
-                      :color="{ color: '#E6F2FF', textColor: '#176DF2', borderColor: '#176DF2' }"
+                      :color="{ color: RandomColorUtil.generate(), textColor: '#fff' }"
                     >
                       {{ tag }}
                     </NTag>
@@ -396,15 +393,6 @@ onUnmounted(() => {
                   <!-- 判题结果详情 -->
                   <n-divider class="!my-4" />
                   <div class="grid grid-cols-3 md:grid-cols-3 gap-4">
-                    <!-- <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-          <div class="text-sm text-gray-500 dark:text-gray-400">
-            测试用例通过
-          </div>
-          <div class="text-2xl font-bold text-green-600 dark:text-green-400">
-            10/10
-          </div>
-        </div> -->
-
                     <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                       <div class="text-sm text-gray-500 dark:text-gray-400">
                         代码长度
@@ -452,18 +440,6 @@ onUnmounted(() => {
                           </div>
                         </div>
                       </div>
-
-                      <!-- <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-          <div class="flex justify-between items-center mb-2">
-            <span class="font-medium">检测结果</span>
-            <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-              未发现抄袭
-            </span>
-          </div>
-          <div class="text-sm text-gray-600 dark:text-gray-300">
-            代码通过克隆检测，未发现高度相似的已有提交
-          </div>
-        </div> -->
                     </div>
 
                     <div class="text-sm text-gray-500 dark:text-gray-400 italic">
@@ -473,15 +449,6 @@ onUnmounted(() => {
 
                   <div class="lg:col-span-2">
                     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-                      <!-- <CodeEditor v-if="resultTaskData?.code"
-            :model-value="resultTaskData?.code"
-            :language="resultTaskData?.language"
-            width="100%"
-            height="400px"
-            :options="{
-              readOnly: true,
-            }"
-          /> -->
                       <CodeEditor
                         v-if="resultTaskData?.message"
                         :model-value="resultTaskData?.message"
@@ -493,94 +460,6 @@ onUnmounted(() => {
                       />
                     </div>
                   </div>
-
-                  <!-- <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <n-card embedded size="small" class="rounded-lg">
-                      <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                          <n-text class="text-gray-500 dark:text-gray-400">
-                            编程语言
-                          </n-text>
-                          <n-tag :bordered="false">
-                            {{ resultTaskData?.languageName }}
-                          </n-tag>
-                        </div>
-                        <div class="flex items-center justify-between">
-                          <n-text class="text-gray-500 dark:text-gray-400">
-                            提交类型
-                          </n-text>
-                          <n-tag :bordered="false" type="info">
-                            {{ resultTaskData?.submitTypeName }}
-                          </n-tag>
-                        </div>
-                      </div>
-                    </n-card>
-
-                    <n-card embedded size="small" class="rounded-lg">
-                      <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                          <n-text class="text-gray-500 dark:text-gray-400">
-                            最大时间
-                          </n-text>
-                          <n-tag :bordered="false" type="info">
-                            {{ resultTaskData?.maxTime }} ms
-                          </n-tag>
-                        </div>
-                        <div class="flex items-center justify-between">
-                          <n-text class="text-gray-500 dark:text-gray-400">
-                            最大内存
-                          </n-text>
-                          <n-tag :bordered="false" type="info">
-                            {{ resultTaskData?.maxMemory }} KB
-                          </n-tag>
-                        </div>
-                      </div>
-                    </n-card>
-                  </div> -->
-
-                  <!-- 代码相似度 -->
-                  <!-- <n-card embedded size="small" class="mt-4 rounded-lg">
-                    <div class="flex items-center justify-between">
-                      <n-text class="text-gray-500 dark:text-gray-400">
-                        代码相似度
-                      </n-text>
-                      <n-progress
-                        v-if="resultTaskData?.similarity"
-                        type="circle"
-                        :percentage="resultTaskData?.similarity"
-                        :indicator-text="`${resultTaskData?.similarity}%`"
-                        :height="60"
-                        :show-indicator="true"
-                      />
-                      <n-text v-else>
-                        未检测
-                      </n-text>
-                    </div>
-                  </n-card> -->
-
-                  <!-- 返回消息 -->
-                  <!-- <n-card embedded size="small" class="mt-4 rounded-lg">
-                    <n-code
-                      :code="resultTaskData?.message"
-                      :language="resultTaskData?.language.toLowerCase()"
-                      show-line-numbers
-                      class="rounded-md overflow-x-scroll"
-                    />
-                  </n-card> -->
-
-                  <!-- 代码展示 -->
-                  <!-- <n-card embedded size="small" class="mt-4 rounded-lg">
-                    <n-code
-                      :code="resultTaskData?.code"
-                      :language="resultTaskData?.language.toLowerCase()"
-                      show-line-numbers
-                      class="rounded-md overflow-x-scroll"
-                    />
-                  </n-card> -->
-                  <!-- <n-collapse :default-expanded-names="['code']" class="mt-4">
-                    <n-collapse-item title="查看相似检测" name="code">
-                    </n-collapse-item>
-                  </n-collapse> -->
                 </n-card>
                 <n-empty
                   v-else
@@ -598,10 +477,16 @@ onUnmounted(() => {
                 </n-empty>
               </NTabPane>
               <NTabPane
+                v-if="detailData?.useAi"
                 name="assistant"
                 tab="增强解析"
               >
-                <AiHelp
+                <!-- <AiHelp
+                  :problem-id="originalId"
+                  :language="submitParam.language"
+                  :user-code="submitParam.code"
+                /> -->
+                <LLMChat
                   :problem-id="originalId"
                   :language="submitParam.language"
                   :user-code="submitParam.code"
@@ -624,10 +509,10 @@ onUnmounted(() => {
               @update:value="handleLanguageChange"
             />
             <n-space align="center">
-              <n-button @click="execute(false)">
+              <n-button :disabled="!submitParam.language || !submitParam.code || isConnected" @click="executeCode(false)">
                 运行
               </n-button>
-              <n-button type="primary" @click="execute(true)">
+              <n-button type="primary" :disabled="!submitParam.language || !submitParam.code || isConnected" @click="executeCode(true)">
                 提交
               </n-button>
             </n-space>

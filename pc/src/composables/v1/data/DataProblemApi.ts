@@ -103,5 +103,8 @@ export function useDataProblemFetch() {
     dataProblemLatest() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/latest`)
     },
+    dataProblemDifficultyDistribution() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/difficulty/distribution`)
+    },
   }
 }

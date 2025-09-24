@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.charlie.web.oj.modular.data.problem.service.DataProblemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -95,5 +96,29 @@ public class DataProblemController {
     @GetMapping("/data/problem/hot")
     public Result<?> getHot() {
         return Result.success(dataProblemService.getHotN(10));
+    }
+
+    @Operation(summary = "C端-难度分布")
+    @GetMapping("/data/problem/difficulty/distribution")
+    public Result<?> difficultyDistribution() {
+        return Result.success(dataProblemService.difficultyDistribution());
+    }
+
+    @Operation(summary = "导入题目")
+    @PostMapping("/data/problem/import")
+    public Result<?> importProblems(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                return Result.failure("请选择要上传的文件");
+            }
+            if (!file.getOriginalFilename().toLowerCase().endsWith(".zip")) {
+                return Result.failure("请选择有效的ZIP格式的压缩包");
+            }
+            dataProblemService.importProblems(file);
+            return Result.success("问题导入成功");
+        } catch (Exception e) {
+            log.error("导入失败", e);
+            return Result.failure("导入失败: " + e.getMessage());
+        }
     }
 }

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NPopconfirm, NSpace, NSplit } from 'naive-ui'
-import { useSysDictFetch } from '@/composables'
+import { useSysDictFetch } from '@/composables/v1'
 import DictForm from './dictform.vue'
 import Form from './form.vue'
 import Detail from './detail.vue'

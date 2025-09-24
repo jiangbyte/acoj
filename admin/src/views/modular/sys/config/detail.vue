@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
-import { useSysConfigFetch } from '@/composables'
+import { useSysConfigFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close'])
 const show = ref(false)
@@ -27,6 +27,9 @@ defineExpose({
       <NDescriptions label-placement="left" bordered :column="1">
         <NDescriptionsItem label="主键">
           {{ formData.id }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="配置类型">
+          {{ formData.configType }}
         </NDescriptionsItem>
         <NDescriptionsItem label="名称">
           {{ formData.name }}

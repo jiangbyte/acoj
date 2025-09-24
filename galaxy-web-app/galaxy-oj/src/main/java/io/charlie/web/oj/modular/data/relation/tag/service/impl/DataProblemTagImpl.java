@@ -30,6 +30,7 @@ public class DataProblemTagImpl extends ServiceImpl<DataProblemTagMapper, DataPr
     // 缓存key前缀
     private static final String DATACACHE_PROBLEM_TAG_IDS = "datacache:problem:tag:ids:";
     private static final String DATACACHE_PROBLEM_TAG_NAMES = "datacache:problem:tag:names:";
+    private static final String DATACACHE_PROBLEM_TAG_PROBLEM_IDS = "datacache:problem:tag:problem:ids:";
     // 缓存过期时间（24小时）
     private static final long CACHE_EXPIRE_TIME = 24 * 60 * 60;
     // 空值缓存过期时间（5分钟，防止缓存穿透）
@@ -131,11 +132,41 @@ public class DataProblemTagImpl extends ServiceImpl<DataProblemTagMapper, DataPr
         return true;
     }
 
+    @Override
+    public List<String> getProblemIdsByTagId(String tagId) {
+        String cacheKey = DATACACHE_PROBLEM_TAG_PROBLEM_IDS + tagId;
+        // 优先查询缓存
+        List<String> cachedProblemIds = (List<String>) redisTemplate.opsForValue().get(cacheKey);
+        if (cachedProblemIds != null) {
+            return cachedProblemIds;
+        }
+        // 缓存不存在，查询数据库
+        List<DataProblemTag> dataProblemTags = this.baseMapper.selectList(new LambdaQueryWrapper<DataProblemTag>()
+                .eq(DataProblemTag::getTagId, tagId)
+        );
+        List<String> problemIds;
+        if (ObjectUtil.isNotEmpty(dataProblemTags)) {
+            problemIds = dataProblemTags.stream()
+                    .map(DataProblemTag::getProblemId)
+                    .toList();
+                    // 将结果存入缓存
+            redisTemplate.opsForValue().set(cacheKey, problemIds, CACHE_EXPIRE_TIME, TimeUnit.SECONDS);
+            return problemIds;
+        } else {
+            // 缓存空值（防止缓存穿透）
+            problemIds = List.of();
+            redisTemplate.opsForValue().set(cacheKey, problemIds, NULL_CACHE_EXPIRE_TIME, TimeUnit.SECONDS);
+        }
+        return problemIds;
+    }
+
     private void clearCache(String problemId) {
         String tagIdsKey = DATACACHE_PROBLEM_TAG_IDS + problemId;
         String tagNamesKey = DATACACHE_PROBLEM_TAG_NAMES + problemId;
+        String problemTagIdsKey = DATACACHE_PROBLEM_TAG_PROBLEM_IDS + problemId;
 
         redisTemplate.delete(tagIdsKey);
         redisTemplate.delete(tagNamesKey);
+        redisTemplate.delete(problemTagIdsKey);
     }
 }

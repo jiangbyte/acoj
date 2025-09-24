@@ -56,7 +56,10 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 }
 
 func (e *Executor) executeTestCase(testCase *dto.SubmitTestCase, index int, runCmd []string, cgroupPath string) error {
-	timeout := time.Duration(e.Sandbox.Workspace.judgeSubmit.MaxTime) * time.Millisecond
+	// 	timeout := time.Duration(e.Sandbox.Workspace.judgeSubmit.MaxTime)
+	timeout := time.Duration(e.Sandbox.Workspace.judgeSubmit.MaxTime)*time.Millisecond + 100*time.Millisecond
+	// 打印timeout值
+	logx.Infof("测试用例 %d 的超时时间设置为: %v", index, timeout)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel() // 设置超时时间，根据提交的最大时间限制
 
@@ -120,8 +123,8 @@ func (e *Executor) executeTestCase(testCase *dto.SubmitTestCase, index int, runC
 		elapsed := time.Since(startTime)
 		// 获取内存使用情况
 		memoryUsed, _ := grutil.GetMemoryUsage(cgroupPath)
-		testCase.MaxMemory = int(grutil.FormatBytesKB(memoryUsed))
-		testCase.MaxTime = int(elapsed.Microseconds())
+		testCase.MaxMemory = grutil.FormatBytesKB(memoryUsed)
+		testCase.MaxTime = float64(elapsed.Milliseconds())
 		testCase.Status = dto.StatusTimeLimitExceeded
 		testCase.Output = stdoutBuf.String()
 		// 检查是否有错误输出
@@ -138,8 +141,12 @@ func (e *Executor) executeTestCase(testCase *dto.SubmitTestCase, index int, runC
 		// 命令正常完成或出错
 		elapsed := time.Since(startTime)
 		memoryUsed, _ := grutil.GetMemoryUsage(cgroupPath)
-		testCase.MaxMemory = int(grutil.FormatBytesKB(memoryUsed))
-		testCase.MaxTime = int(elapsed.Microseconds())
+		testCase.MaxMemory = grutil.FormatBytesKB(memoryUsed)
+		testCase.MaxTime = float64(elapsed.Milliseconds())
+		// 时间判断
+		if elapsed > time.Duration(e.Sandbox.Workspace.judgeSubmit.MaxTime)*time.Millisecond {
+			testCase.Status = dto.StatusTimeLimitExceeded
+		}
 
 		// // 获取退出码
 		// exitCode := 0
@@ -177,8 +184,7 @@ func (e *Executor) executeTestCase(testCase *dto.SubmitTestCase, index int, runC
 		// 	testCase.Message = fmt.Sprintf("程序异常退出，退出码: %d", exitCode)
 		// }
 
-		logx.Infof("测试用例 %d 完成, 内存使用: %d bytes (峰值), 程序退出状态: %v", index, memoryUsed, err)
-		logx.Infof("测试用例 %d 内存使用: %v KB", index, grutil.FormatBytesKB(memoryUsed))
+		logx.Infof("测试用例 %d 完成, 运行时间: %v ms 时间限制 %v ms, 内存使用: %d KB, 程序退出状态: %v", index, elapsed, e.Sandbox.Workspace.judgeSubmit.MaxTime, grutil.FormatBytesKB(memoryUsed), err)
 	}
 
 	return nil

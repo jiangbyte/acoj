@@ -71,6 +71,27 @@ export function useSysDictFetch() {
         },
       })
     },
+    sysDictTree(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/tree`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    sysDictListOption(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/list/option`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    sysDictListGroup(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/list/group`, {
+        params: {
+          ...data,
+        },
+      })
+    },
     /*
      * 字典 选项接口
      */

@@ -35,7 +35,8 @@ public class WebSocketUtil {
     public void sendToTopic(String topic, String destinationId, Object message) {
         String destination = topic + "/" + destinationId;
         try {
-            log.info("推送消息: {} -> {}", destination, message);
+//            log.info("推送消息: {} -> {}", destination, message);
+            log.info("推送消息: {}", destination);
             messagingTemplate.convertAndSend(destination, message);
             recordMessageSent(topic);
         } catch (Exception e) {

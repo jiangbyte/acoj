@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { useDataProblemFetch, useSysBannerFetch, useSysNoticeFetch, useUserRankingFetch } from '@/composables/v1'
+import { useDataProblemFetch, useDataSetFetch, useSysBannerFetch, useSysNoticeFetch, useUserRankingFetch } from '@/composables/v1'
 
-import { AesCrypto, CleanMarkdown } from '@/utils'
+import { AesCrypto, CleanMarkdown, DifficultyColorUtil, RandomColorUtil } from '@/utils'
 
 // 列表数据
 const bannerListData = ref()
@@ -32,10 +32,10 @@ async function loadData() {
     problemListData.value = data
   })
 
-  // // 获取最新题集数据
-  // proSetLatest10().then(({ data }) => {
-  //   setListData.value = data
-  // })
+  // 获取最新题集数据
+  useDataSetFetch().dataSetLatest().then(({ data }) => {
+    setListData.value = data
+  })
 
   // 获取Top10排行榜
   useUserRankingFetch().useUserRankingTop().then(({ data }) => {
@@ -48,10 +48,10 @@ async function loadData() {
     problemRankingListData.value = data
   })
 
-  // // 获取Top10排行榜
-  // setRankingTop().then(({ data }) => {
-  //   setRankingListData.value = data
-  // })
+  // 获取Top10排行榜
+  useDataSetFetch().dataSetHot().then(({ data }) => {
+    setRankingListData.value = data
+  })
 }
 
 loadData()
@@ -183,7 +183,7 @@ loadData()
                       </h3>
                     </n-button>
 
-                    <n-tag size="small" :bordered="false" type="info" class="mr-3">
+                    <n-tag class="mr-3" size="small" :bordered="false" :color="{ color: DifficultyColorUtil.getColor(item.difficulty), textColor: '#fff' }">
                       {{ item.difficultyName }}
                     </n-tag>
                   </div>
@@ -193,7 +193,9 @@ loadData()
                     </n-tag>
                   </div>
                   <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    <span class="mr-4">分类: {{ item.categoryName }}</span>
+                    <n-tag class="mr-4" size="small" :bordered="false" :color="{ color: RandomColorUtil.generate(), textColor: '#fff' }">
+                      {{ item.categoryName }}
+                    </n-tag>
                     <span>通过率: {{ item.acceptance }}%</span>
                   </div>
                 </div>
@@ -269,18 +271,7 @@ loadData()
                 query: { userId: AesCrypto.encrypt(item.id) },
               })"
             >
-              <div v-if="item.rank === 1" class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center text-yellow-600 dark:text-yellow-300 font-bold mr-3">
-                {{ item.rank }}
-              </div>
-              <div v-else-if="item.rank === 2" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold mr-3">
-                {{ item.rank }}
-              </div>
-              <div v-else-if="item.rank === 3" class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-orange-600 dark:text-orange-300 font-bold mr-3">
-                {{ item.rank }}
-              </div>
-              <div v-else class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold mr-3">
-                {{ item.rank }}
-              </div>
+              <RankIcon :rank="item.rank" />
               <n-avatar :src="item.avatar" round :size="40" class="mr-3" />
               <div class="flex-1">
                 <div class="font-medium">
@@ -313,9 +304,7 @@ loadData()
               })"
             >
               <div class="flex items-start">
-                <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-bold mr-3 mt-0.5">
-                  {{ item.rank }}
-                </div>
+                <RankIcon :rank="item.rank" />
                 <div class="flex-1">
                   <n-button text class="mb-2">
                     <h3 class="font-medium">
@@ -351,15 +340,13 @@ loadData()
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 题集排行项 -->
             <div
-              v-for="item in setRankingListData" :key="item.ranking" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+              v-for="item in setRankingListData" :key="item.rank" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
                 name: 'proset_detail',
-                query: { set: AesCrypto.encrypt(item.setId) },
+                query: { set: AesCrypto.encrypt(item.id) },
               })"
             >
               <div class="flex items-start">
-                <div class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-bold mr-3 mt-0.5">
-                  {{ item.ranking }}
-                </div>
+                <RankIcon :rank="item.rank" />
                 <div class="flex-1">
                   <n-button text class="mb-2">
                     <h3 class="font-medium">

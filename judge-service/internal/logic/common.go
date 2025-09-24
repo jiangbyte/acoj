@@ -98,7 +98,7 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 		return
 	}
 
-	l.Infof("收到消息: %+v", judgeSubmit)
+	logx.Infof("收到消息: %+v", judgeSubmit)
 
 	workspace, workspaceResultDto := judge.NewWorkspace(l.ctx, l.svcCtx.Config, judgeSubmit)
 	if workspaceResultDto != nil {
@@ -119,6 +119,7 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 	}
 
 	RunResultDto, err := workspace.Execute()
+	logx.Infof("执行结果: %+v", RunResultDto)
 	if err != nil {
 		err := l.sendResultToMQ(RunResultDto)
 		if err != nil {

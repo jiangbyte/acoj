@@ -31,17 +31,26 @@ defineExpose({
         <NDescriptionsItem label="用户ID">
           {{ formData.userId }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="题集ID">
+          {{ formData.setId }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="是否是题集提交">
+          {{ formData.isSet }}
+        </NDescriptionsItem>
         <NDescriptionsItem label="题目ID">
           {{ formData.problemId }}
         </NDescriptionsItem>
         <NDescriptionsItem label="编程语言">
-          {{ formData.languageName }}
+          {{ formData.language }}
         </NDescriptionsItem>
         <NDescriptionsItem label="源代码">
           {{ formData.code }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="源代码长度">
+          {{ formData.codeLength }}
+        </NDescriptionsItem>
         <NDescriptionsItem label="执行类型">
-          {{ formData.submitTypeName }}
+          {{ formData.submitType }}
         </NDescriptionsItem>
         <NDescriptionsItem label="最大耗时">
           {{ formData.maxTime }}
@@ -53,16 +62,25 @@ defineExpose({
           {{ formData.message }}
         </NDescriptionsItem>
         <NDescriptionsItem label="测试用例结果">
-          {{ formData.testCases }}
+          {{ formData.testCase }}
         </NDescriptionsItem>
         <NDescriptionsItem label="执行状态">
           {{ formData.status }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="流程流转是否完成">
+          {{ formData.isFinish }}
         </NDescriptionsItem>
         <NDescriptionsItem label="相似度">
           {{ formData.similarity }}
         </NDescriptionsItem>
         <NDescriptionsItem label="相似检测任务ID">
           {{ formData.taskId }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="报告ID">
+          {{ formData.reportId }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="相似分级">
+          {{ formData.similarityCategory }}
         </NDescriptionsItem>
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />
@@ -75,6 +93,9 @@ defineExpose({
         </NDescriptionsItem>
         <NDescriptionsItem label="更新人">
           {{ formData.updateUserName }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="相似检测任务ID">
+          {{ formData.judgeTaskId }}
         </NDescriptionsItem>
       </NDescriptions>
       <template #footer>

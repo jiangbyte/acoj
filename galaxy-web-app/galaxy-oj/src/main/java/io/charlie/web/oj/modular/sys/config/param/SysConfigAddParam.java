@@ -25,6 +25,9 @@ public class SysConfigAddParam implements Serializable {
     @Schema(description = "名称")
     private String name;
 
+    @Schema(description = "配置类型")
+    private String configType;
+
     @Schema(description = "编码")
     private String code;
 

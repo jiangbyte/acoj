@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useProProblemFetch, useProSetFetch, useSysUserFetch } from '@/composables'
+import { useDataProblemFetch, useDataSetFetch, useSysUserFetch } from '@/composables/v1'
 import { AesCrypto, CleanMarkdown } from '@/utils'
 import type { DataTableColumns } from 'naive-ui'
 import { NSpace, NTag } from 'naive-ui'
@@ -82,20 +82,23 @@ const setPageParam = ref({
 const pageData = ref()
 const setPageData = ref()
 async function loadData() {
-  const { getUserDetail } = useSysUserFetch()
-  getUserDetail({ id: originalId }).then(({ data }) => {
+  const { sysUserDetailClient } = useSysUserFetch()
+  sysUserDetailClient({ id: originalId }).then(({ data }) => {
     detailData.value = data
   })
 
-  const { proProblemUserRecentSolvedPage } = useProProblemFetch()
-  proProblemUserRecentSolvedPage(pageParam.value).then(({ data }) => {
-    pageData.value = data
-  })
+  // const { proProblemUserRecentSolvedPage } = useProProblemFetch()
+  // proProblemUserRecentSolvedPage(pageParam.value).then(({ data }) => {
+  //   pageData.value = data
+  // })
 
-  const { proSetRecentSolvedPage } = useProSetFetch()
-  proSetRecentSolvedPage(setPageParam.value).then(({ data }) => {
-    setPageData.value = data
-  })
+  // const { proSetRecentSolvedPage } = useProSetFetch()
+  // proSetRecentSolvedPage(setPageParam.value).then(({ data }) => {
+  //   setPageData.value = data
+  // })
+  setPageData.value = {
+    records: [],
+  }
 }
 loadData()
 const router = useRouter()
@@ -284,7 +287,22 @@ function rowProps(row: any) {
           </a> -->
         </div>
 
-        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+        <n-empty
+          v-if="setPageData?.records.length === 0"
+          class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
+          description="无数据"
+        >
+          <template #icon>
+            <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+              <icon-park-outline-info />
+            </n-icon>
+          </template>
+          <n-text depth="3" class="text-center max-w-xs">
+            无数据
+          </n-text>
+        </n-empty>
+
+        <div v-if="setPageData?.records.length !== 0" class="divide-y divide-gray-200 dark:divide-gray-700">
           <!-- 题集1 -->
           <div
             v-for="item in setPageData?.records" :key="item.id" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" @click="$router.push({

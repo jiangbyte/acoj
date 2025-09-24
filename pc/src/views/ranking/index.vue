@@ -2,6 +2,7 @@
 import { useUserRankingFetch } from '@/composables/v1'
 import { AesCrypto } from '@/utils'
 import { NAvatar, NSpace, NText } from 'naive-ui'
+import RankIcon from '@/components/common/rank/RankIcon.vue'
 
 const totalRankingPageData = ref()
 const activeUsersTop = ref()
@@ -35,6 +36,33 @@ const userRankingColumns = [
     title: '排名',
     key: 'rank',
     width: 80,
+    render: (row) => {
+      // return h(NTag, { round: true, bordered: false, color: { color: RankColorUtil.getColor(row.rank), textColor: '#fff' } }, { default: () => RankColorUtil.getDisplayText(row.rank), icon: () => RankColorUtil.getIcon(row.rank) })
+      return h(RankIcon, { rank: row.rank })
+    },
+    // render: (row) => {
+    //   const rank = row.rank
+    //   const isTopThree = rank <= 3
+
+    //   // 配置对象
+    //   const config = {
+    //     tagProps: {
+    //       round: true,
+    //       bordered: false,
+    //       color: isTopThree
+    //         ? { color: RankColorUtil.getColor(rank) }
+    //         : RankColorUtil.getColor(rank),
+    //     },
+    //     slots: {
+    //       default: () => isTopThree ? RankColorUtil.getDisplayText(rank) : rank.toString(),
+    //       ...(isTopThree && {
+    //         icon: () => h('span', {}, RankColorUtil.getIcon(rank)),
+    //       }),
+    //     },
+    //   }
+
+    //   return h(NTag, config.tagProps, config.slots)
+    // },
   },
   {
     title: '用户',

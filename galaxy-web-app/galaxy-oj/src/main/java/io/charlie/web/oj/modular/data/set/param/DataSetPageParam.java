@@ -34,4 +34,13 @@ public class DataSetPageParam implements Serializable {
 
     @Schema(description = "关键词")
     private String keyword;
+
+    @Schema(description = "分类")
+    private String categoryId;
+
+    @Schema(description = "难度")
+    private String difficulty;
+
+    @Schema(description = "类型")
+    private String setType;
 }

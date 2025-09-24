@@ -27,8 +27,8 @@ func NewEvaluater(ctx context.Context, sandbox Sandbox, resultData *dto.JudgeRes
 
 // 实际执行
 func (e *Evaluater) Execute() (*dto.JudgeResultDto, error) {
-	maxTime := 0
-	maxMemory := 0
+	maxTime := 0.0
+	maxMemory := 0.0
 	statusCount := make(map[dto.JudgeStatus]int)
 	messageCount := make(map[string]int)
 

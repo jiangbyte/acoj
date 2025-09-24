@@ -96,4 +96,11 @@ public class DataSubmitController {
         return Result.success(dataSubmitService.handleProblemSubmit(dataSubmitExeParam));
     }
 
+    @Operation(summary = "获取状态统计")
+    //@SaCheckPermission("/pro/submit/page")
+    @GetMapping("/data/submit/status/count")
+    public Result<?> problemUserSubmitStatusCount() {
+        return Result.success(dataSubmitService.countStatusStatistics());
+    }
+
 }

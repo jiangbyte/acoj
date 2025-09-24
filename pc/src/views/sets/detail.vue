@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { AesCrypto } from '@/utils'
+import { AesCrypto, DifficultyColorUtil, RandomColorUtil } from '@/utils'
 import MdViewer from '@/components/common/editor/md/Viewer.vue'
-import { useProSetFetch, useProSetProgressFetch, useProSetSolvedFetch, useProSetSubmitFetch } from '@/composables'
+import { useDataSetFetch } from '@/composables/v1'
 import type { DataTableColumns } from 'naive-ui'
 import { NAvatar, NButton, NSpace, NTag, NText, NTime } from 'naive-ui'
 import { Icon } from '@iconify/vue'
@@ -22,7 +22,7 @@ const setProblemPageParam = ref({
   tagId: null,
   categoryId: null,
   difficulty: null,
-  setId: originalId,
+  id: originalId,
 })
 const submitPageParam = ref({
   current: 1,
@@ -75,7 +75,7 @@ const columns: DataTableColumns<any> = [
     key: 'categoryName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.categoryName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, row.categoryName)
     },
   },
   {
@@ -83,7 +83,7 @@ const columns: DataTableColumns<any> = [
     key: 'tagNames',
     width: 250,
     render: (row) => {
-      return h(NSpace, { align: 'center' }, row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', bordered: false }, tag)) || null)
+      return h(NSpace, { align: 'center' }, row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, tag)) || null)
     },
   },
   {
@@ -91,7 +91,7 @@ const columns: DataTableColumns<any> = [
     key: 'difficultyName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.difficultyName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: DifficultyColorUtil.getColor(row.difficulty), textColor: '#fff' } }, row.difficultyName)
     },
   },
   {
@@ -117,6 +117,7 @@ const columns: DataTableColumns<any> = [
     render: (row) => {
       return h(NButton, {
         size: 'small',
+        type: 'primary',
         onClick: () => {
           router.push({
             name: 'set_submit',
@@ -370,57 +371,58 @@ const progressPageParam = ref({
 })
 
 async function loadData() {
-  const { proSetDetail, proSetProblemPage, proSetProblemList } = useProSetFetch()
-  const { data } = await proSetDetail({ id: originalId })
+  const { dataSetDetail } = useDataSetFetch()
+  const { data } = await dataSetDetail({ id: originalId })
 
   if (data) {
     detailData.value = data
   }
 
-  // proSetProblemPage(setProblemPageParam.value).then(({ data }) => {
+  useDataSetFetch().dataSetProblem(setProblemPageParam.value).then(({ data }) => {
+    console.log(data)
+    setProblemPageData.value = data
+    // processColumns.push({
+    //   title: '操作',
+    //   key: 'action',
+    //   width: 150,
+    // })
+    // 获得setProblemPageData.value里面的records的title，以id为key，title为title，增加到processColumns
+    setProblemPageData.value.forEach((item: any) => {
+      processColumns.push({
+        title: item.title,
+        key: item.id,
+        width: 100,
+      })
+    })
+  })
+
+  // proSetProblemList(setProblemPageParam.value).then(({ data }) => {
   //   setProblemPageData.value = data
-  //   // processColumns.push({
-  //   //   title: '操作',
-  //   //   key: 'action',
-  //   //   width: 150,
-  //   // })
-  //   // 获得setProblemPageData.value里面的records的title，以id为key，title为title，增加到processColumns
-  //   setProblemPageData.value.records.forEach((item: any) => {
-  //     processColumns.push({
-  //       title: item.title,
-  //       key: item.id,
-  //       width: 100,
+  //   if (data) {
+  //     data.forEach((item: any) => {
+  //       processColumns.push({
+  //         title: item.title,
+  //         key: item.id,
+  //         width: 100,
+  //       })
   //     })
-  //   })
+  //   }
   // })
 
-  proSetProblemList(setProblemPageParam.value).then(({ data }) => {
-    setProblemPageData.value = data
-    if (data) {
-      data.forEach((item: any) => {
-        processColumns.push({
-          title: item.title,
-          key: item.id,
-          width: 100,
-        })
-      })
-    }
-  })
+  // const { proSetSubmitPage } = useProSetSubmitFetch()
+  // proSetSubmitPage(submitPageParam.value).then(({ data }) => {
+  //   submitPageData.value = data
+  // })
 
-  const { proSetSubmitPage } = useProSetSubmitFetch()
-  proSetSubmitPage(submitPageParam.value).then(({ data }) => {
-    submitPageData.value = data
-  })
+  // const { proSetSolvedUserPage } = useProSetSolvedFetch()
+  // proSetSolvedUserPage(proSetSolvedUserDataParam.value).then(({ data }) => {
+  //   proSetSolvedUserData.value = data
+  // })
 
-  const { proSetSolvedUserPage } = useProSetSolvedFetch()
-  proSetSolvedUserPage(proSetSolvedUserDataParam.value).then(({ data }) => {
-    proSetSolvedUserData.value = data
-  })
-
-  const { proSetProgressDataPage } = useProSetProgressFetch()
-  proSetProgressDataPage(progressPageParam.value).then(({ data }) => {
-    progressPageData.value = data
-  })
+  // const { proSetProgressDataPage } = useProSetProgressFetch()
+  // proSetProgressDataPage(progressPageParam.value).then(({ data }) => {
+  //   progressPageData.value = data
+  // })
 }
 loadData()
 function rowProps(row: any) {
@@ -520,7 +522,7 @@ function rowProps(row: any) {
           </div>
         </div>
       </div>
-      <div class="bg-white overflow-hidden p-x-6 p-y-4">
+      <div class="bg-white overflow-hidden p-x-6 p-b-3">
         <MdViewer :model-value="detailData?.description" />
       </div>
     </div>

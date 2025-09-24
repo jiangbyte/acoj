@@ -2,11 +2,9 @@ package io.charlie.web.oj.modular.data.set.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
-import io.charlie.web.oj.modular.data.set.param.DataSetAddParam;
-import io.charlie.web.oj.modular.data.set.param.DataSetEditParam;
-import io.charlie.web.oj.modular.data.set.param.DataSetIdParam;
-import io.charlie.web.oj.modular.data.set.param.DataSetPageParam;
+import io.charlie.web.oj.modular.data.set.param.*;
 
 import java.util.List;
 
@@ -29,4 +27,9 @@ public interface DataSetService extends IService<DataSet> {
 
     List<DataSet> latestN(int n);
 
+    List<DataProblem> getSetProblem(DataSetProblemParam dataSetProblemParam);
+
+    DataProblem getSetProblemDetail(DataSetProblemDetailParam dataSetProblemDetailParam);
+
+    List<DataSet> getHotN(int n);
 }

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { SelectOption } from 'naive-ui'
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysGroupFetch, useSysUserFetch } from '@/composables'
+import { useSysGroupFetch, useSysUserFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)

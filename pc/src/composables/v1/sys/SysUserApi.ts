@@ -78,6 +78,13 @@ export function useSysUserFetch() {
         },
       })
     },
+    sysUserDetailClient(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail/client`, {
+        params: {
+          ...data,
+        },
+      })
+    },
     /*
      * 用户 信息接口
      */

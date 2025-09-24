@@ -47,6 +47,7 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
         // 缓存不存在，查询数据库
         List<DataSetProblem> dataSetProblems = this.baseMapper.selectList(new LambdaQueryWrapper<DataSetProblem>()
                 .eq(DataSetProblem::getSetId, setId)
+                .orderByAsc(DataSetProblem::getSort)
         );
 
         List<DataProblem> problems;

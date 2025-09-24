@@ -35,4 +35,13 @@ public class DataProblemPageParam implements Serializable {
 
     @Schema(description = "关键词")
     private String keyword;
+
+    @Schema(description = "标签")
+    private String tagId;
+
+    @Schema(description = "分类")
+    private String categoryId;
+
+    @Schema(description = "难度")
+    private String difficulty;
 }

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysCategoryFetch } from '@/composables'
+import { useSysCategoryFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)

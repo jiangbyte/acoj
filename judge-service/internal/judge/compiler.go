@@ -101,8 +101,8 @@ func (e *Compiler) Execute() (*dto.JudgeResultDto, error) {
 		syscall.Kill(-pgid, syscall.SIGKILL)
 		elapsed := time.Since(startTime)
 		memoryUsed, _ := grutil.GetMemoryUsage(cgroupPath)
-		result.MaxMemory = int(grutil.FormatBytesKB(memoryUsed))
-		result.MaxTime = int(elapsed.Microseconds())
+		result.MaxMemory = grutil.FormatBytesKB(memoryUsed)
+		result.MaxTime = float64(elapsed.Milliseconds())
 		result.Status = dto.StatusCompilationError
 		stderr := stderrBuf.String()
 		if strings.TrimSpace(stderr) != "" {
@@ -116,8 +116,8 @@ func (e *Compiler) Execute() (*dto.JudgeResultDto, error) {
 	case err := <-done:
 		elapsed := time.Since(startTime)
 		memoryUsed, _ := grutil.GetMemoryUsage(cgroupPath)
-		result.MaxMemory = int(grutil.FormatBytesKB(memoryUsed))
-		result.MaxTime = int(elapsed.Microseconds())
+		result.MaxMemory = grutil.FormatBytesKB(memoryUsed)
+		result.MaxTime = float64(elapsed.Milliseconds())
 
 		// // 获取退出码
 		// exitCode := 0

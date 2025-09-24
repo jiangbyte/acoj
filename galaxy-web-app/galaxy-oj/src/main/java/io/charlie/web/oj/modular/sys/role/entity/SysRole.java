@@ -40,5 +40,5 @@ public class SysRole extends CommonEntity {
     private String description;
 
     @Schema(description = "角色层级")
-    private Byte level;
+    private Integer level;
 }

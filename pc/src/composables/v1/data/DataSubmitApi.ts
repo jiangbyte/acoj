@@ -104,5 +104,8 @@ export function useDataSubmitFetch() {
     dataSubmitExecute(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/execute`, data)
     },
+    dataSubmitProblemStatusCount() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/status/count`)
+    },
   }
 }

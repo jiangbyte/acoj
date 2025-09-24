@@ -12,6 +12,9 @@ const rules = {
   userId: [
     { required: true, message: '请输入用户ID', trigger: ['input', 'blur'] },
   ],
+  setId: [
+    { required: true, message: '请输入题集ID', trigger: ['input', 'blur'] },
+  ],
   problemId: [
     { required: true, message: '请输入题目ID', trigger: ['input', 'blur'] },
   ],
@@ -20,6 +23,9 @@ const rules = {
   ],
   code: [
     { required: true, message: '请输入源代码', trigger: ['input', 'blur'] },
+  ],
+  codeLength: [
+    { required: true, message: '请输入源代码长度', type: 'number', trigger: ['input', 'blur'] },
   ],
   maxTime: [
     { required: true, message: '请输入最大耗时', type: 'number', trigger: ['input', 'blur'] },
@@ -30,7 +36,7 @@ const rules = {
   message: [
     { required: true, message: '请输入执行结果消息', trigger: ['input', 'blur'] },
   ],
-  testCases: [
+  testCase: [
     { required: true, message: '请输入测试用例结果', trigger: ['input', 'blur'] },
   ],
   status: [
@@ -40,6 +46,15 @@ const rules = {
     { required: true, message: '请输入相似度', type: 'number', trigger: ['input', 'blur'] },
   ],
   taskId: [
+    { required: true, message: '请输入相似检测任务ID', trigger: ['input', 'blur'] },
+  ],
+  reportId: [
+    { required: true, message: '请输入报告ID', trigger: ['input', 'blur'] },
+  ],
+  similarityCategory: [
+    { required: true, message: '请输入相似分级', trigger: ['input', 'blur'] },
+  ],
+  judgeTaskId: [
     { required: true, message: '请输入相似检测任务ID', trigger: ['input', 'blur'] },
   ],
 }
@@ -100,6 +115,21 @@ defineExpose({
           <NInput v-model:value="formData.userId" placeholder="请输入用户ID" />
         </NFormItem>
         <!-- 输入框 -->
+        <NFormItem label="题集ID" path="setId">
+          <NInput v-model:value="formData.setId" placeholder="请输入题集ID" />
+        </NFormItem>
+        <!-- Boolean 选择框 -->
+        <NFormItem label="是否是题集提交" path="isSet">
+          <NRadioGroup v-model:value="formData.isSet">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
+        </NFormItem>
+        <!-- 输入框 -->
         <NFormItem label="题目ID" path="problemId">
           <NInput v-model:value="formData.problemId" placeholder="请输入题目ID" />
         </NFormItem>
@@ -110,6 +140,10 @@ defineExpose({
         <!-- 输入框 -->
         <NFormItem label="源代码" path="code">
           <NInput v-model:value="formData.code" placeholder="请输入源代码" />
+        </NFormItem>
+        <!-- 数字输入 -->
+        <NFormItem label="源代码长度" path="codeLength">
+          <NInputNumber v-model:value="formData.codeLength" :min="0" :max="100" placeholder="请输入源代码长度" />
         </NFormItem>
         <!-- Boolean 选择框 -->
         <NFormItem label="执行类型" path="submitType">
@@ -135,12 +169,23 @@ defineExpose({
           <NInput v-model:value="formData.message" placeholder="请输入执行结果消息" />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="测试用例结果" path="testCases">
-          <NInput v-model:value="formData.testCases" placeholder="请输入测试用例结果" />
+        <NFormItem label="测试用例结果" path="testCase">
+          <NInput v-model:value="formData.testCase" placeholder="请输入测试用例结果" />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="执行状态" path="status">
           <NInput v-model:value="formData.status" placeholder="请输入执行状态" />
+        </NFormItem>
+        <!-- Boolean 选择框 -->
+        <NFormItem label="流程流转是否完成" path="isFinish">
+          <NRadioGroup v-model:value="formData.isFinish">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
         </NFormItem>
         <!-- 数字输入 -->
         <NFormItem label="相似度" path="similarity">
@@ -149,6 +194,18 @@ defineExpose({
         <!-- 输入框 -->
         <NFormItem label="相似检测任务ID" path="taskId">
           <NInput v-model:value="formData.taskId" placeholder="请输入相似检测任务ID" />
+        </NFormItem>
+        <!-- 输入框 -->
+        <NFormItem label="报告ID" path="reportId">
+          <NInput v-model:value="formData.reportId" placeholder="请输入报告ID" />
+        </NFormItem>
+        <!-- 输入框 -->
+        <NFormItem label="相似分级" path="similarityCategory">
+          <NInput v-model:value="formData.similarityCategory" placeholder="请输入相似分级" />
+        </NFormItem>
+        <!-- 输入框 -->
+        <NFormItem label="相似检测任务ID" path="judgeTaskId">
+          <NInput v-model:value="formData.judgeTaskId" placeholder="请输入相似检测任务ID" />
         </NFormItem>
       </NForm>
       <template #footer>

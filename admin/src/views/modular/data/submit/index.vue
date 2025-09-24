@@ -1,63 +1,47 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText } from 'naive-ui'
+import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
 import { useDataSubmitFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
 
 const formRef = ref()
-const problemDataModalRef = ref()
 const detailRef = ref()
-const router = useRouter()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
   },
   {
-    title: '用户',
-    key: 'user',
-    width: 140,
-    render(row: any) {
-      return h(
-        NSpace,
-        { align: 'center', size: 'small' },
-        {
-          default: () => [
-            h(
-              NAvatar,
-              {
-                size: 'small',
-                round: true,
-                src: row.userAvatar,
-              },
-              {},
-            ),
-            h(
-              NText,
-              {},
-              { default: () => row.userIdName },
-            ),
-          ],
-        },
-      )
-    },
+    title: '用户ID',
+    key: 'userId',
   },
   {
-    title: '题目',
-    key: 'problemIdName',
-    ellipsis: true,
+    title: '题集ID',
+    key: 'setId',
+  },
+  {
+    title: '是否是题集提交',
+    key: 'isSet',
+  },
+  {
+    title: '题目ID',
+    key: 'problemId',
   },
   {
     title: '编程语言',
-    key: 'languageName',
+    key: 'language',
   },
-  // {
-  //   title: '源代码',
-  //   key: 'code',
-  // },
+  {
+    title: '源代码',
+    key: 'code',
+  },
+  {
+    title: '源代码长度',
+    key: 'codeLength',
+  },
   {
     title: '执行类型',
-    key: 'submitTypeName',
+    key: 'submitType',
   },
   {
     title: '最大耗时',
@@ -67,60 +51,53 @@ const columns: DataTableColumns<any> = [
     title: '最大内存使用',
     key: 'maxMemory',
   },
-  // {
-  //   title: '执行结果消息',
-  //   key: 'message',
-  // },
-  // {
-  //   title: '测试用例结果',
-  //   key: 'testCases',
-  // },
+  {
+    title: '执行结果消息',
+    key: 'message',
+  },
+  {
+    title: '测试用例结果',
+    key: 'testCase',
+  },
   {
     title: '执行状态',
-    key: 'statusName',
+    key: 'status',
+  },
+  {
+    title: '流程流转是否完成',
+    key: 'isFinish',
   },
   {
     title: '相似度',
     key: 'similarity',
-    render: (row) => {
-      // return h(NTag, { size: 'small', bordered: false }, row.similarity * 100)
-      return row.similarity * 100
-    },
   },
   {
-    title: '行为标记',
-    key: 'similarityBehaviorName',
-    ellipsis: true,
-  },
-  {
-    title: '检测任务',
+    title: '相似检测任务ID',
     key: 'taskId',
-    ellipsis: true,
+  },
+  {
+    title: '报告ID',
+    key: 'reportId',
+  },
+  {
+    title: '相似分级',
+    key: 'similarityCategory',
+  },
+  {
+    title: '相似检测任务ID',
+    key: 'judgeTaskId',
   },
   {
     title: '操作',
     key: 'action',
-    width: 220,
-    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
-        // h(NButton, {
-        //   type: 'primary',
-        //   size: 'small',
-        //   onClick: () => formRef.value.doOpen(row, true),
-        // }, () => '编辑'),
-        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NButton, {
           type: 'primary',
           size: 'small',
-          disabled: !row.reportId,
-          onClick: () => {
-            router.push({
-              path: `/problem/submit/report/${row.reportId}/task/${row.taskId}`,
-
-            })
-          },
-        }, () => '相似报告'),
+          onClick: () => formRef.value.doOpen(row, true),
+        }, () => '编辑'),
+        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {
@@ -175,14 +152,10 @@ const pageParam = ref({
   sortField: null,
   sortOrder: null,
   keyword: '',
-  problemId: '',
 })
 
-const selectProblemTitle = ref('')
 function resetHandle() {
   pageParam.value.keyword = ''
-  pageParam.value.problemId = ''
-  selectProblemTitle.value = ''
   loadData()
 }
 
@@ -230,17 +203,6 @@ async function deleteBatchHandle() {
             <NFormItem :show-feedback="false" label="关键词" label-placement="left">
               <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" />
             </NFormItem>
-            <NFormItem :show-feedback="false" label="题目" label-placement="left">
-              <SingleProblemModal
-                ref="problemDataModalRef"
-                v-model:value="pageParam.problemId"
-                v-model:title="selectProblemTitle"
-                @update:select="loadData()"
-              />
-              <NButton @click="problemDataModalRef.doOpen()">
-                {{ selectProblemTitle ? selectProblemTitle : '未选择题目' }}
-              </NButton>
-            </NFormItem>
             <NSpace align="center">
               <NButton type="primary" @click="loadData">
                 <template #icon>
@@ -259,12 +221,12 @@ async function deleteBatchHandle() {
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
-            <!-- <NButton type="primary" @click="formRef.doOpen(null, false)">
+            <NButton type="primary" @click="formRef.doOpen(null, false)">
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
               创建
-            </NButton> -->
+            </NButton>
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除

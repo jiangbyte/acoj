@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysConfigFetch } from '@/composables'
+import { useSysConfigFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
@@ -11,6 +11,9 @@ const formData = ref<any>({ ...sysConfigDefaultData })
 const rules = {
   name: [
     { required: true, message: '请输入名称', trigger: ['input', 'blur'] },
+  ],
+  configType: [
+    { required: true, message: '请输入配置类型', trigger: ['input', 'blur'] },
   ],
   code: [
     { required: true, message: '请输入编码', trigger: ['input', 'blur'] },
@@ -76,6 +79,10 @@ defineExpose({
         <!-- 输入框 -->
         <NFormItem v-if="isEdit" label="主键" path="id">
           <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
+        </NFormItem>
+        <!-- 输入框 -->
+        <NFormItem label="配置类型" path="configType">
+          <NInput v-model:value="formData.configType" placeholder="请输入配置类型" />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="名称" path="name">

@@ -15,6 +15,8 @@ import io.charlie.web.oj.modular.sys.auth.param.UsernamePasswordEmailRegisterPar
 import io.charlie.web.oj.modular.sys.auth.result.CaptchaResult;
 import io.charlie.web.oj.modular.sys.auth.result.LoginUser;
 import io.charlie.web.oj.modular.sys.group.enums.SysGroupEnums;
+import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
+import io.charlie.web.oj.modular.sys.role.constant.DefaultRoleData;
 import io.charlie.web.oj.modular.sys.user.constant.DefaultUserData;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.mapper.SysUserMapper;
@@ -27,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author Charlie Zhang
@@ -39,6 +42,7 @@ import java.util.Date;
 public class AuthServiceImpl implements AuthService {
     private final SysUserMapper sysUserMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final SysUserRoleService sysUserRoleService;
 
     @Override
     public CaptchaResult captcha() {
@@ -113,17 +117,16 @@ public class AuthServiceImpl implements AuthService {
         sysUserMapper.updateById(sysUser);
         // redis 记录用户活跃情况（保留30天），进行评分自增记录
 
+        // 判断是否是ADMIN平台
+        if ("ADMIN".equalsIgnoreCase(usernamePasswordLoginParam.getPlatform())) {
+            if (!sysUserRoleService.canAdmin(sysUser.getId())) {
+                throw new BusinessException("无权限");
+            }
+        }
 
         StpUtil.login(sysUser.getId(), usernamePasswordLoginParam.getPlatform().toUpperCase());
         return StpUtil.getTokenValue();
     }
-
-
-
-
-
-
-
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -208,6 +211,9 @@ public class AuthServiceImpl implements AuthService {
         // 默认数据
         sysUser.setDeleted(false);
         sysUserMapper.insert(sysUser);
+
+        // 分配角色
+        sysUserRoleService.assignRoles(sysUser.getId(), List.of(DefaultRoleData.DEFAULT_USER_ROLE_ID));
 
         // 登录
         StpUtil.login(sysUser.getId(), PlatformEnum.CLIENT.getValue());

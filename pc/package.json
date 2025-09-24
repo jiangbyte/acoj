@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@microsoft/fetch-event-source": "^2.0.1",
     "@stomp/stompjs": "^7.2.0",
     "@types/sockjs-client": "^1.5.4",
     "@vicons/ionicons5": "^0.13.0",
@@ -25,6 +26,7 @@
     "pinia-plugin-persistedstate": "^4.4.1",
     "radash": "^12.1.1",
     "sockjs-client": "^1.6.1",
+    "sse.js": "^2.7.1",
     "uuid": "^11.1.0",
     "vue": "^3.5.18",
     "vue-router": "^4.5.1"

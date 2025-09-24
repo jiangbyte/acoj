@@ -1,10 +1,10 @@
 package io.charlie.web.oj.modular.data.submit.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.ranking.RankingUtil;
+import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.ranking.enums.RankingEnums;
@@ -75,6 +76,23 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     public Page<DataSubmit> problemPage(DataSubmitPageParam dataSubmitPageParam) {
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
         queryWrapper.lambda().eq(DataSubmit::getIsSet, false);
+        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
+            queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
+        }
+
+        if (ObjectUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
+            queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
+        }
+        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getLanguage())) {
+            queryWrapper.lambda().eq(DataSubmit::getLanguage, dataSubmitPageParam.getLanguage());
+        }
+        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getStatus())) {
+            queryWrapper.lambda().eq(DataSubmit::getStatus, dataSubmitPageParam.getStatus());
+        }
+        if (ObjectUtil.isNotEmpty(dataSubmitPageParam.getSubmitType())) {
+            queryWrapper.lambda().eq(DataSubmit::getSubmitType, dataSubmitPageParam.getSubmitType());
+        }
+
         if (ObjectUtil.isAllNotEmpty(dataSubmitPageParam.getSortField(), dataSubmitPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataSubmitPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
@@ -96,6 +114,23 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     public Page<DataSubmit> setPage(DataSubmitPageParam dataSubmitPageParam) {
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
         queryWrapper.lambda().eq(DataSubmit::getIsSet, true);
+
+        if (ObjectUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
+            queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
+        }
+        if (ObjectUtil.isNotEmpty(dataSubmitPageParam.getSetId())) {
+            queryWrapper.lambda().eq(DataSubmit::getSetId, dataSubmitPageParam.getSetId());
+        }
+        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getLanguage())) {
+            queryWrapper.lambda().eq(DataSubmit::getLanguage, dataSubmitPageParam.getLanguage());
+        }
+        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getStatus())) {
+            queryWrapper.lambda().eq(DataSubmit::getStatus, dataSubmitPageParam.getStatus());
+        }
+        if (ObjectUtil.isNotEmpty(dataSubmitPageParam.getSubmitType())) {
+            queryWrapper.lambda().eq(DataSubmit::getSubmitType, dataSubmitPageParam.getSubmitType());
+        }
+
         if (ObjectUtil.isAllNotEmpty(dataSubmitPageParam.getSortField(), dataSubmitPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataSubmitPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
@@ -157,7 +192,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         // 2. 存储提交记录
         this.handleSolvedRecord(dataSubmitExeParam, false, dataSubmit);
         // 3. 触发用户活跃度、提交计算
-        this.handleRedisRecord(dataSubmit.getUserId(), dataSubmitExeParam.getSubmitType(), false);
+        this.handleRedisRecord(dataSubmit.getUserId(), dataSubmitExeParam, false);
         rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_PROBLEM.getValue(), dataSubmitExeParam.getProblemId(), 1);
         // 4. 异步处理并发送进度更新
         this.asyncHandleSubmit(dataSubmit, dataSubmitExeParam);
@@ -172,11 +207,26 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         // 2. 存储提交记录
         this.handleSolvedRecord(dataSubmitExeParam, true, dataSubmit);
         // 3. 触发用户活跃度、提交计算
-        this.handleRedisRecord(dataSubmit.getUserId(), dataSubmitExeParam.getSubmitType(), true);
+        this.handleRedisRecord(dataSubmit.getUserId(), dataSubmitExeParam, true);
         rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_SET_PROBLEM.getValue(), dataSubmitExeParam.getProblemId(), 1);
-        // 4. 异步处理并发送进度更新
+        rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_SET.getValue(), dataSubmitExeParam.getSetId(), 1);
+//        // 4. 异步处理并发送进度更新
         this.asyncHandleSubmit(dataSubmit, dataSubmitExeParam);
         return dataSubmit.getId();
+    }
+
+    @Override
+    public List<StatusCount> countStatusStatistics() {
+        List<JudgeStatusCountDTO> countList = this.baseMapper.countByStatus();
+        return countList.stream()
+                .map(dto -> {
+                    StatusCount statusCount = new StatusCount();
+                    statusCount.setStatus(dto.getStatus());
+                    statusCount.setStatusName(JudgeStatus.getDisplayName(dto.getStatus()));
+                    statusCount.setCount(String.valueOf(dto.getCount()));
+                    return statusCount;
+                })
+                .toList();
     }
 
     public DataSubmit handleSubmit(DataSubmitExeParam dataSubmitExeParam, Boolean isSet) {
@@ -191,13 +241,13 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         return submit;
     }
 
-    private void handleRedisRecord(String userId, Boolean isSubmit, Boolean isSet) {
+    private void handleRedisRecord(String userId, DataSubmitExeParam dataSubmitExeParam, Boolean isSet) {
         String realtimeActiveKey = isSet ? RankingEnums.REALTIME_SET_ACTIVE.getValue() : RankingEnums.REALTIME_ACTIVE.getValue();
         String realtimeSubmitKey = isSet ? RankingEnums.REALTIME_SET_SUBMIT.getValue() : RankingEnums.REALTIME_SUBMIT.getValue();
         String tryKey = isSet ? RankingEnums.SET_TRY.getValue() : RankingEnums.TRY.getValue();
 
         rankingUtil.addOrUpdateAutoScore(realtimeActiveKey, userId, 0.1);
-        if (isSubmit) {
+        if (dataSubmitExeParam.getSubmitType()) {
             rankingUtil.addOrUpdateAutoScore(realtimeSubmitKey, userId, 1);
         } else {
             rankingUtil.addOrUpdateAutoScore(tryKey, userId, 1);
@@ -248,13 +298,16 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
             message.setUserId(dataSubmit.getUserId());
             message.setId(dataSubmit.getId());
             message.setJudgeTaskId(param.getJudgeTaskId());
-            message.setIsSet(false);
+            message.setIsSet(dataSubmit.getIsSet());
             // ======================= 题目参数 =======================
             message.setMaxTime(problem.getMaxTime());
             message.setMaxMemory(problem.getMaxMemory());
             message.setTestCase(problem.getTestCase());
             // ======================= 用户提交参数 =======================
             message.setProblemId(param.getProblemId());
+            if (param.getSetId() != null) {
+                message.setSetId(param.getSetId());
+            }
             message.setLanguage(param.getLanguage());
             message.setSubmitType(param.getSubmitType());
             // 处理代码模板
@@ -271,7 +324,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
                 message.setCode(param.getCode());
             }
 
-            judgeHandleMessage.sendJudge(message);
+            judgeHandleMessage.sendJudge(message, dataSubmit);
 
             log.info("题目提交消息已发送到队列，提交ID: {}", dataSubmit.getId());
         } catch (Exception e) {

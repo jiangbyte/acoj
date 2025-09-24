@@ -595,6 +595,20 @@ export const rawMenus: SiteRoute.RowRoute[] = [
     pined: false,
     menuType: '1',
   },
+  {
+    id: '107',
+    pid: '10019',
+    name: 'menu',
+    path: '/system/menu',
+    componentPath: '/modular/sys/menu/index.vue',
+    title: '菜单管理',
+    icon: 'icon-park-outline:application-menu',
+    keepAlive: false,
+    visible: true,
+    sort: '6',
+    pined: false,
+    menuType: '1',
+  },
   // 题目管理分组
   {
     id: '300',

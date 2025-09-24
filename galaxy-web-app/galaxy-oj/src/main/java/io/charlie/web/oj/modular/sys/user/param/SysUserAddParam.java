@@ -55,7 +55,7 @@ public class SysUserAddParam implements Serializable {
     @Schema(description = "电话")
     private String telephone;
 
-    @Schema(description = "登录时间")
-    private LocalDateTime loginTime;
+//    @Schema(description = "登录时间")
+//    private LocalDateTime loginTime;
 
 }

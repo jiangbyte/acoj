@@ -191,6 +191,7 @@ import { clone, min, omit, pick } from 'radash'
 import Layout from '@/layouts/index.vue'
 import { arrayTree, iconRender } from '@/utils'
 import { rawMenus } from '@/stores/RawMenus'
+import { useSysMenuFetch } from '@/composables/v1'
 
 interface RoutesState {
   isInit: boolean
@@ -225,9 +226,11 @@ export const useRouterStore = defineStore('route-store', {
 
   actions: {
     async initAuthRoute() {
-      // const { data, success } = await useSysMenuFetch().getRawMenus()
-      // return success && data ? data : null
-      return rawMenus
+      const { data, success } = await useSysMenuFetch().sysMenuAuthList()
+      // return success && data ? data : rawMenus
+      console.log('认证菜单-->', data)
+      return success && data ? data : []
+      // return rawMenus
     },
 
     async initRouter() {

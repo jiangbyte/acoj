@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useProSetFetch, useSetRankingFetch, useSysCategoryFetch, useSysDictFetch } from '@/composables'
+import { useDataSetFetch, useSysCategoryFetch, useSysDictFetch } from '@/composables/v1'
 import { NButton, NTag } from 'naive-ui'
 import { AesCrypto, CleanMarkdown } from '@/utils'
 
@@ -24,13 +24,13 @@ const loading = ref(true)
 const setListData = ref()
 
 async function loadData() {
-  const { proSetPage, proSetLatest10 } = useProSetFetch()
+  const { dataSetPage } = useDataSetFetch()
   const { sysCategoryOptions } = useSysCategoryFetch()
   const { sysDictOptions } = useSysDictFetch()
-  const { setRankingTop } = useSetRankingFetch()
+  // const { setRankingTop } = useSetRankingFetch()
 
   loading.value = true
-  const { data } = await proSetPage(pageParam.value)
+  const { data } = await dataSetPage(pageParam.value)
   if (data) {
     pageData.value = data
   }
@@ -61,12 +61,11 @@ async function loadData() {
   loading.value = false
 
   // 获取最新题集数据
-  proSetLatest10().then(({ data }) => {
+  useDataSetFetch().dataSetLatest().then(({ data }) => {
     setListData.value = data
   })
 
-  // 获取Top10排行榜
-  setRankingTop().then(({ data }) => {
+  useDataSetFetch().dataSetHot().then(({ data }) => {
     setRankingListData.value = data
   })
 }
@@ -170,8 +169,22 @@ function handleClick(item: any) {
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div class="lg:col-span-2 space-y-8">
+        <n-empty
+          v-if="pageData?.records.length === 0"
+          class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
+          description="暂无结果"
+        >
+          <template #icon>
+            <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+              <icon-park-outline-info />
+            </n-icon>
+          </template>
+          <n-text depth="3" class="text-center max-w-xs">
+            暂无数据
+          </n-text>
+        </n-empty>
         <!-- 题集列表 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+        <div v-if="pageData?.records.length !== 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
           <!-- 题集项 1 -->
           <div
             v-for="item in pageData?.records" :key="item.id"
@@ -193,7 +206,7 @@ function handleClick(item: any) {
               </NTag>
             </div>
             <div class="p-5">
-              <NButton text class=" mb-2">
+              <NButton text class="mb-2">
                 <h3 class="text-xl font-semibold ">
                   {{ item.title }}
                 </h3>
@@ -240,15 +253,13 @@ function handleClick(item: any) {
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 排名1 -->
             <div
-              v-for="item in setRankingListData" :key="item.ranking" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+              v-for="item in setRankingListData" :key="item.rank" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
                 name: 'proset_detail',
-                query: { set: AesCrypto.encrypt(item.setId) },
+                query: { set: AesCrypto.encrypt(item.id) },
               })"
             >
               <div class="flex items-center">
-                <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-yellow-900 flex items-center justify-center font-bold mr-4">
-                  {{ item.ranking }}
-                </div>
+                <RankIcon :rank="item.rank" />
                 <div class="flex-1">
                   <NButton text class="mb-2">
                     <h4 class="font-medium">

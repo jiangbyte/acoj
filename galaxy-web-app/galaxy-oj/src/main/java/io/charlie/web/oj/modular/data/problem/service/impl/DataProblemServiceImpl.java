@@ -6,6 +6,7 @@ import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -13,28 +14,33 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.ranking.RankingInfo;
 import io.charlie.galaxy.utils.ranking.RankingUtil;
+import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblemCount;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemAddParam;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemEditParam;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemIdParam;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemPageParam;
+import io.charlie.web.oj.modular.data.problem.param.*;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.problem.service.DataProblemService;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.data.problem.utils.ProblemBuildTool;
+import io.charlie.web.oj.modular.data.problem.utils.ProblemImportTool;
 import io.charlie.web.oj.modular.data.ranking.enums.RankingEnums;
 import io.charlie.web.oj.modular.data.ranking.service.UserRankingService;
+import io.charlie.web.oj.modular.data.relation.set.service.DataSetProblemService;
 import io.charlie.web.oj.modular.data.relation.tag.service.DataProblemTagService;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
+import io.charlie.web.oj.modular.task.judge.dto.TestCase;
+import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 /**
@@ -51,27 +57,9 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     private final RankingUtil rankingUtil;
     private final UserRankingService userRankingService;
     private final DataProblemTagService dataProblemTagService;
-
-    private void buildProblems(List<DataProblem> dataProblems) {
-        if (CollectionUtil.isEmpty(dataProblems)) {
-            return;
-        }
-
-        dataProblems.forEach(dataProblem -> {
-            // 是否解决
-            try {
-                String loginIdAsString = StpUtil.getLoginIdAsString();
-                Boolean solved = userRankingService.isSolved(loginIdAsString, dataProblem.getId());
-                dataProblem.setCurrentUserSolved(solved);
-            } catch (Exception e) {
-                dataProblem.setCurrentUserSolved(false);
-            }
-
-            // 标签设置
-            dataProblem.setTagIds(dataProblemTagService.getTagIdsById(dataProblem.getId()));
-            dataProblem.setTagNames(dataProblemTagService.getTagNamesById(dataProblem.getId()));
-        });
-    }
+    private final TransService transService;
+    private final ProblemBuildTool problemBuildTool;
+    private final ProblemImportTool problemImportTool;
 
     @Override
     public Page<DataProblem> page(DataProblemPageParam dataProblemPageParam) {
@@ -80,6 +68,23 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         if (ObjectUtil.isNotEmpty(dataProblemPageParam.getKeyword())) {
             queryWrapper.lambda().like(DataProblem::getTitle, dataProblemPageParam.getKeyword());
         }
+        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getCategoryId())) {
+            queryWrapper.lambda().eq(DataProblem::getCategoryId, dataProblemPageParam.getCategoryId());
+        }
+        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getDifficulty())) {
+            queryWrapper.lambda().eq(DataProblem::getDifficulty, dataProblemPageParam.getDifficulty());
+        }
+        // 标签查询
+        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getTagId())) {
+            List<String> idsByTagId = dataProblemTagService.getProblemIdsByTagId(dataProblemPageParam.getTagId());
+            // 如果TagId有值但关联的ID列表为空，则设置一个不可能满足的条件
+            if (ObjectUtil.isEmpty(idsByTagId)) {
+                queryWrapper.lambda().eq(DataProblem::getId, "-1"); // 确保查询不到结果
+            } else {
+                queryWrapper.lambda().in(DataProblem::getId, idsByTagId);
+            }
+        }
+
         if (ObjectUtil.isAllNotEmpty(dataProblemPageParam.getSortField(), dataProblemPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataProblemPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
@@ -93,7 +98,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
                         null
                 ),
                 queryWrapper);
-        buildProblems(page.getRecords());
+        problemBuildTool.buildProblems(page.getRecords());
         return page;
     }
 
@@ -130,6 +135,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         if (ObjectUtil.isEmpty(dataProblem)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
+        problemBuildTool.buildProblem(dataProblem);
         return dataProblem;
     }
 
@@ -167,7 +173,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
                 .last("LIMIT 1")
         ).getCreateTime());
 
-        dataProblemCount.setGrowthRate(BigDecimal.valueOf(monthAdd / (double) count));
+        dataProblemCount.setGrowthRate(BigDecimal.valueOf(monthAdd / (double) count).setScale(4, RoundingMode.HALF_UP));
 
         try {
             String userId = StpUtil.getLoginIdAsString();
@@ -188,6 +194,183 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
             dataProblems.add(dataProblem);
         }
         return dataProblems;
+    }
+
+    @Override
+    public List<DifficultyDistribution> difficultyDistribution() {
+        long totalCount = this.count();
+
+        // 统计难度分布-简单
+        long simpleCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 1));
+        DifficultyDistribution simple = new DifficultyDistribution();
+        simple.setDifficulty(1);
+        simple.setCount(simpleCount);
+        simple.setDifficultyName("简单");
+        if (totalCount == 0) {
+            simple.setPercentage(BigDecimal.ZERO);
+        } else {
+            simple.setPercentage(new BigDecimal(simpleCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+        }
+
+        // 统计难度分布-中等
+        long mediumCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 2));
+        DifficultyDistribution medium = new DifficultyDistribution();
+        medium.setDifficulty(2);
+        medium.setCount(mediumCount);
+        medium.setDifficultyName("中等");
+        if (totalCount == 0) {
+            medium.setPercentage(BigDecimal.ZERO);
+        } else {
+            medium.setPercentage(new BigDecimal(mediumCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+        }
+
+        // 统计难度分布-困难
+        long hardCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 3));
+        DifficultyDistribution hard = new DifficultyDistribution();
+        hard.setDifficulty(3);
+        hard.setCount(hardCount);
+        hard.setDifficultyName("困难");
+        if (totalCount == 0) {
+            hard.setPercentage(BigDecimal.ZERO);
+        } else {
+            hard.setPercentage(new BigDecimal(hardCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+        }
+
+        return List.of(simple, medium, hard);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void importProblems(MultipartFile file) {
+        problemImportTool.importProblems(file);
+    }
+
+    @Override
+    public String llmGetDescription(String id) {
+        DataProblem dataProblem = this.getById(id);
+        if (dataProblem == null) {
+            return "该题目不存在";
+        }
+        return dataProblem.getDescription();
+    }
+
+    @Override
+    public String llmGetTestCase(String id) {
+        DataProblem dataProblem = this.getById(id);
+
+        if (dataProblem == null) {
+            return "该题目不存在";
+        }
+        // 获得测试用例
+        if (ObjectUtil.isEmpty(dataProblem.getTestCase())) {
+            return "测试用例为空";
+        }
+
+        List<TestCase> testCases = dataProblem.getTestCase();
+        // 随机获取一个测试用例
+        TestCase testCase = testCases.get(new Random().nextInt(testCases.size()));
+        return JSONUtil.toJsonPrettyStr(testCase);
+    }
+
+    @Override
+    public String llmGetConstraints(String id) {
+        DataProblem dataProblem = this.getById(id);
+
+        if (dataProblem == null) {
+            return "该题目不存在";
+        }
+
+        class Constraints {
+            String time;
+            String memory;
+        }
+        Constraints constraints = new Constraints();
+        constraints.time = dataProblem.getMaxTime() + "ms";
+        constraints.memory = dataProblem.getMaxMemory() + "KB";
+        return JSONUtil.toJsonPrettyStr(constraints);
+    }
+
+    @Override
+    public String llmGetExample(String id) {
+        DataProblem dataProblem = this.getById(id);
+        if (dataProblem == null) {
+            return "该题目不存在";
+        }
+
+        if (ObjectUtil.isEmpty(dataProblem.getTestCase())) {
+            return "无示例";
+        }
+
+        List<TestCase> testCases = dataProblem.getTestCase();
+        // 获得第一个测试用例
+        TestCase testCase = testCases.getFirst();
+        return JSONUtil.toJsonPrettyStr(testCase);
+    }
+
+    @Override
+    public String getDifficulty(String id) {
+        DataProblem dataProblem = this.getById(id);
+        if (dataProblem == null) {
+            return "该题目不存在";
+        }
+        Integer difficultyLevel = dataProblem.getDifficulty();
+        return switch (difficultyLevel) {
+            case 1 -> "简单";
+            case 2 -> "中等";
+            case 3 -> "困难";
+            default -> "未知";
+        };
+    }
+
+    @Override
+    public String llmGetSource(String id) {
+        DataProblem dataProblem = this.getById(id);
+        if (dataProblem == null) {
+            return "该题目不存在";
+        }
+        return dataProblem.getSource();
+    }
+
+    @Override
+    public String llmGetTags(String id) {
+        DataProblem dataProblem = this.getById(id);
+        if (dataProblem == null) {
+            return "该题目不存在";
+        }
+        List<String> tagNamesById = dataProblemTagService.getTagNamesById(dataProblem.getId());
+        if (tagNamesById == null) {
+            return "无标签";
+        }
+        return JSONUtil.toJsonPrettyStr(tagNamesById);
+    }
+
+    @Override
+    public String llmGetCategory(String id) {
+        DataProblem dataProblem = this.getById(id);
+        if (dataProblem == null) {
+            return "该题目不存在";
+        }
+        transService.transOne(dataProblem);
+        return dataProblem.getCategoryName();
+    }
+
+    @Override
+    public String llmGetOpenLanguage(String id) {
+        DataProblem dataProblem = this.getById(id);
+        if (dataProblem == null) {
+            return "该题目不存在";
+        }
+        List<String> allowedLanguages = dataProblem.getAllowedLanguages();
+        if (allowedLanguages == null) {
+            return "未设置提交语言";
+        }
+        return JSONUtil.toJsonPrettyStr(allowedLanguages);
     }
 
 }

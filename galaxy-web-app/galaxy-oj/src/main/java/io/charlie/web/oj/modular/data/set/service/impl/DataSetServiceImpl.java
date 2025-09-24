@@ -9,17 +9,23 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.galaxy.utils.ranking.RankingInfo;
+import io.charlie.galaxy.utils.ranking.RankingUtil;
+import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
+import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
+import io.charlie.web.oj.modular.data.problem.utils.ProblemBuildTool;
+import io.charlie.web.oj.modular.data.ranking.enums.RankingEnums;
+import io.charlie.web.oj.modular.data.relation.set.service.DataSetProblemService;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
-import io.charlie.web.oj.modular.data.set.param.DataSetAddParam;
-import io.charlie.web.oj.modular.data.set.param.DataSetEditParam;
-import io.charlie.web.oj.modular.data.set.param.DataSetIdParam;
-import io.charlie.web.oj.modular.data.set.param.DataSetPageParam;
+import io.charlie.web.oj.modular.data.set.param.*;
 import io.charlie.web.oj.modular.data.set.mapper.DataSetMapper;
 import io.charlie.web.oj.modular.data.set.service.DataSetService;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +43,11 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> implements DataSetService {
+    private final DataSetProblemService dataSetProblemService;
+    private final TransService transService;
+    private final DataProblemMapper dataProblemMapper;
+    private final ProblemBuildTool problemBuildTool;
+    private final RankingUtil rankingUtil;
 
     @Override
     public Page<DataSet> page(DataSetPageParam dataSetPageParam) {
@@ -44,6 +55,15 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         // 关键字
         if (ObjectUtil.isNotEmpty(dataSetPageParam.getKeyword())) {
             queryWrapper.lambda().like(DataSet::getTitle, dataSetPageParam.getKeyword());
+        }
+        if (GaStringUtil.isNotEmpty(dataSetPageParam.getCategoryId())) {
+            queryWrapper.lambda().eq(DataSet::getCategoryId, dataSetPageParam.getCategoryId());
+        }
+        if (GaStringUtil.isNotEmpty(dataSetPageParam.getDifficulty())) {
+            queryWrapper.lambda().eq(DataSet::getDifficulty, dataSetPageParam.getDifficulty());
+        }
+        if (GaStringUtil.isNotEmpty(dataSetPageParam.getSetType())) {
+            queryWrapper.lambda().eq(DataSet::getSetType, dataSetPageParam.getSetType());
         }
         if (ObjectUtil.isAllNotEmpty(dataSetPageParam.getSortField(), dataSetPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataSetPageParam.getSortOrder())) {
             queryWrapper.orderBy(
@@ -105,6 +125,48 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
                 .last("LIMIT " + n)
         );
         return list;
+    }
+
+    @Override
+    public List<DataProblem> getSetProblem(DataSetProblemParam dataSetProblemParam) {
+        List<String> problemIdsBySetId = dataSetProblemService.getProblemIdsBySetId(dataSetProblemParam.getId());
+        if (ObjectUtil.isEmpty(problemIdsBySetId)) {
+            return List.of();
+        }
+        List<DataProblem> dataProblems = dataProblemMapper.selectByIds(problemIdsBySetId);
+        transService.transBatch(dataProblems);
+        problemBuildTool.buildSetProblems(dataSetProblemParam.getId(), dataProblems);
+        return dataProblems;
+    }
+
+    @Override
+    public DataProblem getSetProblemDetail(DataSetProblemDetailParam dataSetProblemDetailParam) {
+        List<String> problemIdsBySetId = dataSetProblemService.getProblemIdsBySetId(dataSetProblemDetailParam.getId());
+        if (ObjectUtil.isEmpty(problemIdsBySetId)) {
+            throw new BusinessException("该题集没有题目");
+        }
+
+        // 判断problemIdsBySetId 中是否存在dataSetProblemDetailParam.getProblemId
+        if (!problemIdsBySetId.contains(dataSetProblemDetailParam.getProblemId())) {
+            throw new BusinessException("该题集没有该题目");
+        }
+
+        DataProblem dataProblem = dataProblemMapper.selectById(dataSetProblemDetailParam.getProblemId());
+        transService.transOne(dataProblem);
+        problemBuildTool.buildSetProblem(dataSetProblemDetailParam.getId(), dataProblem);
+        return dataProblem;
+    }
+
+    @Override
+    public List<DataSet> getHotN(int n) {
+        List<RankingInfo> topNRanking = rankingUtil.getTopNRanking(RankingEnums.HOT_SET.getValue(), n);
+        List<DataSet> dataSets = new ArrayList<>();
+        for (RankingInfo rankingInfo : topNRanking) {
+            DataSet dataSet = this.getById(rankingInfo.getEntityId());
+            dataSet.setRank(rankingInfo.getRank());
+            dataSets.add(dataSet);
+        }
+        return dataSets;
     }
 
 }

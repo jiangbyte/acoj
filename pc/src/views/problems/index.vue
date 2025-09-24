@@ -3,7 +3,7 @@ import { useDataProblemFetch, useSysCategoryFetch, useSysDictFetch, useSysTagFet
 import type { DataTableColumns } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { NSpace, NTag } from 'naive-ui'
-import { AesCrypto } from '@/utils'
+import { AesCrypto, DifficultyColorUtil, RandomColorUtil } from '@/utils'
 
 const columns: DataTableColumns<any> = [
   {
@@ -33,7 +33,7 @@ const columns: DataTableColumns<any> = [
     key: 'categoryName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.categoryName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, row.categoryName)
     },
   },
   {
@@ -41,7 +41,7 @@ const columns: DataTableColumns<any> = [
     key: 'tagNames',
     width: 250,
     render: (row) => {
-      return h(NSpace, { align: 'center' }, row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', bordered: false }, tag)) || null)
+      return h(NSpace, { align: 'center' }, row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, tag)) || null)
     },
   },
   {
@@ -49,7 +49,7 @@ const columns: DataTableColumns<any> = [
     key: 'difficultyName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.difficultyName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: DifficultyColorUtil.getColor(row.difficulty), textColor: '#fff' } }, row.difficultyName)
     },
   },
   {
@@ -98,6 +98,12 @@ async function loadData() {
   // 获取Top10排行榜
   useDataProblemFetch().dataProblemHot().then(({ data }) => {
     problemRankingListData.value = data
+  })
+
+  useDataProblemFetch().dataProblemDifficultyDistribution().then(({ data }) => {
+    if (data) {
+      difficultyDistribution.value = data
+    }
   })
 
   dataProblemPage(pageParam.value).then(({ data }) => {
@@ -189,7 +195,7 @@ function resetHandle() {
             </h3>
             <p class="text-green-600 dark:text-green-400 text-xs mt-2 flex items-center">
               <icon-park-outline-arrow-up class="mr-1" />
-              较上月增长 {{ problemcount?.growthRate }} %
+              较上月增长 {{ problemcount?.growthRate * 100 }} %
             </p>
           </div>
           <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -394,9 +400,7 @@ function resetHandle() {
               })"
             >
               <div class="flex items-center">
-                <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-yellow-900 flex items-center justify-center font-bold mr-4">
-                  {{ item.rank }}
-                </div>
+                <RankIcon :rank="item.rank" />
                 <div class="flex-1">
                   <n-button text class="mb-2">
                     <h4 class="font-medium">

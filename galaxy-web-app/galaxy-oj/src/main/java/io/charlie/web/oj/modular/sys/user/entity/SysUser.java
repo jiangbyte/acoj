@@ -8,9 +8,13 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.io.Serial;
 import java.util.Date;
+
+import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.dromara.core.trans.anno.Trans;
+import org.dromara.core.trans.constant.TransType;
 
 /**
 * @author Charlie Zhang
@@ -20,7 +24,7 @@ import lombok.EqualsAndHashCode;
 */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("sys_user")
+@TableName(value = "sys_user", autoResultMap = true)
 @Schema(name = "SysUser", description = "用户表")
 public class SysUser extends CommonEntity {
     @Serial
@@ -31,7 +35,12 @@ public class SysUser extends CommonEntity {
     private String id;
 
     @Schema(description = "用户组")
+    @Trans(type = TransType.SIMPLE, target = SysGroup.class, fields = "name", ref = "groupIdName")
     private String groupId;
+
+    @Schema(description = "用户组名称")
+    @TableField(exist = false)
+    private String groupIdName;
 
     @Schema(description = "用户名")
     private String username;

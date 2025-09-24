@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
-import { useSysArticleFetch } from '@/composables'
-import MDViewer from '@/components/common/editor/md/Viewer.vue'
+import { useSysArticleFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close'])
 const show = ref(false)
@@ -36,7 +35,7 @@ defineExpose({
           {{ formData.subtitle }}
         </NDescriptionsItem>
         <NDescriptionsItem label="封面">
-          <NImage :src="formData.cover" width="100" height="100" object-fit="cover" />
+          {{ formData.cover }}
         </NDescriptionsItem>
         <NDescriptionsItem label="作者">
           {{ formData.author }}
@@ -51,7 +50,7 @@ defineExpose({
           {{ formData.toUrl }}
         </NDescriptionsItem>
         <NDescriptionsItem label="父级">
-          {{ formData.parentIdName }}
+          {{ formData.parentId }}
         </NDescriptionsItem>
         <NDescriptionsItem label="类型">
           {{ formData.type }}
@@ -60,7 +59,7 @@ defineExpose({
           {{ formData.category }}
         </NDescriptionsItem>
         <NDescriptionsItem label="内容">
-          <MDViewer :model-value="formData.content" />
+          {{ formData.content }}
         </NDescriptionsItem>
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />

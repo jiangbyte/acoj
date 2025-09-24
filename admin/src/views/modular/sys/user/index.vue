@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace } from 'naive-ui'
-import { useSysUserFetch } from '@/composables'
+import { useSysUserFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
 
@@ -18,6 +18,9 @@ const columns: DataTableColumns<any> = [
   {
     title: '用户名',
     key: 'username',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '昵称',
@@ -40,7 +43,9 @@ const columns: DataTableColumns<any> = [
   {
     title: '签名',
     key: 'quote',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '性别',
@@ -58,21 +63,28 @@ const columns: DataTableColumns<any> = [
   {
     title: '学号',
     key: 'studentNumber',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '邮箱',
     key: 'email',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '电话',
     key: 'telephone',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '操作',
     key: 'action',
-    width: 200,
+    width: 280,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -81,6 +93,7 @@ const columns: DataTableColumns<any> = [
           size: 'small',
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
+        h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => '角色分配'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
@@ -151,6 +164,7 @@ async function loadData() {
   if (data) {
     pageData.value = data
     loading.value = false
+    console.log(data)
   }
 }
 

@@ -7,7 +7,6 @@ import Detail from './detail.vue'
 
 const formRef = ref()
 const detailRef = ref()
-const reportRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -18,55 +17,43 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '分类',
-    key: 'categoryName',
-    ellipsis: {
-      tooltip: true,
-    },
+    key: 'categoryId',
   },
   {
     title: '标题',
     key: 'title',
-    ellipsis: {
-      tooltip: true,
-    },
   },
   {
     title: '来源',
     key: 'source',
-    ellipsis: {
-      tooltip: true,
-    },
   },
   {
     title: '链接',
     key: 'url',
-    ellipsis: {
-      tooltip: true,
-    },
   },
-  // {
-  //   title: '时间限制',
-  //   key: 'maxTime',
-  // },
-  // {
-  //   title: '内存限制',
-  //   key: 'maxMemory',
-  // },
-  // {
-  //   title: '描述',
-  //   key: 'description',
-  // },
-  // {
-  //   title: '用例',
-  //   key: 'testCase',
-  // },
-  // {
-  //   title: '开放语言',
-  //   key: 'allowedLanguages',
-  // },
+  {
+    title: '时间限制',
+    key: 'maxTime',
+  },
+  {
+    title: '内存限制',
+    key: 'maxMemory',
+  },
+  {
+    title: '描述',
+    key: 'description',
+  },
+  {
+    title: '用例',
+    key: 'testCase',
+  },
+  {
+    title: '开放语言',
+    key: 'allowedLanguages',
+  },
   {
     title: '难度',
-    key: 'difficultyName',
+    key: 'difficulty',
   },
   {
     title: '阈值',
@@ -74,23 +61,23 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '使用模板',
-    key: 'useTemplateName',
-  },
-  // {
-  //   title: '模板代码',
-  //   key: 'codeTemplate',
-  // },
-  {
-    title: '公开',
-    key: 'isPublicName',
+    key: 'useTemplate',
   },
   {
-    title: '上架',
-    key: 'isVisibleName',
+    title: '模板代码',
+    key: 'codeTemplate',
   },
   {
-    title: '使用AI',
-    key: 'useAiName',
+    title: '是否公开',
+    key: 'isPublic',
+  },
+  {
+    title: '是否可见',
+    key: 'isVisible',
+  },
+  {
+    title: '是否使用AI',
+    key: 'useAi',
   },
   {
     title: '解决',
@@ -99,16 +86,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 280,
-    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          disabled: row.canUseSimilarReport !== true,
-          onClick: () => { reportRef.value.doOpen(row) },
-        }, () => '相似报告'),
         h(NButton, {
           type: 'primary',
           size: 'small',
@@ -184,7 +163,6 @@ async function loadData() {
   if (data) {
     pageData.value = data
     loading.value = false
-    console.log(data)
   }
 }
 

@@ -2,11 +2,20 @@ package io.charlie.galaxy.cache;
 
 import cn.hutool.extra.spring.SpringUtil;
 import cn.hutool.json.JSONUtil;
+import io.charlie.galaxy.pojo.CommonEntity;
+import io.lettuce.core.dynamic.annotation.Command;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.cache.Cache;
+import org.dromara.core.trans.vo.TransPojo;
+import org.dromara.core.trans.vo.VO;
+import org.dromara.trans.service.impl.TransService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -37,8 +46,15 @@ public class MybatisPlusRedisCache implements Cache {
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
+
+        Class<?> clazz = value.getClass();
+        System.out.println("类名: " + clazz.getName());
+        System.out.println("简单类名: " + clazz.getSimpleName());
+        if (value instanceof ArrayList<?> arrayList) {
+            System.out.println("列表元素类型: " + arrayList.getFirst().getClass().getName());
+        }
+
         if (value != null) {
-            System.out.println(value);
             redisTemplate.opsForValue().set(key.toString(), value, 1, TimeUnit.HOURS);
         }
     }
@@ -49,6 +65,7 @@ public class MybatisPlusRedisCache implements Cache {
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
+
         try {
             if (key != null) {
                 return redisTemplate.opsForValue().get(key.toString());
@@ -66,6 +83,7 @@ public class MybatisPlusRedisCache implements Cache {
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
+
         if (key != null) {
             redisTemplate.delete(key.toString());
         }
@@ -78,6 +96,7 @@ public class MybatisPlusRedisCache implements Cache {
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
+
         Set<String> keys = redisTemplate.keys("*:" + this.id + "*");
         if (!CollectionUtils.isEmpty(keys)) {
             redisTemplate.delete(keys);

@@ -2,7 +2,7 @@
 import { useDataSubmitFetch, useSysDictFetch } from '@/composables/v1'
 import type { DataTableColumns } from 'naive-ui'
 import { NAvatar, NSpace, NTag, NText, NTime } from 'naive-ui'
-import { AesCrypto } from '@/utils'
+import { AesCrypto, LanguageColorUtil, StatusColorUtil, SubmitTypeColorUtil } from '@/utils'
 
 const { dataSubmitProblemPage } = useDataSubmitFetch()
 const { sysDictOptions } = useSysDictFetch()
@@ -49,12 +49,11 @@ async function loadData() {
     statusOptions.value = statusData
   }
 
-  // problemUserSubmitStatusCount().then(({ data }) => {
-  //   if (data) {
-  //     statusCount.value = data
-  //   }
-  //   console.log(data)
-  // })
+  useDataSubmitFetch().dataSubmitProblemStatusCount().then(({ data }) => {
+    if (data) {
+      statusCount.value = data
+    }
+  })
 }
 loadData()
 
@@ -68,7 +67,9 @@ const columns: DataTableColumns<any> = [
   {
     title: '题目',
     key: 'problemIdName',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
     width: 120,
   },
   {
@@ -105,7 +106,7 @@ const columns: DataTableColumns<any> = [
     key: 'statusName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.statusName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: StatusColorUtil.getColor(row.status), textColor: '#fff' } }, row.statusName)
     },
   },
   {
@@ -113,7 +114,7 @@ const columns: DataTableColumns<any> = [
     key: 'languageName',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.languageName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: LanguageColorUtil.getColor(row.language), textColor: '#fff' } }, row.languageName)
     },
   },
   {
@@ -129,7 +130,7 @@ const columns: DataTableColumns<any> = [
     key: 'submitTypeName',
     width: 90,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.submitTypeName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: SubmitTypeColorUtil.getColor(row.submitType), textColor: '#fff' } }, row.submitTypeName)
     },
   },
   {
@@ -190,6 +191,9 @@ const columns: DataTableColumns<any> = [
 function resetHandle() {
   pageParam.value.keyword = ''
   pageParam.value.problem = ''
+  pageParam.value.language = null
+  pageParam.value.submitType = null
+  pageParam.value.status = null
   loadData()
 }
 
@@ -226,11 +230,12 @@ function rowProps(row: any) {
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
       <div v-for="(item, index) in statusCount" :key="index" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
         <div class="font-bold">
-          {{ item.status }}
-        </div>
-        <div class="text-sm text-gray-500 dark:text-gray-400">
+          <!-- {{ item.status }} -->
           {{ item.statusName }}
         </div>
+        <!-- <div class="text-sm text-gray-500 dark:text-gray-400">
+          {{ item.statusName }}
+        </div> -->
         <div class="mt-1 font-semibold">
           {{ item.count }}
         </div>
@@ -241,7 +246,7 @@ function rowProps(row: any) {
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-8">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- 题目筛选 -->
-        <div>
+        <!-- <div>
           <label class="block text-sm font-medium mb-2">题目</label>
           <n-input
             v-model:value="pageParam.problem"
@@ -250,7 +255,7 @@ function rowProps(row: any) {
             @keyup.enter="loadData"
             @clear="resetHandle"
           />
-        </div>
+        </div> -->
 
         <!-- 用户筛选 -->
         <div>
@@ -278,12 +283,24 @@ function rowProps(row: any) {
 
         <!-- 状态筛选 -->
         <div>
-          <label class="block text-sm font-medium mb-2">提交状态</label>
+          <label class="block text-sm font-medium mb-2">判题状态</label>
           <n-select
             v-model:value="pageParam.status"
-            placeholder="选择提交状态"
+            placeholder="选择判题状态"
             clearable
             :options="statusOptions"
+            @clear="resetHandle"
+          />
+        </div>
+
+        <!-- 提交类型筛选 -->
+        <div>
+          <label class="block text-sm font-medium mb-2">提交类型</label>
+          <n-select
+            v-model:value="pageParam.submitType"
+            placeholder="选择提交类型"
+            clearable
+            :options="submitTypeOptions"
             @clear="resetHandle"
           />
         </div>

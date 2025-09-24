@@ -2,7 +2,7 @@
 import { NButton, NCard, NForm, NFormItem, NInput, NText } from 'naive-ui'
 import type { FormInst } from 'naive-ui'
 import { useTokenStore, useUserStore } from '@/stores'
-import { useAuthFetch, useSysConfigFetch } from '@/composables'
+import { useAuthFetch, useSysConfigFetch } from '@/composables/v1'
 
 // 表单数据
 const formRef = ref<FormInst | null>(null)

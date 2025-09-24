@@ -31,4 +31,6 @@ public interface DataSubmitService extends IService<DataSubmit> {
     String handleProblemSubmit(DataSubmitExeParam dataSubmitExeParam);
 
     String handleSetSubmit(DataSubmitExeParam dataSubmitExeParam);
+
+    List<StatusCount> countStatusStatistics();
 }

@@ -14,7 +14,7 @@ import (
 )
 
 // createCgroup 创建cgroup
-func CreateCgroup(maxMemory int) (string, error) {
+func CreateCgroup(maxMemory float64) (string, error) {
 	cgroupName := GenerateCgroupName()
 	cgroupPath := filepath.Join("/sys/fs/cgroup", cgroupName)
 
@@ -26,7 +26,8 @@ func CreateCgroup(maxMemory int) (string, error) {
 	// 设置内存限制（单位：字节）
 	memoryLimit := maxMemory * 1024 // KB 转字节
 	memoryMaxPath := filepath.Join(cgroupPath, "memory.max")
-	if err := os.WriteFile(memoryMaxPath, []byte(strconv.Itoa(memoryLimit)), 0644); err != nil {
+	if err := os.WriteFile(memoryMaxPath, []byte(strconv.FormatFloat(memoryLimit, 'f', -1, 64)), 0644); err != nil {
+	// if err := os.WriteFile(memoryMaxPath, []byte(strconv.Itoa(memoryLimit)), 0644); err != nil {
 		return "", fmt.Errorf("设置内存限制失败: %v", err)
 	}
 

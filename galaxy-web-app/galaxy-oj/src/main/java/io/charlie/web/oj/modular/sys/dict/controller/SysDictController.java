@@ -1,10 +1,7 @@
 package io.charlie.web.oj.modular.sys.dict.controller;
 
 import io.charlie.galaxy.result.Result;
-import io.charlie.web.oj.modular.sys.dict.param.SysDictPageParam;
-import io.charlie.web.oj.modular.sys.dict.param.SysDictAddParam;
-import io.charlie.web.oj.modular.sys.dict.param.SysDictEditParam;
-import io.charlie.web.oj.modular.sys.dict.param.SysDictIdParam;
+import io.charlie.web.oj.modular.sys.dict.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -71,6 +68,26 @@ public class SysDictController {
     @GetMapping("/sys/dict/detail")
     public Result<?> detail(@ParameterObject @Valid SysDictIdParam sysDictIdParam) {
         return Result.success(sysDictService.detail(sysDictIdParam));
+    }
+
+    @Operation(summary = "获取系统字典树")
+    //@SaCheckPermission("/sys/dict/tree")
+    @GetMapping("/sys/dict/tree")
+    public Result<?> tree(@ParameterObject SysDictTreeParam sysDictTreeParam) {
+        return Result.success(sysDictService.treeLabelOption(sysDictTreeParam));
+    }
+
+    @Operation(summary = "获取系统字典树")
+    //@SaCheckPermission("/sys/dict/tree")
+    @GetMapping("/sys/dict/list/option")
+    public Result<?> listLabelOption(@ParameterObject SysDictOptionParam sysDictOptionParam) {
+        return Result.success(sysDictService.listLabelOption(sysDictOptionParam));
+    }
+
+    @Operation(summary = "根据类型分组获取列表")
+    @GetMapping("/sys/dict/list/group")
+    public Result<?> listGroup(@RequestParam String dictType) {
+        return Result.success(sysDictService.listByDictType(dictType));
     }
 
     @Operation(summary = "获取系统字典树")

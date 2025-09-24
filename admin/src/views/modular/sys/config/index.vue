@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
-import { useSysConfigFetch } from '@/composables'
+import { useSysConfigFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
 
@@ -10,6 +10,14 @@ const detailRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
+  },
+  {
+    title: '配置类型',
+    key: 'configType',
+    width: 120,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '名称',

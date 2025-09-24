@@ -21,6 +21,8 @@ export * from './sys/SysNoticeApi'
 export * from './sys/SysRoleApi'
 export * from './sys/SysTagApi'
 export * from './sys/SysUserApi'
+export * from './sys/SysMenuApi'
+export * from './sys/AuthApi'
 
 // 导出其他 API
 export * from './FileApi'

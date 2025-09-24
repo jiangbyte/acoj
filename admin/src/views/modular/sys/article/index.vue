@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace } from 'naive-ui'
-import { useSysArticleFetch } from '@/composables'
+import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { useSysArticleFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
 
@@ -14,29 +14,23 @@ const columns: DataTableColumns<any> = [
   {
     title: '标题',
     key: 'title',
-    ellipsis: true,
   },
   {
     title: '子标题',
     key: 'subtitle',
-    ellipsis: true,
   },
   {
     title: '封面',
     key: 'cover',
-    render: (row) => {
-      return h(NImage, { src: row.cover, width: 50, height: 50, objectFit: 'cover' })
-    },
   },
   {
     title: '作者',
     key: 'author',
-    ellipsis: true,
   },
-  // {
-  //   title: '摘要',
-  //   key: 'summary',
-  // },
+  {
+    title: '摘要',
+    key: 'summary',
+  },
   {
     title: '排序',
     key: 'sort',
@@ -44,12 +38,10 @@ const columns: DataTableColumns<any> = [
   {
     title: '链接',
     key: 'toUrl',
-    ellipsis: true,
   },
   {
     title: '父级',
-    key: 'parentIdName',
-    ellipsis: true,
+    key: 'parentId',
   },
   {
     title: '类型',
@@ -58,13 +50,14 @@ const columns: DataTableColumns<any> = [
   {
     title: '分类',
     key: 'category',
-    ellipsis: true,
+  },
+  {
+    title: '内容',
+    key: 'content',
   },
   {
     title: '操作',
     key: 'action',
-    width: 200,
-    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {

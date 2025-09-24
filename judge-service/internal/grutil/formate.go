@@ -18,13 +18,48 @@ func NormalizeLineEndings(str string) string {
 	return str
 }
 
+// SplitAndNormalize 将文本按行分割并标准化每行
+func SplitAndNormalize(str string) []string {
+	// 标准化换行符
+	str = strings.ReplaceAll(str, "\r\n", "\n")
+	str = strings.ReplaceAll(str, "\r", "\n")
+
+	lines := strings.Split(str, "\n")
+	normalized := make([]string, 0, len(lines))
+
+	for _, line := range lines {
+		// 移除每行的首尾空白
+		line = strings.TrimSpace(line)
+		if line != "" { // 可选：是否忽略空行
+			normalized = append(normalized, line)
+		}
+	}
+
+	return normalized
+}
+
 // 评估两个标准答案与用户提交是否相同
 func CompareOutput(ans string, output string) bool {
-	if NormalizeLineEndings(ans) == NormalizeLineEndings(output) {
-		return true
-	} else {
+	// if NormalizeLineEndings(ans) == NormalizeLineEndings(output) {
+	// 	return true
+	// } else {
+	// 	return false
+	// }
+	// CompareOutput 按行比较，忽略行尾差异
+	ansLines := SplitAndNormalize(ans)
+	outputLines := SplitAndNormalize(output)
+
+	if len(ansLines) != len(outputLines) {
 		return false
 	}
+
+	for i := range ansLines {
+		if ansLines[i] != outputLines[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // filterFilePath 过滤掉消息中的文件路径

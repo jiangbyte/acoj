@@ -3,19 +3,19 @@ package dto
 // ConvertSubmitToResult 将 JudgeSubmitDto 转换为 JudgeResultDto
 func ConvertSubmitToResult(submit JudgeSubmitDto) JudgeResultDto {
 	result := JudgeResultDto{
-		UserId:       submit.UserId,
-		ProblemId:    submit.ProblemId,
-		Language:     submit.Language,
-		SetId: submit.SetId,
-		Code:         submit.Code,
-		SubmitType:   submit.SubmitType,
-		JudgeTaskId:       submit.JudgeTaskId,
-		MaxTime:      0,
-		MaxMemory:    0,
-		ID:           submit.ID,
-		IsSet:        submit.IsSet,
-		Status:       StatusPending, // 初始状态为空，等待判题结果
-		Message:      "",                // 初始消息为空
+		UserId:      submit.UserId,
+		ProblemId:   submit.ProblemId,
+		Language:    submit.Language,
+		SetId:       submit.SetId,
+		Code:        submit.Code,
+		SubmitType:  submit.SubmitType,
+		JudgeTaskId: submit.JudgeTaskId,
+		MaxTime:     0.0,
+		MaxMemory:   0.0,
+		ID:          submit.ID,
+		IsSet:       submit.IsSet,
+		Status:      StatusPending, // 初始状态为空，等待判题结果
+		Message:     "",            // 初始消息为空
 	}
 
 	// 转换测试用例
@@ -25,9 +25,9 @@ func ConvertSubmitToResult(submit JudgeSubmitDto) JudgeResultDto {
 			Input:     testCase.Input,
 			Output:    "",              // 初始输出为空
 			Except:    testCase.Output, // 预期输出来自提交的测试用例
-			MaxTime:   0,
-			MaxMemory: 0,
-			Message:   "",                // 初始消息为空
+			MaxTime:   0.0,
+			MaxMemory: 0.0,
+			Message:   "",            // 初始消息为空
 			Status:    StatusPending, // 初始状态为空
 		}
 	}

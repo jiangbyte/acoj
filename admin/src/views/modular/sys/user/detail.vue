@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
-import { useSysUserFetch } from '@/composables'
+import { useSysUserFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close'])
 const show = ref(false)

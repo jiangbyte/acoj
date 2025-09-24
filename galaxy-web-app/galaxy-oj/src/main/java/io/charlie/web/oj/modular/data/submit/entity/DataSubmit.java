@@ -98,10 +98,10 @@ public class DataSubmit extends CommonEntity {
     private String submitTypeName;
 
     @Schema(description = "最大耗时")
-    private Integer maxTime;
+    private BigDecimal maxTime;
 
     @Schema(description = "最大内存使用")
-    private Integer maxMemory;
+    private BigDecimal maxMemory;
 
     @Schema(description = "执行结果消息")
     private String message;

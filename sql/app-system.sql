@@ -291,6 +291,7 @@ DROP TABLE IF EXISTS sys_config;
 CREATE TABLE sys_config
 (
     id             VARCHAR(32)  NOT NULL COMMENT '主键',
+    config_type    VARCHAR(255) COMMENT '配置分类',
     name           VARCHAR(255) NOT NULL COMMENT '名称',
     code           VARCHAR(255) NOT NULL COMMENT '编码',
     value          VARCHAR(255) NOT NULL COMMENT '值',
@@ -311,8 +312,8 @@ CREATE TABLE sys_config
         '系统配置表';
 
 -- 登录页面背景图片
-INSERT INTO sys_config (id, code, name, value, description)
-VALUES (1, 'APP_ADMIN_LOGIN_BACKGROUND', '登录页面背景图片', 'https://img.shetu66.com/2023/06/25/1687662757639430.png', '登录页面背景图片');
+        INSERT INTO sys_config (id, code, name, value, description)
+    VALUES (1, 'APP_ADMIN_LOGIN_BACKGROUND', '登录页面背景图片', 'https://img.shetu66.com/2023/06/25/1687662757639430.png', '登录页面背景图片');
 -- 应用logo
 INSERT INTO sys_config (id, code, name, value, description)
 VALUES (2, 'APP_LOGO', '应用logo', 'https://cdn.jsdelivr.net/gh/yupi/pku-oj-img/logo.png', '应用logo');
@@ -504,3 +505,51 @@ VALUES (1, '标签1'),
        (6, '标签6'),
        (7, '标签7'),
        (8, '标签8');
+
+
+
+-- ----------------------------
+-- 菜单表
+-- ----------------------------
+DROP TABLE IF EXISTS sys_menu;
+CREATE TABLE sys_menu
+(
+    id             VARCHAR(32) COMMENT '菜单ID',
+    pid            VARCHAR(32) DEFAULT '0' COMMENT '父菜单ID',
+    name           VARCHAR(100) NOT NULL COMMENT '菜单名称（英文标识）',
+    path           VARCHAR(200) COMMENT '路由路径',
+    component_path VARCHAR(500) COMMENT '组件路径',
+    title          VARCHAR(100) NOT NULL COMMENT '菜单标题',
+    icon           VARCHAR(100) COMMENT '图标',
+    keep_alive     TINYINT(1)  DEFAULT 0 COMMENT '是否缓存',
+    visible        TINYINT(1)  DEFAULT 1 COMMENT '是否可见',
+    sort           INT         DEFAULT 0 COMMENT '排序',
+    pined          TINYINT(1)  DEFAULT 0 COMMENT '是否固定',
+    menu_type      INT         DEFAULT 0 COMMENT '菜单类型：0-目录，1-菜单',
+    ex_json        JSON        DEFAULT NULL COMMENT '额外信息',
+    # ------------------------------------------------
+    deleted        TINYINT(1)  DEFAULT 0 COMMENT '删除状态',
+    create_time    DATETIME    DEFAULT NULL COMMENT '创建时间戳',
+    create_user    VARCHAR(32) DEFAULT NULL COMMENT '创建者',
+    update_time    DATETIME    DEFAULT NULL COMMENT '更新时间戳',
+    update_user    VARCHAR(32) DEFAULT NULL COMMENT '更新者',
+    -- 添加索引
+    PRIMARY KEY (id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci
+    COMMENT ='菜单表';
+
+-- ----------------------------
+-- 角色-菜单表 关联表(N-N)
+-- ----------------------------
+DROP TABLE IF EXISTS sys_role_menu;
+CREATE TABLE sys_role_menu
+(
+    role_id VARCHAR(32) NOT NULL COMMENT '角色ID',
+    menu_id VARCHAR(32) NOT NULL COMMENT '菜单ID'
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci
+    COMMENT
+        '角色-菜单 关联表(1-N)';
