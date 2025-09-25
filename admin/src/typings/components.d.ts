@@ -102,6 +102,7 @@ declare module 'vue' {
     NText: typeof import('naive-ui')['NText']
     NTime: typeof import('naive-ui')['NTime']
     NTree: typeof import('naive-ui')['NTree']
+    NTreeSelect: typeof import('naive-ui')['NTreeSelect']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SiderNav: typeof import('./../components/site/SiderNav.vue')['default']

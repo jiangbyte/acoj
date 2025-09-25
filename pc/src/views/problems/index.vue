@@ -26,7 +26,10 @@ const columns: DataTableColumns<any> = [
   {
     title: '题目',
     key: 'title',
-    width: 250,
+    width: 180,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '分类',
@@ -55,9 +58,17 @@ const columns: DataTableColumns<any> = [
   {
     title: '通过率',
     key: 'acceptance',
-    width: 120,
+    width: 100,
     render: (row) => {
       return h(NTag, { size: 'small', bordered: false }, row.acceptance)
+    },
+  },
+  {
+    title: 'LLM 辅助',
+    key: 'useAiName',
+    width: 100,
+    render: (row) => {
+      return row.useAi ? '支持' : '-'
     },
   },
   {

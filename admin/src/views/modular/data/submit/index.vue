@@ -121,7 +121,7 @@ const columns: DataTableColumns<any> = [
   // },
   {
     title: '相似分级',
-    key: 'similarityCategory',
+    key: 'similarityCategoryName',
     ellipsis: {
       tooltip: true,
     },

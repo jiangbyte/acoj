@@ -4,10 +4,12 @@ import { NButton, NCard, NDataTable, NIcon, NPopconfirm, NSpace, NTag } from 'na
 import { useSysMenuFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
+import Permission from './permission.vue'
 import { Icon } from '@iconify/vue'
 
 const formRef = ref()
 const detailRef = ref()
+const permissionRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -118,7 +120,7 @@ const columns: DataTableColumns<any> = [
           size: 'small',
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
-        h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => '权限绑定'),
+        h(NButton, { size: 'small', type: 'warning', onClick: () => permissionRef.value.doOpen(row) }, () => '权限绑定'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
@@ -349,6 +351,7 @@ async function deleteBatchHandle() {
 
     <Form ref="formRef" @submit="loadData" />
     <Detail ref="detailRef" @submit="loadData" />
+    <Permission ref="permissionRef" @submit="loadData" />
   </div>
 </template>
 

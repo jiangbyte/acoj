@@ -3,10 +3,7 @@ package io.charlie.web.oj.modular.sys.menu.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.sys.menu.entity.SysMenu;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuAddParam;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuEditParam;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuIdParam;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuPageParam;
+import io.charlie.web.oj.modular.sys.menu.param.*;
 
 import java.util.List;
 
@@ -30,4 +27,6 @@ public interface SysMenuService extends IService<SysMenu> {
     List<SysMenu> menuTree();
 
     List<SysMenu> authMenu();
+
+    void assignMenuPermission(SysMenuPermissionParam sysMenuPermissionParam);
 }

@@ -18,10 +18,16 @@ const columns: DataTableColumns<any> = [
   {
     title: '任务ID',
     key: 'taskId',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '题集ID',
     key: 'setId',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '是否是题集提交',
@@ -30,6 +36,9 @@ const columns: DataTableColumns<any> = [
   {
     title: '题目ID',
     key: 'problemId',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '样例数量',
@@ -51,14 +60,14 @@ const columns: DataTableColumns<any> = [
     title: '检测阈值',
     key: 'threshold',
   },
-  {
-    title: '相似度分布',
-    key: 'similarityDistribution',
-  },
-  {
-    title: '程度统计',
-    key: 'degreeStatistics',
-  },
+  // {
+  //   title: '相似度分布',
+  //   key: 'similarityDistribution',
+  // },
+  // {
+  //   title: '程度统计',
+  //   key: 'degreeStatistics',
+  // },
   {
     title: '检测模式',
     key: 'checkMode',

@@ -70,5 +70,8 @@ export function useSysRoleFetch() {
         },
       })
     },
+    sysRoleAuthRoles() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/auth/list`)
+    },
   }
 }

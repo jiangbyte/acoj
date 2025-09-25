@@ -74,7 +74,7 @@ public class SysMenu extends CommonEntity {
 
     @Schema(description = "额外信息")
     @TableField(typeHandler = JacksonTypeHandler.class)
-    private List<MenuExJsonItem> exJson;
+    private List<String> exJson;
 
     @Schema(description = "子菜单")
     @TableField(exist = false)

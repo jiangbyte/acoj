@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -29,11 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-06-23
-* @description 提交样本库 服务实现类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-06-23
+ * @description 提交样本库 服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -52,7 +53,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(dataLibraryPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(dataLibraryPageParam.getSize()).orElse(20),
-                null
+                        null
                 ),
                 queryWrapper);
     }
@@ -95,7 +96,54 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
 
     @Override
     public void addLibrary(DataSubmit submit) {
+        // 构建查询条件
+        LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
+                .eq(DataLibrary::getUserId, submit.getUserId())
+                .eq(DataLibrary::getIsSet, submit.getIsSet())
+                .eq(DataLibrary::getProblemId, submit.getProblemId());
 
+        // 如果是set模式，需要额外匹配setId
+        if (submit.getIsSet()) {
+            queryWrapper.eq(DataLibrary::getSetId, submit.getSetId());
+        }
+
+        // 查找已存在的记录
+        DataLibrary library = this.getOne(queryWrapper);
+
+        if (library != null) {
+            log.info("存在记录，执行更新");
+            // 更新现有记录
+            updateExistingLibrary(library, submit);
+            this.updateById(library);
+        } else {
+            log.info("不存在记录，创建新记录");
+            // 创建新记录
+            library = createNewLibrary(submit);
+            this.save(library);
+        }
     }
 
+    /**
+     * 更新已存在的库记录
+     */
+    private void updateExistingLibrary(DataLibrary library, DataSubmit submit) {
+        library.setUserId(submit.getUserId());
+        library.setSetId(submit.getSetId());
+        library.setIsSet(submit.getIsSet());
+        library.setProblemId(submit.getProblemId());
+        library.setSubmitId(submit.getId());
+        library.setSubmitTime(submit.getCreateTime());
+        library.setLanguage(submit.getLanguage());
+        library.setCode(submit.getCode());
+        library.setCodeLength(submit.getCodeLength());
+    }
+
+    /**
+     * 创建新的库记录
+     */
+    private DataLibrary createNewLibrary(DataSubmit submit) {
+        DataLibrary library = new DataLibrary();
+        updateExistingLibrary(library, submit); // 复用设置逻辑
+        return library;
+    }
 }

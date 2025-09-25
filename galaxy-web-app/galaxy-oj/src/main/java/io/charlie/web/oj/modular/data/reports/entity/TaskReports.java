@@ -3,6 +3,7 @@ package io.charlie.web.oj.modular.data.reports.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import io.charlie.galaxy.pojo.CommonEntity;
 
 import java.io.Serializable;
@@ -25,7 +26,7 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("task_reports")
+@TableName(value = "task_reports", autoResultMap = true)
 @Schema(name = "TaskReports", description = "报告库表")
 public class TaskReports extends CommonEntity {
     @Serial
@@ -66,9 +67,11 @@ public class TaskReports extends CommonEntity {
     private BigDecimal threshold;
 
     @Schema(description = "相似度分布")
+    @TableField(typeHandler = JacksonTypeHandler.class)
     private List<Integer> similarityDistribution;
 
     @Schema(description = "程度统计")
+    @TableField(typeHandler = JacksonTypeHandler.class)
     private List<DynamicCloneLevelDetector.CloneLevel> degreeStatistics;
 
     @Schema(description = "检测模式")

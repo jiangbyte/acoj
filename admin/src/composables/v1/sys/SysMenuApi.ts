@@ -84,5 +84,8 @@ export function useSysMenuFetch() {
     sysMenuAuthList() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/auth/list`)
     },
+    sysMenuAssignMenuPermission(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/auth/assign/permission`, data)
+    },
   }
 }

@@ -18,7 +18,7 @@ export function useDataLibraryFetch() {
     isSet: false,
     problemId: '',
     submitId: '',
-    submitTime: '',
+    submitTime: Date.now(),
     language: '',
     code: '',
     codeLength: 0,

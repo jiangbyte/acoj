@@ -51,4 +51,8 @@ public class SimilaritySubmitDto implements Serializable {
 
     private Date createTime;
 
+
+    @Schema(description = "任务ID")
+    private String judgeTaskId;
+
 }

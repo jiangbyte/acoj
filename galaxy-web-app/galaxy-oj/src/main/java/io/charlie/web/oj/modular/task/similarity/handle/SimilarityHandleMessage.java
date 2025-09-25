@@ -24,9 +24,12 @@ import io.charlie.web.oj.modular.task.similarity.enums.ReportTypeEnum;
 import io.charlie.web.oj.modular.task.similarity.mq.CommonSimilarityQueue;
 import io.charlie.web.oj.modular.task.similarity.utils.CodeSimilarityCalculator;
 import io.charlie.web.oj.modular.task.similarity.utils.DynamicCloneLevelDetector;
+import io.charlie.web.oj.modular.websocket.config.WebSocketConfig;
+import io.charlie.web.oj.modular.websocket.data.WebSocketMessage;
 import io.charlie.web.oj.modular.websocket.utils.WebSocketUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dromara.trans.service.impl.TransService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
@@ -61,6 +64,7 @@ public class SimilarityHandleMessage {
     private final TaskSimilarityMapper taskSimilarityMapper;
     private final TaskReportsMapper taskReportsMapper;
     private final CodeSimilarityCalculator codeSimilarityCalculator;
+    private final TransService transService;
 
     public void sendSimilarity(SimilaritySubmitDto similaritySubmitDto) {
 
@@ -97,6 +101,7 @@ public class SimilarityHandleMessage {
         }
 
         // 如果数量其中一个为0或者都为0，则忽略
+        log.info("如果数量其中一个为0或者都为0，则忽略 {}", MIN_SAMPLE_SIZE <= 0 || RECENT_SAMPLE_SIZE <= 0 || MIN_MATCH_LENGTH <= 0);
         if (MIN_SAMPLE_SIZE <= 0 || RECENT_SAMPLE_SIZE <= 0 || MIN_MATCH_LENGTH <= 0) {
             log.info("代码克隆检测 -> 忽略空数据");
             DataSubmit dataSubmit = dataSubmitMapper.selectById(similaritySubmitDto.getId());
@@ -251,6 +256,15 @@ public class SimilarityHandleMessage {
                 .set(DataSubmit::getReportId, reports.getId())
         );
         log.info("更新成功");
+
+        proSubmit = dataSubmitMapper.selectById(similaritySubmitDto.getId());
+        transService.transOne(proSubmit);
+        WebSocketMessage<DataSubmit> message = new WebSocketMessage<>();
+        message.setData(proSubmit);
+
+        log.info("向客户端发送消息：{}", JSONUtil.toJsonStr(message));
+        webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_JUDGE_STATUS, similaritySubmitDto.getJudgeTaskId(), message);
+        webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, similaritySubmitDto.getJudgeTaskId());
     }
 
     /**

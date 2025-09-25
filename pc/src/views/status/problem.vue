@@ -139,7 +139,7 @@ loadData()
             />
 
             <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              您的代码与平台上已有代码存在{{ detailData?.similarity * 100 }}%的相似度，为 {{ detailData?.similarityBehaviorName }}
+              您的代码与平台上已有代码存在{{ detailData?.similarity * 100 }}%的相似度
             </div>
           </div>
         </div>
@@ -147,18 +147,20 @@ loadData()
         <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
           <div class="flex justify-between items-center mb-2">
             <span class="font-medium">检测结果</span>
-            <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-              未发现抄袭
-            </span>
+              <NTag
+                :bordered="false"
+              >
+                {{ detailData?.similarityCategoryName }}
+              </NTag>
           </div>
-          <div class="text-sm text-gray-600 dark:text-gray-300">
-            代码通过克隆检测，未发现高度相似的已有提交
-          </div>
+<!--          <div class="text-sm text-gray-600 dark:text-gray-300">-->
+<!--            代码通过克隆检测，未发现高度相似的已有提交-->
+<!--          </div>-->
         </div>
       </div>
 
       <div class="text-sm text-gray-500 dark:text-gray-400 italic">
-        <i class="fa fa-info-circle mr-1" /> 代码克隆检测用于辅助判断代码相似度，结果仅供参考，最终判定由人工审核决定
+        <i class="fa fa-info-circle mr-1" /> 代码克隆检测用于辅助判断代码相似度，结果仅供参考
       </div>
     </div>
 
@@ -172,7 +174,7 @@ loadData()
               提交的代码
             </h2>
             <div class="flex items-center space-x-2">
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ detailData?.language }}</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{ detailData?.languageName }}</span>
             </div>
           </div>
           <CodeEditor

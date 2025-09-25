@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NTime } from 'naive-ui'
 import { useTaskSimilarityFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -14,104 +14,129 @@ const columns: DataTableColumns<any> = [
   {
     title: '任务ID',
     key: 'taskId',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '手动',
-    key: 'taskType',
+    key: 'taskTypeName',
   },
   {
-    title: '题目ID',
+    title: '题目',
     key: 'problemId',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
-    title: '题集ID',
+    title: '题集',
     key: 'setId',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
-    title: '是否是题集提交',
-    key: 'isSet',
+    title: '题集提交',
+    key: 'isSetName',
   },
   {
-    title: '编程语言',
-    key: 'language',
+    title: '语言',
+    key: 'languageName',
   },
   {
     title: '相似度',
     key: 'similarity',
   },
   {
-    title: '提交用户',
+    title: '用户',
     key: 'submitUser',
   },
-  {
-    title: '源代码',
-    key: 'submitCode',
-  },
-  {
-    title: '源代码长度',
-    key: 'submitCodeLength',
-  },
+  // {
+  //   title: '源代码',
+  //   key: 'submitCode',
+  // },
+  // {
+  //   title: '长度',
+  //   key: 'submitCodeLength',
+  // },
   {
     title: '提交ID',
     key: 'submitId',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '提交时间',
     key: 'submitTime',
+    width: 180,
+    render: (row) => {
+      return h(NTime, { time: row.submitTime })
+    },
   },
-  {
-    title: '提交用户Token名称',
-    key: 'submitTokenName',
-  },
-  {
-    title: '提交用户Token内容',
-    key: 'submitTokenTexts',
-  },
+  // {
+  //   title: '提交用户Token名称',
+  //   key: 'submitTokenName',
+  // },
+  // {
+  //   title: '提交用户Token内容',
+  //   key: 'submitTokenTexts',
+  // },
   {
     title: '样本用户',
     key: 'originUser',
   },
+  // {
+  //   title: '样本源代码',
+  //   key: 'originCode',
+  // },
+  // {
+  //   title: '长度',
+  //   key: 'originCodeLength',
+  // },
   {
-    title: '样本源代码',
-    key: 'originCode',
-  },
-  {
-    title: '样本源代码长度',
-    key: 'originCodeLength',
-  },
-  {
-    title: '样本提交ID',
+    title: '提交ID',
     key: 'originId',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
-    title: '样本提交时间',
+    title: '提交时间',
     key: 'originTime',
+    width: 180,
+    render: (row) => {
+      return h(NTime, { time: row.originTime })
+    },
   },
-  {
-    title: '样本用户Token名称',
-    key: 'originTokenName',
-  },
-  {
-    title: '样本用户Token内容',
-    key: 'originTokenTexts',
-  },
+  // {
+  //   title: '样本用户Token名称',
+  //   key: 'originTokenName',
+  // },
+  // {
+  //   title: '样本用户Token内容',
+  //   key: 'originTokenTexts',
+  // },
   {
     title: '操作',
     key: 'action',
+    width: 90,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          onClick: () => formRef.value.doOpen(row, true),
-        }, () => '编辑'),
+        // h(NButton, {
+        //   type: 'primary',
+        //   size: 'small',
+        //   onClick: () => formRef.value.doOpen(row, true),
+        // }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
-        h(NPopconfirm, {
-          onPositiveClick: () => deleteHandle(row),
-        }, {
-          default: () => '确认删除',
-          trigger: () => h(NButton, { size: 'small', type: 'error' }, () => '删除'),
-        }),
+        // h(NPopconfirm, {
+        //   onPositiveClick: () => deleteHandle(row),
+        // }, {
+        //   default: () => '确认删除',
+        //   trigger: () => h(NButton, { size: 'small', type: 'error' }, () => '删除'),
+        // }),
       ])
     },
   },

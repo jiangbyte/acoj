@@ -17,5 +17,8 @@ export function useAuthFetch() {
     doRegister(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/register`, data)
     },
+    permissionList() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/permission`)
+    },
   }
 }

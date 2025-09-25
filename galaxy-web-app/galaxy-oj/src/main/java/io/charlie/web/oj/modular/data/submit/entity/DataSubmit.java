@@ -132,11 +132,11 @@ public class DataSubmit extends CommonEntity {
     private String reportId;
 
     @Schema(description = "相似分级")
-    @Trans(type = TransType.DICTIONARY, key = "CLONE_LEVEL", ref = "similarityBehaviorName")
+    @Trans(type = TransType.DICTIONARY, key = "CLONE_LEVEL", ref = "similarityCategoryName")
     private String similarityCategory;
 
     @Schema(description = "相似度行为名称")
     @TableField(exist = false)
-    private String similarityBehaviorName;
+    private String similarityCategoryName;
 
 }

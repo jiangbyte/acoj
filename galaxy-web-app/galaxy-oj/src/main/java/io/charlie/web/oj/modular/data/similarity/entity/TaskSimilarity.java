@@ -3,6 +3,11 @@ package io.charlie.web.oj.modular.data.similarity.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -14,6 +19,8 @@ import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.dromara.core.trans.anno.Trans;
+import org.dromara.core.trans.constant.TransType;
 
 /**
 * @author Charlie Zhang
@@ -23,7 +30,7 @@ import lombok.EqualsAndHashCode;
 */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("task_similarity")
+@TableName(value = "task_similarity", autoResultMap = true)
 @Schema(name = "TaskSimilarity", description = "检测结果任务库")
 public class TaskSimilarity extends CommonEntity {
     @Serial
@@ -37,6 +44,7 @@ public class TaskSimilarity extends CommonEntity {
     private String taskId;
 
     @Schema(description = "手动")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean taskType;
 
     @Schema(description = "题目ID")
@@ -46,10 +54,16 @@ public class TaskSimilarity extends CommonEntity {
     private String setId;
 
     @Schema(description = "是否是题集提交")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean isSet;
 
     @Schema(description = "编程语言")
+    @Trans(type = TransType.DICTIONARY, key = "ALLOW_LANGUAGE", ref = "languageName")
     private String language;
+
+    @Schema(description = "语言名称")
+    @TableField(exist = false)
+    private String languageName;
 
     @Schema(description = "相似度")
     private BigDecimal similarity;
@@ -67,12 +81,16 @@ public class TaskSimilarity extends CommonEntity {
     private String submitId;
 
     @Schema(description = "提交时间")
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date submitTime;
 
     @Schema(description = "提交用户Token名称")
+    @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> submitTokenName;
 
     @Schema(description = "提交用户Token内容")
+    @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> submitTokenTexts;
 
     @Schema(description = "样本用户")
@@ -88,11 +106,15 @@ public class TaskSimilarity extends CommonEntity {
     private String originId;
 
     @Schema(description = "样本提交时间")
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date originTime;
 
     @Schema(description = "样本用户Token名称")
+    @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> originTokenName;
 
     @Schema(description = "样本用户Token内容")
+    @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> originTokenTexts;
 }

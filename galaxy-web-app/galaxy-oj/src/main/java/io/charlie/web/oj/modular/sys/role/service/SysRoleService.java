@@ -27,4 +27,6 @@ public interface SysRoleService extends IService<SysRole> {
 
     SysRole detail(SysRoleIdParam sysRoleIdParam);
 
+    List<SysRole> authRoles();
+
 }

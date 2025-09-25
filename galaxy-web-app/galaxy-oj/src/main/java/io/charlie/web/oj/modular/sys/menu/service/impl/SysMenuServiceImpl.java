@@ -3,18 +3,17 @@ package io.charlie.web.oj.modular.sys.menu.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.web.oj.modular.sys.menu.entity.SysMenu;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuAddParam;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuEditParam;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuIdParam;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuPageParam;
+import io.charlie.web.oj.modular.sys.menu.param.*;
 import io.charlie.web.oj.modular.sys.menu.mapper.SysMenuMapper;
 import io.charlie.web.oj.modular.sys.menu.service.SysMenuService;
 import io.charlie.galaxy.enums.ISortOrderEnum;
@@ -172,5 +171,12 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
         // 非超级用户
         List<String> menuIdsByRoleId = sysRoleMenuService.findMenuIdsByRoleId(heightLevelRole.getId());
         return this.baseMapper.selectByIds(menuIdsByRoleId);
+    }
+
+    @Override
+    public void assignMenuPermission(SysMenuPermissionParam sysMenuPermissionParam) {
+        SysMenu byId = this.getById(sysMenuPermissionParam.getId());
+        byId.setExJson(sysMenuPermissionParam.getPermissions());
+        this.updateById(byId);
     }
 }

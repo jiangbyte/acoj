@@ -433,14 +433,14 @@ onUnmounted(() => {
                           />
 
                           <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                            您的代码与平台上已有代码存在{{ resultTaskData?.similarity * 100 }}%的相似度，为 {{ resultTaskData?.similarityBehaviorName }}
+                            您的代码与平台上已有代码存在{{ resultTaskData?.similarity * 100 }}%的相似度，{{ resultTaskData?.similarityCategoryName }}
                           </div>
                         </div>
                       </div>
                     </div>
 
                     <div class="text-sm text-gray-500 dark:text-gray-400 italic">
-                      <i class="fa fa-info-circle mr-1" /> 代码克隆检测用于辅助判断代码相似度，结果仅供参考，最终判定由人工审核决定
+                      <i class="fa fa-info-circle mr-1" /> 代码克隆检测用于辅助判断代码相似度，结果仅供参考
                     </div>
                   </div>
 

@@ -60,6 +60,9 @@ const columns: DataTableColumns<any> = [
   {
     title: '提交ID',
     key: 'submitId',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '提交时间',

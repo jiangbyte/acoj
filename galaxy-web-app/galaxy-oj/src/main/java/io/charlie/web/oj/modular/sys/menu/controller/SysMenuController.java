@@ -2,10 +2,7 @@ package io.charlie.web.oj.modular.sys.menu.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuPageParam;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuAddParam;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuEditParam;
-import io.charlie.web.oj.modular.sys.menu.param.SysMenuIdParam;
+import io.charlie.web.oj.modular.sys.menu.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -84,5 +81,12 @@ public class SysMenuController {
     @GetMapping("/sys/menu/auth/list")
     public Result<?> authMenu() {
         return Result.success(sysMenuService.authMenu());
+    }
+
+    @Operation(summary = "获取认证菜单")
+    @PostMapping("/sys/menu/auth/assign/permission")
+    public Result<?> assignMenuPermission(@RequestBody @Valid SysMenuPermissionParam sysMenuPermissionParam) {
+        sysMenuService.assignMenuPermission(sysMenuPermissionParam);
+        return Result.success();
     }
 }

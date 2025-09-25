@@ -73,4 +73,10 @@ public class SysRoleController {
     public Result<?> detail(@ParameterObject @Valid SysRoleIdParam sysRoleIdParam) {
         return Result.success(sysRoleService.detail(sysRoleIdParam));
     }
+
+    @Operation(summary = "获取角色详情")
+    @GetMapping("/sys/role/auth/list")
+    public Result<?> authRoles() {
+        return Result.success(sysRoleService.authRoles());
+    }
 }

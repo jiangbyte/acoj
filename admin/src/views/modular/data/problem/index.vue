@@ -40,16 +40,16 @@ const columns: DataTableColumns<any> = [
   //   title: '链接',
   //   key: 'url',
   // },
-  {
-    title: '时间限制',
-    key: 'maxTime',
-    width: 110,
-  },
-  {
-    title: '内存限制',
-    key: 'maxMemory',
-    width: 110,
-  },
+  // {
+  //   title: '时间限制',
+  //   key: 'maxTime',
+  //   width: 110,
+  // },
+  // {
+  //   title: '内存限制',
+  //   key: 'maxMemory',
+  //   width: 110,
+  // },
   // {
   //   title: '描述',
   //   key: 'description',

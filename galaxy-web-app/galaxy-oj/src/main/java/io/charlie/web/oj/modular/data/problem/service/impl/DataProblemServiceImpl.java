@@ -107,6 +107,9 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     public void add(DataProblemAddParam dataProblemAddParam) {
         DataProblem bean = BeanUtil.toBean(dataProblemAddParam, DataProblem.class);
         this.save(bean);
+
+        // 处理标签
+        dataProblemTagService.addOrUpdate(bean.getId(), dataProblemAddParam.getTagIds());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -118,6 +121,9 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         DataProblem bean = BeanUtil.toBean(dataProblemEditParam, DataProblem.class);
         BeanUtil.copyProperties(dataProblemEditParam, bean);
         this.updateById(bean);
+
+        // 处理标签
+        dataProblemTagService.addOrUpdate(bean.getId(), dataProblemEditParam.getTagIds());
     }
 
     @Transactional(rollbackFor = Exception.class)

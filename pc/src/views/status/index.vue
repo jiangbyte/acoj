@@ -159,7 +159,7 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '行为标记',
-    key: 'similarityBehaviorName',
+    key: 'similarityCategoryName',
     ellipsis: true,
     width: 80,
   },

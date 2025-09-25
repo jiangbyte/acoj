@@ -184,7 +184,9 @@ public class JudgeHandleMessage {
 
         log.info("向客户端发送消息：{}", JSONUtil.toJsonStr(message));
         webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId(), message);
-        webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId());
+       if (!judgeResultDto.getSubmitType()) {
+           webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId());
+       }
     }
 
     /**
@@ -200,6 +202,7 @@ public class JudgeHandleMessage {
                 log.info("测试提交无需异步处理");
             }
         } catch (Exception e) {
+            e.printStackTrace();
             log.error("异步处理附加任务失败：{}", e.getMessage());
         }
     }
@@ -252,7 +255,9 @@ public class JudgeHandleMessage {
         SimilaritySubmitDto similaritySubmitDto = BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class);
         similaritySubmitDto.setTaskId(taskId);
         similaritySubmitDto.setTaskType(false);
+        similaritySubmitDto.setJudgeTaskId(judgeResultDto.getJudgeTaskId());
         similaritySubmitDto.setCreateTime(dataSubmit.getCreateTime());
+
         similarityHandleMessage.sendSimilarity(similaritySubmitDto);
     }
 }
