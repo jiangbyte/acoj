@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.library.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.data.library.param.DataLibraryPageParam;
 import io.charlie.web.oj.modular.data.library.param.DataLibraryAddParam;
@@ -37,14 +38,14 @@ public class DataLibraryController {
     private final DataLibraryService dataLibraryService;
 
     @Operation(summary = "获取提交样本库分页")
-    //@SaCheckPermission("/data/library/page")
+    @SaCheckPermission("/data/library/page")
     @GetMapping("/data/library/page")
     public Result<?> page(@ParameterObject DataLibraryPageParam dataLibraryPageParam) {
         return Result.success(dataLibraryService.page(dataLibraryPageParam));
     }
 
     @Operation(summary = "添加提交样本库")
-    //@SaCheckPermission("/data/library/add")
+    @SaCheckPermission("/data/library/add")
     @PostMapping("/data/library/add")
     public Result<?> add(@RequestBody @Valid DataLibraryAddParam dataLibraryAddParam) {
         dataLibraryService.add(dataLibraryAddParam);
@@ -52,7 +53,7 @@ public class DataLibraryController {
     }
 
     @Operation(summary = "编辑提交样本库")
-    //@SaCheckPermission("/data/library/edit")
+    @SaCheckPermission("/data/library/edit")
     @PostMapping("/data/library/edit")
     public Result<?> edit(@RequestBody @Valid DataLibraryEditParam dataLibraryEditParam) {
         dataLibraryService.edit(dataLibraryEditParam);
@@ -60,7 +61,7 @@ public class DataLibraryController {
     }
 
     @Operation(summary = "删除提交样本库")
-    //@SaCheckPermission("/data/library/delete")
+    @SaCheckPermission("/data/library/delete")
     @PostMapping("/data/library/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<DataLibraryIdParam> dataLibraryIdParam) {
         dataLibraryService.delete(dataLibraryIdParam);
@@ -68,7 +69,7 @@ public class DataLibraryController {
     }
 
     @Operation(summary = "获取提交样本库详情")
-    //@SaCheckPermission("/data/library/detail")
+    @SaCheckPermission("/data/library/detail")
     @GetMapping("/data/library/detail")
     public Result<?> detail(@ParameterObject @Valid DataLibraryIdParam dataLibraryIdParam) {
         return Result.success(dataLibraryService.detail(dataLibraryIdParam));

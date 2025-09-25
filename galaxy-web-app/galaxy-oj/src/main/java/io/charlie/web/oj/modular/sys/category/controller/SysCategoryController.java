@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.category.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.sys.category.param.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,14 +34,14 @@ public class SysCategoryController {
     private final SysCategoryService sysCategoryService;
 
     @Operation(summary = "获取分类分页")
-    //@SaCheckPermission("/sys/category/page")
+    @SaCheckPermission("/sys/category/page")
     @GetMapping("/sys/category/page")
     public Result<?> page(@ParameterObject SysCategoryPageParam sysCategoryPageParam) {
         return Result.success(sysCategoryService.page(sysCategoryPageParam));
     }
 
     @Operation(summary = "添加分类")
-    //@SaCheckPermission("/sys/category/add")
+    @SaCheckPermission("/sys/category/add")
     @PostMapping("/sys/category/add")
     public Result<?> add(@RequestBody @Valid SysCategoryAddParam sysCategoryAddParam) {
         sysCategoryService.add(sysCategoryAddParam);
@@ -48,7 +49,7 @@ public class SysCategoryController {
     }
 
     @Operation(summary = "编辑分类")
-    //@SaCheckPermission("/sys/category/edit")
+    @SaCheckPermission("/sys/category/edit")
     @PostMapping("/sys/category/edit")
     public Result<?> edit(@RequestBody @Valid SysCategoryEditParam sysCategoryEditParam) {
         sysCategoryService.edit(sysCategoryEditParam);
@@ -56,7 +57,7 @@ public class SysCategoryController {
     }
 
     @Operation(summary = "删除分类")
-    //@SaCheckPermission("/sys/category/delete")
+    @SaCheckPermission("/sys/category/delete")
     @PostMapping("/sys/category/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysCategoryIdParam> sysCategoryIdParam) {
         sysCategoryService.delete(sysCategoryIdParam);
@@ -64,7 +65,7 @@ public class SysCategoryController {
     }
 
     @Operation(summary = "获取分类详情")
-    //@SaCheckPermission("/sys/category/detail")
+    @SaCheckPermission("/sys/category/detail")
     @GetMapping("/sys/category/detail")
     public Result<?> detail(@ParameterObject @Valid SysCategoryIdParam sysCategoryIdParam) {
         return Result.success(sysCategoryService.detail(sysCategoryIdParam));

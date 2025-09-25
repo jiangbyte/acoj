@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.reports.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.data.reports.param.TaskReportsPageParam;
 import io.charlie.web.oj.modular.data.reports.param.TaskReportsAddParam;
@@ -36,14 +37,14 @@ public class TaskReportsController {
     private final TaskReportsService taskReportsService;
 
     @Operation(summary = "获取报告库分页")
-    //@SaCheckPermission("/task/reports/page")
+    @SaCheckPermission("/task/reports/page")
     @GetMapping("/task/reports/page")
     public Result<?> page(@ParameterObject TaskReportsPageParam taskReportsPageParam) {
         return Result.success(taskReportsService.page(taskReportsPageParam));
     }
 
     @Operation(summary = "添加报告库")
-    //@SaCheckPermission("/task/reports/add")
+    @SaCheckPermission("/task/reports/add")
     @PostMapping("/task/reports/add")
     public Result<?> add(@RequestBody @Valid TaskReportsAddParam taskReportsAddParam) {
         taskReportsService.add(taskReportsAddParam);
@@ -51,7 +52,7 @@ public class TaskReportsController {
     }
 
     @Operation(summary = "编辑报告库")
-    //@SaCheckPermission("/task/reports/edit")
+    @SaCheckPermission("/task/reports/edit")
     @PostMapping("/task/reports/edit")
     public Result<?> edit(@RequestBody @Valid TaskReportsEditParam taskReportsEditParam) {
         taskReportsService.edit(taskReportsEditParam);
@@ -59,7 +60,7 @@ public class TaskReportsController {
     }
 
     @Operation(summary = "删除报告库")
-    //@SaCheckPermission("/task/reports/delete")
+    @SaCheckPermission("/task/reports/delete")
     @PostMapping("/task/reports/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<TaskReportsIdParam> taskReportsIdParam) {
         taskReportsService.delete(taskReportsIdParam);
@@ -67,7 +68,7 @@ public class TaskReportsController {
     }
 
     @Operation(summary = "获取报告库详情")
-    //@SaCheckPermission("/task/reports/detail")
+    @SaCheckPermission("/task/reports/detail")
     @GetMapping("/task/reports/detail")
     public Result<?> detail(@ParameterObject @Valid TaskReportsIdParam taskReportsIdParam) {
         return Result.success(taskReportsService.detail(taskReportsIdParam));

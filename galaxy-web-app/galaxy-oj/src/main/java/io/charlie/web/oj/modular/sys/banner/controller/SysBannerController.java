@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.banner.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.sys.banner.param.SysBannerPageParam;
 import io.charlie.web.oj.modular.sys.banner.param.SysBannerAddParam;
@@ -36,14 +37,14 @@ public class SysBannerController {
     private final SysBannerService sysBannerService;
 
     @Operation(summary = "获取横幅分页")
-    //@SaCheckPermission("/sys/banner/page")
+    @SaCheckPermission("/sys/banner/page")
     @GetMapping("/sys/banner/page")
     public Result<?> page(@ParameterObject SysBannerPageParam sysBannerPageParam) {
         return Result.success(sysBannerService.page(sysBannerPageParam));
     }
 
     @Operation(summary = "添加横幅")
-    //@SaCheckPermission("/sys/banner/add")
+    @SaCheckPermission("/sys/banner/add")
     @PostMapping("/sys/banner/add")
     public Result<?> add(@RequestBody @Valid SysBannerAddParam sysBannerAddParam) {
         sysBannerService.add(sysBannerAddParam);
@@ -51,7 +52,7 @@ public class SysBannerController {
     }
 
     @Operation(summary = "编辑横幅")
-    //@SaCheckPermission("/sys/banner/edit")
+    @SaCheckPermission("/sys/banner/edit")
     @PostMapping("/sys/banner/edit")
     public Result<?> edit(@RequestBody @Valid SysBannerEditParam sysBannerEditParam) {
         sysBannerService.edit(sysBannerEditParam);
@@ -59,7 +60,7 @@ public class SysBannerController {
     }
 
     @Operation(summary = "删除横幅")
-    //@SaCheckPermission("/sys/banner/delete")
+    @SaCheckPermission("/sys/banner/delete")
     @PostMapping("/sys/banner/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysBannerIdParam> sysBannerIdParam) {
         sysBannerService.delete(sysBannerIdParam);
@@ -67,7 +68,7 @@ public class SysBannerController {
     }
 
     @Operation(summary = "获取横幅详情")
-    //@SaCheckPermission("/sys/banner/detail")
+    @SaCheckPermission("/sys/banner/detail")
     @GetMapping("/sys/banner/detail")
     public Result<?> detail(@ParameterObject @Valid SysBannerIdParam sysBannerIdParam) {
         return Result.success(sysBannerService.detail(sysBannerIdParam));

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace, NTag, NTime } from 'naive-ui'
 import { useDataSetFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -13,51 +13,80 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '题集类型',
-    key: 'setType',
+    key: 'setTypeName',
   },
   {
     title: '标题',
     key: 'title',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '封面',
     key: 'cover',
+    render: (row) => {
+      return h(NImage, { src: row.cover, width: 50, height: 50, objectFit: 'cover' })
+    },
   },
-  {
-    title: '描述',
-    key: 'description',
-  },
+  // {
+  //   title: '描述',
+  //   key: 'description',
+  // },
   {
     title: '分类',
-    key: 'categoryId',
+    key: 'categoryName',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '难度',
-    key: 'difficulty',
+    key: 'difficultyName',
   },
   {
     title: '开始时间',
     key: 'startTime',
+    width: 180,
+    render: (row) => {
+      return h(NTime, { time: row.startTime })
+    },
   },
   {
     title: '结束时间',
     key: 'endTime',
+    width: 180,
+    render: (row) => {
+      return h(NTime, { time: row.endTime })
+    },
+  },
+  // {
+  //   title: '额外的信息',
+  //   key: 'exJson',
+  // },
+  {
+    title: '上架',
+    key: 'isVisibleName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.isVisible ? 'primary' : 'error',
+      }, () => row.isVisibleName)
+    },
   },
   {
-    title: '额外的信息',
-    key: 'exJson',
-  },
-  {
-    title: '是否可见',
-    key: 'isVisible',
-  },
-  {
-    title: '是否使用AI',
-    key: 'useAi',
+    title: 'AI',
+    key: 'useAiName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.useAi ? 'primary' : 'error',
+      }, () => row.useAiName)
+    },
   },
   {
     title: '操作',
     key: 'action',
+    width: 280,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {
@@ -66,6 +95,12 @@ const columns: DataTableColumns<any> = [
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
+        h(NButton, {
+          type: 'primary',
+          size: 'small',
+          disabled: row.canUseSimilarReport !== true,
+          onClick: () => { },
+        }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {

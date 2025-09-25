@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import { useDataProblemFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -17,43 +17,54 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '分类',
-    key: 'categoryId',
+    key: 'categoryName',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '标题',
     key: 'title',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '来源',
     key: 'source',
+    ellipsis: {
+      tooltip: true,
+    },
   },
-  {
-    title: '链接',
-    key: 'url',
-  },
+  // {
+  //   title: '链接',
+  //   key: 'url',
+  // },
   {
     title: '时间限制',
     key: 'maxTime',
+    width: 110,
   },
   {
     title: '内存限制',
     key: 'maxMemory',
+    width: 110,
   },
-  {
-    title: '描述',
-    key: 'description',
-  },
-  {
-    title: '用例',
-    key: 'testCase',
-  },
-  {
-    title: '开放语言',
-    key: 'allowedLanguages',
-  },
+  // {
+  //   title: '描述',
+  //   key: 'description',
+  // },
+  // {
+  //   title: '用例',
+  //   key: 'testCase',
+  // },
+  // {
+  //   title: '开放语言',
+  //   key: 'allowedLanguages',
+  // },
   {
     title: '难度',
-    key: 'difficulty',
+    key: 'difficultyName',
   },
   {
     title: '阈值',
@@ -61,23 +72,38 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '使用模板',
-    key: 'useTemplate',
+    key: 'useTemplateName',
+  },
+  // {
+  //   title: '模板代码',
+  //   key: 'codeTemplate',
+  // },
+  {
+    title: '公开',
+    key: 'isPublicName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.isPublic ? 'primary' : 'error',
+      }, () => row.isPublicName)
+    },
   },
   {
-    title: '模板代码',
-    key: 'codeTemplate',
+    title: '上架',
+    key: 'isVisibleName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.isVisible ? 'primary' : 'error',
+      }, () => row.isVisibleName)
+    },
   },
   {
-    title: '是否公开',
-    key: 'isPublic',
-  },
-  {
-    title: '是否可见',
-    key: 'isVisible',
-  },
-  {
-    title: '是否使用AI',
-    key: 'useAi',
+    title: 'AI',
+    key: 'useAiName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.useAi ? 'primary' : 'error',
+      }, () => row.useAiName)
+    },
   },
   {
     title: '解决',
@@ -86,6 +112,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
+    width: 280,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, {
@@ -94,6 +122,12 @@ const columns: DataTableColumns<any> = [
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
+        h(NButton, {
+          type: 'primary',
+          size: 'small',
+          disabled: row.canUseSimilarReport !== true,
+          onClick: () => { },
+        }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {
@@ -222,6 +256,12 @@ async function deleteBatchHandle() {
                 <IconParkOutlinePlus />
               </template>
               创建
+            </NButton>
+            <NButton type="primary">
+              <template #icon>
+                <IconParkOutlinePlus />
+              </template>
+              导入
             </NButton>
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>

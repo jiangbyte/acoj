@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.config.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.sys.config.param.SysConfigPageParam;
 import io.charlie.web.oj.modular.sys.config.param.SysConfigAddParam;
@@ -36,14 +37,14 @@ public class SysConfigController {
     private final SysConfigService sysConfigService;
 
     @Operation(summary = "获取系统配置分页")
-    //@SaCheckPermission("/sys/config/page")
+    @SaCheckPermission("/sys/config/page")
     @GetMapping("/sys/config/page")
     public Result<?> page(@ParameterObject SysConfigPageParam sysConfigPageParam) {
         return Result.success(sysConfigService.page(sysConfigPageParam));
     }
 
     @Operation(summary = "添加系统配置")
-    //@SaCheckPermission("/sys/config/add")
+    @SaCheckPermission("/sys/config/add")
     @PostMapping("/sys/config/add")
     public Result<?> add(@RequestBody @Valid SysConfigAddParam sysConfigAddParam) {
         sysConfigService.add(sysConfigAddParam);
@@ -51,7 +52,7 @@ public class SysConfigController {
     }
 
     @Operation(summary = "编辑系统配置")
-    //@SaCheckPermission("/sys/config/edit")
+    @SaCheckPermission("/sys/config/edit")
     @PostMapping("/sys/config/edit")
     public Result<?> edit(@RequestBody @Valid SysConfigEditParam sysConfigEditParam) {
         sysConfigService.edit(sysConfigEditParam);
@@ -59,7 +60,7 @@ public class SysConfigController {
     }
 
     @Operation(summary = "删除系统配置")
-    //@SaCheckPermission("/sys/config/delete")
+    @SaCheckPermission("/sys/config/delete")
     @PostMapping("/sys/config/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysConfigIdParam> sysConfigIdParam) {
         sysConfigService.delete(sysConfigIdParam);
@@ -67,7 +68,7 @@ public class SysConfigController {
     }
 
     @Operation(summary = "获取系统配置详情")
-    //@SaCheckPermission("/sys/config/detail")
+    @SaCheckPermission("/sys/config/detail")
     @GetMapping("/sys/config/detail")
     public Result<?> detail(@ParameterObject @Valid SysConfigIdParam sysConfigIdParam) {
         return Result.success(sysConfigService.detail(sysConfigIdParam));

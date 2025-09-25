@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.auth.controller;
 
+import io.charlie.web.oj.config.PermissionScanner;
 import io.charlie.web.oj.modular.sys.auth.param.PasswordChangeParam;
 import io.charlie.web.oj.modular.sys.auth.param.UsernamePasswordLoginParam;
 import io.charlie.web.oj.modular.sys.auth.result.LoginUser;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 public class AuthController {
     private final AuthService authService;
+    private final PermissionScanner permissionScanner;
 
     @Operation(summary = "获取验证码")
     @GetMapping("/sys/auth/captcha")
@@ -74,4 +76,11 @@ public class AuthController {
         authService.changePassword(passwordChangeParam);
         return Result.success();
     }
+
+    @Operation(summary = "获取权限值")
+    @GetMapping("/sys/auth/permission")
+    public Result<?> permission() {
+        return Result.success(permissionScanner.getGroupedPermissionData());
+    }
+
 }

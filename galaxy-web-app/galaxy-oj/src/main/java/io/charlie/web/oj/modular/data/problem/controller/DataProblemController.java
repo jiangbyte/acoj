@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.problem.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemPageParam;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemAddParam;
@@ -37,14 +38,14 @@ public class DataProblemController {
     private final DataProblemService dataProblemService;
 
     @Operation(summary = "获取题目分页")
-    //@SaCheckPermission("/data/problem/page")
+    @SaCheckPermission("/data/problem/page")
     @GetMapping("/data/problem/page")
     public Result<?> page(@ParameterObject DataProblemPageParam dataProblemPageParam) {
         return Result.success(dataProblemService.page(dataProblemPageParam));
     }
 
     @Operation(summary = "添加题目")
-    //@SaCheckPermission("/data/problem/add")
+    @SaCheckPermission("/data/problem/add")
     @PostMapping("/data/problem/add")
     public Result<?> add(@RequestBody @Valid DataProblemAddParam dataProblemAddParam) {
         dataProblemService.add(dataProblemAddParam);
@@ -52,7 +53,7 @@ public class DataProblemController {
     }
 
     @Operation(summary = "编辑题目")
-    //@SaCheckPermission("/data/problem/edit")
+    @SaCheckPermission("/data/problem/edit")
     @PostMapping("/data/problem/edit")
     public Result<?> edit(@RequestBody @Valid DataProblemEditParam dataProblemEditParam) {
         dataProblemService.edit(dataProblemEditParam);
@@ -60,7 +61,7 @@ public class DataProblemController {
     }
 
     @Operation(summary = "删除题目")
-    //@SaCheckPermission("/data/problem/delete")
+    @SaCheckPermission("/data/problem/delete")
     @PostMapping("/data/problem/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<DataProblemIdParam> dataProblemIdParam) {
         dataProblemService.delete(dataProblemIdParam);
@@ -68,7 +69,7 @@ public class DataProblemController {
     }
 
     @Operation(summary = "获取题目详情")
-    //@SaCheckPermission("/data/problem/detail")
+    @SaCheckPermission("/data/problem/detail")
     @GetMapping("/data/problem/detail")
     public Result<?> detail(@ParameterObject @Valid DataProblemIdParam dataProblemIdParam) {
         return Result.success(dataProblemService.detail(dataProblemIdParam));

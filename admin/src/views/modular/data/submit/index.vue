@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText } from 'naive-ui'
 import { useDataSubmitFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -12,92 +12,146 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: '用户ID',
-    key: 'userId',
+    title: '用户',
+    key: 'user',
+    width: 140,
+    render(row: any) {
+      return h(
+        NSpace,
+        { align: 'center', size: 'small' },
+        {
+          default: () => [
+            h(
+              NAvatar,
+              {
+                size: 'small',
+                round: true,
+                src: row.userAvatar,
+              },
+              {},
+            ),
+            h(
+              NText,
+              {},
+              { default: () => row.userIdName },
+            ),
+          ],
+        },
+      )
+    },
   },
   {
-    title: '题集ID',
-    key: 'setId',
+    title: '题集',
+    key: 'setIdName',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
-    title: '是否是题集提交',
-    key: 'isSet',
+    title: '题集提交',
+    key: 'isSetName',
   },
   {
-    title: '题目ID',
-    key: 'problemId',
+    title: '题目',
+    key: 'problemIdName',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
-    title: '编程语言',
-    key: 'language',
+    title: '语言',
+    key: 'languageName',
   },
+  // {
+  //   title: '源代码',
+  //   key: 'code',
+  // },
   {
-    title: '源代码',
-    key: 'code',
-  },
-  {
-    title: '源代码长度',
+    title: '长度',
     key: 'codeLength',
   },
   {
     title: '执行类型',
-    key: 'submitType',
+    key: 'submitTypeName',
   },
   {
-    title: '最大耗时',
+    title: '耗时',
     key: 'maxTime',
   },
   {
-    title: '最大内存使用',
+    title: '内存',
     key: 'maxMemory',
   },
-  {
-    title: '执行结果消息',
-    key: 'message',
-  },
-  {
-    title: '测试用例结果',
-    key: 'testCase',
-  },
+  // {
+  //   title: '执行结果消息',
+  //   key: 'message',
+  // },
+  // {
+  //   title: '测试用例结果',
+  //   key: 'testCase',
+  // },
   {
     title: '执行状态',
-    key: 'status',
+    key: 'statusName',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
-    title: '流程流转是否完成',
+    title: '流转完成',
     key: 'isFinish',
   },
   {
     title: '相似度',
     key: 'similarity',
   },
-  {
-    title: '相似检测任务ID',
-    key: 'taskId',
-  },
-  {
-    title: '报告ID',
-    key: 'reportId',
-  },
+  // {
+  //   title: '相似检测任务ID',
+  //   key: 'taskId',
+  //   ellipsis: {
+  //     tooltip: true,
+  //   },
+  // },
+  // {
+  //   title: '报告ID',
+  //   key: 'reportId',
+  //   ellipsis: {
+  //     tooltip: true,
+  //   },
+  // },
   {
     title: '相似分级',
     key: 'similarityCategory',
+    ellipsis: {
+      tooltip: true,
+    },
   },
-  {
-    title: '相似检测任务ID',
-    key: 'judgeTaskId',
-  },
+  // {
+  //   title: '相似检测任务ID',
+  //   key: 'judgeTaskId',
+  //   ellipsis: {
+  //     tooltip: true,
+  //   },
+  // },
   {
     title: '操作',
     key: 'action',
+    width: 220,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
+        // h(NButton, {
+        //   type: 'primary',
+        //   size: 'small',
+        //   onClick: () => formRef.value.doOpen(row, true),
+        // }, () => '编辑'),
+        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NButton, {
           type: 'primary',
           size: 'small',
-          onClick: () => formRef.value.doOpen(row, true),
-        }, () => '编辑'),
-        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
+          disabled: row.canUseSimilarReport !== true,
+          onClick: () => { },
+        }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {

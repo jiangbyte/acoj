@@ -22,16 +22,24 @@ public class GalaxyGateway {
     public static void main(String[] args) {
         ConfigurableApplicationContext run = SpringApplication.run(GalaxyGateway.class, args);
         Environment env = run.getEnvironment();
+
+        String port = env.getProperty("server.port");
+        String contextPath = env.getProperty("server.servlet.context-path");
+
+        String displayContextPath = (contextPath == null || contextPath.isEmpty()) ? "" : contextPath;
+
         log.info("""
-                                                \s
-                         -------------------------------------------------
-                             Application is running! Access URLs:
-                             Local:    http://localhost:{}
-                             Doc:      http://localhost:{}/doc.html
-                         -------------------------------------------------
-                        \s""",
-                env.getProperty("server.port"),
-                env.getProperty("server.port")
+                                            \s
+                     -------------------------------------------------
+                         Application is running! Access URLs:
+                         Local:    http://localhost:{}{}
+                         Doc:      http://localhost:{}{}/doc.html
+                     -------------------------------------------------
+                    \s""",
+                port,
+                displayContextPath,
+                port,
+                displayContextPath
         );
     }
 

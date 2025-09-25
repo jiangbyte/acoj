@@ -190,7 +190,6 @@ import type { RouteRecordRaw } from 'vue-router'
 import { clone, min, omit, pick } from 'radash'
 import Layout from '@/layouts/index.vue'
 import { arrayTree, iconRender } from '@/utils'
-import { rawMenus } from '@/stores/RawMenus'
 import { useSysMenuFetch } from '@/composables/v1'
 
 interface RoutesState {

@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.dict.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.sys.dict.param.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,14 +34,14 @@ public class SysDictController {
     private final SysDictService sysDictService;
 
     @Operation(summary = "获取系统字典分页")
-    //@SaCheckPermission("/sys/dict/page")
+    @SaCheckPermission("/sys/dict/page")
     @GetMapping("/sys/dict/page")
     public Result<?> page(@ParameterObject SysDictPageParam sysDictPageParam) {
         return Result.success(sysDictService.page(sysDictPageParam));
     }
 
     @Operation(summary = "添加系统字典")
-    //@SaCheckPermission("/sys/dict/add")
+    @SaCheckPermission("/sys/dict/add")
     @PostMapping("/sys/dict/add")
     public Result<?> add(@RequestBody @Valid SysDictAddParam sysDictAddParam) {
         sysDictService.add(sysDictAddParam);
@@ -48,7 +49,7 @@ public class SysDictController {
     }
 
     @Operation(summary = "编辑系统字典")
-    //@SaCheckPermission("/sys/dict/edit")
+    @SaCheckPermission("/sys/dict/edit")
     @PostMapping("/sys/dict/edit")
     public Result<?> edit(@RequestBody @Valid SysDictEditParam sysDictEditParam) {
         sysDictService.edit(sysDictEditParam);
@@ -56,7 +57,7 @@ public class SysDictController {
     }
 
     @Operation(summary = "删除系统字典")
-    //@SaCheckPermission("/sys/dict/delete")
+    @SaCheckPermission("/sys/dict/delete")
     @PostMapping("/sys/dict/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysDictIdParam> sysDictIdParam) {
         sysDictService.delete(sysDictIdParam);
@@ -64,21 +65,19 @@ public class SysDictController {
     }
 
     @Operation(summary = "获取系统字典详情")
-    //@SaCheckPermission("/sys/dict/detail")
+    @SaCheckPermission("/sys/dict/detail")
     @GetMapping("/sys/dict/detail")
     public Result<?> detail(@ParameterObject @Valid SysDictIdParam sysDictIdParam) {
         return Result.success(sysDictService.detail(sysDictIdParam));
     }
 
     @Operation(summary = "获取系统字典树")
-    //@SaCheckPermission("/sys/dict/tree")
     @GetMapping("/sys/dict/tree")
     public Result<?> tree(@ParameterObject SysDictTreeParam sysDictTreeParam) {
         return Result.success(sysDictService.treeLabelOption(sysDictTreeParam));
     }
 
     @Operation(summary = "获取系统字典树")
-    //@SaCheckPermission("/sys/dict/tree")
     @GetMapping("/sys/dict/list/option")
     public Result<?> listLabelOption(@ParameterObject SysDictOptionParam sysDictOptionParam) {
         return Result.success(sysDictService.listLabelOption(sysDictOptionParam));
@@ -91,7 +90,6 @@ public class SysDictController {
     }
 
     @Operation(summary = "获取系统字典树")
-    //@SaCheckPermission("/sys/dict/tree")
     @GetMapping("/sys/dict/options")
     public Result<?> option(@RequestParam @NotEmpty String dictType) {
         return Result.success(sysDictService.options(dictType));

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText, NTime } from 'naive-ui'
 import { useDataLibraryFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -12,20 +12,50 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: '用户ID',
-    key: 'userId',
+    title: '用户',
+    key: 'user',
+    render(row: any) {
+      return h(
+        NSpace,
+        { align: 'center', size: 'small' },
+        {
+          default: () => [
+            h(
+              NAvatar,
+              {
+                size: 'small',
+                round: true,
+                src: row.userAvatar,
+              },
+              {},
+            ),
+            h(
+              NText,
+              {},
+              { default: () => row.userIdName },
+            ),
+          ],
+        },
+      )
+    },
   },
   {
-    title: '题集ID',
-    key: 'setId',
+    title: '题集',
+    key: 'setIdName',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '是否是题集提交',
-    key: 'isSet',
+    key: 'isSetName',
   },
   {
-    title: '题目ID',
-    key: 'problemId',
+    title: '题目',
+    key: 'problemIdName',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '提交ID',
@@ -34,15 +64,19 @@ const columns: DataTableColumns<any> = [
   {
     title: '提交时间',
     key: 'submitTime',
+    width: 180,
+    render: (row) => {
+      return h(NTime, { time: row.submitTime })
+    },
   },
   {
     title: '编程语言',
-    key: 'language',
+    key: 'languageName',
   },
-  {
-    title: '源代码',
-    key: 'code',
-  },
+  // {
+  //   title: '源代码',
+  //   key: 'code',
+  // },
   {
     title: '源代码长度',
     key: 'codeLength',
@@ -54,20 +88,22 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
+    width: 90,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          onClick: () => formRef.value.doOpen(row, true),
-        }, () => '编辑'),
+        // h(NButton, {
+        //   type: 'primary',
+        //   size: 'small',
+        //   onClick: () => formRef.value.doOpen(row, true),
+        // }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
-        h(NPopconfirm, {
-          onPositiveClick: () => deleteHandle(row),
-        }, {
-          default: () => '确认删除',
-          trigger: () => h(NButton, { size: 'small', type: 'error' }, () => '删除'),
-        }),
+        // h(NPopconfirm, {
+        //   onPositiveClick: () => deleteHandle(row),
+        // }, {
+        //   default: () => '确认删除',
+        //   trigger: () => h(NButton, { size: 'small', type: 'error' }, () => '删除'),
+        // }),
       ])
     },
   },

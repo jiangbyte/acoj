@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.notice.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.sys.notice.param.SysNoticePageParam;
 import io.charlie.web.oj.modular.sys.notice.param.SysNoticeAddParam;
@@ -36,14 +37,14 @@ public class SysNoticeController {
     private final SysNoticeService sysNoticeService;
 
     @Operation(summary = "获取公告分页")
-    //@SaCheckPermission("/sys/notice/page")
+    @SaCheckPermission("/sys/notice/page")
     @GetMapping("/sys/notice/page")
     public Result<?> page(@ParameterObject SysNoticePageParam sysNoticePageParam) {
         return Result.success(sysNoticeService.page(sysNoticePageParam));
     }
 
     @Operation(summary = "添加公告")
-    //@SaCheckPermission("/sys/notice/add")
+    @SaCheckPermission("/sys/notice/add")
     @PostMapping("/sys/notice/add")
     public Result<?> add(@RequestBody @Valid SysNoticeAddParam sysNoticeAddParam) {
         sysNoticeService.add(sysNoticeAddParam);
@@ -51,7 +52,7 @@ public class SysNoticeController {
     }
 
     @Operation(summary = "编辑公告")
-    //@SaCheckPermission("/sys/notice/edit")
+    @SaCheckPermission("/sys/notice/edit")
     @PostMapping("/sys/notice/edit")
     public Result<?> edit(@RequestBody @Valid SysNoticeEditParam sysNoticeEditParam) {
         sysNoticeService.edit(sysNoticeEditParam);
@@ -59,7 +60,7 @@ public class SysNoticeController {
     }
 
     @Operation(summary = "删除公告")
-    //@SaCheckPermission("/sys/notice/delete")
+    @SaCheckPermission("/sys/notice/delete")
     @PostMapping("/sys/notice/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysNoticeIdParam> sysNoticeIdParam) {
         sysNoticeService.delete(sysNoticeIdParam);
@@ -67,7 +68,7 @@ public class SysNoticeController {
     }
 
     @Operation(summary = "获取公告详情")
-    //@SaCheckPermission("/sys/notice/detail")
+    @SaCheckPermission("/sys/notice/detail")
     @GetMapping("/sys/notice/detail")
     public Result<?> detail(@ParameterObject @Valid SysNoticeIdParam sysNoticeIdParam) {
         return Result.success(sysNoticeService.detail(sysNoticeIdParam));

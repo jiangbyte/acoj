@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.submit.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.data.submit.param.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,28 +34,28 @@ public class DataSubmitController {
     private final DataSubmitService dataSubmitService;
 
     @Operation(summary = "获取提交分页")
-    //@SaCheckPermission("/data/submit/page")
+    @SaCheckPermission("/data/submit/page")
     @GetMapping("/data/submit/page")
     public Result<?> page(@ParameterObject DataSubmitPageParam dataSubmitPageParam) {
         return Result.success(dataSubmitService.page(dataSubmitPageParam));
     }
 
     @Operation(summary = "获取题目提交分页")
-    //@SaCheckPermission("/data/submit/problem/page")
+//    @SaCheckPermission("/data/submit/problem/page")
     @GetMapping("/data/submit/problem/page")
     public Result<?> problemPage(@ParameterObject DataSubmitPageParam dataSubmitPageParam) {
         return Result.success(dataSubmitService.problemPage(dataSubmitPageParam));
     }
 
     @Operation(summary = "获取题集提交分页")
-    //@SaCheckPermission("/data/submit/set/page")
+//    @SaCheckPermission("/data/submit/set/page")
     @GetMapping("/data/submit/set/page")
     public Result<?> setPage(@ParameterObject DataSubmitPageParam dataSubmitPageParam) {
         return Result.success(dataSubmitService.setPage(dataSubmitPageParam));
     }
 
     @Operation(summary = "添加提交")
-    //@SaCheckPermission("/data/submit/add")
+    @SaCheckPermission("/data/submit/add")
     @PostMapping("/data/submit/add")
     public Result<?> add(@RequestBody @Valid DataSubmitAddParam dataSubmitAddParam) {
         dataSubmitService.add(dataSubmitAddParam);
@@ -62,7 +63,7 @@ public class DataSubmitController {
     }
 
     @Operation(summary = "编辑提交")
-    //@SaCheckPermission("/data/submit/edit")
+    @SaCheckPermission("/data/submit/edit")
     @PostMapping("/data/submit/edit")
     public Result<?> edit(@RequestBody @Valid DataSubmitEditParam dataSubmitEditParam) {
         dataSubmitService.edit(dataSubmitEditParam);
@@ -70,7 +71,7 @@ public class DataSubmitController {
     }
 
     @Operation(summary = "删除提交")
-    //@SaCheckPermission("/data/submit/delete")
+    @SaCheckPermission("/data/submit/delete")
     @PostMapping("/data/submit/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<DataSubmitIdParam> dataSubmitIdParam) {
         dataSubmitService.delete(dataSubmitIdParam);
@@ -78,7 +79,7 @@ public class DataSubmitController {
     }
 
     @Operation(summary = "获取提交详情")
-    //@SaCheckPermission("/data/submit/detail")
+    @SaCheckPermission("/data/submit/detail")
     @GetMapping("/data/submit/detail")
     public Result<?> detail(@ParameterObject @Valid DataSubmitIdParam dataSubmitIdParam) {
         return Result.success(dataSubmitService.detail(dataSubmitIdParam));
@@ -97,7 +98,6 @@ public class DataSubmitController {
     }
 
     @Operation(summary = "获取状态统计")
-    //@SaCheckPermission("/pro/submit/page")
     @GetMapping("/data/submit/status/count")
     public Result<?> problemUserSubmitStatusCount() {
         return Result.success(dataSubmitService.countStatusStatistics());

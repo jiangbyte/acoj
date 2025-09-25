@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.tag.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.sys.tag.param.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,14 +34,14 @@ public class SysTagController {
     private final SysTagService sysTagService;
 
     @Operation(summary = "获取标签分页")
-    //@SaCheckPermission("/sys/tag/page")
+    @SaCheckPermission("/sys/tag/page")
     @GetMapping("/sys/tag/page")
     public Result<?> page(@ParameterObject SysTagPageParam sysTagPageParam) {
         return Result.success(sysTagService.page(sysTagPageParam));
     }
 
     @Operation(summary = "添加标签")
-    //@SaCheckPermission("/sys/tag/add")
+    @SaCheckPermission("/sys/tag/add")
     @PostMapping("/sys/tag/add")
     public Result<?> add(@RequestBody @Valid SysTagAddParam sysTagAddParam) {
         sysTagService.add(sysTagAddParam);
@@ -48,7 +49,7 @@ public class SysTagController {
     }
 
     @Operation(summary = "编辑标签")
-    //@SaCheckPermission("/sys/tag/edit")
+    @SaCheckPermission("/sys/tag/edit")
     @PostMapping("/sys/tag/edit")
     public Result<?> edit(@RequestBody @Valid SysTagEditParam sysTagEditParam) {
         sysTagService.edit(sysTagEditParam);
@@ -56,7 +57,7 @@ public class SysTagController {
     }
 
     @Operation(summary = "删除标签")
-    //@SaCheckPermission("/sys/tag/delete")
+    @SaCheckPermission("/sys/tag/delete")
     @PostMapping("/sys/tag/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysTagIdParam> sysTagIdParam) {
         sysTagService.delete(sysTagIdParam);
@@ -64,7 +65,7 @@ public class SysTagController {
     }
 
     @Operation(summary = "获取标签详情")
-    //@SaCheckPermission("/sys/tag/detail")
+    @SaCheckPermission("/sys/tag/detail")
     @GetMapping("/sys/tag/detail")
     public Result<?> detail(@ParameterObject @Valid SysTagIdParam sysTagIdParam) {
         return Result.success(sysTagService.detail(sysTagIdParam));

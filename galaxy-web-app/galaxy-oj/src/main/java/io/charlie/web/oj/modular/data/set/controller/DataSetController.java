@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.set.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.data.set.param.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,14 +34,14 @@ public class DataSetController {
     private final DataSetService dataSetService;
 
     @Operation(summary = "获取题集分页")
-    //@SaCheckPermission("/data/set/page")
+    @SaCheckPermission("/data/set/page")
     @GetMapping("/data/set/page")
     public Result<?> page(@ParameterObject DataSetPageParam dataSetPageParam) {
         return Result.success(dataSetService.page(dataSetPageParam));
     }
 
     @Operation(summary = "添加题集")
-    //@SaCheckPermission("/data/set/add")
+    @SaCheckPermission("/data/set/add")
     @PostMapping("/data/set/add")
     public Result<?> add(@RequestBody @Valid DataSetAddParam dataSetAddParam) {
         dataSetService.add(dataSetAddParam);
@@ -48,7 +49,7 @@ public class DataSetController {
     }
 
     @Operation(summary = "编辑题集")
-    //@SaCheckPermission("/data/set/edit")
+    @SaCheckPermission("/data/set/edit")
     @PostMapping("/data/set/edit")
     public Result<?> edit(@RequestBody @Valid DataSetEditParam dataSetEditParam) {
         dataSetService.edit(dataSetEditParam);
@@ -56,7 +57,7 @@ public class DataSetController {
     }
 
     @Operation(summary = "删除题集")
-    //@SaCheckPermission("/data/set/delete")
+    @SaCheckPermission("/data/set/delete")
     @PostMapping("/data/set/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<DataSetIdParam> dataSetIdParam) {
         dataSetService.delete(dataSetIdParam);
@@ -64,7 +65,7 @@ public class DataSetController {
     }
 
     @Operation(summary = "获取题集详情")
-    //@SaCheckPermission("/data/set/detail")
+    @SaCheckPermission("/data/set/detail")
     @GetMapping("/data/set/detail")
     public Result<?> detail(@ParameterObject @Valid DataSetIdParam dataSetIdParam) {
         return Result.success(dataSetService.detail(dataSetIdParam));

@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.solved.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedPageParam;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedAddParam;
@@ -36,14 +37,14 @@ public class DataSolvedController {
     private final DataSolvedService dataSolvedService;
 
     @Operation(summary = "获取用户解决分页")
-    //@SaCheckPermission("/data/solved/page")
+    @SaCheckPermission("/data/solved/page")
     @GetMapping("/data/solved/page")
     public Result<?> page(@ParameterObject DataSolvedPageParam dataSolvedPageParam) {
         return Result.success(dataSolvedService.page(dataSolvedPageParam));
     }
 
     @Operation(summary = "添加用户解决")
-    //@SaCheckPermission("/data/solved/add")
+    @SaCheckPermission("/data/solved/add")
     @PostMapping("/data/solved/add")
     public Result<?> add(@RequestBody @Valid DataSolvedAddParam dataSolvedAddParam) {
         dataSolvedService.add(dataSolvedAddParam);
@@ -51,7 +52,7 @@ public class DataSolvedController {
     }
 
     @Operation(summary = "编辑用户解决")
-    //@SaCheckPermission("/data/solved/edit")
+    @SaCheckPermission("/data/solved/edit")
     @PostMapping("/data/solved/edit")
     public Result<?> edit(@RequestBody @Valid DataSolvedEditParam dataSolvedEditParam) {
         dataSolvedService.edit(dataSolvedEditParam);
@@ -59,7 +60,7 @@ public class DataSolvedController {
     }
 
     @Operation(summary = "删除用户解决")
-    //@SaCheckPermission("/data/solved/delete")
+    @SaCheckPermission("/data/solved/delete")
     @PostMapping("/data/solved/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<DataSolvedIdParam> dataSolvedIdParam) {
         dataSolvedService.delete(dataSolvedIdParam);
@@ -67,7 +68,7 @@ public class DataSolvedController {
     }
 
     @Operation(summary = "获取用户解决详情")
-    //@SaCheckPermission("/data/solved/detail")
+    @SaCheckPermission("/data/solved/detail")
     @GetMapping("/data/solved/detail")
     public Result<?> detail(@ParameterObject @Valid DataSolvedIdParam dataSolvedIdParam) {
         return Result.success(dataSolvedService.detail(dataSolvedIdParam));

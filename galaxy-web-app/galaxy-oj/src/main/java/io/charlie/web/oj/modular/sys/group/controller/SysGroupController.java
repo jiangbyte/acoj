@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.group.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.sys.group.param.SysGroupPageParam;
 import io.charlie.web.oj.modular.sys.group.param.SysGroupAddParam;
@@ -36,14 +37,14 @@ public class SysGroupController {
     private final SysGroupService sysGroupService;
 
     @Operation(summary = "获取用户组分页")
-    //@SaCheckPermission("/sys/group/page")
+    @SaCheckPermission("/sys/group/page")
     @GetMapping("/sys/group/page")
     public Result<?> page(@ParameterObject SysGroupPageParam sysGroupPageParam) {
         return Result.success(sysGroupService.page(sysGroupPageParam));
     }
 
     @Operation(summary = "添加用户组")
-    //@SaCheckPermission("/sys/group/add")
+    @SaCheckPermission("/sys/group/add")
     @PostMapping("/sys/group/add")
     public Result<?> add(@RequestBody @Valid SysGroupAddParam sysGroupAddParam) {
         sysGroupService.add(sysGroupAddParam);
@@ -51,7 +52,7 @@ public class SysGroupController {
     }
 
     @Operation(summary = "编辑用户组")
-    //@SaCheckPermission("/sys/group/edit")
+    @SaCheckPermission("/sys/group/edit")
     @PostMapping("/sys/group/edit")
     public Result<?> edit(@RequestBody @Valid SysGroupEditParam sysGroupEditParam) {
         sysGroupService.edit(sysGroupEditParam);
@@ -59,7 +60,7 @@ public class SysGroupController {
     }
 
     @Operation(summary = "删除用户组")
-    //@SaCheckPermission("/sys/group/delete")
+    @SaCheckPermission("/sys/group/delete")
     @PostMapping("/sys/group/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysGroupIdParam> sysGroupIdParam) {
         sysGroupService.delete(sysGroupIdParam);
@@ -67,7 +68,7 @@ public class SysGroupController {
     }
 
     @Operation(summary = "获取用户组详情")
-    //@SaCheckPermission("/sys/group/detail")
+    @SaCheckPermission("/sys/group/detail")
     @GetMapping("/sys/group/detail")
     public Result<?> detail(@ParameterObject @Valid SysGroupIdParam sysGroupIdParam) {
         return Result.success(sysGroupService.detail(sysGroupIdParam));

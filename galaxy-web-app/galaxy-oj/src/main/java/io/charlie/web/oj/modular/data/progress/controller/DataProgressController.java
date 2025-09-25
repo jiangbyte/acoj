@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.progress.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.data.progress.param.DataProgressPageParam;
 import io.charlie.web.oj.modular.data.progress.param.DataProgressAddParam;
@@ -36,14 +37,14 @@ public class DataProgressController {
     private final DataProgressService dataProgressService;
 
     @Operation(summary = "获取题集进度分页")
-    //@SaCheckPermission("/data/progress/page")
+    @SaCheckPermission("/data/progress/page")
     @GetMapping("/data/progress/page")
     public Result<?> page(@ParameterObject DataProgressPageParam dataProgressPageParam) {
         return Result.success(dataProgressService.page(dataProgressPageParam));
     }
 
     @Operation(summary = "添加题集进度")
-    //@SaCheckPermission("/data/progress/add")
+    @SaCheckPermission("/data/progress/add")
     @PostMapping("/data/progress/add")
     public Result<?> add(@RequestBody @Valid DataProgressAddParam dataProgressAddParam) {
         dataProgressService.add(dataProgressAddParam);
@@ -51,7 +52,7 @@ public class DataProgressController {
     }
 
     @Operation(summary = "编辑题集进度")
-    //@SaCheckPermission("/data/progress/edit")
+    @SaCheckPermission("/data/progress/edit")
     @PostMapping("/data/progress/edit")
     public Result<?> edit(@RequestBody @Valid DataProgressEditParam dataProgressEditParam) {
         dataProgressService.edit(dataProgressEditParam);
@@ -59,7 +60,7 @@ public class DataProgressController {
     }
 
     @Operation(summary = "删除题集进度")
-    //@SaCheckPermission("/data/progress/delete")
+    @SaCheckPermission("/data/progress/delete")
     @PostMapping("/data/progress/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<DataProgressIdParam> dataProgressIdParam) {
         dataProgressService.delete(dataProgressIdParam);
@@ -67,7 +68,7 @@ public class DataProgressController {
     }
 
     @Operation(summary = "获取题集进度详情")
-    //@SaCheckPermission("/data/progress/detail")
+    @SaCheckPermission("/data/progress/detail")
     @GetMapping("/data/progress/detail")
     public Result<?> detail(@ParameterObject @Valid DataProgressIdParam dataProgressIdParam) {
         return Result.success(dataProgressService.detail(dataProgressIdParam));

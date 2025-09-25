@@ -65,6 +65,7 @@ public class DataSubmit extends CommonEntity {
     private String setIdName;
 
     @Schema(description = "是否是题集提交")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean isSet;
 
     @Schema(description = "题目ID")

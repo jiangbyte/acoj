@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.role.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.sys.role.param.SysRolePageParam;
 import io.charlie.web.oj.modular.sys.role.param.SysRoleAddParam;
@@ -36,14 +37,14 @@ public class SysRoleController {
     private final SysRoleService sysRoleService;
 
     @Operation(summary = "获取角色分页")
-    //@SaCheckPermission("/sys/role/page")
+    @SaCheckPermission("/sys/role/page")
     @GetMapping("/sys/role/page")
     public Result<?> page(@ParameterObject SysRolePageParam sysRolePageParam) {
         return Result.success(sysRoleService.page(sysRolePageParam));
     }
 
     @Operation(summary = "添加角色")
-    //@SaCheckPermission("/sys/role/add")
+    @SaCheckPermission("/sys/role/add")
     @PostMapping("/sys/role/add")
     public Result<?> add(@RequestBody @Valid SysRoleAddParam sysRoleAddParam) {
         sysRoleService.add(sysRoleAddParam);
@@ -51,7 +52,7 @@ public class SysRoleController {
     }
 
     @Operation(summary = "编辑角色")
-    //@SaCheckPermission("/sys/role/edit")
+    @SaCheckPermission("/sys/role/edit")
     @PostMapping("/sys/role/edit")
     public Result<?> edit(@RequestBody @Valid SysRoleEditParam sysRoleEditParam) {
         sysRoleService.edit(sysRoleEditParam);
@@ -59,7 +60,7 @@ public class SysRoleController {
     }
 
     @Operation(summary = "删除角色")
-    //@SaCheckPermission("/sys/role/delete")
+    @SaCheckPermission("/sys/role/delete")
     @PostMapping("/sys/role/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysRoleIdParam> sysRoleIdParam) {
         sysRoleService.delete(sysRoleIdParam);
@@ -67,7 +68,7 @@ public class SysRoleController {
     }
 
     @Operation(summary = "获取角色详情")
-    //@SaCheckPermission("/sys/role/detail")
+    @SaCheckPermission("/sys/role/detail")
     @GetMapping("/sys/role/detail")
     public Result<?> detail(@ParameterObject @Valid SysRoleIdParam sysRoleIdParam) {
         return Result.success(sysRoleService.detail(sysRoleIdParam));

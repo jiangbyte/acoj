@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.menu.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.sys.menu.param.SysMenuPageParam;
 import io.charlie.web.oj.modular.sys.menu.param.SysMenuAddParam;
@@ -36,14 +37,14 @@ public class SysMenuController {
     private final SysMenuService sysMenuService;
 
     @Operation(summary = "获取菜单分页")
-    //@SaCheckPermission("/sys/menu/page")
+    @SaCheckPermission("/sys/menu/page")
     @GetMapping("/sys/menu/page")
     public Result<?> page(@ParameterObject SysMenuPageParam sysMenuPageParam) {
         return Result.success(sysMenuService.page(sysMenuPageParam));
     }
 
     @Operation(summary = "添加菜单")
-    //@SaCheckPermission("/sys/menu/add")
+    @SaCheckPermission("/sys/menu/add")
     @PostMapping("/sys/menu/add")
     public Result<?> add(@RequestBody @Valid SysMenuAddParam sysMenuAddParam) {
         sysMenuService.add(sysMenuAddParam);
@@ -51,7 +52,7 @@ public class SysMenuController {
     }
 
     @Operation(summary = "编辑菜单")
-    //@SaCheckPermission("/sys/menu/edit")
+    @SaCheckPermission("/sys/menu/edit")
     @PostMapping("/sys/menu/edit")
     public Result<?> edit(@RequestBody @Valid SysMenuEditParam sysMenuEditParam) {
         sysMenuService.edit(sysMenuEditParam);
@@ -59,7 +60,7 @@ public class SysMenuController {
     }
 
     @Operation(summary = "删除菜单")
-    //@SaCheckPermission("/sys/menu/delete")
+    @SaCheckPermission("/sys/menu/delete")
     @PostMapping("/sys/menu/delete")
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysMenuIdParam> sysMenuIdParam) {
         sysMenuService.delete(sysMenuIdParam);
@@ -67,21 +68,19 @@ public class SysMenuController {
     }
 
     @Operation(summary = "获取菜单详情")
-    //@SaCheckPermission("/sys/menu/detail")
+    @SaCheckPermission("/sys/menu/detail")
     @GetMapping("/sys/menu/detail")
     public Result<?> detail(@ParameterObject @Valid SysMenuIdParam sysMenuIdParam) {
         return Result.success(sysMenuService.detail(sysMenuIdParam));
     }
 
     @Operation(summary = "获取菜单详情")
-    //@SaCheckPermission("/sys/menu/detail")
     @GetMapping("/sys/menu/tree/list")
     public Result<?> treeList() {
         return Result.success(sysMenuService.menuTree());
     }
 
     @Operation(summary = "获取认证菜单")
-    //@SaCheckPermission("/sys/menu/detail")
     @GetMapping("/sys/menu/auth/list")
     public Result<?> authMenu() {
         return Result.success(sysMenuService.authMenu());

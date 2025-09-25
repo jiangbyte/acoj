@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NFlex, NIcon, NPagination, NPopconfirm, NSpace, NText } from 'naive-ui'
+import { NButton, NCard, NDataTable, NIcon, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import { useSysMenuFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -32,6 +32,11 @@ const columns: DataTableColumns<any> = [
   {
     title: '菜单类型',
     key: 'menuTypeName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.menuType === 0 ? 'default' : 'warning',
+      }, () => row.menuTypeName)
+    },
   },
   // {
   //   title: '菜单标题',
@@ -63,24 +68,39 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '缓存',
-    key: 'keepAliveName',
+    title: '排序',
+    key: 'sort',
     width: 80,
   },
   {
     title: '可见',
     key: 'visibleName',
     width: 80,
+    render: (row) => {
+      return h(NTag, {
+        type: row.visible ? 'primary' : 'error',
+      }, () => row.visibleName)
+    },
   },
   {
-    title: '排序',
-    key: 'sort',
+    title: '缓存',
+    key: 'keepAliveName',
     width: 80,
+    render: (row) => {
+      return h(NTag, {
+        type: row.keepAlive ? 'primary' : 'error',
+      }, () => row.keepAliveName)
+    },
   },
   {
     title: '固定',
     key: 'pinedName',
     width: 80,
+    render: (row) => {
+      return h(NTag, {
+        type: row.pined ? 'primary' : 'error',
+      }, () => row.pinedName)
+    },
   },
   // {
   //   title: '额外信息',
@@ -170,6 +190,7 @@ async function loadData() {
   if (data) {
     pageData.value = data
     loading.value = false
+    console.log(data)
   }
 }
 

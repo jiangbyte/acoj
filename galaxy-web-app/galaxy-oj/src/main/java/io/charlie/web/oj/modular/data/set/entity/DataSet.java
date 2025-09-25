@@ -8,9 +8,13 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.io.Serial;
 import java.util.Date;
+
+import io.charlie.web.oj.modular.sys.category.entity.SysCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.dromara.core.trans.anno.Trans;
+import org.dromara.core.trans.constant.TransType;
 
 /**
 * @author Charlie Zhang
@@ -31,7 +35,12 @@ public class DataSet extends CommonEntity {
     private String id;
 
     @Schema(description = "题集类型")
+    @Trans(type = TransType.DICTIONARY, key = "PROBLEM_SET_TYPE", ref = "setTypeName")
     private Integer setType;
+
+    @Schema(description = "题集类型名称")
+    @TableField(exist = false)
+    private String setTypeName;
 
     @Schema(description = "标题")
     private String title;
@@ -43,21 +52,33 @@ public class DataSet extends CommonEntity {
     private String description;
 
     @Schema(description = "分类")
+    @Trans(type = TransType.SIMPLE, target = SysCategory.class, fields = "name", ref = "categoryName")
     private String categoryId;
 
+    @Schema(description = "分类名称")
+    @TableField(exist = false)
+    private String categoryName;
+
     @Schema(description = "难度")
+    @Trans(type = TransType.DICTIONARY, key = "PROBLEM_DIFFICULTY", ref = "difficultyName")
     private Integer difficulty;
 
+    @Schema(description = "难度名称")
+    @TableField(exist = false)
+    private String difficultyName;
+
     @Schema(description = "开始时间")
-    private LocalDateTime startTime;
+    private Date startTime;
 
     @Schema(description = "结束时间")
-    private LocalDateTime endTime;
+    private Date endTime;
 
     @Schema(description = "是否可见")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean isVisible;
 
     @Schema(description = "是否使用AI")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean useAi;
 
     @Schema(description = "额外的信息")
