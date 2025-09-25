@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 20/09/2025
- * @description TODO
+ * @description OJ启动器
  */
 @Slf4j
 @SpringBootApplication

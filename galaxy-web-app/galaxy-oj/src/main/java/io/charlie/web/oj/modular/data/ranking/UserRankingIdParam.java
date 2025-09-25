@@ -10,7 +10,7 @@ import java.io.Serializable;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 21/09/2025
- * @description TODO
+ * @description 用户排行榜
  */
 @Data
 public class UserRankingIdParam implements Serializable {

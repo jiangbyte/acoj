@@ -11,7 +11,7 @@ import java.io.Serializable;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 21/09/2025
- * @description TODO
+ * @description 题目标签实体类
  */
 @Data
 @TableName("data_problem_tag")

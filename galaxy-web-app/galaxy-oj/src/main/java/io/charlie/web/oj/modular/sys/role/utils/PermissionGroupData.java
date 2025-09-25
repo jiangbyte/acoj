@@ -1,4 +1,4 @@
-package io.charlie.web.oj.config;
+package io.charlie.web.oj.modular.sys.role.utils;
 
 import lombok.Data;
 
@@ -8,7 +8,7 @@ import java.util.List;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 25/09/2025
- * @description TODO
+ * @description 权限用分组数据
  */
 @Data
 public class PermissionGroupData {

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 24/09/2025
- * @description TODO
+ * @description websocket 提交端点
  */
 @Slf4j
 @RestController

@@ -6,7 +6,7 @@ import lombok.Data;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 24/09/2025
- * @description TODO
+ * @description 额外信息
  */
 @Data
 public class MenuExJsonItem {

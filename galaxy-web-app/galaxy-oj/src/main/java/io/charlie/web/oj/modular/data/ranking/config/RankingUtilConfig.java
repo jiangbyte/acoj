@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 18/09/2025
- * @description TODO
+ * @description 排行榜配置Bean
  */
 @Configuration
 public class RankingUtilConfig {

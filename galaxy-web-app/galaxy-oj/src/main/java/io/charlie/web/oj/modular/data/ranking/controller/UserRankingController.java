@@ -22,7 +22,7 @@ import java.util.List;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 21/09/2025
- * @description TODO
+ * @description 用户排行榜
  */
 @Tag(name = "用户排行榜控制器")
 @Slf4j

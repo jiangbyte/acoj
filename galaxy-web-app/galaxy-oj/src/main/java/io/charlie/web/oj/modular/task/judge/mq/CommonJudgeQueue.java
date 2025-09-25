@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 20/09/2025
- * @description TODO
+ * @description 判题队列配置
  */
 @Configuration
 @RequiredArgsConstructor

@@ -10,7 +10,7 @@ import java.io.Serializable;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 24/09/2025
- * @description TODO
+ * @description 题目题集
  */
 @Data
 public class DataSetProblemDetailParam implements Serializable {

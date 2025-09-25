@@ -11,7 +11,7 @@ import java.util.List;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 21/09/2025
- * @description TODO
+ * @description 用户排行榜
  */
 public interface SetUserRankingService {
     void processSubmission(DataSubmit dataSubmit);

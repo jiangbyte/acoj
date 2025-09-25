@@ -1,4 +1,4 @@
-package io.charlie.web.oj.config;
+package io.charlie.web.oj.modular.sys.role.utils;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class PermissionScanner {
+public class PermissionScannerTool {
     private final ApplicationContext applicationContext;
 
     /**

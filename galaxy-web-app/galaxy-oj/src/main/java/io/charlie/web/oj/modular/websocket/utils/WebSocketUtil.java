@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 20/09/2025
- * @description TODO
+ * @description websocket 工具
  */
 @Slf4j
 @Component

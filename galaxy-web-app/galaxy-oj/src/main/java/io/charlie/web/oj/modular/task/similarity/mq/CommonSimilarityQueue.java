@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 20/09/2025
- * @description TODO
+ * @description 相似度计算队列配置
  */
 @Configuration
 @RequiredArgsConstructor

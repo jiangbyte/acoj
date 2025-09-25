@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 20/09/2025
- * @description TODO
+ * @description 相似度处理
  */
 @Slf4j
 @Component
