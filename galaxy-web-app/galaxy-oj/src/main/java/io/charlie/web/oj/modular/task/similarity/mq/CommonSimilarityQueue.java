@@ -15,9 +15,12 @@ import org.springframework.context.annotation.Configuration;
 @RequiredArgsConstructor
 public class CommonSimilarityQueue {
     // 判题消息队列
-    public static final String EXCHANGE = "common.similarity.exchange"; // 判题交换机
+    public static final String EXCHANGE = "common.similarity.exchange"; // 判题交换机等
+    public static final String EXCHANGE1 = "common.similarity.exchange"; // 判题交换机等
     public static final String QUEUE = "common.similarity.queue"; // 判题队列
+    public static final String QUEUE1 = "common.similarity.queue"; // 判题队列
     public static final String ROUTING_KEY = "common.similarity.routing"; // 判题路由键
+    public static final String ROUTING_KEY1 = "common.similarity.routing"; // 判题路由键
 
     // 判题交换机
     @Bean
@@ -40,5 +43,28 @@ public class CommonSimilarityQueue {
         return BindingBuilder.bind(commonSimilarityQueueQ())
                 .to(commonSimilarityExchange())
                 .with(ROUTING_KEY);
+    }
+
+    // 判题交换机
+    @Bean
+    public DirectExchange commonSimilarityExchange1() {
+        return new DirectExchange(EXCHANGE1, true, false);
+    }
+
+    // 判题队列（配置死信队列）
+    @Bean
+    public Queue commonSimilarityQueueQ1() {
+        return QueueBuilder.durable(QUEUE1)
+//                .deadLetterExchange(DEAD_LETTER_EXCHANGE) // 死信交换机
+//                .deadLetterRoutingKey(DEAD_LETTER_ROUTING_KEY) // 死信路由键
+                .build();
+    }
+
+    // 判题队列绑定
+    @Bean
+    public Binding commonSimilarityBinding1() {
+        return BindingBuilder.bind(commonSimilarityQueueQ1())
+                .to(commonSimilarityExchange1())
+                .with(ROUTING_KEY1);
     }
 }

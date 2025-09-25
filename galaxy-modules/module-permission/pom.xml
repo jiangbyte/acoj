@@ -5,16 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.charlie</groupId>
-        <artifactId>astro-code-oj</artifactId>
+        <artifactId>galaxy-modules</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <artifactId>galaxy-modules</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>module-generator</module>
-        <module>module-permission</module>
-    </modules>
+    <artifactId>module-permission</artifactId>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

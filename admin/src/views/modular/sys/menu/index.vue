@@ -111,7 +111,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 290,
+    width: 200,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -120,7 +120,7 @@ const columns: DataTableColumns<any> = [
           size: 'small',
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
-        h(NButton, { size: 'small', type: 'warning', onClick: () => permissionRef.value.doOpen(row) }, () => '权限绑定'),
+        // h(NButton, { size: 'small', type: 'warning', onClick: () => permissionRef.value.doOpen(row) }, () => '权限绑定'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),

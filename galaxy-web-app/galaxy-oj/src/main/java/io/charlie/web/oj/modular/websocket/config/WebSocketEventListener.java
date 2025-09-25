@@ -15,14 +15,13 @@ public class WebSocketEventListener {
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         String sessionId = headerAccessor.getSessionId();
-        log.info("收到新的WebSocket连接，sessionId: {}", sessionId);
+        log.info("收到新的 WebSocket 连接，sessionId: {}", sessionId);
     }
 
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         String sessionId = headerAccessor.getSessionId();
-        String username = headerAccessor.getUser() != null ? headerAccessor.getUser().getName() : "unknown";
-        log.info("WebSocket连接断开，sessionId: {}, username: {}", sessionId, username);
+        log.info("WebSocket 连接断开，sessionId: {}", sessionId);
     }
 }

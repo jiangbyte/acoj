@@ -2,6 +2,7 @@ package io.charlie.web.gateway;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @description 网关启动类
  */
 @Slf4j
-//@EnableDubbo
+@EnableDubbo
 @SpringBootApplication
 public class GalaxyGateway {
     public static void main(String[] args) {
