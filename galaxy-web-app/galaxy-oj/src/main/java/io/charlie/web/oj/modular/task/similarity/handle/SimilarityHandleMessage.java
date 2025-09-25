@@ -116,7 +116,12 @@ public class SimilarityHandleMessage {
                 .ne(DataLibrary::getUserId, similaritySubmitDto.getUserId()) // 排除提交用户自身的提交
                 .eq(DataLibrary::getProblemId, similaritySubmitDto.getProblemId())
                 .eq(DataLibrary::getLanguage, similaritySubmitDto.getLanguage())
-                .eq(similaritySubmitDto.getIsSet(), DataLibrary::getIsSet, true);
+                .eq(DataLibrary::getIsSet, similaritySubmitDto.getIsSet());
+//                .eq(similaritySubmitDto.getIsSet(), DataLibrary::getIsSet, true);
+
+        if (similaritySubmitDto.getIsSet()) {
+            queryWrapper.eq(DataLibrary::getSetId, similaritySubmitDto.getSetId());
+        }
 
         // 先查询总数量
         long totalCount = dataLibraryMapper.selectCount(queryWrapper);
@@ -132,8 +137,12 @@ public class SimilarityHandleMessage {
             // 如果获取的近期样本不足最低限制，补充旧样本
             if (proSampleLibraries.size() < MIN_SAMPLE_SIZE) {
                 queryWrapper.clear();
+                if (similaritySubmitDto.getIsSet()) {
+                    queryWrapper.eq(DataLibrary::getSetId, similaritySubmitDto.getSetId());
+                }
                 queryWrapper.ne(DataLibrary::getUserId, similaritySubmitDto.getUserId()) // 排除提交用户自身的提交
                         .eq(DataLibrary::getProblemId, similaritySubmitDto.getProblemId())
+                        .eq(DataLibrary::getIsSet, similaritySubmitDto.getIsSet())
                         .orderByAsc(DataLibrary::getSubmitTime)
                         .last("LIMIT " + (MIN_SAMPLE_SIZE - proSampleLibraries.size()));
                 List<DataLibrary> additionalSubmits = dataLibraryMapper.selectList(queryWrapper);
@@ -174,6 +183,8 @@ public class SimilarityHandleMessage {
             proSimilarityDetail.setTaskId(similaritySubmitDto.getTaskId());
             proSimilarityDetail.setTaskType(similaritySubmitDto.getTaskType());
             proSimilarityDetail.setProblemId(similaritySubmitDto.getProblemId());
+            proSimilarityDetail.setSetId(similaritySubmitDto.getSetId());
+            proSimilarityDetail.setIsSet(similaritySubmitDto.getIsSet());
             proSimilarityDetail.setLanguage(proSampleLibrary.getLanguage());
             proSimilarityDetail.setSimilarity(BigDecimal.valueOf(similarityDetail.getSimilarity()));
             // 提交用户
