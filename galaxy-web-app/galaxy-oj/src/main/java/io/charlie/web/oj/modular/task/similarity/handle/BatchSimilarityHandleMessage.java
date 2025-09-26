@@ -1,6 +1,7 @@
 package io.charlie.web.oj.modular.task.similarity.handle;
 
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -18,6 +19,7 @@ import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.sys.config.entity.SysConfig;
 import io.charlie.web.oj.modular.sys.config.mapper.SysConfigMapper;
+import io.charlie.web.oj.modular.task.similarity.data.Config;
 import io.charlie.web.oj.modular.task.similarity.dto.BatchSimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.enums.CloneLevelEnum;
@@ -68,6 +70,10 @@ public class BatchSimilarityHandleMessage {
     private final TransService transService;
 
     public void sendSimilarity(BatchSimilaritySubmitDto batchSimilaritySubmitDto) {
+        WebSocketMessage<String> message = new WebSocketMessage<>();
+        message.setData("加载中");
+        webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_SIMILARITY_BATCH_STATUS, batchSimilaritySubmitDto.getBatchTaskId(), message);
+
         rabbitTemplate.convertAndSend(
                 CommonSimilarityQueue.EXCHANGE1,
                 CommonSimilarityQueue.ROUTING_KEY1,
@@ -75,11 +81,26 @@ public class BatchSimilarityHandleMessage {
         );
     }
 
+
     @Transactional
     @RabbitListener(queues = CommonSimilarityQueue.QUEUE, concurrency = "5-10")
-    public void receiveSimilarity(BatchSimilaritySubmitDto batchSimilaritySubmitDto) {
-        log.info("代码克隆检测 -> 接收检测消息：{}", JSONUtil.toJsonStr(batchSimilaritySubmitDto));
+    public void receiveSimilarity(BatchSimilaritySubmitDto dto) {
+        log.info("代码克隆检测 -> 接收检测消息：{}", JSONUtil.toJsonStr(dto));
 
+        if (Config.shouldSkip(dto.getConfig())) {
+            skipDetection(dto);
+            return;
+        }
+
+        WebSocketMessage<String> message = new WebSocketMessage<>();
+        message.setData("完成");
+        webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_SIMILARITY_BATCH_STATUS, dto.getBatchTaskId(), message);
+        webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_SIMILARITY_BATCH_STATUS, dto.getBatchTaskId());
+    }
+
+    private void skipDetection(BatchSimilaritySubmitDto dto) {
+        log.info("代码克隆检测 -> 忽略空数据");
+//        updateSubmitSimilarity(dto.getId(), BigDecimal.ZERO, CloneLevelEnum.NOT_DETECTED.getValue(), null);
     }
 
 }

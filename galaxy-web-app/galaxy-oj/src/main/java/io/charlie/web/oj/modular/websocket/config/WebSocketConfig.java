@@ -24,6 +24,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     // 主题常量定义
     public static final String TOPIC_JUDGE_STATUS = "/topic/judge/status";
     public static final String TOPIC_SIMILARITY_STATUS = "/topic/similarity/status";
+    public static final String TOPIC_SIMILARITY_BATCH_STATUS = "/topic/similarity/batch/status";
 
     // 端点常量定义
     public static final String ENDPOINT_JUDGE_STATUS = "/ws/judge/status";
@@ -34,7 +35,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // 配置多个主题前缀，按功能区分
         config.enableSimpleBroker(
                 TOPIC_JUDGE_STATUS,     // 判题状态主题
-                TOPIC_SIMILARITY_STATUS // 克隆状态主题
+                TOPIC_SIMILARITY_STATUS, // 克隆状态主题
+                TOPIC_SIMILARITY_BATCH_STATUS // 克隆批量状态主题
         );
 
         // 设置应用程序目的地的前缀

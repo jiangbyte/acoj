@@ -16,6 +16,8 @@ import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.sys.config.entity.SysConfig;
 import io.charlie.web.oj.modular.sys.config.mapper.SysConfigMapper;
+import io.charlie.web.oj.modular.task.similarity.data.Config;
+import io.charlie.web.oj.modular.task.similarity.data.SimilarityResult;
 import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.enums.CloneLevelEnum;
 import io.charlie.web.oj.modular.task.similarity.enums.ReportTypeEnum;
@@ -67,7 +69,7 @@ public class SimilarityHandleMessage {
         log.info("代码克隆检测 -> 接收检测消息：{}", JSONUtil.toJsonStr(dto));
 
         Config config = loadConfig();
-        if (shouldSkip(config)) {
+        if (Config.shouldSkip(config)) {
             skipDetection(dto);
             return;
         }
@@ -101,10 +103,6 @@ public class SimilarityHandleMessage {
         } else {
             return defaultValue;
         }
-    }
-
-    private boolean shouldSkip(Config config) {
-        return config.getMinSampleSize() <= 0 || config.getRecentSampleSize() <= 0 || config.getMinMatchLength() <= 0;
     }
 
     private void skipDetection(SimilaritySubmitDto dto) {
@@ -336,22 +334,5 @@ public class SimilarityHandleMessage {
         });
     }
 
-    // 内部辅助类
-    @Data
-    public static class Config {
-        private int minSampleSize; // 最小相似样本数
-        private int recentSampleSize; // 最近相似样本数
-        private int minMatchLength; // 最小匹配长度
-    }
 
-    @Data
-    public static class SimilarityResult {
-        private List<TaskSimilarity> details;
-        private TaskSimilarity maxDetail;
-
-        SimilarityResult(List<TaskSimilarity> details, TaskSimilarity maxDetail) {
-            this.details = details;
-            this.maxDetail = maxDetail;
-        }
-    }
 }
