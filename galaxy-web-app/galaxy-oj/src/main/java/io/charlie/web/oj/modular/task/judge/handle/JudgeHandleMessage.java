@@ -128,21 +128,13 @@ public class JudgeHandleMessage {
 
         log.info("向客户端发送消息：{}", JSONUtil.toJsonStr(message));
         webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId(), message);
-        if (!judgeResultDto.getSubmitType()) {
-            webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId());
-        }
     }
 
     private void sendImmediateCloseResponse(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
         transService.transOne(dataSubmit);
         WebSocketMessage<DataSubmit> message = new WebSocketMessage<>();
         message.setData(dataSubmit);
-
         log.info("向客户端发送消息：{}", JSONUtil.toJsonStr(message));
-        webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId(), message);
-        if (!judgeResultDto.getSubmitType()) {
-            webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId());
-        }
         webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId());
     }
 
