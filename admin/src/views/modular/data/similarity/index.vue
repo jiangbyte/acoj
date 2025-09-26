@@ -24,14 +24,14 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '题目',
-    key: 'problemId',
+    key: 'problemIdName',
     ellipsis: {
       tooltip: true,
     },
   },
   {
     title: '题集',
-    key: 'setId',
+    key: 'setIdName',
     ellipsis: {
       tooltip: true,
     },

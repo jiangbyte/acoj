@@ -94,7 +94,50 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
 
         Page<DataProblem> page = this.page(CommonPageRequest.Page(
                         Optional.ofNullable(dataProblemPageParam.getCurrent()).orElse(1),
-                        Optional.ofNullable(dataProblemPageParam.getSize()).orElse(20),
+                        Optional.ofNullable(dataProblemPageParam.getSize()).orElse(10),
+                        null
+                ),
+                queryWrapper);
+        problemBuildTool.buildProblems(page.getRecords());
+        return page;
+    }
+
+    @Override
+    public Page<DataProblem> setPage(DataProblemPageParam dataProblemPageParam) {
+        QueryWrapper<DataProblem> queryWrapper = new QueryWrapper<DataProblem>().checkSqlInjection();
+        // 关键字
+        if (ObjectUtil.isNotEmpty(dataProblemPageParam.getKeyword())) {
+            queryWrapper.lambda().like(DataProblem::getTitle, dataProblemPageParam.getKeyword());
+        }
+        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getCategoryId())) {
+            queryWrapper.lambda().eq(DataProblem::getCategoryId, dataProblemPageParam.getCategoryId());
+        }
+        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getDifficulty())) {
+            queryWrapper.lambda().eq(DataProblem::getDifficulty, dataProblemPageParam.getDifficulty());
+        }
+        // 筛选上架的
+        queryWrapper.lambda().eq(DataProblem::getIsVisible, true);
+        // 标签查询
+        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getTagId())) {
+            List<String> idsByTagId = dataProblemTagService.getProblemIdsByTagId(dataProblemPageParam.getTagId());
+            // 如果TagId有值但关联的ID列表为空，则设置一个不可能满足的条件
+            if (ObjectUtil.isEmpty(idsByTagId)) {
+                queryWrapper.lambda().eq(DataProblem::getId, "-1"); // 确保查询不到结果
+            } else {
+                queryWrapper.lambda().in(DataProblem::getId, idsByTagId);
+            }
+        }
+
+        if (ObjectUtil.isAllNotEmpty(dataProblemPageParam.getSortField(), dataProblemPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataProblemPageParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    dataProblemPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(dataProblemPageParam.getSortField()));
+        }
+
+        Page<DataProblem> page = this.page(CommonPageRequest.Page(
+                        Optional.ofNullable(dataProblemPageParam.getCurrent()).orElse(1),
+                        Optional.ofNullable(dataProblemPageParam.getSize()).orElse(10),
                         null
                 ),
                 queryWrapper);

@@ -106,7 +106,7 @@ const columns: DataTableColumns<any> = [
     key: 'statusName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: StatusColorUtil.getColor(row.status), textColor: '#fff' } }, row.statusName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: StatusColorUtil.getColor(row.status), textColor: '#fff' } }, {default: () =>row.statusName})
     },
   },
   {
@@ -114,7 +114,7 @@ const columns: DataTableColumns<any> = [
     key: 'languageName',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: LanguageColorUtil.getColor(row.language), textColor: '#fff' } }, row.languageName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: LanguageColorUtil.getColor(row.language), textColor: '#fff' } }, {default: () =>row.languageName})
     },
   },
   {
@@ -122,7 +122,7 @@ const columns: DataTableColumns<any> = [
     key: 'codeLength',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.codeLength)
+      return h(NTag, { size: 'small', bordered: false }, {default: () =>row.codeLength})
     },
   },
   {
@@ -130,7 +130,7 @@ const columns: DataTableColumns<any> = [
     key: 'submitTypeName',
     width: 90,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: SubmitTypeColorUtil.getColor(row.submitType), textColor: '#fff' } }, row.submitTypeName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: SubmitTypeColorUtil.getColor(row.submitType), textColor: '#fff' } }, {default: () =>row.submitTypeName})
     },
   },
   {
@@ -138,7 +138,7 @@ const columns: DataTableColumns<any> = [
     key: 'maxTime',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.maxTime)
+      return h(NTag, { size: 'small', bordered: false }, {default: () =>row.maxTime})
     },
   },
   {
@@ -146,7 +146,7 @@ const columns: DataTableColumns<any> = [
     key: 'maxMemory',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.maxMemory)
+      return h(NTag, { size: 'small', bordered: false }, {default: () =>row.maxMemory})
     },
   },
   {
@@ -154,7 +154,7 @@ const columns: DataTableColumns<any> = [
     key: 'similarity',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.similarity * 100)
+      return h(NTag, { size: 'small', bordered: false }, {default: () =>row.similarity * 100})
     },
   },
   {

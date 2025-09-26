@@ -44,6 +44,12 @@ public class DataProblemController {
         return Result.success(dataProblemService.page(dataProblemPageParam));
     }
 
+    @Operation(summary = "获取题目分页")
+    @GetMapping("/data/problem/setpage")
+    public Result<?> setPage(@ParameterObject DataProblemPageParam dataProblemPageParam) {
+        return Result.success(dataProblemService.setPage(dataProblemPageParam));
+    }
+
     @Operation(summary = "添加题目")
     @SaCheckPermission("/data/problem/add")
     @PostMapping("/data/problem/add")
@@ -79,6 +85,16 @@ public class DataProblemController {
     @GetMapping("/data/problem/client/detail")
     public Result<?> clientDetail(@ParameterObject @Valid DataProblemIdParam dataProblemIdParam) {
         return Result.success(dataProblemService.detail(dataProblemIdParam));
+    }
+
+    @Operation(summary = "通过ID获得题目")
+    @PostMapping("/data/problem/listids")
+    public Result<?> listIds(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<DataProblemIdParam> dataProblemIdParam) {
+        if (!dataProblemIdParam.isEmpty()) {
+            List<String> problemIds = dataProblemIdParam.stream().map(DataProblemIdParam::getId).toList();
+            return Result.success(dataProblemService.listByIds(problemIds));
+        }
+        return Result.success();
     }
 
     @Operation(summary = "C端-获取最新10道题目")

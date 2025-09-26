@@ -160,7 +160,9 @@ public class UserRankingServiceImpl implements UserRankingService {
             sysUser.setScore(score);
             sysUser.setRank(rank);
             RankingInfo ranking = rankingUtil.getRanking(RankingEnums.REALTIME_SUBMIT.getValue(), userId);
-            sysUser.setSubmitCount(ranking.getScore());
+            if (ranking != null) {
+                sysUser.setSubmitCount(ranking.getScore());
+            }
 
             rankings.add(sysUser);
 

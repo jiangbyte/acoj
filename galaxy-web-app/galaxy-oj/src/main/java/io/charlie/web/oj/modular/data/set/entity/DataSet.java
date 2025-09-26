@@ -3,11 +3,16 @@ package io.charlie.web.oj.modular.data.set.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.io.Serial;
 import java.util.Date;
+import java.util.List;
 
 import io.charlie.web.oj.modular.sys.category.entity.SysCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -68,9 +73,13 @@ public class DataSet extends CommonEntity {
     private String difficultyName;
 
     @Schema(description = "开始时间")
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date startTime;
 
     @Schema(description = "结束时间")
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date endTime;
 
     @Schema(description = "是否可见")
@@ -87,4 +96,8 @@ public class DataSet extends CommonEntity {
     @Schema(description = "排行")
     @TableField(exist = false)
     private Long rank;
+
+    @TableField(exist = false)
+    private List<String> problemIds;
+
 }

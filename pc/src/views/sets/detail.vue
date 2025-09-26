@@ -479,7 +479,7 @@ function rowProps(row: any) {
                 题目数量
               </div>
               <div class="text-xl font-bold">
-                {{ detailData?.problemCount ? detailData?.problemCount : 0 }} 题
+                {{ detailData?.problemIds.length ? detailData?.problemIds.length : 0 }} 题
               </div>
             </div>
             <div class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">

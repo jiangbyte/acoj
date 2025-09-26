@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.io.Serial;
+import java.util.Date;
+import java.util.List;
 
 /**
 * @author Charlie Zhang
@@ -44,10 +46,10 @@ public class DataSetEditParam implements Serializable {
     private Integer difficulty;
 
     @Schema(description = "开始时间")
-    private LocalDateTime startTime;
+    private Date startTime;
 
     @Schema(description = "结束时间")
-    private LocalDateTime endTime;
+    private Date endTime;
 
     @Schema(description = "是否可见")
     private Boolean isVisible;
@@ -57,5 +59,7 @@ public class DataSetEditParam implements Serializable {
 
     @Schema(description = "额外的信息")
     private String exJson;
+
+    private List<String> problemIds;
 
 }

@@ -72,12 +72,14 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
                     StrUtil.toUnderlineCase(dataSetPageParam.getSortField()));
         }
 
-        return this.page(CommonPageRequest.Page(
+        Page<DataSet> page = this.page(CommonPageRequest.Page(
                         Optional.ofNullable(dataSetPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(dataSetPageParam.getSize()).orElse(20),
                         null
                 ),
                 queryWrapper);
+        page.getRecords().forEach(dataSet -> dataSet.setProblemIds(dataSetProblemService.getProblemIdsBySetId(dataSet.getId())));
+        return page;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -85,6 +87,8 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     public void add(DataSetAddParam dataSetAddParam) {
         DataSet bean = BeanUtil.toBean(dataSetAddParam, DataSet.class);
         this.save(bean);
+
+        dataSetProblemService.addOrUpdate(bean.getId(), dataSetAddParam.getProblemIds());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -96,6 +100,8 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         DataSet bean = BeanUtil.toBean(dataSetEditParam, DataSet.class);
         BeanUtil.copyProperties(dataSetEditParam, bean);
         this.updateById(bean);
+
+        dataSetProblemService.addOrUpdate(bean.getId(), dataSetEditParam.getProblemIds());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -113,6 +119,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         if (ObjectUtil.isEmpty(dataSet)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
+        dataSet.setProblemIds(dataSetProblemService.getProblemIdsBySetId(dataSet.getId()));
         return dataSet;
     }
 
@@ -124,6 +131,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
                 .orderByAsc(DataSet::getCreateTime)
                 .last("LIMIT " + n)
         );
+        list.forEach(dataSet -> dataSet.setProblemIds(dataSetProblemService.getProblemIdsBySetId(dataSet.getId())));
         return list;
     }
 
@@ -166,6 +174,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
             dataSet.setRank(rankingInfo.getRank());
             dataSets.add(dataSet);
         }
+        dataSets.forEach(dataSet -> dataSet.setProblemIds(dataSetProblemService.getProblemIdsBySetId(dataSet.getId())));
         return dataSets;
     }
 

@@ -83,85 +83,29 @@ public class JudgeHandleMessage {
         // 立即响应客户端
         sendImmediateResponse(judgeResultDto, dataSubmit);
 
-        // 事务提交后，再触发异步处理
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        // 确保主事务提交后再执行异步任务
-                        if (judgeResultDto.getSubmitType()) {
-                            log.info("事务提交完成，开始异步处理");
+        // 只有在AC状态且为正式提交时，才注册事务同步处理器
+        if (isAcAndFormalSubmission(judgeResultDto)) {
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            log.info("事务提交完成，开始异步处理AC提交的附加任务");
                             asyncHandleAdditionalTasks(judgeResultDto, dataSubmit);
                         }
                     }
-                }
-        );
+            );
+        } else {
+            // 否则直接返回关闭
+            // 立即响应关闭客户端
+            sendImmediateCloseResponse(judgeResultDto, dataSubmit);
+        }
+    }
 
-//        try {
-
-
-//            log.info("接收到消息：{}", JSONUtil.toJsonStr(judgeResultDto));
-//
-//            // 查询这个ID的提交
-//            DataSubmit dataSubmit = dataSubmitMapper.selectById(judgeResultDto.getId());
-//
-//            // 复制属性
-//            BeanUtil.copyProperties(judgeResultDto, dataSubmit);
-//            dataSubmitMapper.updateById(dataSubmit);
-//
-//            System.out.println(JSONUtil.toJsonPrettyStr(dataSubmit));
-//
-//            // 正式提交
-//            if (judgeResultDto.getSubmitType()) {
-//                log.info("正式提交");
-//                // 通过
-//                if (judgeResultDto.getStatus().equals(JudgeStatus.ACCEPTED.getValue())) {
-//                    // 排行榜更新
-//                    userRankingService.processSubmission(dataSubmit);
-//
-//                    // 更新 solved
-//                    dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
-//                            .eq(DataSolved::getUserId, dataSubmit.getUserId())
-//                            .eq(DataSolved::getProblemId, dataSubmit.getProblemId())
-//                            .eq(DataSolved::getSubmitId, judgeResultDto.getId())
-//                            .set(DataSolved::getSolved, true)
-//                    );
-//
-//                    // 添加到 library
-//                    DataSubmit dataSubmit1 = dataSubmitMapper.selectById(judgeResultDto.getId());
-//                    dataLibraryService.addLibrary(dataSubmit1);
-//
-//                    // 本次提交相似报告
-//                    String taskId = IdUtil.getSnowflakeNextIdStr();
-//                    dataSubmitMapper.update(new LambdaUpdateWrapper<DataSubmit>()
-//                            .eq(DataSubmit::getId, dataSubmit.getId())
-//                            .set(DataSubmit::getTaskId, taskId)
-//                    );
-//
-//                    SimilaritySubmitDto similaritySubmitDto = BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class);
-//                    similaritySubmitDto.setTaskId(taskId);
-//                    similaritySubmitDto.setTaskType(false);
-//                    similaritySubmitDto.setCreateTime(dataSubmit.getCreateTime());
-//                    similarityHandleMessage.sendSimilarity(similaritySubmitDto);
-//                }
-//            } else {
-//                log.info("测试提交");
-//            }
-//
-//            transService.transOne(dataSubmit);
-//            WebSocketMessage<DataSubmit> message = new WebSocketMessage<>();
-//            message.setData(dataSubmit);
-//
-//            log.info("向客户端发送消息：{}", JSONUtil.toJsonStr(message));
-//
-//            webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId(), message);
-//            webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId());
-//            log.info("向客户端 发送关闭指令");
-
-
-//        } catch (Exception e) {
-//            log.error("处理消息失败：{}", e.getMessage());
-//        }
+    /**
+     * 判断是否为AC状态且为正式提交
+     */
+    private boolean isAcAndFormalSubmission(JudgeResultDto judgeResultDto) {
+        return JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus()) && judgeResultDto.getSubmitType();
     }
 
     /**
@@ -184,9 +128,22 @@ public class JudgeHandleMessage {
 
         log.info("向客户端发送消息：{}", JSONUtil.toJsonStr(message));
         webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId(), message);
-       if (!judgeResultDto.getSubmitType()) {
-           webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId());
-       }
+        if (!judgeResultDto.getSubmitType()) {
+            webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId());
+        }
+    }
+
+    private void sendImmediateCloseResponse(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
+        transService.transOne(dataSubmit);
+        WebSocketMessage<DataSubmit> message = new WebSocketMessage<>();
+        message.setData(dataSubmit);
+
+        log.info("向客户端发送消息：{}", JSONUtil.toJsonStr(message));
+        webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId(), message);
+        if (!judgeResultDto.getSubmitType()) {
+            webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId());
+        }
+        webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId());
     }
 
     /**

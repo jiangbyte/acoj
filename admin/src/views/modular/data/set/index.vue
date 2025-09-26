@@ -49,7 +49,7 @@ const columns: DataTableColumns<any> = [
     key: 'startTime',
     width: 180,
     render: (row) => {
-      return h(NTime, { time: row.startTime })
+      return Number(row.setType) === 2 ? h(NTime, { time: row.startTime }) : '-'
     },
   },
   {
@@ -57,7 +57,7 @@ const columns: DataTableColumns<any> = [
     key: 'endTime',
     width: 180,
     render: (row) => {
-      return h(NTime, { time: row.endTime })
+      return Number(row.setType) === 2 ? h(NTime, { time: row.endTime }) : '-'
     },
   },
   // {

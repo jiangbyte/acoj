@@ -314,7 +314,7 @@ CREATE TABLE task_reports
     threshold               DECIMAL(10, 2) UNSIGNED NULL     DEFAULT 0.5 COMMENT '检测阈值',
     similarity_distribution JSON                    NULL COMMENT '相似度分布',
     degree_statistics       JSON                    NULL COMMENT '程度统计',
-    check_mode              INT                     NOT NULL DEFAULT 1 COMMENT '检测模式',
+    check_mode              INT                     NOT NULL DEFAULT 1 COMMENT '检测模式', -- 1:自动,2:手动,3:定时
     # ------------------------------------------------
     deleted                 TINYINT(1)                       DEFAULT 0 COMMENT '删除状态',
     create_time             DATETIME                         DEFAULT NULL COMMENT '创建时间戳',

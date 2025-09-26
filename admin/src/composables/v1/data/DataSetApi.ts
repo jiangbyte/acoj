@@ -26,6 +26,7 @@ export function useDataSetFetch() {
     createUser: '',
     updateTime: '',
     updateUser: '',
+    problemIds: [],
   }
   return {
     /*

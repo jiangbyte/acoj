@@ -16,7 +16,7 @@ import java.util.List;
 public class CommonPageRequest {
     private static final Integer PAGE_NUM_DEFAULT_VALUE = 1;
 
-    private static final Integer PAGE_SIZE_DEFAULT_VALUE = 20;
+    private static final Integer PAGE_SIZE_DEFAULT_VALUE = 10;
     private static final Integer PAGE_SIZE_MAX_VALUE = 1000;
 
     public static <T> Page<T> Page(int page, int size, List<OrderItem> orderItems) {

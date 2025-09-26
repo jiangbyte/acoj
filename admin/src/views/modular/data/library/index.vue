@@ -85,7 +85,7 @@ const columns: DataTableColumns<any> = [
     key: 'codeLength',
   },
   {
-    title: '访问次数',
+    title: '检测热度',
     key: 'accessCount',
   },
   {

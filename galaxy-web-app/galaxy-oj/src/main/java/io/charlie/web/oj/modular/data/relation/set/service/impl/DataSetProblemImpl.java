@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -90,6 +91,7 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
         // 获取数据集下的题目
         List<DataSetProblem> dataSetProblems = this.baseMapper.selectList(new LambdaQueryWrapper<DataSetProblem>()
                 .eq(DataSetProblem::getSetId, setId)
+                .orderByAsc(DataSetProblem::getSort)
         );
 
         List<String> problemIds;
@@ -102,6 +104,7 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
 
         problemIds = dataSetProblems.stream()
                 .map(DataSetProblem::getProblemId)
+                .sorted(Comparator.naturalOrder())
                 .toList();
 
         // 将结果存入缓存
@@ -121,6 +124,7 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
                 DataSetProblem dataSetProblem = new DataSetProblem();
                 dataSetProblem.setSetId(setId);
                 dataSetProblem.setProblemId(item);
+                dataSetProblem.setSort(problemIds.indexOf(item));
                 // 添加
                 this.save(dataSetProblem);
             });

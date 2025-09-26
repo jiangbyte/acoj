@@ -82,11 +82,11 @@ defineExpose({
           <NInput v-model:value="formData.typeLabel" placeholder="请输入类型名称" />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="字典类型" path="dictType">
+        <NFormItem label="字典类型（编码）" path="dictType">
           <NInput v-model:value="formData.dictType" placeholder="请输入字典类型" />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="字典标签" path="dictLabel">
+        <NFormItem label="字典标签（名称）" path="dictLabel">
           <NInput v-model:value="formData.dictLabel" placeholder="请输入字典标签" />
         </NFormItem>
         <!-- 输入框 -->

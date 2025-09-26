@@ -1,6 +1,7 @@
 <script lang="ts" setup>
+import type { DataTableColumns } from 'naive-ui'
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useDataSetFetch, useSysCategoryFetch, useSysDictFetch } from '@/composables/v1'
+import { useDataProblemFetch, useDataSetFetch, useSysCategoryFetch, useSysDictFetch } from '@/composables/v1'
 import MDEditor from '@/components/common/editor/md/Editor.vue'
 
 const emit = defineEmits(['close', 'submit'])
@@ -32,13 +33,9 @@ const rules = {
     // { required: true, message: '请输入额外的信息', trigger: ['input', 'blur'] },
   ],
 }
-function doClose() {
-  emit('close')
-  show.value = false
-  formData.value = { ...dataSetDefaultData }
-}
 
 const isEdit = ref(false)
+const problemKeyValue = ref([])
 async function doSubmit() {
   formRef.value?.validate(async (errors: any) => {
     if (!errors) {
@@ -71,11 +68,39 @@ const categoryOptions = ref()
 const setTypeOptions = ref()
 const { sysDictOptions } = useSysDictFetch()
 const { sysCategoryOptions } = useSysCategoryFetch()
+
+const problemsPageParam = ref({
+  current: 1,
+  size: 10,
+  sortField: null,
+  sortOrder: null,
+  keyword: '',
+})
+const problemsPageData = ref()
+const { dataProblemSetPage, dataProblemListIds } = useDataProblemFetch()
+async function loadData() {
+  const { data } = await dataProblemSetPage(problemsPageParam.value)
+  if (data) {
+    problemsPageData.value = data
+  }
+}
+
+function clearProblemsPageParamHandle() {
+  problemsPageParam.value.keyword = ''
+  loadData()
+}
 async function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
-
+  loadData()
+  const param = formData.value.problemIds.map((id: any) => ({ id }))
+  if (param.length > 0) {
+    loadProblems(param)
+  }
+  else {
+    problemKeyValue.value = []
+  }
   // 获取下拉列表数据
   const { data: difficultyData } = await sysDictOptions({ dictType: 'PROBLEM_DIFFICULTY' })
   if (difficultyData) {
@@ -104,6 +129,83 @@ async function doOpen(row: any = null, edit: boolean = false) {
 defineExpose({
   doOpen,
 })
+
+const problemColumns: DataTableColumns<any> = [
+  {
+    type: 'selection',
+  },
+  {
+    title: '标题',
+    key: 'title',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '分类',
+    key: 'categoryName',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '难度',
+    key: 'difficultyName',
+  },
+]
+async function selectedProblems(keys: Array<string | number>) {
+  formData.value.problemIds = keys
+  const param = keys.map((id: any) => ({ id }))
+  console.log(param)
+  if (param.length > 0) {
+    loadProblems(param)
+  }
+  else {
+    problemKeyValue.value = []
+  }
+}
+async function loadProblems(param: any) {
+  const { data } = await dataProblemListIds(param)
+  if (data) {
+    console.log(data)
+    problemKeyValue.value = data.map((item: { id: any, title: any }) => ({
+      key: item.id,
+      value: item.title,
+    }))
+  }
+}
+function doClose() {
+  emit('close')
+  show.value = false
+  formData.value = { ...dataSetDefaultData }
+  problemKeyValue.value = []
+  problemsPageParam.value = {
+    current: 1,
+    size: 10,
+    sortField: null,
+    sortOrder: null,
+    keyword: '',
+  }
+}
+function removeProblem(index: string | number) {
+  console.log(index)
+  // 先找到problemKeyValue对应index的key
+  const removedItem = problemKeyValue.value.find((_, i) => i === index)
+  if (!removedItem)
+    return
+
+  const removedKey = removedItem.key
+
+  // 从problemKeyValue中移除指定index的项
+  problemKeyValue.value = problemKeyValue.value.filter((_, i) => i !== index)
+
+  // 从formData.problemIds中移除对应的key
+  const problemIds = formData.value.problemIds.filter((id: string | number) => id !== removedKey)
+
+  // 重新调用selectedProblems更新数据（如果需要的话）
+  // 如果不需要重新调用API，可以注释掉下面这行
+  selectedProblems(problemIds)
+}
 </script>
 
 <template>
@@ -162,11 +264,11 @@ defineExpose({
           />
         </NFormItem>
         <!-- 日期选择 -->
-        <NFormItem label="开始时间" path="startTime">
+        <NFormItem v-if="formData.setType === 2" label="开始时间" path="startTime">
           <NDatePicker v-model:value="formData.startTime" type="datetime" />
         </NFormItem>
         <!-- 日期选择 -->
-        <NFormItem label="结束时间" path="endTime">
+        <NFormItem v-if="formData.setType === 2" label="结束时间" path="endTime">
           <NDatePicker v-model:value="formData.endTime" type="datetime" />
         </NFormItem>
         <!-- 输入框 -->
@@ -183,6 +285,65 @@ defineExpose({
               否
             </NRadio>
           </NRadioGroup>
+        </NFormItem>
+        <!-- Boolean 选择框 -->
+        <NFormItem label="题目选择" path="problems">
+          <NSpace vertical class="w-full">
+            <NSpace class="w-full">
+              <NInput v-model:value="problemsPageParam.keyword" placeholder="请输入关键词" clearable @clear="clearProblemsPageParamHandle" />
+              <NButton @click="loadData">
+                搜索
+              </NButton>
+            </NSpace>
+            <NDataTable
+              :checked-row-keys="formData.problemIds"
+              :columns="problemColumns"
+              :bordered="false"
+              :data="problemsPageData?.records"
+              :row-key="(row: any) => row.id"
+              class="flex-1 h-full"
+              @update:checked-row-keys="selectedProblems"
+            />
+            <NSpace align="center" justify="space-between" class="w-full">
+              <NSpace align="center">
+                <NP type="info" show-icon>
+                  当前数据 {{ problemsPageData?.records.length }} 条
+                </NP>
+                <NP type="info" show-icon>
+                  选中了 {{ formData.problemIds.length }} 行
+                </NP>
+              </NSpace>
+              <NPagination
+                v-model:page="problemsPageParam.current"
+                v-model:page-size="problemsPageParam.size"
+                class="flex justify-end"
+                :page-count="problemsPageData ? Number(problemsPageData.pages) : 0"
+                @update:page="loadData"
+                @update:page-size="loadData"
+              />
+            </NSpace>
+            <n-dynamic-input
+              v-model:value="problemKeyValue"
+              @remove="removeProblem"
+            >
+              <template #create-button-default>
+                请选择题目
+              </template>
+              <template #default="{ value, index }">
+                <div style="display: flex; align-items: center; width: 100%; gap: 10px;">
+                  <n-tag type="warning">
+                    # {{ index + 1 }}
+                  </n-tag>
+                  <!-- <NInput
+                    v-model:value="value.key"
+                    style="width: 100%"
+                    disabled
+                  /> -->
+                  <NInput v-model:value="value.value" style="width: 100%" disabled />
+                </div>
+              </template>
+            </n-dynamic-input>
+          </NSpace>
         </NFormItem>
         <!-- Boolean 选择框 -->
         <NFormItem label="是否使用AI" path="useAi">

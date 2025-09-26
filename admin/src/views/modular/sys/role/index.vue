@@ -40,7 +40,7 @@ const columns: DataTableColumns<any> = [
           size: 'small',
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
-        h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => '授权'),
+        h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => '资源授权'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),

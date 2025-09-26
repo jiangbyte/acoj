@@ -16,6 +16,8 @@ import java.io.Serial;
 import java.util.Date;
 import java.util.List;
 
+import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
+import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -48,10 +50,20 @@ public class TaskSimilarity extends CommonEntity {
     private Boolean taskType;
 
     @Schema(description = "题目ID")
+    @Trans(type = TransType.SIMPLE, target = DataProblem.class, fields = "title", ref = "problemIdName")
     private String problemId;
 
+    @Schema(description = "题目名称")
+    @TableField(exist = false)
+    private String problemIdName;
+
     @Schema(description = "题集ID")
+    @Trans(type = TransType.SIMPLE, target = DataSet.class, fields = "title", ref = "setIdName")
     private String setId;
+
+    @Schema(description = "题集名称")
+    @TableField(exist = false)
+    private String setIdName;
 
     @Schema(description = "是否是题集提交")
     @Trans(type = TransType.DICTIONARY, key = "YES_NO")

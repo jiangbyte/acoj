@@ -13,8 +13,8 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public enum ReportTypeEnum implements ILabelEnum<Integer> {
-    SINGLE_SUBMIT(1, "单提交"),
-    PROBLEM_SUBMIT(2, "题目提交"),
+    PROBLEM_SINGLE_SUBMIT(1, "题目单提交"),
+    SET_SINGLE_SUBMIT(2, "题集单提交"),
     ;
 
     private final Integer value;

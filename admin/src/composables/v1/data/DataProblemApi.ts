@@ -52,6 +52,16 @@ export function useDataProblemFetch() {
         },
       })
     },
+    dataProblemSetPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/setpage`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    dataProblemListIds(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/listids`, data)
+    },
 
     /*
      * 题目 新增接口

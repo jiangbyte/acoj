@@ -13,7 +13,10 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '报告类型',
-    key: 'reportType',
+    key: 'reportTypeName',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '任务ID',
@@ -23,19 +26,19 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '题集ID',
-    key: 'setId',
+    title: '题集',
+    key: 'setIdName',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: '是否是题集提交',
-    key: 'isSet',
+    title: '题集提交',
+    key: 'isSetName',
   },
   {
-    title: '题目ID',
-    key: 'problemId',
+    title: '题目',
+    key: 'problemIdName',
     ellipsis: {
       tooltip: true,
     },
@@ -44,10 +47,10 @@ const columns: DataTableColumns<any> = [
     title: '样例数量',
     key: 'sampleCount',
   },
-  {
-    title: '相似组数量',
-    key: 'similarityGroupCount',
-  },
+  // {
+  //   title: '相似组数量',
+  //   key: 'similarityGroupCount',
+  // },
   {
     title: '平均相似度',
     key: 'avgSimilarity',
@@ -70,19 +73,25 @@ const columns: DataTableColumns<any> = [
   // },
   {
     title: '检测模式',
-    key: 'checkMode',
+    key: 'checkModeName',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '操作',
     key: 'action',
+    width: 250,
+    fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          onClick: () => formRef.value.doOpen(row, true),
-        }, () => '编辑'),
-        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
+        // h(NButton, {
+        //   type: 'primary',
+        //   size: 'small',
+        //   onClick: () => formRef.value.doOpen(row, true),
+        // }, () => '编辑'),
+        h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => '相似报告'),
+        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '数据详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {
@@ -206,12 +215,12 @@ async function deleteBatchHandle() {
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
-            <NButton type="primary" @click="formRef.doOpen(null, false)">
+            <!-- <NButton type="primary" @click="formRef.doOpen(null, false)">
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
               创建
-            </NButton>
+            </NButton> -->
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除

@@ -75,7 +75,7 @@ const userRankingColumns = [
         {
           default: () => [
             h(NAvatar, { src: row.avatar, size: 'small', round: true }),
-            h(NText, { depth: 3 }, row.nickname),
+            h(NText, { depth: 3 }, {default: () => row.nickname}),
           ],
         },
       )

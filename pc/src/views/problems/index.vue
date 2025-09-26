@@ -36,7 +36,7 @@ const columns: DataTableColumns<any> = [
     key: 'categoryName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, row.categoryName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, {default: () => row.categoryName})
     },
   },
   {
@@ -44,7 +44,18 @@ const columns: DataTableColumns<any> = [
     key: 'tagNames',
     width: 250,
     render: (row) => {
-      return h(NSpace, { align: 'center' }, row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, tag)) || null)
+      return h(NSpace, { align: 'center' }, {
+        default: () => row.tagNames?.map((tag: any) =>
+            h(NTag, {
+              key: tag,
+              size: 'small',
+              bordered: false,
+              color: { color: RandomColorUtil.generate(), textColor: '#fff' }
+            }, {
+              default: () => tag
+            })
+        ) || null
+      })
     },
   },
   {
@@ -52,7 +63,7 @@ const columns: DataTableColumns<any> = [
     key: 'difficultyName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: DifficultyColorUtil.getColor(row.difficulty), textColor: '#fff' } }, row.difficultyName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: DifficultyColorUtil.getColor(row.difficulty), textColor: '#fff' } }, {default: () => row.difficultyName})
     },
   },
   {
@@ -60,7 +71,7 @@ const columns: DataTableColumns<any> = [
     key: 'acceptance',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.acceptance)
+      return h(NTag, { size: 'small', bordered: false }, {default: () => row.acceptance})
     },
   },
   {
@@ -76,7 +87,7 @@ const columns: DataTableColumns<any> = [
     key: 'solved',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.solved)
+      return h(NTag, { size: 'small', bordered: false }, {default: () => row.solved})
     },
   },
 ]
@@ -262,7 +273,7 @@ function resetHandle() {
             </h3>
             <p class="text-blue-600 dark:text-blue-400 text-xs mt-2 flex items-center">
               <icon-park-outline-calendar class="mr-1" />
-              最新更新于  <n-time :time="problemcount?.lastAddTime" type="relative" />
+              最新更新于  <n-time :time="Number(problemcount?.lastAddTime ? Number(problemcount?.lastAddTime) : 0)" type="relative" />
             </p>
           </div>
           <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">

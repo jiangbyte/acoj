@@ -1,5 +1,9 @@
 package io.charlie.web.oj.modular.data.problem.entity;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,6 +19,8 @@ import java.util.Date;
 public class DataProblemCount {
     private Long total;
     private Long monthAdd; // 本月新增
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date lastAddTime; // 上次新增时间
     private BigDecimal growthRate; // 增长率
 
