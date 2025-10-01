@@ -430,7 +430,7 @@ function resetHandle() {
                     </h4>
                   </n-button>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ item.participantCount }}人解题
+                    {{ item.participantUserCount }} 人参与
                   </p>
                 </div>
                 <!-- <div class="flex items-center text-yellow-500">

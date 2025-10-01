@@ -3,7 +3,6 @@ package io.charlie.web.oj.modular.data.problem.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
@@ -12,8 +11,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.galaxy.utils.ranking.RankingInfo;
-import io.charlie.galaxy.utils.ranking.RankingUtil;
 import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblemCount;
@@ -26,9 +23,10 @@ import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.data.problem.utils.ProblemBuildTool;
 import io.charlie.web.oj.modular.data.problem.utils.ProblemImportTool;
-import io.charlie.web.oj.modular.data.ranking.enums.RankingEnums;
-import io.charlie.web.oj.modular.data.ranking.service.UserRankingService;
-import io.charlie.web.oj.modular.data.relation.set.service.DataSetProblemService;
+import io.charlie.web.oj.modular.data.ranking.data.RankItem;
+import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
+import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
+import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.relation.tag.service.DataProblemTagService;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.task.judge.dto.TestCase;
@@ -54,12 +52,14 @@ import java.util.*;
 @RequiredArgsConstructor
 public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataProblem> implements DataProblemService {
     private final DataSolvedMapper dataSolvedMapper;
-    private final RankingUtil rankingUtil;
-    private final UserRankingService userRankingService;
     private final DataProblemTagService dataProblemTagService;
     private final TransService transService;
     private final ProblemBuildTool problemBuildTool;
     private final ProblemImportTool problemImportTool;
+
+    private final UserCacheService userCacheService;
+    private final ProblemSetCacheService problemSetCacheService;
+    private final ProblemCacheService problemCacheService;
 
     @Override
     public Page<DataProblem> page(DataProblemPageParam dataProblemPageParam) {
@@ -195,6 +195,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
                 .eq(DataProblem::getIsVisible, true)
                 .orderByDesc(DataProblem::getCreateTime)
                 .last("LIMIT " + n));
+        problemBuildTool.buildProblems(list);
         return list;
     }
 
@@ -235,13 +236,14 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
 
     @Override
     public List<DataProblem> getHotN(int n) {
-        List<RankingInfo> topNRanking = rankingUtil.getTopNRanking(RankingEnums.HOT_PROBLEM.getValue(), n);
+        List<RankItem> problemRankTopN = problemCacheService.getProblemRankTopN(n);
         List<DataProblem> dataProblems = new ArrayList<>();
-        for (RankingInfo rankingInfo : topNRanking) {
-            DataProblem dataProblem = this.getById(rankingInfo.getEntityId());
+        for (RankItem rankingInfo : problemRankTopN) {
+            DataProblem dataProblem = this.getById(rankingInfo.getId());
             dataProblem.setRank(rankingInfo.getRank());
             dataProblems.add(dataProblem);
         }
+        problemBuildTool.buildProblems(dataProblems);
         return dataProblems;
     }
 

@@ -100,4 +100,18 @@ public class DataSet extends CommonEntity {
     @TableField(exist = false)
     private List<String> problemIds;
 
+    @Schema(description = "通过率")
+    @TableField(exist = false)
+    private Double avgAcceptance;
+
+    // 提交人数
+    @Schema(description = "提交人数")
+    @TableField(exist = false)
+    private Long submitUserCount;
+
+    // 参与人数
+    @Schema(description = "参与人数")
+    @TableField(exist = false)
+    private Long participantUserCount;
+
 }

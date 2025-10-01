@@ -4,18 +4,15 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.galaxy.utils.ranking.RankingUtil;
 import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
-import io.charlie.web.oj.modular.data.ranking.enums.RankingEnums;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
@@ -47,7 +44,6 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSubmit> implements DataSubmitService {
-    private final RankingUtil rankingUtil;
     private final DataSolvedMapper dataSolvedMapper;
     private final JudgeHandleMessage judgeHandleMessage;
     private final DataProblemMapper dataProblemMapper;
@@ -192,8 +188,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         // 2. 存储提交记录
         this.handleSolvedRecord(dataSubmitExeParam, false, dataSubmit);
         // 3. 触发用户活跃度、提交计算
-        this.handleRedisRecord(dataSubmit.getUserId(), dataSubmitExeParam, false);
-        rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_PROBLEM.getValue(), dataSubmitExeParam.getProblemId(), 1);
+//        this.handleRedisRecord(dataSubmit.getUserId(), dataSubmitExeParam, false);
         // 4. 异步处理并发送进度更新
         this.asyncHandleSubmit(dataSubmit, dataSubmitExeParam);
         return dataSubmit.getId();
@@ -207,9 +202,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         // 2. 存储提交记录
         this.handleSolvedRecord(dataSubmitExeParam, true, dataSubmit);
         // 3. 触发用户活跃度、提交计算
-        this.handleRedisRecord(dataSubmit.getUserId(), dataSubmitExeParam, true);
-        rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_SET_PROBLEM.getValue(), dataSubmitExeParam.getProblemId(), 1);
-        rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_SET.getValue(), dataSubmitExeParam.getSetId(), 1);
+//        this.handleRedisRecord(dataSubmit.getUserId(), dataSubmitExeParam, true);
 //        // 4. 异步处理并发送进度更新
         this.asyncHandleSubmit(dataSubmit, dataSubmitExeParam);
         return dataSubmit.getId();
@@ -241,18 +234,30 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         return submit;
     }
 
-    private void handleRedisRecord(String userId, DataSubmitExeParam dataSubmitExeParam, Boolean isSet) {
-        String realtimeActiveKey = isSet ? RankingEnums.REALTIME_SET_ACTIVE.getValue() : RankingEnums.REALTIME_ACTIVE.getValue();
-        String realtimeSubmitKey = isSet ? RankingEnums.REALTIME_SET_SUBMIT.getValue() : RankingEnums.REALTIME_SUBMIT.getValue();
-        String tryKey = isSet ? RankingEnums.SET_TRY.getValue() : RankingEnums.TRY.getValue();
-
-        rankingUtil.addOrUpdateAutoScore(realtimeActiveKey, userId, 0.1);
-        if (dataSubmitExeParam.getSubmitType()) {
-            rankingUtil.addOrUpdateAutoScore(realtimeSubmitKey, userId, 1);
-        } else {
-            rankingUtil.addOrUpdateAutoScore(tryKey, userId, 1);
-        }
-    }
+//    private void handleRedisRecord(String userId, DataSubmitExeParam dataSubmitExeParam, Boolean isSet) {
+//        // 实时活跃度
+//        String realtimeActiveKey = isSet ? RankingEnums.REALTIME_SET_ACTIVE.getValue() : RankingEnums.REALTIME_ACTIVE.getValue();
+//        rankingUtil.addOrUpdateAutoScore(realtimeActiveKey, userId, 0.1);
+//
+//        if (isSet) {
+//            // 热度
+//            rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_SET_PROBLEM.getValue(), dataSubmitExeParam.getProblemId(), 1);
+//            rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_SET.getValue(), dataSubmitExeParam.getSetId(), 1);
+//        } else {
+//            // 非题集热度
+//            rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_PROBLEM.getValue(), dataSubmitExeParam.getProblemId(), 1);
+//        }
+//
+//        if (dataSubmitExeParam.getSubmitType()) {
+//            // 提交（计数）
+//            String realtimeSubmitKey = isSet ? RankingEnums.REALTIME_SET_SUBMIT.getValue() : RankingEnums.REALTIME_SUBMIT.getValue();
+//            rankingUtil.addOrUpdateAutoScore(realtimeSubmitKey, userId, 1);
+//        } else {
+//            // 尝试（计数）
+//            String tryKey = isSet ? RankingEnums.SET_TRY.getValue() : RankingEnums.TRY.getValue();
+//            rankingUtil.addOrUpdateAutoScore(tryKey, userId, 1);
+//        }
+//    }
 
     public void handleSolvedRecord(DataSubmitExeParam dataSubmitExeParam, Boolean isSet, DataSubmit dataSubmit) {
 //        String userId = StpUtil.getLoginIdAsString();

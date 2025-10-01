@@ -9,13 +9,14 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.galaxy.utils.ranking.RankingInfo;
-import io.charlie.galaxy.utils.ranking.RankingUtil;
 import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.problem.utils.ProblemBuildTool;
-import io.charlie.web.oj.modular.data.ranking.enums.RankingEnums;
+import io.charlie.web.oj.modular.data.ranking.data.RankItem;
+import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
+import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
+import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.relation.set.service.DataSetProblemService;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.set.param.*;
@@ -25,6 +26,7 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.data.set.utils.SetBuildTool;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +49,12 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     private final TransService transService;
     private final DataProblemMapper dataProblemMapper;
     private final ProblemBuildTool problemBuildTool;
-    private final RankingUtil rankingUtil;
+
+    private final UserCacheService userCacheService;
+    private final ProblemSetCacheService problemSetCacheService;
+    private final ProblemCacheService problemCacheService;
+
+    private final SetBuildTool setBuildTool;
 
     @Override
     public Page<DataSet> page(DataSetPageParam dataSetPageParam) {
@@ -78,7 +85,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
                         null
                 ),
                 queryWrapper);
-        page.getRecords().forEach(dataSet -> dataSet.setProblemIds(dataSetProblemService.getProblemIdsBySetId(dataSet.getId())));
+        setBuildTool.buildSets(page.getRecords());
         return page;
     }
 
@@ -119,7 +126,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         if (ObjectUtil.isEmpty(dataSet)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
-        dataSet.setProblemIds(dataSetProblemService.getProblemIdsBySetId(dataSet.getId()));
+        setBuildTool.buildSet(dataSet);
         return dataSet;
     }
 
@@ -131,7 +138,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
                 .orderByAsc(DataSet::getCreateTime)
                 .last("LIMIT " + n)
         );
-        list.forEach(dataSet -> dataSet.setProblemIds(dataSetProblemService.getProblemIdsBySetId(dataSet.getId())));
+        setBuildTool.buildSets(list);
         return list;
     }
 
@@ -167,14 +174,14 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
 
     @Override
     public List<DataSet> getHotN(int n) {
-        List<RankingInfo> topNRanking = rankingUtil.getTopNRanking(RankingEnums.HOT_SET.getValue(), n);
+        List<RankItem> problemSetRankTopN = problemSetCacheService.getProblemSetRankTopN(n);
         List<DataSet> dataSets = new ArrayList<>();
-        for (RankingInfo rankingInfo : topNRanking) {
-            DataSet dataSet = this.getById(rankingInfo.getEntityId());
+        for (RankItem rankingInfo : problemSetRankTopN) {
+            DataSet dataSet = this.getById(rankingInfo.getId());
             dataSet.setRank(rankingInfo.getRank());
             dataSets.add(dataSet);
         }
-        dataSets.forEach(dataSet -> dataSet.setProblemIds(dataSetProblemService.getProblemIdsBySetId(dataSet.getId())));
+        setBuildTool.buildSets(dataSets);
         return dataSets;
     }
 

@@ -1,4 +1,4 @@
-package io.charlie.web.oj.modular.data.ranking;
+package io.charlie.web.oj.modular.data.ranking.param;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -9,11 +9,11 @@ import java.io.Serializable;
 /**
  * @author ZhangJiangHu
  * @version v1.0
- * @date 21/09/2025
- * @description 用户排行榜
+ * @date 01/10/2025
+ * @description TODO
  */
 @Data
-public class UserRankingPageParam implements Serializable {
+public class RankingPageParam implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -31,5 +31,4 @@ public class UserRankingPageParam implements Serializable {
 
     @Schema(description = "关键词")
     private String keyword;
-
 }

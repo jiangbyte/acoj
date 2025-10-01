@@ -1,32 +1,17 @@
 package io.charlie.web.oj.modular.task.similarity.handle;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import io.charlie.galaxy.utils.ranking.RankingUtil;
-import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
-import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
-import io.charlie.web.oj.modular.data.reports.entity.TaskReports;
 import io.charlie.web.oj.modular.data.reports.mapper.TaskReportsMapper;
-import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
 import io.charlie.web.oj.modular.data.similarity.mapper.TaskSimilarityMapper;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
-import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
-import io.charlie.web.oj.modular.sys.config.entity.SysConfig;
 import io.charlie.web.oj.modular.sys.config.mapper.SysConfigMapper;
 import io.charlie.web.oj.modular.task.similarity.data.Config;
 import io.charlie.web.oj.modular.task.similarity.dto.BatchSimilaritySubmitDto;
-import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
-import io.charlie.web.oj.modular.task.similarity.enums.CloneLevelEnum;
-import io.charlie.web.oj.modular.task.similarity.enums.ReportTypeEnum;
 import io.charlie.web.oj.modular.task.similarity.mq.CommonSimilarityQueue;
 import io.charlie.web.oj.modular.task.similarity.utils.CodeSimilarityCalculator;
-import io.charlie.web.oj.modular.task.similarity.utils.DynamicCloneLevelDetector;
 import io.charlie.web.oj.modular.websocket.config.WebSocketConfig;
 import io.charlie.web.oj.modular.websocket.data.WebSocketMessage;
 import io.charlie.web.oj.modular.websocket.utils.WebSocketUtil;
@@ -37,14 +22,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 /**
  * @author ZhangJiangHu
@@ -61,7 +38,6 @@ public class BatchSimilarityHandleMessage {
     private final DataSubmitMapper dataSubmitMapper;
     private final DataSolvedMapper dataSolvedMapper;
     private final DataProblemMapper dataProblemMapper;
-    private final RankingUtil rankingUtil;
     private final DataLibraryMapper dataLibraryMapper;
     private final SysConfigMapper sysConfigMapper;
     private final TaskSimilarityMapper taskSimilarityMapper;

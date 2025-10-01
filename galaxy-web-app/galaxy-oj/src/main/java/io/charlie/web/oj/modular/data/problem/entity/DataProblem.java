@@ -120,5 +120,23 @@ public class DataProblem extends CommonEntity {
     @TableField(exist = false)
     private Boolean currentUserSolved;
 
+    // =====================
+    @Schema(description = "排行榜分数")
+    @TableField(exist = false)
+    private Double score;
+
+    @Schema(description = "通过率")
+    @TableField(exist = false)
+    private Double acceptance;
+
+    // 提交人数
+    @Schema(description = "提交人数")
+    @TableField(exist = false)
+    private Long submitUserCount;
+
+    // 参与人数
+    @Schema(description = "参与人数")
+    @TableField(exist = false)
+    private Long participantUserCount;
 
 }

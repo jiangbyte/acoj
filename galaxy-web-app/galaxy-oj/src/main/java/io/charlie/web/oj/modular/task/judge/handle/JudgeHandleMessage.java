@@ -4,11 +4,10 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import io.charlie.galaxy.utils.ranking.RankingUtil;
+import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
+import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
+import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.library.service.DataLibraryService;
-import io.charlie.web.oj.modular.data.ranking.enums.RankingEnums;
-import io.charlie.web.oj.modular.data.ranking.service.SetUserRankingService;
-import io.charlie.web.oj.modular.data.ranking.service.UserRankingService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
@@ -27,15 +26,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author ZhangJiangHu
@@ -51,12 +47,14 @@ public class JudgeHandleMessage {
     private final WebSocketUtil webSocketUtil;
     private final DataSubmitMapper dataSubmitMapper;
     private final DataSolvedMapper dataSolvedMapper;
-    private final RankingUtil rankingUtil;
     private final DataLibraryService dataLibraryService;
     private final SimilarityHandleMessage similarityHandleMessage;
-    private final UserRankingService userRankingService;
-    private final SetUserRankingService setUserRankingService;
     private final TransService transService;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    private final UserCacheService userCacheService;
+    private final ProblemSetCacheService problemSetCacheService;
+    private final ProblemCacheService problemCacheService;
 
     public void sendJudge(JudgeSubmitDto judgeSubmitDto, DataSubmit dataSubmit) {
         log.info("发送消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
@@ -161,20 +159,58 @@ public class JudgeHandleMessage {
      */
     private void handleFormalSubmissionAsync(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
         if (judgeResultDto.getStatus().equals(JudgeStatus.ACCEPTED.getValue())) {
-            // 1. 排行榜更新
-            userRankingService.processSubmission(dataSubmit);
-            if (dataSubmit.getIsSet()) {
-                setUserRankingService.processSubmission(dataSubmit);
-            }
+            // 2. 排行榜更新
+            handleRedisRecord(judgeResultDto, dataSubmit);
 
-            // 2. 更新 solved
+            // 3. 更新 solved
             updateSolvedRecord(judgeResultDto, dataSubmit);
 
-            // 3. 添加到 library
+            // 4. 添加到 library
             dataLibraryService.addLibrary(dataSubmit);
 
-            // 4. 相似度检测
+            // 5. 相似度检测
             handleSimilarityCheck(judgeResultDto, dataSubmit);
+        }
+    }
+
+    private void handleRedisRecord(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
+        Boolean isSet = judgeResultDto.getIsSet();
+        String userId = judgeResultDto.getUserId();
+        String problemId = judgeResultDto.getProblemId();
+        String setId = judgeResultDto.getSetId();
+        Boolean submitType = judgeResultDto.getSubmitType();
+        boolean isAc = JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus());
+
+        // 用户活跃度
+        userCacheService.addUserActivity(userId, 0.01);
+
+        if (isSet) {
+            // 题集参与度
+            problemSetCacheService.addProblemSetParticipant(setId, userId);
+            if (submitType) {
+                // 题集内题目的提交度
+                problemSetCacheService.addProblemSetProblemSubmit(setId, problemId, userId);
+                if (isAc) {
+                    problemSetCacheService.addProblemSetProblemAccept(setId, problemId, userId);
+                }
+            } else {
+                // 题集内题目的尝试度
+                problemSetCacheService.addProblemSetProblemAttempt(setId, problemId, userId);
+            }
+        } else {
+            // 题目参与度
+            problemCacheService.addParticipantUser(problemId, userId);
+            if (submitType) {
+                // 提交度
+                problemCacheService.addSubmitUser(problemId, userId);
+                if (isAc) {
+                    problemCacheService.addAcceptUser(problemId, userId);
+                    userCacheService.addUserAcceptedProblem(userId, problemId);
+                }
+            } else {
+                // 尝试度
+                problemCacheService.addAttemptUser(problemId, userId);
+            }
         }
     }
 

@@ -51,6 +51,7 @@ async function loadData() {
   // 获取Top10排行榜
   useDataSetFetch().dataSetHot().then(({ data }) => {
     setRankingListData.value = data
+    console.log(data)
   })
 }
 
@@ -196,7 +197,7 @@ loadData()
                     <n-tag class="mr-4" size="small" :bordered="false" :color="{ color: RandomColorUtil.generate(), textColor: '#fff' }">
                       {{ item.categoryName }}
                     </n-tag>
-                    <span>通过率: {{ item.acceptance }}%</span>
+                    <span>通过率: {{ item.acceptance }} %</span>
                   </div>
                 </div>
                 <div class="mt-4 md:mt-0 flex items-center text-sm text-gray-500 dark:text-gray-400">
@@ -234,7 +235,7 @@ loadData()
                   <n-tag size="small" :bordered="false" type="info" class="mr-3">
                     {{ item.setTypeName }}
                   </n-tag>
-                  <span class="text-sm text-gray-500 dark:text-gray-400">{{ item.problemCount }}道题</span>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">共 {{ item.problemIds.length ? item.problemIds.length : 0 }} 道题</span>
                 </div>
                 <n-button text class="mb-2">
                   <h3 class="text-xl font-semibold">
@@ -313,15 +314,15 @@ loadData()
                   </n-button>
                   <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
                     <n-text depth="3">
-                      通过率: {{ item.acceptanceRate }} %
+                      通过率: {{ item.acceptance }} %
                     </n-text>
                     <span class="mx-1">•</span>
                     <n-text depth="3">
-                      参与: {{ item.participantCount }}
+                      参与: {{ item.participantUserCount }}
                     </n-text>
                     <span class="mx-1">•</span>
                     <n-text depth="3">
-                      提交: {{ item.totalSubmissionCount }}
+                      提交: {{ item.submitUserCount }}
                     </n-text>
                   </div>
                 </div>
@@ -355,11 +356,11 @@ loadData()
                   </n-button>
                   <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
                     <n-text depth="3">
-                      参与: {{ item.participantCount }}
+                      通过率: {{ item.avgAcceptance }}
                     </n-text>
                     <span class="mx-1">•</span>
                     <n-text depth="3">
-                      提交: {{ item.totalSubmissionCount }}
+                      参与: {{ item.participantUserCount }}
                     </n-text>
                   </div>
                 </div>

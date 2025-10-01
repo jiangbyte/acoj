@@ -221,8 +221,8 @@ function handleClick(item: any) {
               <!--            <span class="bg-gray-100 dark:bg-gray-700 text-xs px-2 py-1 rounded">贪心</span> -->
               <!--          </div> -->
               <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span><i class="fa fa-question-circle mr-1" /> {{ item.problemIds.length ? item.problemIds.length : 0 }} 题</span>
-                <span><i class="fa fa-user mr-1" /> {{ item.participantCount }}人参与</span>
+                <span><i class="fa fa-question-circle mr-1" />共 {{ item.problemIds.length ? item.problemIds.length : 0 }} 题</span>
+                <span><i class="fa fa-user mr-1" />{{ item.participantUserCount }} 人参与</span>
               </div>
             </div>
           </div>
@@ -267,7 +267,7 @@ function handleClick(item: any) {
                     </h4>
                   </NButton>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ item.participantCount }}人参与
+                    {{ item.participantUserCount }} 人参与
                   </p>
                 </div>
                 <!-- <div class="flex items-center text-yellow-500">
