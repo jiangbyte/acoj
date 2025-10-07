@@ -22,6 +22,7 @@ const pageParam = ref({
 const pageData = ref()
 const loading = ref(true)
 const setListData = ref()
+const difficultyDistribution = ref()
 
 async function loadData() {
   const { dataSetPage } = useDataSetFetch()
@@ -67,6 +68,12 @@ async function loadData() {
 
   useDataSetFetch().dataSetHot().then(({ data }) => {
     setRankingListData.value = data
+  })
+
+  useDataSetFetch().dataSetDifficultyDistribution().then(({ data }) => {
+    if (data) {
+      difficultyDistribution.value = data
+    }
   })
 }
 
@@ -197,8 +204,11 @@ function handleClick(item: any) {
             <div class="relative h-48 overflow-hidden">
               <img :src="item.cover" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
 
-              <NTag size="small" :bordered="false" type="info" class="absolute top-3 left-3 text-xs px-2 py-1">
+              <NTag size="small" :bordered="false" type="error" class="absolute top-3 left-3 text-xs px-2 py-1 bg-white">
                 {{ item.setTypeName }}
+              </NTag>
+              <NTag size="small" :bordered="false" type="info" class="absolute top-3 left-22 text-xs px-2 py-1 bg-white">
+                {{ item.difficultyName }}
               </NTag>
 
               <NTag size="small" :bordered="false" type="warning" class="absolute top-3 right-3  text-xs px-2 py-1">
@@ -243,6 +253,23 @@ function handleClick(item: any) {
         />
       </div>
       <div class="space-y-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700">
+          <h3 class="font-bold text-lg mb-4">
+            难度分布
+          </h3>
+          <div class="space-y-4">
+            <div v-for="item in difficultyDistribution" :key="item.difficulty">
+              <div class="flex justify-between mb-1">
+                <span class="text-sm">{{ item.difficultyName }}</span>
+                <span class="text-sm font-medium">{{ item.count }} 个集合 ({{ item.percentage }}%)</span>
+              </div>
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                <div class="bg-green-600 h-2.5 rounded-full" :style="{ width: `${item.percentage}%` }" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 榜单：最受欢迎 -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div class="p-5 border-b border-gray-100 dark:border-gray-700">
@@ -280,14 +307,13 @@ function handleClick(item: any) {
         </div>
 
         <!-- 榜单：最新上线 -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <!-- <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div class="p-5 border-b border-gray-100 dark:border-gray-700">
             <h3 class="font-semibold text-lg">
               最新上线
             </h3>
           </div>
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
-            <!-- 最新1 -->
             <div
               v-for="item in setListData" :key="item.id" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"@click="$router.push({
                 name: 'proset_detail',
@@ -312,7 +338,7 @@ function handleClick(item: any) {
               </div>
             </div>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
   </main>

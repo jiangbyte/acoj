@@ -95,5 +95,15 @@ export function useDataSetFetch() {
         },
       })
     },
+    dataSetUserPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/user`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    dataSetDifficultyDistribution() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/difficulty/distribution`)
+    },
   }
 }

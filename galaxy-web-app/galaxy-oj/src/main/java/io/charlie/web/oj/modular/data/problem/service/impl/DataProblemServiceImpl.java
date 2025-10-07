@@ -28,6 +28,7 @@ import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
 import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
 import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.relation.tag.service.DataProblemTagService;
+import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.task.judge.dto.TestCase;
 import org.dromara.trans.service.impl.TransService;
@@ -39,6 +40,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -209,10 +214,21 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         );
         dataProblemCount.setTotal(count);
 
+        // 获取当月第一天
+        LocalDateTime firstDay = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+    // 获取当月最后一天
+        LocalDateTime lastDay = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth())
+                .atTime(23, 59, 59);
+
+    // 转换为 Date
+        Date monthStart = Date.from(firstDay.atZone(ZoneId.systemDefault()).toInstant());
+        Date monthEnd = Date.from(lastDay.atZone(ZoneId.systemDefault()).toInstant());
+
         long monthAdd = this.count(new LambdaQueryWrapper<DataProblem>()
                 .eq(DataProblem::getIsVisible, true)
                 .eq(DataProblem::getIsPublic, true)
-                .ge(DataProblem::getCreateTime, Date.from(new Date().toInstant().minusSeconds(30 * 24 * 60 * 60)))
+                .ge(DataProblem::getCreateTime, monthStart)
+                .le(DataProblem::getCreateTime, monthEnd)
         );
         dataProblemCount.setMonthAdd(monthAdd);
 
@@ -227,16 +243,26 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
 
         try {
             String userId = StpUtil.getLoginIdAsString();
+//            Long userAcceptedCount = dataSolvedMapper.selectCount(new LambdaQueryWrapper<DataSolved>()
+//                    .eq(DataSolved::getUserId, userId)
+//                    .eq(DataSolved::getSolved, true)
+//                    .eq(DataSolved::getIsSet, false)
+//            );
+            Long userAcceptedCount = userCacheService.getUserAcceptedCount(userId);
+            dataProblemCount.setSolved(userAcceptedCount);
         } catch (Exception e) {
             // 未登录
+            dataProblemCount.setSolved(0L);
         }
+
+        dataProblemCount.setAvgPassRate(BigDecimal.valueOf(problemCacheService.getAverageAcceptRate()));
 
         return dataProblemCount;
     }
 
     @Override
     public List<DataProblem> getHotN(int n) {
-        List<RankItem> problemRankTopN = problemCacheService.getProblemRankTopN(n);
+        List<RankItem> problemRankTopN = problemCacheService.getProblemParticipantRankTopN(n);
         List<DataProblem> dataProblems = new ArrayList<>();
         for (RankItem rankingInfo : problemRankTopN) {
             DataProblem dataProblem = this.getById(rankingInfo.getId());

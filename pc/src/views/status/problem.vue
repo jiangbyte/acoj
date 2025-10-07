@@ -147,15 +147,15 @@ loadData()
         <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
           <div class="flex justify-between items-center mb-2">
             <span class="font-medium">检测结果</span>
-              <NTag
-                :bordered="false"
-              >
-                {{ detailData?.similarityCategoryName }}
-              </NTag>
+            <NTag
+              :bordered="false"
+            >
+              {{ detailData?.similarityCategoryName }}
+            </NTag>
           </div>
-<!--          <div class="text-sm text-gray-600 dark:text-gray-300">-->
-<!--            代码通过克隆检测，未发现高度相似的已有提交-->
-<!--          </div>-->
+          <!--          <div class="text-sm text-gray-600 dark:text-gray-300"> -->
+          <!--            代码通过克隆检测，未发现高度相似的已有提交 -->
+          <!--          </div> -->
         </div>
       </div>
 

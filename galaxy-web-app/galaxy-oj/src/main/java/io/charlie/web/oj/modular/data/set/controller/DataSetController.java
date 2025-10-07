@@ -83,6 +83,13 @@ public class DataSetController {
         return Result.success(dataSetService.getSetProblem(dataSetProblemParam));
     }
 
+    @Operation(summary = "C端-获取题集用户")
+    @GetMapping("/data/set/user")
+    public Result<?> getSetUser(@ParameterObject @Valid DataSetUserParam dataSetUserParam) {
+        return Result.success(dataSetService.getSetUser(dataSetUserParam));
+    }
+
+
     @Operation(summary = "C端-获取题集题目详情")
     @GetMapping("/data/set/problem/detail")
     public Result<?> getSetProblemDetail(@ParameterObject @Valid DataSetProblemDetailParam dataSetProblemDetailParam) {
@@ -94,4 +101,11 @@ public class DataSetController {
     public Result<?> getHot() {
         return Result.success(dataSetService.getHotN(10));
     }
+
+    @Operation(summary = "C端-难度分布")
+    @GetMapping("/data/set/difficulty/distribution")
+    public Result<?> difficultyDistribution() {
+        return Result.success(dataSetService.difficultyDistribution());
+    }
+
 }

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
+import io.charlie.web.oj.modular.data.library.service.DataLibraryService;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.reports.entity.TaskReports;
@@ -51,7 +52,7 @@ public class SimilarityHandleMessage {
     private final WebSocketUtil webSocketUtil;
     private final DataSubmitMapper dataSubmitMapper;
     private final DataProblemMapper dataProblemMapper;
-    private final DataLibraryMapper dataLibraryMapper;
+    private final DataLibraryService dataLibraryService;
     private final SysConfigMapper sysConfigMapper;
     private final TaskSimilarityMapper taskSimilarityMapper;
     private final TaskReportsMapper taskReportsMapper;
@@ -74,16 +75,25 @@ public class SimilarityHandleMessage {
             return;
         }
 
-        List<DataLibrary> samples = getSamples(dto, config);
-        if (samples.isEmpty()) {
-            skipDetection(dto);
-            return;
-        }
+        int batchSize = 0; // 不批次
+        dataLibraryService.processCodeLibrariesInBatches(
+                dto.getIsSet(),
+                dto.getLanguage(),
+                List.of(dto.getProblemId()),
+                List.of(dto.getSetId()),
+                null,
+                batchSize,
+                libraries -> {
+                    if (libraries.isEmpty()) {
+                        skipDetection(dto);
+                        return;
+                    }
 
-        SimilarityResult result = calculateSimilarities(dto, samples, config.getMinMatchLength());
-        updateSampleAccessCount(samples); // 更新样本访问次数
-        String reportId = saveResults(dto, result);
-        updateSubmitAndNotify(dto, result, reportId);
+                    SimilarityResult result = calculateSimilarities(dto, libraries, config.getMinMatchLength());
+                    String reportId = saveResults(dto, result);
+                    updateSubmitAndNotify(dto, result, reportId);
+                }
+        );
     }
 
     private Config loadConfig() {
@@ -118,43 +128,6 @@ public class SimilarityHandleMessage {
                 .set(DataSubmit::getSimilarityCategory, category)
                 .set(StrUtil.isNotEmpty(reportId), DataSubmit::getReportId, reportId)
         );
-    }
-
-    private List<DataLibrary> getSamples(SimilaritySubmitDto dto, Config config) {
-        LambdaQueryWrapper<DataLibrary> query = buildSampleQuery(dto);
-        // 先查询总数量
-        long totalCount = dataLibraryMapper.selectCount(query);
-
-        // 如果数量不足则返回所有样本
-        if (totalCount <= config.getMinSampleSize()) {
-            return dataLibraryMapper.selectList(query);
-        }
-
-        // 获取最近的样本
-        query.orderByDesc(DataLibrary::getSubmitTime).last("LIMIT " + config.getRecentSampleSize());
-        List<DataLibrary> samples = dataLibraryMapper.selectList(query);
-
-        // 如果不足则补充旧样本
-        if (samples.size() < config.getMinSampleSize()) {
-            query.clear();
-            buildSampleQuery(dto).orderByAsc(DataLibrary::getSubmitTime)
-                    .last("LIMIT " + (config.getMinSampleSize() - samples.size()));
-            samples.addAll(dataLibraryMapper.selectList(query));
-        }
-        return samples;
-    }
-
-    private LambdaQueryWrapper<DataLibrary> buildSampleQuery(SimilaritySubmitDto dto) {
-        LambdaQueryWrapper<DataLibrary> query = new LambdaQueryWrapper<DataLibrary>()
-                .ne(DataLibrary::getUserId, dto.getUserId())
-                .eq(DataLibrary::getProblemId, dto.getProblemId())
-                .eq(DataLibrary::getLanguage, dto.getLanguage())
-                .eq(DataLibrary::getIsSet, dto.getIsSet());
-
-        if (dto.getIsSet()) {
-            query.eq(DataLibrary::getSetId, dto.getSetId());
-        }
-        return query;
     }
 
     private SimilarityResult calculateSimilarities(SimilaritySubmitDto dto, List<DataLibrary> samples, int minMatchLength) {
@@ -211,11 +184,6 @@ public class SimilarityHandleMessage {
         detail.setOriginTokenTexts(similarity.getTokenTexts2());
 
         return detail;
-    }
-
-    private void updateSampleAccessCount(List<DataLibrary> samples) {
-        samples.forEach(sample -> sample.setAccessCount(sample.getAccessCount() + 1));
-        dataLibraryMapper.updateById(samples);
     }
 
     private String saveResults(SimilaritySubmitDto dto, SimilarityResult result) {

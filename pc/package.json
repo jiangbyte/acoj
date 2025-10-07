@@ -29,7 +29,8 @@
     "sse.js": "^2.7.1",
     "uuid": "^11.1.0",
     "vue": "^3.5.18",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "vue3-calendar-heatmap": "^2.0.5"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^5.0.0",

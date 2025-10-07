@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * @author Charlie Zhang
@@ -121,6 +122,94 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
             library = createNewLibrary(submit);
             this.save(library);
         }
+    }
+
+    private long countCodeLibraries(boolean isSet, String language,
+                                    List<String> problemIds, List<String> setIds, List<String> userIds) {
+        LambdaQueryWrapper<DataLibrary> query = buildSampleQuery(isSet, language, problemIds, setIds, userIds);
+        return this.count(query);
+    }
+
+    private LambdaQueryWrapper<DataLibrary> buildSampleQuery(boolean isSet, String language, List<String> problemIds, List<String> setIds, List<String> userIds) {
+        LambdaQueryWrapper<DataLibrary> query = new LambdaQueryWrapper<DataLibrary>()
+                .eq(DataLibrary::getIsSet, isSet);
+
+        if (ObjectUtil.isEmpty(language)) {
+            query.eq(DataLibrary::getLanguage, language);
+        }
+        if (ObjectUtil.isNotEmpty(problemIds)) {
+            query.in(DataLibrary::getProblemId, problemIds);
+        }
+        if (ObjectUtil.isNotEmpty(setIds)) {
+            query.in(DataLibrary::getSetId, setIds);
+        }
+        if (ObjectUtil.isNotEmpty(userIds)) {
+            query.in(DataLibrary::getUserId, userIds);
+        }
+
+        return query;
+    }
+
+
+    @Override
+    public List<DataLibrary> getCodeLibraries(boolean isSet, String language, List<String> problemIds, List<String> setIds, List<String> userIds) {
+        LambdaQueryWrapper<DataLibrary> query = buildSampleQuery(isSet, language, problemIds, setIds, userIds);
+        return this.list(query);
+    }
+
+    @Override
+    public Page<DataLibrary> getCodeLibrariesByPage(boolean isSet, String language,
+                                                    List<String> problemIds, List<String> setIds, List<String> userIds,
+                                                    long current, long size) {
+
+        Page<DataLibrary> page = new Page<>(current, size);
+        LambdaQueryWrapper<DataLibrary> query = buildSampleQuery(isSet, language, problemIds, setIds, userIds);
+        return this.page(page, query);
+    }
+
+    @Override
+    public void processCodeLibrariesInBatches(boolean isSet, String language, List<String> problemIds, List<String> setIds, List<String> userIds, int batchSize, Consumer<List<DataLibrary>> processor) {
+        long total = countCodeLibraries(isSet, language, problemIds, setIds, userIds);
+
+        // 如果批次数为0，则一次性处理所有数据
+        if (batchSize <= 0) {
+            List<DataLibrary> allData = getCodeLibraries(isSet, language, problemIds, setIds, userIds);
+            if (allData != null && !allData.isEmpty()) {
+                // 先增加访问量
+                incrementAccessCount(allData);
+                // 然后执行处理逻辑
+                processor.accept(allData);
+            }
+            return;
+        }
+
+        // 正常分批处理
+        long pages = (total + batchSize - 1) / batchSize;
+
+        for (long current = 1; current <= pages; current++) {
+            Page<DataLibrary> page = getCodeLibrariesByPage(isSet, language, problemIds, setIds, userIds, current, batchSize);
+            if (page.getRecords() != null && !page.getRecords().isEmpty()) {
+                // 先增加访问量
+                incrementAccessCount(page.getRecords());
+                // 然后执行处理逻辑
+                processor.accept(page.getRecords());
+            }
+        }
+    }
+
+    // 增加访问量
+    private void incrementAccessCount(List<DataLibrary> dataList) {
+        if (dataList == null || dataList.isEmpty()) {
+            return;
+        }
+
+        // 方式1: 逐条更新
+        for (DataLibrary data : dataList) {
+            data.setAccessCount(data.getAccessCount() + 1);
+        }
+
+        // 批量更新到数据库
+        this.updateBatchById(dataList);
     }
 
     /**

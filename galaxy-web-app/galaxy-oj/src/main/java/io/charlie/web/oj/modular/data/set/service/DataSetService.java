@@ -3,8 +3,10 @@ package io.charlie.web.oj.modular.data.set.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
+import io.charlie.web.oj.modular.data.problem.param.DifficultyDistribution;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.set.param.*;
+import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 
 import java.util.List;
 
@@ -32,4 +34,9 @@ public interface DataSetService extends IService<DataSet> {
     DataProblem getSetProblemDetail(DataSetProblemDetailParam dataSetProblemDetailParam);
 
     List<DataSet> getHotN(int n);
+
+     Page<SysUser> getSetUser(DataSetUserParam dataSetUserParam);
+
+    List<DifficultyDistribution> difficultyDistribution();
+
 }

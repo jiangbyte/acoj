@@ -188,11 +188,11 @@ const version = import.meta.env.VITE_VERSION
         </NButton>
       </div>
       <div class="mt-4 flex justify-between items-center">
-        <NButton text>
+        <!-- <NButton text>
           <NText depth="3" @click="$router.push('/forget')">
             重置密码
           </NText>
-        </NButton>
+        </NButton> -->
         <div class="flex items-center gap-2">
           <NText depth="3">
             已有账号？

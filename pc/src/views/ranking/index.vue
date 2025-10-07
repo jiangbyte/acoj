@@ -75,7 +75,7 @@ const userRankingColumns = [
         {
           default: () => [
             h(NAvatar, { src: row.avatar, size: 'small', round: true }),
-            h(NText, { depth: 3 }, {default: () => row.nickname}),
+            h(NText, { depth: 3 }, { default: () => row.nickname }),
           ],
         },
       )
@@ -97,7 +97,7 @@ const userRankingColumns = [
   //   width: 100,
   // },
   {
-    title: '提交数',
+    title: '总提交数',
     key: 'submitCount',
     width: 100,
   },
@@ -179,7 +179,7 @@ function rowProps(row: any) {
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div class="p-5 border-b border-gray-100 dark:border-gray-700">
             <h3 class="font-semibold text-lg">
-              30天活跃用户
+              活跃用户
             </h3>
           </div>
           <div class="divide-y divide-gray-100 dark:divide-gray-700">

@@ -38,6 +38,8 @@ public class SetBuildTool {
     public void  buildSet(DataSet dataSet) {
         dataSet.setProblemIds(dataSetProblemService.getProblemIdsBySetId(dataSet.getId()));
 
+        // 提交数
+        dataSet.setSubmitCount(problemSetCacheService.getProblemSetTotalSubmitCount(dataSet.getId()));
         // 通过率
         dataSet.setAvgAcceptance(problemSetCacheService.getProblemSetAverageAcceptRate(dataSet.getId()));
         // 参与人数

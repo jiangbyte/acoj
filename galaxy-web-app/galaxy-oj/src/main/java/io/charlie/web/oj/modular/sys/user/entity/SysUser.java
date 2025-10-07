@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.io.Serial;
 import java.util.Date;
+import java.util.List;
 
 import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -83,6 +84,20 @@ public class SysUser extends CommonEntity {
     private Long rank;
 
     @TableField(exist = false)
-    private Double submitCount;
+    private Long submitCount;
 
+    @TableField(exist = false)
+    private Long solvedProblem;
+
+    @TableField(exist = false)
+    private Long tryProblem;
+
+    @TableField(exist = false)
+    private Long participatedSet;
+
+    @TableField(exist = false)
+    private Double activeScore;
+
+    @TableField(exist = false)
+    private List<ACRecord> acRecord;
 }

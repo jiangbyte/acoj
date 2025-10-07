@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
+import io.charlie.web.oj.modular.data.problem.param.DifficultyDistribution;
 import io.charlie.web.oj.modular.data.problem.utils.ProblemBuildTool;
 import io.charlie.web.oj.modular.data.ranking.data.RankItem;
 import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
@@ -27,12 +28,18 @@ import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.data.set.utils.SetBuildTool;
+import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
+import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
+import io.charlie.web.oj.modular.sys.user.entity.SysUser;
+import io.charlie.web.oj.modular.sys.user.mapper.SysUserMapper;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 /**
@@ -49,12 +56,15 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     private final TransService transService;
     private final DataProblemMapper dataProblemMapper;
     private final ProblemBuildTool problemBuildTool;
+    private final SysUserMapper sysUserMapper;
 
     private final UserCacheService userCacheService;
     private final ProblemSetCacheService problemSetCacheService;
     private final ProblemCacheService problemCacheService;
 
     private final SetBuildTool setBuildTool;
+
+    private final DataSubmitMapper dataSubmitMapper;
 
     @Override
     public Page<DataSet> page(DataSetPageParam dataSetPageParam) {
@@ -183,6 +193,89 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         }
         setBuildTool.buildSets(dataSets);
         return dataSets;
+    }
+
+    @Override
+    public Page<SysUser> getSetUser(DataSetUserParam dataSetUserParam) {
+        List<DataSubmit> dataSubmits = dataSubmitMapper.selectList(new LambdaQueryWrapper<DataSubmit>()
+                .eq(DataSubmit::getSetId, dataSetUserParam.getSetId())
+                .eq(DataSubmit::getIsSet, true)
+        );
+        if (ObjectUtil.isEmpty(dataSubmits)) {
+            return Page.of(dataSetUserParam.getCurrent(), dataSetUserParam.getSize());
+        }
+
+        List<String> stringList = dataSubmits.stream().map(DataSubmit::getUserId).distinct().toList();
+
+        QueryWrapper<SysUser> queryWrapper = new QueryWrapper<SysUser>().checkSqlInjection();
+        queryWrapper.lambda().in(SysUser::getId, stringList);
+        if (ObjectUtil.isAllNotEmpty(dataSetUserParam.getSortField(), dataSetUserParam.getSortOrder()) && ISortOrderEnum.isValid(dataSetUserParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    dataSetUserParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(dataSetUserParam.getSortField()));
+        }
+
+        Page<SysUser> sysUserPage = sysUserMapper.selectPage(CommonPageRequest.Page(
+                        Optional.ofNullable(dataSetUserParam.getCurrent()).orElse(1),
+                        Optional.ofNullable(dataSetUserParam.getSize()).orElse(20),
+                        null
+                ),
+                queryWrapper);
+        sysUserPage.getRecords().forEach(sysUser -> {
+            sysUser.setPassword(null);
+            sysUser.setTelephone(null);
+        });
+        return sysUserPage;
+    }
+
+    @Override
+    public List<DifficultyDistribution> difficultyDistribution() {
+        long totalCount = this.count();
+
+        // 统计难度分布-简单
+        long simpleCount = this.count(new LambdaQueryWrapper<DataSet>().eq(DataSet::getDifficulty, 1));
+        DifficultyDistribution simple = new DifficultyDistribution();
+        simple.setDifficulty(1);
+        simple.setCount(simpleCount);
+        simple.setDifficultyName("简单");
+        if (totalCount == 0) {
+            simple.setPercentage(BigDecimal.ZERO);
+        } else {
+            simple.setPercentage(new BigDecimal(simpleCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+        }
+
+        // 统计难度分布-中等
+        long mediumCount = this.count(new LambdaQueryWrapper<DataSet>().eq(DataSet::getDifficulty, 2));
+        DifficultyDistribution medium = new DifficultyDistribution();
+        medium.setDifficulty(2);
+        medium.setCount(mediumCount);
+        medium.setDifficultyName("中等");
+        if (totalCount == 0) {
+            medium.setPercentage(BigDecimal.ZERO);
+        } else {
+            medium.setPercentage(new BigDecimal(mediumCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+        }
+
+        // 统计难度分布-困难
+        long hardCount = this.count(new LambdaQueryWrapper<DataSet>().eq(DataSet::getDifficulty, 3));
+        DifficultyDistribution hard = new DifficultyDistribution();
+        hard.setDifficulty(3);
+        hard.setCount(hardCount);
+        hard.setDifficultyName("困难");
+        if (totalCount == 0) {
+            hard.setPercentage(BigDecimal.ZERO);
+        } else {
+            hard.setPercentage(new BigDecimal(hardCount)
+                    .multiply(new BigDecimal(100))
+                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+        }
+
+        return List.of(simple, medium, hard);
     }
 
 }

@@ -23,13 +23,13 @@ public class BatchSimilaritySubmitDto implements Serializable {
     // 提交参数
 
     @Schema(description = "用户ID")
-    private List<String> userId;
+    private List<String> userIds;
 
     @Schema(description = "题目ID")
-    private List<String> problemId;
+    private List<String> problemIds;
 
     @Schema(description = "题集ID")
-    private List<String> setId;
+    private String setId;
 
     @Schema(description = "语言")
     private String language;

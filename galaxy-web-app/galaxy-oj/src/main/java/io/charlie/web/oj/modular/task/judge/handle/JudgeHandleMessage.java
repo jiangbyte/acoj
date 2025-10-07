@@ -81,6 +81,9 @@ public class JudgeHandleMessage {
         // 立即响应客户端
         sendImmediateResponse(judgeResultDto, dataSubmit);
 
+        // 排行榜更新
+        handleRedisRecord(judgeResultDto, dataSubmit);
+
         // 只有在AC状态且为正式提交时，才注册事务同步处理器
         if (isAcAndFormalSubmission(judgeResultDto)) {
             TransactionSynchronizationManager.registerSynchronization(
@@ -159,9 +162,6 @@ public class JudgeHandleMessage {
      */
     private void handleFormalSubmissionAsync(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
         if (judgeResultDto.getStatus().equals(JudgeStatus.ACCEPTED.getValue())) {
-            // 2. 排行榜更新
-            handleRedisRecord(judgeResultDto, dataSubmit);
-
             // 3. 更新 solved
             updateSolvedRecord(judgeResultDto, dataSubmit);
 

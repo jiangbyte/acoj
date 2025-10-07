@@ -36,7 +36,7 @@ const columns: DataTableColumns<any> = [
     key: 'categoryName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, {default: () => row.categoryName})
+      return h(NTag, { size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, { default: () => row.categoryName })
     },
   },
   {
@@ -46,15 +46,15 @@ const columns: DataTableColumns<any> = [
     render: (row) => {
       return h(NSpace, { align: 'center' }, {
         default: () => row.tagNames?.map((tag: any) =>
-            h(NTag, {
-              key: tag,
-              size: 'small',
-              bordered: false,
-              color: { color: RandomColorUtil.generate(), textColor: '#fff' }
-            }, {
-              default: () => tag
-            })
-        ) || null
+          h(NTag, {
+            key: tag,
+            size: 'small',
+            bordered: false,
+            color: { color: RandomColorUtil.generate(), textColor: '#fff' },
+          }, {
+            default: () => tag,
+          }),
+        ) || null,
       })
     },
   },
@@ -63,7 +63,7 @@ const columns: DataTableColumns<any> = [
     key: 'difficultyName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: DifficultyColorUtil.getColor(row.difficulty), textColor: '#fff' } }, {default: () => row.difficultyName})
+      return h(NTag, { size: 'small', bordered: false, color: { color: DifficultyColorUtil.getColor(row.difficulty), textColor: '#fff' } }, { default: () => row.difficultyName })
     },
   },
   {
@@ -71,7 +71,7 @@ const columns: DataTableColumns<any> = [
     key: 'acceptance',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, {default: () => row.acceptance})
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.acceptance })
     },
   },
   {
@@ -87,7 +87,7 @@ const columns: DataTableColumns<any> = [
     key: 'solved',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, {default: () => row.solved})
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.solved })
     },
   },
 ]
@@ -131,6 +131,7 @@ async function loadData() {
   dataProblemPage(pageParam.value).then(({ data }) => {
     if (data) {
       pageData.value = data
+      console.log(data)
     }
   })
 
@@ -266,7 +267,7 @@ function resetHandle() {
         <div class="flex items-start justify-between">
           <div>
             <p class="text-gray-500 dark:text-gray-400 text-sm">
-              今日新增
+              本月新增
             </p>
             <h3 class="text-2xl font-bold mt-1">
               {{ problemcount?.monthAdd ? problemcount?.monthAdd : 0 }}

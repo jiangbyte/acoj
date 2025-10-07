@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { useDataProblemFetch, useDataSetFetch, useSysUserFetch } from '@/composables/v1'
-import { AesCrypto, CleanMarkdown } from '@/utils'
+import { useSysUserFetch } from '@/composables/v1'
+import { AesCrypto } from '@/utils'
 import type { DataTableColumns } from 'naive-ui'
 import { NSpace, NTag } from 'naive-ui'
+import { CalendarHeatmap } from 'vue3-calendar-heatmap'
+
+const endDate = ref(new Date())
 
 const route = useRoute()
 const originalId = AesCrypto.decrypt(route.query.userId as string)
@@ -118,17 +121,26 @@ function rowProps(row: any) {
 
 <template>
   <!-- 用户背景Banner -->
-  <div class="relative h-64 md:h-80 overflow-hidden">
+  <!-- <div class="relative h-64 md:h-80 overflow-hidden">
     <div class="absolute" />
     <img
       :src="detailData?.background"
-      class="absolute inset-0 w-full h-full object-cover object-top "
+      class="absolute inset-0 w-full h-full object-cover object-top"
     >
-    <!-- 编辑Banner按钮 - 仅当前用户可见 -->
-    <!-- <button class="absolute right-4 bottom-4 px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-lg text-sm transition-colors">
-      <i class="fa fa-pencil mr-1" /> 编辑封面
-    </button> -->
+  </div> -->
+ <!-- 全屏背景Banner -->
+  <div class="absolute  inset-0 -z-10">
+  <div class="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 via-30% to-#f5f6f7 to-75% dark:from-black/60 dark:to-gray-900 z-10" />
+    <!-- 背景图片 -->
+    <img
+      :src="detailData?.background"
+      class="absolute inset-0 w-full h-full object-cover object-top z-0"
+    />
   </div>
+    <!-- 页面内容 -->
+  <div class="relative z-20">
+    <!-- 用户背景Banner占位区域 -->
+    <div class="h-64 md:h-80"></div>
 
   <!-- 用户信息区域 -->
   <div class="container mx-auto px-4 -mt-20 relative z-10">
@@ -213,7 +225,22 @@ function rowProps(row: any) {
         </div>
       </div>
     </div>
-
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-8">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <h2 class="text-lg font-bold">
+          AC 记录
+        </h2>
+      </div>
+      <div class="overflow-scroll">
+        <CalendarHeatmap
+          :values="detailData?.acRecord ? detailData?.acRecord : []"
+          tooltip-unit="AC"
+          :end-date="endDate"
+          :range-color="['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39']"
+          class="custom-heatmap p-4 min-w-1000px"
+        />
+      </div>
+    </div>
     <!-- 内容导航 -->
     <!-- <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-8">
       <div class="flex overflow-x-auto md:overflow-visible border-b border-gray-200 dark:border-gray-700">
@@ -236,15 +263,11 @@ function rowProps(row: any) {
     <!-- </div>
     </div> -->
 
-    <!-- 最近解题记录 -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-8">
+    <!-- <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-8">
       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
         <h2 class="text-lg font-bold">
           最近解题记录
         </h2>
-        <!-- <a href="#" class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
-          查看全部 <i class="fa fa-angle-right ml-1" />
-        </a> -->
       </div>
 
       <div class="overflow-x-auto">
@@ -274,17 +297,12 @@ function rowProps(row: any) {
       </div>
     </div>
 
-    <!-- 最近比赛成绩和创建的题集 -->
     <div class="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-8">
-      <!-- 创建的题集 -->
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 class="text-lg font-bold">
             最近题集记录
           </h2>
-          <!-- <a href="#" class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
-            查看全部 <i class="fa fa-angle-right ml-1" />
-          </a> -->
         </div>
 
         <n-empty
@@ -303,7 +321,6 @@ function rowProps(row: any) {
         </n-empty>
 
         <div v-if="setPageData?.records.length !== 0" class="divide-y divide-gray-200 dark:divide-gray-700">
-          <!-- 题集1 -->
           <div
             v-for="item in setPageData?.records" :key="item.id" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" @click="$router.push({
               name: 'proset_detail',
@@ -349,18 +366,24 @@ function rowProps(row: any) {
           />
         </div>
       </div>
-    </div>
+    </div> -->
+  </div>
   </div>
 </template>
 
 <style scoped>
-/* 基础样式补充 */
-html {
-  scroll-behavior: smooth;
+.custom-heatmap {
+  /* font-size: 9px; */
 }
 
-a {
-  text-decoration: none;
+/* 使用深度选择器修改子组件样式 */
+:deep(.custom-heatmap .vch__day__label) {
+  font-size: 8px;
+  font-family: 'Your Font', sans-serif;
+}
+:deep(.custom-heatmap .vch__month__label) {
+  font-size: 8px;
+  font-family: 'Your Font', sans-serif;
 }
 
 /* 图片悬停效果 */
@@ -370,24 +393,5 @@ img {
 
 img:hover {
   transform: scale(1.03);
-}
-
-/* 表格行悬停效果 */
-tr {
-  transition: background-color 0.2s ease;
-}
-
-/* 导航栏滚动效果 */
-header {
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-header.scrolled {
-  background-color: white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.dark header.scrolled {
-  background-color: #1f2937;
 }
 </style>

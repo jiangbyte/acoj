@@ -109,6 +109,11 @@ public class DataSet extends CommonEntity {
     @TableField(exist = false)
     private Long submitUserCount;
 
+    // 提交数
+    @Schema(description = "提交人数")
+    @TableField(exist = false)
+    private Long submitCount;
+
     // 参与人数
     @Schema(description = "参与人数")
     @TableField(exist = false)

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { AesCrypto, DifficultyColorUtil, RandomColorUtil } from '@/utils'
 import MdViewer from '@/components/common/editor/md/Viewer.vue'
-import { useDataSetFetch } from '@/composables/v1'
+import { useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
 import type { DataTableColumns } from 'naive-ui'
 import { NAvatar, NButton, NSpace, NTag, NText, NTime } from 'naive-ui'
 import { Icon } from '@iconify/vue'
@@ -31,6 +31,7 @@ const submitPageParam = ref({
   sortOrder: null,
   keyword: '',
   problem: '',
+  setId: originalId,
   language: null,
   submitType: null,
   status: null,
@@ -129,12 +130,12 @@ const columns: DataTableColumns<any> = [
   },
 ]
 const submitColumns: DataTableColumns<any> = [
-  {
-    title: 'ID',
-    key: 'id',
-    width: 80,
-    ellipsis: true,
-  },
+  // {
+  //   title: 'ID',
+  //   key: 'id',
+  //   width: 80,
+  //   ellipsis: true,
+  // },
   {
     title: '题目',
     key: 'problemIdName',
@@ -396,6 +397,14 @@ async function loadData() {
     })
   })
 
+  useDataSubmitFetch().dataSubmitSetPage(submitPageParam.value).then(({ data }) => {
+    submitPageData.value = data
+  })
+  useDataSetFetch().dataSetUserPage(proSetSolvedUserDataParam.value).then(({ data }) => {
+    proSetSolvedUserData.value = data
+    console.log('user', data)
+  })
+
   // proSetProblemList(setProblemPageParam.value).then(({ data }) => {
   //   setProblemPageData.value = data
   //   if (data) {
@@ -495,7 +504,7 @@ function rowProps(row: any) {
                 平均通过率
               </div>
               <div class="text-xl font-bold">
-                {{ detailData?.avgPassRate ? detailData?.avgPassRate : 0 }} %
+                {{ detailData?.avgAcceptance ? detailData?.avgAcceptance : 0 }} %
               </div>
             </div>
             <div class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
@@ -503,7 +512,7 @@ function rowProps(row: any) {
                 参与人数
               </div>
               <div class="text-xl font-bold">
-                {{ detailData?.participantCount ? detailData?.participantCount : 0 }}
+                {{ detailData?.participantUserCount ? detailData?.participantUserCount : 0 }}
               </div>
             </div>
           </div>
@@ -533,7 +542,7 @@ function rowProps(row: any) {
         <n-tab-pane name="problems" tab="题目">
           <!-- 题目筛选和搜索 -->
           <div class="bg-white p-y-2">
-            <div class="flex flex-col md:flex-row gap-4 mb-4">
+            <!-- <div class="flex flex-col md:flex-row gap-4 mb-4">
               <div class="flex flex-wrap gap-2">
                 <NButton>
                   全部题目
@@ -553,7 +562,7 @@ function rowProps(row: any) {
               <div class="w-full md:w-auto">
                 <n-select class="w-40" />
               </div>
-            </div>
+            </div> -->
 
             <div class="divide-y divide-gray-100 dark:divide-gray-700">
               <n-data-table
@@ -580,7 +589,7 @@ function rowProps(row: any) {
             /> -->
           </div>
         </n-tab-pane>
-        <n-tab-pane name="progress" tab="进度">
+        <!-- <n-tab-pane name="progress" tab="进度">
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <n-data-table
               :columns="processColumns"
@@ -604,7 +613,7 @@ function rowProps(row: any) {
             @update:page="loadData"
             @update:page-size="loadData"
           />
-        </n-tab-pane>
+        </n-tab-pane> -->
         <n-tab-pane name="submissions" tab="提交">
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             <n-data-table

@@ -127,7 +127,7 @@ public class DataProblem extends CommonEntity {
 
     @Schema(description = "通过率")
     @TableField(exist = false)
-    private Double acceptance;
+    private BigDecimal acceptance;
 
     // 提交人数
     @Schema(description = "提交人数")

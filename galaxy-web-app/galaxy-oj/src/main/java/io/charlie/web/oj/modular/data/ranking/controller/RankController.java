@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.ranking.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.data.ranking.param.RankingPageParam;
@@ -8,6 +9,8 @@ import io.charlie.web.oj.modular.data.ranking.data.PageResult;
 import io.charlie.web.oj.modular.data.ranking.data.RankItem;
 import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
 import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
+import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
+import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.param.SysUserIdParam;
 import io.charlie.web.oj.modular.sys.user.service.SysUserService;
@@ -30,7 +33,9 @@ import java.util.List;
 @Validated
 public class RankController {
     private final UserCacheService userCacheService;
+    private final ProblemCacheService problemCacheService;
     private final SysUserService sysUserService;
+    private final DataSubmitMapper dataSubmitMapper;
 
     @Operation(summary = "获取用户排行榜")
     @GetMapping("/data/user/rank/top")
@@ -43,6 +48,12 @@ public class RankController {
             SysUser sysUser = sysUserService.appDetail(sysUserIdParam);
             sysUser.setRank(rankItem.getRank());
             sysUser.setScore(rankItem.getScore());
+            Long l = dataSubmitMapper.selectCount(new LambdaQueryWrapper<DataSubmit>()
+                    .eq(DataSubmit::getUserId, sysUser.getId())
+                    .eq(DataSubmit::getIsSet, false)
+                    .eq(DataSubmit::getSubmitType, true)
+            );
+            sysUser.setSubmitCount(l);
             sysUsers.add(sysUser);
         }
         return Result.success(sysUsers);
@@ -58,6 +69,12 @@ public class RankController {
             SysUser sysUser = sysUserService.appDetail(sysUserIdParam);
             sysUser.setRank(rankItem.getRank());
             sysUser.setScore(userCacheService.getUserActivity(sysUser.getId()));
+            Long l = dataSubmitMapper.selectCount(new LambdaQueryWrapper<DataSubmit>()
+                    .eq(DataSubmit::getUserId, sysUser.getId())
+                    .eq(DataSubmit::getIsSet, false)
+                    .eq(DataSubmit::getSubmitType, true)
+            );
+            sysUser.setSubmitCount(l);
             sysUsers.add(sysUser);
         }
 
@@ -66,7 +83,6 @@ public class RankController {
 
     @GetMapping("/data/user/rank/page")
     public Result<?> getUserRankPage(@ParameterObject RankingPageParam rankingPageParam) {
-        // TODO 可能有点问题，待修
         PageResult<RankItem> userRankPage = userCacheService.getUserRankPage(rankingPageParam.getCurrent(), rankingPageParam.getSize());
         List<RankItem> items = userRankPage.getItems();
         Page<SysUser> sysUserPage = new Page<>();
@@ -80,6 +96,13 @@ public class RankController {
             SysUser sysUser = sysUserService.appDetail(sysUserIdParam);
             sysUser.setRank(rankItem.getRank());
             sysUser.setScore(rankItem.getScore());
+
+            Long l = dataSubmitMapper.selectCount(new LambdaQueryWrapper<DataSubmit>()
+                    .eq(DataSubmit::getUserId, sysUser.getId())
+                    .eq(DataSubmit::getIsSet, false)
+                    .eq(DataSubmit::getSubmitType, true)
+            );
+            sysUser.setSubmitCount(l);
             sysUsers.add(sysUser);
         }
         sysUserPage.setRecords(sysUsers);

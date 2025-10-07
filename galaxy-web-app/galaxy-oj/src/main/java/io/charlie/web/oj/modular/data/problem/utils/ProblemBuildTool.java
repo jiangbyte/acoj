@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -61,7 +62,7 @@ public class ProblemBuildTool {
         dataProblem.setTagNames(dataProblemTagService.getTagNamesById(dataProblem.getId()));
 
         // 通过率
-        dataProblem.setAcceptance(problemCacheService.getAcceptRate(dataProblem.getId()));
+        dataProblem.setAcceptance(BigDecimal.valueOf(problemCacheService.getAcceptRate(dataProblem.getId())));
         // 通过人数
         dataProblem.setSolved(problemCacheService.getAcceptCount(dataProblem.getId()));
         // 提交人数
@@ -96,9 +97,11 @@ public class ProblemBuildTool {
         dataProblem.setTagIds(dataProblemTagService.getTagIdsById(dataProblem.getId()));
         dataProblem.setTagNames(dataProblemTagService.getTagNamesById(dataProblem.getId()));
 
+        // 通过率
+        dataProblem.setAcceptance(BigDecimal.valueOf(problemSetCacheService.getProblemAcceptRate(setId, dataProblem.getId())));
+        dataProblem.setSolved(problemSetCacheService.getProblemAcceptCount(setId, dataProblem.getId()));
+
         ProblemSetProblemStats problemSetProblemStats = problemSetCacheService.getProblemSetProblemStats(dataProblem.getId(), dataProblem.getId());
-        dataProblem.setAcceptance(problemSetProblemStats.getAcceptRate());
-        dataProblem.setSolved(problemSetProblemStats.getAcceptCount());
         // 提交人数
         dataProblem.setSubmitUserCount(problemSetProblemStats.getSubmitCount());
         // 参与人数

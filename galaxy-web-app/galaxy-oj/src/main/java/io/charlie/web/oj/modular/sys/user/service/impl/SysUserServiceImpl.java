@@ -3,6 +3,7 @@ package io.charlie.web.oj.modular.sys.user.service.impl;
 import cn.dev33.satoken.secure.BCrypt;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -12,6 +13,10 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
+import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
+import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
+import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
+import io.charlie.web.oj.modular.sys.user.entity.ACRecord;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.param.*;
 import io.charlie.web.oj.modular.sys.user.mapper.SysUserMapper;
@@ -20,23 +25,27 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-06-23
-* @description 用户表 服务实现类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-06-23
+ * @description 用户表 服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
+    private final UserCacheService userCacheService;
+    private final DataSubmitMapper dataSubmitMapper;
 
     @Override
     public Page<SysUser> page(SysUserPageParam sysUserPageParam) {
@@ -51,7 +60,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(sysUserPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(sysUserPageParam.getSize()).orElse(20),
-                null
+                        null
                 ),
                 queryWrapper);
     }
@@ -111,6 +120,32 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
         sysUser.setPassword(null);
         sysUser.setTelephone(null);
+
+        // TODO
+        sysUser.setSolvedProblem(11L);
+        sysUser.setTryProblem(12L);
+        sysUser.setParticipatedSet(13L);
+        sysUser.setActiveScore(userCacheService.getUserActivity(sysUser.getId()));
+
+        List<DataSubmit> dataSubmits = dataSubmitMapper.selectList(new LambdaQueryWrapper<DataSubmit>()
+                .eq(DataSubmit::getUserId, sysUser.getId())
+                .eq(DataSubmit::getIsSet, false)
+                .eq(DataSubmit::getStatus, JudgeStatus.ACCEPTED.getValue())
+                .eq(DataSubmit::getSubmitType, true)
+                // 近两年的
+                .ge(DataSubmit::getCreateTime, DateUtil.offsetMonth(new Date(), -24))
+        );
+        // 构建 ACRecord 列表
+        List<ACRecord> acRecords = dataSubmits.stream()
+                .collect(Collectors.groupingBy(
+                        dataSubmit -> DateUtil.format(dataSubmit.getCreateTime(), "yyyy-MM-dd"),
+                        Collectors.counting()
+                ))
+                .entrySet().stream()
+                .map(entry -> new ACRecord(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(ACRecord::getDate))
+                .toList();
+        sysUser.setAcRecord(acRecords);
         return sysUser;
     }
 
