@@ -91,5 +91,17 @@ export function useSysUserFetch() {
     getProfile() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/profile`)
     },
+    sysUserUpdateAvatar(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/avatar`, data)
+    },
+    sysUserUpdateBackground(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/background`, data)
+    },
+    sysUserUpdatePassword(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/password`, data)
+    },
+    sysUserUpdateProfile(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/profile`, data)
+    },
   }
 }

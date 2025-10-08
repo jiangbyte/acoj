@@ -25,3 +25,6 @@ export * from './sys/AuthApi'
 
 // 导出 ranking 目录下的所有 API
 export * from './ranking/UserRankingApi'
+
+// 导出其他 API
+export * from './FileApi'

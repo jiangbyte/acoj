@@ -128,54 +128,58 @@ function rowProps(row: any) {
       class="absolute inset-0 w-full h-full object-cover object-top"
     >
   </div> -->
- <!-- 全屏背景Banner -->
+  <!-- 全屏背景Banner -->
   <div class="absolute  inset-0 -z-10">
-  <div class="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 via-30% to-#f5f6f7 to-75% dark:from-black/60 dark:to-gray-900 z-10" />
+    <div class="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 via-30% to-#f5f6f7 to-75% dark:from-black/60 dark:to-gray-900 z-10" />
     <!-- 背景图片 -->
     <img
       :src="detailData?.background"
       class="absolute inset-0 w-full h-full object-cover object-top z-0"
-    />
+    >
   </div>
-    <!-- 页面内容 -->
+  <!-- 页面内容 -->
   <div class="relative z-20">
     <!-- 用户背景Banner占位区域 -->
-    <div class="h-64 md:h-80"></div>
+    <div class="h-70 md:h-70" />
 
-  <!-- 用户信息区域 -->
-  <div class="container mx-auto px-4 -mt-20 relative z-10">
-    <div class="flex flex-col md:flex-row gap-6 items-start md:items-end mb-8">
-      <!-- 用户头像 -->
-      <div class="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
-        <img :src="detailData?.avatar" class="w-full h-full object-cover">
-      </div>
+    <!-- 用户信息区域 -->
+    <div class="container mx-auto px-4 -mt-20 relative z-10">
+      <div class="flex flex-col md:flex-row gap-6 items-start md:items-end mb-8">
+        <!-- 用户头像 -->
+        <div class="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
+          <img :src="detailData?.avatar" class="w-32 h-32 md:w-40 md:h-40 object-cover">
+        </div>
 
-      <!-- 用户基本信息 -->
-      <div class="flex-grow w-full">
-        <div class="flex flex-wrap items-start justify-between gap-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 w-full">
-          <div>
-            <h1 class="text-2xl md:text-3xl font-bold mb-4">
-              {{ detailData?.nickname }}
-            </h1>
-            <!-- <p class="text-gray-600 dark:text-gray-300 mb-3">
+        <!-- 用户基本信息 -->
+        <div class="flex-grow w-full">
+          <div class="flex flex-wrap items-start justify-between gap-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 w-full">
+            <div>
+              <h1 class="text-2xl md:text-3xl font-bold mb-4">
+                {{ detailData?.nickname }}
+              </h1>
+              <!-- <p class="text-gray-600 dark:text-gray-300 mb-3">
               算法爱好者 | 后端开发工程师
             </p> -->
 
-            <div class="flex flex-wrap items-center gap-3 mb-4">
-              <div class="flex items-center text-sm">
-                <i class="fa fa-envelope text-gray-500 mr-1.5" />
-                <span>{{ detailData?.email }}</span>
+              <div class="flex flex-wrap items-center gap-3 mb-4">
+                <div class="flex items-center text-sm">
+                  <i class="fa fa-envelope text-gray-500 mr-1.5" />
+                  <span>{{ detailData?.email }}</span>
+                </div>
+                <div class="flex items-center text-sm">
+                  <i class="fa fa-envelope text-gray-500 mr-1.5" />
+                  <span>{{ detailData?.groupName }}</span>
+                </div>
+                <div class="flex items-center text-sm">
+                  <i class="fa fa-calendar text-gray-500 mr-1.5" />
+                  <span>注册于 <n-time :time="detailData?.createTime" /></span>
+                </div>
               </div>
-              <div class="flex items-center text-sm">
-                <i class="fa fa-calendar text-gray-500 mr-1.5" />
-                <span>注册于 <n-time :time="detailData?.createTime" /></span>
-              </div>
-            </div>
 
-            <p class="text-gray-600 dark:text-gray-300 w-full">
-              {{ detailData?.quote }}
-            </p>
-          </div>
+              <p class="text-gray-600 dark:text-gray-300 w-full">
+                {{ detailData?.quote }}
+              </p>
+            </div>
 
           <!-- 操作按钮 -->
           <!-- <div class="flex flex-col gap-2">
@@ -186,61 +190,61 @@ function rowProps(row: any) {
               <i class="fa fa-envelope-o mr-1.5" /> 发消息
             </button>
           </div> -->
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- 统计数据卡片 -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
-        <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-          {{ detailData?.solvedProblem ? detailData?.solvedProblem : 0 }}
+      <!-- 统计数据卡片 -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
+          <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
+            {{ detailData?.solvedProblem ? detailData?.solvedProblem : 0 }}
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            已解决题目
+          </div>
         </div>
-        <div class="text-sm text-gray-500 dark:text-gray-400">
-          已解决题目
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
+          <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
+            {{ detailData?.tryProblem ? detailData?.tryProblem : 0 }}
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            总尝试题目
+          </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
+          <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-1">
+            {{ detailData?.participatedSet ? detailData?.participatedSet : 0 }}
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            参与题集
+          </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
+          <div class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-1">
+            {{ detailData?.activeScore ? detailData?.activeScore : 0 }}
+          </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            活跃指数
+          </div>
         </div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
-        <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-          {{ detailData?.tryProblem ? detailData?.tryProblem : 0 }}
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-8">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h2 class="text-lg font-bold">
+            AC 记录
+          </h2>
         </div>
-        <div class="text-sm text-gray-500 dark:text-gray-400">
-          总尝试题目
-        </div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
-        <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-1">
-          {{ detailData?.participatedSet ? detailData?.participatedSet : 0 }}
-        </div>
-        <div class="text-sm text-gray-500 dark:text-gray-400">
-          参与题集
-        </div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
-        <div class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-1">
-          {{ detailData?.activeScore ? detailData?.activeScore : 0 }}
-        </div>
-        <div class="text-sm text-gray-500 dark:text-gray-400">
-          活跃指数
+        <div class="overflow-scroll">
+          <CalendarHeatmap
+            :values="detailData?.acRecord ? detailData?.acRecord : []"
+            tooltip-unit="AC"
+            :end-date="endDate"
+            :range-color="['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39']"
+            class="custom-heatmap p-4 min-w-1000px"
+          />
         </div>
       </div>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-8">
-      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-        <h2 class="text-lg font-bold">
-          AC 记录
-        </h2>
-      </div>
-      <div class="overflow-scroll">
-        <CalendarHeatmap
-          :values="detailData?.acRecord ? detailData?.acRecord : []"
-          tooltip-unit="AC"
-          :end-date="endDate"
-          :range-color="['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39']"
-          class="custom-heatmap p-4 min-w-1000px"
-        />
-      </div>
-    </div>
     <!-- 内容导航 -->
     <!-- <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-8">
       <div class="flex overflow-x-auto md:overflow-visible border-b border-gray-200 dark:border-gray-700">
@@ -367,7 +371,7 @@ function rowProps(row: any) {
         </div>
       </div>
     </div> -->
-  </div>
+    </div>
   </div>
 </template>
 

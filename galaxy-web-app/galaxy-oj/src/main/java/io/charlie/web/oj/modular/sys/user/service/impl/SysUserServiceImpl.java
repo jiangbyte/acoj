@@ -14,6 +14,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
 import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
+import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
+import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.sys.user.entity.ACRecord;
@@ -46,6 +48,8 @@ import java.util.stream.Collectors;
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
     private final UserCacheService userCacheService;
     private final DataSubmitMapper dataSubmitMapper;
+
+    private final DataSolvedMapper dataSolvedMapper;
 
     @Override
     public Page<SysUser> page(SysUserPageParam sysUserPageParam) {
@@ -121,10 +125,26 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         sysUser.setPassword(null);
         sysUser.setTelephone(null);
 
-        // TODO
-        sysUser.setSolvedProblem(11L);
-        sysUser.setTryProblem(12L);
-        sysUser.setParticipatedSet(13L);
+        Long solvedProblemCount = dataSolvedMapper.selectCount(new LambdaQueryWrapper<DataSolved>()
+                .eq(DataSolved::getUserId, sysUser.getId())
+                .eq(DataSolved::getIsSet, false)
+                .eq(DataSolved::getSolved, true)
+        );
+        sysUser.setSolvedProblem(solvedProblemCount);
+        Long tryProblemCount = dataSolvedMapper.selectCount(new LambdaQueryWrapper<DataSolved>()
+                .eq(DataSolved::getUserId, sysUser.getId())
+                .eq(DataSolved::getIsSet, false)
+                .eq(DataSolved::getSolved, false)
+        );
+        sysUser.setTryProblem(tryProblemCount);
+        long participatedSetCount =  dataSolvedMapper.selectCount(
+                new QueryWrapper<DataSolved>()
+                        .select("DISTINCT set_id")
+                        .lambda()
+                        .eq(DataSolved::getUserId, sysUser.getId())
+                        .eq(DataSolved::getIsSet, true)
+        );
+        sysUser.setParticipatedSet(participatedSetCount);
         sysUser.setActiveScore(userCacheService.getUserActivity(sysUser.getId()));
 
         List<DataSubmit> dataSubmits = dataSubmitMapper.selectList(new LambdaQueryWrapper<DataSubmit>()

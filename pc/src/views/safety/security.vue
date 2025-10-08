@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import { useSysUserFetch } from '@/composables'
+import { useAuthFetch, useSysUserFetch } from '@/composables/v1'
 import type { FormInst, FormItemRule } from 'naive-ui'
 
-const { getProfile, sysUserDefaultData, sysUserUpdateProfile, sysUserUpdateAvatar, sysUserUpdateBackground, sysUserUpdatePassword } = useSysUserFetch()
+const { sysUserDefaultData } = useSysUserFetch()
 const formRef = ref<FormInst | null>(null)
 const passwordFormRef = ref<FormInst | null>(null)
 const profileData = ref(sysUserDefaultData)
 const isEdit = ref(false)
 async function loadData() {
-  getProfile().then(({ data }) => {
+  // getProfile().then(({ data }) => {
+  //   if (data) {
+  //     profileData.value = data
+  //   }
+  // })
+
+  useAuthFetch().getProfile().then(({ data }) => {
     if (data) {
       profileData.value = data
     }
@@ -20,7 +26,7 @@ function updateProfile() {
   if (formRef.value) {
     formRef.value.validate().then((valid) => {
       if (valid) {
-        sysUserUpdateProfile(profileData.value).then(() => {
+        useSysUserFetch().sysUserUpdateProfile(profileData.value).then(() => {
           loadData()
         })
         isEdit.value = false
@@ -31,7 +37,7 @@ function updateProfile() {
 }
 
 function updateAvatar(url: string) {
-  sysUserUpdateAvatar({
+  useSysUserFetch().sysUserUpdateAvatar({
     id: profileData.value.id,
     img: url,
   }).then(({ data }) => {
@@ -41,7 +47,7 @@ function updateAvatar(url: string) {
   })
 }
 function updateBackground(url: string) {
-  sysUserUpdateBackground({
+  useSysUserFetch().sysUserUpdateBackground({
     id: profileData.value.id,
     img: url,
   }).then(({ data }) => {
@@ -61,7 +67,7 @@ const passwordData = ref({
 
 function updatePassword() {
   passwordData.value.id = profileData.value.id
-  sysUserUpdatePassword(passwordData.value).then(({ data }) => {
+  useSysUserFetch().sysUserUpdatePassword(passwordData.value).then(({ data }) => {
     // window.$message.success('密码更新成功')
     if (data) {
       window.$message.success('密码更新成功')
@@ -225,7 +231,7 @@ const profileRules = {
               <h3 class="text-lg font-medium">
                 封面背景
               </h3>
-              <div class="relative h-40 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+              <div class="relative h-50 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
                 <img :src="profileData?.background" class="w-full h-full object-cover">
                 <div class="absolute right-3 bottom-3 px-3 py-1.5 text-sm transition-colors">
                   <FileUploadButton v-model="profileData.background" :is-image="true" buttontext="更换封面" @success="updateBackground" />
@@ -253,6 +259,9 @@ const profileRules = {
                 </n-form-item-gi>
                 <n-form-item-gi :span="12" label="电子邮箱" path="email">
                   <n-input v-model:value="profileData.email" placeholder="请输入电子邮箱" :disabled="!isEdit" />
+                </n-form-item-gi>
+                <n-form-item-gi :span="12" label="学号" path="studentNumber">
+                  <n-input v-model:value="profileData.studentNumber" placeholder="请输入学号" :disabled="!isEdit" />
                 </n-form-item-gi>
                 <n-form-item-gi :span="12" label="手机号" path="telephone">
                   <n-input v-model:value="profileData.telephone" placeholder="请输入手机号" :disabled="!isEdit" />

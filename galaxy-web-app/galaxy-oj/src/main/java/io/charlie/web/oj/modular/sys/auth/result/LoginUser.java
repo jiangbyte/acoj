@@ -64,6 +64,9 @@ public class LoginUser implements Serializable, TransPojo {
     @Schema(description = "电话")
     private String telephone;
 
+    @Schema(description = "学号")
+    private String studentNumber;
+
     @Schema(description = "创建时间")
     private Date createTime;
 
