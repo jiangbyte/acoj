@@ -247,7 +247,7 @@ function rowProps(row: any) {
 
     <!-- 高级筛选区 -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
         <!-- 题目筛选 -->
         <!-- <div>
           <label class="block text-sm font-medium mb-2">题目</label>
@@ -261,7 +261,7 @@ function rowProps(row: any) {
         </div> -->
 
         <!-- 用户筛选 -->
-        <div>
+        <!-- <div>
           <label class="block text-sm font-medium mb-2">用户</label>
           <n-input
             v-model:value="pageParam.keyword"
@@ -270,7 +270,7 @@ function rowProps(row: any) {
             @keyup.enter="loadData"
             @clear="resetHandle"
           />
-        </div>
+        </div> -->
 
         <!-- 语言筛选 -->
         <div>

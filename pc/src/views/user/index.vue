@@ -163,15 +163,15 @@ function rowProps(row: any) {
 
               <div class="flex flex-wrap items-center gap-3 mb-4">
                 <div class="flex items-center text-sm">
-                  <i class="fa fa-envelope text-gray-500 mr-1.5" />
+                  <icon-park-outline-every-user class="mr-1.5" />
+                  <span>{{ detailData?.groupIdName }}</span>
+                </div>
+                <div class="flex items-center text-sm">
+                  <icon-park-outline-accept-email class="mr-1.5" />
                   <span>{{ detailData?.email }}</span>
                 </div>
                 <div class="flex items-center text-sm">
-                  <i class="fa fa-envelope text-gray-500 mr-1.5" />
-                  <span>{{ detailData?.groupName }}</span>
-                </div>
-                <div class="flex items-center text-sm">
-                  <i class="fa fa-calendar text-gray-500 mr-1.5" />
+                  <icon-park-outline-calendar class="mr-1.5" />
                   <span>注册于 <n-time :time="detailData?.createTime" /></span>
                 </div>
               </div>
