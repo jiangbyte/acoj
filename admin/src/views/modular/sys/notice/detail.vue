@@ -44,7 +44,7 @@ defineExpose({
         <NDescriptionsItem label="内容">
           <MDViewer :model-value="formData.content" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="是否可见">
+        <NDescriptionsItem label="上架">
           {{ formData.isVisibleName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="创建时间">

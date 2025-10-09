@@ -73,5 +73,14 @@ export function useSysRoleFetch() {
     sysRoleAuthRoles() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/auth/list`)
     },
+    sysRoleAuthRoles1() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/auth/list1`)
+    },
+    sysRoleAssign(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/assign`, data)
+    },
+    sysMenuAssign(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/menu/assign`, data)
+    },
   }
 }

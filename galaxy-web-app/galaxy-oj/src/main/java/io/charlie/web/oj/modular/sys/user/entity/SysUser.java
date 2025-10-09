@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.charlie.galaxy.pojo.CommonEntity;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.io.Serial;
@@ -18,11 +19,11 @@ import org.dromara.core.trans.anno.Trans;
 import org.dromara.core.trans.constant.TransType;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-09-20
-* @description 用户表
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-09-20
+ * @description 用户表
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @TableName(value = "sys_user", autoResultMap = true)
@@ -100,4 +101,7 @@ public class SysUser extends CommonEntity {
 
     @TableField(exist = false)
     private List<ACRecord> acRecord;
+
+    @TableField(exist = false)
+    private List<String> assignRoles;
 }

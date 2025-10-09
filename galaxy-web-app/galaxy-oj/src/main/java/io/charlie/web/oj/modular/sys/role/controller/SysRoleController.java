@@ -2,10 +2,10 @@ package io.charlie.web.oj.modular.sys.role.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
-import io.charlie.web.oj.modular.sys.role.param.SysRolePageParam;
-import io.charlie.web.oj.modular.sys.role.param.SysRoleAddParam;
-import io.charlie.web.oj.modular.sys.role.param.SysRoleEditParam;
-import io.charlie.web.oj.modular.sys.role.param.SysRoleIdParam;
+import io.charlie.web.oj.modular.sys.relation.service.SysRoleMenuService;
+import io.charlie.web.oj.modular.sys.role.param.SysMenuAssignParam;
+import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
+import io.charlie.web.oj.modular.sys.role.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -35,6 +35,8 @@ import java.util.List;
 @Validated
 public class SysRoleController {
     private final SysRoleService sysRoleService;
+    private final SysUserRoleService  sysUserRoleService;
+    private final SysRoleMenuService sysRoleMenuService;
 
     @Operation(summary = "获取角色分页")
     @SaCheckPermission("/sys/role/page")
@@ -74,9 +76,29 @@ public class SysRoleController {
         return Result.success(sysRoleService.detail(sysRoleIdParam));
     }
 
-    @Operation(summary = "获取角色详情")
+    @Operation(summary = "获取认证角色列表")
     @GetMapping("/sys/role/auth/list")
     public Result<?> authRoles() {
         return Result.success(sysRoleService.authRoles());
+    }
+
+    @Operation(summary = "获取认证角色列表")
+    @GetMapping("/sys/role/auth/list1")
+    public Result<?> authRoles1() {
+        return Result.success(sysRoleService.authRoles1());
+    }
+
+    @Operation(summary = "授权角色")
+    @PostMapping("/sys/role/assign")
+    public Result<?> assign(@RequestBody @Valid SysRoleAssignParam sysRoleAssignParam) {
+        sysUserRoleService.assignRoles(sysRoleAssignParam.getUserId(), sysRoleAssignParam.getRoleIds());
+        return Result.success();
+    }
+
+    @Operation(summary = "获取认证菜单")
+    @PostMapping("/sys/role/menu/assign")
+    public Result<?> assignMenu(@RequestBody @Valid SysMenuAssignParam sysMenuPermissionParam) {
+        sysRoleMenuService.assignMenus(sysMenuPermissionParam.getRoleId(), sysMenuPermissionParam.getMenuIds());
+        return Result.success();
     }
 }

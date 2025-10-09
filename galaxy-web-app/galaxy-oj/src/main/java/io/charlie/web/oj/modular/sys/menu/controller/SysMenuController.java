@@ -3,6 +3,8 @@ package io.charlie.web.oj.modular.sys.menu.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.modular.sys.menu.param.*;
+import io.charlie.web.oj.modular.sys.relation.service.SysRoleMenuService;
+import io.charlie.web.oj.modular.sys.role.param.SysMenuAssignParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -19,11 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-09-24
-* @description 菜单表 控制器
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-09-24
+ * @description 菜单表 控制器
+ */
 @Tag(name = "菜单表控制器")
 @Slf4j
 @RequiredArgsConstructor

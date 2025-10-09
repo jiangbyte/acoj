@@ -4,20 +4,23 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.charlie.galaxy.pojo.CommonEntity;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.io.Serial;
 import java.util.Date;
+import java.util.List;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-09-20
-* @description 角色表
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-09-20
+ * @description 角色表
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @TableName("sys_role")
@@ -41,4 +44,10 @@ public class SysRole extends CommonEntity {
 
     @Schema(description = "角色层级")
     private Integer level;
+
+    @TableField(exist = false)
+    private Boolean isOpen;
+
+    @TableField(exist = false)
+    private List<String> assignResource;
 }

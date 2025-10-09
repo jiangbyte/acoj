@@ -52,7 +52,7 @@ defineExpose({
         <NDescriptionsItem label="创建者">
           {{ formData.createUserName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="是否可见">
+        <NDescriptionsItem label="上架">
           {{ formData.isVisibleName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="更新时间">

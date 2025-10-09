@@ -170,7 +170,15 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
 
         // 非超级用户
         List<String> menuIdsByRoleId = sysRoleMenuService.findMenuIdsByRoleId(heightLevelRole.getId());
+        if (ObjectUtil.isEmpty(menuIdsByRoleId)) {
+            return List.of();
+        }
         return this.baseMapper.selectByIds(menuIdsByRoleId);
+    }
+
+    @Override
+    public List<SysMenu> authMenu1() {
+        return List.of();
     }
 
     @Override

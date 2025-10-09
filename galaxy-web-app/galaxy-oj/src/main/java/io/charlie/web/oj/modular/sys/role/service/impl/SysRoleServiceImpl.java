@@ -10,6 +10,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.web.oj.modular.sys.relation.entity.SysRoleMenu;
+import io.charlie.web.oj.modular.sys.relation.mapper.SysRoleMenuMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
 import io.charlie.web.oj.modular.sys.role.entity.SysRole;
 import io.charlie.web.oj.modular.sys.role.param.SysRoleAddParam;
@@ -40,6 +42,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements SysRoleService {
     private final SysUserRoleService sysUserRoleService;
+    private final SysRoleMenuMapper sysRoleMenuMapper;
 
     @Override
     public Page<SysRole> page(SysRolePageParam sysRolePageParam) {
@@ -55,12 +58,22 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
                     StrUtil.toUnderlineCase(sysRolePageParam.getSortField()));
         }
 
-        return this.page(CommonPageRequest.Page(
+        Page<SysRole> page = this.page(CommonPageRequest.Page(
                         Optional.ofNullable(sysRolePageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(sysRolePageParam.getSize()).orElse(20),
                         null
                 ),
                 queryWrapper);
+        page.getRecords().forEach(sysRole -> {
+            List<SysRoleMenu> sysRoleMenus = sysRoleMenuMapper.selectList(new LambdaQueryWrapper<SysRoleMenu>()
+                    .eq(SysRoleMenu::getRoleId, sysRole.getId())
+            );
+            List<String> stringList = sysRoleMenus.stream().map(SysRoleMenu::getMenuId).toList();
+            if (ObjectUtil.isNotEmpty(stringList)) {
+                sysRole.setAssignResource(stringList);
+            }
+        });
+        return page;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -96,6 +109,13 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         if (ObjectUtil.isEmpty(sysRole)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
+        List<SysRoleMenu> sysRoleMenus = sysRoleMenuMapper.selectList(new LambdaQueryWrapper<SysRoleMenu>()
+                .eq(SysRoleMenu::getRoleId, sysRole.getId())
+        );
+        List<String> stringList = sysRoleMenus.stream().map(SysRoleMenu::getMenuId).toList();
+        if (ObjectUtil.isNotEmpty(stringList)) {
+            sysRole.setAssignResource(stringList);
+        }
         return sysRole;
     }
 
@@ -113,6 +133,29 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
                 .le(SysRole::getLevel, level)  // 查询层级小于等于当前最高层级的角色
                 .orderByAsc(SysRole::getLevel) // 按层级升序排列
         );
+    }
+
+    @Override
+    public List<SysRole> authRoles1() {
+        // 获得全部的角色列表
+        List<SysRole> list = this.list(new LambdaQueryWrapper<SysRole>()
+                .orderByAsc(SysRole::getLevel) // 按层级升序排列
+        );
+
+        String loginIdAsString = StpUtil.getLoginIdAsString();
+        SysRole heightLevelRole = sysUserRoleService.getHeightLevelRole(loginIdAsString);
+        if (heightLevelRole == null) {
+            return List.of();
+        }
+        Integer level = heightLevelRole.getLevel();
+        // 对层级比当前用户高的设置isOpen禁用
+        list.forEach(role -> {
+            if (role.getLevel() > level) {
+                role.setIsOpen(false);
+            }
+        });
+
+        return list;
     }
 
 }

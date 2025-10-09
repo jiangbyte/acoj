@@ -29,4 +29,6 @@ public interface SysRoleService extends IService<SysRole> {
 
     List<SysRole> authRoles();
 
+    List<SysRole> authRoles1();
+
 }

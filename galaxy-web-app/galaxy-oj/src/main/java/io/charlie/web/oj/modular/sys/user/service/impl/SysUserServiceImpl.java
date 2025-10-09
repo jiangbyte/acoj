@@ -18,6 +18,9 @@ import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
+import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
+import io.charlie.web.oj.modular.sys.relation.mapper.SysUserRoleMapper;
+import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
 import io.charlie.web.oj.modular.sys.user.entity.ACRecord;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.param.*;
@@ -50,6 +53,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private final DataSubmitMapper dataSubmitMapper;
 
     private final DataSolvedMapper dataSolvedMapper;
+    private final SysUserRoleMapper sysUserRoleMapper;
 
     @Override
     public Page<SysUser> page(SysUserPageParam sysUserPageParam) {
@@ -61,12 +65,20 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                     StrUtil.toUnderlineCase(sysUserPageParam.getSortField()));
         }
 
-        return this.page(CommonPageRequest.Page(
+        Page<SysUser> page = this.page(CommonPageRequest.Page(
                         Optional.ofNullable(sysUserPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(sysUserPageParam.getSize()).orElse(20),
                         null
                 ),
                 queryWrapper);
+        page.getRecords().forEach(sysUser -> {
+            List<SysUserRole> sysUserRoles = sysUserRoleMapper.selectList(new LambdaQueryWrapper<SysUserRole>()
+                    .eq(SysUserRole::getUserId, sysUser.getId())
+            );
+            List<String> stringList = sysUserRoles.stream().map(SysUserRole::getRoleId).toList();
+            sysUser.setAssignRoles(stringList);
+        });
+        return page;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -102,6 +114,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (ObjectUtil.isEmpty(sysUser)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
+        List<SysUserRole> sysUserRoles = sysUserRoleMapper.selectList(new LambdaQueryWrapper<SysUserRole>()
+                .eq(SysUserRole::getUserId, sysUser.getId())
+        );
+        List<String> stringList = sysUserRoles.stream().map(SysUserRole::getRoleId).toList();
+        sysUser.setAssignRoles(stringList);
         return sysUser;
     }
 
@@ -137,7 +154,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 .eq(DataSolved::getSolved, false)
         );
         sysUser.setTryProblem(tryProblemCount);
-        long participatedSetCount =  dataSolvedMapper.selectCount(
+        long participatedSetCount = dataSolvedMapper.selectCount(
                 new QueryWrapper<DataSolved>()
                         .select("DISTINCT set_id")
                         .lambda()

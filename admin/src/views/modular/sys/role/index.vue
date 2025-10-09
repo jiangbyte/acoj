@@ -4,9 +4,11 @@ import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'na
 import { useSysRoleFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
+import Assign from './assign.vue'
 
 const formRef = ref()
 const detailRef = ref()
+const assignRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -40,7 +42,7 @@ const columns: DataTableColumns<any> = [
           size: 'small',
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
-        h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => '资源授权'),
+        h(NButton, { size: 'small', type: 'warning', onClick: () => assignRef.value.doOpen(row) }, () => '资源授权'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
@@ -272,6 +274,7 @@ async function deleteBatchHandle() {
 
     <Form ref="formRef" @submit="loadData" />
     <Detail ref="detailRef" @submit="loadData" />
+    <Assign ref="assignRef" @submit="loadData" />
   </div>
 </template>
 

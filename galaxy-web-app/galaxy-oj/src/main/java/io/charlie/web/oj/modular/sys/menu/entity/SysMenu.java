@@ -79,4 +79,7 @@ public class SysMenu extends CommonEntity {
     @Schema(description = "子菜单")
     @TableField(exist = false)
     private List<SysMenu> children;
+
+    @TableField(exist = false)
+    private Boolean isOpen;
 }
