@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { DataTableColumns, NDrawer, NDrawerContent, NIcon, NTag } from 'naive-ui'
+import type { DataTableColumns } from 'naive-ui'
+import { NDrawer, NDrawerContent, NIcon, NTag } from 'naive-ui'
 import { useSysMenuFetch, useSysRoleFetch } from '@/composables/v1'
 import { Icon } from '@iconify/vue'
 

@@ -1,30 +1,39 @@
-# 使用 Node.js 22 作为基础镜像
-FROM node:22-alpine
-
-# 设置工作目录
+# 使用 Node.js 22 alpine 版本作为基础镜像，命名为 base 阶段
+FROM node:22-alpine AS base
+# 设置 pnpm 的安装路径环境变量
+ENV PNPM_HOME="/pnpm"
+# 将 pnpm 路径添加到系统 PATH 环境变量中
+ENV PATH="$PNPM_HOME:$PATH"
+# 启用 Node.js 的 corepack 来管理包管理器
+RUN corepack enable
+# 将当前目录所有文件复制到容器的 /app 目录
+COPY . /app
+# 设置工作目录为 /app
 WORKDIR /app
 
-# # 复制构建好的项目文件
-# COPY ./.output /app/.output
-# COPY ecosystem.config.cjs /app/ecosystem.config.cjs
+# 创建名为 prod-deps 的新阶段，用于安装生产依赖
+FROM base AS prod-deps
+# 使用缓存挂载来加速 pnpm 安装，只安装生产依赖，使用冻结的 lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
 
-# # 全局安装 PM2
-# # RUN npm install -g pm2 --registry https://registry.npmmirror.com
+# 创建名为 builder 的新阶段，用于构建项目
+FROM base AS builder
+# 使用缓存挂载安装所有依赖（包括开发依赖），使用冻结的 lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# 运行构建命令
+RUN pnpm run build
 
-# # 暴露端口（Nuxt.js 默认使用 3000 端口）
-# EXPOSE 3000
+# 使用 nginx alpine 版本作为最终运行环境
+FROM nginx:1.23.1-alpine
 
-# # 使用 PM2 启动应用
-# # CMD ["pm2", "start", "/app/ecosystem.config.cjs"]
+# 设置工作目录为 /www
+WORKDIR /www
 
-# # CMD ["pm2", "start", "/app/ecosystem.config.cjs", "--no-daemon"]
+# 从 builder 阶段复制构建产物到当前镜像
+COPY --from=builder /app/dist/ .
 
-# # 使用node
-# CMD ["node", "/app/.output/server/index.mjs"]
+# 复制自定义 nginx 配置文件到容器中
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
-# docker build -t registry.cn-beijing.aliyuncs.com/charlie_images/zero-nuxt:latest .
-# docker push registry.cn-beijing.aliyuncs.com/charlie_images/zero-nuxt:latest
-# docker run -d -p 80:3000 --restart always zero-online-judge-nuxt:latest
-# cp -r ./dist /app/vue
-# node /app/nuxt/server/index.mjs
-# node /app/vue/index.html
+# 声明容器运行时监听的端口
+EXPOSE 81

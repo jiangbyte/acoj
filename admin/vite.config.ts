@@ -1,7 +1,8 @@
 import { resolve } from 'node:path'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
+import process from 'node:process'
 // import vueDevTools from 'vite-plugin-vue-devtools'
 
 import UnoCSS from 'unocss/vite'
@@ -12,7 +13,9 @@ import AutoImport from 'unplugin-auto-import/vite'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vite.dev/config/
-export default defineConfig(() => {
+export default defineConfig(({ command, mode }) => {
+  // 加载环境变量
+  const env = loadEnv(mode, process.cwd(), '')
   return {
     plugins: [
       vue(),
@@ -57,8 +60,10 @@ export default defineConfig(() => {
       },
     },
     server: {
+      // host: process.env.HOST || '0.0.0.0',
       host: '0.0.0.0',
-      port: 3011,
+      // port: process.env.PORT ? Number.parseInt(process.env.PORT) : 81,
+      port: 81,
     },
     optimizeDeps: {
       include: [
@@ -69,5 +74,11 @@ export default defineConfig(() => {
         `monaco-editor/esm/vs/editor/editor.worker`,
       ],
     },
+    // define: command === 'build'
+    //   ? {
+    //       'import.meta.env.VITE_GATEWAY': process.env.VITE_GATEWAY,
+    //       'import.meta.env.VITE_MAIN_SERVICE_CONTEXT': process.env.VITE_MAIN_SERVICE_CONTEXT,
+    //     }
+    //   : {},
   }
 })
