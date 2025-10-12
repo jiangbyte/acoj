@@ -1,12 +1,15 @@
-# 构建阶段
-FROM golang:1.24-alpine AS builder
+FROM registry.cn-beijing.aliyuncs.com/jiangbyte/ubuntu_golang:1.0.0
 
 # 设置 Go 代理
 ENV GOPROXY=https://goproxy.cn,direct
 ENV GOSUMDB=off
 
-# 安装构建依赖
-RUN apk add --no-cache gcc musl-dev libseccomp-dev git
+# 安装完整的构建工具链
+RUN apt-get update && apt-get install -y \
+    gcc \
+    pkg-config \
+    libseccomp-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -22,26 +25,8 @@ COPY . .
 # 构建应用（启用 CGO）
 RUN CGO_ENABLED=1 GOOS=linux go build -o judge-service main.go
 
-# 运行阶段
-FROM alpine:latest
-
-# 安装运行时依赖（只需要 libseccomp 运行时库）
-RUN apk add --no-cache libseccomp ca-certificates
-
-WORKDIR /root/
-
-# 从构建阶段复制二进制文件
-COPY --from=builder /app/judge-service .
-COPY --from=builder /app/etc/judge.yaml ./etc/
-
 # 创建必要的目录
 RUN mkdir -p /tmp/judge
-
-# 创建非root用户
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup \
-    && chown -R appuser:appgroup /root/ /tmp/judge
-
-USER appuser
 
 # 启动应用
 CMD ["./judge-service"]
