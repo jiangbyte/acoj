@@ -15,7 +15,9 @@ import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-
+  // 确保VITE_GATEWAY有值
+  const gateway = env.VITE_GATEWAY
+  console.log('Using Gateway:', gateway)
   return {
     plugins: [
       vue(),
@@ -64,8 +66,9 @@ export default defineConfig(({ command, mode }) => {
       port: 3010,
       proxy: {
         '/oj': {
-          target: env.VITE_GATEWAY,
+          target: gateway,
           changeOrigin: true,
+          secure: false,
           ws: true,
         },
       },

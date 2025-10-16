@@ -3,6 +3,7 @@ package io.charlie.web.oj.modular.sys.file.config;
 import io.charlie.web.oj.modular.sys.file.config.properties.FileStorageProperties;
 import io.charlie.web.oj.modular.sys.file.service.FileStorageService;
 import io.charlie.web.oj.modular.sys.file.service.impl.LocalFileStorageService;
+import io.charlie.web.oj.modular.sys.file.service.impl.MinIoFileStorageService;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,8 +19,10 @@ public class FileStorageConfig {
     
     @Bean
     public FileStorageService fileStorageService(FileStorageProperties properties) {
-        // 这里可以根据配置决定使用本地存储还是OSS
-        // 可以使用策略模式或工厂模式来切换存储方式
-        return new LocalFileStorageService(properties);
+//        if (properties.isUseMinIo()) {
+            return new MinIoFileStorageService(properties);
+//        } else {
+//            return new LocalFileStorageService(properties);
+//        }
     }
 }

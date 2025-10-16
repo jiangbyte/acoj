@@ -15,6 +15,7 @@ import SockJS from 'sockjs-client'
 
 const tokenStore = useTokenStore()
 const userStore = useUserStore()
+const gateway = import.meta.env.VITE_GATEWAY
 
 const stompClient = ref<Client | null>(null)
 const isConnected = ref(false)
@@ -59,7 +60,7 @@ function executeCode(type: boolean) {
 
   // 任务ID生成
   submitParam.value.judgeTaskId = `task-${uuidv4()}`
-  const socket = new SockJS('/oj/ws/judge/status')
+  const socket = new SockJS(`/oj/ws/judge/status`)
 
   // 添加连接关闭事件监听
   socket.onclose = () => {

@@ -7,6 +7,7 @@ import Detail from './detail.vue'
 
 const formRef = ref()
 const detailRef = ref()
+const similaritySelectFormRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -98,8 +99,8 @@ const columns: DataTableColumns<any> = [
         h(NButton, {
           type: 'primary',
           size: 'small',
-          disabled: row.canUseSimilarReport !== true,
-          onClick: () => { },
+          // disabled: row.canUseSimilarReport !== true,
+          onClick: () => similaritySelectFormRef.value.doOpen(row.id, null, false, true),
         }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
@@ -328,6 +329,7 @@ async function deleteBatchHandle() {
 
     <Form ref="formRef" @submit="loadData" />
     <Detail ref="detailRef" @submit="loadData" />
+    <SimilaritySelect ref="similaritySelectFormRef" />
   </div>
 </template>
 

@@ -1,5 +1,3 @@
-
-
 # 使用 Node.js 22 alpine 版本作为基础镜像，命名为 base 阶段
 FROM node:22-alpine AS base
 # 设置 pnpm 的安装路径环境变量

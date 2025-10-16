@@ -18,11 +18,11 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>io.charlie</groupId>
-            <artifactId>module-permission</artifactId>
-            <version>${revision}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.charlie</groupId>-->
+<!--            <artifactId>module-permission</artifactId>-->
+<!--            <version>${revision}</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -33,10 +33,10 @@
             <artifactId>hutool-all</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.dubbo</groupId>
-            <artifactId>dubbo-spring-boot-starter</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.dubbo</groupId>-->
+<!--            <artifactId>dubbo-spring-boot-starter</artifactId>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>com.github.xiaoymin</groupId>

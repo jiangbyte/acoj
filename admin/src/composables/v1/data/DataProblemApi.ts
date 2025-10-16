@@ -94,5 +94,8 @@ export function useDataProblemFetch() {
         },
       })
     },
+    dataProblemImport(formData: FormData | undefined) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/import`, formData)
+    },
   }
 }

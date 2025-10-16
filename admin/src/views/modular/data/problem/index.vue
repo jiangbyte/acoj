@@ -7,6 +7,7 @@ import Detail from './detail.vue'
 
 const formRef = ref()
 const detailRef = ref()
+const similaritySelectFormRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -125,8 +126,8 @@ const columns: DataTableColumns<any> = [
         h(NButton, {
           type: 'primary',
           size: 'small',
-          disabled: row.canUseSimilarReport !== true,
-          onClick: () => { },
+          // disabled: row.canUseSimilarReport !== true,
+          onClick: () => similaritySelectFormRef.value.doOpen(null, row.id, false, false),
         }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
@@ -201,6 +202,7 @@ async function loadData() {
 }
 
 loadData()
+const mdssss = ref()
 
 async function deleteHandle(row: any) {
   const param = [{
@@ -257,12 +259,13 @@ async function deleteBatchHandle() {
               </template>
               创建
             </NButton>
-            <NButton type="primary">
+            <!-- <NButton type="primary">
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
               导入
-            </NButton>
+            </NButton> -->
+            <ProblemImport v-model="mdssss" buttontext="导入" @success="loadData()" />
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除
@@ -352,6 +355,11 @@ async function deleteBatchHandle() {
             v-model:page-size="pageParam.size"
             class="flex justify-end"
             :page-count="pageData ? Number(pageData.pages) : 0"
+            show-size-picker
+            :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+              label: `${(i + 1) * 10} 每页`,
+              value: (i + 1) * 10,
+            }))"
             @update:page="loadData"
             @update:page-size="loadData"
           />
@@ -361,6 +369,7 @@ async function deleteBatchHandle() {
 
     <Form ref="formRef" @submit="loadData" />
     <Detail ref="detailRef" @submit="loadData" />
+    <SimilaritySelect ref="similaritySelectFormRef" />
   </div>
 </template>
 

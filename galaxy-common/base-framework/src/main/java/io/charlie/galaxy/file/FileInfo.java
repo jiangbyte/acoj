@@ -24,4 +24,5 @@ public class FileInfo implements Serializable {
     private String extension;
     private boolean previewable;
     private String url;
+    private long storageTime;
 }

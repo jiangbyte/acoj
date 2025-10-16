@@ -6,6 +6,8 @@ import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityPageParam;
 import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityAddParam;
 import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityEditParam;
 import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityIdParam;
+import io.charlie.web.oj.modular.task.similarity.param.BatchSimilarityParam;
+import io.charlie.web.oj.modular.task.similarity.service.ProblemsSimilarityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -35,6 +37,7 @@ import java.util.List;
 @Validated
 public class TaskSimilarityController {
     private final TaskSimilarityService taskSimilarityService;
+    private final ProblemsSimilarityService problemsSimilarityService;
 
     @Operation(summary = "获取检测结果任务库分页")
     @SaCheckPermission("/task/similarity/page")
@@ -72,5 +75,11 @@ public class TaskSimilarityController {
     @GetMapping("/task/similarity/detail")
     public Result<?> detail(@ParameterObject @Valid TaskSimilarityIdParam taskSimilarityIdParam) {
         return Result.success(taskSimilarityService.detail(taskSimilarityIdParam));
+    }
+
+    @PostMapping("/task/similarity/batch")
+    public Result<?> batch(@RequestBody @Valid BatchSimilarityParam batchSimilarityParam) {
+        problemsSimilarityService.batch(batchSimilarityParam);
+        return Result.success();
     }
 }

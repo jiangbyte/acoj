@@ -46,6 +46,8 @@
         <antlr4.version>4.13.1</antlr4.version>
 
         <easy-trans.version>3.1.1</easy-trans.version>
+
+        <minio.version>8.5.2</minio.version>
     </properties>
 
     <dependencyManagement>
@@ -244,6 +246,12 @@
                 <groupId>org.dromara</groupId>
                 <artifactId>easy-trans-untrans-driver</artifactId>
                 <version>${easy-trans.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
             </dependency>
 
         </dependencies>

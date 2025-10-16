@@ -22,14 +22,14 @@ public class BatchSimilaritySubmitDto implements Serializable {
 
     // 提交参数
 
-    @Schema(description = "用户ID")
-    private List<String> userIds;
+//    @Schema(description = "用户ID")
+//    private List<String> userIds;
 
     @Schema(description = "题目ID")
-    private List<String> problemIds;
+    private List<String> problemIds; // 题集下的题目
 
     @Schema(description = "题集ID")
-    private String setId;
+    private String setId; // 一个题集
 
     @Schema(description = "语言")
     private String language;
@@ -49,7 +49,6 @@ public class BatchSimilaritySubmitDto implements Serializable {
     private Boolean taskType;
 
     private Date createTime;
-
 
     @Schema(description = "任务ID")
     private String batchTaskId;

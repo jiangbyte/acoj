@@ -134,10 +134,10 @@ public class DataProblemController {
                 return Result.failure("请选择有效的ZIP格式的压缩包");
             }
             dataProblemService.importProblems(file);
-            return Result.success("问题导入成功");
+            return Result.success();
         } catch (Exception e) {
             log.error("导入失败", e);
-            return Result.failure("导入失败: " + e.getMessage());
+            return Result.failure(e.getMessage());
         }
     }
 }

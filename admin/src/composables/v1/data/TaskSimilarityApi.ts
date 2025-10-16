@@ -87,5 +87,12 @@ export function useTaskSimilarityFetch() {
         },
       })
     },
+
+    /*
+     * 检测结果任务库 批量接口
+     */
+    taskSimilarityBatch(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/batch`, data)
+    },
   }
 }

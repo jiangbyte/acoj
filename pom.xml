@@ -52,7 +52,7 @@
             <properties>
                 <profiles.active>dev</profiles.active>
                 <!--                <nacos.server-addr>101.201.174.43:8848</nacos.server-addr>-->
-                <nacos.server-addr>localhost:8848</nacos.server-addr>
+                <nacos.server-addr>120.26.180.149:8848</nacos.server-addr>
                 <nacos.username></nacos.username>
                 <nacos.password></nacos.password>
                 <nacos.discovery.group>DEFAULT_GROUP</nacos.discovery.group>

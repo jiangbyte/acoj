@@ -1,5 +1,9 @@
 package io.charlie.web.oj.modular.task.similarity.param;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.web.oj.modular.task.similarity.data.Config;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -15,14 +19,14 @@ import java.util.List;
  */
 @Data
 public class BatchSimilarityParam {
-    @Schema(description = "用户ID")
-    private List<String> userId;
+//    @Schema(description = "用户ID")
+//    private List<String> userId;
 
     @Schema(description = "题目ID")
     private List<String> problemId;
 
     @Schema(description = "题集ID")
-    private List<String> setId;
+    private String setId;
 
     @Schema(description = "语言")
     private String language;
@@ -33,6 +37,8 @@ public class BatchSimilarityParam {
     @Schema(description = "任务ID")
     private String taskId;
 
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date createTime;
 
     @Schema(description = "任务ID")
