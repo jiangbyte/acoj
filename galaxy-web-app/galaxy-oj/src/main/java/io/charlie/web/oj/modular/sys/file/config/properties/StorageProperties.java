@@ -21,30 +21,30 @@ public class StorageProperties {
     private String maxRequestSize;
 
     private List<String> allowedExtensions;
-    private List<String> previewableExtensions;
+    private List<String> previewExtensions;
 
     @Data
     public static class LocalProperties {
-        private String basePath;
-        private String accessUrl;
+        private String basePath; // 存储文件的基础路径
+        private String accessUrl; // 返回的文件访问URL
     }
 
     @Data
     public static class MinioProperties {
-        private String endpoint;
-        private String accessKey;
-        private String secretKey;
-        private String bucketName;
-        private String region;
+        private String endpoint; // MinIO服务端地址
+        private String accessKey; // MinIO访问密钥
+        private String secretKey; // MinIO密钥
+        private String bucketName; // 存储桶名称
+        private String region; // 存储桶区域
     }
 
     @Data
     public static class OSSProperties {
-        private String endpoint;
-        private String accessKey;
-        private String secretKey;
-        private String bucketName;
-        private String region;
+        private String endpoint; // OSS服务端地址
+        private String accessKey; // OSS访问密钥
+        private String secretKey; // OSS密钥
+        private String bucketName; // 存储桶名称
+        private String region; // 存储桶区域
     }
 
     public enum StorageType {

@@ -44,6 +44,7 @@ async function FileUploadRequest({
     const formData = new FormData()
     formData.append('file', file.file as File)
     const { data } = await uploadFile(formData)
+    console.log(data)
 
     if (!data?.url) {
       throw new Error('No URL returned from upload')

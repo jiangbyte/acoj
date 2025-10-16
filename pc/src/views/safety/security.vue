@@ -37,11 +37,12 @@ function updateProfile() {
 }
 
 function updateAvatar(url: string) {
+  console.log('avatar URL', url)
   useSysUserFetch().sysUserUpdateAvatar({
     id: profileData.value.id,
     img: url,
-  }).then(({ data }) => {
-    if (data) {
+  }).then(({ success }) => {
+    if (success) {
       window.$message.success('头像更新成功')
     }
   })
@@ -50,8 +51,8 @@ function updateBackground(url: string) {
   useSysUserFetch().sysUserUpdateBackground({
     id: profileData.value.id,
     img: url,
-  }).then(({ data }) => {
-    if (data) {
+  }).then(({ success }) => {
+    if (success) {
       window.$message.success('背景图更新成功')
     }
   })
@@ -67,9 +68,9 @@ const passwordData = ref({
 
 function updatePassword() {
   passwordData.value.id = profileData.value.id
-  useSysUserFetch().sysUserUpdatePassword(passwordData.value).then(({ data }) => {
+  useSysUserFetch().sysUserUpdatePassword(passwordData.value).then(({ success }) => {
     // window.$message.success('密码更新成功')
-    if (data) {
+    if (success) {
       window.$message.success('密码更新成功')
       updatePasswordReset()
     }

@@ -2,6 +2,7 @@ package io.charlie.web.oj.modular.websocket.config;
 
 import cn.dev33.satoken.context.SaHolder;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.messaging.handler.annotation.Header;
@@ -18,7 +19,6 @@ import java.security.Principal;
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-
     public static final String CLOSE_CONNECTION = "CLOSE_CONNECTION";
 
     // 主题常量定义
@@ -50,12 +50,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // OJ判题状态端点
         registry.addEndpoint(ENDPOINT_JUDGE_STATUS)
-                .setAllowedOriginPatterns("*")
+//                .setAllowedOriginPatterns("*")
                 .withSockJS();
 
         // 克隆状态端点
         registry.addEndpoint(ENDPOINT_SIMILARITY_STATUS)
-                .setAllowedOriginPatterns("*")
+//                .setAllowedOriginPatterns("*")
                 .withSockJS();
 
         // 原生WebSocket端点
