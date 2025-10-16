@@ -20,7 +20,7 @@ loadData()
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mx-auto">
       <!-- 公告封面图 -->
       <div class="rounded-xl overflow-hidden">
-        <img :src="detailData?.cover" alt="全国编程大赛通知封面" class="w-full h-70 object-cover">
+        <img :src="detailData?.cover" class="w-full h-70 object-cover">
       </div>
 
       <!-- 公告标题区 -->

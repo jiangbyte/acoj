@@ -6,37 +6,23 @@ import {
   HardwareChipOutline,
   TimeOutline,
 } from '@vicons/ionicons5'
-import { useDataProblemFetch } from '@/composables/v1'
-import { AesCrypto, DifficultyColorUtil, RandomColorUtil } from '@/utils'
-import { useTokenStore, useUserStore } from '@/stores'
-import { Client } from '@stomp/stompjs'
+import { useDataProblemFetch, useDataSubmitFetch } from '@/composables/v1'
+import { AesCrypto, DifficultyColorUtil, Poller, RandomColorUtil } from '@/utils'
+import { useUserStore } from '@/stores'
 import { v4 as uuidv4 } from 'uuid'
-import SockJS from 'sockjs-client'
 
-const tokenStore = useTokenStore()
 const userStore = useUserStore()
-const gateway = import.meta.env.VITE_GATEWAY
 
-const stompClient = ref<Client | null>(null)
 const isConnected = ref(false)
-const subscription = ref<any>(null)
 
 const route = useRoute()
 const activeTab = ref('description')
 const detailData = ref()
 const originalId = AesCrypto.decrypt(route.query.problem as string)
 async function loadData() {
-  try {
-    const { dataProblemClientDetail } = useDataProblemFetch()
-    const { data } = await dataProblemClientDetail({ id: originalId })
-
-    if (data) {
-      detailData.value = data
-      console.log(data)
-    }
-  }
-  catch {
-  }
+  useDataProblemFetch().dataProblemClientDetail({ id: originalId }).then(({ data }) => {
+    detailData.value = data
+  })
 }
 loadData()
 
@@ -49,8 +35,122 @@ const submitParam = ref({
   judgeTaskId: '',
   userId: userStore.getUserId,
 })
-const resultTaskData = ref()
+const resultTaskData = ref({
+  id: undefined,
+  judgeTaskId: undefined,
+  userId: undefined,
+  userIdName: '未知用户',
+  userAvatar: undefined,
+  setId: undefined,
+  setIdName: undefined,
+  isSet: false,
+  problemId: undefined,
+  problemIdName: '未知题目',
+  language: undefined,
+  languageName: undefined,
+  code: undefined,
+  codeLength: 0,
+  submitType: false,
+  submitTypeName: undefined,
+  maxTime: 0,
+  maxMemory: 0,
+  message: undefined,
+  testCase: [],
+  status: undefined,
+  statusName: undefined,
+  isFinish: false,
+  similarity: 0,
+  taskId: undefined,
+  reportId: undefined,
+  similarityCategory: undefined,
+  similarityCategoryName: undefined,
+  createTime: Date.now(),
+  updateTime: Date.now(),
+})
+const submitTaskId = ref('')
 
+// 在组件数据部分添加
+const poller = ref<Poller<any> | null>(null)
+const isPolling = ref(false)
+const pollingCount = ref(0)
+const MAX_POLLING_COUNT = 40 // 最大轮询次数，防止无限轮询
+// 判题结果轮询函数
+async function startResultPolling(taskId: string) {
+  // 如果已有轮询器在运行，先停止
+  if (poller.value) {
+    poller.value.stop()
+  }
+
+  // 重置轮询计数
+  pollingCount.value = 0
+
+  // 创建新的轮询器
+  poller.value = new Poller(
+    {
+      interval: 2000, // 2秒轮询一次
+      immediate: true,
+    },
+    {
+      onPoll: async () => {
+        pollingCount.value++
+
+        // 检查是否超过最大轮询次数
+        if (pollingCount.value > MAX_POLLING_COUNT) {
+          window.$message.warning('判题超时，请稍后手动查看结果')
+          poller.value?.stop()
+          isConnected.value = false
+          return null
+        }
+
+        try {
+          // 调用获取判题结果的API
+          useDataSubmitFetch().dataSubmitDetail({ id: taskId }).then(({ data }) => {
+            // 更新结果数据
+            resultTaskData.value = data
+
+            if (data.isFinish) {
+              activeTab.value = 'result'
+              isPolling.value = false
+              window.$message.success('判题完成！')
+              stopPollingManually()
+            }
+          })
+        }
+        catch (error) {
+          console.error('获取判题结果失败:', error)
+          // 发生错误时停止轮询
+          poller.value?.stop(() => {
+            window.$message.error('获取判题结果失败')
+            isConnected.value = false
+          })
+          throw error
+        }
+      },
+      onStart: () => {
+        console.log('开始轮询判题结果')
+        isPolling.value = true
+        isConnected.value = true
+        activeTab.value = 'result'
+        window.$message.info('代码已提交，正在判题中...')
+      },
+      onStop: () => {
+        console.log('停止轮询判题结果')
+        isPolling.value = false
+        pollingCount.value = 0
+      },
+    },
+  )
+}
+// 手动停止判题轮询
+function stopPollingManually() {
+  if (poller.value && isPolling.value) {
+    poller.value.stop(() => {
+      window.$message.info('已停止判题结果查询')
+      isConnected.value = false
+      isPolling.value = false
+    })
+  }
+}
 function executeCode(type: boolean) {
   activeTab.value = 'result'
   submitParam.value.submitType = type as any
@@ -60,81 +160,23 @@ function executeCode(type: boolean) {
 
   // 任务ID生成
   submitParam.value.judgeTaskId = `task-${uuidv4()}`
-  const socket = new SockJS(`${gateway}/oj/ws/judge/status`)
 
-  // 添加连接关闭事件监听
-  socket.onclose = () => {
+  useDataSubmitFetch().dataSubmitExecute(submitParam.value).then(({ data }) => {
+    submitTaskId.value = data
+    // 开始轮询判题结果
+    startResultPolling(data)
+  }).catch((error) => {
+    console.error('提交代码失败:', error)
+    window.$message.error('提交失败，请重试')
     isConnected.value = false
-  }
-
-  stompClient.value = new Client({
-    webSocketFactory: () => socket,
-    reconnectDelay: 5000,
-    heartbeatIncoming: 4000,
-    heartbeatOutgoing: 4000,
-    connectHeaders: {
-      Authorization: tokenStore.getToken || '',
-    },
-
-    onConnect: () => {
-      isConnected.value = true
-
-      const topic = `/topic/judge/status/${submitParam.value.judgeTaskId}`
-
-      subscription.value = stompClient.value?.subscribe(topic, (message) => {
-        if (message.body === 'CLOSE_CONNECTION') {
-          disconnectWebSocket()
-          return
-        }
-
-        // 如果不是关闭连接的消息，则解析JSON结果
-        try {
-          const res = JSON.parse(message.body)
-          resultTaskData.value = res?.data
-          console.log(res)
-        }
-        catch (error) {
-          console.error('解析 JSON 错误:', error)
-        }
-      }, {
-        Authorization: tokenStore.getToken || '',
-      })
-
-      // 发送连接消息到服务端
-      const destination = `/app/judge/status/${submitParam.value.judgeTaskId}`
-      stompClient.value?.publish({
-        destination,
-        body: JSON.stringify(submitParam.value),
-        headers: {
-          Authorization: tokenStore.getToken || '',
-        },
-      })
-    },
   })
-
-  // 激活连接
-  stompClient.value.activate()
 }
-function disconnectWebSocket() {
-  if (stompClient.value) {
-    // 取消订阅
-    if (subscription.value) {
-      subscription.value.unsubscribe()
-      subscription.value = null
-    }
-
-    stompClient.value.deactivate()
-    stompClient.value = null
-    isConnected.value = false
-    console.log('WebSocket 连接已断开')
-  }
-}
-
-// 在组件卸载时断开连接
+// 在组件卸载时清理轮询器
 onUnmounted(() => {
-  disconnectWebSocket()
+  if (poller.value) {
+    poller.value.destroy()
+  }
 })
-
 // 获取语言选项
 const languageOptions = computed(() => {
   // if (!detailData.value?.codeTemplate)
@@ -147,6 +189,7 @@ const languageOptions = computed(() => {
 
 // 语言切换处理
 function handleLanguageChange(lang: string) {
+  stopPollingManually()
   // 首字母大写
   window.$message.success(`已切换至 ${lang.charAt(0).toUpperCase() + lang.slice(1)} 语言`)
   if (!detailData.value?.codeTemplate)
@@ -360,9 +403,17 @@ onUnmounted(() => {
                 name="result"
                 tab="判题结果"
               >
-                <n-card v-if="resultTaskData" class="w-full max-w-3xl mx-auto" :bordered="false" size="large">
+                <n-alert v-if="isPolling" type="warning" :show-icon="false">
+                  <n-flex align="center" justify="center">
+                    <n-spin size="small" />
+                    <n-text type="info">
+                      判题中... ({{ pollingCount }}/{{ MAX_POLLING_COUNT }})
+                    </n-text>
+                  </n-flex>
+                </n-alert>
+                <n-card v-if="isPolling || resultTaskData" class="w-full max-w-3xl mx-auto" :bordered="false" size="small">
                   <!-- 头部信息 -->
-                  <div class="flex items-start gap-4">
+                  <div class="flex items-center gap-4">
                     <n-avatar
                       round
                       :size="64"
@@ -378,17 +429,21 @@ onUnmounted(() => {
                           {{ resultTaskData?.statusName }}
                         </n-tag>
                       </div>
-                      <n-text class="text-gray-500 dark:text-gray-400" depth="3">
-                        提交了问题 {{ resultTaskData?.problemIdName }}
-                      </n-text>
-                      <n-flex align="center">
-                        <n-text class="block text-gray-400 text-sm mt-1">
-                          提交:  <n-time :time="resultTaskData?.createTime" />
+                      <div>
+                        <n-text class="text-gray-500 dark:text-gray-400" depth="3">
+                          提交了题目 {{ resultTaskData?.problemIdName }}
                         </n-text>
-                        <n-text class="block text-gray-400 text-sm mt-1">
-                          更新:  <n-time :time="resultTaskData?.updateTime" />
-                        </n-text>
-                      </n-flex>
+                        <n-flex align="center">
+                          <n-text class="block text-gray-400 text-sm mt-1">
+                            提交时间:  <n-time :time="resultTaskData?.createTime" />
+                          </n-text>
+                        </n-flex>
+                        <n-flex align="center">
+                          <n-text class="block text-gray-400 text-sm mt-1">
+                            更新时间:  <n-time :time="resultTaskData?.updateTime" />
+                          </n-text>
+                        </n-flex>
+                      </div>
                     </div>
                   </div>
                   <!-- 判题结果详情 -->
@@ -421,7 +476,7 @@ onUnmounted(() => {
                   </div>
 
                   <div class="bg-white dark:bg-gray-800 rounded-xl p-y-6 ">
-                    <div class="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-6 ">
                       <div class="col-span-1 md:col-span-1">
                         <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                           <div class="flex justify-between items-center mb-2">
@@ -439,12 +494,11 @@ onUnmounted(() => {
                           <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                             您的代码与平台上已有代码存在{{ resultTaskData?.similarity * 100 }}%的相似度，{{ resultTaskData?.similarityCategoryName }}
                           </div>
+                          <div class="text-sm text-gray-500 dark:text-gray-400 italic">
+                            注：代码克隆检测用于辅助判断代码相似度，结果仅供参考
+                          </div>
                         </div>
                       </div>
-                    </div>
-
-                    <div class="text-sm text-gray-500 dark:text-gray-400 italic">
-                      <i class="fa fa-info-circle mr-1" /> 代码克隆检测用于辅助判断代码相似度，结果仅供参考
                     </div>
                   </div>
 
@@ -462,11 +516,7 @@ onUnmounted(() => {
                     </div>
                   </div>
                 </n-card>
-                <n-empty
-                  v-else
-                  class="flex flex-col items-center justify-center py-12"
-                  description="暂无判题结果"
-                >
+                <n-empty v-else class="flex flex-col items-center justify-center py-12" description="暂无判题结果">
                   <template #icon>
                     <n-icon size="40" class="text-gray-300 dark:text-gray-600">
                       <icon-park-outline-info />
@@ -510,6 +560,12 @@ onUnmounted(() => {
               @update:value="handleLanguageChange"
             />
             <n-space align="center">
+              <n-text type="info">
+                ({{ pollingCount }}/{{ MAX_POLLING_COUNT }})
+              </n-text>
+              <n-button v-if="isPolling" size="small" @click="stopPollingManually">
+                停止
+              </n-button>
               <n-button :disabled="!submitParam.language || !submitParam.code || isConnected" @click="executeCode(false)">
                 运行
               </n-button>

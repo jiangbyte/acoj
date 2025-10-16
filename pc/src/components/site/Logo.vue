@@ -15,9 +15,9 @@ async function loadData() {
   ])
 
   // 处理配置项
-  appName.value = appConfig.data ?? appName.value
-  appLogo.value = logoConfig.data ?? appLogo.value
-  appAdminShowAppName.value = adminShowConfig.data === 'true'
+  appName.value = appConfig?.data ?? appName.value
+  appLogo.value = logoConfig?.data ?? appLogo.value
+  appAdminShowAppName.value = adminShowConfig?.data === 'true'
 }
 loadData()
 </script>
