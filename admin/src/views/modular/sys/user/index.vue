@@ -151,8 +151,10 @@ const pageParam = ref({
   sortField: null,
   sortOrder: null,
   keyword: '',
+  groupId: '',
+  type: 'username',
 })
-
+const groupKeyword = ref('')
 function resetHandle() {
   pageParam.value.keyword = ''
   loadData()
@@ -196,133 +198,213 @@ async function deleteBatchHandle() {
 
 <template>
   <div class="flex flex-col h-full w-full">
-    <NCard size="small">
-      <NSpace vertical>
-        <NSpace align="center">
-          <NSpace align="center">
-            <NFormItem :show-feedback="false" label="关键词" label-placement="left">
-              <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" />
-            </NFormItem>
-            <NSpace align="center">
-              <NButton type="primary" @click="loadData">
-                <template #icon>
-                  <IconParkOutlineSearch />
-                </template>
-                搜索
-              </NButton>
-              <NButton type="warning" @click="resetHandle">
-                <template #icon>
-                  <IconParkOutlineRefresh />
-                </template>
-                重置
-              </NButton>
+    <NSplit direction="horizontal" :default-size="0.25" :max="0.75" :min="0.25">
+      <template #1>
+        <div class="flex flex-col h-full w-full">
+          <NCard size="small">
+            <NSpace vertical>
+              <NInputGroup>
+                <NInput
+                  v-model:value="groupKeyword"
+                  placeholder="输入关键字"
+                  clearable
+                  @clear="resetHandle"
+                />
+                <NButton type="primary" @click="loadData">
+                  <template #icon>
+                    <IconParkOutlineSearch />
+                  </template>
+                  搜索
+                </NButton>
+              </NInputGroup>
+              <NScrollbar class="h-[calc(100vh-2.5rem-9.3rem)]">
+                <NTree
+                  show-line
+                  block-line
+                  key-field="value"
+                  label-field="label"
+                  :indent="12"
+                />
+                <!-- <NTree
+                  show-line
+                  block-line
+                  key-field="value"
+                  label-field="label"
+                  :data="treeData"
+                  :indent="12"
+                  :selected-keys="typeKey"
+                  @update:selected-keys="handleTreeSelect"
+                /> -->
+              </NScrollbar>
             </NSpace>
-          </NSpace>
-        </NSpace>
-        <NSpace align="center" justify="space-between">
-          <NSpace align="center">
-            <NButton type="primary" @click="formRef.doOpen(null, false)">
-              <template #icon>
-                <IconParkOutlinePlus />
-              </template>
-              创建
-            </NButton>
-            <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
-              <template #default>
-                确认删除
-              </template>
-              <template #trigger>
-                <NButton type="error">
-                  删除
-                </NButton>
-              </template>
-            </NPopconfirm>
-          </NSpace>
-          <NSpace align="center">
-            <NFormItem :show-feedback="false" label-placement="left">
-              <NButton text @click="loadData">
+            <!-- <template #header>
+              <NButton type="primary" @click="dictformRef.doOpen(null, false)">
                 <template #icon>
-                  <IconParkOutlineRefresh />
+                  <IconParkOutlinePlus />
                 </template>
+                新增
               </NButton>
-            </NFormItem>
-            <NFormItem :show-feedback="false" label-placement="left">
-              <NPopselect
-                v-model:value="displayKey"
-                :options="columnDisplayOptions"
-                multiple
-                @update:value="loadData"
-              >
-                <NButton text>
-                  <template #icon>
-                    <IconParkOutlineEyes />
-                  </template>
-                </NButton>
-              </NPopselect>
-            </NFormItem>
-            <NFormItem :show-feedback="false" label-placement="left">
-              <NPopselect
-                v-model:value="pageParam.sortField"
-                :options="columnSortFieldOptions"
-                @update:value="loadData"
-              >
-                <NButton text>
-                  <template #icon>
-                    <IconParkOutlineSortOne />
-                  </template>
-                </NButton>
-              </NPopselect>
-            </NFormItem>
-            <NFormItem :show-feedback="false" label-placement="left">
-              <NPopselect
-                v-model:value="pageParam.sortOrder"
-                :options="sortOrderOptions"
-                @update:value="loadData"
-              >
-                <NButton text>
-                  <template #icon>
-                    <IconParkOutlineSort />
-                  </template>
-                </NButton>
-              </NPopselect>
-            </NFormItem>
-          </NSpace>
-        </NSpace>
-      </NSpace>
-    </NCard>
-    <NCard size="small" class="flex-1">
-      <NDataTable
-        v-model:checked-row-keys="checkedRowKeys"
-        :columns="filteredColumns"
-        :data="pageData?.records"
-        :bordered="false"
-        :row-key="(row: any) => row.id"
-        :loading="loading"
-        flex-height
-        class="flex-1 h-full"
-      />
-      <template #action>
-        <NSpace align="center" justify="space-between" class="w-full">
-          <NSpace align="center">
-            <NP type="info" show-icon>
-              当前数据 {{ pageData?.records.length }} 条
-            </NP>
-            <NP type="info" show-icon>
-              选中了 {{ checkedRowKeys.length }} 行
-            </NP>
-          </NSpace>
-          <NPagination
-            v-model:page="pageParam.current"
-            v-model:page-size="pageParam.size"
-            class="flex justify-end"
-            :page-count="pageData ? Number(pageData.pages) : 0"
-            @update:page="loadData"
-            @update:page-size="loadData"
-          />
-        </NSpace>
+            </template> -->
+          </NCard>
+        </div>
       </template>
-    </NCard>
-
+      <template #2>
+        <div class="flex flex-col h-full w-full">
+          <NCard size="small">
+            <NSpace vertical>
+              <NSpace align="center">
+                <NSpace align="center">
+                  <NFormItem :show-feedback="false" label="搜索类型" label-placement="left">
+                    <!-- <NInput v-model:value="pageParam.type" placeholder="请选择" clearable @clear="resetHandle" /> -->
+                    <n-select v-model:value="pageParam.type" class="w-30" placeholder="请选择" :options="[
+                      {
+                        label: '昵称',
+                        value: 'nickname',
+                      },
+                      {
+                        label: '用户名',
+                        value: 'username',
+                      },
+                      {
+                        label: '邮箱',
+                        value: 'email'
+                      },
+                      {
+                        label: '手机号',
+                        value: 'telephone'
+                      },
+                      {
+                        label: '学号',
+                        value: 'studentNumber'
+                      }
+                    ]"/>
+                  </NFormItem>
+                  <NFormItem :show-feedback="false" label="关键词" label-placement="left">
+                    <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" clearable @clear="resetHandle" />
+                  </NFormItem>
+                  <NSpace align="center">
+                    <NButton type="primary" @click="loadData">
+                      <template #icon>
+                        <IconParkOutlineSearch />
+                      </template>
+                      搜索
+                    </NButton>
+                    <NButton type="warning" @click="resetHandle">
+                      <template #icon>
+                        <IconParkOutlineRefresh />
+                      </template>
+                      重置
+                    </NButton>
+                  </NSpace>
+                </NSpace>
+              </NSpace>
+              <NSpace align="center" justify="space-between">
+                <NSpace align="center">
+                  <NButton type="primary" @click="formRef.doOpen(null, false)">
+                    <template #icon>
+                      <IconParkOutlinePlus />
+                    </template>
+                    创建
+                  </NButton>
+                  <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
+                    <template #default>
+                      确认删除
+                    </template>
+                    <template #trigger>
+                      <NButton type="error">
+                        删除
+                      </NButton>
+                    </template>
+                  </NPopconfirm>
+                </NSpace>
+                <NSpace align="center">
+                  <NFormItem :show-feedback="false" label-placement="left">
+                    <NButton text @click="loadData">
+                      <template #icon>
+                        <IconParkOutlineRefresh />
+                      </template>
+                    </NButton>
+                  </NFormItem>
+                  <NFormItem :show-feedback="false" label-placement="left">
+                    <NPopselect
+                      v-model:value="displayKey"
+                      :options="columnDisplayOptions"
+                      multiple
+                      @update:value="loadData"
+                    >
+                      <NButton text>
+                        <template #icon>
+                          <IconParkOutlineEyes />
+                        </template>
+                      </NButton>
+                    </NPopselect>
+                  </NFormItem>
+                  <NFormItem :show-feedback="false" label-placement="left">
+                    <NPopselect
+                      v-model:value="pageParam.sortField"
+                      :options="columnSortFieldOptions"
+                      @update:value="loadData"
+                    >
+                      <NButton text>
+                        <template #icon>
+                          <IconParkOutlineSortOne />
+                        </template>
+                      </NButton>
+                    </NPopselect>
+                  </NFormItem>
+                  <NFormItem :show-feedback="false" label-placement="left">
+                    <NPopselect
+                      v-model:value="pageParam.sortOrder"
+                      :options="sortOrderOptions"
+                      @update:value="loadData"
+                    >
+                      <NButton text>
+                        <template #icon>
+                          <IconParkOutlineSort />
+                        </template>
+                      </NButton>
+                    </NPopselect>
+                  </NFormItem>
+                </NSpace>
+              </NSpace>
+            </NSpace>
+          </NCard>
+          <NCard size="small" class="flex-1">
+            <NDataTable
+              v-model:checked-row-keys="checkedRowKeys"
+              :columns="filteredColumns"
+              :data="pageData?.records"
+              :bordered="false"
+              :row-key="(row: any) => row.id"
+              :loading="loading"
+              flex-height
+              :scroll-x="1400"
+              class="flex-1 h-full"
+            />
+            <template #action>
+              <NSpace align="center" justify="space-between" class="w-full">
+                <NSpace align="center">
+                  <NP type="info" show-icon>
+                    当前数据 {{ pageData?.records.length }} 条
+                  </NP>
+                  <NP type="info" show-icon>
+                    选中了 {{ checkedRowKeys.length }} 行
+                  </NP>
+                </NSpace>
+                <NPagination
+                  v-model:page="pageParam.current"
+                  v-model:page-size="pageParam.size"
+                  class="flex justify-end"
+                  :page-count="pageData ? Number(pageData.pages) : 0"
+                  @update:page="loadData"
+                  @update:page-size="loadData"
+                />
+              </NSpace>
+            </template>
+          </NCard>
+        </div>
+      </template>
+    </NSplit>
     <Form ref="formRef" @submit="loadData" />
     <Detail ref="detailRef" @submit="loadData" />
     <Assign ref="assignRef" @submit="loadData" />

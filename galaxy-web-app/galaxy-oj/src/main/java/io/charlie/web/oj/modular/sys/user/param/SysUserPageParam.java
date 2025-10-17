@@ -33,5 +33,9 @@ public class SysUserPageParam implements Serializable {
     private String sortOrder;
 
     @Schema(description = "关键词")
-    private String keyword;
+    private String keyword; // 昵称
+
+    @Schema(description = "用户组Id")
+    private String groupId;
+    private String type;
 }

@@ -31,4 +31,6 @@ public interface SysRoleService extends IService<SysRole> {
 
     List<SysRole> authRoles1();
 
+    List<String> getRoleNamesByUserId(String userId);
+
 }

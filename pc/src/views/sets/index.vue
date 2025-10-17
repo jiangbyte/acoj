@@ -106,7 +106,7 @@ function handleClick(item: any) {
       </h1>
       <p class="text-gray-600 dark:text-gray-400">
         共收录 <span class="text-blue-600 dark:text-blue-400 font-medium">
-          {{ pageData?.total }}
+          {{ pageData?.total ? pageData.total : 0 }}
         </span> 个题集，覆盖各类学习路径和知识点体系
       </p>
     </div>
@@ -177,7 +177,7 @@ function handleClick(item: any) {
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div class="lg:col-span-2 space-y-8">
         <n-empty
-          v-if="pageData?.records.length === 0"
+          v-if="!pageData || pageData?.records.length === 0"
           class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
           description="暂无结果"
         >
@@ -191,7 +191,7 @@ function handleClick(item: any) {
           </n-text>
         </n-empty>
         <!-- 题集列表 -->
-        <div v-if="pageData?.records.length !== 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
           <!-- 题集项 1 -->
           <div
             v-for="item in pageData?.records" :key="item.id"
@@ -241,13 +241,14 @@ function handleClick(item: any) {
         <n-pagination
           v-model:page="pageParam.current"
           v-model:page-size="pageParam.size"
-          class="mt-6 flex items-center justify-center"
+          class="flex items-center justify-center"
           show-size-picker
           :page-count="pageData ? Number(pageData.pages) : 0"
           :page-sizes="[10, 20, 30, 50].map(size => ({
             label: `${size} 每页`,
             value: size,
           }))"
+          :page-slot="5"
           @update:page="loadData"
           @update:page-size="loadData"
         />
@@ -257,7 +258,21 @@ function handleClick(item: any) {
           <h3 class="font-bold text-lg mb-4">
             难度分布
           </h3>
-          <div class="space-y-4">
+          <n-empty
+            v-if="!difficultyDistribution || difficultyDistribution.length === 0"
+            class="flex flex-col items-center justify-center py-10 bg-transparent"
+            description="暂无结果"
+          >
+            <template #icon>
+              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+                <icon-park-outline-info />
+              </n-icon>
+            </template>
+            <n-text depth="3" class="text-center max-w-xs">
+              暂无数据
+            </n-text>
+          </n-empty>
+          <div v-else class="space-y-4">
             <div v-for="item in difficultyDistribution" :key="item.difficulty">
               <div class="flex justify-between mb-1">
                 <span class="text-sm">{{ item.difficultyName }}</span>
@@ -272,12 +287,26 @@ function handleClick(item: any) {
 
         <!-- 榜单：最受欢迎 -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+          <div class="p-x-5 pt-5 border-b border-gray-100 dark:border-gray-700">
             <h3 class="font-semibold text-lg">
               热门题集
             </h3>
           </div>
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          <n-empty
+            v-if="!setRankingListData || setRankingListData.length === 0"
+            class="flex flex-col items-center justify-center py-10 bg-transparent"
+            description="暂无结果"
+          >
+            <template #icon>
+              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+                <icon-park-outline-info />
+              </n-icon>
+            </template>
+            <n-text depth="3" class="text-center max-w-xs">
+              暂无数据
+            </n-text>
+          </n-empty>
+          <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 排名1 -->
             <div
               v-for="item in setRankingListData" :key="item.rank" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
@@ -294,7 +323,7 @@ function handleClick(item: any) {
                     </h4>
                   </NButton>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ item.participantUserCount }} 人参与
+                    共 {{ item.participantUserCount }} 人参与
                   </p>
                 </div>
                 <!-- <div class="flex items-center text-yellow-500">

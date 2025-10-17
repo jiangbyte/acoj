@@ -195,7 +195,7 @@ async function deleteBatchHandle() {
         <NSpace align="center">
           <NSpace align="center">
             <NFormItem :show-feedback="false" label="关键词" label-placement="left">
-              <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" />
+              <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" clearable @clear="resetHandle" />
             </NFormItem>
             <NSpace align="center">
               <NButton type="primary" @click="loadData">
@@ -292,6 +292,7 @@ async function deleteBatchHandle() {
         :bordered="false"
         :row-key="(row: any) => row.id"
         :loading="loading"
+        :scroll-x="1400"
         flex-height
         class="flex-1 h-full"
       />

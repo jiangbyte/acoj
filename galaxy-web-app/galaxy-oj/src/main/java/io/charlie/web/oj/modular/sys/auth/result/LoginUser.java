@@ -1,6 +1,10 @@
 package io.charlie.web.oj.modular.sys.auth.result;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -11,6 +15,7 @@ import org.dromara.core.trans.vo.TransPojo;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author Charlie Zhang
@@ -28,12 +33,10 @@ public class LoginUser implements Serializable, TransPojo {
     private String id;
 
     @Schema(description = "用户组")
-    @Trans(type = TransType.SIMPLE, target = SysGroup.class, fields = "name", ref = "groupName")
     private String groupId;
 
     @Schema(description = "用户组名称")
-    @TableField(exist = false)
-    private String groupName;
+    private String groupIdName;
 
     @Schema(description = "用户名")
     private String username;
@@ -79,4 +82,9 @@ public class LoginUser implements Serializable, TransPojo {
     @Schema(description = "更新用户")
     private String updateUser;
 
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
+    private Date loginTime;
+
+    private List<String> roleNames;
 }

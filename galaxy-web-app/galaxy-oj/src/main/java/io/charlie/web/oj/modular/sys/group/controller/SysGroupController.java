@@ -73,4 +73,10 @@ public class SysGroupController {
     public Result<?> detail(@ParameterObject @Valid SysGroupIdParam sysGroupIdParam) {
         return Result.success(sysGroupService.detail(sysGroupIdParam));
     }
+
+    @Operation(summary = "获取用户组树")
+    @GetMapping("/sys/group/tree")
+    public Result<?> tree() {
+        return Result.success(sysGroupService.authTreeGroup());
+    }
 }

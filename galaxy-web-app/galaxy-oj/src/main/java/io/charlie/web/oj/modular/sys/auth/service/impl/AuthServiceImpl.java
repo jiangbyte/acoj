@@ -14,14 +14,20 @@ import io.charlie.web.oj.modular.sys.auth.service.AuthService;
 import io.charlie.web.oj.modular.sys.auth.param.UsernamePasswordEmailRegisterParam;
 import io.charlie.web.oj.modular.sys.auth.result.CaptchaResult;
 import io.charlie.web.oj.modular.sys.auth.result.LoginUser;
+import io.charlie.web.oj.modular.sys.config.service.SysConfigService;
+import io.charlie.web.oj.modular.sys.dict.service.SysDictService;
+import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
 import io.charlie.web.oj.modular.sys.group.enums.SysGroupEnums;
+import io.charlie.web.oj.modular.sys.group.mapper.SysGroupMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
 import io.charlie.web.oj.modular.sys.role.constant.DefaultRoleData;
+import io.charlie.web.oj.modular.sys.role.service.SysRoleService;
 import io.charlie.web.oj.modular.sys.user.constant.DefaultUserData;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.mapper.SysUserMapper;
 import io.charlie.galaxy.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import org.dromara.trans.service.impl.TransService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -43,6 +49,13 @@ public class AuthServiceImpl implements AuthService {
     private final SysUserMapper sysUserMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SysUserRoleService sysUserRoleService;
+
+    private final SysRoleService sysRoleService;
+    private final SysGroupMapper sysGroupMapper;
+
+    private final SysConfigService sysConfigService;
+
+    private final TransService transService;
 
     @Override
     public CaptchaResult captcha() {
@@ -112,17 +125,17 @@ public class AuthServiceImpl implements AuthService {
         if (!BCrypt.checkpw(password, sysUser.getPassword())) {
             throw new BusinessException("密码错误");
         }
-        // 更新登录时间
-        sysUser.setLoginTime(new Date());
-        sysUserMapper.updateById(sysUser);
-        // redis 记录用户活跃情况（保留30天），进行评分自增记录
-
         // 判断是否是ADMIN平台
         if ("ADMIN".equalsIgnoreCase(usernamePasswordLoginParam.getPlatform())) {
             if (!sysUserRoleService.canAdmin(sysUser.getId())) {
                 throw new BusinessException("无权限");
             }
         }
+        // 更新登录时间
+        sysUser.setLoginTime(new Date());
+        sysUserMapper.updateById(sysUser);
+        // redis 记录用户活跃情况（保留30天），进行评分自增记录
+
 
         StpUtil.login(sysUser.getId(), usernamePasswordLoginParam.getPlatform().toUpperCase());
         return StpUtil.getTokenValue();
@@ -201,15 +214,16 @@ public class AuthServiceImpl implements AuthService {
         // 默认昵称
         sysUser.setNickname(DefaultUserData.USER_DEFAULT_NICKNAME);
         // 默认头像
-        sysUser.setAvatar(DefaultUserData.USER_DEFAULT_AVATAR);
+        sysUser.setAvatar(sysConfigService.getValueByCode("APP_DEFAULT_AVATAR"));
         // 默认背景图片
-        sysUser.setBackground(DefaultUserData.USER_DEFAULT_BACKGROUND);
+        sysUser.setBackground(sysConfigService.getValueByCode("APP_DEFAULT_USER_BACKGROUND"));
         // 默认 性别
         sysUser.setGender(DefaultUserData.USER_DEFAULT_GENDER);
         // 默认 签名
         sysUser.setQuote(DefaultUserData.USER_DEFAULT_QUOTE);
         // 默认数据
         sysUser.setDeleted(false);
+        sysUser.setLoginTime(new Date());
         sysUserMapper.insert(sysUser);
 
         // 分配角色
@@ -230,11 +244,14 @@ public class AuthServiceImpl implements AuthService {
         String loginIdAsString = StpUtil.getLoginIdAsString();
         // 获取用户信息
         SysUser sysUser = sysUserMapper.selectById(loginIdAsString);
+        transService.transOne(sysUser);
         LoginUser loginUser = new LoginUser();
         BeanUtils.copyProperties(sysUser, loginUser);
         // 手机号，邮箱脱敏
 //        loginUser.setTelephone(DesensitizedUtil.mobilePhone(sysUser.getTelephone()));
 //        loginUser.setEmail(DesensitizedUtil.email(sysUser.getEmail()));
+        // 查询这个用户的角色名
+        loginUser.setRoleNames(sysRoleService.getRoleNamesByUserId(sysUser.getId()));
         return loginUser;
     }
 

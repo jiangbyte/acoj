@@ -243,12 +243,12 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
 
         try {
             String userId = StpUtil.getLoginIdAsString();
-//            Long userAcceptedCount = dataSolvedMapper.selectCount(new LambdaQueryWrapper<DataSolved>()
-//                    .eq(DataSolved::getUserId, userId)
-//                    .eq(DataSolved::getSolved, true)
-//                    .eq(DataSolved::getIsSet, false)
-//            );
-            Long userAcceptedCount = userCacheService.getUserAcceptedCount(userId);
+            Long userAcceptedCount = dataSolvedMapper.selectCount(new LambdaQueryWrapper<DataSolved>()
+                    .eq(DataSolved::getUserId, userId)
+                    .eq(DataSolved::getSolved, true)
+                    .eq(DataSolved::getIsSet, false)
+            );
+//            Long userAcceptedCount = userCacheService.getUserAcceptedCount(userId);
             dataProblemCount.setSolved(userAcceptedCount);
         } catch (Exception e) {
             // 未登录

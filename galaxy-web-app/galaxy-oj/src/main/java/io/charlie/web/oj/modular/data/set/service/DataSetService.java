@@ -18,6 +18,7 @@ import java.util.List;
 */
 public interface DataSetService extends IService<DataSet> {
     Page<DataSet> page(DataSetPageParam dataSetPageParam);
+    Page<DataSet> pageClient(DataSetPageParam dataSetPageParam);
 
     void add(DataSetAddParam dataSetAddParam);
 

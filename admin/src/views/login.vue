@@ -64,14 +64,30 @@ loadData()
 
 const router = useRouter()
 const useToken = useTokenStore()
-async function handleLogin() {
-  const { data: token } = await doLogin(formData.value) || { data: null }
-  if (token) {
-    useToken.setToken(token)
-    if (useToken.isLogined) {
-      router.push('/')
+async function handleLogin(e: MouseEvent) {
+  e.preventDefault()
+  formRef.value?.validate((errors) => {
+    if (!errors) {
+      useAuthFetch().doLogin(formData.value).then(({ data }) => {
+        if (data) {
+          useToken.setToken(data)
+          if (useToken.isLogined) {
+            router.push('/')
+          }
+        }
+      })
     }
-  }
+    else {
+      window.$message.error('请填写完整信息')
+    }
+  })
+  // const { data: token } = await doLogin(formData.value) || { data: null }
+  // if (token) {
+  //   useToken.setToken(token)
+  //   if (useToken.isLogined) {
+  //     router.push('/')
+  //   }
+  // }
 }
 
 const version = import.meta.env.VITE_VERSION
@@ -104,6 +120,7 @@ const version = import.meta.env.VITE_VERSION
         :rules="formRules"
         class="w-[300px]"
         :show-label="false"
+        @keypress.enter="handleLogin"
       >
         <NFormItem
           label="Username"
@@ -111,6 +128,9 @@ const version = import.meta.env.VITE_VERSION
         >
           <NInput
             v-model:value="formData.username"
+            :input-props="{
+              autocomplete: 'username',
+            }"
             placeholder="请输入用户名"
           />
         </NFormItem>
@@ -120,6 +140,9 @@ const version = import.meta.env.VITE_VERSION
         >
           <NInput
             v-model:value="formData.password"
+            :input-props="{
+              autocomplete: 'current-password',
+            }"
             type="password"
             placeholder="请输入密码"
           />

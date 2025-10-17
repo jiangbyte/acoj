@@ -65,6 +65,9 @@ export default defineConfig(({ command, mode }) => {
       // port: process.env.PORT ? Number.parseInt(process.env.PORT) : 81,
       port: 81,
     },
+    esbuild: command === 'build' ? {
+      drop: ['console', 'debugger'],
+    } : {},
     optimizeDeps: {
       include: [
         `monaco-editor/esm/vs/language/json/json.worker`,

@@ -22,7 +22,9 @@ export * from './sys/SysRoleApi'
 export * from './sys/SysTagApi'
 export * from './sys/SysUserApi'
 export * from './sys/SysMenuApi'
+export * from './sys/SysLogApi'
 export * from './sys/AuthApi'
+export * from './sys/TodayTotalApi'
 
 // 导出其他 API
 export * from './FileApi'

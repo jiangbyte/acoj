@@ -18,6 +18,7 @@ import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
+import io.charlie.web.oj.modular.sys.notice.entity.SysNotice;
 import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysUserRoleMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
@@ -58,6 +59,38 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Override
     public Page<SysUser> page(SysUserPageParam sysUserPageParam) {
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<SysUser>().checkSqlInjection();
+
+        String type = sysUserPageParam.getType();
+        if (type.equals("username")) {
+            queryWrapper.lambda()
+                    .like(SysUser::getUsername, sysUserPageParam.getKeyword());
+        } else if (type.equals("nickname")) {
+            queryWrapper.lambda()
+                    .like(SysUser::getNickname, sysUserPageParam.getKeyword());
+        } else if (type.equals("email")) {
+            queryWrapper.lambda()
+                    .like(SysUser::getEmail, sysUserPageParam.getKeyword());
+        } else if (type.equals("telephone")) {
+            queryWrapper.lambda()
+                    .like(SysUser::getTelephone, sysUserPageParam.getKeyword());
+        } else if (type.equals("studentNumber")) {
+            queryWrapper.lambda()
+                    .like(SysUser::getStudentNumber, sysUserPageParam.getKeyword());
+        }
+
+        if (ObjectUtil.isNotEmpty(sysUserPageParam.getGroupId())) {
+            queryWrapper.lambda()
+                    .eq(SysUser::getGroupId, sysUserPageParam.getGroupId());
+        }
+//        // 关键字
+//        if (ObjectUtil.isNotEmpty(sysUserPageParam.getKeyword())) {
+//            queryWrapper.lambda()
+//                    .like(SysUser::getNickname, sysUserPageParam.getKeyword());
+//        }
+        if (ObjectUtil.isNotEmpty(sysUserPageParam.getGroupId())) {
+            queryWrapper.lambda()
+                    .like(SysUser::getGroupId, sysUserPageParam.getGroupId());
+        }
         if (ObjectUtil.isAllNotEmpty(sysUserPageParam.getSortField(), sysUserPageParam.getSortOrder()) && ISortOrderEnum.isValid(sysUserPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,

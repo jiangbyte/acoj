@@ -12,9 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author ZhangJiangHu
@@ -110,6 +110,70 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
         // 将结果存入缓存
         redisTemplate.opsForValue().set(cacheKey, problemIds, CACHE_EXPIRE_TIME, TimeUnit.SECONDS);
         return problemIds;
+    }
+
+    @Override
+    public Map<String, List<String>> getProblemIdsBySetIds(List<String> setIds) {
+        if (ObjectUtil.isEmpty(setIds)) {
+            return Map.of();
+        }
+
+        Map<String, List<String>> result = new HashMap<>();
+        List<String> uncachedSetIds = new ArrayList<>();
+
+        // 第一步：先尝试从缓存中获取
+        for (String setId : setIds) {
+            String cacheKey = DATACACHE_SET_PROBLEM_IDS + setId;
+            List<String> cachedProblemIds = (List<String>) redisTemplate.opsForValue().get(cacheKey);
+            if (cachedProblemIds != null) {
+                result.put(setId, cachedProblemIds);
+            } else {
+                uncachedSetIds.add(setId);
+            }
+        }
+
+        // 如果所有数据都在缓存中，直接返回
+        if (uncachedSetIds.isEmpty()) {
+            return result;
+        }
+
+        // 第二步：查询数据库中未缓存的数据
+        List<DataSetProblem> dataSetProblems = this.baseMapper.selectList(new LambdaQueryWrapper<DataSetProblem>()
+                .in(DataSetProblem::getSetId, uncachedSetIds)
+                .orderByAsc(DataSetProblem::getSetId)
+                .orderByAsc(DataSetProblem::getSort)
+        );
+
+        // 按setId分组
+        Map<String, List<DataSetProblem>> setProblemsMap = dataSetProblems.stream()
+                .collect(Collectors.groupingBy(DataSetProblem::getSetId));
+
+        // 第三步：处理每个setId的数据
+        for (String setId : uncachedSetIds) {
+            List<DataSetProblem> problems = setProblemsMap.get(setId);
+            List<String> problemIds;
+
+            if (ObjectUtil.isEmpty(problems)) {
+                // 数据库为空，缓存空值（防止缓存穿透）
+                problemIds = List.of();
+                String cacheKey = DATACACHE_SET_PROBLEM_IDS + setId;
+                redisTemplate.opsForValue().set(cacheKey, problemIds, NULL_CACHE_EXPIRE_TIME, TimeUnit.SECONDS);
+            } else {
+                // 提取problemId并排序
+                problemIds = problems.stream()
+                        .map(DataSetProblem::getProblemId)
+                        .sorted(Comparator.naturalOrder())
+                        .toList();
+
+                // 缓存结果
+                String cacheKey = DATACACHE_SET_PROBLEM_IDS + setId;
+                redisTemplate.opsForValue().set(cacheKey, problemIds, CACHE_EXPIRE_TIME, TimeUnit.SECONDS);
+            }
+
+            result.put(setId, problemIds);
+        }
+
+        return result;
     }
 
     @Override

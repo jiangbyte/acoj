@@ -200,13 +200,13 @@ function resetHandle() {
       </h1>
       <p class="text-gray-600 dark:text-gray-400">
         共收录 <span class="text-blue-600 dark:text-blue-400 font-medium">
-          {{ pageData?.total }}
+          {{ pageData?.total ? pageData.total : 0 }}
         </span> 道题目，覆盖各种难度和知识点
       </p>
     </div>
 
     <!-- 数据统计卡片 -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 transform transition-all hover:shadow-md hover:-translate-y-1">
         <div class="flex items-start justify-between">
           <div>
@@ -214,7 +214,7 @@ function resetHandle() {
               总题目数
             </p>
             <h3 class="text-2xl font-bold mt-1">
-              {{ problemcount?.total }}
+              {{ problemcount?.total ? problemcount.total : 0 }}
             </h3>
             <p class="text-green-600 dark:text-green-400 text-xs mt-2 flex items-center">
               <icon-park-outline-arrow-up class="mr-1" />
@@ -233,7 +233,7 @@ function resetHandle() {
               已解决题目
             </p>
             <h3 class="text-2xl font-bold mt-1">
-              {{ problemcount?.solved ? problemcount.solved : 0 }} / {{ problemcount?.total }}
+              {{ problemcount?.solved ? problemcount.solved : 0 }} / {{ problemcount?.total ? problemcount.total : 0 }}
             </h3>
             <p class="text-gray-500 dark:text-gray-400 text-xs mt-2 flex items-center">
               <icon-park-outline-user class="mr-1" />
@@ -370,6 +370,7 @@ function resetHandle() {
                 :bordered="false"
                 :row-key="(row: any) => row.userId"
                 class="flex-1 h-full"
+                :scroll-x="1000"
                 :row-props="rowProps"
               />
             </div>
@@ -382,6 +383,7 @@ function resetHandle() {
                 label: `${(i + 1) * 10} 每页`,
                 value: (i + 1) * 10,
               }))"
+              :page-slot="5"
               class="flex justify-center items-center p-6"
               @update:page="loadData"
               @update:page-size="loadData"
@@ -394,7 +396,21 @@ function resetHandle() {
           <h3 class="font-bold text-lg mb-4">
             难度分布
           </h3>
-          <div class="space-y-4">
+          <n-empty
+            v-if="!difficultyDistribution || difficultyDistribution.length === 0"
+            class="flex flex-col items-center justify-center py-10 bg-transparent"
+            description="暂无结果"
+          >
+            <template #icon>
+              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+                <icon-park-outline-info />
+              </n-icon>
+            </template>
+            <n-text depth="3" class="text-center max-w-xs">
+              暂无数据
+            </n-text>
+          </n-empty>
+          <div v-else class="space-y-4">
             <div v-for="item in difficultyDistribution" :key="item.difficulty">
               <div class="flex justify-between mb-1">
                 <span class="text-sm">{{ item.difficultyName }}</span>
@@ -409,15 +425,29 @@ function resetHandle() {
 
         <!-- 榜单：最受欢迎 -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+          <div class="p-x-5 pt-5 border-b border-gray-100 dark:border-gray-700">
             <h3 class="font-semibold text-lg">
               热门题目
             </h3>
           </div>
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          <n-empty
+            v-if="!problemRankingListData || problemRankingListData.length === 0"
+            class="flex flex-col items-center justify-center py-10 bg-transparent"
+            description="暂无结果"
+          >
+            <template #icon>
+              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+                <icon-park-outline-info />
+              </n-icon>
+            </template>
+            <n-text depth="3" class="text-center max-w-xs">
+              暂无数据
+            </n-text>
+          </n-empty>
+          <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 排名1 -->
             <div
-              v-for="item in problemRankingListData" :key="item.rank" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
+              v-for="item in problemRankingListData" :key="item.rank" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
                 name: 'problem_submit',
                 query: { problem: AesCrypto.encrypt(item.id) },
               })"
@@ -431,7 +461,7 @@ function resetHandle() {
                     </h4>
                   </n-button>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ item.participantUserCount }} 人参与
+                    共 {{ item.participantUserCount }} 人参与
                   </p>
                 </div>
                 <!-- <div class="flex items-center text-yellow-500">

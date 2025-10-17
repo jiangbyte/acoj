@@ -29,4 +29,5 @@ public interface SysBannerService extends IService<SysBanner> {
 
     List<SysBanner> latestN(int n);
 
+    void visibleToggle(SysBannerIdParam sysBannerIdParam);
 }

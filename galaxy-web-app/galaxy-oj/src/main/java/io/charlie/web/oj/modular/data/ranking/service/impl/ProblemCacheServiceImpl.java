@@ -5,15 +5,16 @@ import io.charlie.web.oj.modular.data.ranking.data.RankItem;
 import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -85,15 +86,88 @@ public class ProblemCacheServiceImpl implements ProblemCacheService {
     }
 
     @Override
+    public Map<String, Long> batchGetSubmitCount(List<String> problemIds) {
+        if (problemIds == null || problemIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        // 使用管道批量操作
+        List<Object> results = redisTemplate.executePipelined(new RedisCallback<Object>() {
+            @Override
+            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+                for (String problemId : problemIds) {
+                    String key = PROBLEM_SUBMIT_PREFIX + problemId;
+                    connection.setCommands().sCard(key.getBytes());
+                }
+                return null;
+            }
+        });
+
+        Map<String, Long> result = new HashMap<>(problemIds.size());
+        for (int i = 0; i < problemIds.size(); i++) {
+            result.put(problemIds.get(i), (Long) results.get(i));
+        }
+        return result;
+    }
+
+    @Override
     public Long getAcceptCount(String problemId) {
         String key = PROBLEM_ACCEPT_PREFIX + problemId;
         return redisTemplate.opsForSet().size(key);
     }
 
     @Override
+    public Map<String, Long> batchGetAcceptCount(List<String> problemIds) {
+        if (problemIds == null || problemIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        List<Object> results = redisTemplate.executePipelined(new RedisCallback<Object>() {
+            @Override
+            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+                for (String problemId : problemIds) {
+                    String key = PROBLEM_ACCEPT_PREFIX + problemId;
+                    connection.setCommands().sCard(key.getBytes());
+                }
+                return null;
+            }
+        });
+
+        Map<String, Long> result = new HashMap<>(problemIds.size());
+        for (int i = 0; i < problemIds.size(); i++) {
+            result.put(problemIds.get(i), (Long) results.get(i));
+        }
+        return result;
+    }
+
+    @Override
     public Long getParticipantCount(String problemId) {
         String key = PROBLEM_PARTICIPANT_PREFIX + problemId;
         return redisTemplate.opsForSet().size(key);
+    }
+
+    @Override
+    public Map<String, Long> batchGetParticipantCount(List<String> problemIds) {
+        if (problemIds == null || problemIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        List<Object> results = redisTemplate.executePipelined(new RedisCallback<Object>() {
+            @Override
+            public Object doInRedis(RedisConnection connection) throws DataAccessException {
+                for (String problemId : problemIds) {
+                    String key = PROBLEM_PARTICIPANT_PREFIX + problemId;
+                    connection.setCommands().sCard(key.getBytes());
+                }
+                return null;
+            }
+        });
+
+        Map<String, Long> result = new HashMap<>(problemIds.size());
+        for (int i = 0; i < problemIds.size(); i++) {
+            result.put(problemIds.get(i), (Long) results.get(i));
+        }
+        return result;
     }
 
     @Override
@@ -119,26 +193,81 @@ public class ProblemCacheServiceImpl implements ProblemCacheService {
 
     @Override
     public Double getAverageAcceptRate() {
-        // 获取所有题目ID（从排行榜中获取）
+//        // 获取所有题目ID（从排行榜中获取）
+//        Set<Object> problemIds = redisTemplate.opsForZSet().range(PROBLEM_RANK_KEY, 0, -1);
+//
+//        if (problemIds == null || problemIds.isEmpty()) {
+//            return 0.0;
+//        }
+//
+//        double totalRate = 0.0;
+//        int count = 0;
+//
+//        for (Object problemIdObj : problemIds) {
+//            String problemId = (String) problemIdObj;
+//            Double acceptRate = getAcceptRate(problemId);
+//            if (acceptRate != null) {
+//                totalRate += acceptRate;
+//                count++;
+//            }
+//        }
+//
+//        return count > 0 ? Math.round((totalRate / count) * 100.0) / 100.0 : 0.0;
+
+        // 优化：直接从排行榜获取所有题目ID，然后批量计算
         Set<Object> problemIds = redisTemplate.opsForZSet().range(PROBLEM_RANK_KEY, 0, -1);
 
         if (problemIds == null || problemIds.isEmpty()) {
             return 0.0;
         }
 
+        List<String> problemIdList = problemIds.stream()
+                .map(Object::toString)
+                .collect(Collectors.toList());
+
+        // 使用批量方法获取通过率
+        Map<String, Double> acceptRates = batchGetAcceptRate(problemIdList);
+
         double totalRate = 0.0;
         int count = 0;
 
-        for (Object problemIdObj : problemIds) {
-            String problemId = (String) problemIdObj;
-            Double acceptRate = getAcceptRate(problemId);
-            if (acceptRate != null) {
-                totalRate += acceptRate;
+        for (Double rate : acceptRates.values()) {
+            if (rate != null) {
+                totalRate += rate;
                 count++;
             }
         }
 
         return count > 0 ? Math.round((totalRate / count) * 100.0) / 100.0 : 0.0;
+    }
+
+    @Override
+    public Map<String, Double> batchGetAcceptRate(List<String> problemIds) {
+        if (problemIds == null || problemIds.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        // 批量获取通过人数和参与人数
+        Map<String, Long> acceptCounts = batchGetAcceptCount(problemIds);
+        Map<String, Long> participantCounts = batchGetParticipantCount(problemIds);
+
+        Map<String, Double> result = new HashMap<>(problemIds.size());
+        DecimalFormat df = new DecimalFormat("0.00");
+
+        for (String problemId : problemIds) {
+            Long acceptCount = acceptCounts.get(problemId);
+            Long participantCount = participantCounts.get(problemId);
+
+            if (participantCount == null || participantCount == 0) {
+                result.put(problemId, 0.0);
+            } else {
+                double rate = (acceptCount.doubleValue() / participantCount) * 100;
+                double formattedRate = Math.round(rate * 100.0) / 100.0;
+                result.put(problemId, Double.parseDouble(df.format(formattedRate)));
+            }
+        }
+
+        return result;
     }
 
     @Override

@@ -183,7 +183,7 @@ async function deleteBatchHandle() {
               <NInputGroup>
                 <NInput
                   v-model:value="treeKeyword"
-                  placeholder="输入关键字过滤"
+                  placeholder="输入关键字"
                   clearable
                   @clear="resetHandle"
                 />
@@ -306,6 +306,7 @@ async function deleteBatchHandle() {
               :row-key="(row: any) => row.id"
               :loading="loading"
               flex-height
+              :scroll-x="1400"
               class="flex-1 h-full"
             />
             <template #action>

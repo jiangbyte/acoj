@@ -221,6 +221,7 @@ onUnmounted(() => {
       <n-drawer-content
         title="Astro Code"
         closable
+        class="z-999"
         @close="doClose"
       >
         <template #header>

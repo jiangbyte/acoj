@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.relation.tag.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -13,8 +14,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author ZhangJiangHu
@@ -109,6 +113,23 @@ public class DataProblemTagImpl extends ServiceImpl<DataProblemTagMapper, DataPr
     }
 
     @Override
+    public Map<String, List<String>> batchGetTagIdsByIds(List<String> problemIds) {
+        if (CollectionUtil.isEmpty(problemIds)) {
+            return Collections.emptyMap();
+        }
+
+        // 实现批量查询逻辑，例如：
+        List<DataProblemTag> tags = this.list(new LambdaQueryWrapper<DataProblemTag>()
+                .in(DataProblemTag::getProblemId, problemIds));
+
+        return tags.stream()
+                .collect(Collectors.groupingBy(
+                        DataProblemTag::getProblemId,
+                        Collectors.mapping(DataProblemTag::getTagId, Collectors.toList())
+                ));
+    }
+
+    @Override
     public boolean addOrUpdate(String problemId, List<String> tagIds) {
         // 先全部清除这些标签
         QueryWrapper<DataProblemTag> queryWrapper = new QueryWrapper<DataProblemTag>().checkSqlInjection();
@@ -149,7 +170,7 @@ public class DataProblemTagImpl extends ServiceImpl<DataProblemTagMapper, DataPr
             problemIds = dataProblemTags.stream()
                     .map(DataProblemTag::getProblemId)
                     .toList();
-                    // 将结果存入缓存
+            // 将结果存入缓存
             redisTemplate.opsForValue().set(cacheKey, problemIds, CACHE_EXPIRE_TIME, TimeUnit.SECONDS);
             return problemIds;
         } else {
@@ -158,6 +179,38 @@ public class DataProblemTagImpl extends ServiceImpl<DataProblemTagMapper, DataPr
             redisTemplate.opsForValue().set(cacheKey, problemIds, NULL_CACHE_EXPIRE_TIME, TimeUnit.SECONDS);
         }
         return problemIds;
+    }
+
+    @Override
+    public Map<String, List<String>> batchGetTagNamesByIds(List<String> problemIds) {
+        if (CollectionUtil.isEmpty(problemIds)) {
+            return Collections.emptyMap();
+        }
+        // 实现批量查询逻辑，例如：
+        List<DataProblemTag> tags = this.list(new LambdaQueryWrapper<DataProblemTag>()
+                .in(DataProblemTag::getProblemId, problemIds));
+
+        // 批量查询标签名称
+        List<String> tagIds = tags.stream()
+                .map(DataProblemTag::getTagId)
+                .toList();
+
+        if (ObjectUtil.isEmpty(tagIds)) {
+            return Collections.emptyMap();
+        }
+
+        List<SysTag> sysTags = sysTagMapper.selectByIds(tagIds);
+        return tags.stream()
+                .collect(Collectors.groupingBy(
+                        DataProblemTag::getProblemId,
+                        Collectors.mapping(item -> sysTags.stream()
+                                        .filter(tag -> tag.getId().equals(item.getTagId()))
+                                        .findFirst()
+                                        .map(SysTag::getName)
+                                        .orElse(null),
+                                Collectors.toList())
+                ));
+
     }
 
     private void clearCache(String problemId) {

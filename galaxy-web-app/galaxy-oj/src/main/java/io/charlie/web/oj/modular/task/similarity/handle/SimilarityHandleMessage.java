@@ -25,10 +25,6 @@ import io.charlie.web.oj.modular.task.similarity.enums.ReportTypeEnum;
 import io.charlie.web.oj.modular.task.similarity.mq.CommonSimilarityQueue;
 import io.charlie.web.oj.modular.task.similarity.utils.CodeSimilarityCalculator;
 import io.charlie.web.oj.modular.task.similarity.utils.DynamicCloneLevelDetector;
-import io.charlie.web.oj.modular.websocket.config.WebSocketConfig;
-import io.charlie.web.oj.modular.websocket.data.WebSocketMessage;
-import io.charlie.web.oj.modular.websocket.utils.WebSocketUtil;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.trans.service.impl.TransService;
@@ -49,7 +45,6 @@ import java.util.stream.IntStream;
 public class SimilarityHandleMessage {
 
     private final RabbitTemplate rabbitTemplate;
-    private final WebSocketUtil webSocketUtil;
     private final DataSubmitMapper dataSubmitMapper;
     private final DataProblemMapper dataProblemMapper;
     private final DataLibraryService dataLibraryService;
@@ -229,12 +224,6 @@ public class SimilarityHandleMessage {
 
         DataSubmit submit = dataSubmitMapper.selectById(dto.getId());
         transService.transOne(submit);
-
-        WebSocketMessage<DataSubmit> message = new WebSocketMessage<>();
-        message.setData(submit);
-
-        webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_JUDGE_STATUS, dto.getJudgeTaskId(), message);
-        webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, dto.getJudgeTaskId());
     }
 
     // 简化工具方法

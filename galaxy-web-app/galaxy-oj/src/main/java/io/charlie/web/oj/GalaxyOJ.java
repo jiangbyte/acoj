@@ -2,7 +2,7 @@ package io.charlie.web.oj;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
+//import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @EnableScheduling
 @EnableAsync
 @EnableCaching  // 开启缓存
-@EnableDubbo
+//@EnableDubbo
 public class GalaxyOJ {
     public static void main(String[] args) {
         ConfigurableApplicationContext run = SpringApplication.run(GalaxyOJ.class, args);

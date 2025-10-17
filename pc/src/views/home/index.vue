@@ -116,7 +116,21 @@ loadData()
             </n-button> -->
           </div>
 
-          <div class="space-y-4">
+          <n-empty
+            v-if="!noticeListData || noticeListData.length === 0"
+            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
+            description="暂无结果"
+          >
+            <template #icon>
+              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+                <icon-park-outline-info />
+              </n-icon>
+            </template>
+            <n-text depth="3" class="text-center max-w-xs">
+              暂无数据
+            </n-text>
+          </n-empty>
+          <div v-else class="space-y-4">
             <div
               v-for="item in noticeListData" :key="item.id"
               class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow " @click="$router.push({
@@ -167,7 +181,21 @@ loadData()
             </n-button>
           </div>
 
-          <div class="space-y-4">
+          <n-empty
+            v-if="!problemListData || problemListData.length === 0"
+            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
+            description="暂无结果"
+          >
+            <template #icon>
+              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+                <icon-park-outline-info />
+              </n-icon>
+            </template>
+            <n-text depth="3" class="text-center max-w-xs">
+              暂无数据
+            </n-text>
+          </n-empty>
+          <div v-else class="space-y-4">
             <!-- 题目项 -->
             <div
               v-for="item in problemListData" :key="item.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow" @click="$router.push({
@@ -219,7 +247,21 @@ loadData()
             </n-button>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <n-empty
+            v-if="!setListData || setListData.length === 0"
+            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
+            description="暂无结果"
+          >
+            <template #icon>
+              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+                <icon-park-outline-info />
+              </n-icon>
+            </template>
+            <n-text depth="3" class="text-center max-w-xs">
+              暂无数据
+            </n-text>
+          </n-empty>
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- 题集项 -->
             <div
               v-for="item in setListData" :key="item.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow" @click="$router.push({
@@ -259,12 +301,26 @@ loadData()
       <div class="space-y-8">
         <!-- 用户排行榜 -->
         <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+          <div class="p-x-5 pt-5 border-b border-gray-100 dark:border-gray-700">
             <h2 class="text-xl font-bold">
               用户排行榜
             </h2>
           </div>
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          <n-empty
+            v-if="!problemUserRankingListData || problemUserRankingListData.length === 0"
+            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
+            description="暂无结果"
+          >
+            <template #icon>
+              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+                <icon-park-outline-info />
+              </n-icon>
+            </template>
+            <n-text depth="3" class="text-center max-w-xs">
+              暂无数据
+            </n-text>
+          </n-empty>
+          <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 排行榜项 -->
             <div
               v-for="item in problemUserRankingListData" :key="item.rank" class="p-4 flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
@@ -279,7 +335,7 @@ loadData()
                   {{ item.nickname }}
                 </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">
-                  解题: {{ item.score }}
+                  解题: {{ item.score }} 道
                 </div>
               </div>
             </div>
@@ -291,12 +347,26 @@ loadData()
 
         <!-- 题目排行榜 -->
         <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+          <div class="p-x-5 pt-5 border-b border-gray-100 dark:border-gray-700">
             <h2 class="text-xl font-bold">
               热门题目
             </h2>
           </div>
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          <n-empty
+            v-if="!problemRankingListData || problemRankingListData.length === 0"
+            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
+            description="暂无结果"
+          >
+            <template #icon>
+              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+                <icon-park-outline-info />
+              </n-icon>
+            </template>
+            <n-text depth="3" class="text-center max-w-xs">
+              暂无数据
+            </n-text>
+          </n-empty>
+          <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 题目排行项 -->
             <div
               v-for="item in problemRankingListData" :key="item.rank" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
@@ -318,12 +388,12 @@ loadData()
                     </n-text>
                     <span class="mx-1">•</span>
                     <n-text depth="3">
-                      参与: {{ item.participantUserCount }}
+                      参与: {{ item.participantUserCount }} 人
                     </n-text>
-                    <span class="mx-1">•</span>
+                    <!-- <span class="mx-1">•</span>
                     <n-text depth="3">
                       提交: {{ item.submitUserCount }}
-                    </n-text>
+                    </n-text> -->
                   </div>
                 </div>
               </div>
@@ -333,12 +403,26 @@ loadData()
 
         <!-- 题集排行榜 -->
         <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+          <div class="p-x-5 pt-5 border-b border-gray-100 dark:border-gray-700">
             <h2 class="text-xl font-bold">
               热门题集
             </h2>
           </div>
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          <n-empty
+            v-if="!setRankingListData || setRankingListData.length === 0"
+            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
+            description="暂无结果"
+          >
+            <template #icon>
+              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+                <icon-park-outline-info />
+              </n-icon>
+            </template>
+            <n-text depth="3" class="text-center max-w-xs">
+              暂无数据
+            </n-text>
+          </n-empty>
+          <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 题集排行项 -->
             <div
               v-for="item in setRankingListData" :key="item.rank" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
@@ -356,11 +440,11 @@ loadData()
                   </n-button>
                   <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
                     <n-text depth="3">
-                      通过率: {{ item.avgAcceptance }}
+                      通过率: {{ item.avgAcceptance }} %
                     </n-text>
                     <span class="mx-1">•</span>
                     <n-text depth="3">
-                      参与: {{ item.participantUserCount }}
+                      参与: {{ item.participantUserCount }} 人
                     </n-text>
                   </div>
                 </div>

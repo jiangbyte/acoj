@@ -125,6 +125,13 @@ const passwordRules = {
 }
 
 const profileRules = {
+  username: [
+    {
+      required: true,
+      message: '请输入用户名',
+      trigger: ['input', 'blur'],
+    },
+  ],
   nickname: [
     {
       required: true,
@@ -144,6 +151,13 @@ const profileRules = {
       required: true,
       message: '请输入个性签名',
       trigger: ['input', 'blur'],
+    },
+  ],
+  gender: [
+    {
+      required: true,
+      message: '请选择性别',
+      // trigger: ['input', 'blur'],
     },
   ],
 }

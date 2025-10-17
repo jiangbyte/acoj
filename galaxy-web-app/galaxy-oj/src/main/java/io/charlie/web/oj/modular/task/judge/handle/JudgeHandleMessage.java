@@ -18,9 +18,6 @@ import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import io.charlie.web.oj.modular.task.judge.mq.CommonJudgeQueue;
 import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.handle.SimilarityHandleMessage;
-import io.charlie.web.oj.modular.websocket.config.WebSocketConfig;
-import io.charlie.web.oj.modular.websocket.data.WebSocketMessage;
-import io.charlie.web.oj.modular.websocket.utils.WebSocketUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.trans.service.impl.TransService;
@@ -44,7 +41,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @RequiredArgsConstructor
 public class JudgeHandleMessage {
     private final RabbitTemplate rabbitTemplate;
-    private final WebSocketUtil webSocketUtil;
     private final DataSubmitMapper dataSubmitMapper;
     private final DataSolvedMapper dataSolvedMapper;
     private final DataLibraryService dataLibraryService;
@@ -58,12 +54,6 @@ public class JudgeHandleMessage {
 
     public void sendJudge(JudgeSubmitDto judgeSubmitDto, DataSubmit dataSubmit) {
         log.info("发送消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
-
-        WebSocketMessage<DataSubmit> message = new WebSocketMessage<>();
-        message.setData(dataSubmit);
-
-        webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeSubmitDto.getJudgeTaskId(), message);
-
         rabbitTemplate.convertAndSend(
                 CommonJudgeQueue.EXCHANGE,
                 CommonJudgeQueue.ROUTING_KEY,
@@ -77,9 +67,6 @@ public class JudgeHandleMessage {
     public void receiveJudge(JudgeResultDto judgeResultDto) {
         // 核心数据库更新 - 同步处理确保数据一致性
         DataSubmit dataSubmit = updateSubmitData(judgeResultDto);
-
-        // 立即响应客户端
-        sendImmediateResponse(judgeResultDto, dataSubmit);
 
         // 排行榜更新
         handleRedisRecord(judgeResultDto, dataSubmit);
@@ -95,10 +82,6 @@ public class JudgeHandleMessage {
                         }
                     }
             );
-        } else {
-            // 否则直接返回关闭
-            // 立即响应关闭客户端
-            sendImmediateCloseResponse(judgeResultDto, dataSubmit);
         }
     }
 
@@ -115,28 +98,9 @@ public class JudgeHandleMessage {
     private DataSubmit updateSubmitData(JudgeResultDto judgeResultDto) {
         DataSubmit dataSubmit = dataSubmitMapper.selectById(judgeResultDto.getId());
         BeanUtil.copyProperties(judgeResultDto, dataSubmit);
+        dataSubmit.setIsFinish(Boolean.TRUE);
         dataSubmitMapper.updateById(dataSubmit);
         return dataSubmit;
-    }
-
-    /**
-     * 发送即时响应
-     */
-    private void sendImmediateResponse(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
-        transService.transOne(dataSubmit);
-        WebSocketMessage<DataSubmit> message = new WebSocketMessage<>();
-        message.setData(dataSubmit);
-
-        log.info("向客户端发送消息：{}", JSONUtil.toJsonStr(message));
-        webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId(), message);
-    }
-
-    private void sendImmediateCloseResponse(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
-        transService.transOne(dataSubmit);
-        WebSocketMessage<DataSubmit> message = new WebSocketMessage<>();
-        message.setData(dataSubmit);
-        log.info("向客户端发送消息：{}", JSONUtil.toJsonStr(message));
-        webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_JUDGE_STATUS, judgeResultDto.getJudgeTaskId());
     }
 
     /**
@@ -179,6 +143,7 @@ public class JudgeHandleMessage {
         String problemId = judgeResultDto.getProblemId();
         String setId = judgeResultDto.getSetId();
         Boolean submitType = judgeResultDto.getSubmitType();
+
         boolean isAc = JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus());
 
         // 用户活跃度

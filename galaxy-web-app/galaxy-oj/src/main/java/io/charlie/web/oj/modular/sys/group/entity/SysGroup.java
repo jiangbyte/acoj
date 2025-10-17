@@ -8,9 +8,14 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.io.Serial;
 import java.util.Date;
+import java.util.List;
+
+import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.dromara.core.trans.anno.Trans;
+import org.dromara.core.trans.constant.TransType;
 
 /**
 * @author Charlie Zhang
@@ -46,8 +51,22 @@ public class SysGroup extends CommonEntity {
     private Byte sort;
 
     @Schema(description = "负责人")
+    @Trans(type = TransType.SIMPLE, target = SysUser.class, fields = {"nickname", "avatar"}, refs = {"adminIdName", "userAvatar"})
     private String adminId;
 
+    @Schema(description = "用户名称")
+    @TableField(exist = false)
+    private String adminIdName;
+
+    @Schema(description = "用户头像")
+    @TableField(exist = false)
+    private String userAvatar;
+
     @Schema(description = "系统组")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean groupType;
+
+    @Schema(description = "子")
+    @TableField(exist = false)
+    private List<SysGroup> children;
 }

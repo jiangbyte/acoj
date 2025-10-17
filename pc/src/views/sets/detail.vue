@@ -76,7 +76,7 @@ const columns: DataTableColumns<any> = [
     key: 'categoryName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, row.categoryName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, { default: () => row.categoryName })
     },
   },
   {
@@ -84,7 +84,7 @@ const columns: DataTableColumns<any> = [
     key: 'tagNames',
     width: 250,
     render: (row) => {
-      return h(NSpace, { align: 'center' }, row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, tag)) || null)
+      return h(NSpace, { align: 'center' }, { default: () => row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, { default: () => tag })) || [] })
     },
   },
   {
@@ -92,7 +92,7 @@ const columns: DataTableColumns<any> = [
     key: 'difficultyName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: DifficultyColorUtil.getColor(row.difficulty), textColor: '#fff' } }, row.difficultyName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: DifficultyColorUtil.getColor(row.difficulty), textColor: '#fff' } }, { default: () => row.difficultyName })
     },
   },
   {
@@ -100,7 +100,7 @@ const columns: DataTableColumns<any> = [
     key: 'acceptance',
     width: 120,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.acceptance)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.acceptance })
     },
   },
   {
@@ -108,7 +108,7 @@ const columns: DataTableColumns<any> = [
     key: 'solved',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.solved)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.solved })
     },
   },
   {
@@ -125,7 +125,7 @@ const columns: DataTableColumns<any> = [
             query: { setId: AesCrypto.encrypt(originalId), problemId: AesCrypto.encrypt(row.id) },
           })
         },
-      }, '开始')
+      }, { default: () => '开始' })
     },
   },
 ]
@@ -176,7 +176,7 @@ const submitColumns: DataTableColumns<any> = [
     key: 'statusName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.statusName)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.statusName })
     },
   },
   {
@@ -184,7 +184,7 @@ const submitColumns: DataTableColumns<any> = [
     key: 'languageName',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.languageName)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.languageName })
     },
   },
   {
@@ -192,7 +192,7 @@ const submitColumns: DataTableColumns<any> = [
     key: 'codeLength',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.codeLength)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.codeLength })
     },
   },
   {
@@ -200,7 +200,7 @@ const submitColumns: DataTableColumns<any> = [
     key: 'submitTypeName',
     width: 90,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.submitTypeName)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.submitTypeName })
     },
   },
   {
@@ -208,7 +208,7 @@ const submitColumns: DataTableColumns<any> = [
     key: 'maxTime',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.maxTime)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.maxTime })
     },
   },
   {
@@ -216,7 +216,7 @@ const submitColumns: DataTableColumns<any> = [
     key: 'maxMemory',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.maxMemory)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.maxMemory })
     },
   },
   {
@@ -224,7 +224,7 @@ const submitColumns: DataTableColumns<any> = [
     key: 'similarity',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.similarity)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.similarity })
     },
   },
   // {
@@ -357,7 +357,7 @@ const processColumns: DataTableColumns<any> = [
     key: 'passRate',
     width: 90,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, '0')
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.passRate })
     },
   },
 ]

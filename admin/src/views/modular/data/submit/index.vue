@@ -7,6 +7,8 @@ import Detail from './detail.vue'
 
 const formRef = ref()
 const detailRef = ref()
+
+const router = useRouter()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -149,8 +151,14 @@ const columns: DataTableColumns<any> = [
         h(NButton, {
           type: 'primary',
           size: 'small',
-          disabled: row.canUseSimilarReport !== true,
-          onClick: () => { },
+          // submitType为true且similarity大于0时才不禁用
+          // 也就是这两个条件都满足时 disabled 为 false
+          disabled: !(row.submitType && row.similarity > 0),
+          onClick: () => {
+            router.push({
+              path: `/visualization/submit/report/${row.reportId}/task/${row.taskId}`,
+            })
+          },
         }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
@@ -250,12 +258,12 @@ async function deleteBatchHandle() {
 
 <template>
   <div class="flex flex-col h-full w-full">
-    <NCard size="small">
+    <NCard size="small" :bordered="false">
       <NSpace vertical>
         <NSpace align="center">
           <NSpace align="center">
             <NFormItem :show-feedback="false" label="关键词" label-placement="left">
-              <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" />
+              <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" clearable @clear="resetHandle" />
             </NFormItem>
             <NSpace align="center">
               <NButton type="primary" @click="loadData">
@@ -353,6 +361,7 @@ async function deleteBatchHandle() {
         :row-key="(row: any) => row.id"
         :loading="loading"
         flex-height
+        :scroll-x="1400"
         class="flex-1 h-full"
       />
       <template #action>

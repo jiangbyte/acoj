@@ -11,6 +11,10 @@ import { AesCrypto, DifficultyColorUtil, Poller, RandomColorUtil } from '@/utils
 import { useUserStore } from '@/stores'
 import { v4 as uuidv4 } from 'uuid'
 
+defineOptions({
+  inheritAttrs: false,
+})
+
 const userStore = useUserStore()
 
 const isConnected = ref(false)
@@ -546,7 +550,7 @@ onUnmounted(() => {
                 /> -->
                 <LLMChat
                   :problem-id="originalId"
-                  :language="submitParam.language"
+                  :language="submitParam.language || ''"
                   :user-code="submitParam.code"
                 />
               </NTabPane>

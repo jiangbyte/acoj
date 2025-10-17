@@ -11,7 +11,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.web.oj.modular.sys.relation.entity.SysRoleMenu;
+import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysRoleMenuMapper;
+import io.charlie.web.oj.modular.sys.relation.mapper.SysUserRoleMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
 import io.charlie.web.oj.modular.sys.role.entity.SysRole;
 import io.charlie.web.oj.modular.sys.role.param.SysRoleAddParam;
@@ -43,6 +45,7 @@ import java.util.*;
 public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements SysRoleService {
     private final SysUserRoleService sysUserRoleService;
     private final SysRoleMenuMapper sysRoleMenuMapper;
+    private final SysUserRoleMapper sysUserRoleMapper;
 
     @Override
     public Page<SysRole> page(SysRolePageParam sysRolePageParam) {
@@ -156,6 +159,23 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         });
 
         return list;
+    }
+
+    @Override
+    public List<String> getRoleNamesByUserId(String userId) {
+        List<SysUserRole> sysUserRoles = sysUserRoleMapper.selectList(new LambdaQueryWrapper<SysUserRole>()
+                .eq(SysUserRole::getUserId, userId)
+        );
+        if (ObjectUtil.isEmpty(sysUserRoles)) {
+            return List.of();
+        }
+        List<SysRole> list = this.list(new LambdaQueryWrapper<SysRole>()
+                .in(SysRole::getId, sysUserRoles.stream().map(SysUserRole::getRoleId).toList())
+        );
+        if (ObjectUtil.isEmpty(list)) {
+            return List.of();
+        }
+        return list.stream().map(SysRole::getName).toList();
     }
 
 }

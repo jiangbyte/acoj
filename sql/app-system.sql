@@ -312,8 +312,8 @@ CREATE TABLE sys_config
         '系统配置表';
 
 -- 登录页面背景图片
-        INSERT INTO sys_config (id, code, name, value, description)
-    VALUES (1, 'APP_ADMIN_LOGIN_BACKGROUND', '登录页面背景图片', 'https://img.shetu66.com/2023/06/25/1687662757639430.png', '登录页面背景图片');
+INSERT INTO sys_config (id, code, name, value, description)
+VALUES (1, 'APP_ADMIN_LOGIN_BACKGROUND', '登录页面背景图片', 'https://img.shetu66.com/2023/06/25/1687662757639430.png', '登录页面背景图片');
 -- 应用logo
 INSERT INTO sys_config (id, code, name, value, description)
 VALUES (2, 'APP_LOGO', '应用logo', 'https://cdn.jsdelivr.net/gh/yupi/pku-oj-img/logo.png', '应用logo');
@@ -553,3 +553,36 @@ CREATE TABLE sys_role_menu
   COLLATE = utf8mb4_unicode_ci
     COMMENT
         '角色-菜单 关联表(1-N)';
+
+
+
+-- ----------------------------
+-- 系统活动/日志记录表
+-- ----------------------------
+DROP TABLE IF EXISTS sys_log;
+CREATE TABLE sys_log
+(
+    id             VARCHAR(32) NOT NULL COMMENT '主键',
+    user_id        VARCHAR(32) COMMENT '用户ID',
+    operation      VARCHAR(255) COMMENT '操作',
+    method         VARCHAR(255) COMMENT '方法',
+    params         TEXT COMMENT '参数',
+    ip             VARCHAR(255) COMMENT 'IP',
+    operation_time DATETIME COMMENT '操作时间',
+    category       VARCHAR(255) COMMENT '操作分类',
+    module         VARCHAR(255) COMMENT '模块名称',
+    description    VARCHAR(255) COMMENT '操作描述',
+    status         VARCHAR(255) COMMENT '操作状态',
+    message        TEXT COMMENT '操作消息',
+    # ------------------------------------------------
+    deleted        TINYINT(1)  DEFAULT 0 COMMENT '删除状态',
+    create_time    DATETIME    DEFAULT NULL COMMENT '创建时间戳',
+    create_user    VARCHAR(32) DEFAULT NULL COMMENT '创建者',
+    update_time    DATETIME    DEFAULT NULL COMMENT '更新时间戳',
+    update_user    VARCHAR(32) DEFAULT NULL COMMENT '更新者',
+    -- 添加索引
+    PRIMARY KEY (id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci
+    COMMENT ='系统活动/日志记录表';

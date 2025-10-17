@@ -30,6 +30,8 @@ public interface ProblemSetCacheService {
     // 获取题集平均通过率
     Double getProblemSetAverageAcceptRate(String problemSetId);
 
+    Map<String, Double> batchGetAcceptRate(String setId, List<String> problemIds);
+
     // 获取题集内题目的统计信息
     ProblemSetProblemStats getProblemSetProblemStats(String problemSetId, String problemId);
 
@@ -43,14 +45,30 @@ public interface ProblemSetCacheService {
 
     Long getProblemAcceptCount(String problemSetId, String problemId);
 
+
+    Map<String, Long> batchGetAcceptCount(String setId, List<String> problemIds);
+
+
+    Map<String, Long> batchGetSubmitCount(String setId, List<String> problemIds);
+
+    Map<String, Long> batchGetParticipantCount(String setId, List<String> problemIds);
+
     // 重置题集缓存
     void resetProblemSetCache(String problemSetId);
 
     /**
      * 获取题集内所有题目的总提交次数
+     *
      * @param problemSetId 题集ID
      * @return 总提交次数
      */
     Long getProblemSetTotalSubmitCount(String problemSetId);
 
+    Long getProblemSubmitCount(String problemSetId, String problemId);
+
+    Map<String, Long> getBatchProblemSetTotalSubmitCount(List<String> problemSetIds);
+
+    Map<String, Double> getBatchProblemSetAverageAcceptRate(List<String> problemSetIds);
+
+    Map<String, Long> getBatchProblemSetParticipantCount(List<String> problemSetIds);
 }

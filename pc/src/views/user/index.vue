@@ -5,6 +5,10 @@ import type { DataTableColumns } from 'naive-ui'
 import { NSpace, NTag } from 'naive-ui'
 import { CalendarHeatmap } from 'vue3-calendar-heatmap'
 
+defineOptions({
+  inheritAttrs: false,
+})
+
 const endDate = ref(new Date())
 
 const route = useRoute()
@@ -23,7 +27,7 @@ const columns: DataTableColumns<any> = [
     key: 'categoryName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.categoryName)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.categoryName })
     },
   },
   {
@@ -31,7 +35,7 @@ const columns: DataTableColumns<any> = [
     key: 'tagNames',
     width: 250,
     render: (row) => {
-      return h(NSpace, { align: 'center' }, row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', bordered: false }, tag)) || null)
+      return h(NSpace, { align: 'center' }, { default: () => row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', bordered: false }, { default: () => tag })) || [] })
     },
   },
   {
@@ -39,7 +43,7 @@ const columns: DataTableColumns<any> = [
     key: 'difficultyName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.difficultyName)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.difficultyName })
     },
   },
   {
@@ -47,7 +51,7 @@ const columns: DataTableColumns<any> = [
     key: 'acceptance',
     width: 120,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.acceptance)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.acceptance })
     },
   },
   {
@@ -55,7 +59,7 @@ const columns: DataTableColumns<any> = [
     key: 'solved',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.solved)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.solved })
     },
   },
 ]
@@ -155,7 +159,7 @@ function rowProps(row: any) {
           <div class="flex flex-wrap items-start justify-between gap-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 w-full">
             <div>
               <h1 class="text-2xl md:text-3xl font-bold mb-4">
-                {{ detailData?.nickname }}
+                {{ detailData?.nickname ? detailData?.nickname : '暂无昵称' }}
               </h1>
               <!-- <p class="text-gray-600 dark:text-gray-300 mb-3">
               算法爱好者 | 后端开发工程师
@@ -164,11 +168,11 @@ function rowProps(row: any) {
               <div class="flex flex-wrap items-center gap-3 mb-4">
                 <div class="flex items-center text-sm">
                   <icon-park-outline-every-user class="mr-1.5" />
-                  <span>{{ detailData?.groupIdName }}</span>
+                  <span>{{ detailData?.groupIdName ? detailData?.groupIdName : '暂无用户组' }}</span>
                 </div>
                 <div class="flex items-center text-sm">
                   <icon-park-outline-accept-email class="mr-1.5" />
-                  <span>{{ detailData?.email }}</span>
+                  <span>{{ detailData?.email ? detailData?.email : '暂无邮箱' }}</span>
                 </div>
                 <div class="flex items-center text-sm">
                   <icon-park-outline-calendar class="mr-1.5" />
@@ -177,7 +181,7 @@ function rowProps(row: any) {
               </div>
 
               <p class="text-gray-600 dark:text-gray-300 w-full">
-                {{ detailData?.quote }}
+                {{ detailData?.quote ? detailData?.quote : '暂无座右铭' }}
               </p>
             </div>
 
@@ -195,7 +199,7 @@ function rowProps(row: any) {
       </div>
 
       <!-- 统计数据卡片 -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="grid grid-cols-3 md:grid-cols-3 gap-4 mb-8">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
           <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
             {{ detailData?.solvedProblem ? detailData?.solvedProblem : 0 }}
@@ -204,14 +208,14 @@ function rowProps(row: any) {
             已解决题目
           </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
+        <!-- <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
           <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
             {{ detailData?.tryProblem ? detailData?.tryProblem : 0 }}
           </div>
           <div class="text-sm text-gray-500 dark:text-gray-400">
             总尝试题目
           </div>
-        </div>
+        </div> -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-center">
           <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-1">
             {{ detailData?.participatedSet ? detailData?.participatedSet : 0 }}

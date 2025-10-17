@@ -16,7 +16,7 @@ import io.charlie.web.oj.modular.sys.role.service.SysRoleService;
 import io.charlie.web.oj.modular.sys.role.utils.RoleLevelTool;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.DubboService;
+//import org.apache.dubbo.config.annotation.DubboService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,7 @@ import java.util.List;
  * @description TODO
  */
 @Slf4j
-@DubboService
+//@DubboService
 @RequiredArgsConstructor
 public class PermissionServiceImpl implements PermissionService {
     private final SysRoleMapper sysRoleMapper;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useUserRankingFetch } from '@/composables/v1'
 import { AesCrypto } from '@/utils'
-import { NAvatar, NSpace, NText } from 'naive-ui'
+import { NAvatar, NSpace, NTag, NText } from 'naive-ui'
 import RankIcon from '@/components/common/rank/RankIcon.vue'
 
 const totalRankingPageData = ref()
@@ -36,7 +36,7 @@ const userRankingColumns = [
     title: '排名',
     key: 'rank',
     width: 80,
-    render: (row) => {
+    render: (row: any) => {
       // return h(NTag, { round: true, bordered: false, color: { color: RankColorUtil.getColor(row.rank), textColor: '#fff' } }, { default: () => RankColorUtil.getDisplayText(row.rank), icon: () => RankColorUtil.getIcon(row.rank) })
       return h(RankIcon, { rank: row.rank })
     },
@@ -85,6 +85,10 @@ const userRankingColumns = [
     title: '解决题目数',
     key: 'score',
     width: 100,
+    align: 'center',
+    render: (row: any) => {
+      return h(NTag, { type: 'info' }, { default: () => row.score })
+    },
   },
   // {
   //   title: '提交题目数',
@@ -99,7 +103,11 @@ const userRankingColumns = [
   {
     title: '总提交数',
     key: 'submitCount',
+    align: 'center',
     width: 100,
+    render: (row: any) => {
+      return h(NTag, { type: 'info' }, { default: () => row.submitCount })
+    },
   },
   // {
   //   title: '运行数',
@@ -177,12 +185,26 @@ function rowProps(row: any) {
       <div class="space-y-8">
         <!-- 榜单：最新上线 -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+          <div class="p-x-5 pt-5 border-b border-gray-100 dark:border-gray-700">
             <h3 class="font-semibold text-lg">
               活跃用户
             </h3>
           </div>
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          <n-empty
+            v-if="!activeUsersTop || activeUsersTop.length === 0"
+            class="flex flex-col items-center justify-center py-10 bg-transparent"
+            description="暂无结果"
+          >
+            <template #icon>
+              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
+                <icon-park-outline-info />
+              </n-icon>
+            </template>
+            <NText depth="3" class="text-center max-w-xs">
+              暂无数据
+            </NText>
+          </n-empty>
+          <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
             <!-- 最新1 -->
             <div
               v-for="item in activeUsersTop" :key="item.id" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
@@ -200,6 +222,40 @@ function rowProps(row: any) {
                     活跃指数: {{ Number(item.score).toFixed(2) }}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 排行榜和活跃度说明卡片 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+          <div class="p-5 border-b border-gray-100 dark:border-gray-700">
+            <h3 class="font-semibold text-lg">
+              排名规则说明
+            </h3>
+          </div>
+          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+            <div class="p-x-5 pb-5 flex flex-col space-y-4">
+              <div>
+                <h4 class="font-medium mb-2">
+                  🏆 用户排行榜
+                </h4>
+                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
+                  <li>按用户成功解决的题目数量从高到低排序</li>
+                  <!-- <li>解决题目数相同的用户，按通过率排序</li> -->
+                  <!-- <li>通过率 = 通过题目数 / 总提交题目数</li> -->
+                  <li>用户排行榜数据实时更新</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 class="font-medium mb-2">
+                  🎯 活跃用户
+                </h4>
+                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
+                  <li>活跃度 = 提交次数(0.01)之和</li>
+                  <li>活跃度指数实时更新，反映提交活跃度</li>
+                </ul>
               </div>
             </div>
           </div>

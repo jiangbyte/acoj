@@ -26,49 +26,49 @@ const columns: DataTableColumns<any> = [
     title: '编程语言',
     key: 'languageName',
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: LanguageColorUtil.getColor(row.language), textColor: '#fff' } }, row.languageName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: LanguageColorUtil.getColor(row.language), textColor: '#fff' } }, { default: () => row.languageName })
     },
   },
   {
     title: '执行类型',
     key: 'submitTypeName',
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: SubmitTypeColorUtil.getColor(row.submitType), textColor: '#fff' } }, row.submitTypeName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: SubmitTypeColorUtil.getColor(row.submitType), textColor: '#fff' } }, { default: () => row.submitTypeName })
     },
   },
   {
     title: '长度',
     key: 'codeLength',
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.codeLength)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.codeLength })
     },
   },
   {
     title: '耗时',
     key: 'maxTime',
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.maxTime)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.maxTime })
     },
   },
   {
     title: '内存',
     key: 'maxMemory',
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.maxMemory)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.maxMemory })
     },
   },
   {
     title: '执行状态',
     key: 'statusName',
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: StatusColorUtil.getColor(row.status), textColor: '#fff' } }, row.statusName)
+      return h(NTag, { size: 'small', bordered: false, color: { color: StatusColorUtil.getColor(row.status), textColor: '#fff' } }, { default: () => row.statusName })
     },
   },
   {
     title: '相似度',
     key: 'similarity',
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, row.similarity * 100)
+      return h(NTag, { size: 'small', bordered: false }, { default: () => row.similarity * 100 })
     },
   },
   // {

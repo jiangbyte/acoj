@@ -73,9 +73,12 @@ export default defineConfig(({ command, mode }) => {
       //   },
       // },
     },
-    define: {
-      global: 'window',
-    },
+    // define: {
+    //   global: 'window',
+    // },
+    esbuild: command === 'build' ? {
+      drop: ['console', 'debugger'],
+    } : {},
     optimizeDeps: {
       include: [
         'sockjs-client',

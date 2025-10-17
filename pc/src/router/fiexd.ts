@@ -73,12 +73,6 @@ export const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: 'test',
-        name: 'test',
-        component: () => import('@/views/test/index2.vue'),
-        meta: { title: '测试', icon: 'list' },
-      },
-      {
         path: '/user',
         name: 'user',
         component: () => import('@/views/user/index.vue'),

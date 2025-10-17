@@ -108,4 +108,14 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
         );
     }
 
+    @Override
+    public void visibleToggle(SysBannerIdParam sysBannerIdParam) {
+        SysBanner sysBanner = this.getById(sysBannerIdParam.getId());
+        if (ObjectUtil.isEmpty(sysBanner)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+        sysBanner.setIsVisible(!sysBanner.getIsVisible());
+        this.updateById(sysBanner);
+    }
+
 }

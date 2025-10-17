@@ -76,17 +76,26 @@ loadData()
 const router = useRouter()
 const useToken = useTokenStore()
 const useUser = useUserStore()
-async function handleRegister() {
-  const { data: token } = await doRegister(formData.value) || { data: null }
-  if (token) {
-    useToken.setToken(token)
-    if (useToken.isLogined) {
-      router.push('/')
+async function handleRegister(e: MouseEvent) {
+  e.preventDefault()
+  formRef.value?.validate((errors) => {
+    if (!errors) {
+      useAuthFetch().doRegister(formData.value).then(({ data }) => {
+        if (data) {
+          useToken.setToken(data)
+          if (useToken.isLogined) {
+            router.push('/')
+          }
+          getProfileNoe().then(({ data }) => {
+            useUser.setUserId(data.id)
+          })
+        }
+      })
     }
-    getProfileNoe().then(({ data }) => {
-      useUser.setUserId(data.id)
-    })
-  }
+    else {
+      window.$message.error('请填写完整信息')
+    }
+  })
 }
 
 const version = import.meta.env.VITE_VERSION
@@ -119,6 +128,7 @@ const version = import.meta.env.VITE_VERSION
         :rules="formRules"
         class="w-[300px]"
         :show-label="false"
+        @keypress.enter="handleRegister"
       >
         <NFormItem
           label="用户名"

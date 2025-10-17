@@ -1,297 +1,225 @@
 <script setup lang="ts">
-import { NButton, NCard, NCollapse, NCollapseItem, NDataTable, NGi, NGrid, NList, NListItem, NSpace, NTag, NText, NThing } from 'naive-ui'
-import { useMonitorFetch } from '@/composables'
+import { useSysLogFetch, useSysUserFetch, useTodayTotalFetch } from '../../composables/v1'
+import ProblemCreateForm from '../modular/data/problem/form.vue'
+import SetCreateForm from '../modular/data/set/form.vue'
+import CategoryCreateForm from '../modular/sys/category/form.vue'
+import TagCreateForm from '../modular/sys/tag/form.vue'
 
-// 定义类型
-interface InstanceDetail {
-  ip: string
-  port: number
-  ephemeral: boolean
-  weight: number
-  healthy: boolean
-  metadata: Record<string, string>
-}
+defineOptions({
+  inheritAttrs: false,
+})
 
-interface ClusterDetail {
-  clusterName: string
-  instances: InstanceDetail[]
-}
+// 模拟用户信息
+const userInfo = ref({
+  nickname: '',
+  roleNames: [],
+  groupIdName: '',
+  loginTime: Date.now(), // 默认当前时间
+})
 
-interface ServiceDetailStatus {
-  serviceName: string
-  groupName: string
-  clusterCount: number
-  instanceCount: number
-  healthyInstanceCount: number
-  protectionThresholdEnabled: boolean
-  clusters: ClusterDetail[]
-}
+const problemCreateFormRef = ref()
+const setCreateFormRef = ref()
+const categoryCreateFormRef = ref()
+const tagCreateFormRef = ref()
 
-// 使用ref存储服务状态数据
-const servicesStatus = ref<ServiceDetailStatus[]>([])
-
-const { healthStatus } = useMonitorFetch()
-async function loadData() {
-  const { data } = await healthStatus()
-  servicesStatus.value = data || []
+const recentlogs = ref()
+const todayTotal = ref()
+function loadData() {
+  useSysLogFetch().sysLogRecent().then(({ data }) => {
+    recentlogs.value = data
+    console.log(data)
+  })
+  useSysUserFetch().getProfile().then(({ data }) => {
+    userInfo.value = data
+    console.log(data)
+    
+    if (!data.loginTime) {
+      userInfo.value.loginTime = Date.now()
+    }
+  })
+  useTodayTotalFetch().getTodayTotal().then(({ data }) => {
+    todayTotal.value = data
+  })
 }
 loadData()
 
-// 获取服务健康状态
-function getServiceHealthStatus(service: ServiceDetailStatus) {
-  if (service.healthyInstanceCount === service.instanceCount) {
-    return 'running'
-  }
-  else if (service.healthyInstanceCount === 0) {
-    return 'down'
-  }
-  else {
-    return 'partial'
-  }
+// 获取问候语
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 6)
+    return '深夜好'
+  if (hour < 12)
+    return '上午好'
+  if (hour < 14)
+    return '中午好'
+  if (hour < 18)
+    return '下午好'
+  return '晚上好'
 }
 
-function getStatusColor(status: string) {
-  switch (status) {
-    case 'running': return 'success'
-    case 'partial': return 'warning'
-    case 'down': return 'error'
-    default: return 'default'
-  }
+// 当前时间响应式变量
+const currentTime = ref()
+
+// 更新时间函数
+function updateTime() {
+  currentTime.value = Date.now()
 }
 
-function getStatusText(status: string) {
-  switch (status) {
-    case 'running': return '运行正常'
-    case 'partial': return '部分运行'
-    case 'down': return '服务宕机'
-    default: return '未知状态'
-  }
-}
+// 定时器
+let timer: any = null
 
-// 实例表格列定义
-const instanceColumns = [
-  {
-    title: 'IP',
-    key: 'ip',
-  },
-  {
-    title: '端口',
-    key: 'port',
-  },
-  {
-    title: '类型',
-    key: 'ephemeral',
-    render: (row: InstanceDetail) => row.ephemeral ? '临时' : '持久',
-  },
-  {
-    title: '权重',
-    key: 'weight',
-  },
-  {
-    title: '状态',
-    key: 'healthy',
-    render: (row: InstanceDetail) => {
-      return h(
-        NTag,
-        {
-          type: row.healthy ? 'success' : 'error',
-          bordered: false,
-        },
-        { default: () => row.healthy ? '健康' : '异常' },
-      )
-    },
-  },
-]
+onMounted(() => {
+  updateTime()
+  timer = setInterval(updateTime, 1000)
+})
+
+onUnmounted(() => {
+  if (timer) {
+    clearInterval(timer)
+  }
+})
 </script>
 
 <template>
-  <NCard>
-    <NGrid
-      :x-gap="16"
-      :y-gap="16"
-    >
-      <NGi :span="16">
-        <NSpace
-          vertical
-          :size="16"
-        >
-          <NCard title="快速操作">
-            <NGrid :cols="6" :x-gap="8" :y-gap="8">
-              <NGi>
-                <NButton type="primary" strong block>
-                  创建新题目
+  <div class="flex flex-col h-full w-full">
+    <!-- 欢迎语区域 -->
+    <NCard size="small">
+      <NSpace vertical>
+        <NH1 style="margin: 0; color: var(--primary-color); font-size: 28px;">
+          {{ getGreeting() }}，{{ userInfo?.nickname }}！👋
+        </NH1>
+        <NSpace vertical>
+          <NText depth="2" style="font-size: 16px;">
+            欢迎回到 OJ 管理控制台
+          </NText>
+          <NText v-if="userInfo?.groupIdName" depth="3" style="font-size: 14px;">
+            <n-tag size="small">
+              {{ userInfo?.groupIdName }}
+            </n-tag>
+          </NText>
+          <NText v-if="userInfo?.roleNames" depth="3" style="font-size: 14px;">
+            <n-space><n-tag v-for="(item, index) in userInfo?.roleNames" :key="index" size="small">
+              {{ item }}
+            </n-tag></n-space>
+          </NText>
+          <NText depth="3" style="font-size: 14px;">
+            当前时间：<n-time :time="currentTime" /> | 上次登录时间：<n-time :time="Number(userInfo.loginTime)" />
+          </NText>
+        </NSpace>
+      </NSpace>
+    </NCard>
+
+    <!-- 主要内容区域 -->
+    <NCard size="small" class="flex-1">
+      <NGrid :x-gap="16" :y-gap="16">
+        <NGi :span="16">
+          <NSpace vertical :size="12">
+            <!-- 快速操作 -->
+            <NCard title="快速操作" size="small">
+              <NGrid :cols="6" :x-gap="8" :y-gap="8">
+                <NGi>
+                  <NButton type="primary" block @click="problemCreateFormRef.doOpen(null, false)">
+                    题目创建
+                  </NButton>
+                </NGi>
+                <NGi>
+                  <NButton type="success" block @click="setCreateFormRef.doOpen(null, false)">
+                    题集创建
+                  </NButton>
+                </NGi>
+                <NGi>
+                  <NButton type="info" block @click="categoryCreateFormRef.doOpen(null, false)">
+                    分类创建
+                  </NButton>
+                </NGi>
+                <NGi>
+                  <NButton type="warning" block @click="tagCreateFormRef.doOpen(null, false)">
+                    标签创建
+                  </NButton>
+                </NGi>
+              </NGrid>
+            </NCard>
+
+            <!-- 最近活动 -->
+            <NCard title="最近活动" size="small">
+              <NList v-if="recentlogs" hoverable size="small">
+                <NListItem v-for="item in recentlogs" :key="item?.id">
+                  <template #prefix>
+                    <NTag
+                      :bordered="false"
+                      size="small"
+                    >
+                      {{ item?.category || '未知' }}
+                    </NTag>
+                  </template>
+                  <div class="flex items-center gap-2 justify-between">
+                    <n-text>{{ item?.description || '无描述' }}</n-text>
+                    <n-time :time="Number(item.operationTime)" />
+                  </div>
+                </NListItem>
+              </NList>
+              <n-empty v-else description="暂无数据" />
+            </NCard>
+          </NSpace>
+        </NGi>
+
+        <NGi :span="8">
+          <NSpace vertical :size="12">
+            <!-- 快捷功能 -->
+            <NCard title="快捷功能" size="small">
+              <NSpace vertical :size="10">
+                <NButton type="primary" ghost block @click="$router.push('/problem/list')">
+                  题目管理
                 </NButton>
-              </NGi>
-              <NGi>
-                <NButton type="info" strong block>
-                  人工执行
+                <NButton type="info" ghost block @click="$router.push('/system/user')">
+                  用户管理
                 </NButton>
-              </NGi>
-              <NGi>
-                <NButton type="success" strong block>
-                  限时题集
+                <NButton type="success" ghost block @click="$router.push('/set/list')">
+                  题集管理
                 </NButton>
-              </NGi>
-              <NGi>
-                <NButton type="warning" strong block>
-                  系统设置
+                <NButton type="warning" ghost block @click="$router.push('/system/log')">
+                  系统日志
                 </NButton>
-              </NGi>
-              <NGi>
-                <NButton type="error" strong block>
-                  清理沙箱
-                </NButton>
-              </NGi>
-              <NGi>
-                <NButton type="default" strong block>
-                  查看日志
-                </NButton>
-              </NGi>
-            </NGrid>
-          </NCard>
-          <NCard title="服务详细信息">
-            <NScrollbar style="max-height: 420px;">
-              <NCollapse>
-                <NCollapseItem v-for="service in servicesStatus" :key="service.serviceName" :title="service.serviceName">
+              </NSpace>
+            </NCard>
+
+            <!-- 今日统计 -->
+            <NCard title="今日统计" size="small">
+              <NSpace vertical :size="12">
+                <NCard content-style="padding: 16px;" size="small">
                   <NSpace vertical>
-                    <NGrid :cols="4" :x-gap="12" :y-gap="12">
-                      <NGi>
-                        <NCard content-style="padding: 12px;">
-                          <NSpace vertical align="center">
-                            <NText depth="3">
-                              分组名称
-                            </NText>
-                            <NText strong>
-                              {{ service.groupName ? service.groupName : '未分组' }}
-                            </NText>
-                          </NSpace>
-                        </NCard>
-                      </NGi>
-                      <NGi>
-                        <NCard content-style="padding: 12px;">
-                          <NSpace vertical align="center">
-                            <NText depth="3">
-                              集群数量
-                            </NText>
-                            <NText strong>
-                              {{ service.clusterCount }}
-                            </NText>
-                          </NSpace>
-                        </NCard>
-                      </NGi>
-                      <NGi>
-                        <NCard content-style="padding: 12px;">
-                          <NSpace vertical align="center">
-                            <NText depth="3">
-                              实例总数
-                            </NText>
-                            <NText strong>
-                              {{ service.instanceCount }}
-                            </NText>
-                          </NSpace>
-                        </NCard>
-                      </NGi>
-                      <NGi>
-                        <NCard content-style="padding: 12px;">
-                          <NSpace vertical align="center">
-                            <NText depth="3">
-                              健康实例
-                            </NText>
-                            <NText strong :type="service.healthyInstanceCount === service.instanceCount ? 'success' : 'error'">
-                              {{ service.healthyInstanceCount }}
-                            </NText>
-                          </NSpace>
-                        </NCard>
-                      </NGi>
-                    </NGrid>
-
-                    <NText strong>
-                      集群详情
-                    </NText>
-                    <NCollapse v-for="cluster in service.clusters" :key="cluster.clusterName" accordion>
-                      <NCollapseItem :title="`集群: ${cluster.clusterName} (${cluster.instances.length}个实例)`">
-                        <NDataTable
-                          :columns="instanceColumns"
-                          :data="cluster.instances"
-                          :bordered="false"
-                        />
-                      </NCollapseItem>
-                    </NCollapse>
-                  </NSpace>
-                </NCollapseItem>
-              </NCollapse>
-            </NScrollbar>
-          </NCard>
-        </NSpace>
-      </NGi>
-      <NGi :span="8">
-        <NSpace
-          vertical
-          :size="16"
-        >
-          <NCard title="服务概览">
-            <NGrid :cols="2" :x-gap="8" :y-gap="8">
-              <NGi>
-                <NCard content-style="padding: 12px;">
-                  <NSpace vertical align="center">
-                    <NText depth="3">
-                      运行中服务
-                    </NText>
-                    <NText strong style="font-size: 24px;">
-                      {{ servicesStatus.filter(s => getServiceHealthStatus(s) === 'running').length }}
-                    </NText>
-                    <NText depth="3">
-                      共{{ servicesStatus.length }}个服务
-                    </NText>
+                    <NSpace justify="space-between" align="center">
+                      <NText depth="2">
+                        新提交
+                      </NText>
+                      <NText style="font-size: 18px; color: var(--info-color);">
+                        {{ todayTotal?.todaySubmitCount ? todayTotal.todaySubmitCount : 0 }}
+                      </NText>
+                    </NSpace>
+                    <NSpace justify="space-between" align="center">
+                      <NText depth="2">
+                        新用户
+                      </NText>
+                      <NText style="font-size: 18px; color: var(--primary-color);">
+                        {{ todayTotal?.todayNewUserCount ? todayTotal.todayNewUserCount : 0 }}
+                      </NText>
+                    </NSpace>
                   </NSpace>
                 </NCard>
-              </NGi>
-              <NGi>
-                <NCard content-style="padding: 12px;">
-                  <NSpace vertical align="center">
-                    <NText depth="3">
-                      异常服务
-                    </NText>
-                    <NText strong style="font-size: 24px; color: var(--error-color)">
-                      {{ servicesStatus.filter(s => getServiceHealthStatus(s) !== 'running').length }}
-                    </NText>
-                    <NText depth="3">
-                      需立即处理
-                    </NText>
-                  </NSpace>
-                </NCard>
-              </NGi>
-            </NGrid>
-          </NCard>
+              </NSpace>
+            </NCard>
+          </NSpace>
+        </NGi>
+      </NGrid>
+    </NCard>
+  </div>
 
-          <NCard title="服务详情">
-            <NList hoverable>
-              <NListItem v-for="service in servicesStatus" :key="service.serviceName">
-                <template #prefix>
-                  <NTag
-                    :bordered="false"
-                    :type="getStatusColor(getServiceHealthStatus(service))"
-                    size="small"
-                  >
-                    {{ getStatusText(getServiceHealthStatus(service)) }}
-                  </NTag>
-                </template>
-                <NThing>
-                  <template #header>
-                    {{ service.serviceName }}
-                  </template>
-                  <template #description>
-                    实例: {{ service.healthyInstanceCount }}/{{ service.instanceCount }} | 集群: {{ service.clusterCount }}
-                  </template>
-                </NThing>
-              </NListItem>
-            </NList>
-          </NCard>
-        </NSpace>
-      </NGi>
-    </NGrid>
-  </NCard>
+  <ProblemCreateForm ref="problemCreateFormRef" />
+  <SetCreateForm ref="setCreateFormRef" />
+  <CategoryCreateForm ref="categoryCreateFormRef" />
+  <TagCreateForm ref="tagCreateFormRef" />
 </template>
 
 <style scoped>
+/* 可以添加一些自定义样式 */
 </style>

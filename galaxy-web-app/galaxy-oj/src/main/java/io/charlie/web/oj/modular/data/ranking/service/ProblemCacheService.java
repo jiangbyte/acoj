@@ -4,6 +4,7 @@ import io.charlie.web.oj.modular.data.ranking.data.RankItem;
 import io.charlie.web.oj.modular.data.ranking.data.PageResult;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ProblemCacheService {
 
@@ -23,12 +24,16 @@ public interface ProblemCacheService {
 
     // 获取提交人数
     Long getSubmitCount(String problemId);
-
+    Map<String, Long> batchGetSubmitCount(List<String> problemIds);
     // 获取通过人数
     Long getAcceptCount(String problemId);
 
+    Map<String, Long> batchGetAcceptCount(List<String> problemIds);
+
     // 获取参与人数
     Long getParticipantCount(String problemId);
+
+    Map<String, Long> batchGetParticipantCount(List<String> problemIds);
 
     // 获取尝试人数
     Long getAttemptCount(String problemId);
@@ -37,6 +42,8 @@ public interface ProblemCacheService {
     Double getAcceptRate(String problemId);
 
     Double getAverageAcceptRate();
+
+    Map<String, Double> batchGetAcceptRate(List<String> problemId);
 
     // 获取题目排行榜TopN（按通过人数排序）
     List<RankItem> getProblemRankTopN(int n);

@@ -19,11 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-09-20
-* @description 题集 控制器
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-09-20
+ * @description 题集 控制器
+ */
 @Tag(name = "题集控制器")
 @Slf4j
 @RequiredArgsConstructor
@@ -38,6 +38,12 @@ public class DataSetController {
     @GetMapping("/data/set/page")
     public Result<?> page(@ParameterObject DataSetPageParam dataSetPageParam) {
         return Result.success(dataSetService.page(dataSetPageParam));
+    }
+
+    @Operation(summary = "获取题集分页")
+    @GetMapping("/data/set/page/client")
+    public Result<?> pageClient(@ParameterObject DataSetPageParam dataSetPageParam) {
+        return Result.success(dataSetService.pageClient(dataSetPageParam));
     }
 
     @Operation(summary = "添加题集")

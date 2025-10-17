@@ -11,6 +11,10 @@ import { AesCrypto, DifficultyColorUtil, Poller, RandomColorUtil } from '@/utils
 import { useUserStore } from '@/stores'
 import { v4 as uuidv4 } from 'uuid'
 
+defineOptions({
+  inheritAttrs: false,
+})
+
 const userStore = useUserStore()
 
 const isConnected = ref(false)
@@ -39,25 +43,25 @@ const resultTaskData = ref({
   id: undefined,
   judgeTaskId: undefined,
   userId: undefined,
-  userIdName: '未知用户',
+  userIdName: '加载中',
   userAvatar: undefined,
   setId: undefined,
   setIdName: undefined,
   isSet: false,
   problemId: undefined,
-  problemIdName: '未知题目',
+  problemIdName: '加载中',
   language: undefined,
-  languageName: undefined,
+  languageName: '加载中',
   code: undefined,
   codeLength: 0,
   submitType: false,
-  submitTypeName: undefined,
+  submitTypeName: '加载中',
   maxTime: 0,
   maxMemory: 0,
   message: undefined,
   testCase: [],
   status: undefined,
-  statusName: undefined,
+  statusName: '加载中',
   isFinish: false,
   similarity: 0,
   taskId: undefined,
@@ -411,7 +415,7 @@ onUnmounted(() => {
                     </n-text>
                   </n-flex>
                 </n-alert>
-                <n-card v-if="isPolling || resultTaskData" class="w-full max-w-3xl mx-auto" :bordered="false" size="small">
+                <n-card v-if="isPolling || resultTaskData.id" class="w-full max-w-3xl mx-auto" :bordered="false" size="small">
                   <!-- 头部信息 -->
                   <div class="flex items-center gap-4">
                     <n-avatar
@@ -539,7 +543,7 @@ onUnmounted(() => {
                 /> -->
                 <LLMChat
                   :problem-id="originalId"
-                  :language="submitParam.language"
+                  :language="submitParam.language || ''"
                   :user-code="submitParam.code"
                 />
               </NTabPane>

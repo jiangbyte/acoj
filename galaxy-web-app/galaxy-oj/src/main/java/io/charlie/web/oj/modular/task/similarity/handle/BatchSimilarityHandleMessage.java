@@ -16,9 +16,6 @@ import io.charlie.web.oj.modular.task.similarity.data.SimilarityResult;
 import io.charlie.web.oj.modular.task.similarity.dto.BatchSimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.mq.CommonSimilarityQueue;
 import io.charlie.web.oj.modular.task.similarity.utils.CodeSimilarityCalculator;
-import io.charlie.web.oj.modular.websocket.config.WebSocketConfig;
-import io.charlie.web.oj.modular.websocket.data.WebSocketMessage;
-import io.charlie.web.oj.modular.websocket.utils.WebSocketUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.trans.service.impl.TransService;
@@ -42,7 +39,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BatchSimilarityHandleMessage {
     private final RabbitTemplate rabbitTemplate;
-    private final WebSocketUtil webSocketUtil;
     private final DataSubmitMapper dataSubmitMapper;
     private final DataSolvedMapper dataSolvedMapper;
     private final DataProblemMapper dataProblemMapper;
@@ -54,14 +50,6 @@ public class BatchSimilarityHandleMessage {
     private final TransService transService;
 
     public void sendSimilarity(BatchSimilaritySubmitDto batchSimilaritySubmitDto) {
-        WebSocketMessage<String> message = new WebSocketMessage<>();
-        message.setData("加载中");
-        webSocketUtil.sendToTopic(
-                WebSocketConfig.TOPIC_SIMILARITY_BATCH_STATUS,
-                batchSimilaritySubmitDto.getBatchTaskId(), // 任务 ID
-                message
-        );
-
         // 发送消息
         rabbitTemplate.convertAndSend(
                 CommonSimilarityQueue.EXCHANGE1,
@@ -81,9 +69,6 @@ public class BatchSimilarityHandleMessage {
     private void notify(BatchSimilaritySubmitDto dto, SimilarityResult result, String reportId) {
         // TODO: 待完善
 
-        WebSocketMessage<DataSubmit> message = new WebSocketMessage<>();
-        webSocketUtil.sendToTopic(WebSocketConfig.TOPIC_SIMILARITY_BATCH_STATUS, dto.getBatchTaskId(), message);
-        webSocketUtil.sendToTopicClose(WebSocketConfig.TOPIC_SIMILARITY_BATCH_STATUS, dto.getBatchTaskId());
     }
 
 }

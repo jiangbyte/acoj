@@ -27,4 +27,10 @@ public interface SysGroupService extends IService<SysGroup> {
 
     List<LabelOption<String>> options(SysGroupOptionParam sysGroupOptionParam);
 
+    List<SysGroup> authTreeGroup();
+
+    List<SysGroup> subGroup(String groupId);
+
+    List<SysGroup> subGroup(String groupId, boolean includeSelf);
+
 }

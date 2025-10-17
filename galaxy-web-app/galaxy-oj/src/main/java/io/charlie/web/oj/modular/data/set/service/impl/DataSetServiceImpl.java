@@ -99,6 +99,41 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         return page;
     }
 
+    @Override
+    public Page<DataSet> pageClient(DataSetPageParam dataSetPageParam) {
+        QueryWrapper<DataSet> queryWrapper = new QueryWrapper<DataSet>().checkSqlInjection();
+        queryWrapper.lambda().eq(DataSet::getIsVisible, Boolean.TRUE);
+
+        // 关键字
+        if (ObjectUtil.isNotEmpty(dataSetPageParam.getKeyword())) {
+            queryWrapper.lambda().like(DataSet::getTitle, dataSetPageParam.getKeyword());
+        }
+        if (GaStringUtil.isNotEmpty(dataSetPageParam.getCategoryId())) {
+            queryWrapper.lambda().eq(DataSet::getCategoryId, dataSetPageParam.getCategoryId());
+        }
+        if (GaStringUtil.isNotEmpty(dataSetPageParam.getDifficulty())) {
+            queryWrapper.lambda().eq(DataSet::getDifficulty, dataSetPageParam.getDifficulty());
+        }
+        if (GaStringUtil.isNotEmpty(dataSetPageParam.getSetType())) {
+            queryWrapper.lambda().eq(DataSet::getSetType, dataSetPageParam.getSetType());
+        }
+        if (ObjectUtil.isAllNotEmpty(dataSetPageParam.getSortField(), dataSetPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataSetPageParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    dataSetPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(dataSetPageParam.getSortField()));
+        }
+
+        Page<DataSet> page = this.page(CommonPageRequest.Page(
+                        Optional.ofNullable(dataSetPageParam.getCurrent()).orElse(1),
+                        Optional.ofNullable(dataSetPageParam.getSize()).orElse(20),
+                        null
+                ),
+                queryWrapper);
+        setBuildTool.buildSets(page.getRecords());
+        return page;
+    }
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void add(DataSetAddParam dataSetAddParam) {

@@ -7,11 +7,11 @@ import io.charlie.web.oj.modular.sys.role.entity.SysRole;
 import java.util.List;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-07-05
-* @description 用户-角色 关联表(1-N) 服务类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-07-05
+ * @description 用户-角色 关联表(1-N) 服务类
+ */
 public interface SysUserRoleService extends IService<SysUserRole> {
     void assignRoles(String userId, List<String> roleIds);
 
@@ -20,4 +20,5 @@ public interface SysUserRoleService extends IService<SysUserRole> {
 
     // 判断用户是否能够进入管理后台
     Boolean canAdmin(String userId);
+
 }

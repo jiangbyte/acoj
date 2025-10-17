@@ -47,7 +47,7 @@ const options = [
     icon: iconRender('icon-park-outline:id-card-h'),
   },
   {
-    label: '账户安全',
+    label: '个人信息',
     key: 'security',
     icon: iconRender('icon-park-outline:people-safe'),
   },

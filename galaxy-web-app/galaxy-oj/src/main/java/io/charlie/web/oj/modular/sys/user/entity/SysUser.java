@@ -3,6 +3,10 @@ package io.charlie.web.oj.modular.sys.user.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 
 import java.io.Serializable;
@@ -75,6 +79,8 @@ public class SysUser extends CommonEntity {
     private String telephone;
 
     @Schema(description = "登录时间")
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date loginTime;
 
     // =====================
