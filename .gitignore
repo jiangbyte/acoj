@@ -93,3 +93,6 @@ build/
 **/TODO.md
 
 /judge-service/JudgeService
+
+**/build_and_push.sh
+**/deploy_galaxy_oj.sh
