@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.sys.group.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.sys.group.param.SysGroupPageParam;
 import io.charlie.web.oj.modular.sys.group.param.SysGroupAddParam;
 import io.charlie.web.oj.modular.sys.group.param.SysGroupEditParam;
@@ -43,6 +46,7 @@ public class SysGroupController {
         return Result.success(sysGroupService.page(sysGroupPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加用户组")
     @SaCheckPermission("/sys/group/add")
     @PostMapping("/sys/group/add")
@@ -51,6 +55,7 @@ public class SysGroupController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑用户组")
     @SaCheckPermission("/sys/group/edit")
     @PostMapping("/sys/group/edit")
@@ -59,6 +64,7 @@ public class SysGroupController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除用户组")
     @SaCheckPermission("/sys/group/delete")
     @PostMapping("/sys/group/delete")
@@ -76,7 +82,7 @@ public class SysGroupController {
 
     @Operation(summary = "获取用户组树")
     @GetMapping("/sys/group/tree")
-    public Result<?> tree() {
-        return Result.success(sysGroupService.authTreeGroup());
+    public Result<?> tree(@RequestParam String keyword) {
+        return Result.success(sysGroupService.authTreeGroup(keyword));
     }
 }

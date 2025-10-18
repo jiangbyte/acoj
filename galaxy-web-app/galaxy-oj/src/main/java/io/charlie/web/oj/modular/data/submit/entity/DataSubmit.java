@@ -120,6 +120,7 @@ public class DataSubmit extends CommonEntity {
     private String statusName;
 
     @Schema(description = "流程流转是否完成")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean isFinish;
 
     @Schema(description = "相似度")

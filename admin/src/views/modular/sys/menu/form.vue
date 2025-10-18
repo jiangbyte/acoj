@@ -11,7 +11,7 @@ const { sysMenuDefaultData, sysMenuAdd, sysMenuEdit } = useSysMenuFetch()
 const formData = ref<any>({ ...sysMenuDefaultData })
 const rules = {
   pid: [
-    { required: true, message: '请输入父菜单ID', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入父菜单ID', trigger: ['input', 'blur'] },
   ],
   name: [
     { required: true, message: '请输入菜单名称', trigger: ['input', 'blur'] },
@@ -72,10 +72,18 @@ async function doSubmit() {
   })
 }
 
+const menuOptions = ref()
 function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
+
+  useSysMenuFetch().sysMenuTreeList().then(({ data }) => {
+    if (data) {
+      console.log(data)
+      menuOptions.value = data
+    }
+  })
 }
 defineExpose({
   doOpen,
@@ -91,12 +99,31 @@ defineExpose({
           <NInput v-model:value="formData.id" placeholder="请输入菜单ID" :disabled="true" />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="父菜单ID" path="pid">
-          <NInput v-model:value="formData.pid" placeholder="请输入父菜单ID" />
+        <NFormItem label="图标" path="icon">
+          <NIcon size="20" class="mr-2">
+            <Icon :icon="formData.icon" />
+          </NIcon>
+          <NInput v-model:value="formData.icon" placeholder="请输入图标" />
+        </NFormItem>
+        <!-- 输入框 -->
+        <NFormItem label="菜单标题" path="title">
+          <NInput v-model:value="formData.title" placeholder="请输入菜单标题" />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="菜单名称" path="name">
           <NInput v-model:value="formData.name" placeholder="请输入菜单名称" />
+        </NFormItem>
+        <!-- 输入框 -->
+        <NFormItem label="父菜单" path="pid">
+          <!-- <NInput v-model:value="formData.pid" placeholder="请输入父菜单ID" /> -->
+          <n-tree-select
+            v-model:value="formData.pid"
+            :options="menuOptions"
+            label-field="title"
+            key-field="id"
+            :indent="12"
+            clearable
+          />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="路由路径" path="path">
@@ -105,17 +132,6 @@ defineExpose({
         <!-- 输入框 -->
         <NFormItem label="组件路径" path="componentPath">
           <NInput v-model:value="formData.componentPath" placeholder="请输入组件路径" />
-        </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="菜单标题" path="title">
-          <NInput v-model:value="formData.title" placeholder="请输入菜单标题" />
-        </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="图标" path="icon">
-          <NIcon size="20" class="mr-2">
-            <Icon :icon="formData.icon" />
-          </NIcon>
-          <NInput v-model:value="formData.icon" placeholder="请输入图标" />
         </NFormItem>
         <!-- Boolean 选择框 -->
         <NFormItem label="是否缓存" path="keepAlive">

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NTime } from 'naive-ui'
+import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText, NTime } from 'naive-ui'
 import { useTaskSimilarityFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -47,10 +47,37 @@ const columns: DataTableColumns<any> = [
   {
     title: '相似度',
     key: 'similarity',
+    render(row: any) {
+      return row.similarity * 100
+    },
   },
   {
     title: '用户',
     key: 'submitUser',
+    render(row: any) {
+      return h(
+        NSpace,
+        { align: 'center', size: 'small' },
+        {
+          default: () => [
+            h(
+              NAvatar,
+              {
+                size: 'small',
+                round: true,
+                src: row.submitUserAvatar,
+              },
+              {},
+            ),
+            h(
+              NText,
+              {},
+              { default: () => row.submitUserName },
+            ),
+          ],
+        },
+      )
+    },
   },
   // {
   //   title: '源代码',
@@ -86,6 +113,30 @@ const columns: DataTableColumns<any> = [
   {
     title: '样本用户',
     key: 'originUser',
+    render(row: any) {
+      return h(
+        NSpace,
+        { align: 'center', size: 'small' },
+        {
+          default: () => [
+            h(
+              NAvatar,
+              {
+                size: 'small',
+                round: true,
+                src: row.originUserAvatar,
+              },
+              {},
+            ),
+            h(
+              NText,
+              {},
+              { default: () => row.originUserName },
+            ),
+          ],
+        },
+      )
+    },
   },
   // {
   //   title: '样本源代码',
@@ -254,12 +305,12 @@ async function deleteBatchHandle() {
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
-            <NButton type="primary" @click="formRef.doOpen(null, false)">
+            <!-- <NButton type="primary" @click="formRef.doOpen(null, false)">
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
               创建
-            </NButton>
+            </NButton> -->
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除
@@ -331,7 +382,7 @@ async function deleteBatchHandle() {
         :bordered="false"
         :row-key="(row: any) => row.id"
         :loading="loading"
-        :scroll-x="1400"
+        :scroll-x="1900"
         flex-height
         class="flex-1 h-full"
       />

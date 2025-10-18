@@ -54,10 +54,16 @@ const columns: DataTableColumns<any> = [
   {
     title: '平均相似度',
     key: 'avgSimilarity',
+    render(row: any) {
+      return row.avgSimilarity * 100
+    },
   },
   {
     title: '最大相似度',
     key: 'maxSimilarity',
+    render(row: any) {
+      return row.maxSimilarity * 100
+    },
   },
   {
     title: '检测阈值',

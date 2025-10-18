@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useDataSubmitFetch } from '@/composables/v1'
-import { AesCrypto, LanguageColorUtil, StatusColorUtil, StatusUtils, SubmitTypeColorUtil } from '@/utils'
+import { AesCrypto, StatusUtils } from '@/utils'
 import CodeEditor from '@/components/common/editor/code/Editor.vue'
 
 const route = useRoute()
@@ -28,10 +28,7 @@ loadData()
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <n-flex>
-            <NTag
-              :bordered="false"
-              :color="{ color: SubmitTypeColorUtil.getColor(detailData?.submitType), textColor: '#fff' }"
-            >
+            <NTag :type="detailData?.submitType ? 'info' : 'warning'">
               {{ detailData?.submitTypeName }}
             </NTag>
             <h1 class="text-2xl font-bold mb-2">
@@ -44,8 +41,6 @@ loadData()
               <NTag
                 class="ml-1"
                 size="small"
-                :bordered="false"
-                :color="{ color: LanguageColorUtil.getColor(detailData?.language), textColor: '#fff' }"
               >
                 {{ detailData?.languageName }}
               </NTag>
@@ -54,7 +49,6 @@ loadData()
               <NTag
                 class="ml-1"
                 size="small"
-                :bordered="false"
               >
                 {{ detailData?.maxTime }}
               </NTag> ms</span>
@@ -62,7 +56,6 @@ loadData()
               <NTag
                 class="ml-1"
                 size="small"
-                :bordered="false"
               >
                 {{ detailData?.maxMemory }}
               </NTag> KB
@@ -71,10 +64,7 @@ loadData()
         </div>
 
         <div class="flex items-center">
-          <NTag
-            :bordered="false"
-            :color="{ color: StatusColorUtil.getColor(detailData?.status), textColor: '#fff' }"
-          >
+          <NTag>
             {{ detailData?.statusName }}
           </NTag>
         </div>
@@ -118,7 +108,7 @@ loadData()
     </div>
 
     <!-- 代码克隆检测结果 -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
+    <div v-if="detailData?.submitType" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
       <h2 class="text-xl font-bold mb-4 flex items-center">
         <i class="fa fa-clone text-purple-500 mr-2" /> 代码克隆检测
       </h2>
@@ -207,15 +197,11 @@ loadData()
                 <span class="font-medium">测试用例 <NTag
                   class="ml-1"
                   size="small"
-                  :bordered="false"
                 >
                   #{{ index + 1 }}
                 </NTag></span>
                 <!-- <span class="text-green-600 dark:text-green-400 text-sm">{{ testCase.status }}</span> -->
-                <NTag
-                  :bordered="false"
-                  :color="{ color: StatusColorUtil.getColor(testCase.status), textColor: '#fff' }"
-                >
+                <NTag>
                   {{ StatusUtils.getStatusText(testCase.status) }}
                 </NTag>
               </div>
@@ -233,7 +219,6 @@ loadData()
                   <NTag
                     class="ml-1"
                     size="small"
-                    :bordered="false"
                   >
                     {{ testCase.maxTime ? testCase.maxTime : 0 }}
                   </NTag> ms</span>
@@ -242,7 +227,6 @@ loadData()
                   <NTag
                     class="ml-1"
                     size="small"
-                    :bordered="false"
                   >
                     {{ testCase.maxMemory ? testCase.maxMemory : 0 }}
                   </NTag> KB

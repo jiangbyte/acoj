@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.data.similarity.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityPageParam;
 import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityAddParam;
 import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityEditParam;
@@ -46,6 +49,7 @@ public class TaskSimilarityController {
         return Result.success(taskSimilarityService.page(taskSimilarityPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加检测结果任务库")
     @SaCheckPermission("/task/similarity/add")
     @PostMapping("/task/similarity/add")
@@ -54,6 +58,7 @@ public class TaskSimilarityController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑检测结果任务库")
     @SaCheckPermission("/task/similarity/edit")
     @PostMapping("/task/similarity/edit")
@@ -62,6 +67,7 @@ public class TaskSimilarityController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除检测结果任务库")
     @SaCheckPermission("/task/similarity/delete")
     @PostMapping("/task/similarity/delete")

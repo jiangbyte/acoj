@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { AesCrypto, DifficultyColorUtil, RandomColorUtil } from '@/utils'
+import { AesCrypto } from '@/utils'
 import MdViewer from '@/components/common/editor/md/Viewer.vue'
 import { useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
 import type { DataTableColumns } from 'naive-ui'
@@ -76,7 +76,7 @@ const columns: DataTableColumns<any> = [
     key: 'categoryName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, { default: () => row.categoryName })
+      return h(NTag, { size: 'small', type: 'success' }, { default: () => row.categoryName })
     },
   },
   {
@@ -84,7 +84,7 @@ const columns: DataTableColumns<any> = [
     key: 'tagNames',
     width: 250,
     render: (row) => {
-      return h(NSpace, { align: 'center' }, { default: () => row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, { default: () => tag })) || [] })
+      return h(NSpace, { align: 'center' }, { default: () => row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', type: 'info' }, { default: () => tag })) || [] })
     },
   },
   {
@@ -92,7 +92,7 @@ const columns: DataTableColumns<any> = [
     key: 'difficultyName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: DifficultyColorUtil.getColor(row.difficulty), textColor: '#fff' } }, { default: () => row.difficultyName })
+      return h(NTag, { size: 'small', type: 'error' }, { default: () => row.difficultyName })
     },
   },
   {
@@ -100,7 +100,7 @@ const columns: DataTableColumns<any> = [
     key: 'acceptance',
     width: 120,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.acceptance })
+      return h(NTag, { size: 'small' }, { default: () => row.acceptance })
     },
   },
   {
@@ -108,7 +108,7 @@ const columns: DataTableColumns<any> = [
     key: 'solved',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.solved })
+      return h(NTag, { size: 'small' }, { default: () => row.solved })
     },
   },
   {
@@ -176,7 +176,16 @@ const submitColumns: DataTableColumns<any> = [
     key: 'statusName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.statusName })
+      return h(NTag, { size: 'small', type:
+      row.status === 'COMPILATION_ERROR'
+      || row.status === 'RUNTIME_ERROR'
+      || row.status === 'TIME_LIMIT_EXCEEDED'
+      || row.status === 'MEMORY_LIMIT_EXCEEDED'
+      || row.status === 'WRONG_ANSWER'
+      || row.status === 'SYSTEM_ERROR'
+      || row.status === 'MEMORY_LIMIT_EXCEEDED'
+        ? 'error'
+        : 'success' }, { default: () => row.statusName })
     },
   },
   {
@@ -184,15 +193,15 @@ const submitColumns: DataTableColumns<any> = [
     key: 'languageName',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.languageName })
+      return h(NTag, { size: 'small' }, { default: () => row.languageName })
     },
   },
   {
-    title: '代码长度',
+    title: '长度(byte)',
     key: 'codeLength',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.codeLength })
+      return h(NTag, { size: 'small' }, { default: () => row.codeLength })
     },
   },
   {
@@ -200,31 +209,40 @@ const submitColumns: DataTableColumns<any> = [
     key: 'submitTypeName',
     width: 90,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.submitTypeName })
+      return h(NTag, { size: 'small', type: row.submitType ? 'info' : 'warning' }, { default: () => row.submitTypeName })
     },
   },
   {
-    title: '耗时',
+    title: '耗时(ms)',
     key: 'maxTime',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.maxTime })
+      return h(NTag, { size: 'small' }, { default: () => row.maxTime })
     },
   },
   {
-    title: '内存',
+    title: '内存(Kb)',
     key: 'maxMemory',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.maxMemory })
+      return h(NTag, { size: 'small' }, { default: () => row.maxMemory })
     },
   },
   {
-    title: '相似度',
+    title: '相似度(%)',
     key: 'similarity',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.similarity })
+      return h(NTag, { size: 'small' }, { default: () => row.similarity * 100 })
+    },
+  },
+  {
+    title: '行为标记',
+    key: 'similarityCategoryName',
+    ellipsis: true,
+    width: 80,
+    render: (row) => {
+      return row.similarityCategoryName ? row.similarityCategoryName : '未触发'
     },
   },
   // {
@@ -361,15 +379,6 @@ const processColumns: DataTableColumns<any> = [
     },
   },
 ]
-const progressPageData = ref()
-const progressPageParam = ref({
-  current: 1,
-  size: 10,
-  sortField: null,
-  sortOrder: null,
-  keyword: '',
-  problemSetId: originalId,
-})
 
 async function loadData() {
   const { dataSetDetail } = useDataSetFetch()
@@ -434,17 +443,17 @@ async function loadData() {
   // })
 }
 loadData()
-function rowProps(row: any) {
-  // return {
-  //   style: 'cursor: pointer;',
-  //   onClick: () => {
-  //     router.push({
-  //       name: 'problem_submit',
-  //       query: { problem: AesCrypto.encrypt(row.id) },
-  //     })
-  //   },
-  // }
-}
+// function rowProps(row: any) {
+//   // return {
+//   //   style: 'cursor: pointer;',
+//   //   onClick: () => {
+//   //     router.push({
+//   //       name: 'problem_submit',
+//   //       query: { problem: AesCrypto.encrypt(row.id) },
+//   //     })
+//   //   },
+//   // }
+// }
 </script>
 
 <template>
@@ -518,17 +527,22 @@ function rowProps(row: any) {
           </div>
 
           <!-- 题集作者信息 -->
-          <div class="flex items-center">
-            <NAvatar :src="detailData?.createUserAvatar" round :size="40" class="mr-3" />
-            <div>
+          <NSpace align="center">
+            <NSpace align="center" :size="0">
+              <NAvatar :src="detailData?.createUserAvatar" round :size="40" class="mr-3" />
               <div class="font-medium">
                 {{ detailData?.createUserName }}
               </div>
+            </NSpace>
+            <NSpace align="center">
               <div class="text-sm text-gray-500 dark:text-gray-400">
-                发布于 <NTime :time="detailData?.createTime" /> · 最后更新 <NTime :time="detailData?.updateTime" />
+                发布于 <NTime :time="detailData?.createTime" />
               </div>
-            </div>
-          </div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                最后更新 <NTime :time="detailData?.updateTime" />
+              </div>
+            </NSpace>
+          </NSpace>
         </div>
       </div>
       <div class="bg-white overflow-hidden p-x-6 p-b-3">

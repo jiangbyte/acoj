@@ -71,12 +71,16 @@ public class LoginUser implements Serializable, TransPojo {
     private String studentNumber;
 
     @Schema(description = "创建时间")
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date createTime;
 
     @Schema(description = "创建用户")
     private String createUser;
 
     @Schema(description = "更新时间")
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date updateTime;
 
     @Schema(description = "更新用户")

@@ -43,7 +43,7 @@ const columns: DataTableColumns<any> = [
         h(NButton, {
           type: 'primary',
           size: 'small',
-          onClick: () => formRef.value.doOpen(row, true),
+          onClick: () => formRef.value.doOpen(null, row, true),
         }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row, true) }, () => '详情'),
         h(NPopconfirm, {
@@ -132,6 +132,7 @@ async function loadListData(typeKey: string) {
   }
 }
 async function handleTreeSelect(keys: string[]) {
+  console.log(keys)
   // 对于keys的每一个key，如果其中有:符号，截取前面的字符串
   const newKeys = keys.map((key) => {
     if (key.includes(':')) {
@@ -175,7 +176,7 @@ async function deleteBatchHandle() {
 
 <template>
   <div class="flex flex-col h-full w-full">
-    <NSplit direction="horizontal" :default-size="0.2" :max="0.8" :min="0.2">
+    <NSplit direction="horizontal" :default-size="0.25" :max="0.75" :min="0.25">
       <template #1>
         <div class="flex flex-col h-full w-full">
           <NCard size="small">
@@ -225,7 +226,7 @@ async function deleteBatchHandle() {
             <NSpace vertical>
               <NSpace align="center" justify="space-between">
                 <NSpace align="center">
-                  <NButton type="primary" @click="formRef.doOpen(null, false)">
+                  <NButton type="primary" @click="formRef.doOpen(typeCode, null, false)">
                     <template #icon>
                       <IconParkOutlinePlus />
                     </template>

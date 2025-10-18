@@ -14,21 +14,24 @@ export function useSysUserFetch() {
   const sysUserDefaultData = {
     id: '',
     groupId: '',
+    groupIdName: '',
     username: '',
     password: '',
     nickname: '',
     avatar: '',
     background: '',
     quote: '',
-    gender: false,
+    gender: 0,
+    genderName: '',
     email: '',
     studentNumber: '',
     telephone: '',
-    loginTime: '',
-    createTime: '',
+    loginTime: Date.now(),
+    createTime: Date.now(),
     createUser: '',
-    updateTime: '',
+    updateTime: Date.now(),
     updateUser: '',
+    roleNames: [],
   }
   return {
     /*
@@ -83,6 +86,18 @@ export function useSysUserFetch() {
      */
     getProfile() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/profile`)
+    },
+    sysUserUpdateAvatar(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/avatar`, data)
+    },
+    sysUserUpdateBackground(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/background`, data)
+    },
+    sysUserUpdatePassword(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/password`, data)
+    },
+    sysUserUpdateProfile(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/update/profile`, data)
     },
   }
 }

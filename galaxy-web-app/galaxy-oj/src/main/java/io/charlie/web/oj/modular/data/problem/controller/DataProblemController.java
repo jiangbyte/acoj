@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.data.problem.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemPageParam;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemAddParam;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemEditParam;
@@ -52,6 +55,7 @@ public class DataProblemController {
         return Result.success(dataProblemService.setPage(dataProblemPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加题目")
     @SaCheckPermission("/data/problem/add")
     @PostMapping("/data/problem/add")
@@ -60,6 +64,7 @@ public class DataProblemController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑题目")
     @SaCheckPermission("/data/problem/edit")
     @PostMapping("/data/problem/edit")
@@ -68,6 +73,7 @@ public class DataProblemController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除题目")
     @SaCheckPermission("/data/problem/delete")
     @PostMapping("/data/problem/delete")
@@ -123,6 +129,7 @@ public class DataProblemController {
         return Result.success(dataProblemService.difficultyDistribution());
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "导入题目")
     @PostMapping("/data/problem/import")
     public Result<?> importProblems(@RequestParam("file") MultipartFile file) {

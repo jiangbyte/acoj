@@ -46,20 +46,39 @@ defineExpose({
         <NDescriptionsItem label="子标题">
           {{ formData.subtitle }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="创建时间">
-          <NTime :time="Number(formData.createTime)" />
-        </NDescriptionsItem>
         <NDescriptionsItem label="创建者">
           {{ formData.createUserName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="上架">
           {{ formData.isVisibleName }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="创建时间">
+          <NTime :time="Number(formData.createTime)" />
+        </NDescriptionsItem>
+        <NDescriptionsItem label="创建者">
+          <!-- {{ formData.createUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.createUserAvatar"
+            />
+            <NText>{{ formData.createUserName }}</NText>
+          </NSpace>
+        </NDescriptionsItem>
         <NDescriptionsItem label="更新时间">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="更新人">
-          {{ formData.updateUserName }}
+          <!-- {{ formData.updateUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.updateUserAvatar"
+            />
+            <NText>{{ formData.updateUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
       </NDescriptions>
       <template #footer>

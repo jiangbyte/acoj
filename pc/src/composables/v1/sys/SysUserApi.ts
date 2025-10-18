@@ -14,21 +14,24 @@ export function useSysUserFetch() {
   const sysUserDefaultData = {
     id: '',
     groupId: '',
+    groupIdName: '',
     username: '',
     password: '',
     nickname: '',
     avatar: '',
     background: '',
     quote: '',
-    gender: false,
+    gender: 0,
+    genderName: '',
     email: '',
     studentNumber: '',
     telephone: '',
-    loginTime: '',
-    createTime: '',
+    loginTime: Date.now(),
+    createTime: Date.now(),
     createUser: '',
-    updateTime: '',
+    updateTime: Date.now(),
     updateUser: '',
+    roleNames: [],
   }
   return {
     /*

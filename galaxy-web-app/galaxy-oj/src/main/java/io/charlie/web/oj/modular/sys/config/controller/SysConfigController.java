@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.sys.config.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.sys.config.param.SysConfigPageParam;
 import io.charlie.web.oj.modular.sys.config.param.SysConfigAddParam;
 import io.charlie.web.oj.modular.sys.config.param.SysConfigEditParam;
@@ -43,6 +46,7 @@ public class SysConfigController {
         return Result.success(sysConfigService.page(sysConfigPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加系统配置")
     @SaCheckPermission("/sys/config/add")
     @PostMapping("/sys/config/add")
@@ -51,6 +55,7 @@ public class SysConfigController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑系统配置")
     @SaCheckPermission("/sys/config/edit")
     @PostMapping("/sys/config/edit")
@@ -59,6 +64,7 @@ public class SysConfigController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除系统配置")
     @SaCheckPermission("/sys/config/delete")
     @PostMapping("/sys/config/delete")

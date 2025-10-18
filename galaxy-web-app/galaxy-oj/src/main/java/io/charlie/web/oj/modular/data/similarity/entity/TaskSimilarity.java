@@ -18,6 +18,7 @@ import java.util.List;
 
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
+import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -81,7 +82,16 @@ public class TaskSimilarity extends CommonEntity {
     private BigDecimal similarity;
 
     @Schema(description = "提交用户")
+    @Trans(type = TransType.SIMPLE, target = SysUser.class, fields = {"nickname", "avatar"}, refs = {"submitUserName", "submitUserAvatar"})
     private String submitUser;
+
+    @Schema(description = "用户名称")
+    @TableField(exist = false)
+    private String submitUserName;
+
+    @Schema(description = "用户头像")
+    @TableField(exist = false)
+    private String submitUserAvatar;
 
     @Schema(description = "源代码")
     private String submitCode;
@@ -106,7 +116,16 @@ public class TaskSimilarity extends CommonEntity {
     private List<String> submitTokenTexts;
 
     @Schema(description = "样本用户")
+    @Trans(type = TransType.SIMPLE, target = SysUser.class, fields = {"nickname", "avatar"}, refs = {"originUserName", "originUserAvatar"})
     private String originUser;
+
+    @Schema(description = "用户名称")
+    @TableField(exist = false)
+    private String originUserName;
+
+    @Schema(description = "用户头像")
+    @TableField(exist = false)
+    private String originUserAvatar;
 
     @Schema(description = "样本源代码")
     private String originCode;

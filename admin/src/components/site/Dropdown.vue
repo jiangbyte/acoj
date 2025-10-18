@@ -19,24 +19,24 @@ function handleSelect(key: string | number) {
     })
   }
   else if (key === 'profile') {
-    router.push('/settings/profile')
+    router.push('/mine')
   }
-  else if (key === 'security') {
-    router.push('/settings/security')
-  }
+  // else if (key === 'security') {
+  //   router.push('/settings/security')
+  // }
 }
 
 const options = [
   {
-    label: '个人信息',
+    label: '个人中心',
     key: 'profile',
     icon: iconRender('icon-park-outline:id-card-h'),
   },
-  {
-    label: '账户安全',
-    key: 'security',
-    icon: iconRender('icon-park-outline:people-safe'),
-  },
+  // {
+  //   label: '账户安全',
+  //   key: 'security',
+  //   icon: iconRender('icon-park-outline:people-safe'),
+  // },
   {
     label: '登出',
     key: 'logout',

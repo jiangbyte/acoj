@@ -202,7 +202,6 @@ async function loadData() {
 }
 
 loadData()
-const mdssss = ref()
 
 async function deleteHandle(row: any) {
   const param = [{
@@ -265,7 +264,7 @@ async function deleteBatchHandle() {
               </template>
               导入
             </NButton> -->
-            <ProblemImport v-model="mdssss" buttontext="导入" @success="loadData()" />
+            <ProblemImport model-value="" buttontext="导入" @success="loadData()" />
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除

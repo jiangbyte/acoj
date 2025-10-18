@@ -45,8 +45,6 @@ public class JudgeHandleMessage {
     private final DataSolvedMapper dataSolvedMapper;
     private final DataLibraryService dataLibraryService;
     private final SimilarityHandleMessage similarityHandleMessage;
-    private final TransService transService;
-    private final RedisTemplate<String, Object> redisTemplate;
 
     private final UserCacheService userCacheService;
     private final ProblemSetCacheService problemSetCacheService;
@@ -65,42 +63,39 @@ public class JudgeHandleMessage {
     @Transactional
     @RabbitListener(queues = CommonJudgeQueue.BACK_QUEUE, concurrency = "5-10")
     public void receiveJudge(JudgeResultDto judgeResultDto) {
-        // 核心数据库更新 - 同步处理确保数据一致性
-        DataSubmit dataSubmit = updateSubmitData(judgeResultDto);
+        log.info("接收到消息：{}", JSONUtil.toJsonStr(judgeResultDto));
+
+        // 核心数据库更新
+        DataSubmit dataSubmit = dataSubmitMapper.selectById(judgeResultDto.getId());
+        BeanUtil.copyProperties(judgeResultDto, dataSubmit);
+        dataSubmitMapper.updateById(dataSubmit);
 
         // 排行榜更新
         handleRedisRecord(judgeResultDto, dataSubmit);
 
-        // 只有在AC状态且为正式提交时，才注册事务同步处理器
-        if (isAcAndFormalSubmission(judgeResultDto)) {
-            TransactionSynchronizationManager.registerSynchronization(
-                    new TransactionSynchronization() {
-                        @Override
-                        public void afterCommit() {
-                            log.info("事务提交完成，开始异步处理AC提交的附加任务");
-                            asyncHandleAdditionalTasks(judgeResultDto, dataSubmit);
-                        }
-                    }
-            );
+        // 正式提交
+        if (judgeResultDto.getSubmitType()) {
+            // ac情况
+            if (JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus())) {
+                log.info("正式提交 AC，进行额外处理");
+                asyncHandleAdditionalTasks(judgeResultDto, dataSubmit);
+            } else {
+                // 非 ac 情况
+                log.info("非 AC 提交，不进行额外处理");
+                stopStatus(judgeResultDto.getId());
+            }
+        } else {
+            // 测试提交
+            log.info("测试提交，不进行额外处理");
+            stopStatus(judgeResultDto.getId());
         }
     }
 
-    /**
-     * 判断是否为AC状态且为正式提交
-     */
-    private boolean isAcAndFormalSubmission(JudgeResultDto judgeResultDto) {
-        return JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus()) && judgeResultDto.getSubmitType();
-    }
-
-    /**
-     * 核心数据更新 - 同步处理
-     */
-    private DataSubmit updateSubmitData(JudgeResultDto judgeResultDto) {
-        DataSubmit dataSubmit = dataSubmitMapper.selectById(judgeResultDto.getId());
-        BeanUtil.copyProperties(judgeResultDto, dataSubmit);
-        dataSubmit.setIsFinish(Boolean.TRUE);
-        dataSubmitMapper.updateById(dataSubmit);
-        return dataSubmit;
+    private void stopStatus(String id) {
+        dataSubmitMapper.update(new LambdaUpdateWrapper<DataSubmit>()
+                .eq(DataSubmit::getId, id)
+                .set(DataSubmit::getIsFinish, Boolean.TRUE)
+        );
     }
 
     /**
@@ -109,39 +104,45 @@ public class JudgeHandleMessage {
     @Async("judgeTaskExecutor")
     public void asyncHandleAdditionalTasks(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
         try {
-            if (judgeResultDto.getSubmitType()) {
-                log.info("开始异步处理正式提交的附加任务");
-                handleFormalSubmissionAsync(judgeResultDto, dataSubmit);
+            log.info("开始异步处理正式提交的附加任务");
+            if (judgeResultDto.getIsSet()) {
+                // 更新 solved
+                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                        .eq(DataSolved::getUserId, judgeResultDto.getUserId())
+                        .eq(DataSolved::getProblemId, judgeResultDto.getProblemId())
+                        .eq(DataSolved::getSetId, judgeResultDto.getSetId())
+                        .eq(DataSolved::getSubmitId, judgeResultDto.getId())
+                        .set(DataSolved::getSolved, Boolean.TRUE)
+                );
             } else {
-                log.info("测试提交无需异步处理");
+                // 更新 solved
+                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                        .eq(DataSolved::getUserId, judgeResultDto.getUserId())
+                        .eq(DataSolved::getProblemId, judgeResultDto.getProblemId())
+                        .eq(DataSolved::getSubmitId, judgeResultDto.getId())
+                        .set(DataSolved::getSolved, Boolean.TRUE)
+                );
             }
+
+            // 从JudgeResultDto 中数据复制到 DataSubmit
+            BeanUtil.copyProperties(judgeResultDto, dataSubmit);
+            // 添加到 library
+            dataLibraryService.addLibrary(dataSubmit);
+            // 相似度检测
+            handleSimilarityCheck(judgeResultDto, dataSubmit);
         } catch (Exception e) {
             e.printStackTrace();
             log.error("异步处理附加任务失败：{}", e.getMessage());
         }
     }
 
-    /**
-     * 异步处理正式提交
-     */
-    private void handleFormalSubmissionAsync(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
-        if (judgeResultDto.getStatus().equals(JudgeStatus.ACCEPTED.getValue())) {
-            // 3. 更新 solved
-            updateSolvedRecord(judgeResultDto, dataSubmit);
-
-            // 4. 添加到 library
-            dataLibraryService.addLibrary(dataSubmit);
-
-            // 5. 相似度检测
-            handleSimilarityCheck(judgeResultDto, dataSubmit);
-        }
-    }
-
     private void handleRedisRecord(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
         Boolean isSet = judgeResultDto.getIsSet();
+
         String userId = judgeResultDto.getUserId();
         String problemId = judgeResultDto.getProblemId();
         String setId = judgeResultDto.getSetId();
+
         Boolean submitType = judgeResultDto.getSubmitType();
 
         boolean isAc = JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus());
@@ -149,12 +150,15 @@ public class JudgeHandleMessage {
         // 用户活跃度
         userCacheService.addUserActivity(userId, 0.01);
 
+        // 题集模式
         if (isSet) {
             // 题集参与度
             problemSetCacheService.addProblemSetParticipant(setId, userId);
+            // 正式提交
             if (submitType) {
                 // 题集内题目的提交度
                 problemSetCacheService.addProblemSetProblemSubmit(setId, problemId, userId);
+                // 通过
                 if (isAc) {
                     problemSetCacheService.addProblemSetProblemAccept(setId, problemId, userId);
                 }
@@ -165,9 +169,11 @@ public class JudgeHandleMessage {
         } else {
             // 题目参与度
             problemCacheService.addParticipantUser(problemId, userId);
+            // 正式提交
             if (submitType) {
                 // 提交度
                 problemCacheService.addSubmitUser(problemId, userId);
+                // 通过
                 if (isAc) {
                     problemCacheService.addAcceptUser(problemId, userId);
                     userCacheService.addUserAcceptedProblem(userId, problemId);
@@ -180,31 +186,19 @@ public class JudgeHandleMessage {
     }
 
     /**
-     * 更新 solved 记录
-     */
-    private void updateSolvedRecord(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
-        dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
-                .eq(DataSolved::getUserId, dataSubmit.getUserId())
-                .eq(DataSolved::getProblemId, dataSubmit.getProblemId())
-                .eq(DataSolved::getSubmitId, judgeResultDto.getId())
-                .eq(judgeResultDto.getIsSet(), DataSolved::getSetId, dataSubmit.getSetId())
-                .set(DataSolved::getSolved, true)
-        );
-    }
-
-    /**
      * 处理相似度检测
      */
     private void handleSimilarityCheck(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
         String taskId = IdUtil.getSnowflakeNextIdStr();
+
         dataSubmitMapper.update(new LambdaUpdateWrapper<DataSubmit>()
-                .eq(DataSubmit::getId, dataSubmit.getId())
-                .set(DataSubmit::getTaskId, taskId)
+                .eq(DataSubmit::getId, judgeResultDto.getId())
+                .set(DataSubmit::getTaskId, taskId) // 克隆检测任务ID
         );
 
         SimilaritySubmitDto similaritySubmitDto = BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class);
         similaritySubmitDto.setTaskId(taskId);
-        similaritySubmitDto.setTaskType(false);
+        similaritySubmitDto.setTaskType(Boolean.FALSE);
         similaritySubmitDto.setJudgeTaskId(judgeResultDto.getJudgeTaskId());
         similaritySubmitDto.setCreateTime(dataSubmit.getCreateTime());
 

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
 import { useSysLogFetch } from '@/composables/v1'
+import { FormatJsonString } from '@/utils'
 
 const emit = defineEmits(['close'])
 const show = ref(false)
@@ -28,8 +29,16 @@ defineExpose({
         <NDescriptionsItem label="主键">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户ID">
-          {{ formData.userId }}
+        <NDescriptionsItem label="用户">
+          <!-- {{ formData.userId }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.userAvatar"
+            />
+            <NText>{{ formData.userIdName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="操作">
           {{ formData.operation }}
@@ -38,7 +47,12 @@ defineExpose({
           {{ formData.method }}
         </NDescriptionsItem>
         <NDescriptionsItem label="参数">
-          {{ formData.params }}
+          <!-- {{ formData.params }} -->
+          <NCode
+            :code="FormatJsonString(formData.params)"
+            language="json"
+            word-wrap
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="IP">
           {{ formData.ip }}
@@ -65,13 +79,29 @@ defineExpose({
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="创建者">
-          {{ formData.createUserName }}
+          <!-- {{ formData.createUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.createUserAvatar"
+            />
+            <NText>{{ formData.createUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="更新时间">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="更新人">
-          {{ formData.updateUserName }}
+          <!-- {{ formData.updateUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.updateUserAvatar"
+            />
+            <NText>{{ formData.updateUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
       </NDescriptions>
       <template #footer>

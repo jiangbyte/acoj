@@ -66,10 +66,15 @@ async function doSubmit() {
   })
 }
 
-async function doOpen(row: any = null, edit: boolean = false) {
+async function doOpen(key11: string | undefined, row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
+  // formData.value.dictType = key[0]
+  // console.log(key)
+  if (!edit) {
+    formData.value.dictType = key11
+  }
 
   const { data } = await sysDictOption({ keyword: '' })
   if (data) {

@@ -19,7 +19,7 @@ const rules = {
     { required: true, message: '请输入按钮文字', trigger: ['input', 'blur'] },
   ],
   toUrl: [
-    { required: true, message: '请输入链接', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入链接', trigger: ['input', 'blur'] },
   ],
   sort: [
     { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
@@ -105,7 +105,7 @@ defineExpose({
           <NInput v-model:value="formData.subtitle" placeholder="请输入子标题" />
         </NFormItem>
         <!-- Boolean 选择框 -->
-        <NFormItem label="是否可见" path="isVisible">
+        <NFormItem label="上架" path="isVisible">
           <NRadioGroup v-model:value="formData.isVisible">
             <NRadio :value="true">
               是

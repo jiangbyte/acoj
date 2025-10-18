@@ -28,17 +28,25 @@ defineExpose({
         <NDescriptionsItem label="主键">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户ID">
-          {{ formData.userId }}
+        <NDescriptionsItem label="用户">
+          <!-- {{ formData.userId }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.userAvatar"
+            />
+            <NText>{{ formData.userIdName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="题集ID">
-          {{ formData.setId }}
+        <NDescriptionsItem label="题集">
+          {{ formData.setIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="是否是题集提交">
-          {{ formData.isSet }}
+        <NDescriptionsItem label="题集提交">
+          {{ formData.isSetName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题目ID">
-          {{ formData.problemId }}
+        <NDescriptionsItem label="题目">
+          {{ formData.problemIdName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="提交ID">
           {{ formData.submitId }}
@@ -47,10 +55,16 @@ defineExpose({
           <NTime :time="Number(formData.submitTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="编程语言">
-          {{ formData.language }}
+          {{ formData.languageName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="源代码">
-          {{ formData.code }}
+          <!-- {{ formData.code }} -->
+          <NCode
+            :code="formData.code"
+            :language="formData.language"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="源代码长度">
           {{ formData.codeLength }}
@@ -62,13 +76,29 @@ defineExpose({
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="创建者">
-          {{ formData.createUserName }}
+          <!-- {{ formData.createUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.createUserAvatar"
+            />
+            <NText>{{ formData.createUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="更新时间">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="更新人">
-          {{ formData.updateUserName }}
+          <!-- {{ formData.updateUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.updateUserAvatar"
+            />
+            <NText>{{ formData.updateUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
       </NDescriptions>
       <template #footer>

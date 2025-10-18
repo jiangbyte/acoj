@@ -115,7 +115,7 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
     }
 
     @Override
-    public List<SysGroup> authTreeGroup() {
+    public List<SysGroup> authTreeGroup(String keyword) {
         String loginIdAsString = StpUtil.getLoginIdAsString();
         SysRole heightLevelRole = sysUserRoleService.getHeightLevelRole(loginIdAsString);
         if (heightLevelRole == null) {
@@ -126,6 +126,7 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
         SysUser sysUser = sysUserMapper.selectById(loginIdAsString);
         String groupId = sysUser.getGroupId();
         if (ObjectUtil.isEmpty(groupId)) {
+            log.info("用户组为空");
             return List.of();
         }
 
@@ -133,11 +134,12 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
         if (heightLevelRole.getLevel() == 99) {
             log.info("超级用户");
             // 返回所有用户组树
-            return buildFullGroupTree();
+            return buildFullGroupTree(keyword);
         }
 
         // 非超级用户。返回本用户组及以下的用户组树（包含本用户组）
-        return buildSubGroupTree(groupId);
+        log.info("非超级用户");
+        return buildSubGroupTree(groupId, keyword);
     }
 
     @Override
@@ -188,8 +190,8 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
     /**
      * 获取用户组的扁平子组列表
      *
-     * @param allGroups 所有用户组列表
-     * @param parentId 父组ID
+     * @param allGroups   所有用户组列表
+     * @param parentId    父组ID
      * @param includeSelf 是否包含自身
      * @return 扁平的用户组列表
      */
@@ -230,21 +232,28 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
             getSubGroupsRecursive(allGroups, child.getId(), result);
         }
     }
+
     /**
      * 构建完整的用户组树
      */
-    private List<SysGroup> buildFullGroupTree() {
+    private List<SysGroup> buildFullGroupTree(String keyword) {
         // 查询所有用户组
-        List<SysGroup> allGroups = this.list(new LambdaQueryWrapper<SysGroup>()
-                .orderByAsc(SysGroup::getSort));
-
-        return buildTree(allGroups, null);
+        LambdaQueryWrapper<SysGroup> queryWrapper = new LambdaQueryWrapper<SysGroup>()
+                .orderByAsc(SysGroup::getSort);
+        log.info("queryWrapper keyword: {}", keyword);
+        if (ObjectUtil.isNotEmpty(keyword)) {
+            log.info("keyword: {}", keyword);
+            queryWrapper.like(SysGroup::getName, keyword);
+        }
+        List<SysGroup> allGroups = this.list(queryWrapper);
+        log.info("allGroups: {}", allGroups);
+        return buildTree(allGroups, "0");
     }
 
     /**
      * 构建指定用户组及其子组的树
      */
-    private List<SysGroup> buildSubGroupTree(String groupId) {
+    private List<SysGroup> buildSubGroupTree(String groupId, String keyword) {
         // 查询指定用户组
         SysGroup currentGroup = this.getById(groupId);
         if (currentGroup == null) {
@@ -252,8 +261,12 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
         }
 
         // 查询所有用户组
-        List<SysGroup> allGroups = this.list(new LambdaQueryWrapper<SysGroup>()
-                .orderByAsc(SysGroup::getSort));
+        LambdaQueryWrapper<SysGroup> queryWrapper = new LambdaQueryWrapper<SysGroup>()
+                .orderByAsc(SysGroup::getSort);
+        if (ObjectUtil.isNotEmpty(keyword)) {
+            queryWrapper.like(SysGroup::getName, keyword);
+        }
+        List<SysGroup> allGroups = this.list(queryWrapper);
 
         // 获取当前组及其所有子组的ID列表
         List<String> subGroupIds = getAllSubGroupIds(allGroups, groupId);

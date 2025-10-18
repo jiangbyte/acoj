@@ -16,6 +16,10 @@ import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 export default defineConfig(({ command, mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd(), '')
+  // 确保VITE_GATEWAY有值
+  const gateway = env.VITE_GATEWAY
+  console.log('Using Gateway:', gateway)
+
   return {
     plugins: [
       vue(),
@@ -65,9 +69,11 @@ export default defineConfig(({ command, mode }) => {
       // port: process.env.PORT ? Number.parseInt(process.env.PORT) : 81,
       port: 81,
     },
-    esbuild: command === 'build' ? {
-      drop: ['console', 'debugger'],
-    } : {},
+    esbuild: command === 'build'
+      ? {
+          drop: ['console', 'debugger'],
+        }
+      : {},
     optimizeDeps: {
       include: [
         `monaco-editor/esm/vs/language/json/json.worker`,

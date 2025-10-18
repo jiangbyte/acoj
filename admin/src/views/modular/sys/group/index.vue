@@ -12,16 +12,16 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: '父级用户组',
-    key: 'parentIdName',
-  },
-  {
     title: '名称',
     key: 'name',
   },
   {
     title: '编码',
     key: 'code',
+  },
+  {
+    title: '父级用户组',
+    key: 'parentIdName',
   },
   {
     title: '描述',

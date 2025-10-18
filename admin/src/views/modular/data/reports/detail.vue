@@ -29,19 +29,19 @@ defineExpose({
           {{ formData.id }}
         </NDescriptionsItem>
         <NDescriptionsItem label="报告类型">
-          {{ formData.reportType }}
+          {{ formData.reportTypeName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="任务ID">
           {{ formData.taskId }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题集ID">
-          {{ formData.setId }}
+        <NDescriptionsItem label="题集">
+          {{ formData.setIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="是否是题集提交">
-          {{ formData.isSet }}
+        <NDescriptionsItem label="题集提交">
+          {{ formData.isSetName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题目ID">
-          {{ formData.problemId }}
+        <NDescriptionsItem label="题目">
+          {{ formData.problemIdName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="样例数量">
           {{ formData.sampleCount }}
@@ -50,34 +50,62 @@ defineExpose({
           {{ formData.similarityGroupCount }}
         </NDescriptionsItem>
         <NDescriptionsItem label="平均相似度">
-          {{ formData.avgSimilarity }}
+          {{ formData.avgSimilarity * 100 }}
         </NDescriptionsItem>
         <NDescriptionsItem label="最大相似度">
-          {{ formData.maxSimilarity }}
+          {{ formData.maxSimilarity * 100 }}
         </NDescriptionsItem>
         <NDescriptionsItem label="检测阈值">
           {{ formData.threshold }}
         </NDescriptionsItem>
         <NDescriptionsItem label="相似度分布">
-          {{ formData.similarityDistribution }}
+          <!-- {{ formData.similarityDistribution }} -->
+          <NCode
+            :code="JSON.stringify(formData.similarityDistribution, null)"
+            language="json"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="程度统计">
-          {{ formData.degreeStatistics }}
+          <!-- {{ formData.degreeStatistics }} -->
+          <NCode
+            :code="JSON.stringify(formData.degreeStatistics, null, 2)"
+            language="json"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="检测模式">
-          {{ formData.checkMode }}
+          {{ formData.checkModeName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="创建者">
-          {{ formData.createUserName }}
+          <!-- {{ formData.createUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.createUserAvatar"
+            />
+            <NText>{{ formData.createUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="更新时间">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="更新人">
-          {{ formData.updateUserName }}
+          <!-- {{ formData.updateUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.updateUserAvatar"
+            />
+            <NText>{{ formData.updateUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
       </NDescriptions>
       <template #footer>

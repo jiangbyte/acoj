@@ -77,11 +77,11 @@ const columns: DataTableColumns<any> = [
     key: 'submitTypeName',
   },
   {
-    title: '耗时',
+    title: '耗时(ms)',
     key: 'maxTime',
   },
   {
-    title: '内存',
+    title: '内存(KB)',
     key: 'maxMemory',
   },
   // {
@@ -101,11 +101,14 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '流转完成',
-    key: 'isFinish',
+    key: 'isFinishName',
   },
   {
     title: '相似度',
     key: 'similarity',
+    render(row: any) {
+      return row.similarity * 100
+    },
   },
   // {
   //   title: '相似检测任务ID',

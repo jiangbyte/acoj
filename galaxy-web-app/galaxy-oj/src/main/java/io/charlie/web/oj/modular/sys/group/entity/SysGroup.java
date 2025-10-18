@@ -36,7 +36,12 @@ public class SysGroup extends CommonEntity {
     private String id;
 
     @Schema(description = "父级用户组")
+    @Trans(type = TransType.SIMPLE, target = SysGroup.class, fields = {"name"}, refs = {"parentIdName"})
     private String parentId;
+
+    @Schema(description = "父级用户组名称")
+    @TableField(exist = false)
+    private String parentIdName;
 
     @Schema(description = "名称")
     private String name;

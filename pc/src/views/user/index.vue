@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { useSysUserFetch } from '@/composables/v1'
 import { AesCrypto } from '@/utils'
-import type { DataTableColumns } from 'naive-ui'
-import { NSpace, NTag } from 'naive-ui'
 import { CalendarHeatmap } from 'vue3-calendar-heatmap'
 
 defineOptions({
@@ -16,77 +14,6 @@ const originalId = AesCrypto.decrypt(route.query.userId as string)
 
 const detailData = ref()
 
-const columns: DataTableColumns<any> = [
-  {
-    title: '题目',
-    key: 'title',
-    width: 250,
-  },
-  {
-    title: '分类',
-    key: 'categoryName',
-    width: 100,
-    render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.categoryName })
-    },
-  },
-  {
-    title: '标签',
-    key: 'tagNames',
-    width: 250,
-    render: (row) => {
-      return h(NSpace, { align: 'center' }, { default: () => row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', bordered: false }, { default: () => tag })) || [] })
-    },
-  },
-  {
-    title: '难度',
-    key: 'difficultyName',
-    width: 100,
-    render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.difficultyName })
-    },
-  },
-  {
-    title: '通过率',
-    key: 'acceptance',
-    width: 120,
-    render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.acceptance })
-    },
-  },
-  {
-    title: '解决',
-    key: 'solved',
-    width: 100,
-    render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.solved })
-    },
-  },
-]
-
-const pageParam = ref({
-  current: 1,
-  size: 20,
-  sortField: null,
-  sortOrder: null,
-  keyword: '',
-  tagId: null,
-  categoryId: null,
-  difficulty: null,
-  userId: originalId,
-})
-const setPageParam = ref({
-  current: 1,
-  size: 20,
-  sortField: null,
-  sortOrder: null,
-  keyword: '',
-  tagId: null,
-  categoryId: null,
-  difficulty: null,
-  userId: originalId,
-})
-const pageData = ref()
 const setPageData = ref()
 async function loadData() {
   const { sysUserDetailClient } = useSysUserFetch()
@@ -108,19 +35,6 @@ async function loadData() {
   }
 }
 loadData()
-const router = useRouter()
-
-function rowProps(row: any) {
-  return {
-    style: 'cursor: pointer;',
-    onClick: () => {
-      router.push({
-        name: 'problem_submit',
-        query: { problem: AesCrypto.encrypt(row.id) },
-      })
-    },
-  }
-}
 </script>
 
 <template>

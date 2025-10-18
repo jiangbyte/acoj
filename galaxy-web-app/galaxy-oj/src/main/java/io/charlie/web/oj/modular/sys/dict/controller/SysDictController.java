@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.sys.dict.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.sys.dict.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +43,7 @@ public class SysDictController {
         return Result.success(sysDictService.page(sysDictPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加系统字典")
     @SaCheckPermission("/sys/dict/add")
     @PostMapping("/sys/dict/add")
@@ -48,6 +52,7 @@ public class SysDictController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑系统字典")
     @SaCheckPermission("/sys/dict/edit")
     @PostMapping("/sys/dict/edit")
@@ -56,6 +61,7 @@ public class SysDictController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除系统字典")
     @SaCheckPermission("/sys/dict/delete")
     @PostMapping("/sys/dict/delete")

@@ -86,15 +86,6 @@ function resetHandle() {
   pageParam.value.setType = null
   loadData()
 }
-
-const router = useRouter()
-
-function handleClick(item: any) {
-  router.push({
-    name: 'proset_detail',
-    query: { set: AesCrypto.encrypt(item.id) },
-  })
-}
 </script>
 
 <template>

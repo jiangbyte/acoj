@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.sys.role.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.sys.relation.service.SysRoleMenuService;
 import io.charlie.web.oj.modular.sys.role.param.SysMenuAssignParam;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
@@ -45,6 +48,7 @@ public class SysRoleController {
         return Result.success(sysRoleService.page(sysRolePageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加角色")
     @SaCheckPermission("/sys/role/add")
     @PostMapping("/sys/role/add")
@@ -53,6 +57,7 @@ public class SysRoleController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑角色")
     @SaCheckPermission("/sys/role/edit")
     @PostMapping("/sys/role/edit")
@@ -61,6 +66,7 @@ public class SysRoleController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除角色")
     @SaCheckPermission("/sys/role/delete")
     @PostMapping("/sys/role/delete")
@@ -88,6 +94,7 @@ public class SysRoleController {
         return Result.success(sysRoleService.authRoles1());
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "授权角色")
     @PostMapping("/sys/role/assign")
     public Result<?> assign(@RequestBody @Valid SysRoleAssignParam sysRoleAssignParam) {
@@ -95,6 +102,7 @@ public class SysRoleController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "获取认证菜单")
     @PostMapping("/sys/role/menu/assign")
     public Result<?> assignMenu(@RequestBody @Valid SysMenuAssignParam sysMenuPermissionParam) {

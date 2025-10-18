@@ -1,4 +1,4 @@
-package io.charlie.web.oj.annotation;
+package io.charlie.web.oj.annotation.log;
 
 /**
  * @author ZhangJiangHu

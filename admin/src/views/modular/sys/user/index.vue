@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace } from 'naive-ui'
-import { useSysUserFetch } from '@/composables/v1'
+import { useSysGroupFetch, useSysUserFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
 import Assign from './assign.vue'
@@ -157,12 +157,14 @@ const pageParam = ref({
 const groupKeyword = ref('')
 function resetHandle() {
   pageParam.value.keyword = ''
-  loadData()
+  loadUserData()
 }
 
+const treeData = ref()
 const { sysUserPage, sysUserDelete } = useSysUserFetch()
 const loading = ref(false)
-async function loadData() {
+
+async function loadUserData() {
   loading.value = true
   const { data } = await sysUserPage(pageParam.value)
   if (data) {
@@ -171,9 +173,26 @@ async function loadData() {
     console.log(data)
   }
 }
+async function loadGroupData() {
+  console.log(groupKeyword.value)
+  useSysGroupFetch().sysGroupAuthTree({ keyword: groupKeyword.value }).then(({ data }) => {
+    treeData.value = data
+  })
+}
+function resetGroupDataHandle() {
+  groupKeyword.value = ''
+  loadGroupData()
+}
+async function loadData() {
+  loadUserData()
+  loadGroupData()
+}
 
 loadData()
-
+function handleTreeSelect(keys: string[]) {
+  pageParam.value.groupId = keys[0]
+  loadUserData()
+}
 async function deleteHandle(row: any) {
   const param = [{
     id: row.id,
@@ -208,22 +227,30 @@ async function deleteBatchHandle() {
                   v-model:value="groupKeyword"
                   placeholder="输入关键字"
                   clearable
-                  @clear="resetHandle"
+                  @clear="resetGroupDataHandle"
                 />
-                <NButton type="primary" @click="loadData">
+                <NButton type="primary" @click="loadGroupData">
                   <template #icon>
                     <IconParkOutlineSearch />
                   </template>
                   搜索
                 </NButton>
+                <!-- <NButton type="warning" @click="resetGroupDataHandle">
+                  <template #icon>
+                    <IconParkOutlineRefresh />
+                  </template>
+                  重置
+                </NButton> -->
               </NInputGroup>
               <NScrollbar class="h-[calc(100vh-2.5rem-9.3rem)]">
                 <NTree
                   show-line
                   block-line
-                  key-field="value"
-                  label-field="label"
+                  key-field="id"
+                  label-field="name"
+                  :data="treeData"
                   :indent="12"
+                  @update:selected-keys="handleTreeSelect"
                 />
                 <!-- <NTree
                   show-line
@@ -256,28 +283,30 @@ async function deleteBatchHandle() {
                 <NSpace align="center">
                   <NFormItem :show-feedback="false" label="搜索类型" label-placement="left">
                     <!-- <NInput v-model:value="pageParam.type" placeholder="请选择" clearable @clear="resetHandle" /> -->
-                    <n-select v-model:value="pageParam.type" class="w-30" placeholder="请选择" :options="[
-                      {
-                        label: '昵称',
-                        value: 'nickname',
-                      },
-                      {
-                        label: '用户名',
-                        value: 'username',
-                      },
-                      {
-                        label: '邮箱',
-                        value: 'email'
-                      },
-                      {
-                        label: '手机号',
-                        value: 'telephone'
-                      },
-                      {
-                        label: '学号',
-                        value: 'studentNumber'
-                      }
-                    ]"/>
+                    <n-select
+                      v-model:value="pageParam.type" class="w-30" placeholder="请选择" :options="[
+                        {
+                          label: '昵称',
+                          value: 'nickname',
+                        },
+                        {
+                          label: '用户名',
+                          value: 'username',
+                        },
+                        {
+                          label: '邮箱',
+                          value: 'email',
+                        },
+                        {
+                          label: '手机号',
+                          value: 'telephone',
+                        },
+                        {
+                          label: '学号',
+                          value: 'studentNumber',
+                        },
+                      ]"
+                    />
                   </NFormItem>
                   <NFormItem :show-feedback="false" label="关键词" label-placement="left">
                     <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" clearable @clear="resetHandle" />

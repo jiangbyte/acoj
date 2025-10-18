@@ -32,28 +32,42 @@ defineExpose({
           {{ formData.taskId }}
         </NDescriptionsItem>
         <NDescriptionsItem label="手动">
-          {{ formData.taskType }}
+          {{ formData.taskTypeName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题目ID">
-          {{ formData.problemId }}
+        <NDescriptionsItem label="题目">
+          {{ formData.problemIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题集ID">
-          {{ formData.setId }}
+        <NDescriptionsItem label="题集">
+          {{ formData.setIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="是否是题集提交">
-          {{ formData.isSet }}
+        <NDescriptionsItem label="题集提交">
+          {{ formData.isSetName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="编程语言">
-          {{ formData.language }}
+          {{ formData.languageName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="相似度">
           {{ formData.similarity }}
         </NDescriptionsItem>
         <NDescriptionsItem label="提交用户">
-          {{ formData.submitUser }}
+          <!-- {{ formData.submitUser }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.submitUserAvatar"
+            />
+            <NText>{{ formData.submitUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="源代码">
-          {{ formData.submitCode }}
+          <!-- {{ formData.submitCode }} -->
+          <NCode
+            :code="formData.submitCode"
+            :language="formData.language"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="源代码长度">
           {{ formData.submitCodeLength }}
@@ -65,16 +79,42 @@ defineExpose({
           <NTime :time="Number(formData.submitTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="提交用户Token名称">
-          {{ formData.submitTokenName }}
+          <!-- {{ formData.submitTokenName }} -->
+          <NCode
+            :code="JSON.stringify(formData.submitTokenName, null)"
+            language="json"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="提交用户Token内容">
-          {{ formData.submitTokenTexts }}
+          <!-- {{ formData.submitTokenTexts }} -->
+          <NCode
+            :code="JSON.stringify(formData.submitTokenTexts, null)"
+            language="json"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="样本用户">
-          {{ formData.originUser }}
+          <!-- {{ formData.originUser }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.originUserAvatar"
+            />
+            <NText>{{ formData.originUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="样本源代码">
-          {{ formData.originCode }}
+          <!-- {{ formData.originCode }} -->
+          <NCode
+            :code="formData.originCode"
+            :language="formData.language"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="样本源代码长度">
           {{ formData.originCodeLength }}
@@ -86,22 +126,50 @@ defineExpose({
           <NTime :time="Number(formData.originTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="样本用户Token名称">
-          {{ formData.originTokenName }}
+          <!-- {{ formData.originTokenName }} -->
+          <NCode
+            :code="JSON.stringify(formData.originTokenName, null)"
+            language="json"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="样本用户Token内容">
-          {{ formData.originTokenTexts }}
+          <!-- {{ formData.originTokenTexts }} -->
+          <NCode
+            :code="JSON.stringify(formData.originTokenTexts, null)"
+            language="json"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="创建者">
-          {{ formData.createUserName }}
+          <!-- {{ formData.createUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.createUserAvatar"
+            />
+            <NText>{{ formData.createUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="更新时间">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="更新人">
-          {{ formData.updateUserName }}
+          <!-- {{ formData.updateUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.updateUserAvatar"
+            />
+            <NText>{{ formData.updateUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
       </NDescriptions>
       <template #footer>

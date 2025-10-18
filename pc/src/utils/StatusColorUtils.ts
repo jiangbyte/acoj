@@ -108,15 +108,6 @@ export class SubmitTypeColorUtil {
   }
 }
 
-// 常见编程语言类型
-type ProgrammingLanguage
-  = | 'java' | 'python' | 'javascript' | 'typescript' | 'c' | 'cpp' | 'c++'
-    | 'csharp' | 'c#' | 'go' | 'rust' | 'php' | 'ruby' | 'swift' | 'kotlin'
-    | 'scala' | 'r' | 'matlab' | 'html' | 'css' | 'sql' | 'bash' | 'shell'
-    | 'perl' | 'lua' | 'dart' | 'haskell' | 'elixir' | 'clojure' | 'erlang'
-    | 'objective-c' | 'vb' | 'assembly' | 'pascal' | 'fortran' | 'cobol'
-    | string // 支持其他未知语言
-
 export class LanguageColorUtil {
   // 常见编程语言颜色映射（参考 GitHub 语言颜色）
   private static readonly LANGUAGE_COLOR_MAP: Record<string, string> = {

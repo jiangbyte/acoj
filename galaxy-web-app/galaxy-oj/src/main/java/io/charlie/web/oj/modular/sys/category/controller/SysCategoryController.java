@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.sys.category.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.sys.category.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +43,8 @@ public class SysCategoryController {
         return Result.success(sysCategoryService.page(sysCategoryPageParam));
     }
 
+
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加分类")
     @SaCheckPermission("/sys/category/add")
     @PostMapping("/sys/category/add")
@@ -48,6 +53,7 @@ public class SysCategoryController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑分类")
     @SaCheckPermission("/sys/category/edit")
     @PostMapping("/sys/category/edit")
@@ -56,6 +62,7 @@ public class SysCategoryController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除分类")
     @SaCheckPermission("/sys/category/delete")
     @PostMapping("/sys/category/delete")

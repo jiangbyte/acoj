@@ -2,7 +2,7 @@
 import { useDataSubmitFetch, useSysDictFetch } from '@/composables/v1'
 import type { DataTableColumns } from 'naive-ui'
 import { NAvatar, NSpace, NTag, NText, NTime } from 'naive-ui'
-import { AesCrypto, LanguageColorUtil, StatusColorUtil, SubmitTypeColorUtil } from '@/utils'
+import { AesCrypto } from '@/utils'
 
 const { dataSubmitProblemPage } = useDataSubmitFetch()
 const { sysDictOptions } = useSysDictFetch()
@@ -106,7 +106,16 @@ const columns: DataTableColumns<any> = [
     key: 'statusName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: StatusColorUtil.getColor(row.status), textColor: '#fff' } }, { default: () => row.statusName })
+      return h(NTag, { size: 'small', type:
+      row.status === 'COMPILATION_ERROR'
+      || row.status === 'RUNTIME_ERROR'
+      || row.status === 'TIME_LIMIT_EXCEEDED'
+      || row.status === 'MEMORY_LIMIT_EXCEEDED'
+      || row.status === 'WRONG_ANSWER'
+      || row.status === 'SYSTEM_ERROR'
+      || row.status === 'MEMORY_LIMIT_EXCEEDED'
+        ? 'error'
+        : 'success' }, { default: () => row.statusName })
     },
   },
   {
@@ -114,7 +123,7 @@ const columns: DataTableColumns<any> = [
     key: 'languageName',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: LanguageColorUtil.getColor(row.language), textColor: '#fff' } }, { default: () => row.languageName })
+      return h(NTag, { size: 'small' }, { default: () => row.languageName })
     },
   },
   {
@@ -122,7 +131,7 @@ const columns: DataTableColumns<any> = [
     key: 'codeLength',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.codeLength })
+      return h(NTag, { size: 'small' }, { default: () => row.codeLength })
     },
   },
   {
@@ -130,7 +139,7 @@ const columns: DataTableColumns<any> = [
     key: 'submitTypeName',
     width: 90,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: SubmitTypeColorUtil.getColor(row.submitType), textColor: '#fff' } }, { default: () => row.submitTypeName })
+      return h(NTag, { size: 'small', type: row.submitType ? 'info' : 'warning' }, { default: () => row.submitTypeName })
     },
   },
   {
@@ -138,7 +147,7 @@ const columns: DataTableColumns<any> = [
     key: 'maxTime',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.maxTime })
+      return h(NTag, { size: 'small' }, { default: () => row.maxTime })
     },
   },
   {
@@ -146,7 +155,7 @@ const columns: DataTableColumns<any> = [
     key: 'maxMemory',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.maxMemory })
+      return h(NTag, { size: 'small' }, { default: () => row.maxMemory })
     },
   },
   {
@@ -154,7 +163,7 @@ const columns: DataTableColumns<any> = [
     key: 'similarity',
     width: 80,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.similarity * 100 })
+      return h(NTag, { size: 'small' }, { default: () => row.similarity * 100 })
     },
   },
   {
@@ -366,6 +375,7 @@ function rowProps(row: any) {
             label: `${(i + 1) * 10} 每页`,
             value: (i + 1) * 10,
           }))"
+          :page-slot="5"
           class="flex justify-center items-center p-6"
           @update:page="loadData"
           @update:page-size="loadData"

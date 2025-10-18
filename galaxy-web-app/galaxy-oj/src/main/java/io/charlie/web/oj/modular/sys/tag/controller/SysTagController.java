@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.sys.tag.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.sys.tag.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +43,7 @@ public class SysTagController {
         return Result.success(sysTagService.page(sysTagPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加标签")
     @SaCheckPermission("/sys/tag/add")
     @PostMapping("/sys/tag/add")
@@ -48,6 +52,7 @@ public class SysTagController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑标签")
     @SaCheckPermission("/sys/tag/edit")
     @PostMapping("/sys/tag/edit")
@@ -56,6 +61,7 @@ public class SysTagController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除标签")
     @SaCheckPermission("/sys/tag/delete")
     @PostMapping("/sys/tag/delete")

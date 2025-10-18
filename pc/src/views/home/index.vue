@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useDataProblemFetch, useDataSetFetch, useSysBannerFetch, useSysNoticeFetch, useUserRankingFetch } from '@/composables/v1'
 
-import { AesCrypto, CleanMarkdown, DifficultyColorUtil, RandomColorUtil } from '@/utils'
+import { AesCrypto, CleanMarkdown } from '@/utils'
 
 // 列表数据
 const bannerListData = ref()
@@ -11,7 +11,6 @@ const setListData = ref()
 const problemUserRankingListData = ref()
 const problemRankingListData = ref()
 const setRankingListData = ref()
-const noticeLoading = ref(true)
 
 function openLink(url: string) {
   window.open(url, '_blank')
@@ -200,7 +199,7 @@ loadData()
             <div
               v-for="item in problemListData" :key="item.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow" @click="$router.push({
                 name: 'problem_submit',
-                query: { problem: AesCrypto.encrypt(item.id) },
+                query: { problemId: AesCrypto.encrypt(item.id) },
               })"
             >
               <div class="flex flex-col md:flex-row md:items-center justify-between">
@@ -212,17 +211,17 @@ loadData()
                       </h3>
                     </n-button>
 
-                    <n-tag class="mr-3" size="small" :bordered="false" :color="{ color: DifficultyColorUtil.getColor(item.difficulty), textColor: '#fff' }">
+                    <n-tag class="mr-3" size="small" type="success">
                       {{ item.difficultyName }}
                     </n-tag>
                   </div>
                   <div class="flex mb-3">
-                    <n-tag v-for="tagName in item.tagNames" :key="tagName" size="small" :bordered="false" class="mr-3">
+                    <n-tag v-for="tagName in item.tagNames" :key="tagName" size="small" class="mr-3">
                       {{ tagName }}
                     </n-tag>
                   </div>
                   <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    <n-tag class="mr-4" size="small" :bordered="false" :color="{ color: RandomColorUtil.generate(), textColor: '#fff' }">
+                    <n-tag class="mr-4" size="small" type="info">
                       {{ item.categoryName }}
                     </n-tag>
                     <span>通过率: {{ item.acceptance }} %</span>
@@ -274,7 +273,7 @@ loadData()
               </div>
               <div class="p-5">
                 <div class="flex items-center mb-2">
-                  <n-tag size="small" :bordered="false" type="info" class="mr-3">
+                  <n-tag size="small" type="info" class="mr-3">
                     {{ item.setTypeName }}
                   </n-tag>
                   <span class="text-sm text-gray-500 dark:text-gray-400">共 {{ item.problemIds.length ? item.problemIds.length : 0 }} 道题</span>
@@ -371,7 +370,7 @@ loadData()
             <div
               v-for="item in problemRankingListData" :key="item.rank" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
                 name: 'problem_submit',
-                query: { problem: AesCrypto.encrypt(item.id) },
+                query: { problemId: AesCrypto.encrypt(item.id) },
               })"
             >
               <div class="flex items-start">

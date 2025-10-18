@@ -9,13 +9,8 @@ defineOptions({
   inheritAttrs: false,
 })
 
-// 模拟用户信息
-const userInfo = ref({
-  nickname: '',
-  roleNames: [],
-  groupIdName: '',
-  loginTime: Date.now(), // 默认当前时间
-})
+const { sysUserDefaultData } = useSysUserFetch()
+const userInfo = ref(sysUserDefaultData)
 
 const problemCreateFormRef = ref()
 const setCreateFormRef = ref()
@@ -32,7 +27,7 @@ function loadData() {
   useSysUserFetch().getProfile().then(({ data }) => {
     userInfo.value = data
     console.log(data)
-    
+
     if (!data.loginTime) {
       userInfo.value.loginTime = Date.now()
     }
@@ -98,9 +93,11 @@ onUnmounted(() => {
             </n-tag>
           </NText>
           <NText v-if="userInfo?.roleNames" depth="3" style="font-size: 14px;">
-            <n-space><n-tag v-for="(item, index) in userInfo?.roleNames" :key="index" size="small">
-              {{ item }}
-            </n-tag></n-space>
+            <n-space>
+              <n-tag v-for="(item, index) in userInfo?.roleNames" :key="index" size="small">
+                {{ item }}
+              </n-tag>
+            </n-space>
           </NText>
           <NText depth="3" style="font-size: 14px;">
             当前时间：<n-time :time="currentTime" /> | 上次登录时间：<n-time :time="Number(userInfo.loginTime)" />
@@ -144,17 +141,24 @@ onUnmounted(() => {
             <NCard title="最近活动" size="small">
               <NList v-if="recentlogs" hoverable size="small">
                 <NListItem v-for="item in recentlogs" :key="item?.id">
-                  <template #prefix>
-                    <NTag
-                      :bordered="false"
-                      size="small"
-                    >
-                      {{ item?.category || '未知' }}
-                    </NTag>
-                  </template>
                   <div class="flex items-center gap-2 justify-between">
-                    <n-text>{{ item?.description || '无描述' }}</n-text>
-                    <n-time :time="Number(item.operationTime)" />
+                    <n-space align="center">
+                      <n-space align="center" size="small">
+                        <n-avatar size="small" round :src="item?.userAvatar" />
+                        <n-text>{{ item?.userIdName }}</n-text>
+                      </n-space>
+                      <n-text>{{ item?.operation || '无操作' }}</n-text>
+                    </n-space>
+                    <n-space align="center" size="small">
+                      <NTag
+                        :bordered="false"
+                        size="small"
+                        type="info"
+                      >
+                        {{ item?.category || '未知' }}
+                      </NTag>
+                      <n-time :time="Number(item.operationTime)" />
+                    </n-space>
                   </div>
                 </NListItem>
               </NList>

@@ -72,8 +72,7 @@ function handleFinish({
   file: UploadFileInfo
   event?: ProgressEvent
 }) {
-  const s = { file, event }
-//   console.log('Upload finished:', file, event)
+  console.log('Upload finished:', file, event)
 }
 
 function handleError({
@@ -83,8 +82,7 @@ function handleError({
   file: UploadFileInfo
   event?: ProgressEvent
 }) {
-  const s = { file, event }
-  //   console.error('Upload error:', file, event)
+  console.error('Upload error:', file, event)
   emit('error', new Error('Upload failed'))
 }
 </script>

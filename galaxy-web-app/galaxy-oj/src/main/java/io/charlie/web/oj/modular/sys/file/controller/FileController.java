@@ -1,5 +1,8 @@
 package io.charlie.web.oj.modular.sys.file.controller;
 
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.sys.file.config.StorageServiceFactory;
 import io.charlie.web.oj.modular.sys.file.service.StorageService;
 import io.charlie.web.oj.modular.sys.file.service.impl.LocalStorageService;
@@ -28,6 +31,7 @@ import io.charlie.galaxy.result.Result;
 public class FileController {
     private final StorageServiceFactory storageServiceFactory;
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "文件上传")
     @PostMapping("/sys/file/upload")
     public Result<?> upload(@RequestParam("file") MultipartFile file) {

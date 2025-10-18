@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.submit.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -183,13 +184,8 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     @Transactional(rollbackFor = Exception.class)
     @Override
     public String handleProblemSubmit(DataSubmitExeParam dataSubmitExeParam) {
-        // 1. 创建记录
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam, false);
-        // 2. 存储提交记录
         this.handleSolvedRecord(dataSubmitExeParam, false, dataSubmit);
-        // 3. 触发用户活跃度、提交计算
-//        this.handleRedisRecord(dataSubmit.getUserId(), dataSubmitExeParam, false);
-        // 4. 异步处理并发送进度更新
         this.asyncHandleSubmit(dataSubmit, dataSubmitExeParam);
         return dataSubmit.getId();
     }
@@ -197,13 +193,8 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     @Transactional(rollbackFor = Exception.class)
     @Override
     public String handleSetSubmit(DataSubmitExeParam dataSubmitExeParam) {
-        // 1. 创建记录
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam, true);
-        // 2. 存储提交记录
         this.handleSolvedRecord(dataSubmitExeParam, true, dataSubmit);
-        // 3. 触发用户活跃度、提交计算
-//        this.handleRedisRecord(dataSubmit.getUserId(), dataSubmitExeParam, true);
-//        // 4. 异步处理并发送进度更新
         this.asyncHandleSubmit(dataSubmit, dataSubmitExeParam);
         return dataSubmit.getId();
     }
@@ -225,8 +216,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     public DataSubmit handleSubmit(DataSubmitExeParam dataSubmitExeParam, Boolean isSet) {
         DataSubmit submit = BeanUtil.toBean(dataSubmitExeParam, DataSubmit.class);
         submit.setIsSet(isSet);
-//        submit.setUserId(StpUtil.getLoginIdAsString());
-        submit.setUserId(dataSubmitExeParam.getUserId());
+        submit.setUserId(StpUtil.getLoginIdAsString());
         submit.setStatus(JudgeStatus.PENDING.getValue()); // 待处理
         submit.setIsFinish(false); // 流程流转未结束
         submit.setCodeLength(dataSubmitExeParam.getCode().length());
@@ -234,62 +224,68 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         return submit;
     }
 
-//    private void handleRedisRecord(String userId, DataSubmitExeParam dataSubmitExeParam, Boolean isSet) {
-//        // 实时活跃度
-//        String realtimeActiveKey = isSet ? RankingEnums.REALTIME_SET_ACTIVE.getValue() : RankingEnums.REALTIME_ACTIVE.getValue();
-//        rankingUtil.addOrUpdateAutoScore(realtimeActiveKey, userId, 0.1);
-//
-//        if (isSet) {
-//            // 热度
-//            rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_SET_PROBLEM.getValue(), dataSubmitExeParam.getProblemId(), 1);
-//            rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_SET.getValue(), dataSubmitExeParam.getSetId(), 1);
-//        } else {
-//            // 非题集热度
-//            rankingUtil.addOrUpdateAutoScore(RankingEnums.HOT_PROBLEM.getValue(), dataSubmitExeParam.getProblemId(), 1);
-//        }
-//
-//        if (dataSubmitExeParam.getSubmitType()) {
-//            // 提交（计数）
-//            String realtimeSubmitKey = isSet ? RankingEnums.REALTIME_SET_SUBMIT.getValue() : RankingEnums.REALTIME_SUBMIT.getValue();
-//            rankingUtil.addOrUpdateAutoScore(realtimeSubmitKey, userId, 1);
-//        } else {
-//            // 尝试（计数）
-//            String tryKey = isSet ? RankingEnums.SET_TRY.getValue() : RankingEnums.TRY.getValue();
-//            rankingUtil.addOrUpdateAutoScore(tryKey, userId, 1);
-//        }
-//    }
-
     public void handleSolvedRecord(DataSubmitExeParam dataSubmitExeParam, Boolean isSet, DataSubmit dataSubmit) {
-//        String userId = StpUtil.getLoginIdAsString();
-        String userId = dataSubmitExeParam.getUserId();
+        String userId = StpUtil.getLoginIdAsString();
         String problemId = dataSubmitExeParam.getProblemId();
+        String setId = dataSubmitExeParam.getSetId();
+        String submitId = dataSubmit.getId();
 
-        // 先查询是否已存在以及当前解决状态
-        LambdaQueryWrapper<DataSolved> queryWrapper = new LambdaQueryWrapper<DataSolved>()
-                .eq(DataSolved::getUserId, userId)
-                .eq(DataSolved::getProblemId, problemId)
-                .eq(DataSolved::getIsSet, isSet);
-
-        DataSolved existingRecord = dataSolvedMapper.selectOne(queryWrapper);
-
-        if (existingRecord != null) {
-            // 根据解决状态执行不同逻辑
-            boolean isSolved = existingRecord.getSolved();
-
-            // 存在记录，只需更新 submitId
-            dataSolvedMapper.update(null, new LambdaUpdateWrapper<DataSolved>()
+        // 先模式
+        if (isSet) {
+            // 当前是否有解决状态
+            LambdaQueryWrapper<DataSolved> queryWrapper = new LambdaQueryWrapper<DataSolved>()
+                    .eq(DataSolved::getUserId, userId)
+                    .eq(DataSolved::getSetId, setId)
+                    .eq(DataSolved::getProblemId, problemId)
+                    .eq(DataSolved::getIsSet, Boolean.TRUE);
+            boolean existingRecord = dataSolvedMapper.exists(queryWrapper);
+            // 如果存在
+            if (existingRecord) {
+                // 存在就更新提交ID和更新时间
+                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                        .eq(DataSolved::getUserId, userId)
+                        .eq(DataSolved::getSetId, setId)
+                        .eq(DataSolved::getProblemId, problemId)
+                        .eq(DataSolved::getIsSet, Boolean.TRUE)
+                        .set(DataSolved::getSubmitId, submitId)
+                        .set(DataSolved::getUpdateTime, new Date())
+                );
+            } else {
+                // 不存在就插入
+                DataSolved dataSolved = new DataSolved();
+                dataSolved.setUserId(userId);
+                dataSolved.setSetId(setId);
+                dataSolved.setProblemId(problemId);
+                dataSolved.setIsSet(Boolean.TRUE);
+                dataSolved.setSubmitId(submitId);
+                dataSolvedMapper.insert(dataSolved);
+            }
+        } else {
+            // 当前是否有解决状态
+            LambdaQueryWrapper<DataSolved> queryWrapper = new LambdaQueryWrapper<DataSolved>()
                     .eq(DataSolved::getUserId, userId)
                     .eq(DataSolved::getProblemId, problemId)
-                    .eq(DataSolved::getIsSet, isSet)
-                    .set(DataSolved::getSubmitId, dataSubmit.getId()));
-        } else {
-            // 不存在则创建新记录
-            DataSolved bean = BeanUtil.toBean(dataSubmitExeParam, DataSolved.class);
-            bean.setUserId(userId);
-            bean.setIsSet(isSet);
-            bean.setSubmitId(dataSubmit.getId());
-            bean.setSolved(false);
-            dataSolvedMapper.insert(bean);
+                    .eq(DataSolved::getIsSet, Boolean.FALSE);
+            boolean existingRecord = dataSolvedMapper.exists(queryWrapper);
+            // 如果存在
+            if (existingRecord) {
+                // 存在就更新提交ID和更新时间
+                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                        .eq(DataSolved::getUserId, userId)
+                        .eq(DataSolved::getProblemId, problemId)
+                        .eq(DataSolved::getIsSet, Boolean.FALSE)
+                        .set(DataSolved::getSubmitId, submitId)
+                        .set(DataSolved::getUpdateTime, new Date())
+                );
+            } else {
+                // 不存在就插入
+                DataSolved dataSolved = new DataSolved();
+                dataSolved.setUserId(userId);
+                dataSolved.setProblemId(problemId);
+                dataSolved.setIsSet(Boolean.TRUE);
+                dataSolved.setSubmitId(submitId);
+                dataSolvedMapper.insert(dataSolved);
+            }
         }
     }
 
@@ -300,8 +296,8 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
 
             JudgeSubmitDto message = new JudgeSubmitDto();
             // ======================= 任务参数 =======================
-            message.setUserId(dataSubmit.getUserId());
             message.setId(dataSubmit.getId());
+            message.setUserId(dataSubmit.getUserId());
             message.setJudgeTaskId(param.getJudgeTaskId());
             message.setIsSet(dataSubmit.getIsSet());
             // ======================= 题目参数 =======================
@@ -315,6 +311,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
             }
             message.setLanguage(param.getLanguage());
             message.setSubmitType(param.getSubmitType());
+
             // 处理代码模板
             if (problem.getUseTemplate()) {
                 problem.getCodeTemplate().stream()
@@ -322,10 +319,13 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
                         .findFirst()
                         .ifPresent(template -> {
                             if (ObjectUtil.isNotEmpty(template.getPrefix()) && ObjectUtil.isNotEmpty(template.getSuffix())) {
-                                message.setCode(template.getPrefix() + param.getCode() + template.getSuffix());
+                                String code = template.getPrefix() + param.getCode() + template.getSuffix();
+                                log.info("处理代码模板成功，提交ID: {} 代码内容: {}", dataSubmit.getId(), code);
+                                message.setCode(code);
                             }
                         });
             } else {
+                log.info("未使用代码模板，提交ID: {} 提交内容: {}", dataSubmit.getId(), param.getCode());
                 message.setCode(param.getCode());
             }
 
@@ -336,7 +336,6 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
             log.error("发送题目提交消息到队列失败，提交ID: {}", dataSubmit.getId(), e);
             throw new BusinessException("提交失败，请稍后重试");
         }
-
     }
 
 }

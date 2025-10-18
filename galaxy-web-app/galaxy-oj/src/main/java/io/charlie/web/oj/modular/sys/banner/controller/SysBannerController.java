@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.sys.banner.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.sys.banner.param.SysBannerPageParam;
 import io.charlie.web.oj.modular.sys.banner.param.SysBannerAddParam;
 import io.charlie.web.oj.modular.sys.banner.param.SysBannerEditParam;
@@ -43,6 +46,7 @@ public class SysBannerController {
         return Result.success(sysBannerService.page(sysBannerPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加横幅")
     @SaCheckPermission("/sys/banner/add")
     @PostMapping("/sys/banner/add")
@@ -51,6 +55,7 @@ public class SysBannerController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑横幅")
     @SaCheckPermission("/sys/banner/edit")
     @PostMapping("/sys/banner/edit")
@@ -59,6 +64,7 @@ public class SysBannerController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除横幅")
     @SaCheckPermission("/sys/banner/delete")
     @PostMapping("/sys/banner/delete")

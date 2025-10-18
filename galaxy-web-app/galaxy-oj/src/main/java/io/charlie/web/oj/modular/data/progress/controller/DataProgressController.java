@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.data.progress.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.data.progress.param.DataProgressPageParam;
 import io.charlie.web.oj.modular.data.progress.param.DataProgressAddParam;
 import io.charlie.web.oj.modular.data.progress.param.DataProgressEditParam;
@@ -43,6 +46,7 @@ public class DataProgressController {
         return Result.success(dataProgressService.page(dataProgressPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加题集进度")
     @SaCheckPermission("/data/progress/add")
     @PostMapping("/data/progress/add")
@@ -51,6 +55,7 @@ public class DataProgressController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑题集进度")
     @SaCheckPermission("/data/progress/edit")
     @PostMapping("/data/progress/edit")
@@ -59,6 +64,7 @@ public class DataProgressController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除题集进度")
     @SaCheckPermission("/data/progress/delete")
     @PostMapping("/data/progress/delete")

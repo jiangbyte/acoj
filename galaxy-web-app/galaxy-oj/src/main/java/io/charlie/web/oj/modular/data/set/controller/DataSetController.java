@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.data.set.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.data.set.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,6 +49,7 @@ public class DataSetController {
         return Result.success(dataSetService.pageClient(dataSetPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加题集")
     @SaCheckPermission("/data/set/add")
     @PostMapping("/data/set/add")
@@ -54,6 +58,7 @@ public class DataSetController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑题集")
     @SaCheckPermission("/data/set/edit")
     @PostMapping("/data/set/edit")
@@ -62,6 +67,7 @@ public class DataSetController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除题集")
     @SaCheckPermission("/data/set/delete")
     @PostMapping("/data/set/delete")

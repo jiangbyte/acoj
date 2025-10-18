@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.data.solved.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedPageParam;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedAddParam;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedEditParam;
@@ -43,6 +46,7 @@ public class DataSolvedController {
         return Result.success(dataSolvedService.page(dataSolvedPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加用户解决")
     @SaCheckPermission("/data/solved/add")
     @PostMapping("/data/solved/add")
@@ -51,6 +55,7 @@ public class DataSolvedController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑用户解决")
     @SaCheckPermission("/data/solved/edit")
     @PostMapping("/data/solved/edit")
@@ -59,6 +64,7 @@ public class DataSolvedController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除用户解决")
     @SaCheckPermission("/data/solved/delete")
     @PostMapping("/data/solved/delete")

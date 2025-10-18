@@ -2,9 +2,10 @@ package io.charlie.web.oj.modular.sys.menu.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.sys.menu.param.*;
-import io.charlie.web.oj.modular.sys.relation.service.SysRoleMenuService;
-import io.charlie.web.oj.modular.sys.role.param.SysMenuAssignParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -42,6 +43,7 @@ public class SysMenuController {
         return Result.success(sysMenuService.page(sysMenuPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "添加菜单")
     @SaCheckPermission("/sys/menu/add")
     @PostMapping("/sys/menu/add")
@@ -50,6 +52,7 @@ public class SysMenuController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "编辑菜单")
     @SaCheckPermission("/sys/menu/edit")
     @PostMapping("/sys/menu/edit")
@@ -58,6 +61,7 @@ public class SysMenuController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
     @Operation(summary = "删除菜单")
     @SaCheckPermission("/sys/menu/delete")
     @PostMapping("/sys/menu/delete")
@@ -85,7 +89,8 @@ public class SysMenuController {
         return Result.success(sysMenuService.authMenu());
     }
 
-    @Operation(summary = "获取认证菜单")
+    @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
+    @Operation(summary = "授权菜单权限")
     @PostMapping("/sys/menu/auth/assign/permission")
     public Result<?> assignMenuPermission(@RequestBody @Valid SysMenuPermissionParam sysMenuPermissionParam) {
         sysMenuService.assignMenuPermission(sysMenuPermissionParam);

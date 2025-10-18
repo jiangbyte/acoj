@@ -3,7 +3,7 @@ import { useDataProblemFetch, useSysCategoryFetch, useSysDictFetch, useSysTagFet
 import type { DataTableColumns } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { NSpace, NTag } from 'naive-ui'
-import { AesCrypto, DifficultyColorUtil, RandomColorUtil } from '@/utils'
+import { AesCrypto } from '@/utils'
 
 const columns: DataTableColumns<any> = [
   {
@@ -36,7 +36,7 @@ const columns: DataTableColumns<any> = [
     key: 'categoryName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: RandomColorUtil.generate(), textColor: '#fff' } }, { default: () => row.categoryName })
+      return h(NTag, { size: 'small', type: 'success' }, { default: () => row.categoryName })
     },
   },
   {
@@ -49,8 +49,7 @@ const columns: DataTableColumns<any> = [
           h(NTag, {
             key: tag,
             size: 'small',
-            bordered: false,
-            color: { color: RandomColorUtil.generate(), textColor: '#fff' },
+            type: 'info',
           }, {
             default: () => tag,
           }),
@@ -63,7 +62,7 @@ const columns: DataTableColumns<any> = [
     key: 'difficultyName',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false, color: { color: DifficultyColorUtil.getColor(row.difficulty), textColor: '#fff' } }, { default: () => row.difficultyName })
+      return h(NTag, { size: 'small', type: 'error' }, { default: () => row.difficultyName })
     },
   },
   {
@@ -71,7 +70,7 @@ const columns: DataTableColumns<any> = [
     key: 'acceptance',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.acceptance })
+      return h(NTag, { size: 'small', type: 'warning' }, { default: () => row.acceptance })
     },
   },
   {
@@ -87,7 +86,7 @@ const columns: DataTableColumns<any> = [
     key: 'solved',
     width: 100,
     render: (row) => {
-      return h(NTag, { size: 'small', bordered: false }, { default: () => row.solved })
+      return h(NTag, { size: 'small' }, { default: () => row.solved })
     },
   },
 ]
@@ -176,7 +175,7 @@ function rowProps(row: any) {
     onClick: () => {
       router.push({
         name: 'problem_submit',
-        query: { problem: AesCrypto.encrypt(row.id) },
+        query: { problemId: AesCrypto.encrypt(row.id) },
       })
     },
   }
@@ -206,7 +205,7 @@ function resetHandle() {
     </div>
 
     <!-- 数据统计卡片 -->
-    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 transform transition-all hover:shadow-md hover:-translate-y-1">
         <div class="flex items-start justify-between">
           <div>
@@ -449,7 +448,7 @@ function resetHandle() {
             <div
               v-for="item in problemRankingListData" :key="item.rank" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
                 name: 'problem_submit',
-                query: { problem: AesCrypto.encrypt(item.id) },
+                query: { problemId: AesCrypto.encrypt(item.id) },
               })"
             >
               <div class="flex items-center">

@@ -67,14 +67,20 @@ const passwordData = ref({
 })
 
 function updatePassword() {
-  passwordData.value.id = profileData.value.id
-  useSysUserFetch().sysUserUpdatePassword(passwordData.value).then(({ success }) => {
-    // window.$message.success('密码更新成功')
-    if (success) {
-      window.$message.success('密码更新成功')
-      updatePasswordReset()
-    }
-  })
+  if (passwordFormRef.value) {
+    passwordFormRef.value.validate().then((valid) => {
+      if (valid) {
+        passwordData.value.id = userInfo.value.id
+        useSysUserFetch().sysUserUpdatePassword(passwordData.value).then(({ success }) => {
+          // window.$message.success('密码更新成功')
+          if (success) {
+            window.$message.success('密码更新成功')
+            updatePasswordReset()
+          }
+        })
+      }
+    })
+  }
 }
 function updatePasswordReset() {
   passwordData.value = {

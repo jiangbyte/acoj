@@ -29,25 +29,25 @@ defineExpose({
         <NDescriptionsItem label="菜单ID">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="父菜单ID">
-          {{ formData.pid }}
+        <NDescriptionsItem label="图标">
+          <NIcon size="20" class="mr-2">
+            <Icon :icon="formData.icon" />
+          </NIcon>{{ formData.icon }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="菜单标题">
+          {{ formData.title }}
         </NDescriptionsItem>
         <NDescriptionsItem label="菜单名称">
           {{ formData.name }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="父菜单">
+          {{ formData.pidName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="路由路径">
           {{ formData.path }}
         </NDescriptionsItem>
         <NDescriptionsItem label="组件路径">
           {{ formData.componentPath }}
-        </NDescriptionsItem>
-        <NDescriptionsItem label="菜单标题">
-          {{ formData.title }}
-        </NDescriptionsItem>
-        <NDescriptionsItem label="图标">
-          <NIcon size="20" class="mr-2">
-            <Icon :icon="formData.icon" />
-          </NIcon>{{ formData.icon }}
         </NDescriptionsItem>
         <NDescriptionsItem label="是否缓存">
           {{ formData.keepAliveName }}
@@ -64,20 +64,36 @@ defineExpose({
         <NDescriptionsItem label="菜单类型">
           {{ formData.menuTypeName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="额外信息">
+        <!-- <NDescriptionsItem label="额外信息">
           {{ formData.exJson }}
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="创建者">
-          {{ formData.createUserName }}
+          <!-- {{ formData.createUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.createUserAvatar"
+            />
+            <NText>{{ formData.createUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="更新时间">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="更新人">
-          {{ formData.updateUserName }}
+          <!-- {{ formData.updateUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.updateUserAvatar"
+            />
+            <NText>{{ formData.updateUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
       </NDescriptions>
       <template #footer>

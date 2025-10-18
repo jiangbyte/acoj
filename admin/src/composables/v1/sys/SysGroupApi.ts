@@ -73,5 +73,12 @@ export function useSysGroupFetch() {
         },
       })
     },
+    sysGroupAuthTree(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/tree`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

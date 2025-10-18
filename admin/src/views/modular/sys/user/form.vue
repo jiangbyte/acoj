@@ -8,7 +8,6 @@ const show = ref(false)
 const loading = ref(false)
 const formRef = ref()
 const { sysUserDefaultData, sysUserAdd, sysUserEdit } = useSysUserFetch()
-const { sysGroupOptions } = useSysGroupFetch()
 const groupOptionsLoading = ref(false)
 const groupOptions = ref<SelectOption[]>([])
 const formData = ref<any>({ ...sysUserDefaultData })
@@ -51,6 +50,7 @@ function doClose() {
 }
 
 const isEdit = ref(false)
+
 async function doSubmit() {
   formRef.value?.validate(async (errors: any) => {
     if (!errors) {
@@ -77,36 +77,19 @@ async function doSubmit() {
     }
   })
 }
-
 function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
 
-  // 如果编辑模式且已有groupId，则初始化显示名称
-  if (edit && row?.groupId && row?.groupIdName) {
-    groupOptions.value = [{
-      value: row.groupId,
-      label: row.groupIdName,
-    }]
-  }
+  useSysGroupFetch().sysGroupAuthTree({ keyword: '' }).then(({ data }) => {
+    groupOptions.value = data
+    groupOptionsLoading.value = false
+  })
 }
 defineExpose({
   doOpen,
 })
-async function handleGroupSearch(query: string) {
-  if (!query.length) {
-    groupOptions.value = []
-    return
-  }
-  groupOptionsLoading.value = true
-
-  const { data } = await sysGroupOptions({ keyword: query })
-  if (data) {
-    groupOptions.value = data
-    groupOptionsLoading.value = false
-  }
-}
 </script>
 
 <template>
@@ -122,16 +105,12 @@ async function handleGroupSearch(query: string) {
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="用户组" path="groupId">
-          <!-- <NInput v-model:value="formData.groupId" placeholder="请输入用户组" /> -->
-          <NSelect
+          <n-tree-select
             v-model:value="formData.groupId"
-            filterable
-            placeholder="搜索用户组"
             :options="groupOptions"
-            :loading="groupOptionsLoading"
-            clearable
-            remote
-            @search="handleGroupSearch"
+            label-field="name"
+            key-field="id"
+            :indent="12"
           />
         </NFormItem>
         <!-- 输入框 -->

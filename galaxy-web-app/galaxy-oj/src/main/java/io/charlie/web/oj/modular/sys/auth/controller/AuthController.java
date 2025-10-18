@@ -1,8 +1,5 @@
 package io.charlie.web.oj.modular.sys.auth.controller;
 
-import io.charlie.web.oj.annotation.Log;
-import io.charlie.web.oj.annotation.LogCategory;
-import io.charlie.web.oj.annotation.LogModule;
 import io.charlie.web.oj.modular.sys.role.utils.PermissionScannerTool;
 import io.charlie.web.oj.modular.sys.auth.param.PasswordChangeParam;
 import io.charlie.web.oj.modular.sys.auth.param.UsernamePasswordLoginParam;
@@ -40,14 +37,12 @@ public class AuthController {
         return Result.success(authService.captcha());
     }
 
-    @Log(value = "登录", category = LogCategory.LOGIN_LOGOUT, module = LogModule.AUTH)
     @Operation(summary = "登录")
     @PostMapping("/sys/auth/login")
     public Result<?> login(@RequestBody @Valid UsernamePasswordLoginParam usernamePasswordLoginParam) {
         return Result.success(authService.doLogin(usernamePasswordLoginParam));
     }
 
-    @Log(value = "注册", category = LogCategory.LOGIN_LOGOUT, module = LogModule.AUTH)
     @Operation(summary = "注册")
     @PostMapping("/sys/auth/register")
     public Result<?> register(@RequestBody @Valid UsernamePasswordEmailRegisterParam usernamePasswordEmailRegisterParam) {
@@ -75,7 +70,6 @@ public class AuthController {
         return Result.success(loginUser);
     }
 
-    @Log(value = "修改密码", category = LogCategory.OPERATION, module = LogModule.AUTH)
     @Operation(summary = "修改密码")
     @PostMapping("/sys/user/password/change")
     public Result<?> changePassword(@RequestBody @Valid PasswordChangeParam passwordChangeParam) {

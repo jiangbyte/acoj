@@ -1,4 +1,4 @@
-package io.charlie.web.oj.annotation;
+package io.charlie.web.oj.annotation.log;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson.JSON;
@@ -6,6 +6,7 @@ import io.charlie.web.oj.modular.sys.log.entity.SysLog;
 import io.charlie.web.oj.modular.sys.log.service.SysLogService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -13,7 +14,6 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -23,16 +23,14 @@ import java.util.Date;
 @Aspect
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class LogAspect {
 
-    @Autowired
-    private SysLogService sysLogService;
-
-    @Autowired
-    private HttpServletRequest request;
+    private final SysLogService sysLogService;
+    private final HttpServletRequest request;
 
     // 定义切点：标注了@Log注解的方法
-    @Pointcut("@annotation(io.charlie.web.oj.annotation.Log)")
+    @Pointcut("@annotation(io.charlie.web.oj.annotation.log.Log)")
     public void logPointCut() {
     }
 
@@ -57,7 +55,13 @@ public class LogAspect {
         setOperationInfo(joinPoint, logAnnotation, sysLog);
 
         // 设置用户信息
-        setUserInfo(sysLog);
+        try {
+            String loginIdAsString = StpUtil.getLoginIdAsString();
+            sysLog.setUserId(loginIdAsString);
+            log.info("用户ID日志: {}", loginIdAsString);
+        } catch (Exception e) {
+            log.warn("获取用户信息失败: {}", e.getMessage());
+        }
 
         // 设置请求参数
         setRequestParams(joinPoint, sysLog);
@@ -97,16 +101,6 @@ public class LogAspect {
             if (operation != null) {
                 sysLog.setOperation(operation.summary());
             }
-        }
-    }
-
-    private void setUserInfo(SysLog sysLog) {
-        try {
-            if (StpUtil.isLogin()) {
-                sysLog.setUserId(StpUtil.getLoginIdAsString());
-            }
-        } catch (Exception e) {
-            log.warn("获取用户信息失败: {}", e.getMessage());
         }
     }
 

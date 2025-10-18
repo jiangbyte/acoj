@@ -38,7 +38,7 @@ const formRules = {
 }
 
 // 请求处理
-const { doRegister, captcha, getProfileNoe } = useAuthFetch()
+const { captcha, getProfileNoe } = useAuthFetch()
 const { getValueByCode } = useSysConfigFetch()
 const captchaRef = ref({
   captcha: '',

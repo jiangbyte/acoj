@@ -28,6 +28,7 @@ loadData()
     :wrap="false"
     justify="center"
     class="h-10"
+    @click="$router.push('/')"
   >
     <img
       v-if="appLogo && !appAdminShowAppName"

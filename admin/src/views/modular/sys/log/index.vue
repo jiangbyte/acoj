@@ -11,7 +11,7 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
-    title: '用户ID',
+    title: '用户',
     key: 'user',
     render(row: any) {
       return h(
@@ -50,7 +50,7 @@ const columns: DataTableColumns<any> = [
     key: 'method',
     ellipsis: {
       tooltip: true,
-    }
+    },
   },
   // {
   //   title: '参数',
@@ -84,13 +84,13 @@ const columns: DataTableColumns<any> = [
       tooltip: true,
     },
   },
-  {
-    title: '操作描述',
-    key: 'description',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
+  // {
+  //   title: '操作描述',
+  //   key: 'description',
+  //   ellipsis: {
+  //     tooltip: true,
+  //   },
+  // },
   {
     title: '操作状态',
     key: 'status',
@@ -105,7 +105,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 180,
+    width: 140,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -238,12 +238,12 @@ async function deleteBatchHandle() {
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
-            <NButton type="primary" @click="formRef.doOpen(null, false)">
+            <!-- <NButton type="primary" @click="formRef.doOpen(null, false)">
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
               创建
-            </NButton>
+            </NButton> -->
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除

@@ -20,6 +20,7 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.sys.menu.entity.SysMenu;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,11 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     @Override
     public Page<SysLog> page(SysLogPageParam sysLogPageParam) {
         QueryWrapper<SysLog> queryWrapper = new QueryWrapper<SysLog>().checkSqlInjection();
+        // 默认倒序
+        queryWrapper.lambda().orderByDesc(SysLog::getCreateTime);
+        if (ObjectUtil.isNotEmpty(sysLogPageParam.getKeyword())) {
+            queryWrapper.lambda().like(SysLog::getOperation, sysLogPageParam.getKeyword());
+        }
         if (ObjectUtil.isAllNotEmpty(sysLogPageParam.getSortField(), sysLogPageParam.getSortOrder()) && ISortOrderEnum.isValid(sysLogPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,

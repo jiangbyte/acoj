@@ -77,6 +77,6 @@ public class SysLogController {
     @Operation(summary = "获取系统活动/日志记录最近")
     @GetMapping("/sys/log/recent")
     public Result<?> recent() {
-        return Result.success(sysLogService.recent(10));
+        return Result.success(sysLogService.recent(4));
     }
 }

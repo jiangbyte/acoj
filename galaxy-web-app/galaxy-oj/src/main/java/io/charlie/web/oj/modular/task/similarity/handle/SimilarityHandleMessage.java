@@ -5,7 +5,6 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
-import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
 import io.charlie.web.oj.modular.data.library.service.DataLibraryService;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
@@ -52,11 +51,14 @@ public class SimilarityHandleMessage {
     private final TaskSimilarityMapper taskSimilarityMapper;
     private final TaskReportsMapper taskReportsMapper;
     private final CodeSimilarityCalculator codeSimilarityCalculator;
-    private final TransService transService;
 
     public void sendSimilarity(SimilaritySubmitDto dto) {
         log.info("代码克隆检测 -> 发送检测消息：{}", JSONUtil.toJsonStr(dto));
-        rabbitTemplate.convertAndSend(CommonSimilarityQueue.EXCHANGE, CommonSimilarityQueue.ROUTING_KEY, dto);
+        rabbitTemplate.convertAndSend(
+                CommonSimilarityQueue.EXCHANGE,
+                CommonSimilarityQueue.ROUTING_KEY,
+                dto
+        );
     }
 
     @Transactional
@@ -70,6 +72,7 @@ public class SimilarityHandleMessage {
             return;
         }
 
+        log.info("代码克隆检测 -> 获取配置：{}", JSONUtil.toJsonStr(config));
         int batchSize = 0; // 不批次
         dataLibraryService.processCodeLibrariesInBatches(
                 dto.getIsSet(),
@@ -86,7 +89,7 @@ public class SimilarityHandleMessage {
 
                     SimilarityResult result = calculateSimilarities(dto, libraries, config.getMinMatchLength());
                     String reportId = saveResults(dto, result);
-                    updateSubmitAndNotify(dto, result, reportId);
+                    updateSubmit(dto, result, reportId);
                 }
         );
     }
@@ -112,20 +115,28 @@ public class SimilarityHandleMessage {
 
     private void skipDetection(SimilaritySubmitDto dto) {
         log.info("代码克隆检测 -> 忽略空数据");
-        updateSubmitSimilarity(dto.getId(), BigDecimal.ZERO, CloneLevelEnum.NOT_DETECTED.getValue(), null);
+        updateSubmitSimilarity(
+                dto.getId(),
+                BigDecimal.ZERO,
+                CloneLevelEnum.NOT_DETECTED.getValue(),
+                null
+        );
     }
 
     private void updateSubmitSimilarity(String submitId, BigDecimal similarity, String category, String reportId) {
         log.info("更新提交 {} 相似度 {} 相似等级分类 {}", submitId, similarity, category);
+
         dataSubmitMapper.update(new LambdaUpdateWrapper<DataSubmit>()
                 .eq(DataSubmit::getId, submitId)
                 .set(DataSubmit::getSimilarity, similarity)
                 .set(DataSubmit::getSimilarityCategory, category)
+                .set(DataSubmit::getIsFinish, Boolean.TRUE)
                 .set(StrUtil.isNotEmpty(reportId), DataSubmit::getReportId, reportId)
         );
     }
 
     private SimilarityResult calculateSimilarities(SimilaritySubmitDto dto, List<DataLibrary> samples, int minMatchLength) {
+        log.info("代码克隆检测 -> 计算相似度");
         List<TaskSimilarity> details = new ArrayList<>();
         TaskSimilarity maxDetail = null;
 
@@ -144,7 +155,7 @@ public class SimilarityHandleMessage {
                 maxDetail = detail;
             }
         }
-
+        log.info("代码克隆检测 -> 最大相似度：{}", maxDetail);
         return new SimilarityResult(details, maxDetail);
     }
 
@@ -213,17 +224,12 @@ public class SimilarityHandleMessage {
         return report;
     }
 
-    private void updateSubmitAndNotify(SimilaritySubmitDto dto, SimilarityResult result, String reportId) {
+    private void updateSubmit(SimilaritySubmitDto dto, SimilarityResult result, String reportId) {
+        log.info("更新提交 {} 相似度 {} 最大相似度 {}", dto.getId(), result.getMaxDetail().getSimilarity(), result.getMaxDetail().getSimilarity());
         DataProblem problem = dataProblemMapper.selectById(dto.getProblemId());
-        if (problem == null) return;
-
         DynamicCloneLevelDetector detector = new DynamicCloneLevelDetector(problem.getThreshold());
         CloneLevelEnum level = detector.detect(result.getMaxDetail().getSimilarity());
-
         updateSubmitSimilarity(dto.getId(), result.getMaxDetail().getSimilarity(), level.getValue(), reportId);
-
-        DataSubmit submit = dataSubmitMapper.selectById(dto.getId());
-        transService.transOne(submit);
     }
 
     // 简化工具方法

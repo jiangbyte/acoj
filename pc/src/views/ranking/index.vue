@@ -175,6 +175,7 @@ function rowProps(row: any) {
                 label: `${(i + 1) * 10} 每页`,
                 value: (i + 1) * 10,
               }))"
+              :page-slot="5"
               class="flex justify-center items-center p-6"
               @update:page="loadData"
               @update:page-size="loadData"

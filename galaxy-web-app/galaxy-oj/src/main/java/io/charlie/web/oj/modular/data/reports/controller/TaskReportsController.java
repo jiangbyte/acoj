@@ -2,6 +2,9 @@ package io.charlie.web.oj.modular.data.reports.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.data.reports.param.TaskReportsPageParam;
 import io.charlie.web.oj.modular.data.reports.param.TaskReportsAddParam;
 import io.charlie.web.oj.modular.data.reports.param.TaskReportsEditParam;
@@ -43,6 +46,7 @@ public class TaskReportsController {
         return Result.success(taskReportsService.page(taskReportsPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加报告库")
     @SaCheckPermission("/task/reports/add")
     @PostMapping("/task/reports/add")
@@ -51,6 +55,7 @@ public class TaskReportsController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑报告库")
     @SaCheckPermission("/task/reports/edit")
     @PostMapping("/task/reports/edit")
@@ -59,6 +64,7 @@ public class TaskReportsController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除报告库")
     @SaCheckPermission("/task/reports/delete")
     @PostMapping("/task/reports/delete")

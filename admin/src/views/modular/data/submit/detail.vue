@@ -28,50 +28,68 @@ defineExpose({
         <NDescriptionsItem label="主键">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户ID">
-          {{ formData.userId }}
+        <NDescriptionsItem label="用户">
+          <!-- {{ formData.userId }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.userAvatar"
+            />
+            <NText>{{ formData.userIdName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="题集ID">
-          {{ formData.setId }}
+        <NDescriptionsItem label="题集">
+          {{ formData.setIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="是否是题集提交">
-          {{ formData.isSet }}
+        <NDescriptionsItem label="题集提交">
+          {{ formData.isSetName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题目ID">
-          {{ formData.problemId }}
+        <NDescriptionsItem label="题目">
+          {{ formData.problemIdName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="编程语言">
-          {{ formData.language }}
+          {{ formData.languageName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="源代码">
-          {{ formData.code }}
+          <NCode
+            :code="formData.code"
+            :language="formData.language"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="源代码长度">
           {{ formData.codeLength }}
         </NDescriptionsItem>
         <NDescriptionsItem label="执行类型">
-          {{ formData.submitType }}
+          {{ formData.submitTypeName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="最大耗时">
-          {{ formData.maxTime }}
+          {{ formData.maxTime }} ms
         </NDescriptionsItem>
         <NDescriptionsItem label="最大内存使用">
-          {{ formData.maxMemory }}
+          {{ formData.maxMemory }} KB
         </NDescriptionsItem>
         <NDescriptionsItem label="执行结果消息">
           {{ formData.message }}
         </NDescriptionsItem>
         <NDescriptionsItem label="测试用例结果">
-          {{ formData.testCase }}
+          <NCode
+            :code="JSON.stringify(formData.testCase, null, 2)"
+            language="json"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="执行状态">
-          {{ formData.status }}
+          {{ formData.statusName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="流程流转是否完成">
-          {{ formData.isFinish }}
+        <NDescriptionsItem label="流程流转完成">
+          {{ formData.isFinishName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="相似度">
-          {{ formData.similarity }}
+          {{ formData.similarity * 100 }}
         </NDescriptionsItem>
         <NDescriptionsItem label="相似检测任务ID">
           {{ formData.taskId }}
@@ -80,22 +98,38 @@ defineExpose({
           {{ formData.reportId }}
         </NDescriptionsItem>
         <NDescriptionsItem label="相似分级">
-          {{ formData.similarityCategory }}
+          {{ formData.similarityCategoryName }}
+        </NDescriptionsItem>
+        <NDescriptionsItem label="相似检测任务ID">
+          {{ formData.judgeTaskId }}
         </NDescriptionsItem>
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="创建者">
-          {{ formData.createUserName }}
+          <!-- {{ formData.createUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.createUserAvatar"
+            />
+            <NText>{{ formData.createUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="更新时间">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="更新人">
-          {{ formData.updateUserName }}
-        </NDescriptionsItem>
-        <NDescriptionsItem label="相似检测任务ID">
-          {{ formData.judgeTaskId }}
+          <!-- {{ formData.updateUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.updateUserAvatar"
+            />
+            <NText>{{ formData.updateUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
       </NDescriptions>
       <template #footer>

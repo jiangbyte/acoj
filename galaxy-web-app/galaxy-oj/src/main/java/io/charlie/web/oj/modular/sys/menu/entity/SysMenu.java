@@ -36,7 +36,11 @@ public class SysMenu extends CommonEntity {
     private String id;
 
     @Schema(description = "父菜单ID")
+    @Trans(type = TransType.SIMPLE, target = SysMenu.class, fields = {"name"}, refs = {"pidName"})
     private String pid;
+
+    @TableField(exist = false)
+    private String pidName;
 
     @Schema(description = "菜单名称（英文标识）")
     private String name;

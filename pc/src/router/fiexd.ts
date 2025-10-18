@@ -115,26 +115,26 @@ export const routes: RouteRecordRaw[] = [
     children: [
       // 提交页面（全屏代码编辑）
       {
-        path: '',
+        path: '/p',
         name: 'problem_submit',
         component: () => import('@/views/problems/submit.vue'),
         meta: { title: '提交代码' },
         beforeEnter: (to) => {
-          if (!to.query.problem) {
+          if (!to.query.problemId) {
             return '/'
           }
         },
       },
       {
-        path: '',
+        path: '/s',
         name: 'set_submit',
         component: () => import('@/views/sets/submit.vue'),
         meta: { title: '提交代码' },
-        beforeEnter: (to) => {
-          if (!to.query.setId || !to.query.problemId) {
-            return '/'
-          }
-        },
+        // beforeEnter: (to) => {
+        //   if (!to.query.setId || !to.query.problemId) {
+        //     return '/'
+        //   }
+        // },
       },
     ],
   },

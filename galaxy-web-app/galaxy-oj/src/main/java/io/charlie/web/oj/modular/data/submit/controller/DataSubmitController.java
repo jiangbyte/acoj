@@ -2,6 +2,10 @@ package io.charlie.web.oj.modular.data.submit.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
+import io.charlie.web.oj.annotation.limit.SubmitLimit;
+import io.charlie.web.oj.annotation.log.Log;
+import io.charlie.web.oj.annotation.log.LogCategory;
+import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.data.submit.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -54,6 +58,7 @@ public class DataSubmitController {
         return Result.success(dataSubmitService.setPage(dataSubmitPageParam));
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "添加提交")
     @SaCheckPermission("/data/submit/add")
     @PostMapping("/data/submit/add")
@@ -62,6 +67,7 @@ public class DataSubmitController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "编辑提交")
     @SaCheckPermission("/data/submit/edit")
     @PostMapping("/data/submit/edit")
@@ -70,6 +76,7 @@ public class DataSubmitController {
         return Result.success();
     }
 
+    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "删除提交")
     @SaCheckPermission("/data/submit/delete")
     @PostMapping("/data/submit/delete")
@@ -85,12 +92,14 @@ public class DataSubmitController {
         return Result.success(dataSubmitService.detail(dataSubmitIdParam));
     }
 
+    @SubmitLimit(limit = 2, message = "提交过于频繁，请2秒后再试")
     @Operation(summary = "执行题集提交")
     @PostMapping("/data/submit/set/execute")
     public Result<?> setExecute(@RequestBody @Valid DataSubmitExeParam dataSubmitExeParam) {
         return Result.success(dataSubmitService.handleSetSubmit(dataSubmitExeParam));
     }
 
+    @SubmitLimit(limit = 2, message = "提交过于频繁，请2秒后再试")
     @Operation(summary = "执行题目提交")
     @PostMapping("/data/submit/execute")
     public Result<?> execute(@RequestBody @Valid DataSubmitExeParam dataSubmitExeParam) {

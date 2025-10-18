@@ -99,7 +99,7 @@ defineExpose({
           <MDEditor v-model="formData.content" />
         </NFormItem>
         <!-- Boolean 选择框 -->
-        <NFormItem label="是否可见" path="isVisible">
+        <NFormItem label="上架" path="isVisible">
           <NRadioGroup v-model:value="formData.isVisible">
             <NRadio :value="true">
               是

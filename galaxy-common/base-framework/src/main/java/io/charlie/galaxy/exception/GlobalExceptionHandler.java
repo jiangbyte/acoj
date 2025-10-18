@@ -139,4 +139,10 @@ public class GlobalExceptionHandler {
             log.warn("异步请求超时: {}", e.getMessage());
         }
     }
+
+    @ExceptionHandler(SubmitLimitException.class)
+    public Result<?> handleSubmitLimitException(SubmitLimitException e) {
+        log.info("提交限流: {}", e.getMessage());
+        return Result.failure(e.getMessage());
+    }
 }

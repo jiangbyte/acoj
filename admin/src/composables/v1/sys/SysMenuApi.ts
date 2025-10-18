@@ -24,7 +24,7 @@ export function useSysMenuFetch() {
     sort: 0,
     pined: false,
     menuType: 0,
-    exJson: '',
+    exJson: [],
     createTime: '',
     createUser: '',
     updateTime: '',
