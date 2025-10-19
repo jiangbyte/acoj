@@ -2,6 +2,7 @@
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
 import { useSysMenuFetch } from '@/composables/v1'
 import { Icon } from '@iconify/vue'
+import CodeEditor from '@/components/common/editor/code/Editor.vue'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
@@ -29,7 +30,7 @@ const rules = {
     { required: true, message: '请输入图标', trigger: ['input', 'blur'] },
   ],
   sort: [
-    { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
   ],
   menuType: [
     { required: true, message: '请输入菜单类型', type: 'number', trigger: ['input', 'blur'] },
@@ -131,10 +132,20 @@ defineExpose({
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="组件路径" path="componentPath">
-          <NInput v-model:value="formData.componentPath" placeholder="请输入组件路径" />
+         <NInput v-model:value="formData.componentPath" placeholder="请输入组件路径" >
+            <template #prefix>
+              <n-text depth="3">
+            @/src/view
+          </n-text>
+              </template>
+          </NInput>
+        </NFormItem>
+        <!-- 数字输入 -->
+        <NFormItem label="排序" path="sort">
+          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />
         </NFormItem>
         <!-- Boolean 选择框 -->
-        <NFormItem label="是否缓存" path="keepAlive">
+        <NFormItem label="缓存" path="keepAlive">
           <NRadioGroup v-model:value="formData.keepAlive">
             <NRadio :value="true">
               是
@@ -145,7 +156,7 @@ defineExpose({
           </NRadioGroup>
         </NFormItem>
         <!-- Boolean 选择框 -->
-        <NFormItem label="是否可见" path="visible">
+        <NFormItem label="可见" path="visible">
           <NRadioGroup v-model:value="formData.visible">
             <NRadio :value="true">
               是
@@ -155,12 +166,8 @@ defineExpose({
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <!-- 数字输入 -->
-        <NFormItem label="排序" path="sort">
-          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />
-        </NFormItem>
         <!-- Boolean 选择框 -->
-        <NFormItem label="是否固定" path="pined">
+        <NFormItem label="固定" path="pined">
           <NRadioGroup v-model:value="formData.pined">
             <NRadio :value="true">
               是
@@ -181,6 +188,21 @@ defineExpose({
               菜单
             </NRadio>
           </NRadioGroup>
+        </NFormItem>
+        <NFormItem label="头部参数" path="parameters">
+          <!-- <NInput v-model:value="formData.parameters" type="textarea" placeholder="请输入头部参数" /> -->
+          <n-flex vertical class="w-full">
+            <CodeEditor
+              v-model="formData.parameters"
+              :language="String('json')"
+              style="height: 300px;"
+            />
+            <n-alert type="info" show-icon>
+              请使用JSON格式，可用参数：<br>
+              href_inner: 外部链接（当前页面内嵌）<br>
+              href_outter: 外部链接（新窗口打开）
+            </n-alert>
+          </n-flex>
         </NFormItem>
         <!-- 输入框 -->
         <!-- <NFormItem label="额外信息" path="exJson">

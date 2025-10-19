@@ -37,6 +37,9 @@ public class BatchSimilarityParam {
     @Schema(description = "任务ID")
     private String taskId;
 
+    @Schema(description = "用户组ID（可选）")
+    private String groupId;
+
     @JsonSerialize(using = DateToTimestampSerializer.class)
     @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date createTime;

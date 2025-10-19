@@ -19,6 +19,7 @@ export function useSysMenuFetch() {
     componentPath: '',
     title: '',
     icon: '',
+    parameters: '',
     keepAlive: false,
     visible: false,
     sort: 0,

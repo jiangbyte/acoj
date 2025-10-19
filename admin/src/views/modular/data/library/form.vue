@@ -69,9 +69,15 @@ async function doSubmit() {
 }
 
 function doOpen(row: any = null, edit: boolean = false) {
-  show.value = true
-  isEdit.value = edit
-  formData.value = Object.assign(formData.value, row)
+  // show.value = true
+  // isEdit.value = edit
+  // formData.value = Object.assign(formData.value, row)
+  window.$dialog.warning({
+    title: '提示',
+    content: '功能维护中...',
+    positiveText: '确定',
+
+  })
 }
 defineExpose({
   doOpen,

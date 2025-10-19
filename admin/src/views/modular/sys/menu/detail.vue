@@ -64,6 +64,15 @@ defineExpose({
         <NDescriptionsItem label="菜单类型">
           {{ formData.menuTypeName }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="头部参数">
+          <!-- {{ formData.submitTokenName }} -->
+          <NCode
+            :code="String(formData.parameters || '')"
+            language="json"
+            word-wrap
+            show-line-numbers
+          />
+        </NDescriptionsItem>
         <!-- <NDescriptionsItem label="额外信息">
           {{ formData.exJson }}
         </NDescriptionsItem> -->

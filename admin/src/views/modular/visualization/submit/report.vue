@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import type { DataTableColumns } from 'naive-ui'
+import { useSysGroupFetch, useTaskReportsFetch } from '@/composables/v1'
+import type { DataTableColumns, SelectOption } from 'naive-ui'
 import { NAvatar, NButton, NSpace, NTag, NText, NTime } from 'naive-ui'
 
 const route = useRoute()
 const reportId = route.params.reportId // 获取 reportId
 const taskId = route.params.taskId // 获取 taskId
+
+const groupOptionsLoading = ref(false)
+const groupOptions = ref<SelectOption[]>([])
 
 const columns: DataTableColumns<any> = [
   {
@@ -73,7 +77,7 @@ const columns: DataTableColumns<any> = [
     key: 'action',
     width: 50,
     fixed: 'right',
-    render(row: any) {
+    render() {
       return h(NSpace, { align: 'center' }, () => [
         h(NButton, { type: 'primary', size: 'small', onClick: () => {} }, () => '查看详情'),
         // h(NButton, {
@@ -101,25 +105,32 @@ const pageParam = ref({
 const pageData = ref({
   total: 0,
   records: [],
+  pages: 0,
 })
 
+const formData = ref({
+  groupId: null,
+})
 const detailData = ref()
 const totalSimilarGroups = ref(0)
 async function loadData() {
-  // const { proSimilarityReportsDetail } = useProSimilarityReportsFetch()
-  // proSimilarityReportsDetail({ id: reportId }).then(({ data }) => {
-  //   detailData.value = data
-  //   if (detailData.value?.similarityDistribution && Array.isArray(detailData.value.similarityDistribution)) {
-  //     totalSimilarGroups.value = detailData.value.similarityDistribution.reduce((sum: any, item: { value: any }) => {
-  //       const value = typeof item === 'object' ? (item.value || 0) : (item || 0)
-  //       return sum + value
-  //     }, 0)
-  //   }
-  //   else {
-  //     totalSimilarGroups.value = 0
-  //   }
-  // })
+  useTaskReportsFetch().taskReportsDetail({ id: reportId }).then(({ data }) => {
+    detailData.value = data
+    if (detailData.value?.similarityDistribution && Array.isArray(detailData.value.similarityDistribution)) {
+      totalSimilarGroups.value = detailData.value.similarityDistribution.reduce((sum: any, item: { value: any }) => {
+        const value = typeof item === 'object' ? (item.value || 0) : (item || 0)
+        return sum + value
+      }, 0)
+    }
+    else {
+      totalSimilarGroups.value = 0
+    }
+  })
 
+  useSysGroupFetch().sysGroupAuthTree({ keyword: '' }).then(({ data }) => {
+    groupOptions.value = data
+    groupOptionsLoading.value = false
+  })
   // const { proSimilarityDetailPage } = useProSimilarityDetailFetch()
   // proSimilarityDetailPage(pageParam.value).then(({ data }) => {
   //   pageData.value = data
@@ -139,9 +150,17 @@ loadData()
             <h2 class="text-[clamp(1.25rem,3vw,1.75rem)] font-bold mb-2">
               代码克隆检测报告
             </h2>
-            <NText depth="3">
-              检测时间: <NTime :time="detailData?.createTime" /> | 任务ID: {{ detailData?.id }}
-            </NText>
+            <NSpace align="center">
+              <NTag>
+                {{ detailData?.reportTypeName ? detailData.reportTypeName : '-' }}
+              </NTag>
+              <NTag>
+                {{ detailData?.taskType ? '人工' : '自动' }}
+              </NTag>
+              <NText depth="3">
+                检测时间: <NTime :time="detailData?.createTime" /> | 任务ID: {{ detailData?.id }}
+              </NText>
+            </NSpace>
           </div>
           <div class="flex space-x-3">
           <!-- <button class="px-4 py-2 bg-white border border-gray-medium rounded-md text-sm text-gray-dark hover:bg-gray-light transition-colors">
@@ -161,13 +180,13 @@ loadData()
               </n-icon>
               <NSpace vertical :size="2">
                 <p class="font-medium">
-                  题目标题
+                  {{ detailData?.problemIdName ? detailData.problemIdName : '-' }}
                 </p>
                 <NSpace align="center">
                   <div>
                     解决
                     <NTag size="small">
-                      80
+                      -1
                     </NTag>
                   </div>
                 </NSpace>
@@ -182,10 +201,10 @@ loadData()
               <NSpace class="w-full" justify="space-between">
                 <NSpace :size="1" vertical>
                   <p class="font-medium">
-                    共检测 {{ detailData?.sampleCount }} 份有效代码
+                    共检测 {{ detailData?.sampleCount ? detailData.sampleCount : 0 }} 份有效代码
                   </p>
                   <p class="font-medium">
-                    发现 {{ totalSimilarGroups }} 组疑似克隆
+                    发现 {{ totalSimilarGroups ? totalSimilarGroups : 0 }} 组疑似克隆
                   </p>
                 </NSpace>
                 <!-- <NSpace :size="1" vertical>
@@ -207,10 +226,10 @@ loadData()
               <NSpace class="w-full" justify="space-between">
                 <NSpace :size="1" vertical>
                   <p class="font-medium">
-                    平均相似度：{{ detailData?.avgSimilarity * 100 }}%
+                    平均相似度：{{ detailData?.avgSimilarity ? detailData?.avgSimilarity * 100 : 0 }} %
                   </p>
                   <p class="font-medium">
-                    最高相似度：{{ detailData?.maxSimilarity * 100 }}%
+                    最高相似度：{{ detailData?.maxSimilarity ? detailData?.maxSimilarity * 100 : 0 }} %
                   </p>
                 </NSpace>
                 <!-- <NSpace :size="1" vertical>
@@ -229,7 +248,7 @@ loadData()
         <n-card size="small" title="相似度分布统计" class="rounded-xl">
           <div class="grid grid-cols-3 gap-8">
             <div class="col-span-2">
-              <SimilarityDistributionChart :value="detailData?.similarityDistribution" />
+              <SimilarityDistributionChart :value="detailData?.similarityDistribution || []" />
             </div>
             <div class="flex flex-col w-full gap-3">
               <n-card size="small" title="程度指标" class="rounded-xl">
@@ -261,9 +280,16 @@ loadData()
         <n-card size="small" title="疑似克隆对列表" class="rounded-xl">
           <template #header-extra>
             <NSpace align="center">
-              <n-select placeholder="筛选样本用户组" class="w-50" />
+              <n-tree-select
+                v-model:value="formData.groupId"
+                :options="groupOptions"
+                label-field="name"
+                key-field="id"
+                :indent="12"
+                class="w-50"
+              />
               <n-input placeholder="输入用户名" />
-              <NButton type="primary">
+              <NButton type="primary" @click="loadData">
                 搜索
               </NButton>
             </NSpace>

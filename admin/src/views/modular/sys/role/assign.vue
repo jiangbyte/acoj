@@ -32,6 +32,17 @@ async function doSubmit() {
   })
 }
 
+// function doOpen(row: any) {
+//   show.value = true
+//   assignResource.value = row.assignResource
+//   roleIdR.value = row.id
+
+//   console.log(assignResource.value)
+
+//   useSysMenuFetch().sysMenuAuthList().then(({ data }) => {
+//     authResource.value = data.filter((item: any) => item.visible)
+//   })
+// }
 function doOpen(row: any) {
   show.value = true
   assignResource.value = row.assignResource
@@ -40,9 +51,59 @@ function doOpen(row: any) {
   console.log(assignResource.value)
 
   useSysMenuFetch().sysMenuAuthList().then(({ data }) => {
-    authResource.value = data.filter((item: any) => item.visible)
+    // 构建树形结构
+    const menuTree = buildMenuTree(data)
+
+    // 递归过滤：如果父级不可见，子级也要隐藏
+    authResource.value = filterInvisibleMenus(menuTree)
   })
 }
+
+// 构建树形结构
+function buildMenuTree(flatMenus: any[]) {
+  const menuMap = new Map()
+  const tree: any[] = []
+
+  // 第一遍：将所有菜单项存入map，并初始化children数组
+  flatMenus.forEach((menu) => {
+    menuMap.set(menu.id, { ...menu, children: [] })
+  })
+
+  // 第二遍：构建父子关系
+  flatMenus.forEach((menu) => {
+    const menuItem = menuMap.get(menu.id)
+
+    if (menu.pid && menu.pid !== '0') {
+      const parent = menuMap.get(menu.pid)
+      if (parent) {
+        parent.children.push(menuItem)
+      }
+    }
+    else {
+      tree.push(menuItem)
+    }
+  })
+
+  return tree
+}
+
+// 递归过滤不可见菜单
+function filterInvisibleMenus(menus: any[]): any[] {
+  return menus
+    .filter(menu => menu.visible) // 只保留可见的菜单
+    .map((menu) => {
+      // 深拷贝菜单项，避免修改原始数据
+      const filteredMenu = { ...menu }
+
+      // 递归过滤子菜单
+      if (filteredMenu.children && filteredMenu.children.length > 0) {
+        filteredMenu.children = filterInvisibleMenus(filteredMenu.children)
+      }
+
+      return filteredMenu
+    })
+}
+
 defineExpose({
   doOpen,
 })
@@ -158,6 +219,7 @@ const columns: DataTableColumns<any> = [
         :data="authResource"
         :bordered="false"
         :row-key="(row: any) => row.id"
+        :cascade="false"
         flex-height
         class="flex-1 h-full"
       />

@@ -13,6 +13,7 @@ declare namespace SiteRoute {
     parameter?: boolean
     pined?: boolean
     visible?: boolean
+    parameters?: { [key: string]: string }
   }
 
   type MetaKeys = keyof RouteMeta

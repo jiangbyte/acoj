@@ -69,7 +69,7 @@ defineExpose({
         <NDescriptionsItem label="源代码长度">
           {{ formData.codeLength }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="访问次数">
+        <NDescriptionsItem label="检测热度">
           {{ formData.accessCount }}
         </NDescriptionsItem>
         <NDescriptionsItem label="创建时间">

@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { useSysDictFetch, useTaskSimilarityFetch } from '@/composables/v1'
+import { useSysDictFetch, useSysGroupFetch } from '@/composables/v1'
+import type { SelectOption } from 'naive-ui'
 import { NButton, NDrawer, NDrawerContent, NForm, NInputNumber } from 'naive-ui'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -8,12 +9,15 @@ const show = ref(false)
 const loading = ref(false)
 const formRef = ref()
 const allowLanguageOptions = ref()
+const groupOptionsLoading = ref(false)
+const groupOptions = ref<SelectOption[]>([])
 const formData = ref({
   problemId: [] as string[],
   setId: '',
-  language: '',
+  language: null,
   isSet: false,
   taskId: '',
+  groupId: null,
   createTime: Date.now(),
   batchTaskId: '',
   config: {
@@ -39,9 +43,10 @@ function doClose() {
   formData.value = {
     problemId: [],
     setId: '',
-    language: '',
+    language: null,
     isSet: false,
     taskId: '',
+    groupId: null,
     createTime: Date.now(),
     batchTaskId: '',
     config: {
@@ -53,23 +58,28 @@ function doClose() {
 }
 
 async function doSubmit() {
-  formRef.value?.validate(async (errors: any) => {
-    if (!errors) {
-      loading.value = true
-      useTaskSimilarityFetch().taskSimilarityBatch(formData.value).then(({ success }) => {
-        if (success) {
-          window.$message.success('提交成功')
-        }
-      })
-      emit('submit', true)
-      doClose()
-      show.value = false
-      loading.value = false
-    }
-    else {
-      //
-    }
+  window.$dialog.warning({
+    title: '提示',
+    content: '功能维护中...',
+    positiveText: '确定',
   })
+  // formRef.value?.validate(async (errors: any) => {
+  //   if (!errors) {
+  //     loading.value = true
+  //     useTaskSimilarityFetch().taskSimilarityBatch(formData.value).then(({ success }) => {
+  //       if (success) {
+  //         window.$message.success('提交成功')
+  //       }
+  //     })
+  //     emit('submit', true)
+  //     doClose()
+  //     show.value = false
+  //     loading.value = false
+  //   }
+  //   else {
+  //     //
+  //   }
+  // })
 }
 
 const isSetCollectRef = ref(false)
@@ -91,8 +101,12 @@ function doOpen(sId: string = '', pid: string = '', isSetCollect: boolean = fals
     allowLanguageOptions.value = data
   })
 
-//   isEdit.value = edit
-//   formData.value = Object.assign(formData.value, row)
+  //   isEdit.value = edit
+  //   formData.value = Object.assign(formData.value, row)
+  useSysGroupFetch().sysGroupAuthTree({ keyword: '' }).then(({ data }) => {
+    groupOptions.value = data
+    groupOptionsLoading.value = false
+  })
 }
 defineExpose({
   doOpen,
@@ -134,13 +148,13 @@ defineExpose({
           <NInputNumber v-model:value="formData.config.minMatchLength" placeholder="请输入敏感度" />
         </NFormItem>
 
-        <NFormItem label="用户组" path="allowedLanguages">
-          <NSelect
-            v-model:value="formData.language"
-            placeholder="请选择开放语言"
-            :options="allowLanguageOptions"
-            clearable
-            remote
+        <NFormItem label="用户组" path="groupId">
+          <n-tree-select
+            v-model:value="formData.groupId"
+            :options="groupOptions"
+            label-field="name"
+            key-field="id"
+            :indent="12"
           />
         </NFormItem>
       </NForm>
@@ -150,13 +164,13 @@ defineExpose({
             <template #icon>
               <IconParkOutlineClose />
             </template>
-            关闭
+            取消
           </NButton>
           <NButton type="primary" :loading="loading" @click="doSubmit">
             <template #icon>
               <IconParkOutlineSave />
             </template>
-            保存
+            开始检测
           </NButton>
         </NSpace>
       </template>

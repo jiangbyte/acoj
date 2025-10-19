@@ -103,7 +103,7 @@ public class SysRoleController {
     }
 
     @Log(category = LogCategory.OPERATION, module = LogModule.SYS)
-    @Operation(summary = "获取认证菜单")
+    @Operation(summary = "授权菜单")
     @PostMapping("/sys/role/menu/assign")
     public Result<?> assignMenu(@RequestBody @Valid SysMenuAssignParam sysMenuPermissionParam) {
         sysRoleMenuService.assignMenus(sysMenuPermissionParam.getRoleId(), sysMenuPermissionParam.getMenuIds());

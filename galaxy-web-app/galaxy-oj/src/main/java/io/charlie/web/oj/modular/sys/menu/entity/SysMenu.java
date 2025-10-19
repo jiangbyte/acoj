@@ -57,6 +57,9 @@ public class SysMenu extends CommonEntity {
     @Schema(description = "图标")
     private String icon;
 
+    @Schema(description = "头部参数")
+    private String parameters;
+
     @Schema(description = "是否缓存")
     @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean keepAlive;

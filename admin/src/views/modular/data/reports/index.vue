@@ -5,6 +5,7 @@ import { useTaskReportsFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
 
+const router = useRouter()
 const formRef = ref()
 const detailRef = ref()
 const columns: DataTableColumns<any> = [
@@ -87,7 +88,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 250,
+    width: 270,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -96,7 +97,16 @@ const columns: DataTableColumns<any> = [
         //   size: 'small',
         //   onClick: () => formRef.value.doOpen(row, true),
         // }, () => '编辑'),
-        h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => '相似报告'),
+        // h(NButton, { size: 'small', type: 'warning', onClick: () => {} }, () => '相似报告'),
+        h(NButton, {
+          type: 'primary',
+          size: 'small',
+          onClick: () => {
+            router.push({
+              path: `/visualization/submit/report/${row.id}/task/${row.taskId}`,
+            })
+          },
+        }, () => '报告可视化'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '数据详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),

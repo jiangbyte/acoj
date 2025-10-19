@@ -1,14 +1,13 @@
 <script lang="ts" setup>
 import type { SelectOption } from 'naive-ui'
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysGroupFetch, useSysUserFetch } from '@/composables/v1'
+import { useSysGroupFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
 const loading = ref(false)
 const formRef = ref()
-const { sysUserOptions } = useSysUserFetch()
-const { sysGroupDefaultData, sysGroupAdd, sysGroupEdit, sysGroupOptions } = useSysGroupFetch()
+const { sysGroupDefaultData, sysGroupAdd, sysGroupEdit } = useSysGroupFetch()
 const userOptionsLoading = ref(false)
 const userOptions = ref<SelectOption[]>([])
 const groupOptionsLoading = ref(false)
@@ -22,16 +21,16 @@ const rules = {
     { required: true, message: '请输入名称', trigger: ['input', 'blur'] },
   ],
   code: [
-    { required: true, message: '请输入编码', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入编码', trigger: ['input', 'blur'] },
   ],
   description: [
     // { required: true, message: '请输入描述', trigger: ['input', 'blur'] },
   ],
   sort: [
-    { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
   ],
   adminId: [
-    { required: true, message: '请输入负责人', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入负责人', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -79,11 +78,10 @@ async function doOpen(row: any = null, edit: boolean = false) {
   //   userOptionsLoading.value = false
   // }
 
-  const { data: data2 } = await sysGroupOptions({ keyword: '' })
-  if (data2) {
-    groupOptions.value = data2
+  useSysGroupFetch().sysGroupAuthTree({ keyword: '' }).then(({ data }) => {
+    groupOptions.value = data
     groupOptionsLoading.value = false
-  }
+  })
   // 如果编辑模式且已有adminId，则初始化显示名称
   if (edit && row?.adminId && row?.adminIdName) {
     userOptions.value = [{
@@ -107,26 +105,26 @@ async function handleUserSearch(query: string) {
   }
   userOptionsLoading.value = true
 
-  const { data } = await sysUserOptions({ keyword: query })
-  if (data) {
-    userOptions.value = data
-    userOptionsLoading.value = false
-  }
+  // const { data } = await sysUserOptions({ keyword: query })
+  // if (data) {
+  //   userOptions.value = data
+  //   userOptionsLoading.value = false
+  // }
 }
 
-async function handleGroupSearch(query: string) {
-  if (!query.length) {
-    groupOptions.value = []
-    return
-  }
-  groupOptionsLoading.value = true
+// async function handleGroupSearch(query: string) {
+//   if (!query.length) {
+//     groupOptions.value = []
+//     return
+//   }
+//   groupOptionsLoading.value = true
 
-  const { data } = await sysGroupOptions({ keyword: query })
-  if (data) {
-    groupOptions.value = data
-    groupOptionsLoading.value = false
-  }
-}
+//   // const { data } = await sysGroupOptions({ keyword: query })
+//   // if (data) {
+//   //   groupOptions.value = data
+//   //   groupOptionsLoading.value = false
+//   // }
+// }
 </script>
 
 <template>
@@ -140,7 +138,7 @@ async function handleGroupSearch(query: string) {
         <!-- 输入框 -->
         <NFormItem label="父级用户组" path="parentId">
           <!-- <NInput v-model:value="formData.parentId" placeholder="请输入父级用户组" /> -->
-          <NSelect
+          <!-- <NSelect
             v-model:value="formData.parentId"
             filterable
             placeholder="搜索用户组"
@@ -149,6 +147,13 @@ async function handleGroupSearch(query: string) {
             clearable
             remote
             @search="handleGroupSearch"
+          /> -->
+          <n-tree-select
+            v-model:value="formData.parentId"
+            :options="groupOptions"
+            label-field="name"
+            key-field="id"
+            :indent="12"
           />
         </NFormItem>
         <!-- 输入框 -->

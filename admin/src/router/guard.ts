@@ -1,6 +1,19 @@
 import { useRouterStore, useTabStore, useTokenStore } from '@/stores'
 import type { Router } from 'vue-router'
 
+function parseJson(json: string) {
+  if (json === 'null' || json === 'undefined') {
+    return null
+  }
+  try {
+    return JSON.parse(json)
+  }
+  catch (e) {
+    console.error(e)
+    return null
+  }
+}
+
 export function setupRouterGuard(router: Router) {
   const tokenStore = useTokenStore()
   const routerStore = useRouterStore()
@@ -14,11 +27,15 @@ export function setupRouterGuard(router: Router) {
       isInit: routerStore.isInit,
       rowRoutesLength: routerStore.rowRoutes?.length,
     })
+
+    const parameters = parseJson(String(to.meta.parameters))
+    console.log('头部参数', parameters)
+
     // 外部链接
-    if (to.meta.extraLink) {
-      if (to.meta.extraLink && to.meta.extraLinkEnabled) {
-        window.open(to.meta.extraLink as string)
-      }
+    if (parameters?.href_outter) {
+      console.log('href_outter', parameters.href_outter)
+      window.open(parameters.href_outter as string)
+      next(false)
       return
     }
 

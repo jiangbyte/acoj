@@ -46,6 +46,9 @@ public class SysMenuEditParam implements Serializable {
     @Schema(description = "图标")
     private String icon;
 
+    @Schema(description = "头部参数")
+    private String parameters;
+
     @Schema(description = "是否缓存")
     private Boolean keepAlive;
 
