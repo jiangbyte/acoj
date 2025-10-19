@@ -76,8 +76,17 @@ func (w *Workspace) createDirs() error {
 
 // Cleanup 删除工作空间
 func (w *Workspace) Cleanup() error {
-	// return os.RemoveAll(w.RootPath)
-	return nil
+	 logx.Infof("开始清理工作空间 路径: %s", w.RootPath)
+    
+    err := os.RemoveAll(w.RootPath)
+    if err != nil {
+        logx.Errorf("清理工作空间失败 路径: %s, 错误: %v", w.RootPath, err)
+        return err
+    }
+    
+    logx.Infof("工作空间清理完毕: %s", w.RootPath)
+    logx.Infof("=================================================== 工作空间处理完成 ===================================================")
+    return nil
 }
 
 // getLanguageConfig 查找并返回语言配置
@@ -128,11 +137,12 @@ func (w *Workspace) Execute() (*dto.JudgeResultDto, error) {
 
 	// 沙箱编译
 	compileResult, err := sandbox.Compile()
+	// 不为空说明出错了
 	if err != nil {
 		if compileResult.Message != "" {
 			compileResult.Message = grutil.FilterFilePath(compileResult.Message)
 		}
-		return compileResult, err
+		return compileResult, err // 编译结果到这里结束
 	}
 
 	// 沙箱运行
@@ -145,5 +155,5 @@ func (w *Workspace) Execute() (*dto.JudgeResultDto, error) {
 	}
 
 	// 运行成功，返回运行结果给上级
-	return evaluateResult, err
+	return evaluateResult, nil
 }

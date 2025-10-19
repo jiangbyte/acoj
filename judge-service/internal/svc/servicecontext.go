@@ -2,6 +2,7 @@ package svc
 
 import (
 	"judge-service/internal/config"
+	"judge-service/internal/nacos"
 
 	"github.com/streadway/amqp"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -14,6 +15,7 @@ type ServiceContext struct {
 	ProblemChannel    *amqp.Channel
 	ProblemSetChannel *amqp.Channel
 	CommonChannel     *amqp.Channel
+	ServiceRegistry   *nacos.ServiceRegistry // 服务注册器
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -47,12 +49,35 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		panic(err)
 	}
 
+	// 创建服务注册器
+	var serviceRegistry *nacos.ServiceRegistry
+	if c.Nacos.ServerAddr != "" {
+		registry, err := nacos.NewServiceRegistry(c.Nacos, c)
+		if err != nil {
+			logx.Errorf("Failed to create service registry: %v", err)
+			// 不 panic，让服务继续运行
+		} else {
+			serviceRegistry = registry
+
+			// 注册服务到 Nacos
+			if err := serviceRegistry.Register(); err != nil {
+				logx.Errorf("Failed to register service: %v", err)
+			} else {
+				logx.Info("Service registered to Nacos successfully")
+
+				// 启动健康检查
+				go serviceRegistry.HealthCheck()
+			}
+		}
+	}
+
 	return &ServiceContext{
 		Config:   c,
 		RabbitMQ: conn,
 
 		// ProblemChannel:    problemCh,
 		// ProblemSetChannel: problemSetCh,
-		CommonChannel:     commonCh,
+		CommonChannel: commonCh,
+		ServiceRegistry: serviceRegistry,
 	}
 }

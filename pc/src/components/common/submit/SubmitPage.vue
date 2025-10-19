@@ -95,6 +95,10 @@ async function startResultPolling(taskId: string) {
     poller.value.stop()
   }
 
+  if (!taskId) {
+    return
+  }
+
   // 重置轮询计数
   pollingCount.value = 0
 
@@ -196,9 +200,11 @@ function executeCode(type: boolean) {
 
   if (props.isSet) {
     useDataSubmitFetch().dataSubmitSetExecute(submitParam.value).then(({ data }) => {
-      submitTaskId.value = data
-      // 开始轮询判题结果
-      startResultPolling(data)
+      if (data) {
+        submitTaskId.value = data
+        // 开始轮询判题结果
+        startResultPolling(data)
+      }
     }).catch((error) => {
       console.error('提交代码失败:', error)
       // window.$message.error('提交失败，请重试')
@@ -210,9 +216,11 @@ function executeCode(type: boolean) {
   }
   else {
     useDataSubmitFetch().dataSubmitExecute(submitParam.value).then(({ data }) => {
-      submitTaskId.value = data
-      // 开始轮询判题结果
-      startResultPolling(data)
+      if (data) {
+        submitTaskId.value = data
+        // 开始轮询判题结果
+        startResultPolling(data)
+      }
     }).catch((error) => {
       console.error('提交代码失败:', error)
       // window.$message.error('提交失败，请重试')

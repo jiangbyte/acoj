@@ -65,17 +65,34 @@ func CompareOutput(ans string, output string) bool {
 // filterFilePath 过滤掉消息中的文件路径
 func FilterFilePath(message string) string {
 	// 使用正则表达式匹配并移除文件路径
-	// 匹配模式：以/tmp/或类似开头的文件路径
-	pattern := `/\S+?\.(cpp|c|java|py|js|go):\d+:\d+:`
-	re := regexp.MustCompile(pattern)
+	// 匹配两种格式：
+	// 1. /path/file.cpp:123:456:
+	// 2. /path/file.cpp: description
+	// pattern := `/\S+?\.(cpp|c|java|py|js|go)(?::\d+:\d+:|:\s*)`
+	// re := regexp.MustCompile(pattern)
 
-	// 移除文件路径部分，只保留错误信息
-	filtered := re.ReplaceAllString(message, "")
+	// // 移除文件路径部分，只保留错误信息
+	// filtered := re.ReplaceAllString(message, "")
 
-	// 如果过滤后为空，返回原始消息
-	if filtered == "" {
-		return message
-	}
+	// // 如果过滤后为空，返回原始消息
+	// if filtered == "" {
+	// 	return message
+	// }
 
-	return filtered
+	// return filtered
+
+
+	 // 匹配常见的文件路径模式
+	patterns := []string{
+        `/[^/]+?/([^/]+?\.(cpp|c|java|py|js|go)):\d+:\d+:`,  // Unix路径，保留文件名
+        `/[^/]+?/([^/]+?\.(cpp|c|java|py|js|go)):\s*`,       // Unix路径，保留文件名  
+        `[a-zA-Z]:\\[^\\]+?\\([^\\]+?\.(cpp|c|java|py|js|go)):`, // Windows路径，保留文件名
+    }
+    
+    for _, pattern := range patterns {
+        re := regexp.MustCompile(pattern)
+        message = re.ReplaceAllString(message, "")
+    }
+    
+    return message
 }

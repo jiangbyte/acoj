@@ -140,6 +140,8 @@ CREATE TABLE data_solved
   COLLATE = utf8mb4_unicode_ci
     COMMENT '用户解决表';
 
+ALTER TABLE data_solved ADD UNIQUE KEY uk_user_problem_set (user_id, problem_id, set_id, is_set);
+
 -- ----------------------------
 -- 题集
 -- ----------------------------

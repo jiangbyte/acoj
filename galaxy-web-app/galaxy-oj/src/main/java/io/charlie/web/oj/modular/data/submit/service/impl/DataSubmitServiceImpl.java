@@ -27,6 +27,9 @@ import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.task.judge.dto.JudgeSubmitDto;
 import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import io.charlie.web.oj.modular.task.judge.handle.JudgeHandleMessage;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Charlie Zhang
@@ -48,6 +52,8 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     private final DataSolvedMapper dataSolvedMapper;
     private final JudgeHandleMessage judgeHandleMessage;
     private final DataProblemMapper dataProblemMapper;
+
+    private final RedissonClient redissonClient;
 
     @Override
     public Page<DataSubmit> page(DataSubmitPageParam dataSubmitPageParam) {
@@ -224,25 +230,45 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         return submit;
     }
 
+
     public void handleSolvedRecord(DataSubmitExeParam dataSubmitExeParam, Boolean isSet, DataSubmit dataSubmit) {
+        String userId = StpUtil.getLoginIdAsString();
+        String problemId = dataSubmitExeParam.getProblemId();
+        // 锁的key包含所有唯一标识参数
+        String lockKey = String.format("solved:lock:%s:%s:%s:%s",
+                userId, problemId, isSet, dataSubmitExeParam.getSetId() != null ? dataSubmitExeParam.getSetId() : "null");
+
+        RLock lock = redissonClient.getLock(lockKey);
+        try {
+            // 尝试获取锁，等待3秒，锁有效期10秒（根据业务调整）
+            boolean locked = lock.tryLock(3, 10, TimeUnit.SECONDS);
+            if (locked) {
+                doHandleSolvedRecord(dataSubmitExeParam, isSet, dataSubmit);
+            } else {
+                // 获取锁失败，可以抛出异常或记录日志
+                log.warn("获取分布式锁失败，用户:{} 问题:{} 模式:{}", userId, problemId, isSet);
+                throw new BusinessException("系统繁忙，请稍后重试");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException("处理被中断", e);
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+    }
+
+    public void doHandleSolvedRecord(DataSubmitExeParam dataSubmitExeParam, Boolean isSet, DataSubmit dataSubmit) {
         String userId = StpUtil.getLoginIdAsString();
         String problemId = dataSubmitExeParam.getProblemId();
         String setId = dataSubmitExeParam.getSetId();
         String submitId = dataSubmit.getId();
 
-        // 先模式
-        if (isSet) {
-            // 当前是否有解决状态
-            LambdaQueryWrapper<DataSolved> queryWrapper = new LambdaQueryWrapper<DataSolved>()
-                    .eq(DataSolved::getUserId, userId)
-                    .eq(DataSolved::getSetId, setId)
-                    .eq(DataSolved::getProblemId, problemId)
-                    .eq(DataSolved::getIsSet, Boolean.TRUE);
-            boolean existingRecord = dataSolvedMapper.exists(queryWrapper);
-            // 如果存在
-            if (existingRecord) {
-                // 存在就更新提交ID和更新时间
-                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+        try {
+            if (isSet) {
+                // 先尝试更新
+                int updated = dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
                         .eq(DataSolved::getUserId, userId)
                         .eq(DataSolved::getSetId, setId)
                         .eq(DataSolved::getProblemId, problemId)
@@ -250,44 +276,163 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
                         .set(DataSolved::getSubmitId, submitId)
                         .set(DataSolved::getUpdateTime, new Date())
                 );
+
+                // 如果更新失败（记录不存在），则插入
+                if (updated == 0) {
+                    DataSolved dataSolved = new DataSolved();
+                    dataSolved.setUserId(userId);
+                    dataSolved.setSetId(setId);
+                    dataSolved.setProblemId(problemId);
+                    dataSolved.setIsSet(Boolean.TRUE);
+                    dataSolved.setSubmitId(submitId);
+                    dataSolved.setCreateTime(new Date());
+                    dataSolved.setUpdateTime(new Date());
+
+                    try {
+                        dataSolvedMapper.insert(dataSolved);
+                    } catch (DuplicateKeyException e) {
+                        // 发生唯一约束冲突，说明其他线程已经插入，重新尝试更新
+                        log.info("检测到并发插入冲突，重新尝试更新记录");
+                        dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                                .eq(DataSolved::getUserId, userId)
+                                .eq(DataSolved::getSetId, setId)
+                                .eq(DataSolved::getProblemId, problemId)
+                                .eq(DataSolved::getIsSet, Boolean.TRUE)
+                                .set(DataSolved::getSubmitId, submitId)
+                                .set(DataSolved::getUpdateTime, new Date())
+                        );
+                    }
+                }
             } else {
-                // 不存在就插入
-                DataSolved dataSolved = new DataSolved();
-                dataSolved.setUserId(userId);
-                dataSolved.setSetId(setId);
-                dataSolved.setProblemId(problemId);
-                dataSolved.setIsSet(Boolean.TRUE);
-                dataSolved.setSubmitId(submitId);
-                dataSolvedMapper.insert(dataSolved);
-            }
-        } else {
-            // 当前是否有解决状态
-            LambdaQueryWrapper<DataSolved> queryWrapper = new LambdaQueryWrapper<DataSolved>()
-                    .eq(DataSolved::getUserId, userId)
-                    .eq(DataSolved::getProblemId, problemId)
-                    .eq(DataSolved::getIsSet, Boolean.FALSE);
-            boolean existingRecord = dataSolvedMapper.exists(queryWrapper);
-            // 如果存在
-            if (existingRecord) {
-                // 存在就更新提交ID和更新时间
-                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                // 非set模式的逻辑
+                int updated = dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
                         .eq(DataSolved::getUserId, userId)
                         .eq(DataSolved::getProblemId, problemId)
                         .eq(DataSolved::getIsSet, Boolean.FALSE)
                         .set(DataSolved::getSubmitId, submitId)
                         .set(DataSolved::getUpdateTime, new Date())
                 );
-            } else {
-                // 不存在就插入
-                DataSolved dataSolved = new DataSolved();
-                dataSolved.setUserId(userId);
-                dataSolved.setProblemId(problemId);
-                dataSolved.setIsSet(Boolean.TRUE);
-                dataSolved.setSubmitId(submitId);
-                dataSolvedMapper.insert(dataSolved);
+
+                if (updated == 0) {
+                    DataSolved dataSolved = new DataSolved();
+                    dataSolved.setUserId(userId);
+                    dataSolved.setProblemId(problemId);
+                    dataSolved.setIsSet(Boolean.FALSE);
+                    dataSolved.setSubmitId(submitId);
+                    dataSolved.setCreateTime(new Date());
+                    dataSolved.setUpdateTime(new Date());
+
+                    try {
+                        dataSolvedMapper.insert(dataSolved);
+                    } catch (DuplicateKeyException e) {
+                        // 发生唯一约束冲突，重新尝试更新
+                        log.info("检测到并发插入冲突，重新尝试更新记录");
+                        dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                                .eq(DataSolved::getUserId, userId)
+                                .eq(DataSolved::getProblemId, problemId)
+                                .eq(DataSolved::getIsSet, Boolean.FALSE)
+                                .set(DataSolved::getSubmitId, submitId)
+                                .set(DataSolved::getUpdateTime, new Date())
+                        );
+                    }
+                }
             }
+        } catch (Exception e) {
+            log.error("处理解题记录失败，用户:{} 问题:{} 模式:{}", userId, problemId, isSet, e);
+            throw new BusinessException("处理解题记录失败", e);
         }
     }
+
+//    public void handleSolvedRecord(DataSubmitExeParam dataSubmitExeParam, Boolean isSet, DataSubmit dataSubmit) {
+//        String userId = StpUtil.getLoginIdAsString();
+//        String problemId = dataSubmitExeParam.getProblemId();
+//        String lockKey = String.format("solved:lock:%s:%s:%s", userId, problemId, isSet);
+//
+//        RLock lock = redissonClient.getLock(lockKey);
+//        try {
+//            // 尝试获取锁，等待5秒，锁有效期30秒
+//            boolean locked = lock.tryLock(5, 30, TimeUnit.SECONDS);
+//            if (locked) {
+//                doHandleSolvedRecord(dataSubmitExeParam, isSet, dataSubmit);
+//            } else {
+//                throw new BusinessException("获取锁失败，请重试");
+//            }
+//        } catch (InterruptedException e) {
+//            Thread.currentThread().interrupt();
+//            throw new BusinessException("处理中断", e);
+//        } finally {
+//            if (lock.isHeldByCurrentThread()) {
+//                lock.unlock();
+//            }
+//        }
+//
+//
+//    }
+//
+//    private void doHandleSolvedRecord(DataSubmitExeParam dataSubmitExeParam, Boolean isSet, DataSubmit dataSubmit) {
+//        String userId = StpUtil.getLoginIdAsString();
+//        String problemId = dataSubmitExeParam.getProblemId();
+//        String setId = dataSubmitExeParam.getSetId();
+//        String submitId = dataSubmit.getId();
+//
+//        // 先模式
+//        if (isSet) {
+//            // 当前是否有解决状态
+//            LambdaQueryWrapper<DataSolved> queryWrapper = new LambdaQueryWrapper<DataSolved>()
+//                    .eq(DataSolved::getUserId, userId)
+//                    .eq(DataSolved::getSetId, setId)
+//                    .eq(DataSolved::getProblemId, problemId)
+//                    .eq(DataSolved::getIsSet, Boolean.TRUE);
+//            boolean existingRecord = dataSolvedMapper.exists(queryWrapper);
+//            // 如果存在
+//            if (existingRecord) {
+//                // 存在就更新提交ID和更新时间
+//                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+//                        .eq(DataSolved::getUserId, userId)
+//                        .eq(DataSolved::getSetId, setId)
+//                        .eq(DataSolved::getProblemId, problemId)
+//                        .eq(DataSolved::getIsSet, Boolean.TRUE)
+//                        .set(DataSolved::getSubmitId, submitId)
+//                        .set(DataSolved::getUpdateTime, new Date())
+//                );
+//            } else {
+//                // 不存在就插入
+//                DataSolved dataSolved = new DataSolved();
+//                dataSolved.setUserId(userId);
+//                dataSolved.setSetId(setId);
+//                dataSolved.setProblemId(problemId);
+//                dataSolved.setIsSet(Boolean.TRUE);
+//                dataSolved.setSubmitId(submitId);
+//                dataSolvedMapper.insert(dataSolved);
+//            }
+//        } else {
+//            // 当前是否有解决状态
+//            LambdaQueryWrapper<DataSolved> queryWrapper = new LambdaQueryWrapper<DataSolved>()
+//                    .eq(DataSolved::getUserId, userId)
+//                    .eq(DataSolved::getProblemId, problemId)
+//                    .eq(DataSolved::getIsSet, Boolean.FALSE);
+//            boolean existingRecord = dataSolvedMapper.exists(queryWrapper);
+//            // 如果存在
+//            if (existingRecord) {
+//                // 存在就更新提交ID和更新时间
+//                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+//                        .eq(DataSolved::getUserId, userId)
+//                        .eq(DataSolved::getProblemId, problemId)
+//                        .eq(DataSolved::getIsSet, Boolean.FALSE)
+//                        .set(DataSolved::getSubmitId, submitId)
+//                        .set(DataSolved::getUpdateTime, new Date())
+//                );
+//            } else {
+//                // 不存在就插入
+//                DataSolved dataSolved = new DataSolved();
+//                dataSolved.setUserId(userId);
+//                dataSolved.setProblemId(problemId);
+//                dataSolved.setIsSet(Boolean.FALSE);
+//                dataSolved.setSubmitId(submitId);
+//                dataSolvedMapper.insert(dataSolved);
+//            }
+//        }
+//    }
 
     @Async("taskExecutor")
     public void asyncHandleSubmit(DataSubmit dataSubmit, DataSubmitExeParam param) {

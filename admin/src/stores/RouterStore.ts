@@ -235,11 +235,20 @@ export const useRouterStore = defineStore('route-store', {
     async initRouter() {
       this.isInit = false
       const rowRoutes = await this.initAuthRoute()
-      if (!rowRoutes)
+      if (!rowRoutes || rowRoutes.length === 0) {
+        console.error('获取菜单数据失败')
         return
+      }
 
       this.rowRoutes = rowRoutes
-      router.addRoute(createRoutes(rowRoutes))
+
+      // router.addRoute(createRoutes(rowRoutes))
+      const routes = createRoutes(rowRoutes)
+      router.addRoute(routes)
+
+      // 验证路由是否添加成功
+      console.log('路由添加后的路由表:', router.getRoutes())
+
       this.menus = createMenus(rowRoutes)
       this.cacheRoutes = rowRoutes.filter((i: any) => i.keepAlive).map((i: any) => i.name)
       this.isInit = true

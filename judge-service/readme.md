@@ -15,7 +15,8 @@ export PATH=$PATH:/usr/local/go/bin
 rm -rf /usr/local/go && tar -C /usr/local -xzf go1.24.4.linux-amd64.tar.gz
 
 
-
+// 其他服务中可以通过服务名发现判题服务
+instances, err := serviceRegistry.GetServiceInstances("judge-service")
 
 
 ---

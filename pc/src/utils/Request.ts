@@ -100,6 +100,15 @@ const alovaInstance = createAlova({
           return response.blob()
         }
 
+        // 如果code 是 401 马上执行本地登出
+        if (jsonData.code === '401') {
+          message.error('登录过期，请重新登录')
+          // 登出
+          const tokenStore = useTokenStore()
+          tokenStore.resetToken()
+          return
+        }
+
         // 获取json数据中的code字段，判断是否为成功状态，默认为"200"
         if (jsonData.code === '200') {
           return jsonData

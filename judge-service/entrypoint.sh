@@ -11,7 +11,7 @@ echo 1 > /sys/fs/cgroup/temp_group/cgroup.procs
 echo "+cpu +memory +io" > /sys/fs/cgroup/cgroup.subtree_control
 
 # 启动应用
-exec ./judge-service
+exec ./judge-service -f etc/judge.yaml -nacos
 
 # 启动bash
 #exec /bin/bash

@@ -101,6 +101,7 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 	logx.Infof("收到消息: %+v", judgeSubmit)
 
 	workspace, workspaceResultDto := judge.NewWorkspace(l.ctx, l.svcCtx.Config, judgeSubmit)
+	// workspaceResultDto 为空说明没有错误，不为空则说明出错
 	if workspaceResultDto != nil {
 		err := l.sendResultToMQ(workspaceResultDto)
 		if err != nil {
@@ -108,7 +109,12 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 		}
 		return
 	}
+
+	// 正常执行
+
+	// 保存代码
 	SourceCodeResultDto := workspace.SaveSourceCode()
+	// SourceCodeResultDto 不为空说明出错了
 	if SourceCodeResultDto != nil {
 		err := l.sendResultToMQ(SourceCodeResultDto)
 		if err != nil {
@@ -118,8 +124,10 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 		return
 	}
 
+	// 程序执行
 	RunResultDto, err := workspace.Execute()
 	logx.Infof("执行结果: %+v", RunResultDto)
+	// 不为空说明出错了
 	if err != nil {
 		err := l.sendResultToMQ(RunResultDto)
 		if err != nil {
@@ -129,14 +137,23 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 		return
 	}
 
+	logx.Infof("消息开始返回")
+	// 如果正常会执行到这里
 	err = l.sendResultToMQ(RunResultDto)
 	if err != nil {
 		l.Errorf("发送结果到MQ失败: %v", err)
+		err = workspace.Cleanup()
+		if err != nil {
+			l.Errorf("删除工作空间失败: %v", err)
+		}
+		return
 	}
 
+	logx.Infof("消息返回成功")
 	err = workspace.Cleanup()
 	if err != nil {
 		l.Errorf("删除工作空间失败: %v", err)
+		return
 	}
 }
 
