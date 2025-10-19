@@ -1,16 +1,20 @@
 package io.charlie.web.oj.modular.task.similarity.utils;
 
+import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
 import io.charlie.web.oj.modular.task.similarity.enums.CloneLevelEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author ZhangJiangHu
@@ -116,5 +120,57 @@ public class DynamicCloneLevelDetector implements Serializable {
     public static List<CloneLevel> getLevels(BigDecimal baseThreshold) {
         DynamicCloneLevelDetector detector = new DynamicCloneLevelDetector(baseThreshold);
         return detector.getLevels();
+    }
+
+    // 相似分布
+    public List<Integer> similarityDistribution(List<TaskSimilarity> similarities) {
+        // 相似度分布
+        int[] distribution = new int[10];
+        similarities.forEach(detail -> {
+            int index = Math.min((int) (detail.getSimilarity().doubleValue() * 10), 9);
+            distribution[index]++;
+        });
+
+        return Arrays.stream(distribution).boxed().collect(Collectors.toList());
+    }
+
+    public List<DynamicCloneLevelDetector.CloneLevel> similarityDegreeStatistics(List<TaskSimilarity> details) {
+
+        List<CloneLevel> levels = this.getLevels();
+
+        if (details.isEmpty() || levels.isEmpty()) return levels;
+
+        // 按相似度阈值从高到低排序，确保正确的范围匹配
+        List<DynamicCloneLevelDetector.CloneLevel> sortedLevels = levels.stream()
+                .sorted(Comparator.comparing(DynamicCloneLevelDetector.CloneLevel::getSimilarity).reversed())
+                .collect(Collectors.toList());
+
+        int[] counts = new int[sortedLevels.size()];
+        details.forEach(detail -> {
+            BigDecimal similarity = detail.getSimilarity();
+            int levelIndex = findMatchingLevelIndex(similarity, sortedLevels);
+            if (levelIndex >= 0) counts[levelIndex]++;
+        });
+
+        int total = details.size();
+        IntStream.range(0, sortedLevels.size()).forEach(i -> {
+            DynamicCloneLevelDetector.CloneLevel level = sortedLevels.get(i);
+            level.setCount(counts[i]);
+            BigDecimal percentage = total > 0 ?
+                    new BigDecimal(counts[i]).divide(new BigDecimal(total), 4, RoundingMode.HALF_UP).multiply(new BigDecimal(100)) :
+                    BigDecimal.ZERO;
+            level.setPercentage(percentage);
+        });
+        return sortedLevels;
+    }
+
+    private int findMatchingLevelIndex(BigDecimal similarity, List<DynamicCloneLevelDetector.CloneLevel> levels) {
+        for (int i = 0; i < levels.size(); i++) {
+            DynamicCloneLevelDetector.CloneLevel level = levels.get(i);
+            if (i == 0 && similarity.compareTo(level.getSimilarity()) >= 0) return i;
+            if (i > 0 && similarity.compareTo(level.getSimilarity()) >= 0 &&
+                    similarity.compareTo(levels.get(i - 1).getSimilarity()) < 0) return i;
+        }
+        return levels.size() - 1; // 默认最低级别
     }
 }

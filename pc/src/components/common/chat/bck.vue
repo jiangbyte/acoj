@@ -2,7 +2,6 @@
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { v4 as uuidv4 } from 'uuid'
 import MdViewer from '@/components/common/editor/md/Viewer.vue'
-import { useLMMessageStore } from '@/stores'
 
 // 定义 props
 const props = defineProps({
@@ -23,6 +22,7 @@ const props = defineProps({
 // 监听 props 变化
 watch(() => props.problemId, (newVal) => {
   console.log('问题ID变化:', newVal)
+  // 可以在这里重新加载对应问题的数据
 })
 
 watch(() => props.userCode, (newVal) => {
@@ -74,9 +74,8 @@ function getMessageTypeLabel(messageType: string) {
 }
 
 // 连接并发送消息
-function sendMessage(customMessage?: string, messageType: string = 'chat') {
-  const finalMessage = customMessage || llmMessageParam.value.message
-  if (!finalMessage.trim())
+function sendMessage() {
+  if (!llmMessageParam.value.message.trim())
     return
 
   // 生成会话ID（如果是新会话）
@@ -84,24 +83,21 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
     llmMessageParam.value.conversantId = `task-${uuidv4()}`
   }
 
-  // 更新消息类型和内容
-  llmMessageParam.value.messageType = messageType
-  llmMessageParam.value.userCode = props.userCode
-  llmMessageParam.value.language = props.language
+  llmMessageParam.value.messageType = 'chat'
+  const userMessage = llmMessageParam.value.message
+  const currentMessage = userMessage
 
   // 添加用户消息到界面
   messages.value.push({
     id: uuidv4(),
-    content: finalMessage,
+    content: userMessage,
     type: 'user',
     timestamp: Date.now(),
-    messageType,
+    messageType: 'chat',
   })
 
-  // 如果是按钮触发的，清空输入框
-  // if (customMessage) {
+  // 清空输入框
   llmMessageParam.value.message = ''
-  // }
 
   // 添加机器人消息占位符
   const botMessageId = uuidv4()
@@ -110,7 +106,7 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
     content: '',
     type: 'bot',
     timestamp: Date.now(),
-    messageType,
+    messageType: '',
   })
 
   isLoading.value = true
@@ -119,17 +115,15 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
   controller.value = new AbortController()
 
   fetchEventSource(`${gateway + pathPrefix}chat/stream`, {
-    method: 'POST',
+    method: 'POST', // 通常是POST请求发送消息
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       conversantId: llmMessageParam.value.conversantId,
       problemId: llmMessageParam.value.problemId,
-      message: finalMessage,
-      messageType,
-      userCode: llmMessageParam.value.userCode,
-      language: llmMessageParam.value.language,
+      message: currentMessage,
+      messageType: llmMessageParam.value.messageType,
     }),
     signal: controller.value.signal,
 
@@ -148,13 +142,17 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
     },
 
     onmessage: (event) => {
+      // 处理服务器返回的消息
       try {
         if (event.data) {
           const data = JSON.parse(event.data)
+          // 更新机器人消息内容
           const botMessageIndex = messages.value.findIndex(msg => msg.id === botMessageId)
           if (botMessageIndex !== -1) {
             messages.value[botMessageIndex].content += data.content || data.message || ''
+            // 更新消息的时间戳
             messages.value[botMessageIndex].timestamp = data.timestamp || ''
+            // 更新消息类型
             messages.value[botMessageIndex].messageType = data.messageType || ''
           }
         }
@@ -167,6 +165,7 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
     onerror: (error) => {
       console.error('SSE错误:', error)
       isLoading.value = false
+      // 可以在这里显示错误信息
       const botMessageIndex = messages.value.findIndex(msg => msg.id === botMessageId)
       if (botMessageIndex !== -1) {
         messages.value[botMessageIndex].content = '抱歉，发生错误，请重试。'
@@ -180,14 +179,6 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
   })
 }
 
-// 按钮点击处理函数
-function handleButtonClick(messageType: string) {
-  const prompt = promptTemplates[messageType]
-  if (prompt) {
-    sendMessage(prompt, messageType)
-  }
-}
-
 // 停止发送
 function stopSending() {
   if (controller.value) {
@@ -197,71 +188,14 @@ function stopSending() {
 }
 
 // 清空对话
-// function clearMessages() {
-//   messages.value = []
-//   llmMessageParam.value.conversantId = ''
-// }
+function clearMessages() {
+  messages.value = []
+  llmMessageParam.value.conversantId = ''
+}
 
 const isCollapse = ref(false)
 function handleCollapse() {
   isCollapse.value = !isCollapse.value
-}
-
-const messageStore = useLMMessageStore()
-// 生成存储键
-const getStorageKey = computed(() => {
-  return `llm-chat-${props.problemId}`
-})
-// 从本地存储加载消息
-function loadMessages() {
-  if (typeof window === 'undefined')
-    return
-
-  const stored = localStorage.getItem(getStorageKey.value)
-  if (stored) {
-    try {
-      messages.value = JSON.parse(stored)
-      // 恢复会话ID
-      if (messages.value.length > 0) {
-        llmMessageParam.value.conversantId = `task-${uuidv4()}`
-      }
-    }
-    catch (error) {
-      console.error('加载聊天记录失败:', error)
-    }
-  }
-}
-
-// 保存消息到本地存储
-function saveMessages() {
-  if (typeof window === 'undefined')
-    return
-
-  try {
-    localStorage.setItem(getStorageKey.value, JSON.stringify(messages.value))
-  }
-  catch (error) {
-    console.error('保存聊天记录失败:', error)
-  }
-}
-
-// 监听消息变化并保存
-watch(messages, () => {
-  saveMessages()
-}, { deep: true })
-
-// 组件挂载时加载消息
-onMounted(() => {
-  loadMessages()
-})
-
-// 清空对话时也清除存储
-function clearMessages() {
-  messages.value = []
-  llmMessageParam.value.conversantId = ''
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(getStorageKey.value)
-  }
 }
 </script>
 
@@ -276,7 +210,7 @@ function clearMessages() {
         <n-empty
           v-if="messages.length === 0"
           class="flex flex-col items-center justify-center py-12"
-          description="暂无对话记录"
+          description="暂无判题结果"
         >
           <template #icon>
             <n-icon size="40" class="text-gray-300 dark:text-gray-600">
@@ -284,16 +218,19 @@ function clearMessages() {
             </n-icon>
           </template>
           <n-text depth="3" class="text-center max-w-xs">
-            还没有消息，点击下方按钮开始对话！
+            还没有消息，快来提问吧！
           </n-text>
         </n-empty>
         <div v-for="message in messages" :key="message.id">
           <n-card v-if="message.type === 'user'" size="small" class="bg-#f0f7ff" :bordered="false">
             <n-flex vertical :size="4">
               <div class="flex items-center justify-between">
-                <n-tag :type="message.messageType === 'chat' ? 'primary' : 'success'" size="small">
-                  {{ getMessageTypeLabel(message.messageType) }}
+                <n-tag v-if="message.messageType === 'chat'" type="primary" size="small">
+                  对话
                 </n-tag>
+                <!-- <n-tag type="primary" size="small">
+                  提问/解析/优化
+                </n-tag> -->
                 <n-time :time="message.timestamp" />
               </div>
               <n-text>
@@ -303,14 +240,7 @@ function clearMessages() {
           </n-card>
           <div v-if="message.type === 'bot'">
             <n-time :time="message.timestamp" style="display: flex; justify-content: end; width: 100%; margin-top: 6px;" />
-            <n-card size="small">
-              <n-flex vertical :size="4">
-                <n-tag :type="message.messageType === 'chat' ? 'primary' : 'success'" size="small">
-                  {{ getMessageTypeLabel(message.messageType) }}
-                </n-tag>
-                <MdViewer :model-value="message.content" />
-              </n-flex>
-            </n-card>
+            <MdViewer :model-value="message.content" />
           </div>
           <span v-if="isLoading && message.type === 'bot' && !message.content" class="typing-indicator">
             思考中...
@@ -330,21 +260,13 @@ function clearMessages() {
             <n-button
               type="primary"
               size="small"
-              @click="handleButtonClick('generate_solution')"
             >
               生成解题思路
             </n-button>
             <n-button
               size="small"
-              @click="handleButtonClick('analyze_code')"
             >
               分析我的代码
-            </n-button>
-            <n-button
-              size="small"
-              @click="handleButtonClick('optimize_code')"
-            >
-              优化代码
             </n-button>
           </n-flex>
           <n-button
@@ -355,10 +277,10 @@ function clearMessages() {
           </n-button>
         </n-flex>
         <n-flex v-if="!isCollapse">
-          <n-button round size="tiny" @click="handleButtonClick('explain_complexity')">
+          <n-button round size="tiny">
             解释时间复杂度
           </n-button>
-          <n-button round size="tiny" @click="handleButtonClick('boundary_cases')">
+          <n-button round size="tiny">
             有哪些边界情况需要考虑
           </n-button>
         </n-flex>
@@ -368,7 +290,7 @@ function clearMessages() {
           type="textarea"
           placeholder="遇到问题？向AI描述你的疑问或需要帮助的地方。例如：如何优化这段代码的时间复杂度？或者：为什么我的代码在这个测试用例上失败了？"
           :autosize="{ minRows: 4, maxRows: 4 }"
-          @keydown.enter.prevent="sendMessage()"
+          @keydown.enter.prevent="sendMessage"
         />
         <NFlex
           v-if="!isCollapse"
@@ -378,7 +300,7 @@ function clearMessages() {
           <NButton
             type="primary"
             size="small"
-            @click="sendMessage()"
+            @click="sendMessage"
           >
             <template #icon>
               <icon-park-outline-send />

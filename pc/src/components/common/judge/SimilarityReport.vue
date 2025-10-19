@@ -7,7 +7,7 @@ defineProps<Props>()
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-xl p-y-6">
+  <div class="bg-white dark:bg-gray-800 rounded-xl">
     <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
       <div class="col-span-1 md:col-span-1">
         <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">

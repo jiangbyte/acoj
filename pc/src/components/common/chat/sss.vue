@@ -2,7 +2,6 @@
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { v4 as uuidv4 } from 'uuid'
 import MdViewer from '@/components/common/editor/md/Viewer.vue'
-import { useLMMessageStore } from '@/stores'
 
 // 定义 props
 const props = defineProps({
@@ -99,9 +98,9 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
   })
 
   // 如果是按钮触发的，清空输入框
-  // if (customMessage) {
-  llmMessageParam.value.message = ''
-  // }
+  if (customMessage) {
+    llmMessageParam.value.message = ''
+  }
 
   // 添加机器人消息占位符
   const botMessageId = uuidv4()
@@ -197,71 +196,14 @@ function stopSending() {
 }
 
 // 清空对话
-// function clearMessages() {
-//   messages.value = []
-//   llmMessageParam.value.conversantId = ''
-// }
+function clearMessages() {
+  messages.value = []
+  llmMessageParam.value.conversantId = ''
+}
 
 const isCollapse = ref(false)
 function handleCollapse() {
   isCollapse.value = !isCollapse.value
-}
-
-const messageStore = useLMMessageStore()
-// 生成存储键
-const getStorageKey = computed(() => {
-  return `llm-chat-${props.problemId}`
-})
-// 从本地存储加载消息
-function loadMessages() {
-  if (typeof window === 'undefined')
-    return
-
-  const stored = localStorage.getItem(getStorageKey.value)
-  if (stored) {
-    try {
-      messages.value = JSON.parse(stored)
-      // 恢复会话ID
-      if (messages.value.length > 0) {
-        llmMessageParam.value.conversantId = `task-${uuidv4()}`
-      }
-    }
-    catch (error) {
-      console.error('加载聊天记录失败:', error)
-    }
-  }
-}
-
-// 保存消息到本地存储
-function saveMessages() {
-  if (typeof window === 'undefined')
-    return
-
-  try {
-    localStorage.setItem(getStorageKey.value, JSON.stringify(messages.value))
-  }
-  catch (error) {
-    console.error('保存聊天记录失败:', error)
-  }
-}
-
-// 监听消息变化并保存
-watch(messages, () => {
-  saveMessages()
-}, { deep: true })
-
-// 组件挂载时加载消息
-onMounted(() => {
-  loadMessages()
-})
-
-// 清空对话时也清除存储
-function clearMessages() {
-  messages.value = []
-  llmMessageParam.value.conversantId = ''
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(getStorageKey.value)
-  }
 }
 </script>
 
@@ -330,18 +272,21 @@ function clearMessages() {
             <n-button
               type="primary"
               size="small"
+              :loading="isLoading"
               @click="handleButtonClick('generate_solution')"
             >
               生成解题思路
             </n-button>
             <n-button
               size="small"
+              :loading="isLoading"
               @click="handleButtonClick('analyze_code')"
             >
               分析我的代码
             </n-button>
             <n-button
               size="small"
+              :loading="isLoading"
               @click="handleButtonClick('optimize_code')"
             >
               优化代码
@@ -355,10 +300,10 @@ function clearMessages() {
           </n-button>
         </n-flex>
         <n-flex v-if="!isCollapse">
-          <n-button round size="tiny" @click="handleButtonClick('explain_complexity')">
+          <n-button round size="tiny" :loading="isLoading" @click="handleButtonClick('explain_complexity')">
             解释时间复杂度
           </n-button>
-          <n-button round size="tiny" @click="handleButtonClick('boundary_cases')">
+          <n-button round size="tiny" :loading="isLoading" @click="handleButtonClick('boundary_cases')">
             有哪些边界情况需要考虑
           </n-button>
         </n-flex>
@@ -378,6 +323,7 @@ function clearMessages() {
           <NButton
             type="primary"
             size="small"
+            :loading="isLoading"
             @click="sendMessage()"
           >
             <template #icon>
@@ -389,6 +335,7 @@ function clearMessages() {
             secondary
             type="primary"
             size="small"
+            :disabled="!isLoading"
             @click="stopSending"
           >
             <template #icon>

@@ -112,19 +112,9 @@ const formData = ref({
   groupId: null,
 })
 const detailData = ref()
-const totalSimilarGroups = ref(0)
 async function loadData() {
   useTaskReportsFetch().taskReportsDetail({ id: reportId }).then(({ data }) => {
     detailData.value = data
-    if (detailData.value?.similarityDistribution && Array.isArray(detailData.value.similarityDistribution)) {
-      totalSimilarGroups.value = detailData.value.similarityDistribution.reduce((sum: any, item: { value: any }) => {
-        const value = typeof item === 'object' ? (item.value || 0) : (item || 0)
-        return sum + value
-      }, 0)
-    }
-    else {
-      totalSimilarGroups.value = 0
-    }
   })
 
   useSysGroupFetch().sysGroupAuthTree({ keyword: '' }).then(({ data }) => {
@@ -204,7 +194,7 @@ loadData()
                     共检测 {{ detailData?.sampleCount ? detailData.sampleCount : 0 }} 份有效代码
                   </p>
                   <p class="font-medium">
-                    发现 {{ totalSimilarGroups ? totalSimilarGroups : 0 }} 组疑似克隆
+                    发现 {{ detailData?.similarityGroupCount ? detailData.similarityGroupCount : 0 }} 分类相似计数
                   </p>
                 </NSpace>
                 <!-- <NSpace :size="1" vertical>

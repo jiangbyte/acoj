@@ -31,10 +31,10 @@ defineProps<Props>()
       <JudgeResultStats :result-task-data="resultTaskData" />
 
       <!-- 代码相似度 -->
-      <SimilarityReport v-if="resultTaskData.submitType" :result-task-data="resultTaskData" />
+      <SimilarityReport v-if="resultTaskData.submitType" :result-task-data="resultTaskData" class="pt-6"/>
 
       <!-- 错误信息 -->
-      <div class="lg:col-span-2">
+      <div class="lg:col-span-2 pt-6">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <CodeEditor
             v-if="resultTaskData?.message"

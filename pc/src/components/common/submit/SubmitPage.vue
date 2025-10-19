@@ -344,6 +344,25 @@ onUnmounted(() => {
               :result-task-data="resultTaskData"
             />
           </NTabPane>
+          <NTabPane
+            v-if="detailData?.useAi"
+            name="assistant"
+            tab="增强解析"
+          >
+            <!-- <LLMChat
+              :problem-id="originalId"
+              :language="submitParam.language || ''"
+              :user-code="submitParam.code"
+            /> -->
+            <KeepAlive>
+              <LLMChat
+                :key="`llm-chat-${originalId}`"
+                :problem-id="originalId"
+                :language="submitParam.language || ''"
+                :user-code="submitParam.code"
+              />
+            </KeepAlive>
+          </NTabPane>
         </NTabs>
       </NFlex>
     </NCard>
@@ -402,11 +421,19 @@ onUnmounted(() => {
                 name="assistant"
                 tab="增强解析"
               >
-                <LLMChat
+                <!-- <LLMChat
                   :problem-id="originalId"
                   :language="submitParam.language || ''"
                   :user-code="submitParam.code"
-                />
+                /> -->
+                <KeepAlive>
+                  <LLMChat
+                    :key="`llm-chat-${originalId}`"
+                    :problem-id="originalId"
+                    :language="submitParam.language || ''"
+                    :user-code="submitParam.code"
+                  />
+                </KeepAlive>
               </NTabPane>
             </NTabs>
           </NFlex>
@@ -454,7 +481,7 @@ onUnmounted(() => {
 }
 
 :deep(.n-tab-pane) {
-  height: calc(100vh - 72px);
+  height: calc(100vh - 72px - 60px);
   overflow: scroll;
 }
 </style>

@@ -6,6 +6,7 @@ export * from './RouterStore.ts'
 export * from './TokenStore.ts'
 export * from './SiteStore.ts'
 export * from './UserStore.ts'
+export * from './LMMessageStore.ts'
 
 export function setupPinia(app: App) {
   const pinia = createPinia()

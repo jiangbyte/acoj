@@ -41,6 +41,8 @@ public class TaskReportsServiceImpl extends ServiceImpl<TaskReportsMapper, TaskR
     @Override
     public Page<TaskReports> page(TaskReportsPageParam taskReportsPageParam) {
         QueryWrapper<TaskReports> queryWrapper = new QueryWrapper<TaskReports>().checkSqlInjection();
+        // 降序
+        queryWrapper.lambda().orderByDesc(TaskReports::getCreateTime);
         if (ObjectUtil.isAllNotEmpty(taskReportsPageParam.getSortField(), taskReportsPageParam.getSortOrder()) && ISortOrderEnum.isValid(taskReportsPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,

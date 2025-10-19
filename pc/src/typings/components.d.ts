@@ -9,6 +9,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AiHelp: typeof import('./../components/modular/problem/problem/AiHelp.vue')['default']
+    Bck: typeof import('./../components/common/chat/bck.vue')['default']
     CodeEditorToolbar: typeof import('./../components/common/judge/CodeEditorToolbar.vue')['default']
     Dropdown: typeof import('./../components/site/Dropdown.vue')['default']
     Editor: typeof import('./../components/common/editor/code/Editor.vue')['default']
@@ -95,6 +96,7 @@ declare module 'vue' {
     SetRankingPage: typeof import('./../components/modular/set/ranking/SetRankingPage.vue')['default']
     SetUserSubmit: typeof import('./../components/modular/set/submit/SetUserSubmit.vue')['default']
     SimilarityReport: typeof import('./../components/common/judge/SimilarityReport.vue')['default']
+    Sss: typeof import('./../components/common/chat/sss.vue')['default']
     SubmitPage: typeof import('./../components/common/submit/SubmitPage.vue')['default']
     UserAvatar: typeof import('./../components/site/UserAvatar.vue')['default']
     Viewer: typeof import('./../components/common/editor/md/Viewer.vue')['default']
