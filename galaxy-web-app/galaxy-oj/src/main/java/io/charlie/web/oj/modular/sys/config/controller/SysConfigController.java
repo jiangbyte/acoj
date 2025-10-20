@@ -5,10 +5,7 @@ import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.annotation.log.Log;
 import io.charlie.web.oj.annotation.log.LogCategory;
 import io.charlie.web.oj.annotation.log.LogModule;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigPageParam;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigAddParam;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigEditParam;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigIdParam;
+import io.charlie.web.oj.modular.sys.config.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -71,6 +68,11 @@ public class SysConfigController {
     public Result<?> delete(@RequestBody @Valid @NotEmpty(message = "集合不能为空") List<SysConfigIdParam> sysConfigIdParam) {
         sysConfigService.delete(sysConfigIdParam);
         return Result.success();
+    }
+
+    @GetMapping("/sys/config/list")
+    public Result<?> list(@ParameterObject SysConfigListParam sysConfigListParam) {
+        return Result.success(sysConfigService.listAll(sysConfigListParam));
     }
 
     @Operation(summary = "获取系统配置详情")

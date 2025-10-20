@@ -10,10 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.web.oj.modular.sys.config.entity.SysConfig;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigAddParam;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigEditParam;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigIdParam;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigPageParam;
+import io.charlie.web.oj.modular.sys.config.param.*;
 import io.charlie.web.oj.modular.sys.config.mapper.SysConfigMapper;
 import io.charlie.web.oj.modular.sys.config.service.SysConfigService;
 import io.charlie.galaxy.enums.ISortOrderEnum;
@@ -45,6 +42,11 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         if (ObjectUtil.isNotEmpty(sysConfigPageParam.getKeyword())) {
             queryWrapper.lambda().like(SysConfig::getName, sysConfigPageParam.getKeyword());
         }
+        // 先按 configType 排序，然后按 name 排序
+        queryWrapper.lambda()
+                .orderByAsc(SysConfig::getConfigType)
+                .orderByAsc(SysConfig::getName);
+
         if (ObjectUtil.isAllNotEmpty(sysConfigPageParam.getSortField(), sysConfigPageParam.getSortOrder()) && ISortOrderEnum.isValid(sysConfigPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
@@ -58,6 +60,20 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
                 null
                 ),
                 queryWrapper);
+    }
+
+    @Override
+    public List<SysConfig> listAll(SysConfigListParam sysConfigListParam) {
+        QueryWrapper<SysConfig> queryWrapper = new QueryWrapper<SysConfig>().checkSqlInjection();
+        // 关键字
+        if (ObjectUtil.isNotEmpty(sysConfigListParam.getKeyword())) {
+            queryWrapper.lambda().like(SysConfig::getName, sysConfigListParam.getKeyword());
+        }
+        // 先按 configType 排序，然后按 name 排序
+        queryWrapper.lambda()
+                .orderByAsc(SysConfig::getConfigType)
+                .orderByAsc(SysConfig::getName);
+        return this.list(queryWrapper);
     }
 
     @Transactional(rollbackFor = Exception.class)

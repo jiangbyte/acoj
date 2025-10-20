@@ -41,6 +41,10 @@ public class TaskSimilarityServiceImpl extends ServiceImpl<TaskSimilarityMapper,
     @Override
     public Page<TaskSimilarity> page(TaskSimilarityPageParam taskSimilarityPageParam) {
         QueryWrapper<TaskSimilarity> queryWrapper = new QueryWrapper<TaskSimilarity>().checkSqlInjection();
+        if (ObjectUtil.isNotEmpty(taskSimilarityPageParam.getTaskId())) {
+            queryWrapper.lambda().eq(TaskSimilarity::getTaskId, taskSimilarityPageParam.getTaskId());
+        }
+
         if (ObjectUtil.isAllNotEmpty(taskSimilarityPageParam.getSortField(), taskSimilarityPageParam.getSortOrder()) && ISortOrderEnum.isValid(taskSimilarityPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,

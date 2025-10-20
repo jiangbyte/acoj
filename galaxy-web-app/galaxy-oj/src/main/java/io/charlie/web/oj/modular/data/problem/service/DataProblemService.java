@@ -46,7 +46,7 @@ public interface DataProblemService extends IService<DataProblem> {
     String llmGetTestCase(String id);
 
     // 获取题目约束条件
-    String llmGetConstraints(String id);
+    String llmGetResourceConstraints(String id);
 
     // 获取题目示例（第一个测试用例）
     String llmGetExample(String id);

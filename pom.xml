@@ -56,8 +56,10 @@
                 <nacos.password></nacos.password>
                 <nacos.discovery.group>DEFAULT_GROUP</nacos.discovery.group>
                 <nacos.discovery.namespace>8fee08f3-44ea-4e26-a9b5-530c582330a3</nacos.discovery.namespace>
+<!--                <nacos.discovery.namespace>public</nacos.discovery.namespace>-->
                 <nacos.config.group>DEFAULT_GROUP</nacos.config.group>
                 <nacos.config.namespace>8fee08f3-44ea-4e26-a9b5-530c582330a3</nacos.config.namespace>
+<!--                <nacos.config.namespace>public</nacos.config.namespace>-->
             </properties>
         </profile>
 

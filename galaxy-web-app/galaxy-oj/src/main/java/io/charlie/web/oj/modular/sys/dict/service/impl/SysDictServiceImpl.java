@@ -61,6 +61,13 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void add(SysDictAddParam sysDictAddParam) {
+        boolean exists = this.exists(new LambdaQueryWrapper<SysDict>()
+                .eq(SysDict::getDictType, sysDictAddParam.getDictType())
+                .eq(SysDict::getDictValue, sysDictAddParam.getDictValue())
+        );
+        if (exists) {
+            throw new BusinessException("字典值已经存在");
+        }
         SysDict bean = BeanUtil.toBean(sysDictAddParam, SysDict.class);
         this.save(bean);
         refreshDictCache(bean.getDictType());

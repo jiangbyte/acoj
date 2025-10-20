@@ -209,7 +209,7 @@ function removeProblem(index: string | number) {
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" default-width="1200" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" default-width="1200" @after-leave="doClose">
     <NDrawerContent :title="isEdit ? '编辑' : '新增'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
         <!-- 输入框 -->

@@ -13,7 +13,7 @@ const columns: DataTableColumns<any> = [
   },
   {
     title: '配置类型',
-    key: 'configType',
+    key: 'configTypeName',
     width: 120,
     ellipsis: {
       tooltip: true,
@@ -42,10 +42,10 @@ const columns: DataTableColumns<any> = [
       tooltip: true,
     },
   },
-  // {
-  //   title: '组件类型',
-  //   key: 'componentType',
-  // },
+  {
+    title: '组件类型',
+    key: 'componentTypeName',
+  },
   // {
   //   title: '描述',
   //   key: 'description',

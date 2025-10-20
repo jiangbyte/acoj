@@ -11,6 +11,8 @@ import java.util.Date;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.dromara.core.trans.anno.Trans;
+import org.dromara.core.trans.constant.TransType;
 
 /**
 * @author Charlie Zhang
@@ -31,6 +33,7 @@ public class SysConfig extends CommonEntity {
     private String id;
 
     @Schema(description = "配置类型")
+    @Trans(type = TransType.DICTIONARY, key = "CONFIG_TYPE")
     private String configType;
 
     @Schema(description = "名称")
@@ -43,6 +46,7 @@ public class SysConfig extends CommonEntity {
     private String value;
 
     @Schema(description = "组件类型")
+    @Trans(type = TransType.DICTIONARY, key = "COMPONENT_TYPE")
     private String componentType;
 
     @Schema(description = "描述")

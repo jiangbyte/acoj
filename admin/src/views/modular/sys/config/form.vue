@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysConfigFetch } from '@/composables/v1'
+import { useSysConfigFetch, useSysDictFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
@@ -22,7 +22,7 @@ const rules = {
     { required: true, message: '请输入值', trigger: ['input', 'blur'] },
   ],
   componentType: [
-    // { required: true, message: '请输入组件类型', trigger: ['input', 'blur'] },
+    { required: true, message: '请输入组件类型', trigger: ['input', 'blur'] },
   ],
   // description: [
   //   { required: true, message: '请输入描述', trigger: ['input', 'blur'] },
@@ -62,10 +62,19 @@ async function doSubmit() {
   })
 }
 
+const configTypeRef = ref()
+const componentTypeRef = ref()
 function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
+
+  useSysDictFetch().sysDictOptions({ dictType: 'COMPONENT_TYPE' }).then(({ data }) => {
+    componentTypeRef.value = data
+  })
+  useSysDictFetch().sysDictOptions({ dictType: 'CONFIG_TYPE' }).then(({ data }) => {
+    configTypeRef.value = data
+  })
 }
 defineExpose({
   doOpen,
@@ -73,7 +82,7 @@ defineExpose({
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent :title="isEdit ? '编辑' : '新增'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
         <!-- 输入框 -->
@@ -82,7 +91,12 @@ defineExpose({
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="配置类型" path="configType">
-          <NInput v-model:value="formData.configType" placeholder="请输入配置类型" />
+          <!-- <NInput v-model:value="formData.configType" placeholder="请输入配置类型" /> -->
+          <NSelect
+            v-model:value="formData.configType"
+            placeholder="请选择配置类型"
+            :options="configTypeRef"
+          />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="名称" path="name">
@@ -97,9 +111,14 @@ defineExpose({
           <NInput v-model:value="formData.value" type="textarea" placeholder="请输入值" />
         </NFormItem>
         <!-- 输入框 -->
-        <!--        <NFormItem label="组件类型" path="componentType"> -->
-        <!--          <NInput v-model:value="formData.componentType" placeholder="请输入组件类型" /> -->
-        <!--        </NFormItem> -->
+        <NFormItem label="组件类型" path="componentType">
+          <!-- <NInput v-model:value="formData.componentType" placeholder="请输入组件类型" /> -->
+          <NSelect
+            v-model:value="formData.componentType"
+            placeholder="请选择组件类型"
+            :options="componentTypeRef"
+          />
+        </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="描述" path="description">
           <NInput v-model:value="formData.description" type="textarea" placeholder="请输入描述" />

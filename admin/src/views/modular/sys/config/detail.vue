@@ -22,14 +22,14 @@ defineExpose({
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent title="详情">
       <NDescriptions label-placement="left" bordered :column="1">
         <NDescriptionsItem label="主键">
           {{ formData.id }}
         </NDescriptionsItem>
         <NDescriptionsItem label="配置类型">
-          {{ formData.configType }}
+          {{ formData.configTypeName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="名称">
           {{ formData.name }}
@@ -40,9 +40,9 @@ defineExpose({
         <NDescriptionsItem label="值">
           {{ formData.value }}
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="组件类型">
-          {{ formData.componentType }}
-        </NDescriptionsItem> -->
+        <NDescriptionsItem label="组件类型">
+          {{ formData.componentTypeName }}
+        </NDescriptionsItem>
         <NDescriptionsItem label="描述">
           {{ formData.description }}
         </NDescriptionsItem>

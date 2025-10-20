@@ -13,7 +13,7 @@ export function useSysDictFetch() {
      */
   const sysDictDefaultData = {
     id: '',
-    dictType: '',
+    dictType: null,
     typeLabel: '',
     dictValue: '',
     dictLabel: '',

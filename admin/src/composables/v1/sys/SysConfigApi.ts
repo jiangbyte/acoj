@@ -16,7 +16,7 @@ export function useSysConfigFetch() {
     name: '',
     code: '',
     value: '',
-    componentType: '',
+    componentType: null,
     description: '',
     createTime: '',
     createUser: '',
@@ -34,6 +34,13 @@ export function useSysConfigFetch() {
      */
     sysConfigPage(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    sysConfigList(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/list`, {
         params: {
           ...data,
         },

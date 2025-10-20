@@ -4,6 +4,8 @@ import cn.dev33.satoken.secure.BCrypt;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.captcha.CaptchaUtil;
 import cn.hutool.captcha.CircleCaptcha;
+import cn.hutool.captcha.LineCaptcha;
+import cn.hutool.captcha.generator.RandomGenerator;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.*;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -59,13 +61,20 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public CaptchaResult captcha() {
-        CircleCaptcha circleCaptcha = CaptchaUtil.createCircleCaptcha(100, 38, 4, 10);
         CaptchaResult captchaResult = new CaptchaResult();
-        String imageBase64Data = circleCaptcha.getImageBase64Data();
+
+//        CircleCaptcha circleCaptcha = CaptchaUtil.createCircleCaptcha(100, 38, 4, 10);
+//        String imageBase64Data = circleCaptcha.getImageBase64Data();
+
+        RandomGenerator randomGenerator = new RandomGenerator("0123456789", 4);
+        LineCaptcha lineCaptcha = CaptchaUtil.createLineCaptcha(200, 100, 4, 5);
+        lineCaptcha.setGenerator(randomGenerator);
+        String imageBase64Data = lineCaptcha.getImageBase64Data();
+
         captchaResult.setCaptcha(imageBase64Data);
         String uuid = IdUtil.fastSimpleUUID();
         captchaResult.setUuid(uuid);
-        redisTemplate.opsForValue().set("captcha:" + uuid, circleCaptcha.getCode(), Duration.ofSeconds(5 * 60L));
+        redisTemplate.opsForValue().set("captcha:" + uuid, lineCaptcha.getCode(), Duration.ofSeconds(5 * 60L));
         return captchaResult;
     }
 

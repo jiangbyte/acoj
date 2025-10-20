@@ -6,6 +6,7 @@ import io.charlie.web.oj.modular.sys.file.service.StorageService;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.http.Method;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -25,6 +26,9 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.Iterator;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author ZhangJiangHu
@@ -46,29 +50,65 @@ public class MinioStorageService implements StorageService {
     @Autowired
     public MinioStorageService(StorageProperties storageProperties) {
         this.storageProperties = storageProperties;
-        initMinioClient();
+//        initMinioClient();
     }
 
-    private void initMinioClient() {
+    private final CompletableFuture<Void> initFuture = new CompletableFuture<>();
+
+    @PostConstruct
+    public void asyncInit() {
+        CompletableFuture.runAsync(() -> {
+            try {
+                StorageProperties.MinioProperties minioProps = storageProperties.getMinio();
+                this.bucketName = minioProps.getBucketName();
+
+                this.minioClient = MinioClient.builder()
+                        .endpoint(minioProps.getEndpoint())
+                        .credentials(minioProps.getAccessKey(), minioProps.getSecretKey())
+                        .region(minioProps.getRegion())
+                        .build();
+
+                createBucketIfNotExists();
+                log.info("MinIO客户端异步初始化成功, Bucket: {}", bucketName);
+                initFuture.complete(null);
+
+            } catch (Exception e) {
+                log.error("MinIO客户端异步初始化失败", e);
+                initFuture.completeExceptionally(e);
+            }
+        });
+    }
+
+    private void ensureInitialized() {
         try {
-            StorageProperties.MinioProperties minioProps = storageProperties.getMinio();
-            this.bucketName = minioProps.getBucketName();
-
-            this.minioClient = MinioClient.builder()
-                    .endpoint(minioProps.getEndpoint())
-                    .credentials(minioProps.getAccessKey(), minioProps.getSecretKey())
-                    .region(minioProps.getRegion())
-                    .build();
-
-            // 检查并创建存储桶
-            createBucketIfNotExists();
-            log.info("MinIO客户端初始化成功, Bucket: {}", bucketName);
-
+            initFuture.get(30, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            throw new RuntimeException("MinIO初始化超时", e);
         } catch (Exception e) {
-            log.error("MinIO客户端初始化失败", e);
-            throw new RuntimeException("MinIO客户端初始化失败", e);
+            throw new RuntimeException("MinIO初始化失败", e);
         }
     }
+
+//    private void initMinioClient() {
+//        try {
+//            StorageProperties.MinioProperties minioProps = storageProperties.getMinio();
+//            this.bucketName = minioProps.getBucketName();
+//
+//            this.minioClient = MinioClient.builder()
+//                    .endpoint(minioProps.getEndpoint())
+//                    .credentials(minioProps.getAccessKey(), minioProps.getSecretKey())
+//                    .region(minioProps.getRegion())
+//                    .build();
+//
+//            // 检查并创建存储桶
+//            createBucketIfNotExists();
+//            log.info("MinIO客户端初始化成功, Bucket: {}", bucketName);
+//
+//        } catch (Exception e) {
+//            log.error("MinIO客户端初始化失败", e);
+//            throw new RuntimeException("MinIO客户端初始化失败", e);
+//        }
+//    }
 
     private void createBucketIfNotExists() throws Exception {
         boolean found = minioClient.bucketExists(BucketExistsArgs.builder()

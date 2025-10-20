@@ -45,7 +45,7 @@ defineExpose({
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent title="角色分配">
       <n-checkbox-group v-model:value="assignRoles">
         <n-space vertical>

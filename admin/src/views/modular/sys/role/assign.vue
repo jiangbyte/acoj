@@ -211,7 +211,7 @@ const columns: DataTableColumns<any> = [
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent title="资源分配">
       <NDataTable
         v-model:checked-row-keys="assignResource"

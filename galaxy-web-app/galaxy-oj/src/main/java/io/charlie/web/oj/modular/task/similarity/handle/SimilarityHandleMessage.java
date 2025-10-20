@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.task.similarity.handle;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -94,7 +95,7 @@ public class SimilarityHandleMessage {
 
         // 使用 stream 过滤掉用户本身的样本
         List<DataLibrary> filteredSamples = samples.stream()
-                .filter(sample -> !sample.getSubmitId().equals(similaritySubmitDto.getUserId()))
+                .filter(sample -> !sample.getUserId().equals(similaritySubmitDto.getUserId()))
                 .toList();
 
         for (DataLibrary dataLibrary : filteredSamples) {
@@ -148,14 +149,14 @@ public class SimilarityHandleMessage {
         // 阈值分布选择器
         DynamicCloneLevelDetector detector = new DynamicCloneLevelDetector(dataProblem.getThreshold());
 
-        TaskReports taskReports = new TaskReports();
+        TaskReports taskReports = BeanUtil.toBean(similaritySubmitDto, TaskReports.class);
         if (similaritySubmitDto.getIsSet()) {
+            log.info("代码克隆检测 -> 单题集报告");
             taskReports.setReportType(ReportTypeEnum.SET_SINGLE_SUBMIT.getValue());
         } else {
+            log.info("代码克隆检测 -> 单题目报告");
             taskReports.setReportType(ReportTypeEnum.PROBLEM_SINGLE_SUBMIT.getValue());
         }
-        taskReports.setTaskId(similaritySubmitDto.getTaskId());
-        taskReports.setProblemId(similaritySubmitDto.getProblemId());
         taskReports.setSampleCount(similarities.size());
         taskReports.setThreshold(dataProblem.getThreshold());
 

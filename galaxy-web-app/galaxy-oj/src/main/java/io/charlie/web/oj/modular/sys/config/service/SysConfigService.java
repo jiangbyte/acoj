@@ -3,10 +3,7 @@ package io.charlie.web.oj.modular.sys.config.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.sys.config.entity.SysConfig;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigAddParam;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigEditParam;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigIdParam;
-import io.charlie.web.oj.modular.sys.config.param.SysConfigPageParam;
+import io.charlie.web.oj.modular.sys.config.param.*;
 
 import java.util.List;
 
@@ -18,6 +15,8 @@ import java.util.List;
 */
 public interface SysConfigService extends IService<SysConfig> {
     Page<SysConfig> page(SysConfigPageParam sysConfigPageParam);
+
+    List<SysConfig> listAll(SysConfigListParam sysConfigListParam);
 
     void add(SysConfigAddParam sysConfigAddParam);
 

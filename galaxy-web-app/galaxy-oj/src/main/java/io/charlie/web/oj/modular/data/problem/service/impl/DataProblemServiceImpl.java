@@ -356,7 +356,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
-    public String llmGetConstraints(String id) {
+    public String llmGetResourceConstraints(String id) {
         DataProblem dataProblem = this.getById(id);
 
         if (dataProblem == null) {

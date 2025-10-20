@@ -13,12 +13,14 @@ export function useDataSetFetch() {
      */
   const dataSetDefaultData = {
     id: '',
-    setType: 0,
+    setType: null,
+    isVisible: false,
+    useAi: false,
     title: '',
     cover: '',
     description: '',
-    categoryId: '',
-    difficulty: 0,
+    categoryId: null,
+    difficulty: null,
     startTime: Date.now(),
     endTime: Date.now(),
     exJson: '',

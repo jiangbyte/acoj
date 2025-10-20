@@ -80,6 +80,9 @@ async function doOpen(key11: string | undefined, row: any = null, edit: boolean 
   if (data) {
     dictOptions.value = data
     dictOptionsLoading.value = false
+    if (!edit) {
+      formData.value.typeLabel = dictOptions.value.find(item => item.value === key11)?.label || ''
+    }
   }
 }
 defineExpose({
@@ -101,7 +104,7 @@ async function handleDictSearch(query: string) {
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent :title="isEdit ? '编辑' : '新增'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
         <!-- 输入框 -->
@@ -109,7 +112,7 @@ async function handleDictSearch(query: string) {
           <NInput v-model:value="formData.id" placeholder="请输入主键ID" :disabled="true" />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="字典类型" path="dictTypeObject">
+        <NFormItem label="字典类型" path="dictType">
           <!-- <NInput v-model:value="formData.dictType" placeholder="请输入字典类型" :disabled="isEdit" /> -->
           <NSelect
             v-model:value="formData.dictType"

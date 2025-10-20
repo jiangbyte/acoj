@@ -18,7 +18,7 @@ export function useSysGroupFetch() {
     code: '',
     description: '',
     sort: 0,
-    adminId: '',
+    adminId: null,
     groupType: false,
     createTime: '',
     createUser: '',

@@ -587,3 +587,59 @@ CREATE TABLE sys_log
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
     COMMENT ='系统活动/日志记录表';
+
+
+-- ----------------------------
+-- 大模型对话表
+-- ----------------------------
+DROP TABLE IF EXISTS sys_conversation;
+CREATE TABLE sys_conversation
+(
+    id                 VARCHAR(32)  NOT NULL COMMENT '主键',
+    conversation_id    VARCHAR(64)  NOT NULL COMMENT '对话ID',
+
+    -- 对话基本信息
+    problem_id         VARCHAR(32)  NULL COMMENT '题目ID',
+    set_id             VARCHAR(32)  NULL COMMENT '题集ID',
+    is_set             TINYINT(1)  DEFAULT 0 COMMENT '题集对话',
+    user_id            VARCHAR(32)  NULL COMMENT '用户ID',
+
+    -- 消息角色和类型
+    message_type       VARCHAR(255) NULL COMMENT '消息类型',
+    message_role       VARCHAR(32)  NULL COMMENT '消息角色',
+
+    -- 消息内容
+    message_content    LONGTEXT     NULL COMMENT '消息内容',
+
+    -- 用户OJ数据
+    user_code          TEXT         NULL COMMENT '用户代码',
+    language           VARCHAR(255) NULL COMMENT '代码语言',
+
+    -- Token使用情况
+    prompt_tokens      INT         DEFAULT 0 COMMENT '提示Tokens',
+    completion_tokens  INT         DEFAULT 0 COMMENT '完成Tokens',
+    total_tokens       INT         DEFAULT 0 COMMENT '总Tokens',
+
+    -- 性能指标
+    response_time      DATETIME     NULL COMMENT '响应时间',
+    streaming_duration INT          NULL COMMENT '流式传输总耗时',
+
+    -- 状态信息
+    status             VARCHAR(32)  NULL COMMENT '状态',
+    error_message      TEXT         NULL COMMENT '错误信息',
+
+    -- 用户环境信息
+    user_platform      VARCHAR(255) NULL COMMENT '用户平台',
+    ip_address         VARCHAR(255) NULL COMMENT 'IP地址',
+
+    # ------------------------------------------------
+    deleted            TINYINT(1)  DEFAULT 0 COMMENT '删除状态',
+    create_time        DATETIME    DEFAULT NULL COMMENT '创建时间戳',
+    create_user        VARCHAR(32) DEFAULT NULL COMMENT '创建者',
+    update_time        DATETIME    DEFAULT NULL COMMENT '更新时间戳',
+    update_user        VARCHAR(32) DEFAULT NULL COMMENT '更新者',
+
+    PRIMARY KEY (id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci COMMENT '大模型对话表';

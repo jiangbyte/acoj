@@ -5,6 +5,8 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetriever;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
+import com.alibaba.cloud.ai.memory.jdbc.MysqlChatMemoryRepository;
+import com.alibaba.cloud.ai.prompt.ConfigurablePromptTemplateFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -25,20 +27,50 @@ import org.springframework.core.io.ResourceLoader;
 @Configuration
 @RequiredArgsConstructor
 public class DashScopeConfig {
-    private final ResourceLoader resourceLoader;
+    //    private final ResourceLoader resourceLoader;
     private final ProblemTools problemTool;
     private final Environment env;
+    private final LLMProperties systemPromptProperties;
+
+    private final MysqlChatMemoryRepository mysqlChatMemoryRepository;
+
+    private static final int MAX_MESSAGES = 100;
+
+
     @Bean
     public DashScopeApi dashScopeApi() {
         return DashScopeApi.builder().apiKey(env.getProperty("spring.ai.dashscope.api-key")).build();
     }
+
     @Bean
     public ChatClient chatClient(ChatClient.Builder builder) {
-        return builder.defaultSystem(resourceLoader.getResource("classpath:system-message.txt"))
-                .defaultAdvisors(new SimpleLoggerAdvisor(), MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder()
-                                        .chatMemoryRepository(new InMemoryChatMemoryRepository()).maxMessages(100).build()).build(),
-                        new DocumentRetrievalAdvisor(new DashScopeDocumentRetriever(dashScopeApi(),
-                                DashScopeDocumentRetrieverOptions.builder().withIndexName("astro oj").build())))
-                .defaultOptions(DashScopeChatOptions.builder().withTopP(0.7).build()).defaultTools(problemTool).build();
+        MessageChatMemoryAdvisor messageChatMemoryAdvisor = MessageChatMemoryAdvisor.builder(
+                MessageWindowChatMemory
+                        .builder()
+//                        .chatMemoryRepository(new InMemoryChatMemoryRepository()) // 内存存储
+                        .chatMemoryRepository(mysqlChatMemoryRepository) // mysql存储
+                        .maxMessages(MAX_MESSAGES)
+                        .build()
+        ).build();
+
+        DashScopeDocumentRetriever dashScopeDocumentRetriever = new DashScopeDocumentRetriever(
+                dashScopeApi(),
+                DashScopeDocumentRetrieverOptions
+                        .builder()
+                        .withIndexName(systemPromptProperties.getExternalKnowledgeBase().getIndexName())
+                        .build());
+        DocumentRetrievalAdvisor documentRetrievalAdvisor = new DocumentRetrievalAdvisor(dashScopeDocumentRetriever);
+
+        DashScopeChatOptions dashScopeChatOptions = DashScopeChatOptions
+                .builder()
+                .withTopP(0.7)
+                .build();
+
+        return builder
+                .defaultSystem(systemPromptProperties.getPrompts().getDefaultPrompt())
+                .defaultAdvisors(new SimpleLoggerAdvisor(), messageChatMemoryAdvisor, documentRetrievalAdvisor)
+                .defaultOptions(dashScopeChatOptions)
+                .defaultTools(problemTool)
+                .build();
     }
 }

@@ -2,7 +2,8 @@
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { v4 as uuidv4 } from 'uuid'
 import MdViewer from '@/components/common/editor/md/Viewer.vue'
-import { useLMMessageStore } from '@/stores'
+import { useTokenStore } from '@/stores'
+import { useSysConversationFetch } from '@/composables/v1'
 
 // 定义 props
 const props = defineProps({
@@ -23,6 +24,8 @@ const props = defineProps({
 // 监听 props 变化
 watch(() => props.problemId, (newVal) => {
   console.log('问题ID变化:', newVal)
+  // 问题变化时重新加载对话历史
+  loadConversationHistory()
 })
 
 watch(() => props.userCode, (newVal) => {
@@ -38,7 +41,7 @@ const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
 const pathPrefix = `${context}/api/v1/`
 
 const llmMessageParam = ref({
-  conversantId: '',
+  conversationId: '',
   problemId: props.problemId,
   message: '',
   messageType: 'chat',
@@ -46,31 +49,93 @@ const llmMessageParam = ref({
   language: props.language,
 })
 
-const messages = ref<Array<{ id: string, content: string, type: 'user' | 'bot', timestamp: any, messageType: string }>>([])
+// 调整消息结构以匹配后端实体
+const messages = ref<Array<{
+  id: string
+  content: string
+  type: 'user' | 'bot'
+  timestamp: any
+  messageType: string
+  userMessage?: string
+  aiResponse?: string
+  userCode?: string
+  language?: string
+}>>([])
+
 const isLoading = ref(false)
+const isHistoryLoading = ref(false)
 const controller = ref<AbortController | null>(null)
 
+type MessageType = 'analyze-problem-boundary-conditions'
+  | 'analyze-user-code-complexity'
+  | 'generate-solution-idea'
+  | 'optimize-code'
+  | 'chat'
+
 // 预定义的提示词模板
-const promptTemplates = {
-  generate_solution: '请为这个问题生成详细的解题思路，包括算法设计和实现方法。',
-  analyze_code: '请分析我的代码，指出其中的问题和改进建议。',
-  explain_complexity: '请解释这个解法的时间复杂度和空间复杂度。',
-  boundary_cases: '请列出这个问题的边界情况和特殊测试用例。',
-  optimize_code: '请帮我优化这段代码，提高性能和可读性。',
-  chat: '', // 用户自定义输入
+const promptTemplates: Record<MessageType, string> = {
+  'generate-solution-idea': '请为这个问题生成详细的解题思路，包括算法设计和实现方法。',
+  'analyze-user-code-complexity': '请解释这个解法的时间复杂度和空间复杂度。',
+  'analyze-problem-boundary-conditions': '请列出这个问题的边界情况和特殊测试用例。',
+  'optimize-code': '请帮我优化这段代码，提高性能和可读性。',
+  'chat': '',
 }
 
 // 获取消息类型对应的标签
 function getMessageTypeLabel(messageType: string) {
-  const labels = {
-    generate_solution: '解题思路',
-    analyze_code: '代码分析',
-    explain_complexity: '复杂度分析',
-    boundary_cases: '边界情况',
-    optimize_code: '代码优化',
-    chat: '对话',
+  const labels: Record<MessageType, string> = {
+    'analyze-problem-boundary-conditions': '分析边界',
+    'analyze-user-code-complexity': '分析复杂度',
+    'generate-solution-idea': '解题思路',
+    'optimize-code': '优化代码',
+    'chat': '默认对话',
   }
-  return labels[messageType] || '对话'
+  return labels[messageType as MessageType] || '默认对话'
+}
+
+const tokenStore = useTokenStore()
+
+const { sysConversationHistory } = useSysConversationFetch()
+// 加载对话历史
+async function loadConversationHistory() {
+  if (!llmMessageParam.value.conversationId)
+    return
+
+  isHistoryLoading.value = true
+  try {
+    const { data } = await sysConversationHistory(llmMessageParam.value.conversationId)
+    if (data) {
+      // 转换后端数据为前端消息格式
+      messages.value = data.map((item: any) => [
+        // 用户消息
+        {
+          id: `${item.id}-user`,
+          content: item.userMessage,
+          type: 'user' as const,
+          timestamp: item.createTime,
+          messageType: item.messageType,
+          userMessage: item.userMessage,
+          userCode: item.userCode,
+          language: item.language,
+        },
+        // AI回复消息
+        {
+          id: `${item.id}-bot`,
+          content: item.aiResponse,
+          type: 'bot' as const,
+          timestamp: item.responseTime,
+          messageType: item.messageType,
+          aiResponse: item.aiResponse,
+        },
+      ]).flat().filter(msg => msg.content) // 过滤掉空内容的消息
+    }
+  }
+  catch (error) {
+    console.error('加载对话历史失败:', error)
+  }
+  finally {
+    isHistoryLoading.value = false
+  }
 }
 
 // 连接并发送消息
@@ -80,8 +145,8 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
     return
 
   // 生成会话ID（如果是新会话）
-  if (!llmMessageParam.value.conversantId) {
-    llmMessageParam.value.conversantId = `task-${uuidv4()}`
+  if (!llmMessageParam.value.conversationId) {
+    llmMessageParam.value.conversationId = `task-${uuidv4()}`
   }
 
   // 更新消息类型和内容
@@ -91,26 +156,27 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
 
   // 添加用户消息到界面
   messages.value.push({
-    id: uuidv4(),
+    id: `${Date.now()}-user`,
     content: finalMessage,
     type: 'user',
     timestamp: Date.now(),
     messageType,
+    userMessage: finalMessage,
+    userCode: props.userCode,
+    language: props.language,
   })
 
-  // 如果是按钮触发的，清空输入框
-  // if (customMessage) {
   llmMessageParam.value.message = ''
-  // }
 
   // 添加机器人消息占位符
-  const botMessageId = uuidv4()
+  const botMessageId = `${Date.now()}-bot`
   messages.value.push({
     id: botMessageId,
     content: '',
     type: 'bot',
     timestamp: Date.now(),
     messageType,
+    aiResponse: '',
   })
 
   isLoading.value = true
@@ -122,9 +188,10 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': tokenStore.getToken || '',
     },
     body: JSON.stringify({
-      conversantId: llmMessageParam.value.conversantId,
+      conversationId: llmMessageParam.value.conversationId,
       problemId: llmMessageParam.value.problemId,
       message: finalMessage,
       messageType,
@@ -154,8 +221,9 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
           const botMessageIndex = messages.value.findIndex(msg => msg.id === botMessageId)
           if (botMessageIndex !== -1) {
             messages.value[botMessageIndex].content += data.content || data.message || ''
-            messages.value[botMessageIndex].timestamp = data.timestamp || ''
-            messages.value[botMessageIndex].messageType = data.messageType || ''
+            messages.value[botMessageIndex].timestamp = data.timestamp || Date.now()
+            messages.value[botMessageIndex].messageType = data.messageType || messageType
+            messages.value[botMessageIndex].aiResponse = messages.value[botMessageIndex].content
           }
         }
       }
@@ -170,18 +238,21 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
       const botMessageIndex = messages.value.findIndex(msg => msg.id === botMessageId)
       if (botMessageIndex !== -1) {
         messages.value[botMessageIndex].content = '抱歉，发生错误，请重试。'
+        messages.value[botMessageIndex].aiResponse = '抱歉，发生错误，请重试。'
       }
     },
 
     onclose: () => {
       console.log('SSE连接关闭')
       isLoading.value = false
+      // 对话结束后重新加载历史记录以确保数据同步
+      loadConversationHistory()
     },
   })
 }
 
 // 按钮点击处理函数
-function handleButtonClick(messageType: string) {
+function handleButtonClick(messageType: MessageType) {
   const prompt = promptTemplates[messageType]
   if (prompt) {
     sendMessage(prompt, messageType)
@@ -197,72 +268,22 @@ function stopSending() {
 }
 
 // 清空对话
-// function clearMessages() {
-//   messages.value = []
-//   llmMessageParam.value.conversantId = ''
-// }
+function clearMessages() {
+  messages.value = []
+  llmMessageParam.value.conversationId = ''
+}
 
 const isCollapse = ref(false)
 function handleCollapse() {
   isCollapse.value = !isCollapse.value
 }
 
-const messageStore = useLMMessageStore()
-// 生成存储键
-const getStorageKey = computed(() => {
-  return `llm-chat-${props.problemId}`
-})
-// 从本地存储加载消息
-function loadMessages() {
-  if (typeof window === 'undefined')
-    return
-
-  const stored = localStorage.getItem(getStorageKey.value)
-  if (stored) {
-    try {
-      messages.value = JSON.parse(stored)
-      // 恢复会话ID
-      if (messages.value.length > 0) {
-        llmMessageParam.value.conversantId = `task-${uuidv4()}`
-      }
-    }
-    catch (error) {
-      console.error('加载聊天记录失败:', error)
-    }
-  }
-}
-
-// 保存消息到本地存储
-function saveMessages() {
-  if (typeof window === 'undefined')
-    return
-
-  try {
-    localStorage.setItem(getStorageKey.value, JSON.stringify(messages.value))
-  }
-  catch (error) {
-    console.error('保存聊天记录失败:', error)
-  }
-}
-
-// 监听消息变化并保存
-watch(messages, () => {
-  saveMessages()
-}, { deep: true })
-
-// 组件挂载时加载消息
+// 组件挂载时，如果有会话ID则加载历史记录
 onMounted(() => {
-  loadMessages()
-})
-
-// 清空对话时也清除存储
-function clearMessages() {
-  messages.value = []
-  llmMessageParam.value.conversantId = ''
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(getStorageKey.value)
+  if (llmMessageParam.value.conversationId) {
+    loadConversationHistory()
   }
-}
+})
 </script>
 
 <template>
@@ -273,8 +294,11 @@ function clearMessages() {
     <!-- 对话内容区域 -->
     <n-flex ref="chatContainer" vertical class="overflow-scroll" :class="{ 'h-104': !isCollapse, 'h-145': isCollapse }">
       <div>
+        <!-- 历史记录加载状态 -->
+        <n-spin v-if="isHistoryLoading" size="small" class="flex justify-center py-4" />
+
         <n-empty
-          v-if="messages.length === 0"
+          v-else-if="messages.length === 0"
           class="flex flex-col items-center justify-center py-12"
           description="暂无对话记录"
         >
@@ -302,12 +326,14 @@ function clearMessages() {
             </n-flex>
           </n-card>
           <div v-if="message.type === 'bot'">
-            <n-time :time="message.timestamp" style="display: flex; justify-content: end; width: 100%; margin-top: 6px;" />
-            <n-card size="small">
+            <n-card size="small" class="mb-4">
               <n-flex vertical :size="4">
-                <n-tag :type="message.messageType === 'chat' ? 'primary' : 'success'" size="small">
-                  {{ getMessageTypeLabel(message.messageType) }}
-                </n-tag>
+                <n-flex align="center" justify="space-between">
+                  <n-tag :type="message.messageType === 'chat' ? 'primary' : 'success'" size="small">
+                    {{ getMessageTypeLabel(message.messageType) }}
+                  </n-tag>
+                  <n-time :time="message.timestamp" />
+                </n-flex>
                 <MdViewer :model-value="message.content" />
               </n-flex>
             </n-card>
@@ -330,21 +356,28 @@ function clearMessages() {
             <n-button
               type="primary"
               size="small"
-              @click="handleButtonClick('generate_solution')"
+              @click="handleButtonClick('generate-solution-idea')"
             >
-              生成解题思路
+              解题思路
             </n-button>
             <n-button
               size="small"
-              @click="handleButtonClick('analyze_code')"
+              @click="handleButtonClick('analyze-user-code-complexity')"
             >
-              分析我的代码
+              分析复杂度
             </n-button>
             <n-button
               size="small"
-              @click="handleButtonClick('optimize_code')"
+              :disabled="!props.userCode && !props.language"
+              @click="handleButtonClick('optimize-code')"
             >
               优化代码
+            </n-button>
+            <n-button
+              size="small"
+              @click="handleButtonClick('analyze-problem-boundary-conditions')"
+            >
+              分析边界
             </n-button>
           </n-flex>
           <n-button
@@ -352,14 +385,6 @@ function clearMessages() {
             @click="handleCollapse"
           >
             {{ isCollapse ? '展开' : '收起' }}
-          </n-button>
-        </n-flex>
-        <n-flex v-if="!isCollapse">
-          <n-button round size="tiny" @click="handleButtonClick('explain_complexity')">
-            解释时间复杂度
-          </n-button>
-          <n-button round size="tiny" @click="handleButtonClick('boundary_cases')">
-            有哪些边界情况需要考虑
           </n-button>
         </n-flex>
         <NInput
@@ -378,6 +403,7 @@ function clearMessages() {
           <NButton
             type="primary"
             size="small"
+            :loading="isLoading"
             @click="sendMessage()"
           >
             <template #icon>
@@ -389,6 +415,7 @@ function clearMessages() {
             secondary
             type="primary"
             size="small"
+            :disabled="!isLoading"
             @click="stopSending"
           >
             <template #icon>

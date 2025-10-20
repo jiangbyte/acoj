@@ -135,7 +135,7 @@ useEcharts('similarityRef', option)
 </script>
 
 <template>
-  <div ref="similarityRef" class="h-300px w-full" />
+  <div ref="similarityRef" class="h-full w-full" />
 </template>
 
 <style scoped>

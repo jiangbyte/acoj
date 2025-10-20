@@ -108,7 +108,7 @@ const treeData = ref<any[]>([])
 const loading = ref(false)
 const treeKeyword = ref('')
 const typeKey = ref<string[]>([''])
-const typeCode = ref('')
+const typeCode = ref()
 async function loadData() {
   const { data: treeDataD } = await sysDictTree({
     keyword: treeKeyword.value,
@@ -121,8 +121,8 @@ async function loadData() {
 loadData()
 function resetHandle() {
   treeKeyword.value = ''
-  typeKey.value = ['']
-  typeCode.value = ''
+  typeKey.value = []
+  typeCode.value = null as any
   loadData()
 }
 async function loadListData(typeKey: string) {

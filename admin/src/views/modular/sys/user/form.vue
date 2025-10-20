@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { SelectOption } from 'naive-ui'
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysGroupFetch, useSysUserFetch } from '@/composables/v1'
+import { useSysDictFetch, useSysGroupFetch, useSysUserFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
@@ -77,6 +77,8 @@ async function doSubmit() {
     }
   })
 }
+
+const genderRef = ref()
 function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
@@ -86,6 +88,15 @@ function doOpen(row: any = null, edit: boolean = false) {
     groupOptions.value = data
     groupOptionsLoading.value = false
   })
+
+  useSysDictFetch().sysDictOptions({ dictType: 'SYS_GENDER' }).then(({ data }) => {
+    // genderRef.value = data
+    // 对value进行num转换
+    genderRef.value = data.map((item: { label: string, value: number }) => {
+      item.value = Number(item.value)
+      return item
+    })
+  })
 }
 defineExpose({
   doOpen,
@@ -93,7 +104,7 @@ defineExpose({
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent :title="isEdit ? '编辑' : '新增'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
         <!-- 输入框 -->
@@ -135,7 +146,7 @@ defineExpose({
         </NFormItem>
         <!-- Boolean 选择框 -->
         <NFormItem label="性别" path="gender">
-          <NSelect
+          <!-- <NSelect
             v-model:value="formData.gender"
             placeholder="请选择性别"
             :options="[
@@ -143,6 +154,12 @@ defineExpose({
               { label: '女', value: 2 },
               { label: '未知', value: 0 },
             ]"
+          /> -->
+
+          <NSelect
+            v-model:value="formData.gender"
+            placeholder="请选择性别"
+            :options="genderRef"
           />
         </NFormItem>
         <!-- 输入框 -->

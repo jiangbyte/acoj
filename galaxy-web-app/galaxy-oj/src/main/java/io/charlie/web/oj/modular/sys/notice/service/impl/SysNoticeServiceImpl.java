@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.web.oj.modular.sys.banner.entity.SysBanner;
 import io.charlie.web.oj.modular.sys.notice.entity.SysNotice;
 import io.charlie.web.oj.modular.sys.notice.param.SysNoticeAddParam;
 import io.charlie.web.oj.modular.sys.notice.param.SysNoticeEditParam;
@@ -51,7 +52,7 @@ public class SysNoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice
                     sysNoticePageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(sysNoticePageParam.getSortField()));
         } else {
-            queryWrapper.lambda().orderByAsc(SysNotice::getSort);
+            queryWrapper.lambda().orderByDesc(SysNotice::getCreateTime);
         }
 
         return this.page(CommonPageRequest.Page(

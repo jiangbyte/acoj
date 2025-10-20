@@ -7,8 +7,6 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
-import java.util.Random;
-
 /**
  * @author Charlie Zhang
  * @version v1.0
@@ -28,9 +26,9 @@ public class ProblemTools {
     public String getProblemTestCaseById(@ToolParam(description = "题目ID") String id) {
         return dataProblemService.llmGetTestCase(id);
     }
-    @Tool(description = "通过题目id获取题目约束条件")
-    public String getProblemConstraintsById(@ToolParam(description = "题目ID") String id) {
-        return dataProblemService.llmGetConstraints(id);
+    @Tool(description = "通过题目id获取题目资源使用约束条件")
+    public String getProblemResourceConstraintsById(@ToolParam(description = "题目ID") String id) {
+        return dataProblemService.llmGetResourceConstraints(id);
     }
     @Tool(description = "通过题目id获取题目示例")
     public String getProblemExampleById(@ToolParam(description = "题目ID") String id) {

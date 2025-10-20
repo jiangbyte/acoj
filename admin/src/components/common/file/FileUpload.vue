@@ -5,7 +5,7 @@ import { useFileFetch } from '@/composables/v1'
 import { watch } from 'vue'
 
 const props = defineProps<{
-  modelValue: string // v-model 绑定的值
+  modelValue?: string // v-model 绑定的值
   isImage?: boolean // 是否为图片上传 (made optional since not used)
   moltiple?: boolean // 是否为多文件上传 (made optional since not used)
 }>()

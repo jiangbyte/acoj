@@ -92,7 +92,7 @@ defineExpose({
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent :title="isEdit ? '编辑' : '新增'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
         <!-- 输入框 -->
@@ -132,12 +132,12 @@ defineExpose({
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="组件路径" path="componentPath">
-         <NInput v-model:value="formData.componentPath" placeholder="请输入组件路径" >
+          <NInput v-model:value="formData.componentPath" placeholder="请输入组件路径">
             <template #prefix>
               <n-text depth="3">
-            @/src/view
-          </n-text>
-              </template>
+                @/src/view
+              </n-text>
+            </template>
           </NInput>
         </NFormItem>
         <!-- 数字输入 -->

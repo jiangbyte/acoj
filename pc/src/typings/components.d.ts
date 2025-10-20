@@ -99,6 +99,7 @@ declare module 'vue' {
     Sss: typeof import('./../components/common/chat/sss.vue')['default']
     SubmitPage: typeof import('./../components/common/submit/SubmitPage.vue')['default']
     UserAvatar: typeof import('./../components/site/UserAvatar.vue')['default']
+    V3: typeof import('./../components/common/chat/v3.vue')['default']
     Viewer: typeof import('./../components/common/editor/md/Viewer.vue')['default']
   }
 }

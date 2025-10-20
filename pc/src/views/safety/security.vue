@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useAuthFetch, useSysUserFetch } from '@/composables/v1'
+import { useAuthFetch, useSysDictFetch, useSysUserFetch } from '@/composables/v1'
 import type { FormInst, FormItemRule } from 'naive-ui'
 
 const { sysUserDefaultData } = useSysUserFetch()
@@ -7,6 +7,7 @@ const formRef = ref<FormInst | null>(null)
 const passwordFormRef = ref<FormInst | null>(null)
 const profileData = ref(sysUserDefaultData)
 const isEdit = ref(false)
+const genderRef = ref()
 async function loadData() {
   // getProfile().then(({ data }) => {
   //   if (data) {
@@ -18,6 +19,15 @@ async function loadData() {
     if (data) {
       profileData.value = data
     }
+  })
+
+  useSysDictFetch().sysDictOptions({ dictType: 'SYS_GENDER' }).then(({ data }) => {
+    // genderRef.value = data
+    // 对value进行num转换
+    genderRef.value = data.map((item: { label: string, value: number }) => {
+      item.value = Number(item.value)
+      return item
+    })
   })
 }
 loadData()
@@ -289,7 +299,7 @@ const profileRules = {
                 </n-form-item-gi>
                 <n-form-item-gi :span="12" label="性别" path="gender">
                   <!-- <n-select v-model:value="profileData.gender" placeholder="请选择性别" /> -->
-                  <n-radio-group v-model:value="profileData.gender" :disabled="!isEdit">
+                  <!-- <n-radio-group v-model:value="profileData.gender" :disabled="!isEdit">
                     <n-space>
                       <n-radio :key="0" :value="0">
                         未知
@@ -301,7 +311,13 @@ const profileRules = {
                         女
                       </n-radio>
                     </n-space>
-                  </n-radio-group>
+                  </n-radio-group> -->
+                  <NSelect
+                    v-model:value="profileData.gender"
+                    placeholder="请选择性别"
+                    :options="genderRef"
+                    :disabled="!isEdit"
+                  />
                 </n-form-item-gi>
                 <n-form-item-gi span="12 m:24" label="个人签名" path="quote">
                   <n-input v-model:value="profileData.quote" type="textarea" placeholder="请输入个人签名" :disabled="!isEdit" />

@@ -44,6 +44,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
     @Override
     public Page<DataLibrary> page(DataLibraryPageParam dataLibraryPageParam) {
         QueryWrapper<DataLibrary> queryWrapper = new QueryWrapper<DataLibrary>().checkSqlInjection();
+        queryWrapper.lambda().orderByDesc(DataLibrary::getCreateTime);
         if (ObjectUtil.isAllNotEmpty(dataLibraryPageParam.getSortField(), dataLibraryPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataLibraryPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
