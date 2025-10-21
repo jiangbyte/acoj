@@ -34,9 +34,10 @@ func NewExecutor(ctx context.Context, sandbox Sandbox) *Executor {
 // 执行器执行
 func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 	result := dto.ConvertSubmitToResult(e.Sandbox.Workspace.judgeSubmit)
-	runCmd := grutil.GetRunCommand(e.Sandbox.Workspace.langConfig, e.Sandbox.Workspace.BuildFile)
+	runCmd := grutil.GetRunCommand(e.Sandbox.Workspace.langConfig, e.Sandbox.Workspace.SourceFile, e.Sandbox.Workspace.BuildFile)
 	for i := range result.TestCase {
 		testCase := &result.TestCase[i]
+		// 执行超内存保护，默认编译内存限制 + 配置内存限制
 		cgroupPath, err := grutil.CreateCgroup(e.Sandbox.Workspace.judgeSubmit.MaxMemory)
 		if err != nil {
 			logx.Errorf("创建 CGroup 失败: %v", err)
@@ -57,7 +58,8 @@ func (e *Executor) Execute() (*dto.JudgeResultDto, error) {
 
 func (e *Executor) executeTestCase(testCase *dto.SubmitTestCase, index int, runCmd []string, cgroupPath string) error {
 	// 	timeout := time.Duration(e.Sandbox.Workspace.judgeSubmit.MaxTime)
-	timeout := time.Duration(e.Sandbox.Workspace.judgeSubmit.MaxTime)*time.Millisecond + 100*time.Millisecond
+	// 执行超时保护，默认执行时间限制 + 配置时间限制
+	timeout := time.Duration(e.Sandbox.Workspace.judgeSubmit.MaxTime)*time.Millisecond + 30*time.Millisecond
 	// 打印timeout值
 	logx.Infof("测试用例 %d 的超时时间设置为: %v", index, timeout)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

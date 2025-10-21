@@ -1,6 +1,5 @@
 package io.charlie.web.oj.modular.task.similarity.dto;
 
-import io.charlie.web.oj.modular.task.similarity.utils.CodeSimilarityCalculator;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

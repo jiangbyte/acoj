@@ -76,17 +76,17 @@ func (w *Workspace) createDirs() error {
 
 // Cleanup 删除工作空间
 func (w *Workspace) Cleanup() error {
-	 logx.Infof("开始清理工作空间 路径: %s", w.RootPath)
-    
-    err := os.RemoveAll(w.RootPath)
-    if err != nil {
-        logx.Errorf("清理工作空间失败 路径: %s, 错误: %v", w.RootPath, err)
-        return err
-    }
-    
-    logx.Infof("工作空间清理完毕: %s", w.RootPath)
-    logx.Infof("=================================================== 工作空间处理完成 ===================================================")
-    return nil
+	logx.Infof("开始清理工作空间 路径: %s", w.RootPath)
+
+	err := os.RemoveAll(w.RootPath)
+	if err != nil {
+		logx.Errorf("清理工作空间失败 路径: %s, 错误: %v", w.RootPath, err)
+		return err
+	}
+
+	logx.Infof("工作空间清理完毕: %s", w.RootPath)
+	logx.Infof("=================================================== 工作空间处理完成 ===================================================")
+	return nil
 }
 
 // getLanguageConfig 查找并返回语言配置
@@ -128,6 +128,7 @@ func (w *Workspace) SaveSourceCode() *dto.JudgeResultDto {
 	// 设置工作空间源代码文件路径（编译用）和编译文件路径（执行用）
 	w.SourceFile = filePath
 	w.BuildFile = filepath.Join(w.BuildPath, w.langConfig.CompileFile)
+	logx.Infof("源代码保存成功: %s", filePath)
 	return nil
 }
 
@@ -135,14 +136,25 @@ func (w *Workspace) SaveSourceCode() *dto.JudgeResultDto {
 func (w *Workspace) Execute() (*dto.JudgeResultDto, error) {
 	sandbox := NewSandbox(w.ctx, *w)
 
-	// 沙箱编译
-	compileResult, err := sandbox.Compile()
-	// 不为空说明出错了
+	langConfig, err := w.getLanguageConfig()
 	if err != nil {
-		if compileResult.Message != "" {
-			compileResult.Message = grutil.FilterFilePath(compileResult.Message)
+		return nil, fmt.Errorf("get language config failed: %v", err)
+	}
+
+	// 调试日志
+	logx.Infof("语言: %s, 编译命令长度: %d", w.judgeSubmit.Language, len(langConfig.CompileCmd))
+
+	// 如果编译命令不为空，执行编译
+	if len(langConfig.CompileCmd) > 0 {
+		// 沙箱编译
+		compileResult, err := sandbox.Compile()
+		// 不为空说明出错了
+		if err != nil {
+			if compileResult.Message != "" {
+				compileResult.Message = grutil.FilterFilePath(compileResult.Message)
+			}
+			return compileResult, err // 编译结果到这里结束
 		}
-		return compileResult, err // 编译结果到这里结束
 	}
 
 	// 沙箱运行

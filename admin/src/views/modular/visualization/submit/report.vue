@@ -2,7 +2,7 @@
 import { useSysGroupFetch, useTaskReportsFetch, useTaskSimilarityFetch } from '@/composables/v1'
 import type { DataTableColumns, SelectOption } from 'naive-ui'
 import { NAvatar, NButton, NSpace, NTag, NText, NTime } from 'naive-ui'
-import CodeEditor from '@/components/common/editor/code/Editor.vue'
+import CodeEditor from '@/components/common/editor/code/CodeEditor.vue'
 
 const route = useRoute()
 const reportId = route.params.reportId // 获取 reportId

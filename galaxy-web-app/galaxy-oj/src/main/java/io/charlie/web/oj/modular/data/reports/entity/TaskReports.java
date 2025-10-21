@@ -2,20 +2,16 @@ package io.charlie.web.oj.modular.data.reports.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import io.charlie.galaxy.pojo.CommonEntity;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.io.Serial;
-import java.util.Date;
 import java.util.List;
 
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
-import io.charlie.web.oj.modular.task.similarity.utils.DynamicCloneLevelDetector;
+import io.charlie.web.oj.modular.task.similarity.basic.utils.DynamicCloneLevelDetector;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

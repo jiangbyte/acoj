@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import MdViewer from '@/components/common/editor/md/Viewer.vue'
+import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 import {
   BarChartOutline,
   HardwareChipOutline,

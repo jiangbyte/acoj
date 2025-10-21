@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
 import { useDataProblemFetch } from '@/composables/v1'
-import MDViewer from '@/components/common/editor/md/Viewer.vue'
+import MDViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 import { FormatLanguages } from '@/utils'
 
 const emit = defineEmits(['close'])

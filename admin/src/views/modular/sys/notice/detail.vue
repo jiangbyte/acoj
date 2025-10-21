@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
 import { useSysNoticeFetch } from '@/composables/v1'
-import MDViewer from '@/components/common/editor/md/Viewer.vue'
+import MDViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 
 const emit = defineEmits(['close'])
 const show = ref(false)

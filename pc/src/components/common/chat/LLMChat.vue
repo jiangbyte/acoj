@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { v4 as uuidv4 } from 'uuid'
-import MdViewer from '@/components/common/editor/md/Viewer.vue'
 import { useTokenStore } from '@/stores'
 import { useSysConversationFetch } from '@/composables/v1'
+import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 
 // 定义 props
 const props = defineProps({
@@ -21,182 +21,104 @@ const props = defineProps({
   },
 })
 
-// 监听 props 变化
-watch(() => props.problemId, (newVal) => {
-  console.log('问题ID变化:', newVal)
-  // 问题变化时重新加载对话历史
-  loadConversationHistory()
-})
+const { sysConversationStreamUrl } = useSysConversationFetch()
 
-watch(() => props.userCode, (newVal) => {
-  console.log('代码变化:', newVal)
-})
-
-watch(() => props.language, (newVal) => {
-  console.log('语言变化:', newVal)
-})
-
-const gateway = import.meta.env.VITE_GATEWAY
-const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
-const pathPrefix = `${context}/api/v1/`
-
-const llmMessageParam = ref({
+const chatRequestParam = ref({
   conversationId: '',
   problemId: props.problemId,
-  message: '',
-  messageType: 'chat',
+  messageContent: '',
+  messageType: 'DailyConversation',
   userCode: props.userCode,
   language: props.language,
+  setId: '',
 })
 
-// 调整消息结构以匹配后端实体
-const messages = ref<Array<{
-  id: string
-  content: string
-  type: 'user' | 'bot'
-  timestamp: any
-  messageType: string
-  userMessage?: string
-  aiResponse?: string
-  userCode?: string
-  language?: string
-}>>([])
-
+const messages = ref<Array<any>>([])
 const isLoading = ref(false)
-const isHistoryLoading = ref(false)
 const controller = ref<AbortController | null>(null)
-
-type MessageType = 'analyze-problem-boundary-conditions'
-  | 'analyze-user-code-complexity'
-  | 'generate-solution-idea'
-  | 'optimize-code'
-  | 'chat'
-
-// 预定义的提示词模板
-const promptTemplates: Record<MessageType, string> = {
-  'generate-solution-idea': '请为这个问题生成详细的解题思路，包括算法设计和实现方法。',
-  'analyze-user-code-complexity': '请解释这个解法的时间复杂度和空间复杂度。',
-  'analyze-problem-boundary-conditions': '请列出这个问题的边界情况和特殊测试用例。',
-  'optimize-code': '请帮我优化这段代码，提高性能和可读性。',
-  'chat': '',
-}
-
-// 获取消息类型对应的标签
-function getMessageTypeLabel(messageType: string) {
-  const labels: Record<MessageType, string> = {
-    'analyze-problem-boundary-conditions': '分析边界',
-    'analyze-user-code-complexity': '分析复杂度',
-    'generate-solution-idea': '解题思路',
-    'optimize-code': '优化代码',
-    'chat': '默认对话',
-  }
-  return labels[messageType as MessageType] || '默认对话'
-}
+const currentAssistantMessage = ref('')
+const currentMessageType = ref('')
+// 新增：标记当前是否被用户主动停止
+const isUserStopped = ref(false)
 
 const tokenStore = useTokenStore()
 
-const { sysConversationHistory } = useSysConversationFetch()
-// 加载对话历史
-async function loadConversationHistory() {
-  if (!llmMessageParam.value.conversationId)
-    return
-
-  isHistoryLoading.value = true
-  try {
-    const { data } = await sysConversationHistory(llmMessageParam.value.conversationId)
-    if (data) {
-      // 转换后端数据为前端消息格式
-      messages.value = data.map((item: any) => [
-        // 用户消息
-        {
-          id: `${item.id}-user`,
-          content: item.userMessage,
-          type: 'user' as const,
-          timestamp: item.createTime,
-          messageType: item.messageType,
-          userMessage: item.userMessage,
-          userCode: item.userCode,
-          language: item.language,
-        },
-        // AI回复消息
-        {
-          id: `${item.id}-bot`,
-          content: item.aiResponse,
-          type: 'bot' as const,
-          timestamp: item.responseTime,
-          messageType: item.messageType,
-          aiResponse: item.aiResponse,
-        },
-      ]).flat().filter(msg => msg.content) // 过滤掉空内容的消息
-    }
-  }
-  catch (error) {
-    console.error('加载对话历史失败:', error)
-  }
-  finally {
-    isHistoryLoading.value = false
-  }
-}
-
 // 连接并发送消息
-function sendMessage(customMessage?: string, messageType: string = 'chat') {
-  const finalMessage = customMessage || llmMessageParam.value.message
-  if (!finalMessage.trim())
+function sendMessage(messageType: string = 'DailyConversation') {
+  if (!chatRequestParam.value.messageContent.trim() && messageType === 'DailyConversation') {
+    window.$message?.warning('请输入消息内容')
     return
+  }
+
+  // 重置停止状态
+  isUserStopped.value = false
 
   // 生成会话ID（如果是新会话）
-  if (!llmMessageParam.value.conversationId) {
-    llmMessageParam.value.conversationId = `task-${uuidv4()}`
+  if (!chatRequestParam.value.conversationId) {
+    chatRequestParam.value.conversationId = `task-${uuidv4()}`
+    console.log('生成会话ID:', chatRequestParam.value.conversationId)
   }
 
-  // 更新消息类型和内容
-  llmMessageParam.value.messageType = messageType
-  llmMessageParam.value.userCode = props.userCode
-  llmMessageParam.value.language = props.language
-
-  // 添加用户消息到界面
-  messages.value.push({
-    id: `${Date.now()}-user`,
-    content: finalMessage,
-    type: 'user',
-    timestamp: Date.now(),
-    messageType,
-    userMessage: finalMessage,
-    userCode: props.userCode,
-    language: props.language,
-  })
-
-  llmMessageParam.value.message = ''
-
-  // 添加机器人消息占位符
-  const botMessageId = `${Date.now()}-bot`
-  messages.value.push({
-    id: botMessageId,
-    content: '',
-    type: 'bot',
-    timestamp: Date.now(),
-    messageType,
-    aiResponse: '',
-  })
-
   isLoading.value = true
+  currentAssistantMessage.value = ''
+  currentMessageType.value = messageType
+
+  // 根据消息类型确定要发送的内容
+  let messageContentToSend = ''
+  let userDisplayMessage = ''
+
+  if (messageType === 'DailyConversation') {
+    messageContentToSend = chatRequestParam.value.messageContent
+    userDisplayMessage = chatRequestParam.value.messageContent
+  }
+  else {
+    // 对于功能按钮，设置对应的消息内容
+    const buttonMessages = {
+      ProblemSolvingIdeas: '请帮我分析这道题的解题思路',
+      AnalyzeComplexity: '请帮我分析这段代码的时间复杂度和空间复杂度',
+      OptimizeCode: '请帮我优化这段代码',
+      AnalyzeBoundary: '请帮我分析这道题的边界情况',
+    } as const
+    messageContentToSend = buttonMessages[messageType as keyof typeof buttonMessages] || '请帮我分析这个问题'
+    userDisplayMessage = messageContentToSend
+  }
+
+  // 添加用户消息到消息列表
+  messages.value.push({
+    conversationId: chatRequestParam.value.conversationId,
+    messageContent: userDisplayMessage,
+    messageType,
+    messageRole: 'USER',
+    responseTime: Date.now(),
+  })
 
   // 创建中止控制器
   controller.value = new AbortController()
 
-  fetchEventSource(`${gateway + pathPrefix}chat/stream`, {
+  console.log('发送请求:', {
+    conversationId: chatRequestParam.value.conversationId,
+    problemId: chatRequestParam.value.problemId,
+    messageContent: messageContentToSend,
+    messageType,
+    userCode: chatRequestParam.value.userCode,
+    language: chatRequestParam.value.language,
+    setId: chatRequestParam.value.setId,
+  })
+
+  fetchEventSource(sysConversationStreamUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': tokenStore.getToken || '',
+      'Authorization': tokenStore.getToken ? tokenStore.getToken : '',
     },
     body: JSON.stringify({
-      conversationId: llmMessageParam.value.conversationId,
-      problemId: llmMessageParam.value.problemId,
-      message: finalMessage,
+      conversationId: chatRequestParam.value.conversationId,
+      problemId: chatRequestParam.value.problemId,
+      messageContent: messageContentToSend,
       messageType,
-      userCode: llmMessageParam.value.userCode,
-      language: llmMessageParam.value.language,
+      userCode: chatRequestParam.value.userCode,
+      language: chatRequestParam.value.language,
+      setId: chatRequestParam.value.setId,
     }),
     signal: controller.value.signal,
 
@@ -204,73 +126,108 @@ function sendMessage(customMessage?: string, messageType: string = 'chat') {
       if (response.ok) {
         console.log('SSE连接已建立')
       }
-      else if (response.status === 401 || response.status === 403) {
-        console.error('认证失败')
-        throw new Error('认证失败')
-      }
       else {
-        console.error('连接失败:', response.status)
-        throw new Error(`连接失败: ${response.status}`)
+        window.$message?.error(`连接失败: ${response.status}`)
+        handleRequestEnd(false)
       }
     },
-
     onmessage: (event) => {
       try {
         if (event.data) {
           const data = JSON.parse(event.data)
-          const botMessageIndex = messages.value.findIndex(msg => msg.id === botMessageId)
-          if (botMessageIndex !== -1) {
-            messages.value[botMessageIndex].content += data.content || data.message || ''
-            messages.value[botMessageIndex].timestamp = data.timestamp || Date.now()
-            messages.value[botMessageIndex].messageType = data.messageType || messageType
-            messages.value[botMessageIndex].aiResponse = messages.value[botMessageIndex].content
+          console.log('接收到消息:', data)
+
+          // 处理流式消息
+          if (data.content || data.messageContent || data.data) {
+            const content = data.content || data.messageContent || data.data
+            currentAssistantMessage.value += content
+
+            // 更新最后一条助手消息的内容
+            const lastMessageIndex = messages.value.length - 1
+            if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
+              messages.value[lastMessageIndex].messageContent = currentAssistantMessage.value
+            }
+          }
+
+          // 处理消息结束
+          if (data.finishReason || data.finished) {
+            console.log('消息接收完成')
+            handleRequestEnd(true)
           }
         }
       }
       catch (error) {
         console.error('解析消息错误:', error)
+        window.$message?.error('接收消息格式错误')
+        handleRequestEnd(false)
       }
     },
-
     onerror: (error) => {
       console.error('SSE错误:', error)
-      isLoading.value = false
-      const botMessageIndex = messages.value.findIndex(msg => msg.id === botMessageId)
-      if (botMessageIndex !== -1) {
-        messages.value[botMessageIndex].content = '抱歉，发生错误，请重试。'
-        messages.value[botMessageIndex].aiResponse = '抱歉，发生错误，请重试。'
+      // 如果是用户主动停止，不显示错误消息
+      if (!isUserStopped.value) {
+        window.$message?.error('连接错误，已停止接收消息')
       }
+      handleRequestEnd(false)
     },
-
     onclose: () => {
       console.log('SSE连接关闭')
-      isLoading.value = false
-      // 对话结束后重新加载历史记录以确保数据同步
-      loadConversationHistory()
+      handleRequestEnd(false)
     },
   })
-}
 
-// 按钮点击处理函数
-function handleButtonClick(messageType: MessageType) {
-  const prompt = promptTemplates[messageType]
-  if (prompt) {
-    sendMessage(prompt, messageType)
+  // 清空输入框（仅对日常对话）
+  if (messageType === 'DailyConversation') {
+    chatRequestParam.value.messageContent = ''
   }
+}
+// 按钮点击处理函数
+function handleButtonClick(messageType: string | undefined) {
+  sendMessage(messageType)
+}
+// 统一处理请求结束逻辑
+function handleRequestEnd(isCompleted: boolean) {
+  isLoading.value = false
+
+  const lastMessageIndex = messages.value.length - 1
+  if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
+    // 更新消息状态
+    messages.value[lastMessageIndex].isCompleted = isCompleted
+    messages.value[lastMessageIndex].isStopped = isUserStopped.value
+
+    // 如果消息为空且不是用户停止，可能是连接异常，移除空消息
+    if (!messages.value[lastMessageIndex].messageContent && !isUserStopped.value) {
+      messages.value.pop()
+    }
+  }
+
+  currentAssistantMessage.value = ''
+  controller.value = null
 }
 
 // 停止发送
 function stopSending() {
   if (controller.value) {
+    isUserStopped.value = true
     controller.value.abort()
     isLoading.value = false
+
+    // 立即更新最后一条助手消息的状态
+    const lastMessageIndex = messages.value.length - 1
+    if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
+      messages.value[lastMessageIndex].isStopped = true
+    }
+
+    window.$message?.info('已停止生成')
   }
 }
 
 // 清空对话
 function clearMessages() {
   messages.value = []
-  llmMessageParam.value.conversationId = ''
+  chatRequestParam.value.conversationId = ''
+  currentAssistantMessage.value = ''
+  isUserStopped.value = false
 }
 
 const isCollapse = ref(false)
@@ -278,12 +235,47 @@ function handleCollapse() {
   isCollapse.value = !isCollapse.value
 }
 
+// 判断是否显示加载状态
+function shouldShowTyping(message: any) {
+  return !message.messageContent && !message.isCompleted && !message.isStopped
+}
+
+// 判断是否显示停止提示
+function shouldShowStopped(message: any) {
+  return message.isStopped && message.messageContent
+}
+
+// 自动滚动到底部
+function scrollToBottom() {
+  nextTick(() => {
+    const chatContainer = document.querySelector('.overflow-scroll')
+    if (chatContainer) {
+      chatContainer.scrollTop = chatContainer.scrollHeight
+    }
+  })
+}
+
+// 监听消息变化，自动滚动
+watch(messages, () => {
+  scrollToBottom()
+}, { deep: true })
+
 // 组件挂载时，如果有会话ID则加载历史记录
 onMounted(() => {
-  if (llmMessageParam.value.conversationId) {
-    loadConversationHistory()
-  }
+  // 这里可以添加加载历史消息的逻辑
 })
+
+// 添加消息类型映射函数
+function getMessageTypeText(type: string | number) {
+  const typeMap = {
+    DailyConversation: '对话',
+    ProblemSolvingIdeas: '解题思路',
+    AnalyzeComplexity: '复杂度分析',
+    OptimizeCode: '代码优化',
+    AnalyzeBoundary: '边界分析',
+  } as const
+  return typeMap[type as keyof typeof typeMap] || type
+}
 </script>
 
 <template>
@@ -291,14 +283,10 @@ onMounted(() => {
     vertical
     :size="0"
   >
-    <!-- 对话内容区域 -->
-    <n-flex ref="chatContainer" vertical class="overflow-scroll" :class="{ 'h-104': !isCollapse, 'h-145': isCollapse }">
+    <n-flex ref="chatContainer" vertical class="overflow-scroll" :class="{ 'h-112': !isCollapse, 'h-149': isCollapse }">
       <div>
-        <!-- 历史记录加载状态 -->
-        <n-spin v-if="isHistoryLoading" size="small" class="flex justify-center py-4" />
-
         <n-empty
-          v-else-if="messages.length === 0"
+          v-if="messages.length === 0"
           class="flex flex-col items-center justify-center py-12"
           description="暂无对话记录"
         >
@@ -311,41 +299,57 @@ onMounted(() => {
             还没有消息，点击下方按钮开始对话！
           </n-text>
         </n-empty>
-        <div v-for="message in messages" :key="message.id">
-          <n-card v-if="message.type === 'user'" size="small" class="bg-#f0f7ff" :bordered="false">
+
+        <div v-for="(message, index) in messages" :key="index">
+          <n-card v-if="message.messageRole === 'USER'" size="small" class="bg-#f0f7ff mb-4" :bordered="false">
             <n-flex vertical :size="4">
               <div class="flex items-center justify-between">
-                <n-tag :type="message.messageType === 'chat' ? 'primary' : 'success'" size="small">
-                  {{ getMessageTypeLabel(message.messageType) }}
+                <n-tag :type="message.messageType === 'DailyConversation' ? 'primary' : 'success'" size="small">
+                  {{ getMessageTypeText(message.messageType) }}
                 </n-tag>
-                <n-time :time="message.timestamp" />
+                <n-time :time="message.responseTime" />
               </div>
               <n-text>
-                {{ message.content }}
+                {{ message.messageContent }}
               </n-text>
             </n-flex>
           </n-card>
-          <div v-if="message.type === 'bot'">
-            <n-card size="small" class="mb-4">
-              <n-flex vertical :size="4">
-                <n-flex align="center" justify="space-between">
-                  <n-tag :type="message.messageType === 'chat' ? 'primary' : 'success'" size="small">
-                    {{ getMessageTypeLabel(message.messageType) }}
-                  </n-tag>
-                  <n-time :time="message.timestamp" />
-                </n-flex>
-                <MdViewer :model-value="message.content" />
+
+          <n-card v-else-if="message.messageRole === 'ASSISTANT'" size="small" class="mb-4">
+            <n-flex vertical :size="4">
+              <n-flex align="center" justify="space-between">
+                <n-tag :type="message.messageType === 'DailyConversation' ? 'primary' : 'success'" size="small">
+                  {{ getMessageTypeText(message.messageType) }}
+                </n-tag>
+                <n-time :time="message.responseTime" />
               </n-flex>
-            </n-card>
-          </div>
-          <span v-if="isLoading && message.type === 'bot' && !message.content" class="typing-indicator">
-            思考中...
-          </span>
+
+              <!-- 优化后的消息显示逻辑 -->
+              <MdViewer v-if="message.messageContent" :model-value="message.messageContent" />
+
+              <!-- <div v-else-if="shouldShowTyping(message)" class="typing-indicator">
+                思考中...
+              </div> -->
+
+              <n-spin v-else-if="shouldShowTyping(message)" size="small">
+                思考中...
+              </n-spin>
+
+              <div v-if="shouldShowStopped(message)" class="stopped-indicator">
+                <n-text type="warning" depth="3">
+                  <n-icon size="14">
+                    <icon-park-outline-info />
+                  </n-icon>
+                  已停止生成
+                </n-text>
+              </div>
+            </n-flex>
+          </n-card>
         </div>
       </div>
     </n-flex>
 
-    <!-- 输入区域 -->
+    <!-- 输入区域保持不变 -->
     <n-card size="small">
       <NFlex
         vertical
@@ -356,28 +360,35 @@ onMounted(() => {
             <n-button
               type="primary"
               size="small"
-              @click="handleButtonClick('generate-solution-idea')"
+              @click="handleButtonClick('ProblemSolvingIdeas')"
             >
               解题思路
             </n-button>
             <n-button
               size="small"
-              @click="handleButtonClick('analyze-user-code-complexity')"
+              :disabled="!props.userCode && !props.language"
+              @click="handleButtonClick('AnalyzeComplexity')"
             >
               分析复杂度
             </n-button>
             <n-button
               size="small"
               :disabled="!props.userCode && !props.language"
-              @click="handleButtonClick('optimize-code')"
+              @click="handleButtonClick('OptimizeCode')"
             >
               优化代码
             </n-button>
             <n-button
               size="small"
-              @click="handleButtonClick('analyze-problem-boundary-conditions')"
+              @click="handleButtonClick('AnalyzeBoundary')"
             >
               分析边界
+            </n-button>
+            <n-button
+              size="small"
+              @click="clearMessages"
+            >
+              清空对话
             </n-button>
           </n-flex>
           <n-button
@@ -389,11 +400,11 @@ onMounted(() => {
         </n-flex>
         <NInput
           v-if="!isCollapse"
-          v-model:value="llmMessageParam.message"
+          v-model:value="chatRequestParam.messageContent"
           type="textarea"
-          placeholder="遇到问题？向AI描述你的疑问或需要帮助的地方。例如：如何优化这段代码的时间复杂度？或者：为什么我的代码在这个测试用例上失败了？"
+          placeholder="遇到问题？向 AI 描述你的疑问或需要帮助的地方。例如：如何优化这段代码的时间复杂度？"
           :autosize="{ minRows: 4, maxRows: 4 }"
-          @keydown.enter.prevent="sendMessage()"
+          @keydown.enter.exact.prevent="sendMessage()"
         />
         <NFlex
           v-if="!isCollapse"
@@ -423,17 +434,6 @@ onMounted(() => {
             </template>
             停止
           </NButton>
-          <NButton
-            secondary
-            size="small"
-            type="error"
-            @click="clearMessages"
-          >
-            <template #icon>
-              <icon-park-outline-clear />
-            </template>
-            清空
-          </NButton>
         </NFlex>
       </NFlex>
     </n-card>
@@ -444,10 +444,24 @@ onMounted(() => {
 .typing-indicator {
   animation: blink 1.4s infinite;
   margin-bottom: 6px;
+  color: #666;
+  font-style: italic;
+}
+
+.stopped-indicator {
+  margin-top: 8px;
+  padding: 4px 8px;
+  background-color: #fff7e6;
+  border-radius: 4px;
+  border-left: 3px solid #ffa940;
 }
 
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
+}
+
+.overflow-scroll {
+  overflow-y: auto;
 }
 </style>

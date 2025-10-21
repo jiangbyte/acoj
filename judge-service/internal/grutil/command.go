@@ -8,10 +8,12 @@ import (
 )
 
 // getRunCommand 获取执行命令
-func GetRunCommand(config config.LanguageConfig, buildFile string) []string {
+func GetRunCommand(config config.LanguageConfig, sourceFile string, buildFile string) []string {
 	runCmd := make([]string, len(config.RunCmd))
 	for i, part := range config.RunCmd {
-		runCmd[i] = strings.ReplaceAll(part, "{exec}", buildFile)
+		// runCmd[i] = strings.ReplaceAll(part, "{exec}", buildFile)
+		runCmd[i] = strings.ReplaceAll(part, "{source}", sourceFile)
+		runCmd[i] = strings.ReplaceAll(runCmd[i], "{exec}", buildFile)
 	}
 
 	logx.Infof("得到运行命令: %s", runCmd)

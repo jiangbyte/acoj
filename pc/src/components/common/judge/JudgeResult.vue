@@ -1,6 +1,4 @@
 <script lang="ts" setup>
-import CodeEditor from '@/components/common/editor/code/Editor.vue'
-
 interface Props {
   isPolling: boolean
   pollingCount: number
@@ -23,30 +21,35 @@ defineProps<Props>()
     </n-alert>
 
     <n-card v-if="isPolling || resultTaskData.id" class="w-full max-w-3xl mx-auto" :bordered="false" size="small">
-      <!-- 头部信息 -->
-      <JudgeResultHeader :result-task-data="resultTaskData" />
+      <n-space vertical :size="16">
+        <!-- 头部信息 -->
+        <JudgeResultHeader :result-task-data="resultTaskData" />
 
-      <!-- 判题结果详情 -->
-      <n-divider class="!my-4" />
-      <JudgeResultStats :result-task-data="resultTaskData" />
+        <!-- 判题结果详情 -->
+        <JudgeResultStats :result-task-data="resultTaskData" />
 
-      <!-- 代码相似度 -->
-      <SimilarityReport v-if="resultTaskData.submitType" :result-task-data="resultTaskData" class="pt-6" />
+        <!-- 代码相似度 -->
+        <SimilarityReport v-if="resultTaskData.submitType && resultTaskData?.similarity" :result-task-data="resultTaskData" />
 
-      <!-- 错误信息 -->
-      <div class="lg:col-span-2 pt-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <CodeEditor
-            v-if="resultTaskData?.message"
-            :model-value="resultTaskData?.message"
-            width="100%"
-            height="400px"
-            :options="{
-              readOnly: true,
-            }"
-          />
-        </div>
-      </div>
+        <n-card v-if="resultTaskData?.message" size="small" hoverable>
+          <n-code :language="resultTaskData?.language" :code="resultTaskData?.message" show-line-numbers word-wrap />
+        </n-card>
+        <!-- 错误信息 -->
+        <!-- <div class="lg:col-span-2 w-full">
+          <div class="bg-white dark:bg-gray-800 rounded-md shadow-sm overflow-hidden w-full">
+            <CodeEditor
+              v-if="resultTaskData?.message"
+              :model-value="resultTaskData?.message"
+              width="100%"
+              class="flex-1"
+              height="400px"
+              :options="{
+                readOnly: true,
+              }"
+            />
+          </div>
+        </div> -->
+      </n-space>
     </n-card>
 
     <n-empty v-else class="flex flex-col items-center justify-center py-12" description="暂无判题结果">

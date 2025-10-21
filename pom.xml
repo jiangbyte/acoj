@@ -52,8 +52,8 @@
             <properties>
                 <profiles.active>dev</profiles.active>
                 <nacos.server-addr>120.26.180.149:8848</nacos.server-addr>
-                <nacos.username></nacos.username>
-                <nacos.password></nacos.password>
+                <nacos.username>nacos</nacos.username>
+                <nacos.password>123456</nacos.password>
                 <nacos.discovery.group>DEFAULT_GROUP</nacos.discovery.group>
                 <nacos.discovery.namespace>8fee08f3-44ea-4e26-a9b5-530c582330a3</nacos.discovery.namespace>
 <!--                <nacos.discovery.namespace>public</nacos.discovery.namespace>-->
@@ -68,8 +68,8 @@
             <properties>
                 <profiles.active>prod</profiles.active>
                 <nacos.server-addr>120.26.180.149:8848</nacos.server-addr>
-                <nacos.username></nacos.username>
-                <nacos.password></nacos.password>
+                <nacos.username>nacos</nacos.username>
+                <nacos.password>123456</nacos.password>
                 <nacos.discovery.group>DEFAULT_GROUP</nacos.discovery.group>
                 <nacos.discovery.namespace>11a37e04-ac1b-4666-9e4c-5e4f88fa78f0</nacos.discovery.namespace>
                 <nacos.config.group>DEFAULT_GROUP</nacos.config.group>

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText } from 'naive-ui'
 import { useSysConversationFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -14,43 +14,79 @@ const columns: DataTableColumns<any> = [
   {
     title: '对话ID',
     key: 'conversationId',
-  },
-  {
-    title: '题目',
-    key: 'problemIdName',
-  },
-  {
-    title: '题集',
-    key: 'setIdName',
-  },
-  {
-    title: '题集对话',
-    key: 'isSetName',
-  },
-  {
-    title: '用户ID',
-    key: 'userId',
-  },
-  {
-    title: '消息类型',
-    key: 'messageTypeName',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '消息角色',
     key: 'messageRoleName',
   },
   {
-    title: '消息内容',
-    key: 'messageContent',
+    title: '用户',
+    key: 'user',
+    width: 140,
+    render(row: any) {
+      return row.userId
+        ? h(
+            NSpace,
+            { align: 'center', size: 'small' },
+            {
+              default: () => [
+                h(
+                  NAvatar,
+                  {
+                    size: 'small',
+                    round: true,
+                    src: row.userAvatar,
+                  },
+                  {},
+                ),
+                h(
+                  NText,
+                  {},
+                  { default: () => row.userIdName },
+                ),
+              ],
+            },
+          )
+        : ''
+    },
   },
+  {
+    title: '题目',
+    key: 'problemIdName',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '题集',
+    key: 'setIdName',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '题集内对话',
+    key: 'isSetName',
+  },
+  {
+    title: '消息类型',
+    key: 'messageTypeName',
+  },
+  // {
+  //   title: '消息内容',
+  //   key: 'messageContent',
+  // },
   // {
   //   title: '用户代码',
   //   key: 'userCode',
   // },
-  {
-    title: '代码语言',
-    key: 'languageName',
-  },
+  // {
+  //   title: '代码语言',
+  //   key: 'languageName',
+  // },
   // {
   //   title: '提示Tokens',
   //   key: 'promptTokens',
@@ -79,10 +115,10 @@ const columns: DataTableColumns<any> = [
   //   title: '错误信息',
   //   key: 'errorMessage',
   // },
-  // {
-  //   title: '用户平台',
-  //   key: 'userPlatform',
-  // },
+  {
+    title: '用户平台',
+    key: 'userPlatform',
+  },
   // {
   //   title: 'IP地址',
   //   key: 'ipAddress',
@@ -90,15 +126,15 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 200,
+    width: 140,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          onClick: () => formRef.value.doOpen(row, true),
-        }, () => '编辑'),
+        // h(NButton, {
+        //   type: 'primary',
+        //   size: 'small',
+        //   onClick: () => formRef.value.doOpen(row, true),
+        // }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
@@ -223,12 +259,15 @@ async function deleteBatchHandle() {
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
-            <NButton type="primary" @click="formRef.doOpen(null, false)">
+            <!-- <NButton type="primary" @click="formRef.doOpen(null, false)">
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
               创建
-            </NButton>
+            </NButton> -->
+            <!-- <NButton type="primary">
+              对话内存
+            </NButton> -->
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除
@@ -301,6 +340,7 @@ async function deleteBatchHandle() {
         :row-key="(row: any) => row.id"
         :loading="loading"
         flex-height
+        :scroll-x="1400"
         class="flex-1 h-full"
       />
       <template #action>

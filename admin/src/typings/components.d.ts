@@ -9,10 +9,11 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     Breadcrumb: typeof import('./../components/site/Breadcrumb.vue')['default']
+    CodeEditor: typeof import('./../components/common/editor/code/CodeEditor.vue')['default']
     Collapse: typeof import('./../components/site/Collapse.vue')['default']
     Direction: typeof import('./../components/site/Direction.vue')['default']
     Dropdown: typeof import('./../components/site/Dropdown.vue')['default']
-    Editor: typeof import('./../components/common/editor/code/Editor.vue')['default']
+    Editor: typeof import('../components/common/editor/code/CodeEditor.vue')['default']
     FileUpload: typeof import('./../components/common/file/FileUpload.vue')['default']
     FileUploadTextButton: typeof import('./../components/common/file/FileUploadTextButton.vue')['default']
     Footer: typeof import('./../components/site/Footer.vue')['default']
@@ -37,6 +38,8 @@ declare module 'vue' {
     IconParkOutlineSortOne: typeof import('~icons/icon-park-outline/sort-one')['default']
     IconParkOutlineUser: typeof import('~icons/icon-park-outline/user')['default']
     Logo: typeof import('./../components/site/Logo.vue')['default']
+    MarkdownEditor: typeof import('./../components/common/editor/md/MarkdownEditor.vue')['default']
+    MarkdownViewer: typeof import('./../components/common/editor/md/MarkdownViewer.vue')['default']
     MultProblemModal: typeof import('./../components/problem/MultProblemModal.vue')['default']
     NaiveProvider: typeof import('./../components/provider/NaiveProvider.vue')['default']
     NAlert: typeof import('naive-ui')['NAlert']
@@ -112,6 +115,6 @@ declare module 'vue' {
     SingleSetModal: typeof import('./../components/set/SingleSetModal.vue')['default']
     TabBar: typeof import('./../components/site/TabBar.vue')['default']
     UserAvatar: typeof import('./../components/site/UserAvatar.vue')['default']
-    Viewer: typeof import('./../components/common/editor/md/Viewer.vue')['default']
+    Viewer: typeof import('../components/common/editor/md/MarkdownViewer.vue')['default']
   }
 }

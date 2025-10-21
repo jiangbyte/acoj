@@ -12,6 +12,7 @@ import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * @author Charlie Zhang
@@ -32,32 +33,11 @@ public interface DataLibraryService extends IService<DataLibrary> {
 
     void addLibrary(DataSubmit submit);
 
-
-    // 获得代码样本
-    List<DataLibrary> getCodeLibraries(
-            boolean isSet,
-            String language,
-            List<String> problemIds,
-            List<String> setIds,
-            List<String> userIds
-    );
-    // 分页获取代码样本
-    Page<DataLibrary> getCodeLibrariesByPage(
-            boolean isSet,
-            String language,
-            List<String> problemIds,
-            List<String> setIds,
-            List<String> userIds,
-            long current,  // 当前页码
-            long size      // 每页大小
-    );
-
-    void processCodeLibrariesInBatches(
-            boolean isSet,
-            String language,
-            List<String> problemIds,
-            List<String> setIds,
-            List<String> userIds,
-            int batchSize,
-            Consumer<List<DataLibrary>> processor);
+    // 修改原方法，返回处理结果
+    <R> List<R> processCodeLibrariesInBatches(boolean isSet, String language,
+                                              List<String> problemIds, List<String> setIds,
+                                              List<String> userIds, int batchSize,
+                                              String filterProblemId, String filterSetId,
+                                              String filterUserId,
+                                              Function<List<DataLibrary>, List<R>> processor);
 }

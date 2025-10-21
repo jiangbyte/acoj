@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { NDescriptions, NDescriptionsItem, NDrawer, NDrawerContent, NTime } from 'naive-ui'
 import { useSysConversationFetch } from '@/composables/v1'
+import MDViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 
 const emit = defineEmits(['close'])
 const show = ref(false)
@@ -22,7 +23,7 @@ defineExpose({
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent title="详情">
       <NDescriptions label-placement="left" bordered :column="1">
         <NDescriptionsItem label="主键">
@@ -31,42 +32,56 @@ defineExpose({
         <NDescriptionsItem label="对话ID">
           {{ formData.conversationId }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题目ID">
-          {{ formData.problemId }}
+        <NDescriptionsItem label="题目">
+          {{ formData.problemIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题集ID">
-          {{ formData.setId }}
+        <NDescriptionsItem label="题集">
+          {{ formData.setIdName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题集对话">
-          {{ formData.isSet }}
+        <NDescriptionsItem label="题集内对话">
+          {{ formData.isSetName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="用户ID">
-          {{ formData.userId }}
+        <NDescriptionsItem label="用户">
+          <!-- {{ formData.userId }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.userAvatar"
+            />
+            <NText>{{ formData.userIdName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="消息类型">
-          {{ formData.messageType }}
+          {{ formData.messageTypeName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="消息角色">
-          {{ formData.messageRole }}
+          {{ formData.messageRoleName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="消息内容">
-          {{ formData.messageContent }}
+          <!-- {{ formData.messageContent }} -->
+          <MDViewer :model-value="formData.messageContent" />
         </NDescriptionsItem>
         <NDescriptionsItem label="用户代码">
-          {{ formData.userCode }}
+          <NCode
+            :code="formData.userCode"
+            :language="formData.language"
+            word-wrap
+            show-line-numbers
+          />
         </NDescriptionsItem>
         <NDescriptionsItem label="代码语言">
-          {{ formData.language }}
+          {{ formData.languageName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="提示Tokens">
+        <!-- <NDescriptionsItem label="提示Tokens">
           {{ formData.promptTokens }}
         </NDescriptionsItem>
         <NDescriptionsItem label="完成Tokens">
           {{ formData.completionTokens }}
-        </NDescriptionsItem>
-        <NDescriptionsItem label="总Tokens">
+        </NDescriptionsItem> -->
+        <!-- <NDescriptionsItem label="总Tokens">
           {{ formData.totalTokens }}
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="响应时间">
           <NTime :time="Number(formData.responseTime)" />
         </NDescriptionsItem>
@@ -82,20 +97,36 @@ defineExpose({
         <NDescriptionsItem label="用户平台">
           {{ formData.userPlatform }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="IP地址">
+        <!-- <NDescriptionsItem label="IP地址">
           {{ formData.ipAddress }}
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="创建者">
-          {{ formData.createUserName }}
+          <!-- {{ formData.createUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.createUserAvatar"
+            />
+            <NText>{{ formData.createUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
         <NDescriptionsItem label="更新时间">
           <NTime :time="Number(formData.updateTime)" />
         </NDescriptionsItem>
         <NDescriptionsItem label="更新人">
-          {{ formData.updateUserName }}
+          <!-- {{ formData.updateUserName }} -->
+          <NSpace align="center" size="small">
+            <NAvatar
+              size="small"
+              :round="true"
+              :src="formData.updateUserAvatar"
+            />
+            <NText>{{ formData.updateUserName }}</NText>
+          </NSpace>
         </NDescriptionsItem>
       </NDescriptions>
       <template #footer>

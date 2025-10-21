@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
 import { useDataProblemFetch, useSysCategoryFetch, useSysDictFetch, useSysTagFetch } from '@/composables/v1'
-import MDEditor from '@/components/common/editor/md/Editor.vue'
+import MDEditor from '@/components/common/editor/md/MarkdownEditor.vue'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
@@ -180,11 +180,11 @@ defineExpose({
         </NFormItem>
         <!-- 数字输入 -->
         <NFormItem label="时间限制" path="maxTime">
-          <NInputNumber v-model:value="formData.maxTime" :min="0" :max="10000" placeholder="请输入时间限制" />
+          <NInputNumber v-model:value="formData.maxTime" :min="0" :max="1000000" placeholder="请输入时间限制" />
         </NFormItem>
         <!-- 数字输入 -->
         <NFormItem label="内存限制" path="maxMemory">
-          <NInputNumber v-model:value="formData.maxMemory" :min="0" :max="10000" placeholder="请输入内存限制" />
+          <NInputNumber v-model:value="formData.maxMemory" :min="0" :max="1000000" placeholder="请输入内存限制" />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="描述" path="description">

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import MdViewer from '@/components/common/editor/md/Viewer.vue'
+import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 
 const testContent2 = ref(`### 测试标题 
 哈希表方法的时间复杂度是 $O(n)$，原因如下：

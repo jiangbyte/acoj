@@ -8,29 +8,23 @@ defineProps<Props>()
 
 <template>
   <div class="grid grid-cols-3 md:grid-cols-3 gap-4">
-    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-      <div class="text-sm text-gray-500 dark:text-gray-400">
-        代码长度
+    <n-card size="small" hoverable>
+      <n-text>长度(B)</n-text>
+      <div class="text-xl font-bold">
+        {{ resultTaskData?.codeLength ? resultTaskData?.codeLength : 0 }}
       </div>
-      <div class="text-2xl font-bold">
-        {{ resultTaskData?.codeLength ? resultTaskData?.codeLength : 0 }} B
+    </n-card>
+    <n-card size="small" hoverable>
+      <n-text>时间(ms)</n-text>
+      <div class="text-xl font-bold">
+        {{ resultTaskData?.time ? resultTaskData?.time : 0 }}
       </div>
-    </div>
-    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-      <div class="text-sm text-gray-500 dark:text-gray-400">
-        运行时间
+    </n-card>
+    <n-card size="small" hoverable>
+      <n-text>内存(KB)</n-text>
+      <div class="text-xl font-bold">
+        {{ resultTaskData?.memory ? resultTaskData?.memory : 0 }}
       </div>
-      <div class="text-2xl font-bold">
-        {{ resultTaskData?.maxTime }} ms
-      </div>
-    </div>
-    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-      <div class="text-sm text-gray-500 dark:text-gray-400">
-        内存消耗
-      </div>
-      <div class="text-2xl font-bold">
-        {{ resultTaskData?.maxMemory }} KB
-      </div>
-    </div>
+    </n-card>
   </div>
 </template>

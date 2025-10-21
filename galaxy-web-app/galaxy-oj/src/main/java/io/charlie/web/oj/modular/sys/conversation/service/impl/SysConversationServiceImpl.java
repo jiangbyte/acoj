@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.conversation.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -10,6 +11,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.web.oj.modular.llm.param.ChatRequest;
+import io.charlie.web.oj.modular.sys.conversation.constant.MessageRole;
 import io.charlie.web.oj.modular.sys.conversation.entity.SysConversation;
 import io.charlie.web.oj.modular.sys.conversation.param.SysConversationAddParam;
 import io.charlie.web.oj.modular.sys.conversation.param.SysConversationEditParam;
@@ -29,11 +31,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-06-23
-* @description 大模型对话表 服务实现类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-06-23
+ * @description 大模型对话表 服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -47,12 +49,14 @@ public class SysConversationServiceImpl extends ServiceImpl<SysConversationMappe
                     true,
                     sysConversationPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(sysConversationPageParam.getSortField()));
+        } else {
+            queryWrapper.lambda().orderByDesc(SysConversation::getId);
         }
 
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(sysConversationPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(sysConversationPageParam.getSize()).orElse(20),
-                null
+                        null
                 ),
                 queryWrapper);
     }
@@ -94,11 +98,82 @@ public class SysConversationServiceImpl extends ServiceImpl<SysConversationMappe
     }
 
     @Override
-    public SysConversation saveConversation(ChatRequest chatRequest) {
-        SysConversation bean = BeanUtil.toBean(chatRequest, SysConversation.class);
-        bean.setMessageContent(chatRequest.getMessage());
-        this.save(bean);
-        return bean;
+    public SysConversation saveUserConversation(ChatRequest chatRequest) {
+        SysConversation sysConversation = BeanUtil.toBean(chatRequest, SysConversation.class);
+        sysConversation.setMessageRole(MessageRole.USER);
+
+        try {
+            if (StpUtil.isLogin()) {
+                sysConversation.setUserId(StpUtil.getLoginIdAsString());
+                sysConversation.setUserPlatform(StpUtil.getLoginDevice());
+            }
+        } catch (Exception e) {
+            log.error("获取用户信息失败", e);
+        }
+
+        sysConversation.setResponseTime(new Date());
+        this.save(sysConversation);
+        return sysConversation;
+    }
+
+    @Override
+    public SysConversation saveBotConversation(ChatRequest chatRequest, String content, Long time, String error) {
+        SysConversation sysConversation = BeanUtil.toBean(chatRequest, SysConversation.class);
+        if (ObjectUtil.isNotEmpty(content)) {
+            sysConversation.setMessageContent(content);
+        }
+        sysConversation.setMessageRole(MessageRole.ASSISTANT);
+
+        try {
+            if (StpUtil.isLogin()) {
+                sysConversation.setUserId(StpUtil.getLoginIdAsString());
+                sysConversation.setUserPlatform(StpUtil.getLoginDevice());
+            }
+        } catch (Exception e) {
+            log.error("获取用户信息失败");
+        }
+
+        sysConversation.setStatus(error == null ? "SUCCESS" : "ERROR");
+
+        if (ObjectUtil.isNotEmpty(error)) {
+            sysConversation.setErrorMessage(error);
+        }
+
+        if (ObjectUtil.isNotEmpty(time)) {
+            sysConversation.setStreamingDuration(Math.toIntExact(time));
+        }
+
+        this.save(sysConversation);
+        return sysConversation;
+    }
+
+    @Override
+    public List<SysConversation> historyByConversationId(String conversationId) {
+        return this.list(new LambdaQueryWrapper<SysConversation>().eq(SysConversation::getConversationId, conversationId));
+    }
+
+    @Override
+    public Page<SysConversation> userHistorypage(SysConversationPageParam sysConversationPageParam) {
+        QueryWrapper<SysConversation> queryWrapper = new QueryWrapper<SysConversation>().checkSqlInjection();
+        if (StpUtil.isLogin()) {
+            queryWrapper.lambda().eq(SysConversation::getUserId, StpUtil.getLoginIdAsString());
+        } else {
+            return new Page<>();
+        }
+
+        if (ObjectUtil.isAllNotEmpty(sysConversationPageParam.getSortField(), sysConversationPageParam.getSortOrder()) && ISortOrderEnum.isValid(sysConversationPageParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    sysConversationPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(sysConversationPageParam.getSortField()));
+        }
+
+        return this.page(CommonPageRequest.Page(
+                        Optional.ofNullable(sysConversationPageParam.getCurrent()).orElse(1),
+                        Optional.ofNullable(sysConversationPageParam.getSize()).orElse(20),
+                        null
+                ),
+                queryWrapper);
     }
 
 }

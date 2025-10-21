@@ -1,7 +1,7 @@
 package io.charlie.web.oj.modular.llm.service;
 
 import io.charlie.web.oj.modular.llm.param.ChatRequest;
-import io.charlie.web.oj.modular.llm.param.ChatResponse;
+import io.charlie.web.oj.modular.sys.conversation.entity.SysConversation;
 import reactor.core.publisher.Flux;
 
 /**
@@ -11,5 +11,5 @@ import reactor.core.publisher.Flux;
  * @description TODO
  */
 public interface LLMService {
-    Flux<ChatResponse> streamChat(ChatRequest request);
+    Flux<SysConversation> streamChat(ChatRequest request);
 }

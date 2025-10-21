@@ -4,6 +4,7 @@ import { request as $alova } from '@/utils'
  * 大模型对话 API请求
  */
 export function useSysConversationFetch() {
+  const gateway = import.meta.env.VITE_GATEWAY
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
   const pathPrefix = `${context}/api/v1/`
   const table = 'sys/conversation'
@@ -37,11 +38,14 @@ export function useSysConversationFetch() {
     updateTime: '',
     updateUser: '',
   }
+
+  const sysConversationStreamUrl = `${gateway + pathPrefix}chat/stream`
   return {
     /*
     * 大模型对话 默认数据
     */
     sysConversationDefaultData,
+    sysConversationStreamUrl,
 
     /*
      * 大模型对话 分页接口
@@ -88,6 +92,23 @@ export function useSysConversationFetch() {
 
     sysConversationHistory(data: any) {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/history/${data}`)
+    },
+    sysConversationUserHistory(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/userHistory`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    sysConversationStream(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix}chat/stream`, data, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        params: {
+          // sse: true,
+        },
+      })
     },
   }
 }

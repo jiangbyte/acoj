@@ -12,11 +12,11 @@ import io.charlie.web.oj.modular.sys.conversation.param.SysConversationPageParam
 import java.util.List;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-10-20
-* @description 大模型对话表 服务类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-10-20
+ * @description 大模型对话表 服务类
+ */
 public interface SysConversationService extends IService<SysConversation> {
     Page<SysConversation> page(SysConversationPageParam sysConversationPageParam);
 
@@ -28,5 +28,11 @@ public interface SysConversationService extends IService<SysConversation> {
 
     SysConversation detail(SysConversationIdParam sysConversationIdParam);
 
-    SysConversation saveConversation(ChatRequest chatRequest);
+    SysConversation saveUserConversation(ChatRequest chatRequest);
+
+    SysConversation saveBotConversation(ChatRequest chatRequest, String content, Long time, String error);
+
+    List<SysConversation> historyByConversationId(String conversationId);
+
+    Page<SysConversation> userHistorypage(SysConversationPageParam sysConversationPageParam);
 }

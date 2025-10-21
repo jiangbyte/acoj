@@ -11,7 +11,7 @@ import io.charlie.web.oj.modular.sys.config.mapper.SysConfigMapper;
 import io.charlie.web.oj.modular.task.similarity.data.SimilarityResult;
 import io.charlie.web.oj.modular.task.similarity.dto.BatchSimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.mq.CommonSimilarityQueue;
-import io.charlie.web.oj.modular.task.similarity.utils.CodeSimilarityCalculator;
+import io.charlie.web.oj.modular.task.similarity.basic.utils.CodeSimilarityCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.trans.service.impl.TransService;

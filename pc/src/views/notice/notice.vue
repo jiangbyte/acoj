@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useSysNoticeFetch } from '@/composables/v1'
 import { AesCrypto } from '@/utils'
-import MdViewer from '@/components/common/editor/md/Viewer.vue'
+import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 
 const route = useRoute()
 const detailData = ref()

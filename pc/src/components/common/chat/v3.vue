@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { v4 as uuidv4 } from 'uuid'
-import MdViewer from '@/components/common/editor/md/Viewer.vue'
+import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 import { useLMMessageStore, useTokenStore } from '@/stores'
 
 // 定义 props

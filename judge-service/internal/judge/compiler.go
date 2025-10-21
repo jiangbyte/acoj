@@ -44,7 +44,8 @@ func (e *Compiler) Execute() (*dto.JudgeResultDto, error) {
 		return &result, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// 编译超时保护，默认编译时间限制 + 5 秒
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, comCmd[0], comCmd[1:]...)

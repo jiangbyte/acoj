@@ -22,13 +22,17 @@ import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * @author Charlie Zhang
@@ -40,6 +44,7 @@ import java.util.function.Consumer;
 @Service
 @RequiredArgsConstructor
 public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataLibrary> implements DataLibraryService {
+    private final RedissonClient redissonClient;
 
     @Override
     public Page<DataLibrary> page(DataLibraryPageParam dataLibraryPageParam) {
@@ -96,46 +101,136 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         return dataLibrary;
     }
 
+    //    @Override
+//    public void addLibrary(DataSubmit submit) {
+//        // 构建查询条件
+//        LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
+//                .eq(DataLibrary::getUserId, submit.getUserId())
+//                .eq(DataLibrary::getLanguage, submit.getLanguage())
+//                .eq(DataLibrary::getProblemId, submit.getProblemId());
+//
+//        // 如果是set模式，需要额外匹配setId
+//        if (submit.getIsSet()) {
+//            queryWrapper.eq(DataLibrary::getSetId, submit.getSetId());
+//            queryWrapper.eq(DataLibrary::getIsSet, Boolean.TRUE);
+//        } else {
+//            queryWrapper.eq(DataLibrary::getIsSet, Boolean.FALSE);
+//        }
+//
+//        // 查找已存在的记录
+//        DataLibrary library = this.getOne(queryWrapper);
+//
+//        if (library != null) {
+//            log.info("存在记录，执行更新");
+//            // 更新现有记录
+//            library.setSubmitId(submit.getId());
+//            library.setSubmitTime(submit.getCreateTime());
+//            library.setCode(submit.getCode());
+//            library.setCodeLength(submit.getCodeLength());
+//            this.updateById(library);
+//        } else {
+//            log.info("不存在记录，创建新记录");
+//            // 创建新记录
+//            library = new DataLibrary();
+//            library.setUserId(submit.getUserId());
+//            library.setSetId(submit.getIsSet() ? submit.getSetId() : null);
+//            library.setProblemId(submit.getProblemId());
+//            library.setLanguage(submit.getLanguage());
+//            library.setSubmitId(submit.getId());
+//            library.setSubmitTime(submit.getCreateTime());
+//            library.setCode(submit.getCode());
+//            library.setCodeLength(submit.getCodeLength());
+//            library.setIsSet(submit.getIsSet());
+//            library.setAccessCount(0);
+//
+//            this.save(library);
+//        }
+//    }
     @Override
     public void addLibrary(DataSubmit submit) {
-        // 构建查询条件
+        String lockKey = buildLockKey(submit);
+        RLock lock = redissonClient.getLock(lockKey);
+
+        try {
+            // 尝试获取锁，等待5秒，锁超时时间30秒
+            boolean locked = lock.tryLock(5, 30, TimeUnit.SECONDS);
+            if (!locked) {
+                throw new RuntimeException("获取分布式锁失败");
+            }
+
+            try {
+                // 在锁保护下执行原有逻辑
+                doAddLibrary(submit);
+            } finally {
+                lock.unlock();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("操作被中断", e);
+        }
+    }
+
+    private void doAddLibrary(DataSubmit submit) {
+        // 原有的业务逻辑
         LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
                 .eq(DataLibrary::getUserId, submit.getUserId())
-                .eq(DataLibrary::getIsSet, submit.getIsSet())
-                .eq(DataLibrary::getProblemId, submit.getProblemId());
+                .eq(DataLibrary::getLanguage, submit.getLanguage())
+                .eq(DataLibrary::getProblemId, submit.getProblemId())
+                .eq(DataLibrary::getIsSet, submit.getIsSet());
 
-        // 如果是set模式，需要额外匹配setId
         if (submit.getIsSet()) {
             queryWrapper.eq(DataLibrary::getSetId, submit.getSetId());
         }
 
-        // 查找已存在的记录
         DataLibrary library = this.getOne(queryWrapper);
 
         if (library != null) {
             log.info("存在记录，执行更新");
-            // 更新现有记录
-            updateExistingLibrary(library, submit);
+            library.setSubmitId(submit.getId());
+            library.setSubmitTime(submit.getCreateTime());
+            library.setCode(submit.getCode());
+            library.setCodeLength(submit.getCodeLength());
             this.updateById(library);
         } else {
             log.info("不存在记录，创建新记录");
-            // 创建新记录
-            library = createNewLibrary(submit);
+            library = new DataLibrary();
+            library.setUserId(submit.getUserId());
+            library.setSetId(submit.getIsSet() ? submit.getSetId() : null);
+            library.setProblemId(submit.getProblemId());
+            library.setLanguage(submit.getLanguage());
+            library.setSubmitId(submit.getId());
+            library.setSubmitTime(submit.getCreateTime());
+            library.setCode(submit.getCode());
+            library.setCodeLength(submit.getCodeLength());
+            library.setIsSet(submit.getIsSet());
+            library.setAccessCount(0);
             this.save(library);
         }
     }
 
-    private long countCodeLibraries(boolean isSet, String language,
-                                    List<String> problemIds, List<String> setIds, List<String> userIds) {
-        LambdaQueryWrapper<DataLibrary> query = buildSampleQuery(isSet, language, problemIds, setIds, userIds);
-        return this.count(query);
+    private String buildLockKey(DataSubmit submit) {
+        if (submit.getIsSet()) {
+            return String.format("library:lock:%s:%s:%s:%s",
+                    submit.getUserId(), submit.getLanguage(),
+                    submit.getProblemId(), submit.getSetId());
+        } else {
+            return String.format("library:lock:%s:%s:%s",
+                    submit.getUserId(), submit.getLanguage(), submit.getProblemId());
+        }
     }
 
-    private LambdaQueryWrapper<DataLibrary> buildSampleQuery(boolean isSet, String language, List<String> problemIds, List<String> setIds, List<String> userIds) {
+    private LambdaQueryWrapper<DataLibrary> buildSampleQuery(
+            boolean isSet,
+            String language,
+            List<String> problemIds,
+            List<String> setIds,
+            List<String> userIds
+    ) {
+
         LambdaQueryWrapper<DataLibrary> query = new LambdaQueryWrapper<DataLibrary>()
                 .eq(DataLibrary::getIsSet, isSet);
 
-        if (ObjectUtil.isEmpty(language)) {
+        if (ObjectUtil.isNotEmpty(language)) {
             query.eq(DataLibrary::getLanguage, language);
         }
         if (ObjectUtil.isNotEmpty(problemIds)) {
@@ -151,51 +246,65 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         return query;
     }
 
-
     @Override
-    public List<DataLibrary> getCodeLibraries(boolean isSet, String language, List<String> problemIds, List<String> setIds, List<String> userIds) {
-        LambdaQueryWrapper<DataLibrary> query = buildSampleQuery(isSet, language, problemIds, setIds, userIds);
-        return this.list(query);
-    }
+    public <R> List<R> processCodeLibrariesInBatches(boolean isSet, String language,
+                                                     List<String> problemIds, List<String> setIds,
+                                                     List<String> userIds, int batchSize,
+                                                     String filterProblemId, String filterSetId,
+                                                     String filterUserId,
+                                                     Function<List<DataLibrary>, List<R>> processor) {
 
-    @Override
-    public Page<DataLibrary> getCodeLibrariesByPage(boolean isSet, String language,
-                                                    List<String> problemIds, List<String> setIds, List<String> userIds,
-                                                    long current, long size) {
+        LambdaQueryWrapper<DataLibrary> queryWrapper = buildSampleQuery(isSet, language, problemIds, setIds, userIds);
 
-        Page<DataLibrary> page = new Page<>(current, size);
-        LambdaQueryWrapper<DataLibrary> query = buildSampleQuery(isSet, language, problemIds, setIds, userIds);
-        return this.page(page, query);
-    }
+        // 添加过滤条件
+        if (filterProblemId != null) {
+            queryWrapper.ne(DataLibrary::getProblemId, filterProblemId);
+        }
+        if (filterSetId != null) {
+            queryWrapper.ne(DataLibrary::getSetId, filterSetId);
+        }
+        if (filterUserId != null) {
+            queryWrapper.ne(DataLibrary::getUserId, filterUserId);
+        }
 
-    @Override
-    public void processCodeLibrariesInBatches(boolean isSet, String language, List<String> problemIds, List<String> setIds, List<String> userIds, int batchSize, Consumer<List<DataLibrary>> processor) {
-        long total = countCodeLibraries(isSet, language, problemIds, setIds, userIds);
+        List<R> allResults = new ArrayList<>();
 
         // 如果批次数为0，则一次性处理所有数据
         if (batchSize <= 0) {
-            List<DataLibrary> allData = getCodeLibraries(isSet, language, problemIds, setIds, userIds);
+            List<DataLibrary> allData = this.list(queryWrapper);
             if (allData != null && !allData.isEmpty()) {
                 // 先增加访问量
                 incrementAccessCount(allData);
-                // 然后执行处理逻辑
-                processor.accept(allData);
+                // 然后执行处理逻辑并收集结果
+                List<R> results = processor.apply(allData);
+                if (results != null) {
+                    allResults.addAll(results);
+                }
             }
-            return;
+            return allResults; // 直接返回全量结果
         }
 
         // 正常分批处理
+        long total = this.count(queryWrapper);
         long pages = (total + batchSize - 1) / batchSize;
 
         for (long current = 1; current <= pages; current++) {
-            Page<DataLibrary> page = getCodeLibrariesByPage(isSet, language, problemIds, setIds, userIds, current, batchSize);
+            Page<DataLibrary> page = this.page(new Page<>(current, batchSize), queryWrapper);
             if (page.getRecords() != null && !page.getRecords().isEmpty()) {
+                List<DataLibrary> batch = page.getRecords();
+
                 // 先增加访问量
-                incrementAccessCount(page.getRecords());
-                // 然后执行处理逻辑
-                processor.accept(page.getRecords());
+                incrementAccessCount(batch);
+
+                // 然后执行处理逻辑并收集结果
+                List<R> batchResults = processor.apply(batch);
+                if (batchResults != null) {
+                    allResults.addAll(batchResults);
+                }
             }
         }
+
+        return allResults;
     }
 
     // 增加访问量
@@ -211,29 +320,5 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
 
         // 批量更新到数据库
         this.updateBatchById(dataList);
-    }
-
-    /**
-     * 更新已存在的库记录
-     */
-    private void updateExistingLibrary(DataLibrary library, DataSubmit submit) {
-        library.setUserId(submit.getUserId());
-        library.setSetId(submit.getSetId());
-        library.setIsSet(submit.getIsSet());
-        library.setProblemId(submit.getProblemId());
-        library.setSubmitId(submit.getId());
-        library.setSubmitTime(submit.getCreateTime());
-        library.setLanguage(submit.getLanguage());
-        library.setCode(submit.getCode());
-        library.setCodeLength(submit.getCodeLength());
-    }
-
-    /**
-     * 创建新的库记录
-     */
-    private DataLibrary createNewLibrary(DataSubmit submit) {
-        DataLibrary library = new DataLibrary();
-        updateExistingLibrary(library, submit); // 复用设置逻辑
-        return library;
     }
 }

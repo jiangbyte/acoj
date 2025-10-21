@@ -1,0 +1,33 @@
+package io.charlie.web.oj.modular.task.similarity.config;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.annotation.Validated;
+
+/**
+ * @author ZhangJiangHu
+ * @version v1.0
+ * @date 21/10/2025
+ * @description TODO
+ */
+@Data
+@Validated
+@Configuration
+@ConfigurationProperties(prefix = "similarity.config")
+public class SimilarityConfigProperties {
+    // 题目单提交分批大小
+    private Integer problemSingleSubmitBatchSize = 100;
+    // 题目单提交检测灵敏度
+    private Integer problemSingleSubmitSensitivity = 5;
+
+    // 题目集内单提交分批大小
+    private Integer setSingleSubmitBatchSize = 200;
+    // 题目集内单提交检测灵敏度
+    private Integer setSingleSubmitSensitivity = 5;
+
+    // 自定义检测批次大小
+    private Integer customDetectionBatchSize = 100;
+    // 自定义检测灵敏度
+    private Integer customDetectionSensitivity = 5;
+}

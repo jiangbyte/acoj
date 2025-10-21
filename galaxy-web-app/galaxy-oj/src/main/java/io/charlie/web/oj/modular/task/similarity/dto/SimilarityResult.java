@@ -1,6 +1,6 @@
 package io.charlie.web.oj.modular.task.similarity.dto;
 
-import io.charlie.web.oj.modular.task.similarity.utils.CodeSimilarityCalculator;
+import io.charlie.web.oj.modular.task.similarity.basic.utils.CodeSimilarityCalculator;
 import lombok.Data;
 
 import java.util.List;

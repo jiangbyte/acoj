@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import CodeEditor from '@/components/common/editor/code/Editor.vue'
+import CodeEditor from '@/components/common/editor/code/CodeEditor.vue'
 import { useDataProblemFetch, useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
 import { AesCrypto, Poller } from '@/utils'
 import { useUserStore } from '@/stores'
@@ -452,7 +452,7 @@ onUnmounted(() => {
               @update:value="handleLanguageChange"
             />
             <n-space align="center">
-              <n-button v-if="isPolling" size="small" @click="stopPollingManually">
+              <n-button v-if="isPolling" @click="stopPollingManually">
                 停止
               </n-button>
               <n-button :disabled="!submitParam.language || !submitParam.code || isPolling" @click="executeCode(false)">

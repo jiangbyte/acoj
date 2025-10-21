@@ -58,7 +58,7 @@ func NewServiceRegistry(nacosConfig config.NacosConfig, serviceConfig config.Con
 		NotLoadCacheAtStart: true,
 		LogDir:              "/tmp/nacos/log",
 		CacheDir:            "/tmp/nacos/cache",
-		LogLevel:            "warn",
+		LogLevel:            "info",
 		Username:            nacosConfig.Username,
 		Password:            nacosConfig.Password,
 	}

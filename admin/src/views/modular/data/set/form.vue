@@ -2,7 +2,7 @@
 import type { DataTableColumns } from 'naive-ui'
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
 import { useDataProblemFetch, useDataSetFetch, useSysCategoryFetch, useSysDictFetch } from '@/composables/v1'
-import MDEditor from '@/components/common/editor/md/Editor.vue'
+import MDEditor from '@/components/common/editor/md/MarkdownEditor.vue'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)

@@ -1,85 +1,3 @@
-// package nacos
-
-// import (
-// 	"fmt"
-
-// 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
-// 	"github.com/nacos-group/nacos-sdk-go/v2/clients/config_client"
-// 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
-// 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
-// )
-
-// type ConfigManager struct {
-// 	client config_client.IConfigClient
-// 	group  string
-// }
-
-// func NewNacosConfigManager(serverAddr, username, password, namespace, group string) (*ConfigManager, error) {
-// 	if serverAddr == "" {
-// 		return nil, fmt.Errorf("nacos server address is required")
-// 	}
-
-// 	// 创建 clientConfig
-// 	clientConfig := constant.ClientConfig{
-// 		NamespaceId:         namespace,
-// 		TimeoutMs:           5000,
-// 		NotLoadCacheAtStart: true,
-// 		LogDir:              "/tmp/nacos/log",
-// 		CacheDir:            "/tmp/nacos/cache",
-// 		LogLevel:            "info",
-// 		Username:            username,
-// 		Password:            password,
-// 	}
-
-// 	// 创建 serverConfig
-// 	serverConfigs := []constant.ServerConfig{
-// 		{
-// 			IpAddr:      serverAddr,
-// 			Port:        8848,
-// 			ContextPath: "/nacos",
-// 		},
-// 	}
-
-// 	// 创建配置客户端
-// 	configClient, err := clients.NewConfigClient(
-// 		vo.NacosClientParam{
-// 			ClientConfig:  &clientConfig,
-// 			ServerConfigs: serverConfigs,
-// 		},
-// 	)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to create nacos config client: %v", err)
-// 	}
-
-// 	return &ConfigManager{
-// 		client: configClient,
-// 		group:  group,
-// 	}, nil
-// }
-
-// // GetConfig 从 Nacos 获取配置
-// func (m *ConfigManager) GetConfig(dataId string) (string, error) {
-// 	content, err := m.client.GetConfig(vo.ConfigParam{
-// 		DataId: dataId,
-// 		Group:  m.group,
-// 	})
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to get config from nacos: %v", err)
-// 	}
-// 	return content, nil
-// }
-
-// // ListenConfig 监听配置变化
-// func (m *ConfigManager) ListenConfig(dataId string, callback func(string)) error {
-// 	return m.client.ListenConfig(vo.ConfigParam{
-// 		DataId: dataId,
-// 		Group:  m.group,
-// 		OnChange: func(namespace, group, dataId, data string) {
-// 			callback(data)
-// 		},
-// 	})
-// }
-
 package nacos
 
 import (
@@ -116,7 +34,7 @@ func NewNacosConfigManager(serverAddr, username, password, namespace, group stri
 		NotLoadCacheAtStart: true,
 		LogDir:              "/tmp/nacos/log",
 		CacheDir:            "/tmp/nacos/cache",
-		LogLevel:            "warn", // 降低日志级别
+		LogLevel:            "info", // 降低日志级别
 		Username:            username,
 		Password:            password,
 	}
@@ -221,24 +139,40 @@ func (m *ConfigManager) CheckConfigExists(dataId string) (bool, error) {
 	return content != "", nil
 }
 
-// ListenConfig 监听配置变化
-// func (m *ConfigManager) ListenConfig(dataId string, callback func(string)) error {
+func (m *ConfigManager) ListenConfig(dataId string, onConfigChange func(string)) error {
 // 	return m.client.ListenConfig(vo.ConfigParam{
 // 		DataId: dataId,
 // 		Group:  m.group,
 // 		OnChange: func(namespace, group, dataId, data string) {
-// 			callback(data)
+// 			logx.Infof("Config changed: namespace=%s, group=%s, dataId=%s", namespace, group, dataId)
+// 			onConfigChange(data)
 // 		},
 // 	})
-// }
 
-func (m *ConfigManager) ListenConfig(dataId string, onConfigChange func(string)) error {
-	return m.client.ListenConfig(vo.ConfigParam{
-		DataId: dataId,
-		Group:  m.group,
-		OnChange: func(namespace, group, dataId, data string) {
-			logx.Infof("Config changed: namespace=%s, group=%s, dataId=%s", namespace, group, dataId)
-			onConfigChange(data)
-		},
-	})
+ err := m.client.ListenConfig(vo.ConfigParam{
+        DataId: dataId,
+        Group:  m.group,
+        OnChange: func(namespace, group, dataId, data string) {
+            logx.Infof("Config changed: namespace=%s, group=%s, dataId=%s", namespace, group, dataId)
+            onConfigChange(data)
+        },
+    })
+    if err != nil {
+        return fmt.Errorf("failed to listen config: %v", err)
+    }
+    logx.Infof("Started listening config changes, dataId: %s, group: %s", dataId, m.group)
+    return nil
+}
+
+// CancelListenConfig 取消监听配置
+func (m *ConfigManager) CancelListenConfig(dataId string) error {
+    err := m.client.CancelListenConfig(vo.ConfigParam{
+        DataId: dataId,
+        Group:  m.group,
+    })
+    if err != nil {
+        return fmt.Errorf("failed to cancel listen config: %v", err)
+    }
+    logx.Infof("Canceled listening config changes, dataId: %s, group: %s", dataId, m.group)
+    return nil
 }
