@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemOverallStats;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemStatistics;
+import io.charlie.web.oj.modular.data.solved.entity.SetStatistics;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedAddParam;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedEditParam;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedIdParam;
@@ -242,6 +243,45 @@ public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSol
             for (String problemId : problemIds) {
                 if (!result.containsKey(problemId)) {
                     result.put(problemId, new ProblemStatistics(BigDecimal.ZERO, 0, 0));
+                }
+            }
+
+            return result;
+        } catch (Exception e) {
+            log.error("获取批量题目统计失败", e);
+            return Collections.emptyMap();
+        }
+    }
+
+    @Override
+    public Map<String, SetStatistics> getBatchSetStatistics(List<String> setIds) {
+        if (setIds == null || setIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        try {
+            List<Map<String, Object>> statsList = this.baseMapper.selectSetAcceptanceStatsBatch(setIds);
+            Map<String, SetStatistics> result = new HashMap<>();
+
+            for (Map<String, Object> stat : statsList) {
+                String setId = (String) stat.get("setId");
+                Long totalParticipants = (Long) stat.get("totalParticipants");
+                Long acceptedParticipants = (Long) stat.get("acceptedParticipants");
+                BigDecimal acceptanceRate = (BigDecimal) stat.get("acceptanceRate");
+                Long submitCount = (Long) stat.get("submitCount");
+
+                result.put(setId, new SetStatistics(
+                        acceptanceRate,
+                        totalParticipants.intValue(),
+                        acceptedParticipants.intValue(),
+                        submitCount.intValue()
+                ));
+            }
+
+            // 为没有统计数据的题目设置默认值
+            for (String setId : setIds) {
+                if (!result.containsKey(setId)) {
+                    result.put(setId, new SetStatistics(BigDecimal.ZERO, 0, 0, 0));
                 }
             }
 

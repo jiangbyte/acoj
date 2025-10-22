@@ -235,7 +235,7 @@ function resetHandle() {
         />
       </div>
       <div class="space-y-8">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700">
+        <!-- <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700">
           <h3 class="font-bold text-lg mb-4">
             难度分布
           </h3>
@@ -252,7 +252,7 @@ function resetHandle() {
               </div>
             </div>
           </div>
-        </div>
+        </div> -->
 
         <!-- 题集排行榜 -->
         <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">

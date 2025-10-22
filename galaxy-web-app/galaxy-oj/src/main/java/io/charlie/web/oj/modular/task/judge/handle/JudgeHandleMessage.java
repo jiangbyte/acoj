@@ -71,7 +71,7 @@ public class JudgeHandleMessage {
         dataSubmitMapper.updateById(dataSubmit);
 
         // 排行榜更新
-        handleRedisRecord(judgeResultDto, dataSubmit);
+//        handleRedisRecord(judgeResultDto, dataSubmit);
 
         // 正式提交
         if (judgeResultDto.getSubmitType()) {

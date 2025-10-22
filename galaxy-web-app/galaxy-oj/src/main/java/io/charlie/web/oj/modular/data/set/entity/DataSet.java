@@ -9,6 +9,7 @@ import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
 import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.io.Serial;
 import java.util.Date;
@@ -102,7 +103,7 @@ public class DataSet extends CommonEntity {
 
     @Schema(description = "通过率")
     @TableField(exist = false)
-    private Double avgAcceptance;
+    private BigDecimal avgAcceptance;
 
     // 提交人数
     @Schema(description = "提交人数")
@@ -118,5 +119,10 @@ public class DataSet extends CommonEntity {
     @Schema(description = "参与人数")
     @TableField(exist = false)
     private Long participantUserCount;
+
+
+    @Schema(description = "通过率")
+    @TableField(exist = false)
+    private BigDecimal acceptance;
 
 }

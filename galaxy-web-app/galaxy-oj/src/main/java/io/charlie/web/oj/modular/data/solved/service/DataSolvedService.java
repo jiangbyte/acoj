@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemOverallStats;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemStatistics;
+import io.charlie.web.oj.modular.data.solved.entity.SetStatistics;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedAddParam;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedEditParam;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedIdParam;
@@ -36,5 +37,6 @@ public interface DataSolvedService extends IService<DataSolved> {
 
     Map<String, ProblemStatistics> getBatchSetProblemStatistics(String setId, List<String> problemIds);
 
+    Map<String, SetStatistics> getBatchSetStatistics(List<String> setIds);
 
 }

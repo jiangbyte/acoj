@@ -205,9 +205,9 @@ public interface DataSolvedMapper extends BaseMapper<DataSolved> {
     @Select("""
         SELECT 
             COUNT(DISTINCT user_id) as totalParticipants,
-            COUNT(DISTINCT CASE WHEN solved = true THEN user_id ELSE NULL END) as acceptedParticipants,
+            COUNT(DISTINCT CASE WHEN solved = 1 THEN user_id ELSE NULL END) as acceptedParticipants,
             CASE WHEN COUNT(DISTINCT user_id) > 0 THEN 
-                ROUND(COUNT(DISTINCT CASE WHEN solved = true THEN user_id ELSE NULL END) * 100.0 / COUNT(DISTINCT user_id), 2)
+                ROUND(COUNT(DISTINCT CASE WHEN solved = 1 THEN user_id ELSE NULL END) * 100.0 / COUNT(DISTINCT user_id), 2)
             ELSE 0 END as acceptanceRate
         FROM data_solved
         WHERE set_id = #{setId}
@@ -221,23 +221,55 @@ public interface DataSolvedMapper extends BaseMapper<DataSolved> {
      * @param setIds 题集ID列表
      * @return 题集整体统计信息列表
      */
+//    @Select("""
+//        <script>
+//        SELECT
+//            set_id as setId,
+//            COUNT(DISTINCT user_id) as totalParticipants,
+//            COUNT(DISTINCT CASE WHEN solved = true THEN user_id ELSE NULL END) as acceptedParticipants,
+//            CASE WHEN COUNT(DISTINCT user_id) > 0 THEN
+//                ROUND(COUNT(DISTINCT CASE WHEN solved = true THEN user_id ELSE NULL END) * 100.0 / COUNT(DISTINCT user_id), 2)
+//            ELSE 0 END as acceptanceRate
+//        FROM data_solved
+//        WHERE set_id IN
+//        <foreach collection='setIds' item='id' open='(' separator=',' close=')'>
+//            #{id}
+//        </foreach>
+//        AND is_set = 1
+//        GROUP BY set_id
+//        </script>
+//        """)
+//    List<Map<String, Object>> selectSetAcceptanceStatsBatch(@Param("setIds") List<String> setIds);
+
     @Select("""
-        <script>
-        SELECT 
-            set_id as setId,
-            COUNT(DISTINCT user_id) as totalParticipants,
-            COUNT(DISTINCT CASE WHEN solved = true THEN user_id ELSE NULL END) as acceptedParticipants,
-            CASE WHEN COUNT(DISTINCT user_id) > 0 THEN 
-                ROUND(COUNT(DISTINCT CASE WHEN solved = true THEN user_id ELSE NULL END) * 100.0 / COUNT(DISTINCT user_id), 2)
-            ELSE 0 END as acceptanceRate
-        FROM data_solved
-        WHERE set_id IN
-        <foreach collection='setIds' item='id' open='(' separator=',' close=')'>
-            #{id}
-        </foreach>
-        AND is_set = 1
-        GROUP BY set_id
-        </script>
-        """)
+            <script>
+            SELECT 
+                ds.set_id as setId,
+                COUNT(DISTINCT ds.user_id) as totalParticipants,
+                COUNT(DISTINCT CASE WHEN ds.solved = 1 THEN ds.user_id ELSE NULL END) as acceptedParticipants,
+                CASE WHEN COUNT(DISTINCT ds.user_id) > 0 THEN 
+                    ROUND(COUNT(DISTINCT CASE WHEN ds.solved = 1 THEN ds.user_id ELSE NULL END) * 100.0 / COUNT(DISTINCT ds.user_id), 2)
+                ELSE 0 END as acceptanceRate,
+                COALESCE(sub.submitCount, 0) as submitCount
+            FROM data_solved ds
+            LEFT JOIN (
+                SELECT set_id, COUNT(*) as submitCount
+                FROM data_submit
+                WHERE set_id IN
+                <foreach collection='setIds' item='id' open='(' separator=',' close=')'>
+                    #{id}
+                </foreach>
+                AND is_set = 1
+                AND submit_type = 1
+                GROUP BY set_id
+            ) sub ON ds.set_id = sub.set_id
+            WHERE ds.set_id IN
+            <foreach collection='setIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+            AND ds.is_set = 1
+            GROUP BY ds.set_id, sub.submitCount
+            </script>
+            """)
     List<Map<String, Object>> selectSetAcceptanceStatsBatch(@Param("setIds") List<String> setIds);
 }

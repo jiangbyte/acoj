@@ -10,9 +10,13 @@ import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.relation.set.service.DataSetProblemService;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
+import io.charlie.web.oj.modular.data.solved.entity.ProblemStatistics;
+import io.charlie.web.oj.modular.data.solved.entity.SetStatistics;
+import io.charlie.web.oj.modular.data.solved.service.DataSolvedService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +32,8 @@ import java.util.Map;
 public class SetBuildTool {
     private final ProblemSetCacheService problemSetCacheService;
     private final DataSetProblemService dataSetProblemService;
+
+    private final DataSolvedService dataSolvedService;
 
     public void buildSets(List<DataSet> dataSets) {
         if (CollectionUtil.isEmpty(dataSets)) {
@@ -52,21 +58,36 @@ public class SetBuildTool {
                 .toList();
         Map<String, List<String>> problemIdsMap = dataSetProblemService.getProblemIdsBySetIds(setIds);
 
-        Map<String, Long> totalSubmitCountMap = problemSetCacheService.getBatchProblemSetTotalSubmitCount(setIds);
-        Map<String, Double> avgAcceptanceMap = problemSetCacheService.getBatchProblemSetAverageAcceptRate(setIds);
-        Map<String, Long> participantUserCountMap = problemSetCacheService.getBatchProblemSetParticipantCount(setIds);
+        Map<String, SetStatistics> batchSetStatistics = dataSolvedService.getBatchSetStatistics(setIds);
+
+//        Map<String, Long> totalSubmitCountMap = problemSetCacheService.getBatchProblemSetTotalSubmitCount(setIds);
+//        Map<String, Double> avgAcceptanceMap = problemSetCacheService.getBatchProblemSetAverageAcceptRate(setIds);
+//        Map<String, Long> participantUserCountMap = problemSetCacheService.getBatchProblemSetParticipantCount(setIds);
 
 
         for (DataSet dataSet : dataSets) {
-            String id = dataSet.getId();
-            dataSet.setProblemIds(problemIdsMap.getOrDefault(id, Collections.emptyList()));
+            String setId = dataSet.getId();
+            dataSet.setProblemIds(problemIdsMap.getOrDefault(setId, Collections.emptyList()));
 
+            SetStatistics statistics = batchSetStatistics.get(setId);
+            if (statistics != null) {
+                dataSet.setAvgAcceptance(statistics.getAcceptanceRate());
+                dataSet.setParticipantUserCount((long) statistics.getTotalParticipants());
+//                dataSet.setSolved((long) statistics.getAcceptedParticipants());
+                dataSet.setSubmitCount((long) statistics.getSubmitCount());
+            } else {
+                // 设置默认值
+                dataSet.setAvgAcceptance(BigDecimal.ZERO);
+                dataSet.setParticipantUserCount(0L);
+//                dataProblem.setSolved(0L);
+                dataSet.setSubmitCount(0L);
+            }
             // 提交数
-            dataSet.setSubmitCount(totalSubmitCountMap.getOrDefault(id, 0L));
-            // 通过率
-            dataSet.setAvgAcceptance(avgAcceptanceMap.getOrDefault(id, 0D));
-            // 参与人数
-            dataSet.setParticipantUserCount(participantUserCountMap.getOrDefault(id, 0L));
+//            dataSet.setSubmitCount(totalSubmitCountMap.getOrDefault(setId, 0L));
+//            // 通过率
+//            dataSet.setAvgAcceptance(avgAcceptanceMap.getOrDefault(setId, 0D));
+//            // 参与人数
+//            dataSet.setParticipantUserCount(participantUserCountMap.getOrDefault(setId, 0L));
         }
     }
 

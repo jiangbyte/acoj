@@ -17,13 +17,13 @@ defineProps<Props>()
     <n-card size="small" hoverable>
       <n-text>时间(ms)</n-text>
       <div class="text-xl font-bold">
-        {{ resultTaskData?.time ? resultTaskData?.time : 0 }}
+        {{ resultTaskData?.maxTime ? resultTaskData?.maxTime : 0 }}
       </div>
     </n-card>
     <n-card size="small" hoverable>
       <n-text>内存(KB)</n-text>
       <div class="text-xl font-bold">
-        {{ resultTaskData?.memory ? resultTaskData?.memory : 0 }}
+        {{ resultTaskData?.maxMemory ? resultTaskData?.maxMemory : 0 }}
       </div>
     </n-card>
   </div>
