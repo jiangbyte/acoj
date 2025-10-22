@@ -1,8 +1,6 @@
 <script lang="ts" setup>
 import { useDataProblemFetch, useDataSetFetch, useSysBannerFetch, useSysNoticeFetch, useUserRankingFetch } from '@/composables/v1'
 
-import { AesCrypto, CleanMarkdown } from '@/utils'
-
 // 列表数据
 const bannerListData = ref()
 const noticeListData = ref()
@@ -11,10 +9,6 @@ const setListData = ref()
 const problemUserRankingListData = ref()
 const problemRankingListData = ref()
 const setRankingListData = ref()
-
-function openLink(url: string) {
-  window.open(url, '_blank')
-}
 
 // 获取列表数据
 async function loadData() {
@@ -59,46 +53,10 @@ loadData()
 
 <template>
   <main class="container mx-auto px-4 py-6">
+    <BannerSkeleton01 v-if="!bannerListData" />
+    <EmptyData v-else-if="!bannerListData.length" />
     <!-- 轮播图 -->
-    <section class="mb-12 rounded-2xl overflow-hidden shadow-lg">
-      <div class="my-section">
-        <n-carousel
-          autoplay
-          show-arrow
-          draggable
-        >
-          <div
-            v-for="item in bannerListData"
-            :key="item.id"
-            class="carousel-item"
-          >
-            <img
-              class="carousel-img"
-              :src="item.banner"
-            >
-            <div class="carousel-caption">
-              <div class="caption-title">
-                {{ item.title }}
-              </div>
-              <div class="caption-subtitle">
-                {{ item.subtitle }}
-              </div>
-              <n-button
-                v-if="item.buttonText"
-                type="primary"
-                round
-                @click="openLink(item.toUrl || '#')"
-              >
-                {{ item.buttonText || '了解更多' }}
-                <template #icon>
-                  <icon-park-outline-hand-right />
-                </template>
-              </n-button>
-            </div>
-          </div>
-        </n-carousel>
-      </div>
-    </section>
+    <LatestBanner v-else :banner-list-data="bannerListData" />
 
     <!-- 主要内容区：两列布局 -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -110,63 +68,13 @@ loadData()
             <h2 class="text-2xl font-bold">
               全站公告
             </h2>
-            <!-- <n-button text @click="$router.push({ path: '/notices' })">
+            <n-button text>
               查看全部
-            </n-button> -->
+            </n-button>
           </div>
-
-          <n-empty
-            v-if="!noticeListData || noticeListData.length === 0"
-            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
-            description="暂无结果"
-          >
-            <template #icon>
-              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
-                <icon-park-outline-info />
-              </n-icon>
-            </template>
-            <n-text depth="3" class="text-center max-w-xs">
-              暂无数据
-            </n-text>
-          </n-empty>
-          <div v-else class="space-y-4">
-            <div
-              v-for="item in noticeListData" :key="item.id"
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow " @click="$router.push({
-                name: 'notice_detail',
-                query: { notice: AesCrypto.encrypt(item.id) },
-              })"
-            >
-              <div class="md:flex">
-                <div class="md:w-1/3 h-32 md:h-auto relative">
-                  <img :src="item.cover" :alt="item.title" class="absolute inset-0 w-full h-full object-cover">
-                </div>
-                <div class="md:w-2/3 p-x-6 pt-6 pb-1">
-                  <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-                    <!-- <n-tag size="small" :bordered="false" type="info" class="mr-3">
-                      重要
-                    </n-tag> -->
-                    <n-time :time="item.createTime" />
-                    <span class="mx-2">•</span>
-                    <n-text>
-                      {{ item.createUserName }}
-                    </n-text>
-                  </div>
-                  <n-button text class="mb-3">
-                    <h3 class="text-xl font-semibold ">
-                      {{ item.title }}
-                    </h3>
-                  </n-button>
-                  <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
-                    {{ CleanMarkdown(item.content) }}
-                  </p>
-                  <!-- <n-button text>
-                    阅读详情
-                  </n-button> -->
-                </div>
-              </div>
-            </div>
-          </div>
+          <NoticeSkeleton01 v-if="!noticeListData" />
+          <EmptyData v-else-if="noticeListData.length === 0" />
+          <LatestNotice v-else :notice-list-data="noticeListData" />
         </section>
 
         <!-- 最新题目 -->
@@ -180,59 +88,9 @@ loadData()
             </n-button>
           </div>
 
-          <n-empty
-            v-if="!problemListData || problemListData.length === 0"
-            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
-            description="暂无结果"
-          >
-            <template #icon>
-              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
-                <icon-park-outline-info />
-              </n-icon>
-            </template>
-            <n-text depth="3" class="text-center max-w-xs">
-              暂无数据
-            </n-text>
-          </n-empty>
-          <div v-else class="space-y-4">
-            <!-- 题目项 -->
-            <div
-              v-for="item in problemListData" :key="item.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow" @click="$router.push({
-                name: 'problem_submit',
-                query: { problemId: AesCrypto.encrypt(item.id) },
-              })"
-            >
-              <div class="flex flex-col md:flex-row md:items-center justify-between">
-                <div>
-                  <div class="flex items-center mb-2">
-                    <n-button text class="mr-3">
-                      <h3 class="text-xl font-semibold">
-                        {{ item.title }}
-                      </h3>
-                    </n-button>
-
-                    <n-tag class="mr-3" size="small" type="success">
-                      {{ item.difficultyName }}
-                    </n-tag>
-                  </div>
-                  <div class="flex mb-3">
-                    <n-tag v-for="tagName in item.tagNames" :key="tagName" size="small" class="mr-3">
-                      {{ tagName }}
-                    </n-tag>
-                  </div>
-                  <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    <n-tag class="mr-4" size="small" type="info">
-                      {{ item.categoryName }}
-                    </n-tag>
-                    <span>通过率: {{ item.acceptance }} %</span>
-                  </div>
-                </div>
-                <div class="mt-4 md:mt-0 flex items-center text-sm text-gray-500 dark:text-gray-400">
-                  <span>发布于 <n-time :time="item.createTime" /></span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ProblemSkeleton01 v-if="!problemListData" />
+          <EmptyData v-else-if="problemListData.length === 0" />
+          <LatestProblem v-else :problem-list-data="problemListData" />
         </section>
 
         <!-- 最新题集 -->
@@ -246,53 +104,9 @@ loadData()
             </n-button>
           </div>
 
-          <n-empty
-            v-if="!setListData || setListData.length === 0"
-            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
-            description="暂无结果"
-          >
-            <template #icon>
-              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
-                <icon-park-outline-info />
-              </n-icon>
-            </template>
-            <n-text depth="3" class="text-center max-w-xs">
-              暂无数据
-            </n-text>
-          </n-empty>
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- 题集项 -->
-            <div
-              v-for="item in setListData" :key="item.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow" @click="$router.push({
-                name: 'proset_detail',
-                query: { set: AesCrypto.encrypt(item.id) },
-              })"
-            >
-              <div class="h-40 relative">
-                <img :src="item.cover" class="absolute inset-0 w-full h-full object-cover">
-              </div>
-              <div class="p-5">
-                <div class="flex items-center mb-2">
-                  <n-tag size="small" type="info" class="mr-3">
-                    {{ item.setTypeName }}
-                  </n-tag>
-                  <span class="text-sm text-gray-500 dark:text-gray-400">共 {{ item.problemIds.length ? item.problemIds.length : 0 }} 道题</span>
-                </div>
-                <n-button text class="mb-2">
-                  <h3 class="text-xl font-semibold">
-                    {{ item.title }}
-                  </h3>
-                </n-button>
-                <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
-                  {{ CleanMarkdown(item.description) }}
-                </p>
-                <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                  <span>分类: {{ item.categoryName }}</span>
-                  <span>难度: {{ item.difficultyName }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <SetSkeleton01 v-if="!setListData" />
+          <EmptyData v-else-if="setListData.length === 0" />
+          <LatestSet v-else :set-list-data="setListData" />
         </section>
       </div>
 
@@ -305,43 +119,9 @@ loadData()
               用户排行榜
             </h2>
           </div>
-          <n-empty
-            v-if="!problemUserRankingListData || problemUserRankingListData.length === 0"
-            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
-            description="暂无结果"
-          >
-            <template #icon>
-              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
-                <icon-park-outline-info />
-              </n-icon>
-            </template>
-            <n-text depth="3" class="text-center max-w-xs">
-              暂无数据
-            </n-text>
-          </n-empty>
-          <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
-            <!-- 排行榜项 -->
-            <div
-              v-for="item in problemUserRankingListData" :key="item.rank" class="p-4 flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
-                name: 'user',
-                query: { userId: AesCrypto.encrypt(item.id) },
-              })"
-            >
-              <RankIcon :rank="item.rank" />
-              <n-avatar :src="item.avatar" round :size="40" class="mr-3" />
-              <div class="flex-1">
-                <div class="font-medium">
-                  {{ item.nickname }}
-                </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                  解题: {{ item.score }} 道
-                </div>
-              </div>
-            </div>
-          </div>
-          <n-button text class="text-center w-full p-4" @click="$router.push({ path: '/ranking' })">
-            查看完整排行榜
-          </n-button>
+          <ListSkeleton01 v-if="!problemUserRankingListData" />
+          <EmptyData v-else-if="problemUserRankingListData.length === 0" />
+          <UserSolvedRanking v-else :list-data="problemUserRankingListData" />
         </section>
 
         <!-- 题目排行榜 -->
@@ -351,53 +131,10 @@ loadData()
               热门题目
             </h2>
           </div>
-          <n-empty
-            v-if="!problemRankingListData || problemRankingListData.length === 0"
-            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
-            description="暂无结果"
-          >
-            <template #icon>
-              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
-                <icon-park-outline-info />
-              </n-icon>
-            </template>
-            <n-text depth="3" class="text-center max-w-xs">
-              暂无数据
-            </n-text>
-          </n-empty>
-          <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
-            <!-- 题目排行项 -->
-            <div
-              v-for="item in problemRankingListData" :key="item.rank" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
-                name: 'problem_submit',
-                query: { problemId: AesCrypto.encrypt(item.id) },
-              })"
-            >
-              <div class="flex items-start">
-                <RankIcon :rank="item.rank" />
-                <div class="flex-1">
-                  <n-button text class="mb-2">
-                    <h3 class="font-medium">
-                      {{ item.title }}
-                    </h3>
-                  </n-button>
-                  <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                    <n-text depth="3">
-                      通过率: {{ item.acceptance }} %
-                    </n-text>
-                    <span class="mx-1">•</span>
-                    <n-text depth="3">
-                      参与: {{ item.participantUserCount }} 人
-                    </n-text>
-                    <!-- <span class="mx-1">•</span>
-                    <n-text depth="3">
-                      提交: {{ item.submitUserCount }}
-                    </n-text> -->
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+
+          <ListSkeleton02 v-if="!problemRankingListData" />
+          <EmptyData v-else-if="problemRankingListData.length === 0" />
+          <HotProblem v-else :list-data="problemRankingListData" />
         </section>
 
         <!-- 题集排行榜 -->
@@ -407,49 +144,10 @@ loadData()
               热门题集
             </h2>
           </div>
-          <n-empty
-            v-if="!setRankingListData || setRankingListData.length === 0"
-            class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
-            description="暂无结果"
-          >
-            <template #icon>
-              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
-                <icon-park-outline-info />
-              </n-icon>
-            </template>
-            <n-text depth="3" class="text-center max-w-xs">
-              暂无数据
-            </n-text>
-          </n-empty>
-          <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
-            <!-- 题集排行项 -->
-            <div
-              v-for="item in setRankingListData" :key="item.rank" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
-                name: 'proset_detail',
-                query: { set: AesCrypto.encrypt(item.id) },
-              })"
-            >
-              <div class="flex items-start">
-                <RankIcon :rank="item.rank" />
-                <div class="flex-1">
-                  <n-button text class="mb-2">
-                    <h3 class="font-medium">
-                      {{ item.title }}
-                    </h3>
-                  </n-button>
-                  <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                    <n-text depth="3">
-                      通过率: {{ item.avgAcceptance }} %
-                    </n-text>
-                    <span class="mx-1">•</span>
-                    <n-text depth="3">
-                      参与: {{ item.participantUserCount }} 人
-                    </n-text>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+
+          <ListSkeleton02 v-if="!setRankingListData" />
+          <EmptyData v-else-if="setRankingListData.length === 0" />
+          <HotSet v-else :list-data="setRankingListData" />
         </section>
       </div>
     </div>

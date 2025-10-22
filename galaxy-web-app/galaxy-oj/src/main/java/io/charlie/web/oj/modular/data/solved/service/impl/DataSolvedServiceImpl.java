@@ -10,6 +10,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
+import io.charlie.web.oj.modular.data.solved.entity.ProblemOverallStats;
+import io.charlie.web.oj.modular.data.solved.entity.ProblemStatistics;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedAddParam;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedEditParam;
 import io.charlie.web.oj.modular.data.solved.param.DataSolvedIdParam;
@@ -25,14 +27,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-06-23
-* @description 用户解决表 服务实现类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-06-23
+ * @description 用户解决表 服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -46,12 +50,14 @@ public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSol
                     true,
                     dataSolvedPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(dataSolvedPageParam.getSortField()));
+        } else {
+            queryWrapper.lambda().orderByDesc(DataSolved::getCreateTime);
         }
 
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(dataSolvedPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(dataSolvedPageParam.getSize()).orElse(20),
-                null
+                        null
                 ),
                 queryWrapper);
     }
@@ -91,5 +97,160 @@ public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSol
         }
         return dataSolved;
     }
+
+    /**
+     * 获取系统整体通过率统计
+     */
+    @Override
+    public ProblemOverallStats getProblemOverallStats() {
+        try {
+            Map<String, Object> stats = this.baseMapper.selectAllProblemAcceptanceStats();
+
+            ProblemOverallStats overallStats = new ProblemOverallStats();
+//            overallStats.setTotalProblems((BigDecimal) stats.get("totalProblems"));
+//            overallStats.setProblemsWithSubmissions((BigDecimal) stats.get("problemsWithSubmissions"));
+//            overallStats.setTotalParticipants((BigDecimal) stats.get("totalParticipants"));
+//            overallStats.setTotalAcceptedParticipants((BigDecimal) stats.get("totalAcceptedParticipants"));
+//            overallStats.setAverageAcceptanceRate((BigDecimal) stats.get("averageAcceptanceRate"));
+//            overallStats.setMinAcceptanceRate((BigDecimal) stats.get("minAcceptanceRate"));
+//            overallStats.setMaxAcceptanceRate((BigDecimal) stats.get("maxAcceptanceRate"));
+
+            // 根据实际返回类型进行转换
+            overallStats.setTotalProblems(toBigDecimal(stats.get("totalProblems")));
+            overallStats.setProblemsWithSubmissions(toBigDecimal(stats.get("problemsWithSubmissions")));
+            overallStats.setTotalParticipants(toBigDecimal(stats.get("totalParticipants")));
+            overallStats.setTotalAcceptedParticipants(toBigDecimal(stats.get("totalAcceptedParticipants")));
+            overallStats.setAverageAcceptanceRate(toBigDecimal(stats.get("averageAcceptanceRate")));
+            overallStats.setMinAcceptanceRate(toBigDecimal(stats.get("minAcceptanceRate")));
+            overallStats.setMaxAcceptanceRate(toBigDecimal(stats.get("maxAcceptanceRate")));
+
+//            // 计算有提交题目的比例
+//            if (overallStats.getTotalProblems() > 0) {
+//                BigDecimal submissionRatio = BigDecimal.valueOf(overallStats.getProblemsWithSubmissions())
+//                        .divide(BigDecimal.valueOf(overallStats.getTotalProblems()), 4, RoundingMode.HALF_UP)
+//                        .multiply(BigDecimal.valueOf(100))
+//                        .setScale(2, RoundingMode.HALF_UP);
+//                overallStats.setSubmissionRatio(submissionRatio);
+//            } else {
+//                overallStats.setSubmissionRatio(BigDecimal.ZERO);
+//            }
+            // 计算有提交题目的比例
+//            if (overallStats.getTotalProblems() != null && overallStats.getTotalProblems().compareTo(BigDecimal.ZERO) > 0) {
+//
+//                BigDecimal submissionRatio = overallStats.getProblemsWithSubmissions()
+//                        .divide(overallStats.getTotalProblems(), 4, RoundingMode.HALF_UP)
+//                        .multiply(BigDecimal.valueOf(100))
+//                        .setScale(2, RoundingMode.HALF_UP);
+//                overallStats.setSubmissionRatio(submissionRatio);
+//            } else {
+//                overallStats.setSubmissionRatio(BigDecimal.ZERO);
+//            }
+
+            if (overallStats.getTotalProblems() != null &&
+                    overallStats.getTotalProblems().compareTo(BigDecimal.ZERO) > 0 &&
+                    overallStats.getProblemsWithSubmissions() != null) {
+
+                BigDecimal submissionRatio = overallStats.getProblemsWithSubmissions()
+                        .divide(overallStats.getTotalProblems(), 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100))
+                        .setScale(2, RoundingMode.HALF_UP);
+                overallStats.setSubmissionRatio(submissionRatio);
+            } else {
+                overallStats.setSubmissionRatio(BigDecimal.ZERO);
+            }
+
+            return overallStats;
+        } catch (Exception e) {
+            log.error("获取题目整体统计失败", e);
+            return new ProblemOverallStats(); // 返回空对象
+        }
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) return BigDecimal.ZERO;
+        if (value instanceof BigDecimal) return (BigDecimal) value;
+        if (value instanceof Long) return new BigDecimal((Long) value);
+        if (value instanceof Integer) return new BigDecimal((Integer) value);
+        if (value instanceof Double) return BigDecimal.valueOf((Double) value);
+        return BigDecimal.ZERO;
+    }
+
+    /**
+     * 获取批量题目的通过率统计
+     */
+    @Override
+    public Map<String, ProblemStatistics> getBatchProblemStatistics(List<String> problemIds) {
+        if (problemIds == null || problemIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        try {
+            List<Map<String, Object>> statsList = this.baseMapper.selectProblemAcceptanceStats(problemIds);
+            Map<String, ProblemStatistics> result = new HashMap<>();
+
+            for (Map<String, Object> stat : statsList) {
+                String problemId = (String) stat.get("problemId");
+                Long totalParticipants = (Long) stat.get("totalParticipants");
+                Long acceptedParticipants = (Long) stat.get("acceptedParticipants");
+                BigDecimal acceptanceRate = (BigDecimal) stat.get("acceptanceRate");
+
+                result.put(problemId, new ProblemStatistics(
+                        acceptanceRate,
+                        totalParticipants.intValue(),
+                        acceptedParticipants.intValue()
+                ));
+            }
+
+            // 为没有统计数据的题目设置默认值
+            for (String problemId : problemIds) {
+                if (!result.containsKey(problemId)) {
+                    result.put(problemId, new ProblemStatistics(BigDecimal.ZERO, 0, 0));
+                }
+            }
+
+            return result;
+        } catch (Exception e) {
+            log.error("获取批量题目统计失败", e);
+            return Collections.emptyMap();
+        }
+    }
+
+    @Override
+    public Map<String, ProblemStatistics> getBatchSetProblemStatistics(String setId, List<String> problemIds) {
+        if (problemIds == null || problemIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        try {
+            List<Map<String, Object>> statsList = this.baseMapper.selectSetProblemAcceptanceStats(setId, problemIds);
+            Map<String, ProblemStatistics> result = new HashMap<>();
+
+            for (Map<String, Object> stat : statsList) {
+                String problemId = (String) stat.get("problemId");
+                Long totalParticipants = (Long) stat.get("totalParticipants");
+                Long acceptedParticipants = (Long) stat.get("acceptedParticipants");
+                BigDecimal acceptanceRate = (BigDecimal) stat.get("acceptanceRate");
+
+                result.put(problemId, new ProblemStatistics(
+                        acceptanceRate,
+                        totalParticipants.intValue(),
+                        acceptedParticipants.intValue()
+                ));
+            }
+
+            // 为没有统计数据的题目设置默认值
+            for (String problemId : problemIds) {
+                if (!result.containsKey(problemId)) {
+                    result.put(problemId, new ProblemStatistics(BigDecimal.ZERO, 0, 0));
+                }
+            }
+
+            return result;
+        } catch (Exception e) {
+            log.error("获取批量题目统计失败", e);
+            return Collections.emptyMap();
+        }
+    }
+
 
 }

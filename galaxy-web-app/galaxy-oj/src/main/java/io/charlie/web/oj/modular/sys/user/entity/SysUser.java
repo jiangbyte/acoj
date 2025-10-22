@@ -10,6 +10,7 @@ import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.io.Serial;
 import java.util.Date;
@@ -94,10 +95,22 @@ public class SysUser extends CommonEntity {
     private Long submitCount;
 
     @TableField(exist = false)
+    private Long totalSubmitCount;
+
+    @TableField(exist = false)
+    private BigDecimal acceptanceRate;
+
+    @TableField(exist = false)
     private Long solvedProblem;
 
     @TableField(exist = false)
+    private Long solvedCount;
+
+    @TableField(exist = false)
     private Long tryProblem;
+
+    @TableField(exist = false)
+    private Long submittedCount;
 
     @TableField(exist = false)
     private Long participatedSet;

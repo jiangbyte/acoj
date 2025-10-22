@@ -5,12 +5,37 @@ import {
   HardwareChipOutline,
   TimeOutline,
 } from '@vicons/ionicons5'
+// import { NSpin } from 'naive-ui'
 
 interface Props {
   detailData?: any
 }
 
 defineProps<Props>()
+
+// 懒加载重量级组件
+// const MdViewer = defineAsyncComponent(() =>
+//   import('@/components/common/editor/md/MarkdownViewer.vue'),
+// )
+// const MdViewer = defineAsyncComponent({
+//   loader: () => import('@/components/common/editor/md/MarkdownViewer.vue'),
+//   loadingComponent: {
+//     setup() {
+//       return () => h('div', {
+//         class: 'h-full',
+//         style: {
+//           display: 'flex',
+//           alignItems: 'center',
+//           justifyContent: 'center',
+//         },
+//       }, [
+//         h(NSpin, { size: 'small', description: '加载中...' }, { }),
+//       ])
+//     },
+//   },
+//   delay: 200,
+//   timeout: 10000,
+// })
 </script>
 
 <template>

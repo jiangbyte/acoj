@@ -1,15 +1,44 @@
 <script lang="ts" setup>
-import CodeEditor from '@/components/common/editor/code/CodeEditor.vue'
+// import CodeEditor from '@/components/common/editor/code/CodeEditor.vue'
 import { useDataProblemFetch, useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
 import { AesCrypto, Poller } from '@/utils'
 import { useUserStore } from '@/stores'
 import { v4 as uuidv4 } from 'uuid'
+import { NSpin } from 'naive-ui'
 
 defineOptions({
   inheritAttrs: false,
 })
 
 const props = defineProps<Props>()
+
+// 懒加载重量级组件
+const CodeEditor = defineAsyncComponent({
+  loader: () => import('@/components/common/editor/code/CodeEditor.vue'),
+  // loader: () =>
+  //   new Promise((resolve) => {
+  //     // 模拟 3 秒延迟
+  //     setTimeout(() => {
+  //       resolve(import('@/components/common/editor/code/CodeEditor.vue'))
+  //     }, 3000)
+  //   }),
+  loadingComponent: {
+    setup() {
+      return () => h('div', {
+        class: 'h-full',
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+      }, [
+        h(NSpin, { size: 'small', description: '代码编辑器加载中...' }, { }),
+      ])
+    },
+  },
+  delay: 200,
+  timeout: 10000,
+})
 
 interface Props {
   isSet: boolean

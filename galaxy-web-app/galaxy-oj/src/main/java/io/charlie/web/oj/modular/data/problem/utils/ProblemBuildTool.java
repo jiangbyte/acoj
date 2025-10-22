@@ -10,13 +10,20 @@ import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.relation.tag.service.DataProblemTagService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
+import io.charlie.web.oj.modular.data.solved.entity.ProblemStatistics;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
+import io.charlie.web.oj.modular.data.solved.service.DataSolvedService;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,16 +34,15 @@ import java.util.stream.Collectors;
  * @date 24/09/2025
  * @description 构建题目工具
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ProblemBuildTool {
     private final DataSolvedMapper dataSolvedMapper;
     private final DataProblemTagService dataProblemTagService;
-    private final TransService transService;
 
-    private final UserCacheService userCacheService;
     private final ProblemSetCacheService problemSetCacheService;
-    private final ProblemCacheService problemCacheService;
+    private final DataSolvedService dataSolvedService;
 
     public void buildProblems(List<DataProblem> dataProblems) {
         if (CollectionUtil.isEmpty(dataProblems)) {
@@ -68,22 +74,27 @@ public class ProblemBuildTool {
         Map<String, List<String>> tagNamesMap = dataProblemTagService.batchGetTagNamesByIds(problemIds);
 
         // 3. 批量获取题目统计信息
-        Map<String, Double> acceptanceMap = problemCacheService.batchGetAcceptRate(problemIds);
-        Map<String, Long> solvedMap = problemCacheService.batchGetAcceptCount(problemIds);
-        Map<String, Long> submitUserCountMap = problemCacheService.batchGetSubmitCount(problemIds);
-        Map<String, Long> participantCountMap = problemCacheService.batchGetParticipantCount(problemIds);
+        Map<String, ProblemStatistics> stringProblemStatisticsMap = dataSolvedService.getBatchProblemStatistics(problemIds);
 
         // 批量设置属性
         for (DataProblem dataProblem : dataProblems) {
             String problemId = dataProblem.getId();
 
-            dataProblem.setCurrentUserSolved(userSolvedMap.getOrDefault(problemId, false));
+            dataProblem.setCurrentUserSolved(userSolvedMap.getOrDefault(problemId, Boolean.FALSE));
             dataProblem.setTagIds(tagIdsMap.getOrDefault(problemId, Collections.emptyList()));
             dataProblem.setTagNames(tagNamesMap.getOrDefault(problemId, Collections.emptyList()));
-            dataProblem.setAcceptance(BigDecimal.valueOf(acceptanceMap.getOrDefault(problemId, 0.0)));
-            dataProblem.setSolved(solvedMap.getOrDefault(problemId, 0L));
-            dataProblem.setSubmitUserCount(submitUserCountMap.getOrDefault(problemId, 0L));
-            dataProblem.setParticipantUserCount(participantCountMap.getOrDefault(problemId, 0L));
+
+            ProblemStatistics statistics = stringProblemStatisticsMap.get(problemId);
+            if (statistics != null) {
+                dataProblem.setAcceptance(statistics.getAcceptanceRate());
+                dataProblem.setParticipantUserCount((long) statistics.getTotalParticipants());
+                dataProblem.setSolved((long) statistics.getAcceptedParticipants());
+            } else {
+                // 设置默认值
+                dataProblem.setAcceptance(BigDecimal.ZERO);
+                dataProblem.setParticipantUserCount(0L);
+                dataProblem.setSolved(0L);
+            }
         }
     }
 
@@ -142,40 +153,11 @@ public class ProblemBuildTool {
         }
         buildSetProblemsBatch(setId, dataProblems);
     }
+
     // 保留单个构建方法作为兼容
     public void buildSetProblem(String setId, DataProblem dataProblem) {
         buildSetProblems(setId, Collections.singletonList(dataProblem));
     }
-
-//    public void buildSetProblem(String setId, DataProblem dataProblem) {
-//        // 是否解决
-//        try {
-//            String loginIdAsString = StpUtil.getLoginIdAsString();
-//            boolean exists = dataSolvedMapper.exists(new LambdaQueryWrapper<DataSolved>()
-//                    .eq(DataSolved::getUserId, loginIdAsString)
-//                    .eq(DataSolved::getProblemId, dataProblem.getId())
-//                    .eq(DataSolved::getIsSet, Boolean.TRUE)
-//                    .eq(DataSolved::getSolved, Boolean.TRUE)
-//            );
-//            dataProblem.setCurrentUserSolved(exists);
-//        } catch (Exception e) {
-//            dataProblem.setCurrentUserSolved(false);
-//        }
-//
-//        // 标签设置
-//        dataProblem.setTagIds(dataProblemTagService.getTagIdsById(dataProblem.getId()));
-//        dataProblem.setTagNames(dataProblemTagService.getTagNamesById(dataProblem.getId()));
-//
-//        // 通过率
-//        dataProblem.setAcceptance(BigDecimal.valueOf(problemSetCacheService.getProblemAcceptRate(setId, dataProblem.getId())));
-//        dataProblem.setSolved(problemSetCacheService.getProblemAcceptCount(setId, dataProblem.getId()));
-//
-//        ProblemSetProblemStats problemSetProblemStats = problemSetCacheService.getProblemSetProblemStats(dataProblem.getId(), dataProblem.getId());
-//        // 提交人数
-//        dataProblem.setSubmitUserCount(problemSetProblemStats.getSubmitCount());
-//        // 参与人数
-//        dataProblem.setParticipantUserCount(problemSetProblemStats.getParticipantCount());
-//    }
 
     private void buildSetProblemsBatch(String setId, List<DataProblem> dataProblems) {
         if (CollectionUtil.isEmpty(dataProblems)) {
@@ -195,10 +177,12 @@ public class ProblemBuildTool {
         Map<String, List<String>> tagNamesMap = dataProblemTagService.batchGetTagNamesByIds(problemIds);
 
         // 3. 批量获取题目统计信息
-        Map<String, Double> acceptanceMap = problemSetCacheService.batchGetAcceptRate(setId, problemIds);
-        Map<String, Long> solvedMap = problemSetCacheService.batchGetAcceptCount(setId, problemIds);
-        Map<String, Long> submitUserCountMap = problemSetCacheService.batchGetSubmitCount(setId, problemIds);
-        Map<String, Long> participantCountMap = problemSetCacheService.batchGetParticipantCount(setId, problemIds);
+        Map<String, ProblemStatistics> stringProblemStatisticsMap = dataSolvedService.getBatchSetProblemStatistics(setId, problemIds);
+
+//        Map<String, Double> acceptanceMap = problemSetCacheService.batchGetAcceptRate(setId, problemIds);
+//        Map<String, Long> solvedMap = problemSetCacheService.batchGetAcceptCount(setId, problemIds);
+//        Map<String, Long> submitUserCountMap = problemSetCacheService.batchGetSubmitCount(setId, problemIds);
+//        Map<String, Long> participantCountMap = problemSetCacheService.batchGetParticipantCount(setId, problemIds);
 
         // 批量设置属性
         for (DataProblem dataProblem : dataProblems) {
@@ -208,10 +192,17 @@ public class ProblemBuildTool {
             dataProblem.setTagIds(tagIdsMap.getOrDefault(problemId, Collections.emptyList()));
             dataProblem.setTagNames(tagNamesMap.getOrDefault(problemId, Collections.emptyList()));
 
-            dataProblem.setAcceptance(BigDecimal.valueOf(acceptanceMap.getOrDefault(problemId, 0.0)));
-            dataProblem.setSolved(solvedMap.getOrDefault(problemId, 0L));
-            dataProblem.setSubmitUserCount(submitUserCountMap.getOrDefault(problemId, 0L));
-            dataProblem.setParticipantUserCount(participantCountMap.getOrDefault(problemId, 0L));
+            ProblemStatistics statistics = stringProblemStatisticsMap.get(problemId);
+            if (statistics != null) {
+                dataProblem.setAcceptance(statistics.getAcceptanceRate());
+                dataProblem.setParticipantUserCount((long) statistics.getTotalParticipants());
+                dataProblem.setSolved((long) statistics.getAcceptedParticipants());
+            } else {
+                // 设置默认值
+                dataProblem.setAcceptance(BigDecimal.ZERO);
+                dataProblem.setParticipantUserCount(0L);
+                dataProblem.setSolved(0L);
+            }
         }
     }
 }

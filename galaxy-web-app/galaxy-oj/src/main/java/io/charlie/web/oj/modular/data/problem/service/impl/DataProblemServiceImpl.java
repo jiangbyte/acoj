@@ -29,7 +29,9 @@ import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
 import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.relation.tag.service.DataProblemTagService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
+import io.charlie.web.oj.modular.data.solved.entity.ProblemOverallStats;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
+import io.charlie.web.oj.modular.data.solved.service.DataSolvedService;
 import io.charlie.web.oj.modular.task.judge.dto.TestCase;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
@@ -61,6 +63,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     private final TransService transService;
     private final ProblemBuildTool problemBuildTool;
     private final ProblemImportTool problemImportTool;
+    private final DataSolvedService dataSolvedService;
 
     private final UserCacheService userCacheService;
     private final ProblemSetCacheService problemSetCacheService;
@@ -197,7 +200,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     public List<DataProblem> latestN(int n) {
         List<DataProblem> list = this.list(new QueryWrapper<DataProblem>().checkSqlInjection()
                 .lambda()
-                .eq(DataProblem::getIsVisible, true)
+                .eq(DataProblem::getIsVisible, Boolean.TRUE)
                 .orderByDesc(DataProblem::getCreateTime)
                 .last("LIMIT " + n));
         problemBuildTool.buildProblems(list);
@@ -209,8 +212,8 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         DataProblemCount dataProblemCount = new DataProblemCount();
 
         long count = this.count(new LambdaQueryWrapper<DataProblem>()
-                .eq(DataProblem::getIsVisible, true)
-                .eq(DataProblem::getIsPublic, true)
+                .eq(DataProblem::getIsVisible, Boolean.TRUE)
+                .eq(DataProblem::getIsPublic, Boolean.TRUE)
         );
         dataProblemCount.setTotal(count);
 
@@ -225,16 +228,16 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         Date monthEnd = Date.from(lastDay.atZone(ZoneId.systemDefault()).toInstant());
 
         long monthAdd = this.count(new LambdaQueryWrapper<DataProblem>()
-                .eq(DataProblem::getIsVisible, true)
-                .eq(DataProblem::getIsPublic, true)
+                .eq(DataProblem::getIsVisible, Boolean.TRUE)
+                .eq(DataProblem::getIsPublic, Boolean.TRUE)
                 .ge(DataProblem::getCreateTime, monthStart)
                 .le(DataProblem::getCreateTime, monthEnd)
         );
         dataProblemCount.setMonthAdd(monthAdd);
 
         dataProblemCount.setLastAddTime(this.getOne(new LambdaQueryWrapper<DataProblem>()
-                .eq(DataProblem::getIsVisible, true)
-                .eq(DataProblem::getIsPublic, true)
+                .eq(DataProblem::getIsVisible, Boolean.TRUE)
+                .eq(DataProblem::getIsPublic, Boolean.TRUE)
                 .orderByDesc(DataProblem::getCreateTime)
                 .last("LIMIT 1")
         ).getCreateTime());
@@ -245,8 +248,8 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
             String userId = StpUtil.getLoginIdAsString();
             Long userAcceptedCount = dataSolvedMapper.selectCount(new LambdaQueryWrapper<DataSolved>()
                     .eq(DataSolved::getUserId, userId)
-                    .eq(DataSolved::getSolved, true)
-                    .eq(DataSolved::getIsSet, false)
+                    .eq(DataSolved::getSolved, Boolean.TRUE)
+                    .eq(DataSolved::getIsSet, Boolean.FALSE)
             );
 //            Long userAcceptedCount = userCacheService.getUserAcceptedCount(userId);
             dataProblemCount.setSolved(userAcceptedCount);
@@ -255,21 +258,24 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
             dataProblemCount.setSolved(0L);
         }
 
-        dataProblemCount.setAvgPassRate(BigDecimal.valueOf(problemCacheService.getAverageAcceptRate()));
+        ProblemOverallStats problemOverallStats = dataSolvedService.getProblemOverallStats();
+        dataProblemCount.setAvgPassRate(problemOverallStats.getAverageAcceptanceRate());
 
         return dataProblemCount;
     }
 
     @Override
     public List<DataProblem> getHotN(int n) {
-        List<RankItem> problemRankTopN = problemCacheService.getProblemParticipantRankTopN(n);
-        List<DataProblem> dataProblems = new ArrayList<>();
-        for (RankItem rankingInfo : problemRankTopN) {
-            DataProblem dataProblem = this.getById(rankingInfo.getId());
-            dataProblem.setRank(rankingInfo.getRank());
-            dataProblems.add(dataProblem);
-        }
+//        List<RankItem> problemRankTopN = problemCacheService.getProblemParticipantRankTopN(n);
+//        List<DataProblem> dataProblems = new ArrayList<>();
+//        for (RankItem rankingInfo : problemRankTopN) {
+//            DataProblem dataProblem = this.getById(rankingInfo.getId());
+//            dataProblem.setRank(rankingInfo.getRank());
+//            dataProblems.add(dataProblem);
+//        }
+        List<DataProblem> dataProblems = this.baseMapper.selectTopNBySubmitCount(n);
         problemBuildTool.buildProblems(dataProblems);
+        transService.transBatch(dataProblems);
         return dataProblems;
     }
 

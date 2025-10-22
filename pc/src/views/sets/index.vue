@@ -167,20 +167,8 @@ function resetHandle() {
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div class="lg:col-span-2 space-y-8">
-        <n-empty
-          v-if="!pageData || pageData?.records.length === 0"
-          class="flex flex-col items-center justify-center py-18 bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
-          description="暂无结果"
-        >
-          <template #icon>
-            <n-icon size="40" class="text-gray-300 dark:text-gray-600">
-              <icon-park-outline-info />
-            </n-icon>
-          </template>
-          <n-text depth="3" class="text-center max-w-xs">
-            暂无数据
-          </n-text>
-        </n-empty>
+        <SetSkeleton01 v-if="!pageData" />
+        <EmptyData v-else-if="pageData?.records.length === 0" />
         <!-- 题集列表 -->
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
           <!-- 题集项 1 -->
@@ -209,7 +197,9 @@ function resetHandle() {
             <div class="p-5">
               <NButton text class="mb-2">
                 <h3 class="text-xl font-semibold ">
-                  {{ item.title }}
+                  <n-ellipsis style="max-width: 260px">
+                    {{ item.title }}
+                  </n-ellipsis>
                 </h3>
               </NButton>
 
@@ -239,7 +229,7 @@ function resetHandle() {
             label: `${size} 每页`,
             value: size,
           }))"
-          :page-slot="5"
+          :page-slot="3"
           @update:page="loadData"
           @update:page-size="loadData"
         />
@@ -249,20 +239,8 @@ function resetHandle() {
           <h3 class="font-bold text-lg mb-4">
             难度分布
           </h3>
-          <n-empty
-            v-if="!difficultyDistribution || difficultyDistribution.length === 0"
-            class="flex flex-col items-center justify-center py-10 bg-transparent"
-            description="暂无结果"
-          >
-            <template #icon>
-              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
-                <icon-park-outline-info />
-              </n-icon>
-            </template>
-            <n-text depth="3" class="text-center max-w-xs">
-              暂无数据
-            </n-text>
-          </n-empty>
+          <LineSkeleton01 v-if="!difficultyDistribution" />
+          <EmptyData v-else-if="difficultyDistribution.length === 0" />
           <div v-else class="space-y-4">
             <div v-for="item in difficultyDistribution" :key="item.difficulty">
               <div class="flex justify-between mb-1">
@@ -276,55 +254,18 @@ function resetHandle() {
           </div>
         </div>
 
-        <!-- 榜单：最受欢迎 -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <!-- 题集排行榜 -->
+        <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div class="p-x-5 pt-5 border-b border-gray-100 dark:border-gray-700">
-            <h3 class="font-semibold text-lg">
+            <h2 class="text-xl font-bold">
               热门题集
-            </h3>
+            </h2>
           </div>
-          <n-empty
-            v-if="!setRankingListData || setRankingListData.length === 0"
-            class="flex flex-col items-center justify-center py-10 bg-transparent"
-            description="暂无结果"
-          >
-            <template #icon>
-              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
-                <icon-park-outline-info />
-              </n-icon>
-            </template>
-            <n-text depth="3" class="text-center max-w-xs">
-              暂无数据
-            </n-text>
-          </n-empty>
-          <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
-            <!-- 排名1 -->
-            <div
-              v-for="item in setRankingListData" :key="item.rank" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
-                name: 'proset_detail',
-                query: { set: AesCrypto.encrypt(item.id) },
-              })"
-            >
-              <div class="flex items-center">
-                <RankIcon :rank="item.rank" />
-                <div class="flex-1">
-                  <NButton text class="mb-2">
-                    <h4 class="font-medium">
-                      {{ item.title }}
-                    </h4>
-                  </NButton>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    共 {{ item.participantUserCount }} 人参与
-                  </p>
-                </div>
-                <!-- <div class="flex items-center text-yellow-500">
-                  <i class="fa fa-star mr-1" />
-                  <span>4.8</span>
-                </div> -->
-              </div>
-            </div>
-          </div>
-        </div>
+
+          <ListSkeleton02 v-if="!setRankingListData" />
+          <EmptyData v-else-if="setRankingListData.length === 0" />
+          <HotSet v-else :list-data="setRankingListData" />
+        </section>
 
         <!-- 榜单：最新上线 -->
         <!-- <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">

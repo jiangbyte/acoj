@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import { useSysGroupFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -38,6 +38,11 @@ const columns: DataTableColumns<any> = [
   {
     title: '系统组',
     key: 'groupTypeName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.groupType ? 'primary' : 'error',
+      }, () => row.groupTypeName)
+    },
   },
   {
     title: '操作',

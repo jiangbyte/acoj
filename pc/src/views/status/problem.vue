@@ -28,7 +28,7 @@ loadData()
   <div class="container mx-auto px-4 py-8">
     <!-- 提交状态概览 -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-4">
-      <JudgeResultHeader :result-task-data="detailData" class="mb-4"/>
+      <JudgeResultHeader :result-task-data="detailData" class="mb-4" />
 
       <!-- 判题结果详情 -->
       <JudgeResultStats :result-task-data="detailData" class="w-full" />

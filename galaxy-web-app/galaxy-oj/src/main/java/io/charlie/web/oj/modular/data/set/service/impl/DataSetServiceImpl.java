@@ -219,14 +219,9 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
 
     @Override
     public List<DataSet> getHotN(int n) {
-        List<RankItem> problemSetRankTopN = problemSetCacheService.getProblemSetRankTopN(n);
-        List<DataSet> dataSets = new ArrayList<>();
-        for (RankItem rankingInfo : problemSetRankTopN) {
-            DataSet dataSet = this.getById(rankingInfo.getId());
-            dataSet.setRank(rankingInfo.getRank());
-            dataSets.add(dataSet);
-        }
+        List<DataSet> dataSets = this.baseMapper.selectTopNBySubmitCount(10);
         setBuildTool.buildSets(dataSets);
+        transService.transBatch(dataSets);
         return dataSets;
     }
 

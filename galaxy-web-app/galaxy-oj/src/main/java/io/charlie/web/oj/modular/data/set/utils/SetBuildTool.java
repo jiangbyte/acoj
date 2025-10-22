@@ -26,9 +26,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class SetBuildTool {
-    private final UserCacheService userCacheService;
     private final ProblemSetCacheService problemSetCacheService;
-    private final ProblemCacheService problemCacheService;
     private final DataSetProblemService dataSetProblemService;
 
     public void buildSets(List<DataSet> dataSets) {
@@ -53,6 +51,7 @@ public class SetBuildTool {
                 .distinct()
                 .toList();
         Map<String, List<String>> problemIdsMap = dataSetProblemService.getProblemIdsBySetIds(setIds);
+
         Map<String, Long> totalSubmitCountMap = problemSetCacheService.getBatchProblemSetTotalSubmitCount(setIds);
         Map<String, Double> avgAcceptanceMap = problemSetCacheService.getBatchProblemSetAverageAcceptRate(setIds);
         Map<String, Long> participantUserCountMap = problemSetCacheService.getBatchProblemSetParticipantCount(setIds);

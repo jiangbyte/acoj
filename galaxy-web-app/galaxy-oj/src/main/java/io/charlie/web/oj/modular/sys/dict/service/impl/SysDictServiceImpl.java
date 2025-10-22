@@ -20,20 +20,23 @@ import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import jakarta.annotation.PostConstruct;
 import org.dromara.trans.service.impl.DictionaryTransService;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-06-23
-* @description 系统字典表 服务实现类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-06-23
+ * @description 系统字典表 服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -203,25 +206,76 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
                 .orderByAsc(SysDict::getSortOrder));
     }
 
+
     @PostConstruct
     public void initDictCache() {
-        // 查询所有启用的字典类型
-        List<String> dictTypes = this.list(new LambdaQueryWrapper<SysDict>())
-                .stream().map(SysDict::getDictType).toList();
+        CompletableFuture.runAsync(() -> {
+            log.info("开始异步初始化字典缓存...");
 
-        for (String dictType : dictTypes) {
-            // 查询该类型下的所有字典项
-            List<SysDict> dictItems = this.list(new LambdaQueryWrapper<SysDict>()
-                    .eq(SysDict::getDictType, dictType));
+            try {
+                // 一次性查询所有字典数据
+                List<SysDict> allDicts = this.list();
 
-            // 构建字典Map
-            Map<String, String> transMap = dictItems.stream()
-                    .collect(Collectors.toMap(SysDict::getDictValue, SysDict::getDictLabel));
+                // 按字典类型分组
+                Map<String, List<SysDict>> dictsByType = allDicts.stream()
+                        .collect(Collectors.groupingBy(SysDict::getDictType));
 
-            // 刷新缓存
-            dictionaryTransService.refreshCache(dictType, transMap);
-        }
+                // 批量刷新缓存
+                dictsByType.forEach((dictType, dictItems) -> {
+                    Map<String, String> transMap = dictItems.stream()
+                            .collect(Collectors.toMap(SysDict::getDictValue, SysDict::getDictLabel));
+                    dictionaryTransService.refreshCache(dictType, transMap);
+                });
+
+                log.info("字典缓存异步初始化完成，共初始化 {} 个字典类型", dictsByType.size());
+            } catch (Exception e) {
+                log.error("字典缓存初始化失败", e);
+            }
+        });
     }
+//    public void initDictCache() {
+//        log.info("开始异步初始化字典缓存...");
+//
+//        try {
+//            // 一次性查询所有字典数据
+//            List<SysDict> allDicts = this.list();
+//
+//            // 按字典类型分组
+//            Map<String, List<SysDict>> dictsByType = allDicts.stream()
+//                    .collect(Collectors.groupingBy(SysDict::getDictType));
+//
+//            // 批量刷新缓存
+//            dictsByType.forEach((dictType, dictItems) -> {
+//                Map<String, String> transMap = dictItems.stream()
+//                        .collect(Collectors.toMap(SysDict::getDictValue, SysDict::getDictLabel));
+//                dictionaryTransService.refreshCache(dictType, transMap);
+//            });
+//
+//            log.info("字典缓存异步初始化完成，共初始化 {} 个字典类型", dictsByType.size());
+//        } catch (Exception e) {
+//            log.error("字典缓存初始化失败", e);
+//        }
+//    }
+
+////    @PostConstruct
+//    public void initDictCache() {
+//        // 查询所有启用的字典类型
+//        List<String> dictTypes = this.list(new LambdaQueryWrapper<SysDict>())
+//                .stream().map(SysDict::getDictType).toList();
+//
+//        for (String dictType : dictTypes) {
+//            // 查询该类型下的所有字典项
+//            List<SysDict> dictItems = this.list(new LambdaQueryWrapper<SysDict>()
+//                    .eq(SysDict::getDictType, dictType));
+//
+//            // 构建字典Map
+//            Map<String, String> transMap = dictItems.stream()
+//                    .collect(Collectors.toMap(SysDict::getDictValue, SysDict::getDictLabel));
+//
+//            // 刷新缓存
+//            dictionaryTransService.refreshCache(dictType, transMap);
+//        }
+//    }
 
     public void refreshDictCache(String dictType) {
         List<SysDict> dictItems = this.list(new LambdaQueryWrapper<SysDict>()

@@ -1,25 +1,7 @@
 <script lang="ts" setup>
-import { useSysBannerFetch } from '@/composables'
-// 列表数据
-const listData = ref([] as any[])
-
-// 获取列表数据
-async function loadData() {
-  try {
-    const { sysBannerLatest10 } = useSysBannerFetch()
-    const { data } = await sysBannerLatest10()
-
-    if (data) {
-      listData.value = data
-    }
-    else {
-      listData.value = []
-    }
-  }
-  catch {}
-}
-
-loadData()
+defineProps<{
+  bannerListData: any
+}>()
 
 function openLink(url: string) {
   window.open(url, '_blank')
@@ -27,46 +9,80 @@ function openLink(url: string) {
 </script>
 
 <template>
-  <div class="my-section">
-    <n-carousel
-      autoplay
-      show-arrow
-      draggable
-    >
-      <div
-        v-for="item in listData"
-        :key="item.id"
-        class="carousel-item"
+  <section class="mb-12 rounded-2xl overflow-hidden shadow-lg">
+    <div class="my-section">
+      <n-carousel
+        autoplay
+        show-arrow
+        draggable
       >
-        <img
-          class="carousel-img"
-          :src="item.banner"
+        <div
+          v-for="item in bannerListData"
+          :key="item.id"
+          class="carousel-item"
         >
-        <div class="carousel-caption">
-          <div class="caption-title">
-            {{ item.title }}
-          </div>
-          <div class="caption-subtitle">
-            {{ item.subtitle }}
-          </div>
-          <n-button
-            v-if="item.buttonText"
-            type="primary"
-            round
-            @click="openLink(item.toUrl || '#')"
+          <img
+            class="carousel-img"
+            :src="item.banner"
           >
-            {{ item.buttonText || '了解更多' }}
-            <template #icon>
-              <icon-park-outline-hand-right />
-            </template>
-          </n-button>
+          <div class="carousel-caption">
+            <div class="caption-title">
+              {{ item.title }}
+            </div>
+            <div class="caption-subtitle">
+              {{ item.subtitle }}
+            </div>
+            <n-button
+              v-if="item.buttonText"
+              type="primary"
+              round
+              @click="openLink(item.toUrl || '#')"
+            >
+              {{ item.buttonText || '了解更多' }}
+              <template #icon>
+                <icon-park-outline-hand-right />
+              </template>
+            </n-button>
+          </div>
         </div>
-      </div>
-    </n-carousel>
-  </div>
+      </n-carousel>
+    </div>
+  </section>
 </template>
 
 <style scoped>
+/* 基础样式补充，Unocss未覆盖的部分 */
+/* 确保平滑滚动 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 链接样式统一 */
+a {
+  text-decoration: none;
+}
+
+/* 图片加载过渡 */
+img {
+  transition: opacity 0.3s ease-in-out;
+}
+
+img.loading {
+  opacity: 0.5;
+}
+
+img.loaded {
+  opacity: 1;
+}
+
+/* img {
+  transition: transform 0.3s ease;
+}
+
+img:hover {
+  transform: scale(1.03);
+} */
+
 .my-section {
   border-radius: 0.5rem;
   overflow: hidden;
@@ -76,7 +92,7 @@ function openLink(url: string) {
 
 .carousel-item {
   position: relative;
-  height: 280px;
+  height: 320px;
 }
 
 @media (max-width: 768px) {
@@ -132,7 +148,13 @@ function openLink(url: string) {
 
 /* 动画效果 */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

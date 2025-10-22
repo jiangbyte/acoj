@@ -83,11 +83,20 @@ const userRankingColumns = [
   },
   {
     title: '解决题目数',
-    key: 'score',
+    key: 'solvedCount',
     width: 100,
     align: 'center',
     render: (row: any) => {
-      return h(NTag, { type: 'info' }, { default: () => row.score })
+      return h(NTag, { type: 'info' }, { default: () => row.solvedCount })
+    },
+  },
+  {
+    title: '提交题目数',
+    key: 'submittedCount',
+    width: 100,
+    align: 'center',
+    render: (row: any) => {
+      return h(NTag, { type: 'info' }, { default: () => row.submittedCount })
     },
   },
   // {
@@ -95,18 +104,21 @@ const userRankingColumns = [
   //   key: 'submitCount',
   //   width: 100,
   // },
-  // {
-  //   title: '通过率',
-  //   key: 'acceptanceRate',
-  //   width: 100,
-  // },
   {
     title: '总提交数',
-    key: 'submitCount',
+    key: 'totalSubmitCount',
     align: 'center',
     width: 100,
     render: (row: any) => {
-      return h(NTag, { type: 'info' }, { default: () => row.submitCount })
+      return h(NTag, { type: 'info' }, { default: () => row.totalSubmitCount })
+    },
+  },
+  {
+    title: '通过率',
+    key: 'acceptanceRate',
+    width: 100,
+    render: (row: any) => {
+      return h(NTag, { type: 'info' }, { default: () => row.acceptanceRate })
     },
   },
   // {
@@ -163,6 +175,7 @@ function rowProps(row: any) {
                 :bordered="false"
                 :row-key="(row: any) => row.userId"
                 :row-props="rowProps"
+                :loading="!totalRankingPageData?.records"
                 class="flex-1 h-full"
               />
             </div>
@@ -175,7 +188,7 @@ function rowProps(row: any) {
                 label: `${(i + 1) * 10} 每页`,
                 value: (i + 1) * 10,
               }))"
-              :page-slot="5"
+              :page-slot="3"
               class="flex justify-center items-center p-6"
               @update:page="loadData"
               @update:page-size="loadData"
@@ -183,50 +196,19 @@ function rowProps(row: any) {
           </div>
         </div>
       </div>
+
       <div class="space-y-8">
-        <!-- 榜单：最新上线 -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <!-- 用户排行榜 -->
+        <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           <div class="p-x-5 pt-5 border-b border-gray-100 dark:border-gray-700">
-            <h3 class="font-semibold text-lg">
+            <h2 class="text-xl font-bold">
               活跃用户
-            </h3>
+            </h2>
           </div>
-          <n-empty
-            v-if="!activeUsersTop || activeUsersTop.length === 0"
-            class="flex flex-col items-center justify-center py-10 bg-transparent"
-            description="暂无结果"
-          >
-            <template #icon>
-              <n-icon size="40" class="text-gray-300 dark:text-gray-600">
-                <icon-park-outline-info />
-              </n-icon>
-            </template>
-            <NText depth="3" class="text-center max-w-xs">
-              暂无数据
-            </NText>
-          </n-empty>
-          <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
-            <!-- 最新1 -->
-            <div
-              v-for="item in activeUsersTop" :key="item.id" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" @click="$router.push({
-                name: 'user',
-                query: { userId: AesCrypto.encrypt(item.id) },
-              })"
-            >
-              <div class="flex items-center">
-                <NAvatar :src="item.avatar" round :size="40" class="mr-3" />
-                <div class="flex-1">
-                  <div class="font-medium">
-                    {{ item.nickname }}
-                  </div>
-                  <div class="text-xs text-gray-500 dark:text-gray-400">
-                    活跃指数: {{ Number(item.score).toFixed(2) }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          <ListSkeleton03 v-if="!activeUsersTop" />
+          <EmptyData v-else-if="activeUsersTop.length === 0" />
+          <UserActiveRanking v-else :list-data="activeUsersTop" />
+        </section>
 
         <!-- 排行榜和活跃度说明卡片 -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">

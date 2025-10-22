@@ -33,22 +33,6 @@ import org.springframework.web.reactive.config.EnableWebFlux;
 //@EnableDubbo
 public class GalaxyOJ {
 
-    @Value("${profiles.active:default}")
-    private String activeProfile;
-
-    @PostConstruct
-    public void checkProfile() {
-        log.info("=== @Value注入的profile: {} ===", activeProfile);
-    }
-
-    @Bean
-    public CommandLineRunner printProfile() {
-        return args -> {
-            log.info("=== CommandLineRunner - Maven Profile Active: {} ===", activeProfile);
-            System.out.println("=== Maven Profile Active: " + activeProfile + " ===");
-        };
-    }
-
     public static void main(String[] args) {
         ConfigurableApplicationContext run = SpringApplication.run(GalaxyOJ.class, args);
         Environment env = run.getEnvironment();

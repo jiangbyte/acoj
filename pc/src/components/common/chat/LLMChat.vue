@@ -131,6 +131,37 @@ function sendMessage(messageType: string = 'DailyConversation') {
         handleRequestEnd(false)
       }
     },
+    // onmessage: (event) => {
+    //   try {
+    //     if (event.data) {
+    //       const data = JSON.parse(event.data)
+    //       console.log('接收到消息:', data)
+
+    //       // 处理流式消息
+    //       if (data.messageContent) {
+    //         const content = data.messageContent
+    //         currentAssistantMessage.value += content
+
+    //         // 更新最后一条助手消息的内容
+    //         const lastMessageIndex = messages.value.length - 1
+    //         if (lastMessageIndex >= 0 && messages.value[lastMessageIndex].messageRole === 'ASSISTANT') {
+    //           messages.value[lastMessageIndex].messageContent = currentAssistantMessage.value
+    //         }
+    //       }
+
+    //       // 处理消息结束
+    //       if (data.finishReason || data.finished) {
+    //         console.log('消息接收完成')
+    //         handleRequestEnd(true)
+    //       }
+    //     }
+    //   }
+    //   catch (error) {
+    //     console.error('解析消息错误:', error)
+    //     window.$message?.error('接收消息格式错误')
+    //     handleRequestEnd(true)
+    //   }
+    // },
     onmessage: (event) => {
       try {
         if (event.data) {
@@ -138,8 +169,20 @@ function sendMessage(messageType: string = 'DailyConversation') {
           console.log('接收到消息:', data)
 
           // 处理流式消息
-          if (data.content || data.messageContent || data.data) {
-            const content = data.content || data.messageContent || data.data
+          if (data.messageContent) {
+            const content = data.messageContent
+            // 如果是第一条助手消息，先创建消息条目
+            if (!currentAssistantMessage.value) {
+              messages.value.push({
+                conversationId: chatRequestParam.value.conversationId,
+                messageContent: '',
+                messageType: currentMessageType.value,
+                messageRole: 'ASSISTANT',
+                responseTime: Date.now(),
+                isCompleted: false,
+                isStopped: false,
+              })
+            }
             currentAssistantMessage.value += content
 
             // 更新最后一条助手消息的内容
@@ -155,11 +198,10 @@ function sendMessage(messageType: string = 'DailyConversation') {
             handleRequestEnd(true)
           }
         }
-      }
-      catch (error) {
+      } catch (error) {
         console.error('解析消息错误:', error)
         window.$message?.error('接收消息格式错误')
-        handleRequestEnd(false)
+        handleRequestEnd(true)
       }
     },
     onerror: (error) => {
@@ -168,11 +210,11 @@ function sendMessage(messageType: string = 'DailyConversation') {
       if (!isUserStopped.value) {
         window.$message?.error('连接错误，已停止接收消息')
       }
-      handleRequestEnd(false)
+      handleRequestEnd(true)
     },
     onclose: () => {
       console.log('SSE连接关闭')
-      handleRequestEnd(false)
+      handleRequestEnd(true)
     },
   })
 
@@ -326,10 +368,6 @@ function getMessageTypeText(type: string | number) {
 
               <!-- 优化后的消息显示逻辑 -->
               <MdViewer v-if="message.messageContent" :model-value="message.messageContent" />
-
-              <!-- <div v-else-if="shouldShowTyping(message)" class="typing-indicator">
-                思考中...
-              </div> -->
 
               <n-spin v-else-if="shouldShowTyping(message)" size="small">
                 思考中...

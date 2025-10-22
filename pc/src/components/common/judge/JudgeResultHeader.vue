@@ -8,7 +8,7 @@ defineProps<Props>()
 
 <template>
   <n-card size="small" hoverable>
-    <div class="flex items-center gap-4">
+    <n-flex align="center">
       <n-avatar
         round
         :size="64"
@@ -26,19 +26,25 @@ defineProps<Props>()
         </div>
         <n-flex vertical :size="6">
           <n-text class="text-gray-500 dark:text-gray-400" depth="3">
-            提交了题目 <n-tag size="small">{{ resultTaskData?.problemIdName || '未知题目' }}</n-tag>
+            提交了题目 <n-tag size="small">
+              {{ resultTaskData?.problemIdName || '未知题目' }}
+            </n-tag>
           </n-text>
           <n-flex align="center">
             <n-text class="text-gray-500 dark:text-gray-400" depth="3">
-              使用语言 <n-tag size="small">{{ resultTaskData?.languageName || '未知语言' }}</n-tag>
+              使用语言 <n-tag size="small">
+                {{ resultTaskData?.languageName || '未知语言' }}
+              </n-tag>
             </n-text>
             <n-text class="text-gray-500 dark:text-gray-400" depth="3">
-              提交类型 <n-tag size="small">{{ resultTaskData?.submitTypeName || '未知类型'  }}</n-tag>
+              提交类型 <n-tag size="small">
+                {{ resultTaskData?.submitTypeName || '未知类型' }}
+              </n-tag>
             </n-text>
           </n-flex>
         </n-flex>
       </n-flex>
-    </div>
+    </n-flex>
     <template #footer>
       <n-flex align="center" justify="space-between">
         <n-text class="block text-gray-400 text-sm mt-1">

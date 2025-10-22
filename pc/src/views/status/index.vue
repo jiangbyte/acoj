@@ -363,6 +363,7 @@ function rowProps(row: any) {
             :row-key="(row: any) => row.userId"
             class="flex-1 h-full"
             :row-props="rowProps"
+            :loading="!pageData?.records"
             :scroll-x="1400"
           />
         </div>
@@ -375,7 +376,7 @@ function rowProps(row: any) {
             label: `${(i + 1) * 10} 每页`,
             value: (i + 1) * 10,
           }))"
-          :page-slot="5"
+          :page-slot="3"
           class="flex justify-center items-center p-6"
           @update:page="loadData"
           @update:page-size="loadData"

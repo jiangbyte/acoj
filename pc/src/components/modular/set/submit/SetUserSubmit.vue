@@ -172,7 +172,7 @@ function rowProps(row: any) {
           label: `${(i + 1) * 10} 每页`,
           value: (i + 1) * 10,
         }))"
-        :page-slot="5"
+        :page-slot="3"
         @update:page="loadData"
         @update:page-size="loadData"
       />

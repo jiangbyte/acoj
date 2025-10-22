@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import { useSysNoticeFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -35,6 +35,11 @@ const columns: DataTableColumns<any> = [
   {
     title: '上架',
     key: 'isVisibleName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.isVisible ? 'primary' : 'error',
+      }, () => row.isVisibleName)
+    },
   },
   {
     title: '操作',
