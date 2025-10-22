@@ -24,23 +24,6 @@ import org.springframework.web.bind.annotation.RestController;
 //@EnableDubbo
 @SpringBootApplication
 public class GalaxyGateway {
-
-    @Value("${profiles.active:default}")
-    private String activeProfile;
-
-    @PostConstruct
-    public void checkProfile() {
-        log.info("=== @Value注入的profile: {} ===", activeProfile);
-    }
-
-    @Bean
-    public CommandLineRunner printProfile() {
-        return args -> {
-            log.info("=== CommandLineRunner - Maven Profile Active: {} ===", activeProfile);
-            System.out.println("=== Maven Profile Active: " + activeProfile + " ===");
-        };
-    }
-
     public static void main(String[] args) {
         ConfigurableApplicationContext run = SpringApplication.run(GalaxyGateway.class, args);
         Environment env = run.getEnvironment();

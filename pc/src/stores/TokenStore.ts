@@ -1,4 +1,4 @@
-import { useAuthFetch } from '@/composables'
+import { useAuthFetch } from '@/composables/v1'
 
 export const useTokenStore = defineStore('tokenStore', {
   state: () => {

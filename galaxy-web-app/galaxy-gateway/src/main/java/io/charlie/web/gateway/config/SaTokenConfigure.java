@@ -43,7 +43,7 @@ public class SaTokenConfigure {
                             SaRouter.match("/**")
                                     .notMatch(properties.getIgnore().getUrls())
                                     .check(r -> StpUtil.checkLogin());
-                            log.info("请求 path={}  提交 token={}", SaHolder.getRequest().getRequestPath(), StpUtil.getTokenValue());
+                            log.info("请求 path={} 提交 token={}", SaHolder.getRequest().getRequestPath(), StpUtil.getTokenValue());
                         }
                 )
                 // 前置函数：在每次认证函数之前执行
@@ -63,9 +63,9 @@ public class SaTokenConfigure {
                     ;
 
                     // 如果是预检请求，则立即返回到前端
-                    SaRouter.match(SaHttpMethod.OPTIONS)
-                            .free(r -> log.info("OPTIONS 预检请求(不做处理) 请求 path={}  提交 token={}", SaHolder.getRequest().getRequestPath(), StpUtil.getTokenValue()))
-                            .back();
+//                    SaRouter.match(SaHttpMethod.OPTIONS)
+//                            .free(r -> log.info("OPTIONS 预检请求(不做处理) 请求 path={}  提交 token={}", SaHolder.getRequest().getRequestPath(), StpUtil.getTokenValue()))
+//                            .back();
                 })
 //                .setError(Throwable::getMessage);
                 .setError(e -> JSONUtil.toJsonStr(Result.failure(ResultCode.UNAUTHORIZED, ResultCode.UNAUTHORIZED.getMessage())));

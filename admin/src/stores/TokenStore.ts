@@ -1,3 +1,5 @@
+import { useAuthFetch } from '@/composables/v1'
+
 export const useTokenStore = defineStore('tokenStore', {
   state: () => {
     return {
@@ -22,6 +24,7 @@ export const useTokenStore = defineStore('tokenStore', {
     },
 
     async logoutAndRedirect() {
+      await useAuthFetch().doLogout()
       this.resetToken()
       window.location.reload()
     },

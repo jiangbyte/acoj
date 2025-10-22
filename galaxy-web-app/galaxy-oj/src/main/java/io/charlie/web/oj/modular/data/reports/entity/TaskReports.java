@@ -11,6 +11,7 @@ import java.util.List;
 
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
+import io.charlie.web.oj.modular.data.similarity.dto.CloneLevel;
 import io.charlie.web.oj.modular.task.similarity.basic.utils.DynamicCloneLevelDetector;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -88,7 +89,7 @@ public class TaskReports extends CommonEntity {
 
     @Schema(description = "程度统计")
     @TableField(typeHandler = JacksonTypeHandler.class)
-    private List<DynamicCloneLevelDetector.CloneLevel> degreeStatistics;
+    private List<CloneLevel> degreeStatistics;
 
     @Schema(description = "检测模式")
     @Trans(type = TransType.DICTIONARY, key = "CHECK_MODE", ref = "checkModeName")

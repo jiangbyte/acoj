@@ -188,8 +188,11 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
             log.info("存在记录，执行更新");
             library.setSubmitId(submit.getId());
             library.setSubmitTime(submit.getCreateTime());
-            library.setCode(submit.getCode());
             library.setCodeLength(submit.getCodeLength());
+            if (!submit.getCode().equals(library.getCode())) {
+                library.setCode(submit.getCode());
+                library.setAccessCount(0);// 重置访问次数
+            }
             this.updateById(library);
         } else {
             log.info("不存在记录，创建新记录");
@@ -258,12 +261,15 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
 
         // 添加过滤条件
         if (filterProblemId != null) {
+            log.info("添加 filterProblemId 过滤条件：{}", filterProblemId);
             queryWrapper.ne(DataLibrary::getProblemId, filterProblemId);
         }
         if (filterSetId != null) {
+            log.info("添加 filterSetId 过滤条件：{}", filterSetId);
             queryWrapper.ne(DataLibrary::getSetId, filterSetId);
         }
         if (filterUserId != null) {
+            log.info("添加 filterUserId 过滤条件：{}", filterUserId);
             queryWrapper.ne(DataLibrary::getUserId, filterUserId);
         }
 
@@ -271,6 +277,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
 
         // 如果批次数为0，则一次性处理所有数据
         if (batchSize <= 0) {
+            log.info("处理所有数据 批次大小 {}", batchSize);
             List<DataLibrary> allData = this.list(queryWrapper);
             if (allData != null && !allData.isEmpty()) {
                 // 先增加访问量
@@ -286,14 +293,17 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
 
         // 正常分批处理
         long total = this.count(queryWrapper);
+        log.info("总记录数：{}", total);
         long pages = (total + batchSize - 1) / batchSize;
+        log.info("总页数：{}", pages);
 
         for (long current = 1; current <= pages; current++) {
+            log.info("处理分页 {} 批次大小 {}", current, batchSize);
             Page<DataLibrary> page = this.page(new Page<>(current, batchSize), queryWrapper);
             if (page.getRecords() != null && !page.getRecords().isEmpty()) {
                 List<DataLibrary> batch = page.getRecords();
 
-                // 先增加访问量
+                // 增加访问量
                 incrementAccessCount(batch);
 
                 // 然后执行处理逻辑并收集结果

@@ -29,7 +29,7 @@ defineProps<Props>()
         <JudgeResultStats :result-task-data="resultTaskData" />
 
         <!-- 代码相似度 -->
-        <SimilarityReport v-if="resultTaskData.submitType && resultTaskData?.similarity" :result-task-data="resultTaskData" />
+        <SimilarityReport v-if="resultTaskData.submitType" :result-task-data="resultTaskData" />
 
         <n-card v-if="resultTaskData?.message" size="small" hoverable>
           <n-code :language="resultTaskData?.language" :code="resultTaskData?.message" show-line-numbers word-wrap />

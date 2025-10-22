@@ -17,17 +17,17 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "similarity.config")
 public class SimilarityConfigProperties {
     // 题目单提交分批大小
-    private Integer problemSingleSubmitBatchSize = 100;
+    private Integer problemSingleSubmitBatchSize = 500;
     // 题目单提交检测灵敏度
     private Integer problemSingleSubmitSensitivity = 5;
 
     // 题目集内单提交分批大小
-    private Integer setSingleSubmitBatchSize = 200;
+    private Integer setSingleSubmitBatchSize = 500;
     // 题目集内单提交检测灵敏度
     private Integer setSingleSubmitSensitivity = 5;
 
     // 自定义检测批次大小
-    private Integer customDetectionBatchSize = 100;
+    private Integer customDetectionBatchSize = 500;
     // 自定义检测灵敏度
     private Integer customDetectionSensitivity = 5;
 }

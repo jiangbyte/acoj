@@ -11,6 +11,8 @@ import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.reports.entity.TaskReports;
 import io.charlie.web.oj.modular.data.reports.mapper.TaskReportsMapper;
+import io.charlie.web.oj.modular.data.similarity.dto.CloneLevel;
+import io.charlie.web.oj.modular.data.similarity.dto.TaskReportStats;
 import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
 import io.charlie.web.oj.modular.data.similarity.mapper.TaskSimilarityMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
@@ -67,11 +69,20 @@ public class SimilarityHandleMessage {
         try {
             log.info("代码克隆检测 -> 接收检测消息：{}", JSONUtil.toJsonStr(similaritySubmitDto));
 
-            List<TaskSimilarity> taskSimilarities = dataLibraryService.processCodeLibrariesInBatches(
+            // setId参数
+            List<String> setIdParam = (similaritySubmitDto.getSetId() == null || similaritySubmitDto.getSetId().isEmpty())
+                    ? null
+                    : List.of(similaritySubmitDto.getSetId());
+            // problemId参数
+            List<String> problemIdParam = (similaritySubmitDto.getProblemId() == null || similaritySubmitDto.getProblemId().isEmpty())
+                    ? null
+                    : List.of(similaritySubmitDto.getProblemId());
+
+            dataLibraryService.processCodeLibrariesInBatches(
                     similaritySubmitDto.getIsSet(),
                     similaritySubmitDto.getLanguage(),
-                    List.of(similaritySubmitDto.getProblemId()),
-                    List.of(similaritySubmitDto.getSetId()),
+                    problemIdParam,
+                    setIdParam,
                     null,
                     similaritySubmitDto.getIsSet() ? similarityConfigProperties.getSetSingleSubmitBatchSize() : similarityConfigProperties.getProblemSingleSubmitBatchSize(),
                     null,
@@ -80,7 +91,7 @@ public class SimilarityHandleMessage {
                     dataLibraries -> calculateTaskSimilarities(similaritySubmitDto, dataLibraries)
             );
 
-            saveSimilarityReportData(similaritySubmitDto, taskSimilarities);
+            saveSimilarityReportDataFromDB(similaritySubmitDto);
         } catch (Exception e) {
             log.error("代码克隆检测处理失败，消息体：{}", JSONUtil.toJsonStr(similaritySubmitDto), e);
             // 可以考虑重试机制或死信队列处理
@@ -96,6 +107,7 @@ public class SimilarityHandleMessage {
             return details;
         }
 
+        log.info("代码克隆检测 -> 样本数量：{}", dataLibraries.size());
         for (DataLibrary dataLibrary : dataLibraries) {
             CodeSimilarityCalculator.SimilarityDetail similarityDetail = codeSimilarityCalculator.getSimilarityDetail(
                     similaritySubmitDto.getLanguage().toLowerCase(),
@@ -136,23 +148,16 @@ public class SimilarityHandleMessage {
             details.add(detail);
         }
 
-        return details;
+        // 直接插入
+        taskSimilarityMapper.insert(details);
+        return List.of();
     }
 
-    private void saveSimilarityReportData(SimilaritySubmitDto similaritySubmitDto, List<TaskSimilarity> similarities) {
-        if (similarities.isEmpty()) {
-            log.info("代码克隆检测 -> 样本为空");
-            return;
-        }
-
-        taskSimilarityMapper.insert(similarities);
-
+    void saveSimilarityReportDataFromDB(SimilaritySubmitDto similaritySubmitDto) {
         DataProblem dataProblem = dataProblemMapper.selectById(similaritySubmitDto.getProblemId());
 
-        // 阈值分布选择器
-        DynamicCloneLevelDetector detector = new DynamicCloneLevelDetector(dataProblem.getThreshold());
-
         TaskReports taskReports = BeanUtil.toBean(similaritySubmitDto, TaskReports.class);
+        taskReports.setId(null);
         if (similaritySubmitDto.getIsSet()) {
             log.info("代码克隆检测 -> 单题集报告");
             taskReports.setReportType(ReportTypeEnum.SET_SINGLE_SUBMIT.getValue());
@@ -163,38 +168,45 @@ public class SimilarityHandleMessage {
 
         taskReports.setThreshold(dataProblem.getThreshold());
 
-        // 按相似度聚合统计个数
-        Map<BigDecimal, Long> similarityGroupCount = similarities.stream()
-                .collect(Collectors.groupingBy(
-                        TaskSimilarity::getSimilarity,
-                        Collectors.counting()
-                ));
-        taskReports.setSimilarityGroupCount(similarityGroupCount.size());
+        // 从数据库中查询
+        TaskReportStats taskReportStats = taskSimilarityMapper.selectSimilarityStats(similaritySubmitDto.getTaskId(), similaritySubmitDto.getProblemId(), similaritySubmitDto.getSetId(), similaritySubmitDto.getIsSet() ? 1 : 0);
+        if (taskReportStats.getAvgSimilarity() == null || taskReportStats.getMaxSimilarity() == null || taskReportStats.getAvgSimilarity().equals(BigDecimal.ZERO) || taskReportStats.getMaxSimilarity().equals(BigDecimal.ZERO)) {
+            log.info("代码克隆检测 -> 相似为空 忽略报告");
+            dataSubmitMapper.update(new LambdaUpdateWrapper<DataSubmit>()
+                    .eq(DataSubmit::getId, similaritySubmitDto.getId())
+                    .set(DataSubmit::getSimilarity, BigDecimal.ZERO)
+                    .set(DataSubmit::getSimilarityCategory, CloneLevelEnum.NOT_DETECTED.getValue())
+                    .set(DataSubmit::getIsFinish, Boolean.TRUE)
+                    .set(DataSubmit::getReportId, null)
+            );
+            return;
+        }
 
-        DoubleSummaryStatistics stats = similarities.stream()
-                .mapToDouble(d -> d.getSimilarity().doubleValue())
-                .summaryStatistics();
+        taskReports.setSampleCount(taskReportStats.getSampleCount());
+        taskReports.setSimilarityGroupCount(taskReportStats.getGroupCount());
+        taskReports.setAvgSimilarity(taskReportStats.getAvgSimilarity());
+        taskReports.setMaxSimilarity(taskReportStats.getMaxSimilarity());
 
-        BigDecimal avgSimilarity = BigDecimal.valueOf(stats.getAverage()).setScale(4, RoundingMode.HALF_UP);
-        BigDecimal maxSimilarity = BigDecimal.valueOf(stats.getMax());
-        taskReports.setAvgSimilarity(avgSimilarity);
-        taskReports.setMaxSimilarity(maxSimilarity);
-        taskReports.setSampleCount((int) stats.getCount());
+        // 获取相似度分布数组
+        List<Integer> distributionArray = taskSimilarityMapper.selectSimilarityDistribution(similaritySubmitDto.getTaskId());
+        taskReports.setSimilarityDistribution(distributionArray);
 
-        // 相似度分布
-        taskReports.setSimilarityDistribution(detector.similarityDistribution(similarities));
-        // 程度统计
-        taskReports.setDegreeStatistics(detector.similarityDegreeStatistics(similarities));
+        // 获取程度统计
+        List<CloneLevel> degreeStats = taskSimilarityMapper.selectDegreeStatistics(similaritySubmitDto.getTaskId(), dataProblem.getThreshold());
+        taskReports.setDegreeStatistics(degreeStats);
 
         taskReportsMapper.insert(taskReports);
 
-        log.info("更新提交 {} 最大相似度 {} 平均相似度 {} 相似等级分类 {}", similaritySubmitDto.getId(), maxSimilarity, avgSimilarity, detector.detect(maxSimilarity).getValue());
+        log.info("更新提交 {} 最大相似度 {} 平均相似度 {}", similaritySubmitDto.getId(), taskReportStats.getMaxSimilarity(), taskReportStats.getAvgSimilarity());
+        String degreeBySimilarity = taskSimilarityMapper.getDegreeBySimilarity(taskReportStats.getMaxSimilarity(), dataProblem.getThreshold());
+
         dataSubmitMapper.update(new LambdaUpdateWrapper<DataSubmit>()
                 .eq(DataSubmit::getId, similaritySubmitDto.getId())
-                .set(DataSubmit::getSimilarity, maxSimilarity)
-                .set(DataSubmit::getSimilarityCategory, detector.detect(maxSimilarity).getValue())
+                .set(DataSubmit::getSimilarity, taskReportStats.getMaxSimilarity())
+                .set(DataSubmit::getSimilarityCategory, degreeBySimilarity)
                 .set(DataSubmit::getIsFinish, Boolean.TRUE)
                 .set(StrUtil.isNotEmpty(taskReports.getId()), DataSubmit::getReportId, taskReports.getId())
         );
+
     }
 }
