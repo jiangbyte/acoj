@@ -24,6 +24,7 @@ const loading = ref(true)
 const setListData = ref()
 const difficultyDistribution = ref()
 
+const isLoading = ref(false)
 async function loadData() {
   const { dataSetPage } = useDataSetFetch()
   const { sysCategoryOptions } = useSysCategoryFetch()
@@ -31,9 +32,11 @@ async function loadData() {
   // const { setRankingTop } = useSetRankingFetch()
 
   loading.value = true
+  isLoading.value = true
   const { data } = await dataSetPage(pageParam.value)
   if (data) {
     pageData.value = data
+    isLoading.value = false
   }
 
   const { data: catgoryData } = await sysCategoryOptions({})
@@ -89,244 +92,203 @@ function resetHandle() {
 </script>
 
 <template>
-  <main class="container mx-auto px-4 py-8">
-    <!-- 页面标题和统计信息 -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold mb-2">
-        题集
-      </h1>
-      <p class="text-gray-600 dark:text-gray-400">
-        共收录 <span class="text-blue-600 dark:text-blue-400 font-medium">
-          {{ pageData?.total ? pageData.total : 0 }}
-        </span> 个题集，覆盖各类学习路径和知识点体系
-      </p>
-    </div>
-
-    <!-- 搜索和筛选区 -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-8">
-      <!-- 关键字搜索 -->
-      <div class="mb-6">
-        <n-input
-          v-model:value="pageParam.keyword"
-          placeholder="搜索题集"
-          clearable
-          @keyup.enter="loadData"
-          @clear="resetHandle"
-        />
-      </div>
-
-      <!-- 高级筛选区 - 分类、难度 -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- 难度筛选 -->
-        <div>
-          <label class="block text-sm font-medium mb-2">题集类型</label>
-          <n-select
-            v-model:value="pageParam.setType"
-            placeholder="选择题集类型"
-            clearable
-            :options="setTypeOptions"
-            @clear="resetHandle"
-          />
-        </div>
-
-        <!-- 分类筛选 -->
-        <div>
-          <label class="block text-sm font-medium mb-2">题集分类</label>
-          <n-select
-            v-model:value="pageParam.categoryId"
-            placeholder="选择分类"
-            clearable
-            :options="categoryOptions"
-            @clear="resetHandle"
-          />
-        </div>
-
-        <!-- 难度筛选 -->
-        <div>
-          <label class="block text-sm font-medium mb-2">难度范围</label>
-          <n-select
-            v-model:value="pageParam.difficulty"
-            placeholder="选择难度"
-            clearable
-            :options="difficultyOptions"
-            @clear="resetHandle"
-          />
-        </div>
-      </div>
-
-      <!-- 筛选按钮 -->
-      <div class="mt-6 flex justify-end space-x-3">
-        <NButton type="warning" @click="resetHandle">
-          重置筛选
-        </NButton>
-        <NButton type="primary" @click="loadData">
-          应用筛选
-        </NButton>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div class="lg:col-span-2 space-y-8">
-        <SetSkeleton01 v-if="!pageData" />
-        <EmptyData v-else-if="pageData?.records.length === 0" />
-        <!-- 题集列表 -->
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-          <!-- 题集项 1 -->
-          <div
-            v-for="item in pageData?.records" :key="item.id"
-            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
-            @click="$router.push({
-              name: 'proset_detail',
-              query: { set: AesCrypto.encrypt(item.id) },
-            })"
-          >
-            <div class="relative h-48 overflow-hidden">
-              <img :src="item.cover" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
-
-              <NTag size="small" :bordered="false" type="error" class="absolute top-3 left-3 text-xs px-2 py-1 bg-white">
-                {{ item.setTypeName }}
-              </NTag>
-              <NTag size="small" :bordered="false" type="info" class="absolute top-3 left-22 text-xs px-2 py-1 bg-white">
-                {{ item.difficultyName }}
-              </NTag>
-
-              <NTag size="small" :bordered="false" type="warning" class="absolute top-3 right-3  text-xs px-2 py-1">
-                {{ item.categoryName }}
-              </NTag>
-            </div>
-            <div class="p-5">
-              <NButton text class="mb-2">
-                <h3 class="text-xl font-semibold ">
-                  <n-ellipsis style="max-width: 260px">
-                    {{ item.title }}
-                  </n-ellipsis>
-                </h3>
-              </NButton>
-
-              <p class="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
-                {{ CleanMarkdown(item.description) }}
-              </p>
-              <!--          <div class="flex flex-wrap gap-2 mb-4"> -->
-              <!--            <span class="bg-gray-100 dark:bg-gray-700 text-xs px-2 py-1 rounded">排序</span> -->
-              <!--            <span class="bg-gray-100 dark:bg-gray-700 text-xs px-2 py-1 rounded">查找</span> -->
-              <!--            <span class="bg-gray-100 dark:bg-gray-700 text-xs px-2 py-1 rounded">贪心</span> -->
-              <!--          </div> -->
-              <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span><i class="fa fa-question-circle mr-1" />共 {{ item.problemIds.length ? item.problemIds.length : 0 }} 题</span>
-                <span><i class="fa fa-user mr-1" />{{ item.participantUserCount }} 人参与</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <n-pagination
-          v-model:page="pageParam.current"
-          v-model:page-size="pageParam.size"
-          class="flex items-center justify-center"
-          show-size-picker
-          :page-count="pageData ? Number(pageData.pages) : 0"
-          :page-sizes="[10, 20, 30, 50].map(size => ({
-            label: `${size} 每页`,
-            value: size,
-          }))"
-          :page-slot="3"
-          @update:page="loadData"
-          @update:page-size="loadData"
-        />
-      </div>
-      <div class="space-y-8">
-        <!-- <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700">
-          <h3 class="font-bold text-lg mb-4">
-            难度分布
-          </h3>
-          <LineSkeleton01 v-if="!difficultyDistribution" />
-          <EmptyData v-else-if="difficultyDistribution.length === 0" />
-          <div v-else class="space-y-4">
-            <div v-for="item in difficultyDistribution" :key="item.difficulty">
-              <div class="flex justify-between mb-1">
-                <span class="text-sm">{{ item.difficultyName }}</span>
-                <span class="text-sm font-medium">{{ item.count }} 个集合 ({{ item.percentage }}%)</span>
-              </div>
-              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                <div class="bg-green-600 h-2.5 rounded-full" :style="{ width: `${item.percentage}%` }" />
-              </div>
-            </div>
-          </div>
-        </div> -->
-
-        <!-- 题集排行榜 -->
-        <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="p-x-5 pt-5 border-b border-gray-100 dark:border-gray-700">
-            <h2 class="text-xl font-bold">
-              热门题集
-            </h2>
-          </div>
-
-          <ListSkeleton02 v-if="!setRankingListData" />
-          <EmptyData v-else-if="setRankingListData.length === 0" />
-          <HotSet v-else :list-data="setRankingListData" />
-        </section>
-
-        <!-- 榜单：最新上线 -->
-        <!-- <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-gray-100 dark:border-gray-700">
-            <h3 class="font-semibold text-lg">
-              最新上线
-            </h3>
-          </div>
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
-            <div
-              v-for="item in setListData" :key="item.id" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"@click="$router.push({
-                name: 'proset_detail',
-                query: { set: AesCrypto.encrypt(item.id) },
-              })"
+  <main class="container mx-auto px-2 py-6">
+    <n-grid
+      cols="1 l:6"
+      :x-gap="24"
+      :y-gap="24"
+      responsive="screen"
+    >
+      <!-- 左侧主内容 -->
+      <n-gi span="1 l:4">
+        <!-- 公告内容 -->
+        <NSpace vertical :size="24">
+          <n-card size="small" class="rounded-xl">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
+                筛选题集
+              </n-h2>
+            </template>
+            <!-- <template #header-extra>
+              <n-flex align="center">
+                <n-text class="text-sm">
+                  题目总数
+                </n-text>
+                <n-text class="text-2xl font-bold">
+                  {{ problemcount?.total ? problemcount.total : 0 }}
+                </n-text>
+                <n-text class="text-green-600 dark:text-green-400 text-xs flex items-center">
+                  <icon-park-outline-arrow-up class="mr-1" />
+                  较上月增长 {{ problemcount?.growthRate * 100 }} %
+                </n-text>
+              </n-flex>
+            </template> -->
+            <n-grid
+              cols="1 l:3"
+              :x-gap="24"
+              :y-gap="24"
+              responsive="screen"
             >
-              <div class="flex items-center">
-                <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-green-600 dark:text-green-300 font-bold mr-4">
-                  <icon-park-outline-time />
-                </div>
-                <div class="flex-1">
-                  <NButton text class="mb-2">
-                    <h4 class="font-medium">
-                      {{ item.title }}
-                    </h4>
-                  </NButton>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    <n-time :time="item.createTime" type="relative" /> • {{ item.problemIds.length ? item.problemIds.length : 0 }} 题
-                  </p>
-                </div>
-                <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">新</span>
-              </div>
-            </div>
-          </div>
-        </div> -->
-      </div>
-    </div>
+              <n-gi span="1 l:1">
+                <n-input
+                  v-model:value="pageParam.keyword"
+                  placeholder="搜索题集"
+                  clearable
+                  @keyup.enter="loadData"
+                  @clear="() => { pageParam.keyword = ''; loadData() }"
+                />
+              </n-gi>
+              <n-gi span="1 l:1">
+                <n-select
+                  v-model:value="pageParam.categoryId"
+                  placeholder="选择分类"
+                  clearable
+                  :options="categoryOptions"
+                  @clear="() => { pageParam.categoryId = null; loadData() }"
+                />
+              </n-gi>
+              <n-gi span="1 l:1">
+                <n-select
+                  v-model:value="pageParam.difficulty"
+                  placeholder="选择难度"
+                  clearable
+                  :options="difficultyOptions"
+                  @clear="() => { pageParam.difficulty = null; loadData() }"
+                />
+              </n-gi>
+            </n-grid>
+            <template #footer>
+              <n-input-group class="flex justify-end">
+                <NButton type="warning" @click="resetHandle">
+                  重置筛选
+                </NButton>
+                <NButton type="primary" @click="loadData">
+                  应用筛选
+                </NButton>
+              </n-input-group>
+            </template>
+          </n-card>
+
+          <n-card class="rounded-xl" size="small" content-style="padding: 0">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
+                题集列表
+              </n-h2>
+            </template>
+            <template #header-extra>
+              <n-text>
+                当前共 <span class="text-blue-600 dark:text-blue-400 font-medium">
+                  {{ pageData?.total ? pageData.total : 0 }}
+                </span> 条数据
+              </n-text>
+            </template>
+            <SetSkeleton01 v-if="!pageData" />
+            <EmptyData v-else-if="pageData?.records.length === 0" />
+            <n-list v-if="pageData && pageData?.records.length > 0" hoverable class="rounded-xl p-0">
+              <n-spin :show="isLoading">
+                <n-list-item
+                  v-for="item in pageData?.records" :key="item.id" @click="$router.push({
+                    name: 'proset_detail',
+                    query: { set: AesCrypto.encrypt(item.id) },
+                  })"
+                >
+                  <n-grid
+                    cols="1 l:8"
+                    :x-gap="18"
+                    responsive="screen"
+                  >
+                    <n-gi span="1 l:3">
+                      <img :src="item?.cover" class="w-full h-42 l:h-42 rounded-xl object-cover">
+                    </n-gi>
+                    <n-gi span="1 l:5" class="flex items-center w-full">
+                      <n-thing class="w-full">
+                        <template #header>
+                          <n-flex align="center" :wrap="false">
+                            <n-h3 class="pb-0 mb-0">
+                              <n-ellipsis :line-clamp="1">
+                                {{ item.title }}
+                              </n-ellipsis>
+                            </n-h3>
+                          </n-flex>
+                        </template>
+                        <template #description>
+                          <n-space vertical>
+                            <n-flex>
+                              <NTag size="small" type="error">
+                                {{ item.setTypeName }}
+                              </NTag>
+                              <NTag size="small" type="info">
+                                {{ item.categoryName }}
+                              </NTag>
+                              <NTag size="small" type="warning">
+                                {{ item.difficultyName }}
+                              </NTag>
+                            </n-flex>
+                            <n-text depth="3">
+                              <n-ellipsis :line-clamp="2" :tooltip="false">
+                                {{ CleanMarkdown(item.description) }}
+                              </n-ellipsis>
+                            </n-text>
+                          </n-space>
+                        </template>
+                        <template #footer>
+                          <n-space :size="0" align="center" justify="space-between">
+                            <n-space align="center" :size="0">
+                              <n-avatar :src="item?.createUserAvatar" round class="mr-2" />
+                              <n-text class="flex-1">
+                                {{ item?.createUserName }}
+                              </n-text>
+                            </n-space>
+                            <n-text>
+                              <n-time :time="item.createTime" />
+                            </n-text>
+                          </n-space>
+                        </template>
+                      </n-thing>
+                    </n-gi>
+                  </n-grid>
+                </n-list-item>
+              </n-spin>
+            </n-list>
+            <template #footer>
+              <n-pagination
+                v-model:page="pageParam.current"
+                v-model:page-size="pageParam.size"
+                class="flex items-center justify-center"
+                show-size-picker
+                :page-count="pageData ? Number(pageData.pages) : 0"
+                :page-sizes="[10, 20, 30, 50].map(size => ({
+                  label: `${size} 每页`,
+                  value: size,
+                }))"
+                :page-slot="3"
+                @update:page="loadData"
+                @update:page-size="loadData"
+              />
+            </template>
+          </n-card>
+        </NSpace>
+      </n-gi>
+      <n-gi span="1 l:2">
+        <NSpace
+          vertical
+          :size="24"
+        >
+          <n-card size="small" class="rounded-xl" content-style="padding: 0">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
+                热门题集
+              </n-h2>
+            </template>
+            <ListSkeleton02 v-if="!setRankingListData" />
+            <EmptyData v-else-if="setRankingListData.length === 0" />
+            <HotSet v-else :list-data="setRankingListData" />
+          </n-card>
+        </NSpace>
+      </n-gi>
+    </n-grid>
   </main>
 </template>
 
 <style scoped>
-/* 基础样式补充 */
-html {
-  scroll-behavior: smooth;
-}
-
-a {
-  text-decoration: none;
-}
-
-/* 解决select下拉箭头在部分浏览器不显示的问题 */
-select {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
-
-img {
-  transition: transform 0.3s ease;
-}
-
-img:hover {
-  transform: scale(1.03);
-}
 </style>

@@ -171,6 +171,9 @@ defineExpose({
           <NInput v-model:value="formData.telephone" placeholder="请输入电话" />
         </NFormItem>
       </NForm>
+      <n-alert type="warning" v-if="!isEdit">
+        创建的用户将设置默认密码为：123456789
+      </n-alert>
       <template #footer>
         <NSpace align="center" justify="end">
           <NButton @click="doClose">

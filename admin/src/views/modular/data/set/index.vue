@@ -61,10 +61,6 @@ const columns: DataTableColumns<any> = [
       return Number(row.setType) === 2 ? h(NTime, { time: row.endTime }) : '-'
     },
   },
-  // {
-  //   title: '额外的信息',
-  //   key: 'exJson',
-  // },
   {
     title: '上架',
     key: 'isVisibleName',

@@ -11,7 +11,7 @@
       <RankIcon :rank="item" />
       <div class="flex-1 flex-col gap-2">
         <n-skeleton class="w-full h-6 mb-2" />
-        <n-flex align="center">
+        <n-flex align="center" class="">
           <n-skeleton class="w-10" />
           <n-skeleton class="w-10" />
           <n-skeleton class="w-10" />

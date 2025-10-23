@@ -29,7 +29,7 @@ defineProps<{
           </div>
           <n-button text class="mb-3">
             <h3 class="text-xl font-semibold ">
-              <n-ellipsis style="max-width: 260px">
+              <n-ellipsis style="max-width: 230px">
                 {{ item.title }}
               </n-ellipsis>
             </h3>

@@ -18,10 +18,12 @@ import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
+import io.charlie.web.oj.modular.sys.auth.utils.UserValidationUtil;
 import io.charlie.web.oj.modular.sys.notice.entity.SysNotice;
 import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysUserRoleMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
+import io.charlie.web.oj.modular.sys.user.constant.DefaultUserData;
 import io.charlie.web.oj.modular.sys.user.entity.ACRecord;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.param.*;
@@ -32,6 +34,7 @@ import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
+import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +58,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     private final DataSolvedMapper dataSolvedMapper;
     private final SysUserRoleMapper sysUserRoleMapper;
+
+    private final TransService transService;
 
     @Override
     public Page<SysUser> page(SysUserPageParam sysUserPageParam) {
@@ -117,7 +122,15 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void add(SysUserAddParam sysUserAddParam) {
+//        UserValidationUtil.validatePassword(password).throwIfFailed();
+        UserValidationUtil.validateUsername(sysUserAddParam.getUsername()).throwIfFailed();
+
+        UserValidationUtil.validateEmail(sysUserAddParam.getEmail()).throwIfFailed();
+
+        // 加密密码
+        String encodePassword = BCrypt.hashpw(DefaultUserData.DEFAULT_PASSWORD);
         SysUser bean = BeanUtil.toBean(sysUserAddParam, SysUser.class);
+        bean.setPassword(encodePassword);
         this.save(bean);
     }
 
@@ -127,6 +140,10 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (!this.exists(new LambdaQueryWrapper<SysUser>().eq(SysUser::getId, sysUserEditParam.getId()))) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
+        UserValidationUtil.validateUsername(sysUserEditParam.getUsername()).throwIfFailed();
+
+        UserValidationUtil.validateEmail(sysUserEditParam.getEmail()).throwIfFailed();
+
         SysUser bean = BeanUtil.toBean(sysUserEditParam, SysUser.class);
         BeanUtil.copyProperties(sysUserEditParam, bean);
         this.updateById(bean);
@@ -216,6 +233,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 .sorted(Comparator.comparing(ACRecord::getDate))
                 .toList();
         sysUser.setAcRecord(acRecords);
+        transService.transOne(sysUser);
         return sysUser;
     }
 

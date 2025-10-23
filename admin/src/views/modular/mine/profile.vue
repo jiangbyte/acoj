@@ -297,29 +297,22 @@ function updateProfile() {
             </NSpace>
           </template>
         </NCard>
-        <NCard
-          title="安全设置"
-          size="small"
-        >
-          <div class="p-6 space-y-6">
-            <!-- 密码修改 -->
-            <div class="p-5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <div class="flex flex-wrap justify-between items-center gap-4">
-                <div>
-                  <h3 class="font-medium">
-                    密码
-                  </h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    建议定期更换密码以保证账户安全
-                  </p>
-                </div>
-                <n-button @click="showPasswordModal = true">
-                  修改密码
-                </n-button>
-              </div>
-            </div>
-          </div>
-        </NCard>
+
+        <n-card size="small" >
+          <template #header>
+            <n-h3 class="pb-0 mb-0">
+              安全设置
+            </n-h3>
+          </template>
+          <n-space align="center" justify="space-between">
+            <n-text depth="3" class="w-full">
+              建议定期更换密码以保证账户安全
+            </n-text>
+            <n-button type="warning" @click="showPasswordModal = true">
+              修改密码
+            </n-button>
+          </n-space>
+        </n-card>
       </NSpace>
     </n-card>
 

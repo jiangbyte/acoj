@@ -31,14 +31,29 @@ public class SysBannerAddParam implements Serializable {
     @Schema(description = "按钮文字")
     private String buttonText;
 
-    @Schema(description = "链接")
-    private String toUrl;
+    @Schema(description = "按钮是否可见")
+    private Boolean isVisibleButton;
+
+    @Schema(description = "跳转模块")
+    private String jumpModule;
+
+    @Schema(description = "跳转类别")
+    private String jumpType;
+
+    @Schema(description = "跳转目标")
+    private String jumpTarget;
+
+    @Schema(description = "新窗口打开")
+    private Boolean targetBlank;
 
     @Schema(description = "排序")
-    private Byte sort;
+    private Integer sort;
 
     @Schema(description = "子标题")
     private String subtitle;
+
+    @Schema(description = "子标题是否可见")
+    private Boolean isVisibleSubtitle;
 
     @Schema(description = "是否可见")
     private Boolean isVisible;

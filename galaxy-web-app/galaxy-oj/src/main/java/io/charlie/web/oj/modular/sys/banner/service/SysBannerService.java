@@ -3,10 +3,7 @@ package io.charlie.web.oj.modular.sys.banner.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.sys.banner.entity.SysBanner;
-import io.charlie.web.oj.modular.sys.banner.param.SysBannerAddParam;
-import io.charlie.web.oj.modular.sys.banner.param.SysBannerEditParam;
-import io.charlie.web.oj.modular.sys.banner.param.SysBannerIdParam;
-import io.charlie.web.oj.modular.sys.banner.param.SysBannerPageParam;
+import io.charlie.web.oj.modular.sys.banner.param.*;
 
 import java.util.List;
 
@@ -30,4 +27,6 @@ public interface SysBannerService extends IService<SysBanner> {
     List<SysBanner> latestN(int n);
 
     void visibleToggle(SysBannerIdParam sysBannerIdParam);
+
+    List<SysBannerJumpTargetResult> jumpTargetList(SysBannerJumpTargetParam sysBannerJumpTargetParam);
 }

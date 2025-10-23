@@ -23,7 +23,6 @@ export function useDataSetFetch() {
     difficulty: null,
     startTime: Date.now(),
     endTime: Date.now(),
-    exJson: '',
     createTime: '',
     createUser: '',
     updateTime: '',

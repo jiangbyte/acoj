@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { AesCrypto } from '@/utils'
-import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 import { useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
 import type { DataTableColumns } from 'naive-ui'
 import { NAvatar, NButton, NSpace, NTag, NText, NTime } from 'naive-ui'
@@ -52,7 +51,6 @@ const columns: DataTableColumns<any> = [
   {
     title: '状态',
     key: 'currentUserSolved',
-    width: 60,
     render: (row: any) => {
       return row.currentUserSolved
         ? h(Icon, {
@@ -69,12 +67,10 @@ const columns: DataTableColumns<any> = [
   {
     title: '题目',
     key: 'title',
-    width: 250,
   },
   {
     title: '分类',
     key: 'categoryName',
-    width: 100,
     render: (row) => {
       return h(NTag, { size: 'small', type: 'success' }, { default: () => row.categoryName })
     },
@@ -82,7 +78,6 @@ const columns: DataTableColumns<any> = [
   {
     title: '标签',
     key: 'tagNames',
-    width: 250,
     render: (row) => {
       return h(NSpace, { align: 'center' }, { default: () => row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', type: 'info' }, { default: () => tag })) || [] })
     },
@@ -90,7 +85,6 @@ const columns: DataTableColumns<any> = [
   {
     title: '难度',
     key: 'difficultyName',
-    width: 100,
     render: (row) => {
       return h(NTag, { size: 'small', type: 'error' }, { default: () => row.difficultyName })
     },
@@ -98,7 +92,6 @@ const columns: DataTableColumns<any> = [
   {
     title: '通过率',
     key: 'acceptance',
-    width: 120,
     render: (row) => {
       return h(NTag, { size: 'small' }, { default: () => row.acceptance })
     },
@@ -106,7 +99,6 @@ const columns: DataTableColumns<any> = [
   {
     title: '解决',
     key: 'solved',
-    width: 100,
     render: (row) => {
       return h(NTag, { size: 'small' }, { default: () => row.solved })
     },
@@ -114,7 +106,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 100,
+    fixed: 'right',
+    width: 60,
     render: (row) => {
       return h(NButton, {
         size: 'small',
@@ -391,12 +384,6 @@ async function loadData() {
   useDataSetFetch().dataSetProblem(setProblemPageParam.value).then(({ data }) => {
     console.log(data)
     setProblemPageData.value = data
-    // processColumns.push({
-    //   title: '操作',
-    //   key: 'action',
-    //   width: 150,
-    // })
-    // 获得setProblemPageData.value里面的records的title，以id为key，title为title，增加到processColumns
     setProblemPageData.value.forEach((item: any) => {
       processColumns.push({
         title: item.title,
@@ -413,275 +400,265 @@ async function loadData() {
     proSetSolvedUserData.value = data
     console.log('user', data)
   })
-
-  // proSetProblemList(setProblemPageParam.value).then(({ data }) => {
-  //   setProblemPageData.value = data
-  //   if (data) {
-  //     data.forEach((item: any) => {
-  //       processColumns.push({
-  //         title: item.title,
-  //         key: item.id,
-  //         width: 100,
-  //       })
-  //     })
-  //   }
-  // })
-
-  // const { proSetSubmitPage } = useProSetSubmitFetch()
-  // proSetSubmitPage(submitPageParam.value).then(({ data }) => {
-  //   submitPageData.value = data
-  // })
-
-  // const { proSetSolvedUserPage } = useProSetSolvedFetch()
-  // proSetSolvedUserPage(proSetSolvedUserDataParam.value).then(({ data }) => {
-  //   proSetSolvedUserData.value = data
-  // })
-
-  // const { proSetProgressDataPage } = useProSetProgressFetch()
-  // proSetProgressDataPage(progressPageParam.value).then(({ data }) => {
-  //   progressPageData.value = data
-  // })
 }
 loadData()
-// function rowProps(row: any) {
-//   // return {
-//   //   style: 'cursor: pointer;',
-//   //   onClick: () => {
-//   //     router.push({
-//   //       name: 'problem_submit',
-//   //       query: { problem: AesCrypto.encrypt(row.id) },
-//   //     })
-//   //   },
-//   // }
-// }
 </script>
 
 <template>
-  <main class="container mx-auto px-4 py-8">
-    <!-- 题集封面和基本信息 -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden mb-8">
-      <div class="md:flex items-center">
-        <!-- 题集封面图 -->
-        <div class="md:w-1/3 lg:w-1/4">
-          <img :src="detailData?.cover" class="w-full h-69 object-cover rounded-xl">
-        </div>
-
-        <!-- 题集基本信息 -->
-        <div class="p-6 md:p-8 md:w-2/3 lg:w-3/4">
-          <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
-            <div>
-              <h1 class="text-2xl md:text-3xl font-bold mb-2">
-                {{ detailData?.title }}
-              </h1>
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-block px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium rounded"> {{ detailData?.setTypeName }}</span>
-                <span class="inline-block px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs font-medium rounded">  {{ detailData?.categoryName }}</span>
-                <span class="inline-block px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-medium rounded">{{ detailData?.difficultyName }}</span>
-              </div>
-            </div>
-
-            <div class="flex gap-3">
-              <!-- <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center">
-                  <i class="fa fa-bookmark-o mr-2"></i> 收藏
-                </button>
-                <button class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center">
-                  <i class="fa fa-share-alt mr-2"></i> 分享
-                </button> -->
-            </div>
-          </div>
-
-          <!-- 题集统计信息 -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-              <div class="text-sm text-gray-500 dark:text-gray-400">
-                题目数量
-              </div>
-              <div class="text-xl font-bold">
-                {{ detailData?.problemIds.length ? detailData?.problemIds.length : 0 }} 题
-              </div>
-            </div>
-            <div class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-              <div class="text-sm text-gray-500 dark:text-gray-400">
-                总提交次数
-              </div>
-              <div class="text-xl font-bold">
-                {{ detailData?.submitCount ? detailData?.submitCount : 0 }}
-              </div>
-            </div>
-            <div class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-              <div class="text-sm text-gray-500 dark:text-gray-400">
-                平均通过率
-              </div>
-              <div class="text-xl font-bold">
-                {{ detailData?.avgAcceptance ? detailData?.avgAcceptance : 0 }} %
-              </div>
-            </div>
-            <div class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-              <div class="text-sm text-gray-500 dark:text-gray-400">
-                参与人数
-              </div>
-              <div class="text-xl font-bold">
-                {{ detailData?.participantUserCount ? detailData?.participantUserCount : 0 }}
-              </div>
-            </div>
-          </div>
-
-          <!-- 题集作者信息 -->
-          <NSpace align="center">
+  <main class="container mx-auto px-2 py-6">
+    <n-grid
+      cols="1 l:7"
+      :x-gap="24"
+      :y-gap="24"
+      responsive="screen"
+    >
+      <n-gi span="1 l:7">
+        <!-- <n-card class="rounded-xl" size="small">
+          <template #header>
+            <n-h2 class="pb-0 mb-0">
+              {{ detailData?.title }}
+            </n-h2>
+          </template>
+          <NSpace align="center" class="mb-4">
+            <NTag size="small" type="error">
+              {{ detailData?.setTypeName }}
+            </NTag>
+            <NTag size="small" type="info">
+              {{ detailData?.categoryName }}
+            </NTag>
+            <NTag size="small" type="warning">
+              {{ detailData?.difficultyName }}
+            </NTag>
+            <NTag size="small" type="info">
+              开放中
+            </NTag>
+          </NSpace>
+          <NSpace vertical class="mb-4">
+            <NText>
+              {{ detailData?.description }}
+            </NText>
             <NSpace align="center" :size="0">
-              <NAvatar :src="detailData?.createUserAvatar" round :size="40" class="mr-3" />
-              <div class="font-medium">
-                {{ detailData?.createUserName }}
-              </div>
-            </NSpace>
-            <NSpace align="center">
-              <div class="text-sm text-gray-500 dark:text-gray-400">
-                发布于 <NTime :time="detailData?.createTime" />
-              </div>
-              <div class="text-sm text-gray-500 dark:text-gray-400">
-                最后更新 <NTime :time="detailData?.updateTime" />
-              </div>
+              <NText depth="3">
+                更新时间：
+              </NText>
+              <NText>
+                <NTime :time="detailData?.updateTime" />
+              </NText>
             </NSpace>
           </NSpace>
-        </div>
-      </div>
-      <div class="bg-white overflow-hidden p-x-6 p-b-3">
-        <MdViewer :model-value="detailData?.description" />
-      </div>
-    </div>
+          <template #footer>
+            <NSpace align="center" :size="0">
+              <NSpace align="center" :size="0">
+                <NAvatar :src="detailData?.createUserAvatar" round :size="36" class="mr-3 shadow-sm" />
+                <NText class="flex-1">
+                  {{ detailData?.createUserName }}
+                </NText>
+              </NSpace>
+              <NText depth="3" class="ml-2 mr-2">
+                发布于
+              </NText>
+              <NText>
+                <NTime :time="detailData?.createTime" />
+              </NText>
+            </NSpace>
+          </template>
+        </n-card> -->
+        <n-card size="small" content-style="padding: 0">
+          <n-grid
+            cols="1 l:8"
+            responsive="screen"
+            class="relative"
+          >
+            <n-gi span="1 l:3" class="relative">
+              <img
+                :src="detailData?.cover" class="w-full
+               <!-- 手机：只有上部圆角 -->
+                rounded-t-xl rounded-tr-xl rounded-tl-xl
+                rounded-br-none rounded-bl-none
+                <!-- 电脑：只有左侧圆角 -->
+                m:rounded-l-xl m:rounded-bl-xl m:rounded-tl-xl
+                m:rounded-r-none m:rounded-tr-none m:rounded-br-none
+                l:rounded-l-xl l:rounded-bl-xl l:rounded-tl-xl
+                l:rounded-r-none l:rounded-tr-none l:rounded-br-none
+              object-cover h-50 m:absolute m:inset-0 m:h-full l:absolute l:inset-0 l:h-full "
+              >
+            </n-gi>
+            <n-gi span="1 l:5">
+              <n-card size="small" :bordered="false" class="l:h-full m:h-full">
+                <n-thing class="w-full">
+                  <template #header>
+                    <n-flex align="center" :wrap="false">
+                      <n-h2 class="pb-0 mb-0">
+                        <n-ellipsis :line-clamp="1">
+                          {{ detailData?.title }}
+                        </n-ellipsis>
+                      </n-h2>
+                    </n-flex>
+                  </template>
+                  <template #description>
+                    <NSpace vertical>
+                      <n-flex>
+                        <NTag size="small" type="error">
+                          {{ detailData?.setTypeName }}
+                        </NTag>
+                        <NTag size="small" type="info">
+                          {{ detailData?.categoryName }}
+                        </NTag>
+                        <NTag size="small" type="warning">
+                          {{ detailData?.difficultyName }}
+                        </NTag>
+                      </n-flex>
+                      <NText>
+                        <MarkdownViewer :model-value="detailData?.description || ''" />
+                      </NText>
+                    </NSpace>
+                  </template>
+                  <template #footer>
+                    <NSpace :size="0" align="center" justify="space-between">
+                      <NSpace align="center" :size="0">
+                        <NAvatar :src="detailData?.createUserAvatar" round class="mr-2" />
+                        <NText class="flex-1">
+                          {{ detailData?.createUserName }}
+                        </NText>
+                      </NSpace>
+                      <NText>
+                        <NTime :time="detailData?.createTime" />
+                      </NText>
+                    </NSpace>
+                  </template>
+                </n-thing>
+              </n-card>
+            </n-gi>
+          </n-grid>
+        </n-card>
+      </n-gi>
+      <!-- 左侧主内容 -->
 
-    <!-- 题集内容导航 -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-      <n-tabs type="line" animated>
-        <n-tab-pane name="problems" tab="题目">
-          <!-- 题目筛选和搜索 -->
-          <div class="bg-white p-y-2">
-            <!-- <div class="flex flex-col md:flex-row gap-4 mb-4">
-              <div class="flex flex-wrap gap-2">
-                <NButton>
-                  全部题目
-                </NButton>
-                <NButton>
-                  未完成
-                </NButton>
-                <NButton>
-                  已完成
-                </NButton>
-              </div>
+      <!-- 左侧主内容 -->
+      <n-gi span="1 l:5">
+        <!-- 公告内容 -->
+        <NSpace vertical :size="24">
+          <n-card class="rounded-xl" size="small">
+            <n-tabs type="line" animated>
+              <n-tab-pane name="problems" tab="题目">
+                <!-- 题目筛选和搜索 -->
+                <div class="bg-white p-y-2">
+                  <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <n-data-table
+                      :columns="columns"
+                      :data="setProblemPageData"
+                      :bordered="false"
+                      :row-key="(row: any) => row.id"
+                      class="flex-1 h-full"
+                      :scroll-x="1000"
+                    />
+                  </div>
+                </div>
+              </n-tab-pane>
+              <n-tab-pane name="submissions" tab="提交">
+                <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                  <n-data-table
+                    :columns="submitColumns"
+                    :data="submitPageData?.records"
+                    :bordered="false"
+                    :row-key="(row: any) => row.userId"
+                    class="flex-1 h-full"
+                    :scroll-x="1400"
+                  />
+                </div>
+                <n-pagination
+                  v-model:page="submitPageParam.current"
+                  v-model:page-size="submitPageParam.size"
+                  show-size-picker
+                  :page-count="submitPageData ? Number(submitPageData.pages) : 0"
+                  :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+                    label: `${(i + 1) * 10} 每页`,
+                    value: (i + 1) * 10,
+                  }))"
+                  :page-slot="3"
+                  class="flex justify-center items-center pt-6"
+                  @update:page="loadData"
+                  @update:page-size="loadData"
+                />
+              </n-tab-pane>
+              <n-tab-pane name="users" tab="用户">
+                <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                  <n-data-table
+                    :columns="userColumns"
+                    :data="proSetSolvedUserData?.records"
+                    :bordered="false"
+                    :row-key="(row: any) => row.userId"
+                    class="flex-1 h-full"
+                    :scroll-x="1400"
+                  />
+                </div>
+                <n-pagination
+                  v-model:page="proSetSolvedUserDataParam.current"
+                  v-model:page-size="proSetSolvedUserDataParam.size"
+                  show-size-picker
+                  :page-count="proSetSolvedUserData ? Number(proSetSolvedUserData.pages) : 0"
+                  :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+                    label: `${(i + 1) * 10} 每页`,
+                    value: (i + 1) * 10,
+                  }))"
+                  :page-slot="3"
+                  class="flex justify-center items-center pt-6"
+                  @update:page="loadData"
+                  @update:page-size="loadData"
+                />
+              </n-tab-pane>
+            </n-tabs>
+          </n-card>
+        </NSpace>
+      </n-gi>
 
-              <div class="flex-grow relative">
-                <n-input placeholder="搜索本题集题目" />
-              </div>
-
-              <div class="w-full md:w-auto">
-                <n-select class="w-40" />
-              </div>
-            </div> -->
-
-            <div class="divide-y divide-gray-100 dark:divide-gray-700">
-              <n-data-table
-                :columns="columns"
-                :data="setProblemPageData"
-                :bordered="false"
-                :row-key="(row: any) => row.id"
-                class="flex-1 h-full"
-                :scroll-x="1400"
-              />
-            </div>
-          <!-- <n-pagination
-              v-model:page="setProblemPageParam.current"
-              v-model:page-size="setProblemPageParam.size"
-              show-size-picker
-              :page-count="setProblemPageData ? Number(setProblemPageData.pages) : 0"
-              :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                label: `${(i + 1) * 10} 每页`,
-                value: (i + 1) * 10,
-              }))"
-              class="flex justify-center items-center pt-6"
-              @update:page="loadData"
-              @update:page-size="loadData"
-            /> -->
-          </div>
-        </n-tab-pane>
-        <!-- <n-tab-pane name="progress" tab="进度">
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
-            <n-data-table
-              :columns="processColumns"
-              :data="progressPageData?.records"
-              :bordered="false"
-              :row-key="(row: any) => row.userId"
-              class="flex-1 h-full"
-              :scroll-x="1400"
-            />
-          </div>
-          <n-pagination
-            v-model:page="submitPageParam.current"
-            v-model:page-size="submitPageParam.size"
-            show-size-picker
-            :page-count="submitPageData ? Number(submitPageData.pages) : 0"
-            :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-              label: `${(i + 1) * 10} 每页`,
-              value: (i + 1) * 10,
-            }))"
-            class="flex justify-center items-center pt-6"
-            @update:page="loadData"
-            @update:page-size="loadData"
-          />
-        </n-tab-pane> -->
-        <n-tab-pane name="submissions" tab="提交">
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
-            <n-data-table
-              :columns="submitColumns"
-              :data="submitPageData?.records"
-              :bordered="false"
-              :row-key="(row: any) => row.userId"
-              class="flex-1 h-full"
-              :scroll-x="1400"
-            />
-          </div>
-          <n-pagination
-            v-model:page="submitPageParam.current"
-            v-model:page-size="submitPageParam.size"
-            show-size-picker
-            :page-count="submitPageData ? Number(submitPageData.pages) : 0"
-            :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-              label: `${(i + 1) * 10} 每页`,
-              value: (i + 1) * 10,
-            }))"
-            :page-slot="3"
-            class="flex justify-center items-center pt-6"
-            @update:page="loadData"
-            @update:page-size="loadData"
-          />
-        </n-tab-pane>
-        <n-tab-pane name="users" tab="用户">
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
-            <n-data-table
-              :columns="userColumns"
-              :data="proSetSolvedUserData?.records"
-              :bordered="false"
-              :row-key="(row: any) => row.userId"
-              class="flex-1 h-full"
-              :scroll-x="1400"
-            />
-          </div>
-          <n-pagination
-            v-model:page="proSetSolvedUserDataParam.current"
-            v-model:page-size="proSetSolvedUserDataParam.size"
-            show-size-picker
-            :page-count="proSetSolvedUserData ? Number(proSetSolvedUserData.pages) : 0"
-            :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-              label: `${(i + 1) * 10} 每页`,
-              value: (i + 1) * 10,
-            }))"
-            :page-slot="3"
-            class="flex justify-center items-center pt-6"
-            @update:page="loadData"
-            @update:page-size="loadData"
-          />
-        </n-tab-pane>
-      </n-tabs>
-    </div>
+      <n-gi span="1 l:2">
+        <!-- 公告内容 -->
+        <NSpace vertical :size="24">
+          <n-card class="rounded-xl" size="small">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
+                题集统计
+              </n-h2>
+            </template>
+            <NSpace vertical class="mb-4">
+              <NSpace align="center" :size="0">
+                <NText depth="3">
+                  题目数量：
+                </NText>
+                <NText>
+                  {{ detailData?.problemIds.length ? detailData?.problemIds.length : 0 }}
+                </NText>
+              </NSpace>
+              <NSpace align="center" :size="0">
+                <NText depth="3">
+                  总提交数：
+                </NText>
+                <NText>
+                  {{ detailData?.submitCount ? detailData?.submitCount : 0 }}
+                </NText>
+              </NSpace>
+              <NSpace align="center" :size="0">
+                <NText depth="3">
+                  平均通过率：
+                </NText>
+                <NText>
+                  {{ detailData?.avgAcceptance ? detailData?.avgAcceptance : 0 }}
+                </NText>
+              </NSpace>
+              <NSpace align="center" :size="0">
+                <NText depth="3">
+                  参与人数：
+                </NText>
+                <NText>
+                  {{ detailData?.participantUserCount ? detailData?.participantUserCount : 0 }}
+                </NText>
+              </NSpace>
+            </NSpace>
+          </n-card>
+        </NSpace>
+      </n-gi>
+    </n-grid>
   </main>
 </template>
 

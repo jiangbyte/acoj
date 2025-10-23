@@ -6,103 +6,100 @@ import MdViewer from '@/components/common/editor/md/MarkdownViewer.vue'
 const route = useRoute()
 const detailData = ref()
 const originalId = AesCrypto.decrypt(route.query.notice as string)
+const noticeListData = ref()
 async function loadData() {
   useSysNoticeFetch().sysNoticeDetail({ id: originalId }).then(({ data }) => {
     detailData.value = data
+  })
+
+  useSysNoticeFetch().sysNoticeLatest().then(({ data }) => {
+    noticeListData.value = data ?? []
   })
 }
 loadData()
 </script>
 
 <template>
-  <main class="container mx-auto px-4 py-8">
-    <!-- 公告内容 -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mx-auto">
-      <!-- 公告封面图 -->
-      <div class="rounded-xl overflow-hidden">
-        <img :src="detailData?.cover" class="w-full h-70 object-cover">
-      </div>
+  <main class="container mx-auto px-2 py-6">
+    <n-grid
+      cols="1 l:6"
+      :x-gap="24"
+      :y-gap="24"
+      responsive="screen"
+    >
+      <!-- 左侧主内容 -->
+      <n-gi span="1 l:4">
+        <!-- 公告内容 -->
+        <n-card class="rounded-xl" size="small" content-style="padding: 0">
+          <!-- 公告封面图 -->
+          <n-image
+            :src="detailData?.cover"
+            width="100%"
+            object-fit="cover"
+            class="w-full h-48 md:h-60 rounded-t-xl"
+          />
 
-      <!-- 公告标题区 -->
-      <div class="mb-4 mt-6 text-center">
-        <h1 class="text-3xl md:text-4xl font-bold mb-4">
-          {{ detailData?.title }}
-        </h1>
-        <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">发布于：<n-time :time="detailData?.createTime" /></span>
-        <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">发布者：{{ detailData?.createUserName }}</span>
-      </div>
+          <!-- 公告标题区 -->
+          <n-flex class="p-x-6 pt-4 pb-4" :size="0">
+            <n-h1>
+              {{ detailData?.title }}
+            </n-h1>
+            <!-- 元信息卡片 -->
+            <n-card class="rounded-xl" size="small">
+              <n-flex class="w-full" vertical>
+                <n-space align="center" :size="0">
+                  <n-text>
+                    作者：
+                  </n-text>
+                  <n-space align="center" :size="0">
+                    <n-avatar :src="detailData?.createUserAvatar" round :size="36" class="mr-3 shadow-sm" />
+                    <n-text class="flex-1">
+                      {{ detailData?.createUserName }}
+                    </n-text>
+                  </n-space>
+                </n-space>
+                <n-space align="center" :size="0">
+                  <n-text>
+                    发布时间：
+                  </n-text>
+                  <n-flex>
+                    <n-time :time="detailData?.createTime" />
+                  </n-flex>
+                </n-space>
+                <n-space align="center" :size="0">
+                  <n-text>
+                    更新时间：
+                  </n-text>
+                  <n-flex>
+                    <n-time :time="detailData?.updateTime" />
+                  </n-flex>
+                </n-space>
+              </n-flex>
+            </n-card>
+          </n-flex>
 
-      <div class="pl-8 pr-8 pb-4 pt-2">
-        <MdViewer :model-value="detailData?.content" />
-      </div>
-    </div>
+          <!-- 内容区域 -->
+          <MdViewer :model-value="detailData?.content" class="rounded-b-xl px-6 pb-2" />
+        </n-card>
+      </n-gi>
+
+      <!-- 右侧边栏 -->
+      <n-gi span="1 l:2">
+        <n-card class="rounded-xl" size="small" content-style="padding: 0">
+          <template #header>
+            <n-h2 class="pb-0 mb-0">
+              最新公告
+            </n-h2>
+          </template>
+          <ListSkeleton01 v-if="!noticeListData" />
+          <EmptyData v-else-if="noticeListData.length === 0" />
+          <LatestNotice02 v-else :list-data="noticeListData" />
+        </n-card>
+      </n-gi>
+    </n-grid>
   </main>
 </template>
 
 <style scoped>
-/* 基础样式补充 */
-html {
-  scroll-behavior: smooth;
-}
 
-a {
-  text-decoration: none;
-}
-
-/* 图片悬停效果 */
-img {
-  transition: transform 0.3s ease;
-}
-
-/* 评论区样式优化 */
-textarea {
-  resize: vertical;
-}
-
-/* 文章内容样式增强 */
-.prose h2 {
-  font-size: 1.5rem;
-  margin-top: 2rem;
-  margin-bottom: 1rem;
-  font-weight: 600;
-}
-
-.prose p {
-  margin-bottom: 1rem;
-  line-height: 1.8;
-}
-
-.prose ul, .prose ol {
-  margin-bottom: 1rem;
-  padding-left: 1.5rem;
-}
-
-.prose li {
-  margin-bottom: 0.5rem;
-}
-
-.prose table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 1rem;
-}
-
-.prose th, .prose td {
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  text-align: left;
-}
-
-.prose th {
-  background-color: #f8fafc;
-  font-weight: 600;
-}
-
-.dark .prose th {
-  background-color: #1e293b;
-}
-
-.dark .prose th, .dark .prose td {
-  border-color: #334155;
-}
 </style>

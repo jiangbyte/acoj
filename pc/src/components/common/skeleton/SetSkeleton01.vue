@@ -1,24 +1,37 @@
 <template>
-  <n-grid x-gap="16" y-gap="16" cols="1 m:2 " responsive="screen">
-    <n-gi v-for="i in 2" :key="i">
-      <div
-        class="bg-white  w-full dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-      >
-        <div class="h-40 ">
-          <n-skeleton class=" w-full h-full" />
-        </div>
-        <div class="p-5">
-          <div class="flex items-center mb-2">
-            <n-skeleton text :repeat="1" class="w-15 mr-3" />
-            <n-skeleton text :repeat="1" class="w-15 mr-3" />
-          </div>
-          <n-skeleton class="w-50 h-7 mb-2" />
-          <n-skeleton text :repeat="2" class="mb-3" />
-          <n-flex align="center" justify="space-between">
-            <n-skeleton v-for="tagName in 2" :key="tagName" text :repeat="1" class="w-20" />
-          </n-flex>
-        </div>
-      </div>
+  <n-grid
+    cols="1 l:8"
+    :x-gap="18"
+    responsive="screen"
+  >
+    <n-gi span="1 l:3">
+      <n-skeleton class="w-full h-40 l:h-40 rounded-xl object-cover" />
+    </n-gi>
+    <n-gi span="1 l:5" class="flex items-center w-full">
+      <n-thing class="w-full">
+        <template #header>
+          <n-skeleton class="w-50 h-7 mt-2 mb-2" />
+        </template>
+        <template #description>
+          <n-space vertical>
+            <n-flex>
+              <n-skeleton text :repeat="1" class="w-15 " />
+              <n-skeleton text :repeat="1" class="w-15" />
+              <n-skeleton text :repeat="1" class="w-15" />
+            </n-flex>
+            <n-skeleton text :repeat="2" class="w-full " />
+          </n-space>
+        </template>
+        <template #footer>
+          <n-space :size="0" align="center" justify="space-between">
+            <n-space align="center" :size="0">
+              <n-skeleton class="w-6 h-6 mr-2" />
+              <n-skeleton text :repeat="1" class="w-15" />
+            </n-space>
+            <n-skeleton text :repeat="1" class="w-15 " />
+          </n-space>
+        </template>
+      </n-thing>
     </n-gi>
   </n-grid>
 </template>

@@ -38,7 +38,6 @@ const isLoading = ref(false)
 const controller = ref<AbortController | null>(null)
 const currentAssistantMessage = ref('')
 const currentMessageType = ref('')
-// 新增：标记当前是否被用户主动停止
 const isUserStopped = ref(false)
 
 const tokenStore = useTokenStore()
@@ -198,7 +197,8 @@ function sendMessage(messageType: string = 'DailyConversation') {
             handleRequestEnd(true)
           }
         }
-      } catch (error) {
+      }
+      catch (error) {
         console.error('解析消息错误:', error)
         window.$message?.error('接收消息格式错误')
         handleRequestEnd(true)
@@ -316,7 +316,7 @@ function getMessageTypeText(type: string | number) {
     OptimizeCode: '代码优化',
     AnalyzeBoundary: '边界分析',
   } as const
-  return typeMap[type as keyof typeof typeMap] || type
+  return typeMap[type as keyof typeof typeMap]
 }
 </script>
 
@@ -341,8 +341,9 @@ function getMessageTypeText(type: string | number) {
             还没有消息，点击下方按钮开始对话！
           </n-text>
         </n-empty>
-
+        <!-- 消息列表 -->
         <div v-for="(message, index) in messages" :key="index">
+          <!-- 用户消息 -->
           <n-card v-if="message.messageRole === 'USER'" size="small" class="bg-#f0f7ff mb-4" :bordered="false">
             <n-flex vertical :size="4">
               <div class="flex items-center justify-between">
@@ -357,7 +358,8 @@ function getMessageTypeText(type: string | number) {
             </n-flex>
           </n-card>
 
-          <n-card v-else-if="message.messageRole === 'ASSISTANT'" size="small" class="mb-4">
+          <!-- 助手消息 -->
+          <n-card v-if="message.messageRole === 'ASSISTANT'" size="small" class="mb-4">
             <n-flex vertical :size="4">
               <n-flex align="center" justify="space-between">
                 <n-tag :type="message.messageType === 'DailyConversation' ? 'primary' : 'success'" size="small">
@@ -368,8 +370,7 @@ function getMessageTypeText(type: string | number) {
 
               <!-- 优化后的消息显示逻辑 -->
               <MdViewer v-if="message.messageContent" :model-value="message.messageContent" />
-
-              <n-spin v-else-if="shouldShowTyping(message)" size="small">
+              <n-spin v-if="shouldShowTyping(message)" size="small">
                 思考中...
               </n-spin>
 

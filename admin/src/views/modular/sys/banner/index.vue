@@ -14,7 +14,23 @@ const columns: DataTableColumns<any> = [
   {
     title: '标题',
     key: 'title',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '子标题',
+    key: 'subtitle',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: '按钮文字',
+    key: 'buttonText',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '横幅',
@@ -24,23 +40,56 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '按钮文字',
-    key: 'buttonText',
-    ellipsis: true,
+    title: '跳转模块',
+    key: 'jumpModuleName',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
-    title: '链接',
-    key: 'toUrl',
-    ellipsis: true,
+    title: '显示按钮',
+    key: 'isVisibleButtonName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.isVisibleButton ? 'primary' : 'error',
+      }, { default: () => row.isVisibleButtonName })
+    },
+  },
+  // {
+  //   title: '跳转类别',
+  //   key: 'jumpType',
+  //   ellipsis: {
+  //     tooltip: true,
+  //   },
+  // },
+  // {
+  //   title: '跳转目标',
+  //   key: 'jumpTarget',
+  //   ellipsis: {
+  //     tooltip: true,
+  //   },
+  // },
+  {
+    title: '新窗口打开',
+    key: 'targetBlankName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.targetBlank ? 'primary' : 'error',
+      }, { default: () => row.targetBlankName })
+    },
+  },
+  {
+    title: '显示子标题',
+    key: 'isVisibleSubtitleName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.isVisibleSubtitle ? 'primary' : 'error',
+      }, { default: () => row.isVisibleSubtitleName })
+    },
   },
   {
     title: '排序',
     key: 'sort',
-  },
-  {
-    title: '子标题',
-    key: 'subtitle',
-    ellipsis: true,
   },
   {
     title: '上架',
@@ -48,7 +97,7 @@ const columns: DataTableColumns<any> = [
     render: (row) => {
       return h(NTag, {
         type: row.isVisible ? 'primary' : 'error',
-      }, () => row.isVisibleName)
+      }, { default: () => row.isVisibleName })
     },
   },
   {
@@ -63,12 +112,12 @@ const columns: DataTableColumns<any> = [
           size: 'small',
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
-        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
+        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, { default: () => '详情' }),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {
           default: () => '确认删除',
-          trigger: () => h(NButton, { size: 'small', type: 'error' }, () => '删除'),
+          trigger: () => h(NButton, { size: 'small', type: 'error' }, { default: () => '删除' }),
         }),
       ])
     },

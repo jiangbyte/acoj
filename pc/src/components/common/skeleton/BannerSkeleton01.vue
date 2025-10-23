@@ -1,5 +1,5 @@
 <template>
-  <section class="mb-12 rounded-2xl overflow-hidden shadow-lg">
+  <section class="rounded-2xl overflow-hidden shadow-lg">
     <div class="my-section">
       <div
         class="carousel-item"

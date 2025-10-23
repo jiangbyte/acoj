@@ -2,6 +2,10 @@ package io.charlie.web.oj.modular.data.set.param;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -43,9 +47,13 @@ public class DataSetAddParam implements Serializable {
     private Integer difficulty;
 
     @Schema(description = "开始时间")
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date startTime;
 
     @Schema(description = "结束时间")
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date endTime;
 
     @Schema(description = "是否可见")
@@ -53,9 +61,6 @@ public class DataSetAddParam implements Serializable {
 
     @Schema(description = "是否使用AI")
     private Boolean useAi;
-
-    @Schema(description = "额外的信息")
-    private String exJson;
 
     private List<String> problemIds;
 

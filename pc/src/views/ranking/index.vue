@@ -148,76 +148,81 @@ function rowProps(row: any) {
 </script>
 
 <template>
-  <main class="container mx-auto px-4 py-8">
-    <!-- 页面标题和统计信息 -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold mb-2">
-        排行榜
-      </h1>
-      <p class="text-gray-600 dark:text-gray-400">
-        查看平台上用户解题排行榜、活跃的用户等
-      </p>
-    </div>
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-      <div class="lg:col-span-3 space-y-8">
-        <!-- 排行榜标签页 -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-            <div class="p-5 border-b border-gray-100 dark:border-gray-700">
-              <h3 class="font-semibold text-lg">
+  <main class="container mx-auto px-2 py-6">
+    <n-grid
+      cols="1 l:6"
+      :x-gap="24"
+      :y-gap="24"
+      responsive="screen"
+    >
+      <!-- 左侧主内容 -->
+      <n-gi span="1 l:4">
+        <!-- 公告内容 -->
+        <NSpace vertical :size="24">
+          <n-card class="rounded-xl" size="small" content-style="padding: 0">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
                 用户排行榜
-              </h3>
-            </div>
-            <div class="divide-y divide-gray-100 dark:divide-gray-700">
-              <n-data-table
-                :columns="userRankingColumns"
-                :data="totalRankingPageData?.records"
-                :bordered="false"
-                :row-key="(row: any) => row.userId"
-                :row-props="rowProps"
-                :loading="!totalRankingPageData?.records"
-                class="flex-1 h-full"
-              />
-            </div>
-            <n-pagination
-              v-model:page="totalRankingPageParam.current"
-              v-model:page-size="totalRankingPageParam.size"
-              show-size-picker
-              :page-count="totalRankingPageData ? Number(totalRankingPageData.pages) : 0"
-              :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                label: `${(i + 1) * 10} 每页`,
-                value: (i + 1) * 10,
-              }))"
-              :page-slot="3"
-              class="flex justify-center items-center p-6"
-              @update:page="loadData"
-              @update:page-size="loadData"
+              </n-h2>
+            </template>
+            <template #header-extra>
+              <NText>
+                当前共 <span class="text-blue-600 dark:text-blue-400 font-medium">
+                  {{ totalRankingPageData?.total ? totalRankingPageData.total : 0 }}
+                </span> 条数据
+              </NText>
+            </template>
+            <n-data-table
+              :columns="userRankingColumns"
+              :data="totalRankingPageData?.records"
+              :bordered="false"
+              :row-key="(row: any) => row.userId"
+              :row-props="rowProps"
+              :loading="!totalRankingPageData?.records"
+              class="flex-1 h-full"
             />
-          </div>
-        </div>
-      </div>
+            <template #footer>
+              <n-pagination
+                v-model:page="totalRankingPageParam.current"
+                v-model:page-size="totalRankingPageParam.size"
+                show-size-picker
+                :page-count="totalRankingPageData ? Number(totalRankingPageData.pages) : 0"
+                :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+                  label: `${(i + 1) * 10} 每页`,
+                  value: (i + 1) * 10,
+                }))"
+                :page-slot="3"
+                class="flex justify-center items-center p-6"
+                @update:page="loadData"
+                @update:page-size="loadData"
+              />
+            </template>
+          </n-card>
+        </NSpace>
+      </n-gi>
+      <!-- 右侧边栏 -->
+      <n-gi span="1 l:2">
+        <NSpace
+          vertical
+          :size="24"
+        >
+          <n-card class="rounded-xl" size="small" content-style="padding: 0">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
+                活跃用户
+              </n-h2>
+            </template>
+            <ListSkeleton03 v-if="!activeUsersTop" />
+            <EmptyData v-else-if="activeUsersTop.length === 0" />
+            <UserActiveRanking v-else :list-data="activeUsersTop" />
+          </n-card>
 
-      <div class="space-y-8">
-        <!-- 用户排行榜 -->
-        <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="p-x-5 pt-5 border-b border-gray-100 dark:border-gray-700">
-            <h2 class="text-xl font-bold">
-              活跃用户
-            </h2>
-          </div>
-          <ListSkeleton03 v-if="!activeUsersTop" />
-          <EmptyData v-else-if="activeUsersTop.length === 0" />
-          <UserActiveRanking v-else :list-data="activeUsersTop" />
-        </section>
-
-        <!-- 排行榜和活跃度说明卡片 -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="p-5 border-b border-gray-100 dark:border-gray-700">
-            <h3 class="font-semibold text-lg">
-              排名规则说明
-            </h3>
-          </div>
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          <n-card class="rounded-xl" size="small" content-style="padding: 0">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
+                排名规则说明
+              </n-h2>
+            </template>
             <div class="p-x-5 pb-5 flex flex-col space-y-4">
               <div>
                 <h4 class="font-medium mb-2">
@@ -241,10 +246,10 @@ function rowProps(row: any) {
                 </ul>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          </n-card>
+        </NSpace>
+      </n-gi>
+    </n-grid>
   </main>
 </template>
 

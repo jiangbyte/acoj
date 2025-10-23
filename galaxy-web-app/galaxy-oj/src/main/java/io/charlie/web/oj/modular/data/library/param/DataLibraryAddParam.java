@@ -2,12 +2,17 @@ package io.charlie.web.oj.modular.data.library.param;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.io.Serial;
+import java.util.Date;
 
 /**
 * @author Charlie Zhang
@@ -38,7 +43,9 @@ public class DataLibraryAddParam implements Serializable {
     private String submitId;
 
     @Schema(description = "提交时间")
-    private LocalDateTime submitTime;
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
+    private Date submitTime;
 
     @Schema(description = "编程语言")
     private String language;

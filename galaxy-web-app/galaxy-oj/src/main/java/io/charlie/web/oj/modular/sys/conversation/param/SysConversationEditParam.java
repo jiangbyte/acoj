@@ -2,6 +2,10 @@ package io.charlie.web.oj.modular.sys.conversation.param;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 import java.io.Serializable;
 import java.sql.Date;
@@ -66,6 +70,8 @@ public class SysConversationEditParam implements Serializable {
     private Integer totalTokens;
 
     @Schema(description = "响应时间")
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date responseTime;
 
     @Schema(description = "流式传输总耗时")

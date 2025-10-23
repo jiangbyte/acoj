@@ -61,9 +61,6 @@ defineExpose({
             -
           </div>
         </NDescriptionsItem>
-        <!-- <NDescriptionsItem label="额外的信息">
-          {{ formData.exJson }}
-        </NDescriptionsItem> -->
         <NDescriptionsItem label="上架">
           {{ formData.isVisibleName }}
         </NDescriptionsItem>

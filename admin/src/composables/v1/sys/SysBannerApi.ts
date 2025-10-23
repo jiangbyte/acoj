@@ -16,9 +16,14 @@ export function useSysBannerFetch() {
     title: '',
     banner: '',
     buttonText: '',
-    toUrl: '',
+    isVisibleButton: false,
+    jumpModule: null,
+    jumpType: null,
+    jumpTarget: null,
+    targetBlank: false,
     sort: 0,
     subtitle: '',
+    isVisibleSubtitle: false,
     isVisible: false,
     createTime: '',
     createUser: '',
@@ -79,6 +84,13 @@ export function useSysBannerFetch() {
      */
     sysBannerLatest() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/latest`)
+    },
+    sysBannerJumpTargetList(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/jumpTargetList`, {
+        params: {
+          ...data,
+        },
+      })
     },
   }
 }

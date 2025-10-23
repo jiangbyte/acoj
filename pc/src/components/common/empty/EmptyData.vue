@@ -16,7 +16,7 @@
       暂无数据
     </n-text>
   </n-empty> -->
-  <n-empty description="暂无数据" class="p-4"/>
+  <n-empty description="暂无数据" class="p-4 p-y-20" />
 </template>
 
 <style scoped>

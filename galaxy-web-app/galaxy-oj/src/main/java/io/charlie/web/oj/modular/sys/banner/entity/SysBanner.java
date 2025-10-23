@@ -41,14 +41,34 @@ public class SysBanner extends CommonEntity {
     @Schema(description = "按钮文字")
     private String buttonText;
 
-    @Schema(description = "链接")
-    private String toUrl;
+    @Schema(description = "按钮是否可见")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
+    private Boolean isVisibleButton;
+
+    @Schema(description = "跳转模块")
+    @Trans(type = TransType.DICTIONARY, key = "JUMP_MODULE")
+    private String jumpModule;
+
+    @Schema(description = "跳转类别")
+    @Trans(type = TransType.DICTIONARY, key = "JUMP_TYPE")
+    private String jumpType;
+
+    @Schema(description = "跳转目标")
+    private String jumpTarget;
+
+    @Schema(description = "新窗口打开")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
+    private Boolean targetBlank;
 
     @Schema(description = "排序")
-    private Byte sort;
+    private Integer sort;
 
     @Schema(description = "子标题")
     private String subtitle;
+
+    @Schema(description = "子标题是否可见")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
+    private Boolean isVisibleSubtitle;
 
     @Schema(description = "是否可见")
     @Trans(type = TransType.DICTIONARY, key = "YES_NO")

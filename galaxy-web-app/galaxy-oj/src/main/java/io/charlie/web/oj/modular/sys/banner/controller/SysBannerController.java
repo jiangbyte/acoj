@@ -5,10 +5,7 @@ import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.annotation.log.Log;
 import io.charlie.web.oj.annotation.log.LogCategory;
 import io.charlie.web.oj.annotation.log.LogModule;
-import io.charlie.web.oj.modular.sys.banner.param.SysBannerPageParam;
-import io.charlie.web.oj.modular.sys.banner.param.SysBannerAddParam;
-import io.charlie.web.oj.modular.sys.banner.param.SysBannerEditParam;
-import io.charlie.web.oj.modular.sys.banner.param.SysBannerIdParam;
+import io.charlie.web.oj.modular.sys.banner.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -84,6 +81,12 @@ public class SysBannerController {
     @GetMapping("/sys/banner/latest")
     public Result<?> latest() {
         return Result.success(sysBannerService.latestN(10));
+    }
+
+    @Operation(summary = "获取跳转目标列表")
+    @GetMapping("/sys/banner/jumpTargetList")
+    public Result<?> jumpTargetList(@ParameterObject @Valid SysBannerJumpTargetParam sysBannerJumpTargetParam) {
+        return Result.success(sysBannerService.jumpTargetList(sysBannerJumpTargetParam));
     }
 
 }

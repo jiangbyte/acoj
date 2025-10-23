@@ -68,6 +68,7 @@ public class SysUser extends CommonEntity {
     private String quote;
 
     @Schema(description = "性别")
+    @Trans(type = TransType.DICTIONARY, key = "SYS_GENDER")
     private Integer gender;
 
     @Schema(description = "邮箱")

@@ -54,12 +54,15 @@ public class LogAspect {
         // 设置操作信息
         setOperationInfo(joinPoint, logAnnotation, sysLog);
 
+        String loginDevice = null;
         // 设置用户信息
         try {
             String loginIdAsString = StpUtil.getLoginIdAsString();
             sysLog.setUserId(loginIdAsString);
+           loginDevice = StpUtil.getLoginDevice();
             log.info("用户ID日志: {}", loginIdAsString);
         } catch (Exception e) {
+            loginDevice = null;
             log.warn("获取用户信息失败: {}", e.getMessage());
         }
 
@@ -76,8 +79,12 @@ public class LogAspect {
             sysLog.setMessage(e.getMessage());
             throw e;
         } finally {
-            // 异步保存日志
-            saveLog(sysLog);
+            if (loginDevice != null) {
+                if ("ADMIN".equals(loginDevice)) {
+                    // 异步保存日志
+                    saveLog(sysLog);
+                }
+            }
         }
 
         return result;

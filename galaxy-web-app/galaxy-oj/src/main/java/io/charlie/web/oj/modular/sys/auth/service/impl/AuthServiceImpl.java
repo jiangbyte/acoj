@@ -16,6 +16,7 @@ import io.charlie.web.oj.modular.sys.auth.service.AuthService;
 import io.charlie.web.oj.modular.sys.auth.param.UsernamePasswordEmailRegisterParam;
 import io.charlie.web.oj.modular.sys.auth.result.CaptchaResult;
 import io.charlie.web.oj.modular.sys.auth.result.LoginUser;
+import io.charlie.web.oj.modular.sys.auth.utils.UserValidationUtil;
 import io.charlie.web.oj.modular.sys.config.service.SysConfigService;
 import io.charlie.web.oj.modular.sys.dict.service.SysDictService;
 import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
@@ -104,27 +105,10 @@ public class AuthServiceImpl implements AuthService {
 
         // 登录逻辑
         String username = usernamePasswordLoginParam.getUsername();
-        if (ObjectUtil.isEmpty(username)) {
-            throw new BusinessException("用户名不能为空");
-        }
-
-        // 校验长度
-        if (username.length() < 6 || username.length() > 20) {
-            throw new BusinessException("用户名长度必须在6-20位之间");
-        }
-
-        // 校验必须以字母开头
-        if (!Character.isLetter(username.charAt(0))) {
-            throw new BusinessException("用户名必须以字母开头");
-        }
-
-        // 校验只能包含字母、数字、下划线
-        String usernamePattern = "^[a-zA-Z0-9_]+$";
-        if (!username.matches(usernamePattern)) {
-            throw new BusinessException("用户名只能包含字母、数字和下划线");
-        }
+        UserValidationUtil.validateUsername(username).throwIfFailed();
 
         String password = usernamePasswordLoginParam.getPassword();
+        UserValidationUtil.validatePassword(password).throwIfFailed();
 
         // 数据库用户名是否存在
         SysUser sysUser = sysUserMapper.selectOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, username));
@@ -144,7 +128,6 @@ public class AuthServiceImpl implements AuthService {
         sysUser.setLoginTime(new Date());
         sysUserMapper.updateById(sysUser);
         // redis 记录用户活跃情况（保留30天），进行评分自增记录
-
 
         StpUtil.login(sysUser.getId(), usernamePasswordLoginParam.getPlatform().toUpperCase());
         return StpUtil.getTokenValue();
@@ -170,25 +153,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 用户名校验，必须是字母开头，长度6-20位，只能包含字母、数字、下划线
         String username = usernamePasswordEmailRegisterParam.getUsername();
-        if (ObjectUtil.isEmpty(username)) {
-            throw new BusinessException("用户名不能为空");
-        }
-
-        // 校验长度
-        if (username.length() < 6 || username.length() > 20) {
-            throw new BusinessException("用户名长度必须在6-20位之间");
-        }
-
-        // 校验必须以字母开头
-        if (!Character.isLetter(username.charAt(0))) {
-            throw new BusinessException("用户名必须以字母开头");
-        }
-
-        // 校验只能包含字母、数字、下划线
-        String usernamePattern = "^[a-zA-Z0-9_]+$";
-        if (!username.matches(usernamePattern)) {
-            throw new BusinessException("用户名只能包含字母、数字和下划线");
-        }
+        UserValidationUtil.validateUsername(username).throwIfFailed();
 
         // 到这里验证码校验通过，删除验证码
         redisTemplate.delete("captcha:" + usernamePasswordEmailRegisterParam.getUuid());
@@ -196,7 +161,10 @@ public class AuthServiceImpl implements AuthService {
         // 注册逻辑
 //        String username = usernamePasswordEmailRegisterParam.getUsername();
         String password = usernamePasswordEmailRegisterParam.getPassword();
+        UserValidationUtil.validatePassword(password).throwIfFailed();
+
         String email = usernamePasswordEmailRegisterParam.getEmail();
+        UserValidationUtil.validateEmail(email).throwIfFailed();
 
         // 用户名 邮箱 存在校验
         if (sysUserMapper.exists(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, username))) {
@@ -204,11 +172,6 @@ public class AuthServiceImpl implements AuthService {
         }
         if (sysUserMapper.exists(new LambdaQueryWrapper<SysUser>().eq(SysUser::getEmail, email))) {
             throw new BusinessException("邮箱已存在");
-        }
-
-        // 邮箱格式校验
-        if (!Validator.isEmail(email)) {
-            throw new BusinessException("邮箱格式错误");
         }
 
         // 加密密码

@@ -93,7 +93,7 @@ const columns: DataTableColumns<any> = [
 
 const pageParam = ref({
   current: 1,
-  size: 20,
+  size: 10,
   sortField: null,
   sortOrder: null,
   keyword: '',
@@ -111,6 +111,7 @@ const difficultyDistribution = ref()
 const problemcount = ref()
 const problemRankingListData = ref()
 
+const isLoading = ref(false)
 async function loadData() {
   const { dataProblemPage, dataProblemCount } = useDataProblemFetch()
   const { sysCategoryOptions } = useSysCategoryFetch()
@@ -128,10 +129,12 @@ async function loadData() {
     }
   })
 
+  isLoading.value = true
   dataProblemPage(pageParam.value).then(({ data }) => {
     if (data) {
       pageData.value = data
       console.log(data)
+      isLoading.value = false
     }
   })
 
@@ -192,261 +195,273 @@ function resetHandle() {
 </script>
 
 <template>
-  <main class="container mx-auto px-4 py-8">
-    <!-- 页面标题和统计信息 -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold mb-2">
-        题库
-      </h1>
-      <p class="text-gray-600 dark:text-gray-400">
-        共收录 <span class="text-blue-600 dark:text-blue-400 font-medium">
-          {{ pageData?.total ? pageData.total : 0 }}
-        </span> 道题目，覆盖各种难度和知识点
-      </p>
-    </div>
+  <main class="container mx-auto px-2 py-6">
+    <n-grid
+      cols="1 l:6"
+      :x-gap="24"
+      :y-gap="24"
+      responsive="screen"
+    >
+      <!-- 左侧主内容 -->
+      <n-gi span="1 l:4">
+        <!-- 公告内容 -->
+        <NSpace vertical :size="24">
+          <n-card size="small" class="rounded-xl">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
+                筛选题目
+              </n-h2>
+            </template>
+            <template #header-extra>
+              <n-flex align="center">
+                <n-text class="text-sm">
+                  收录题目 <span class="text-blue-600 dark:text-blue-400 font-medium">
+                    {{ problemcount?.total ? problemcount.total : 0 }}
+                  </span>
+                </n-text>
+                <!-- <n-text class="text-green-600 dark:text-green-400 text-xs flex items-center">
+                  <icon-park-outline-arrow-up class="mr-1" />
+                  较上月增长 {{ problemcount?.growthRate * 100 }} %
+                </n-text> -->
+              </n-flex>
+            </template>
+            <n-grid
+              cols="2 l:4"
+              :x-gap="24"
+              :y-gap="24"
+              responsive="screen"
+            >
+              <n-gi span="1 l:1">
+                <n-input
+                  v-model:value="pageParam.keyword"
+                  placeholder="搜索题目"
+                  clearable
+                  @keyup.enter="loadData"
+                  @clear="() => { pageParam.keyword = ''; loadData() }"
+                />
+              </n-gi>
+              <n-gi span="1 l:1">
+                <n-select
+                  v-model:value="pageParam.categoryId"
+                  placeholder="选择分类"
+                  clearable
+                  :options="categoryOptions"
+                  @clear="() => { pageParam.categoryId = null; loadData() }"
+                />
+              </n-gi>
+              <n-gi span="1 l:1">
+                <n-select
+                  v-model:value="pageParam.tagId"
+                  placeholder="选择标签"
+                  clearable
+                  :options="tagOptions"
+                  @clear="() => { pageParam.tagId = null; loadData() }"
+                />
+              </n-gi>
+              <n-gi span="1 l:1">
+                <n-select
+                  v-model:value="pageParam.difficulty"
+                  placeholder="选择难度"
+                  clearable
+                  :options="difficultyOptions"
+                  @clear="() => { pageParam.difficulty = null; loadData() }"
+                />
+              </n-gi>
+            </n-grid>
+            <template #footer>
+              <n-input-group class="flex justify-end">
+                <n-button type="warning" @click="resetHandle">
+                  重置筛选
+                </n-button>
+                <n-button type="primary" @click="loadData">
+                  应用筛选
+                </n-button>
+              </n-input-group>
+            </template>
+          </n-card>
 
-    <!-- 数据统计卡片 -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 transform transition-all hover:shadow-md hover:-translate-y-1">
-        <div class="flex items-start justify-between">
-          <div>
-            <p class="text-gray-500 dark:text-gray-400 text-sm">
-              总题目数
-            </p>
-            <h3 class="text-2xl font-bold mt-1">
-              {{ problemcount?.total ? problemcount.total : 0 }}
-            </h3>
-            <p class="text-green-600 dark:text-green-400 text-xs mt-2 flex items-center">
-              <icon-park-outline-arrow-up class="mr-1" />
-              较上月增长 {{ problemcount?.growthRate * 100 }} %
-            </p>
-          </div>
-          <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-            <icon-park-outline-book />
-          </div>
-        </div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 transform transition-all hover:shadow-md hover:-translate-y-1">
-        <div class="flex items-start justify-between">
-          <div>
-            <p class="text-gray-500 dark:text-gray-400 text-sm">
-              已解决题目
-            </p>
-            <h3 class="text-2xl font-bold mt-1">
-              {{ problemcount?.solved ? problemcount.solved : 0 }} / {{ problemcount?.total ? problemcount.total : 0 }}
-            </h3>
-            <p class="text-gray-500 dark:text-gray-400 text-xs mt-2 flex items-center">
-              <icon-park-outline-user class="mr-1" />
-              登录后可跟踪进度
-            </p>
-          </div>
-          <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
-            <icon-park-outline-check />
-          </div>
-        </div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 transform transition-all hover:shadow-md hover:-translate-y-1">
-        <div class="flex items-start justify-between">
-          <div>
-            <p class="text-gray-500 dark:text-gray-400 text-sm">
-              总体通过率
-            </p>
-            <h3 class="text-2xl font-bold mt-1">
-              {{ problemcount?.avgPassRate ? problemcount?.avgPassRate : 0 }} %
-            </h3>
-            <p class="text-gray-500 dark:text-gray-400 text-xs mt-2">
-              所有已提交的题目总体提交通过率
-            </p>
-          </div>
-          <div class="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
-            <icon-park-outline-chart-line />
-          </div>
-        </div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 transform transition-all hover:shadow-md hover:-translate-y-1">
-        <div class="flex items-start justify-between">
-          <div>
-            <p class="text-gray-500 dark:text-gray-400 text-sm">
-              本月新增
-            </p>
-            <h3 class="text-2xl font-bold mt-1">
-              {{ problemcount?.monthAdd ? problemcount?.monthAdd : 0 }}
-            </h3>
-            <p class="text-blue-600 dark:text-blue-400 text-xs mt-2 flex items-center">
-              <icon-park-outline-calendar class="mr-1" />
-              最新更新于  <n-time :time="Number(problemcount?.lastAddTime ? Number(problemcount?.lastAddTime) : 0)" type="relative" />
-            </p>
-          </div>
-          <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-            <icon-park-outline-add />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 搜索和筛选区 -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 mb-8">
-      <!-- 关键字搜索 -->
-      <div class="mb-6">
-        <n-input
-          v-model:value="pageParam.keyword"
-          placeholder="搜索题目"
-          clearable
-          @keyup.enter="loadData"
-          @clear="resetHandle"
-        />
-      </div>
-
-      <!-- 高级筛选区 - 分类、标签、难度 -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- 分类筛选 -->
-        <div>
-          <label class="block text-sm font-medium mb-2">题目分类</label>
-          <n-select
-            v-model:value="pageParam.categoryId"
-            placeholder="选择分类"
-            clearable
-            :options="categoryOptions"
-            @clear="resetHandle"
-          />
-        </div>
-
-        <!-- 标签筛选 -->
-        <div>
-          <label class="block text-sm font-medium mb-2">标签</label>
-          <n-select
-            v-model:value="pageParam.tagId"
-            placeholder="选择标签"
-            clearable
-            :options="tagOptions"
-            @clear="resetHandle"
-          />
-        </div>
-
-        <!-- 难度筛选 -->
-        <div>
-          <label class="block text-sm font-medium mb-2">难度</label>
-          <n-select
-            v-model:value="pageParam.difficulty"
-            placeholder="选择难度"
-            clearable
-            :options="difficultyOptions"
-            @clear="resetHandle"
-          />
-        </div>
-      </div>
-
-      <!-- 热门标签快速筛选 -->
-      <!--      <div class="mt-6"> -->
-      <!--        <label class="block text-sm font-medium mb-2">热门标签</label> -->
-      <!--        <n-tag :bordered="false" class="mr-2" round v-for="i in 6" :key="i">456</n-tag> -->
-      <!--      </div> -->
-
-      <!-- 筛选按钮 -->
-      <div class="mt-6 flex justify-end space-x-3">
-        <n-button type="warning" @click="resetHandle">
-          重置筛选
-        </n-button>
-        <n-button type="primary" @click="loadData">
-          应用筛选
-        </n-button>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div class="lg:col-span-2 space-y-8">
-        <!-- 题库 -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-            <div class="p-5 border-b border-gray-100 dark:border-gray-700">
-              <h3 class="font-semibold text-lg">
-                题库
-              </h3>
-            </div>
-            <div class="divide-y divide-gray-100 dark:divide-gray-700">
-              <n-data-table
-                :columns="columns"
-                :data="pageData?.records"
-                :bordered="false"
-                :row-key="(row: any) => row.userId"
-                class="flex-1 h-full"
-                :scroll-x="1000"
-                :row-props="rowProps"
-                :loading="!pageData?.records"
-              />
-            </div>
-            <n-pagination
-              v-model:page="pageParam.current"
-              v-model:page-size="pageParam.size"
-              show-size-picker
-              :page-count="pageData ? Number(pageData.pages) : 0"
-              :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                label: `${(i + 1) * 10} 每页`,
-                value: (i + 1) * 10,
-              }))"
-              :page-slot="3"
-              class="flex justify-center items-center p-6"
-              @update:page="loadData"
-              @update:page-size="loadData"
+          <n-card class="rounded-xl" size="small" content-style="padding: 0">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
+                题目列表
+              </n-h2>
+            </template>
+            <template #header-extra>
+              <n-text>
+                当前共 <span class="text-blue-600 dark:text-blue-400 font-medium">
+                  {{ pageData?.total ? pageData.total : 0 }}
+                </span> 条数据
+              </n-text>
+            </template>
+            <n-data-table
+              :columns="columns"
+              :data="pageData?.records"
+              :bordered="false"
+              :row-key="(row: any) => row.userId"
+              class="flex-1 h-full"
+              :scroll-x="1000"
+              :row-props="rowProps"
+              :loading="isLoading"
             />
-          </div>
-        </div>
-      </div>
-      <div class="space-y-8">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700">
-          <h3 class="font-bold text-lg mb-4">
-            难度分布
-          </h3>
-          <LineSkeleton01 v-if="!difficultyDistribution" />
-          <EmptyData v-else-if="difficultyDistribution.length === 0" />
-          <div v-else class="space-y-4">
-            <div v-for="item in difficultyDistribution" :key="item.difficulty">
-              <div class="flex justify-between mb-1">
-                <span class="text-sm">{{ item.difficultyName }}</span>
-                <span class="text-sm font-medium">{{ item.count }} 题 ({{ item.percentage }}%)</span>
+            <template #footer>
+              <n-pagination
+                v-model:page="pageParam.current"
+                v-model:page-size="pageParam.size"
+                show-size-picker
+                :page-count="pageData ? Number(pageData.pages) : 0"
+                :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+                  label: `${(i + 1) * 10} 每页`,
+                  value: (i + 1) * 10,
+                }))"
+                :page-slot="3"
+                class="flex justify-center items-center mt-4"
+                @update:page="loadData"
+                @update:page-size="loadData"
+              />
+            </template>
+          </n-card>
+        </NSpace>
+      </n-gi>
+
+      <!-- 右侧边栏 -->
+      <n-gi span="1 l:2">
+        <NSpace
+          vertical
+          :size="24"
+        >
+          <n-card class="rounded-xl" size="small">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
+                我的解题
+              </n-h2>
+            </template>
+            <n-flex align="center" justify="center">
+              <h3 class="text-4xl font-bold">
+                {{ problemcount?.solved ? problemcount.solved : 0 }} / {{ problemcount?.total ? problemcount.total : 0 }}
+              </h3>
+            </n-flex>
+            <!-- <icon-park-outline-check /> -->
+            <template #footer>
+              <n-text depth="3">
+                <icon-park-outline-user class="mr-1" /> 登录后可跟踪进度
+              </n-text>
+            </template>
+          </n-card>
+
+          <n-card class="rounded-xl" size="small" content-style="padding: 0">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
+                难度分布
+              </n-h2><LineSkeleton01 v-if="!difficultyDistribution" />
+              <EmptyData v-else-if="difficultyDistribution.length === 0" />
+              <div v-else class="space-y-4">
+                <div v-for="item in difficultyDistribution" :key="item.difficulty">
+                  <div class="flex justify-between mb-1">
+                    <span class="text-sm">{{ item.difficultyName }}</span>
+                    <span class="text-sm font-medium">{{ item.count }} 题 ({{ item.percentage }}%)</span>
+                  </div>
+                  <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div class="bg-green-600 h-2.5 rounded-full" :style="{ width: `${item.percentage}%` }" />
+                  </div>
+                </div>
               </div>
-              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                <div class="bg-green-600 h-2.5 rounded-full" :style="{ width: `${item.percentage}%` }" />
+            </template>
+          </n-card>
+
+          <n-card size="small" class="rounded-xl" content-style="padding: 0">
+            <template #header>
+              <n-h2 class="pb-0 mb-0">
+                热门题目
+              </n-h2>
+            </template>
+            <ListSkeleton02 v-if="!problemRankingListData" />
+            <EmptyData v-else-if="problemRankingListData.length === 0" />
+            <HotProblem v-else :list-data="problemRankingListData" />
+          </n-card>
+
+          <!-- 数据统计卡片 -->
+          <!-- <div class="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 transform transition-all hover:shadow-md hover:-translate-y-1">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-gray-500 dark:text-gray-400 text-sm">
+                    总题目数
+                  </p>
+                  <h3 class="text-2xl font-bold mt-1">
+                    {{ problemcount?.total ? problemcount.total : 0 }}
+                  </h3>
+                  <p class="text-green-600 dark:text-green-400 text-xs mt-2 flex items-center">
+                    <icon-park-outline-arrow-up class="mr-1" />
+                    较上月增长 {{ problemcount?.growthRate * 100 }} %
+                  </p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <icon-park-outline-book />
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <section class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div class="p-x-5 pt-5 border-b border-gray-100 dark:border-gray-700">
-            <h2 class="text-xl font-bold">
-              热门题目
-            </h2>
-          </div>
-
-          <ListSkeleton02 v-if="!problemRankingListData" />
-          <EmptyData v-else-if="problemRankingListData.length === 0" />
-          <HotProblem v-else :list-data="problemRankingListData" />
-        </section>
-      </div>
-    </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 transform transition-all hover:shadow-md hover:-translate-y-1">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-gray-500 dark:text-gray-400 text-sm">
+                    已解决题目
+                  </p>
+                  <h3 class="text-2xl font-bold mt-1">
+                    {{ problemcount?.solved ? problemcount.solved : 0 }} / {{ problemcount?.total ? problemcount.total : 0 }}
+                  </h3>
+                  <p class="text-gray-500 dark:text-gray-400 text-xs mt-2 flex items-center">
+                    <icon-park-outline-user class="mr-1" />
+                    登录后可跟踪进度
+                  </p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                  <icon-park-outline-check />
+                </div>
+              </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 transform transition-all hover:shadow-md hover:-translate-y-1">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-gray-500 dark:text-gray-400 text-sm">
+                    总体通过率
+                  </p>
+                  <h3 class="text-2xl font-bold mt-1">
+                    {{ problemcount?.avgPassRate ? problemcount?.avgPassRate : 0 }} %
+                  </h3>
+                  <p class="text-gray-500 dark:text-gray-400 text-xs mt-2">
+                    所有已提交的题目总体提交通过率
+                  </p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-600 dark:text-yellow-400">
+                  <icon-park-outline-chart-line />
+                </div>
+              </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-gray-700 transform transition-all hover:shadow-md hover:-translate-y-1">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-gray-500 dark:text-gray-400 text-sm">
+                    本月新增
+                  </p>
+                  <h3 class="text-2xl font-bold mt-1">
+                    {{ problemcount?.monthAdd ? problemcount?.monthAdd : 0 }}
+                  </h3>
+                  <p class="text-blue-600 dark:text-blue-400 text-xs mt-2 flex items-center">
+                    <icon-park-outline-calendar class="mr-1" />
+                    最新更新于  <n-time :time="Number(problemcount?.lastAddTime ? Number(problemcount?.lastAddTime) : 0)" type="relative" />
+                  </p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                  <icon-park-outline-add />
+                </div>
+              </div>
+            </div>
+          </div> -->
+        </NSpace>
+      </n-gi>
+    </n-grid>
   </main>
 </template>
 
 <style scoped>
-/* 基础样式补充 */
-html {
-  scroll-behavior: smooth;
-}
-
-a {
-  text-decoration: none;
-}
-
-/* 表格行悬停效果优化 */
-tr:hover {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-/* 解决select下拉箭头在部分浏览器不显示的问题 */
-select {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
 </style>

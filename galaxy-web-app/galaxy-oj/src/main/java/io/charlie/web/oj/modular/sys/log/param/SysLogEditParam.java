@@ -2,6 +2,10 @@ package io.charlie.web.oj.modular.sys.log.param;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -42,6 +46,8 @@ public class SysLogEditParam implements Serializable {
     private String ip;
 
     @Schema(description = "操作时间")
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date operationTime;
 
     @Schema(description = "操作分类")

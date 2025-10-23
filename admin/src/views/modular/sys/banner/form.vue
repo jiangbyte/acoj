@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysBannerFetch } from '@/composables/v1'
+import { useSysBannerFetch, useSysDictFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
@@ -16,16 +16,22 @@ const rules = {
     { required: true, message: '请输入横幅', trigger: ['input', 'blur'] },
   ],
   buttonText: [
-    { required: true, message: '请输入按钮文字', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入按钮文字', trigger: ['input', 'blur'] },
   ],
-  toUrl: [
-    // { required: true, message: '请输入链接', trigger: ['input', 'blur'] },
+  jumpModule: [
+    { required: true, message: '请输入跳转模块', trigger: ['input', 'blur'] },
+  ],
+  jumpType: [
+    // { required: true, message: '请输入跳转类别', trigger: ['input', 'blur'] },
+  ],
+  jumpTarget: [
+    { required: true, message: '请输入跳转目标', trigger: ['input', 'blur'] },
   ],
   sort: [
     { required: true, message: '请输入排序', type: 'number', trigger: ['input', 'blur'] },
   ],
   subtitle: [
-    { required: true, message: '请输入子标题', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入子标题', trigger: ['input', 'blur'] },
   ],
 }
 function doClose() {
@@ -62,13 +68,59 @@ async function doSubmit() {
   })
 }
 
+const jumpModuleRef = ref()
+const jumpTypeRef = ref()
 function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
+
+  useSysDictFetch().sysDictOptions({ dictType: 'JUMP_MODULE' }).then(({ data }) => {
+    jumpModuleRef.value = data
+  })
+  // useSysDictFetch().sysDictOptions({ dictType: 'JUMP_TYPE' }).then(({ data }) => {
+  //   jumpTypeRef.value = data
+  // })
 }
 defineExpose({
   doOpen,
+})
+
+const isDisableTargetBlank = ref(false)
+const jumpTargetListOptions = ref()
+
+// 如果formDataJUMP_MODULE选择外链，JUMP_TYPE才显示URL
+watch(() => formData.value.jumpModule, (val) => {
+  // 当状态为三种之一时，统一处理
+  const isSpecialState = ['NOTDO', 'PAGE_PROBLEM', 'PAGE_SET'].includes(val)
+
+  if (val === 'HREF') {
+    useSysDictFetch().sysDictOptions({ dictType: 'JUMP_TYPE' }).then(({ data }) => {
+      jumpTypeRef.value = data.filter((item: any) => item.value === 'URL')
+      formData.value.targetBlank = true
+      isDisableTargetBlank.value = true
+      formData.value.jumpType = 'URL'
+    })
+  }
+  else if (isSpecialState) {
+    formData.value.jumpType = ''
+    formData.value.jumpTarget = ''
+    formData.value.targetBlank = false
+    jumpTargetListOptions.value = []
+    jumpTypeRef.value = []
+  }
+  else {
+    useSysBannerFetch().sysBannerJumpTargetList({ jumpModule: val, keyword: '' }).then(({ data }) => {
+      jumpTargetListOptions.value = data
+    })
+
+    useSysDictFetch().sysDictOptions({ dictType: 'JUMP_TYPE' }).then(({ data }) => {
+      jumpTypeRef.value = data.filter((item: any) => item.value !== 'URL')
+      formData.value.targetBlank = false
+      isDisableTargetBlank.value = false
+      formData.value.jumpType = 'ID'
+    })
+  }
 })
 </script>
 
@@ -85,24 +137,89 @@ defineExpose({
           <NInput v-model:value="formData.title" placeholder="请输入标题" />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="横幅" path="banner">
-          <FileUpload v-model="formData.banner" :is-image="true" />
+        <NFormItem label="子标题" path="subtitle">
+          <NInput v-model:value="formData.subtitle" placeholder="请输入子标题" />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="按钮文字" path="buttonText">
           <NInput v-model:value="formData.buttonText" placeholder="请输入按钮文字" />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="链接" path="toUrl">
+        <NFormItem label="横幅" path="banner">
+          <FileUpload v-model="formData.banner" :is-image="true" />
+        </NFormItem>
+        <!-- Boolean 选择框 -->
+        <NFormItem label="按钮是否可见" path="isVisibleButton">
+          <NRadioGroup v-model:value="formData.isVisibleButton">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
+        </NFormItem>
+        <!-- 输入框 -->
+        <NFormItem label="跳转模块" path="jumpModule">
+          <!-- <NInput v-model:value="formData.jumpModule" placeholder="请输入跳转模块" /> -->
+          <NSelect
+            v-model:value="formData.jumpModule"
+            placeholder="请选择跳转模块"
+            :options="jumpModuleRef"
+          />
+        </NFormItem>
+        <!-- 输入框 -->
+        <NFormItem v-if="!['NOTDO', 'PAGE_PROBLEM', 'PAGE_SET'].includes(formData.jumpModule)" label="跳转类别" path="jumpType">
+          <NInput v-model:value="formData.jumpType" placeholder="跳转类别" :disabled="true" />
+          <!-- <NSelect
+            v-model:value="formData.jumpType"
+            placeholder="请选择跳转类别"
+            :options="jumpTypeRef"
+            :disabled="!formData.jumpModule"
+          /> -->
+        </NFormItem>
+        <!-- 输入框 -->
+        <NFormItem v-if="!['NOTDO', 'PAGE_PROBLEM', 'PAGE_SET'].includes(formData.jumpModule)" label="跳转目标" path="jumpTarget">
+          <NInput v-if="formData.jumpModule === 'HREF' " v-model:value="formData.jumpTarget" placeholder="请输入跳转目标URL" :disabled="!formData.jumpModule" />
+          <NSelect
+            v-else
+            v-model:value="formData.jumpTarget"
+            placeholder="请选择跳转目标"
+            label-field="name"
+            value-field="id"
+            :options="jumpTargetListOptions || []"
+            :disabled="!formData.jumpModule"
+          />
+        </NFormItem>
+        <!-- Boolean 选择框 -->
+        <NFormItem v-if="formData.jumpModule !== 'NOTDO'" label="新窗口打开" path="targetBlank">
+          <NRadioGroup v-model:value="formData.targetBlank" :disabled="isDisableTargetBlank">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
+        </NFormItem>
+        <!-- 输入框 -->
+        <!-- <NFormItem label="链接" path="toUrl">
           <NInput v-model:value="formData.toUrl" placeholder="请输入链接" />
+        </NFormItem> -->
+        <!-- Boolean 选择框 -->
+        <NFormItem label="子标题是否可见" path="isVisibleSubtitle">
+          <NRadioGroup v-model:value="formData.isVisibleSubtitle">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
         </NFormItem>
         <!-- 数字输入 -->
         <NFormItem label="排序" path="sort">
           <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />
-        </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="子标题" path="subtitle">
-          <NInput v-model:value="formData.subtitle" placeholder="请输入子标题" />
         </NFormItem>
         <!-- Boolean 选择框 -->
         <NFormItem label="上架" path="isVisible">

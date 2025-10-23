@@ -1,15 +1,125 @@
-<script lang="ts" setup>
+<!-- <script lang="ts" setup>
+import { AesCrypto } from '@/utils'
+
 defineProps<{
   bannerListData: any
 }>()
 
-function openLink(url: string) {
-  window.open(url, '_blank')
+const router = useRouter()
+function openLink(item: any) {
+  const isOpenNew = item.targetBlank
+  if (item.jumpModule === 'HREF') {
+    // HREF默认跳转外部链接
+    window.open(item.jumpTarget, '_blank')
+  }
+  if (item.jumpModule === 'NOTICE') {
+    router.push({
+      name: 'notice_detail',
+      query: { notice: AesCrypto.encrypt(item.jumpTarget) },
+    })
+  }
+  if (item.jumpModule === 'PERSONAL') {
+    router.push({
+      name: 'user',
+      query: { userId: AesCrypto.encrypt(item.jumpTarget) },
+    })
+  }
+  if (item.jumpModule === 'PROBLEM') {
+    router.push({
+      name: 'problem_submit',
+      query: { problemId: AesCrypto.encrypt(item.jumpTarget) },
+    })
+  }
+  if (item.jumpModule === 'SET') {
+    router.push({
+      name: 'proset_detail',
+      query: { set: AesCrypto.encrypt(item.jumpTarget) },
+    })
+  }
+}
+</script> -->
+<script lang="ts" setup>
+import { AesCrypto } from '@/utils'
+
+defineProps<{
+  bannerListData: any
+}>()
+
+const router = useRouter()
+
+function openLink(item: any) {
+  const isOpenNew = item.targetBlank
+
+  // 统一处理路由跳转，支持新页面打开
+  const handleRoute = (routeConfig: any, isExternal = false) => {
+    if (isOpenNew && !isExternal) {
+      // 在新页面打开内部路由
+      const route = router.resolve(routeConfig)
+      window.open(route.href, '_blank')
+    }
+    else if (isOpenNew && isExternal) {
+      // 外部链接直接在新窗口打开
+      window.open(routeConfig, '_blank')
+    }
+    else if (!isOpenNew && !isExternal) {
+      // 在当前页面打开内部路由
+      router.push(routeConfig)
+    }
+    else {
+      // 外部链接在当前页面打开
+      window.location.href = routeConfig
+    }
+  }
+
+  switch (item.jumpModule) {
+    case 'HREF':
+      // HREF默认跳转外部链接
+      handleRoute(item.jumpTarget, true)
+      break
+    case 'NOTICE':
+      handleRoute({
+        name: 'notice_detail',
+        query: { notice: AesCrypto.encrypt(item.jumpTarget) },
+      })
+      break
+    case 'PERSONAL':
+      handleRoute({
+        name: 'user',
+        query: { userId: AesCrypto.encrypt(item.jumpTarget) },
+      })
+      break
+    case 'PROBLEM':
+      handleRoute({
+        name: 'problem_submit',
+        query: { problemId: AesCrypto.encrypt(item.jumpTarget) },
+      })
+      break
+    case 'PAGE_PROBLEM':
+      handleRoute({
+        name: 'problems',
+      })
+      break
+    case 'SET':
+      handleRoute({
+        name: 'proset_detail',
+        query: { set: AesCrypto.encrypt(item.jumpTarget) },
+      })
+      break
+    case 'PAGE_SET':
+      handleRoute({
+        name: 'sets',
+      })
+      break
+    case 'NOTDO':
+      break
+    default:
+      console.warn('Unknown jump module:', item.jumpModule)
+  }
 }
 </script>
 
 <template>
-  <section class="mb-12 rounded-2xl overflow-hidden shadow-lg">
+  <section class="rounded-xl overflow-hidden shadow-lg">
     <div class="my-section">
       <n-carousel
         autoplay
@@ -29,14 +139,14 @@ function openLink(url: string) {
             <div class="caption-title">
               {{ item.title }}
             </div>
-            <div class="caption-subtitle">
+            <div v-if="item.isVisibleSubtitle" class="caption-subtitle">
               {{ item.subtitle }}
             </div>
             <n-button
-              v-if="item.buttonText"
+              v-if="item.isVisibleButton"
               type="primary"
               round
-              @click="openLink(item.toUrl || '#')"
+              @click="openLink(item)"
             >
               {{ item.buttonText || '了解更多' }}
               <template #icon>

@@ -12,7 +12,7 @@ const props = defineProps({
 
 <template>
   <div
-    class="w-9 h-9 rounded-full text-white flex items-center justify-center mr-3 text-1.1rem"
+    class="w-10 h-10 rounded-full text-white flex items-center justify-center mr-3 text-1.6rem"
     :style="{ backgroundColor: RankColorUtil.getColor(props.rank) }"
   >
     {{ RankColorUtil.getDisplayTextAPE(props.rank) }}

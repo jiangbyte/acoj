@@ -15,10 +15,19 @@ const originalId = AesCrypto.decrypt(route.query.userId as string)
 const detailData = ref()
 
 const setPageData = ref()
+const acRecordRef = ref()
 async function loadData() {
   const { sysUserDetailClient } = useSysUserFetch()
   sysUserDetailClient({ id: originalId }).then(({ data }) => {
     detailData.value = data
+    console.log(data.acRecord)
+
+    if (data.acRecord && Array.isArray(data.acRecord)) {
+      acRecordRef.value = data.acRecord.map(item => ({
+        timestamp: new Date(item.date).getTime(),
+        value: item.count !== undefined ? item.count : null,
+      }))
+    }
   })
   setPageData.value = {
     records: [],
@@ -31,104 +40,117 @@ loadData()
   <!-- 页面内容 -->
   <div class="flex flex-col h-full w-full">
     <div
-      class="relative mt-72px px-4 py-8"
+      class="relative mt-72px px-2 py-6"
       size="small"
       :bordered="false"
-      :style="{
-        backgroundImage: detailData?.background ? `linear-gradient(to left bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 0, rgba(255,255,255,1) 65%), url(${detailData.background})` : '',
-        backgroundSize: 'cover',
-        backgroundPosition: 'right top',
-        backgroundRepeat: 'no-repeat',
-      }"
     >
-      <NSpace vertical size="large" class="container mx-auto">
-        <NSpace align="center" :wrap="false">
-          <NSpace vertical align="center" size="small">
-            <NAvatar
-              round
-              :size="90"
-              :src="detailData?.avatar"
-            />
-          </NSpace>
-
-          <NSpace vertical size="small" style="margin-left: 20px;">
-            <NSpace align="center">
-              <h2 style="margin: 0">
-                {{ detailData?.nickname }}
-              </h2>
+      <NSpace vertical class="container mx-auto">
+        <n-card
+          class="mb-2 rounded-xl" :bordered="false" :style="{
+            backgroundImage: detailData?.background ? `linear-gradient(to left bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 0, rgba(255,255,255,1) 65%), url(${detailData.background})` : '',
+            backgroundSize: 'cover',
+            backgroundPosition: 'right top',
+            backgroundRepeat: 'no-repeat',
+          }"
+        >
+          <NSpace align="center" :wrap="false" class="mb-2">
+            <NSpace vertical align="center" size="small">
+              <NAvatar
+                round
+                :size="70"
+                :src="detailData?.avatar"
+              />
             </NSpace>
-            <NSpace vertical>
-              <NSpace size="small" align="center">
-                <n-tag size="small" type="info">
-                  {{ detailData?.genderName || '未知' }}
-                </n-tag>
+
+            <NSpace vertical size="small" class="ml-2">
+              <NSpace align="center">
+                <n-h2 class="pb-0 mb-0">
+                  {{ detailData?.nickname }}
+                </n-h2>
+              </NSpace>
+              <NSpace vertical>
+                <NSpace size="small" align="center">
+                  <n-tag size="small" type="info">
+                    {{ detailData?.genderName || '未知' }}
+                  </n-tag>
+                </NSpace>
               </NSpace>
             </NSpace>
           </NSpace>
-        </NSpace>
 
-        <n-space vertical>
-          <NSpace size="small">
-            <NText>
-              所属组
-            </NText>
-            <NTag size="small" type="success">
-              {{ detailData?.groupIdName }}
-            </NTag>
-          </NSpace>
-          <n-space align="center">
-            <NText>
-              注册时间
-            </NText>
-            <n-tag size="small" type="info">
-              <n-time :time="Number(detailData?.createTime) || Date.now()" />
-            </n-tag>
+          <n-space vertical>
+            <NSpace size="small">
+              <NText>
+                所属组
+              </NText>
+              <NTag size="small" type="success">
+                {{ detailData?.groupIdName }}
+              </NTag>
+            </NSpace>
+            <n-space align="center">
+              <NText>
+                注册时间
+              </NText>
+              <n-tag size="small" type="info">
+                <n-time :time="Number(detailData?.createTime) || Date.now()" />
+              </n-tag>
+            </n-space>
+            <NSpace size="small">
+              <NText>
+                邮箱地址
+              </NText>
+              <n-tag size="small" type="info">
+                {{ detailData?.email }}
+              </n-tag>
+            </NSpace>
+            <NSpace size="small" align="center">
+              <NText>
+                个性签名
+              </NText>
+              <NText depth="3">
+                {{ detailData?.quote }}
+              </NText>
+            </NSpace>
           </n-space>
-          <NSpace size="small">
-            <NText>
-              邮箱地址
-            </NText>
-            <n-tag size="small" type="info">
-              {{ detailData?.email }}
-            </n-tag>
-          </NSpace>
-          <NSpace size="small" align="center">
-            <NText>
-              个性签名
-            </NText>
-            <NText depth="3">
-              {{ detailData?.quote }}
-            </NText>
-          </NSpace>
-        </n-space>
+        </n-card>
 
-        <!-- 统计数据卡片 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-          <n-card hoverable class="mt-2 rounded-xl text-center" size="small">
-            <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">
-              {{ detailData?.solvedProblem ? detailData?.solvedProblem : 0 }}
-            </div>
-            <div class="text-sm text-gray-500 dark:text-gray-400">
-              已解决题目
-            </div>
-          </n-card>
-          <n-card hoverable class="mt-2 rounded-xl text-center" size="small">
-            <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-              {{ detailData?.participatedSet ? detailData?.participatedSet : 0 }}
-            </div>
-            <div class="text-sm text-gray-500 dark:text-gray-400">
-              参与题集
-            </div>
-          </n-card>
-          <n-card hoverable class="mt-2 rounded-xl text-center" size="small">
-            <div class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-1">
-              {{ detailData?.activeScore ? detailData?.activeScore : 0 }}
-            </div>
-            <div class="text-sm text-gray-500 dark:text-gray-400">
-              活跃指数
-            </div>
-          </n-card>
-        </div>
+        <n-grid
+          cols="1 l:3"
+          :x-gap="24"
+          :y-gap="24"
+          responsive="screen"
+        >
+          <n-gi span="1 l:1">
+            <n-card hoverable class="rounded-xl text-center" size="small">
+              <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">
+                {{ detailData?.solvedProblem ? detailData?.solvedProblem : 0 }}
+              </div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                已解决题目
+              </div>
+            </n-card>
+          </n-gi>
+          <n-gi span="1 l:1">
+            <n-card hoverable class="rounded-xl text-center" size="small">
+              <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
+                {{ detailData?.participatedSet ? detailData?.participatedSet : 0 }}
+              </div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                参与题集
+              </div>
+            </n-card>
+          </n-gi>
+          <n-gi span="1 l:1">
+            <n-card hoverable class="rounded-xl text-center" size="small">
+              <div class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-1">
+                {{ detailData?.activeScore ? detailData?.activeScore : 0 }}
+              </div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                活跃指数
+              </div>
+            </n-card>
+          </n-gi>
+        </n-grid>
 
         <n-card class="mt-2 rounded-xl" size="small">
           <div class="overflow-scroll">

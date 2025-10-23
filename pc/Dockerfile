@@ -4,6 +4,9 @@ FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 # 将 pnpm 路径添加到系统 PATH 环境变量中
 ENV PATH="$PNPM_HOME:$PATH"
+# 设置 npm 和 pnpm 使用国内镜像源
+ENV PNPM_REGISTRY=https://registry.npmmirror.com/
+ENV NPM_CONFIG_REGISTRY=https://registry.npmmirror.com/
 # 启用 Node.js 的 corepack 来管理包管理器
 RUN corepack enable
 # 将当前目录所有文件复制到容器的 /app 目录
@@ -14,13 +17,13 @@ WORKDIR /app
 # 创建名为 prod-deps 的新阶段，用于安装生产依赖
 FROM base AS prod-deps
 # 使用缓存挂载来加速 pnpm 安装，只安装生产依赖，使用冻结的 lockfile
- RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
-RUN #pnpm install --prod --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+# RUN pnpm install --prod --frozen-lockfile
 # 创建名为 builder 的新阶段，用于构建项目
 FROM base AS builder
 # 使用缓存挂载安装所有依赖（包括开发依赖），使用冻结的 lockfile
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-RUN #pnpm install --frozen-lockfile
+# RUN pnpm install --frozen-lockfile
 # 运行构建命令
 RUN pnpm run build
 

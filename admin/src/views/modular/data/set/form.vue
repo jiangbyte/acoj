@@ -29,9 +29,6 @@ const rules = {
   difficulty: [
     { required: true, message: '请输入难度', type: 'number', trigger: ['input', 'blur'] },
   ],
-  exJson: [
-    // { required: true, message: '请输入额外的信息', trigger: ['input', 'blur'] },
-  ],
 }
 
 const isEdit = ref(false)
@@ -271,10 +268,6 @@ function removeProblem(index: string | number) {
         <NFormItem v-if="formData.setType === 2" label="结束时间" path="endTime">
           <NDatePicker v-model:value="formData.endTime" type="datetime" />
         </NFormItem>
-        <!-- 输入框 -->
-        <!-- <NFormItem label="额外的信息" path="exJson">
-          <NInput v-model:value="formData.exJson" placeholder="请输入额外的信息" />
-        </NFormItem> -->
         <!-- Boolean 选择框 -->
         <NFormItem label="是否可见" path="isVisible">
           <NRadioGroup v-model:value="formData.isVisible">
