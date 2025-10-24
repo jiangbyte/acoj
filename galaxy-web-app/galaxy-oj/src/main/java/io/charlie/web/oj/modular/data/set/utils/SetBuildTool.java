@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -82,6 +83,26 @@ public class SetBuildTool {
 //                dataProblem.setSolved(0L);
                 dataSet.setSubmitCount(0L);
             }
+
+            // 限时题集
+            if (dataSet.getSetType().equals(2)) {
+                // 时间状态计算
+                Date now = new Date();
+                // 只有当开始时间和结束时间都存在时才计算
+                if (dataSet.getStartTime() != null && dataSet.getEndTime() != null) {
+                    if (now.before(dataSet.getStartTime())) {
+                        dataSet.setTimeStatus(1);  // 未开始
+                    } else if (now.after(dataSet.getEndTime())) {
+                        dataSet.setTimeStatus(3);  // 已结束
+                    } else {
+                        dataSet.setTimeStatus(2); // 进行中
+                    }
+                } else {
+                    // 如果时间不完整，可以设置一个默认状态或保持null
+                    dataSet.setTimeStatus(0); // 或 null，表示时间状态未知
+                }
+            }
+
             // 提交数
 //            dataSet.setSubmitCount(totalSubmitCountMap.getOrDefault(setId, 0L));
 //            // 通过率

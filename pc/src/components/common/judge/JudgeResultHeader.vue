@@ -20,7 +20,15 @@ defineProps<Props>()
           <n-text class="text-xl font-bold">
             {{ resultTaskData?.userIdName || '未知用户' }}
           </n-text>
-          <n-tag size="small" type="info">
+          <n-tag size="small" :type="resultTaskData?.status === 'COMPILATION_ERROR'
+      || resultTaskData?.status === 'RUNTIME_ERROR'
+      || resultTaskData?.status === 'TIME_LIMIT_EXCEEDED'
+      || resultTaskData?.status === 'MEMORY_LIMIT_EXCEEDED'
+      || resultTaskData?.status === 'WRONG_ANSWER'
+      || resultTaskData?.status === 'SYSTEM_ERROR'
+      || resultTaskData?.status === 'MEMORY_LIMIT_EXCEEDED'
+        ? 'error'
+        : 'success'">
             {{ resultTaskData?.statusName || '未知状态' }}
           </n-tag>
         </div>
@@ -37,7 +45,7 @@ defineProps<Props>()
               </n-tag>
             </n-text>
             <n-text class="text-gray-500 dark:text-gray-400" depth="3">
-              提交类型 <n-tag size="small">
+              提交类型 <n-tag size="small" :type="resultTaskData?.submitType ? 'info' : 'warning'">
                 {{ resultTaskData?.submitTypeName || '未知类型' }}
               </n-tag>
             </n-text>

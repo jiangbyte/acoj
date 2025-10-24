@@ -4,6 +4,8 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import io.charlie.web.oj.modular.data.ranking.ActivityScoreCalculator;
+import io.charlie.web.oj.modular.data.ranking.UserActivityService;
 import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
 import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
 import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
@@ -50,6 +52,8 @@ public class JudgeHandleMessage {
     private final ProblemSetCacheService problemSetCacheService;
     private final ProblemCacheService problemCacheService;
 
+    private final UserActivityService userActivityService;
+
     public void sendJudge(JudgeSubmitDto judgeSubmitDto, DataSubmit dataSubmit) {
         log.info("发送消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
         rabbitTemplate.convertAndSend(
@@ -78,6 +82,7 @@ public class JudgeHandleMessage {
             // ac情况
             if (JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus())) {
                 log.info("正式提交 AC，进行额外处理");
+                userActivityService.addActivity(judgeResultDto.getUserId(), ActivityScoreCalculator.SUBMIT, true);
                 asyncHandleAdditionalTasks(judgeResultDto, dataSubmit);
             } else {
                 // 非 ac 情况

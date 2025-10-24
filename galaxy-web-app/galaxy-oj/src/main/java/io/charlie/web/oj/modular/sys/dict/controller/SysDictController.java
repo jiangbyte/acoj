@@ -97,7 +97,7 @@ public class SysDictController {
 
     @Operation(summary = "获取系统字典树")
     @GetMapping("/sys/dict/options")
-    public Result<?> option(@RequestParam @NotEmpty String dictType) {
+    public Result<?> option(@RequestParam String dictType) {
         return Result.success(sysDictService.options(dictType));
     }
 }

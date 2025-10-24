@@ -46,7 +46,7 @@ export function useDataProblemFetch() {
      * 题目 分页接口
      */
     dataProblemPage(data: any) {
-      return $alova.Get<IResult<any>>(`${pathPrefix + table}/page`, {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/page/client`, {
         params: {
           ...data,
         },

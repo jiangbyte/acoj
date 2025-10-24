@@ -69,6 +69,7 @@ public class LLMServiceImpl implements LLMService {
                         sysConversation.setMessageContent(messageContent);
                         sysConversation.setMessageType(chatRequest.getMessageType());
                         sysConversation.setMessageRole(MessageRole.ASSISTANT);
+                        sysConversation.setUserPlatform(chatRequest.getUserPlatform());
                         sysConversation.setResponseTime(new Date());
                         return sysConversation;
                     })

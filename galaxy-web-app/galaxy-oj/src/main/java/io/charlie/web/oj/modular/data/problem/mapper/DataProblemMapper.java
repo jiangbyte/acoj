@@ -3,6 +3,7 @@ package io.charlie.web.oj.modular.data.problem.mapper;
 import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import io.charlie.web.oj.modular.data.problem.param.DifficultyDistribution;
 import org.apache.ibatis.annotations.CacheNamespace;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -50,8 +51,24 @@ public interface DataProblemMapper extends BaseMapper<DataProblem> {
             GROUP BY problem_id
             HAVING COUNT(DISTINCT user_id) > 0
         ) ds ON dp.id = ds.problem_id
+        WHERE dp.is_public = 1 AND dp.is_visible = 1 
         ORDER BY ds.submit_count DESC
         LIMIT #{topN}
     """)
     List<DataProblem> selectTopNBySubmitCount(@Param("topN") Integer topN);
+
+
+    @Select("SELECT " +
+            "difficulty, " +
+            "COUNT(*) as count, " +
+            "CASE difficulty " +
+            "    WHEN 1 THEN '简单' " +
+            "    WHEN 2 THEN '中等' " +
+            "    WHEN 3 THEN '困难' " +
+            "END as difficulty_name, " +
+            "ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM data_problem WHERE is_visible = true AND is_public = true), 2) as percentage " +
+            "FROM data_problem " +
+            "WHERE is_visible = true AND is_public = true AND difficulty IN (1, 2, 3) " +
+            "GROUP BY difficulty")
+    List<DifficultyDistribution> selectDifficultyDistribution();
 }

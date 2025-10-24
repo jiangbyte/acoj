@@ -18,6 +18,8 @@ import java.util.List;
 public interface DataProblemService extends IService<DataProblem> {
     Page<DataProblem> page(DataProblemPageParam dataProblemPageParam);
 
+    Page<DataProblem> pageClient(DataProblemPageParam dataProblemPageParam);
+
     Page<DataProblem> setPage(DataProblemPageParam dataProblemPageParam);
 
     void add(DataProblemAddParam dataProblemAddParam);

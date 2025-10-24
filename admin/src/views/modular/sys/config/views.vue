@@ -113,9 +113,10 @@ function hasValueChanged(item: SysConfigItem): boolean {
           ref="formRef"
           :rules="rules"
           label-placement="top"
+          class="max-w-150"
         >
           <n-grid
-            cols="1 m:2 l:3"
+            cols="1"
             :x-gap="24"
             :y-gap="16"
             responsive="screen"
@@ -125,7 +126,7 @@ function hasValueChanged(item: SysConfigItem): boolean {
               :key="item.id"
             >
               <n-card size="small" class="w-full">
-                <n-form-item :show-label="false" :path="`config_${item.id}`" class="h-30">
+                <n-form-item :show-label="false" :path="`config_${item.id}`">
                   <div class="flex flex-col gap-3">
                     <div class="flex-1">
                       <!-- 单选框组 -->

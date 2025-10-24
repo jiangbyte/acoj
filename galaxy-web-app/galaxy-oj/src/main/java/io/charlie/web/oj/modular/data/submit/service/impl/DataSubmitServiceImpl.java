@@ -14,6 +14,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
+import io.charlie.web.oj.modular.data.ranking.ActivityScoreCalculator;
+import io.charlie.web.oj.modular.data.ranking.UserActivityService;
+import io.charlie.web.oj.modular.data.set.entity.DataSet;
+import io.charlie.web.oj.modular.data.set.mapper.DataSetMapper;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
@@ -52,8 +56,11 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     private final DataSolvedMapper dataSolvedMapper;
     private final JudgeHandleMessage judgeHandleMessage;
     private final DataProblemMapper dataProblemMapper;
+    private final DataSetMapper dataSetMapper;
 
     private final RedissonClient redissonClient;
+
+    private final UserActivityService userActivityService;
 
     @Override
     public Page<DataSubmit> page(DataSubmitPageParam dataSubmitPageParam) {
@@ -193,12 +200,51 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam, false);
         this.handleSolvedRecord(dataSubmitExeParam, false, dataSubmit);
         this.asyncHandleSubmit(dataSubmit, dataSubmitExeParam);
+        try {
+            String loginIdAsString = StpUtil.getLoginIdAsString();
+            if (GaStringUtil.isNotEmpty(loginIdAsString)) {
+                userActivityService.addActivity(loginIdAsString, ActivityScoreCalculator.SUBMIT, false);
+            }
+        } catch (Exception e) {
+            log.error("用户活动记录失败", e);
+        }
         return dataSubmit.getId();
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
     public String handleSetSubmit(DataSubmitExeParam dataSubmitExeParam) {
+        String setId = dataSubmitExeParam.getSetId();
+        if (GaStringUtil.isEmpty(setId)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+
+        DataSet dataSet = dataSetMapper.selectById(setId);
+
+        // 时间判断
+        // 限时题集
+        if (dataSet.getSetType().equals(2)) {
+            // 时间状态计算
+            Date now = new Date();
+            // 只有当开始时间和结束时间都存在时才计算
+            if (dataSet.getStartTime() != null && dataSet.getEndTime() != null) {
+                if (now.before(dataSet.getStartTime())) {
+//                    dataSet.setTimeStatus(1);  // 未开始
+                    throw new BusinessException("题集未开始，不能提交");
+                } else if (now.after(dataSet.getEndTime())) {
+//                    dataSet.setTimeStatus(3);  // 已结束
+                    throw new BusinessException("题集已结束，不能提交");
+                }
+//                else {
+////                    dataSet.setTimeStatus(2); // 进行中
+//                }
+            }
+//            else {
+//                // 如果时间不完整，可以设置一个默认状态或保持null
+////                dataSet.setTimeStatus(0); // 或 null，表示时间状态未知
+//            }
+        }
+
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam, true);
         this.handleSolvedRecord(dataSubmitExeParam, true, dataSubmit);
         this.asyncHandleSubmit(dataSubmit, dataSubmitExeParam);

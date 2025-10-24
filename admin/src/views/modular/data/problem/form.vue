@@ -133,7 +133,7 @@ defineExpose({
 </script>
 
 <template>
-  <NDrawer v-model:show="show" :mask-closable="false" placement="right" :default-width="1200" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" :default-width="800" resizable @after-leave="doClose">
     <NDrawerContent :title="isEdit ? '编辑' : '新增'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
         <!-- 输入框 -->
@@ -357,6 +357,9 @@ defineExpose({
             </NRadio>
           </NRadioGroup>
         </NFormItem>
+        <n-alert type="warning" class="mb-4">
+          <n-tag type="primary" size="small">公开</n-tag> 与 <n-tag type="primary" size="small">可见</n-tag> 处理 Web 题库显示，均开启时显示该题。<n-tag type="primary" size="small">公开</n-tag> 标记是否为题集中私有题目，题集组题时不受影响。
+        </n-alert>
         <!-- Boolean 选择框 -->
         <NFormItem label="是否使用AI" path="useAi">
           <NRadioGroup v-model:value="formData.useAi">

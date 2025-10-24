@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
+import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.sys.dict.entity.SysDict;
 import io.charlie.web.oj.modular.sys.dict.param.*;
 import io.charlie.web.oj.modular.sys.dict.mapper.SysDictMapper;
@@ -125,6 +126,10 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
 
     @Override
     public List<LabelOption<String>> options(String dictType) {
+        if (GaStringUtil.isEmpty(dictType)) {
+            return List.of();
+        }
+
         QueryWrapper<SysDict> queryWrapper = new QueryWrapper<SysDict>().checkSqlInjection();
         queryWrapper.lambda().like(SysDict::getDictType, dictType);
         // 从数据库获取的所有字典数据

@@ -101,6 +101,11 @@ public class DataProblem extends CommonEntity {
     @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean useAi;
 
+    @Schema(description = "是否使用AI")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
+    @TableField(exist = false)
+    private Boolean setUseAi; // 题集专用
+
     @Schema(description = "解决")
     private Long solved;
 

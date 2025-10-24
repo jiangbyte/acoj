@@ -31,6 +31,9 @@ public class SysRoleEditParam implements Serializable {
     @Schema(description = "编码")
     private String code;
 
+    @Schema(description = "数据范围")
+    private String dataScope;
+
     @Schema(description = "描述")
     private String description;
 

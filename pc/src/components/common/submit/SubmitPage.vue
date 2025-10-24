@@ -56,6 +56,7 @@ async function loadData() {
     useDataSetFetch().dataSetProblemDetail({ problemId: originalId, id: originalSetId }).then(({ data }) => {
       if (data) {
         detailData.value = data
+        console.log(data)
       }
     })
   }
@@ -331,8 +332,9 @@ onUnmounted(() => {
             <ProblemDescription :detail-data="detailData" />
           </NTabPane>
           <NTabPane name="submissions" tab="提交历史">
-            <SetUserSubmit v-if="props.isSet && originalSetId" :problem="originalId" :set="originalSetId" />
-            <ProblemUserSubmit v-if="!props.isSet" :problem="originalId" />
+            <!-- <SetUserSubmit v-if="props.isSet && originalSetId" :problem="originalId" :set="originalSetId" />
+            <ProblemUserSubmit v-if="!props.isSet" :problem="originalId" /> -->
+            <UserSubmitPages :is-set="props.isSet" :problem-id="originalId" :set-id="originalSetId" />
           </NTabPane>
           <NTabPane name="submit" tab="提交代码">
             <n-card size="small">
@@ -373,8 +375,12 @@ onUnmounted(() => {
               :result-task-data="resultTaskData"
             />
           </NTabPane>
+          <!--
+            非题集时，使用题目自身的 useAi 来判是否要启用 LLM 聊天
+            题集时 也就是 isSet = true 时，使用 setUseAi 来判断是否要启用 LLM 聊天
+            -->
           <NTabPane
-            v-if="detailData?.useAi"
+            v-if="props.isSet ? detailData?.setUseAi : detailData?.useAi"
             name="assistant"
             tab="增强解析"
           >
@@ -431,8 +437,9 @@ onUnmounted(() => {
                 name="submissions"
                 tab="提交历史"
               >
-                <SetUserSubmit v-if="props.isSet && originalSetId" :problem="originalId" :set="originalSetId" />
-                <ProblemUserSubmit v-if="!props.isSet" :problem="originalId" />
+                <!-- <SetUserSubmit v-if="props.isSet && originalSetId" :problem="originalId" :set="originalSetId" />
+                <ProblemUserSubmit v-if="!props.isSet" :problem="originalId" /> -->
+                <UserSubmitPages :is-set="props.isSet" :problem-id="originalId" :set-id="originalSetId" />
               </NTabPane>
               <NTabPane
                 name="result"
@@ -446,7 +453,7 @@ onUnmounted(() => {
                 />
               </NTabPane>
               <NTabPane
-                v-if="detailData?.useAi"
+                v-if="props.isSet ? detailData?.setUseAi : detailData?.useAi"
                 name="assistant"
                 tab="增强解析"
               >

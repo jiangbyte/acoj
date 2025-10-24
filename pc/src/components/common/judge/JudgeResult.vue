@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { NSpin } from 'naive-ui'
+
 interface Props {
   isPolling: boolean
   pollingCount: number
@@ -7,13 +9,40 @@ interface Props {
 }
 
 defineProps<Props>()
+
+const CodeEditor = defineAsyncComponent({
+  loader: () => import('@/components/common/editor/code/CodeEditor.vue'),
+  // loader: () =>
+  //   new Promise((resolve) => {
+  //     // 模拟 3 秒延迟
+  //     setTimeout(() => {
+  //       resolve(import('@/components/common/editor/code/CodeEditor.vue'))
+  //     }, 3000)
+  //   }),
+  loadingComponent: {
+    setup() {
+      return () => h('div', {
+        class: 'h-full p-4',
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+      }, [
+        h(NSpin, { size: 'small', description: '代码预览器加载中...' }, { }),
+      ])
+    },
+  },
+  delay: 200,
+  timeout: 10000,
+})
 </script>
 
 <template>
   <div>
     <n-alert v-if="isPolling" type="warning" :show-icon="false">
       <n-flex align="center" justify="center">
-        <n-spin size="small" />
+        <NSpin size="small" />
         <n-text type="info">
           判题中... ({{ pollingCount }}/{{ maxPollingCount }})
         </n-text>
@@ -31,24 +60,30 @@ defineProps<Props>()
         <!-- 代码相似度 -->
         <SimilarityReport v-if="resultTaskData.submitType" :result-task-data="resultTaskData" />
 
-        <n-card v-if="resultTaskData?.message" size="small" hoverable>
+        <!-- <n-card v-if="resultTaskData?.message" size="small" hoverable>
           <n-code :language="resultTaskData?.language" :code="resultTaskData?.message" show-line-numbers word-wrap />
-        </n-card>
+        </n-card> -->
         <!-- 错误信息 -->
-        <!-- <div class="lg:col-span-2 w-full">
-          <div class="bg-white dark:bg-gray-800 rounded-md shadow-sm overflow-hidden w-full">
-            <CodeEditor
-              v-if="resultTaskData?.message"
-              :model-value="resultTaskData?.message"
-              width="100%"
-              class="flex-1"
-              height="400px"
-              :options="{
-                readOnly: true,
-              }"
-            />
-          </div>
-        </div> -->
+        <n-card v-if="resultTaskData.message" size="small" class="rounded-xl">
+          <template #header>
+            <n-h2 class="pb-0 mb-0">
+              错误信息
+            </n-h2>
+          </template>
+          <!-- <n-code :language="detailData?.language" :code="detailData?.message" show-line-numbers word-wrap /> -->
+          <CodeEditor
+            :model-value="resultTaskData.message"
+            :language="resultTaskData.language"
+            width="100%"
+            style="height: 300px"
+            :options="{
+              readOnly: true,
+              minimap: {
+                enabled: false,
+              },
+            }"
+          />
+        </n-card>
       </n-space>
     </n-card>
 

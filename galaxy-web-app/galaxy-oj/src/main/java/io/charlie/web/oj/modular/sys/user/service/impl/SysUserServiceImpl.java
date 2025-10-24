@@ -13,16 +13,19 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
+import io.charlie.web.oj.modular.data.ranking.UserActivityService;
 import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.sys.auth.utils.UserValidationUtil;
+import io.charlie.web.oj.modular.sys.group.enums.SysGroupEnums;
 import io.charlie.web.oj.modular.sys.notice.entity.SysNotice;
 import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysUserRoleMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
+import io.charlie.web.oj.modular.sys.role.constant.DefaultRoleData;
 import io.charlie.web.oj.modular.sys.user.constant.DefaultUserData;
 import io.charlie.web.oj.modular.sys.user.entity.ACRecord;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
@@ -53,13 +56,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
-    private final UserCacheService userCacheService;
+    private final UserActivityService userActivityService;
     private final DataSubmitMapper dataSubmitMapper;
 
     private final DataSolvedMapper dataSolvedMapper;
     private final SysUserRoleMapper sysUserRoleMapper;
 
     private final TransService transService;
+    private final SysUserRoleService sysUserRoleService;
 
     @Override
     public Page<SysUser> page(SysUserPageParam sysUserPageParam) {
@@ -132,6 +136,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         SysUser bean = BeanUtil.toBean(sysUserAddParam, SysUser.class);
         bean.setPassword(encodePassword);
         this.save(bean);
+        // 分配角色
+        sysUserRoleService.assignRoles(bean.getId(), List.of(DefaultRoleData.DEFAULT_USER_ROLE_ID));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -212,7 +218,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                         .eq(DataSolved::getIsSet, true)
         );
         sysUser.setParticipatedSet(participatedSetCount);
-        sysUser.setActiveScore(userCacheService.getUserActivity(sysUser.getId()));
+        sysUser.setActiveScore(userActivityService.getUserActivityScore(sysUser.getId()));
 
         List<DataSubmit> dataSubmits = dataSubmitMapper.selectList(new LambdaQueryWrapper<DataSubmit>()
                 .eq(DataSubmit::getUserId, sysUser.getId())

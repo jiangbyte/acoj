@@ -50,6 +50,12 @@ public class DataProblemController {
     }
 
     @Operation(summary = "获取题目分页")
+    @GetMapping("/data/problem/page/client")
+    public Result<?> pageClient(@ParameterObject DataProblemPageParam dataProblemPageParam) {
+        return Result.success(dataProblemService.pageClient(dataProblemPageParam));
+    }
+
+    @Operation(summary = "获取题目分页")
     @GetMapping("/data/problem/setpage")
     public Result<?> setPage(@ParameterObject DataProblemPageParam dataProblemPageParam) {
         return Result.success(dataProblemService.setPage(dataProblemPageParam));

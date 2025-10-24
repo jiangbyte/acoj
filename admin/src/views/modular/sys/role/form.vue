@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysRoleFetch } from '@/composables/v1'
+import { useSysDictFetch, useSysRoleFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
@@ -14,6 +14,9 @@ const rules = {
   ],
   code: [
     { required: true, message: '请输入编码', trigger: ['input', 'blur'] },
+  ],
+  dataScope: [
+    { required: true, message: '请选择数据范围', trigger: ['input', 'blur'] },
   ],
   description: [
     { required: true, message: '请输入描述', trigger: ['input', 'blur'] },
@@ -56,10 +59,15 @@ async function doSubmit() {
   })
 }
 
+const dataScopeRef = ref()
 function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
+
+  useSysDictFetch().sysDictOptions({ dictType: 'DATA_SCOPE' }).then(({ data }) => {
+    dataScopeRef.value = data
+  })
 }
 defineExpose({
   doOpen,
@@ -80,11 +88,20 @@ defineExpose({
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="编码" path="code">
-          <NInput v-model:value="formData.code" placeholder="请输入编码" :disabled="formData.code !== ''" />
+          <NInput v-model:value="formData.code" placeholder="请输入编码" :disabled="isEdit" />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="描述" path="description">
           <NInput v-model:value="formData.description" placeholder="请输入描述" />
+        </NFormItem>
+        <!-- 输入框 -->
+        <NFormItem label="数据范围" path="dataScope">
+          <!-- <NInput v-model:value="formData.dataScope" placeholder="请输入描述" /> -->
+          <NSelect
+            v-model:value="formData.dataScope"
+            placeholder="请选择数据范围"
+            :options="dataScopeRef"
+          />
         </NFormItem>
         <!-- 数字输入 -->
         <NFormItem label="角色层级" path="level">

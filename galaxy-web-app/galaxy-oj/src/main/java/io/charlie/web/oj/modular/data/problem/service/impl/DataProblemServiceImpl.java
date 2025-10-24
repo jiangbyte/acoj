@@ -28,6 +28,7 @@ import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
 import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
 import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.relation.tag.service.DataProblemTagService;
+import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemOverallStats;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
@@ -111,8 +112,53 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    public Page<DataProblem> pageClient(DataProblemPageParam dataProblemPageParam) {
+        QueryWrapper<DataProblem> queryWrapper = new QueryWrapper<DataProblem>().checkSqlInjection();
+        queryWrapper.lambda().eq(DataProblem::getIsVisible, true).eq(DataProblem::getIsPublic, true);
+
+        // 关键字
+        if (ObjectUtil.isNotEmpty(dataProblemPageParam.getKeyword())) {
+            queryWrapper.lambda().like(DataProblem::getTitle, dataProblemPageParam.getKeyword());
+        }
+        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getCategoryId())) {
+            queryWrapper.lambda().eq(DataProblem::getCategoryId, dataProblemPageParam.getCategoryId());
+        }
+        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getDifficulty())) {
+            queryWrapper.lambda().eq(DataProblem::getDifficulty, dataProblemPageParam.getDifficulty());
+        }
+        // 标签查询
+        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getTagId())) {
+            List<String> idsByTagId = dataProblemTagService.getProblemIdsByTagId(dataProblemPageParam.getTagId());
+            // 如果TagId有值但关联的ID列表为空，则设置一个不可能满足的条件
+            if (ObjectUtil.isEmpty(idsByTagId)) {
+                queryWrapper.lambda().eq(DataProblem::getId, "-1"); // 确保查询不到结果
+            } else {
+                queryWrapper.lambda().in(DataProblem::getId, idsByTagId);
+            }
+        }
+
+        if (ObjectUtil.isAllNotEmpty(dataProblemPageParam.getSortField(), dataProblemPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataProblemPageParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    dataProblemPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(dataProblemPageParam.getSortField()));
+        }
+
+        Page<DataProblem> page = this.page(CommonPageRequest.Page(
+                        Optional.ofNullable(dataProblemPageParam.getCurrent()).orElse(1),
+                        Optional.ofNullable(dataProblemPageParam.getSize()).orElse(10),
+                        null
+                ),
+                queryWrapper);
+        problemBuildTool.buildProblems(page.getRecords());
+        return page;
+    }
+
+    @Override
     public Page<DataProblem> setPage(DataProblemPageParam dataProblemPageParam) {
         QueryWrapper<DataProblem> queryWrapper = new QueryWrapper<DataProblem>().checkSqlInjection();
+        queryWrapper.lambda()
+                .eq(DataProblem::getIsVisible, Boolean.TRUE);
         // 关键字
         if (ObjectUtil.isNotEmpty(dataProblemPageParam.getKeyword())) {
             queryWrapper.lambda().like(DataProblem::getTitle, dataProblemPageParam.getKeyword());
@@ -201,6 +247,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         List<DataProblem> list = this.list(new QueryWrapper<DataProblem>().checkSqlInjection()
                 .lambda()
                 .eq(DataProblem::getIsVisible, Boolean.TRUE)
+                .eq(DataProblem::getIsPublic, Boolean.TRUE)
                 .orderByDesc(DataProblem::getCreateTime)
                 .last("LIMIT " + n));
         problemBuildTool.buildProblems(list);
@@ -210,7 +257,6 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     @Override
     public DataProblemCount getProblemCount() {
         DataProblemCount dataProblemCount = new DataProblemCount();
-
         long count = this.count(new LambdaQueryWrapper<DataProblem>()
                 .eq(DataProblem::getIsVisible, Boolean.TRUE)
                 .eq(DataProblem::getIsPublic, Boolean.TRUE)
@@ -219,11 +265,11 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
 
         // 获取当月第一天
         LocalDateTime firstDay = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-    // 获取当月最后一天
+        // 获取当月最后一天
         LocalDateTime lastDay = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth())
                 .atTime(23, 59, 59);
 
-    // 转换为 Date
+        // 转换为 Date
         Date monthStart = Date.from(firstDay.atZone(ZoneId.systemDefault()).toInstant());
         Date monthEnd = Date.from(lastDay.atZone(ZoneId.systemDefault()).toInstant());
 
@@ -281,51 +327,53 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
 
     @Override
     public List<DifficultyDistribution> difficultyDistribution() {
-        long totalCount = this.count();
+//        long totalCount = this.count();
+//
+//        // 统计难度分布-简单
+//        long simpleCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 1).eq(DataProblem::getIsVisible, true).eq(DataProblem::getIsPublic, true));
+//        DifficultyDistribution simple = new DifficultyDistribution();
+//        simple.setDifficulty(1);
+//        simple.setCount(simpleCount);
+//        simple.setDifficultyName("简单");
+//        if (totalCount == 0) {
+//            simple.setPercentage(BigDecimal.ZERO);
+//        } else {
+//            simple.setPercentage(new BigDecimal(simpleCount)
+//                    .multiply(new BigDecimal(100))
+//                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+//        }
+//
+//        // 统计难度分布-中等
+//        long mediumCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 2).eq(DataProblem::getIsVisible, true).eq(DataProblem::getIsPublic, true));
+//        DifficultyDistribution medium = new DifficultyDistribution();
+//        medium.setDifficulty(2);
+//        medium.setCount(mediumCount);
+//        medium.setDifficultyName("中等");
+//        if (totalCount == 0) {
+//            medium.setPercentage(BigDecimal.ZERO);
+//        } else {
+//            medium.setPercentage(new BigDecimal(mediumCount)
+//                    .multiply(new BigDecimal(100))
+//                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+//        }
+//
+//        // 统计难度分布-困难
+//        long hardCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 3).eq(DataProblem::getIsVisible, true).eq(DataProblem::getIsPublic, true));
+//        DifficultyDistribution hard = new DifficultyDistribution();
+//        hard.setDifficulty(3);
+//        hard.setCount(hardCount);
+//        hard.setDifficultyName("困难");
+//        if (totalCount == 0) {
+//            hard.setPercentage(BigDecimal.ZERO);
+//        } else {
+//            hard.setPercentage(new BigDecimal(hardCount)
+//                    .multiply(new BigDecimal(100))
+//                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
+//        }
+//
+//        return List.of(simple, medium, hard);
 
-        // 统计难度分布-简单
-        long simpleCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 1));
-        DifficultyDistribution simple = new DifficultyDistribution();
-        simple.setDifficulty(1);
-        simple.setCount(simpleCount);
-        simple.setDifficultyName("简单");
-        if (totalCount == 0) {
-            simple.setPercentage(BigDecimal.ZERO);
-        } else {
-            simple.setPercentage(new BigDecimal(simpleCount)
-                    .multiply(new BigDecimal(100))
-                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
-        }
-
-        // 统计难度分布-中等
-        long mediumCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 2));
-        DifficultyDistribution medium = new DifficultyDistribution();
-        medium.setDifficulty(2);
-        medium.setCount(mediumCount);
-        medium.setDifficultyName("中等");
-        if (totalCount == 0) {
-            medium.setPercentage(BigDecimal.ZERO);
-        } else {
-            medium.setPercentage(new BigDecimal(mediumCount)
-                    .multiply(new BigDecimal(100))
-                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
-        }
-
-        // 统计难度分布-困难
-        long hardCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 3));
-        DifficultyDistribution hard = new DifficultyDistribution();
-        hard.setDifficulty(3);
-        hard.setCount(hardCount);
-        hard.setDifficultyName("困难");
-        if (totalCount == 0) {
-            hard.setPercentage(BigDecimal.ZERO);
-        } else {
-            hard.setPercentage(new BigDecimal(hardCount)
-                    .multiply(new BigDecimal(100))
-                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
-        }
-
-        return List.of(simple, medium, hard);
+        return this.baseMapper.selectDifficultyDistribution();
     }
 
     @Transactional(rollbackFor = Exception.class)

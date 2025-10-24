@@ -335,10 +335,22 @@ function resetHandle() {
                 我的解题
               </n-h2>
             </template>
-            <n-flex align="center" justify="center">
-              <h3 class="text-4xl font-bold">
-                {{ problemcount?.solved ? problemcount.solved : 0 }} / {{ problemcount?.total ? problemcount.total : 0 }}
+            <n-flex align="end" justify="center" :size="4">
+              <n-text depth="3">
+                解决
+              </n-text>
+              <h3 class="text-4xl  text-green-6">
+                {{ problemcount?.solved ? problemcount.solved : 0 }}
               </h3>
+              <n-text depth="3">
+                /
+              </n-text>
+              <h3 class="text-4xl text-red-6">
+                {{ problemcount?.total ? problemcount.total : 0 }}
+              </h3>
+              <n-text depth="3">
+                未解决
+              </n-text>
             </n-flex>
             <!-- <icon-park-outline-check /> -->
             <template #footer>

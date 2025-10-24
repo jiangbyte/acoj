@@ -66,8 +66,8 @@ public class ChatRequest {
 //    @Schema(description = "错误信息")
 //    private String errorMessage;
 //
-//    @Schema(description = "用户平台")
-//    private String userPlatform;
+    @Schema(description = "用户平台")
+    private String userPlatform;
 //
 //    @Schema(description = "IP地址")
 //    private String ipAddress;

@@ -230,9 +230,9 @@ function rowProps(row: any) {
                 </h4>
                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
                   <li>按用户成功解决的题目数量从高到低排序</li>
-                  <!-- <li>解决题目数相同的用户，按通过率排序</li> -->
-                  <!-- <li>通过率 = 通过题目数 / 总提交题目数</li> -->
-                  <li>用户排行榜数据实时更新</li>
+                  <li>解决题目数相同的用户，按提交效率排序</li>
+                  <li>通过率 = 用户通过题目数 / 用户总提交题目数</li>
+                  <li>用户排行榜数据每十分钟刷新一次</li>
                 </ul>
               </div>
 
@@ -241,8 +241,12 @@ function rowProps(row: any) {
                   🎯 活跃用户
                 </h4>
                 <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-                  <li>活跃度 = 提交次数(0.01)之和</li>
-                  <li>活跃度指数实时更新，反映提交活跃度</li>
+                  <li>活跃度计算分数：</li>
+                  <li>登录：+5分</li>
+                  <li>有效提交代码：+2分</li>
+                  <li>解题成功：+10分</li>
+                  <li>每日上限：50分（防止刷分）</li>
+                  <li>活跃度指数实时更新，反映用户活跃度</li>
                 </ul>
               </div>
             </div>

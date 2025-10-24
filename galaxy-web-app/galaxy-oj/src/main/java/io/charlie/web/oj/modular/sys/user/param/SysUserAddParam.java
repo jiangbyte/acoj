@@ -28,8 +28,8 @@ public class SysUserAddParam implements Serializable {
     @Schema(description = "用户名")
     private String username;
 
-    @Schema(description = "密码")
-    private String password;
+//    @Schema(description = "密码")
+//    private String password;
 
     @Schema(description = "昵称")
     private String nickname;

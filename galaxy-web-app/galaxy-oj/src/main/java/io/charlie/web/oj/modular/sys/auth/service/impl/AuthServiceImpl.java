@@ -9,6 +9,8 @@ import cn.hutool.captcha.generator.RandomGenerator;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.*;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.charlie.web.oj.modular.data.ranking.ActivityScoreCalculator;
+import io.charlie.web.oj.modular.data.ranking.UserActivityService;
 import io.charlie.web.oj.modular.sys.auth.enums.PlatformEnum;
 import io.charlie.web.oj.modular.sys.auth.param.PasswordChangeParam;
 import io.charlie.web.oj.modular.sys.auth.param.UsernamePasswordLoginParam;
@@ -52,6 +54,8 @@ public class AuthServiceImpl implements AuthService {
     private final SysUserMapper sysUserMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SysUserRoleService sysUserRoleService;
+
+    private final UserActivityService userActivityService;
 
     private final SysRoleService sysRoleService;
     private final SysGroupMapper sysGroupMapper;
@@ -130,6 +134,8 @@ public class AuthServiceImpl implements AuthService {
         // redis 记录用户活跃情况（保留30天），进行评分自增记录
 
         StpUtil.login(sysUser.getId(), usernamePasswordLoginParam.getPlatform().toUpperCase());
+
+        userActivityService.addActivity(sysUser.getId(), ActivityScoreCalculator.LOGIN, false);
         return StpUtil.getTokenValue();
     }
 

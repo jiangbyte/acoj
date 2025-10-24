@@ -87,7 +87,7 @@ public class SysUser extends CommonEntity {
 
     // =====================
     @TableField(exist = false)
-    private Double score;
+    private BigDecimal score;
 
     @TableField(exist = false)
     private Long rank;
@@ -117,7 +117,7 @@ public class SysUser extends CommonEntity {
     private Long participatedSet;
 
     @TableField(exist = false)
-    private Double activeScore;
+    private BigDecimal activeScore;
 
     @TableField(exist = false)
     private List<ACRecord> acRecord;

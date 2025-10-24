@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
+import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput, NTag } from 'naive-ui'
 import { useDataProblemFetch, useDataSetFetch, useSysCategoryFetch, useSysDictFetch } from '@/composables/v1'
 import MDEditor from '@/components/common/editor/md/MarkdownEditor.vue'
 
@@ -149,6 +149,19 @@ const problemColumns: DataTableColumns<any> = [
     title: '难度',
     key: 'difficultyName',
   },
+  {
+    title: '阈值',
+    key: 'threshold',
+  },
+  {
+    title: '公开',
+    key: 'isPublicName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.isPublic ? 'primary' : 'error',
+      }, () => row.isPublicName)
+    },
+  },
 ]
 async function selectedProblems(keys: Array<string | number>) {
   formData.value.problemIds = keys
@@ -206,7 +219,7 @@ function removeProblem(index: string | number) {
 </script>
 
 <template>
-  <NDrawer v-model:show="show" :mask-closable="false" placement="right" default-width="1200" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" :default-width="800" resizable @after-leave="doClose">
     <NDrawerContent :title="isEdit ? '编辑' : '新增'">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
         <!-- 输入框 -->
@@ -269,7 +282,7 @@ function removeProblem(index: string | number) {
           <NDatePicker v-model:value="formData.endTime" type="datetime" />
         </NFormItem>
         <!-- Boolean 选择框 -->
-        <NFormItem label="是否可见" path="isVisible">
+        <NFormItem label="上架" path="isVisible">
           <NRadioGroup v-model:value="formData.isVisible">
             <NRadio :value="true">
               是

@@ -518,6 +518,7 @@ CREATE TABLE `sys_role`
     `id`          VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NOT NULL COMMENT '主键',
     `name`        VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '名称',
     `code`        VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NULL DEFAULT NULL COMMENT '编码',
+    `data_scope`  VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NULL DEFAULT NULL COMMENT '数据范围',
     `description` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '描述',
     `level`       INT                                                           NULL DEFAULT 5 COMMENT '角色层级',
     `deleted`     TINYINT(1)                                                    NULL DEFAULT 0 COMMENT '删除状态',

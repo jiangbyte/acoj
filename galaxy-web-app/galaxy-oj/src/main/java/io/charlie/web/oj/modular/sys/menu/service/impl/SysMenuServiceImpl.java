@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.web.oj.modular.sys.auth.utils.AuthContextUtil;
 import io.charlie.web.oj.modular.sys.menu.entity.SysMenu;
 import io.charlie.web.oj.modular.sys.menu.param.*;
 import io.charlie.web.oj.modular.sys.menu.mapper.SysMenuMapper;
@@ -33,17 +34,18 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-06-23
-* @description 菜单表 服务实现类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-06-23
+ * @description 菜单表 服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> implements SysMenuService {
     private final SysRoleMenuService sysRoleMenuService;
     private final SysUserRoleService sysUserRoleService;
+    private final AuthContextUtil authContextUtil;
 
     @Override
     public Page<SysMenu> page(SysMenuPageParam sysMenuPageParam) {
@@ -68,7 +70,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(sysMenuPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(sysMenuPageParam.getSize()).orElse(20),
-                null
+                        null
                 ),
                 queryWrapper);
     }
@@ -156,14 +158,12 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
 
     @Override
     public List<SysMenu> authMenu() {
-        String loginIdAsString = StpUtil.getLoginIdAsString();
-        SysRole heightLevelRole = sysUserRoleService.getHeightLevelRole(loginIdAsString);
+        SysRole heightLevelRole = authContextUtil.getHighLevelRole();
         if (heightLevelRole == null) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
 
-        // 判断是否是超级用户(层级99)
-        if (heightLevelRole.getLevel() == 99) {
+        if (authContextUtil.isSuperUser()) {
             log.info("超级用户");
             return this.list();
         }

@@ -83,6 +83,11 @@ public class DataSet extends CommonEntity {
     @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date endTime;
 
+    @Schema(description = "时间状态")
+    @Trans(type = TransType.DICTIONARY, key = "TIME_STATUS")
+    @TableField(exist = false)
+    private Integer timeStatus;
+
     @Schema(description = "是否可见")
     @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean isVisible;

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NIcon, NPopconfirm, NSpace, NTag } from 'naive-ui'
+import { NButton, NCard, NDataTable, NEllipsis, NIcon, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import { useSysMenuFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -27,7 +27,7 @@ const columns: DataTableColumns<any> = [
     render: (row: any) => {
       return h('div', { class: 'inline-flex items-center justify-center' }, [
         h(NIcon, { }, { default: () => h(Icon, { icon: row.icon }) }),
-        h('span', { class: 'ml-2' }, row.title || row.name),
+        h(NEllipsis, { style: { width: '80px' }, class: 'ml-2' }, row.title || row.name),
       ])
     },
   },

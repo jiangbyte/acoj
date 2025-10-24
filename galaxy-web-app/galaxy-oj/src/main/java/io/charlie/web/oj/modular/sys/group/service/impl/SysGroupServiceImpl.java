@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
+import io.charlie.web.oj.modular.sys.auth.utils.AuthContextUtil;
 import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
 import io.charlie.web.oj.modular.sys.group.param.*;
 import io.charlie.web.oj.modular.sys.group.mapper.SysGroupMapper;
@@ -43,6 +44,8 @@ import java.util.stream.Collectors;
 public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> implements SysGroupService {
     private final SysUserRoleService sysUserRoleService;
     private final SysUserMapper sysUserMapper;
+
+    private final AuthContextUtil authContextUtil;
 
     @Override
     public Page<SysGroup> page(SysGroupPageParam sysGroupPageParam) {
@@ -116,22 +119,14 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
 
     @Override
     public List<SysGroup> authTreeGroup(String keyword) {
-        String loginIdAsString = StpUtil.getLoginIdAsString();
-        SysRole heightLevelRole = sysUserRoleService.getHeightLevelRole(loginIdAsString);
-        if (heightLevelRole == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR);
-        }
-
-        // 查询用户
-        SysUser sysUser = sysUserMapper.selectById(loginIdAsString);
-        String groupId = sysUser.getGroupId();
+        String groupId = authContextUtil.getUserGroupId();
         if (ObjectUtil.isEmpty(groupId)) {
             log.info("用户组为空");
             return List.of();
         }
 
         // 判断是否是超级用户(层级99)
-        if (heightLevelRole.getLevel() == 99) {
+        if (authContextUtil.isSuperUser()) {
             log.info("超级用户");
             // 返回所有用户组树
             return buildFullGroupTree(keyword);

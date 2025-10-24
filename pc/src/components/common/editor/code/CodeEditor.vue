@@ -36,6 +36,8 @@ export default defineComponent({
     }
     let editor: monaco.editor.IStandaloneCodeEditor
     const codeEditBox = ref()
+    let resizeObserver: ResizeObserver | null = null
+
     const init = () => {
       monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
         noSemanticValidation: true,
@@ -58,6 +60,12 @@ export default defineComponent({
       })
       // eslint-disable-next-line vue/custom-event-name-casing
       emit('editor-mounted', editor)
+
+      resizeObserver = new ResizeObserver(() => {
+        editor.layout()
+      })
+
+      resizeObserver.observe(codeEditBox.value)
     }
     watch(
       () => props.modelValue,
@@ -84,6 +92,9 @@ export default defineComponent({
       },
     )
     onBeforeUnmount(() => {
+      if (resizeObserver) {
+        resizeObserver.disconnect()
+      }
       editor.dispose()
     })
     onMounted(() => {
@@ -95,7 +106,7 @@ export default defineComponent({
 </script>
 
 <template>
-  <div ref="codeEditBox" class="codeEditBox" />
+  <div ref="codeEditBox" class="codeEditBox " />
 </template>
 
 <style lang="scss" scoped>

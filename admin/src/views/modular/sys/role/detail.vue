@@ -37,6 +37,9 @@ defineExpose({
         <NDescriptionsItem label="描述">
           {{ formData.description }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="数据范围">
+          {{ formData.dataScopeName }}
+        </NDescriptionsItem>
         <NDescriptionsItem label="角色层级">
           {{ formData.level }}
         </NDescriptionsItem>

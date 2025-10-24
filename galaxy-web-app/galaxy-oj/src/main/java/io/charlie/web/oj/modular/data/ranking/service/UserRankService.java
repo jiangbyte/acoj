@@ -308,7 +308,7 @@ public class UserRankService {
         // 设置分数
         Double score = redisTemplate.opsForZSet().score(USER_RANK_SORTED_SET_KEY, user.getId());
         if (score != null) {
-            user.setScore(score);
+//            user.setScore(score);
         }
 
         // 设置统计信息

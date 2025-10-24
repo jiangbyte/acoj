@@ -162,7 +162,7 @@ async function handleUserSearch(query: string) {
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="编码" path="code">
-          <NInput v-model:value="formData.code" placeholder="请输入编码" :disabled="formData.code !== ''" />
+          <NInput v-model:value="formData.code" placeholder="请输入编码" :disabled="isEdit" />
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="描述" path="description">

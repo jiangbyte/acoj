@@ -22,6 +22,10 @@ const columns: DataTableColumns<any> = [
     key: 'code',
   },
   {
+    title: '数据范围',
+    key: 'dataScopeName',
+  },
+  {
     title: '描述',
     key: 'description',
     ellipsis: true,

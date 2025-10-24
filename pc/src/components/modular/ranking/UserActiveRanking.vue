@@ -22,7 +22,7 @@ defineProps<{
             {{ item.nickname }}
           </div>
           <div class="text-xs text-gray-500 dark:text-gray-400">
-            活跃指数: {{ Number(item.score).toFixed(2) }}
+            活跃指数: {{ Number(item.activeScore).toFixed(2) }}
           </div>
         </div>
       </div>

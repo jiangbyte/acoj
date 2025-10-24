@@ -14,6 +14,8 @@ import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.dromara.core.trans.anno.Trans;
+import org.dromara.core.trans.constant.TransType;
 
 /**
  * @author Charlie Zhang
@@ -38,6 +40,10 @@ public class SysRole extends CommonEntity {
 
     @Schema(description = "编码")
     private String code;
+
+    @Schema(description = "数据范围")
+    @Trans(type = TransType.DICTIONARY, key = "DATA_SCOPE")
+    private String dataScope;
 
     @Schema(description = "描述")
     private String description;

@@ -110,9 +110,10 @@ watch(() => formData.value.jumpModule, (val) => {
     jumpTypeRef.value = []
   }
   else {
-    useSysBannerFetch().sysBannerJumpTargetList({ jumpModule: val, keyword: '' }).then(({ data }) => {
-      jumpTargetListOptions.value = data
-    })
+    // useSysBannerFetch().sysBannerJumpTargetList({ jumpModule: val, keyword: '' }).then(({ data }) => {
+    //   jumpTargetListOptions.value = data
+    // })
+    loadJumpTarget('', val)
 
     useSysDictFetch().sysDictOptions({ dictType: 'JUMP_TYPE' }).then(({ data }) => {
       jumpTypeRef.value = data.filter((item: any) => item.value !== 'URL')
@@ -122,6 +123,12 @@ watch(() => formData.value.jumpModule, (val) => {
     })
   }
 })
+
+function loadJumpTarget(value: string, jm: string = formData.value.jumpModule) {
+  useSysBannerFetch().sysBannerJumpTargetList({ jumpModule: jm, keyword: value }).then(({ data }) => {
+    jumpTargetListOptions.value = data
+  })
+}
 </script>
 
 <template>
@@ -187,8 +194,10 @@ watch(() => formData.value.jumpModule, (val) => {
             placeholder="请选择跳转目标"
             label-field="name"
             value-field="id"
+            filterable
             :options="jumpTargetListOptions || []"
             :disabled="!formData.jumpModule"
+            @search="(val) => loadJumpTarget(val)"
           />
         </NFormItem>
         <!-- Boolean 选择框 -->

@@ -11,8 +11,8 @@ const setRankingListData = ref()
 const pageParam = ref({
   current: 1,
   size: 10,
-  sortField: null,
-  sortOrder: null,
+  sortField: 'id',
+  sortOrder: 'DESCEND',
   keyword: '',
   categoryId: null,
   difficulty: null,
@@ -198,7 +198,7 @@ function resetHandle() {
                     responsive="screen"
                   >
                     <n-gi span="1 l:3">
-                      <img :src="item?.cover" class="w-full h-42 l:h-42 rounded-xl object-cover">
+                      <img :src="item?.cover" class="w-full h-50 l:h-50 rounded-xl object-cover">
                     </n-gi>
                     <n-gi span="1 l:5" class="flex items-center w-full">
                       <n-thing class="w-full">
@@ -213,16 +213,24 @@ function resetHandle() {
                         </template>
                         <template #description>
                           <n-space vertical>
-                            <n-flex>
-                              <NTag size="small" type="error">
-                                {{ item.setTypeName }}
-                              </NTag>
-                              <NTag size="small" type="info">
-                                {{ item.categoryName }}
-                              </NTag>
-                              <NTag size="small" type="warning">
-                                {{ item.difficultyName }}
-                              </NTag>
+                            <n-flex vertical>
+                              <n-flex align="center">
+                                <!-- 限时题集 -->
+                                <NTag v-if="item.setType === 2" size="small" type="error">
+                                  {{ item.timeStatusName || '未知状态' }}
+                                </NTag>
+                                <NTag size="small" type="success">
+                                  {{ item.setTypeName }}
+                                </NTag>
+                              </n-flex>
+                              <n-flex align="center">
+                                <NTag size="small" type="info">
+                                  {{ item.categoryName }}
+                                </NTag>
+                                <NTag size="small" type="warning">
+                                  {{ item.difficultyName }}
+                                </NTag>
+                              </n-flex>
                             </n-flex>
                             <n-text depth="3">
                               <n-ellipsis :line-clamp="2" :tooltip="false">
@@ -254,7 +262,7 @@ function resetHandle() {
               <n-pagination
                 v-model:page="pageParam.current"
                 v-model:page-size="pageParam.size"
-                class="flex items-center justify-center"
+                class="flex items-center justify-center mt-2"
                 show-size-picker
                 :page-count="pageData ? Number(pageData.pages) : 0"
                 :page-sizes="[10, 20, 30, 50].map(size => ({

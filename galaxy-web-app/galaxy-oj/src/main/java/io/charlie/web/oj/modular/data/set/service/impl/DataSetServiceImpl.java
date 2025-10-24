@@ -58,10 +58,6 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     private final ProblemBuildTool problemBuildTool;
     private final SysUserMapper sysUserMapper;
 
-    private final UserCacheService userCacheService;
-    private final ProblemSetCacheService problemSetCacheService;
-    private final ProblemCacheService problemCacheService;
-
     private final SetBuildTool setBuildTool;
 
     private final DataSubmitMapper dataSubmitMapper;
@@ -211,9 +207,12 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
             throw new BusinessException("该题集没有该题目");
         }
 
+        DataSet byId = this.getById(dataSetProblemDetailParam.getId());
+
         DataProblem dataProblem = dataProblemMapper.selectById(dataSetProblemDetailParam.getProblemId());
         transService.transOne(dataProblem);
         problemBuildTool.buildSetProblem(dataSetProblemDetailParam.getId(), dataProblem);
+        dataProblem.setSetUseAi(byId.getUseAi());
         return dataProblem;
     }
 
@@ -264,7 +263,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         long totalCount = this.count();
 
         // 统计难度分布-简单
-        long simpleCount = this.count(new LambdaQueryWrapper<DataSet>().eq(DataSet::getDifficulty, 1));
+        long simpleCount = this.count(new LambdaQueryWrapper<DataSet>().eq(DataSet::getDifficulty, 1).eq(DataSet::getIsVisible, true));
         DifficultyDistribution simple = new DifficultyDistribution();
         simple.setDifficulty(1);
         simple.setCount(simpleCount);
@@ -278,7 +277,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         }
 
         // 统计难度分布-中等
-        long mediumCount = this.count(new LambdaQueryWrapper<DataSet>().eq(DataSet::getDifficulty, 2));
+        long mediumCount = this.count(new LambdaQueryWrapper<DataSet>().eq(DataSet::getDifficulty, 2).eq(DataSet::getIsVisible, true));
         DifficultyDistribution medium = new DifficultyDistribution();
         medium.setDifficulty(2);
         medium.setCount(mediumCount);
@@ -292,7 +291,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         }
 
         // 统计难度分布-困难
-        long hardCount = this.count(new LambdaQueryWrapper<DataSet>().eq(DataSet::getDifficulty, 3));
+        long hardCount = this.count(new LambdaQueryWrapper<DataSet>().eq(DataSet::getDifficulty, 3).eq(DataSet::getIsVisible, true));
         DifficultyDistribution hard = new DifficultyDistribution();
         hard.setDifficulty(3);
         hard.setCount(hardCount);

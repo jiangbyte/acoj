@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { AesCrypto } from '@/utils'
+import { AesCrypto, Poller } from '@/utils'
 import { useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
-import type { DataTableColumns } from 'naive-ui'
+import type { DataTableColumns, ImageInst } from 'naive-ui'
 import { NAvatar, NButton, NSpace, NTag, NText, NTime } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 
@@ -112,6 +112,7 @@ const columns: DataTableColumns<any> = [
       return h(NButton, {
         size: 'small',
         type: 'primary',
+        disabled: detailData.value.setType === 2 ? detailData.value.timeStatus !== 2 : false,
         onClick: () => {
           router.push({
             name: 'set_submit',
@@ -402,6 +403,81 @@ async function loadData() {
   })
 }
 loadData()
+
+const imageRef = ref<ImageInst>()
+function handleClickImage() {
+  imageRef.value?.showPreview()
+}
+
+// 倒计时相关
+const countdownDuration = ref(0)
+const countdownActive = ref(false)
+const countdownType = ref<'start' | 'end'>('start')
+
+// 计算倒计时持续时间
+function calculateCountdown() {
+  if (!detailData.value?.setType === 2)
+    return
+
+  const now = Date.now()
+  const startTime = Number(detailData.value.startTime)
+  const endTime = Number(detailData.value.endTime)
+
+  // 如果当前时间在开始时间之前，显示开始倒计时
+  if (now < startTime) {
+    countdownDuration.value = startTime - now
+    countdownType.value = 'start'
+    countdownActive.value = true
+  }
+  // 如果当前时间在开始时间和结束时间之间，显示结束倒计时
+  else if (now >= startTime && now < endTime) {
+    countdownDuration.value = endTime - now
+    countdownType.value = 'end'
+    countdownActive.value = true
+  }
+  // 如果已经结束，停止倒计时
+  else {
+    countdownActive.value = false
+  }
+}
+
+// 监听detailData变化，计算倒计时
+watch(() => detailData.value, (newVal) => {
+  if (newVal?.setType === 2) {
+    calculateCountdown()
+  }
+})
+
+// 每秒更新一次倒计时（可选）
+const countdownPoller = new Poller(
+  {
+    interval: 1000, // 1秒轮询一次
+    immediate: true,
+  },
+  {
+    onPoll: () => {
+      calculateCountdown()
+    },
+  },
+)
+
+// 自定义倒计时显示格式 - 时分秒
+function renderCountdown({ hours, minutes, seconds }: { hours: number, minutes: number, seconds: number }) {
+  return `${hours.toString().padStart(2, '0')} 时 ${minutes.toString().padStart(2, '0')} 分 ${seconds.toString().padStart(2, '0')} 秒`
+}
+onMounted(() => {
+  if (detailData.value?.setType === 2) {
+    countdownPoller.start()
+  }
+})
+
+onUnmounted(() => {
+  countdownPoller.stop()
+})
+
+function onfinishTime() {
+  window.location.reload()
+}
 </script>
 
 <template>
@@ -413,57 +489,7 @@ loadData()
       responsive="screen"
     >
       <n-gi span="1 l:7">
-        <!-- <n-card class="rounded-xl" size="small">
-          <template #header>
-            <n-h2 class="pb-0 mb-0">
-              {{ detailData?.title }}
-            </n-h2>
-          </template>
-          <NSpace align="center" class="mb-4">
-            <NTag size="small" type="error">
-              {{ detailData?.setTypeName }}
-            </NTag>
-            <NTag size="small" type="info">
-              {{ detailData?.categoryName }}
-            </NTag>
-            <NTag size="small" type="warning">
-              {{ detailData?.difficultyName }}
-            </NTag>
-            <NTag size="small" type="info">
-              开放中
-            </NTag>
-          </NSpace>
-          <NSpace vertical class="mb-4">
-            <NText>
-              {{ detailData?.description }}
-            </NText>
-            <NSpace align="center" :size="0">
-              <NText depth="3">
-                更新时间：
-              </NText>
-              <NText>
-                <NTime :time="detailData?.updateTime" />
-              </NText>
-            </NSpace>
-          </NSpace>
-          <template #footer>
-            <NSpace align="center" :size="0">
-              <NSpace align="center" :size="0">
-                <NAvatar :src="detailData?.createUserAvatar" round :size="36" class="mr-3 shadow-sm" />
-                <NText class="flex-1">
-                  {{ detailData?.createUserName }}
-                </NText>
-              </NSpace>
-              <NText depth="3" class="ml-2 mr-2">
-                发布于
-              </NText>
-              <NText>
-                <NTime :time="detailData?.createTime" />
-              </NText>
-            </NSpace>
-          </template>
-        </n-card> -->
-        <n-card size="small" content-style="padding: 0">
+        <n-card size="small" content-style="padding: 0" class="rounded-xl">
           <n-grid
             cols="1 l:8"
             responsive="screen"
@@ -480,11 +506,17 @@ loadData()
                 m:rounded-r-none m:rounded-tr-none m:rounded-br-none
                 l:rounded-l-xl l:rounded-bl-xl l:rounded-tl-xl
                 l:rounded-r-none l:rounded-tr-none l:rounded-br-none
-              object-cover h-50 m:absolute m:inset-0 m:h-full l:absolute l:inset-0 l:h-full "
+                object-cover h-50 m:absolute m:inset-0 m:h-full l:absolute l:inset-0 l:h-full"
+                @click="handleClickImage"
               >
+              <n-image
+                ref="imageRef"
+                :src="detailData?.cover"
+                class="opacity-0 w-0 h-0"
+              />
             </n-gi>
             <n-gi span="1 l:5">
-              <n-card size="small" :bordered="false" class="l:h-full m:h-full">
+              <n-card size="small" :bordered="false" class="l:h-full m:h-full rounded-xl">
                 <n-thing class="w-full">
                   <template #header>
                     <n-flex align="center" :wrap="false">
@@ -498,7 +530,11 @@ loadData()
                   <template #description>
                     <NSpace vertical>
                       <n-flex>
-                        <NTag size="small" type="error">
+                        <!-- 限时题集 -->
+                        <NTag v-if="detailData?.setType === 2" size="small" type="error">
+                          {{ detailData?.timeStatusName || '未知状态' }}
+                        </NTag>
+                        <NTag size="small" type="success">
                           {{ detailData?.setTypeName }}
                         </NTag>
                         <NTag size="small" type="info">
@@ -618,16 +654,52 @@ loadData()
           <n-card class="rounded-xl" size="small">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                题集统计
+                题集信息与统计
               </n-h2>
             </template>
             <NSpace vertical class="mb-4">
+              <!-- 倒计时显示 -->
+              <NSpace v-if="detailData?.setType === 2 && countdownActive" align="center" :size="0">
+                <NText depth="3">
+                  {{ countdownType === 'start' ? '开始倒计时：' : '结束倒计时：' }}
+                </NText>
+                <NCountdown
+                  :duration="countdownDuration"
+                  :active="countdownActive"
+                  :render="renderCountdown"
+                  @finish="onfinishTime()"
+                />
+              </NSpace>
+              <NSpace v-if="detailData?.setType === 2" align="center" :size="0">
+                <NText depth="3">
+                  开始时间：
+                </NText>
+                <NText>
+                  <NTime :time="Number(detailData?.startTime) || 0" />
+                </NText>
+              </NSpace>
+              <NSpace v-if="detailData?.setType === 2" align="center" :size="0">
+                <NText depth="3">
+                  结束时间：
+                </NText>
+                <NText>
+                  <NTime :time="Number(detailData?.endTime) || 0" />
+                </NText>
+              </NSpace>
               <NSpace align="center" :size="0">
                 <NText depth="3">
                   题目数量：
                 </NText>
                 <NText>
-                  {{ detailData?.problemIds.length ? detailData?.problemIds.length : 0 }}
+                  {{ setProblemPageData?.length ? setProblemPageData.length : 0 }}
+                </NText>
+              </NSpace>
+              <NSpace align="center" :size="0">
+                <NText depth="3">
+                  AI 使用：
+                </NText>
+                <NText>
+                  {{ detailData?.useAiName }}
                 </NText>
               </NSpace>
               <NSpace align="center" :size="0">
@@ -654,6 +726,9 @@ loadData()
                   {{ detailData?.participantUserCount ? detailData?.participantUserCount : 0 }}
                 </NText>
               </NSpace>
+              <n-alert show-icon type="warning">
+                限时题集请注意时间及时刷新页面：开始时间到达时请刷新页面，结束时间到达将锁定题集，无法提交。
+              </n-alert>
             </NSpace>
           </n-card>
         </NSpace>

@@ -44,7 +44,7 @@ defineProps<Props>()
       <n-tag type="success">
         {{ detailData?.categoryName }}
       </n-tag>
-      <n-tag :bordered="false" type="error">
+      <n-tag type="error">
         {{ detailData?.difficultyName }}
       </n-tag>
       <n-h3 style="margin: 0;">

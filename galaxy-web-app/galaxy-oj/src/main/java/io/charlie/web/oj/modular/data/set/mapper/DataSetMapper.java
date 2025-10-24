@@ -32,6 +32,7 @@ public interface DataSetMapper extends BaseMapper<DataSet> {
          GROUP BY set_id
          HAVING COUNT(DISTINCT user_id) > 0
      ) ds ON dp.id = ds.set_id
+      WHERE dp.is_visible = 1 
      ORDER BY ds.submit_count DESC
         LIMIT #{topN}
     """)
