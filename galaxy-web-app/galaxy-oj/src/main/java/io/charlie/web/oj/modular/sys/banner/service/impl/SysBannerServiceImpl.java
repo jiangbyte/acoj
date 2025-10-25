@@ -60,8 +60,6 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
                     true,
                     sysBannerPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(sysBannerPageParam.getSortField()));
-        } else {
-            queryWrapper.lambda().orderByDesc(SysBanner::getCreateTime);
         }
 
         return this.page(CommonPageRequest.Page(

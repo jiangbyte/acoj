@@ -31,6 +31,29 @@ import java.time.Duration;
 @Configuration
 public class RedisConfig {
 
+    @Bean
+    @Primary
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory);
+
+        // 使用 GenericJackson2JsonRedisSerializer
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(serializer);
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(serializer);
+
+        template.afterPropertiesSet();
+        return template;
+    }
+
 //    @Bean
 //    @Primary
 //    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
@@ -87,50 +110,45 @@ public class RedisConfig {
 //                .build();
 //    }
 
-    @Bean
-    @Primary
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(connectionFactory);
-
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setHashKeySerializer(new StringRedisSerializer());
-
-        // 使用自定义配置的 Jackson 序列化器
-        template.setValueSerializer(jackson2JsonRedisSerializer());
-        template.setHashValueSerializer(jackson2JsonRedisSerializer());
-
-        template.afterPropertiesSet();
-        return template;
-    }
-
-    @Bean
-    public GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer() {
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        // 允许序列化 transient 字段
-        objectMapper.configure(MapperFeature.PROPAGATE_TRANSIENT_MARKER, false);
-
-        // 忽略未知属性（反序列化时）
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-        // 忽略空bean转json错误
-        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-
-        // 处理循环引用
-        objectMapper.configure(SerializationFeature.WRITE_SELF_REFERENCES_AS_NULL, true);
-
-        // 日期格式处理
-        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        objectMapper.registerModule(new JavaTimeModule());
-
-        // 包含 null 值，确保所有字段都被序列化
-        objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
-
-//        // 启用所有字段的自动检测（包括非public字段）
-//        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-//        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-
-        return new GenericJackson2JsonRedisSerializer(objectMapper);
-    }
+//    @Bean
+//    @Primary
+//    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+//        RedisTemplate<String, Object> template = new RedisTemplate<>();
+//        template.setConnectionFactory(connectionFactory);
+//
+//        template.setKeySerializer(new StringRedisSerializer());
+//        template.setHashKeySerializer(new StringRedisSerializer());
+//
+//        // 使用自定义配置的 Jackson 序列化器
+//        template.setValueSerializer(jackson2JsonRedisSerializer());
+//        template.setHashValueSerializer(jackson2JsonRedisSerializer());
+//
+//        template.afterPropertiesSet();
+//        return template;
+//    }
+//
+//    @Bean
+//    public GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer() {
+//        ObjectMapper objectMapper = new ObjectMapper();
+//
+//        // 允许序列化 transient 字段
+//        objectMapper.configure(MapperFeature.PROPAGATE_TRANSIENT_MARKER, false);
+//
+//        // 忽略未知属性（反序列化时）
+//        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//
+//        // 忽略空bean转json错误
+//        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+//
+//        // 处理循环引用
+//        objectMapper.configure(SerializationFeature.WRITE_SELF_REFERENCES_AS_NULL, true);
+//
+//        // 日期格式处理
+//        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+//        objectMapper.registerModule(new JavaTimeModule());
+//
+//        // 包含 null 值，确保所有字段都被序列化
+//        objectMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+//        return new GenericJackson2JsonRedisSerializer(objectMapper);
+//    }
 }

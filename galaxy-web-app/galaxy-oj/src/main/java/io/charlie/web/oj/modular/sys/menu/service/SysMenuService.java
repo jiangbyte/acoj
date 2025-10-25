@@ -28,7 +28,5 @@ public interface SysMenuService extends IService<SysMenu> {
 
     List<SysMenu> authMenu();
 
-    List<SysMenu> authMenu1();
-
     void assignMenuPermission(SysMenuPermissionParam sysMenuPermissionParam);
 }

@@ -9,6 +9,7 @@ import cn.hutool.captcha.generator.RandomGenerator;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.*;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.ranking.ActivityScoreCalculator;
 import io.charlie.web.oj.modular.data.ranking.UserActivityService;
 import io.charlie.web.oj.modular.sys.auth.enums.PlatformEnum;
@@ -63,6 +64,8 @@ public class AuthServiceImpl implements AuthService {
     private final SysConfigService sysConfigService;
 
     private final TransService transService;
+
+    private final DataScopeUtil dataScopeUtil;
 
     @Override
     public CaptchaResult captcha() {
@@ -124,7 +127,7 @@ public class AuthServiceImpl implements AuthService {
         }
         // 判断是否是ADMIN平台
         if ("ADMIN".equalsIgnoreCase(usernamePasswordLoginParam.getPlatform())) {
-            if (!sysUserRoleService.canAdmin(sysUser.getId())) {
+            if (!dataScopeUtil.canManageData(sysUser.getId())) {
                 throw new BusinessException("无权限");
             }
         }

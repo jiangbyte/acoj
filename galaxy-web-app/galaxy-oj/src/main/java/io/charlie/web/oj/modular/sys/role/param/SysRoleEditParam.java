@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.io.Serial;
+import java.util.List;
 
 /**
 * @author Charlie Zhang
@@ -37,7 +38,7 @@ public class SysRoleEditParam implements Serializable {
     @Schema(description = "描述")
     private String description;
 
-    @Schema(description = "角色层级")
-    private Byte level;
+    @Schema(description = "分配用户组ID")
+    private List<String> assignGroupIds;
 
 }

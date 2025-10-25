@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemOverallStats;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemStatistics;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Charlie Zhang
@@ -43,16 +45,27 @@ import java.util.*;
 @RequiredArgsConstructor
 public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSolved> implements DataSolvedService {
 
+    private final DataScopeUtil dataScopeUtil;
+
     @Override
     public Page<DataSolved> page(DataSolvedPageParam dataSolvedPageParam) {
         QueryWrapper<DataSolved> queryWrapper = new QueryWrapper<DataSolved>().checkSqlInjection();
+
+        List<String> accessibleGroupIds = dataScopeUtil.getDataScopeContext().getAccessibleGroupIds();
+        if (accessibleGroupIds.isEmpty()) {
+            return new Page<>();
+        }
+
+        // 使用 EXISTS 子查询的方式（性能更好）
+        queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id IN (" +
+                accessibleGroupIds.stream().map(id -> "'" + id + "'").collect(Collectors.joining(",")) +
+                ")");
+
         if (ObjectUtil.isAllNotEmpty(dataSolvedPageParam.getSortField(), dataSolvedPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataSolvedPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
                     dataSolvedPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(dataSolvedPageParam.getSortField()));
-        } else {
-            queryWrapper.lambda().orderByDesc(DataSolved::getCreateTime);
         }
 
         return this.page(CommonPageRequest.Page(

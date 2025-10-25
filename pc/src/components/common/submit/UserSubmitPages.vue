@@ -120,8 +120,8 @@ const pageData = ref()
 const pageParam = ref({
   current: 1,
   size: 10,
-  sortField: null,
-  sortOrder: null,
+  sortField: 'id',
+  sortOrder: 'DESCEND',
   problemId: props.problemId,
   setId: null,
 })

@@ -15,10 +15,4 @@ import java.util.List;
 public interface SysUserRoleService extends IService<SysUserRole> {
     void assignRoles(String userId, List<String> roleIds);
 
-    // 获得某个用户最大的角色
-    SysRole getHeightLevelRole(String userId);
-
-    // 判断用户是否能够进入管理后台
-    Boolean canAdmin(String userId);
-
 }

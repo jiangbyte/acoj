@@ -184,14 +184,23 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
         );
 
         if (ObjectUtil.isNotEmpty(problemIds)) {
-            problemIds.forEach(item -> {
+//            problemIds.forEach(item -> {
+//                DataSetProblem dataSetProblem = new DataSetProblem();
+//                dataSetProblem.setSetId(setId);
+//                dataSetProblem.setProblemId(item);
+//                dataSetProblem.setSort(problemIds.indexOf(item));
+//                // 添加
+//                this.save(dataSetProblem);
+//            });
+
+            List<DataSetProblem> list = problemIds.stream().map(item -> {
                 DataSetProblem dataSetProblem = new DataSetProblem();
                 dataSetProblem.setSetId(setId);
                 dataSetProblem.setProblemId(item);
                 dataSetProblem.setSort(problemIds.indexOf(item));
-                // 添加
-                this.save(dataSetProblem);
-            });
+                return dataSetProblem;
+            }).toList();
+            return this.saveBatch(list);
         }
         clearCache(setId);
         return true;
@@ -204,11 +213,16 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
                 .eq(DataSetProblem::getSetId, setId)
         );
         if (ObjectUtil.isNotEmpty(sets)) {
-            sets.forEach(item -> {
+//            sets.forEach(item -> {
+//                item.setSetId(setId);
+//                // 添加
+//                this.save(item);
+//            });
+            List<DataSetProblem> list = sets.stream().map(item -> {
                 item.setSetId(setId);
-                // 添加
-                this.save(item);
-            });
+                return item;
+            }).toList();
+            return this.saveBatch(list);
         }
         clearCache(setId);
         return true;

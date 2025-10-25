@@ -27,18 +27,26 @@ public class SysRoleMenuServiceImpl extends ServiceImpl<SysRoleMenuMapper, SysRo
 
     @Override
     public void assignMenus(String roleId, List<String> menuIds) {
-        // 先清除
+        // 先清除全部的
         this.remove(new LambdaQueryWrapper<SysRoleMenu>()
                 .eq(SysRoleMenu::getRoleId, roleId)
         );
 
         // 再分配
-        for (String menuId : menuIds) {
+        List<SysRoleMenu> sysRoleMenus = menuIds.stream().map(menuId -> {
             SysRoleMenu sysRoleMenu = new SysRoleMenu();
             sysRoleMenu.setRoleId(roleId);
             sysRoleMenu.setMenuId(menuId);
-            this.save(sysRoleMenu);
-        }
+            return sysRoleMenu;
+        }).toList();
+
+//        for (String menuId : menuIds) {
+//            SysRoleMenu sysRoleMenu = new SysRoleMenu();
+//            sysRoleMenu.setRoleId(roleId);
+//            sysRoleMenu.setMenuId(menuId);
+//            this.save(sysRoleMenu);
+//        }
+        this.saveBatch(sysRoleMenus);
     }
 
     @Override

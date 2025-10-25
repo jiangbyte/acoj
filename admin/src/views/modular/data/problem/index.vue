@@ -180,8 +180,8 @@ const pageData = ref()
 const pageParam = ref({
   current: 1,
   size: 20,
-  sortField: null,
-  sortOrder: null,
+  sortField: 'id',
+  sortOrder: 'DESCEND',
   keyword: '',
 })
 

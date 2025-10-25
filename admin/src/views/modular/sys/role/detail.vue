@@ -40,9 +40,6 @@ defineExpose({
         <NDescriptionsItem label="数据范围">
           {{ formData.dataScopeName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="角色层级">
-          {{ formData.level }}
-        </NDescriptionsItem>
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>

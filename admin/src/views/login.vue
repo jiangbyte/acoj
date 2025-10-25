@@ -13,6 +13,14 @@ const formData = ref({
   uuid: '',
   platform: 'ADMIN',
 })
+
+// 如果不是build，设置默认值
+if (import.meta.env.DEV) {
+  // 开发环境下设置默认用户名和密码，方便测试
+  formData.value.username = 'superadmin'
+  formData.value.password = '123456'
+}
+
 const formRules = {
   username: {
     required: true,

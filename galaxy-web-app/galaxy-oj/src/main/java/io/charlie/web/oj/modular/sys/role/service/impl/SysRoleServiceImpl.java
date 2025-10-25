@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.sys.relation.entity.SysRoleMenu;
 import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysRoleMenuMapper;
@@ -26,6 +27,7 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.sys.role.utils.SysRoleBuildUtil;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,13 +45,22 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements SysRoleService {
-    private final SysUserRoleService sysUserRoleService;
-    private final SysRoleMenuMapper sysRoleMenuMapper;
     private final SysUserRoleMapper sysUserRoleMapper;
+
+    private final SysRoleBuildUtil sysRoleBuildUtil;
+
+    private final DataScopeUtil dataScopeUtil;
 
     @Override
     public Page<SysRole> page(SysRolePageParam sysRolePageParam) {
         QueryWrapper<SysRole> queryWrapper = new QueryWrapper<SysRole>().checkSqlInjection();
+
+        List<String> accessibleRoleIds = dataScopeUtil.getDataScopeContext().getAccessibleRoleIds();
+        if (accessibleRoleIds.isEmpty()) {
+            return new Page<>();
+        }
+        queryWrapper.lambda().in(SysRole::getId, accessibleRoleIds);
+
         // 关键字
         if (ObjectUtil.isNotEmpty(sysRolePageParam.getKeyword())) {
             queryWrapper.lambda().like(SysRole::getName, sysRolePageParam.getKeyword());
@@ -67,15 +78,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
                         null
                 ),
                 queryWrapper);
-        page.getRecords().forEach(sysRole -> {
-            List<SysRoleMenu> sysRoleMenus = sysRoleMenuMapper.selectList(new LambdaQueryWrapper<SysRoleMenu>()
-                    .eq(SysRoleMenu::getRoleId, sysRole.getId())
-            );
-            List<String> stringList = sysRoleMenus.stream().map(SysRoleMenu::getMenuId).toList();
-            if (ObjectUtil.isNotEmpty(stringList)) {
-                sysRole.setAssignResource(stringList);
-            }
-        });
+        sysRoleBuildUtil.buildRoles(page.getRecords());
         return page;
     }
 
@@ -112,53 +115,26 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         if (ObjectUtil.isEmpty(sysRole)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
-        List<SysRoleMenu> sysRoleMenus = sysRoleMenuMapper.selectList(new LambdaQueryWrapper<SysRoleMenu>()
-                .eq(SysRoleMenu::getRoleId, sysRole.getId())
-        );
-        List<String> stringList = sysRoleMenus.stream().map(SysRoleMenu::getMenuId).toList();
-        if (ObjectUtil.isNotEmpty(stringList)) {
-            sysRole.setAssignResource(stringList);
-        }
+        sysRoleBuildUtil.buildRole(sysRole);
         return sysRole;
     }
 
     @Override
     public List<SysRole> authRoles() {
-        String loginIdAsString = StpUtil.getLoginIdAsString();
-        SysRole heightLevelRole = sysUserRoleService.getHeightLevelRole(loginIdAsString);
-        if (heightLevelRole == null) {
+        List<String> accessibleRoleIds = dataScopeUtil.getDataScopeContext().getAccessibleRoleIds();
+        if (accessibleRoleIds.isEmpty()) {
             return List.of();
         }
-
-        Integer level = heightLevelRole.getLevel();
-        // 获得比最高层级低的角色列表（包含最高角色本身）
-        return this.list(new LambdaQueryWrapper<SysRole>()
-                .le(SysRole::getLevel, level)  // 查询层级小于等于当前最高层级的角色
-                .orderByAsc(SysRole::getLevel) // 按层级升序排列
-        );
+        return this.listByIds(accessibleRoleIds);
     }
 
     @Override
     public List<SysRole> authRoles1() {
-        // 获得全部的角色列表
-        List<SysRole> list = this.list(new LambdaQueryWrapper<SysRole>()
-                .orderByAsc(SysRole::getLevel) // 按层级升序排列
-        );
-
-        String loginIdAsString = StpUtil.getLoginIdAsString();
-        SysRole heightLevelRole = sysUserRoleService.getHeightLevelRole(loginIdAsString);
-        if (heightLevelRole == null) {
+        List<String> accessibleRoleIds = dataScopeUtil.getDataScopeContext().getAccessibleRoleIds();
+        if (accessibleRoleIds.isEmpty()) {
             return List.of();
         }
-        Integer level = heightLevelRole.getLevel();
-        // 对层级比当前用户高的设置isOpen禁用
-        list.forEach(role -> {
-            if (role.getLevel() > level) {
-                role.setIsOpen(false);
-            }
-        });
-
-        return list;
+        return this.listByIds(accessibleRoleIds);
     }
 
     @Override

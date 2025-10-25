@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.ranking.ActivityScoreCalculator;
@@ -42,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author Charlie Zhang
@@ -62,17 +64,34 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
 
     private final UserActivityService userActivityService;
 
+    private final DataScopeUtil dataScopeUtil;
+
     @Override
     public Page<DataSubmit> page(DataSubmitPageParam dataSubmitPageParam) {
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
+
+        List<String> accessibleGroupIds = dataScopeUtil.getDataScopeContext().getAccessibleGroupIds();
+        if (accessibleGroupIds.isEmpty()) {
+            return new Page<>();
+        }
+
+        // 在最后拼接 sql，查询 user_id 的 sys_user 表的 group_id 在 accessibleGroupIds 中
+//        queryWrapper.inSql("user_id",
+//                "SELECT id FROM sys_user WHERE group_id IN (" +
+//                        accessibleGroupIds.stream().map(id -> "'" + id + "'").collect(Collectors.joining(",")) +
+//                        ")");
+
+        // 使用 EXISTS 子查询的方式（性能更好）
+         queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id IN (" +
+             accessibleGroupIds.stream().map(id -> "'" + id + "'").collect(Collectors.joining(",")) +
+             ")");
+
         if (ObjectUtil.isAllNotEmpty(dataSubmitPageParam.getSortField(), dataSubmitPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataSubmitPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
                     dataSubmitPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(dataSubmitPageParam.getSortField()));
         }
-        // 默认按时间降序
-        queryWrapper.lambda().orderByDesc(DataSubmit::getCreateTime);
 
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(dataSubmitPageParam.getCurrent()).orElse(1),
@@ -109,8 +128,6 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
                     dataSubmitPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(dataSubmitPageParam.getSortField()));
         }
-        // 默认按时间降序
-        queryWrapper.lambda().orderByDesc(DataSubmit::getCreateTime);
 
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(dataSubmitPageParam.getCurrent()).orElse(1),
@@ -147,8 +164,6 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
                     dataSubmitPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(dataSubmitPageParam.getSortField()));
         }
-        // 默认按时间降序
-        queryWrapper.lambda().orderByDesc(DataSubmit::getCreateTime);
 
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(dataSubmitPageParam.getCurrent()).orElse(1),

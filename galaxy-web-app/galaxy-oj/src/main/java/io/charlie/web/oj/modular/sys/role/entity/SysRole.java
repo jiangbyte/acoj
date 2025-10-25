@@ -3,6 +3,7 @@ package io.charlie.web.oj.modular.sys.role.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import io.charlie.galaxy.pojo.CommonEntity;
 
 import java.io.Serializable;
@@ -25,7 +26,7 @@ import org.dromara.core.trans.constant.TransType;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("sys_role")
+@TableName(value = "sys_role", autoResultMap = true)
 @Schema(name = "SysRole", description = "角色表")
 public class SysRole extends CommonEntity {
     @Serial
@@ -45,15 +46,17 @@ public class SysRole extends CommonEntity {
     @Trans(type = TransType.DICTIONARY, key = "DATA_SCOPE")
     private String dataScope;
 
+    @Schema(description = "分配用户组ID")
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> assignGroupIds;
+
     @Schema(description = "描述")
     private String description;
-
-    @Schema(description = "角色层级")
-    private Integer level;
 
     @TableField(exist = false)
     private Boolean isOpen;
 
+    @Schema(description = "分配资源")
     @TableField(exist = false)
     private List<String> assignResource;
 }

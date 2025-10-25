@@ -13,6 +13,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
+import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.ranking.UserActivityService;
 import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
@@ -36,6 +37,7 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.sys.user.utils.SysUserBuildUtil;
 import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
@@ -60,14 +62,24 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private final DataSubmitMapper dataSubmitMapper;
 
     private final DataSolvedMapper dataSolvedMapper;
-    private final SysUserRoleMapper sysUserRoleMapper;
 
     private final TransService transService;
     private final SysUserRoleService sysUserRoleService;
 
+    private final SysUserBuildUtil sysUserBuildUtil;
+    private final DataScopeUtil dataScopeUtil;
+
     @Override
     public Page<SysUser> page(SysUserPageParam sysUserPageParam) {
+
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<SysUser>().checkSqlInjection();
+
+        List<String> accessibleGroupIds = dataScopeUtil.getDataScopeContext().getAccessibleGroupIds();
+        if (accessibleGroupIds.isEmpty()) {
+            return new Page<>();
+        }
+
+        queryWrapper.lambda().in(SysUser::getGroupId, accessibleGroupIds);
 
         String type = sysUserPageParam.getType();
         if (type.equals("username")) {
@@ -91,11 +103,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             queryWrapper.lambda()
                     .eq(SysUser::getGroupId, sysUserPageParam.getGroupId());
         }
-//        // 关键字
-//        if (ObjectUtil.isNotEmpty(sysUserPageParam.getKeyword())) {
-//            queryWrapper.lambda()
-//                    .like(SysUser::getNickname, sysUserPageParam.getKeyword());
-//        }
         if (ObjectUtil.isNotEmpty(sysUserPageParam.getGroupId())) {
             queryWrapper.lambda()
                     .like(SysUser::getGroupId, sysUserPageParam.getGroupId());
@@ -113,13 +120,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                         null
                 ),
                 queryWrapper);
-        page.getRecords().forEach(sysUser -> {
-            List<SysUserRole> sysUserRoles = sysUserRoleMapper.selectList(new LambdaQueryWrapper<SysUserRole>()
-                    .eq(SysUserRole::getUserId, sysUser.getId())
-            );
-            List<String> stringList = sysUserRoles.stream().map(SysUserRole::getRoleId).toList();
-            sysUser.setAssignRoles(stringList);
-        });
+        sysUserBuildUtil.buildUsers(page.getRecords());
         return page;
     }
 
@@ -170,11 +171,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (ObjectUtil.isEmpty(sysUser)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
-        List<SysUserRole> sysUserRoles = sysUserRoleMapper.selectList(new LambdaQueryWrapper<SysUserRole>()
-                .eq(SysUserRole::getUserId, sysUser.getId())
-        );
-        List<String> stringList = sysUserRoles.stream().map(SysUserRole::getRoleId).toList();
-        sysUser.setAssignRoles(stringList);
+        sysUserBuildUtil.buildUser(sysUser);
         return sysUser;
     }
 

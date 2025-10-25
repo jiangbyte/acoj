@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author ZhangJiangHu
@@ -138,13 +139,22 @@ public class DataProblemTagImpl extends ServiceImpl<DataProblemTagMapper, DataPr
 
         // 再增加关联标签
         if (ObjectUtil.isNotEmpty(tagIds)) {
-            tagIds.forEach(item -> {
+//            tagIds.forEach(item -> {
+//                DataProblemTag dataProblemTag = new DataProblemTag();
+//                dataProblemTag.setProblemId(problemId);
+//                dataProblemTag.setTagId(item);
+//                // 添加
+//                this.save(dataProblemTag);
+//            });
+
+            List<DataProblemTag> list = tagIds.stream().map(item -> {
                 DataProblemTag dataProblemTag = new DataProblemTag();
                 dataProblemTag.setProblemId(problemId);
                 dataProblemTag.setTagId(item);
-                // 添加
-                this.save(dataProblemTag);
-            });
+                return dataProblemTag;
+            }).toList();
+
+            return this.saveBatch(list);
         }
 
         // 清除相关缓存

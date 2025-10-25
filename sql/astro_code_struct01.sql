@@ -515,23 +515,24 @@ CREATE TABLE `sys_notice`
 DROP TABLE IF EXISTS `sys_role`;
 CREATE TABLE `sys_role`
 (
-    `id`          VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NOT NULL COMMENT '主键',
-    `name`        VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '名称',
-    `code`        VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NULL DEFAULT NULL COMMENT '编码',
-    `data_scope`  VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NULL DEFAULT NULL COMMENT '数据范围',
-    `description` VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '描述',
-    `level`       INT                                                           NULL DEFAULT 5 COMMENT '角色层级',
-    `deleted`     TINYINT(1)                                                    NULL DEFAULT 0 COMMENT '删除状态',
-    `create_time` DATETIME                                                      NULL DEFAULT NULL COMMENT '创建时间戳',
-    `create_user` VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NULL DEFAULT NULL COMMENT '创建者',
-    `update_time` DATETIME                                                      NULL DEFAULT NULL COMMENT '更新时间戳',
-    `update_user` VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NULL DEFAULT NULL COMMENT '更新者',
+    `id`               VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NOT NULL COMMENT '主键',
+    `name`             VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '名称',
+    `code`             VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NULL DEFAULT NULL COMMENT '编码',
+    `data_scope`       VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NULL DEFAULT NULL COMMENT '数据范围',
+    `description`      VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '描述',
+    `assign_group_ids` JSON                                                          NULL DEFAULT NULL COMMENT '角色分配用户组',
+    `deleted`          TINYINT(1)                                                    NULL DEFAULT 0 COMMENT '删除状态',
+    `create_time`      DATETIME                                                      NULL DEFAULT NULL COMMENT '创建时间戳',
+    `create_user`      VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NULL DEFAULT NULL COMMENT '创建者',
+    `update_time`      DATETIME                                                      NULL DEFAULT NULL COMMENT '更新时间戳',
+    `update_user`      VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci  NULL DEFAULT NULL COMMENT '更新者',
     PRIMARY KEY (`id`) USING BTREE,
     INDEX `idx_role_code` (`code` ASC) USING BTREE
 ) ENGINE = InnoDB
   CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci COMMENT = '角色表'
   ROW_FORMAT = DYNAMIC;
+
 
 -- ----------------------------
 -- Table structure for sys_role_menu

@@ -3,6 +3,7 @@ package io.charlie.web.oj.modular.sys.group.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -11,7 +12,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
-import io.charlie.web.oj.modular.sys.auth.utils.AuthContextUtil;
+import io.charlie.web.oj.modular.context.DataScopeContext;
+import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
 import io.charlie.web.oj.modular.sys.group.param.*;
 import io.charlie.web.oj.modular.sys.group.mapper.SysGroupMapper;
@@ -42,14 +44,19 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> implements SysGroupService {
-    private final SysUserRoleService sysUserRoleService;
-    private final SysUserMapper sysUserMapper;
-
-    private final AuthContextUtil authContextUtil;
+    private final DataScopeUtil dataScopeUtil;
 
     @Override
     public Page<SysGroup> page(SysGroupPageParam sysGroupPageParam) {
         QueryWrapper<SysGroup> queryWrapper = new QueryWrapper<SysGroup>().checkSqlInjection();
+
+        List<String> accessibleGroupIds = dataScopeUtil.getDataScopeContext().getAccessibleGroupIds();
+        if (accessibleGroupIds.isEmpty()) {
+            return new Page<>();
+        }
+
+        queryWrapper.lambda().in(SysGroup::getId, accessibleGroupIds);
+
         // 关键字
         if (ObjectUtil.isNotEmpty(sysGroupPageParam.getKeyword())) {
             queryWrapper.lambda().like(SysGroup::getName, sysGroupPageParam.getKeyword());
@@ -59,9 +66,8 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
                     true,
                     sysGroupPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(sysGroupPageParam.getSortField()));
-        } else {
-            queryWrapper.lambda().orderByAsc(SysGroup::getSort);
         }
+        queryWrapper.lambda().orderByAsc(SysGroup::getSort);
 
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(sysGroupPageParam.getCurrent()).orElse(1),
@@ -119,23 +125,61 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
 
     @Override
     public List<SysGroup> authTreeGroup(String keyword) {
-        String groupId = authContextUtil.getUserGroupId();
-        if (ObjectUtil.isEmpty(groupId)) {
-            log.info("用户组为空");
+        DataScopeContext dataScopeContext = dataScopeUtil.getDataScopeContext();
+        List<String> accessibleGroupIds = dataScopeContext.getAccessibleGroupIds(); // 可访问的用户组ID列表
+        // 构建查询条件
+        LambdaQueryWrapper<SysGroup> queryWrapper = new LambdaQueryWrapper<SysGroup>()
+                .orderByAsc(SysGroup::getSort);
+
+        // 添加关键字过滤
+        if (ObjectUtil.isNotEmpty(keyword)) {
+            queryWrapper.like(SysGroup::getName, keyword);
+        }
+
+        // 添加权限过滤 - 只查询可访问的用户组
+        if (ObjectUtil.isNotEmpty(accessibleGroupIds)) {
+            queryWrapper.in(SysGroup::getId, accessibleGroupIds);
+        }
+
+        // 查询所有符合条件的用户组
+        List<SysGroup> allGroups = this.list(queryWrapper);
+
+        // 如果没有数据直接返回空列表
+        if (CollectionUtil.isEmpty(allGroups)) {
             return List.of();
         }
 
-        // 判断是否是超级用户(层级99)
-        if (authContextUtil.isSuperUser()) {
-            log.info("超级用户");
-            // 返回所有用户组树
-            return buildFullGroupTree(keyword);
+        // 使用Map构建树结构
+        Map<String, SysGroup> groupMap = allGroups.stream()
+                .collect(Collectors.toMap(SysGroup::getId, group -> group));
+
+        // 存储根节点
+        List<SysGroup> roots = new ArrayList<>();
+
+        // 构建树形结构
+        for (SysGroup group : allGroups) {
+            String parentId = group.getParentId();
+
+            // 如果父ID为空或者是自己（防止循环），或者父节点不存在于当前列表中，则作为根节点
+            if (ObjectUtil.isEmpty(parentId) ||
+                    group.getId().equals(parentId) ||
+                    !groupMap.containsKey(parentId)) {
+                roots.add(group);
+            } else {
+                // 找到父组并添加到其children中
+                SysGroup parent = groupMap.get(parentId);
+                if (parent != null) {
+                    if (parent.getChildren() == null) {
+                        parent.setChildren(new ArrayList<>());
+                    }
+                    parent.getChildren().add(group);
+                }
+            }
         }
 
-        // 非超级用户。返回本用户组及以下的用户组树（包含本用户组）
-        log.info("非超级用户");
-        return buildSubGroupTree(groupId, keyword);
+        return roots;
     }
+
 
     @Override
     public List<SysGroup> subGroup(String groupId) {
@@ -228,105 +272,6 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
         }
     }
 
-    /**
-     * 构建完整的用户组树
-     */
-    private List<SysGroup> buildFullGroupTree(String keyword) {
-        // 查询所有用户组
-        LambdaQueryWrapper<SysGroup> queryWrapper = new LambdaQueryWrapper<SysGroup>()
-                .orderByAsc(SysGroup::getSort);
-        log.info("queryWrapper keyword: {}", keyword);
-        if (ObjectUtil.isNotEmpty(keyword)) {
-            log.info("keyword: {}", keyword);
-            queryWrapper.like(SysGroup::getName, keyword);
-        }
-        List<SysGroup> allGroups = this.list(queryWrapper);
-        log.info("allGroups: {}", allGroups);
-        return buildTree(allGroups, "0");
-    }
-
-    /**
-     * 构建指定用户组及其子组的树
-     */
-    private List<SysGroup> buildSubGroupTree(String groupId, String keyword) {
-        // 查询指定用户组
-        SysGroup currentGroup = this.getById(groupId);
-        if (currentGroup == null) {
-            return List.of();
-        }
-
-        // 查询所有用户组
-        LambdaQueryWrapper<SysGroup> queryWrapper = new LambdaQueryWrapper<SysGroup>()
-                .orderByAsc(SysGroup::getSort);
-        if (ObjectUtil.isNotEmpty(keyword)) {
-            queryWrapper.like(SysGroup::getName, keyword);
-        }
-        List<SysGroup> allGroups = this.list(queryWrapper);
-
-        // 获取当前组及其所有子组的ID列表
-        List<String> subGroupIds = getAllSubGroupIds(allGroups, groupId);
-        subGroupIds.add(groupId); // 包含当前组
-
-        // 过滤出相关的用户组
-        List<SysGroup> relatedGroups = allGroups.stream()
-                .filter(group -> subGroupIds.contains(group.getId()))
-                .collect(Collectors.toList());
-
-        return buildTree(relatedGroups, groupId);
-    }
-
-    /**
-     * 递归获取所有子组ID
-     */
-    private List<String> getAllSubGroupIds(List<SysGroup> allGroups, String parentId) {
-        List<String> subGroupIds = new ArrayList<>();
-
-        // 查找直接子组
-        List<SysGroup> directChildren = allGroups.stream()
-                .filter(group -> parentId.equals(group.getParentId()))
-                .toList();
-
-        // 递归获取子组的子组
-        for (SysGroup child : directChildren) {
-            subGroupIds.add(child.getId());
-            subGroupIds.addAll(getAllSubGroupIds(allGroups, child.getId()));
-        }
-
-        return subGroupIds;
-    }
-
-    /**
-     * 通用的树构建方法
-     */
-    private List<SysGroup> buildTree(List<SysGroup> groups, String rootParentId) {
-        // 创建ID到组的映射
-        Map<String, SysGroup> groupMap = groups.stream()
-                .collect(Collectors.toMap(SysGroup::getId, group -> group));
-
-        // 构建树结构
-        List<SysGroup> tree = new ArrayList<>();
-
-        for (SysGroup group : groups) {
-            String parentId = group.getParentId();
-
-            // 如果是根节点（parentId为空或等于指定的根父ID）
-            if (ObjectUtil.isEmpty(parentId) ||
-                    (rootParentId != null && rootParentId.equals(parentId))) {
-                tree.add(group);
-            } else {
-                // 找到父组并添加到其children中
-                SysGroup parent = groupMap.get(parentId);
-                if (parent != null) {
-                    if (parent.getChildren() == null) {
-                        parent.setChildren(new ArrayList<>());
-                    }
-                    parent.getChildren().add(group);
-                }
-            }
-        }
-
-        return tree;
-    }
 
     /**
      * 可选：添加排序方法，确保树结构有序

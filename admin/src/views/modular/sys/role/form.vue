@@ -104,9 +104,9 @@ defineExpose({
           />
         </NFormItem>
         <!-- 数字输入 -->
-        <NFormItem label="角色层级" path="level">
+        <!-- <NFormItem label="角色层级" path="level">
           <NInputNumber v-model:value="formData.level" :min="0" :max="100" placeholder="请输入角色层级" />
-        </NFormItem>
+        </NFormItem> -->
       </NForm>
       <template #footer>
         <NSpace align="center" justify="end">

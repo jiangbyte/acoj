@@ -2,4 +2,72 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.charlie.web.oj.modular.sys.group.mapper.SysGroupMapper">
 
+    <!-- 查询用户组及其所有子组ID（包含自身） -->
+    <select id="selectGroupAndChildrenIds" resultType="java.lang.String">
+        WITH RECURSIVE group_tree AS (
+            SELECT id, parent_id
+            FROM sys_group
+            WHERE id = #{groupId}
+              AND deleted = 0
+
+            UNION ALL
+
+            SELECT sg.id, sg.parent_id
+            FROM sys_group sg
+                     INNER JOIN group_tree gt ON sg.parent_id = gt.id
+            WHERE sg.deleted = 0
+        )
+        SELECT id FROM group_tree
+    </select>
+
+<!--    &lt;!&ndash; 查询用户组及其所有子组ID（可选择是否包含自身） &ndash;&gt;-->
+<!--    <select id="selectGroupAndChildrenIdsWithOption" resultType="java.lang.String">-->
+<!--        WITH RECURSIVE group_tree AS (-->
+<!--        SELECT id, parent_id-->
+<!--        FROM sys_group-->
+<!--        WHERE id = #{groupId}-->
+<!--        AND deleted = 0-->
+
+<!--        UNION ALL-->
+
+<!--        SELECT sg.id, sg.parent_id-->
+<!--        FROM sys_group sg-->
+<!--        INNER JOIN group_tree gt ON sg.parent_id = gt.id-->
+<!--        WHERE sg.deleted = 0-->
+<!--        )-->
+<!--        SELECT id FROM group_tree-->
+<!--        <if test="!includeSelf">-->
+<!--            WHERE id != #{groupId}-->
+<!--        </if>-->
+<!--    </select>-->
+
+    <!-- 查询用户组及其所有子组ID（可选择是否包含自身） -->
+    <select id="selectGroupAndChildrenIdsWithOption" resultType="java.lang.String">
+        WITH RECURSIVE group_tree AS (
+        SELECT
+        id,
+        parent_id,
+        1 as level
+        FROM sys_group
+        WHERE id = #{groupId}
+        AND deleted = 0
+
+        UNION ALL
+
+        SELECT
+        sg.id,
+        sg.parent_id,
+        gt.level + 1 as level
+        FROM sys_group sg
+        INNER JOIN group_tree gt ON sg.parent_id = gt.id
+        WHERE sg.deleted = 0
+        <![CDATA[
+        AND gt.level < 20
+        ]]>
+        )
+        SELECT id FROM group_tree
+        <if test="!includeSelf">
+            WHERE id != #{groupId}
+        </if>
+    </select>
 </mapper>

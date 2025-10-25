@@ -7,6 +7,5 @@ package io.charlie.web.oj.modular.sys.role.constant;
  * @description 默认角色数据
  */
 public interface DefaultRoleData {
-    String DEFAULT_ROLE = "USER";
     String DEFAULT_USER_ROLE_ID = "5";
 }

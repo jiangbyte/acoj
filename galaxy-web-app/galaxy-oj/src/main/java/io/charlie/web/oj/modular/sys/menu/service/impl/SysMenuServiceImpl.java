@@ -12,7 +12,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.web.oj.modular.sys.auth.utils.AuthContextUtil;
+import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.sys.menu.entity.SysMenu;
 import io.charlie.web.oj.modular.sys.menu.param.*;
 import io.charlie.web.oj.modular.sys.menu.mapper.SysMenuMapper;
@@ -43,13 +43,18 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> implements SysMenuService {
-    private final SysRoleMenuService sysRoleMenuService;
-    private final SysUserRoleService sysUserRoleService;
-    private final AuthContextUtil authContextUtil;
+    private final DataScopeUtil dataScopeUtil;
 
     @Override
     public Page<SysMenu> page(SysMenuPageParam sysMenuPageParam) {
         QueryWrapper<SysMenu> queryWrapper = new QueryWrapper<SysMenu>().checkSqlInjection();
+
+        List<String> accessibleMenuIds = dataScopeUtil.getDataScopeContext().getAccessibleMenuIds();
+        if (accessibleMenuIds.isEmpty()) {
+            return new Page<>();
+        }
+        queryWrapper.lambda().in(SysMenu::getId, accessibleMenuIds);
+
         // 关键字
         if (ObjectUtil.isNotEmpty(sysMenuPageParam.getKeyword())) {
             queryWrapper.lambda().like(SysMenu::getName, sysMenuPageParam.getKeyword());
@@ -63,8 +68,6 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
                     true,
                     sysMenuPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(sysMenuPageParam.getSortField()));
-        } else {
-            queryWrapper.lambda().orderByAsc(SysMenu::getSort);
         }
 
         return this.page(CommonPageRequest.Page(
@@ -158,27 +161,11 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
 
     @Override
     public List<SysMenu> authMenu() {
-        SysRole heightLevelRole = authContextUtil.getHighLevelRole();
-        if (heightLevelRole == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR);
-        }
-
-        if (authContextUtil.isSuperUser()) {
-            log.info("超级用户");
-            return this.list();
-        }
-
-        // 非超级用户
-        List<String> menuIdsByRoleId = sysRoleMenuService.findMenuIdsByRoleId(heightLevelRole.getId());
-        if (ObjectUtil.isEmpty(menuIdsByRoleId)) {
+        List<String> accessibleMenuIds = dataScopeUtil.getDataScopeContext().getAccessibleMenuIds();
+        if (accessibleMenuIds.isEmpty()) {
             return List.of();
         }
-        return this.baseMapper.selectByIds(menuIdsByRoleId);
-    }
-
-    @Override
-    public List<SysMenu> authMenu1() {
-        return List.of();
+        return this.listByIds(accessibleMenuIds);
     }
 
     @Override

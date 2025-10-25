@@ -51,8 +51,6 @@ public class SysNoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice
                     true,
                     sysNoticePageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(sysNoticePageParam.getSortField()));
-        } else {
-            queryWrapper.lambda().orderByDesc(SysNotice::getCreateTime);
         }
 
         return this.page(CommonPageRequest.Page(
