@@ -698,11 +698,11 @@ CREATE TABLE `sys_group`
 INSERT INTO `sys_group`
 VALUES ('0', '0', '平台', 'DEFAULT_GROUP', '平台', 0, '1', 1, 0, '2025-10-21 12:25:12', '1', '2025-10-25 21:29:39', '1');
 INSERT INTO `sys_group`
-VALUES ('1982138236630949890', '0', '默认用户', 'DEFAULT_GROUP', '默认用户组', 1, '1', 1, 0, '2025-10-21 12:25:12', '1', '2025-10-25 21:29:39', '1');
+VALUES ('1', '0', '默认用户', 'DEFAULT_GROUP', '默认用户组', 1, '1', 1, 0, '2025-10-21 12:25:12', '1', '2025-10-25 21:29:39', '1');
 INSERT INTO `sys_group`
-VALUES ('1982138236630949891', '0', '系统管理组', 'SUPER_GROUP', '超级管理员组', 2, '1', 1, 0, '2025-10-21 12:25:12', '1', '2025-10-22 12:25:12', '1');
+VALUES ('2', '0', '系统管理组', 'SUPER_GROUP', '超级管理员组', 2, '1', 1, 0, '2025-10-21 12:25:12', '1', '2025-10-22 12:25:12', '1');
 INSERT INTO `sys_group`
-VALUES ('1982138236630949892', '0', '管理员组', 'ADMIN_GROUP', '管理员组', 3, '1', 0, 0, '2025-10-21 12:25:12', '1', '2025-10-22 12:25:12', '1');
+VALUES ('3', '0', '管理员组', 'ADMIN_GROUP', '管理员组', 3, '1', 0, 0, '2025-10-21 12:25:12', '1', '2025-10-22 12:25:12', '1');
 
 -- ----------------------------
 -- Table structure for sys_log
@@ -1104,18 +1104,18 @@ CREATE TABLE `sys_user`
 -- Records of sys_user
 -- ----------------------------
 INSERT INTO `sys_user`
-VALUES ('0', '1982138236630949890', 'default', '$2a$10$CGf0BGdflI3iG6Fl83Vjz.kE.XdhMSu.sstPIeNI.9WFz8FR/lmS.', 'Astro Code',
+VALUES ('0', '1', 'default', '$2a$10$CGf0BGdflI3iG6Fl83Vjz.kE.XdhMSu.sstPIeNI.9WFz8FR/lmS.', 'Astro Code',
         NULL,
         NULL, NULL, 0,
         'default@163.com', NULL, NULL, NULL, 0, '2025-10-21 12:25:12', '1', '2025-10-22 12:25:12', '1');
 INSERT INTO `sys_user`
-VALUES ('1', '1982138236630949891', 'superadmin', '$2a$10$hS6E7n8tqGZMX2qOzLyk2.pospgtnLo.8gjXAtfttGruIh9AE2lgG', 'SuperAdmin',
+VALUES ('1', '2', 'superadmin', '$2a$10$hS6E7n8tqGZMX2qOzLyk2.pospgtnLo.8gjXAtfttGruIh9AE2lgG', 'SuperAdmin',
         NULL,
         NULL, NULL, 1,
         'superadmin@163.com', NULL, NULL, '2025-10-26 01:11:44', 0, '2025-10-21 12:25:12', '1',
         '2025-10-26 01:11:44', '1');
 INSERT INTO `sys_user`
-VALUES ('2', '1982138236630949892', 'adminadmin', '$2a$10$hS6E7n8tqGZMX2qOzLyk2.pospgtnLo.8gjXAtfttGruIh9AE2lgG',
+VALUES ('2', '3', 'adminadmin', '$2a$10$hS6E7n8tqGZMX2qOzLyk2.pospgtnLo.8gjXAtfttGruIh9AE2lgG',
         'Admin', NULL,
         NULL, NULL, 0,
         'adminadmin@163.com', NULL, NULL, '2025-10-07 13:20:00', 0, '2025-10-21 12:25:12', '1',

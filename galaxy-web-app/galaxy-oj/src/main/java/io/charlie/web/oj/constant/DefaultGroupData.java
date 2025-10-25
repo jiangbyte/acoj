@@ -7,5 +7,5 @@ package io.charlie.web.oj.constant;
  * @description 默认角色数据
  */
 public interface DefaultGroupData {
-    String DEFAULT_USER_GROUP_ID = "1982138236630949890";
+    String DEFAULT_USER_GROUP_ID = "1";
 }
