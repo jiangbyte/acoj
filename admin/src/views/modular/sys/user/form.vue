@@ -170,8 +170,12 @@ defineExpose({
         <NFormItem label="电话" path="telephone">
           <NInput v-model:value="formData.telephone" placeholder="请输入电话" />
         </NFormItem>
-        <n-alert type="warning" v-if="!isEdit">
-          新创建的用户将设置默认密码为 <n-tag type="primary">123456789</n-tag>，默认分配角色为 <n-tag type="primary">普通用户</n-tag>
+        <n-alert v-if="!isEdit" type="warning">
+          新创建的用户将设置默认密码为 <n-tag type="primary">
+            123456789
+          </n-tag>，默认分配角色为 <n-tag type="primary">
+            普通用户
+          </n-tag>
         </n-alert>
       </NForm>
       <template #footer>

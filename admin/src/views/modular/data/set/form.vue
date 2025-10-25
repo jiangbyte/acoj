@@ -337,9 +337,9 @@ function removeProblem(index: string | number) {
               </template>
               <template #default="{ value, index }">
                 <div style="display: flex; align-items: center; width: 100%; gap: 10px;">
-                  <n-tag type="warning">
+                  <NTag type="warning">
                     # {{ index + 1 }}
-                  </n-tag>
+                  </NTag>
                   <!-- <NInput
                     v-model:value="value.key"
                     style="width: 100%"

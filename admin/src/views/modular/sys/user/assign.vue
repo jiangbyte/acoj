@@ -30,13 +30,16 @@ async function doSubmit() {
   })
 }
 
+const isLoading = ref(false)
 function doOpen(row: any) {
   show.value = true
   assignRoles.value = row.assignRoles
   userIdR.value = row.id
 
+  isLoading.value = true
   useSysRoleFetch().sysRoleAuthRoles1().then(({ data }) => {
     authRoles.value = data
+    isLoading.value = false
   })
 }
 defineExpose({
@@ -47,17 +50,19 @@ defineExpose({
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent title="角色分配">
-      <n-checkbox-group v-model:value="assignRoles">
-        <n-space vertical>
-          <n-checkbox
-            v-for="item in authRoles"
-            :key="item.id"
-            :value="item.id"
-            :label="`${item.name} (${item.description})`"
-            :disabled="item.isOpen"
-          />
-        </n-space>
-      </n-checkbox-group>
+      <n-spin :show="isLoading">
+        <n-checkbox-group v-model:value="assignRoles">
+          <n-space vertical>
+            <n-checkbox
+              v-for="item in authRoles"
+              :key="item.id"
+              :value="item.id"
+              :label="`${item.name} (${item.description})`"
+              :disabled="item.isOpen"
+            />
+          </n-space>
+        </n-checkbox-group>
+      </n-spin>
       <template #footer>
         <NSpace align="center" justify="end">
           <NButton @click="doClose">

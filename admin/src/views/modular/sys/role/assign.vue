@@ -43,6 +43,7 @@ async function doSubmit() {
 //     authResource.value = data.filter((item: any) => item.visible)
 //   })
 // }
+const isLoading = ref(false)
 function doOpen(row: any) {
   show.value = true
   assignResource.value = row.assignResource
@@ -50,12 +51,14 @@ function doOpen(row: any) {
 
   console.log(assignResource.value)
 
+  isLoading.value = true
   useSysMenuFetch().sysMenuAuthList().then(({ data }) => {
     // 构建树形结构
     const menuTree = buildMenuTree(data)
 
     // 递归过滤：如果父级不可见，子级也要隐藏
     authResource.value = filterInvisibleMenus(menuTree)
+    isLoading.value = false
   })
 }
 
@@ -218,6 +221,7 @@ const columns: DataTableColumns<any> = [
         :columns="columns"
         :data="authResource"
         :bordered="false"
+        :loading="isLoading"
         :row-key="(row: any) => row.id"
         :cascade="false"
         flex-height

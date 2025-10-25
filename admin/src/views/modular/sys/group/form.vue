@@ -15,7 +15,7 @@ const groupOptions = ref<SelectOption[]>([])
 const formData = ref<any>({ ...sysGroupDefaultData })
 const rules = {
   parentId: [
-    // { required: true, message: '请输入父级用户组', trigger: ['input', 'blur'] },
+    { required: true, message: '请选择父级用户组', trigger: ['input', 'blur'] },
   ],
   name: [
     { required: true, message: '请输入名称', trigger: ['input', 'blur'] },

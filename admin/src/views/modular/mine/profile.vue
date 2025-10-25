@@ -298,7 +298,7 @@ function updateProfile() {
           </template>
         </NCard>
 
-        <n-card size="small" >
+        <n-card size="small">
           <template #header>
             <n-h3 class="pb-0 mb-0">
               安全设置

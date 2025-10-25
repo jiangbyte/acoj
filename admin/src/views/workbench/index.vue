@@ -73,6 +73,81 @@ onUnmounted(() => {
     clearInterval(timer)
   }
 })
+
+// 定义所有可能的按钮
+const allButtons = [
+  {
+    permission: '/data/problem/add',
+    text: '题目创建',
+    type: 'primary' as const,
+    action: () => problemCreateFormRef.value.doOpen(null, false),
+  },
+  {
+    permission: '/data/set/add',
+    text: '题集创建',
+    type: 'success' as const,
+    action: () => setCreateFormRef.value.doOpen(null, false),
+  },
+  {
+    permission: '/sys/category/add',
+    text: '分类创建',
+    type: 'info' as const,
+    action: () => categoryCreateFormRef.value.doOpen(null, false),
+  },
+  {
+    permission: '/sys/tag/add',
+    text: '标签创建',
+    type: 'warning' as const,
+    action: () => tagCreateFormRef.value.doOpen(null, false),
+  },
+]
+
+// 计算可见的按钮
+const visibleButtons = computed(() => {
+  return allButtons.filter(button => checkPermission(button.permission))
+})
+
+// 定义所有可能的快捷功能
+const allQuickActions = [
+  {
+    path: '/problem/list',
+    text: '题目管理',
+    type: 'primary' as const,
+    permission: '/data/problem/add', // 根据实际权限配置
+  },
+  {
+    path: '/system/user',
+    text: '用户管理',
+    type: 'info' as const,
+    permission: '/sys/user/add',
+  },
+  {
+    path: '/set/list',
+    text: '题集管理',
+    type: 'success' as const,
+    permission: '/data/set/add',
+  },
+  {
+    path: '/system/log',
+    text: '系统日志',
+    type: 'warning' as const,
+    permission: '/sys/log/add',
+  },
+]
+
+// 计算有权限的快捷功能
+const quickActions = computed(() => {
+  return allQuickActions.filter(action => checkPermission(action.permission))
+})
+
+function checkPermission(permission: string) {
+  try {
+    return (userInfo.value?.permissions as string[] | undefined)?.includes(permission) ?? false
+  }
+  catch {
+    return false
+  }
+}
 </script>
 
 <template>
@@ -114,25 +189,13 @@ onUnmounted(() => {
             <!-- 快速操作 -->
             <NCard title="快速操作" size="small">
               <NGrid :cols="6" :x-gap="8" :y-gap="8">
-                <NGi>
-                  <NButton type="primary" block @click="problemCreateFormRef.doOpen(null, false)">
-                    题目创建
+                <NGi v-for="button in visibleButtons" :key="button.permission">
+                  <NButton :type="button.type" block @click="button.action">
+                    {{ button.text }}
                   </NButton>
                 </NGi>
-                <NGi>
-                  <NButton type="success" block @click="setCreateFormRef.doOpen(null, false)">
-                    题集创建
-                  </NButton>
-                </NGi>
-                <NGi>
-                  <NButton type="info" block @click="categoryCreateFormRef.doOpen(null, false)">
-                    分类创建
-                  </NButton>
-                </NGi>
-                <NGi>
-                  <NButton type="warning" block @click="tagCreateFormRef.doOpen(null, false)">
-                    标签创建
-                  </NButton>
+                <NGi v-if="visibleButtons.length === 0">
+                  暂无快速操作
                 </NGi>
               </NGrid>
             </NCard>
@@ -172,7 +235,7 @@ onUnmounted(() => {
             <!-- 快捷功能 -->
             <NCard title="快捷功能" size="small">
               <NSpace vertical :size="10">
-                <NButton type="primary" ghost block @click="$router.push('/problem/list')">
+                <!-- <NButton type="primary" ghost block @click="$router.push('/problem/list')">
                   题目管理
                 </NButton>
                 <NButton type="info" ghost block @click="$router.push('/system/user')">
@@ -183,7 +246,20 @@ onUnmounted(() => {
                 </NButton>
                 <NButton type="warning" ghost block @click="$router.push('/system/log')">
                   系统日志
+                </NButton> -->
+                <NButton
+                  v-for="item in quickActions"
+                  :key="item.path"
+                  :type="item.type"
+                  ghost
+                  block
+                  @click="$router.push(item.path)"
+                >
+                  {{ item.text }}
                 </NButton>
+                <div v-if="quickActions.length === 0" class="text-center text-gray-400">
+                  暂无可用功能
+                </div>
               </NSpace>
             </NCard>
 

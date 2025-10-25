@@ -33,6 +33,7 @@ public class DataScopeContext implements Serializable {
     private List<String> accessibleRoleIds;
     private List<String> accessibleGroupIds;
     private List<String> accessibleMenuIds;
+    private List<String> accessiblePermissions;
     private boolean isSuperAdmin;
 
     /**

@@ -70,14 +70,17 @@ loadData()
 const router = useRouter()
 const useToken = useTokenStore()
 const useUser = useUserStore()
+const isLoading = ref(false)
 async function handleLogin(e: MouseEvent) {
   e.preventDefault()
   formRef.value?.validate((errors) => {
     if (!errors) {
+      isLoading.value = true
       useAuthFetch().doLogin(formData.value).then(({ data }) => {
         if (data) {
           useToken.setToken(data)
           if (useToken.isLogined) {
+            isLoading.value = false
             router.push('/')
           }
           getProfileNoe().then(({ data }) => {
@@ -183,6 +186,7 @@ const version = import.meta.env.VITE_VERSION
         <NButton
           block
           type="primary"
+          :loading="isLoading"
           @click="handleLogin"
         >
           登录

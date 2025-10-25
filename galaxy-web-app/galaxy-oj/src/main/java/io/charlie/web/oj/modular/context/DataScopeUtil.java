@@ -2,6 +2,8 @@ package io.charlie.web.oj.modular.context;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
@@ -19,7 +21,6 @@ import io.charlie.web.oj.modular.sys.user.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -62,12 +63,13 @@ public class DataScopeUtil {
 //            dataScopeCacheService.put(userId, dataScopeContext);
             dataScopeContext.printDataScopeContext();
             return dataScopeContext;
-        } catch (BusinessException e) {
-            throw e;
         } catch (Exception e) {
             log.error("获取数据权限上下文失败", e);
-            throw new BusinessException("获取数据权限失败");
+//            throw new BusinessException("获取数据权限失败");
+            e.printStackTrace();
         }
+
+        return DataScopeContext.builder().build();
     }
 
     /**
@@ -108,8 +110,8 @@ public class DataScopeUtil {
         List<String> accessibleRoleIds = getAccessibleRoleIds(dataScopes, userData.getRoles());
 
         // 获取可访问的菜单
-        List<String> accessibleMenuIds = getAccessibleMenuIds(dataScopes, userData.getRoleIds());
-
+        MenuDataBundle menuData = getMenuDataBundle(dataScopes, userData.getRoleIds());
+        log.info("menuData={}", JSONUtil.toJsonStr(menuData));
         return DataScopeContext.builder()
                 .userId(userId)
                 .groupId(user.getGroupId())
@@ -118,7 +120,8 @@ public class DataScopeUtil {
                 .dataScopes(dataScopes)
                 .accessibleGroupIds(accessibleGroupIds)
                 .accessibleRoleIds(accessibleRoleIds)
-                .accessibleMenuIds(accessibleMenuIds)
+                .accessibleMenuIds(menuData.getAccessibleMenuIds())
+                .accessiblePermissions(menuData.getAccessiblePermissions())
                 .build();
     }
 
@@ -141,7 +144,6 @@ public class DataScopeUtil {
 
         // 处理数据权限
         Set<String> dataScopes = processDataScopes(userData.getRoles());
-
 
         // 创建包含所有管理权限的集合
         Set<String> manageScopes = new HashSet<>(Arrays.asList(
@@ -337,6 +339,61 @@ public class DataScopeUtil {
                 .map(SysRoleMenu::getMenuId)
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    private MenuDataBundle getMenuDataBundle(Set<String> dataScopes, List<String> roleIds) {
+        if (CollectionUtil.isEmpty(roleIds)) {
+            return MenuDataBundle.empty();
+        }
+
+        // 如果是ALL，是所有菜单
+        if (dataScopes.contains(DataScopeConstant.ALL)) {
+            List<SysMenu> sysMenus = sysMenuMapper.selectList(null);
+            return MenuDataBundle.fromMenu(sysMenus);
+        }
+
+        // 其他的根据权限来获取
+        List<SysRoleMenu> roleMenus = sysRoleMenuMapper.selectList(new LambdaQueryWrapper<SysRoleMenu>().in(SysRoleMenu::getRoleId, roleIds));
+        List<String> menuIds = roleMenus.stream().map(SysRoleMenu::getMenuId).toList();
+        List<SysMenu> sysMenus = sysMenuMapper.selectList(new LambdaQueryWrapper<SysMenu>()
+                .in(SysMenu::getId, menuIds)
+        );
+        return MenuDataBundle.fromMenu(sysMenus);
+    }
+
+    /**
+     * 用户数据包，用于批量传递用户相关数据
+     */
+    @lombok.Data
+    @lombok.Builder
+    private static class MenuDataBundle {
+        private List<String> accessibleMenuIds;
+        private List<String> accessiblePermissions;
+
+        public static MenuDataBundle empty() {
+            return MenuDataBundle.builder()
+                    .accessibleMenuIds(Collections.emptyList())
+                    .accessiblePermissions(Collections.emptyList())
+                    .build();
+        }
+
+        public static MenuDataBundle fromMenu(List<SysMenu> menus) {
+            List<String> accessibleMenuIds = menus.stream()
+                    .map(SysMenu::getId)
+                    .toList();
+
+            List<String> flattenedPermissions = menus.stream()
+                    .map(SysMenu::getExJson)
+                    .filter(exJson -> exJson != null && !exJson.isEmpty())
+                    .flatMap(List::stream)
+                    .toList();
+
+            return MenuDataBundle.builder()
+                    .accessibleMenuIds(accessibleMenuIds)
+                    .accessiblePermissions(flattenedPermissions)
+                    .build();
+
+        }
     }
 
     /**

@@ -522,7 +522,7 @@ function onfinishTime() {
                     <n-flex align="center" :wrap="false">
                       <n-h2 class="pb-0 mb-0">
                         <!-- <n-ellipsis :line-clamp="1"> -->
-                          {{ detailData?.title }}
+                        {{ detailData?.title }}
                         <!-- </n-ellipsis> -->
                       </n-h2>
                     </n-flex>

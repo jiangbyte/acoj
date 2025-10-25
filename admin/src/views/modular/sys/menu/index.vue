@@ -34,6 +34,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '菜单类型',
     key: 'menuTypeName',
+    width: 80,
     render: (row) => {
       return h(NTag, {
         type: row.menuType === 0 ? 'default' : 'warning',
@@ -51,6 +52,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '名称',
     key: 'name',
+    width: 100,
     ellipsis: {
       tooltip: true,
     },
@@ -72,12 +74,12 @@ const columns: DataTableColumns<any> = [
   {
     title: '排序',
     key: 'sort',
-    width: 80,
+    width: 60,
   },
   {
     title: '可见',
     key: 'visibleName',
-    width: 80,
+    width: 60,
     render: (row) => {
       return h(NTag, {
         type: row.visible ? 'primary' : 'error',
@@ -87,7 +89,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '缓存',
     key: 'keepAliveName',
-    width: 80,
+    width: 60,
     render: (row) => {
       return h(NTag, {
         type: row.keepAlive ? 'primary' : 'error',
@@ -97,7 +99,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '固定',
     key: 'pinedName',
-    width: 80,
+    width: 60,
     render: (row) => {
       return h(NTag, {
         type: row.pined ? 'primary' : 'error',
@@ -111,7 +113,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 200,
+    width: 280,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -120,7 +122,7 @@ const columns: DataTableColumns<any> = [
           size: 'small',
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
-        // h(NButton, { size: 'small', type: 'warning', onClick: () => permissionRef.value.doOpen(row) }, () => '权限绑定'),
+        h(NButton, { size: 'small', type: 'warning', disabled: row.menuType === 0, onClick: () => permissionRef.value.doOpen(row) }, () => '权限绑定'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),

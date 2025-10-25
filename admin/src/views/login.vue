@@ -14,13 +14,6 @@ const formData = ref({
   platform: 'ADMIN',
 })
 
-// 如果不是build，设置默认值
-if (import.meta.env.DEV) {
-  // 开发环境下设置默认用户名和密码，方便测试
-  formData.value.username = 'superadmin'
-  formData.value.password = '123456'
-}
-
 const formRules = {
   username: {
     required: true,
@@ -72,14 +65,17 @@ loadData()
 
 const router = useRouter()
 const useToken = useTokenStore()
+const isLoading = ref(false)
 async function handleLogin(e: MouseEvent) {
   e.preventDefault()
   formRef.value?.validate((errors) => {
     if (!errors) {
+      isLoading.value = true
       useAuthFetch().doLogin(formData.value).then(({ data }) => {
         if (data) {
           useToken.setToken(data)
           if (useToken.isLogined) {
+            isLoading.value = false
             router.push('/')
           }
         }
@@ -89,13 +85,6 @@ async function handleLogin(e: MouseEvent) {
       window.$message.error('请填写完整信息')
     }
   })
-  // const { data: token } = await doLogin(formData.value) || { data: null }
-  // if (token) {
-  //   useToken.setToken(token)
-  //   if (useToken.isLogined) {
-  //     router.push('/')
-  //   }
-  // }
 }
 
 const version = import.meta.env.VITE_VERSION
@@ -189,6 +178,7 @@ const version = import.meta.env.VITE_VERSION
         <NButton
           block
           type="primary"
+          :loading="isLoading"
           @click="handleLogin"
         >
           登录

@@ -217,7 +217,7 @@ async function deleteBatchHandle() {
 
 <template>
   <div class="flex flex-col h-full w-full">
-    <NSplit direction="horizontal" :default-size="0.25" :max="0.75" :min="0.25">
+    <NSplit direction="horizontal" :default-size="0.2" :max="0.8" :min="0.2">
       <template #1>
         <div class="flex flex-col h-full w-full">
           <NCard size="small">

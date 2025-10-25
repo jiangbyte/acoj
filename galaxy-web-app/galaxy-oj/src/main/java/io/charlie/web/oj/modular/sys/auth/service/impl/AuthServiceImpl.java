@@ -6,8 +6,12 @@ import cn.hutool.captcha.CaptchaUtil;
 import cn.hutool.captcha.CircleCaptcha;
 import cn.hutool.captcha.LineCaptcha;
 import cn.hutool.captcha.generator.RandomGenerator;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.*;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.ranking.ActivityScoreCalculator;
@@ -21,12 +25,18 @@ import io.charlie.web.oj.modular.sys.auth.result.CaptchaResult;
 import io.charlie.web.oj.modular.sys.auth.result.LoginUser;
 import io.charlie.web.oj.modular.sys.auth.utils.UserValidationUtil;
 import io.charlie.web.oj.modular.sys.config.service.SysConfigService;
-import io.charlie.web.oj.modular.sys.dict.service.SysDictService;
-import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
 import io.charlie.web.oj.modular.sys.group.enums.SysGroupEnums;
 import io.charlie.web.oj.modular.sys.group.mapper.SysGroupMapper;
+import io.charlie.web.oj.modular.sys.menu.entity.SysMenu;
+import io.charlie.web.oj.modular.sys.menu.mapper.SysMenuMapper;
+import io.charlie.web.oj.modular.sys.relation.entity.SysRoleMenu;
+import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
+import io.charlie.web.oj.modular.sys.relation.mapper.SysRoleMenuMapper;
+import io.charlie.web.oj.modular.sys.relation.mapper.SysUserRoleMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
 import io.charlie.web.oj.modular.sys.role.constant.DefaultRoleData;
+import io.charlie.web.oj.modular.sys.role.entity.SysRole;
+import io.charlie.web.oj.modular.sys.role.mapper.SysRoleMapper;
 import io.charlie.web.oj.modular.sys.role.service.SysRoleService;
 import io.charlie.web.oj.modular.sys.user.constant.DefaultUserData;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
@@ -40,8 +50,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Charlie Zhang
@@ -66,6 +78,13 @@ public class AuthServiceImpl implements AuthService {
     private final TransService transService;
 
     private final DataScopeUtil dataScopeUtil;
+
+    private final SysUserRoleMapper sysUserRoleMapper;
+
+    private final SysRoleMapper sysRoleMapper;
+    private final SysRoleMenuMapper sysRoleMenuMapper;
+
+    private final SysMenuMapper sysMenuMapper;
 
     @Override
     public CaptchaResult captcha() {
@@ -130,7 +149,11 @@ public class AuthServiceImpl implements AuthService {
             if (!dataScopeUtil.canManageData(sysUser.getId())) {
                 throw new BusinessException("无权限");
             }
+        } else {
+            // CLIENT 平台
+            userActivityService.addActivity(sysUser.getId(), ActivityScoreCalculator.LOGIN, false);
         }
+
         // 更新登录时间
         sysUser.setLoginTime(new Date());
         sysUserMapper.updateById(sysUser);
@@ -138,7 +161,6 @@ public class AuthServiceImpl implements AuthService {
 
         StpUtil.login(sysUser.getId(), usernamePasswordLoginParam.getPlatform().toUpperCase());
 
-        userActivityService.addActivity(sysUser.getId(), ActivityScoreCalculator.LOGIN, false);
         return StpUtil.getTokenValue();
     }
 
@@ -222,9 +244,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginUser getLoginUser() {
-        String loginIdAsString = StpUtil.getLoginIdAsString();
+        String userId = StpUtil.getLoginIdAsString();
         // 获取用户信息
-        SysUser sysUser = sysUserMapper.selectById(loginIdAsString);
+        SysUser sysUser = sysUserMapper.selectById(userId);
         transService.transOne(sysUser);
         LoginUser loginUser = new LoginUser();
         BeanUtils.copyProperties(sysUser, loginUser);
@@ -233,6 +255,33 @@ public class AuthServiceImpl implements AuthService {
 //        loginUser.setEmail(DesensitizedUtil.email(sysUser.getEmail()));
         // 查询这个用户的角色名
         loginUser.setRoleNames(sysRoleService.getRoleNamesByUserId(sysUser.getId()));
+
+        List<String> list = sysMenuMapper.selectPermissionsByUserId(userId);
+        if (CollectionUtil.isNotEmpty(list)) {
+            List<String> permissions = new ArrayList<>();
+            for (String s : list) {
+                if (StrUtil.isBlank(s) || "null".equals(s)) {
+                    continue;
+                }
+
+                // 判断是否是JSON数组格式
+                if (JSONUtil.isTypeJSONArray(s)) {
+                    // 解析JSON数组
+                    JSONArray jsonArray = JSONUtil.parseArray(s);
+                    for (Object item : jsonArray) {
+                        if (item != null) {
+                            permissions.add(item.toString());
+                        }
+                    }
+                } else {
+                    // 单个权限字符串
+                    permissions.add(s);
+                }
+            }
+
+            loginUser.setPermissions(permissions);
+        }
+
         return loginUser;
     }
 

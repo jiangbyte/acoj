@@ -91,4 +91,6 @@ public class LoginUser implements Serializable, TransPojo {
     private Date loginTime;
 
     private List<String> roleNames;
+
+    private List<String> permissions;
 }

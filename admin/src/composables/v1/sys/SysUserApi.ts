@@ -32,6 +32,7 @@ export function useSysUserFetch() {
     updateTime: Date.now(),
     updateUser: '',
     roleNames: [],
+    permissions: [],
   }
   return {
     /*

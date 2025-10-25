@@ -20,15 +20,17 @@ defineProps<Props>()
           <n-text class="text-xl font-bold">
             {{ resultTaskData?.userIdName || '未知用户' }}
           </n-text>
-          <n-tag size="small" :type="resultTaskData?.status === 'COMPILATION_ERROR'
-      || resultTaskData?.status === 'RUNTIME_ERROR'
-      || resultTaskData?.status === 'TIME_LIMIT_EXCEEDED'
-      || resultTaskData?.status === 'MEMORY_LIMIT_EXCEEDED'
-      || resultTaskData?.status === 'WRONG_ANSWER'
-      || resultTaskData?.status === 'SYSTEM_ERROR'
-      || resultTaskData?.status === 'MEMORY_LIMIT_EXCEEDED'
-        ? 'error'
-        : 'success'">
+          <n-tag
+            size="small" :type="resultTaskData?.status === 'COMPILATION_ERROR'
+              || resultTaskData?.status === 'RUNTIME_ERROR'
+              || resultTaskData?.status === 'TIME_LIMIT_EXCEEDED'
+              || resultTaskData?.status === 'MEMORY_LIMIT_EXCEEDED'
+              || resultTaskData?.status === 'WRONG_ANSWER'
+              || resultTaskData?.status === 'SYSTEM_ERROR'
+              || resultTaskData?.status === 'MEMORY_LIMIT_EXCEEDED'
+              ? 'error'
+              : 'success'"
+          >
             {{ resultTaskData?.statusName || '未知状态' }}
           </n-tag>
         </div>

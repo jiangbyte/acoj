@@ -76,13 +76,16 @@ loadData()
 const router = useRouter()
 const useToken = useTokenStore()
 const useUser = useUserStore()
+const isLoading = ref(false)
 async function handleRegister(e: MouseEvent) {
   e.preventDefault()
   formRef.value?.validate((errors) => {
     if (!errors) {
+      isLoading.value = true
       useAuthFetch().doRegister(formData.value).then(({ data }) => {
         if (data) {
           useToken.setToken(data)
+          isLoading.value = false
           if (useToken.isLogined) {
             router.push('/')
           }
@@ -192,6 +195,7 @@ const version = import.meta.env.VITE_VERSION
         <NButton
           block
           type="primary"
+          :loading="isLoading"
           @click="handleRegister"
         >
           注册
