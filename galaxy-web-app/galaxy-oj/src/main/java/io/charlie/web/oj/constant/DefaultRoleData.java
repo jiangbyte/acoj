@@ -1,4 +1,4 @@
-package io.charlie.web.oj.modular.sys.role.constant;
+package io.charlie.web.oj.constant;
 
 /**
  * @author ZhangJiangHu
@@ -7,5 +7,5 @@ package io.charlie.web.oj.modular.sys.role.constant;
  * @description 默认角色数据
  */
 public interface DefaultRoleData {
-    String DEFAULT_USER_ROLE_ID = "5";
+    String DEFAULT_USER_ROLE_ID = "3";
 }

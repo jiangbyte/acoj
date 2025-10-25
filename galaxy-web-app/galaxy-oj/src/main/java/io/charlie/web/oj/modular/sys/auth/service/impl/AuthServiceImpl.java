@@ -3,16 +3,14 @@ package io.charlie.web.oj.modular.sys.auth.service.impl;
 import cn.dev33.satoken.secure.BCrypt;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.captcha.CaptchaUtil;
-import cn.hutool.captcha.CircleCaptcha;
 import cn.hutool.captcha.LineCaptcha;
 import cn.hutool.captcha.generator.RandomGenerator;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.*;
 import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.charlie.web.oj.constant.DefaultGroupData;
 import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.ranking.ActivityScoreCalculator;
 import io.charlie.web.oj.modular.data.ranking.UserActivityService;
@@ -25,20 +23,15 @@ import io.charlie.web.oj.modular.sys.auth.result.CaptchaResult;
 import io.charlie.web.oj.modular.sys.auth.result.LoginUser;
 import io.charlie.web.oj.modular.sys.auth.utils.UserValidationUtil;
 import io.charlie.web.oj.modular.sys.config.service.SysConfigService;
-import io.charlie.web.oj.modular.sys.group.enums.SysGroupEnums;
 import io.charlie.web.oj.modular.sys.group.mapper.SysGroupMapper;
-import io.charlie.web.oj.modular.sys.menu.entity.SysMenu;
 import io.charlie.web.oj.modular.sys.menu.mapper.SysMenuMapper;
-import io.charlie.web.oj.modular.sys.relation.entity.SysRoleMenu;
-import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysRoleMenuMapper;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysUserRoleMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
-import io.charlie.web.oj.modular.sys.role.constant.DefaultRoleData;
-import io.charlie.web.oj.modular.sys.role.entity.SysRole;
+import io.charlie.web.oj.constant.DefaultRoleData;
 import io.charlie.web.oj.modular.sys.role.mapper.SysRoleMapper;
 import io.charlie.web.oj.modular.sys.role.service.SysRoleService;
-import io.charlie.web.oj.modular.sys.user.constant.DefaultUserData;
+import io.charlie.web.oj.constant.DefaultUserData;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.mapper.SysUserMapper;
 import io.charlie.galaxy.exception.BusinessException;
@@ -53,7 +46,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author Charlie Zhang
@@ -213,7 +205,7 @@ public class AuthServiceImpl implements AuthService {
         sysUser.setPassword(encodePassword);
         sysUser.setEmail(email);
         // 默认用户组
-        sysUser.setGroupId(SysGroupEnums.DEFAULT_GROUP.getValue());
+        sysUser.setGroupId(DefaultGroupData.DEFAULT_USER_GROUP_ID);
         // 默认昵称
         sysUser.setNickname(DefaultUserData.USER_DEFAULT_NICKNAME);
         // 默认头像

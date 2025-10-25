@@ -1,4 +1,4 @@
-package io.charlie.web.oj.modular.sys.user.constant;
+package io.charlie.web.oj.constant;
 
 import cn.hutool.core.util.RandomUtil;
 
@@ -10,8 +10,6 @@ import cn.hutool.core.util.RandomUtil;
  */
 public interface DefaultUserData {
     String USER_DEFAULT_NICKNAME = "用户-" + RandomUtil.randomString(5);
-    String USER_DEFAULT_AVATAR = "https://cdn.jsdelivr.net/gh/charlie-zhang-cn/cdn/img/avatar.png";
-    String USER_DEFAULT_BACKGROUND = "https://cdn.jsdelivr.net/gh/charlie-zhang-cn/cdn/img/background.png";
     String USER_DEFAULT_QUOTE = "Hello World!";
     Integer USER_DEFAULT_GENDER = 0;
     String DEFAULT_PASSWORD = "123456789";
