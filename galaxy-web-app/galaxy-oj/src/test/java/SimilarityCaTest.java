@@ -1,5 +1,5 @@
 import io.charlie.web.oj.GalaxyOJ;
-import io.charlie.web.oj.modular.task.similarity.basic.utils.CodeSimilarityCalculator;
+import io.charlie.web.oj.utils.similarity.utils.CodeSimilarityCalculator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

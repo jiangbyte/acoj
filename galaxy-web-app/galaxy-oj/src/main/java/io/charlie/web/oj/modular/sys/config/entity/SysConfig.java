@@ -45,6 +45,10 @@ public class SysConfig extends CommonEntity {
     @Schema(description = "值")
     private String value;
 
+
+    @Schema(description = "排序")
+    private Integer sort;
+
     @Schema(description = "组件类型")
     @Trans(type = TransType.DICTIONARY, key = "COMPONENT_TYPE")
     private String componentType;

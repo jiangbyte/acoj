@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class DataScopeCacheService {
     
     private final CacheManager cacheManager;
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+//    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     
     // 用于存储缓存时间戳，便于手动清理
     private final ConcurrentHashMap<String, Long> cacheTimestamps = new ConcurrentHashMap<>();
@@ -28,31 +28,31 @@ public class DataScopeCacheService {
     /**
      * 初始化定时清理任务
      */
-    @PostConstruct
-    public void init() {
-        // 每30分钟执行一次清理任务
-        scheduler.scheduleAtFixedRate(this::cleanExpiredCache, 10, 10, TimeUnit.MINUTES);
-        log.info("数据权限缓存自动清理任务已启动，每30分钟执行一次");
-    }
+//    @PostConstruct
+//    public void init() {
+//        // 每30分钟执行一次清理任务
+//        scheduler.scheduleAtFixedRate(this::cleanExpiredCache, 10, 10, TimeUnit.MINUTES);
+//        log.info("数据权限缓存自动清理任务已启动，每30分钟执行一次");
+//    }
 
     /**
      * 销毁时关闭定时任务
      */
-    @PreDestroy
-    public void destroy() {
-        if (!scheduler.isShutdown()) {
-            scheduler.shutdown();
-            try {
-                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    scheduler.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                scheduler.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-            log.info("数据权限缓存自动清理任务已停止");
-        }
-    }
+//    @PreDestroy
+//    public void destroy() {
+//        if (!scheduler.isShutdown()) {
+//            scheduler.shutdown();
+//            try {
+//                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+//                    scheduler.shutdownNow();
+//                }
+//            } catch (InterruptedException e) {
+//                scheduler.shutdownNow();
+//                Thread.currentThread().interrupt();
+//            }
+//            log.info("数据权限缓存自动清理任务已停止");
+//        }
+//    }
     
     public void put(String userId, DataScopeContext context) {
         String cacheKey = getCacheKey(userId);

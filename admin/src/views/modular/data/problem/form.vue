@@ -193,7 +193,9 @@ defineExpose({
         </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="测试用例" path="testCase">
-          <!-- <NInput v-model:value="formData.testCase" placeholder="请输入用例" /> -->
+          <n-alert type="warning">
+            即将舍弃使用
+          </n-alert>
           <NDynamicInput
             v-model:value="formData.testCase"
             show-sort-button
@@ -364,7 +366,12 @@ defineExpose({
             可见
           </n-tag> 处理 Web 题库显示，均开启时显示该题。<n-tag type="primary" size="small">
             公开
-          </n-tag> 标记是否为题集中私有题目，题集组题时不受影响。
+          </n-tag> 标记是否为题集中私有题目。
+        </n-alert>
+        <n-alert type="warning" class="mb-4">
+          题集组题时受是否<n-tag type="primary" size="small">
+            可见
+          </n-tag> 标记限制。
         </n-alert>
         <!-- Boolean 选择框 -->
         <NFormItem label="是否使用AI" path="useAi">

@@ -3,27 +3,18 @@ package io.charlie.web.oj.modular.data.problem.utils;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import io.charlie.web.oj.modular.data.ranking.data.ProblemSetProblemStats;
-import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.relation.tag.service.DataProblemTagService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemStatistics;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.solved.service.DataSolvedService;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,7 +32,6 @@ public class ProblemBuildTool {
     private final DataSolvedMapper dataSolvedMapper;
     private final DataProblemTagService dataProblemTagService;
 
-    private final ProblemSetCacheService problemSetCacheService;
     private final DataSolvedService dataSolvedService;
 
     public void buildProblems(List<DataProblem> dataProblems) {

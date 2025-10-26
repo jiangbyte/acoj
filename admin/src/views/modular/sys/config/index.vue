@@ -28,6 +28,10 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
+    title: '排序',
+    key: 'sort',
+  },
+  {
     title: '编码',
     key: 'code',
     width: 250,

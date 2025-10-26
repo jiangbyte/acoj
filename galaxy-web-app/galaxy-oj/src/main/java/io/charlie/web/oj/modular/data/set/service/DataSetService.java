@@ -2,6 +2,7 @@ package io.charlie.web.oj.modular.data.set.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import io.charlie.galaxy.option.LabelOption;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.param.DifficultyDistribution;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
@@ -11,13 +12,14 @@ import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import java.util.List;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-09-20
-* @description 题集 服务类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-09-20
+ * @description 题集 服务类
+ */
 public interface DataSetService extends IService<DataSet> {
     Page<DataSet> page(DataSetPageParam dataSetPageParam);
+
     Page<DataSet> pageClient(DataSetPageParam dataSetPageParam);
 
     void add(DataSetAddParam dataSetAddParam);
@@ -32,11 +34,16 @@ public interface DataSetService extends IService<DataSet> {
 
     List<DataProblem> getSetProblem(DataSetProblemParam dataSetProblemParam);
 
+    List<DataProblem> getSetProblemWithSearch(DataSetProblemSearchParam dataSetProblemParam);
+
     DataProblem getSetProblemDetail(DataSetProblemDetailParam dataSetProblemDetailParam);
 
     List<DataSet> getHotN(int n);
 
-     Page<SysUser> getSetUser(DataSetUserParam dataSetUserParam);
+    Page<SysUser> getSetUser(DataSetUserParam dataSetUserParam);
+
+    // 获取该题集中题目允许的语言（并条件）
+    List<LabelOption<String>> getSetProblemLanguages(DataSetProblemLanguageParam dataSetProblemLanguageParam);
 
     List<DifficultyDistribution> difficultyDistribution();
 

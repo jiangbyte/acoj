@@ -17,6 +17,7 @@ export function useSysConfigFetch() {
     code: '',
     value: '',
     componentType: null,
+    sort: 0,
     description: '',
     createTime: '',
     createUser: '',

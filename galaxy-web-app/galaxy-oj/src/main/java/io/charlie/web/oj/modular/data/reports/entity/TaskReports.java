@@ -12,7 +12,6 @@ import java.util.List;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.similarity.dto.CloneLevel;
-import io.charlie.web.oj.modular.task.similarity.basic.utils.DynamicCloneLevelDetector;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

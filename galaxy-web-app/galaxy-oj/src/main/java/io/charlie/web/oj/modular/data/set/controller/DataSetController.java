@@ -95,6 +95,19 @@ public class DataSetController {
         return Result.success(dataSetService.getSetProblem(dataSetProblemParam));
     }
 
+    @Operation(summary = "C端-获取题集题目")
+    @GetMapping("/data/set/problem/options")
+    public Result<?> getSetProblemWithSearch(@ParameterObject @Valid DataSetProblemSearchParam dataSetProblemSearchParam) {
+        return Result.success(dataSetService.getSetProblemWithSearch(dataSetProblemSearchParam));
+    }
+
+    @Operation(summary = "C端-获取题集题目")
+    @GetMapping("/data/set/problem/commonLanguages")
+    public Result<?> getSetProblemLanguages(@ParameterObject @Valid DataSetProblemLanguageParam dataSetProblemLanguageParam) {
+        return Result.success(dataSetService.getSetProblemLanguages(dataSetProblemLanguageParam));
+    }
+
+
     @Operation(summary = "C端-获取题集用户")
     @GetMapping("/data/set/user")
     public Result<?> getSetUser(@ParameterObject @Valid DataSetUserParam dataSetUserParam) {
@@ -119,5 +132,6 @@ public class DataSetController {
     public Result<?> difficultyDistribution() {
         return Result.success(dataSetService.difficultyDistribution());
     }
+
 
 }

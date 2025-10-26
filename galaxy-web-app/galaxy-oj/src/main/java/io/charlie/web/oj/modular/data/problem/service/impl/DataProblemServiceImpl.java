@@ -23,12 +23,7 @@ import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.data.problem.utils.ProblemBuildTool;
 import io.charlie.web.oj.modular.data.problem.utils.ProblemImportTool;
-import io.charlie.web.oj.modular.data.ranking.data.RankItem;
-import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.relation.tag.service.DataProblemTagService;
-import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemOverallStats;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
@@ -65,10 +60,6 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     private final ProblemBuildTool problemBuildTool;
     private final ProblemImportTool problemImportTool;
     private final DataSolvedService dataSolvedService;
-
-    private final UserCacheService userCacheService;
-    private final ProblemSetCacheService problemSetCacheService;
-    private final ProblemCacheService problemCacheService;
 
     @Override
     public Page<DataProblem> page(DataProblemPageParam dataProblemPageParam) {
@@ -169,8 +160,6 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         if (GaStringUtil.isNotEmpty(dataProblemPageParam.getDifficulty())) {
             queryWrapper.lambda().eq(DataProblem::getDifficulty, dataProblemPageParam.getDifficulty());
         }
-        // 筛选上架的
-        queryWrapper.lambda().eq(DataProblem::getIsVisible, true);
         // 标签查询
         if (GaStringUtil.isNotEmpty(dataProblemPageParam.getTagId())) {
             List<String> idsByTagId = dataProblemTagService.getProblemIdsByTagId(dataProblemPageParam.getTagId());
@@ -266,7 +255,8 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         // 获取当月第一天
         LocalDateTime firstDay = LocalDate.now().withDayOfMonth(1).atStartOfDay();
         // 获取当月最后一天
-        LocalDateTime lastDay = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth())
+        LocalDateTime lastDay = LocalDate.now()
+                .withDayOfMonth(LocalDate.now().lengthOfMonth())
                 .atTime(23, 59, 59);
 
         // 转换为 Date
@@ -281,14 +271,25 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         );
         dataProblemCount.setMonthAdd(monthAdd);
 
-        dataProblemCount.setLastAddTime(this.getOne(new LambdaQueryWrapper<DataProblem>()
+        // 添加空值检查
+        DataProblem lastProblem = this.getOne(new LambdaQueryWrapper<DataProblem>()
                 .eq(DataProblem::getIsVisible, Boolean.TRUE)
                 .eq(DataProblem::getIsPublic, Boolean.TRUE)
                 .orderByDesc(DataProblem::getCreateTime)
                 .last("LIMIT 1")
-        ).getCreateTime());
+        );
+        if (lastProblem != null) {
+            dataProblemCount.setLastAddTime(lastProblem.getCreateTime());
+        } else {
+            dataProblemCount.setLastAddTime(null);
+        }
 
-        dataProblemCount.setGrowthRate(BigDecimal.valueOf(monthAdd / (double) count).setScale(4, RoundingMode.HALF_UP));
+        // 计算增长率，避免除零错误
+        if (count > 0) {
+            dataProblemCount.setGrowthRate(BigDecimal.valueOf(monthAdd / (double) count).setScale(4, RoundingMode.HALF_UP));
+        } else {
+            dataProblemCount.setGrowthRate(BigDecimal.ZERO);
+        }
 
         try {
             String userId = StpUtil.getLoginIdAsString();
@@ -297,7 +298,6 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
                     .eq(DataSolved::getSolved, Boolean.TRUE)
                     .eq(DataSolved::getIsSet, Boolean.FALSE)
             );
-//            Long userAcceptedCount = userCacheService.getUserAcceptedCount(userId);
             dataProblemCount.setSolved(userAcceptedCount);
         } catch (Exception e) {
             // 未登录

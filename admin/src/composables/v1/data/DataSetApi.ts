@@ -77,5 +77,19 @@ export function useDataSetFetch() {
         },
       })
     },
+    dataProblemGetSetProblemLanguages(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problem/commonLanguages`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    dataSetProblemWithSearch(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/problem/options`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

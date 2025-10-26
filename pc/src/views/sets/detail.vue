@@ -726,7 +726,7 @@ function onfinishTime() {
                   {{ detailData?.participantUserCount ? detailData?.participantUserCount : 0 }}
                 </NText>
               </NSpace>
-              <n-alert show-icon type="warning">
+              <n-alert  v-if="detailData?.setType === 2" show-icon type="warning">
                 限时题集请注意时间及时刷新页面：开始时间到达时请刷新页面，结束时间到达将锁定题集，无法提交。
               </n-alert>
             </NSpace>

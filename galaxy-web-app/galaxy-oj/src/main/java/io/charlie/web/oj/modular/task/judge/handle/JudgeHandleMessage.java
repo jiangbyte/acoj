@@ -2,13 +2,13 @@ package io.charlie.web.oj.modular.task.judge.handle;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import io.charlie.web.oj.modular.data.ranking.ActivityScoreCalculator;
-import io.charlie.web.oj.modular.data.ranking.UserActivityService;
-import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
+import io.charlie.web.oj.modular.data.judgecase.entity.DataJudgeCase;
+import io.charlie.web.oj.modular.data.judgecase.mapper.DataJudgeCaseMapper;
+import io.charlie.web.oj.modular.data.ranking.utils.ActivityScoreCalculator;
+import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
 import io.charlie.web.oj.modular.data.library.service.DataLibraryService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
@@ -22,15 +22,14 @@ import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.handle.SimilarityHandleMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dromara.trans.service.impl.TransService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * @author ZhangJiangHu
@@ -48,11 +47,10 @@ public class JudgeHandleMessage {
     private final DataLibraryService dataLibraryService;
     private final SimilarityHandleMessage similarityHandleMessage;
 
-    private final UserCacheService userCacheService;
-    private final ProblemSetCacheService problemSetCacheService;
-    private final ProblemCacheService problemCacheService;
-
     private final UserActivityService userActivityService;
+
+    private final DataJudgeCaseMapper dataJudgeCaseMapper;
+
 
     public void sendJudge(JudgeSubmitDto judgeSubmitDto, DataSubmit dataSubmit) {
         log.info("发送消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
@@ -74,8 +72,23 @@ public class JudgeHandleMessage {
         BeanUtil.copyProperties(judgeResultDto, dataSubmit);
         dataSubmitMapper.updateById(dataSubmit);
 
-        // 排行榜更新
-//        handleRedisRecord(judgeResultDto, dataSubmit);
+        if (ObjectUtil.isNotEmpty(dataSubmit.getTestCase())) {
+            List<DataJudgeCase> dataJudgeCases = dataSubmit.getTestCase().stream().map(testCase -> {
+                DataJudgeCase dataJudgeCase = new DataJudgeCase();
+                dataJudgeCase.setSubmitId(judgeResultDto.getId());
+                dataJudgeCase.setInputData(testCase.getInput());
+                dataJudgeCase.setOutputData(testCase.getOutput());
+                dataJudgeCase.setExpectedOutput(testCase.getExcept());
+                dataJudgeCase.setMaxTime(testCase.getMaxTime());
+                dataJudgeCase.setMaxMemory(testCase.getMaxMemory());
+                dataJudgeCase.setStatus(testCase.getStatus());
+                dataJudgeCase.setMessage(testCase.getMessage());
+                dataJudgeCase.setExitCode(testCase.getExitCode());
+                dataJudgeCase.setScore(BigDecimal.ZERO);
+                return dataJudgeCase;
+            }).toList();
+            dataJudgeCaseMapper.insert(dataJudgeCases);
+        }
 
         // 正式提交
         if (judgeResultDto.getSubmitType()) {
@@ -138,55 +151,6 @@ public class JudgeHandleMessage {
         } catch (Exception e) {
             e.printStackTrace();
             log.error("异步处理附加任务失败：{}", e.getMessage());
-        }
-    }
-
-    private void handleRedisRecord(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
-        Boolean isSet = judgeResultDto.getIsSet();
-
-        String userId = judgeResultDto.getUserId();
-        String problemId = judgeResultDto.getProblemId();
-        String setId = judgeResultDto.getSetId();
-
-        Boolean submitType = judgeResultDto.getSubmitType();
-
-        boolean isAc = JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus());
-
-        // 用户活跃度
-        userCacheService.addUserActivity(userId, 0.01);
-
-        // 题集模式
-        if (isSet) {
-            // 题集参与度
-            problemSetCacheService.addProblemSetParticipant(setId, userId);
-            // 正式提交
-            if (submitType) {
-                // 题集内题目的提交度
-                problemSetCacheService.addProblemSetProblemSubmit(setId, problemId, userId);
-                // 通过
-                if (isAc) {
-                    problemSetCacheService.addProblemSetProblemAccept(setId, problemId, userId);
-                }
-            } else {
-                // 题集内题目的尝试度
-                problemSetCacheService.addProblemSetProblemAttempt(setId, problemId, userId);
-            }
-        } else {
-            // 题目参与度
-            problemCacheService.addParticipantUser(problemId, userId);
-            // 正式提交
-            if (submitType) {
-                // 提交度
-                problemCacheService.addSubmitUser(problemId, userId);
-                // 通过
-                if (isAc) {
-                    problemCacheService.addAcceptUser(problemId, userId);
-                    userCacheService.addUserAcceptedProblem(userId, problemId);
-                }
-            } else {
-                // 尝试度
-                problemCacheService.addAttemptUser(problemId, userId);
-            }
         }
     }
 

@@ -20,6 +20,8 @@ public class SimilarityConfigProperties {
     private Integer problemSingleSubmitBatchSize = 500;
     // 题目单提交检测灵敏度
     private Integer problemSingleSubmitSensitivity = 5;
+    // 题目单提交分批截止批次大小
+    private Integer problemSingleSubmitBatchEndSize = 5;
 
     // 题目集内单提交分批大小
     private Integer setSingleSubmitBatchSize = 500;

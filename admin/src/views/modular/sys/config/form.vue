@@ -102,6 +102,9 @@ defineExpose({
         <NFormItem label="名称" path="name">
           <NInput v-model:value="formData.name" placeholder="请输入名称" />
         </NFormItem>
+        <NFormItem label="排序" path="sort">
+          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />
+        </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="编码" path="code">
           <NInput v-model:value="formData.code" placeholder="请输入编码" :disabled="isEdit" />

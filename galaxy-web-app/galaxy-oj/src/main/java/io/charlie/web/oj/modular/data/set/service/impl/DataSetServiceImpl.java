@@ -9,15 +9,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.galaxy.option.LabelOption;
 import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.problem.param.DifficultyDistribution;
 import io.charlie.web.oj.modular.data.problem.utils.ProblemBuildTool;
-import io.charlie.web.oj.modular.data.ranking.data.RankItem;
-import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.relation.set.service.DataSetProblemService;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.set.param.*;
@@ -41,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Charlie Zhang
@@ -196,6 +195,22 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     }
 
     @Override
+    public List<DataProblem> getSetProblemWithSearch(DataSetProblemSearchParam dataSetProblemParam) {
+        List<String> problemIdsBySetId = dataSetProblemService.getProblemIdsBySetId(dataSetProblemParam.getId());
+        if (ObjectUtil.isEmpty(problemIdsBySetId)) {
+            return List.of();
+        }
+
+        List<DataProblem> dataProblems = dataProblemMapper.selectList(new LambdaQueryWrapper<DataProblem>()
+                .in(DataProblem::getId, problemIdsBySetId)
+                .like(DataProblem::getTitle, dataSetProblemParam.getKeyword())
+        );
+//        transService.transBatch(dataProblems);
+//        problemBuildTool.buildSetProblems(dataSetProblemParam.getId(), dataProblems);
+        return dataProblems;
+    }
+
+    @Override
     public DataProblem getSetProblemDetail(DataSetProblemDetailParam dataSetProblemDetailParam) {
         List<String> problemIdsBySetId = dataSetProblemService.getProblemIdsBySetId(dataSetProblemDetailParam.getId());
         if (ObjectUtil.isEmpty(problemIdsBySetId)) {
@@ -256,6 +271,58 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
             sysUser.setTelephone(null);
         });
         return sysUserPage;
+    }
+
+    @Override
+    public List<LabelOption<String>> getSetProblemLanguages(DataSetProblemLanguageParam dataSetProblemLanguageParam) {
+        if (ObjectUtil.isEmpty(dataSetProblemLanguageParam.getProblemIds())) {
+            List<String> problemIdsBySetId = dataSetProblemService.getProblemIdsBySetId(dataSetProblemLanguageParam.getId());
+            if (ObjectUtil.isEmpty(problemIdsBySetId)) {
+                return List.of();
+            }
+
+            List<DataProblem> dataProblems = dataProblemMapper.selectList(new LambdaQueryWrapper<DataProblem>()
+                    .in(DataProblem::getId, problemIdsBySetId)
+            );
+
+            // 获取这些题目中都有的语言（交集）
+            List<String> commonLanguages = dataProblems.stream()
+                    .map(DataProblem::getAllowedLanguages)
+                    .filter(Objects::nonNull) // 过滤掉null值
+                    .map(HashSet::new) // 转换为Set便于求交集
+                    .reduce((set1, set2) -> {
+                        set1.retainAll(set2); // 求交集
+                        return set1;
+                    })
+                    .map(HashSet::stream)
+                    .orElse(Stream.empty())
+                    .toList();
+
+            return commonLanguages.stream()
+                    .map(language -> new LabelOption<>(language, language))
+                    .toList();
+
+        }
+
+        List<DataProblem> dataProblems = dataProblemMapper.selectList(new LambdaQueryWrapper<DataProblem>()
+                .in(DataProblem::getId, dataSetProblemLanguageParam.getProblemIds()));
+
+        // 获取这些题目中都有的语言（交集）
+        List<String> commonLanguages = dataProblems.stream()
+                .map(DataProblem::getAllowedLanguages)
+                .filter(Objects::nonNull) // 过滤掉null值
+                .map(HashSet::new) // 转换为Set便于求交集
+                .reduce((set1, set2) -> {
+                    set1.retainAll(set2); // 求交集
+                    return set1;
+                })
+                .map(HashSet::stream)
+                .orElse(Stream.empty())
+                .toList();
+
+        return commonLanguages.stream()
+                .map(language -> new LabelOption<>(language, language))
+                .toList();
     }
 
     @Override

@@ -200,9 +200,9 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
                 dataSetProblem.setSort(problemIds.indexOf(item));
                 return dataSetProblem;
             }).toList();
+            clearCache(setId);
             return this.saveBatch(list);
         }
-        clearCache(setId);
         return true;
     }
 
@@ -222,9 +222,9 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
                 item.setSetId(setId);
                 return item;
             }).toList();
+            clearCache(setId);
             return this.saveBatch(list);
         }
-        clearCache(setId);
         return true;
     }
 

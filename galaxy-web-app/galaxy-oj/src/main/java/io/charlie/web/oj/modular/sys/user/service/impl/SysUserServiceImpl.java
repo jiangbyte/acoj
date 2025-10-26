@@ -14,7 +14,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
 import io.charlie.web.oj.modular.context.DataScopeUtil;
-import io.charlie.web.oj.modular.data.ranking.UserActivityService;
+import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
@@ -24,6 +24,7 @@ import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
 import io.charlie.web.oj.constant.DefaultRoleData;
 import io.charlie.web.oj.constant.DefaultUserData;
 import io.charlie.web.oj.modular.sys.user.entity.ACRecord;
+import io.charlie.web.oj.modular.sys.user.entity.SysNoNeUser;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.param.*;
 import io.charlie.web.oj.modular.sys.user.mapper.SysUserMapper;
@@ -171,14 +172,30 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
-    public List<LabelOption<String>> options(SysUserOptionParam sysUserOptionParam) {
+    public List<SysNoNeUser> options(SysUserOptionParam sysUserOptionParam) {
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<SysUser>().checkSqlInjection();
+
+        List<String> accessibleGroupIds = dataScopeUtil.getDataScopeContext().getAccessibleGroupIds();
+        if (accessibleGroupIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        queryWrapper.lambda().in(SysUser::getGroupId, accessibleGroupIds);
+
         // 关键字
         if (ObjectUtil.isNotEmpty(sysUserOptionParam.getKeyword())) {
             queryWrapper.lambda().like(SysUser::getNickname, sysUserOptionParam.getKeyword());
             queryWrapper.lambda().or().like(SysUser::getUsername, sysUserOptionParam.getKeyword());
         }
-        return this.list(queryWrapper).stream().map(sysUser -> new LabelOption<>(sysUser.getId(), sysUser.getNickname())).toList();
+
+        return this.list(queryWrapper)
+                .stream()
+                .map(sysUser -> {
+                    SysNoNeUser sysNoNeUser = new SysNoNeUser();
+                    BeanUtil.copyProperties(sysUser, sysNoNeUser);
+                    return sysNoNeUser;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override

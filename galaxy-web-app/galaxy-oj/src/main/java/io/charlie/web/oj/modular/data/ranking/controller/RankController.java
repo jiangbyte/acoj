@@ -1,20 +1,9 @@
 package io.charlie.web.oj.modular.data.ranking.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.result.Result;
-import io.charlie.web.oj.modular.data.ranking.UserActivityService;
+import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
 import io.charlie.web.oj.modular.data.ranking.param.RankingPageParam;
-import io.charlie.web.oj.modular.data.ranking.data.PageResult;
-import io.charlie.web.oj.modular.data.ranking.data.RankItem;
-import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.UserRankService;
-import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
-import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
-import io.charlie.web.oj.modular.sys.user.entity.SysUser;
-import io.charlie.web.oj.modular.sys.user.param.SysUserIdParam;
-import io.charlie.web.oj.modular.sys.user.service.SysUserService;
+import io.charlie.web.oj.modular.data.ranking.service.UserRankTask;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Tag(name = "排行榜控制器")
 @Slf4j
 @RequiredArgsConstructor
@@ -34,16 +20,10 @@ import java.util.List;
 @RestController
 @Validated
 public class RankController {
-    private final UserCacheService userCacheService;
-    private final ProblemCacheService problemCacheService;
-    private final SysUserService sysUserService;
-    private final DataSubmitMapper dataSubmitMapper;
-
-
     @Autowired
     private UserActivityService userActivityService;
 
-    private final UserRankService userRankService;
+    private final UserRankTask userRankService;
 
     @Operation(summary = "获取用户排行榜")
     @GetMapping("/data/user/rank/top")
@@ -53,25 +33,6 @@ public class RankController {
 
     @GetMapping("/data/user/rank/active/top")
     public Result<?> getUserRankActiveTop() {
-//        List<RankItem> userRankTopN = userCacheService.getUserActivityTopN(10);
-//        List<SysUser> sysUsers = new ArrayList<>();
-//        for (RankItem rankItem : userRankTopN) {
-//            SysUserIdParam sysUserIdParam = new SysUserIdParam();
-//            sysUserIdParam.setId(rankItem.getId());
-//            SysUser sysUser = sysUserService.appDetail(sysUserIdParam);
-//            sysUser.setRank(rankItem.getRank());
-//            // TODO
-////            sysUser.setScore(userCacheService.getUserActivity(sysUser.getId()));
-//            Long l = dataSubmitMapper.selectCount(new LambdaQueryWrapper<DataSubmit>()
-//                    .eq(DataSubmit::getUserId, sysUser.getId())
-//                    .eq(DataSubmit::getIsSet, false)
-//                    .eq(DataSubmit::getSubmitType, true)
-//            );
-//            sysUser.setSubmitCount(l);
-//            sysUsers.add(sysUser);
-//        }
-//
-//        return Result.success(sysUsers);
         return Result.success(userActivityService.getTopNActiveUsers(10));
     }
 

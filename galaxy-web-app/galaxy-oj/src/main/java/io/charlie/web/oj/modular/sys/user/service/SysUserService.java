@@ -3,6 +3,7 @@ package io.charlie.web.oj.modular.sys.user.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.galaxy.option.LabelOption;
+import io.charlie.web.oj.modular.sys.user.entity.SysNoNeUser;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.param.*;
 
@@ -25,7 +26,7 @@ public interface SysUserService extends IService<SysUser> {
 
     SysUser detail(SysUserIdParam sysUserIdParam);
 
-    List<LabelOption<String>> options(SysUserOptionParam sysUserOptionParam);
+    List<SysNoNeUser> options(SysUserOptionParam sysUserOptionParam);
 
     SysUser appDetail(SysUserIdParam sysUserIdParam);
 

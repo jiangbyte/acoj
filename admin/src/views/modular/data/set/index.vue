@@ -96,7 +96,7 @@ const columns: DataTableColumns<any> = [
           type: 'primary',
           size: 'small',
           // disabled: row.canUseSimilarReport !== true,
-          onClick: () => similaritySelectFormRef.value.doOpen(row.id, null, false, true),
+          onClick: () => similaritySelectFormRef.value.doOpen(row.id, null, true),
         }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),

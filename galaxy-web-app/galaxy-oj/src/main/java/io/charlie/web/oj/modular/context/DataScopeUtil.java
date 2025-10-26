@@ -271,6 +271,17 @@ public class DataScopeUtil {
         if (dataScopes.contains(DataScopeConstant.SPECIFIED_GROUP)) {
             accessibleGroupIds.addAll(getSpecifiedGroupIds(roles));
         }
+
+        // 负责人自己的组
+        List<SysGroup> sysGroups = sysGroupMapper.selectList(new LambdaQueryWrapper<SysGroup>()
+                .eq(SysGroup::getAdminId, userId)
+        );
+        if (ObjectUtil.isNotEmpty(sysGroups)) {
+            accessibleGroupIds.addAll(sysGroups.stream()
+                    .map(SysGroup::getId)
+                    .toList());
+        }
+
         return accessibleGroupIds;
     }
 

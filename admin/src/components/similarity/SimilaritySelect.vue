@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useSysDictFetch, useSysGroupFetch } from '@/composables/v1'
+import { useDataProblemFetch, useDataSetFetch, useSysDictFetch, useSysGroupFetch } from '@/composables/v1'
 import type { SelectOption } from 'naive-ui'
 import { NButton, NDrawer, NDrawerContent, NForm, NInputNumber } from 'naive-ui'
 import { v4 as uuidv4 } from 'uuid'
@@ -12,7 +12,7 @@ const allowLanguageOptions = ref()
 const groupOptionsLoading = ref(false)
 const groupOptions = ref<SelectOption[]>([])
 const formData = ref({
-  problemId: [] as string[],
+  problemIds: [] as string[],
   setId: '',
   language: null,
   isSet: false,
@@ -23,25 +23,31 @@ const formData = ref({
   config: {
     minSampleSize: 0,
     recentSampleSize: 0,
-    minMatchLength: 15,
+    minMatchLength: 5,
   },
 })
 const rules = {
-  problemId: [
-    // { required: true, message: '请输入题集ID', trigger: ['input', 'blur'] },
+  problemIds: [
+    { required: true, message: '请选择题目', trigger: ['input', 'blur'] },
   ],
   setId: [
   ],
   language: [
+    { required: true, message: '请选择语言', trigger: ['input', 'blur'] },
   ],
   isSet: [
   ],
+  config: {
+    minMatchLength: [
+      // { required: true, message: '请输入敏感度', trigger: ['input', 'blur'] },
+    ],
+  },
 }
 function doClose() {
   emit('close')
   show.value = false
   formData.value = {
-    problemId: [],
+    problemIds: [],
     setId: '',
     language: null,
     isSet: false,
@@ -52,57 +58,71 @@ function doClose() {
     config: {
       minSampleSize: 0,
       recentSampleSize: 0,
-      minMatchLength: 15,
+      minMatchLength: 5,
     },
   }
 }
 
 async function doSubmit() {
-  window.$dialog.warning({
-    title: '提示',
-    content: '功能维护中...',
-    positiveText: '确定',
-  })
-  // formRef.value?.validate(async (errors: any) => {
-  //   if (!errors) {
-  //     loading.value = true
-  //     useTaskSimilarityFetch().taskSimilarityBatch(formData.value).then(({ success }) => {
-  //       if (success) {
-  //         window.$message.success('提交成功')
-  //       }
-  //     })
-  //     emit('submit', true)
-  //     doClose()
-  //     show.value = false
-  //     loading.value = false
-  //   }
+  formRef.value?.validate(async (errors: any) => {
+    if (!errors) {
+      window.$dialog.warning({
+        title: '提示',
+        content: '功能维护中...',
+        positiveText: '确定',
+      })
+      //     loading.value = true
+      //     useTaskSimilarityFetch().taskSimilarityBatch(formData.value).then(({ success }) => {
+      //       if (success) {
+      //         window.$message.success('提交成功')
+      //       }
+      //     })
+      //     emit('submit', true)
+      //     doClose()
+      //     show.value = false
+      //     loading.value = false
+    }
   //   else {
   //     //
   //   }
-  // })
+  })
 }
 
-const isSetCollectRef = ref(false)
-const isProblemCollectRef = ref(false)
-function doOpen(sId: string = '', pid: string = '', isSetCollect: boolean = false, isProblemCollect: boolean = false) {
+const isSetRef = ref(false)
+
+const setProblemOptions = ref([])
+const languageOptions = ref([])
+function doOpen(sId: string = '', pid: string = '', isSet: boolean) {
   show.value = true
-  isSetCollectRef.value = isSetCollect
-  formData.value.isSet = isProblemCollect
-  isProblemCollectRef.value = isProblemCollect
+  isSetRef.value = isSet
+  formData.value.isSet = isSet
   formData.value.batchTaskId = `task-${uuidv4()}`
-  if (!isProblemCollect && pid) {
-    formData.value.problemId = [pid]
-  }
-  if (!isSetCollect && sId) {
+  if (isSet) {
     formData.value.setId = sId
+    useDataSetFetch().dataSetProblemWithSearch({ id: sId, keyword: '' }).then(({ data }) => {
+      setProblemOptions.value = data
+      console.log(data)
+    })
+    useDataSetFetch().dataProblemGetSetProblemLanguages({ id: sId, problemIds: formData.value.problemIds }).then(({ data }) => {
+      if (data) {
+        // 直接使用API返回的对象结构
+        languageOptions.value = data.map((item: any) => ({
+          label: item.label.charAt(0).toUpperCase() + item.label.slice(1),
+          value: item.value,
+        }))
+      }
+    })
+  }
+  else {
+    formData.value.problemIds = [pid]
+    useDataProblemFetch().dataProblemDetail({ id: pid }).then(({ data }) => {
+      languageOptions.value = data.allowedLanguages.map((language: any) => ({
+        label: language.charAt(0).toUpperCase() + language.slice(1),
+        value: language,
+      }))
+    })
   }
 
-  useSysDictFetch().sysDictOptions({ dictType: 'ALLOW_LANGUAGE' }).then(({ data }) => {
-    allowLanguageOptions.value = data
-  })
-
-  //   isEdit.value = edit
-  //   formData.value = Object.assign(formData.value, row)
   useSysGroupFetch().sysGroupAuthTree({ keyword: '' }).then(({ data }) => {
     groupOptions.value = data
     groupOptionsLoading.value = false
@@ -111,37 +131,45 @@ function doOpen(sId: string = '', pid: string = '', isSetCollect: boolean = fals
 defineExpose({
   doOpen,
 })
+
+function updateProblemIds(value: any) {
+  console.log(value)
+  useDataSetFetch().dataProblemGetSetProblemLanguages({ id: formData.value.setId, problemIds: value }).then(({ data }) => {
+    if (data) {
+      // 直接使用API返回的对象结构
+      languageOptions.value = data.map((item: any) => ({
+        label: item.label.charAt(0).toUpperCase() + item.label.slice(1),
+        value: item.value,
+      }))
+    }
+  })
+}
 </script>
 
 <template>
-  <NDrawer v-model:show="show" placement="right" width="800" @after-leave="doClose">
+  <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent title="报告参数配置">
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
         <!-- 输入框 -->
-        <NFormItem v-if="isSetCollectRef" label="题目" path="setId">
+        <NFormItem v-if="isSetRef" label="题目" path="problemIds">
           <NSelect
-            v-model:value="formData.setId"
-            placeholder="请选择题集"
-            clearable
-            remote
-          />
-        </NFormItem>
-        <NFormItem v-if="!isSetCollectRef && isProblemCollectRef" label="题目" path="problemId">
-          <NSelect
-            v-model:value="formData.problemId"
+            v-model:value="formData.problemIds"
             placeholder="请选择题目"
+            label-field="title"
+            value-field="id"
+            filterable
             clearable
             multiple
-            remote
+            :options="setProblemOptions"
+            @update:value="updateProblemIds"
           />
         </NFormItem>
-        <NFormItem label="检测语言" path="allowedLanguages">
+        <NFormItem label="检测语言" path="language">
           <NSelect
             v-model:value="formData.language"
             placeholder="请选择开放语言"
-            :options="allowLanguageOptions"
+            :options="languageOptions"
             clearable
-            remote
           />
         </NFormItem>
         <NFormItem label="敏感度" path="config.minMatchLength">
@@ -158,6 +186,16 @@ defineExpose({
           />
         </NFormItem>
       </NForm>
+      <n-alert type="warning" class="mb-4">
+        检测范围最多为近期
+        <n-tag type="info" size="small">
+          1000
+        </n-tag>
+        条有效数据。
+      </n-alert>
+      <n-alert v-if="isSetRef" type="warning" class="mb-4">
+        题集检测语言为题目中允许的语言交集
+      </n-alert>
       <template #footer>
         <NSpace align="center" justify="end">
           <NButton @click="doClose">

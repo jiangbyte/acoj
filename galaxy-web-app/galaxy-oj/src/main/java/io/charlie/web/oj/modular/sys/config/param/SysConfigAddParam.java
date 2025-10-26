@@ -40,4 +40,8 @@ public class SysConfigAddParam implements Serializable {
     @Schema(description = "描述")
     private String description;
 
+
+    @Schema(description = "排序")
+    private Integer sort;
+
 }

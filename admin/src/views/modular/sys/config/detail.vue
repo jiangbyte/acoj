@@ -40,6 +40,9 @@ defineExpose({
         <NDescriptionsItem label="值">
           {{ formData.value }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="排序">
+          {{ formData.sort }}
+        </NDescriptionsItem>
         <NDescriptionsItem label="组件类型">
           {{ formData.componentTypeName }}
         </NDescriptionsItem>

@@ -1,16 +1,8 @@
 package io.charlie.web.oj.modular.data.set.utils;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
-import io.charlie.web.oj.modular.data.ranking.service.ProblemCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.ProblemSetCacheService;
-import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.charlie.web.oj.modular.data.relation.set.service.DataSetProblemService;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
-import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
-import io.charlie.web.oj.modular.data.solved.entity.ProblemStatistics;
 import io.charlie.web.oj.modular.data.solved.entity.SetStatistics;
 import io.charlie.web.oj.modular.data.solved.service.DataSolvedService;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +23,6 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class SetBuildTool {
-    private final ProblemSetCacheService problemSetCacheService;
     private final DataSetProblemService dataSetProblemService;
 
     private final DataSolvedService dataSolvedService;

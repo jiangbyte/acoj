@@ -15,8 +15,8 @@ import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
-import io.charlie.web.oj.modular.data.ranking.ActivityScoreCalculator;
-import io.charlie.web.oj.modular.data.ranking.UserActivityService;
+import io.charlie.web.oj.modular.data.ranking.utils.ActivityScoreCalculator;
+import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.set.mapper.DataSetMapper;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
@@ -29,7 +29,10 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.data.testcase.entity.DataTestCase;
+import io.charlie.web.oj.modular.data.testcase.service.DataTestCaseService;
 import io.charlie.web.oj.modular.task.judge.dto.JudgeSubmitDto;
+import io.charlie.web.oj.modular.task.judge.dto.TestCase;
 import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import io.charlie.web.oj.modular.task.judge.handle.JudgeHandleMessage;
 import org.redisson.api.RLock;
@@ -65,6 +68,8 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     private final UserActivityService userActivityService;
 
     private final DataScopeUtil dataScopeUtil;
+
+    private final DataTestCaseService dataTestCaseService;
 
     @Override
     public Page<DataSubmit> page(DataSubmitPageParam dataSubmitPageParam) {
@@ -404,101 +409,18 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         }
     }
 
-//    public void handleSolvedRecord(DataSubmitExeParam dataSubmitExeParam, Boolean isSet, DataSubmit dataSubmit) {
-//        String userId = StpUtil.getLoginIdAsString();
-//        String problemId = dataSubmitExeParam.getProblemId();
-//        String lockKey = String.format("solved:lock:%s:%s:%s", userId, problemId, isSet);
-//
-//        RLock lock = redissonClient.getLock(lockKey);
-//        try {
-//            // 尝试获取锁，等待5秒，锁有效期30秒
-//            boolean locked = lock.tryLock(5, 30, TimeUnit.SECONDS);
-//            if (locked) {
-//                doHandleSolvedRecord(dataSubmitExeParam, isSet, dataSubmit);
-//            } else {
-//                throw new BusinessException("获取锁失败，请重试");
-//            }
-//        } catch (InterruptedException e) {
-//            Thread.currentThread().interrupt();
-//            throw new BusinessException("处理中断", e);
-//        } finally {
-//            if (lock.isHeldByCurrentThread()) {
-//                lock.unlock();
-//            }
-//        }
-//
-//
-//    }
-//
-//    private void doHandleSolvedRecord(DataSubmitExeParam dataSubmitExeParam, Boolean isSet, DataSubmit dataSubmit) {
-//        String userId = StpUtil.getLoginIdAsString();
-//        String problemId = dataSubmitExeParam.getProblemId();
-//        String setId = dataSubmitExeParam.getSetId();
-//        String submitId = dataSubmit.getId();
-//
-//        // 先模式
-//        if (isSet) {
-//            // 当前是否有解决状态
-//            LambdaQueryWrapper<DataSolved> queryWrapper = new LambdaQueryWrapper<DataSolved>()
-//                    .eq(DataSolved::getUserId, userId)
-//                    .eq(DataSolved::getSetId, setId)
-//                    .eq(DataSolved::getProblemId, problemId)
-//                    .eq(DataSolved::getIsSet, Boolean.TRUE);
-//            boolean existingRecord = dataSolvedMapper.exists(queryWrapper);
-//            // 如果存在
-//            if (existingRecord) {
-//                // 存在就更新提交ID和更新时间
-//                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
-//                        .eq(DataSolved::getUserId, userId)
-//                        .eq(DataSolved::getSetId, setId)
-//                        .eq(DataSolved::getProblemId, problemId)
-//                        .eq(DataSolved::getIsSet, Boolean.TRUE)
-//                        .set(DataSolved::getSubmitId, submitId)
-//                        .set(DataSolved::getUpdateTime, new Date())
-//                );
-//            } else {
-//                // 不存在就插入
-//                DataSolved dataSolved = new DataSolved();
-//                dataSolved.setUserId(userId);
-//                dataSolved.setSetId(setId);
-//                dataSolved.setProblemId(problemId);
-//                dataSolved.setIsSet(Boolean.TRUE);
-//                dataSolved.setSubmitId(submitId);
-//                dataSolvedMapper.insert(dataSolved);
-//            }
-//        } else {
-//            // 当前是否有解决状态
-//            LambdaQueryWrapper<DataSolved> queryWrapper = new LambdaQueryWrapper<DataSolved>()
-//                    .eq(DataSolved::getUserId, userId)
-//                    .eq(DataSolved::getProblemId, problemId)
-//                    .eq(DataSolved::getIsSet, Boolean.FALSE);
-//            boolean existingRecord = dataSolvedMapper.exists(queryWrapper);
-//            // 如果存在
-//            if (existingRecord) {
-//                // 存在就更新提交ID和更新时间
-//                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
-//                        .eq(DataSolved::getUserId, userId)
-//                        .eq(DataSolved::getProblemId, problemId)
-//                        .eq(DataSolved::getIsSet, Boolean.FALSE)
-//                        .set(DataSolved::getSubmitId, submitId)
-//                        .set(DataSolved::getUpdateTime, new Date())
-//                );
-//            } else {
-//                // 不存在就插入
-//                DataSolved dataSolved = new DataSolved();
-//                dataSolved.setUserId(userId);
-//                dataSolved.setProblemId(problemId);
-//                dataSolved.setIsSet(Boolean.FALSE);
-//                dataSolved.setSubmitId(submitId);
-//                dataSolvedMapper.insert(dataSolved);
-//            }
-//        }
-//    }
-
     @Async("taskExecutor")
     public void asyncHandleSubmit(DataSubmit dataSubmit, DataSubmitExeParam param) {
         try {
             DataProblem problem = dataProblemMapper.selectById(dataSubmit.getProblemId());
+
+            List<DataTestCase> testCaseByProblemId = dataTestCaseService.getTestCaseByProblemId(dataSubmit.getProblemId());
+            List<TestCase> testCases = testCaseByProblemId.stream().map(testCase -> {
+                TestCase testCase1 = new TestCase();
+                testCase1.setInput(testCase.getInputData());
+                testCase1.setOutput(testCase.getExpectedOutput());
+                return testCase1;
+            }).toList();
 
             JudgeSubmitDto message = new JudgeSubmitDto();
             // ======================= 任务参数 =======================
@@ -509,7 +431,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
             // ======================= 题目参数 =======================
             message.setMaxTime(problem.getMaxTime());
             message.setMaxMemory(problem.getMaxMemory());
-            message.setTestCase(problem.getTestCase());
+            message.setTestCase(testCases);
             // ======================= 用户提交参数 =======================
             message.setProblemId(param.getProblemId());
             if (param.getSetId() != null) {

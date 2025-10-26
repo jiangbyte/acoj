@@ -4,10 +4,12 @@ import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NTag } fr
 import { useDataProblemFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
+import TestCasePage from './testcase.vue'
 
 const formRef = ref()
 const detailRef = ref()
 const similaritySelectFormRef = ref()
+const testcaseIndexRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -113,7 +115,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 280,
+    width: 370,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -126,8 +128,13 @@ const columns: DataTableColumns<any> = [
         h(NButton, {
           type: 'primary',
           size: 'small',
+          onClick: () => testcaseIndexRef.value.doOpen(row, true),
+        }, () => '用例数据'),
+        h(NButton, {
+          type: 'primary',
+          size: 'small',
           // disabled: row.canUseSimilarReport !== true,
-          onClick: () => similaritySelectFormRef.value.doOpen(null, row.id, false, false),
+          onClick: () => similaritySelectFormRef.value.doOpen(null, row.id, false),
         }, () => '相似报告'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
@@ -370,6 +377,7 @@ async function deleteBatchHandle() {
     <Form ref="formRef" @submit="loadData" />
     <Detail ref="detailRef" @submit="loadData" />
     <SimilaritySelect ref="similaritySelectFormRef" />
+    <TestCasePage ref="testcaseIndexRef" />
   </div>
 </template>
 

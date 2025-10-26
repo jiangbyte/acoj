@@ -82,6 +82,13 @@ export function useSysUserFetch() {
         },
       })
     },
+    sysUserOptions(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/options`, {
+        params: {
+          ...data,
+        },
+      })
+    },
     /*
      * 用户 信息接口
      */

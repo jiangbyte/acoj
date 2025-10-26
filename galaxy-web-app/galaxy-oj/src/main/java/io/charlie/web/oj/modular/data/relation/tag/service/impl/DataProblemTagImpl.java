@@ -154,12 +154,10 @@ public class DataProblemTagImpl extends ServiceImpl<DataProblemTagMapper, DataPr
                 return dataProblemTag;
             }).toList();
 
+            // 清除相关缓存
+            clearCache(problemId);
             return this.saveBatch(list);
         }
-
-        // 清除相关缓存
-        clearCache(problemId);
-
         return true;
     }
 

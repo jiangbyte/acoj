@@ -4,10 +4,11 @@ import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, 
 import { useDataSubmitFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
+import JudgeCasePage from './judgecase.vue'
 
 const formRef = ref()
 const detailRef = ref()
-
+const judgecaseIndexRef = ref()
 const router = useRouter()
 const columns: DataTableColumns<any> = [
   {
@@ -16,7 +17,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '用户',
     key: 'user',
-    width: 140,
+    width: 150,
     render(row: any) {
       return h(
         NSpace,
@@ -141,7 +142,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 220,
+    width: 310,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -151,6 +152,11 @@ const columns: DataTableColumns<any> = [
         //   onClick: () => formRef.value.doOpen(row, true),
         // }, () => '编辑'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
+        h(NButton, {
+          type: 'primary',
+          size: 'small',
+          onClick: () => judgecaseIndexRef.value.doOpen(row),
+        }, () => '用例详情'),
         h(NButton, {
           type: 'primary',
           size: 'small',
@@ -364,7 +370,7 @@ async function deleteBatchHandle() {
         :row-key="(row: any) => row.id"
         :loading="loading"
         flex-height
-        :scroll-x="1400"
+        :scroll-x="1600"
         class="flex-1 h-full"
       />
       <template #action>
@@ -391,6 +397,7 @@ async function deleteBatchHandle() {
 
     <Form ref="formRef" @submit="loadData" />
     <Detail ref="detailRef" @submit="loadData" />
+    <JudgeCasePage ref="judgecaseIndexRef" />
   </div>
 </template>
 

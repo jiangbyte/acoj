@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import type { SelectOption } from 'naive-ui'
-import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysGroupFetch } from '@/composables/v1'
+import type { SelectOption, SelectRenderLabel, SelectRenderTag } from 'naive-ui'
+import { NAvatar, NButton, NDrawer, NDrawerContent, NEllipsis, NForm, NFormItem, NInput, NText } from 'naive-ui'
+import { useSysGroupFetch, useSysUserFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
@@ -92,39 +92,84 @@ async function doOpen(row: any = null, edit: boolean = false) {
     //   value: row.parentId,
     //   label: row.parentIdName,
     // }]
+
+    handleUserSearch('')
   }
 }
 defineExpose({
   doOpen,
 })
 
+const { sysUserOptions } = useSysUserFetch()
 async function handleUserSearch(query: string) {
-  if (!query.length) {
-    userOptions.value = []
-    return
-  }
   userOptionsLoading.value = true
-
-  // const { data } = await sysUserOptions({ keyword: query })
-  // if (data) {
-  //   userOptions.value = data
-  //   userOptionsLoading.value = false
-  // }
+  const { data } = await sysUserOptions({ keyword: query })
+  if (data) {
+    userOptions.value = data
+    userOptionsLoading.value = false
+  }
 }
 
-// async function handleGroupSearch(query: string) {
-//   if (!query.length) {
-//     groupOptions.value = []
-//     return
-//   }
-//   groupOptionsLoading.value = true
+const renderSingleSelectTag: SelectRenderTag = ({ option }) => {
+  return h(
+    'div',
+    {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+      },
+    },
+    [
+      h(NAvatar, {
+        src: String(option.avatar),
+        round: true,
+        size: 24,
+        style: {
+          marginRight: '12px',
+        },
+      }),
+      option.nickname as string,
+    ],
+  )
+}
 
-//   // const { data } = await sysGroupOptions({ keyword: query })
-//   // if (data) {
-//   //   groupOptions.value = data
-//   //   groupOptionsLoading.value = false
-//   // }
-// }
+const renderLabel: SelectRenderLabel = (option) => {
+  return h(
+    'div',
+    {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+      },
+    },
+    [
+      h(NAvatar, {
+        src: String(option.avatar),
+        round: true,
+        size: 'small',
+      }),
+      h(
+        'div',
+        {
+          style: {
+            marginLeft: '12px',
+            padding: '4px 0',
+          },
+        },
+        [
+          h('div', null, [option.nickname as string]),
+          h(
+            NEllipsis,
+            { lineClamp: 1 },
+            {
+              default: () => option.quote as string,
+            },
+          ),
+        ],
+      ),
+    ],
+  )
+}
 </script>
 
 <template>
@@ -178,11 +223,14 @@ async function handleUserSearch(query: string) {
           <NSelect
             v-model:value="formData.adminId"
             filterable
-            placeholder="搜索负责人"
+            placeholder="选择负责人"
             :options="userOptions"
             :loading="userOptionsLoading"
+            :render-label="renderLabel"
+            :render-tag="renderSingleSelectTag"
+            label-field="nickname"
+            value-field="id"
             clearable
-            remote
             @search="handleUserSearch"
           />
         </NFormItem>

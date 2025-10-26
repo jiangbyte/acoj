@@ -1,0 +1,121 @@
+package io.charlie.web.oj.modular.sys.user.entity;
+
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
+import io.charlie.galaxy.pojo.CommonEntity;
+import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.dromara.core.trans.anno.Trans;
+import org.dromara.core.trans.constant.TransType;
+
+import java.io.Serial;
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-09-20
+ * @description 用户表
+ */
+@EqualsAndHashCode(callSuper = true)
+@Data
+public class SysNoNeUser extends CommonEntity {
+    @Serial
+    @TableField(exist = false)
+    private static final long serialVersionUID = 1L;
+
+    @Schema(description = "主键")
+    private String id;
+
+//    @Schema(description = "用户组")
+//    @Trans(type = TransType.SIMPLE, target = SysGroup.class, fields = "name", ref = "groupIdName")
+//    private String groupId;
+//
+//    @Schema(description = "用户组名称")
+//    @TableField(exist = false)
+//    private String groupIdName;
+
+    @Schema(description = "用户名")
+    private String username;
+
+//    @Schema(description = "密码")
+//    private String password;
+
+    @Schema(description = "昵称")
+    private String nickname;
+
+    @Schema(description = "头像")
+    private String avatar;
+
+    @Schema(description = "背景图片")
+    private String background;
+
+//    @Schema(description = "签名")
+//    private String quote;
+
+//    @Schema(description = "性别")
+//    @Trans(type = TransType.DICTIONARY, key = "SYS_GENDER")
+//    private Integer gender;
+
+//    @Schema(description = "邮箱")
+//    private String email;
+
+    @Schema(description = "学号")
+    private String studentNumber;
+
+//    @Schema(description = "电话")
+//    private String telephone;
+
+//    @Schema(description = "登录时间")
+//    @JsonSerialize(using = DateToTimestampSerializer.class)
+//    @JsonDeserialize(using = TimestampToDateDeserializer.class)
+//    private Date loginTime;
+//
+//    // =====================
+//    @TableField(exist = false)
+//    private BigDecimal score;
+//
+//    @TableField(exist = false)
+//    private Long rank;
+//
+//    @TableField(exist = false)
+//    private Long submitCount;
+//
+//    @TableField(exist = false)
+//    private Long totalSubmitCount;
+//
+//    @TableField(exist = false)
+//    private BigDecimal acceptanceRate;
+//
+//    @TableField(exist = false)
+//    private Long solvedProblem;
+//
+//    @TableField(exist = false)
+//    private Long solvedCount;
+//
+//    @TableField(exist = false)
+//    private Long tryProblem;
+//
+//    @TableField(exist = false)
+//    private Long submittedCount;
+//
+//    @TableField(exist = false)
+//    private Long participatedSet;
+//
+//    @TableField(exist = false)
+//    private BigDecimal activeScore;
+//
+//    @TableField(exist = false)
+//    private List<ACRecord> acRecord;
+//
+//    @TableField(exist = false)
+//    private List<String> assignRoles;
+}

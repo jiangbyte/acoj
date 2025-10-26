@@ -9,7 +9,6 @@ import io.charlie.web.oj.modular.data.problem.param.DataProblemPageParam;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemAddParam;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemEditParam;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemIdParam;
-import io.charlie.web.oj.modular.data.ranking.service.UserCacheService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -40,7 +39,6 @@ import java.util.List;
 @Validated
 public class DataProblemController {
     private final DataProblemService dataProblemService;
-    private final UserCacheService userCacheService;
 
     @Operation(summary = "获取题目分页")
     @SaCheckPermission("/data/problem/page")

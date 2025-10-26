@@ -1,19 +1,14 @@
 package io.charlie.web.oj.modular.data.similarity.mapper;
 
-import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.web.oj.modular.data.similarity.dto.CloneLevel;
 import io.charlie.web.oj.modular.data.similarity.dto.TaskReportStats;
 import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import io.charlie.web.oj.modular.task.similarity.basic.utils.DynamicCloneLevelDetector;
-import org.apache.ibatis.annotations.CacheNamespace;
-import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 /**
 * @author Charlie Zhang

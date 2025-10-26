@@ -246,6 +246,10 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
             query.in(DataLibrary::getUserId, userIds);
         }
 
+        // 按时间降序，优先更新时间
+        query.orderByDesc(DataLibrary::getUpdateTime);
+        query.orderByDesc(DataLibrary::getCreateTime);
+
         return query;
     }
 
@@ -255,6 +259,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
                                                      List<String> userIds, int batchSize,
                                                      String filterProblemId, String filterSetId,
                                                      String filterUserId,
+                                                     int maxBatches, // 最大批次数限制
                                                      Function<List<DataLibrary>, List<R>> processor) {
 
         LambdaQueryWrapper<DataLibrary> queryWrapper = buildSampleQuery(isSet, language, problemIds, setIds, userIds);
@@ -296,6 +301,14 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         log.info("总记录数：{}", total);
         long pages = (total + batchSize - 1) / batchSize;
         log.info("总页数：{}", pages);
+
+        // 如果设置了最大批次数，则限制处理的页数
+        if (maxBatches > 0) {
+            pages = Math.min(pages, maxBatches);
+            log.info("限制最大批次数：{}，实际处理页数：{}", maxBatches, pages);
+        } else {
+            log.info("总页数：{}", pages);
+        }
 
         for (long current = 1; current <= pages; current++) {
             log.info("处理分页 {} 批次大小 {}", current, batchSize);

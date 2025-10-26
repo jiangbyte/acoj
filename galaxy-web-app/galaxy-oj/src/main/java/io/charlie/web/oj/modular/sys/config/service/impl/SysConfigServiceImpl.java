@@ -25,11 +25,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-06-23
-* @description 系统配置表 服务实现类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-06-23
+ * @description 系统配置表 服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -42,22 +42,24 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         if (ObjectUtil.isNotEmpty(sysConfigPageParam.getKeyword())) {
             queryWrapper.lambda().like(SysConfig::getName, sysConfigPageParam.getKeyword());
         }
-        // 先按 configType 排序，然后按 name 排序
-        queryWrapper.lambda()
-                .orderByAsc(SysConfig::getConfigType)
-                .orderByAsc(SysConfig::getName);
+
 
         if (ObjectUtil.isAllNotEmpty(sysConfigPageParam.getSortField(), sysConfigPageParam.getSortOrder()) && ISortOrderEnum.isValid(sysConfigPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
                     sysConfigPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
                     StrUtil.toUnderlineCase(sysConfigPageParam.getSortField()));
+        } else {
+            // 先按 configType 排序，然后按 name 排序
+            queryWrapper.lambda()
+                    .orderByAsc(SysConfig::getConfigType)
+                    .orderByAsc(SysConfig::getName);
         }
 
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(sysConfigPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(sysConfigPageParam.getSize()).orElse(20),
-                null
+                        null
                 ),
                 queryWrapper);
     }
@@ -69,10 +71,8 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
         if (ObjectUtil.isNotEmpty(sysConfigListParam.getKeyword())) {
             queryWrapper.lambda().like(SysConfig::getName, sysConfigListParam.getKeyword());
         }
-        // 先按 configType 排序，然后按 name 排序
         queryWrapper.lambda()
-                .orderByAsc(SysConfig::getConfigType)
-                .orderByAsc(SysConfig::getName);
+                .orderByAsc(SysConfig::getSort);
         return this.list(queryWrapper);
     }
 

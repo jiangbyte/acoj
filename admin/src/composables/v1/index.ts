@@ -7,6 +7,8 @@ export * from './data/DataProgressApi'
 export * from './data/DataSetApi'
 export * from './data/DataSolvedApi'
 export * from './data/DataSubmitApi'
+export * from './data/DataTestCaseApi'
+export * from './data/DataJudgeCaseApi'
 export * from './data/TaskReportsApi'
 export * from './data/TaskSimilarityApi'
 

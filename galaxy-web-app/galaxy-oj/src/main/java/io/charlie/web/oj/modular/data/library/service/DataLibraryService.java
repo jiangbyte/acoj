@@ -39,5 +39,6 @@ public interface DataLibraryService extends IService<DataLibrary> {
                                               List<String> userIds, int batchSize,
                                               String filterProblemId, String filterSetId,
                                               String filterUserId,
+                                              int maxBatches,
                                               Function<List<DataLibrary>, List<R>> processor);
 }

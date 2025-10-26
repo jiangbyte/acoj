@@ -3,7 +3,6 @@ package io.charlie.web.oj.modular.task.similarity.handle;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.service.DataLibraryService;
@@ -17,16 +16,12 @@ import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
 import io.charlie.web.oj.modular.data.similarity.mapper.TaskSimilarityMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
-import io.charlie.web.oj.modular.sys.config.entity.SysConfig;
-import io.charlie.web.oj.modular.sys.config.mapper.SysConfigMapper;
 import io.charlie.web.oj.modular.task.similarity.config.SimilarityConfigProperties;
-import io.charlie.web.oj.modular.task.similarity.data.Config;
 import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.enums.CloneLevelEnum;
 import io.charlie.web.oj.modular.task.similarity.enums.ReportTypeEnum;
 import io.charlie.web.oj.modular.task.similarity.mq.CommonSimilarityQueue;
-import io.charlie.web.oj.modular.task.similarity.basic.utils.CodeSimilarityCalculator;
-import io.charlie.web.oj.modular.task.similarity.basic.utils.DynamicCloneLevelDetector;
+import io.charlie.web.oj.utils.similarity.utils.CodeSimilarityCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -35,9 +30,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -88,6 +81,7 @@ public class SimilarityHandleMessage {
                     null,
                     null,
                     similaritySubmitDto.getUserId(),
+                    similarityConfigProperties.getProblemSingleSubmitBatchEndSize(),
                     dataLibraries -> calculateTaskSimilarities(similaritySubmitDto, dataLibraries)
             );
 
