@@ -47,15 +47,15 @@ public class CodeSimilarityCalculator {
     /**
      * 贪婪字符串匹配算法实现
      *
-     * @param list1          第一个Token序列
-     * @param list2          第二个Token序列
+     * @param token1          第一个Token序列
+     * @param token2          第二个Token序列
      * @param minMatchLength 控制匹配敏感度
      * @return 匹配的Token数量
      */
-    private int greedyStringTiling(List<Integer> list1, List<Integer> list2, int minMatchLength) {
+    private int greedyStringTiling(List<Integer> token1, List<Integer> token2, int minMatchLength) {
         List<MatchTile> tiles = new ArrayList<>();
-        boolean[] matched1 = new boolean[list1.size()];
-        boolean[] matched2 = new boolean[list2.size()];
+        boolean[] matched1 = new boolean[token1.size()];
+        boolean[] matched2 = new boolean[token2.size()];
 
         int maxMatch;
         do {
@@ -63,18 +63,18 @@ public class CodeSimilarityCalculator {
             List<MatchTile> maxTiles = new ArrayList<>();
 
             // 寻找所有最大匹配块
-            for (int i = 0; i < list1.size(); i++) {
+            for (int i = 0; i < token1.size(); i++) {
                 if (matched1[i]) continue;
 
-                for (int j = 0; j < list2.size(); j++) {
+                for (int j = 0; j < token2.size(); j++) {
                     if (matched2[j]) continue;
 
                     int k = 0;
-                    while (i + k < list1.size() &&
-                            j + k < list2.size() &&
+                    while (i + k < token1.size() &&
+                            j + k < token2.size() &&
                             !matched1[i + k] &&
                             !matched2[j + k] &&
-                            list1.get(i + k).equals(list2.get(j + k))) {
+                            token1.get(i + k).equals(token2.get(j + k))) {
                         k++;
                     }
 

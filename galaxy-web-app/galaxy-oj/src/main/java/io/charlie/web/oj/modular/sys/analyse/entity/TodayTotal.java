@@ -6,7 +6,6 @@ import lombok.Data;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 17/10/2025
- * @description TODO
  */
 @Data
 public class TodayTotal {

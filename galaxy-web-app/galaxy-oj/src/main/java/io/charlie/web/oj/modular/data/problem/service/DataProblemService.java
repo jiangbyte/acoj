@@ -38,8 +38,6 @@ public interface DataProblemService extends IService<DataProblem> {
 
     List<DifficultyDistribution> difficultyDistribution();
 
-    void importProblems(MultipartFile file);
-
     // LLM 工具调用接口
     // 获取题目描述
     String llmGetDescription(String id);

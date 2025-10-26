@@ -9,5 +9,5 @@ import io.charlie.web.oj.modular.task.similarity.param.BatchSimilarityParam;
  * @description 题目相似度
  */
 public interface ProblemsSimilarityService {
-    void batch(BatchSimilarityParam batchSimilarityParam);
+    String batch(BatchSimilarityParam batchSimilarityParam);
 }

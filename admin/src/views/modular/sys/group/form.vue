@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { SelectOption, SelectRenderLabel, SelectRenderTag } from 'naive-ui'
-import { NAvatar, NButton, NDrawer, NDrawerContent, NEllipsis, NForm, NFormItem, NInput, NText } from 'naive-ui'
+import { NAvatar, NButton, NDrawer, NDrawerContent, NEllipsis, NForm, NFormItem, NInput } from 'naive-ui'
 import { useSysGroupFetch, useSysUserFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])

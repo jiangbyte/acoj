@@ -21,6 +21,8 @@ import java.util.List;
 public interface TaskSimilarityMapper extends BaseMapper<TaskSimilarity> {
     TaskReportStats selectSimilarityStats(String taskId, String problemId, String setId, int isSet);
 
+    TaskReportStats selectSimilarityStatsByTaskId(String taskId);
+
     /**
      * 相似度分布查询 - 0-100分10个区间，返回数量数组
      * 返回格式: [0,0,1,2,5,6,5,4,8,1]

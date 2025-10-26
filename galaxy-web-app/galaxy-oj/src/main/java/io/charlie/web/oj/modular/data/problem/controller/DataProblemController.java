@@ -9,6 +9,8 @@ import io.charlie.web.oj.modular.data.problem.param.DataProblemPageParam;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemAddParam;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemEditParam;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemIdParam;
+import io.charlie.web.oj.modular.data.problem.importdata.FileImportService;
+import io.charlie.web.oj.modular.data.problem.importdata.ImportResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,11 +28,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-09-20
-* @description 题目表 控制器
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-09-20
+ * @description 题目表 控制器
+ */
 @Tag(name = "题目表控制器")
 @Slf4j
 @RequiredArgsConstructor
@@ -39,6 +41,7 @@ import java.util.List;
 @Validated
 public class DataProblemController {
     private final DataProblemService dataProblemService;
+    private final FileImportService fileImportService;
 
     @Operation(summary = "获取题目分页")
     @SaCheckPermission("/data/problem/page")
@@ -133,22 +136,21 @@ public class DataProblemController {
         return Result.success(dataProblemService.difficultyDistribution());
     }
 
-    @Log(category = LogCategory.OPERATION, module = LogModule.DATA)
     @Operation(summary = "导入题目")
     @PostMapping("/data/problem/import")
     public Result<?> importProblems(@RequestParam("file") MultipartFile file) {
-        try {
-            if (file.isEmpty()) {
-                return Result.failure("请选择要上传的文件");
-            }
-            if (!file.getOriginalFilename().toLowerCase().endsWith(".zip")) {
-                return Result.failure("请选择有效的ZIP格式的压缩包");
-            }
-            dataProblemService.importProblems(file);
-            return Result.success();
-        } catch (Exception e) {
-            log.error("导入失败", e);
-            return Result.failure(e.getMessage());
+        if (file.isEmpty()) {
+            return Result.success(ImportResult.error("文件不能为空"));
         }
+
+        log.info("开始导入FPS文件: {}, 大小: {} bytes", file.getOriginalFilename(), file.getSize());
+
+        ImportResult result = fileImportService.importFpsFile(file);
+
+        log.info("文件导入完成: {}，结果: {}", file.getOriginalFilename(), result.getMessage());
+        if (!result.isSuccess()) {
+            return Result.failure(result.getMessage());
+        }
+        return Result.success(result);
     }
 }

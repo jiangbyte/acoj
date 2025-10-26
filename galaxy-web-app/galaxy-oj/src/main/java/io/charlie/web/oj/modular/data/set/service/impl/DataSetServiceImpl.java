@@ -11,11 +11,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
 import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.problem.param.DifficultyDistribution;
 import io.charlie.web.oj.modular.data.problem.utils.ProblemBuildTool;
+import io.charlie.web.oj.modular.data.relation.set.mapper.DataSetProblemMapper;
 import io.charlie.web.oj.modular.data.relation.set.service.DataSetProblemService;
+import io.charlie.web.oj.modular.data.relation.tag.mapper.DataProblemTagMapper;
+import io.charlie.web.oj.modular.data.reports.mapper.TaskReportsMapper;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.set.param.*;
 import io.charlie.web.oj.modular.data.set.mapper.DataSetMapper;
@@ -25,8 +29,11 @@ import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.data.set.utils.SetBuildTool;
+import io.charlie.web.oj.modular.data.similarity.mapper.TaskSimilarityMapper;
+import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
+import io.charlie.web.oj.modular.data.testcase.mapper.DataTestCaseMapper;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.mapper.SysUserMapper;
 import org.dromara.trans.service.impl.TransService;
@@ -60,6 +67,14 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     private final SetBuildTool setBuildTool;
 
     private final DataSubmitMapper dataSubmitMapper;
+
+    private final DataProblemTagMapper dataProblemTagMapper; // 标签
+    private final DataTestCaseMapper dataTestCaseMapper; // 测试用例
+    private final DataSolvedMapper solvedMapper; // 提交记录
+    private final DataSetProblemMapper dataSetProblemMapper; // 题集关系
+    private final DataLibraryMapper dataLibraryMapper; // 检测代码库
+    private final TaskReportsMapper taskReportsMapper; // 任务报告
+    private final TaskSimilarityMapper taskSimilarityMapper; // 相似度详情
 
     @Override
     public Page<DataSet> page(DataSetPageParam dataSetPageParam) {
@@ -157,7 +172,15 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         if (ObjectUtil.isEmpty(dataSetIdParamList)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
-        this.removeByIds(CollStreamUtil.toList(dataSetIdParamList, DataSetIdParam::getId));
+        List<String> dataSetIds = CollStreamUtil.toList(dataSetIdParamList, DataSetIdParam::getId);
+        this.removeByIds(dataSetIds);
+
+//        if (ObjectUtil.isNotEmpty(dataSetIds)) {
+//            // 移除提交记录
+//            dataSubmitMapper.delete(new LambdaQueryWrapper<DataSubmit>()
+//                    .in(DataSubmit::getSetId, dataSetIds)
+//            );
+//        }
     }
 
     @Override

@@ -110,36 +110,36 @@ public class SimilarityHandleMessage {
                     similaritySubmitDto.getIsSet() ? similarityConfigProperties.getSetSingleSubmitSensitivity() : similarityConfigProperties.getProblemSingleSubmitSensitivity()
             );
 
-            TaskSimilarity detail = new TaskSimilarity();
+            TaskSimilarity taskSimilarity = new TaskSimilarity();
             // 基础信息
-            detail.setTaskId(similaritySubmitDto.getTaskId());
-            detail.setTaskType(similaritySubmitDto.getTaskType());
-            detail.setProblemId(similaritySubmitDto.getProblemId());
-            detail.setSetId(similaritySubmitDto.getSetId());
-            detail.setIsSet(similaritySubmitDto.getIsSet());
-            detail.setLanguage(dataLibrary.getLanguage());
-            detail.setSimilarity(BigDecimal.valueOf(similarityDetail.getSimilarity()));
+            taskSimilarity.setTaskId(similaritySubmitDto.getTaskId());
+            taskSimilarity.setTaskType(similaritySubmitDto.getTaskType());
+            taskSimilarity.setProblemId(similaritySubmitDto.getProblemId());
+            taskSimilarity.setSetId(similaritySubmitDto.getSetId());
+            taskSimilarity.setIsSet(similaritySubmitDto.getIsSet());
+            taskSimilarity.setLanguage(dataLibrary.getLanguage());
+            taskSimilarity.setSimilarity(BigDecimal.valueOf(similarityDetail.getSimilarity()));
 
             // 提交信息
-            detail.setSubmitUser(similaritySubmitDto.getUserId());
-            detail.setSubmitCode(similaritySubmitDto.getCode());
-            detail.setSubmitCodeLength(similaritySubmitDto.getCode().length());
-            detail.setSubmitId(similaritySubmitDto.getId());
-            detail.setSubmitTime(similaritySubmitDto.getCreateTime());
-            detail.setSubmitTokenName(similarityDetail.getSubmitTokenNames());
-            detail.setSubmitTokenTexts(similarityDetail.getSubmitTokenTexts());
+            taskSimilarity.setSubmitUser(similaritySubmitDto.getUserId());
+            taskSimilarity.setSubmitCode(similaritySubmitDto.getCode());
+            taskSimilarity.setSubmitCodeLength(similaritySubmitDto.getCode().length());
+            taskSimilarity.setSubmitId(similaritySubmitDto.getId());
+            taskSimilarity.setSubmitTime(similaritySubmitDto.getCreateTime());
+            taskSimilarity.setSubmitTokenName(similarityDetail.getSubmitTokenNames());
+            taskSimilarity.setSubmitTokenTexts(similarityDetail.getSubmitTokenTexts());
 
             // 样本信息
-            detail.setOriginUser(dataLibrary.getUserId());
-            detail.setOriginCode(dataLibrary.getCode());
-            detail.setOriginCodeLength(dataLibrary.getCodeLength());
-            detail.setOriginId(dataLibrary.getSubmitId());
-            detail.setOriginTime(dataLibrary.getCreateTime());
-            detail.setOriginTokenName(similarityDetail.getLibraryTokenNames());
-            detail.setOriginTokenTexts(similarityDetail.getLibraryTokenTexts());
+            taskSimilarity.setOriginUser(dataLibrary.getUserId());
+            taskSimilarity.setOriginCode(dataLibrary.getCode());
+            taskSimilarity.setOriginCodeLength(dataLibrary.getCodeLength());
+            taskSimilarity.setOriginId(dataLibrary.getSubmitId());
+            taskSimilarity.setOriginTime(dataLibrary.getCreateTime());
+            taskSimilarity.setOriginTokenName(similarityDetail.getLibraryTokenNames());
+            taskSimilarity.setOriginTokenTexts(similarityDetail.getLibraryTokenTexts());
 
             // 增加
-            details.add(detail);
+            details.add(taskSimilarity);
         }
 
         // 直接插入

@@ -77,22 +77,24 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         queryWrapper.lambda().in(SysUser::getGroupId, accessibleGroupIds);
 
-        String type = sysUserPageParam.getType();
-        if (type.equals("username")) {
-            queryWrapper.lambda()
-                    .like(SysUser::getUsername, sysUserPageParam.getKeyword());
-        } else if (type.equals("nickname")) {
-            queryWrapper.lambda()
-                    .like(SysUser::getNickname, sysUserPageParam.getKeyword());
-        } else if (type.equals("email")) {
-            queryWrapper.lambda()
-                    .like(SysUser::getEmail, sysUserPageParam.getKeyword());
-        } else if (type.equals("telephone")) {
-            queryWrapper.lambda()
-                    .like(SysUser::getTelephone, sysUserPageParam.getKeyword());
-        } else if (type.equals("studentNumber")) {
-            queryWrapper.lambda()
-                    .like(SysUser::getStudentNumber, sysUserPageParam.getKeyword());
+        if (ObjectUtil.isNotEmpty(sysUserPageParam.getType())) {
+            String type = sysUserPageParam.getType();
+            if (type.equals("username")) {
+                queryWrapper.lambda()
+                        .like(SysUser::getUsername, sysUserPageParam.getKeyword());
+            } else if (type.equals("nickname")) {
+                queryWrapper.lambda()
+                        .like(SysUser::getNickname, sysUserPageParam.getKeyword());
+            } else if (type.equals("email")) {
+                queryWrapper.lambda()
+                        .like(SysUser::getEmail, sysUserPageParam.getKeyword());
+            } else if (type.equals("telephone")) {
+                queryWrapper.lambda()
+                        .like(SysUser::getTelephone, sysUserPageParam.getKeyword());
+            } else if (type.equals("studentNumber")) {
+                queryWrapper.lambda()
+                        .like(SysUser::getStudentNumber, sysUserPageParam.getKeyword());
+            }
         }
 
         if (ObjectUtil.isNotEmpty(sysUserPageParam.getGroupId())) {

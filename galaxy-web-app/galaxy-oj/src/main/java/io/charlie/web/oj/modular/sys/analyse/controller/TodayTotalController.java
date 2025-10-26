@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 17/10/2025
- * @description TODO
  */
 @Tag(name = "今日统计控制器")
 @Slf4j

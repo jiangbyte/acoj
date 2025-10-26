@@ -26,6 +26,22 @@
         </where>
     </select>
 
+
+    <select id="selectSimilarityStatsByTaskId"
+            resultType="io.charlie.web.oj.modular.data.similarity.dto.TaskReportStats">
+        SELECT
+        COUNT(*) as sampleCount,
+        COUNT(DISTINCT similarity) as groupCount,
+        MAX(similarity) as maxSimilarity,
+        AVG(similarity) as avgSimilarity
+        FROM task_similarity
+        <where>
+            <if test="taskId != null">
+                AND task_id = #{taskId}
+            </if>
+        </where>
+    </select>
+
     <!-- 相似度分布查询 - 返回数量数组 [0,0,1,2,5,6,5,4,8,1] -->
     <select id="selectSimilarityDistribution" resultType="java.lang.Integer">
     <![CDATA[

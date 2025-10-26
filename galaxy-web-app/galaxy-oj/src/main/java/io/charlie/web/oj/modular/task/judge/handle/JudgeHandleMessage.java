@@ -158,7 +158,7 @@ public class JudgeHandleMessage {
      * 处理相似度检测
      */
     private void handleSimilarityCheck(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
-        String taskId = IdUtil.getSnowflakeNextIdStr();
+        String taskId = IdUtil.objectId();
 
         dataSubmitMapper.update(new LambdaUpdateWrapper<DataSubmit>()
                 .eq(DataSubmit::getId, judgeResultDto.getId())

@@ -172,12 +172,6 @@ public class MinioStorageService implements StorageService {
         }
     }
 
-/* ============================================================ 压缩 ============================================================ */
-
-/* ============================================================ 压缩 ============================================================ */
-
-
-
     @Override
     public Resource download(String filename) throws FileNotFoundException {
         try {

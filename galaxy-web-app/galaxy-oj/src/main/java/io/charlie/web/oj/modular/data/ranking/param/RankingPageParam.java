@@ -10,7 +10,6 @@ import java.io.Serializable;
  * @author ZhangJiangHu
  * @version v1.0
  * @date 01/10/2025
- * @description TODO
  */
 @Data
 public class RankingPageParam implements Serializable {

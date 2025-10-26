@@ -14,5 +14,7 @@ public class SnowflakeGenerator {
 
         String snowflakeNextIdStr = IdUtil.objectId();
         System.out.println(snowflakeNextIdStr);
+        // 查看长度
+        System.out.println(snowflakeNextIdStr.length());
     }
 }

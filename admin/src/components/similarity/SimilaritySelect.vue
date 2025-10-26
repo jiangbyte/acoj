@@ -1,90 +1,76 @@
 <script lang="ts" setup>
-import { useDataProblemFetch, useDataSetFetch, useSysDictFetch, useSysGroupFetch } from '@/composables/v1'
-import type { SelectOption } from 'naive-ui'
-import { NButton, NDrawer, NDrawerContent, NForm, NInputNumber } from 'naive-ui'
+import { useDataProblemFetch, useDataSetFetch, useSysGroupFetch, useSysUserFetch, useTaskSimilarityFetch } from '@/composables/v1'
+import type { DataTableColumns, SelectOption } from 'naive-ui'
+import { NAvatar, NButton, NDrawer, NDrawerContent, NForm, NInputNumber, NSpace, NText } from 'naive-ui'
 import { v4 as uuidv4 } from 'uuid'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
 const loading = ref(false)
 const formRef = ref()
-const allowLanguageOptions = ref()
 const groupOptionsLoading = ref(false)
 const groupOptions = ref<SelectOption[]>([])
-const formData = ref({
-  problemIds: [] as string[],
+
+const defaultFormData = {
+  problemIds: [],
   setId: '',
   language: null,
   isSet: false,
+  userIds: [],
   taskId: '',
+  isGroup: false,
   groupId: null,
-  createTime: Date.now(),
   batchTaskId: '',
-  config: {
-    minSampleSize: 0,
-    recentSampleSize: 0,
-    minMatchLength: 5,
-  },
-})
+  minMatchLength: 5,
+  threshold: 0.5
+}
+
+const formData = ref({ ...defaultFormData })
 const rules = {
   problemIds: [
-    { required: true, message: '请选择题目', trigger: ['input', 'blur'] },
+    // { required: true, message: '请选择题目', trigger: ['input', 'blur'] },
   ],
   setId: [
   ],
   language: [
     { required: true, message: '请选择语言', trigger: ['input', 'blur'] },
   ],
-  isSet: [
+  minMatchLength: [
+    // { required: true, message: '请输入敏感度', trigger: ['input', 'blur'] },
   ],
-  config: {
-    minMatchLength: [
-      // { required: true, message: '请输入敏感度', trigger: ['input', 'blur'] },
-    ],
-  },
+  threshold: [
+    // { required: true, message: '请输入阈值', trigger: ['input', 'blur'] },
+  ],
 }
 function doClose() {
   emit('close')
   show.value = false
-  formData.value = {
-    problemIds: [],
-    setId: '',
-    language: null,
-    isSet: false,
-    taskId: '',
-    groupId: null,
-    createTime: Date.now(),
-    batchTaskId: '',
-    config: {
-      minSampleSize: 0,
-      recentSampleSize: 0,
-      minMatchLength: 5,
-    },
-  }
+  formData.value = { ...defaultFormData }
 }
 
 async function doSubmit() {
   formRef.value?.validate(async (errors: any) => {
     if (!errors) {
-      window.$dialog.warning({
-        title: '提示',
-        content: '功能维护中...',
-        positiveText: '确定',
-      })
-      //     loading.value = true
-      //     useTaskSimilarityFetch().taskSimilarityBatch(formData.value).then(({ success }) => {
-      //       if (success) {
-      //         window.$message.success('提交成功')
-      //       }
-      //     })
-      //     emit('submit', true)
-      //     doClose()
-      //     show.value = false
-      //     loading.value = false
+          loading.value = true
+          useTaskSimilarityFetch().taskSimilarityBatch(formData.value).then(({ data }) => {
+            if (data) {
+              console.log(data)
+              useTaskSimilarityFetch().taskSimilarityProgress(data).then(({ data }) => {
+                console.log(data)
+              })
+              window.$message.success('提交成功')
+            }
+          })
+          emit('submit', true)
+          doClose()
+          console.log(formData.value)
+          
+          show.value = false
+          loading.value = false
     }
-  //   else {
-  //     //
-  //   }
+    else {
+      //
+    }
   })
 }
 
@@ -144,6 +130,63 @@ function updateProblemIds(value: any) {
     }
   })
 }
+
+const columns: DataTableColumns<any> = [
+  {
+    type: 'selection',
+  },
+  {
+    title: '昵称',
+    key: 'nickname',
+    render(row: any) {
+      return h(
+        NSpace,
+        { align: 'center', size: 'small' },
+        {
+          default: () => [
+            h(
+              NAvatar,
+              {
+                size: 'small',
+                round: true,
+                src: row.avatar,
+              },
+              {},
+            ),
+            h(
+              NText,
+              {},
+              { default: () => row.nickname },
+            ),
+          ],
+        },
+      )
+    },
+  },
+]
+const pageData = ref()
+const pageParam = ref({
+  current: 1,
+  size: 20,
+  sortField: 'id',
+  sortOrder: 'ASCEND',
+  keyword: '',
+  groupId: '',
+})
+const { sysUserPage } = useSysUserFetch()
+async function loadUserData() {
+  loading.value = true
+  const { data } = await sysUserPage(pageParam.value)
+  if (data) {
+    pageData.value = data
+    loading.value = false
+    console.log(data)
+  }
+}
+function handleUserGroupChange(value: any) {
+  pageParam.value.groupId = value
+  loadUserData()
+}
 </script>
 
 <template>
@@ -172,10 +215,22 @@ function updateProblemIds(value: any) {
             clearable
           />
         </NFormItem>
-        <NFormItem label="敏感度" path="config.minMatchLength">
-          <NInputNumber v-model:value="formData.config.minMatchLength" placeholder="请输入敏感度" />
+        <NFormItem label="匹配敏感度" path="minMatchLength">
+          <NInputNumber v-model:value="formData.minMatchLength" placeholder="请输入匹配敏感度" />
         </NFormItem>
-
+        <NFormItem label="阈值" path="threshold">
+          <NInputNumber v-model:value="formData.threshold" placeholder="请输入检测阈值" />
+        </NFormItem>
+        <NFormItem label="检测组" path="isGroup">
+          <NRadioGroup v-model:value="formData.isGroup">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
+        </NFormItem>
         <NFormItem label="用户组" path="groupId">
           <n-tree-select
             v-model:value="formData.groupId"
@@ -183,9 +238,42 @@ function updateProblemIds(value: any) {
             label-field="name"
             key-field="id"
             :indent="12"
+            @update:value="handleUserGroupChange"
           />
         </NFormItem>
       </NForm>
+      <NCard v-if="!formData.isGroup" size="small" class="flex-1 mb-4">
+        <NDataTable
+          v-model:checked-row-keys="formData.userIds"
+          :columns="columns"
+          :data="pageData?.records"
+          :bordered="false"
+          :row-key="(row: any) => row.id"
+          :loading="loading"
+          flex-height
+          class="h-90"
+        />
+        <template #action>
+          <NSpace align="center" justify="space-between" class="w-full">
+            <NSpace align="center">
+              <NP type="info" show-icon>
+                当前数据 {{ pageData?.records.length }} 条
+              </NP>
+              <NP type="info" show-icon>
+                选中了 {{ formData.userIds?.length }} 行
+              </NP>
+            </NSpace>
+            <NPagination
+              v-model:page="pageParam.current"
+              v-model:page-size="pageParam.size"
+              class="flex justify-end"
+              :page-count="pageData ? Number(pageData.pages) : 0"
+              @update:page="loadUserData"
+              @update:page-size="loadUserData"
+            />
+          </NSpace>
+        </template>
+      </NCard>
       <n-alert type="warning" class="mb-4">
         检测范围最多为近期
         <n-tag type="info" size="small">

@@ -12,6 +12,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
+import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblemCount;
 import io.charlie.web.oj.modular.data.problem.param.*;
@@ -22,12 +24,23 @@ import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.data.problem.utils.ProblemBuildTool;
-import io.charlie.web.oj.modular.data.problem.utils.ProblemImportTool;
+import io.charlie.web.oj.modular.data.relation.set.entity.DataSetProblem;
+import io.charlie.web.oj.modular.data.relation.set.mapper.DataSetProblemMapper;
+import io.charlie.web.oj.modular.data.relation.tag.entity.DataProblemTag;
+import io.charlie.web.oj.modular.data.relation.tag.mapper.DataProblemTagMapper;
 import io.charlie.web.oj.modular.data.relation.tag.service.DataProblemTagService;
+import io.charlie.web.oj.modular.data.reports.entity.TaskReports;
+import io.charlie.web.oj.modular.data.reports.mapper.TaskReportsMapper;
+import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
+import io.charlie.web.oj.modular.data.similarity.mapper.TaskSimilarityMapper;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemOverallStats;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.solved.service.DataSolvedService;
+import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
+import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
+import io.charlie.web.oj.modular.data.testcase.entity.DataTestCase;
+import io.charlie.web.oj.modular.data.testcase.mapper.DataTestCaseMapper;
 import io.charlie.web.oj.modular.task.judge.dto.TestCase;
 import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
@@ -58,8 +71,16 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     private final DataProblemTagService dataProblemTagService;
     private final TransService transService;
     private final ProblemBuildTool problemBuildTool;
-    private final ProblemImportTool problemImportTool;
     private final DataSolvedService dataSolvedService;
+
+    private final DataProblemTagMapper dataProblemTagMapper; // 标签
+    private final DataTestCaseMapper dataTestCaseMapper; // 测试用例
+    private final DataSubmitMapper dataSubmitMapper; // 提交记录
+    private final DataSolvedMapper solvedMapper; // 提交记录
+    private final DataSetProblemMapper dataSetProblemMapper; // 题集关系
+    private final DataLibraryMapper dataLibraryMapper; // 检测代码库
+    private final TaskReportsMapper taskReportsMapper; // 任务报告
+    private final TaskSimilarityMapper taskSimilarityMapper; // 相似度详情
 
     @Override
     public Page<DataProblem> page(DataProblemPageParam dataProblemPageParam) {
@@ -218,7 +239,43 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         if (ObjectUtil.isEmpty(dataProblemIdParamList)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
-        this.removeByIds(CollStreamUtil.toList(dataProblemIdParamList, DataProblemIdParam::getId));
+        List<String> problemIds = CollStreamUtil.toList(dataProblemIdParamList, DataProblemIdParam::getId);
+        this.removeByIds(problemIds);
+        if (ObjectUtil.isNotEmpty(problemIds)) {
+            // 移除对应的标签、提交记录、测试用例、解题记录
+            // 移除标签
+            dataProblemTagMapper.delete(new LambdaQueryWrapper<DataProblemTag>()
+                    .in(DataProblemTag::getProblemId, problemIds)
+            );
+            // 移除测试用例
+            dataTestCaseMapper.delete(new LambdaQueryWrapper<DataTestCase>()
+                    .in(DataTestCase::getProblemId, problemIds)
+            );
+            // 移除提交记录
+//            dataSubmitMapper.delete(new LambdaQueryWrapper<DataSubmit>()
+//                    .in(DataSubmit::getProblemId, problemIds)
+//            );
+//            // 移除解题记录
+//            solvedMapper.delete(new LambdaQueryWrapper<DataSolved>()
+//                    .in(DataSolved::getProblemId, problemIds)
+//            );
+//            // 移除数据集题目
+//            dataSetProblemMapper.delete(new LambdaQueryWrapper<DataSetProblem>()
+//                    .in(DataSetProblem::getProblemId, problemIds)
+//            );
+//            // 移除代码库
+//            dataLibraryMapper.delete(new LambdaQueryWrapper<DataLibrary>()
+//                    .in(DataLibrary::getProblemId, problemIds)
+//            );
+//            // 移除任务报告
+//            taskReportsMapper.delete(new LambdaQueryWrapper<TaskReports>()
+//                    .in(TaskReports::getProblemId, problemIds)
+//            );
+//            // 移除任务相似度
+//            taskSimilarityMapper.delete(new LambdaQueryWrapper<TaskSimilarity>()
+//                    .in(TaskSimilarity::getProblemId, problemIds)
+//            );
+        }
     }
 
     @Override
@@ -312,13 +369,6 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
 
     @Override
     public List<DataProblem> getHotN(int n) {
-//        List<RankItem> problemRankTopN = problemCacheService.getProblemParticipantRankTopN(n);
-//        List<DataProblem> dataProblems = new ArrayList<>();
-//        for (RankItem rankingInfo : problemRankTopN) {
-//            DataProblem dataProblem = this.getById(rankingInfo.getId());
-//            dataProblem.setRank(rankingInfo.getRank());
-//            dataProblems.add(dataProblem);
-//        }
         List<DataProblem> dataProblems = this.baseMapper.selectTopNBySubmitCount(n);
         problemBuildTool.buildProblems(dataProblems);
         transService.transBatch(dataProblems);
@@ -327,59 +377,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
 
     @Override
     public List<DifficultyDistribution> difficultyDistribution() {
-//        long totalCount = this.count();
-//
-//        // 统计难度分布-简单
-//        long simpleCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 1).eq(DataProblem::getIsVisible, true).eq(DataProblem::getIsPublic, true));
-//        DifficultyDistribution simple = new DifficultyDistribution();
-//        simple.setDifficulty(1);
-//        simple.setCount(simpleCount);
-//        simple.setDifficultyName("简单");
-//        if (totalCount == 0) {
-//            simple.setPercentage(BigDecimal.ZERO);
-//        } else {
-//            simple.setPercentage(new BigDecimal(simpleCount)
-//                    .multiply(new BigDecimal(100))
-//                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
-//        }
-//
-//        // 统计难度分布-中等
-//        long mediumCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 2).eq(DataProblem::getIsVisible, true).eq(DataProblem::getIsPublic, true));
-//        DifficultyDistribution medium = new DifficultyDistribution();
-//        medium.setDifficulty(2);
-//        medium.setCount(mediumCount);
-//        medium.setDifficultyName("中等");
-//        if (totalCount == 0) {
-//            medium.setPercentage(BigDecimal.ZERO);
-//        } else {
-//            medium.setPercentage(new BigDecimal(mediumCount)
-//                    .multiply(new BigDecimal(100))
-//                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
-//        }
-//
-//        // 统计难度分布-困难
-//        long hardCount = this.count(new LambdaQueryWrapper<DataProblem>().eq(DataProblem::getDifficulty, 3).eq(DataProblem::getIsVisible, true).eq(DataProblem::getIsPublic, true));
-//        DifficultyDistribution hard = new DifficultyDistribution();
-//        hard.setDifficulty(3);
-//        hard.setCount(hardCount);
-//        hard.setDifficultyName("困难");
-//        if (totalCount == 0) {
-//            hard.setPercentage(BigDecimal.ZERO);
-//        } else {
-//            hard.setPercentage(new BigDecimal(hardCount)
-//                    .multiply(new BigDecimal(100))
-//                    .divide(new BigDecimal(totalCount), 2, RoundingMode.DOWN));
-//        }
-//
-//        return List.of(simple, medium, hard);
-
         return this.baseMapper.selectDifficultyDistribution();
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    @Override
-    public void importProblems(MultipartFile file) {
-        problemImportTool.importProblems(file);
     }
 
     @Override

@@ -94,5 +94,11 @@ export function useTaskSimilarityFetch() {
     taskSimilarityBatch(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/batch`, data)
     },
+    taskSimilarityProgress(taskId: string) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/progress/${taskId}`)
+    },
+    taskSimilarityBatchProgress(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/progress/batch`, data)
+    },
   }
 }
