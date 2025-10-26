@@ -106,7 +106,7 @@ const columns: DataTableColumns<any> = [
               path: `/visualization/submit/report/${row.id}/task/${row.taskId}`,
             })
           },
-        }, () => '报告可视化'),
+        }, () => '相似可视'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '数据详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),

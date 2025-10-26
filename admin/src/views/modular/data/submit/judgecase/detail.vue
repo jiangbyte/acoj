@@ -61,18 +61,15 @@ defineExpose({
           {{ formData.submitId }}
         </NDescriptionsItem>
         <NDescriptionsItem label="输入数据">
-          <!-- {{ formData.inputData }} -->
           <CodeEditor :model-value="formData.inputData" height="200px" />
         </NDescriptionsItem>
         <NDescriptionsItem label="输出数据">
-          <!-- {{ formData.outputData }} -->
           <CodeEditor :model-value="formData.outputData" height="200px" />
         </NDescriptionsItem>
         <NDescriptionsItem label="期望输出">
-          <!-- {{ formData.expectedOutput }} -->
           <CodeEditor :model-value="formData.expectedOutput" height="200px" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="输入文件路径">
+        <!-- <NDescriptionsItem label="输入文件路径">
           {{ formData.inputFilePath }}
         </NDescriptionsItem>
         <NDescriptionsItem label="输入文件大小">
@@ -83,19 +80,19 @@ defineExpose({
         </NDescriptionsItem>
         <NDescriptionsItem label="输出文件大小">
           {{ formData.outputFileSize }}
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="最大耗时">
           {{ formData.maxTime }}
         </NDescriptionsItem>
         <NDescriptionsItem label="最大内存使用">
           {{ formData.maxMemory }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="是否样例判题">
+        <!-- <NDescriptionsItem label="是否样例判题">
           {{ formData.isSampleName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="分值">
           {{ formData.score }}
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="执行状态">
           {{ formData.status }}
         </NDescriptionsItem>

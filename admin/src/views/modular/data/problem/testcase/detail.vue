@@ -71,7 +71,7 @@ defineExpose({
           <CodeEditor :model-value="formData.expectedOutput" height="200px" />
           <!-- {{ formData.expectedOutput }} -->
         </NDescriptionsItem>
-        <NDescriptionsItem label="输入文件路径">
+        <!-- <NDescriptionsItem label="输入文件路径">
           {{ formData.inputFilePath }}
         </NDescriptionsItem>
         <NDescriptionsItem label="输入文件大小">
@@ -88,7 +88,7 @@ defineExpose({
         </NDescriptionsItem>
         <NDescriptionsItem label="分值">
           {{ formData.score }}
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>

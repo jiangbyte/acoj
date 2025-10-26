@@ -30,9 +30,9 @@ defineExpose({
         <NDescriptionsItem label="主键">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="展示ID">
+        <!-- <NDescriptionsItem label="展示ID">
           {{ formData.displayId }}
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="分类">
           {{ formData.categoryId }}
         </NDescriptionsItem>
@@ -54,15 +54,14 @@ defineExpose({
         <NDescriptionsItem label="描述">
           <MDViewer :model-value="formData.description" />
         </NDescriptionsItem>
-        <NDescriptionsItem label="用例">
-          <!-- {{ formData.testCase }} -->
+        <!-- <NDescriptionsItem label="用例">
           <NCode
             :code="JSON.stringify(formData.testCase, null, 2)"
             language="json"
             word-wrap
             show-line-numbers
           />
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="开放语言">
           <!-- {{ formData.allowedLanguages }} -->
           <n-space align="center">
@@ -77,10 +76,10 @@ defineExpose({
         <NDescriptionsItem label="阈值">
           {{ formData.threshold }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="使用模板">
+        <!-- <NDescriptionsItem label="使用模板">
           {{ formData.useTemplateName }}
-        </NDescriptionsItem>
-        <NDescriptionsItem label="模板代码">
+        </NDescriptionsItem> -->
+        <!-- <NDescriptionsItem label="模板代码">
           <n-space vertical>
             <n-card v-for="(item, index) in formData.codeTemplate" :key="index" size="small">
               <template #header>
@@ -88,7 +87,6 @@ defineExpose({
               </template>
 
               <NSpace vertical size="large">
-                <!-- 前置代码 -->
                 <n-card v-if="item.prefix" size="small" title="前置代码">
                   <NCode
                     :code="item.prefix"
@@ -97,8 +95,6 @@ defineExpose({
                     show-line-numbers
                   />
                 </n-card>
-
-                <!-- 模板代码 -->
                 <n-card v-if="item.template" size="small" title="模板代码">
                   <NCode
                     :code="item.template"
@@ -107,8 +103,6 @@ defineExpose({
                     show-line-numbers
                   />
                 </n-card>
-
-                <!-- 后置代码 -->
                 <n-card v-if="item.suffix" size="small" title="后置代码">
                   <NCode
                     :code="item.suffix"
@@ -117,8 +111,6 @@ defineExpose({
                     show-line-numbers
                   />
                 </n-card>
-
-                <!-- 如果没有代码 -->
                 <n-empty
                   v-if="!item.prefix && !item.template && !item.suffix"
                   size="small"
@@ -127,7 +119,7 @@ defineExpose({
               </NSpace>
             </n-card>
           </n-space>
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="是否公开">
           {{ formData.isPublicName }}
         </NDescriptionsItem>

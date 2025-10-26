@@ -74,14 +74,14 @@ defineExpose({
         <NDescriptionsItem label="执行结果消息">
           {{ formData.message }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="测试用例结果">
+        <!-- <NDescriptionsItem label="测试用例结果">
           <NCode
             :code="JSON.stringify(formData.testCase, null, 2)"
             language="json"
             word-wrap
             show-line-numbers
           />
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="执行状态">
           {{ formData.statusName }}
         </NDescriptionsItem>

@@ -198,7 +198,7 @@ async function deleteBatchHandle() {
     <NCard size="small">
       <NSpace vertical>
         <NSpace align="center">
-          <NSpace align="center">
+          <!-- <NSpace align="center">
             <NFormItem :show-feedback="false" label="关键词" label-placement="left">
               <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" />
             </NFormItem>
@@ -216,16 +216,16 @@ async function deleteBatchHandle() {
                 重置
               </NButton>
             </NSpace>
-          </NSpace>
+          </NSpace> -->
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
-            <NButton type="primary" @click="formRef.doOpen(null, false)">
+            <!-- <NButton type="primary" @click="formRef.doOpen(null, false)">
               <template #icon>
                 <IconParkOutlinePlus />
               </template>
               创建
-            </NButton>
+            </NButton> -->
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除

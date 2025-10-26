@@ -141,9 +141,9 @@ defineExpose({
           <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="展示ID" path="displayId">
+        <!-- <NFormItem label="展示ID" path="displayId">
           <NInput v-model:value="formData.displayId" placeholder="请输入展示ID" />
-        </NFormItem>
+        </NFormItem> -->
         <!-- 输入框 -->
         <NFormItem label="分类" path="categoryId">
           <!-- <NInput v-model:value="formData.categoryId" placeholder="请输入分类" /> -->
@@ -192,7 +192,7 @@ defineExpose({
           <MDEditor v-model="formData.description" />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="测试用例" path="testCase">
+        <!-- <NFormItem label="测试用例" path="testCase">
           <n-alert type="warning">
             即将舍弃使用
           </n-alert>
@@ -228,7 +228,7 @@ defineExpose({
               </div>
             </template>
           </NDynamicInput>
-        </NFormItem>
+        </NFormItem> -->
         <!-- 输入框 -->
         <NFormItem label="开放语言" path="allowedLanguages">
           <!-- <NInput v-model:value="formData.allowedLanguages" placeholder="请输入开放语言" /> -->
@@ -257,7 +257,7 @@ defineExpose({
           <NInputNumber v-model:value="formData.threshold" :min="0" :max="1.0" placeholder="请输入阈值" :step="0.1" :precision="1" />
         </NFormItem>
         <!-- Boolean 选择框 -->
-        <NFormItem label="使用模板" path="useTemplate">
+        <!-- <NFormItem label="使用模板" path="useTemplate">
           <NRadioGroup v-model:value="formData.useTemplate">
             <NRadio :value="true">
               是
@@ -266,10 +266,9 @@ defineExpose({
               否
             </NRadio>
           </NRadioGroup>
-        </NFormItem>
+        </NFormItem> -->
         <!-- 输入框 -->
-        <NFormItem label="模板代码" path="codeTemplate">
-          <!-- <NInput v-model:value="formData.codeTemplate" placeholder="请输入模板代码" /> -->
+        <!-- <NFormItem label="模板代码" path="codeTemplate">
           <NDynamicInput
             v-model:value="formData.codeTemplate"
             show-sort-button
@@ -282,7 +281,6 @@ defineExpose({
           >
             <template #default="{ value }">
               <div style="display: flex; width: 100%; flex-direction: column; gap: 12px;">
-                <!-- <NFormItem label="语言"> -->
                 <NSelect
                   v-model:value="value.language"
                   placeholder="请选择语言"
@@ -290,14 +288,7 @@ defineExpose({
                   clearable
                   remote
                 />
-                <!-- </NFormItem> -->
                 <div style="display: flex; align-items: center; width: 100%; gap: 12px;">
-                  <!-- <NFormItem label="前缀"> -->
-                  <!-- <CodeEditor
-                      v-model="value.prefix"
-                      width="280px"
-                      height="100px"
-                    /> -->
                   <NInput
                     v-model:value="value.prefix" type="textarea" placeholder="请输入模板前缀" :autosize="{
                       minRows: 3,
@@ -316,27 +307,11 @@ defineExpose({
                       maxRows: 3,
                     }"
                   />
-
-                  <!-- </NFormItem> -->
-                  <!-- <NFormItem label="模板">
-                    <CodeEditor
-                      v-model="value.template"
-                      width="280px"
-                      height="100px"
-                    />
-                  </NFormItem>
-                  <NFormItem label="后缀">
-                    <CodeEditor
-                      v-model="value.suffix"
-                      width="280px"
-                      height="100px"
-                    />
-                  </NFormItem> -->
                 </div>
               </div>
             </template>
           </NDynamicInput>
-        </NFormItem>
+        </NFormItem> -->
         <!-- Boolean 选择框 -->
         <NFormItem label="是否公开" path="isPublic">
           <NRadioGroup v-model:value="formData.isPublic">

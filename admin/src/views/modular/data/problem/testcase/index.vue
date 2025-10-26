@@ -58,19 +58,19 @@ const columns: DataTableColumns<any> = [
   //   title: '输出文件大小',
   //   key: 'outputFileSize',
   // },
-  {
-    title: '是否样例',
-    key: 'isSample',
-    render: (row) => {
-      return h(NTag, {
-        type: row.isSample ? 'primary' : 'error',
-      }, () => row.isSampleName)
-    },
-  },
-  {
-    title: '分值',
-    key: 'score',
-  },
+  // {
+  //   title: '是否样例',
+  //   key: 'isSample',
+  //   render: (row) => {
+  //     return h(NTag, {
+  //       type: row.isSample ? 'primary' : 'error',
+  //     }, () => row.isSampleName)
+  //   },
+  // },
+  // {
+  //   title: '分值',
+  //   key: 'score',
+  // },
   {
     title: '操作',
     key: 'action',
@@ -186,7 +186,7 @@ async function deleteBatchHandle() {
     <NCard size="small">
       <NSpace vertical>
         <NSpace align="center">
-          <NSpace align="center">
+          <!-- <NSpace align="center">
             <NFormItem :show-feedback="false" label="关键词" label-placement="left">
               <NInput v-model:value="pageParam.keyword" placeholder="请输入关键词" />
             </NFormItem>
@@ -204,7 +204,7 @@ async function deleteBatchHandle() {
                 重置
               </NButton>
             </NSpace>
-          </NSpace>
+          </NSpace> -->
         </NSpace>
         <NSpace align="center" justify="space-between">
           <NSpace align="center">
