@@ -5,10 +5,8 @@ import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.annotation.log.Log;
 import io.charlie.web.oj.annotation.log.LogCategory;
 import io.charlie.web.oj.annotation.log.LogModule;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryPageParam;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryAddParam;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryEditParam;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryIdParam;
+import io.charlie.web.oj.modular.data.library.param.*;
+import io.charlie.web.oj.modular.sys.user.param.SysUserPageParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -80,4 +78,11 @@ public class DataLibraryController {
     public Result<?> detail(@ParameterObject @Valid DataLibraryIdParam dataLibraryIdParam) {
         return Result.success(dataLibraryService.detail(dataLibraryIdParam));
     }
+
+    @Operation(summary = "获取用户分页")
+    @GetMapping("/data/library/userPage")
+    public Result<?> userPage(@ParameterObject DataLibraryUserPageParam dataLibraryUserPageParam) {
+        return Result.success(dataLibraryService.getLibraryUserPage(dataLibraryUserPageParam));
+    }
+
 }

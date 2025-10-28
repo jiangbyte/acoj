@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NAvatar, NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NText } from 'naive-ui'
+import { NAvatar, NButton, NCard, NDataTable, NEllipsis, NPagination, NPopconfirm, NSpace } from 'naive-ui'
 import { useDataSubmitFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -21,7 +21,7 @@ const columns: DataTableColumns<any> = [
     render(row: any) {
       return h(
         NSpace,
-        { align: 'center', size: 'small' },
+        { align: 'center', size: 'small', wrap: false },
         {
           default: () => [
             h(
@@ -34,8 +34,12 @@ const columns: DataTableColumns<any> = [
               {},
             ),
             h(
-              NText,
-              {},
+              NEllipsis,
+              {
+                style: {
+                  maxWidth: '90px',
+                },
+              },
               { default: () => row.userIdName },
             ),
           ],
@@ -388,6 +392,12 @@ async function deleteBatchHandle() {
             v-model:page-size="pageParam.size"
             class="flex justify-end"
             :page-count="pageData ? Number(pageData.pages) : 0"
+            show-size-picker
+            :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+              label: `${(i + 1) * 10} 每页`,
+              value: (i + 1) * 10,
+            }))"
+            :page-slot="5"
             @update:page="loadData"
             @update:page-size="loadData"
           />

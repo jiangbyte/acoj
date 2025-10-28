@@ -15,7 +15,10 @@ public class GaStringUtil {
      * @return true: 空/null/"null", false: 非空
      */
     public static boolean isEmpty(String str) {
-        return str == null || str.isEmpty() || "null".equalsIgnoreCase(str.trim());
+        if (str == null) return true;
+        String trimmed = str.trim();
+        return trimmed.isEmpty() ||
+                "null".equalsIgnoreCase(trimmed);
     }
 
     /**

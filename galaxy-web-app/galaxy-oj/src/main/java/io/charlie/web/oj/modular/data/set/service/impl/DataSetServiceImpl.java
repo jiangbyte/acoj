@@ -80,7 +80,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     public Page<DataSet> page(DataSetPageParam dataSetPageParam) {
         QueryWrapper<DataSet> queryWrapper = new QueryWrapper<DataSet>().checkSqlInjection();
         // 关键字
-        if (ObjectUtil.isNotEmpty(dataSetPageParam.getKeyword())) {
+        if (GaStringUtil.isNotEmpty(dataSetPageParam.getKeyword())) {
             queryWrapper.lambda().like(DataSet::getTitle, dataSetPageParam.getKeyword());
         }
         if (GaStringUtil.isNotEmpty(dataSetPageParam.getCategoryId())) {

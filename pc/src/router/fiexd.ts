@@ -84,10 +84,10 @@ export const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: '/security',
-        name: 'mine_security',
-        component: () => import('@/views/safety/security.vue'),
-        meta: { title: '安全设置' },
+        path: '/profile',
+        name: 'profile',
+        component: () => import('@/views/user/profile.vue'),
+        meta: { title: '个人信息' },
         // beforeEnter: (to) => {
         //   if (!to.query.user) {
         //     return '/'

@@ -129,7 +129,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         queryWrapper.lambda().eq(DataProblem::getIsVisible, true).eq(DataProblem::getIsPublic, true);
 
         // 关键字
-        if (ObjectUtil.isNotEmpty(dataProblemPageParam.getKeyword())) {
+        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getKeyword())) {
             queryWrapper.lambda().like(DataProblem::getTitle, dataProblemPageParam.getKeyword());
         }
         if (GaStringUtil.isNotEmpty(dataProblemPageParam.getCategoryId())) {

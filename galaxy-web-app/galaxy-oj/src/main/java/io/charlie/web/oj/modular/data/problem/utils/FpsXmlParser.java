@@ -112,14 +112,18 @@ public class FpsXmlParser {
         List<Element> sampleOutputs = item.elements("sample_output");
         int sampleCount = Math.min(sampleInputs.size(), sampleOutputs.size());
         for (int i = 0; i < sampleCount; i++) {
-            DataTestCase testCase = new DataTestCase();
-//            testCase.setCaseSign("sample_" + (i + 1));
-            testCase.setCaseSign(IdUtil.objectId());
-            testCase.setInputData(sampleInputs.get(i).getText());
-            testCase.setExpectedOutput(sampleOutputs.get(i).getText());
-            testCase.setIsSample(Boolean.TRUE);
-            testCase.setScore(0);
-            importData.getTestCases().add(testCase);
+            String input = i < sampleInputs.size() ? sampleInputs.get(i).getText() : "";
+            String output = i < sampleOutputs.size() ? sampleOutputs.get(i).getText() : "";
+            // 只要其中一个有文本就可以创建
+            if (StringUtils.hasText(input) || StringUtils.hasText(output)) {
+                DataTestCase testCase = new DataTestCase();
+                testCase.setCaseSign(IdUtil.objectId());
+                testCase.setInputData(sampleInputs.get(i).getText());
+                testCase.setExpectedOutput(sampleOutputs.get(i).getText());
+                testCase.setIsSample(Boolean.TRUE);
+                testCase.setScore(0);
+                importData.getTestCases().add(testCase);
+            }
         }
 
         // ============================ 解析测试用例 ============================
@@ -127,16 +131,19 @@ public class FpsXmlParser {
         List<Element> testOutputs = item.elements("test_output");
         int testCount = Math.min(testInputs.size(), testOutputs.size());
         for (int i = 0; i < testCount; i++) {
-            Element testInput = testInputs.get(i);
-//            String caseName = testInput.attributeValue("name");
-            DataTestCase testCase = new DataTestCase();
-//            testCase.setCaseSign(caseSign);
-            testCase.setCaseSign(IdUtil.objectId());
-            testCase.setInputData(testInput.getText());
-            testCase.setExpectedOutput(testOutputs.get(i).getText());
-            testCase.setIsSample(Boolean.FALSE);
-            testCase.setScore(10);
-            importData.getTestCases().add(testCase);
+            String input = i < testInputs.size() ? testInputs.get(i).getText() : "";
+            String output = i < testOutputs.size() ? testOutputs.get(i).getText() : "";
+
+            // 只要其中一个有文本就可以创建
+            if (StringUtils.hasText(input) || StringUtils.hasText(output)) {
+                DataTestCase testCase = new DataTestCase();
+                testCase.setCaseSign(IdUtil.objectId());
+                testCase.setInputData(input);
+                testCase.setExpectedOutput(output);
+                testCase.setIsSample(Boolean.FALSE);
+                testCase.setScore(10);
+                importData.getTestCases().add(testCase);
+            }
         }
 
         // ============================ 解析解决方案 ============================

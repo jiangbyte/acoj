@@ -13,6 +13,8 @@
 
  Date: 26/10/2025 12:39:57
 */
+CREATE DATABASE IF NOT EXISTS astro_code;
+
 USE astro_code;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;

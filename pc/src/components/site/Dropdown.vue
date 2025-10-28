@@ -26,7 +26,7 @@ function handleSelect(key: string) {
       },
     })
   }
-  else if (key === 'profile') {
+  else if (key === 'space') {
     console.log(key)
     const userId = useUser.getUserId
     console.log(userId)
@@ -35,20 +35,20 @@ function handleSelect(key: string) {
       query: { userId: AesCrypto.encrypt(userId) },
     })
   }
-  else if (key === 'security') {
-    router.push('/security')
+  else if (key === 'profile') {
+    router.push('/profile')
   }
 }
 
 const options = [
   {
     label: '个人空间',
-    key: 'profile',
+    key: 'space',
     icon: iconRender('icon-park-outline:id-card-h'),
   },
   {
     label: '个人信息',
-    key: 'security',
+    key: 'profile',
     icon: iconRender('icon-park-outline:people-safe'),
   },
   {

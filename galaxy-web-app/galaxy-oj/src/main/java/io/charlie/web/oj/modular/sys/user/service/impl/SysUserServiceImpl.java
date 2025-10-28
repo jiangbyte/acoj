@@ -13,6 +13,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
+import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
@@ -20,6 +21,7 @@ import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.sys.auth.utils.UserValidationUtil;
+import io.charlie.web.oj.modular.sys.config.service.SysConfigService;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
 import io.charlie.web.oj.constant.DefaultRoleData;
 import io.charlie.web.oj.constant.DefaultUserData;
@@ -64,6 +66,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     private final SysUserBuildUtil sysUserBuildUtil;
     private final DataScopeUtil dataScopeUtil;
+    private final SysConfigService sysConfigService;
 
     @Override
     public Page<SysUser> page(SysUserPageParam sysUserPageParam) {
@@ -101,10 +104,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             queryWrapper.lambda()
                     .eq(SysUser::getGroupId, sysUserPageParam.getGroupId());
         }
-        if (ObjectUtil.isNotEmpty(sysUserPageParam.getGroupId())) {
-            queryWrapper.lambda()
-                    .like(SysUser::getGroupId, sysUserPageParam.getGroupId());
-        }
         if (ObjectUtil.isAllNotEmpty(sysUserPageParam.getSortField(), sysUserPageParam.getSortOrder()) && ISortOrderEnum.isValid(sysUserPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
@@ -134,6 +133,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         String encodePassword = BCrypt.hashpw(DefaultUserData.DEFAULT_PASSWORD);
         SysUser bean = BeanUtil.toBean(sysUserAddParam, SysUser.class);
         bean.setPassword(encodePassword);
+
+        if (GaStringUtil.isEmpty(bean.getAvatar())) {
+            // 默认头像
+            bean.setAvatar(sysConfigService.getValueByCode("APP_DEFAULT_AVATAR"));
+        }
+        if (GaStringUtil.isEmpty(bean.getBackground())) {
+            // 默认背景图片
+            bean.setBackground(sysConfigService.getValueByCode("APP_DEFAULT_USER_BACKGROUND"));
+        }
+
         this.save(bean);
         // 分配角色
         sysUserRoleService.assignRoles(bean.getId(), List.of(DefaultRoleData.DEFAULT_USER_ROLE_ID));

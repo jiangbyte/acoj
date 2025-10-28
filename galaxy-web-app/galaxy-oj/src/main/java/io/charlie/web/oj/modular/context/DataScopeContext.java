@@ -80,6 +80,6 @@ public class DataScopeContext implements Serializable {
     }
 
     public void printDataScopeContext() {
-        log.info("数据权限上下文初始化完成：{}", this);
+//        log.info("数据权限上下文初始化完成：{}", this);
     }
 }

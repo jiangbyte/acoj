@@ -6,6 +6,7 @@ import io.charlie.web.oj.annotation.log.Log;
 import io.charlie.web.oj.annotation.log.LogCategory;
 import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.context.DataScopeCacheService;
+import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.sys.relation.service.SysRoleMenuService;
 import io.charlie.web.oj.modular.sys.role.param.SysMenuAssignParam;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
@@ -41,7 +42,7 @@ public class SysRoleController {
     private final SysRoleService sysRoleService;
     private final SysUserRoleService  sysUserRoleService;
     private final SysRoleMenuService sysRoleMenuService;
-    private final DataScopeCacheService dataScopeCacheService;
+    private final DataScopeUtil dataScopeUtil;
 
     @Operation(summary = "获取角色分页")
     @SaCheckPermission("/sys/role/page")
@@ -101,7 +102,7 @@ public class SysRoleController {
     @PostMapping("/sys/role/assign")
     public Result<?> assign(@RequestBody @Valid SysRoleAssignParam sysRoleAssignParam) {
         sysUserRoleService.assignRoles(sysRoleAssignParam.getUserId(), sysRoleAssignParam.getRoleIds());
-        dataScopeCacheService.evict(sysRoleAssignParam.getUserId());
+        dataScopeUtil.refreshUserDataScope(sysRoleAssignParam.getUserId());
         return Result.success();
     }
 

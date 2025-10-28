@@ -247,6 +247,7 @@ function rowProps(row: any) {
                   <li>解题成功：+10分</li>
                   <li>每日上限：50分（防止刷分）</li>
                   <li>活跃度指数实时更新，反映用户活跃度</li>
+                  <li>每月月初重置数据</li>
                 </ul>
               </div>
             </div>

@@ -1,6 +1,7 @@
 package io.charlie.web.oj.modular.task.similarity.service;
 
 import io.charlie.web.oj.modular.task.similarity.dto.SimilarityProgressDto;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -10,9 +11,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Component
 public class SimilarityProgressService {
-    
+
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
     
@@ -23,6 +25,7 @@ public class SimilarityProgressService {
      * 初始化进度
      */
     public void initProgress(String taskId, int totalCount) {
+        log.info("初始化进度: {}", taskId);
         String key = getProgressKey(taskId);
         Map<String, Object> progress = new HashMap<>();
         progress.put("taskId", taskId);
@@ -69,6 +72,7 @@ public class SimilarityProgressService {
      * 查询进度
      */
     public SimilarityProgressDto getProgress(String taskId) {
+        log.info("查询进度: {}", taskId);
         String key = getProgressKey(taskId);
         Map<Object, Object> progressMap = redisTemplate.opsForHash().entries(key);
         

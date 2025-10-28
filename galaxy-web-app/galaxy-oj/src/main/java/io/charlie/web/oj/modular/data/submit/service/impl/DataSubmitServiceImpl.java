@@ -147,10 +147,10 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
         queryWrapper.lambda().eq(DataSubmit::getIsSet, true);
 
-        if (ObjectUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
+        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
             queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
         }
-        if (ObjectUtil.isNotEmpty(dataSubmitPageParam.getSetId())) {
+        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getSetId())) {
             queryWrapper.lambda().eq(DataSubmit::getSetId, dataSubmitPageParam.getSetId());
         }
         if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getLanguage())) {

@@ -10,11 +10,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryAddParam;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryEditParam;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryIdParam;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryPageParam;
+import io.charlie.web.oj.modular.data.library.param.*;
 import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
 import io.charlie.web.oj.modular.data.library.service.DataLibraryService;
 import io.charlie.galaxy.enums.ISortOrderEnum;
@@ -22,6 +21,10 @@ import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
+import io.charlie.web.oj.modular.sys.user.entity.SysUser;
+import io.charlie.web.oj.modular.sys.user.service.SysUserService;
+import io.charlie.web.oj.modular.sys.user.utils.SysUserBuildUtil;
+import io.micrometer.common.util.StringUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author Charlie Zhang
@@ -45,6 +49,11 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataLibrary> implements DataLibraryService {
     private final RedissonClient redissonClient;
+
+    private final SysUserBuildUtil sysUserBuildUtil;
+    private final DataScopeUtil dataScopeUtil;
+
+    private final SysUserService sysUserService;
 
     @Override
     public Page<DataLibrary> page(DataLibraryPageParam dataLibraryPageParam) {
@@ -233,7 +242,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         LambdaQueryWrapper<DataLibrary> query = new LambdaQueryWrapper<DataLibrary>()
                 .eq(DataLibrary::getIsSet, isSet);
 
-        if (ObjectUtil.isNotEmpty(language)) {
+        if (GaStringUtil.isNotEmpty(language)) {
             query.eq(DataLibrary::getLanguage, language);
         }
         if (ObjectUtil.isNotEmpty(problemIds)) {
@@ -328,6 +337,94 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         }
 
         return allResults;
+    }
+
+    @Override
+    public Page<SysUser> getLibraryUserPage(DataLibraryUserPageParam dataLibraryUserPageParam) {
+        QueryWrapper<SysUser> queryWrapper = new QueryWrapper<SysUser>().checkSqlInjection();
+
+        List<String> accessibleGroupIds = dataScopeUtil.getDataScopeContext().getAccessibleGroupIds();
+        if (accessibleGroupIds.isEmpty()) {
+            return new Page<>();
+        }
+
+        queryWrapper.lambda().in(SysUser::getGroupId, accessibleGroupIds);
+
+        // 统一的 EXISTS 条件构建
+        StringBuilder existsSql = new StringBuilder("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id");
+
+        boolean hasCondition = false;
+
+
+        // 添加 problemIds 条件
+        if (ObjectUtil.isNotEmpty(dataLibraryUserPageParam.getProblemIds())) {
+            existsSql.append(" AND dl.problem_id IN (")
+                    .append(dataLibraryUserPageParam.getProblemIds().stream()
+                            .map(id -> "'" + id + "'")
+                            .collect(Collectors.joining(",")))
+                    .append(")");
+            hasCondition = true;
+        }
+
+        // 添加 setId 条件
+        if (GaStringUtil.isNotEmpty(dataLibraryUserPageParam.getSetId())) {
+            existsSql.append(" AND dl.set_id = '").append(dataLibraryUserPageParam.getSetId()).append("'");
+            hasCondition = true;
+        }
+
+        // 添加 language 条件
+        if (GaStringUtil.isNotEmpty(dataLibraryUserPageParam.getLanguage())) {
+            existsSql.append(" AND dl.language = '").append(dataLibraryUserPageParam.getLanguage()).append("'");
+            hasCondition = true;
+        }
+
+        // 只有当有具体条件时才添加 EXISTS，或者保持原样查询所有有 data_library 记录的用户
+        if (hasCondition) {
+            queryWrapper.exists(existsSql.toString());
+        } else {
+            // 如果没有特定条件，但想查询所有在 data_library 中有记录的用户
+            queryWrapper.exists("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id");
+        }
+
+        if (ObjectUtil.isNotEmpty(dataLibraryUserPageParam.getType())) {
+            String type = dataLibraryUserPageParam.getType();
+            if (type.equals("username")) {
+                queryWrapper.lambda()
+                        .like(SysUser::getUsername, dataLibraryUserPageParam.getKeyword());
+            } else if (type.equals("nickname")) {
+                queryWrapper.lambda()
+                        .like(SysUser::getNickname, dataLibraryUserPageParam.getKeyword());
+            } else if (type.equals("email")) {
+                queryWrapper.lambda()
+                        .like(SysUser::getEmail, dataLibraryUserPageParam.getKeyword());
+            } else if (type.equals("telephone")) {
+                queryWrapper.lambda()
+                        .like(SysUser::getTelephone, dataLibraryUserPageParam.getKeyword());
+            } else if (type.equals("studentNumber")) {
+                queryWrapper.lambda()
+                        .like(SysUser::getStudentNumber, dataLibraryUserPageParam.getKeyword());
+            }
+        }
+
+        if (GaStringUtil.isNotEmpty(dataLibraryUserPageParam.getGroupId())) {
+            queryWrapper.lambda()
+                    .eq(SysUser::getGroupId, dataLibraryUserPageParam.getGroupId());
+        }
+        if (ObjectUtil.isAllNotEmpty(dataLibraryUserPageParam.getSortField(), dataLibraryUserPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataLibraryUserPageParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    dataLibraryUserPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(dataLibraryUserPageParam.getSortField()));
+        }
+
+        Page<SysUser> page = sysUserService.page(CommonPageRequest.Page(
+                        Optional.ofNullable(dataLibraryUserPageParam.getCurrent()).orElse(1),
+                        Optional.ofNullable(dataLibraryUserPageParam.getSize()).orElse(20),
+                        null
+                ),
+                queryWrapper);
+        sysUserBuildUtil.buildUsers(page.getRecords());
+        return page;
     }
 
     // 增加访问量

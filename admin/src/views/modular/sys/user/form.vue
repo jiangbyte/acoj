@@ -25,19 +25,19 @@ const rules = {
     { required: true, message: '请输入昵称', trigger: ['input', 'blur'] },
   ],
   avatar: [
-    { required: true, message: '请输入头像', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入头像', trigger: ['input', 'blur'] },
   ],
   background: [
-    { required: true, message: '请输入背景图片', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入背景图片', trigger: ['input', 'blur'] },
   ],
   quote: [
-    { required: true, message: '请输入签名', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入签名', trigger: ['input', 'blur'] },
   ],
   email: [
     { required: true, message: '请输入邮箱', trigger: ['input', 'blur'] },
   ],
   telephone: [
-    { required: true, message: '请输入电话', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入电话', trigger: ['input', 'blur'] },
   ],
   // studentNumber: [
   //   { required: true, message: '请输入学号', trigger: ['input', 'blur'] },

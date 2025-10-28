@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NTag } from 'naive-ui'
+import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
 import { useDataTestCaseFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -308,6 +308,7 @@ async function deleteBatchHandle() {
               label: `${(i + 1) * 10} 每页`,
               value: (i + 1) * 10,
             }))"
+            :page-slot="5"
             @update:page="loadData"
             @update:page-size="loadData"
           />

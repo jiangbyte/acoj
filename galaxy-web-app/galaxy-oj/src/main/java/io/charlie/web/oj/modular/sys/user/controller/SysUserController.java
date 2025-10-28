@@ -116,4 +116,5 @@ public class SysUserController {
         return Result.success(sysUserService.updatePassword(sysUserPasswordUpdateParam));
     }
 
+
 }

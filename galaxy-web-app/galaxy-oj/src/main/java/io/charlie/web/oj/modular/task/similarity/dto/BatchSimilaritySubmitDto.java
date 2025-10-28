@@ -24,10 +24,10 @@ public class BatchSimilaritySubmitDto implements Serializable {
     private List<String> problemIds;
     private String setId;
     private String language;
-    private Boolean isSet;
+//    private Boolean isSet;
     private List<String> userIds;
     private String taskId;
-    private Boolean isGroup;
+//    private Boolean isGroup;
     private String groupId;
     private String batchTaskId;
     private Integer minMatchLength;

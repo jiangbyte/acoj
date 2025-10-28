@@ -14,10 +14,10 @@ const columns: DataTableColumns<any> = [
   {
     type: 'selection',
   },
-  {
-    title: '展示ID',
-    key: 'displayId',
-  },
+  // {
+  //   title: '展示ID',
+  //   key: 'displayId',
+  // },
   {
     title: '分类',
     key: 'categoryName',
@@ -73,10 +73,10 @@ const columns: DataTableColumns<any> = [
     title: '阈值',
     key: 'threshold',
   },
-  {
-    title: '使用模板',
-    key: 'useTemplateName',
-  },
+  // {
+  //   title: '使用模板',
+  //   key: 'useTemplateName',
+  // },
   // {
   //   title: '模板代码',
   //   key: 'codeTemplate',
@@ -115,7 +115,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 370,
+    width: 280,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -130,12 +130,11 @@ const columns: DataTableColumns<any> = [
           size: 'small',
           onClick: () => testcaseIndexRef.value.doOpen(row, true),
         }, () => '用例数据'),
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          // disabled: row.canUseSimilarReport !== true,
-          onClick: () => similaritySelectFormRef.value.doOpen(null, row.id, false),
-        }, () => '相似检测'),
+        // h(NButton, {
+        //   type: 'primary',
+        //   size: 'small',
+        //   onClick: () => similaritySelectFormRef.value.doOpen(null, row.id, false),
+        // }, () => '相似检测'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {
@@ -230,6 +229,7 @@ async function deleteBatchHandle() {
     checkedRowKeys.value = []
   }
 }
+const problemImportRef = ref()
 </script>
 
 <template>
@@ -271,7 +271,13 @@ async function deleteBatchHandle() {
               </template>
               导入
             </NButton> -->
-            <ProblemImport model-value="" buttontext="导入" @success="loadData()" />
+            <!-- <ProblemImport model-value="" buttontext="导入" @success="loadData()" /> -->
+            <NButton type="primary" @click="problemImportRef.doOpen()">
+              <template #icon>
+                <IconParkOutlinePlus />
+              </template>
+              导入
+            </NButton>
             <NPopconfirm v-if="checkedRowKeys.length > 0" @positive-click="deleteBatchHandle">
               <template #default>
                 确认删除
@@ -367,6 +373,7 @@ async function deleteBatchHandle() {
               label: `${(i + 1) * 10} 每页`,
               value: (i + 1) * 10,
             }))"
+            :page-slot="5"
             @update:page="loadData"
             @update:page-size="loadData"
           />
@@ -378,6 +385,7 @@ async function deleteBatchHandle() {
     <Detail ref="detailRef" @submit="loadData" />
     <SimilaritySelect ref="similaritySelectFormRef" />
     <TestCasePage ref="testcaseIndexRef" />
+    <ProblemImport ref="problemImportRef" @success="loadData" />
   </div>
 </template>
 

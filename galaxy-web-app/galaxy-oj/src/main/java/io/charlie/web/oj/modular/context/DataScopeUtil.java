@@ -46,7 +46,7 @@ public class DataScopeUtil {
 
         try {
             String userId = StpUtil.getLoginIdAsString();
-            log.info("开始获取用户数据权限上下文：userId={}", userId);
+//            log.info("开始获取用户数据权限上下文：userId={}", userId);
 //
 //            // 首先尝试从缓存获取
 //            DataScopeContext cachedContext = dataScopeCacheService.get(userId);
@@ -111,7 +111,7 @@ public class DataScopeUtil {
 
         // 获取可访问的菜单
         MenuDataBundle menuData = getMenuDataBundle(dataScopes, userData.getRoleIds());
-        log.info("menuData={}", JSONUtil.toJsonStr(menuData));
+//        log.info("menuData={}", JSONUtil.toJsonStr(menuData));
         return DataScopeContext.builder()
                 .userId(userId)
                 .groupId(user.getGroupId())
@@ -366,10 +366,13 @@ public class DataScopeUtil {
         // 其他的根据权限来获取
         List<SysRoleMenu> roleMenus = sysRoleMenuMapper.selectList(new LambdaQueryWrapper<SysRoleMenu>().in(SysRoleMenu::getRoleId, roleIds));
         List<String> menuIds = roleMenus.stream().map(SysRoleMenu::getMenuId).toList();
-        List<SysMenu> sysMenus = sysMenuMapper.selectList(new LambdaQueryWrapper<SysMenu>()
-                .in(SysMenu::getId, menuIds)
-        );
-        return MenuDataBundle.fromMenu(sysMenus);
+        if (ObjectUtil.isNotEmpty(menuIds)) {
+            List<SysMenu> sysMenus = sysMenuMapper.selectList(new LambdaQueryWrapper<SysMenu>()
+                    .in(SysMenu::getId, menuIds)
+            );
+            return MenuDataBundle.fromMenu(sysMenus);
+        }
+        return MenuDataBundle.fromMenu(List.of());
     }
 
     /**

@@ -37,10 +37,10 @@ public class SysUserRoleServiceImpl extends ServiceImpl<SysUserRoleMapper, SysUs
         );
 
         // 再分配
-        List<SysUserRole> sysRoleMenus = roleIds.stream().map(menuId -> {
+        List<SysUserRole> sysUserRoles = roleIds.stream().map(roleId -> {
             SysUserRole sysUserRole = new SysUserRole();
-            sysUserRole.setUserId(menuId);
-            sysUserRole.setRoleId(userId);
+            sysUserRole.setUserId(userId);
+            sysUserRole.setRoleId(roleId);
             return sysUserRole;
         }).toList();
 
@@ -52,6 +52,6 @@ public class SysUserRoleServiceImpl extends ServiceImpl<SysUserRoleMapper, SysUs
 //            this.save(sysUserRole);
 //        }
 
-        this.saveBatch(sysRoleMenus);
+        this.saveBatch(sysUserRoles);
     }
 }

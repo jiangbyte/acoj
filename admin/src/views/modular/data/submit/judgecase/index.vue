@@ -316,6 +316,12 @@ async function deleteBatchHandle() {
             v-model:page-size="pageParam.size"
             class="flex justify-end"
             :page-count="pageData ? Number(pageData.pages) : 0"
+            show-size-picker
+            :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+              label: `${(i + 1) * 10} 每页`,
+              value: (i + 1) * 10,
+            }))"
+            :page-slot="5"
             @update:page="loadData"
             @update:page-size="loadData"
           />

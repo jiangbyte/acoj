@@ -76,5 +76,12 @@ export function useDataLibraryFetch() {
         },
       })
     },
+    dataLibraryiUserPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/userPage`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

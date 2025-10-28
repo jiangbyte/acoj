@@ -1,0 +1,133 @@
+package initializer
+
+import (
+	"fmt"
+	"judge-service/internal/config"
+	"judge-service/internal/database"
+	"judge-service/internal/mq"
+	"judge-service/internal/nacos"
+	"judge-service/internal/repository"
+	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type InitializerManager struct {
+	config          config.Config
+	mysqlManager    *database.MySQLManager
+	rabbitMQManager *mq.RabbitMQManager
+	serviceRegistry *nacos.ServiceRegistryManager
+	testCaseRepo    repository.TestCaseRepository
+}
+
+func NewInitializerManager(c config.Config) *InitializerManager {
+	return &InitializerManager{
+		config: c,
+	}
+}
+
+func (im *InitializerManager) Initialize() error {
+	// 初始化 RabbitMQ（同步，因为其他组件依赖它）
+	if err := im.initRabbitMQ(); err != nil {
+		return err
+	}
+
+	// 初始化服务注册（同步）
+	im.initServiceRegistry()
+
+	// 异步初始化 MySQL
+	go im.initMySQLWithRetry()
+
+	return nil
+}
+
+func (im *InitializerManager) initRabbitMQ() error {
+	rabbitMQManager, err := mq.NewRabbitMQManager(im.config.RabbitMQ)
+	if err != nil {
+		logx.Errorf("无法连接到 RabbitMQ: %v", err)
+		return err
+	}
+	im.rabbitMQManager = rabbitMQManager
+	return nil
+}
+
+func (im *InitializerManager) initServiceRegistry() {
+	im.serviceRegistry = nacos.NewServiceRegistryManager(im.config.Nacos, im.config)
+	if err := im.serviceRegistry.Register(); err != nil {
+		logx.Errorf("服务注册初始化失败: %v", err)
+	}
+}
+
+func (im *InitializerManager) initMySQLWithRetry() {
+	maxRetries := 5
+	retryInterval := time.Second * 5
+
+	for i := 0; i < maxRetries; i++ {
+		mysqlManager, err := database.NewMySQLManager(im.config.MySQL)
+		if err != nil {
+			logx.Errorf("初始化 MySQL 失败 (尝试 %d/%d): %v", i+1, maxRetries, err)
+
+			if i == maxRetries-1 {
+				logx.Error("已达到最大重试次数，MySQL 连接失败")
+				return
+			}
+
+			logx.Infof("%v 后重试...", retryInterval)
+			time.Sleep(retryInterval)
+			continue
+		}
+
+		im.mysqlManager = mysqlManager
+		im.testCaseRepo = repository.NewTestCaseRepository(mysqlManager.DB)
+		logx.Info("MySQL 连接成功")
+		return
+	}
+}
+
+func (im *InitializerManager) Close() error {
+	var errs []error
+
+	if im.serviceRegistry != nil {
+		if err := im.serviceRegistry.Deregister(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if im.rabbitMQManager != nil {
+		if err := im.rabbitMQManager.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if im.mysqlManager != nil {
+		if err := im.mysqlManager.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("关闭资源时发生错误: %v", errs)
+	}
+	return nil
+}
+
+// Getters
+func (im *InitializerManager) GetMySQLManager() *database.MySQLManager {
+	return im.mysqlManager
+}
+
+func (im *InitializerManager) GetRabbitMQManager() *mq.RabbitMQManager {
+	return im.rabbitMQManager
+}
+
+func (im *InitializerManager) GetTestCaseRepo() repository.TestCaseRepository {
+	return im.testCaseRepo
+}
+
+func (im *InitializerManager) GetServiceReRegistry() *nacos.ServiceRegistryManager {
+	return im.serviceRegistry
+}
+
+func (im *InitializerManager) IsDBReady() bool {
+	return im.mysqlManager != nil && im.mysqlManager.IsReady()
+}

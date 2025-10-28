@@ -37,9 +37,18 @@ const rules = {
   testCase: [
     // { required: true, message: '请输入用例', trigger: ['input', 'blur'] },
   ],
-  allowedLanguages: [
-    // { required: true, message: '请输入开放语言', trigger: ['input', 'blur'] },
-  ],
+  allowedLanguages: [{
+    type: 'array',
+    required: true,
+    trigger: ['blur', 'change'],
+    message: '请选择语言',
+  }],
+  tagIds: [{
+    type: 'array',
+    required: true,
+    trigger: ['blur', 'change'],
+    message: '请选择标签',
+  }],
   difficulty: [
     { required: true, message: '请输入难度', type: 'number', trigger: ['input', 'blur'] },
   ],
@@ -52,6 +61,21 @@ const rules = {
   solved: [
     // { required: true, message: '请输入解决', type: 'number', trigger: ['input', 'blur'] },
   ],
+  // useAi: [{
+  //   required: true,
+  //   trigger: 'change',
+  //   message: '请选择',
+  // }],
+  // isPublic: [{
+  //   required: true,
+  //   trigger: 'change',
+  //   message: '请选择',
+  // }],
+  // isVisible: [{
+  //   required: true,
+  //   trigger: 'change',
+  //   message: '请选择',
+  // }],
 }
 function doClose() {
   emit('close')
@@ -130,6 +154,16 @@ async function doOpen(row: any = null, edit: boolean = false) {
 defineExpose({
   doOpen,
 })
+
+function handleTagUpdate(newValue: string[], option: any) {
+  if (newValue.length > 2) {
+    window.$message.warning(`最多只能选择 ${2} 个标签`)
+    // 截断
+    formData.value.tagIds = formData.value.tagIds.slice(0, 2)
+    return
+  }
+  formData.value.tagIds = newValue
+}
 </script>
 
 <template>
@@ -164,6 +198,7 @@ defineExpose({
             clearable
             multiple
             remote
+            @update:value="handleTagUpdate"
           />
         </NFormItem>
         <!-- 输入框 -->
@@ -257,6 +292,17 @@ defineExpose({
           <NInputNumber v-model:value="formData.threshold" :min="0" :max="1.0" placeholder="请输入阈值" :step="0.1" :precision="1" />
         </NFormItem>
         <!-- Boolean 选择框 -->
+        <NFormItem label="是否使用AI" path="useAi">
+          <NRadioGroup v-model:value="formData.useAi">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
+        </NFormItem>
+        <!-- Boolean 选择框 -->
         <!-- <NFormItem label="使用模板" path="useTemplate">
           <NRadioGroup v-model:value="formData.useTemplate">
             <NRadio :value="true">
@@ -324,7 +370,7 @@ defineExpose({
           </NRadioGroup>
         </NFormItem>
         <!-- Boolean 选择框 -->
-        <NFormItem label="是否可见" path="isVisible">
+        <NFormItem label="是否上架" path="isVisible">
           <NRadioGroup v-model:value="formData.isVisible">
             <NRadio :value="true">
               是
@@ -338,27 +384,13 @@ defineExpose({
           <n-tag type="primary" size="small">
             公开
           </n-tag> 与 <n-tag type="primary" size="small">
-            可见
+            上架
           </n-tag> 处理 Web 题库显示，均开启时显示该题。<n-tag type="primary" size="small">
             公开
-          </n-tag> 标记是否为题集中私有题目。
-        </n-alert>
-        <n-alert type="warning" class="mb-4">
-          题集组题时受是否<n-tag type="primary" size="small">
-            可见
+          </n-tag> 标记是否为题集中私有题目。题集组题时受是否<n-tag type="primary" size="small">
+            上架
           </n-tag> 标记限制。
         </n-alert>
-        <!-- Boolean 选择框 -->
-        <NFormItem label="是否使用AI" path="useAi">
-          <NRadioGroup v-model:value="formData.useAi">
-            <NRadio :value="true">
-              是
-            </NRadio>
-            <NRadio :value="false">
-              否
-            </NRadio>
-          </NRadioGroup>
-        </NFormItem>
         <!-- 数字输入 -->
         <!-- <NFormItem label="解决" path="solved">
           <NInputNumber v-model:value="formData.solved" :min="0" :max="100" placeholder="请输入解决" />

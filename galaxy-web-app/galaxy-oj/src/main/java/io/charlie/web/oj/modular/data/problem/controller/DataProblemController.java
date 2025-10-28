@@ -5,10 +5,7 @@ import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.annotation.log.Log;
 import io.charlie.web.oj.annotation.log.LogCategory;
 import io.charlie.web.oj.annotation.log.LogModule;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemPageParam;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemAddParam;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemEditParam;
-import io.charlie.web.oj.modular.data.problem.param.DataProblemIdParam;
+import io.charlie.web.oj.modular.data.problem.param.*;
 import io.charlie.web.oj.modular.data.problem.importdata.FileImportService;
 import io.charlie.web.oj.modular.data.problem.importdata.ImportResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -136,18 +134,36 @@ public class DataProblemController {
         return Result.success(dataProblemService.difficultyDistribution());
     }
 
+//    @Operation(summary = "导入题目")
+//    @PostMapping("/data/problem/import")
+//    public Result<?> importProblems(@RequestParam("file") MultipartFile file) {
+//        if (file.isEmpty()) {
+//            return Result.success(ImportResult.error("文件不能为空"));
+//        }
+//
+//        log.info("开始导入FPS文件: {}, 大小: {} bytes", file.getOriginalFilename(), file.getSize());
+//
+//        ImportResult result = fileImportService.importFpsFile(file);
+//
+//        log.info("文件导入完成: {}，结果: {}", file.getOriginalFilename(), result.getMessage());
+//        if (!result.isSuccess()) {
+//            return Result.failure(result.getMessage());
+//        }
+//        return Result.success(result);
+//    }
+
     @Operation(summary = "导入题目")
-    @PostMapping("/data/problem/import")
-    public Result<?> importProblems(@RequestParam("file") MultipartFile file) {
-        if (file.isEmpty()) {
+    @PostMapping(value = "/data/problem/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Result<?> importProblems(@Valid DataProblemImportParam dataProblemImportParam) {
+        log.info("开始导入题目");
+        if (dataProblemImportParam.getFile().isEmpty()) {
             return Result.success(ImportResult.error("文件不能为空"));
         }
+        log.info("开始导入FPS文件: {}, 大小: {} bytes", dataProblemImportParam.getFile().getOriginalFilename(), dataProblemImportParam.getFile().getSize());
 
-        log.info("开始导入FPS文件: {}, 大小: {} bytes", file.getOriginalFilename(), file.getSize());
+        ImportResult result = fileImportService.importFpsFile(dataProblemImportParam);
 
-        ImportResult result = fileImportService.importFpsFile(file);
-
-        log.info("文件导入完成: {}，结果: {}", file.getOriginalFilename(), result.getMessage());
+        log.info("文件导入完成: {}，结果: {}", dataProblemImportParam.getFile().getOriginalFilename(), result.getMessage());
         if (!result.isSuccess()) {
             return Result.failure(result.getMessage());
         }

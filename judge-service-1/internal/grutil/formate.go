@@ -1,0 +1,98 @@
+package grutil
+
+import (
+	"regexp"
+	"strings"
+)
+
+func FormatBytesKB(bytes uint64) float64 {
+	return float64(bytes) / 1024
+}
+
+// normalizeLineEndings 将不同风格的换行符统一为\n
+func NormalizeLineEndings(str string) string {
+	// 将\r\n替换为\n
+	str = strings.ReplaceAll(str, "\r\n", "\n")
+	// 将单独的\r也替换为\n（处理Mac OS旧格式）
+	str = strings.ReplaceAll(str, "\r", "\n")
+	return str
+}
+
+// SplitAndNormalize 将文本按行分割并标准化每行
+func SplitAndNormalize(str string) []string {
+	// 标准化换行符
+	str = strings.ReplaceAll(str, "\r\n", "\n")
+	str = strings.ReplaceAll(str, "\r", "\n")
+
+	lines := strings.Split(str, "\n")
+	normalized := make([]string, 0, len(lines))
+
+	for _, line := range lines {
+		// 移除每行的首尾空白
+		line = strings.TrimSpace(line)
+		if line != "" { // 可选：是否忽略空行
+			normalized = append(normalized, line)
+		}
+	}
+
+	return normalized
+}
+
+// 评估两个标准答案与用户提交是否相同
+func CompareOutput(ans string, output string) bool {
+	// if NormalizeLineEndings(ans) == NormalizeLineEndings(output) {
+	// 	return true
+	// } else {
+	// 	return false
+	// }
+	// CompareOutput 按行比较，忽略行尾差异
+	ansLines := SplitAndNormalize(ans)
+	outputLines := SplitAndNormalize(output)
+
+	if len(ansLines) != len(outputLines) {
+		return false
+	}
+
+	for i := range ansLines {
+		if ansLines[i] != outputLines[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// filterFilePath 过滤掉消息中的文件路径
+func FilterFilePath(message string) string {
+	// 使用正则表达式匹配并移除文件路径
+	// 匹配两种格式：
+	// 1. /path/file.cpp:123:456:
+	// 2. /path/file.cpp: description
+	// pattern := `/\S+?\.(cpp|c|java|py|js|go)(?::\d+:\d+:|:\s*)`
+	// re := regexp.MustCompile(pattern)
+
+	// // 移除文件路径部分，只保留错误信息
+	// filtered := re.ReplaceAllString(message, "")
+
+	// // 如果过滤后为空，返回原始消息
+	// if filtered == "" {
+	// 	return message
+	// }
+
+	// return filtered
+
+
+	 // 匹配常见的文件路径模式
+	patterns := []string{
+        `/[^/]+?/([^/]+?\.(cpp|c|java|py|js|go)):\d+:\d+:`,  // Unix路径，保留文件名
+        `/[^/]+?/([^/]+?\.(cpp|c|java|py|js|go)):\s*`,       // Unix路径，保留文件名  
+        `[a-zA-Z]:\\[^\\]+?\\([^\\]+?\.(cpp|c|java|py|js|go)):`, // Windows路径，保留文件名
+    }
+    
+    for _, pattern := range patterns {
+        re := regexp.MustCompile(pattern)
+        message = re.ReplaceAllString(message, "")
+    }
+    
+    return message
+}

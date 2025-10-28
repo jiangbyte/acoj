@@ -4,11 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryAddParam;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryEditParam;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryIdParam;
-import io.charlie.web.oj.modular.data.library.param.DataLibraryPageParam;
+import io.charlie.web.oj.modular.data.library.param.*;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
+import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -41,4 +39,6 @@ public interface DataLibraryService extends IService<DataLibrary> {
                                               String filterUserId,
                                               int maxBatches,
                                               Function<List<DataLibrary>, List<R>> processor);
+
+    Page<SysUser> getLibraryUserPage(DataLibraryUserPageParam dataLibraryUserPageParam);
 }

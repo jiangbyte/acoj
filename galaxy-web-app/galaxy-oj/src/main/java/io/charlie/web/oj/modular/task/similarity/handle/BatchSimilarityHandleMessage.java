@@ -208,6 +208,7 @@ public class BatchSimilarityHandleMessage {
     private final SimilarityProgressService progressService;
 
     public void sendSimilarity(BatchSimilaritySubmitDto batchSimilaritySubmitDto) {
+        log.info("代码克隆检测 -> 发送批量检测消息：{}", JSONUtil.toJsonStr(batchSimilaritySubmitDto));
         rabbitTemplate.convertAndSend(
                 CommonSimilarityQueue.BATCH_EXCHANGE,
                 CommonSimilarityQueue.BATCH_ROUTING_KEY,
@@ -218,13 +219,14 @@ public class BatchSimilarityHandleMessage {
     @Transactional
     @RabbitListener(queues = CommonSimilarityQueue.BATCH_QUEUE, concurrency = "5-10")
     public void receiveSimilarity(BatchSimilaritySubmitDto batchSimilaritySubmitDto) {
+        log.info("代码克隆检测 -> 接收批量检测消息：{}", JSONUtil.toJsonStr(batchSimilaritySubmitDto));
+
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 
         String taskId = batchSimilaritySubmitDto.getTaskId();
 
         try {
-            log.info("代码克隆检测 -> 接收批量检测消息：{}", JSONUtil.toJsonStr(batchSimilaritySubmitDto));
 
             List<DataLibrary> dataLibraries = queryDataLibraries(batchSimilaritySubmitDto);
             log.info("代码克隆检测 -> 样本数量：{}", dataLibraries.size());
@@ -291,18 +293,18 @@ public class BatchSimilarityHandleMessage {
      */
     private List<DataLibrary> queryDataLibraries(BatchSimilaritySubmitDto dto) {
         LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
-                .eq(DataLibrary::getIsSet, dto.getIsSet())
+                .eq(DataLibrary::getIsSet, Boolean.TRUE)
                 .eq(DataLibrary::getLanguage, dto.getLanguage())
                 .orderByDesc(DataLibrary::getUpdateTime)
                 .orderByDesc(DataLibrary::getCreateTime)
                 .last("LIMIT 1000");
 
-        if (dto.getIsSet()) {
-            queryWrapper.eq(DataLibrary::getSetId, dto.getSetId())
-                    .in(DataLibrary::getProblemId, dto.getProblemIds());
-        } else {
-            queryWrapper.eq(DataLibrary::getProblemId, dto.getProblemIds().getFirst());
-        }
+//        if (dto.getIsSet()) {
+        queryWrapper.eq(DataLibrary::getSetId, dto.getSetId())
+                .in(DataLibrary::getProblemId, dto.getProblemIds());
+//        } else {
+//            queryWrapper.eq(DataLibrary::getProblemId, dto.getProblemIds().getFirst());
+//        }
 
         return dataLibraryMapper.selectList(queryWrapper);
     }
@@ -313,11 +315,11 @@ public class BatchSimilarityHandleMessage {
     private List<TaskSimilarity> processSimilarityDetection(List<DataLibrary> dataLibraries,
                                                             BatchSimilaritySubmitDto dto) {
         // 如果是题集模式，按题目分组并行处理
-        if (dto.getIsSet()) {
-            return processGroupedSimilarityDetection(dataLibraries, dto);
-        } else {
-            return processSingleProblemSimilarityDetection(dataLibraries, dto);
-        }
+//        if (dto.getIsSet()) {
+        return processGroupedSimilarityDetection(dataLibraries, dto);
+//        } else {
+//            return processSingleProblemSimilarityDetection(dataLibraries, dto);
+//        }
     }
 
     /**
@@ -390,7 +392,8 @@ public class BatchSimilarityHandleMessage {
             taskSimilarity.setTaskType(batchSimilaritySubmitDto.getTaskType());
             taskSimilarity.setProblemId(submit.getProblemId());
             taskSimilarity.setSetId(batchSimilaritySubmitDto.getSetId());
-            taskSimilarity.setIsSet(batchSimilaritySubmitDto.getIsSet());
+//            taskSimilarity.setIsSet(batchSimilaritySubmitDto.getIsSet());
+            taskSimilarity.setIsSet(Boolean.TRUE);
             taskSimilarity.setLanguage(batchSimilaritySubmitDto.getLanguage());
             taskSimilarity.setSimilarity(BigDecimal.valueOf(similarityDetail.getSimilarity()));
 
@@ -439,13 +442,13 @@ public class BatchSimilarityHandleMessage {
     void saveSimilarityReportDataFromDB(BatchSimilaritySubmitDto batchSimilaritySubmitDto) {
         TaskReports taskReports = BeanUtil.toBean(batchSimilaritySubmitDto, TaskReports.class);
         taskReports.setId(null);
-        if (batchSimilaritySubmitDto.getIsSet()) {
-            log.info("代码克隆检测 -> 单题集报告");
-            taskReports.setReportType(ReportTypeEnum.SET_SINGLE_SUBMIT.getValue());
-        } else {
-            log.info("代码克隆检测 -> 单题目报告");
-            taskReports.setReportType(ReportTypeEnum.PROBLEM_SINGLE_SUBMIT.getValue());
-        }
+//        if (batchSimilaritySubmitDto.getIsSet()) {
+        log.info("代码克隆检测 -> 单题集报告");
+        taskReports.setReportType(ReportTypeEnum.SET_SINGLE_SUBMIT.getValue());
+//        } else {
+//            log.info("代码克隆检测 -> 单题目报告");
+//            taskReports.setReportType(ReportTypeEnum.PROBLEM_SINGLE_SUBMIT.getValue());
+//        }
 
         taskReports.setThreshold(batchSimilaritySubmitDto.getThreshold());
 

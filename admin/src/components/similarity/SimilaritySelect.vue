@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useDataProblemFetch, useDataSetFetch, useSysGroupFetch, useSysUserFetch, useTaskSimilarityFetch } from '@/composables/v1'
+import { useDataLibraryFetch, useDataProblemFetch, useDataSetFetch, useSysGroupFetch, useTaskSimilarityFetch } from '@/composables/v1'
 import type { DataTableColumns, SelectOption } from 'naive-ui'
 import { NAvatar, NButton, NDrawer, NDrawerContent, NForm, NInputNumber, NSpace, NText } from 'naive-ui'
 import { v4 as uuidv4 } from 'uuid'
@@ -13,7 +13,7 @@ const groupOptions = ref<SelectOption[]>([])
 
 const defaultFormData = {
   problemIds: [],
-  setId: '',
+  setId: null,
   language: null,
   isSet: false,
   userIds: [],
@@ -22,24 +22,33 @@ const defaultFormData = {
   groupId: null,
   batchTaskId: '',
   minMatchLength: 5,
-  threshold: 0.5
+  threshold: 0.5,
+
+  current: 1,
+  size: 20,
+  sortField: 'id',
+  sortOrder: 'ASCEND',
+  keyword: '',
 }
 
 const formData = ref({ ...defaultFormData })
 const rules = {
-  problemIds: [
-    // { required: true, message: '请选择题目', trigger: ['input', 'blur'] },
-  ],
+  problemIds: [{
+    type: 'array',
+    required: true,
+    trigger: ['blur', 'change'],
+    message: '请选择题目',
+  }],
   setId: [
   ],
   language: [
     { required: true, message: '请选择语言', trigger: ['input', 'blur'] },
   ],
   minMatchLength: [
-    // { required: true, message: '请输入敏感度', trigger: ['input', 'blur'] },
+    { type: 'number', required: true, trigger: ['blur', 'change'], message: '请输入匹配敏感度' },
   ],
   threshold: [
-    // { required: true, message: '请输入阈值', trigger: ['input', 'blur'] },
+    { type: 'number', required: true, trigger: ['blur', 'change'], message: '请输入阈值' },
   ],
 }
 function doClose() {
@@ -51,22 +60,28 @@ function doClose() {
 async function doSubmit() {
   formRef.value?.validate(async (errors: any) => {
     if (!errors) {
-          loading.value = true
-          useTaskSimilarityFetch().taskSimilarityBatch(formData.value).then(({ data }) => {
-            if (data) {
-              console.log(data)
-              useTaskSimilarityFetch().taskSimilarityProgress(data).then(({ data }) => {
-                console.log(data)
-              })
-              window.$message.success('提交成功')
-            }
-          })
-          emit('submit', true)
-          doClose()
-          console.log(formData.value)
-          
-          show.value = false
-          loading.value = false
+      if (formData.value.userIds.length <= 1) {
+        window.$message.error('请选择至少两个用户')
+        return
+      }
+      loading.value = true
+      useTaskSimilarityFetch().taskSimilarityBatch(formData.value).then(async ({ data }) => {
+        if (data) {
+          console.log(data)
+          // 等待2秒后查询
+          // await new Promise(resolve => setTimeout(resolve, 2000))
+          // useTaskSimilarityFetch().taskSimilarityProgress(data).then(({ data }) => {
+          //   console.log(data)
+          // })
+          window.$message.success('提交成功，在后台执行中，请稍后查看结果')
+        }
+      })
+      // emit('submit', true)
+      // doClose()
+      // console.log(formData.value)
+
+      // show.value = false
+      // loading.value = false
     }
     else {
       //
@@ -113,6 +128,7 @@ function doOpen(sId: string = '', pid: string = '', isSet: boolean) {
     groupOptions.value = data
     groupOptionsLoading.value = false
   })
+  loadUserData()
 }
 defineExpose({
   doOpen,
@@ -129,6 +145,7 @@ function updateProblemIds(value: any) {
       }))
     }
   })
+  loadUserData()
 }
 
 const columns: DataTableColumns<any> = [
@@ -163,6 +180,10 @@ const columns: DataTableColumns<any> = [
       )
     },
   },
+  {
+    title: '用户组',
+    key: 'groupIdName',
+  },
 ]
 const pageData = ref()
 const pageParam = ref({
@@ -172,11 +193,14 @@ const pageParam = ref({
   sortOrder: 'ASCEND',
   keyword: '',
   groupId: '',
+  problemIds: [],
+  setId: '',
+  language: '',
 })
-const { sysUserPage } = useSysUserFetch()
+const { dataLibraryiUserPage } = useDataLibraryFetch()
 async function loadUserData() {
   loading.value = true
-  const { data } = await sysUserPage(pageParam.value)
+  const { data } = await dataLibraryiUserPage(formData.value)
   if (data) {
     pageData.value = data
     loading.value = false
@@ -192,6 +216,15 @@ function handleUserGroupChange(value: any) {
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent title="报告参数配置">
+      <n-alert type="warning" class="mb-4">
+        检测范围最多为近期
+        <n-tag type="info" size="small">
+          1000
+        </n-tag>
+        条有效数据。题集检测语言为题目中允许的语言交集
+      </n-alert>
+      <!-- <n-alert v-if="isSetRef" type="warning" class="mb-4">
+      </n-alert> -->
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="auto">
         <!-- 输入框 -->
         <NFormItem v-if="isSetRef" label="题目" path="problemIds">
@@ -213,15 +246,18 @@ function handleUserGroupChange(value: any) {
             placeholder="请选择开放语言"
             :options="languageOptions"
             clearable
+            @update:value="loadUserData"
           />
         </NFormItem>
-        <NFormItem label="匹配敏感度" path="minMatchLength">
-          <NInputNumber v-model:value="formData.minMatchLength" placeholder="请输入匹配敏感度" />
-        </NFormItem>
-        <NFormItem label="阈值" path="threshold">
-          <NInputNumber v-model:value="formData.threshold" placeholder="请输入检测阈值" />
-        </NFormItem>
-        <NFormItem label="检测组" path="isGroup">
+        <n-grid :cols="24" :x-gap="24">
+          <n-form-item-gi :span="12" label="匹配敏感度" path="minMatchLength">
+            <NInputNumber v-model:value="formData.minMatchLength" placeholder="请输入匹配敏感度" />
+          </n-form-item-gi>
+          <n-form-item-gi :span="12" label="阈值" path="threshold">
+            <NInputNumber v-model:value="formData.threshold" placeholder="请输入检测阈值" />
+          </n-form-item-gi>
+        </n-grid>
+        <!-- <NFormItem label="检测组" path="isGroup">
           <NRadioGroup v-model:value="formData.isGroup">
             <NRadio :value="true">
               是
@@ -230,35 +266,44 @@ function handleUserGroupChange(value: any) {
               否
             </NRadio>
           </NRadioGroup>
-        </NFormItem>
-        <NFormItem label="用户组" path="groupId">
-          <n-tree-select
-            v-model:value="formData.groupId"
-            :options="groupOptions"
-            label-field="name"
-            key-field="id"
-            :indent="12"
-            @update:value="handleUserGroupChange"
-          />
-        </NFormItem>
+        </NFormItem> -->
       </NForm>
-      <NCard v-if="!formData.isGroup" size="small" class="flex-1 mb-4">
-        <NDataTable
-          v-model:checked-row-keys="formData.userIds"
-          :columns="columns"
-          :data="pageData?.records"
-          :bordered="false"
-          :row-key="(row: any) => row.id"
-          :loading="loading"
-          flex-height
-          class="h-90"
-        />
+      <NCard size="small" class="flex-1 mb-4">
+        <NSpace vertical>
+          <NSpace align="center" justify="space-between">
+            <NSpace align="center">
+              <NText>
+                用户组筛选
+              </NText>
+              <n-tree-select
+                v-model:value="formData.groupId"
+                :options="groupOptions"
+                label-field="name"
+                key-field="id"
+                :indent="12"
+                class="w-60"
+                placeholder="请选择用户组"
+                @update:value="handleUserGroupChange"
+              />
+            </NSpace>
+            <NP type="info" show-icon>
+              当前数据 {{ pageData?.records.length }} 条
+            </NP>
+          </NSpace>
+          <NDataTable
+            v-model:checked-row-keys="formData.userIds"
+            :columns="columns"
+            :data="pageData?.records"
+            :bordered="false"
+            :row-key="(row: any) => row.id"
+            :loading="!pageData"
+            flex-height
+            class="h-90"
+          />
+        </NSpace>
         <template #action>
           <NSpace align="center" justify="space-between" class="w-full">
             <NSpace align="center">
-              <NP type="info" show-icon>
-                当前数据 {{ pageData?.records.length }} 条
-              </NP>
               <NP type="info" show-icon>
                 选中了 {{ formData.userIds?.length }} 行
               </NP>
@@ -274,16 +319,6 @@ function handleUserGroupChange(value: any) {
           </NSpace>
         </template>
       </NCard>
-      <n-alert type="warning" class="mb-4">
-        检测范围最多为近期
-        <n-tag type="info" size="small">
-          1000
-        </n-tag>
-        条有效数据。
-      </n-alert>
-      <n-alert v-if="isSetRef" type="warning" class="mb-4">
-        题集检测语言为题目中允许的语言交集
-      </n-alert>
       <template #footer>
         <NSpace align="center" justify="end">
           <NButton @click="doClose">

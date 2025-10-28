@@ -10,8 +10,8 @@ defineProps<{
   <n-list hoverable class="rounded-xl p-0">
     <n-list-item
       v-for="item in listData" :key="item.id" @click="$router.push({
-        name: 'problem_submit',
-        query: { problemId: AesCrypto.encrypt(item.id) },
+        name: 'user',
+        query: { userId: AesCrypto.encrypt(item.id) },
       })"
     >
       <template #prefix>
