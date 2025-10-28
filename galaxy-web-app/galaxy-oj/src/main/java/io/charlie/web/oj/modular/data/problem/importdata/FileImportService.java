@@ -282,7 +282,7 @@ public class FileImportService {
                 // 保存题目
                 DataProblem problem = importData.getProblem();
                 problem.setThreshold(dataProblemImportParam.getThreshold());
-                problem.setSetUseAi(dataProblemImportParam.getUseAi());
+                problem.setUseAi(dataProblemImportParam.getUseAi());
                 problem.setIsPublic(dataProblemImportParam.getIsPublic());
                 problem.setIsVisible(dataProblemImportParam.getIsVisible());
                 problem.setCategoryId(dataProblemImportParam.getCategoryId());

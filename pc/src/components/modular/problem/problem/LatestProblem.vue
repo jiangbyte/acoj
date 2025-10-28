@@ -48,9 +48,7 @@ defineProps<{
               </n-tag>
             </n-space>
             <n-space align="center" :size="3">
-              <n-text depth="3">
-                发布于
-              </n-text> <n-time :time="item.createTime" />
+              <n-time :time="item.createTime" type="relative" />
             </n-space>
           </n-space>
         </template>

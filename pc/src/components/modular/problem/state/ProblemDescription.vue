@@ -40,6 +40,9 @@ defineProps<Props>()
 
 <template>
   <n-space vertical>
+    <n-tag v-if="detailData?.source" type="warning">
+      {{ detailData?.source }}
+    </n-tag>
     <n-space align="center">
       <n-tag type="success">
         {{ detailData?.categoryName }}

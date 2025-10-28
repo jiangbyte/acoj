@@ -195,7 +195,6 @@ const version = import.meta.env.VITE_VERSION
         <NButton
           block
           type="primary"
-          :loading="isLoading"
           @click="handleRegister"
         >
           注册

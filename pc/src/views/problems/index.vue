@@ -8,6 +8,7 @@ import { AesCrypto } from '@/utils'
 const columns: DataTableColumns<any> = [
   {
     title: '状态',
+    align: 'center',
     key: 'currentUserSolved',
     width: 60,
     render: (row: any) => {
@@ -24,9 +25,17 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
+    title: '来源',
+    key: 'source',
+    width: 120,
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
     title: '题目',
     key: 'title',
-    width: 180,
+    width: 150,
     ellipsis: {
       tooltip: true,
     },
@@ -34,7 +43,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '分类',
     key: 'categoryName',
-    width: 100,
+    width: 90,
     render: (row) => {
       return h(NTag, { size: 'small', type: 'success' }, { default: () => row.categoryName })
     },
@@ -42,7 +51,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '标签',
     key: 'tagNames',
-    width: 250,
+    width: 210,
     render: (row) => {
       return h(NSpace, { align: 'center' }, {
         default: () => row.tagNames?.map((tag: any) =>
@@ -60,23 +69,17 @@ const columns: DataTableColumns<any> = [
   {
     title: '难度',
     key: 'difficultyName',
-    width: 100,
+    align: 'center',
+    width: 60,
     render: (row) => {
       return h(NTag, { size: 'small', type: 'error' }, { default: () => row.difficultyName })
     },
   },
   {
-    title: '通过率',
-    key: 'acceptance',
-    width: 100,
-    render: (row) => {
-      return h(NTag, { size: 'small', type: 'warning' }, { default: () => row.acceptance })
-    },
-  },
-  {
-    title: 'LLM 辅助',
+    title: '智能辅助',
     key: 'useAiName',
-    width: 100,
+    align: 'center',
+    width: 80,
     render: (row) => {
       return row.useAi ? '支持' : '-'
     },
@@ -85,8 +88,19 @@ const columns: DataTableColumns<any> = [
     title: '解决',
     key: 'solved',
     width: 100,
+    align: 'center',
     render: (row) => {
       return h(NTag, { size: 'small' }, { default: () => row.solved })
+    },
+  },
+  {
+    title: '通过率',
+    key: 'acceptance',
+    fixed: 'right',
+    align: 'center',
+    width: 80,
+    render: (row) => {
+      return h(NTag, { size: 'small', type: 'warning' }, { default: () => row.acceptance })
     },
   },
 ]
