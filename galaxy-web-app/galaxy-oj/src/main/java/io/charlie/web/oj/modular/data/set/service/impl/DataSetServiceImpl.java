@@ -16,6 +16,7 @@ import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.problem.param.DifficultyDistribution;
 import io.charlie.web.oj.modular.data.problem.utils.ProblemBuildTool;
+import io.charlie.web.oj.modular.data.relation.set.entity.DataSetProblem;
 import io.charlie.web.oj.modular.data.relation.set.mapper.DataSetProblemMapper;
 import io.charlie.web.oj.modular.data.relation.set.service.DataSetProblemService;
 import io.charlie.web.oj.modular.data.relation.tag.mapper.DataProblemTagMapper;
@@ -181,6 +182,13 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
 //                    .in(DataSubmit::getSetId, dataSetIds)
 //            );
 //        }
+
+        // 移除关联题目
+        if (ObjectUtil.isNotEmpty(dataSetIds)) {
+            dataSetProblemMapper.delete(new LambdaQueryWrapper<DataSetProblem>()
+                    .in(DataSetProblem::getSetId, dataSetIds)
+            );
+        }
     }
 
     @Override

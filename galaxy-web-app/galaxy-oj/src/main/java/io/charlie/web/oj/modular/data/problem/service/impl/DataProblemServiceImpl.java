@@ -259,10 +259,10 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
 //            solvedMapper.delete(new LambdaQueryWrapper<DataSolved>()
 //                    .in(DataSolved::getProblemId, problemIds)
 //            );
-//            // 移除数据集题目
-//            dataSetProblemMapper.delete(new LambdaQueryWrapper<DataSetProblem>()
-//                    .in(DataSetProblem::getProblemId, problemIds)
-//            );
+            // 移除数据集题目
+            dataSetProblemMapper.delete(new LambdaQueryWrapper<DataSetProblem>()
+                    .in(DataSetProblem::getProblemId, problemIds)
+            );
 //            // 移除代码库
 //            dataLibraryMapper.delete(new LambdaQueryWrapper<DataLibrary>()
 //                    .in(DataLibrary::getProblemId, problemIds)

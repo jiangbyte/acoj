@@ -51,6 +51,8 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 
     private final DataScopeUtil dataScopeUtil;
 
+    private final SysRoleMenuMapper sysRoleMenuMapper;
+
     @Override
     public Page<SysRole> page(SysRolePageParam sysRolePageParam) {
         QueryWrapper<SysRole> queryWrapper = new QueryWrapper<SysRole>().checkSqlInjection();
@@ -106,7 +108,22 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         if (ObjectUtil.isEmpty(sysRoleIdParamList)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
-        this.removeByIds(CollStreamUtil.toList(sysRoleIdParamList, SysRoleIdParam::getId));
+        List<String> stringList = CollStreamUtil.toList(sysRoleIdParamList, SysRoleIdParam::getId);
+        // 先查看有没有用户授权到
+        boolean exists = sysUserRoleMapper.exists(new LambdaQueryWrapper<SysUserRole>()
+                .in(SysUserRole::getRoleId, stringList)
+        );
+        if (exists) {
+            throw new BusinessException("当前角色正在被授权用户中，请先将授权用户授权为其他角色");
+        }
+
+        this.removeByIds(stringList);
+
+        if (ObjectUtil.isNotEmpty(stringList)) {
+            // 删除角色对应的菜单关联
+            sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>()
+                    .in(SysRoleMenu::getRoleId, stringList));
+        }
     }
 
     @Override

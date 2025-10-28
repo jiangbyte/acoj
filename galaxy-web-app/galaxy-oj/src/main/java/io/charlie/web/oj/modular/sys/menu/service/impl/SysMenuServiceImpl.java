@@ -21,9 +21,12 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.sys.relation.entity.SysRoleMenu;
+import io.charlie.web.oj.modular.sys.relation.mapper.SysRoleMenuMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysRoleMenuService;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
 import io.charlie.web.oj.modular.sys.role.entity.SysRole;
+import io.charlie.web.oj.modular.sys.role.param.SysRoleIdParam;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +48,7 @@ import java.util.stream.Collectors;
 public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> implements SysMenuService {
     private final DataScopeUtil dataScopeUtil;
 
+    private final SysRoleMenuMapper sysRoleMenuMapper;
     @Override
     public Page<SysMenu> page(SysMenuPageParam sysMenuPageParam) {
         QueryWrapper<SysMenu> queryWrapper = new QueryWrapper<SysMenu>().checkSqlInjection();
@@ -102,7 +106,13 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
         if (ObjectUtil.isEmpty(sysMenuIdParamList)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
-        this.removeByIds(CollStreamUtil.toList(sysMenuIdParamList, SysMenuIdParam::getId));
+        List<String> stringList = CollStreamUtil.toList(sysMenuIdParamList, SysMenuIdParam::getId);
+        this.removeByIds(stringList);
+        if (ObjectUtil.isNotEmpty(stringList)) {
+            // 删除角色对应的菜单关联
+            sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenu>()
+                    .in(SysRoleMenu::getMenuId, stringList));
+        }
     }
 
     @Override

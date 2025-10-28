@@ -22,6 +22,8 @@ import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.sys.auth.utils.UserValidationUtil;
 import io.charlie.web.oj.modular.sys.config.service.SysConfigService;
+import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
+import io.charlie.web.oj.modular.sys.relation.mapper.SysUserRoleMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
 import io.charlie.web.oj.constant.DefaultRoleData;
 import io.charlie.web.oj.constant.DefaultUserData;
@@ -67,6 +69,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private final SysUserBuildUtil sysUserBuildUtil;
     private final DataScopeUtil dataScopeUtil;
     private final SysConfigService sysConfigService;
+    private final SysUserRoleMapper sysUserRoleMapper;
 
     @Override
     public Page<SysUser> page(SysUserPageParam sysUserPageParam) {
@@ -169,7 +172,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (ObjectUtil.isEmpty(sysUserIdParamList)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
-        this.removeByIds(CollStreamUtil.toList(sysUserIdParamList, SysUserIdParam::getId));
+        List<String> stringList = CollStreamUtil.toList(sysUserIdParamList, SysUserIdParam::getId);
+        this.removeByIds(stringList);
+        if (ObjectUtil.isNotEmpty(stringList)) {
+            sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
+                    .in(SysUserRole::getUserId, stringList));
+        }
     }
 
     @Override

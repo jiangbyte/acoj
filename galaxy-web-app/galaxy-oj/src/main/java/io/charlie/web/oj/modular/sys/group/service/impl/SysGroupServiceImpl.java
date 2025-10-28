@@ -22,6 +22,7 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
 import io.charlie.web.oj.modular.sys.role.entity.SysRole;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> implements SysGroupService {
     private final DataScopeUtil dataScopeUtil;
+    private final SysUserMapper sysUserMapper;
 
     @Override
     public Page<SysGroup> page(SysGroupPageParam sysGroupPageParam) {
@@ -101,7 +103,18 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
         if (ObjectUtil.isEmpty(sysGroupIdParamList)) {
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
-        this.removeByIds(CollStreamUtil.toList(sysGroupIdParamList, SysGroupIdParam::getId));
+        List<String> stringList = CollStreamUtil.toList(sysGroupIdParamList, SysGroupIdParam::getId);
+        if (ObjectUtil.isNotEmpty(stringList)) {
+            // 先查看有没有用户授权到
+            boolean exists = sysUserMapper.exists(new LambdaQueryWrapper<SysUser>()
+                    .in(SysUser::getGroupId, stringList)
+            );
+            if (exists) {
+                throw new BusinessException("用户组正在被用户使用，删除前请将组内用户迁移至其他用户组");
+            }
+        }
+
+        this.removeByIds(stringList);
     }
 
     @Override
