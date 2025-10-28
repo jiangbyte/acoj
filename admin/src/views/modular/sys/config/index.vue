@@ -81,6 +81,8 @@ const columns: DataTableColumns<any> = [
 const columnSortFieldOptions = computed<any[]>(() => {
   return [
     { label: 'ID', value: 'id' },
+    { label: '名称', value: 'name' },
+    { label: '排序', value: 'sort' },
     { label: '创建时间', value: 'createTime' },
     { label: '更新时间', value: 'updateTime' },
   ]
@@ -118,8 +120,8 @@ const pageData = ref()
 const pageParam = ref({
   current: 1,
   size: 20,
-  sortField: null,
-  sortOrder: null,
+  sortField: 'id',
+  sortOrder: 'ASCEND',
   keyword: '',
 })
 

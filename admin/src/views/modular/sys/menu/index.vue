@@ -288,7 +288,7 @@ async function deleteBatchHandle() {
                 </NButton>
               </NPopselect>
             </NFormItem>
-            <NFormItem :show-feedback="false" label-placement="left">
+            <!-- <NFormItem :show-feedback="false" label-placement="left">
               <NPopselect
                 v-model:value="pageParam.sortField"
                 :options="columnSortFieldOptions"
@@ -313,7 +313,7 @@ async function deleteBatchHandle() {
                   </template>
                 </NButton>
               </NPopselect>
-            </NFormItem>
+            </NFormItem> -->
           </NSpace>
         </NSpace>
       </NSpace>

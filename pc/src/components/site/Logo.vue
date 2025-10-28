@@ -30,16 +30,16 @@ loadData()
     class="h-10"
     @click="$router.push('/')"
   >
-    <n-avatar
+    <!-- <n-avatar
       v-if="appLogo && !appAdminShowAppName"
       size="large"
       :src="appLogo"
-    />
-    <!-- <img
+    /> -->
+    <img
       v-if="appLogo && !appAdminShowAppName"
       :src="appLogo"
-      class="h-10 flex items-center justify-center object-cover"
-    > -->
+      class="h-12 flex items-center justify-center"
+    >
     <NText
       v-if="appAdminShowAppName"
     >

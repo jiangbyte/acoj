@@ -117,6 +117,8 @@ const columns: DataTableColumns<any> = [
 const columnSortFieldOptions = computed<any[]>(() => {
   return [
     { label: 'ID', value: 'id' },
+    { label: '用户名', value: 'username' },
+    { label: '学号', value: 'studentNumber' },
     { label: '创建时间', value: 'createTime' },
     { label: '更新时间', value: 'updateTime' },
   ]

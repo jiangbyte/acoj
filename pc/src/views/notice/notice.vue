@@ -36,7 +36,7 @@ loadData()
             :src="detailData?.cover"
             width="100%"
             object-fit="cover"
-            class="w-full h-48 md:h-60 rounded-t-xl"
+            class="w-full h-62 md:h-60 rounded-t-xl object-cover"
           />
 
           <!-- 公告标题区 -->

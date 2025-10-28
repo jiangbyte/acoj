@@ -111,7 +111,7 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
         return this.list(new QueryWrapper<SysBanner>().checkSqlInjection()
                 .lambda()
                 .eq(SysBanner::getIsVisible, true)
-                .orderByDesc(SysBanner::getCreateTime)
+                .orderByAsc(SysBanner::getSort)  // 改为按sort升序排列，越小越靠前
                 .last("LIMIT " + n)
         );
     }
