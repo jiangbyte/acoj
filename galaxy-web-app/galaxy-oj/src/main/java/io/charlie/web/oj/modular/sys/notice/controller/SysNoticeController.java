@@ -87,4 +87,10 @@ public class SysNoticeController {
         return Result.success(sysNoticeService.latestN(4));
     }
 
+    @Operation(summary = "获取全站N条公告")
+    @GetMapping("/sys/notice/lists")
+    public Result<?> lists() {
+        return Result.success(sysNoticeService.lists(10));
+    }
+
 }

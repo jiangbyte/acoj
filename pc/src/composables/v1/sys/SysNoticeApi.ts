@@ -78,5 +78,8 @@ export function useSysNoticeFetch() {
     sysNoticeLatest() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/latest`)
     },
+    sysNoticeLists() {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/lists`)
+    },
   }
 }

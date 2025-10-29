@@ -10,7 +10,7 @@ const { sysBannerDefaultData, sysBannerAdd, sysBannerEdit } = useSysBannerFetch(
 const formData = ref<any>({ ...sysBannerDefaultData })
 const rules = {
   title: [
-    { required: true, message: '请输入标题', trigger: ['input', 'blur'] },
+    // { required: true, message: '请输入标题', trigger: ['input', 'blur'] },
   ],
   banner: [
     { required: true, message: '请输入横幅', trigger: ['input', 'blur'] },
@@ -140,6 +140,10 @@ function loadJumpTarget(value: string, jm: string = formData.value.jumpModule) {
           <NInput v-model:value="formData.id" placeholder="请输入主键" :disabled="true" />
         </NFormItem>
         <!-- 输入框 -->
+        <NFormItem label="横幅" path="banner">
+          <FileUpload v-model="formData.banner" :is-image="true" />
+        </NFormItem>
+        <!-- 输入框 -->
         <NFormItem label="标题" path="title">
           <NInput v-model:value="formData.title" placeholder="请输入标题" />
         </NFormItem>
@@ -147,13 +151,19 @@ function loadJumpTarget(value: string, jm: string = formData.value.jumpModule) {
         <NFormItem label="子标题" path="subtitle">
           <NInput v-model:value="formData.subtitle" placeholder="请输入子标题" />
         </NFormItem>
+        <NFormItem label="子标题是否可见" path="isVisibleSubtitle">
+          <NRadioGroup v-model:value="formData.isVisibleSubtitle">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
+        </NFormItem>
         <!-- 输入框 -->
         <NFormItem label="按钮文字" path="buttonText">
           <NInput v-model:value="formData.buttonText" placeholder="请输入按钮文字" />
-        </NFormItem>
-        <!-- 输入框 -->
-        <NFormItem label="横幅" path="banner">
-          <FileUpload v-model="formData.banner" :is-image="true" />
         </NFormItem>
         <!-- Boolean 选择框 -->
         <NFormItem label="按钮是否可见" path="isVisibleButton">
@@ -216,16 +226,6 @@ function loadJumpTarget(value: string, jm: string = formData.value.jumpModule) {
           <NInput v-model:value="formData.toUrl" placeholder="请输入链接" />
         </NFormItem> -->
         <!-- Boolean 选择框 -->
-        <NFormItem label="子标题是否可见" path="isVisibleSubtitle">
-          <NRadioGroup v-model:value="formData.isVisibleSubtitle">
-            <NRadio :value="true">
-              是
-            </NRadio>
-            <NRadio :value="false">
-              否
-            </NRadio>
-          </NRadioGroup>
-        </NFormItem>
         <!-- 数字输入 -->
         <NFormItem label="排序" path="sort">
           <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />

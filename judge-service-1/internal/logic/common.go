@@ -102,10 +102,10 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 	}
 
 	// 程序执行
-	RunResultDto := workspace.Execute()
+	judgeResponse := workspace.Execute()
 
 	// 如果正常会执行到这里
-	err := l.sendResultToMQ(RunResultDto)
+	err := l.sendResultToMQ(judgeResponse)
 	if err != nil {
 		logx.Errorf("发送结果到MQ失败: %v", err)
 		err = workspace.Cleanup()
@@ -124,6 +124,7 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 
 func (l *CommonLogic) sendResultToMQ(result *dto.JudgeResponse) error {
 	body, err := json.Marshal(result)
+
 	if err != nil {
 		return err
 	}

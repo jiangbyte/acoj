@@ -11,7 +11,7 @@ type LanguageConfig struct {
 	Extension   string   `json:"extension"`   // 文件扩展名，如 ".go", ".py"
 	CompileCmd  []string `json:"compileCmd"`  // 编译命令模板，如 ["go", "build", "-o", "{output}", "{source}"]
 	RunCmd      []string `json:"runCmd"`      // 运行命令模板，如 ["./{output}"] 或 ["python3", "{source}"]
-	NeerCompile bool     `json:",default=true"`
+	NeedCompile bool     `json:",default=true"`
 }
 
 type NacosConfig struct {

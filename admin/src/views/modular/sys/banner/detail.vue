@@ -28,23 +28,26 @@ defineExpose({
         <NDescriptionsItem label="主键">
           {{ formData.id }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="横幅">
+          <NImage :src="formData.banner" width="100" height="100" object-fit="cover" />
+        </NDescriptionsItem>
         <NDescriptionsItem label="标题">
           {{ formData.title }}
         </NDescriptionsItem>
         <NDescriptionsItem label="子标题">
           {{ formData.subtitle }}
         </NDescriptionsItem>
+        <NDescriptionsItem label="子标题是否可见">
+          {{ formData.isVisibleSubtitleName }}
+        </NDescriptionsItem>
         <NDescriptionsItem label="按钮文字">
           {{ formData.buttonText }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="横幅">
-          <NImage :src="formData.banner" width="100" height="100" object-fit="cover" />
+        <NDescriptionsItem label="按钮是否可见">
+          {{ formData.isVisibleButtonName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="跳转模块">
           {{ formData.jumpModuleName }}
-        </NDescriptionsItem>
-        <NDescriptionsItem label="按钮是否可见">
-          {{ formData.isVisibleButtonName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="新窗口打开">
           {{ formData.targetBlankName }}
@@ -54,9 +57,6 @@ defineExpose({
         </NDescriptionsItem>
         <NDescriptionsItem label="跳转目标">
           {{ formData.jumpTarget }}
-        </NDescriptionsItem>
-        <NDescriptionsItem label="子标题是否可见">
-          {{ formData.isVisibleSubtitleName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="排序">
           {{ formData.sort }}

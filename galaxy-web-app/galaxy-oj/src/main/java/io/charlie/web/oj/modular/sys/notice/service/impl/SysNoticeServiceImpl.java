@@ -102,7 +102,16 @@ public class SysNoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice
         return this.list(new QueryWrapper<SysNotice>().checkSqlInjection()
                 .lambda()
                 .eq(SysNotice::getIsVisible, true)
-                .orderByDesc(SysNotice::getSort)
+                .orderByDesc(SysNotice::getCreateTime)
+                .last("LIMIT " + n));
+    }
+
+    @Override
+    public List<SysNotice> lists(int n) {
+        return this.list(new QueryWrapper<SysNotice>().checkSqlInjection()
+                .lambda()
+                .eq(SysNotice::getIsVisible, true)
+                .orderByAsc(SysNotice::getSort)
                 .last("LIMIT " + n));
     }
 

@@ -132,6 +132,13 @@ const problemColumns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
+    title: '来源',
+    key: 'source',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
     title: '标题',
     key: 'title',
     ellipsis: {
@@ -324,6 +331,12 @@ function removeProblem(index: string | number) {
                 v-model:page-size="problemsPageParam.size"
                 class="flex justify-end"
                 :page-count="problemsPageData ? Number(problemsPageData.pages) : 0"
+                show-size-picker
+                :page-sizes="Array.from({ length: 10 }, (_, i) => ({
+                  label: `${(i + 1) * 10} 每页`,
+                  value: (i + 1) * 10,
+                }))"
+                :page-slot="5"
                 @update:page="loadData"
                 @update:page-size="loadData"
               />

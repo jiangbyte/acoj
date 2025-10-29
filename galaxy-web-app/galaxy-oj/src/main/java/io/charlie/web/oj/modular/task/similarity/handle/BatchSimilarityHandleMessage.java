@@ -169,6 +169,7 @@ import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.enums.CloneLevelEnum;
 import io.charlie.web.oj.modular.task.similarity.enums.ReportTypeEnum;
 import io.charlie.web.oj.modular.task.similarity.mq.CommonSimilarityQueue;
+import io.charlie.web.oj.modular.task.similarity.mq.SimilarlyQueueProperties;
 import io.charlie.web.oj.modular.task.similarity.service.SimilarityProgressService;
 import io.charlie.web.oj.utils.similarity.utils.CodeSimilarityCalculator;
 import lombok.RequiredArgsConstructor;
@@ -207,17 +208,20 @@ public class BatchSimilarityHandleMessage {
 
     private final SimilarityProgressService progressService;
 
+
+    private final SimilarlyQueueProperties properties;
+
     public void sendSimilarity(BatchSimilaritySubmitDto batchSimilaritySubmitDto) {
         log.info("代码克隆检测 -> 发送批量检测消息：{}", JSONUtil.toJsonStr(batchSimilaritySubmitDto));
         rabbitTemplate.convertAndSend(
-                CommonSimilarityQueue.BATCH_EXCHANGE,
-                CommonSimilarityQueue.BATCH_ROUTING_KEY,
+                properties.getBatch().getExchange(),
+                properties.getBatch().getRoutingKey(),
                 batchSimilaritySubmitDto
         );
     }
 
     @Transactional
-    @RabbitListener(queues = CommonSimilarityQueue.BATCH_QUEUE, concurrency = "5-10")
+    @RabbitListener(queues = "${oj.mq.similarity.batch.queue}", concurrency = "5-10")
     public void receiveSimilarity(BatchSimilaritySubmitDto batchSimilaritySubmitDto) {
         log.info("代码克隆检测 -> 接收批量检测消息：{}", JSONUtil.toJsonStr(batchSimilaritySubmitDto));
 

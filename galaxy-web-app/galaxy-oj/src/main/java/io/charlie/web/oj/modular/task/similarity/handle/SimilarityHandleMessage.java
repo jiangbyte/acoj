@@ -21,6 +21,7 @@ import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.enums.CloneLevelEnum;
 import io.charlie.web.oj.modular.task.similarity.enums.ReportTypeEnum;
 import io.charlie.web.oj.modular.task.similarity.mq.CommonSimilarityQueue;
+import io.charlie.web.oj.modular.task.similarity.mq.SimilarlyQueueProperties;
 import io.charlie.web.oj.utils.similarity.utils.CodeSimilarityCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,17 +48,19 @@ public class SimilarityHandleMessage {
 
     private final SimilarityConfigProperties similarityConfigProperties;
 
+    private final SimilarlyQueueProperties properties;
+
     public void sendSimilarity(SimilaritySubmitDto dto) {
         log.info("代码克隆检测 -> 发送检测消息：{}", JSONUtil.toJsonStr(dto));
         rabbitTemplate.convertAndSend(
-                CommonSimilarityQueue.EXCHANGE,
-                CommonSimilarityQueue.ROUTING_KEY,
+                properties.getSingle().getExchange(),
+                properties.getSingle().getRoutingKey(),
                 dto
         );
     }
 
     @Transactional
-    @RabbitListener(queues = CommonSimilarityQueue.QUEUE, concurrency = "5-10")
+    @RabbitListener(queues = "${oj.mq.similarity.single.queue}", concurrency = "5-10")
     public void receiveSimilarity(SimilaritySubmitDto similaritySubmitDto) {
         try {
             log.info("代码克隆检测 -> 接收检测消息：{}", JSONUtil.toJsonStr(similaritySubmitDto));

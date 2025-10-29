@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 @Configuration
-@ConfigurationProperties(prefix = "storage")
+@ConfigurationProperties(prefix = "oj.storage")
 @Data
 public class StorageProperties {
 

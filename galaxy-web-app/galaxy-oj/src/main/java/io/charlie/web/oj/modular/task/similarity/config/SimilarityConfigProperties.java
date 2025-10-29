@@ -13,7 +13,7 @@ import org.springframework.validation.annotation.Validated;
 @Data
 @Validated
 @Configuration
-@ConfigurationProperties(prefix = "similarity.config")
+@ConfigurationProperties(prefix = "oj.similarity.config")
 public class SimilarityConfigProperties {
     // 题目单提交分批大小
     private Integer problemSingleSubmitBatchSize = 500;

@@ -37,10 +37,6 @@ public class GalaxyOJ {
         ConfigurableApplicationContext run = SpringApplication.run(GalaxyOJ.class, args);
         Environment env = run.getEnvironment();
 
-        // 检查环境变量中的属性
-        String mavenProfile = env.getProperty("profiles.active");
-        log.info("=== Environment中的profiles.active: {} ===", mavenProfile);
-
         String port = env.getProperty("server.port");
         String contextPath = env.getProperty("server.servlet.context-path");
 

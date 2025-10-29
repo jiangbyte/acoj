@@ -25,7 +25,7 @@ func NewTestCaseRepository(db *gorm.DB) TestCaseRepository {
 
 func (r *testCaseRepository) GetTestCasesByProblemID(ctx context.Context, problemID string) ([]model.DataTestCase, error) {
 	if r.db == nil {
-		return nil, fmt.Errorf("database is not ready")
+		return nil, fmt.Errorf("数据库未准备好")
 	}
 
 	// 添加调试日志

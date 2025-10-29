@@ -18,6 +18,7 @@ import io.charlie.web.oj.modular.task.judge.dto.JudgeResultDto;
 import io.charlie.web.oj.modular.task.judge.dto.JudgeSubmitDto;
 import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import io.charlie.web.oj.modular.task.judge.mq.CommonJudgeQueue;
+import io.charlie.web.oj.modular.task.judge.mq.JudgeQueueProperties;
 import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.handle.SimilarityHandleMessage;
 import lombok.RequiredArgsConstructor;
@@ -50,20 +51,21 @@ public class JudgeHandleMessage {
     private final UserActivityService userActivityService;
 
     private final DataJudgeCaseMapper dataJudgeCaseMapper;
+    private final JudgeQueueProperties judgeQueueProperties;
 
 
     public void sendJudge(JudgeSubmitDto judgeSubmitDto, DataSubmit dataSubmit) {
         log.info("发送消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
         rabbitTemplate.convertAndSend(
-                CommonJudgeQueue.EXCHANGE,
-                CommonJudgeQueue.ROUTING_KEY,
+                judgeQueueProperties.getCommon().getExchange(),
+                judgeQueueProperties.getCommon().getRoutingKey(),
                 judgeSubmitDto
         );
         log.info("发送消息成功");
     }
 
     @Transactional
-    @RabbitListener(queues = CommonJudgeQueue.BACK_QUEUE, concurrency = "5-10")
+    @RabbitListener(queues = "${oj.mq.judge.result.queue}", concurrency = "5-10")
     public void receiveJudge(JudgeResultDto judgeResultDto) {
         log.info("接收到消息：{}", JSONUtil.toJsonStr(judgeResultDto));
 

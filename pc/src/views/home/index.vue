@@ -16,7 +16,7 @@ async function loadData() {
     bannerListData.value = data ?? []
   })
 
-  useSysNoticeFetch().sysNoticeLatest().then(({ data }) => {
+  useSysNoticeFetch().sysNoticeLists().then(({ data }) => {
     noticeListData.value = data ?? []
   })
 
@@ -73,7 +73,7 @@ loadData()
           <n-card class="rounded-xl" size="small" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
-                最新公告
+                全站公告
               </n-h2>
             </template>
             <ListSkeleton01 v-if="!noticeListData" />

@@ -12,6 +12,13 @@ const columns: DataTableColumns<any> = [
     type: 'selection',
   },
   {
+    title: '横幅',
+    key: 'banner',
+    render: (row) => {
+      return h(NImage, { src: row.banner, width: 50, height: 50, objectFit: 'cover' })
+    },
+  },
+  {
     title: '标题',
     key: 'title',
     ellipsis: {
@@ -26,22 +33,17 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
+    title: '显示子标题',
+    key: 'isVisibleSubtitleName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.isVisibleSubtitle ? 'primary' : 'error',
+      }, { default: () => row.isVisibleSubtitleName })
+    },
+  },
+  {
     title: '按钮文字',
     key: 'buttonText',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
-    title: '横幅',
-    key: 'banner',
-    render: (row) => {
-      return h(NImage, { src: row.banner, width: 50, height: 50, objectFit: 'cover' })
-    },
-  },
-  {
-    title: '跳转模块',
-    key: 'jumpModuleName',
     ellipsis: {
       tooltip: true,
     },
@@ -53,6 +55,13 @@ const columns: DataTableColumns<any> = [
       return h(NTag, {
         type: row.isVisibleButton ? 'primary' : 'error',
       }, { default: () => row.isVisibleButtonName })
+    },
+  },
+  {
+    title: '跳转模块',
+    key: 'jumpModuleName',
+    ellipsis: {
+      tooltip: true,
     },
   },
   // {
@@ -76,15 +85,6 @@ const columns: DataTableColumns<any> = [
       return h(NTag, {
         type: row.targetBlank ? 'primary' : 'error',
       }, { default: () => row.targetBlankName })
-    },
-  },
-  {
-    title: '显示子标题',
-    key: 'isVisibleSubtitleName',
-    render: (row) => {
-      return h(NTag, {
-        type: row.isVisibleSubtitle ? 'primary' : 'error',
-      }, { default: () => row.isVisibleSubtitleName })
     },
   },
   {

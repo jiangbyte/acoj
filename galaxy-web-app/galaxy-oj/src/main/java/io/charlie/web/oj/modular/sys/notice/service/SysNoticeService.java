@@ -29,4 +29,6 @@ public interface SysNoticeService extends IService<SysNotice> {
 
     List<SysNotice> latestN(int n);
 
+    List<SysNotice> lists(int n);
+
 }
