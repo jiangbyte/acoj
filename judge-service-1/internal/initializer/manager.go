@@ -13,11 +13,12 @@ import (
 )
 
 type InitializerManager struct {
-	config          config.Config
-	mysqlManager    *database.MySQLManager
-	rabbitMQManager *mq.RabbitMQManager
-	serviceRegistry *nacos.ServiceRegistryManager
-	testCaseRepo    repository.TestCaseRepository
+	config              config.Config
+	mysqlManager        *database.MySQLManager
+	rabbitMQManager     *mq.RabbitMQManager
+	serviceRegistry     *nacos.ServiceRegistryManager
+	testCaseRepo        repository.TestCaseRepository
+	judgeCaseRepository repository.JudgeCaseRepository
 }
 
 func NewInitializerManager(c config.Config) *InitializerManager {
@@ -79,6 +80,7 @@ func (im *InitializerManager) initMySQLWithRetry() {
 
 		im.mysqlManager = mysqlManager
 		im.testCaseRepo = repository.NewTestCaseRepository(mysqlManager.DB)
+		im.judgeCaseRepository = repository.NewJudgeCaseRepository(mysqlManager.DB)
 		logx.Info("MySQL 连接成功")
 		return
 	}
@@ -122,6 +124,10 @@ func (im *InitializerManager) GetRabbitMQManager() *mq.RabbitMQManager {
 
 func (im *InitializerManager) GetTestCaseRepo() repository.TestCaseRepository {
 	return im.testCaseRepo
+}
+
+func (im *InitializerManager) GetJudgeCaseRepo() repository.JudgeCaseRepository {
+	return im.judgeCaseRepository
 }
 
 func (im *InitializerManager) GetServiceReRegistry() *nacos.ServiceRegistryManager {

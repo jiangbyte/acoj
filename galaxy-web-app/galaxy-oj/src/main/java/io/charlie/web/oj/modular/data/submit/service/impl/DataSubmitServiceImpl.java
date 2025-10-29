@@ -414,13 +414,13 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         try {
             DataProblem problem = dataProblemMapper.selectById(dataSubmit.getProblemId());
 
-            List<DataTestCase> testCaseByProblemId = dataTestCaseService.getTestCaseByProblemId(dataSubmit.getProblemId());
-            List<TestCase> testCases = testCaseByProblemId.stream().map(testCase -> {
-                TestCase testCase1 = new TestCase();
-                testCase1.setInput(testCase.getInputData());
-                testCase1.setOutput(testCase.getExpectedOutput());
-                return testCase1;
-            }).toList();
+//            List<DataTestCase> testCaseByProblemId = dataTestCaseService.getTestCaseByProblemId(dataSubmit.getProblemId());
+//            List<TestCase> testCases = testCaseByProblemId.stream().map(testCase -> {
+//                TestCase testCase1 = new TestCase();
+//                testCase1.setInput(testCase.getInputData());
+//                testCase1.setOutput(testCase.getExpectedOutput());
+//                return testCase1;
+//            }).toList();
 
             JudgeSubmitDto message = new JudgeSubmitDto();
             // ======================= 任务参数 =======================
@@ -431,7 +431,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
             // ======================= 题目参数 =======================
             message.setMaxTime(problem.getMaxTime());
             message.setMaxMemory(problem.getMaxMemory());
-            message.setTestCase(testCases);
+//            message.setTestCase(testCases);
             // ======================= 用户提交参数 =======================
             message.setProblemId(param.getProblemId());
             if (param.getSetId() != null) {
@@ -441,21 +441,21 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
             message.setSubmitType(param.getSubmitType());
 
             // 处理代码模板
-            if (problem.getUseTemplate()) {
-                problem.getCodeTemplate().stream()
-                        .filter(t -> t.getLanguage().equals(param.getLanguage().toLowerCase()))
-                        .findFirst()
-                        .ifPresent(template -> {
-                            if (ObjectUtil.isNotEmpty(template.getPrefix()) && ObjectUtil.isNotEmpty(template.getSuffix())) {
-                                String code = template.getPrefix() + param.getCode() + template.getSuffix();
-                                log.info("处理代码模板成功，提交ID: {} 代码内容: {}", dataSubmit.getId(), code);
-                                message.setCode(code);
-                            }
-                        });
-            } else {
-                log.info("未使用代码模板，提交ID: {} 提交内容: {}", dataSubmit.getId(), param.getCode());
-                message.setCode(param.getCode());
-            }
+//            if (problem.getUseTemplate()) {
+//                problem.getCodeTemplate().stream()
+//                        .filter(t -> t.getLanguage().equals(param.getLanguage().toLowerCase()))
+//                        .findFirst()
+//                        .ifPresent(template -> {
+//                            if (ObjectUtil.isNotEmpty(template.getPrefix()) && ObjectUtil.isNotEmpty(template.getSuffix())) {
+//                                String code = template.getPrefix() + param.getCode() + template.getSuffix();
+//                                log.info("处理代码模板成功，提交ID: {} 代码内容: {}", dataSubmit.getId(), code);
+//                                message.setCode(code);
+//                            }
+//                        });
+//            } else {
+//                log.info("未使用代码模板，提交ID: {} 提交内容: {}", dataSubmit.getId(), param.getCode());
+//                message.setCode(param.getCode());
+//            }
 
             judgeHandleMessage.sendJudge(message, dataSubmit);
 

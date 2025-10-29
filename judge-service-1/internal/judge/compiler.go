@@ -303,7 +303,7 @@ func (c *DefaultCompiler) handleCompletion(err error, cgroupPath string, stdoutB
 		result.Success = false
 		result.Message = stderr
 		if err != nil {
-			result.Message = fmt.Sprintf("%s: %v", result.Message, err)
+			result.Message = fmt.Sprintf("%v\n\n%s", err, result.Message)
 		}
 		return result, err
 	}

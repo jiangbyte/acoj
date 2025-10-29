@@ -70,8 +70,8 @@ func (w *Workspace) buildErrorResponse(message string) *dto.JudgeResponse {
 		SetId:       w.judgeRequest.SetId,
 		Code:        w.judgeRequest.Code,
 		SubmitType:  w.judgeRequest.SubmitType,
-		MaxTime:     w.judgeRequest.MaxTime,
-		MaxMemory:   w.judgeRequest.MaxMemory,
+		MaxTime:     0,
+		MaxMemory:   0,
 		Message:     message,
 		ID:          w.judgeRequest.ID,
 		IsSet:       w.judgeRequest.IsSet,
@@ -137,7 +137,8 @@ func (w *Workspace) Execute() *dto.JudgeResponse {
 		// TODO 执行编译
 		compileResult, err := w.compile()
 		if err != nil {
-			return w.buildErrorResponse("编译失败: " + err.Error())
+			logx.Error("编译失败", err.Error())
+			return w.buildErrorResponse(compileResult.Message)
 		}
 		if !compileResult.Success {
 			return &dto.JudgeResponse{

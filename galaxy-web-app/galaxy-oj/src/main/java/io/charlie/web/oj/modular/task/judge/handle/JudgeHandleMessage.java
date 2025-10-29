@@ -74,23 +74,23 @@ public class JudgeHandleMessage {
         BeanUtil.copyProperties(judgeResultDto, dataSubmit);
         dataSubmitMapper.updateById(dataSubmit);
 
-        if (ObjectUtil.isNotEmpty(dataSubmit.getTestCase())) {
-            List<DataJudgeCase> dataJudgeCases = dataSubmit.getTestCase().stream().map(testCase -> {
-                DataJudgeCase dataJudgeCase = new DataJudgeCase();
-                dataJudgeCase.setSubmitId(judgeResultDto.getId());
-                dataJudgeCase.setInputData(testCase.getInput());
-                dataJudgeCase.setOutputData(testCase.getOutput());
-                dataJudgeCase.setExpectedOutput(testCase.getExcept());
-                dataJudgeCase.setMaxTime(testCase.getMaxTime());
-                dataJudgeCase.setMaxMemory(testCase.getMaxMemory());
-                dataJudgeCase.setStatus(testCase.getStatus());
-                dataJudgeCase.setMessage(testCase.getMessage());
-                dataJudgeCase.setExitCode(testCase.getExitCode());
-                dataJudgeCase.setScore(BigDecimal.ZERO);
-                return dataJudgeCase;
-            }).toList();
-            dataJudgeCaseMapper.insert(dataJudgeCases);
-        }
+//        if (ObjectUtil.isNotEmpty(dataSubmit.getTestCase())) {
+//            List<DataJudgeCase> dataJudgeCases = dataSubmit.getTestCase().stream().map(testCase -> {
+//                DataJudgeCase dataJudgeCase = new DataJudgeCase();
+//                dataJudgeCase.setSubmitId(judgeResultDto.getId());
+//                dataJudgeCase.setInputData(testCase.getInput());
+//                dataJudgeCase.setOutputData(testCase.getOutput());
+//                dataJudgeCase.setExpectedOutput(testCase.getExcept());
+//                dataJudgeCase.setMaxTime(testCase.getMaxTime());
+//                dataJudgeCase.setMaxMemory(testCase.getMaxMemory());
+//                dataJudgeCase.setStatus(testCase.getStatus());
+//                dataJudgeCase.setMessage(testCase.getMessage());
+//                dataJudgeCase.setExitCode(testCase.getExitCode());
+//                dataJudgeCase.setScore(BigDecimal.ZERO);
+//                return dataJudgeCase;
+//            }).toList();
+//            dataJudgeCaseMapper.insert(dataJudgeCases);
+//        }
 
         // 正式提交
         if (judgeResultDto.getSubmitType()) {

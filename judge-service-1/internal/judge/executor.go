@@ -15,20 +15,6 @@
 // 	"github.com/zeromicro/go-zero/core/logx"
 // )
 
-// type ExecuteResult struct {
-// 	Output string
-// 	Error  string
-
-// 	TimeLimitExceeded   bool
-// 	MemoryLimitExceeded bool
-
-// 	Success   bool
-// 	Message   string
-// 	ExitCode  int
-// 	MaxTime   float64
-// 	MaxMemory float64
-// }
-
 // type Executor interface {
 // 	Execute(workspace *Workspace, testCase *model.DataTestCase) (*model.DataJudgeCase, error)
 // }
@@ -40,7 +26,11 @@
 // func (e *SandboxExecutor) Execute(workspace *Workspace, testCase *model.DataTestCase) (*model.DataJudgeCase, error) {
 // 	startTime := time.Now()
 
-// 	result := &model.DataJudgeCase{}
+// 	result := &model.DataJudgeCase{
+// 		SubmitID: workspace.judgeRequest.ID,
+// 		CaseSign: testCase.CaseSign,
+// 		IsSample: testCase.IsSample,
+// 	}
 
 // 	cgroupPath, err := grutil.CreateCgroup(workspace.judgeRequest.MaxMemory)
 // 	if err != nil {
@@ -176,14 +166,15 @@
 // 		}
 
 // 		dataJudgeCase := &model.DataJudgeCase{
-// 			SubmitID:   w.judgeRequest.ID,
-// 			CaseSign:   testCase.CaseSign,
-// 			InputData:  testCase.InputData,
-// 			OutputData: result.OutputData,
-// 			MaxTime:    result.MaxTime,
-// 			MaxMemory:  result.MaxMemory,
-// 			IsSample:   result.IsSample,
-// 			Message:    result.Message,
+// 			SubmitID:       w.judgeRequest.ID,
+// 			CaseSign:       testCase.CaseSign,
+// 			InputData:      testCase.InputData,
+// 			OutputData:     result.OutputData,
+// 			ExpectedOutput: testCase.ExpectedOutput,
+// 			MaxTime:        result.MaxTime,
+// 			MaxMemory:      result.MaxMemory,
+// 			IsSample:       result.IsSample,
+// 			Message:        result.Message,
 // 		}
 
 // 		results = append(results, dataJudgeCase)
@@ -208,6 +199,7 @@ import (
 	"fmt"
 	"judge-service/internal/grutil"
 	"judge-service/internal/model"
+	"judge-service/internal/snowflake"
 	"os/exec"
 	"strings"
 	"sync"
@@ -217,78 +209,110 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-type ExecuteResult struct {
-	Output string
-	Error  string
-
-	TimeLimitExceeded   bool
-	MemoryLimitExceeded bool
-
-	Success   bool
-	Message   string
-	ExitCode  int
-	MaxTime   float64
-	MaxMemory float64
-}
-
+// Executor 执行器接口
 type Executor interface {
 	Execute(workspace *Workspace, testCase *model.DataTestCase) (*model.DataJudgeCase, error)
 }
 
+// SandboxExecutor 沙箱执行器
 type SandboxExecutor struct {
 	mu sync.Mutex
 }
 
-// 执行配置常量
-const (
-	extraTimeout    = 30 * time.Millisecond // 额外超时缓冲
-	defaultExitCode = 1
-	timeoutExitCode = -1
-)
-
 // Execute 执行测试用例
 func (e *SandboxExecutor) Execute(workspace *Workspace, testCase *model.DataTestCase) (*model.DataJudgeCase, error) {
 	startTime := time.Now()
-	result := &model.DataJudgeCase{}
 
+	// 初始化结果对象
+	result := e.initResult(workspace, testCase)
+
+	// 创建cgroup进行资源限制
 	cgroupPath, err := grutil.CreateCgroup(workspace.judgeRequest.MaxMemory)
 	if err != nil {
-		return e.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), defaultExitCode, err)
+		return e.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
 	}
 	defer grutil.CleanupCgroup(cgroupPath)
 
-	runCmd := grutil.GetRunCommand(workspace.langConfig, workspace.SourceFile, workspace.BuildFile)
-	timeout := e.calculateTimeout(workspace.judgeRequest.MaxTime)
+	// 执行命令并获取结果
+	return e.executeCommand(workspace, testCase, result, cgroupPath, startTime)
+}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+// initResult 初始化结果对象
+func (e *SandboxExecutor) initResult(workspace *Workspace, testCase *model.DataTestCase) *model.DataJudgeCase {
+	now := time.Now()
+	return &model.DataJudgeCase{
+		ID:             snowflake.GenerateID(),
+		SubmitID:       workspace.judgeRequest.ID,
+		CaseSign:       testCase.CaseSign,
+		InputData:      testCase.InputData,
+		ExpectedOutput: testCase.ExpectedOutput,
+		IsSample:       testCase.IsSample,
+		Score:          testCase.Score,
+		Status:         "PENDING",
+		// 文件相关字段
+		InputFilePath:  "", // 初始化为空字符串
+		InputFileSize:  0,  // 使用默认值
+		OutputFilePath: "", // 初始化为空字符串
+		OutputFileSize: 0,  // 使用默认值
+		// 执行结果相关字段
+		MaxTime:   0.00,
+		MaxMemory: 0.00,
+		Message:   "",
+		ExitCode:  0,
+		Deleted:   false,
+		// 时间相关字段
+		CreateTime: &now,
+		CreateUser: "0",
+		UpdateTime: &now,
+		UpdateUser: "0",
+	}
+}
+
+// executeCommand 执行命令并处理结果
+func (e *SandboxExecutor) executeCommand(workspace *Workspace, testCase *model.DataTestCase,
+	result *model.DataJudgeCase, cgroupPath string, startTime time.Time) (*model.DataJudgeCase, error) {
+
+	// 准备命令执行环境
+	cmd, stdoutBuf, stderrBuf, ctx, cancel, err := e.prepareCommand(workspace, testCase)
+	if err != nil {
+		return e.handleError(result, fmt.Sprintf("准备命令失败: %v", err), 1, err)
+	}
 	defer cancel()
 
-	cmd, err := e.createCommand(ctx, runCmd, testCase.InputData)
+	// 启动并管理进程
+	pgid, err := e.startAndManageProcess(cmd, cgroupPath)
 	if err != nil {
-		return e.handleError(result, fmt.Sprintf("创建命令失败: %v", err), defaultExitCode, err)
+		return e.handleError(result, fmt.Sprintf("进程管理失败: %v", err), 1, err)
 	}
 
-	if err := cmd.Start(); err != nil {
-		return e.handleError(result, fmt.Sprintf("启动进程失败: %v", err), defaultExitCode, err)
-	}
-
-	pgid, err := e.controlProcess(cmd, cgroupPath)
-	if err != nil {
-		return e.handleError(result, fmt.Sprintf("进程控制失败: %v", err), defaultExitCode, err)
-	}
-
-	return e.waitForCompletion(cmd, ctx, pgid, cgroupPath, workspace, testCase, startTime, result)
+	// 等待命令完成并收集结果
+	return e.waitForCompletion(cmd, ctx, workspace, testCase, result, cgroupPath, pgid, startTime, stdoutBuf, stderrBuf)
 }
 
-// calculateTimeout 计算执行超时时间
-func (e *SandboxExecutor) calculateTimeout(maxTime float64) time.Duration {
-	return time.Duration(maxTime)*time.Millisecond + extraTimeout
-}
+// prepareCommand 准备命令执行环境
+func (e *SandboxExecutor) prepareCommand(workspace *Workspace, testCase *model.DataTestCase) (
+	*exec.Cmd, *bytes.Buffer, *bytes.Buffer, context.Context, context.CancelFunc, error) {
 
-// createCommand 创建执行命令
-func (e *SandboxExecutor) createCommand(ctx context.Context, runCmd []string, inputData string) (*exec.Cmd, error) {
+	runCmd := grutil.GetRunCommand(workspace.langConfig, workspace.SourceFile, workspace.BuildFile)
+
+	// 设置超时上下文（执行时间限制 + 安全余量）
+	timeout := time.Duration(workspace.judgeRequest.MaxTime)*time.Millisecond + 30*time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
 	cmd := exec.CommandContext(ctx, runCmd[0], runCmd[1:]...)
+	e.setProcessAttributes(cmd)
 
+	// 设置输入输出缓冲区
+	cmd.Stdin = strings.NewReader(testCase.InputData)
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	return cmd, &stdoutBuf, &stderrBuf, ctx, cancel, nil
+}
+
+// setProcessAttributes 设置进程属性
+func (e *SandboxExecutor) setProcessAttributes(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 		Cloneflags: syscall.CLONE_NEWNS |
@@ -298,43 +322,45 @@ func (e *SandboxExecutor) createCommand(ctx context.Context, runCmd []string, in
 			syscall.CLONE_NEWIPC,
 		Unshareflags: syscall.CLONE_NEWNS,
 	}
-
-	cmd.Stdin = strings.NewReader(inputData)
-	return cmd, nil
 }
 
-// controlProcess 控制进程：暂停→设置cgroup→恢复
-func (e *SandboxExecutor) controlProcess(cmd *exec.Cmd, cgroupPath string) (int, error) {
+// startAndManageProcess 启动并管理进程
+func (e *SandboxExecutor) startAndManageProcess(cmd *exec.Cmd, cgroupPath string) (int, error) {
+	// 启动命令
+	if err := cmd.Start(); err != nil {
+		return 0, fmt.Errorf("启动进程失败: %w", err)
+	}
+
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// 暂停进程
-	if err := syscall.Kill(cmd.Process.Pid, syscall.SIGSTOP); err != nil {
-		return 0, fmt.Errorf("暂停进程失败: %v", err)
+	pgid := cmd.Process.Pid
+
+	// 暂停进程以便设置cgroup
+	if err := syscall.Kill(pgid, syscall.SIGSTOP); err != nil {
+		syscall.Kill(-pgid, syscall.SIGKILL)
+		return 0, fmt.Errorf("暂停进程失败: %w", err)
 	}
 
-	pgid := cmd.Process.Pid
+	// 设置cgroup
 	if err := grutil.SetCgroupForProcess(cgroupPath, pgid); err != nil {
 		syscall.Kill(-pgid, syscall.SIGKILL)
-		return 0, fmt.Errorf("设置cgroup失败: %v", err)
+		return 0, fmt.Errorf("设置cgroup失败: %w", err)
 	}
 
-	// 恢复进程
-	if err := syscall.Kill(cmd.Process.Pid, syscall.SIGCONT); err != nil {
-		return 0, fmt.Errorf("恢复进程失败: %v", err)
+	// 恢复进程执行
+	if err := syscall.Kill(pgid, syscall.SIGCONT); err != nil {
+		syscall.Kill(-pgid, syscall.SIGKILL)
+		return 0, fmt.Errorf("恢复进程失败: %w", err)
 	}
 
 	return pgid, nil
 }
 
-// waitForCompletion 等待命令完成
-func (e *SandboxExecutor) waitForCompletion(cmd *exec.Cmd, ctx context.Context, pgid int,
-	cgroupPath string, workspace *Workspace, testCase *model.DataTestCase,
-	startTime time.Time, result *model.DataJudgeCase) (*model.DataJudgeCase, error) {
-
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = &stderrBuf
+// waitForCompletion 等待命令完成并收集结果
+func (e *SandboxExecutor) waitForCompletion(cmd *exec.Cmd, ctx context.Context, workspace *Workspace,
+	testCase *model.DataTestCase, result *model.DataJudgeCase, cgroupPath string, pgid int,
+	startTime time.Time, stdoutBuf, stderrBuf *bytes.Buffer) (*model.DataJudgeCase, error) {
 
 	done := make(chan error, 1)
 	go func() {
@@ -343,109 +369,100 @@ func (e *SandboxExecutor) waitForCompletion(cmd *exec.Cmd, ctx context.Context, 
 
 	select {
 	case <-ctx.Done():
-		return e.handleTimeout(pgid, cgroupPath, &stdoutBuf, &stderrBuf, workspace, startTime, result)
+		return e.handleTimeout(workspace, result, cgroupPath, pgid, startTime, stdoutBuf, stderrBuf)
 	case err := <-done:
-		return e.handleCompletion(err, cgroupPath, &stdoutBuf, &stderrBuf, workspace, testCase, startTime, result)
+		return e.handleCommandResult(workspace, testCase, result, cgroupPath, startTime, stdoutBuf, stderrBuf, err)
 	}
 }
 
 // handleTimeout 处理超时情况
-func (e *SandboxExecutor) handleTimeout(pgid int, cgroupPath string, stdoutBuf, stderrBuf *bytes.Buffer,
-	workspace *Workspace, startTime time.Time, result *model.DataJudgeCase) (*model.DataJudgeCase, error) {
+func (e *SandboxExecutor) handleTimeout(workspace *Workspace, result *model.DataJudgeCase,
+	cgroupPath string, pgid int, startTime time.Time, stdoutBuf, stderrBuf *bytes.Buffer) (*model.DataJudgeCase, error) {
 
+	// 杀死进程组
 	syscall.Kill(-pgid, syscall.SIGKILL)
 
+	// 收集执行结果
 	elapsed := time.Since(startTime)
-	memoryUsed, _ := grutil.GetMemoryUsage(cgroupPath)
+	e.collectExecutionMetrics(result, cgroupPath, elapsed)
 
-	e.setResultMetrics(result, elapsed, memoryUsed)
 	result.OutputData = stdoutBuf.String()
-	result.Status = "TimeLimitExceeded"
-
-	if stderr := strings.TrimSpace(stderrBuf.String()); stderr != "" {
-		result.Message = stderr
-		result.Status = "RuntimeError"
-	}
-
-	logx.Errorf("超时杀死进程组，运行时间: %v ms，时间限制: %v ms",
-		elapsed.Milliseconds(), workspace.judgeRequest.MaxTime)
-
-	return result, nil
-}
-
-// handleCompletion 处理命令完成情况
-func (e *SandboxExecutor) handleCompletion(err error, cgroupPath string, stdoutBuf, stderrBuf *bytes.Buffer,
-	workspace *Workspace, testCase *model.DataTestCase, startTime time.Time, result *model.DataJudgeCase) (*model.DataJudgeCase, error) {
-
-	elapsed := time.Since(startTime)
-	memoryUsed, _ := grutil.GetMemoryUsage(cgroupPath)
-
-	e.setResultMetrics(result, elapsed, memoryUsed)
-	result.OutputData = stdoutBuf.String()
-
-	// 检查各种错误情况
-	e.evaluateResult(result, err, cgroupPath, stderrBuf, workspace, elapsed)
-
-	logx.Infof("运行完成，时间: %.1f ms，内存: %.1f KB，状态: %s",
-		result.MaxTime, result.MaxMemory, result.Status)
-
-	return result, nil
-}
-
-// setResultMetrics 设置结果指标
-func (e *SandboxExecutor) setResultMetrics(result *model.DataJudgeCase, elapsed time.Duration, memoryUsed uint64) {
-	result.MaxTime = float64(elapsed.Milliseconds())
-	result.MaxMemory = grutil.FormatBytesKB(memoryUsed)
-}
-
-// evaluateResult 评估执行结果
-func (e *SandboxExecutor) evaluateResult(result *model.DataJudgeCase, err error, cgroupPath string,
-	stderrBuf *bytes.Buffer, workspace *Workspace, elapsed time.Duration) {
-
-	// 检查时间限制
-	if elapsed > time.Duration(workspace.judgeRequest.MaxTime)*time.Millisecond {
-		result.Status = "TimeLimitExceeded"
-		return
-	}
-
-	// 检查内存溢出
-	if grutil.CheckOOMEvent(cgroupPath) {
-		result.Status = "MemoryLimitExceeded"
-		return
-	}
-
-	// 检查执行错误
-	if err != nil {
-		result.Message = err.Error()
-		result.Status = "RuntimeError"
-		return
-	}
+	result.Status = "TIME_LIMIT_EXCEEDED"
 
 	// 检查错误输出
 	if stderr := strings.TrimSpace(stderrBuf.String()); stderr != "" {
 		result.Message = stderr
-		result.Status = "RuntimeError"
-		return
 	}
 
-	// 正常完成
-	result.Status = "Completed"
+	logx.Errorf("超时杀死进程组，运行时间: %v ms，时间限制: %v ms", elapsed.Milliseconds(), workspace.judgeRequest.MaxTime)
+	return result, nil
 }
 
-// handleError 统一错误处理
-func (e *SandboxExecutor) handleError(result *model.DataJudgeCase, message string, exitCode int, err error) (*model.DataJudgeCase, error) {
-	result.Message = message
-	result.ExitCode = exitCode
-	result.Status = "RuntimeError"
-	logx.Errorf("执行错误: %s", message)
-	return result, err
+// handleCommandResult 处理命令执行结果
+func (e *SandboxExecutor) handleCommandResult(workspace *Workspace, testCase *model.DataTestCase,
+	result *model.DataJudgeCase, cgroupPath string, startTime time.Time,
+	stdoutBuf, stderrBuf *bytes.Buffer, cmdErr error) (*model.DataJudgeCase, error) {
+
+	elapsed := time.Since(startTime)
+	e.collectExecutionMetrics(result, cgroupPath, elapsed)
+
+	result.OutputData = stdoutBuf.String()
+
+	// 判断执行状态
+	result.Status = e.determineExecutionStatus(workspace, result, cgroupPath, elapsed, cmdErr, stderrBuf.String())
+
+	logx.Infof("运行完成 - 状态: %s, 时间: %.2f ms, 内存: %.2f KB",
+		result.Status, result.MaxTime, result.MaxMemory)
+
+	return result, nil
 }
 
-// executeTestCases 执行所有测试用例
+// collectExecutionMetrics 收集执行指标
+func (e *SandboxExecutor) collectExecutionMetrics(result *model.DataJudgeCase,
+	cgroupPath string, elapsed time.Duration) {
+
+	result.MaxTime = float64(elapsed.Milliseconds())
+
+	if memoryUsed, err := grutil.GetMemoryUsage(cgroupPath); err == nil {
+		result.MaxMemory = grutil.FormatBytesKB(memoryUsed)
+	}
+}
+
+// determineExecutionStatus 判断执行状态
+func (e *SandboxExecutor) determineExecutionStatus(workspace *Workspace, result *model.DataJudgeCase,
+	cgroupPath string, elapsed time.Duration, cmdErr error, stderr string) string {
+
+	// 检查时间限制
+	if elapsed > time.Duration(workspace.judgeRequest.MaxTime)*time.Millisecond {
+		return "TIME_LIMIT_EXCEEDED"
+	}
+
+	// 检查内存限制
+	if grutil.CheckOOMEvent(cgroupPath) {
+		return "MEMORY_LIMIT_EXCEEDED"
+	}
+
+	// 检查运行时错误
+	if cmdErr != nil {
+		result.Message = cmdErr.Error()
+		return "RUNTIME_ERROR"
+	}
+
+	// 检查错误输出
+	if strings.TrimSpace(stderr) != "" {
+		result.Message = stderr
+		return "RUNTIME_ERROR"
+	}
+
+	return "RUN_SUCCESS"
+}
+
+// executeTestCases 执行测试用例集
 func (w *Workspace) executeTestCases() ([]*model.DataJudgeCase, error) {
-	testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemID(w.ctx, w.judgeRequest.ProblemId)
+	// testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemID(w.ctx, w.judgeRequest.ProblemId)
+	testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemIDWithSample(w.ctx, w.judgeRequest.ProblemId, w.judgeRequest.SubmitType)
 	if err != nil {
-		return nil, fmt.Errorf("获取测试用例失败: %v", err)
+		return nil, fmt.Errorf("获取测试用例失败: %w", err)
 	}
 
 	executor := &SandboxExecutor{}
@@ -454,24 +471,25 @@ func (w *Workspace) executeTestCases() ([]*model.DataJudgeCase, error) {
 	for _, testCase := range testCases {
 		result, err := executor.Execute(w, &testCase)
 		if err != nil {
-			return nil, fmt.Errorf("执行测试用例失败: %v", err)
+			// 记录错误但继续执行其他测试用例
+			logx.Errorf("执行测试用例 %s 失败: %v", testCase.CaseSign, err)
+			continue
 		}
+		results = append(results, result)
+	}
 
-		judgeCase := &model.DataJudgeCase{
-			SubmitID:   w.judgeRequest.ID,
-			CaseSign:   testCase.CaseSign,
-			InputData:  testCase.InputData,
-			OutputData: result.OutputData,
-			MaxTime:    result.MaxTime,
-			MaxMemory:  result.MaxMemory,
-			IsSample:   result.IsSample,
-			Message:    result.Message,
-			Status:     result.Status,
-			ExitCode:   result.ExitCode,
-		}
-
-		results = append(results, judgeCase)
+	if len(results) == 0 && len(testCases) > 0 {
+		return nil, fmt.Errorf("所有测试用例执行失败")
 	}
 
 	return results, nil
+}
+
+// handleError 统一错误处理
+func (e *SandboxExecutor) handleError(result *model.DataJudgeCase, message string, exitCode int, err error) (*model.DataJudgeCase, error) {
+	result.Status = "SystemError"
+	result.Message = message
+	result.ExitCode = exitCode
+	logx.Errorf("执行错误: %s, 原始错误: %v", message, err)
+	return result, fmt.Errorf("%s: %w", message, err)
 }

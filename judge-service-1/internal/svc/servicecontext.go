@@ -53,6 +53,9 @@ func (s *ServiceContext) CommonChannel() *amqp.Channel {
 func (s *ServiceContext) TestCaseRepo() repository.TestCaseRepository {
 	return s.Initializer.GetTestCaseRepo()
 }
+func (s *ServiceContext) JudgeCaseRepo() repository.JudgeCaseRepository {
+	return s.Initializer.GetJudgeCaseRepo()
+}
 
 func (s *ServiceContext) IsDBReady() bool {
 	return s.Initializer.IsDBReady()
