@@ -1,4 +1,4 @@
-module judge-service
+module similarity-service
 
 go 1.24.4
 

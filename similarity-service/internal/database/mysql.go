@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"judge-service/internal/config"
+	"similarity-service/internal/config"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/mysql"

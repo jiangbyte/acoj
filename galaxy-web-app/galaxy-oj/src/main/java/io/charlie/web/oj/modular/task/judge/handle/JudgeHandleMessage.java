@@ -4,10 +4,10 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import io.charlie.web.oj.modular.data.judgecase.mapper.DataJudgeCaseMapper;
+import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
+import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.ranking.utils.ActivityScoreCalculator;
 import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
-import io.charlie.web.oj.modular.data.library.service.DataLibraryService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
@@ -18,13 +18,21 @@ import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import io.charlie.web.oj.modular.task.judge.mq.JudgeQueueProperties;
 import io.charlie.web.oj.modular.task.library.handle.LibraryHandleMessage;
 import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
+import io.charlie.web.oj.modular.task.similarity.handle.SimilarityHandleMessage;
 import io.charlie.web.oj.modular.task.similarity.handle.SingleSimilarityHandleMessage;
+import io.charlie.web.oj.modular.task.similarity.msg.SimilarityMessage;
+import io.charlie.web.oj.utils.similarity.utils.CodeTokenUtil;
+import io.charlie.web.oj.utils.similarity.utils.TokenDetail;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author ZhangJiangHu
@@ -39,15 +47,19 @@ public class JudgeHandleMessage {
     private final RabbitTemplate rabbitTemplate;
     private final DataSubmitMapper dataSubmitMapper;
     private final DataSolvedMapper dataSolvedMapper;
-    private final SingleSimilarityHandleMessage similarityHandleMessage;
+    private final SingleSimilarityHandleMessage singleSimilarityHandleMessage;
+    private final SimilarityHandleMessage similarityHandleMessage;
     private final LibraryHandleMessage libraryHandleMessage;
 
     private final UserActivityService userActivityService;
 
     private final JudgeQueueProperties judgeQueueProperties;
 
+    private final CodeTokenUtil codeTokenUtil;
+    private final DataProblemMapper dataProblemMapper;
 
-    public void sendJudge(JudgeSubmitDto judgeSubmitDto, DataSubmit dataSubmit) {
+
+    public void sendJudge(JudgeSubmitDto judgeSubmitDto) {
         log.info("发送消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
         rabbitTemplate.convertAndSend(
                 judgeQueueProperties.getCommon().getExchange(),
@@ -65,6 +77,7 @@ public class JudgeHandleMessage {
         // 核心数据库更新
         DataSubmit dataSubmit = dataSubmitMapper.selectById(judgeResultDto.getId());
         BeanUtil.copyProperties(judgeResultDto, dataSubmit);
+        dataSubmit.setIsFinish(Boolean.TRUE); // 流转结束
         dataSubmitMapper.updateById(dataSubmit);
 
 //        if (ObjectUtil.isNotEmpty(dataSubmit.getTestCase())) {
@@ -91,25 +104,15 @@ public class JudgeHandleMessage {
             if (JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus())) {
                 log.info("正式提交 AC，进行额外处理");
                 userActivityService.addActivity(judgeResultDto.getUserId(), ActivityScoreCalculator.SUBMIT, true);
-                stopStatus(judgeResultDto.getId()); // 流转结束
                 handleAdditionalTasks(judgeResultDto, dataSubmit);
             } else {
                 // 非 ac 情况
                 log.info("非 AC 提交，不进行额外处理");
-                stopStatus(judgeResultDto.getId());
             }
         } else {
             // 测试提交
             log.info("测试提交，不进行额外处理");
-            stopStatus(judgeResultDto.getId());
         }
-    }
-
-    private void stopStatus(String id) {
-        dataSubmitMapper.update(new LambdaUpdateWrapper<DataSubmit>()
-                .eq(DataSubmit::getId, id)
-                .set(DataSubmit::getIsFinish, Boolean.TRUE)
-        );
     }
 
     /**
@@ -158,11 +161,30 @@ public class JudgeHandleMessage {
         String taskId = IdUtil.objectId();
         dataSubmitMapper.update(new LambdaUpdateWrapper<DataSubmit>().eq(DataSubmit::getId, judgeResultDto.getId()).set(DataSubmit::getTaskId, taskId));
 
-        SimilaritySubmitDto similaritySubmitDto = BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class);
-        similaritySubmitDto.setTaskId(taskId);
-        similaritySubmitDto.setTaskType(Boolean.FALSE);
-        similaritySubmitDto.setJudgeTaskId(judgeResultDto.getJudgeTaskId());
-        similaritySubmitDto.setCreateTime(dataSubmit.getCreateTime());
-        similarityHandleMessage.sendSimilarity(similaritySubmitDto);
+//        SimilaritySubmitDto similaritySubmitDto = BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class);
+//        similaritySubmitDto.setTaskId(taskId);
+//        similaritySubmitDto.setTaskType(Boolean.FALSE);
+//        similaritySubmitDto.setJudgeTaskId(judgeResultDto.getJudgeTaskId());
+//        similaritySubmitDto.setCreateTime(dataSubmit.getCreateTime());
+//        singleSimilarityHandleMessage.sendSimilarity(similaritySubmitDto);
+
+        // 方法
+        DataProblem dataProblem = dataProblemMapper.selectById(dataSubmit.getProblemId());
+        TokenDetail codeTokensDetail = codeTokenUtil.getCodeTokensDetail(judgeResultDto.getLanguage().toLowerCase(), judgeResultDto.getCode());
+
+        SimilarityMessage similarityMessage = new SimilarityMessage();
+        similarityMessage.setTaskId(taskId);
+        similarityMessage.setSubmitId(dataSubmit.getId());
+        similarityMessage.setSetId(dataSubmit.getSetId());
+        similarityMessage.setProblemId(dataSubmit.getProblemId());
+        similarityMessage.setIsSet(judgeResultDto.getIsSet());
+        similarityMessage.setLanguage(judgeResultDto.getLanguage());
+        similarityMessage.setThreshold(dataProblem.getThreshold());
+        similarityMessage.setTaskType(Boolean.FALSE);
+        similarityMessage.setMinMatchLength(5);
+        similarityMessage.setCodeTokens(codeTokensDetail.getTokens());
+        similarityMessage.setCodeTokenNames(codeTokensDetail.getTokenNames());
+        similarityMessage.setCodeTokenTexts(codeTokensDetail.getTokenTexts());
+        similarityHandleMessage.sendSimilarity(similarityMessage);
     }
 }

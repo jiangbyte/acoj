@@ -2,19 +2,18 @@ package core
 
 import (
 	"context"
-	"fmt"
-	"judge-service/internal/config"
-	"judge-service/internal/mq"
-	"judge-service/internal/svc"
-	"judge-service/internal/utils"
-	"os"
-	"path/filepath"
-	"strings"
+	"encoding/json"
+	"github.com/zeromicro/go-zero/core/logx"
+	"math"
+	"runtime"
+	"similarity-service/internal/config"
+	"similarity-service/internal/database/model"
+	"similarity-service/internal/mq"
+	"similarity-service/internal/similarity"
+	"similarity-service/internal/svc"
+	"similarity-service/internal/utils"
 	"sync"
 	"time"
-
-	"github.com/google/uuid"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 // WorkspaceManager 工作空间管理器，负责工作空间的创建和清理
@@ -39,169 +38,424 @@ func GetWorkspaceManager(basePath string) *WorkspaceManager {
 }
 
 type Workspace struct {
-	ctx          context.Context
-	config       config.Config
-	startTime    time.Time
-	judgeRequest mq.JudgeRequest
-	RootPath     string // 工作空间根目录
-	SourcePath   string // 源代码目录
-	SourceFile   string // 源代码文件
-	BuildPath    string // 编译目录
-	BuildFile    string // 编译文件
-	RunsPath     string // 运行目录
-	svcCtx       *svc.ServiceContext
-	mu           sync.RWMutex // 工作空间内部锁
-	isCleaned    bool         // 标记是否已清理
+	ctx               context.Context
+	config            config.Config
+	startTime         time.Time
+	similarityMessage mq.SimilarityMessage
+	svcCtx            *svc.ServiceContext
+	mu                sync.RWMutex // 工作空间内部锁
+	isCleaned         bool         // 标记是否已清理
 }
 
 // NewWorkspace 创建工作空间,上下文/配置/提交信息,返回 工作空间实例 和 提交信息
-func NewWorkspace(ctx context.Context, config config.Config, judgeRequest mq.JudgeRequest, svcCtx *svc.ServiceContext) (*Workspace, *mq.JudgeResponse) {
-	submissionID := generateSubmissionID()
-	workDir := config.Workspace
-	root := filepath.Join(workDir, submissionID) // 本次工作空间根目录
-
+func NewWorkspace(ctx context.Context, config config.Config, similarityMessage mq.SimilarityMessage, svcCtx *svc.ServiceContext) (*Workspace, *mq.SimilarityResultMessage) {
 	ws := &Workspace{
-		ctx:          ctx,                           // 使用传入的ctx
-		startTime:    time.Now(),                    // 记录开始时间，用来计算任务总耗时
-		config:       config,                        // 系统配置
-		judgeRequest: judgeRequest,                  // 提交信息
-		RootPath:     root,                          // 根目录
-		SourcePath:   filepath.Join(root, "source"), // 源代码目录
-		BuildPath:    filepath.Join(root, "build"),  // 编译目录
-		RunsPath:     filepath.Join(root, "runs"),   // 运行目录
-		svcCtx:       svcCtx,
-		isCleaned:    false,
+		ctx:               ctx,        // 使用传入的ctx
+		startTime:         time.Now(), // 记录开始时间，用来计算任务总耗时
+		config:            config,     // 系统配置
+		similarityMessage: similarityMessage,
+		svcCtx:            svcCtx,
+		isCleaned:         false,
 	}
-
-	// 注册到工作空间管理器
-	GetWorkspaceManager(config.Workspace).Register(ws)
-
-	// 创建目录
-	if err := ws.createDirs(); err != nil {
-		return nil, ws.buildErrorResponse("创建工作空间失败: "+err.Error(), "SYSTEM_ERROR")
-	}
-
 	return ws, nil
 }
 
-// generateSubmissionID 生成提交ID
-func generateSubmissionID() string {
-	return strings.ReplaceAll(uuid.New().String(), "-", "")
-}
-
 // buildErrorResponse 构建错误响应
-func (w *Workspace) buildErrorResponse(message string, status string) *mq.JudgeResponse {
-	return &mq.JudgeResponse{
-		UserId:      w.judgeRequest.UserId,
-		ProblemId:   w.judgeRequest.ProblemId,
-		Language:    w.judgeRequest.Language,
-		SetId:       w.judgeRequest.SetId,
-		Code:        w.judgeRequest.Code,
-		SubmitType:  w.judgeRequest.SubmitType,
-		MaxTime:     0,
-		MaxMemory:   0,
-		Message:     message,
-		ID:          w.judgeRequest.ID,
-		IsSet:       w.judgeRequest.IsSet,
-		Status:      status,
-		ExitCode:    1,
-		JudgeTaskId: w.judgeRequest.JudgeTaskId,
+func (w *Workspace) buildErrorResponse() *mq.SimilarityResultMessage {
+	return &mq.SimilarityResultMessage{
+		TaskID:         w.similarityMessage.TaskID,
+		SubmitID:       w.similarityMessage.SubmitID,
+		SetID:          w.similarityMessage.SetID,
+		ProblemID:      w.similarityMessage.ProblemID,
+		IsSet:          w.similarityMessage.IsSet,
+		Language:       w.similarityMessage.Language,
+		UserID:         w.similarityMessage.UserID,
+		MinMatchLength: w.similarityMessage.MinMatchLength,
+		Threshold:      w.similarityMessage.Threshold,
+		TaskType:       w.similarityMessage.TaskType,
+		CodeTokens:     w.similarityMessage.CodeTokens,
+		CodeTokenNames: w.similarityMessage.CodeTokenNames,
+		CodeTokenTexts: w.similarityMessage.CodeTokenTexts,
+		Similarity:     0.0,
 	}
 }
 
-// createDirs 创建目录
-func (w *Workspace) createDirs() error {
-	dirs := []string{w.SourcePath, w.BuildPath, w.RunsPath}
-	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("创建目录 %s 失败: %w", dir, err)
-		}
+// buildErrorResponse 构建响应
+func (w *Workspace) buildResponse(similarity float64) *mq.SimilarityResultMessage {
+	return &mq.SimilarityResultMessage{
+		TaskID:         w.similarityMessage.TaskID,
+		SubmitID:       w.similarityMessage.SubmitID,
+		SetID:          w.similarityMessage.SetID,
+		ProblemID:      w.similarityMessage.ProblemID,
+		IsSet:          w.similarityMessage.IsSet,
+		Language:       w.similarityMessage.Language,
+		UserID:         w.similarityMessage.UserID,
+		MinMatchLength: w.similarityMessage.MinMatchLength,
+		Threshold:      w.similarityMessage.Threshold,
+		TaskType:       w.similarityMessage.TaskType,
+		CodeTokens:     w.similarityMessage.CodeTokens,
+		CodeTokenNames: w.similarityMessage.CodeTokenNames,
+		CodeTokenTexts: w.similarityMessage.CodeTokenTexts,
+		Similarity:     similarity,
 	}
-	return nil
 }
 
-// getLanguageConfig 获取语言配置
-func (w *Workspace) getLanguageConfig() (*config.LanguageConfig, error) {
-	for _, lang := range w.config.Languages {
-		if lang.Name == w.judgeRequest.Language {
-			return &lang, nil
-		}
-	}
-	return nil, fmt.Errorf("不支持的语言: %s", w.judgeRequest.Language)
-}
-
-// writeSourceCode 写入源代码
-func (w *Workspace) writeSourceCode() error {
-	langConfig, err := w.getLanguageConfig()
-	if err != nil {
-		return err
-	}
-	w.langConfig = *langConfig
-
-	fileName := langConfig.SourceFile + langConfig.Extension
-	filePath := filepath.Join(w.SourcePath, fileName)
-
-	if err := os.WriteFile(filePath, []byte(w.judgeRequest.Code), 0644); err != nil {
-		return fmt.Errorf("写入源代码文件失败: %w", err)
+func calculateSimilarityScorePrecise(matches int, submitTokens, libraryTokens []int) float64 {
+	if matches == 0 {
+		return 0.0
 	}
 
-	w.SourceFile = filePath
-	w.BuildFile = filepath.Join(w.RunsPath, langConfig.CompileFile)
-	logx.Infof("源代码保存成功: %s", filePath)
+	// 使用 int64 避免溢出
+	matchesBig := int64(matches * 2)
+	submitSize := int64(len(submitTokens))
+	librarySize := int64(len(libraryTokens))
 
-	return nil
+	denominator := submitSize + librarySize
+	if denominator == 0 {
+		return 0.0
+	}
+
+	similarity := float64(matchesBig) / float64(denominator)
+	return math.Round(similarity*10000) / 10000 // 保留4位小数
 }
 
 // 执行代码
-func (w *Workspace) Execute() *mq.JudgeResponse {
+//func (w *Workspace) Execute() *mq.SimilarityResultMessage {
+//	startTime := time.Now()
+//	logx.Infof("开始执行 %v", w.similarityMessage.TaskID)
+//	w.mu.Lock()
+//	defer w.mu.Unlock()
+//
+//	sampleLibraries, err := w.svcCtx.DataLibraryRepo().GetSimilarityLibraries(
+//		w.similarityMessage.IsSet,
+//		w.similarityMessage.ProblemID,
+//		w.similarityMessage.Language,
+//		w.similarityMessage.UserID,
+//		w.similarityMessage.SetID,
+//		100,
+//	)
+//
+//	if err != nil {
+//		logx.Errorf("获取样本库失败: %v", err)
+//		return nil
+//	}
+//
+//	logx.Infof("样本库数量: %d", len(sampleLibraries))
+//
+//	var (
+//		maxSimilarityScore float64
+//		_                  sync.Mutex
+//	)
+//
+//	// 使用 worker pool
+//	numWorkers := runtime.NumCPU() * 2
+//	jobs := make(chan model.DataLibrary, len(sampleLibraries))
+//	results := make(chan float64, len(sampleLibraries))
+//
+//	// 启动 worker
+//	for i := 0; i < numWorkers; i++ {
+//		go func() {
+//			for library := range jobs {
+//				// 解析 CodeToken JSON 字符串为 []int
+//				var codeTokens []int
+//				if err := json.Unmarshal([]byte(library.CodeToken), &codeTokens); err != nil {
+//					logx.Infof("解析 CodeToken JSON 失败 (ID: %s): %v", library.ID, err)
+//					results <- 0.0
+//					continue
+//				}
+//
+//				matches := similarity.GreedyStringTiling(w.similarityMessage.CodeTokens, codeTokens, 5)
+//				similarityScore := calculateSimilarityScorePrecise(
+//					matches,
+//					w.similarityMessage.CodeTokens,
+//					codeTokens,
+//				)
+//				results <- similarityScore
+//			}
+//		}()
+//	}
+//
+//	// 分发任务
+//	go func() {
+//		for _, library := range sampleLibraries {
+//			jobs <- library
+//		}
+//		close(jobs)
+//	}()
+//
+//	// 收集结果
+//	for i := 0; i < len(sampleLibraries); i++ {
+//		if similarityScore := <-results; similarityScore > maxSimilarityScore {
+//			maxSimilarityScore = similarityScore
+//		}
+//	}
+//
+//	totalTime := time.Since(startTime)
+//	logx.Infof("Execute函数总执行耗时: %v", totalTime)
+//	return w.buildResponse(maxSimilarityScore)
+//}
+
+// 执行代码
+func (w *Workspace) Execute() *mq.SimilarityResultMessage {
+	startTime := time.Now()
+	logx.Infof("开始执行 %v", w.similarityMessage.TaskID)
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if w.isCleaned {
-		return w.buildErrorResponse("工作空间已清理", "SYSTEM_ERROR")
-	}
+	sampleLibraries, err := w.svcCtx.DataLibraryRepo().GetSimilarityLibraries(
+		w.similarityMessage.IsSet,
+		w.similarityMessage.ProblemID,
+		w.similarityMessage.Language,
+		w.similarityMessage.UserID,
+		w.similarityMessage.SetID,
+		100,
+	)
 
-	// 1. 写入源代码
-	if err := w.writeSourceCode(); err != nil {
-		return w.buildErrorResponse(err.Error(), "SYSTEM_ERROR")
-	}
-
-	// 2. 编译（如果需要）
-	if w.langConfig.NeedCompile {
-		// TODO 执行编译
-		compileResult, err := w.compile()
-		if err != nil {
-			logx.Error("编译失败", err.Error())
-			compileResult.Message = utils.AutoMaskAllFilePaths(compileResult.Message)
-			return w.buildErrorResponse(compileResult.Message, "COMPILATION_ERROR")
-		}
-		if !compileResult.Success {
-			compileResult.Message = utils.AutoMaskAllFilePaths(compileResult.Message)
-			return w.buildErrorResponse(compileResult.Message, "COMPILATION_ERROR")
-		}
-	}
-
-	// 3. 执行测试用例
-	executeResult, err := w.executeTestCases()
 	if err != nil {
-		return w.buildErrorResponse("执行失败: "+err.Error(), "RUNTIME_ERROR")
+		logx.Errorf("获取样本库失败: %v", err)
+		return nil
 	}
 
-	// 4. 评估结果
-	evaluationResult := w.evaluate(executeResult)
+	logx.Infof("样本库数量: %d", len(sampleLibraries))
 
-	// 5. 返回最终结果
-	return evaluationResult
+	var (
+		maxSimilarityScore float64
+		mu                 sync.Mutex
+		taskSimilarities   []*model.TaskSimilarity // 用于收集 TaskSimilarity 记录
+	)
+	// 定义结果结构
+	type similarityResult struct {
+		similarityScore float64
+		library         model.DataLibrary
+	}
+
+	// 使用 worker pool
+	numWorkers := runtime.NumCPU() * 2
+	jobs := make(chan model.DataLibrary, len(sampleLibraries))
+	results := make(chan *similarityResult, len(sampleLibraries))
+
+	// 启动 worker
+	for i := 0; i < numWorkers; i++ {
+		go func() {
+			for library := range jobs {
+				// 解析 CodeToken JSON 字符串为 []int
+				var codeTokens []int
+				if err := json.Unmarshal([]byte(library.CodeToken), &codeTokens); err != nil {
+					logx.Infof("解析 CodeToken JSON 失败 (ID: %s): %v", library.ID, err)
+					results <- &similarityResult{similarityScore: 0.0, library: library}
+					continue
+				}
+
+				matches := similarity.GreedyStringTiling(w.similarityMessage.CodeTokens, codeTokens, 5)
+				similarityScore := calculateSimilarityScorePrecise(
+					matches,
+					w.similarityMessage.CodeTokens,
+					codeTokens,
+				)
+				results <- &similarityResult{similarityScore: similarityScore, library: library}
+			}
+		}()
+	}
+
+	// 分发任务
+	go func() {
+		for _, library := range sampleLibraries {
+			jobs <- library
+		}
+		close(jobs)
+	}()
+
+	// 收集结果
+	for i := 0; i < len(sampleLibraries); i++ {
+		result := <-results
+
+		// 更新最大相似度
+		if result.similarityScore > maxSimilarityScore {
+			maxSimilarityScore = result.similarityScore
+		}
+
+		// 创建 TaskSimilarity 记录
+		taskSimilarity := w.createTaskSimilarity(result.library, result.similarityScore)
+
+		mu.Lock()
+		taskSimilarities = append(taskSimilarities, taskSimilarity)
+		mu.Unlock()
+	}
+
+	// 批量插入 TaskSimilarity 记录
+	if len(taskSimilarities) > 0 {
+		if err := w.svcCtx.TaskSimilarityRepo().BatchCreate(taskSimilarities); err != nil {
+			logx.Errorf("批量插入 TaskSimilarity 记录失败: %v", err)
+		} else {
+			logx.Infof("成功插入 %d 条 TaskSimilarity 记录", len(taskSimilarities))
+		}
+	}
+
+	//totalTime := time.Since(startTime)
+	//logx.Infof("Execute函数总执行耗时: %v", totalTime)
+	//return w.buildResponse(maxSimilarityScore)
+
+	// 构建响应
+	response := w.buildResponse(maxSimilarityScore)
+
+	// 生成报告
+	if err := w.GenerateReport(response); err != nil {
+		logx.Errorf("生成报告失败: %v", err)
+		// 不返回错误，继续返回相似度结果
+	}
+
+	totalTime := time.Since(startTime)
+	logx.Infof("Execute函数总执行耗时: %v", totalTime)
+	return response
 }
 
-// Register 注册工作空间
-func (wm *WorkspaceManager) Register(ws *Workspace) {
-	wm.workspaces.Store(ws.RootPath, ws)
+// 创建 TaskSimilarity 记录
+func (w *Workspace) createTaskSimilarity(library model.DataLibrary, similarityScore float64) *model.TaskSimilarity {
+	now := time.Now()
+
+	// 将 token 数组转换为 JSON 字符串
+	submitCodeTokenJSON, _ := json.Marshal(w.similarityMessage.CodeTokens)
+	originCodeTokenJSON, _ := json.Marshal(library.CodeToken)
+
+	submitTokenNames, _ := json.Marshal(w.similarityMessage.CodeTokenNames)
+	submitTokenTexts, _ := json.Marshal(w.similarityMessage.CodeTokenTexts)
+
+	return &model.TaskSimilarity{
+		ID:         utils.GenerateID(),
+		TaskID:     w.similarityMessage.TaskID,
+		TaskType:   w.similarityMessage.IsSet,
+		ProblemID:  w.similarityMessage.ProblemID,
+		SetID:      w.similarityMessage.SetID,
+		IsSet:      w.similarityMessage.IsSet,
+		Language:   w.similarityMessage.Language,
+		Similarity: similarityScore,
+		SubmitUser: w.similarityMessage.UserID,
+		//SubmitCode:       w.similarityMessage.SubmitCode,
+		//SubmitCodeLength: len(w.similarityMessage.SubmitCode),
+		SubmitID:         w.similarityMessage.SubmitID,
+		SubmitTime:       &now,
+		SubmitCodeToken:  string(submitCodeTokenJSON),
+		SubmitTokenName:  string(submitTokenNames), // 根据实际情况设置
+		SubmitTokenTexts: string(submitTokenTexts), // 根据实际情况设置
+		OriginUser:       library.UserID,
+		OriginCode:       library.Code,
+		OriginCodeLength: len(library.Code),
+		OriginID:         library.ID,
+		OriginTime:       library.SubmitTime,
+		OriginCodeToken:  string(originCodeTokenJSON),
+		OriginTokenName:  library.CodeTokenName,  // 根据实际情况设置
+		OriginTokenTexts: library.CodeTokenTexts, // 根据实际情况设置
+		CreateTime:       &now,
+		CreateUser:       "0", // 根据实际情况设置
+		UpdateTime:       &now,
+		UpdateUser:       "0",
+	}
 }
 
-// Unregister 注销工作空间
-func (wm *WorkspaceManager) Unregister(ws *Workspace) {
-	wm.workspaces.Delete(ws.RootPath)
+// 在Workspace结构体中添加报告生成方法
+func (w *Workspace) GenerateReport(similarityResult *mq.SimilarityResultMessage) error {
+	logx.Infof("开始生成报告 taskID: %s", w.similarityMessage.TaskID)
+
+	// 设置阈值
+	threshold := w.similarityMessage.Threshold
+
+	var isSetValue int
+	if w.similarityMessage.IsSet {
+		isSetValue = 1
+	} else {
+		isSetValue = 0
+	}
+	// 从数据库中查询统计信息
+	taskReportStats, err := w.svcCtx.TaskSimilarityRepo().SelectSimilarityStats(
+		w.similarityMessage.TaskID,
+		w.similarityMessage.ProblemID,
+		w.similarityMessage.SetID,
+		isSetValue,
+	)
+	if err != nil {
+		logx.Errorf("查询相似度统计失败: %v", err)
+		return err
+	}
+
+	// 检查相似度是否为空（类似于Java中的BigDecimal.ZERO检查）
+	if taskReportStats.AvgSimilarity == 0 || taskReportStats.MaxSimilarity == 0 {
+		logx.Info("代码克隆检测 -> 相似为空 忽略报告")
+
+		//// 更新DataSubmit记录
+		//dataSubmit, err := w.svcCtx.DataSubmitRepo().FindByID(w.similarityMessage.SubmitID)
+		//if err != nil {
+		//	logx.Errorf("查找DataSubmit记录失败: %v", err)
+		//	return err
+		//}
+		//
+		//// 更新字段
+		//dataSubmit.Similarity = 0
+		//dataSubmit.SimilarityCategory = enum.NOT_DETECTED
+		//dataSubmit.ReportID = nil
+		//dataSubmit.UpdateTime = time.Now()
+		//
+		//if err := w.svcCtx.DataSubmitRepo().Update(dataSubmit); err != nil {
+		//	logx.Errorf("更新DataSubmit记录失败: %v", err)
+		//	return err
+		//}
+
+		logx.Info("已更新DataSubmit记录，跳过报告生成")
+		return nil
+	}
+
+	// 获取相似度分布数组
+	distributionArray, err := w.svcCtx.TaskSimilarityRepo().SelectSimilarityDistribution(w.similarityMessage.TaskID)
+	if err != nil {
+		logx.Errorf("查询相似度分布失败: %v", err)
+		return err
+	}
+
+	// 获取程度统计
+	degreeStats, err := w.svcCtx.TaskSimilarityRepo().SelectDegreeStatistics(w.similarityMessage.TaskID, threshold)
+	if err != nil {
+		logx.Errorf("查询程度统计失败: %v", err)
+		return err
+	}
+
+	// 将分布数组和程度统计转换为JSON字符串
+	distributionJSON, err := json.Marshal(distributionArray)
+	if err != nil {
+		logx.Errorf("序列化相似度分布失败: %v", err)
+		return err
+	}
+
+	degreeStatsJSON, err := json.Marshal(degreeStats)
+	if err != nil {
+		logx.Errorf("序列化程度统计失败: %v", err)
+		return err
+	}
+
+	now := time.Now()
+	// 创建TaskReports记录
+	taskReport := &model.TaskReports{
+		ID:                     utils.GenerateID(),
+		TaskID:                 w.similarityMessage.TaskID,
+		ProblemID:              w.similarityMessage.ProblemID,
+		SetID:                  w.similarityMessage.SetID,
+		SampleCount:            taskReportStats.SampleCount,
+		SimilarityGroupCount:   taskReportStats.GroupCount,
+		AvgSimilarity:          taskReportStats.AvgSimilarity,
+		MaxSimilarity:          taskReportStats.MaxSimilarity,
+		Threshold:              threshold,
+		SimilarityDistribution: string(distributionJSON),
+		DegreeStatistics:       string(degreeStatsJSON),
+		CreateTime:             &now,
+		UpdateTime:             &now,
+	}
+
+	// 插入TaskReports记录
+	if err := w.svcCtx.TaskReportsRepo().Create(taskReport); err != nil {
+		logx.Errorf("插入TaskReports记录失败: %v", err)
+		return err
+	}
+
+	logx.Infof("成功生成报告，报告ID: %s", taskReport.ID)
+	return nil
 }
 
 // GetAllWorkspaces 获取所有工作空间（用于监控）
@@ -214,31 +468,4 @@ func (wm *WorkspaceManager) GetAllWorkspaces() []*Workspace {
 		return true
 	})
 	return workspaces
-}
-
-// Cleanup 清理工作空间
-func (w *Workspace) Cleanup() error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	if w.isCleaned {
-		return nil
-	}
-
-	logx.Infof("开始清理工作空间 路径: %s", w.RootPath)
-
-	// 从管理器注销
-	GetWorkspaceManager(w.config.Workspace).Unregister(w)
-
-	// 异步清理，不阻塞当前goroutine
-	go func(path string) {
-		if err := os.RemoveAll(path); err != nil {
-			logx.Errorf("清理工作空间失败 路径: %s, 错误: %v", path, err)
-		} else {
-			logx.Infof("工作空间清理完毕: %s", path)
-		}
-	}(w.RootPath)
-
-	w.isCleaned = true
-	return nil
 }

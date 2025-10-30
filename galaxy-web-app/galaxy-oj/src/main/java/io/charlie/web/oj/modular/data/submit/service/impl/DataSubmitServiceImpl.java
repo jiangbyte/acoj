@@ -15,13 +15,14 @@ import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
-import io.charlie.web.oj.modular.data.ranking.utils.ActivityScoreCalculator;
 import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
+import io.charlie.web.oj.modular.data.ranking.utils.ActivityScoreCalculator;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.set.mapper.DataSetMapper;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
+import io.charlie.web.oj.modular.data.submit.event.ProblemSubmitEvent;
 import io.charlie.web.oj.modular.data.submit.param.*;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.data.submit.service.DataSubmitService;
@@ -29,16 +30,14 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
-import io.charlie.web.oj.modular.data.testcase.entity.DataTestCase;
 import io.charlie.web.oj.modular.data.testcase.service.DataTestCaseService;
 import io.charlie.web.oj.modular.task.judge.dto.JudgeSubmitDto;
-import io.charlie.web.oj.modular.task.judge.dto.TestCase;
 import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import io.charlie.web.oj.modular.task.judge.handle.JudgeHandleMessage;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DeadlockLoserDataAccessException;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
@@ -49,6 +48,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -74,6 +74,8 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     private final DataScopeUtil dataScopeUtil;
 
     private final DataTestCaseService dataTestCaseService;
+
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public Page<DataSubmit> page(DataSubmitPageParam dataSubmitPageParam) {
@@ -222,16 +224,21 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     @Override
     public String handleProblemSubmit(DataSubmitExeParam dataSubmitExeParam) {
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam, false);
-        this.handleSolvedRecord(dataSubmitExeParam, false, dataSubmit);
-        this.asyncHandleSubmit(dataSubmit, dataSubmitExeParam);
-        try {
-            String loginIdAsString = StpUtil.getLoginIdAsString();
-            if (GaStringUtil.isNotEmpty(loginIdAsString)) {
-                userActivityService.addActivity(loginIdAsString, ActivityScoreCalculator.SUBMIT, false);
-            }
-        } catch (Exception e) {
-            log.error("用户活动记录失败", e);
-        }
+        String loginIdAsString = StpUtil.getLoginIdAsString();
+
+        applicationEventPublisher.publishEvent(new ProblemSubmitEvent(dataSubmitExeParam, dataSubmit, Boolean.FALSE, loginIdAsString));
+
+//        this.handleSolvedRecord(dataSubmitExeParam, false, dataSubmit);
+//        this.asyncHandleSubmit(dataSubmit, dataSubmitExeParam);
+//        try {
+//            String loginIdAsString = StpUtil.getLoginIdAsString();
+//            if (GaStringUtil.isNotEmpty(loginIdAsString)) {
+//                userActivityService.addActivity(loginIdAsString, ActivityScoreCalculator.SUBMIT, false);
+//            }
+//        } catch (Exception e) {
+//            log.error("用户活动记录失败", e);
+//        }
+
         return dataSubmit.getId();
     }
 
@@ -438,7 +445,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
 
             message.setCode(param.getCode());
 
-            judgeHandleMessage.sendJudge(message, dataSubmit);
+            judgeHandleMessage.sendJudge(message);
 
             log.info("题目提交消息已发送到队列，提交ID: {}", dataSubmit.getId());
         } catch (Exception e) {

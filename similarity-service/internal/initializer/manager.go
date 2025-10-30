@@ -2,23 +2,24 @@ package initializer
 
 import (
 	"fmt"
-	"judge-service/internal/config"
-	"judge-service/internal/database"
-	repository2 "judge-service/internal/database/repository"
-	"judge-service/internal/mq"
-	"judge-service/internal/nacos"
+	"similarity-service/internal/config"
+	"similarity-service/internal/database"
+	repository2 "similarity-service/internal/database/repository"
+	"similarity-service/internal/mq"
+	"similarity-service/internal/nacos"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type InitializerManager struct {
-	config              config.Config
-	mysqlManager        *database.MySQLManager
-	rabbitMQManager     *mq.RabbitMQManager
-	serviceRegistry     *nacos.ServiceRegistryManager
-	testCaseRepo        repository2.TestCaseRepository
-	judgeCaseRepository repository2.JudgeCaseRepository
+	config                   config.Config
+	mysqlManager             *database.MySQLManager
+	rabbitMQManager          *mq.RabbitMQManager
+	serviceRegistry          *nacos.ServiceRegistryManager
+	dataLibraryRepository    repository2.DataLibraryRepository
+	taskSimilarityRepository repository2.TaskSimilarityRepository
+	taskReportsRepository    repository2.TaskReportsRepository
 }
 
 func NewInitializerManager(c config.Config) *InitializerManager {
@@ -79,8 +80,9 @@ func (im *InitializerManager) initMySQLWithRetry() {
 		}
 
 		im.mysqlManager = mysqlManager
-		im.testCaseRepo = repository2.NewTestCaseRepository(mysqlManager.DB)
-		im.judgeCaseRepository = repository2.NewJudgeCaseRepository(mysqlManager.DB)
+		im.dataLibraryRepository = repository2.NewDataLibraryRepository(mysqlManager.DB)
+		im.taskSimilarityRepository = repository2.NewTaskSimilarityRepository(mysqlManager.DB)
+		im.taskReportsRepository = repository2.NewTaskReportsRepository(mysqlManager.DB)
 		logx.Info("MySQL 连接成功")
 		return
 	}
@@ -122,12 +124,16 @@ func (im *InitializerManager) GetRabbitMQManager() *mq.RabbitMQManager {
 	return im.rabbitMQManager
 }
 
-func (im *InitializerManager) GetTestCaseRepo() repository2.TestCaseRepository {
-	return im.testCaseRepo
+func (im *InitializerManager) GetDataLibraryRepo() repository2.DataLibraryRepository {
+	return im.dataLibraryRepository
 }
 
-func (im *InitializerManager) GetJudgeCaseRepo() repository2.JudgeCaseRepository {
-	return im.judgeCaseRepository
+func (im *InitializerManager) GetTaskSimilarityRepo() repository2.TaskSimilarityRepository {
+	return im.taskSimilarityRepository
+}
+
+func (im *InitializerManager) GetTaskReportsRepo() repository2.TaskReportsRepository {
+	return im.taskReportsRepository
 }
 
 func (im *InitializerManager) GetServiceReRegistry() *nacos.ServiceRegistryManager {

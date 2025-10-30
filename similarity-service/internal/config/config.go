@@ -32,20 +32,19 @@ type RabbitMQConfig struct {
 	VirtualHost string `json:",optional"` // 虚拟主机
 	// 常规队列
 	Common struct {
-		Exchange         string `json:",optional"`
-		Queue            string `json:",optional"`
-		RoutingKey       string `json:",optional"`
-		ResultExchange   string `json:",optional"`
-		ResultQueue      string `json:",optional"`
-		ResultRoutingKey string `json:",optional"`
+		SimilarityExchange   string `json:",optional"`
+		SimilarityQueue      string `json:",optional"`
+		SimilarityRoutingKey string `json:",optional"`
+		ResultExchange       string `json:",optional"`
+		ResultQueue          string `json:",optional"`
+		ResultRoutingKey     string `json:",optional"`
 	} `json:",optional"`
 }
 
 // 配置队列
 type Config struct {
 	rest.RestConf
-	Workspace string `json:",optional"` // 工作空间(文件工作路径)
-	Nacos     NacosConfig
-	MySQL     MySQLConfig    `json:",optional"` // MySQL 配置
-	RabbitMQ  RabbitMQConfig `json:",optional"`
+	Nacos    NacosConfig
+	MySQL    MySQLConfig    `json:",optional"` // MySQL 配置
+	RabbitMQ RabbitMQConfig `json:",optional"`
 }

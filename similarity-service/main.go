@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"judge-service/internal/app"
 	"os"
+	"similarity-service/internal/app"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

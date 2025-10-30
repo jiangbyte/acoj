@@ -2,8 +2,8 @@ package app
 
 import (
 	"fmt"
-	"judge-service/internal/config"
-	"judge-service/internal/nacos"
+	"similarity-service/internal/config"
+	"similarity-service/internal/nacos"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"

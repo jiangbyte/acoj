@@ -2,7 +2,7 @@ package logic
 
 import (
 	"context"
-	"judge-service/internal/svc"
+	"similarity-service/internal/svc"
 )
 
 type ConsumeLogic struct {

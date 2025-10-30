@@ -3,9 +3,9 @@ package logic
 import (
 	"context"
 	"encoding/json"
-	"judge-service/internal/core"
-	"judge-service/internal/mq"
-	"judge-service/internal/svc"
+	"similarity-service/internal/core"
+	"similarity-service/internal/mq"
+	"similarity-service/internal/svc"
 	"sync"
 	"time"
 
@@ -31,7 +31,7 @@ func (l *CommonLogic) StartConsumer() {
 	CommonChannel := l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel
 
 	_, err := CommonChannel.QueueDeclare(
-		l.svcCtx.Config.RabbitMQ.Common.Queue,
+		l.svcCtx.Config.RabbitMQ.Common.SimilarityQueue,
 		true, false, false, false, nil,
 	)
 	if err != nil {
@@ -51,15 +51,15 @@ func (l *CommonLogic) StartConsumer() {
 	}
 
 	msgs, err := CommonChannel.Consume(
-		l.svcCtx.Config.RabbitMQ.Common.Queue,
+		l.svcCtx.Config.RabbitMQ.Common.SimilarityQueue,
 		"", false, false, false, false, nil,
 	)
 	if err != nil {
-		logx.Errorf("注册题目消费者失败: %v", err)
+		logx.Errorf("注册相似消费者失败: %v", err)
 		return
 	}
 
-	logx.Info("题目消费者已成功启动")
+	logx.Info("相似消费者已成功启动")
 
 	var wg sync.WaitGroup
 
@@ -86,18 +86,18 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 
 	defer func() {
 		if err := delivery.Ack(false); err != nil {
-			logx.Errorf("未能确认题目消息: %v", err)
+			logx.Errorf("未能确认相似消息: %v", err)
 		}
 	}()
 
-	var judgeSubmit mq.JudgeRequest
-	if err := json.Unmarshal(delivery.Body, &judgeSubmit); err != nil {
+	var similarityMessage mq.SimilarityMessage
+	if err := json.Unmarshal(delivery.Body, &similarityMessage); err != nil {
 		logx.Errorf("解码 JSON 出错: %v", err)
 		return
 	}
 
 	// 使用新的上下文创建工作空间
-	workspace, result := core.NewWorkspace(ctx, l.svcCtx.Config, judgeSubmit, l.svcCtx)
+	workspace, result := core.NewWorkspace(ctx, l.svcCtx.Config, similarityMessage, l.svcCtx)
 	if result != nil {
 		if err := l.sendResultToMQ(result); err != nil {
 			logx.Errorf("发送结果到MQ失败: %v", err)
@@ -106,20 +106,15 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 	}
 
 	// 程序执行
-	judgeResponse := workspace.Execute()
+	resultMessage := workspace.Execute()
 
 	// 发送结果
-	if err := l.sendResultToMQ(judgeResponse); err != nil {
+	if err := l.sendResultToMQ(resultMessage); err != nil {
 		logx.Errorf("发送结果到MQ失败: %v", err)
-	}
-
-	// 清理工作空间
-	if err := workspace.Cleanup(); err != nil {
-		logx.Errorf("删除工作空间失败: %v", err)
 	}
 }
 
-func (l *CommonLogic) sendResultToMQ(result *mq.JudgeResponse) error {
+func (l *CommonLogic) sendResultToMQ(result *mq.SimilarityResultMessage) error {
 	body, err := json.Marshal(result)
 	if err != nil {
 		return err

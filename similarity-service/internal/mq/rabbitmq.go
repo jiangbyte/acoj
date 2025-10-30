@@ -2,7 +2,7 @@ package mq
 
 import (
 	"fmt"
-	"judge-service/internal/config"
+	"similarity-service/internal/config"
 
 	"github.com/streadway/amqp"
 	"github.com/zeromicro/go-zero/core/logx"

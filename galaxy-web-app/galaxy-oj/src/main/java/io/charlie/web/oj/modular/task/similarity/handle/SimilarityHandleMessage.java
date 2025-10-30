@@ -77,104 +77,11 @@ public class SimilarityHandleMessage {
         try {
             log.info("代码克隆检测 -> 接收检测消息：{}", JSONUtil.toJsonStr(resultMessage));
 
-//            List<DataLibrary> dataLibraries = new ArrayList<>();
-//
-//            if (submitDto.getIsSet()) {
-//                Integer singleSetProblemLibrarySize = similarityConfigProperties.getSingleSetProblemLibrarySize();
-//                LambdaQueryWrapper<DataLibrary> query = new LambdaQueryWrapper<DataLibrary>()
-//                        .eq(DataLibrary::getIsSet, Boolean.TRUE) // 题集
-//                        .eq(DataLibrary::getSetId, submitDto.getSetId()) // 题集ID
-//                        .eq(DataLibrary::getProblemId, submitDto.getProblemId()) // 题目ID
-//                        .eq(DataLibrary::getLanguage, submitDto.getLanguage()) // 语言
-//                        .ne(DataLibrary::getUserId, submitDto.getUserId()) // 非该用户
-//                        .orderByDesc(DataLibrary::getUpdateTime)
-//                        .last("LIMIT " + singleSetProblemLibrarySize); // 动态设置LIMIT
-//                dataLibraries = dataLibraryService.list(query);
-//            } else {
-//                Integer singleProblemLibrarySize = similarityConfigProperties.getSingleProblemLibrarySize();
-//                LambdaQueryWrapper<DataLibrary> query = new LambdaQueryWrapper<DataLibrary>()
-//                        .eq(DataLibrary::getIsSet, Boolean.FALSE) // 非题集
-//                        .eq(DataLibrary::getProblemId, submitDto.getProblemId()) // 题目ID
-//                        .eq(DataLibrary::getLanguage, submitDto.getLanguage()) // 语言
-//                        .ne(DataLibrary::getUserId, submitDto.getUserId()) // 非该用户
-//                        .orderByDesc(DataLibrary::getUpdateTime)
-//                        .last("LIMIT " + singleProblemLibrarySize); // 动态设置LIMIT
-//                dataLibraries = dataLibraryService.list(query);
-//            }
-//
-//            calculateTask(submitDto, dataLibraries);
-//
 //            saveSimilarityReport(submitDto);
         } catch (Exception e) {
             log.error("代码克隆检测处理失败，消息体：{}", JSONUtil.toJsonStr(resultMessage), e);
-            // 可以考虑重试机制或死信队列处理
-            throw e; // 保持事务回滚
+            throw e;
         }
-    }
-
-    private void calculateTask(SimilaritySubmitDto submitDto, List<DataLibrary> dataLibraries) {
-        log.info("代码克隆检测 -> 计算相似度");
-        List<TaskSimilarity> details = new ArrayList<>();
-        if (dataLibraries.isEmpty()) {
-            log.info("代码克隆检测 -> 样本为空");
-            return;
-        }
-
-        TokenDetail tokensDetail = codeTokenUtil.getCodeTokensDetail(
-                submitDto.getLanguage().toLowerCase(),
-                submitDto.getCode()
-        );
-
-        log.info("代码克隆检测 -> 样本数量：{}", dataLibraries.size());
-
-        List<CompletableFuture<TaskSimilarity>> futures = dataLibraries.stream()
-                .map(dataLibrary -> CompletableFuture.supplyAsync(() -> {
-                    BigDecimal similarity = codeSimilarityCalculator.calculateBigDecimalFinal(
-                            tokensDetail.getTokens(),
-                            dataLibrary.getCodeToken(),
-                            submitDto.getIsSet() ?
-                                    similarityConfigProperties.getSetSingleSubmitSensitivity() :
-                                    similarityConfigProperties.getProblemSingleSubmitSensitivity()
-                    );
-
-                    TaskSimilarity taskSimilarity = new TaskSimilarity();
-                    // 基础信息
-                    taskSimilarity.setTaskId(submitDto.getTaskId());
-                    taskSimilarity.setTaskType(submitDto.getTaskType());
-                    taskSimilarity.setProblemId(submitDto.getProblemId());
-                    taskSimilarity.setSetId(submitDto.getSetId());
-                    taskSimilarity.setIsSet(submitDto.getIsSet());
-                    taskSimilarity.setLanguage(dataLibrary.getLanguage());
-                    taskSimilarity.setSimilarity(similarity);
-
-                    // 提交信息
-                    taskSimilarity.setSubmitUser(submitDto.getUserId());
-                    taskSimilarity.setSubmitCode(submitDto.getCode());
-                    taskSimilarity.setSubmitCodeLength(submitDto.getCode().length());
-                    taskSimilarity.setSubmitId(submitDto.getId());
-                    taskSimilarity.setSubmitTime(submitDto.getCreateTime());
-                    taskSimilarity.setSubmitTokenName(tokensDetail.getTokenNames());
-                    taskSimilarity.setSubmitTokenTexts(tokensDetail.getTokenTexts());
-
-                    // 样本信息
-                    taskSimilarity.setOriginUser(dataLibrary.getUserId());
-                    taskSimilarity.setOriginCode(dataLibrary.getCode());
-                    taskSimilarity.setOriginCodeLength(dataLibrary.getCodeLength());
-                    taskSimilarity.setOriginId(dataLibrary.getSubmitId());
-                    taskSimilarity.setOriginTime(dataLibrary.getCreateTime());
-                    taskSimilarity.setOriginTokenName(dataLibrary.getCodeTokenName());
-                    taskSimilarity.setOriginTokenTexts(dataLibrary.getCodeTokenTexts());
-
-                    return taskSimilarity;
-                }))
-                .toList();
-
-        // 等待所有任务完成
-        details = futures.stream()
-                .map(CompletableFuture::join)
-                .collect(Collectors.toList());
-
-        taskSimilarityMapper.insert(details);
     }
 
     void saveSimilarityReport(SimilaritySubmitDto submitDto) {

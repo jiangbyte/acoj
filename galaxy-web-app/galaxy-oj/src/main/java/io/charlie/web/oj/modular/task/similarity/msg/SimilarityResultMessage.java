@@ -22,11 +22,10 @@ public class SimilarityResultMessage implements Serializable {
     private String submitId; // 提交ID
 
     private String setId; // 题集
-    private List<String> problemIds; // 多个或单个题目
+    private String problemId; // 多个或单个题目
     private Boolean isSet; // 是否是题集
 
     private String language; // 语言
-    private List<String> userIds; // 用户ID
     private Integer minMatchLength; // 敏感度
     private BigDecimal threshold; // 阈值
 
@@ -38,4 +37,6 @@ public class SimilarityResultMessage implements Serializable {
     private List<String> codeTokenTexts;
 
     private BigDecimal similarity;
+
+    private String userId;
 }

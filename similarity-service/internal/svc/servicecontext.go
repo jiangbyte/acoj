@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	"gorm.io/gorm"
-	"judge-service/internal/config"
-	repository2 "judge-service/internal/database/repository"
-	"judge-service/internal/initializer"
+	"similarity-service/internal/config"
+	repository2 "similarity-service/internal/database/repository"
+	"similarity-service/internal/initializer"
 )
 
 type ServiceContext struct {
@@ -49,11 +49,16 @@ func (s *ServiceContext) CommonChannel() *amqp.Channel {
 	return nil
 }
 
-func (s *ServiceContext) TestCaseRepo() repository2.TestCaseRepository {
-	return s.Initializer.GetTestCaseRepo()
+func (s *ServiceContext) TaskSimilarityRepo() repository2.TaskSimilarityRepository {
+	return s.Initializer.GetTaskSimilarityRepo()
 }
-func (s *ServiceContext) JudgeCaseRepo() repository2.JudgeCaseRepository {
-	return s.Initializer.GetJudgeCaseRepo()
+
+func (s *ServiceContext) TaskReportsRepo() repository2.TaskReportsRepository {
+	return s.Initializer.GetTaskReportsRepo()
+}
+
+func (s *ServiceContext) DataLibraryRepo() repository2.DataLibraryRepository {
+	return s.Initializer.GetDataLibraryRepo()
 }
 
 func (s *ServiceContext) IsDBReady() bool {

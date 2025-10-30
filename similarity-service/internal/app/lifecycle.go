@@ -2,9 +2,9 @@ package app
 
 import (
 	"context"
-	"judge-service/internal/config"
-	"judge-service/internal/logic"
-	"judge-service/internal/svc"
+	"similarity-service/internal/config"
+	"similarity-service/internal/logic"
+	"similarity-service/internal/svc"
 	"sync"
 
 	"github.com/zeromicro/go-zero/core/logx"

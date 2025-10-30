@@ -2,8 +2,8 @@ package nacos
 
 import (
 	"fmt"
-	"judge-service/internal/config"
 	"net"
+	"similarity-service/internal/config"
 	"strconv"
 	"time"
 
@@ -116,7 +116,6 @@ func NewServiceRegistry(nacosConfig config.NacosConfig, serviceConfig config.Con
 		port:        port,
 		metadata: map[string]string{
 			"version":   "1.0.0",
-			"workspace": serviceConfig.Workspace,
 			"port":      strconv.Itoa(serviceConfig.Port),
 			"startTime": time.Now().Format(time.RFC3339),
 		},
