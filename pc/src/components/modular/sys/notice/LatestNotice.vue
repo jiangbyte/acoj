@@ -24,7 +24,9 @@ defineProps<{
             <n-time :time="item.createTime" />
             <span class="mx-2">•</span>
             <n-text>
-              {{ item.createUserName }}
+              <n-ellipsis style="width: 90px">
+                {{ item?.createUserName }}
+              </n-ellipsis>
             </n-text>
           </div>
           <n-button text class="mb-3">

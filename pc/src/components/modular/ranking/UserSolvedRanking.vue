@@ -19,11 +19,11 @@ defineProps<{
       </template>
       <n-thing>
         <n-space align="center">
-          <n-avatar :src="item?.createUserAvatar" round :size="36" class="mr-2" />
+          <n-avatar :src="item?.avatar" round :size="36" class="mr-2" />
           <n-space :size="0" vertical>
             <n-text class="flex-1">
-              <n-ellipsis :line-clamp="1">
-                {{ item?.createUserName }}
+              <n-ellipsis style="width: 90px">
+                {{ item?.nickname }}
               </n-ellipsis>
             </n-text>
             <n-text depth="3">

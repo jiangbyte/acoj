@@ -133,6 +133,7 @@ const version = import.meta.env.VITE_VERSION
         >
           <NInput
             v-model:value="formData.username"
+            data-testid="username-inp"
             :input-props="{
               autocomplete: 'username',
             }"
@@ -146,6 +147,7 @@ const version = import.meta.env.VITE_VERSION
           <NInput
             v-model:value="formData.password"
             type="password"
+            data-testid="password-inp"
             :input-props="{
               autocomplete: 'current-password',
             }"
@@ -160,6 +162,7 @@ const version = import.meta.env.VITE_VERSION
             <NInput
               v-model:value="formData.captchaCode"
               placeholder="请输入验证码"
+              data-testid="captcha-inp"
               class="flex-1"
             />
             <div
@@ -187,6 +190,7 @@ const version = import.meta.env.VITE_VERSION
           block
           type="primary"
           @click="handleLogin"
+          data-testid="login-execute"
         >
           登录
         </NButton>

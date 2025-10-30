@@ -146,32 +146,22 @@
 package io.charlie.web.oj.modular.task.similarity.handle;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
-import io.charlie.web.oj.modular.data.library.service.DataLibraryService;
-import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
-import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.reports.entity.TaskReports;
 import io.charlie.web.oj.modular.data.reports.mapper.TaskReportsMapper;
 import io.charlie.web.oj.modular.data.similarity.dto.CloneLevel;
 import io.charlie.web.oj.modular.data.similarity.dto.TaskReportStats;
 import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
 import io.charlie.web.oj.modular.data.similarity.mapper.TaskSimilarityMapper;
-import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
-import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.task.similarity.dto.BatchSimilaritySubmitDto;
-import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
-import io.charlie.web.oj.modular.task.similarity.enums.CloneLevelEnum;
 import io.charlie.web.oj.modular.task.similarity.enums.ReportTypeEnum;
-import io.charlie.web.oj.modular.task.similarity.mq.CommonSimilarityQueue;
 import io.charlie.web.oj.modular.task.similarity.mq.SimilarlyQueueProperties;
 import io.charlie.web.oj.modular.task.similarity.service.SimilarityProgressService;
-import io.charlie.web.oj.utils.similarity.utils.CodeSimilarityCalculator;
+import io.charlie.web.oj.utils.similarity.utils.SimilarityCalculator;
+import io.charlie.web.oj.utils.similarity.utils.SimilarityDetail;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -202,7 +192,7 @@ public class BatchSimilarityHandleMessage {
     private final RabbitTemplate rabbitTemplate;
     private final DataLibraryMapper dataLibraryMapper;
     private final TaskSimilarityMapper taskSimilarityMapper;
-    private final CodeSimilarityCalculator codeSimilarityCalculator;
+    private final SimilarityCalculator codeSimilarityCalculator;
     private final ThreadPoolTaskExecutor similarityTaskExecutor;
     private final TaskReportsMapper taskReportsMapper;
 
@@ -383,7 +373,7 @@ public class BatchSimilarityHandleMessage {
      */
     private TaskSimilarity calculateSimilarity(DataLibrary submit, DataLibrary library, BatchSimilaritySubmitDto batchSimilaritySubmitDto) {
         try {
-            CodeSimilarityCalculator.SimilarityDetail similarityDetail = codeSimilarityCalculator.getSimilarityDetail(
+            SimilarityDetail similarityDetail = codeSimilarityCalculator.getCalculatorDetail(
                     submit.getLanguage().toLowerCase(),
                     submit.getCode(),
                     library.getCode(),

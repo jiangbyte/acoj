@@ -15,6 +15,9 @@ import org.springframework.validation.annotation.Validated;
 @Configuration
 @ConfigurationProperties(prefix = "oj.similarity.config")
 public class SimilarityConfigProperties {
+    private Integer singleProblemLibrarySize = 50;
+    private Integer singleSetProblemLibrarySize = 50;
+
     // 题目单提交分批大小
     private Integer problemSingleSubmitBatchSize = 500;
     // 题目单提交检测灵敏度

@@ -1,0 +1,3291 @@
+目录结构:
+.
+├── app
+│   ├── config_loader.go
+│   ├── lifecycle.go
+│   ├── signal_handler.go
+│   └── startup.go
+├── config
+│   └── config.go
+├── core
+│   ├── compiler.go
+│   ├── evaluator.go
+│   ├── executor.go
+│   └── workspace.go
+├── database
+│   ├── model
+│   │   ├── data_judge_case.go
+│   │   └── data_test_case.go
+│   ├── mysql.go
+│   └── repository
+│       ├── judgecase_repository.go
+│       └── testcase_repository.go
+├── initializer
+│   └── manager.go
+├── logic
+│   ├── common.go
+│   └── consume.go
+├── mq
+│   ├── judge_request.go
+│   ├── judge_response.go
+│   └── rabbitmq.go
+├── nacos
+│   ├── nacos.go
+│   ├── registry.go
+│   └── service_registry.go
+├── svc
+│   └── servicecontext.go
+└── utils
+    ├── cgroup.go
+    ├── command.go
+    ├── formate.go
+    └── snowflake.go
+
+==================================================
+
+
+文件: app\config_loader.go
+--------------------------------------------------
+package app
+
+import (
+	"fmt"
+	"judge-service/internal/config"
+	"judge-service/internal/nacos"
+
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+// ConfigLoader 配置加载器
+type ConfigLoader struct {
+	configFile string
+	useNacos   bool
+}
+
+// NewConfigLoader 创建配置加载器
+func NewConfigLoader(configFile string, useNacos bool) *ConfigLoader {
+	return &ConfigLoader{
+		configFile: configFile,
+		useNacos:   useNacos,
+	}
+}
+
+// Load 加载配置
+func (cl *ConfigLoader) Load() (*config.Config, *nacos.ConfigManager, error) {
+	var localConfig config.Config
+
+	if cl.useNacos {
+		fmt.Println("正在使用 Nacos 配置中心启动应用...")
+
+		config, manager, err := cl.loadFromNacos()
+		if err != nil {
+			logx.Errorf("从 Nacos 加载配置失败，回退到本地配置: %v", err)
+			// 回退到本地配置
+			conf.MustLoad(cl.configFile, &localConfig)
+			return &localConfig, nil, nil
+		}
+		return config, manager, nil
+	} else {
+		// 使用本地配置
+		conf.MustLoad(cl.configFile, &localConfig)
+		fmt.Println("从本地文件加载配置")
+		return &localConfig, nil, nil
+	}
+}
+
+// loadFromNacos 从 Nacos 加载配置
+func (cl *ConfigLoader) loadFromNacos() (*config.Config, *nacos.ConfigManager, error) {
+	// 先加载本地配置获取 Nacos 连接信息
+	var bootstrapConfig config.Config
+	if err := conf.Load(cl.configFile, &bootstrapConfig); err != nil {
+		return nil, nil, fmt.Errorf("加载本地配置文件失败: %w", err)
+	}
+
+	// 验证 Nacos 配置
+	if err := cl.validateNacosConfig(bootstrapConfig.Nacos); err != nil {
+		return nil, nil, err
+	}
+
+	// 初始化 Nacos 配置管理器
+	nacosManager, err := nacos.NewNacosConfigManager(
+		bootstrapConfig.Nacos.ServerAddr,
+		bootstrapConfig.Nacos.Username,
+		bootstrapConfig.Nacos.Password,
+		bootstrapConfig.Nacos.Namespace,
+		bootstrapConfig.Nacos.Group,
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("创建 Nacos 配置管理器失败: %w", err)
+	}
+
+	// 从 Nacos 获取配置
+	configContent, err := nacosManager.GetConfig(bootstrapConfig.Nacos.DataId)
+	if err != nil {
+		return nil, nil, fmt.Errorf("从 Nacos 获取配置失败: %w", err)
+	}
+
+	// 解析 Nacos 配置
+	var nacosConfig config.Config
+	if err := conf.LoadFromYamlBytes([]byte(configContent), &nacosConfig); err != nil {
+		return nil, nil, fmt.Errorf("解析 Nacos 配置失败: %w", err)
+	}
+
+	// 确保 Nacos 配置本身也包含正确的 Nacos 连接信息（用于后续监听）
+	nacosConfig.Nacos = bootstrapConfig.Nacos
+
+	fmt.Println("从 Nacos 成功加载配置")
+	return &nacosConfig, nacosManager, nil
+}
+
+// validateNacosConfig 验证 Nacos 配置
+func (cl *ConfigLoader) validateNacosConfig(nacosConfig config.NacosConfig) error {
+	if nacosConfig.ServerAddr == "" {
+		return fmt.Errorf("使用 nacos 时必须配置 Nacos 服务器地址")
+	}
+
+	if nacosConfig.DataId == "" {
+		return fmt.Errorf("使用 nacos 时必须配置 Nacos dataId")
+	}
+
+	return nil
+}
+
+// LoadLocalConfig 加载本地配置（用于回退）
+func (cl *ConfigLoader) LoadLocalConfig() (*config.Config, error) {
+	var localConfig config.Config
+	if err := conf.Load(cl.configFile, &localConfig); err != nil {
+		return nil, fmt.Errorf("加载本地配置文件失败: %w", err)
+	}
+	return &localConfig, nil
+}
+
+
+文件: app\lifecycle.go
+--------------------------------------------------
+package app
+
+import (
+	"context"
+	"judge-service/internal/config"
+	"judge-service/internal/logic"
+	"judge-service/internal/svc"
+	"sync"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+// LifecycleManager 服务生命周期管理器
+type LifecycleManager struct {
+	serviceCtx   *svc.ServiceContext
+	consumeLogic *logic.ConsumeLogic
+	mutex        sync.RWMutex
+	restartChan  chan struct{}
+}
+
+// NewLifecycleManager 创建生命周期管理器
+func NewLifecycleManager() *LifecycleManager {
+	return &LifecycleManager{
+		restartChan: make(chan struct{}, 1),
+	}
+}
+
+// InitializeServices 初始化服务组件
+func (lm *LifecycleManager) InitializeServices(c config.Config) error {
+	lm.mutex.Lock()
+	defer lm.mutex.Unlock()
+
+	// 关闭旧的服务实例（如果存在）
+	if lm.serviceCtx != nil {
+		lm.shutdownServices()
+	}
+
+	// 创建新的服务实例
+	lm.serviceCtx = svc.NewServiceContext(c)
+	lm.consumeLogic = logic.NewConsumeLogic(context.Background(), lm.serviceCtx)
+
+	return nil
+}
+
+// StartConsumer 启动消费者
+func (lm *LifecycleManager) StartConsumer() {
+	lm.mutex.RLock()
+	logicInstance := lm.consumeLogic
+	lm.mutex.RUnlock()
+
+	if logicInstance != nil {
+		go logicInstance.StartConsuming()
+	}
+}
+
+// ShutdownServices 关闭服务组件
+func (lm *LifecycleManager) ShutdownServices() {
+	lm.mutex.Lock()
+	defer lm.mutex.Unlock()
+
+	lm.shutdownServices()
+}
+
+// RestartServices 重启服务
+func (lm *LifecycleManager) RestartServices(newConfig config.Config) {
+	logx.Info("正在使用新配置重启服务...")
+
+	// 停止当前服务
+	lm.ShutdownServices()
+
+	// 使用新配置重新初始化服务
+	if err := lm.InitializeServices(newConfig); err != nil {
+		logx.Errorf("重新初始化服务失败: %v", err)
+		return
+	}
+
+	// 重新启动消费者
+	lm.StartConsumer()
+
+	logx.Info("服务使用新配置重启成功")
+}
+
+// shutdownServices 内部关闭服务方法
+func (lm *LifecycleManager) shutdownServices() {
+	if lm.serviceCtx != nil {
+		// 关闭 RabbitMQ 连接
+		if lm.serviceCtx.CommonChannel() != nil {
+			if err := lm.serviceCtx.CommonChannel().Close(); err != nil {
+				logx.Errorf("关闭 CommonChannel RabbitMQ 连接失败: %v", err)
+			}
+		}
+		if lm.serviceCtx.RabbitMQ() != nil {
+			if err := lm.serviceCtx.RabbitMQ().Close(); err != nil {
+				logx.Errorf("关闭 RabbitMQ 连接失败: %v", err)
+			}
+		}
+
+		// 注销服务
+		if lm.serviceCtx.Initializer.GetServiceReRegistry() != nil {
+			if err := lm.serviceCtx.Initializer.GetServiceReRegistry().Deregister(); err != nil {
+				logx.Errorf("服务注销失败: %v", err)
+			} else {
+				logx.Info("服务已从 Nacos 注销")
+			}
+		}
+	}
+
+	// 关闭重启通道
+	if lm.restartChan != nil {
+		close(lm.restartChan)
+		lm.restartChan = nil
+	}
+
+	lm.serviceCtx = nil
+	lm.consumeLogic = nil
+}
+
+
+文件: app\signal_handler.go
+--------------------------------------------------
+package app
+
+import (
+	"os"
+	"os/signal"
+	"syscall"
+)
+
+// SignalHandler 信号处理器
+type SignalHandler struct {
+	shutdownCallback func()
+}
+
+// NewSignalHandler 创建信号处理器
+func NewSignalHandler() *SignalHandler {
+	return &SignalHandler{}
+}
+
+// SetShutdownCallback 设置关闭回调函数
+func (sh *SignalHandler) SetShutdownCallback(callback func()) {
+	sh.shutdownCallback = callback
+}
+
+// WaitForSignal 等待信号
+func (sh *SignalHandler) WaitForSignal() {
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT)
+	
+	// 等待信号
+	<-ch
+	
+	// 执行关闭回调
+	if sh.shutdownCallback != nil {
+		sh.shutdownCallback()
+	}
+}
+
+文件: app\startup.go
+--------------------------------------------------
+package app
+
+import (
+	"fmt"
+	"judge-service/internal/config"
+	"judge-service/internal/nacos"
+
+	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+// AppManager 应用管理器
+type AppManager struct {
+	configFile string
+	useNacos   bool
+	config     *config.Config
+	nacosMgr   *nacos.ConfigManager
+	lifecycle  *LifecycleManager
+}
+
+// NewAppManager 创建应用管理器
+func NewAppManager(configFile string, useNacos bool) *AppManager {
+	return &AppManager{
+		configFile: configFile,
+		useNacos:   useNacos,
+		lifecycle:  NewLifecycleManager(),
+	}
+}
+
+// Run 启动应用
+func (am *AppManager) Run() error {
+	// 加载配置
+	if err := am.loadConfig(); err != nil {
+		return fmt.Errorf("加载配置失败: %w", err)
+	}
+
+	// 初始化服务
+	if err := am.lifecycle.InitializeServices(*am.config); err != nil {
+		return fmt.Errorf("初始化服务失败: %w", err)
+	}
+
+	// 启动配置监听（如果使用 Nacos）
+	if am.useNacos && am.nacosMgr != nil && am.config.Nacos.DataId != "" {
+		if err := am.startConfigListener(); err != nil {
+			logx.Errorf("启动配置监听失败: %v", err)
+		}
+	}
+
+	// 启动消费者
+	am.lifecycle.StartConsumer()
+
+	// 等待退出信号
+	am.waitForShutdown()
+
+	return nil
+}
+
+// loadConfig 加载配置
+func (am *AppManager) loadConfig() error {
+	configLoader := NewConfigLoader(am.configFile, am.useNacos)
+
+	config, nacosMgr, err := configLoader.Load()
+	if err != nil {
+		return err
+	}
+
+	am.config = config
+	am.nacosMgr = nacosMgr
+	return nil
+}
+
+// startConfigListener 启动配置监听
+func (am *AppManager) startConfigListener() error {
+	onConfigChange := func(newConfigContent string) {
+		logx.Info("收到 Nacos 配置变更通知")
+
+		var newConfig config.Config
+		if err := conf.LoadFromYamlBytes([]byte(newConfigContent), &newConfig); err != nil {
+			logx.Errorf("解析更新后的 Nacos 配置失败: %v", err)
+			return
+		}
+
+		logx.Infof("配置更新成功，正在重启服务...")
+		am.lifecycle.RestartServices(newConfig)
+
+		// 更新当前配置
+		am.config = &newConfig
+	}
+
+	if err := am.nacosMgr.ListenConfig(am.config.Nacos.DataId, onConfigChange); err != nil {
+		return fmt.Errorf("监听配置变更失败: %w", err)
+	}
+
+	logx.Infof("已开始监听配置变更，数据ID: %s", am.config.Nacos.DataId)
+	return nil
+}
+
+// waitForShutdown 等待关闭信号
+func (am *AppManager) waitForShutdown() {
+	signalHandler := NewSignalHandler()
+
+	// 设置关闭回调
+	signalHandler.SetShutdownCallback(func() {
+		fmt.Println("正在关闭服务...")
+
+		// 取消配置监听
+		if am.nacosMgr != nil && am.config.Nacos.DataId != "" {
+			if err := am.nacosMgr.CancelListenConfig(am.config.Nacos.DataId); err != nil {
+				logx.Errorf("取消配置监听失败: %v", err)
+			}
+		}
+
+		// 关闭服务
+		am.lifecycle.ShutdownServices()
+		fmt.Println("服务已退出")
+	})
+
+	// 等待信号
+	signalHandler.WaitForSignal()
+}
+
+
+文件: config\config.go
+--------------------------------------------------
+package config
+
+import (
+	"github.com/zeromicro/go-zero/rest"
+)
+
+type LanguageConfig struct {
+	Name        string   `json:"name"`        // 语言名称，如 "go", "python"
+	SourceFile  string   `json:"sourceFile"`  // 源文件名，如 "main", "Main"
+	CompileFile string   `json:"compileFile"` // 编译文件名，如 "main", "Main"
+	Extension   string   `json:"extension"`   // 文件扩展名，如 ".go", ".py"
+	CompileCmd  []string `json:"compileCmd"`  // 编译命令模板，如 ["go", "build", "-o", "{output}", "{source}"]
+	RunCmd      []string `json:"runCmd"`      // 运行命令模板，如 ["./{output}"] 或 ["python3", "{source}"]
+	NeedCompile bool     `json:",default=true"`
+}
+
+type NacosConfig struct {
+	ServerAddr string `json:",optional"` // 120.26.180.149:8848
+	Username   string `json:",optional"` // 可选
+	Password   string `json:",optional"` // 可选
+	Namespace  string `json:",optional"` // 8fee08f3-44ea-4e26-a9b5-530c582330a3
+	Group      string `json:",default=DEFAULT_GROUP"`
+	DataId     string `json:",optional"`
+}
+
+// MySQL 配置
+type MySQLConfig struct {
+	Host            string `json:",default=127.0.0.1:3306"`
+	Username        string `json:",default=root"`
+	Password        string `json:",optional"`
+	Database        string `json:",default="`
+	Charset         string `json:",default=utf8mb4"`
+	ParseTime       bool   `json:",default=true"`
+	Loc             string `json:",default=Local"`
+	MaxIdleConns    int    `json:",default=10"`
+	MaxOpenConns    int    `json:",default=100"`
+	ConnMaxLifetime string `json:",default=1h"`
+}
+
+type RabbitMQConfig struct {
+	Host        string `json:",optional"` // 主机地址
+	VirtualHost string `json:",optional"` // 虚拟主机
+	// 常规队列
+	Common struct {
+		JudgeExchange    string `json:",optional"`
+		JudgeQueue       string `json:",optional"`
+		JudgeRoutingKey  string `json:",optional"`
+		ResultExchange   string `json:",optional"`
+		ResultQueue      string `json:",optional"`
+		ResultRoutingKey string `json:",optional"`
+	} `json:",optional"`
+}
+
+// 配置队列
+type Config struct {
+	rest.RestConf
+	Workspace string `json:",optional"` // 工作空间(文件工作路径)
+	Nacos     NacosConfig
+	MySQL     MySQLConfig      `json:",optional"` // MySQL 配置
+	Languages []LanguageConfig `json:",optional"` // 支持的语言配置，设为可选
+	RabbitMQ  RabbitMQConfig   `json:",optional"`
+}
+
+
+文件: core\compiler.go
+--------------------------------------------------
+package core
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"judge-service/internal/utils"
+	"os/exec"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type CompileResult struct {
+	Success   bool
+	Message   string
+	ExitCode  int
+	MaxTime   float64
+	MaxMemory float64
+}
+
+type Compiler interface {
+	Compile(workspace *Workspace) (*CompileResult, error)
+}
+
+type DefaultCompiler struct {
+	mu sync.Mutex
+}
+
+// 编译超时时间常量
+const compileTimeout = 5 * time.Second
+
+func (c *DefaultCompiler) Compile(workspace *Workspace) (*CompileResult, error) {
+	startTime := time.Now()
+	result := &CompileResult{
+		MaxTime: float64(time.Since(startTime).Milliseconds()),
+	}
+
+	cgroupPath, err := utils.CreateCgroupNoMemory()
+	if err != nil {
+		return c.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
+	}
+	defer utils.CleanupCgroup(cgroupPath) // 使用defer确保资源清理
+
+	ctx, cancel := context.WithTimeout(context.Background(), compileTimeout)
+	defer cancel()
+
+	compilerCmd := utils.GetCompileCommand(workspace.langConfig, workspace.SourceFile, workspace.BuildFile)
+	cmd := c.createCommand(ctx, compilerCmd, workspace.BuildPath)
+
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	if err := cmd.Start(); err != nil {
+		return c.handleError(result, fmt.Sprintf("启动进程失败: %v", err), 1, err)
+	}
+
+	// 进程控制逻辑
+	pgid, err := c.controlProcess(cmd, cgroupPath, result)
+	if err != nil {
+		return result, err
+	}
+
+	return c.waitForCompletion(cmd, ctx, pgid, cgroupPath, &stdoutBuf, &stderrBuf, startTime, result)
+}
+
+// 创建命令实例
+func (c *DefaultCompiler) createCommand(ctx context.Context, compilerCmd []string, dir string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, compilerCmd[0], compilerCmd[1:]...)
+	cmd.Dir = dir
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+		Cloneflags: syscall.CLONE_NEWNS |
+			syscall.CLONE_NEWUTS |
+			syscall.CLONE_NEWPID |
+			syscall.CLONE_NEWNET |
+			syscall.CLONE_NEWIPC,
+		Unshareflags: syscall.CLONE_NEWNS,
+	}
+
+	return cmd
+}
+
+// 进程控制：暂停、设置cgroup、恢复
+func (c *DefaultCompiler) controlProcess(cmd *exec.Cmd, cgroupPath string, result *CompileResult) (int, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// 立即暂停进程
+	if err := syscall.Kill(cmd.Process.Pid, syscall.SIGSTOP); err != nil {
+		return 0, fmt.Errorf("暂停进程失败: %v", err)
+	}
+
+	pgid := cmd.Process.Pid
+	if err := utils.SetCgroupForProcess(cgroupPath, pgid); err != nil {
+		syscall.Kill(-pgid, syscall.SIGKILL)
+		return 0, fmt.Errorf("设置cgroup失败: %v", err)
+	}
+
+	// 恢复进程执行
+	if err := syscall.Kill(cmd.Process.Pid, syscall.SIGCONT); err != nil {
+		return 0, fmt.Errorf("恢复进程失败: %v", err)
+	}
+
+	return pgid, nil
+}
+
+// 等待命令完成并处理结果
+func (c *DefaultCompiler) waitForCompletion(cmd *exec.Cmd, ctx context.Context, pgid int,
+	cgroupPath string, stdoutBuf, stderrBuf *bytes.Buffer, startTime time.Time, result *CompileResult) (*CompileResult, error) {
+
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Wait()
+	}()
+
+	select {
+	case <-ctx.Done():
+		return c.handleTimeout(pgid, cgroupPath, stderrBuf, startTime, result)
+	case err := <-done:
+		return c.handleCompletion(err, cgroupPath, stdoutBuf, stderrBuf, startTime, result)
+	}
+}
+
+// 处理超时情况
+func (c *DefaultCompiler) handleTimeout(pgid int, cgroupPath string, stderrBuf *bytes.Buffer,
+	startTime time.Time, result *CompileResult) (*CompileResult, error) {
+
+	syscall.Kill(-pgid, syscall.SIGKILL)
+	elapsed := time.Since(startTime)
+
+	memoryUsed, _ := utils.GetMemoryUsage(cgroupPath)
+	result.MaxMemory = utils.FormatBytesKB(memoryUsed)
+	result.MaxTime = float64(elapsed.Milliseconds())
+
+	stderr := strings.TrimSpace(stderrBuf.String())
+	if stderr != "" {
+		result.Message = stderr
+	}
+
+	result.Success = false
+	logx.Errorf("超时杀死整个进程组，运行时间: %v ms", elapsed)
+
+	return result, context.DeadlineExceeded
+}
+
+// 处理正常完成情况
+func (c *DefaultCompiler) handleCompletion(err error, cgroupPath string, stdoutBuf, stderrBuf *bytes.Buffer,
+	startTime time.Time, result *CompileResult) (*CompileResult, error) {
+
+	elapsed := time.Since(startTime)
+	memoryUsed, _ := utils.GetMemoryUsage(cgroupPath)
+	result.MaxMemory = utils.FormatBytesKB(memoryUsed)
+	result.MaxTime = float64(elapsed.Milliseconds())
+
+	stderr := strings.TrimSpace(stderrBuf.String())
+	if stderr != "" || err != nil {
+		result.Success = false
+		result.Message = stderr
+		if err != nil {
+			result.Message = fmt.Sprintf("%v\n\n%s", err, result.Message)
+		}
+		return result, err
+	}
+
+	logx.Infof("编译完成, 内存使用: %d bytes (峰值), %f KB, 用时 %f ms",
+		memoryUsed, result.MaxMemory, result.MaxTime)
+	result.Success = true
+
+	return result, nil
+}
+
+// 统一错误处理
+func (c *DefaultCompiler) handleError(result *CompileResult, message string, exitCode int, err error) (*CompileResult, error) {
+	result.Success = false
+	result.Message = message
+	result.ExitCode = exitCode
+	logx.Errorf(message)
+	return result, err
+}
+
+func (w *Workspace) compile() (*CompileResult, error) {
+	compiler := &DefaultCompiler{}
+	return compiler.Compile(w)
+}
+
+
+文件: core\evaluator.go
+--------------------------------------------------
+package core
+
+import (
+	"judge-service/internal/database/model"
+	"judge-service/internal/mq"
+	"judge-service/internal/utils"
+)
+
+type Evaluator interface {
+	Evaluate(workspace *Workspace, results []*model.DataJudgeCase) *mq.JudgeResponse
+}
+
+type DefaultEvaluator struct{}
+
+func (e *DefaultEvaluator) Evaluate(workspace *Workspace, results []*model.DataJudgeCase) *mq.JudgeResponse {
+	judgeRequest := workspace.judgeRequest
+	result := &mq.JudgeResponse{
+		ID:          judgeRequest.ID,
+		UserId:      judgeRequest.UserId,
+		ProblemId:   judgeRequest.ProblemId,
+		SetId:       judgeRequest.SetId,
+		Language:    judgeRequest.Language,
+		Code:        judgeRequest.Code,
+		SubmitType:  judgeRequest.SubmitType,
+		MaxTime:     0,
+		MaxMemory:   0,
+		IsSet:       judgeRequest.IsSet,
+		JudgeTaskId: judgeRequest.JudgeTaskId,
+	}
+
+	err := workspace.svcCtx.JudgeCaseRepo().BatchCreateJudgeCases(workspace.ctx, results)
+	if err != nil {
+		result.Status = "SYSTEM_ERROR"
+		return result
+	}
+
+	maxTime := 0.0
+	maxMemory := 0.0
+	statusCount := make(map[string]int)
+	messageCount := make(map[string]int)
+
+	for _, testCase := range results {
+		// 计算最大值
+		if testCase.MaxTime > maxTime {
+			maxTime = testCase.MaxTime
+		}
+		if testCase.MaxMemory > maxMemory {
+			maxMemory = testCase.MaxMemory
+		}
+
+		if testCase.Status == "RUN_SUCCESS" {
+			if utils.CompareOutput(testCase.ExpectedOutput, testCase.OutputData) {
+				testCase.Status = "ACCEPTED"
+			} else {
+				testCase.Status = "WRONG_ANSWER"
+			}
+		}
+
+		// 统计各种状态的数量
+		statusCount[testCase.Status]++
+		// 消息聚合
+		messageCount[testCase.Message]++
+	}
+
+	// 设置最终的最大值
+	result.MaxTime = maxTime
+	result.MaxMemory = maxMemory
+
+	// 根据状态统计结果设置最终状态
+	result.Status = e.aggregateStatus(statusCount, len(results))
+	result.Message = e.aggregateMessage(messageCount)
+	return result
+}
+
+func (w *Workspace) evaluate(results []*model.DataJudgeCase) *mq.JudgeResponse {
+	evaluator := &DefaultEvaluator{}
+	return evaluator.Evaluate(w, results)
+}
+
+// 聚合状态，优先异常状态，然后选择数量最多的状态
+func (e *DefaultEvaluator) aggregateStatus(statusCount map[string]int, lens int) string {
+	if len(statusCount) == 0 {
+		return "PENDING"
+	}
+
+	// 定义异常状态优先级（从高到低）
+	exceptionStatuses := []string{
+		"COMPILATION_ERROR",
+		"RUNTIME_ERROR",
+		"TIME_LIMIT_EXCEEDED",
+		"MEMORY_LIMIT_EXCEEDED",
+		"SYSTEM_ERROR",
+	}
+
+	// 首先检查是否有异常状态
+	for _, status := range exceptionStatuses {
+		if count, exists := statusCount[status]; exists && count > 0 {
+			return status
+		}
+	}
+
+	// 如果没有异常状态，则按照AC、PC、WA的优先级处理
+	acCount := statusCount["ACCEPTED"]
+	pcCount := statusCount["PARTIAL_ACCEPTED"]
+	waCount := statusCount["WRONG_ANSWER"]
+	otherCount := 0
+
+	// 计算其他状态的总数
+	for status, count := range statusCount {
+		if status != "ACCEPTED" &&
+			status != "PARTIAL_ACCEPTED" &&
+			status != "WRONG_ANSWER" &&
+			status != "PENDING" {
+			otherCount += count
+		}
+	}
+
+	// 判断逻辑
+	if acCount == lens {
+		// 全部正确
+		return "ACCEPTED"
+	} else if acCount > 0 && (acCount+pcCount+waCount+otherCount == lens) {
+		if pcCount > 0 || waCount > 0 || otherCount > 0 {
+			// 有部分正确，也有错误
+			return "PARTIAL_ACCEPTED"
+		}
+	} else if waCount == lens {
+		// 全部错误
+		return "WRONG_ANSWER"
+	} else if pcCount > 0 {
+		// 有部分正确的情况
+		return "PARTIAL_ACCEPTED"
+	}
+
+	// 默认情况：选择数量最多的状态（排除跳过和待判状态）
+	maxCount := 0
+	mostCommonStatus := "PENDING"
+
+	for status, count := range statusCount {
+		if status != "PENDING" &&
+			count > maxCount {
+			maxCount = count
+			mostCommonStatus = status
+		}
+	}
+
+	// 如果所有测试用例都是跳过或待判状态
+	if mostCommonStatus == "PENDING" &&
+		(statusCount["PENDING"] > 0) {
+		// 检查是否有实际的状态
+		hasActualStatus := false
+		for status := range statusCount {
+			if status != "PENDING" {
+				hasActualStatus = true
+				break
+			}
+		}
+		if !hasActualStatus {
+			return "PENDING"
+		}
+	}
+
+	return mostCommonStatus
+}
+
+// aggregateMessage 聚合消息
+func (e *DefaultEvaluator) aggregateMessage(messageCount map[string]int) string {
+	if len(messageCount) == 0 {
+		return ""
+	}
+
+	var maxCount int
+	var mostFrequentMessage string
+
+	for message, count := range messageCount {
+		if count > maxCount {
+			maxCount = count
+			mostFrequentMessage = message
+		}
+	}
+
+	return mostFrequentMessage
+}
+
+
+文件: core\executor.go
+--------------------------------------------------
+package core
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	model2 "judge-service/internal/database/model"
+	"judge-service/internal/utils"
+	"os/exec"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+// Executor 执行器接口
+type Executor interface {
+	Execute(workspace *Workspace, testCase *model2.DataTestCase) (*model2.DataJudgeCase, error)
+}
+
+// SandboxExecutor 沙箱执行器
+type SandboxExecutor struct {
+	mu sync.Mutex
+}
+
+// Execute 执行测试用例
+func (e *SandboxExecutor) Execute(workspace *Workspace, testCase *model2.DataTestCase) (*model2.DataJudgeCase, error) {
+	startTime := time.Now()
+
+	// 初始化结果对象
+	result := e.initResult(workspace, testCase)
+
+	// 创建cgroup进行资源限制
+	cgroupPath, err := utils.CreateCgroup(workspace.judgeRequest.MaxMemory)
+	if err != nil {
+		return e.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
+	}
+	defer utils.CleanupCgroup(cgroupPath)
+
+	// 执行命令并获取结果
+	return e.executeCommand(workspace, testCase, result, cgroupPath, startTime)
+}
+
+// initResult 初始化结果对象
+func (e *SandboxExecutor) initResult(workspace *Workspace, testCase *model2.DataTestCase) *model2.DataJudgeCase {
+	now := time.Now()
+	return &model2.DataJudgeCase{
+		ID:             utils.GenerateID(),
+		SubmitID:       workspace.judgeRequest.ID,
+		CaseSign:       testCase.CaseSign,
+		InputData:      testCase.InputData,
+		ExpectedOutput: testCase.ExpectedOutput,
+		IsSample:       testCase.IsSample,
+		Score:          testCase.Score,
+		Status:         "PENDING",
+		// 文件相关字段
+		InputFilePath:  "", // 初始化为空字符串
+		InputFileSize:  0,  // 使用默认值
+		OutputFilePath: "", // 初始化为空字符串
+		OutputFileSize: 0,  // 使用默认值
+		// 执行结果相关字段
+		MaxTime:   0.00,
+		MaxMemory: 0.00,
+		Message:   "",
+		ExitCode:  0,
+		Deleted:   false,
+		// 时间相关字段
+		CreateTime: &now,
+		CreateUser: "0",
+		UpdateTime: &now,
+		UpdateUser: "0",
+	}
+}
+
+// executeCommand 执行命令并处理结果
+func (e *SandboxExecutor) executeCommand(workspace *Workspace, testCase *model2.DataTestCase,
+	result *model2.DataJudgeCase, cgroupPath string, startTime time.Time) (*model2.DataJudgeCase, error) {
+
+	// 准备命令执行环境
+	cmd, stdoutBuf, stderrBuf, ctx, cancel, err := e.prepareCommand(workspace, testCase)
+	if err != nil {
+		return e.handleError(result, fmt.Sprintf("准备命令失败: %v", err), 1, err)
+	}
+	defer cancel()
+
+	// 启动并管理进程
+	pgid, err := e.startAndManageProcess(cmd, cgroupPath)
+	if err != nil {
+		return e.handleError(result, fmt.Sprintf("进程管理失败: %v", err), 1, err)
+	}
+
+	// 等待命令完成并收集结果
+	return e.waitForCompletion(cmd, ctx, workspace, testCase, result, cgroupPath, pgid, startTime, stdoutBuf, stderrBuf)
+}
+
+// prepareCommand 准备命令执行环境
+func (e *SandboxExecutor) prepareCommand(workspace *Workspace, testCase *model2.DataTestCase) (
+	*exec.Cmd, *bytes.Buffer, *bytes.Buffer, context.Context, context.CancelFunc, error) {
+
+	runCmd := utils.GetRunCommand(workspace.langConfig, workspace.SourceFile, workspace.BuildFile)
+
+	// 设置超时上下文（执行时间限制 + 安全余量）
+	timeout := time.Duration(workspace.judgeRequest.MaxTime)*time.Millisecond + 30*time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
+	cmd := exec.CommandContext(ctx, runCmd[0], runCmd[1:]...)
+	e.setProcessAttributes(cmd)
+
+	// 设置输入输出缓冲区
+	cmd.Stdin = strings.NewReader(testCase.InputData)
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	return cmd, &stdoutBuf, &stderrBuf, ctx, cancel, nil
+}
+
+// setProcessAttributes 设置进程属性
+func (e *SandboxExecutor) setProcessAttributes(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+		Cloneflags: syscall.CLONE_NEWNS |
+			syscall.CLONE_NEWUTS |
+			syscall.CLONE_NEWPID |
+			syscall.CLONE_NEWNET |
+			syscall.CLONE_NEWIPC,
+		Unshareflags: syscall.CLONE_NEWNS,
+	}
+}
+
+// startAndManageProcess 启动并管理进程
+func (e *SandboxExecutor) startAndManageProcess(cmd *exec.Cmd, cgroupPath string) (int, error) {
+	// 启动命令
+	if err := cmd.Start(); err != nil {
+		return 0, fmt.Errorf("启动进程失败: %w", err)
+	}
+
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	pgid := cmd.Process.Pid
+
+	// 暂停进程以便设置cgroup
+	if err := syscall.Kill(pgid, syscall.SIGSTOP); err != nil {
+		syscall.Kill(-pgid, syscall.SIGKILL)
+		return 0, fmt.Errorf("暂停进程失败: %w", err)
+	}
+
+	// 设置cgroup
+	if err := utils.SetCgroupForProcess(cgroupPath, pgid); err != nil {
+		syscall.Kill(-pgid, syscall.SIGKILL)
+		return 0, fmt.Errorf("设置cgroup失败: %w", err)
+	}
+
+	// 恢复进程执行
+	if err := syscall.Kill(pgid, syscall.SIGCONT); err != nil {
+		syscall.Kill(-pgid, syscall.SIGKILL)
+		return 0, fmt.Errorf("恢复进程失败: %w", err)
+	}
+
+	return pgid, nil
+}
+
+// waitForCompletion 等待命令完成并收集结果
+func (e *SandboxExecutor) waitForCompletion(cmd *exec.Cmd, ctx context.Context, workspace *Workspace,
+	testCase *model2.DataTestCase, result *model2.DataJudgeCase, cgroupPath string, pgid int,
+	startTime time.Time, stdoutBuf, stderrBuf *bytes.Buffer) (*model2.DataJudgeCase, error) {
+
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Wait()
+	}()
+
+	select {
+	case <-ctx.Done():
+		return e.handleTimeout(workspace, result, cgroupPath, pgid, startTime, stdoutBuf, stderrBuf)
+	case err := <-done:
+		return e.handleCommandResult(workspace, testCase, result, cgroupPath, startTime, stdoutBuf, stderrBuf, err)
+	}
+}
+
+// handleTimeout 处理超时情况
+func (e *SandboxExecutor) handleTimeout(workspace *Workspace, result *model2.DataJudgeCase,
+	cgroupPath string, pgid int, startTime time.Time, stdoutBuf, stderrBuf *bytes.Buffer) (*model2.DataJudgeCase, error) {
+
+	// 杀死进程组
+	syscall.Kill(-pgid, syscall.SIGKILL)
+
+	// 收集执行结果
+	elapsed := time.Since(startTime)
+	e.collectExecutionMetrics(result, cgroupPath, elapsed)
+
+	result.OutputData = stdoutBuf.String()
+	result.Status = "TIME_LIMIT_EXCEEDED"
+
+	// 检查错误输出
+	if stderr := strings.TrimSpace(stderrBuf.String()); stderr != "" {
+		result.Message = stderr
+	}
+
+	logx.Errorf("超时杀死进程组，运行时间: %v ms，时间限制: %v ms", elapsed.Milliseconds(), workspace.judgeRequest.MaxTime)
+	return result, nil
+}
+
+// handleCommandResult 处理命令执行结果
+func (e *SandboxExecutor) handleCommandResult(workspace *Workspace, testCase *model2.DataTestCase,
+	result *model2.DataJudgeCase, cgroupPath string, startTime time.Time,
+	stdoutBuf, stderrBuf *bytes.Buffer, cmdErr error) (*model2.DataJudgeCase, error) {
+
+	elapsed := time.Since(startTime)
+	e.collectExecutionMetrics(result, cgroupPath, elapsed)
+
+	result.OutputData = stdoutBuf.String()
+
+	// 判断执行状态
+	result.Status = e.determineExecutionStatus(workspace, result, cgroupPath, elapsed, cmdErr, stderrBuf.String())
+
+	logx.Infof("运行完成 - 状态: %s, 时间: %.2f ms, 内存: %.2f KB",
+		result.Status, result.MaxTime, result.MaxMemory)
+
+	return result, nil
+}
+
+// collectExecutionMetrics 收集执行指标
+func (e *SandboxExecutor) collectExecutionMetrics(result *model2.DataJudgeCase,
+	cgroupPath string, elapsed time.Duration) {
+
+	result.MaxTime = float64(elapsed.Milliseconds())
+
+	if memoryUsed, err := utils.GetMemoryUsage(cgroupPath); err == nil {
+		result.MaxMemory = utils.FormatBytesKB(memoryUsed)
+	}
+}
+
+// determineExecutionStatus 判断执行状态
+func (e *SandboxExecutor) determineExecutionStatus(workspace *Workspace, result *model2.DataJudgeCase,
+	cgroupPath string, elapsed time.Duration, cmdErr error, stderr string) string {
+
+	// 检查时间限制
+	if elapsed > time.Duration(workspace.judgeRequest.MaxTime)*time.Millisecond {
+		return "TIME_LIMIT_EXCEEDED"
+	}
+
+	// 检查内存限制
+	if utils.CheckOOMEvent(cgroupPath) {
+		return "MEMORY_LIMIT_EXCEEDED"
+	}
+
+	// 检查运行时错误
+	if cmdErr != nil {
+		result.Message = cmdErr.Error()
+		return "RUNTIME_ERROR"
+	}
+
+	// 检查错误输出
+	if strings.TrimSpace(stderr) != "" {
+		result.Message = stderr
+		return "RUNTIME_ERROR"
+	}
+
+	return "RUN_SUCCESS"
+}
+
+// executeTestCases 执行测试用例集
+func (w *Workspace) executeTestCases() ([]*model2.DataJudgeCase, error) {
+	// testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemID(w.ctx, w.judgeRequest.ProblemId)
+	testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemIDWithSample(w.ctx, w.judgeRequest.ProblemId, w.judgeRequest.SubmitType)
+	if err != nil {
+		return nil, fmt.Errorf("获取测试用例失败: %w", err)
+	}
+
+	executor := &SandboxExecutor{}
+	results := make([]*model2.DataJudgeCase, 0, len(testCases))
+
+	for _, testCase := range testCases {
+		result, err := executor.Execute(w, &testCase)
+		if err != nil {
+			// 记录错误但继续执行其他测试用例
+			logx.Errorf("执行测试用例 %s 失败: %v", testCase.CaseSign, err)
+			continue
+		}
+		results = append(results, result)
+	}
+
+	if len(results) == 0 && len(testCases) > 0 {
+		return nil, fmt.Errorf("所有测试用例执行失败")
+	}
+
+	return results, nil
+}
+
+// handleError 统一错误处理
+func (e *SandboxExecutor) handleError(result *model2.DataJudgeCase, message string, exitCode int, err error) (*model2.DataJudgeCase, error) {
+	result.Status = "SystemError"
+	result.Message = message
+	result.ExitCode = exitCode
+	logx.Errorf("执行错误: %s, 原始错误: %v", message, err)
+	return result, fmt.Errorf("%s: %w", message, err)
+}
+
+
+文件: core\workspace.go
+--------------------------------------------------
+package core
+
+import (
+	"context"
+	"fmt"
+	"judge-service/internal/config"
+	"judge-service/internal/mq"
+	"judge-service/internal/svc"
+	"judge-service/internal/utils"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type Workspace struct {
+	ctx          context.Context
+	config       config.Config
+	startTime    time.Time
+	langConfig   config.LanguageConfig
+	judgeRequest mq.JudgeRequest
+	RootPath     string // 工作空间根目录
+	SourcePath   string // 源代码目录
+	SourceFile   string // 源代码文件
+	BuildPath    string // 编译目录
+	BuildFile    string // 编译文件
+	RunsPath     string // 运行目录
+	svcCtx       *svc.ServiceContext
+}
+
+// NewWorkspace 创建工作空间,上下文/配置/提交信息,返回 工作空间实例 和 提交信息
+func NewWorkspace(ctx context.Context, config config.Config, judgeRequest mq.JudgeRequest, svcCtx *svc.ServiceContext) (*Workspace, *mq.JudgeResponse) {
+	submissionID := generateSubmissionID()
+	workDir := config.Workspace
+	root := filepath.Join(workDir, submissionID) // 本次工作空间根目录
+
+	ws := &Workspace{
+		ctx:          ctx,                           // 使用传入的ctx
+		startTime:    time.Now(),                    // 记录开始时间，用来计算任务总耗时
+		config:       config,                        // 系统配置
+		judgeRequest: judgeRequest,                  // 提交信息
+		RootPath:     root,                          // 根目录
+		SourcePath:   filepath.Join(root, "source"), // 源代码目录
+		BuildPath:    filepath.Join(root, "build"),  // 编译目录
+		RunsPath:     filepath.Join(root, "runs"),   // 运行目录
+		svcCtx:       svcCtx,
+	}
+
+	// 创建目录
+	if err := ws.createDirs(); err != nil {
+		return nil, ws.buildErrorResponse("创建工作空间失败: "+err.Error(), "SYSTEM_ERROR")
+	}
+
+	return ws, nil
+}
+
+// generateSubmissionID 生成提交ID
+func generateSubmissionID() string {
+	return strings.ReplaceAll(uuid.New().String(), "-", "")
+}
+
+// buildErrorResponse 构建错误响应
+func (w *Workspace) buildErrorResponse(message string, status string) *mq.JudgeResponse {
+	return &mq.JudgeResponse{
+		UserId:      w.judgeRequest.UserId,
+		ProblemId:   w.judgeRequest.ProblemId,
+		Language:    w.judgeRequest.Language,
+		SetId:       w.judgeRequest.SetId,
+		Code:        w.judgeRequest.Code,
+		SubmitType:  w.judgeRequest.SubmitType,
+		MaxTime:     0,
+		MaxMemory:   0,
+		Message:     message,
+		ID:          w.judgeRequest.ID,
+		IsSet:       w.judgeRequest.IsSet,
+		Status:      status,
+		ExitCode:    1,
+		JudgeTaskId: w.judgeRequest.JudgeTaskId,
+	}
+}
+
+// createDirs 创建目录
+func (w *Workspace) createDirs() error {
+	dirs := []string{w.SourcePath, w.BuildPath, w.RunsPath}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("创建目录 %s 失败: %w", dir, err)
+		}
+	}
+	return nil
+}
+
+// getLanguageConfig 获取语言配置
+func (w *Workspace) getLanguageConfig() (*config.LanguageConfig, error) {
+	for _, lang := range w.config.Languages {
+		if lang.Name == w.judgeRequest.Language {
+			return &lang, nil
+		}
+	}
+	return nil, fmt.Errorf("不支持的语言: %s", w.judgeRequest.Language)
+}
+
+// writeSourceCode 写入源代码
+func (w *Workspace) writeSourceCode() error {
+	langConfig, err := w.getLanguageConfig()
+	if err != nil {
+		return err
+	}
+	w.langConfig = *langConfig
+
+	fileName := langConfig.SourceFile + langConfig.Extension
+	filePath := filepath.Join(w.SourcePath, fileName)
+
+	if err := os.WriteFile(filePath, []byte(w.judgeRequest.Code), 0644); err != nil {
+		return fmt.Errorf("写入源代码文件失败: %w", err)
+	}
+
+	w.SourceFile = filePath
+	w.BuildFile = filepath.Join(w.RunsPath, langConfig.CompileFile)
+	logx.Infof("源代码保存成功: %s", filePath)
+
+	return nil
+}
+
+// 执行代码
+func (w *Workspace) Execute() *mq.JudgeResponse {
+
+	// 1. 写入源代码
+	if err := w.writeSourceCode(); err != nil {
+		return w.buildErrorResponse(err.Error(), "SYSTEM_ERROR")
+	}
+
+	// 2. 编译（如果需要）
+	if w.langConfig.NeedCompile {
+		// TODO 执行编译
+		compileResult, err := w.compile()
+		if err != nil {
+			logx.Error("编译失败", err.Error())
+			compileResult.Message = utils.AutoMaskAllFilePaths(compileResult.Message)
+			return w.buildErrorResponse(compileResult.Message, "COMPILATION_ERROR")
+		}
+		if !compileResult.Success {
+			compileResult.Message = utils.AutoMaskAllFilePaths(compileResult.Message)
+			return w.buildErrorResponse(compileResult.Message, "COMPILATION_ERROR")
+		}
+	}
+
+	// 3. 执行测试用例
+	executeResult, err := w.executeTestCases()
+	if err != nil {
+		return w.buildErrorResponse("执行失败: "+err.Error(), "RUNTIME_ERROR")
+	}
+
+	// 4. 评估结果
+	evaluationResult := w.evaluate(executeResult)
+
+	// 5. 返回最终结果
+	return evaluationResult
+}
+
+// Cleanup 清理工作空间
+func (w *Workspace) Cleanup() error {
+	logx.Infof("开始清理工作空间 路径: %s", w.RootPath)
+
+	// if err := os.RemoveAll(w.RootPath); err != nil {
+	// 	logx.Errorf("清理工作空间失败 路径: %s, 错误: %v", w.RootPath, err)
+	// 	return err
+	// }
+
+	logx.Infof("工作空间清理完毕: %s", w.RootPath)
+	return nil
+}
+
+
+文件: database\mysql.go
+--------------------------------------------------
+package database
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"judge-service/internal/config"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+)
+
+type MySQLManager struct {
+	DB *gorm.DB
+}
+
+func NewMySQLManager(c config.MySQLConfig) (*MySQLManager, error) {
+	dsn := buildDSN(c)
+
+	db, err := connectMySQL(dsn, c)
+	if err != nil {
+		return nil, err
+	}
+
+	logx.Info("MySQL 连接成功")
+	return &MySQLManager{DB: db}, nil
+}
+
+func buildDSN(c config.MySQLConfig) string {
+	return c.Username + ":" + c.Password + "@tcp(" + c.Host + ")/" + c.Database +
+		"?charset=" + c.Charset + "&parseTime=" + boolToString(c.ParseTime) + "&loc=" + c.Loc
+}
+
+func connectMySQL(dsn string, c config.MySQLConfig) (*gorm.DB, error) {
+	newLogger := logger.New(
+		log.New(log.Writer(), "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold:             time.Second,
+			LogLevel:                  logger.Silent,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  false,
+		},
+	)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: newLogger,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	sqlDB.SetMaxIdleConns(c.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(c.MaxOpenConns)
+
+	if maxLifetime, err := time.ParseDuration(c.ConnMaxLifetime); err == nil {
+		sqlDB.SetConnMaxLifetime(maxLifetime)
+	}
+
+	return db, nil
+}
+
+func boolToString(b bool) string {
+	if b {
+		return "True"
+	}
+	return "False"
+}
+
+func (m *MySQLManager) IsReady() bool {
+	return m.DB != nil
+}
+
+func (m *MySQLManager) SafeDB() (*gorm.DB, error) {
+	if m.DB == nil {
+		return nil, fmt.Errorf("数据库未初始化")
+	}
+	return m.DB, nil
+}
+
+func (m *MySQLManager) Close() error {
+	if m.DB != nil {
+		sqlDB, err := m.DB.DB()
+		if err != nil {
+			return err
+		}
+		return sqlDB.Close()
+	}
+	return nil
+}
+
+
+文件: database\model\data_judge_case.go
+--------------------------------------------------
+package model
+
+import (
+	"time"
+)
+
+// 判题结果用例表
+type DataJudgeCase struct {
+	ID             string     `gorm:"column:id;primaryKey;type:varchar(32)"`
+	SubmitID       string     `gorm:"column:submit_id;type:varchar(32);not null"`
+	CaseSign       string     `gorm:"column:case_sign;type:varchar(255)"`
+	InputData      string     `gorm:"column:input_data;type:longtext"`
+	OutputData     string     `gorm:"column:output_data;type:longtext"`
+	ExpectedOutput string     `gorm:"column:expected_output;type:longtext"`
+	InputFilePath  string     `gorm:"column:input_file_path;type:varchar(500)"`
+	InputFileSize  int64      `gorm:"column:input_file_size;default:0"`
+	OutputFilePath string     `gorm:"column:output_file_path;type:varchar(500)"`
+	OutputFileSize int64      `gorm:"column:output_file_size;default:0"`
+	MaxTime        float64    `gorm:"column:max_time;type:decimal(10,2);default:0.00"`
+	MaxMemory      float64    `gorm:"column:max_memory;type:decimal(10,2);default:0.00"`
+	IsSample       bool       `gorm:"column:is_sample;default:false"`
+	Score          float64    `gorm:"column:score;type:decimal(10,2);default:0.00"`
+	Status         string     `gorm:"column:status;type:varchar(32)"`
+	Message        string     `gorm:"column:message;type:text"`
+	ExitCode       int        `gorm:"column:exit_code;default:0"`
+	Deleted        bool       `gorm:"column:deleted;default:false"`
+	CreateTime     *time.Time `gorm:"column:create_time"`
+	CreateUser     string     `gorm:"column:create_user;type:varchar(32)"`
+	UpdateTime     *time.Time `gorm:"column:update_time"`
+	UpdateUser     string     `gorm:"column:update_user;type:varchar(32)"`
+}
+
+func (DataJudgeCase) TableName() string {
+	return "data_judge_case"
+}
+
+
+文件: database\model\data_test_case.go
+--------------------------------------------------
+package model
+
+import (
+	"time"
+)
+
+// 题目测试用例表
+type DataTestCase struct {
+	ID             string     `gorm:"column:id;primaryKey;type:varchar(32)"`
+	ProblemID      string     `gorm:"column:problem_id;type:varchar(32);not null"`
+	CaseSign       string     `gorm:"column:case_sign;type:varchar(255)"`
+	InputData      string     `gorm:"column:input_data;type:longtext"`
+	ExpectedOutput string     `gorm:"column:expected_output;type:longtext"`
+	InputFilePath  string     `gorm:"column:input_file_path;type:varchar(500)"`
+	InputFileSize  int64      `gorm:"column:input_file_size;default:0"`
+	OutputFilePath string     `gorm:"column:output_file_path;type:varchar(500)"`
+	OutputFileSize int64      `gorm:"column:output_file_size;default:0"`
+	IsSample       bool       `gorm:"column:is_sample;default:false"`
+	Score          float64    `gorm:"column:score;type:decimal(10,2);default:0.00"`
+	Deleted        bool       `gorm:"column:deleted;default:false"`
+	CreateTime     *time.Time `gorm:"column:create_time"`
+	CreateUser     string     `gorm:"column:create_user;type:varchar(32)"`
+	UpdateTime     *time.Time `gorm:"column:update_time"`
+	UpdateUser     string     `gorm:"column:update_user;type:varchar(32)"`
+}
+
+func (DataTestCase) TableName() string {
+	return "data_test_case"
+}
+
+
+文件: database\repository\judgecase_repository.go
+--------------------------------------------------
+package repository
+
+import (
+	"context"
+	"fmt"
+	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
+	"judge-service/internal/database/model"
+)
+
+type JudgeCaseRepository interface {
+	// 单个操作
+	CreateJudgeCase(ctx context.Context, judgeCase *model.DataJudgeCase) error
+
+	// 批量操作
+	BatchCreateJudgeCases(ctx context.Context, judgeCases []*model.DataJudgeCase) error
+}
+
+type judgeCaseRepository struct {
+	db *gorm.DB
+}
+
+func NewJudgeCaseRepository(db *gorm.DB) JudgeCaseRepository {
+	return &judgeCaseRepository{
+		db: db,
+	}
+}
+
+// CreateJudgeCase 创建单个判题用例
+func (r *judgeCaseRepository) CreateJudgeCase(ctx context.Context, judgeCase *model.DataJudgeCase) error {
+	if r.db == nil {
+		return fmt.Errorf("数据库未准备好")
+	}
+
+	logx.Infof("开始创建判题用例，问题ID: %s", judgeCase.SubmitID)
+
+	err := r.db.WithContext(ctx).Create(judgeCase).Error
+	if err != nil {
+		logx.Errorf("创建判题用例失败: %v", err)
+		return fmt.Errorf("创建判题用例失败: %v", err)
+	}
+
+	logx.Infof("成功创建判题用例，ID: %s", judgeCase.ID)
+	return nil
+}
+
+// BatchCreateJudgeCases 批量创建判题用例
+func (r *judgeCaseRepository) BatchCreateJudgeCases(ctx context.Context, judgeCases []*model.DataJudgeCase) error {
+	if r.db == nil {
+		return fmt.Errorf("数据库未准备好")
+	}
+
+	if len(judgeCases) == 0 {
+		logx.Info("判题用例列表为空，跳过批量创建")
+		return nil
+	}
+
+	// 获取第一个用例的问题ID用于日志
+	submitID := ""
+	if len(judgeCases) > 0 && judgeCases[0] != nil {
+		submitID = judgeCases[0].SubmitID
+	}
+
+	logx.Infof("开始批量创建判题用例，问题ID: %s，数量: %d", submitID, len(judgeCases))
+
+	// 使用事务确保批量操作的原子性
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.CreateInBatches(judgeCases, 100).Error; err != nil {
+			return fmt.Errorf("批量创建判题用例失败: %v", err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		logx.Errorf("批量创建判题用例失败: %v", err)
+		return err
+	}
+
+	logx.Infof("成功批量创建判题用例，问题ID: %s，数量: %d", submitID, len(judgeCases))
+	return nil
+}
+
+
+文件: database\repository\testcase_repository.go
+--------------------------------------------------
+package repository
+
+import (
+	"context"
+	"fmt"
+	"judge-service/internal/database/model"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
+)
+
+type TestCaseRepository interface {
+	GetTestCasesByProblemID(ctx context.Context, problemID string) ([]model.DataTestCase, error)
+	GetTestCasesByProblemIDWithSample(ctx context.Context, problemID string, isSample bool) ([]model.DataTestCase, error)
+}
+
+type testCaseRepository struct {
+	db *gorm.DB
+}
+
+func NewTestCaseRepository(db *gorm.DB) TestCaseRepository {
+	return &testCaseRepository{
+		db: db,
+	}
+}
+
+func (r *testCaseRepository) GetTestCasesByProblemID(ctx context.Context, problemID string) ([]model.DataTestCase, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("数据库未准备好")
+	}
+
+	// 添加调试日志
+	logx.Infof("开始查询题目 %s 的测试用例", problemID)
+
+	var testCases []model.DataTestCase
+	err := r.db.
+		Where("problem_id = ?", problemID).
+		Order("create_time ASC").
+		Find(&testCases).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("获取测试用例失败: %v", err)
+	}
+
+	logx.Infof("成功获取题目 %s 的测试用例，共 %d 条", problemID, len(testCases))
+
+	// 如果没有数据，记录警告
+	if len(testCases) == 0 {
+		logx.Infof("题目 %s 没有找到未删除的测试用例", problemID)
+	}
+
+	return testCases, nil
+}
+
+func (r *testCaseRepository) GetTestCasesByProblemIDWithSample(ctx context.Context, problemID string, submitType bool) ([]model.DataTestCase, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("数据库未准备好")
+	}
+
+	// 添加调试日志
+	logx.Infof("开始查询题目 %s 的测试用例, submitType: %t", problemID, submitType)
+
+	var testCases []model.DataTestCase
+	var err error
+
+	baseQuery := r.db.
+		Where("problem_id = ?", problemID).
+		Where("deleted = 0")
+
+	// 正式提交
+	if submitType {
+		// 正式提交：获取所有非样例测试用例
+		testCases, err = r.getTestCases(baseQuery, 0, "ASC")
+	} else {
+		// 测试提交：先获取样例，如果没有则回退
+		testCases, err = r.getTestCases(baseQuery, 1, "ASC")
+		if err == nil && len(testCases) == 0 {
+			logx.Infof("题目 %s 没有找到样例测试用例，尝试获取1条测试用例", problemID)
+			testCases, err = r.getFallbackTestCase(baseQuery)
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	logx.Infof("成功获取题目 %s 的测试用例，共 %d 条", problemID, len(testCases))
+
+	if len(testCases) == 0 {
+		logx.Errorf("题目 %s 没有找到测试用例", problemID)
+	}
+
+	return testCases, nil
+}
+	
+// 辅助方法
+func (r *testCaseRepository) getTestCases(baseQuery *gorm.DB, isSample int, order string) ([]model.DataTestCase, error) {
+	var testCases []model.DataTestCase
+	err := baseQuery.
+		Where("is_sample = ?", isSample).
+		Order("create_time " + order).
+		Find(&testCases).Error
+	if err != nil {
+		return nil, fmt.Errorf("获取测试用例失败: %v", err)
+	}
+	return testCases, nil
+}
+
+func (r *testCaseRepository) getFallbackTestCase(baseQuery *gorm.DB) ([]model.DataTestCase, error) {
+	var testCases []model.DataTestCase
+	err := baseQuery.
+		Order("create_time DESC").
+		Limit(1).
+		Find(&testCases).Error
+	if err != nil {
+		return nil, fmt.Errorf("获取回退测试用例失败: %v", err)
+	}
+	return testCases, nil
+}
+
+
+文件: initializer\manager.go
+--------------------------------------------------
+package initializer
+
+import (
+	"fmt"
+	"judge-service/internal/config"
+	"judge-service/internal/database"
+	repository2 "judge-service/internal/database/repository"
+	"judge-service/internal/mq"
+	"judge-service/internal/nacos"
+	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type InitializerManager struct {
+	config              config.Config
+	mysqlManager        *database.MySQLManager
+	rabbitMQManager     *mq.RabbitMQManager
+	serviceRegistry     *nacos.ServiceRegistryManager
+	testCaseRepo        repository2.TestCaseRepository
+	judgeCaseRepository repository2.JudgeCaseRepository
+}
+
+func NewInitializerManager(c config.Config) *InitializerManager {
+	return &InitializerManager{
+		config: c,
+	}
+}
+
+func (im *InitializerManager) Initialize() error {
+	// 初始化 RabbitMQ（同步，因为其他组件依赖它）
+	if err := im.initRabbitMQ(); err != nil {
+		return err
+	}
+
+	// 初始化服务注册（同步）
+	im.initServiceRegistry()
+
+	// 异步初始化 MySQL
+	go im.initMySQLWithRetry()
+
+	return nil
+}
+
+func (im *InitializerManager) initRabbitMQ() error {
+	rabbitMQManager, err := mq.NewRabbitMQManager(im.config.RabbitMQ)
+	if err != nil {
+		logx.Errorf("无法连接到 RabbitMQ: %v", err)
+		return err
+	}
+	im.rabbitMQManager = rabbitMQManager
+	return nil
+}
+
+func (im *InitializerManager) initServiceRegistry() {
+	im.serviceRegistry = nacos.NewServiceRegistryManager(im.config.Nacos, im.config)
+	if err := im.serviceRegistry.Register(); err != nil {
+		logx.Errorf("服务注册初始化失败: %v", err)
+	}
+}
+
+func (im *InitializerManager) initMySQLWithRetry() {
+	maxRetries := 5
+	retryInterval := time.Second * 5
+
+	for i := 0; i < maxRetries; i++ {
+		mysqlManager, err := database.NewMySQLManager(im.config.MySQL)
+		if err != nil {
+			logx.Errorf("初始化 MySQL 失败 (尝试 %d/%d): %v", i+1, maxRetries, err)
+
+			if i == maxRetries-1 {
+				logx.Error("已达到最大重试次数，MySQL 连接失败")
+				return
+			}
+
+			logx.Infof("%v 后重试...", retryInterval)
+			time.Sleep(retryInterval)
+			continue
+		}
+
+		im.mysqlManager = mysqlManager
+		im.testCaseRepo = repository2.NewTestCaseRepository(mysqlManager.DB)
+		im.judgeCaseRepository = repository2.NewJudgeCaseRepository(mysqlManager.DB)
+		logx.Info("MySQL 连接成功")
+		return
+	}
+}
+
+func (im *InitializerManager) Close() error {
+	var errs []error
+
+	if im.serviceRegistry != nil {
+		if err := im.serviceRegistry.Deregister(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if im.rabbitMQManager != nil {
+		if err := im.rabbitMQManager.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if im.mysqlManager != nil {
+		if err := im.mysqlManager.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("关闭资源时发生错误: %v", errs)
+	}
+	return nil
+}
+
+// Getters
+func (im *InitializerManager) GetMySQLManager() *database.MySQLManager {
+	return im.mysqlManager
+}
+
+func (im *InitializerManager) GetRabbitMQManager() *mq.RabbitMQManager {
+	return im.rabbitMQManager
+}
+
+func (im *InitializerManager) GetTestCaseRepo() repository2.TestCaseRepository {
+	return im.testCaseRepo
+}
+
+func (im *InitializerManager) GetJudgeCaseRepo() repository2.JudgeCaseRepository {
+	return im.judgeCaseRepository
+}
+
+func (im *InitializerManager) GetServiceReRegistry() *nacos.ServiceRegistryManager {
+	return im.serviceRegistry
+}
+
+func (im *InitializerManager) IsDBReady() bool {
+	return im.mysqlManager != nil && im.mysqlManager.IsReady()
+}
+
+
+文件: logic\common.go
+--------------------------------------------------
+package logic
+
+import (
+	"context"
+	"encoding/json"
+	"judge-service/internal/core"
+	"judge-service/internal/mq"
+	"judge-service/internal/svc"
+	"sync"
+	"time"
+
+	"github.com/streadway/amqp"
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type CommonLogic struct {
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+}
+
+// 题目逻辑
+func NewCommonLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CommonLogic {
+	return &CommonLogic{
+		ctx:    ctx,
+		svcCtx: svcCtx,
+	}
+}
+
+// 开始消费者
+func (l *CommonLogic) StartConsumer() {
+	CommonChannel := l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel
+	// 声明队列（确保存在）
+	_, err := CommonChannel.QueueDeclare(
+		l.svcCtx.Config.RabbitMQ.Common.JudgeQueue,
+		true, false, false, false, nil,
+	)
+	if err != nil {
+		logx.Errorf("无法声明问题队列: %v", err)
+		return
+	}
+
+	// 设置预取计数，控制并发度
+	err = CommonChannel.Qos(
+		10,    // 预取计数，控制并发处理的消息数量
+		0,     // 预取大小，0表示无限制
+		false, // 全局设置，false表示只对当前channel有效
+	)
+	if err != nil {
+		logx.Errorf("设置Qos失败: %v", err)
+		return
+	}
+
+	msgs, err := CommonChannel.Consume(
+		l.svcCtx.Config.RabbitMQ.Common.JudgeQueue,
+		"", false, false, false, false, nil,
+	)
+	if err != nil {
+		logx.Errorf("注册题目消费者失败: %v", err)
+		return
+	}
+
+	logx.Info("题目消费者已成功启动")
+
+	var wg sync.WaitGroup
+	semaphore := make(chan struct{}, 10) // 控制并发数量的信号量
+
+	for d := range msgs {
+		semaphore <- struct{}{} // 获取信号量
+		wg.Add(1)
+
+		go func(delivery amqp.Delivery) {
+			defer wg.Done()
+			defer func() { <-semaphore }() // 释放信号量
+
+			l.processMessage(delivery)
+		}(d)
+	}
+
+	wg.Wait() // 等待所有处理完成
+}
+
+func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
+	defer func() {
+		if err := delivery.Ack(false); err != nil {
+			logx.Errorf("未能确认题目消息: %v", err)
+		}
+	}()
+
+	var judgeSubmit mq.JudgeRequest
+	if err := json.Unmarshal(delivery.Body, &judgeSubmit); err != nil {
+		logx.Errorf("解码 JSON 出错: %v", err)
+		return
+	}
+
+	workspace, result := core.NewWorkspace(l.ctx, l.svcCtx.Config, judgeSubmit, l.svcCtx)
+	if result != nil {
+		err := l.sendResultToMQ(result)
+		if err != nil {
+			logx.Errorf("发送结果到MQ失败: %v", err)
+		}
+		return
+	}
+
+	// 程序执行
+	judgeResponse := workspace.Execute()
+
+	// 如果正常会执行到这里
+	err := l.sendResultToMQ(judgeResponse)
+	if err != nil {
+		logx.Errorf("发送结果到MQ失败: %v", err)
+		err = workspace.Cleanup()
+		if err != nil {
+			logx.Errorf("删除工作空间失败: %v", err)
+		}
+		return
+	}
+
+	err = workspace.Cleanup()
+	if err != nil {
+		logx.Errorf("删除工作空间失败: %v", err)
+		return
+	}
+}
+
+func (l *CommonLogic) sendResultToMQ(result *mq.JudgeResponse) error {
+	body, err := json.Marshal(result)
+
+	if err != nil {
+		return err
+	}
+
+	exchange := l.svcCtx.Config.RabbitMQ.Common.ResultExchange
+	routingKey := l.svcCtx.Config.RabbitMQ.Common.ResultRoutingKey
+
+	err = l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel.Publish(
+		exchange,
+		routingKey,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+			Timestamp:   time.Now(),
+		},
+	)
+	return err
+}
+
+
+文件: logic\consume.go
+--------------------------------------------------
+package logic
+
+import (
+	"context"
+	"judge-service/internal/svc"
+)
+
+type ConsumeLogic struct {
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+}
+
+func NewConsumeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ConsumeLogic {
+	return &ConsumeLogic{
+		ctx:    ctx,
+		svcCtx: svcCtx,
+	}
+}
+
+func (l *ConsumeLogic) StartConsuming() {
+	ctx, cancel := context.WithCancel(l.ctx)
+	defer cancel()
+
+	go NewCommonLogic(ctx, l.svcCtx).StartConsumer()
+
+	<-ctx.Done()
+}
+
+
+文件: mq\judge_request.go
+--------------------------------------------------
+package mq
+
+type JudgeRequest struct {
+	UserId      string  `json:"userId"`
+	ProblemId   string  `json:"problemId"`
+	SetId       string  `json:"setId"`
+	Language    string  `json:"language"`
+	Code        string  `json:"code"`
+	SubmitType  bool    `json:"submitType"`
+	MaxTime     float64 `json:"maxTime"`   // ms
+	MaxMemory   float64 `json:"maxMemory"` // kb
+	ID          string  `json:"id"`
+	IsSet       bool    `json:"isSet"`
+	JudgeTaskId string  `json:"judgeTaskId"`
+}
+
+
+文件: mq\judge_response.go
+--------------------------------------------------
+package mq
+
+type JudgeResponse struct {
+	UserId      string  `json:"userId"`
+	ProblemId   string  `json:"problemId"`
+	Language    string  `json:"language"`
+	SetId       string  `json:"setId"`
+	Code        string  `json:"code"`
+	SubmitType  bool    `json:"submitType"`
+	MaxTime     float64 `json:"maxTime"`   // ms
+	MaxMemory   float64 `json:"maxMemory"` // kb
+	Message     string  `json:"message"`
+	ID          string  `json:"id"`
+	IsSet       bool    `json:"isSet"`
+	Status      string  `json:"status"`
+	ExitCode    int     `json:"exitCode"` // 程序退出码
+	JudgeTaskId string  `json:"judgeTaskId"`
+}
+
+
+文件: mq\rabbitmq.go
+--------------------------------------------------
+package mq
+
+import (
+	"fmt"
+	"judge-service/internal/config"
+
+	"github.com/streadway/amqp"
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type RabbitMQManager struct {
+	Conn          *amqp.Connection
+	CommonChannel *amqp.Channel
+	config        config.RabbitMQConfig
+}
+
+func NewRabbitMQManager(c config.RabbitMQConfig) (*RabbitMQManager, error) {
+	conn, err := amqp.DialConfig(c.Host, amqp.Config{
+		Vhost: c.VirtualHost,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	commonCh, err := conn.Channel()
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+
+	logx.Info("RabbitMQ 连接成功")
+	return &RabbitMQManager{
+		Conn:          conn,
+		CommonChannel: commonCh,
+		config:        c,
+	}, nil
+}
+
+func (r *RabbitMQManager) IsReady() bool {
+	return r.Conn != nil && !r.Conn.IsClosed()
+}
+
+func (r *RabbitMQManager) Close() error {
+	if r.CommonChannel != nil {
+		r.CommonChannel.Close()
+	}
+	if r.Conn != nil {
+		return r.Conn.Close()
+	}
+	return nil
+}
+
+func (r *RabbitMQManager) GetChannel() (*amqp.Channel, error) {
+	if !r.IsReady() {
+		return nil, fmt.Errorf("RabbitMQ 连接不可用")
+	}
+	return r.Conn.Channel()
+}
+
+
+文件: nacos\nacos.go
+--------------------------------------------------
+package nacos
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/nacos-group/nacos-sdk-go/v2/clients"
+	"github.com/nacos-group/nacos-sdk-go/v2/clients/config_client"
+	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type ConfigManager struct {
+	client config_client.IConfigClient
+	group  string
+}
+
+func NewNacosConfigManager(serverAddr, username, password, namespace, group string) (*ConfigManager, error) {
+	if serverAddr == "" {
+		return nil, fmt.Errorf("Nacos服务器地址不能为空")
+	}
+
+	// 解析服务器地址，处理端口
+	serverConfigs, err := parseServerConfigs(serverAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	// 创建 clientConfig
+	clientConfig := constant.ClientConfig{
+		NamespaceId:         namespace,
+		TimeoutMs:           10000, // 增加超时时间
+		NotLoadCacheAtStart: true,
+		LogDir:              "/tmp/nacos/log",
+		CacheDir:            "/tmp/nacos/cache",
+		LogLevel:            "error", // 降低日志级别
+		Username:            username,
+		Password:            password,
+	}
+
+	// 如果用户名和密码都为空，则不设置认证
+	if username == "" && password == "" {
+		clientConfig.Username = ""
+		clientConfig.Password = ""
+	}
+
+	// 创建配置客户端
+	configClient, err := clients.NewConfigClient(
+		vo.NacosClientParam{
+			ClientConfig:  &clientConfig,
+			ServerConfigs: serverConfigs,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("创建Nacos配置客户端失败: %v", err)
+	}
+
+	return &ConfigManager{
+		client: configClient,
+		group:  group,
+	}, nil
+}
+
+// parseServerConfigs 解析服务器地址
+func parseServerConfigs(serverAddr string) ([]constant.ServerConfig, error) {
+	var serverConfigs []constant.ServerConfig
+
+	// 支持多个服务器地址（逗号分隔）
+	addrs := strings.Split(serverAddr, ",")
+	for _, addr := range addrs {
+		addr = strings.TrimSpace(addr)
+		if addr == "" {
+			continue
+		}
+
+		// 解析主机和端口
+		var host string
+		var port uint64 = 8848 // 默认端口
+
+		if strings.Contains(addr, ":") {
+			parts := strings.Split(addr, ":")
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("服务器地址格式无效: %s", addr)
+			}
+			host = parts[0]
+			// 这里可以解析端口，但 Nacos SDK 通常使用默认端口
+			// portStr := parts[1]
+			// 如果需要自定义端口，可以在这里解析
+		} else {
+			host = addr
+		}
+
+		serverConfigs = append(serverConfigs, constant.ServerConfig{
+			IpAddr:      host,
+			Port:        port,
+			ContextPath: "/nacos",
+			Scheme:      "http", // 明确指定协议
+		})
+	}
+
+	if len(serverConfigs) == 0 {
+		return nil, fmt.Errorf("未找到有效的服务器地址")
+	}
+
+	return serverConfigs, nil
+}
+
+// GetConfig 从 Nacos 获取配置
+func (m *ConfigManager) GetConfig(dataId string) (string, error) {
+	if dataId == "" {
+		return "", fmt.Errorf("dataId不能为空")
+	}
+
+	content, err := m.client.GetConfig(vo.ConfigParam{
+		DataId: dataId,
+		Group:  m.group,
+	})
+	if err != nil {
+		return "", fmt.Errorf("从Nacos获取配置失败: %v", err)
+	}
+
+	if content == "" {
+		return "", fmt.Errorf("配置内容为空, dataId: %s, group: %s", dataId, m.group)
+	}
+
+	return content, nil
+}
+
+// CheckConfigExists 检查配置是否存在
+func (m *ConfigManager) CheckConfigExists(dataId string) (bool, error) {
+	content, err := m.client.GetConfig(vo.ConfigParam{
+		DataId: dataId,
+		Group:  m.group,
+	})
+	if err != nil {
+		return false, err
+	}
+	return content != "", nil
+}
+
+func (m *ConfigManager) ListenConfig(dataId string, onConfigChange func(string)) error {
+	err := m.client.ListenConfig(vo.ConfigParam{
+		DataId: dataId,
+		Group:  m.group,
+		OnChange: func(namespace, group, dataId, data string) {
+			logx.Infof("配置已更新：命名空间=%s，组别=%s，数据ID=%s", namespace, group, dataId)
+			onConfigChange(data)
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("监听配置失败: %v", err)
+	}
+	logx.Infof("开始监听配置变更，数据ID：%s，组别：%s", dataId, m.group)
+	return nil
+}
+
+// CancelListenConfig 取消监听配置
+func (m *ConfigManager) CancelListenConfig(dataId string) error {
+	err := m.client.CancelListenConfig(vo.ConfigParam{
+		DataId: dataId,
+		Group:  m.group,
+	})
+	if err != nil {
+		return fmt.Errorf("取消监听配置失败: %v", err)
+	}
+	logx.Infof("已取消监听配置变更，数据ID：%s，组别：%s", dataId, m.group)
+	return nil
+}
+
+
+文件: nacos\registry.go
+--------------------------------------------------
+package nacos
+
+import (
+	"fmt"
+	"judge-service/internal/config"
+	"net"
+	"strconv"
+	"time"
+
+	"github.com/nacos-group/nacos-sdk-go/v2/clients"
+	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
+	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/model"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+// ServiceInstance 服务实例信息
+type ServiceInstance struct {
+	InstanceId  string            `json:"instanceId"`
+	Ip          string            `json:"ip"`
+	Port        uint64            `json:"port"`
+	ServiceName string            `json:"serviceName"`
+	Weight      float64           `json:"weight"`
+	Healthy     bool              `json:"healthy"`
+	Enabled     bool              `json:"enabled"`
+	Metadata    map[string]string `json:"metadata"`
+	ClusterName string            `json:"clusterName"`
+}
+
+// ServiceRegistry 服务注册器
+type ServiceRegistry struct {
+	client      naming_client.INamingClient
+	group       string
+	serviceName string
+	ip          string
+	port        uint64
+	metadata    map[string]string
+	clusterName string
+	instanceId  string
+}
+
+// NewServiceRegistry 创建服务注册器
+func NewServiceRegistry(nacosConfig config.NacosConfig, serviceConfig config.Config) (*ServiceRegistry, error) {
+	if nacosConfig.ServerAddr == "" {
+		return nil, fmt.Errorf("Nacos服务器地址不能为空")
+	}
+
+	// 解析服务器地址
+	serverConfigs, err := parseServerConfigs(nacosConfig.ServerAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	// 创建 clientConfig
+	clientConfig := constant.ClientConfig{
+		NamespaceId:         nacosConfig.Namespace,
+		TimeoutMs:           10000,
+		NotLoadCacheAtStart: true,
+		LogDir:              "/tmp/nacos/log",
+		CacheDir:            "/tmp/nacos/cache",
+		LogLevel:            "error",
+		Username:            nacosConfig.Username,
+		Password:            nacosConfig.Password,
+	}
+
+	// 如果用户名和密码都为空，则不设置认证
+	if nacosConfig.Username == "" && nacosConfig.Password == "" {
+		clientConfig.Username = ""
+		clientConfig.Password = ""
+	}
+
+	// 创建命名客户端
+	namingClient, err := clients.NewNamingClient(
+		vo.NacosClientParam{
+			ClientConfig:  &clientConfig,
+			ServerConfigs: serverConfigs,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("创建Nacos命名客户端失败: %v", err)
+	}
+
+	// 解析服务端口
+	port, err := strconv.ParseUint(strconv.Itoa(serviceConfig.Port), 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("端口号无效: %v", err)
+	}
+
+	// 获取自动检测的IP
+	autoIP, err := getLocalIP()
+	if err != nil {
+		logx.Errorf("自动获取IP失败: %v，使用默认配置", err)
+		autoIP = "0.0.0.0"
+	}
+
+	// 确定最终使用的IP
+	finalIP := autoIP
+	if serviceConfig.Host != "0.0.0.0" && serviceConfig.Host != "" {
+		finalIP = serviceConfig.Host
+		logx.Infof("使用配置的IP: %s (自动检测的IP: %s)", finalIP, autoIP)
+	} else {
+		logx.Infof("使用自动检测的IP: %s", finalIP)
+	}
+
+	logx.Infof("服务注册 IP: %s", finalIP)
+
+	// 生成实例ID
+	instanceId := fmt.Sprintf("%s-%s-%d", serviceConfig.Name, finalIP, port)
+
+	return &ServiceRegistry{
+		client:      namingClient,
+		group:       nacosConfig.Group,
+		serviceName: serviceConfig.Name,
+		ip:          finalIP,
+		port:        port,
+		metadata: map[string]string{
+			"version":   "1.0.0",
+			"workspace": serviceConfig.Workspace,
+			"port":      strconv.Itoa(serviceConfig.Port),
+			"startTime": time.Now().Format(time.RFC3339),
+		},
+		clusterName: "DEFAULT",
+		instanceId:  instanceId,
+	}, nil
+}
+
+// 获取本机第一个非回环的IPv4地址
+func getLocalIP() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+
+	for _, addr := range addrs {
+		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			if ipNet.IP.To4() != nil {
+				return ipNet.IP.String(), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("不能获取 IP 地址")
+}
+
+// Register 注册服务
+func (r *ServiceRegistry) Register() error {
+	param := vo.RegisterInstanceParam{
+		Ip:          r.ip,
+		Port:        r.port,
+		ServiceName: r.serviceName,
+		Weight:      10,
+		Enable:      true,
+		Healthy:     true,
+		Ephemeral:   true,
+		Metadata:    r.metadata,
+		ClusterName: r.clusterName,
+		GroupName:   r.group,
+	}
+
+	success, err := r.client.RegisterInstance(param)
+	if err != nil {
+		return fmt.Errorf("服务注册失败: %v", err)
+	}
+
+	if !success {
+		return fmt.Errorf("服务注册未成功")
+	}
+
+	logx.Infof("服务注册成功: %s:%d, 实例ID: %s", r.ip, r.port, r.instanceId)
+	return nil
+}
+
+// Deregister 注销服务
+func (r *ServiceRegistry) Deregister() error {
+	param := vo.DeregisterInstanceParam{
+		Ip:          r.ip,
+		Port:        r.port,
+		ServiceName: r.serviceName,
+		Cluster:     r.clusterName,
+		GroupName:   r.group,
+		Ephemeral:   true,
+	}
+
+	success, err := r.client.DeregisterInstance(param)
+	if err != nil {
+		return fmt.Errorf("服务注销失败: %v", err)
+	}
+
+	if !success {
+		return fmt.Errorf("服务注销未成功")
+	}
+
+	logx.Infof("服务注销成功: %s:%d", r.ip, r.port)
+	return nil
+}
+
+// SetMetadata 设置元数据
+func (r *ServiceRegistry) SetMetadata(key, value string) {
+	r.metadata[key] = value
+}
+
+// GetServiceInstances 获取服务实例列表
+func (r *ServiceRegistry) GetServiceInstances(serviceName string) ([]ServiceInstance, error) {
+	instances, err := r.client.SelectInstances(vo.SelectInstancesParam{
+		ServiceName: serviceName,
+		GroupName:   r.group,
+		Clusters:    []string{r.clusterName},
+		HealthyOnly: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("获取服务实例列表失败: %v", err)
+	}
+
+	var result []ServiceInstance
+	for _, instance := range instances {
+		result = append(result, ServiceInstance{
+			InstanceId:  instance.InstanceId,
+			Ip:          instance.Ip,
+			Port:        instance.Port,
+			ServiceName: instance.ServiceName,
+			Weight:      instance.Weight,
+			Healthy:     instance.Healthy,
+			Enabled:     instance.Enable,
+			Metadata:    instance.Metadata,
+			ClusterName: instance.ClusterName,
+		})
+	}
+	return result, nil
+}
+
+// Subscribe 订阅服务变化
+func (r *ServiceRegistry) Subscribe(serviceName string, callback func([]ServiceInstance)) error {
+	err := r.client.Subscribe(&vo.SubscribeParam{
+		ServiceName: serviceName,
+		GroupName:   r.group,
+		Clusters:    []string{r.clusterName},
+		SubscribeCallback: func(services []model.Instance, err error) {
+			if err != nil {
+				logx.Errorf("服务订阅回调错误: %v", err)
+				return
+			}
+
+			var instances []ServiceInstance
+			for _, service := range services {
+				instances = append(instances, ServiceInstance{
+					InstanceId:  service.InstanceId,
+					Ip:          service.Ip,
+					Port:        service.Port,
+					ServiceName: service.ServiceName,
+					Weight:      service.Weight,
+					Healthy:     service.Healthy,
+					Enabled:     service.Enable,
+					Metadata:    service.Metadata,
+					ClusterName: service.ClusterName,
+				})
+			}
+			callback(instances)
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("服务订阅失败: %v", err)
+	}
+	return nil
+}
+
+// Unsubscribe 取消订阅
+func (r *ServiceRegistry) Unsubscribe(serviceName string) error {
+	err := r.client.Unsubscribe(&vo.SubscribeParam{
+		ServiceName: serviceName,
+		GroupName:   r.group,
+		Clusters:    []string{r.clusterName},
+	})
+	if err != nil {
+		return fmt.Errorf("取消服务订阅失败: %v", err)
+	}
+	return nil
+}
+
+// HealthCheck 健康检查
+func (r *ServiceRegistry) HealthCheck() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		// 发送心跳，更新服务状态
+		_, err := r.client.GetService(vo.GetServiceParam{
+			ServiceName: r.serviceName,
+			GroupName:   r.group,
+		})
+		if err != nil {
+			logx.Errorf("健康检查失败: %v", err)
+			// 尝试重新注册
+			if err := r.Register(); err != nil {
+				logx.Errorf("健康检查失败后重新注册服务失败: %v", err)
+			} else {
+				logx.Info("健康检查失败后服务重新注册成功")
+			}
+		} else {
+			logx.Debugf("服务健康检查通过: %s", r.serviceName)
+		}
+	}
+}
+
+// GetServiceInfo 获取服务信息
+func (r *ServiceRegistry) GetServiceInfo() ServiceInstance {
+	return ServiceInstance{
+		InstanceId:  r.instanceId,
+		Ip:          r.ip,
+		Port:        r.port,
+		ServiceName: r.serviceName,
+		Weight:      10,
+		Healthy:     true,
+		Enabled:     true,
+		Metadata:    r.metadata,
+		ClusterName: r.clusterName,
+	}
+}
+
+
+文件: nacos\service_registry.go
+--------------------------------------------------
+package nacos
+
+import (
+	"judge-service/internal/config"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type ServiceRegistryManager struct {
+	registry *ServiceRegistry
+	enabled  bool
+}
+
+func NewServiceRegistryManager(nacosConfig config.NacosConfig, appConfig config.Config) *ServiceRegistryManager {
+	if nacosConfig.ServerAddr == "" {
+		return &ServiceRegistryManager{enabled: false}
+	}
+
+	registry, err := NewServiceRegistry(nacosConfig, appConfig)
+	if err != nil {
+		logx.Errorf("创建服务注册器失败: %v", err)
+		return &ServiceRegistryManager{enabled: false}
+	}
+
+	return &ServiceRegistryManager{
+		registry: registry,
+		enabled:  true,
+	}
+}
+
+func (s *ServiceRegistryManager) Register() error {
+	if !s.enabled || s.registry == nil {
+		return nil
+	}
+
+	if err := s.registry.Register(); err != nil {
+		logx.Errorf("服务注册失败: %v", err)
+		return err
+	}
+
+	logx.Info("服务成功注册到 Nacos")
+
+	// 启动健康检查
+	go s.registry.HealthCheck()
+
+	return nil
+}
+
+func (s *ServiceRegistryManager) Deregister() error {
+	if !s.enabled || s.registry == nil {
+		return nil
+	}
+	return s.registry.Deregister()
+}
+
+func (s *ServiceRegistryManager) IsEnabled() bool {
+	return s.enabled
+}
+
+
+文件: svc\servicecontext.go
+--------------------------------------------------
+package svc
+
+import (
+	"fmt"
+	"github.com/streadway/amqp"
+	"gorm.io/gorm"
+	"judge-service/internal/config"
+	repository2 "judge-service/internal/database/repository"
+	"judge-service/internal/initializer"
+)
+
+type ServiceContext struct {
+	Config      config.Config
+	Initializer *initializer.InitializerManager
+}
+
+func NewServiceContext(c config.Config) *ServiceContext {
+	initializer := initializer.NewInitializerManager(c)
+
+	if err := initializer.Initialize(); err != nil {
+		panic(err)
+	}
+
+	return &ServiceContext{
+		Config:      c,
+		Initializer: initializer,
+	}
+}
+
+// 便捷方法
+func (s *ServiceContext) DB() *gorm.DB {
+	if s.Initializer.GetMySQLManager() != nil {
+		return s.Initializer.GetMySQLManager().DB
+	}
+	return nil
+}
+
+func (s *ServiceContext) RabbitMQ() *amqp.Connection {
+	if s.Initializer.GetRabbitMQManager() != nil {
+		return s.Initializer.GetRabbitMQManager().Conn
+	}
+	return nil
+}
+
+func (s *ServiceContext) CommonChannel() *amqp.Channel {
+	if s.Initializer.GetRabbitMQManager() != nil {
+		return s.Initializer.GetRabbitMQManager().CommonChannel
+	}
+	return nil
+}
+
+func (s *ServiceContext) TestCaseRepo() repository2.TestCaseRepository {
+	return s.Initializer.GetTestCaseRepo()
+}
+func (s *ServiceContext) JudgeCaseRepo() repository2.JudgeCaseRepository {
+	return s.Initializer.GetJudgeCaseRepo()
+}
+
+func (s *ServiceContext) IsDBReady() bool {
+	return s.Initializer.IsDBReady()
+}
+
+func (s *ServiceContext) SafeDB() (*gorm.DB, error) {
+	if s.Initializer.GetMySQLManager() != nil {
+		return s.Initializer.GetMySQLManager().SafeDB()
+	}
+	return nil, fmt.Errorf("数据库未初始化")
+}
+
+func (s *ServiceContext) Close() error {
+	return s.Initializer.Close()
+}
+
+
+文件: utils\cgroup.go
+--------------------------------------------------
+package utils
+
+import (
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+// createCgroup 创建cgroup
+func CreateCgroup(maxMemory float64) (string, error) {
+	cgroupName := GenerateCgroupName()
+	cgroupPath := filepath.Join("/sys/fs/cgroup", cgroupName)
+
+	// 创建cgroup目录
+	if err := os.MkdirAll(cgroupPath, 0755); err != nil {
+		return "", fmt.Errorf("创建cgroup目录失败: %v", err)
+	}
+
+	// 设置内存限制（单位：字节）
+	memoryLimit := maxMemory * 1024 // KB 转字节
+	memoryMaxPath := filepath.Join(cgroupPath, "memory.max")
+	if err := os.WriteFile(memoryMaxPath, []byte(strconv.FormatFloat(memoryLimit, 'f', -1, 64)), 0644); err != nil {
+		return "", fmt.Errorf("设置内存限制失败: %v", err)
+	}
+
+	// 禁用swap
+	memorySwapMaxPath := filepath.Join(cgroupPath, "memory.swap.max")
+	if err := os.WriteFile(memorySwapMaxPath, []byte("0"), 0644); err != nil {
+		logx.Errorf("禁用swap失败: %v", err)
+	}
+
+	// 验证内存限制是否设置成功
+	setLimit, err := os.ReadFile(memoryMaxPath)
+	if err != nil {
+		return "", fmt.Errorf("验证内存限制失败: %v", err)
+	}
+	logx.Infof("设置的内存限制: %s bytes", strings.TrimSpace(string(setLimit)))
+	return cgroupPath, nil
+}
+
+// createCgroup 创建cgroup
+func CreateCgroupNoMemory() (string, error) {
+	cgroupName := GenerateCgroupName()
+	cgroupPath := filepath.Join("/sys/fs/cgroup", cgroupName)
+
+	// 创建cgroup目录
+	if err := os.MkdirAll(cgroupPath, 0755); err != nil {
+		return "", fmt.Errorf("创建cgroup目录失败: %v", err)
+	}
+
+	// 禁用swap
+	memorySwapMaxPath := filepath.Join(cgroupPath, "memory.swap.max")
+	if err := os.WriteFile(memorySwapMaxPath, []byte("0"), 0644); err != nil {
+		logx.Errorf("禁用swap失败: %v", err)
+	}
+
+	return cgroupPath, nil
+}
+
+// getMemoryUsage 从cgroup读取峰值内存使用
+func GetMemoryUsage(cgroupPath string) (uint64, error) {
+	// 首先检查cgroup目录是否存在
+	if _, err := os.Stat(cgroupPath); os.IsNotExist(err) {
+		logx.Errorf("cgroup目录不存在: %s", cgroupPath)
+		return 0, fmt.Errorf("cgroup目录不存在")
+	}
+
+	// 读取 memory.peak 文件
+	peakPath := filepath.Join(cgroupPath, "memory.peak")
+	content, err := os.ReadFile(peakPath)
+	if err != nil {
+		logx.Errorf("读取memory.peak失败: %s, 错误: %v", peakPath, err)
+		return 0, fmt.Errorf("读取memory.peak失败: %v", err)
+	}
+
+	peakContent := strings.TrimSpace(string(content))
+	logx.Infof("memory.peak 内容: '%s'", peakContent)
+
+	// 读取 memory.current 文件
+	currentPath := filepath.Join(cgroupPath, "memory.current")
+	currentContent, err := os.ReadFile(currentPath)
+	if err != nil {
+		logx.Errorf("读取memory.current失败: %v", err)
+	} else {
+		logx.Infof("memory.current 内容: '%s'", strings.TrimSpace(string(currentContent)))
+	}
+
+	// 解析内存使用量
+	memoryUsed, err := strconv.ParseUint(peakContent, 10, 64)
+	if err != nil {
+		logx.Errorf("解析内存使用量失败: '%s', 错误: %v", peakContent, err)
+		return 0, fmt.Errorf("解析内存使用量失败: %v", err)
+	}
+
+	logx.Infof("解析后的内存使用量: %d bytes", memoryUsed)
+	return memoryUsed, nil
+}
+
+func GenerateCgroupName() string {
+	pid := os.Getpid()
+	timestamp := time.Now().Format("150405") // 时分秒
+
+	// 生成3字节随机数
+	randomBytes := make([]byte, 3)
+	rand.Read(randomBytes)
+	randomStr := base64.RawURLEncoding.EncodeToString(randomBytes)
+
+	return fmt.Sprintf("judge-p%d-%s-%s", pid, timestamp, randomStr)
+}
+
+// setCgroupForProcess 将进程添加到cgroup
+func SetCgroupForProcess(cgroupPath string, pid int) error {
+	procsFile := filepath.Join(cgroupPath, "cgroup.procs")
+	// 检查进程是否存在
+	if _, err := os.FindProcess(pid); err != nil {
+		return fmt.Errorf("进程不存在: %d", pid)
+	}
+
+	// 将进程PID写入cgroup.procs文件
+	return os.WriteFile(procsFile, []byte(strconv.Itoa(pid)), 0644)
+}
+
+// cleanupCgroup 清理cgroup
+func CleanupCgroup(cgroupPath string) {
+	if err := os.RemoveAll(cgroupPath); err != nil {
+		logx.Errorf("清理cgroup失败: %v", err)
+	} else {
+		logx.Infof("清理cgroup: %s", cgroupPath)
+	}
+}
+
+// checkOOMEvent 检查cgroup是否发生了OOM事件
+func CheckOOMEvent(cgroupPath string) bool {
+	eventsPath := filepath.Join(cgroupPath, "memory.events")
+	content, err := os.ReadFile(eventsPath)
+	if err != nil {
+		logx.Errorf("读取memory.events失败: %v", err)
+		return false
+	}
+
+	// 解析事件文件
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "oom ") {
+			parts := strings.Split(line, " ")
+			if len(parts) >= 2 {
+				count, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+				if err == nil && count > 0 {
+					logx.Infof("检测到OOM事件: %s", line)
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+
+文件: utils\command.go
+--------------------------------------------------
+package utils
+
+import (
+	"judge-service/internal/config"
+	"strings"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+// getRunCommand 获取执行命令
+func GetRunCommand(config config.LanguageConfig, sourceFile string, buildFile string) []string {
+	runCmd := make([]string, len(config.RunCmd))
+	for i, part := range config.RunCmd {
+		// runCmd[i] = strings.ReplaceAll(part, "{exec}", buildFile)
+		runCmd[i] = strings.ReplaceAll(part, "{source}", sourceFile)
+		runCmd[i] = strings.ReplaceAll(runCmd[i], "{exec}", buildFile)
+	}
+
+	logx.Infof("得到运行命令: %s", runCmd)
+	return runCmd
+}
+
+func GetCompileCommand(config config.LanguageConfig, sourceFile string, buildFile string) []string {
+	compileCmd := make([]string, len(config.CompileCmd))
+	for i, part := range config.CompileCmd {
+		compileCmd[i] = strings.ReplaceAll(part, "{source}", sourceFile)
+		compileCmd[i] = strings.ReplaceAll(compileCmd[i], "{exec}", buildFile)
+	}
+
+	logx.Infof("得到编译命令: %s", compileCmd)
+	return compileCmd
+}
+
+
+文件: utils\formate.go
+--------------------------------------------------
+package utils
+
+import (
+	"regexp"
+	"strings"
+)
+
+func FormatBytesKB(bytes uint64) float64 {
+	return float64(bytes) / 1024
+}
+
+// SplitAndNormalize 将文本按行分割并标准化每行
+func SplitAndNormalize(str string) []string {
+	// 标准化换行符
+	str = strings.ReplaceAll(str, "\r\n", "\n")
+	str = strings.ReplaceAll(str, "\r", "\n")
+
+	lines := strings.Split(str, "\n")
+	normalized := make([]string, 0, len(lines))
+
+	for _, line := range lines {
+		// 移除每行的首尾空白
+		line = strings.TrimSpace(line)
+		if line != "" { // 可选：是否忽略空行
+			normalized = append(normalized, line)
+		}
+	}
+
+	return normalized
+}
+
+// 评估两个标准答案与用户提交是否相同
+func CompareOutput(ans string, output string) bool {
+	// if NormalizeLineEndings(ans) == NormalizeLineEndings(output) {
+	// 	return true
+	// } else {
+	// 	return false
+	// }
+	// CompareOutput 按行比较，忽略行尾差异
+	ansLines := SplitAndNormalize(ans)
+	outputLines := SplitAndNormalize(output)
+
+	if len(ansLines) != len(outputLines) {
+		return false
+	}
+
+	for i := range ansLines {
+		if ansLines[i] != outputLines[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// 综合自动屏蔽文件路径
+func AutoMaskAllFilePaths(text string) string {
+	// 首先处理编译错误格式的路径
+	result := maskCompilerErrorPaths(text)
+	// 然后处理普通文件路径
+	result = maskGeneralFilePaths(result)
+	return result
+}
+
+// 屏蔽编译错误中的文件路径
+func maskCompilerErrorPaths(text string) string {
+	// 匹配: 路径:行号:列号: 消息
+	re := regexp.MustCompile(`([/\w\.-]+(/[/\w\.-]+)*):(\d+):(\d+):`)
+	return re.ReplaceAllStringFunc(text, func(match string) string {
+		parts := strings.Split(match, ":")
+		if len(parts) >= 3 {
+			filePath := parts[0]
+			pathParts := strings.Split(filePath, "/")
+			filename := pathParts[len(pathParts)-1]
+			return "/" + filename + ":" + strings.Join(parts[1:], ":")
+		}
+		return ""
+	})
+}
+
+// 屏蔽普通文件路径
+func maskGeneralFilePaths(text string) string {
+	// 匹配绝对路径
+	re := regexp.MustCompile(`(/[^\s:]+)+`)
+	return re.ReplaceAllStringFunc(text, func(match string) string {
+		pathParts := strings.Split(match, "/")
+		if len(pathParts) > 1 {
+			return "/" + pathParts[len(pathParts)-1]
+		}
+		return ""
+	})
+}
+
+
+文件: utils\snowflake.go
+--------------------------------------------------
+package utils
+
+import (
+	"errors"
+	"fmt"
+	"net"
+	"os"
+	"strconv"
+	"sync"
+	"time"
+)
+
+const (
+	// 雪花算法参数 (符合MyBatis-Plus默认配置)
+	twepoch          = int64(1288834974657) // 起始时间戳 (2010-11-04 09:42:54 UTC)
+	workerIDBits     = uint(5)              // 机器ID位数
+	datacenterIDBits = uint(5)              // 数据中心ID位数
+	sequenceBits     = uint(12)             // 序列号位数
+
+	maxWorkerID     = int64(-1) ^ (int64(-1) << workerIDBits)
+	maxDatacenterID = int64(-1) ^ (int64(-1) << datacenterIDBits)
+	maxSequence     = int64(-1) ^ (int64(-1) << sequenceBits)
+
+	workerIDShift      = sequenceBits
+	datacenterIDShift  = sequenceBits + workerIDBits
+	timestampLeftShift = sequenceBits + workerIDBits + datacenterIDBits
+)
+
+type Snowflake struct {
+	mu            sync.Mutex
+	lastTimestamp int64
+	workerID      int64
+	datacenterID  int64
+	sequence      int64
+}
+
+var (
+	instance *Snowflake
+	once     sync.Once
+)
+
+// NewSnowflake 创建雪花算法实例
+func NewSnowflake() *Snowflake {
+	workerID := getWorkerID()
+	datacenterID := getDatacenterID()
+
+	return &Snowflake{
+		workerID:     workerID,
+		datacenterID: datacenterID,
+	}
+}
+
+// getWorkerID 获取工作节点ID
+func getWorkerID() int64 {
+	// 1. 从环境变量获取
+	if envID := os.Getenv("SNOWFLAKE_WORKER_ID"); envID != "" {
+		if id, err := strconv.ParseInt(envID, 10, 64); err == nil && id <= maxWorkerID {
+			return id
+		}
+	}
+
+	// 2. 基于IP地址生成
+	if interfaces, err := net.Interfaces(); err == nil {
+		for _, iface := range interfaces {
+			if iface.Flags&net.FlagUp != 0 && iface.Flags&net.FlagLoopback == 0 {
+				if addrs, err := iface.Addrs(); err == nil {
+					for _, addr := range addrs {
+						if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+							if ipnet.IP.To4() != nil {
+								ip := ipnet.IP.To4()
+								return int64(ip[3]) & maxWorkerID
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 3. 默认值
+	return 1
+}
+
+// getDatacenterID 获取数据中心ID
+func getDatacenterID() int64 {
+	// 1. 从环境变量获取
+	if envID := os.Getenv("SNOWFLAKE_DATACENTER_ID"); envID != "" {
+		if id, err := strconv.ParseInt(envID, 10, 64); err == nil && id <= maxDatacenterID {
+			return id
+		}
+	}
+
+	// 2. 基于主机名生成
+	hostname, err := os.Hostname()
+	if err == nil && hostname != "" {
+		var hash int64
+		for i := 0; i < len(hostname); i++ {
+			hash = (hash << 5) - hash + int64(hostname[i])
+		}
+		return (hash & maxDatacenterID)
+	}
+
+	// 3. 默认值
+	return 1
+}
+
+// tilNextMillis 等待下一毫秒
+func (s *Snowflake) tilNextMillis(lastTimestamp int64) int64 {
+	timestamp := timeGen()
+	for timestamp <= lastTimestamp {
+		timestamp = timeGen()
+	}
+	return timestamp
+}
+
+// timeGen 生成当前时间戳（毫秒）
+func timeGen() int64 {
+	return time.Now().UnixNano() / 1e6
+}
+
+// GenerateID 生成64位ID（返回int64）
+func (s *Snowflake) GenerateID() (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	timestamp := timeGen()
+
+	if timestamp < s.lastTimestamp {
+		return 0, errors.New("clock moved backwards")
+	}
+
+	if s.lastTimestamp == timestamp {
+		s.sequence = (s.sequence + 1) & maxSequence
+		if s.sequence == 0 {
+			timestamp = s.tilNextMillis(s.lastTimestamp)
+		}
+	} else {
+		s.sequence = 0
+	}
+
+	s.lastTimestamp = timestamp
+
+	return ((timestamp - twepoch) << timestampLeftShift) |
+		(s.datacenterID << datacenterIDShift) |
+		(s.workerID << workerIDShift) |
+		s.sequence, nil
+}
+
+// GenerateIDString 生成字符串格式的ID（类似MyBatis-Plus格式）
+func (s *Snowflake) GenerateIDString() string {
+	id, err := s.GenerateID()
+	if err != nil {
+		// 降级方案：使用纳秒时间戳
+		return fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	return fmt.Sprintf("%d", id)
+}
+
+// GetInstance 获取单例实例
+func GetInstance() *Snowflake {
+	once.Do(func() {
+		instance = NewSnowflake()
+	})
+	return instance
+}
+
+// GenerateID 包级函数，生成字符串ID
+func GenerateID() string {
+	return GetInstance().GenerateIDString()
+}
+

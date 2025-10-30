@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useDataSubmitFetch, useSysDictFetch } from '@/composables/v1'
 import type { DataTableColumns } from 'naive-ui'
-import { NAvatar, NSpace, NTag, NText, NTime } from 'naive-ui'
+import { NAvatar, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
 import { AesCrypto } from '@/utils'
 
 const { dataSubmitProblemPage } = useDataSubmitFetch()
@@ -94,8 +94,12 @@ const columns: DataTableColumns<any> = [
               {},
             ),
             h(
-              NText,
-              {},
+              NEllipsis,
+              {
+                style: {
+                  maxWidth: '90px',
+                },
+              },
               { default: () => row.userIdName },
             ),
           ],

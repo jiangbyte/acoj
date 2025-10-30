@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.task.similarity.mq;
 
+import io.charlie.web.oj.modular.task.config.QueueConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -25,23 +26,7 @@ public class SimilarlyQueueProperties {
      */
     private QueueConfig batch;
 
-    
-    @Data
-    public static class QueueConfig {
-        /**
-         * 交换机名称
-         */
-        private String exchange;
-        
-        /**
-         * 队列名称
-         */
-        private String queue;
-        
-        /**
-         * 路由键
-         */
-        private String routingKey;
-    }
+    private QueueConfig common;
+    private QueueConfig result;
 
 }

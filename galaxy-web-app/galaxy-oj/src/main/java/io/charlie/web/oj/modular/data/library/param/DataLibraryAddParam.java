@@ -2,6 +2,7 @@ package io.charlie.web.oj.modular.data.library.param;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.io.Serial;
 import java.util.Date;
+import java.util.List;
 
 /**
 * @author Charlie Zhang
@@ -58,5 +60,9 @@ public class DataLibraryAddParam implements Serializable {
 
     @Schema(description = "访问次数")
     private Integer accessCount;
+
+    private List<Integer> codeToken;
+    private List<String> codeTokenName;
+    private List<String> codeTokenTexts;
 
 }

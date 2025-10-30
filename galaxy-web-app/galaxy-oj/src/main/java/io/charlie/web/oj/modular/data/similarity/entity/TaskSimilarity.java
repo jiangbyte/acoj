@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
 import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,11 +27,11 @@ import org.dromara.core.trans.anno.Trans;
 import org.dromara.core.trans.constant.TransType;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-09-21
-* @description 检测结果任务库
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-09-21
+ * @description 检测结果任务库
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @TableName(value = "task_similarity", autoResultMap = true)
@@ -107,6 +108,10 @@ public class TaskSimilarity extends CommonEntity {
     @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date submitTime;
 
+
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<Integer> submitCodeToken;
+
     @Schema(description = "提交用户Token名称")
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> submitTokenName;
@@ -140,6 +145,9 @@ public class TaskSimilarity extends CommonEntity {
     @JsonSerialize(using = DateToTimestampSerializer.class)
     @JsonDeserialize(using = TimestampToDateDeserializer.class)
     private Date originTime;
+
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<Integer> originCodeToken;
 
     @Schema(description = "样本用户Token名称")
     @TableField(typeHandler = JacksonTypeHandler.class)

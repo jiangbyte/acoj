@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useDataSubmitFetch } from '@/composables/v1'
 import { NSpin } from 'naive-ui'
 
 interface Props {
@@ -8,7 +9,7 @@ interface Props {
   resultTaskData: any
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 const CodeEditor = defineAsyncComponent({
   loader: () => import('@/components/common/editor/code/CodeEditor.vue'),
@@ -36,6 +37,27 @@ const CodeEditor = defineAsyncComponent({
   delay: 200,
   timeout: 10000,
 })
+
+const similarityData = ref(props.resultTaskData)
+
+watch(() => props.resultTaskData, (newValue) => {
+  similarityData.value = newValue
+})
+
+function refreshSimilarityData() {
+  // 调用获取判题结果的API
+  useDataSubmitFetch().dataSubmitDetail({ id: props.resultTaskData.id }).then(({ data }) => {
+    if (data) {
+      // 更新结果数据
+      similarityData.value = data
+
+      window.$notification.success({
+        title: '刷新完成',
+        duration: 3000,
+      })
+    }
+  })
+}
 </script>
 
 <template>
@@ -57,8 +79,12 @@ const CodeEditor = defineAsyncComponent({
         <!-- 判题结果详情 -->
         <JudgeResultStats :result-task-data="resultTaskData" />
 
+        <n-alert type="info">
+          代码相似度可以稍后在状态中查看，或者稍等片刻点击 <n-button size="small" type="primary" @click="refreshSimilarityData">刷新</n-button>
+        </n-alert>
+
         <!-- 代码相似度 -->
-        <SimilarityReport v-if="resultTaskData.submitType" :result-task-data="resultTaskData" />
+        <SimilarityReport v-if="resultTaskData.submitType" :result-task-data="similarityData" />
 
         <!-- <n-card v-if="resultTaskData?.message" size="small" hoverable>
           <n-code :language="resultTaskData?.language" :code="resultTaskData?.message" show-line-numbers word-wrap />

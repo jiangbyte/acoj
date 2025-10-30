@@ -18,7 +18,9 @@ defineProps<Props>()
       <n-flex vertical :size="6">
         <div class="flex items-center gap-2">
           <n-text class="text-xl font-bold">
-            {{ resultTaskData?.userIdName || '未知用户' }}
+            <n-ellipsis style="width: 90px">
+              {{ resultTaskData?.userIdName || '未知用户' }}
+            </n-ellipsis>
           </n-text>
           <n-tag
             size="small" :type="resultTaskData?.status === 'COMPILATION_ERROR'
@@ -37,7 +39,9 @@ defineProps<Props>()
         <n-flex vertical :size="6">
           <n-text class="text-gray-500 dark:text-gray-400" depth="3">
             提交了题目 <n-tag size="small">
-              {{ resultTaskData?.problemIdName || '未知题目' }}
+              <n-ellipsis style="width: 90px">
+                {{ resultTaskData?.problemIdName || '未知题目' }}
+              </n-ellipsis>
             </n-tag>
           </n-text>
           <n-flex align="center">

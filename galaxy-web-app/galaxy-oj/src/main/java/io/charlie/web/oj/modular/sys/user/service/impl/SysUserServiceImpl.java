@@ -132,6 +132,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         UserValidationUtil.validateEmail(sysUserAddParam.getEmail()).throwIfFailed();
 
+        if (sysUserAddParam.getTelephone() != null && StrUtil.isNotBlank(sysUserAddParam.getTelephone())) {
+            UserValidationUtil.validatePhone(sysUserAddParam.getTelephone()).throwIfFailed();
+        }
         // 加密密码
         String encodePassword = BCrypt.hashpw(DefaultUserData.DEFAULT_PASSWORD);
         SysUser bean = BeanUtil.toBean(sysUserAddParam, SysUser.class);
@@ -145,7 +148,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             // 默认背景图片
             bean.setBackground(sysConfigService.getValueByCode("APP_DEFAULT_USER_BACKGROUND"));
         }
-
+        bean.setEmail(sysUserAddParam.getEmail().toLowerCase());
+        bean.setUsername(sysUserAddParam.getUsername().toLowerCase());
         this.save(bean);
         // 分配角色
         sysUserRoleService.assignRoles(bean.getId(), List.of(DefaultRoleData.DEFAULT_USER_ROLE_ID));
@@ -161,8 +165,14 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         UserValidationUtil.validateEmail(sysUserEditParam.getEmail()).throwIfFailed();
 
+        if (sysUserEditParam.getTelephone() != null && StrUtil.isNotBlank(sysUserEditParam.getTelephone())) {
+            UserValidationUtil.validatePhone(sysUserEditParam.getTelephone()).throwIfFailed();
+        }
+
         SysUser bean = BeanUtil.toBean(sysUserEditParam, SysUser.class);
         BeanUtil.copyProperties(sysUserEditParam, bean);
+        bean.setEmail(sysUserEditParam.getEmail().toLowerCase());
+        bean.setUsername(sysUserEditParam.getUsername().toLowerCase());
         this.updateById(bean);
     }
 
@@ -279,6 +289,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
         SysUser bean = BeanUtil.toBean(sysUserUpdateAppParam, SysUser.class);
         BeanUtil.copyProperties(sysUserUpdateAppParam, bean);
+
+        bean.setEmail(sysUserUpdateAppParam.getEmail().toLowerCase());
+        bean.setUsername(sysUserUpdateAppParam.getUsername().toLowerCase());
+        if (sysUserUpdateAppParam.getTelephone() != null && StrUtil.isNotBlank(sysUserUpdateAppParam.getTelephone())) {
+            UserValidationUtil.validatePhone(sysUserUpdateAppParam.getTelephone()).throwIfFailed();
+        }
         this.updateById(bean);
     }
 

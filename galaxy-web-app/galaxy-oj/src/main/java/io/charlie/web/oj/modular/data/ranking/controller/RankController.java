@@ -28,12 +28,12 @@ public class RankController {
     @Operation(summary = "获取用户排行榜")
     @GetMapping("/data/user/rank/top")
     public Result<?> getUserTopN() {
-        return Result.success(userRankService.getTopNRankingUsers(10));
+        return Result.success(userRankService.getTopNRankingUsers(5));
     }
 
     @GetMapping("/data/user/rank/active/top")
     public Result<?> getUserRankActiveTop() {
-        return Result.success(userActivityService.getTopNActiveUsers(10));
+        return Result.success(userActivityService.getTopNActiveUsers(5));
     }
 
     @GetMapping("/data/user/rank/page")

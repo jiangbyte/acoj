@@ -63,14 +63,14 @@
                         UNION ALL
                         SELECT 80, 90, 9
                         UNION ALL
-                        SELECT 90, 100, 10)
+                        SELECT 90, 101, 10)
         SELECT COALESCE(COUNT(ts.similarity), 0) as count
         FROM ranges r
             LEFT JOIN task_similarity ts
         ON
             ts.task_id = #{taskId}
-            AND (ts.similarity * 100) >= r.range_start
-            AND (ts.similarity * 100) < r.range_end
+            AND ts.similarity >= r.range_start / 100.0
+            AND ts.similarity < r.range_end / 100.0
         GROUP BY r.range_index
         ORDER BY r.range_index
         ]]>

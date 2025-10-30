@@ -48,10 +48,12 @@ defineProps<{
                 <n-space align="center" :size="0">
                   <n-avatar :src="item?.createUserAvatar" round class="mr-2" />
                   <n-text class="flex-1">
-                    {{ item?.createUserName }}
+                    <n-ellipsis style="width: 90px">
+                      {{ item?.createUserName }}
+                    </n-ellipsis>
                   </n-text>
                 </n-space>
-                <n-time :time="item.createTime" />
+                <n-time :time="item.createTime" type="relative" />
               </n-space>
             </template>
           </n-thing>

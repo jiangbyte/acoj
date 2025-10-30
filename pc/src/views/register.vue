@@ -139,6 +139,7 @@ const version = import.meta.env.VITE_VERSION
         >
           <NInput
             v-model:value="formData.username"
+            data-testid="username-inp"
             placeholder="请输入用户名"
           />
         </NFormItem>
@@ -148,6 +149,7 @@ const version = import.meta.env.VITE_VERSION
         >
           <NInput
             v-model:value="formData.email"
+            data-testid="email-inp"
             placeholder="请输入邮箱"
           />
         </NFormItem>
@@ -157,6 +159,7 @@ const version = import.meta.env.VITE_VERSION
         >
           <NInput
             v-model:value="formData.password"
+            data-testid="password-inp"
             type="password"
             placeholder="请输入密码"
           />
@@ -168,6 +171,7 @@ const version = import.meta.env.VITE_VERSION
           <div class="flex items-center gap-2">
             <NInput
               v-model:value="formData.captchaCode"
+              data-testid="captcha-inp"
               placeholder="请输入验证码"
               class="flex-1"
             />
@@ -196,6 +200,7 @@ const version = import.meta.env.VITE_VERSION
           block
           type="primary"
           @click="handleRegister"
+          data-testid="register-execute"
         >
           注册
         </NButton>

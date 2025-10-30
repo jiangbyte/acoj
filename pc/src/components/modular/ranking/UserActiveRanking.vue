@@ -19,7 +19,9 @@ defineProps<{
         <NAvatar :src="item.avatar" round :size="40" class="mr-3" />
         <div class="flex-1">
           <div class="font-medium">
-            {{ item.nickname }}
+            <n-ellipsis style="width: 90px">
+              {{ item?.nickname }}
+            </n-ellipsis>
           </div>
           <div class="text-xs text-gray-500 dark:text-gray-400">
             活跃指数: {{ Number(item.activeScore).toFixed(2) }}

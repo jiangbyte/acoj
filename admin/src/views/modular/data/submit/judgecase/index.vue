@@ -18,6 +18,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '用例标识',
     key: 'caseSign',
+    width: 150,
     ellipsis: {
       tooltip: true,
     },
@@ -55,34 +56,47 @@ const columns: DataTableColumns<any> = [
   //   key: 'outputFileSize',
   // },
   {
-    title: '最大耗时',
+    title: '耗时',
     key: 'maxTime',
+    width: 80,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
-    title: '最大内存使用',
+    title: '内存',
     key: 'maxMemory',
+    width: 80,
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
-    title: '是否样例',
+    title: '样例',
     key: 'isSample',
+    width: 60,
     render: (row) => {
       return h(NTag, {
         type: row.isSample ? 'primary' : 'error',
       }, () => row.isSampleName)
     },
   },
+  // {
+  //   title: '分值',
+  //   key: 'score',
+  // },
   {
-    title: '分值',
-    key: 'score',
-  },
-  {
-    title: '执行状态',
+    title: '状态',
     key: 'status',
+    width: 100,
+    ellipsis: {
+      tooltip: true,
+    },
   },
-  {
-    title: '退出码',
-    key: 'exitCode',
-  },
+  // {
+  //   title: '退出码',
+  //   key: 'exitCode',
+  // },
   {
     title: '操作',
     key: 'action',
@@ -297,7 +311,6 @@ async function deleteBatchHandle() {
         :bordered="false"
         :row-key="(row: any) => row.id"
         :loading="loading"
-        :scroll-x="1400"
         flex-height
         class="flex-1 h-full"
       />

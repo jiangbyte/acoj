@@ -29,7 +29,7 @@ import java.util.UUID;
  * @description 本地存储服务实现
  */
 @Service
-@ConditionalOnProperty(name = "storage.type", havingValue = "local")
+@ConditionalOnProperty(name = "oj.storage.type", havingValue = "local")
 @Slf4j
 public class LocalStorageService implements StorageService {
 

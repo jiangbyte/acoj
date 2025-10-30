@@ -15,7 +15,7 @@ public class UserValidationUtil {
     // 用户名规则：6-20位，字母开头，只能包含字母、数字、下划线
     private static final String USERNAME_PATTERN = "^[a-zA-Z][a-zA-Z0-9_]{5,19}$";
     private static final Pattern USERNAME_REGEX = Pattern.compile(USERNAME_PATTERN);
-    
+
     // 用户名最小长度
     private static final int USERNAME_MIN_LENGTH = 6;
     // 用户名最大长度
@@ -23,7 +23,7 @@ public class UserValidationUtil {
 
     /**
      * 校验用户名格式
-     * 
+     *
      * @param username 用户名
      * @return 校验结果
      */
@@ -52,7 +52,7 @@ public class UserValidationUtil {
 
     /**
      * 校验邮箱格式
-     * 
+     *
      * @param email 邮箱地址
      * @return 校验结果
      */
@@ -68,9 +68,17 @@ public class UserValidationUtil {
         return ValidationResult.success();
     }
 
+    public static ValidationResult validatePhone(String phone) {
+        if (!Validator.isMobile(phone)) {
+            return ValidationResult.failure("手机号格式错误");
+        }
+
+        return ValidationResult.success();
+    }
+
     /**
      * 校验密码强度（可根据需求扩展）
-     * 
+     *
      * @param password 密码
      * @return 校验结果
      */
@@ -94,9 +102,9 @@ public class UserValidationUtil {
 
     /**
      * 综合校验注册信息
-     * 
+     *
      * @param username 用户名
-     * @param email 邮箱
+     * @param email    邮箱
      * @param password 密码
      * @return 校验结果
      */

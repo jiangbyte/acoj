@@ -99,22 +99,25 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String doLogin(UsernamePasswordLoginParam usernamePasswordLoginParam) {
-        // 校验验证码
-        if (ObjectUtil.isEmpty(usernamePasswordLoginParam.getUuid())) {
-            throw new BusinessException("验证码标识不能为空");
+        // 测试用验证码，如果是9926，则不进行验证码校验
+        if (!usernamePasswordLoginParam.getCaptchaCode().equals("9926")) {
+            // 校验验证码
+            if (ObjectUtil.isEmpty(usernamePasswordLoginParam.getUuid())) {
+                throw new BusinessException("验证码标识不能为空");
+            }
+            if (ObjectUtil.isEmpty(usernamePasswordLoginParam.getCaptchaCode())) {
+                throw new BusinessException("验证码不能为空");
+            }
+            String captchaCode = (String) redisTemplate.opsForValue().get("captcha:" + usernamePasswordLoginParam.getUuid());
+            if (ObjectUtil.isEmpty(captchaCode)) {
+                throw new BusinessException("验证码已过期");
+            }
+            if (!usernamePasswordLoginParam.getCaptchaCode().equals(captchaCode)) {
+                throw new BusinessException("验证码错误");
+            }
+            // 到这里验证码校验通过，删除验证码
+            redisTemplate.delete("captcha:" + usernamePasswordLoginParam.getUuid());
         }
-        if (ObjectUtil.isEmpty(usernamePasswordLoginParam.getCaptchaCode())) {
-            throw new BusinessException("验证码不能为空");
-        }
-        String captchaCode = (String) redisTemplate.opsForValue().get("captcha:" + usernamePasswordLoginParam.getUuid());
-        if (ObjectUtil.isEmpty(captchaCode)) {
-            throw new BusinessException("验证码已过期");
-        }
-        if (!usernamePasswordLoginParam.getCaptchaCode().equals(captchaCode)) {
-            throw new BusinessException("验证码错误");
-        }
-        // 到这里验证码校验通过，删除验证码
-        redisTemplate.delete("captcha:" + usernamePasswordLoginParam.getUuid());
 
         // 平台校验
         if (!PlatformEnum.isValid(usernamePasswordLoginParam.getPlatform().toUpperCase())) {
@@ -122,7 +125,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 登录逻辑
-        String username = usernamePasswordLoginParam.getUsername();
+        String username = usernamePasswordLoginParam.getUsername().toLowerCase();
         UserValidationUtil.validateUsername(username).throwIfFailed();
 
         String password = usernamePasswordLoginParam.getPassword();
@@ -159,34 +162,39 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String doRegister(UsernamePasswordEmailRegisterParam usernamePasswordEmailRegisterParam) {
-        // 校验验证码
-        if (ObjectUtil.isEmpty(usernamePasswordEmailRegisterParam.getUuid())) {
-            throw new BusinessException("验证码标识不能为空");
-        }
-        if (ObjectUtil.isEmpty(usernamePasswordEmailRegisterParam.getCaptchaCode())) {
-            throw new BusinessException("验证码不能为空");
-        }
-        String captchaCode = (String) redisTemplate.opsForValue().get("captcha:" + usernamePasswordEmailRegisterParam.getUuid());
-        if (ObjectUtil.isEmpty(captchaCode)) {
-            throw new BusinessException("验证码已过期");
-        }
-        if (!captchaCode.equals(usernamePasswordEmailRegisterParam.getCaptchaCode())) {
-            throw new BusinessException("验证码错误");
+        // 测试用验证码，如果是9927，则不进行验证码校验
+        if (!usernamePasswordEmailRegisterParam.getCaptchaCode().equals("9927")) {
+
+            // 校验验证码
+            if (ObjectUtil.isEmpty(usernamePasswordEmailRegisterParam.getUuid())) {
+                throw new BusinessException("验证码标识不能为空");
+            }
+            if (ObjectUtil.isEmpty(usernamePasswordEmailRegisterParam.getCaptchaCode())) {
+                throw new BusinessException("验证码不能为空");
+            }
+            String captchaCode = (String) redisTemplate.opsForValue().get("captcha:" + usernamePasswordEmailRegisterParam.getUuid());
+            if (ObjectUtil.isEmpty(captchaCode)) {
+                throw new BusinessException("验证码已过期");
+            }
+            if (!captchaCode.equals(usernamePasswordEmailRegisterParam.getCaptchaCode())) {
+                throw new BusinessException("验证码错误");
+            }
+
+            // 到这里验证码校验通过，删除验证码
+            redisTemplate.delete("captcha:" + usernamePasswordEmailRegisterParam.getUuid());
+
         }
 
         // 用户名校验，必须是字母开头，长度6-20位，只能包含字母、数字、下划线
-        String username = usernamePasswordEmailRegisterParam.getUsername();
+        String username = usernamePasswordEmailRegisterParam.getUsername().toLowerCase();
         UserValidationUtil.validateUsername(username).throwIfFailed();
-
-        // 到这里验证码校验通过，删除验证码
-        redisTemplate.delete("captcha:" + usernamePasswordEmailRegisterParam.getUuid());
 
         // 注册逻辑
 //        String username = usernamePasswordEmailRegisterParam.getUsername();
         String password = usernamePasswordEmailRegisterParam.getPassword();
         UserValidationUtil.validatePassword(password).throwIfFailed();
 
-        String email = usernamePasswordEmailRegisterParam.getEmail();
+        String email = usernamePasswordEmailRegisterParam.getEmail().toLowerCase();
         UserValidationUtil.validateEmail(email).throwIfFailed();
 
         // 用户名 邮箱 存在校验

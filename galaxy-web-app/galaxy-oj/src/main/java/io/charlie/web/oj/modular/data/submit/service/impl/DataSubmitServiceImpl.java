@@ -37,11 +37,15 @@ import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import io.charlie.web.oj.modular.task.judge.handle.JudgeHandleMessage;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.dao.DeadlockLoserDataAccessException;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -87,9 +91,9 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
 //                        ")");
 
         // 使用 EXISTS 子查询的方式（性能更好）
-         queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id IN (" +
-             accessibleGroupIds.stream().map(id -> "'" + id + "'").collect(Collectors.joining(",")) +
-             ")");
+        queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id IN (" +
+                accessibleGroupIds.stream().map(id -> "'" + id + "'").collect(Collectors.joining(",")) +
+                ")");
 
         if (ObjectUtil.isAllNotEmpty(dataSubmitPageParam.getSortField(), dataSubmitPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataSubmitPageParam.getSortOrder())) {
             queryWrapper.orderBy(
@@ -296,23 +300,18 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         return submit;
     }
 
-
+    @Retryable(value = {DeadlockLoserDataAccessException.class}, maxAttempts = 3, backoff = @Backoff(delay = 100))
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void handleSolvedRecord(DataSubmitExeParam dataSubmitExeParam, Boolean isSet, DataSubmit dataSubmit) {
         String userId = StpUtil.getLoginIdAsString();
-        String problemId = dataSubmitExeParam.getProblemId();
-        // 锁的key包含所有唯一标识参数
-        String lockKey = String.format("solved:lock:%s:%s:%s:%s",
-                userId, problemId, isSet, dataSubmitExeParam.getSetId() != null ? dataSubmitExeParam.getSetId() : "null");
+        String lockKey = String.format("solved:lock:%s:%s",
+                userId, isSet ? dataSubmitExeParam.getSetId() : dataSubmitExeParam.getProblemId());
 
         RLock lock = redissonClient.getLock(lockKey);
         try {
-            // 尝试获取锁，等待3秒，锁有效期10秒（根据业务调整）
-            boolean locked = lock.tryLock(3, 10, TimeUnit.SECONDS);
-            if (locked) {
+            if (lock.tryLock(1, 30, TimeUnit.SECONDS)) {
                 doHandleSolvedRecord(dataSubmitExeParam, isSet, dataSubmit);
             } else {
-                // 获取锁失败，可以抛出异常或记录日志
-                log.warn("获取分布式锁失败，用户:{} 问题:{} 模式:{}", userId, problemId, isSet);
                 throw new BusinessException("系统繁忙，请稍后重试");
             }
         } catch (InterruptedException e) {
@@ -333,18 +332,22 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
 
         try {
             if (isSet) {
-                // 先尝试更新
-                int updated = dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                if (dataSolvedMapper.exists(new LambdaQueryWrapper<DataSolved>()
                         .eq(DataSolved::getUserId, userId)
                         .eq(DataSolved::getSetId, setId)
                         .eq(DataSolved::getProblemId, problemId)
                         .eq(DataSolved::getIsSet, Boolean.TRUE)
-                        .set(DataSolved::getSubmitId, submitId)
-                        .set(DataSolved::getUpdateTime, new Date())
-                );
-
-                // 如果更新失败（记录不存在），则插入
-                if (updated == 0) {
+                )) {
+                    // 更新
+                    dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                            .eq(DataSolved::getUserId, userId)
+                            .eq(DataSolved::getSetId, setId)
+                            .eq(DataSolved::getProblemId, problemId)
+                            .eq(DataSolved::getIsSet, Boolean.TRUE)
+                            .set(DataSolved::getSubmitId, submitId)
+                            .set(DataSolved::getUpdateTime, new Date())
+                    );
+                } else {
                     DataSolved dataSolved = new DataSolved();
                     dataSolved.setUserId(userId);
                     dataSolved.setSetId(setId);
@@ -353,33 +356,22 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
                     dataSolved.setSubmitId(submitId);
                     dataSolved.setCreateTime(new Date());
                     dataSolved.setUpdateTime(new Date());
-
-                    try {
-                        dataSolvedMapper.insert(dataSolved);
-                    } catch (DuplicateKeyException e) {
-                        // 发生唯一约束冲突，说明其他线程已经插入，重新尝试更新
-                        log.info("检测到并发插入冲突，重新尝试更新记录");
-                        dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
-                                .eq(DataSolved::getUserId, userId)
-                                .eq(DataSolved::getSetId, setId)
-                                .eq(DataSolved::getProblemId, problemId)
-                                .eq(DataSolved::getIsSet, Boolean.TRUE)
-                                .set(DataSolved::getSubmitId, submitId)
-                                .set(DataSolved::getUpdateTime, new Date())
-                        );
-                    }
+                    dataSolvedMapper.insert(dataSolved);
                 }
             } else {
-                // 非set模式的逻辑
-                int updated = dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                if (dataSolvedMapper.exists(new LambdaQueryWrapper<DataSolved>()
                         .eq(DataSolved::getUserId, userId)
                         .eq(DataSolved::getProblemId, problemId)
                         .eq(DataSolved::getIsSet, Boolean.FALSE)
-                        .set(DataSolved::getSubmitId, submitId)
-                        .set(DataSolved::getUpdateTime, new Date())
-                );
-
-                if (updated == 0) {
+                )) {
+                    dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                            .eq(DataSolved::getUserId, userId)
+                            .eq(DataSolved::getProblemId, problemId)
+                            .eq(DataSolved::getIsSet, Boolean.FALSE)
+                            .set(DataSolved::getSubmitId, submitId)
+                            .set(DataSolved::getUpdateTime, new Date())
+                    );
+                } else {
                     DataSolved dataSolved = new DataSolved();
                     dataSolved.setUserId(userId);
                     dataSolved.setProblemId(problemId);
@@ -387,20 +379,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
                     dataSolved.setSubmitId(submitId);
                     dataSolved.setCreateTime(new Date());
                     dataSolved.setUpdateTime(new Date());
-
-                    try {
-                        dataSolvedMapper.insert(dataSolved);
-                    } catch (DuplicateKeyException e) {
-                        // 发生唯一约束冲突，重新尝试更新
-                        log.info("检测到并发插入冲突，重新尝试更新记录");
-                        dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
-                                .eq(DataSolved::getUserId, userId)
-                                .eq(DataSolved::getProblemId, problemId)
-                                .eq(DataSolved::getIsSet, Boolean.FALSE)
-                                .set(DataSolved::getSubmitId, submitId)
-                                .set(DataSolved::getUpdateTime, new Date())
-                        );
-                    }
+                    dataSolvedMapper.insert(dataSolved);
                 }
             }
         } catch (Exception e) {
@@ -456,6 +435,8 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
 //                log.info("未使用代码模板，提交ID: {} 提交内容: {}", dataSubmit.getId(), param.getCode());
 //                message.setCode(param.getCode());
 //            }
+
+            message.setCode(param.getCode());
 
             judgeHandleMessage.sendJudge(message, dataSubmit);
 

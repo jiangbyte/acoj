@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useSysGroupFetch, useTaskReportsFetch, useTaskSimilarityFetch } from '@/composables/v1'
 import type { DataTableColumns, SelectOption } from 'naive-ui'
-import { NAvatar, NButton, NSpace, NTag, NText, NTime } from 'naive-ui'
+import { NAvatar, NButton, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
 import CodeEditor from '@/components/common/editor/code/CodeEditor.vue'
 
 const route = useRoute()
@@ -49,8 +49,12 @@ const columns: DataTableColumns<any> = [
               {},
             ),
             h(
-              NText,
-              {},
+              NEllipsis,
+              {
+                style: {
+                  maxWidth: '90px',
+                },
+              },
               { default: () => row.submitUserName },
             ),
           ],
@@ -91,8 +95,12 @@ const columns: DataTableColumns<any> = [
               {},
             ),
             h(
-              NText,
-              {},
+              NEllipsis,
+              {
+                style: {
+                  maxWidth: '90px',
+                },
+              },
               { default: () => row.originUserName },
             ),
           ],

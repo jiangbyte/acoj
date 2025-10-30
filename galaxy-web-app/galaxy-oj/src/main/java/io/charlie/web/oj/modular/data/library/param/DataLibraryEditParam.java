@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.io.Serial;
 import java.util.Date;
+import java.util.List;
 
 /**
 * @author Charlie Zhang
@@ -61,5 +62,9 @@ public class DataLibraryEditParam implements Serializable {
 
     @Schema(description = "访问次数")
     private Integer accessCount;
+
+    private List<Integer> codeToken;
+    private List<String> codeTokenName;
+    private List<String> codeTokenTexts;
 
 }

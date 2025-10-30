@@ -118,6 +118,7 @@ const isPolling = ref(false)
 const pollingCount = ref(0)
 const MAX_POLLING_COUNT = 40 // 最大轮询次数，防止无限轮询
 
+const showSimilarityTip = ref(false)
 // 判题结果轮询函数
 async function startResultPolling(taskId: string) {
   // 如果已有轮询器在运行，先停止
@@ -164,7 +165,6 @@ async function startResultPolling(taskId: string) {
               poller.value?.stop(() => {
                 isPolling.value = false
                 activeTab.value = 'result'
-                // window.$message.success('判题完成！')
                 window.$notification.success({
                   title: '判题完成',
                   duration: 3000,
@@ -345,15 +345,16 @@ onUnmounted(() => {
                   placeholder="请选择语言"
                   class="w-50"
                   @update:value="handleLanguageChange"
+                 data-testid="language-select"
                 />
                 <n-space align="center">
-                  <n-button v-if="isPolling" size="small" @click="stopPollingManually">
+                  <n-button v-if="isPolling" size="small" @click="stopPollingManually" data-testid="polling-stop-button">
                     停止
                   </n-button>
-                  <n-button :disabled="!submitParam.language || !submitParam.code || isPolling" @click="executeCode(false)">
+                  <n-button data-testid="test-submit-button" :disabled="!submitParam.language || !submitParam.code || isPolling" @click="executeCode(false)">
                     运行
                   </n-button>
-                  <n-button type="primary" :disabled="!submitParam.language || !submitParam.code || isPolling" @click="executeCode(true)">
+                  <n-button data-testid="judge-submit-button" type="primary" :disabled="!submitParam.language || !submitParam.code || isPolling" @click="executeCode(true)">
                     提交
                   </n-button>
                 </n-space>

@@ -7,6 +7,7 @@ import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.param.*;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
+import io.charlie.web.oj.modular.task.judge.dto.JudgeResultDto;
 
 import java.util.List;
 import java.util.function.Consumer;

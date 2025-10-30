@@ -84,13 +84,13 @@ public class SysNoticeController {
     @Operation(summary = "获取最新N条公告")
     @GetMapping("/sys/notice/latest")
     public Result<?> latest() {
-        return Result.success(sysNoticeService.latestN(4));
+        return Result.success(sysNoticeService.latestN(5));
     }
 
     @Operation(summary = "获取全站N条公告")
     @GetMapping("/sys/notice/lists")
     public Result<?> lists() {
-        return Result.success(sysNoticeService.lists(10));
+        return Result.success(sysNoticeService.lists(5));
     }
 
 }

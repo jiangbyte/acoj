@@ -65,7 +65,9 @@ loadData()
             <NSpace vertical size="small" class="ml-2">
               <NSpace align="center">
                 <n-h2 class="pb-0 mb-0">
-                  {{ detailData?.nickname }}
+                  <n-ellipsis :line-clamp="1">
+                    {{ detailData?.nickname || '未知用户' }}
+                  </n-ellipsis>
                 </n-h2>
               </NSpace>
               <NSpace vertical>

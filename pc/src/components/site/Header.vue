@@ -179,10 +179,10 @@ onUnmounted(() => {
             </template>
           </Dropdown>
           <n-space v-else>
-            <n-button @click="$router.push('/login')">
+            <n-button data-testid="login-btn" @click="$router.push('/login')">
               登录
             </n-button>
-            <n-button @click="$router.push('/register')">
+            <n-button data-testid="register-btn" @click="$router.push('/register')">
               注册
             </n-button>
           </n-space>

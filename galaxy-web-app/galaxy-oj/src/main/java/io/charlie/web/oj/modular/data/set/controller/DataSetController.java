@@ -86,7 +86,7 @@ public class DataSetController {
     @Operation(summary = "C端-获取最新N题集")
     @GetMapping("/data/set/latest")
     public Result<?> latest10() {
-        return Result.success(dataSetService.latestN(4));
+        return Result.success(dataSetService.latestN(5));
     }
 
     @Operation(summary = "C端-获取题集题目")
@@ -124,7 +124,7 @@ public class DataSetController {
     @Operation(summary = "C端-获取最热10个题集")
     @GetMapping("/data/set/hot")
     public Result<?> getHot() {
-        return Result.success(dataSetService.getHotN(10));
+        return Result.success(dataSetService.getHotN(5));
     }
 
     @Operation(summary = "C端-难度分布")

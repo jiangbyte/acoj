@@ -113,7 +113,7 @@ public class DataProblemController {
     @Operation(summary = "C端-获取最新10道题目")
     @GetMapping("/data/problem/latest")
     public Result<?> latest10() {
-        return Result.success(dataProblemService.latestN(4));
+        return Result.success(dataProblemService.latestN(5));
     }
 
     @Operation(summary = "获取题目统计")
@@ -125,7 +125,7 @@ public class DataProblemController {
     @Operation(summary = "C端-获取最热10道题目")
     @GetMapping("/data/problem/hot")
     public Result<?> getHot() {
-        return Result.success(dataProblemService.getHotN(10));
+        return Result.success(dataProblemService.getHotN(5));
     }
 
     @Operation(summary = "C端-难度分布")

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace } from 'naive-ui'
+import { NButton, NCard, NDataTable, NPagination, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import { useDataTestCaseFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -58,15 +58,15 @@ const columns: DataTableColumns<any> = [
   //   title: '输出文件大小',
   //   key: 'outputFileSize',
   // },
-  // {
-  //   title: '是否样例',
-  //   key: 'isSample',
-  //   render: (row) => {
-  //     return h(NTag, {
-  //       type: row.isSample ? 'primary' : 'error',
-  //     }, () => row.isSampleName)
-  //   },
-  // },
+  {
+    title: '是否样例',
+    key: 'isSample',
+    render: (row) => {
+      return h(NTag, {
+        type: row.isSample ? 'primary' : 'error',
+      }, () => row.isSampleName)
+    },
+  },
   // {
   //   title: '分值',
   //   key: 'score',

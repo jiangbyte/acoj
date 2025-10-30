@@ -86,22 +86,25 @@ CREATE TABLE `data_judge_case`
 DROP TABLE IF EXISTS `data_library`;
 CREATE TABLE `data_library`
 (
-    `id`           VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
-    `user_id`      VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '用户ID',
-    `set_id`       VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题集ID',
-    `is_set`       TINYINT(1)                                                   NULL DEFAULT 0 COMMENT '是否是题集提交',
-    `problem_id`   VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题目ID',
-    `submit_id`    VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '提交ID',
-    `submit_time`  DATETIME                                                     NULL DEFAULT NULL COMMENT '提交时间',
-    `language`     VARCHAR(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '编程语言',
-    `code`         TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci        NULL COMMENT '源代码',
-    `code_length`  INT                                                          NULL DEFAULT 0 COMMENT '源代码长度',
-    `access_count` INT                                                          NULL DEFAULT 0 COMMENT '访问次数',
-    `deleted`      TINYINT(1)                                                   NULL DEFAULT 0 COMMENT '删除状态',
-    `create_time`  DATETIME                                                     NULL DEFAULT NULL COMMENT '创建时间戳',
-    `create_user`  VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
-    `update_time`  DATETIME                                                     NULL DEFAULT NULL COMMENT '更新时间戳',
-    `update_user`  VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
+    `id`               VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
+    `user_id`          VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '用户ID',
+    `set_id`           VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题集ID',
+    `is_set`           TINYINT(1)                                                   NULL DEFAULT 0 COMMENT '是否是题集提交',
+    `problem_id`       VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题目ID',
+    `submit_id`        VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '提交ID',
+    `submit_time`      DATETIME                                                     NULL DEFAULT NULL COMMENT '提交时间',
+    `language`         VARCHAR(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '编程语言',
+    `code`             TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci        NULL COMMENT '源代码',
+    `code_token`       JSON                                                         NULL COMMENT '源代码Token标记',
+    `code_token_name`  JSON                                                         NULL COMMENT '样本用户Token名称',
+    `code_token_texts` JSON                                                         NULL COMMENT '样本用户Token内容',
+    `code_length`      INT                                                          NULL DEFAULT 0 COMMENT '源代码长度',
+    `access_count`     INT                                                          NULL DEFAULT 0 COMMENT '访问次数',
+    `deleted`          TINYINT(1)                                                   NULL DEFAULT 0 COMMENT '删除状态',
+    `create_time`      DATETIME                                                     NULL DEFAULT NULL COMMENT '创建时间戳',
+    `create_user`      VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
+    `update_time`      DATETIME                                                     NULL DEFAULT NULL COMMENT '更新时间戳',
+    `update_user`      VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
     PRIMARY KEY (`id`) USING BTREE,
     INDEX `problem_id` (`problem_id` ASC, `user_id` ASC) USING BTREE,
     INDEX `user_id` (`user_id` ASC, `problem_id` ASC) USING BTREE,
@@ -276,6 +279,12 @@ CREATE TABLE `data_solved`
   CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_unicode_ci COMMENT = '用户解决表'
   ROW_FORMAT = DYNAMIC;
+
+-- 对于 is_set = true 的查询
+ALTER TABLE data_solved ADD INDEX idx_user_set_problem (user_id, set_id, problem_id, is_set);
+
+-- 对于 is_set = false 的查询
+ALTER TABLE data_solved ADD INDEX idx_user_problem (user_id, problem_id, is_set);
 
 -- ----------------------------
 -- Records of data_solved
@@ -1436,6 +1445,7 @@ CREATE TABLE `task_similarity`
     `submit_code_length` INT                                                          NULL DEFAULT 0 COMMENT '源代码长度',
     `submit_id`          VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '提交ID',
     `submit_time`        DATETIME                                                     NULL DEFAULT NULL COMMENT '提交时间',
+    `submit_code_token`  JSON                                                         NULL COMMENT '源代码Token标记',
     `submit_token_name`  JSON                                                         NULL COMMENT '提交用户Token名称',
     `submit_token_texts` JSON                                                         NULL COMMENT '提交用户Token内容',
     `origin_user`        VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '样本用户',
@@ -1443,6 +1453,7 @@ CREATE TABLE `task_similarity`
     `origin_code_length` INT                                                          NULL DEFAULT 0 COMMENT '样本源代码长度',
     `origin_id`          VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '样本提交ID',
     `origin_time`        DATETIME                                                     NULL DEFAULT NULL COMMENT '样本提交时间',
+    `origin_code_token`  JSON                                                         NULL COMMENT '源代码Token标记',
     `origin_token_name`  JSON                                                         NULL COMMENT '样本用户Token名称',
     `origin_token_texts` JSON                                                         NULL COMMENT '样本用户Token内容',
     `deleted`            TINYINT(1)                                                   NULL DEFAULT 0 COMMENT '删除状态',

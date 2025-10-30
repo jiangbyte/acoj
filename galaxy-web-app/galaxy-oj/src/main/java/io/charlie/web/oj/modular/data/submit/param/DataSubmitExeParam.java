@@ -26,9 +26,8 @@ public class DataSubmitExeParam implements Serializable {
     @NotEmpty(message = "任务ID不能为空")
     private String judgeTaskId;
 
-    @Schema(description = "用户ID")
-    @NotEmpty(message = "用户ID不能为空")
-    private String userId;
+//    @Schema(description = "用户ID")
+//    private String userId;
 
     @Schema(description = "题目ID")
     @NotEmpty(message = "题目ID不能为空")

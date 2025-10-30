@@ -72,7 +72,8 @@ loadData()
               <n-h2 class="pb-0 mb-0">
                 提交信息
               </n-h2>
-            </template><JudgeResultHeader :result-task-data="detailData" class="mb-4" />
+            </template>
+            <JudgeResultHeader :result-task-data="detailData" class="mb-4" />
 
             <!-- 判题结果详情 -->
             <JudgeResultStats :result-task-data="detailData" class="w-full" />

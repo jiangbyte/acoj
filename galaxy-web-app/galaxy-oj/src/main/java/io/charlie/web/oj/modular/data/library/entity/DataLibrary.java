@@ -2,16 +2,16 @@ package io.charlie.web.oj.modular.data.library.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
 import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
-import java.io.Serializable;
-import java.time.LocalDateTime;
+
 import java.io.Serial;
 import java.util.Date;
+import java.util.List;
 
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
@@ -23,14 +23,14 @@ import org.dromara.core.trans.anno.Trans;
 import org.dromara.core.trans.constant.TransType;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-09-20
-* @description 提交样本库
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-09-20
+ * @description 提交样本库
+ */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@TableName("data_library")
+@TableName(value = "data_library", autoResultMap = true)
 @Schema(name = "DataLibrary", description = "提交样本库")
 public class DataLibrary extends CommonEntity {
     @Serial
@@ -93,6 +93,15 @@ public class DataLibrary extends CommonEntity {
 
     @Schema(description = "源代码长度")
     private Integer codeLength;
+
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<Integer> codeToken;
+
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> codeTokenName;
+
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> codeTokenTexts;
 
     @Schema(description = "访问次数")
     private Integer accessCount;
