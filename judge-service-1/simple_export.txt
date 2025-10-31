@@ -18,7 +18,6 @@
 │   │   └── data_test_case.go
 │   ├── mysql.go
 │   └── repository
-│       ├── cached_testcase_repository.go
 │       ├── judgecase_repository.go
 │       └── testcase_repository.go
 ├── initializer
@@ -450,7 +449,6 @@ func (am *AppManager) waitForShutdown() {
 package config
 
 import (
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/rest"
 )
 
@@ -507,7 +505,6 @@ type Config struct {
 	Workspace string `json:",optional"` // 工作空间(文件工作路径)
 	Nacos     NacosConfig
 	MySQL     MySQLConfig      `json:",optional"` // MySQL 配置
-	Redis     redis.RedisConf  `json:",optional"` // 修改为 go-zero 的 RedisConf
 	Languages []LanguageConfig `json:",optional"` // 支持的语言配置，设为可选
 	RabbitMQ  RabbitMQConfig   `json:",optional"`
 }
@@ -1268,8 +1265,7 @@ func (e *SandboxExecutor) determineExecutionStatus(workspace *Workspace, result 
 
 // executeTestCases 并发执行测试用例
 func (w *Workspace) executeTestCases() ([]*model2.DataJudgeCase, error) {
-	//testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemIDWithSample(w.ctx, w.judgeRequest.ProblemId, w.judgeRequest.SubmitType)
-	testCases, err := w.svcCtx.TestCaseCacheRepo().GetTestCasesByProblemIDWithSample(w.ctx, w.judgeRequest.ProblemId, w.judgeRequest.SubmitType)
+	testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemIDWithSample(w.ctx, w.judgeRequest.ProblemId, w.judgeRequest.SubmitType)
 	if err != nil {
 		return nil, fmt.Errorf("获取测试用例失败: %w", err)
 	}
@@ -1340,7 +1336,6 @@ import (
 	"context"
 	"fmt"
 	"judge-service/internal/config"
-	repository2 "judge-service/internal/database/repository"
 	"judge-service/internal/mq"
 	"judge-service/internal/svc"
 	"judge-service/internal/utils"
@@ -1594,14 +1589,6 @@ func (w *Workspace) Cleanup() error {
 	return nil
 }
 
-// 在需要清除缓存的地方调用
-func (w *Workspace) clearTestCaseCache() error {
-	if cachedRepo, ok := w.svcCtx.TestCaseRepo().(*repository2.CachedTestCaseRepository); ok {
-		return cachedRepo.ClearCache(w.ctx, w.judgeRequest.ProblemId)
-	}
-	return nil
-}
-
 
 文件: database\mysql.go
 --------------------------------------------------
@@ -1789,206 +1776,6 @@ type DataTestCase struct {
 
 func (DataTestCase) TableName() string {
 	return "data_test_case"
-}
-
-
-文件: database\repository\cached_testcase_repository.go
---------------------------------------------------
-package repository
-
-import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"time"
-
-	"judge-service/internal/database/model"
-
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"gorm.io/gorm"
-)
-
-type CachedTestCaseRepository struct {
-	db    *gorm.DB
-	redis *redis.Redis
-	ttl   time.Duration // 缓存过期时间
-}
-
-func NewCachedTestCaseRepository(db *gorm.DB, redis *redis.Redis) TestCaseRepository {
-	return &CachedTestCaseRepository{
-		db:    db,
-		redis: redis,
-		ttl:   time.Hour, // 默认缓存1小时
-	}
-}
-
-// 生成缓存键
-func (r *CachedTestCaseRepository) getCacheKey(problemID string, isSample *bool) string {
-	if isSample != nil {
-		return fmt.Sprintf("testcase:%s:sample:%t", problemID, *isSample)
-	}
-	return fmt.Sprintf("testcase:%s:all", problemID)
-}
-
-// 带缓存的查询方法
-func (r *CachedTestCaseRepository) GetTestCasesByProblemID(ctx context.Context, problemID string) ([]model.DataTestCase, error) {
-	cacheKey := r.getCacheKey(problemID, nil)
-
-	// 添加 Redis 客户端检查
-	if r.redis != nil {
-		cachedData, err := r.redis.Get(cacheKey)
-		if err == nil && cachedData != "" {
-			var testCases []model.DataTestCase
-			if err := json.Unmarshal([]byte(cachedData), &testCases); err == nil {
-				logx.Infof("从缓存获取题目 %s 的测试用例，共 %d 条", problemID, len(testCases))
-				return testCases, nil
-			}
-		}
-	}
-
-	// 1. 尝试从缓存获取
-	cachedData, err := r.redis.Get(cacheKey)
-	if err == nil && cachedData != "" {
-		var testCases []model.DataTestCase
-		if err := json.Unmarshal([]byte(cachedData), &testCases); err == nil {
-			logx.Infof("从缓存获取题目 %s 的测试用例，共 %d 条", problemID, len(testCases))
-			return testCases, nil
-		}
-	}
-
-	// 2. 缓存未命中，从数据库查询
-	logx.Infof("缓存未命中，从数据库查询题目 %s 的测试用例", problemID)
-
-	var testCases []model.DataTestCase
-	err = r.db.
-		Where("problem_id = ? AND deleted = ?", problemID, false).
-		Order("create_time ASC").
-		Find(&testCases).Error
-
-	if err != nil {
-		return nil, fmt.Errorf("获取测试用例失败: %v", err)
-	}
-
-	// 3. 将结果写入缓存
-	if len(testCases) > 0 {
-		data, err := json.Marshal(testCases)
-		if err == nil {
-			err = r.redis.Setex(cacheKey, string(data), int(r.ttl.Seconds()))
-			if err != nil {
-				logx.Errorf("写入缓存失败: %v", err)
-			} else {
-				logx.Infof("成功缓存题目 %s 的测试用例，共 %d 条", problemID, len(testCases))
-			}
-		}
-	}
-
-	return testCases, nil
-}
-
-func (r *CachedTestCaseRepository) GetTestCasesByProblemIDWithSample(ctx context.Context, problemID string, submitType bool) ([]model.DataTestCase, error) {
-	cacheKey := r.getCacheKey(problemID, &submitType)
-
-	// 1. 如果 Redis 客户端不为 nil，尝试从缓存获取
-	if r.redis != nil {
-		cachedData, err := r.redis.Get(cacheKey)
-		if err == nil && cachedData != "" {
-			var testCases []model.DataTestCase
-			if err := json.Unmarshal([]byte(cachedData), &testCases); err == nil {
-				logx.Infof("从缓存获取题目 %s 的测试用例(submitType: %t)，共 %d 条", problemID, submitType, len(testCases))
-				return testCases, nil
-			}
-		}
-	} else {
-		logx.Infof("Redis 客户端未初始化，直接从数据库查询")
-	}
-
-	// 2. 缓存未命中或 Redis 不可用，从数据库查询
-	logx.Infof("缓存未命中，从数据库查询题目 %s 的测试用例, submitType: %t", problemID, submitType)
-
-	var testCases []model.DataTestCase
-	var queryErr error
-
-	baseQuery := r.db.
-		Where("problem_id = ? AND deleted = ?", problemID, false)
-
-	if submitType {
-		// 正式提交：获取所有非样例测试用例
-		testCases, queryErr = r.getTestCases(baseQuery, false, "ASC")
-	} else {
-		// 测试提交：先获取样例，如果没有则回退
-		testCases, queryErr = r.getTestCases(baseQuery, true, "ASC")
-		if queryErr == nil && len(testCases) == 0 {
-			logx.Infof("题目 %s 没有找到样例测试用例，尝试获取1条测试用例", problemID)
-			testCases, queryErr = r.getFallbackTestCase(baseQuery)
-		}
-	}
-
-	if queryErr != nil {
-		return nil, queryErr
-	}
-
-	// 3. 如果 Redis 客户端不为 nil，将结果写入缓存
-	if r.redis != nil && len(testCases) > 0 {
-		data, err := json.Marshal(testCases)
-		if err == nil {
-			err = r.redis.Setex(cacheKey, string(data), int(r.ttl.Seconds()))
-			if err != nil {
-				logx.Errorf("写入缓存失败: %v", err)
-			} else {
-				logx.Infof("成功缓存题目 %s 的测试用例(submitType: %t)，共 %d 条", problemID, submitType, len(testCases))
-			}
-		}
-	}
-
-	return testCases, nil
-}
-
-// 清除缓存
-func (r *CachedTestCaseRepository) ClearCache(ctx context.Context, problemID string) error {
-	// 删除该题目的所有相关缓存
-	keys := []string{
-		r.getCacheKey(problemID, nil),
-		r.getCacheKey(problemID, &[]bool{true}[0]),
-		r.getCacheKey(problemID, &[]bool{false}[0]),
-	}
-
-	for _, key := range keys {
-		_, err := r.redis.Del(key)
-		if err != nil {
-			logx.Errorf("删除缓存键 %s 失败: %v", key, err)
-		}
-	}
-
-	logx.Infof("已清除题目 %s 的缓存", problemID)
-	return nil
-}
-
-// 辅助方法保持不变
-func (r *CachedTestCaseRepository) getTestCases(baseQuery *gorm.DB, isSample bool, order string) ([]model.DataTestCase, error) {
-	var testCases []model.DataTestCase
-	err := baseQuery.
-		Where("is_sample = ?", isSample).
-		Where("deleted = 0").
-		Order("create_time " + order).
-		Find(&testCases).Error
-	if err != nil {
-		return nil, fmt.Errorf("获取测试用例失败: %v", err)
-	}
-	return testCases, nil
-}
-
-func (r *CachedTestCaseRepository) getFallbackTestCase(baseQuery *gorm.DB) ([]model.DataTestCase, error) {
-	var testCases []model.DataTestCase
-	err := baseQuery.
-		Order("create_time DESC").
-		Where("deleted = 0").
-		Limit(1).
-		Find(&testCases).Error
-	if err != nil {
-		return nil, fmt.Errorf("获取回退测试用例失败: %v", err)
-	}
-	return testCases, nil
 }
 
 
@@ -2206,7 +1993,6 @@ package initializer
 
 import (
 	"fmt"
-	"github.com/zeromicro/go-zero/core/stores/redis"
 	"judge-service/internal/config"
 	"judge-service/internal/database"
 	repository2 "judge-service/internal/database/repository"
@@ -2220,11 +2006,9 @@ import (
 type InitializerManager struct {
 	config              config.Config
 	mysqlManager        *database.MySQLManager
-	redisClient         *redis.Redis
 	rabbitMQManager     *mq.RabbitMQManager
 	serviceRegistry     *nacos.ServiceRegistryManager
 	testCaseRepo        repository2.TestCaseRepository
-	testCaseCacheRepo   repository2.TestCaseRepository
 	judgeCaseRepository repository2.JudgeCaseRepository
 }
 
@@ -2243,12 +2027,6 @@ func (im *InitializerManager) Initialize() error {
 	// 初始化服务注册（同步）
 	im.initServiceRegistry()
 
-	// 初始化 Redis（同步）
-	if err := im.initRedis(); err != nil {
-		logx.Errorf("Redis 初始化失败: %v", err)
-		// Redis 初始化失败不阻断应用启动
-	}
-
 	// 异步初始化 MySQL
 	go im.initMySQLWithRetry()
 
@@ -2263,39 +2041,6 @@ func (im *InitializerManager) initRabbitMQ() error {
 	}
 	im.rabbitMQManager = rabbitMQManager
 	return nil
-}
-
-func (im *InitializerManager) initRedis() error {
-	// 检查 Redis 配置是否有效
-	if im.config.Redis.Host == "" {
-		logx.Info("Redis 配置为空，跳过 Redis 初始化")
-		return nil
-	}
-
-	redisClient, err := im.createRedisClient()
-	if err != nil {
-		logx.Errorf("创建 Redis 客户端失败: %v", err)
-		return fmt.Errorf("创建 Redis 客户端失败: %v", err)
-	}
-	im.redisClient = redisClient
-	logx.Info("Redis 连接成功")
-	return nil
-}
-
-func (im *InitializerManager) createRedisClient() (*redis.Redis, error) {
-	// 使用 go-zero 的 Redis 客户端
-	redisClient, err := redis.NewRedis(im.config.Redis)
-	if err != nil {
-		return nil, err
-	}
-
-	// 测试连接
-	ok := redisClient.Ping()
-	if !ok {
-		return nil, err
-	}
-
-	return redisClient, nil
 }
 
 func (im *InitializerManager) initServiceRegistry() {
@@ -2327,9 +2072,6 @@ func (im *InitializerManager) initMySQLWithRetry() {
 		im.mysqlManager = mysqlManager
 		im.testCaseRepo = repository2.NewTestCaseRepository(mysqlManager.DB)
 		im.judgeCaseRepository = repository2.NewJudgeCaseRepository(mysqlManager.DB)
-
-		im.testCaseCacheRepo = repository2.NewCachedTestCaseRepository(mysqlManager.DB, im.redisClient)
-
 		logx.Info("MySQL 连接成功")
 		return
 	}
@@ -2367,20 +2109,12 @@ func (im *InitializerManager) GetMySQLManager() *database.MySQLManager {
 	return im.mysqlManager
 }
 
-func (im *InitializerManager) GetRedisClient() *redis.Redis {
-	return im.redisClient
-}
-
 func (im *InitializerManager) GetRabbitMQManager() *mq.RabbitMQManager {
 	return im.rabbitMQManager
 }
 
 func (im *InitializerManager) GetTestCaseRepo() repository2.TestCaseRepository {
 	return im.testCaseRepo
-}
-
-func (im *InitializerManager) GetTestCaseCacheRepo() repository2.TestCaseRepository {
-	return im.testCaseCacheRepo
 }
 
 func (im *InitializerManager) GetJudgeCaseRepo() repository2.JudgeCaseRepository {
@@ -2393,10 +2127,6 @@ func (im *InitializerManager) GetServiceReRegistry() *nacos.ServiceRegistryManag
 
 func (im *InitializerManager) IsDBReady() bool {
 	return im.mysqlManager != nil && im.mysqlManager.IsReady()
-}
-
-func (im *InitializerManager) IsRedisReady() bool {
-	return im.redisClient != nil
 }
 
 
@@ -3440,11 +3170,6 @@ func (s *ServiceContext) CommonChannel() *amqp.Channel {
 func (s *ServiceContext) TestCaseRepo() repository2.TestCaseRepository {
 	return s.Initializer.GetTestCaseRepo()
 }
-
-func (s *ServiceContext) TestCaseCacheRepo() repository2.TestCaseRepository {
-	return s.Initializer.GetTestCaseCacheRepo()
-}
-
 func (s *ServiceContext) JudgeCaseRepo() repository2.JudgeCaseRepository {
 	return s.Initializer.GetJudgeCaseRepo()
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/streadway/amqp"
 	"gorm.io/gorm"
 	"judge-service/internal/config"
+	"judge-service/internal/database"
 	repository2 "judge-service/internal/database/repository"
 	"judge-service/internal/initializer"
 )
@@ -25,6 +26,15 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:      c,
 		Initializer: initializer,
 	}
+}
+
+// 新增 Redis 相关方法
+func (s *ServiceContext) Redis() *database.RedisManager {
+	return s.Initializer.GetRedisManager()
+}
+
+func (s *ServiceContext) IsRedisReady() bool {
+	return s.Initializer.IsRedisReady()
 }
 
 // 便捷方法
@@ -50,7 +60,17 @@ func (s *ServiceContext) CommonChannel() *amqp.Channel {
 }
 
 func (s *ServiceContext) TestCaseRepo() repository2.TestCaseRepository {
-	return s.Initializer.GetTestCaseRepo()
+	//return s.Initializer.GetTestCaseRepo()
+	baseRepo := s.Initializer.GetTestCaseRepo()
+	redisMgr := s.Initializer.GetRedisManager()
+
+	// 如果 Redis 可用，返回带缓存的版本
+	if redisMgr != nil && redisMgr.IsReady() {
+		return repository2.NewTestCaseRepositoryWithCache(baseRepo, redisMgr)
+	}
+
+	// 否则返回基础版本
+	return baseRepo
 }
 func (s *ServiceContext) JudgeCaseRepo() repository2.JudgeCaseRepository {
 	return s.Initializer.GetJudgeCaseRepo()

@@ -15,6 +15,7 @@ import (
 type InitializerManager struct {
 	config              config.Config
 	mysqlManager        *database.MySQLManager
+	redisManager        *database.RedisManager // 新增
 	rabbitMQManager     *mq.RabbitMQManager
 	serviceRegistry     *nacos.ServiceRegistryManager
 	testCaseRepo        repository2.TestCaseRepository
@@ -38,6 +39,8 @@ func (im *InitializerManager) Initialize() error {
 
 	// 异步初始化 MySQL
 	go im.initMySQLWithRetry()
+
+	go im.initRedisWithRetry() // 新增
 
 	return nil
 }
@@ -86,6 +89,32 @@ func (im *InitializerManager) initMySQLWithRetry() {
 	}
 }
 
+// 新增 Redis 初始化方法
+func (im *InitializerManager) initRedisWithRetry() {
+	maxRetries := 5
+	retryInterval := time.Second * 5
+
+	for i := 0; i < maxRetries; i++ {
+		redisManager, err := database.NewRedisManager(im.config.Redis)
+		if err != nil {
+			logx.Errorf("初始化 Redis 失败 (尝试 %d/%d): %v", i+1, maxRetries, err)
+
+			if i == maxRetries-1 {
+				logx.Error("已达到最大重试次数，Redis 连接失败")
+				return
+			}
+
+			logx.Infof("%v 后重试...", retryInterval)
+			time.Sleep(retryInterval)
+			continue
+		}
+
+		im.redisManager = redisManager
+		logx.Info("Redis 连接成功")
+		return
+	}
+}
+
 func (im *InitializerManager) Close() error {
 	var errs []error
 
@@ -106,7 +135,12 @@ func (im *InitializerManager) Close() error {
 			errs = append(errs, err)
 		}
 	}
-
+	// 新增 Redis 关闭
+	if im.redisManager != nil {
+		if err := im.redisManager.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
 	if len(errs) > 0 {
 		return fmt.Errorf("关闭资源时发生错误: %v", errs)
 	}
@@ -136,4 +170,13 @@ func (im *InitializerManager) GetServiceReRegistry() *nacos.ServiceRegistryManag
 
 func (im *InitializerManager) IsDBReady() bool {
 	return im.mysqlManager != nil && im.mysqlManager.IsReady()
+}
+
+// 新增 GetRedisManager 方法
+func (im *InitializerManager) GetRedisManager() *database.RedisManager {
+	return im.redisManager
+}
+
+func (im *InitializerManager) IsRedisReady() bool {
+	return im.redisManager != nil && im.redisManager.IsReady()
 }

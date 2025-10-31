@@ -51,6 +51,13 @@ type RabbitMQConfig struct {
 	} `json:",optional"`
 }
 
+type RedisConfig struct {
+	Host     string `json:",default=127.0.0.1:6379"`
+	Password string `json:",optional"`
+	DB       int    `json:",default=0"`
+	PoolSize int    `json:",default=10"`
+}
+
 // 配置队列
 type Config struct {
 	rest.RestConf
@@ -59,4 +66,5 @@ type Config struct {
 	MySQL     MySQLConfig      `json:",optional"` // MySQL 配置
 	Languages []LanguageConfig `json:",optional"` // 支持的语言配置，设为可选
 	RabbitMQ  RabbitMQConfig   `json:",optional"`
+	Redis     RedisConfig      `json:",optional"` // 新增 Redis 配置
 }
