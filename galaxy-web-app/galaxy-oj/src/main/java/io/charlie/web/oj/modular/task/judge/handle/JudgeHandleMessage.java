@@ -17,9 +17,7 @@ import io.charlie.web.oj.modular.task.judge.dto.JudgeSubmitDto;
 import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import io.charlie.web.oj.modular.task.judge.mq.JudgeQueueProperties;
 import io.charlie.web.oj.modular.task.library.handle.LibraryHandleMessage;
-import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.handle.SimilarityHandleMessage;
-import io.charlie.web.oj.modular.task.similarity.handle.SingleSimilarityHandleMessage;
 import io.charlie.web.oj.modular.task.similarity.msg.SimilarityMessage;
 import io.charlie.web.oj.utils.similarity.utils.CodeTokenUtil;
 import io.charlie.web.oj.utils.similarity.utils.TokenDetail;
@@ -29,10 +27,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * @author ZhangJiangHu
@@ -47,7 +41,6 @@ public class JudgeHandleMessage {
     private final RabbitTemplate rabbitTemplate;
     private final DataSubmitMapper dataSubmitMapper;
     private final DataSolvedMapper dataSolvedMapper;
-    private final SingleSimilarityHandleMessage singleSimilarityHandleMessage;
     private final SimilarityHandleMessage similarityHandleMessage;
     private final LibraryHandleMessage libraryHandleMessage;
 
@@ -79,24 +72,6 @@ public class JudgeHandleMessage {
         BeanUtil.copyProperties(judgeResultDto, dataSubmit);
         dataSubmit.setIsFinish(Boolean.TRUE); // 流转结束
         dataSubmitMapper.updateById(dataSubmit);
-
-//        if (ObjectUtil.isNotEmpty(dataSubmit.getTestCase())) {
-//            List<DataJudgeCase> dataJudgeCases = dataSubmit.getTestCase().stream().map(testCase -> {
-//                DataJudgeCase dataJudgeCase = new DataJudgeCase();
-//                dataJudgeCase.setSubmitId(judgeResultDto.getId());
-//                dataJudgeCase.setInputData(testCase.getInput());
-//                dataJudgeCase.setOutputData(testCase.getOutput());
-//                dataJudgeCase.setExpectedOutput(testCase.getExcept());
-//                dataJudgeCase.setMaxTime(testCase.getMaxTime());
-//                dataJudgeCase.setMaxMemory(testCase.getMaxMemory());
-//                dataJudgeCase.setStatus(testCase.getStatus());
-//                dataJudgeCase.setMessage(testCase.getMessage());
-//                dataJudgeCase.setExitCode(testCase.getExitCode());
-//                dataJudgeCase.setScore(BigDecimal.ZERO);
-//                return dataJudgeCase;
-//            }).toList();
-//            dataJudgeCaseMapper.insert(dataJudgeCases);
-//        }
 
         // 正式提交
         if (judgeResultDto.getSubmitType()) {
@@ -160,13 +135,6 @@ public class JudgeHandleMessage {
         // 相似度检测
         String taskId = IdUtil.objectId();
         dataSubmitMapper.update(new LambdaUpdateWrapper<DataSubmit>().eq(DataSubmit::getId, judgeResultDto.getId()).set(DataSubmit::getTaskId, taskId));
-
-//        SimilaritySubmitDto similaritySubmitDto = BeanUtil.toBean(judgeResultDto, SimilaritySubmitDto.class);
-//        similaritySubmitDto.setTaskId(taskId);
-//        similaritySubmitDto.setTaskType(Boolean.FALSE);
-//        similaritySubmitDto.setJudgeTaskId(judgeResultDto.getJudgeTaskId());
-//        similaritySubmitDto.setCreateTime(dataSubmit.getCreateTime());
-//        singleSimilarityHandleMessage.sendSimilarity(similaritySubmitDto);
 
         // 方法
         DataProblem dataProblem = dataProblemMapper.selectById(dataSubmit.getProblemId());
