@@ -9,6 +9,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
+import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.reports.entity.TaskReports;
 import io.charlie.web.oj.modular.data.reports.param.TaskReportsAddParam;
 import io.charlie.web.oj.modular.data.reports.param.TaskReportsEditParam;
@@ -20,6 +22,7 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.data.similarity.mapper.TaskSimilarityMapper;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +40,9 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class TaskReportsServiceImpl extends ServiceImpl<TaskReportsMapper, TaskReports> implements TaskReportsService {
+
+    private final TaskSimilarityMapper taskSimilarityMapper;
+    private final DataProblemMapper dataProblemMapper;
 
     @Override
     public Page<TaskReports> page(TaskReportsPageParam taskReportsPageParam) {

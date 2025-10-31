@@ -181,10 +181,13 @@ public class JudgeHandleMessage {
         similarityMessage.setLanguage(judgeResultDto.getLanguage());
         similarityMessage.setThreshold(dataProblem.getThreshold());
         similarityMessage.setTaskType(Boolean.FALSE);
+        similarityMessage.setCode(judgeResultDto.getCode());
+        similarityMessage.setCodeLength(judgeResultDto.getCode().length());
         similarityMessage.setMinMatchLength(5);
         similarityMessage.setCodeTokens(codeTokensDetail.getTokens());
         similarityMessage.setCodeTokenNames(codeTokensDetail.getTokenNames());
         similarityMessage.setCodeTokenTexts(codeTokensDetail.getTokenTexts());
+        similarityMessage.setUserId(dataSubmit.getUserId());
         similarityHandleMessage.sendSimilarity(similarityMessage);
     }
 }

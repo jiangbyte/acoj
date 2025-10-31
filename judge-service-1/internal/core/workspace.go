@@ -155,6 +155,7 @@ func (w *Workspace) writeSourceCode() error {
 
 // 执行代码
 func (w *Workspace) Execute() *mq.JudgeResponse {
+	startTime := time.Now()
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -169,7 +170,6 @@ func (w *Workspace) Execute() *mq.JudgeResponse {
 
 	// 2. 编译（如果需要）
 	if w.langConfig.NeedCompile {
-		// TODO 执行编译
 		compileResult, err := w.compile()
 		if err != nil {
 			logx.Error("编译失败", err.Error())
@@ -190,6 +190,9 @@ func (w *Workspace) Execute() *mq.JudgeResponse {
 
 	// 4. 评估结果
 	evaluationResult := w.evaluate(executeResult)
+
+	totalTime := time.Since(startTime)
+	logx.Infof("Execute函数总执行耗时: %v", totalTime)
 
 	// 5. 返回最终结果
 	return evaluationResult

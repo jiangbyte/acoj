@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"judge-service/internal/database/model"
 	"judge-service/internal/mq"
 	"judge-service/internal/utils"
@@ -28,11 +29,15 @@ func (e *DefaultEvaluator) Evaluate(workspace *Workspace, results []*model.DataJ
 		JudgeTaskId: judgeRequest.JudgeTaskId,
 	}
 
-	err := workspace.svcCtx.JudgeCaseRepo().BatchCreateJudgeCases(workspace.ctx, results)
-	if err != nil {
-		result.Status = "SYSTEM_ERROR"
-		return result
+	// 异步插入 JudgeCase 记录
+	if len(results) > 0 {
+		e.asyncInsertJudgeCases(workspace, results)
 	}
+	//err := workspace.svcCtx.JudgeCaseRepo().BatchCreateJudgeCases(workspace.ctx, results)
+	//if err != nil {
+	//	result.Status = "SYSTEM_ERROR"
+	//	return result
+	//}
 
 	maxTime := 0.0
 	maxMemory := 0.0
@@ -70,6 +75,36 @@ func (e *DefaultEvaluator) Evaluate(workspace *Workspace, results []*model.DataJ
 	result.Status = e.aggregateStatus(statusCount, len(results))
 	result.Message = e.aggregateMessage(messageCount)
 	return result
+}
+
+// 异步插入方法
+func (e *DefaultEvaluator) asyncInsertJudgeCases(workspace *Workspace, results []*model.DataJudgeCase) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logx.Errorf("异步插入 JudgeCase 时发生 panic: %v", r)
+			}
+		}()
+
+		// 创建深拷贝避免数据竞争
+		casesCopy := e.copyJudgeCases(results)
+
+		if err := workspace.svcCtx.JudgeCaseRepo().BatchCreateJudgeCases(casesCopy); err != nil {
+			logx.Errorf("异步批量插入 JudgeCase 记录失败: %v", err)
+		} else {
+			logx.Infof("成功异步插入 %d 条 JudgeCase 记录", len(casesCopy))
+		}
+	}()
+}
+
+// 深拷贝 JudgeCase 数据
+func (e *DefaultEvaluator) copyJudgeCases(cases []*model.DataJudgeCase) []*model.DataJudgeCase {
+	copies := make([]*model.DataJudgeCase, len(cases))
+	for i, c := range cases {
+		copyCase := *c // 创建结构体副本
+		copies[i] = &copyCase
+	}
+	return copies
 }
 
 func (w *Workspace) evaluate(results []*model.DataJudgeCase) *mq.JudgeResponse {

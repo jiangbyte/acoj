@@ -13,7 +13,7 @@ type JudgeCaseRepository interface {
 	CreateJudgeCase(ctx context.Context, judgeCase *model.DataJudgeCase) error
 
 	// 批量操作
-	BatchCreateJudgeCases(ctx context.Context, judgeCases []*model.DataJudgeCase) error
+	BatchCreateJudgeCases(judgeCases []*model.DataJudgeCase) error
 }
 
 type judgeCaseRepository struct {
@@ -45,7 +45,7 @@ func (r *judgeCaseRepository) CreateJudgeCase(ctx context.Context, judgeCase *mo
 }
 
 // BatchCreateJudgeCases 批量创建判题用例
-func (r *judgeCaseRepository) BatchCreateJudgeCases(ctx context.Context, judgeCases []*model.DataJudgeCase) error {
+func (r *judgeCaseRepository) BatchCreateJudgeCases(judgeCases []*model.DataJudgeCase) error {
 	if r.db == nil {
 		return fmt.Errorf("数据库未准备好")
 	}
@@ -64,7 +64,7 @@ func (r *judgeCaseRepository) BatchCreateJudgeCases(ctx context.Context, judgeCa
 	logx.Infof("开始批量创建判题用例，问题ID: %s，数量: %d", submitID, len(judgeCases))
 
 	// 使用事务确保批量操作的原子性
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.CreateInBatches(judgeCases, 100).Error; err != nil {
 			return fmt.Errorf("批量创建判题用例失败: %v", err)
 		}

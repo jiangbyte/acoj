@@ -95,3 +95,5 @@ build/
 /judge-service/JudgeService
 
 depoloy/
+
+**/go1.24.4.linux-amd64.tar.gz

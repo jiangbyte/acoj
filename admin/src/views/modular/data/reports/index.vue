@@ -88,7 +88,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 270,
+    width: 160,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -106,8 +106,8 @@ const columns: DataTableColumns<any> = [
               path: `/visualization/submit/report/${row.id}/task/${row.taskId}`,
             })
           },
-        }, () => '相似可视'),
-        h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '数据详情'),
+        }, () => '数据统计'),
+        // h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '数据详情'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {

@@ -65,6 +65,6 @@ public class SysMenuEditParam implements Serializable {
     private Integer menuType;
 
     @Schema(description = "额外信息")
-    private List<MenuExJsonItem> exJson;
+    private List<String> exJson;
 
 }

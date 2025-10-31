@@ -11,8 +11,12 @@ type SimilarityResultMessage struct {
 	MinMatchLength int      `json:"minMatchLength"` // 敏感度
 	Threshold      float64  `json:"threshold"`      // 阈值
 	TaskType       bool     `json:"taskType"`       // 是否手动
+	Code           string   `json:"code"`
+	CodeLength     int      `json:"codeLength"`
 	CodeTokens     []int    `json:"codeTokens"`
 	CodeTokenNames []string `json:"codeTokenNames"`
 	CodeTokenTexts []string `json:"codeTokenTexts"`
 	Similarity     float64  `json:"similarity"` // 相似度
+	ReportID       string   `json:"reportId"`
+	Skip           bool     `json:"skip"`
 }

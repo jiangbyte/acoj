@@ -32,6 +32,8 @@ public class SimilarityMessage implements Serializable {
     @Schema(description = "手动")
     private Boolean taskType; // 是否手动
 
+    private String code;
+    private Integer codeLength;
     private List<Integer> codeTokens;
     private List<String> codeTokenNames;
     private List<String> codeTokenTexts;

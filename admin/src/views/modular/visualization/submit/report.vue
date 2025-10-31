@@ -405,7 +405,11 @@ loadData()
                 :round="true"
                 :src="similarityDataDetail.submitUserAvatar"
               />
-              <NText>{{ similarityDataDetail.submitUserName }}</NText>
+              <NText>
+                <NEllipsis style="width: 90px;">
+                  {{ similarityDataDetail.submitUserName }}
+                </NEllipsis>
+              </NText>
             </NSpace>
             <div>
               提交时间：<NTime :time="Number(similarityDataDetail.submitTime) || Date.now()" />
@@ -452,7 +456,11 @@ loadData()
                 :round="true"
                 :src="similarityDataDetail.originUserAvatar"
               />
-              <NText>{{ similarityDataDetail.originUserName }}</NText>
+              <NText>
+                <NEllipsis style="width: 90px;">
+                  {{ similarityDataDetail.originUserName }}
+                </NEllipsis>
+              </NText>
             </NSpace>
             <div>
               提交时间：<NTime :time="Number(similarityDataDetail.originTime) || Date.now()" />

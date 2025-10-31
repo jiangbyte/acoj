@@ -176,6 +176,67 @@
 # CMD ["./entrypoint.sh"]
 
 
+#
+## syntax=docker/dockerfile:1.4
+#FROM ubuntu:22.04
+#LABEL authors="Charlie"
+#
+## 启用 BuildKit 缓存挂载（需要 DOCKER_BUILDKIT=1）
+#RUN --mount=type=cache,target=/var/cache/apt \
+#    --mount=type=cache,target=/var/lib/apt \
+#    sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+#    sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+#    apt-get update && apt-get install -y --no-install-recommends \
+#    wget ca-certificates gcc g++ build-essential pkg-config libseccomp-dev \
+#    openjdk-17-jdk python3 python3-pip && \
+#    apt-get clean
+#
+## 设置环境变量
+#ENV GOPATH=/go \
+#    PATH=/usr/local/go/bin:$GOPATH/bin:$PATH \
+#    GOPROXY=https://goproxy.cn,direct \
+#    GOSUMDB=off \
+#    GO111MODULE=auto
+#
+#WORKDIR /tmp
+#
+## 下载并安装 Go
+#RUN wget -q https://mirrors.aliyun.com/golang/go1.24.4.linux-amd64.tar.gz && \
+#    tar -C /usr/local -xzf go1.24.4.linux-amd64.tar.gz && \
+#    rm go1.24.4.linux-amd64.tar.gz
+#
+#RUN go version
+#
+#WORKDIR /app
+#
+#COPY go.mod go.sum ./
+#
+## 使用 Go 模块缓存
+#RUN --mount=type=cache,target=/go/pkg/mod \
+#    --mount=type=cache,target=/root/.cache/go-build \
+#    go mod download
+#
+#COPY . .
+#
+#RUN CGO_ENABLED=1 GOOS=linux go build -o similarity-service main.go
+#
+#RUN echo "Go version:" && go version && \
+#    echo "G++ version:" && g++ --version && \
+#    echo "Java version:" && java -version && \
+#    echo "Python3 version:" && python3 --version
+#
+#COPY entrypoint.sh .
+#RUN chmod +x entrypoint.sh
+#
+#CMD ["./entrypoint.sh"]
+
+
+# DOCKER_BUILDKIT=1 docker build -t registry.cn-beijing.aliyuncs.com/jiangbyte/galaxy_oj_judge_service:1.0.0 .
+
+
+
+
+
 
 # syntax=docker/dockerfile:1.4
 FROM ubuntu:22.04
@@ -187,8 +248,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
     sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
     sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
     apt-get update && apt-get install -y --no-install-recommends \
-    wget ca-certificates gcc g++ build-essential pkg-config libseccomp-dev \
-    openjdk-17-jdk python3 python3-pip && \
+    wget ca-certificates pkg-config build-essential gcc && \
     apt-get clean
 
 # 设置环境变量
@@ -201,9 +261,15 @@ ENV GOPATH=/go \
 WORKDIR /tmp
 
 # 下载并安装 Go
-RUN wget -q https://mirrors.aliyun.com/golang/go1.24.4.linux-amd64.tar.gz && \
+RUN wget https://mirrors.aliyun.com/golang/go1.24.4.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.24.4.linux-amd64.tar.gz && \
     rm go1.24.4.linux-amd64.tar.gz
+
+# 主机文件系统复制Go安装包
+# 从构建上下文复制并安装 Go
+#COPY go1.24.4.linux-amd64.tar.gz /tmp/
+#RUN tar -C /usr/local -xzf go1.24.4.linux-amd64.tar.gz && \
+#    rm go1.24.4.linux-amd64.tar.gz
 
 RUN go version
 
@@ -218,17 +284,11 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux go build -o judge-service main.go
+RUN CGO_ENABLED=1 GOOS=linux go build -o similarity-service main.go
 
-RUN echo "Go version:" && go version && \
-    echo "G++ version:" && g++ --version && \
-    echo "Java version:" && java -version && \
-    echo "Python3 version:" && python3 --version
+RUN echo "Go version:" && go version
 
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
 CMD ["./entrypoint.sh"]
-
-
-# DOCKER_BUILDKIT=1 docker build -t registry.cn-beijing.aliyuncs.com/jiangbyte/galaxy_oj_judge_service:1.0.0 .

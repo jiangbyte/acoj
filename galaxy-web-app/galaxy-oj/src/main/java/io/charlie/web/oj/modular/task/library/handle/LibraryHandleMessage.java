@@ -61,14 +61,15 @@ public class LibraryHandleMessage {
                 library.setSubmitId(submit.getId());
                 library.setSubmitTime(submit.getCreateTime());
 
-                library.setCodeLength(submit.getCodeLength());
-                library.setCode(submit.getCode());
-
-                library.setCodeToken(tokensDetail.getTokens());
-                library.setCodeTokenName(tokensDetail.getTokenNames());
-                library.setCodeTokenTexts(tokensDetail.getTokenTexts());
-
-                library.setAccessCount(0);// 重置访问次数
+                // 如果代码长度和原本的代码长度不一致，则更新代码
+                if (!library.getCodeLength().equals(submit.getCodeLength())) {
+                    library.setCodeLength(submit.getCodeLength());
+                    library.setCode(submit.getCode());
+                    library.setCodeToken(tokensDetail.getTokens());
+                    library.setCodeTokenName(tokensDetail.getTokenNames());
+                    library.setCodeTokenTexts(tokensDetail.getTokenTexts());
+                    library.setAccessCount(0);// 重置访问次数
+                }
 
                 dataLibraryMapper.updateById(library);
             } else {
