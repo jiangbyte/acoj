@@ -271,7 +271,10 @@ function resetHandle() {
                 }))"
                 :page-slot="3"
                 @update:page="loadData"
-                @update:page-size="loadData"
+                @update:page-size="() => {
+                  pageParam.current = 1
+                  loadData()
+                }"
               />
             </template>
           </n-card>

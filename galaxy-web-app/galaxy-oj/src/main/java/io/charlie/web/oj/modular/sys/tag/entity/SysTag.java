@@ -32,4 +32,5 @@ public class SysTag extends CommonEntity {
 
     @Schema(description = "名称")
     private String name;
+
 }

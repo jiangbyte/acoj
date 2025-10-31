@@ -18,6 +18,7 @@
 │   │   └── data_test_case.go
 │   ├── mysql.go
 │   └── repository
+│       ├── cached_testcase_repository.go
 │       ├── judgecase_repository.go
 │       └── testcase_repository.go
 ├── initializer
@@ -449,6 +450,7 @@ func (am *AppManager) waitForShutdown() {
 package config
 
 import (
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/rest"
 )
 
@@ -505,6 +507,7 @@ type Config struct {
 	Workspace string `json:",optional"` // 工作空间(文件工作路径)
 	Nacos     NacosConfig
 	MySQL     MySQLConfig      `json:",optional"` // MySQL 配置
+	Redis     redis.RedisConf  `json:",optional"` // 修改为 go-zero 的 RedisConf
 	Languages []LanguageConfig `json:",optional"` // 支持的语言配置，设为可选
 	RabbitMQ  RabbitMQConfig   `json:",optional"`
 }
@@ -528,6 +531,27 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
+// CompilerManager 编译器管理器，管理编译器实例
+type CompilerManager struct {
+    compilers sync.Pool
+}
+
+var compilerManager = &CompilerManager{
+    compilers: sync.Pool{
+        New: func() interface{} {
+            return &DefaultCompiler{}
+        },
+    },
+}
+
+func GetCompiler() *DefaultCompiler {
+    return compilerManager.compilers.Get().(*DefaultCompiler)
+}
+
+func ReleaseCompiler(compiler *DefaultCompiler) {
+    compilerManager.compilers.Put(compiler)
+}
+
 type CompileResult struct {
 	Success   bool
 	Message   string
@@ -541,7 +565,7 @@ type Compiler interface {
 }
 
 type DefaultCompiler struct {
-	mu sync.Mutex
+	// mu sync.Mutex
 }
 
 // 编译超时时间常量
@@ -602,8 +626,8 @@ func (c *DefaultCompiler) createCommand(ctx context.Context, compilerCmd []strin
 
 // 进程控制：暂停、设置cgroup、恢复
 func (c *DefaultCompiler) controlProcess(cmd *exec.Cmd, cgroupPath string, result *CompileResult) (int, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	// c.mu.Lock()
+	// defer c.mu.Unlock()
 
 	// 立即暂停进程
 	if err := syscall.Kill(cmd.Process.Pid, syscall.SIGSTOP); err != nil {
@@ -709,6 +733,7 @@ func (w *Workspace) compile() (*CompileResult, error) {
 package core
 
 import (
+	"github.com/zeromicro/go-zero/core/logx"
 	"judge-service/internal/database/model"
 	"judge-service/internal/mq"
 	"judge-service/internal/utils"
@@ -736,11 +761,15 @@ func (e *DefaultEvaluator) Evaluate(workspace *Workspace, results []*model.DataJ
 		JudgeTaskId: judgeRequest.JudgeTaskId,
 	}
 
-	err := workspace.svcCtx.JudgeCaseRepo().BatchCreateJudgeCases(workspace.ctx, results)
-	if err != nil {
-		result.Status = "SYSTEM_ERROR"
-		return result
+	// 异步插入 JudgeCase 记录
+	if len(results) > 0 {
+		e.asyncInsertJudgeCases(workspace, results)
 	}
+	//err := workspace.svcCtx.JudgeCaseRepo().BatchCreateJudgeCases(workspace.ctx, results)
+	//if err != nil {
+	//	result.Status = "SYSTEM_ERROR"
+	//	return result
+	//}
 
 	maxTime := 0.0
 	maxMemory := 0.0
@@ -778,6 +807,36 @@ func (e *DefaultEvaluator) Evaluate(workspace *Workspace, results []*model.DataJ
 	result.Status = e.aggregateStatus(statusCount, len(results))
 	result.Message = e.aggregateMessage(messageCount)
 	return result
+}
+
+// 异步插入方法
+func (e *DefaultEvaluator) asyncInsertJudgeCases(workspace *Workspace, results []*model.DataJudgeCase) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logx.Errorf("异步插入 JudgeCase 时发生 panic: %v", r)
+			}
+		}()
+
+		// 创建深拷贝避免数据竞争
+		casesCopy := e.copyJudgeCases(results)
+
+		if err := workspace.svcCtx.JudgeCaseRepo().BatchCreateJudgeCases(casesCopy); err != nil {
+			logx.Errorf("异步批量插入 JudgeCase 记录失败: %v", err)
+		} else {
+			logx.Infof("成功异步插入 %d 条 JudgeCase 记录", len(casesCopy))
+		}
+	}()
+}
+
+// 深拷贝 JudgeCase 数据
+func (e *DefaultEvaluator) copyJudgeCases(cases []*model.DataJudgeCase) []*model.DataJudgeCase {
+	copies := make([]*model.DataJudgeCase, len(cases))
+	for i, c := range cases {
+		copyCase := *c // 创建结构体副本
+		copies[i] = &copyCase
+	}
+	return copies
 }
 
 func (w *Workspace) evaluate(results []*model.DataJudgeCase) *mq.JudgeResponse {
@@ -910,6 +969,27 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
+// ExecutorManager 执行器管理器
+type ExecutorManager struct {
+	executors sync.Pool
+}
+
+var executorManager = &ExecutorManager{
+	executors: sync.Pool{
+		New: func() interface{} {
+			return &SandboxExecutor{}
+		},
+	},
+}
+
+func GetExecutor() *SandboxExecutor {
+	return executorManager.executors.Get().(*SandboxExecutor)
+}
+
+func ReleaseExecutor(executor *SandboxExecutor) {
+	executorManager.executors.Put(executor)
+}
+
 // Executor 执行器接口
 type Executor interface {
 	Execute(workspace *Workspace, testCase *model2.DataTestCase) (*model2.DataJudgeCase, error)
@@ -917,7 +997,7 @@ type Executor interface {
 
 // SandboxExecutor 沙箱执行器
 type SandboxExecutor struct {
-	mu sync.Mutex
+	// mu sync.Mutex
 }
 
 // Execute 执行测试用例
@@ -1032,8 +1112,8 @@ func (e *SandboxExecutor) startAndManageProcess(cmd *exec.Cmd, cgroupPath string
 		return 0, fmt.Errorf("启动进程失败: %w", err)
 	}
 
-	e.mu.Lock()
-	defer e.mu.Unlock()
+	// e.mu.Lock()
+	// defer e.mu.Unlock()
 
 	pgid := cmd.Process.Pid
 
@@ -1159,26 +1239,82 @@ func (e *SandboxExecutor) determineExecutionStatus(workspace *Workspace, result 
 }
 
 // executeTestCases 执行测试用例集
+// func (w *Workspace) executeTestCases() ([]*model2.DataJudgeCase, error) {
+// 	// testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemID(w.ctx, w.judgeRequest.ProblemId)
+// 	testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemIDWithSample(w.ctx, w.judgeRequest.ProblemId, w.judgeRequest.SubmitType)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("获取测试用例失败: %w", err)
+// 	}
+
+// 	executor := &SandboxExecutor{}
+// 	results := make([]*model2.DataJudgeCase, 0, len(testCases))
+
+// 	for _, testCase := range testCases {
+// 		result, err := executor.Execute(w, &testCase)
+// 		if err != nil {
+// 			// 记录错误但继续执行其他测试用例
+// 			logx.Errorf("执行测试用例 %s 失败: %v", testCase.CaseSign, err)
+// 			continue
+// 		}
+// 		results = append(results, result)
+// 	}
+
+// 	if len(results) == 0 && len(testCases) > 0 {
+// 		return nil, fmt.Errorf("所有测试用例执行失败")
+// 	}
+
+// 	return results, nil
+// }
+
+// executeTestCases 并发执行测试用例
 func (w *Workspace) executeTestCases() ([]*model2.DataJudgeCase, error) {
-	// testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemID(w.ctx, w.judgeRequest.ProblemId)
-	testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemIDWithSample(w.ctx, w.judgeRequest.ProblemId, w.judgeRequest.SubmitType)
+	//testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemIDWithSample(w.ctx, w.judgeRequest.ProblemId, w.judgeRequest.SubmitType)
+	testCases, err := w.svcCtx.TestCaseCacheRepo().GetTestCasesByProblemIDWithSample(w.ctx, w.judgeRequest.ProblemId, w.judgeRequest.SubmitType)
 	if err != nil {
 		return nil, fmt.Errorf("获取测试用例失败: %w", err)
 	}
 
-	executor := &SandboxExecutor{}
 	results := make([]*model2.DataJudgeCase, 0, len(testCases))
+	var wg sync.WaitGroup
+	// var mu sync.Mutex
+	resultChan := make(chan *model2.DataJudgeCase, len(testCases))
+	errChan := make(chan error, len(testCases))
+
+	// 控制并发执行的测试用例数量
+	semaphore := make(chan struct{}, 5)
 
 	for _, testCase := range testCases {
-		result, err := executor.Execute(w, &testCase)
-		if err != nil {
-			// 记录错误但继续执行其他测试用例
-			logx.Errorf("执行测试用例 %s 失败: %v", testCase.CaseSign, err)
-			continue
-		}
+		wg.Add(1)
+		semaphore <- struct{}{}
+
+		go func(tc model2.DataTestCase) {
+			defer wg.Done()
+			defer func() { <-semaphore }()
+
+			executor := GetExecutor()
+			defer ReleaseExecutor(executor)
+
+			result, err := executor.Execute(w, &tc)
+			if err != nil {
+				logx.Errorf("执行测试用例 %s 失败: %v", tc.CaseSign, err)
+				errChan <- err
+				return
+			}
+
+			resultChan <- result
+		}(testCase)
+	}
+
+	wg.Wait()
+	close(resultChan)
+	close(errChan)
+
+	// 收集结果
+	for result := range resultChan {
 		results = append(results, result)
 	}
 
+	// 检查错误
 	if len(results) == 0 && len(testCases) > 0 {
 		return nil, fmt.Errorf("所有测试用例执行失败")
 	}
@@ -1204,17 +1340,40 @@ import (
 	"context"
 	"fmt"
 	"judge-service/internal/config"
+	repository2 "judge-service/internal/database/repository"
 	"judge-service/internal/mq"
 	"judge-service/internal/svc"
 	"judge-service/internal/utils"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
+
+// WorkspaceManager 工作空间管理器，负责工作空间的创建和清理
+type WorkspaceManager struct {
+	workspaces sync.Map // 存储活跃的工作空间
+	basePath   string
+	mu         sync.RWMutex
+}
+
+var (
+	workspaceManager *WorkspaceManager
+	once             sync.Once
+)
+
+func GetWorkspaceManager(basePath string) *WorkspaceManager {
+	once.Do(func() {
+		workspaceManager = &WorkspaceManager{
+			basePath: basePath,
+		}
+	})
+	return workspaceManager
+}
 
 type Workspace struct {
 	ctx          context.Context
@@ -1229,6 +1388,8 @@ type Workspace struct {
 	BuildFile    string // 编译文件
 	RunsPath     string // 运行目录
 	svcCtx       *svc.ServiceContext
+	mu           sync.RWMutex // 工作空间内部锁
+	isCleaned    bool         // 标记是否已清理
 }
 
 // NewWorkspace 创建工作空间,上下文/配置/提交信息,返回 工作空间实例 和 提交信息
@@ -1247,7 +1408,11 @@ func NewWorkspace(ctx context.Context, config config.Config, judgeRequest mq.Jud
 		BuildPath:    filepath.Join(root, "build"),  // 编译目录
 		RunsPath:     filepath.Join(root, "runs"),   // 运行目录
 		svcCtx:       svcCtx,
+		isCleaned:    false,
 	}
+
+	// 注册到工作空间管理器
+	GetWorkspaceManager(config.Workspace).Register(ws)
 
 	// 创建目录
 	if err := ws.createDirs(); err != nil {
@@ -1327,6 +1492,13 @@ func (w *Workspace) writeSourceCode() error {
 
 // 执行代码
 func (w *Workspace) Execute() *mq.JudgeResponse {
+	startTime := time.Now()
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.isCleaned {
+		return w.buildErrorResponse("工作空间已清理", "SYSTEM_ERROR")
+	}
 
 	// 1. 写入源代码
 	if err := w.writeSourceCode(); err != nil {
@@ -1335,7 +1507,6 @@ func (w *Workspace) Execute() *mq.JudgeResponse {
 
 	// 2. 编译（如果需要）
 	if w.langConfig.NeedCompile {
-		// TODO 执行编译
 		compileResult, err := w.compile()
 		if err != nil {
 			logx.Error("编译失败", err.Error())
@@ -1357,20 +1528,77 @@ func (w *Workspace) Execute() *mq.JudgeResponse {
 	// 4. 评估结果
 	evaluationResult := w.evaluate(executeResult)
 
+	totalTime := time.Since(startTime)
+	logx.Infof("Execute函数总执行耗时: %v", totalTime)
+
 	// 5. 返回最终结果
 	return evaluationResult
 }
 
+// Register 注册工作空间
+func (wm *WorkspaceManager) Register(ws *Workspace) {
+	wm.workspaces.Store(ws.RootPath, ws)
+}
+
+// Unregister 注销工作空间
+func (wm *WorkspaceManager) Unregister(ws *Workspace) {
+	wm.workspaces.Delete(ws.RootPath)
+}
+
+// GetAllWorkspaces 获取所有工作空间（用于监控）
+func (wm *WorkspaceManager) GetAllWorkspaces() []*Workspace {
+	var workspaces []*Workspace
+	wm.workspaces.Range(func(key, value interface{}) bool {
+		if ws, ok := value.(*Workspace); ok {
+			workspaces = append(workspaces, ws)
+		}
+		return true
+	})
+	return workspaces
+}
+
 // Cleanup 清理工作空间
 func (w *Workspace) Cleanup() error {
-	logx.Infof("开始清理工作空间 路径: %s", w.RootPath)
+	// logx.Infof("开始清理工作空间 路径: %s", w.RootPath)
 
 	// if err := os.RemoveAll(w.RootPath); err != nil {
 	// 	logx.Errorf("清理工作空间失败 路径: %s, 错误: %v", w.RootPath, err)
 	// 	return err
 	// }
 
-	logx.Infof("工作空间清理完毕: %s", w.RootPath)
+	// logx.Infof("工作空间清理完毕: %s", w.RootPath)
+	// return nil
+
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.isCleaned {
+		return nil
+	}
+
+	logx.Infof("开始清理工作空间 路径: %s", w.RootPath)
+
+	// 从管理器注销
+	GetWorkspaceManager(w.config.Workspace).Unregister(w)
+
+	// 异步清理，不阻塞当前goroutine
+	go func(path string) {
+		if err := os.RemoveAll(path); err != nil {
+			logx.Errorf("清理工作空间失败 路径: %s, 错误: %v", path, err)
+		} else {
+			logx.Infof("工作空间清理完毕: %s", path)
+		}
+	}(w.RootPath)
+
+	w.isCleaned = true
+	return nil
+}
+
+// 在需要清除缓存的地方调用
+func (w *Workspace) clearTestCaseCache() error {
+	if cachedRepo, ok := w.svcCtx.TestCaseRepo().(*repository2.CachedTestCaseRepository); ok {
+		return cachedRepo.ClearCache(w.ctx, w.judgeRequest.ProblemId)
+	}
 	return nil
 }
 
@@ -1402,6 +1630,22 @@ func NewMySQLManager(c config.MySQLConfig) (*MySQLManager, error) {
 	db, err := connectMySQL(dsn, c)
 	if err != nil {
 		return nil, err
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	// 优化连接池配置以适应高并发
+	sqlDB.SetMaxIdleConns(50)                 // 增加最大空闲连接数
+	sqlDB.SetMaxOpenConns(200)                // 增加最大打开连接数
+	sqlDB.SetConnMaxLifetime(5 * time.Minute) // 减少连接最大生存时间
+	sqlDB.SetConnMaxIdleTime(2 * time.Minute) // 设置连接最大空闲时间
+
+	// 测试连接
+	if err := sqlDB.Ping(); err != nil {
+		return nil, fmt.Errorf("数据库连接测试失败: %v", err)
 	}
 
 	logx.Info("MySQL 连接成功")
@@ -1548,6 +1792,206 @@ func (DataTestCase) TableName() string {
 }
 
 
+文件: database\repository\cached_testcase_repository.go
+--------------------------------------------------
+package repository
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"judge-service/internal/database/model"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
+	"gorm.io/gorm"
+)
+
+type CachedTestCaseRepository struct {
+	db    *gorm.DB
+	redis *redis.Redis
+	ttl   time.Duration // 缓存过期时间
+}
+
+func NewCachedTestCaseRepository(db *gorm.DB, redis *redis.Redis) TestCaseRepository {
+	return &CachedTestCaseRepository{
+		db:    db,
+		redis: redis,
+		ttl:   time.Hour, // 默认缓存1小时
+	}
+}
+
+// 生成缓存键
+func (r *CachedTestCaseRepository) getCacheKey(problemID string, isSample *bool) string {
+	if isSample != nil {
+		return fmt.Sprintf("testcase:%s:sample:%t", problemID, *isSample)
+	}
+	return fmt.Sprintf("testcase:%s:all", problemID)
+}
+
+// 带缓存的查询方法
+func (r *CachedTestCaseRepository) GetTestCasesByProblemID(ctx context.Context, problemID string) ([]model.DataTestCase, error) {
+	cacheKey := r.getCacheKey(problemID, nil)
+
+	// 添加 Redis 客户端检查
+	if r.redis != nil {
+		cachedData, err := r.redis.Get(cacheKey)
+		if err == nil && cachedData != "" {
+			var testCases []model.DataTestCase
+			if err := json.Unmarshal([]byte(cachedData), &testCases); err == nil {
+				logx.Infof("从缓存获取题目 %s 的测试用例，共 %d 条", problemID, len(testCases))
+				return testCases, nil
+			}
+		}
+	}
+
+	// 1. 尝试从缓存获取
+	cachedData, err := r.redis.Get(cacheKey)
+	if err == nil && cachedData != "" {
+		var testCases []model.DataTestCase
+		if err := json.Unmarshal([]byte(cachedData), &testCases); err == nil {
+			logx.Infof("从缓存获取题目 %s 的测试用例，共 %d 条", problemID, len(testCases))
+			return testCases, nil
+		}
+	}
+
+	// 2. 缓存未命中，从数据库查询
+	logx.Infof("缓存未命中，从数据库查询题目 %s 的测试用例", problemID)
+
+	var testCases []model.DataTestCase
+	err = r.db.
+		Where("problem_id = ? AND deleted = ?", problemID, false).
+		Order("create_time ASC").
+		Find(&testCases).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("获取测试用例失败: %v", err)
+	}
+
+	// 3. 将结果写入缓存
+	if len(testCases) > 0 {
+		data, err := json.Marshal(testCases)
+		if err == nil {
+			err = r.redis.Setex(cacheKey, string(data), int(r.ttl.Seconds()))
+			if err != nil {
+				logx.Errorf("写入缓存失败: %v", err)
+			} else {
+				logx.Infof("成功缓存题目 %s 的测试用例，共 %d 条", problemID, len(testCases))
+			}
+		}
+	}
+
+	return testCases, nil
+}
+
+func (r *CachedTestCaseRepository) GetTestCasesByProblemIDWithSample(ctx context.Context, problemID string, submitType bool) ([]model.DataTestCase, error) {
+	cacheKey := r.getCacheKey(problemID, &submitType)
+
+	// 1. 如果 Redis 客户端不为 nil，尝试从缓存获取
+	if r.redis != nil {
+		cachedData, err := r.redis.Get(cacheKey)
+		if err == nil && cachedData != "" {
+			var testCases []model.DataTestCase
+			if err := json.Unmarshal([]byte(cachedData), &testCases); err == nil {
+				logx.Infof("从缓存获取题目 %s 的测试用例(submitType: %t)，共 %d 条", problemID, submitType, len(testCases))
+				return testCases, nil
+			}
+		}
+	} else {
+		logx.Infof("Redis 客户端未初始化，直接从数据库查询")
+	}
+
+	// 2. 缓存未命中或 Redis 不可用，从数据库查询
+	logx.Infof("缓存未命中，从数据库查询题目 %s 的测试用例, submitType: %t", problemID, submitType)
+
+	var testCases []model.DataTestCase
+	var queryErr error
+
+	baseQuery := r.db.
+		Where("problem_id = ? AND deleted = ?", problemID, false)
+
+	if submitType {
+		// 正式提交：获取所有非样例测试用例
+		testCases, queryErr = r.getTestCases(baseQuery, false, "ASC")
+	} else {
+		// 测试提交：先获取样例，如果没有则回退
+		testCases, queryErr = r.getTestCases(baseQuery, true, "ASC")
+		if queryErr == nil && len(testCases) == 0 {
+			logx.Infof("题目 %s 没有找到样例测试用例，尝试获取1条测试用例", problemID)
+			testCases, queryErr = r.getFallbackTestCase(baseQuery)
+		}
+	}
+
+	if queryErr != nil {
+		return nil, queryErr
+	}
+
+	// 3. 如果 Redis 客户端不为 nil，将结果写入缓存
+	if r.redis != nil && len(testCases) > 0 {
+		data, err := json.Marshal(testCases)
+		if err == nil {
+			err = r.redis.Setex(cacheKey, string(data), int(r.ttl.Seconds()))
+			if err != nil {
+				logx.Errorf("写入缓存失败: %v", err)
+			} else {
+				logx.Infof("成功缓存题目 %s 的测试用例(submitType: %t)，共 %d 条", problemID, submitType, len(testCases))
+			}
+		}
+	}
+
+	return testCases, nil
+}
+
+// 清除缓存
+func (r *CachedTestCaseRepository) ClearCache(ctx context.Context, problemID string) error {
+	// 删除该题目的所有相关缓存
+	keys := []string{
+		r.getCacheKey(problemID, nil),
+		r.getCacheKey(problemID, &[]bool{true}[0]),
+		r.getCacheKey(problemID, &[]bool{false}[0]),
+	}
+
+	for _, key := range keys {
+		_, err := r.redis.Del(key)
+		if err != nil {
+			logx.Errorf("删除缓存键 %s 失败: %v", key, err)
+		}
+	}
+
+	logx.Infof("已清除题目 %s 的缓存", problemID)
+	return nil
+}
+
+// 辅助方法保持不变
+func (r *CachedTestCaseRepository) getTestCases(baseQuery *gorm.DB, isSample bool, order string) ([]model.DataTestCase, error) {
+	var testCases []model.DataTestCase
+	err := baseQuery.
+		Where("is_sample = ?", isSample).
+		Where("deleted = 0").
+		Order("create_time " + order).
+		Find(&testCases).Error
+	if err != nil {
+		return nil, fmt.Errorf("获取测试用例失败: %v", err)
+	}
+	return testCases, nil
+}
+
+func (r *CachedTestCaseRepository) getFallbackTestCase(baseQuery *gorm.DB) ([]model.DataTestCase, error) {
+	var testCases []model.DataTestCase
+	err := baseQuery.
+		Order("create_time DESC").
+		Where("deleted = 0").
+		Limit(1).
+		Find(&testCases).Error
+	if err != nil {
+		return nil, fmt.Errorf("获取回退测试用例失败: %v", err)
+	}
+	return testCases, nil
+}
+
+
 文件: database\repository\judgecase_repository.go
 --------------------------------------------------
 package repository
@@ -1565,7 +2009,7 @@ type JudgeCaseRepository interface {
 	CreateJudgeCase(ctx context.Context, judgeCase *model.DataJudgeCase) error
 
 	// 批量操作
-	BatchCreateJudgeCases(ctx context.Context, judgeCases []*model.DataJudgeCase) error
+	BatchCreateJudgeCases(judgeCases []*model.DataJudgeCase) error
 }
 
 type judgeCaseRepository struct {
@@ -1597,7 +2041,7 @@ func (r *judgeCaseRepository) CreateJudgeCase(ctx context.Context, judgeCase *mo
 }
 
 // BatchCreateJudgeCases 批量创建判题用例
-func (r *judgeCaseRepository) BatchCreateJudgeCases(ctx context.Context, judgeCases []*model.DataJudgeCase) error {
+func (r *judgeCaseRepository) BatchCreateJudgeCases(judgeCases []*model.DataJudgeCase) error {
 	if r.db == nil {
 		return fmt.Errorf("数据库未准备好")
 	}
@@ -1616,7 +2060,7 @@ func (r *judgeCaseRepository) BatchCreateJudgeCases(ctx context.Context, judgeCa
 	logx.Infof("开始批量创建判题用例，问题ID: %s，数量: %d", submitID, len(judgeCases))
 
 	// 使用事务确保批量操作的原子性
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.CreateInBatches(judgeCases, 100).Error; err != nil {
 			return fmt.Errorf("批量创建判题用例失败: %v", err)
 		}
@@ -1762,6 +2206,7 @@ package initializer
 
 import (
 	"fmt"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"judge-service/internal/config"
 	"judge-service/internal/database"
 	repository2 "judge-service/internal/database/repository"
@@ -1775,9 +2220,11 @@ import (
 type InitializerManager struct {
 	config              config.Config
 	mysqlManager        *database.MySQLManager
+	redisClient         *redis.Redis
 	rabbitMQManager     *mq.RabbitMQManager
 	serviceRegistry     *nacos.ServiceRegistryManager
 	testCaseRepo        repository2.TestCaseRepository
+	testCaseCacheRepo   repository2.TestCaseRepository
 	judgeCaseRepository repository2.JudgeCaseRepository
 }
 
@@ -1796,6 +2243,12 @@ func (im *InitializerManager) Initialize() error {
 	// 初始化服务注册（同步）
 	im.initServiceRegistry()
 
+	// 初始化 Redis（同步）
+	if err := im.initRedis(); err != nil {
+		logx.Errorf("Redis 初始化失败: %v", err)
+		// Redis 初始化失败不阻断应用启动
+	}
+
 	// 异步初始化 MySQL
 	go im.initMySQLWithRetry()
 
@@ -1810,6 +2263,39 @@ func (im *InitializerManager) initRabbitMQ() error {
 	}
 	im.rabbitMQManager = rabbitMQManager
 	return nil
+}
+
+func (im *InitializerManager) initRedis() error {
+	// 检查 Redis 配置是否有效
+	if im.config.Redis.Host == "" {
+		logx.Info("Redis 配置为空，跳过 Redis 初始化")
+		return nil
+	}
+
+	redisClient, err := im.createRedisClient()
+	if err != nil {
+		logx.Errorf("创建 Redis 客户端失败: %v", err)
+		return fmt.Errorf("创建 Redis 客户端失败: %v", err)
+	}
+	im.redisClient = redisClient
+	logx.Info("Redis 连接成功")
+	return nil
+}
+
+func (im *InitializerManager) createRedisClient() (*redis.Redis, error) {
+	// 使用 go-zero 的 Redis 客户端
+	redisClient, err := redis.NewRedis(im.config.Redis)
+	if err != nil {
+		return nil, err
+	}
+
+	// 测试连接
+	ok := redisClient.Ping()
+	if !ok {
+		return nil, err
+	}
+
+	return redisClient, nil
 }
 
 func (im *InitializerManager) initServiceRegistry() {
@@ -1841,6 +2327,9 @@ func (im *InitializerManager) initMySQLWithRetry() {
 		im.mysqlManager = mysqlManager
 		im.testCaseRepo = repository2.NewTestCaseRepository(mysqlManager.DB)
 		im.judgeCaseRepository = repository2.NewJudgeCaseRepository(mysqlManager.DB)
+
+		im.testCaseCacheRepo = repository2.NewCachedTestCaseRepository(mysqlManager.DB, im.redisClient)
+
 		logx.Info("MySQL 连接成功")
 		return
 	}
@@ -1878,12 +2367,20 @@ func (im *InitializerManager) GetMySQLManager() *database.MySQLManager {
 	return im.mysqlManager
 }
 
+func (im *InitializerManager) GetRedisClient() *redis.Redis {
+	return im.redisClient
+}
+
 func (im *InitializerManager) GetRabbitMQManager() *mq.RabbitMQManager {
 	return im.rabbitMQManager
 }
 
 func (im *InitializerManager) GetTestCaseRepo() repository2.TestCaseRepository {
 	return im.testCaseRepo
+}
+
+func (im *InitializerManager) GetTestCaseCacheRepo() repository2.TestCaseRepository {
+	return im.testCaseCacheRepo
 }
 
 func (im *InitializerManager) GetJudgeCaseRepo() repository2.JudgeCaseRepository {
@@ -1898,9 +2395,161 @@ func (im *InitializerManager) IsDBReady() bool {
 	return im.mysqlManager != nil && im.mysqlManager.IsReady()
 }
 
+func (im *InitializerManager) IsRedisReady() bool {
+	return im.redisClient != nil
+}
+
 
 文件: logic\common.go
 --------------------------------------------------
+// package logic
+
+// import (
+// 	"context"
+// 	"encoding/json"
+// 	"judge-service/internal/core"
+// 	"judge-service/internal/mq"
+// 	"judge-service/internal/svc"
+// 	"sync"
+// 	"time"
+
+// 	"github.com/streadway/amqp"
+// 	"github.com/zeromicro/go-zero/core/logx"
+// )
+
+// type CommonLogic struct {
+// 	ctx    context.Context
+// 	svcCtx *svc.ServiceContext
+// }
+
+// // 题目逻辑
+// func NewCommonLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CommonLogic {
+// 	return &CommonLogic{
+// 		ctx:    ctx,
+// 		svcCtx: svcCtx,
+// 	}
+// }
+
+// // 开始消费者
+// func (l *CommonLogic) StartConsumer() {
+// 	CommonChannel := l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel
+// 	// 声明队列（确保存在）
+// 	_, err := CommonChannel.QueueDeclare(
+// 		l.svcCtx.Config.RabbitMQ.Common.JudgeQueue,
+// 		true, false, false, false, nil,
+// 	)
+// 	if err != nil {
+// 		logx.Errorf("无法声明问题队列: %v", err)
+// 		return
+// 	}
+
+// 	// 设置预取计数，控制并发度
+// 	err = CommonChannel.Qos(
+// 		10,    // 预取计数，控制并发处理的消息数量
+// 		0,     // 预取大小，0表示无限制
+// 		false, // 全局设置，false表示只对当前channel有效
+// 	)
+// 	if err != nil {
+// 		logx.Errorf("设置Qos失败: %v", err)
+// 		return
+// 	}
+
+// 	msgs, err := CommonChannel.Consume(
+// 		l.svcCtx.Config.RabbitMQ.Common.JudgeQueue,
+// 		"", false, false, false, false, nil,
+// 	)
+// 	if err != nil {
+// 		logx.Errorf("注册题目消费者失败: %v", err)
+// 		return
+// 	}
+
+// 	logx.Info("题目消费者已成功启动")
+
+// 	var wg sync.WaitGroup
+// 	semaphore := make(chan struct{}, 10) // 控制并发数量的信号量
+
+// 	for d := range msgs {
+// 		semaphore <- struct{}{} // 获取信号量
+// 		wg.Add(1)
+
+// 		go func(delivery amqp.Delivery) {
+// 			defer wg.Done()
+// 			defer func() { <-semaphore }() // 释放信号量
+
+// 			l.processMessage(delivery)
+// 		}(d)
+// 	}
+
+// 	wg.Wait() // 等待所有处理完成
+// }
+
+// func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
+// 	defer func() {
+// 		if err := delivery.Ack(false); err != nil {
+// 			logx.Errorf("未能确认题目消息: %v", err)
+// 		}
+// 	}()
+
+// 	var judgeSubmit mq.JudgeRequest
+// 	if err := json.Unmarshal(delivery.Body, &judgeSubmit); err != nil {
+// 		logx.Errorf("解码 JSON 出错: %v", err)
+// 		return
+// 	}
+
+// 	workspace, result := core.NewWorkspace(l.ctx, l.svcCtx.Config, judgeSubmit, l.svcCtx)
+// 	if result != nil {
+// 		err := l.sendResultToMQ(result)
+// 		if err != nil {
+// 			logx.Errorf("发送结果到MQ失败: %v", err)
+// 		}
+// 		return
+// 	}
+
+// 	// 程序执行
+// 	judgeResponse := workspace.Execute()
+
+// 	// 如果正常会执行到这里
+// 	err := l.sendResultToMQ(judgeResponse)
+// 	if err != nil {
+// 		logx.Errorf("发送结果到MQ失败: %v", err)
+// 		err = workspace.Cleanup()
+// 		if err != nil {
+// 			logx.Errorf("删除工作空间失败: %v", err)
+// 		}
+// 		return
+// 	}
+
+// 	err = workspace.Cleanup()
+// 	if err != nil {
+// 		logx.Errorf("删除工作空间失败: %v", err)
+// 		return
+// 	}
+// }
+
+// func (l *CommonLogic) sendResultToMQ(result *mq.JudgeResponse) error {
+// 	body, err := json.Marshal(result)
+
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	exchange := l.svcCtx.Config.RabbitMQ.Common.ResultExchange
+// 	routingKey := l.svcCtx.Config.RabbitMQ.Common.ResultRoutingKey
+
+// 	err = l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel.Publish(
+// 		exchange,
+// 		routingKey,
+// 		false,
+// 		false,
+// 		amqp.Publishing{
+// 			ContentType: "application/json",
+// 			Body:        body,
+// 			Timestamp:   time.Now(),
+// 		},
+// 	)
+// 	return err
+// }
+
 package logic
 
 import (
@@ -1917,22 +2566,22 @@ import (
 )
 
 type CommonLogic struct {
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
+	ctx       context.Context
+	svcCtx    *svc.ServiceContext
+	semaphore chan struct{} // 控制并发数量的信号量
 }
 
-// 题目逻辑
 func NewCommonLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CommonLogic {
 	return &CommonLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		semaphore: make(chan struct{}, 20), // 控制并发数量
 	}
 }
 
-// 开始消费者
 func (l *CommonLogic) StartConsumer() {
 	CommonChannel := l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel
-	// 声明队列（确保存在）
+
 	_, err := CommonChannel.QueueDeclare(
 		l.svcCtx.Config.RabbitMQ.Common.JudgeQueue,
 		true, false, false, false, nil,
@@ -1942,11 +2591,11 @@ func (l *CommonLogic) StartConsumer() {
 		return
 	}
 
-	// 设置预取计数，控制并发度
+	// 增加预取计数，提高并发度
 	err = CommonChannel.Qos(
-		10,    // 预取计数，控制并发处理的消息数量
-		0,     // 预取大小，0表示无限制
-		false, // 全局设置，false表示只对当前channel有效
+		50, // 增加预取计数
+		0,
+		false,
 	)
 	if err != nil {
 		logx.Errorf("设置Qos失败: %v", err)
@@ -1965,24 +2614,28 @@ func (l *CommonLogic) StartConsumer() {
 	logx.Info("题目消费者已成功启动")
 
 	var wg sync.WaitGroup
-	semaphore := make(chan struct{}, 10) // 控制并发数量的信号量
 
 	for d := range msgs {
-		semaphore <- struct{}{} // 获取信号量
 		wg.Add(1)
+		l.semaphore <- struct{}{} // 获取信号量
 
 		go func(delivery amqp.Delivery) {
 			defer wg.Done()
-			defer func() { <-semaphore }() // 释放信号量
+			defer func() { <-l.semaphore }() // 释放信号量
 
 			l.processMessage(delivery)
 		}(d)
 	}
 
-	wg.Wait() // 等待所有处理完成
+	wg.Wait()
 }
 
+// 为每个消息创建独立的上下文，避免上下文取消影响其他处理
 func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
+	// 为每个消息创建独立的上下文
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
 	defer func() {
 		if err := delivery.Ack(false); err != nil {
 			logx.Errorf("未能确认题目消息: %v", err)
@@ -1995,10 +2648,10 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 		return
 	}
 
-	workspace, result := core.NewWorkspace(l.ctx, l.svcCtx.Config, judgeSubmit, l.svcCtx)
+	// 使用新的上下文创建工作空间
+	workspace, result := core.NewWorkspace(ctx, l.svcCtx.Config, judgeSubmit, l.svcCtx)
 	if result != nil {
-		err := l.sendResultToMQ(result)
-		if err != nil {
+		if err := l.sendResultToMQ(result); err != nil {
 			logx.Errorf("发送结果到MQ失败: %v", err)
 		}
 		return
@@ -2007,27 +2660,19 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 	// 程序执行
 	judgeResponse := workspace.Execute()
 
-	// 如果正常会执行到这里
-	err := l.sendResultToMQ(judgeResponse)
-	if err != nil {
+	// 发送结果
+	if err := l.sendResultToMQ(judgeResponse); err != nil {
 		logx.Errorf("发送结果到MQ失败: %v", err)
-		err = workspace.Cleanup()
-		if err != nil {
-			logx.Errorf("删除工作空间失败: %v", err)
-		}
-		return
 	}
 
-	err = workspace.Cleanup()
-	if err != nil {
+	// 清理工作空间
+	if err := workspace.Cleanup(); err != nil {
 		logx.Errorf("删除工作空间失败: %v", err)
-		return
 	}
 }
 
 func (l *CommonLogic) sendResultToMQ(result *mq.JudgeResponse) error {
 	body, err := json.Marshal(result)
-
 	if err != nil {
 		return err
 	}
@@ -2035,7 +2680,7 @@ func (l *CommonLogic) sendResultToMQ(result *mq.JudgeResponse) error {
 	exchange := l.svcCtx.Config.RabbitMQ.Common.ResultExchange
 	routingKey := l.svcCtx.Config.RabbitMQ.Common.ResultRoutingKey
 
-	err = l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel.Publish(
+	return l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel.Publish(
 		exchange,
 		routingKey,
 		false,
@@ -2046,7 +2691,6 @@ func (l *CommonLogic) sendResultToMQ(result *mq.JudgeResponse) error {
 			Timestamp:   time.Now(),
 		},
 	)
-	return err
 }
 
 
@@ -2796,6 +3440,11 @@ func (s *ServiceContext) CommonChannel() *amqp.Channel {
 func (s *ServiceContext) TestCaseRepo() repository2.TestCaseRepository {
 	return s.Initializer.GetTestCaseRepo()
 }
+
+func (s *ServiceContext) TestCaseCacheRepo() repository2.TestCaseRepository {
+	return s.Initializer.GetTestCaseCacheRepo()
+}
+
 func (s *ServiceContext) JudgeCaseRepo() repository2.JudgeCaseRepository {
 	return s.Initializer.GetJudgeCaseRepo()
 }

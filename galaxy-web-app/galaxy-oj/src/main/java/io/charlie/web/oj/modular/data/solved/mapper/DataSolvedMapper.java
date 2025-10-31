@@ -19,7 +19,7 @@ import java.util.Map;
  * @description 用户解决表 Mapper 接口
  */
 @Mapper
-//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface DataSolvedMapper extends BaseMapper<DataSolved> {
     /**
      * 获取全部题目(在解决表中有记录的题目)的详细通过率统计（包含题目数量）

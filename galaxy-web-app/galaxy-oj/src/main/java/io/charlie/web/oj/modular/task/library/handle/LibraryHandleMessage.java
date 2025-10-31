@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
+import io.charlie.web.oj.modular.task.library.DTO.Library;
 import io.charlie.web.oj.modular.task.library.mq.LibraryQueueProperties;
 import io.charlie.web.oj.utils.similarity.utils.CodeTokenUtil;
 import io.charlie.web.oj.utils.similarity.utils.TokenDetail;
@@ -14,6 +15,8 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Date;
 
 /**
  * @author ZhangJiangHu
@@ -31,21 +34,19 @@ public class LibraryHandleMessage {
 
     private final CodeTokenUtil codeTokenUtil;
 
-    public void sendLibrary(DataSubmit dataSubmit) {
-        log.info("发送消息：{}", JSONUtil.toJsonStr(dataSubmit));
+    public void sendLibrary(Library dataSubmit) {
         rabbitTemplate.convertAndSend(
                 libraryQueueProperties.getCommon().getExchange(),
                 libraryQueueProperties.getCommon().getRoutingKey(),
                 dataSubmit
         );
-        log.info("发送消息成功");
+        log.info("发送样本库消息成功");
     }
 
     @Transactional
     @RabbitListener(queues = "${oj.mq.library.common.queue}", concurrency = "5-10")
-    public void receiveJudge(DataSubmit submit) {
+    public void receiveJudge(Library submit) {
         TokenDetail tokensDetail = codeTokenUtil.getCodeTokensDetail(submit.getLanguage().toLowerCase(), submit.getCode());
-        log.info("代码库克隆检测 -> 语言 {} 获取代码Token {}", submit.getLanguage(), JSONUtil.toJsonStr(tokensDetail.getTokens()));
 
         if (submit.getIsSet()) {
             LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
@@ -58,12 +59,12 @@ public class LibraryHandleMessage {
             if (dataLibraryMapper.exists(queryWrapper)) {
                 log.info("存在记录，执行更新");
                 DataLibrary library = dataLibraryMapper.selectOne(queryWrapper);
-                library.setSubmitId(submit.getId());
-                library.setSubmitTime(submit.getCreateTime());
+                library.setSubmitId(submit.getSubmitId());
+                library.setSubmitTime(new Date());
 
                 // 如果代码长度和原本的代码长度不一致，则更新代码
-                if (!library.getCodeLength().equals(submit.getCodeLength())) {
-                    library.setCodeLength(submit.getCodeLength());
+                if (!library.getCodeLength().equals(submit.getCode().length())) {
+                    library.setCodeLength(submit.getCode().length());
                     library.setCode(submit.getCode());
                     library.setCodeToken(tokensDetail.getTokens());
                     library.setCodeTokenName(tokensDetail.getTokenNames());
@@ -81,15 +82,15 @@ public class LibraryHandleMessage {
                 library.setSetId(submit.getIsSet() ? submit.getSetId() : null);
                 library.setProblemId(submit.getProblemId());
                 library.setLanguage(submit.getLanguage());
-                library.setSubmitId(submit.getId());
-                library.setSubmitTime(submit.getCreateTime());
+                library.setSubmitId(submit.getSubmitId());
+                library.setSubmitTime(new Date());
                 library.setCode(submit.getCode());
 
                 library.setCodeToken(tokensDetail.getTokens());
                 library.setCodeTokenName(tokensDetail.getTokenNames());
                 library.setCodeTokenTexts(tokensDetail.getTokenTexts());
 
-                library.setCodeLength(submit.getCodeLength());
+                library.setCodeLength(submit.getCode().length());
                 library.setIsSet(submit.getIsSet());
                 library.setAccessCount(0);
 
@@ -105,10 +106,10 @@ public class LibraryHandleMessage {
             if (dataLibraryMapper.exists(queryWrapper)) {
                 log.info("存在记录，执行更新");
                 DataLibrary library = dataLibraryMapper.selectOne(queryWrapper);
-                library.setSubmitId(submit.getId());
-                library.setSubmitTime(submit.getCreateTime());
+                library.setSubmitId(submit.getSubmitId());
+                library.setSubmitTime(new Date());
 
-                library.setCodeLength(submit.getCodeLength());
+                library.setCodeLength(submit.getCode().length());
                 library.setCode(submit.getCode());
 
                 library.setCodeToken(tokensDetail.getTokens());
@@ -127,20 +128,22 @@ public class LibraryHandleMessage {
                 library.setSetId(submit.getIsSet() ? submit.getSetId() : null);
                 library.setProblemId(submit.getProblemId());
                 library.setLanguage(submit.getLanguage());
-                library.setSubmitId(submit.getId());
-                library.setSubmitTime(submit.getCreateTime());
+                library.setSubmitId(submit.getSubmitId());
+                library.setSubmitTime(new Date());
                 library.setCode(submit.getCode());
 
                 library.setCodeToken(tokensDetail.getTokens());
                 library.setCodeTokenName(tokensDetail.getTokenNames());
                 library.setCodeTokenTexts(tokensDetail.getTokenTexts());
 
-                library.setCodeLength(submit.getCodeLength());
+                library.setCodeLength(submit.getCode().length());
                 library.setIsSet(submit.getIsSet());
                 library.setAccessCount(0);
 
                 dataLibraryMapper.insert(library);
             }
         }
+
+        log.info("样本库处理完成");
     }
 }

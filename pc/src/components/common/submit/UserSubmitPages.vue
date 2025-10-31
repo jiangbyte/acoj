@@ -53,7 +53,7 @@ const columns: DataTableColumns<any> = [
   //   key: 'problemIdName',
   // },
   {
-    title: '编程语言',
+    title: '语言',
     key: 'languageName',
     render: (row) => {
       return h(NTag, { size: 'small' }, { default: () => row.languageName })
@@ -103,13 +103,13 @@ const columns: DataTableColumns<any> = [
         : 'success' }, { default: () => row.statusName })
     },
   },
-  {
-    title: '相似度',
-    key: 'similarity',
-    render: (row) => {
-      return h(NTag, { size: 'small' }, { default: () => row.similarity * 100 })
-    },
-  },
+  // {
+  //   title: '相似度',
+  //   key: 'similarity',
+  //   render: (row) => {
+  //     return h(NTag, { size: 'small' }, { default: () => row.similarity * 100 })
+  //   },
+  // },
   // {
   //   title: '检测任务',
   //   key: 'taskId',
@@ -212,7 +212,7 @@ function rowProps(row: any) {
       :bordered="false"
       :row-key="(row: any) => row.id"
       :row-props="rowProps"
-      scroll-x="700"
+      scroll-x="550"
       class="flex-1 h-full"
     />
     <n-flex justify="center">
@@ -227,7 +227,10 @@ function rowProps(row: any) {
         }))"
         :page-slot="3"
         @update:page="loadData"
-        @update:page-size="loadData"
+        @update:page-size="() => {
+          pageParam.current = 1
+          loadData()
+        }"
       />
     </n-flex>
 
@@ -235,7 +238,6 @@ function rowProps(row: any) {
       v-model:show="showModal"
       preset="card"
       title="提交详情"
-      :bordered="false"
       style="max-width: 700px;"
     >
       <n-scrollbar style="max-height: 500px">
@@ -247,7 +249,7 @@ function rowProps(row: any) {
           <JudgeResultStats :result-task-data="modalData" />
 
           <!-- 代码相似度 -->
-          <SimilarityReport v-if="modalData.submitType" :result-task-data="modalData" />
+          <!-- <SimilarityReport v-if="modalData.submitType" :result-task-data="modalData" /> -->
 
           <NSpace vertical :size="24">
             <n-card v-if="modalData?.message" size="small" class="rounded-xl">

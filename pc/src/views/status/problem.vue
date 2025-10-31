@@ -77,7 +77,7 @@ loadData()
 
             <!-- 判题结果详情 -->
             <JudgeResultStats :result-task-data="detailData" class="w-full" />
-            <n-space v-if="detailData?.submitType" vertical class="w-full mt-4" :size="16">
+            <!-- <n-space v-if="detailData?.submitType" vertical class="w-full mt-4" :size="16">
               <n-space align="center" justify="space-between">
                 <n-text>代码相似度</n-text>
                 <n-space align="center">
@@ -97,7 +97,7 @@ loadData()
               <n-alert type="info" show-icon>
                 代码克隆检测用于辅助判断代码相似度，结果仅供参考
               </n-alert>
-            </n-space>
+            </n-space> -->
           </n-card>
         </NSpace>
       </n-gi>

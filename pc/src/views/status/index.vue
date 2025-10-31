@@ -164,23 +164,23 @@ const columns: DataTableColumns<any> = [
       return h(NTag, { size: 'small' }, { default: () => row.maxMemory })
     },
   },
-  {
-    title: '相似度(%)',
-    key: 'similarity',
-    width: 80,
-    render: (row) => {
-      return h(NTag, { size: 'small' }, { default: () => row.similarity * 100 })
-    },
-  },
-  {
-    title: '行为标记',
-    key: 'similarityCategoryName',
-    ellipsis: true,
-    width: 80,
-    render: (row) => {
-      return row.similarityCategoryName ? row.similarityCategoryName : '未触发'
-    },
-  },
+  // {
+  //   title: '相似度(%)',
+  //   key: 'similarity',
+  //   width: 80,
+  //   render: (row) => {
+  //     return h(NTag, { size: 'small' }, { default: () => row.similarity * 100 })
+  //   },
+  // },
+  // {
+  //   title: '行为标记',
+  //   key: 'similarityCategoryName',
+  //   ellipsis: true,
+  //   width: 80,
+  //   render: (row) => {
+  //     return row.similarityCategoryName ? row.similarityCategoryName : '未触发'
+  //   },
+  // },
   // {
   //   title: '检测任务',
   //   key: 'taskId',
@@ -348,7 +348,7 @@ function rowProps(row: any) {
               class="flex-1 h-full"
               :row-props="rowProps"
               :loading="isLoading"
-              :scroll-x="1400"
+              :scroll-x="1200"
             />
             <template #footer>
               <n-pagination
@@ -363,7 +363,10 @@ function rowProps(row: any) {
                 :page-slot="3"
                 class="flex justify-center items-center p-6"
                 @update:page="loadData"
-                @update:page-size="loadData"
+                @update:page-size="() => {
+                  pageParam.current = 1
+                  loadData()
+                }"
               />
             </template>
           </n-card>

@@ -18,7 +18,7 @@ import java.util.List;
  * @description 题目表 Mapper 接口
  */
 @Mapper
-//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface DataProblemMapper extends BaseMapper<DataProblem> {
     /**
      * 按提交人数排行的题目 Top N 查询（包含排名）

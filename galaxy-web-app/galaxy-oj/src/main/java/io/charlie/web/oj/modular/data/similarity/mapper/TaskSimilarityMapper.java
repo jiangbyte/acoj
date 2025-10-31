@@ -1,9 +1,11 @@
 package io.charlie.web.oj.modular.data.similarity.mapper;
 
+import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.web.oj.modular.data.similarity.dto.CloneLevel;
 import io.charlie.web.oj.modular.data.similarity.dto.TaskReportStats;
 import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.CacheNamespace;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -17,7 +19,7 @@ import java.util.List;
 * @description 检测结果任务库 Mapper 接口
 */
 @Mapper
-//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface TaskSimilarityMapper extends BaseMapper<TaskSimilarity> {
     TaskReportStats selectSimilarityStats(String taskId, String problemId, String setId, int isSet);
 

@@ -12,10 +12,16 @@ const props = defineProps({
 
 <template>
   <div
-    class="w-10 h-10 rounded-full text-white flex items-center justify-center mr-3 text-1.6rem"
+    v-if="Number(props.rank) <= 100"
+    class="w-10 h-10 rounded-full text-white flex items-center justify-center mr-3 text-1.2rem"
     :style="{ backgroundColor: RankColorUtil.getColor(props.rank) }"
   >
     {{ RankColorUtil.getDisplayTextAPE(props.rank) }}
+  </div>
+  <div
+    v-else
+  >
+    未上榜
   </div>
 </template>
 

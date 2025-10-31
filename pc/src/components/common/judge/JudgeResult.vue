@@ -79,12 +79,12 @@ function refreshSimilarityData() {
         <!-- 判题结果详情 -->
         <JudgeResultStats :result-task-data="resultTaskData" />
 
-        <n-alert type="info">
+        <!-- <n-alert type="info">
           代码相似度可以稍后在状态中查看，或者稍等片刻点击 <n-button size="small" type="primary" @click="refreshSimilarityData">刷新</n-button>
-        </n-alert>
+        </n-alert> -->
 
         <!-- 代码相似度 -->
-        <SimilarityReport v-if="resultTaskData.submitType" :result-task-data="similarityData" />
+        <!-- <SimilarityReport v-if="resultTaskData.submitType" :result-task-data="similarityData" /> -->
 
         <!-- <n-card v-if="resultTaskData?.message" size="small" hoverable>
           <n-code :language="resultTaskData?.language" :code="resultTaskData?.message" show-line-numbers word-wrap />

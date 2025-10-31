@@ -18,7 +18,7 @@ import java.util.List;
 * @description 题集 Mapper 接口
 */
 @Mapper
-//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface DataSetMapper extends BaseMapper<DataSet> {
     @Select("""
      SELECT

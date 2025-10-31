@@ -238,7 +238,8 @@ CREATE TABLE `data_solved`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_user_problem_set`(`user_id` ASC, `problem_id` ASC, `set_id` ASC, `is_set` ASC) USING BTREE
+  UNIQUE INDEX `uk_user_problem_set`(`user_id` ASC, `problem_id` ASC, `set_id` ASC, `is_set` ASC) USING BTREE,
+  UNIQUE INDEX `uk_user_problem`(`user_id` ASC, `problem_id` ASC, `is_set` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户解决表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------

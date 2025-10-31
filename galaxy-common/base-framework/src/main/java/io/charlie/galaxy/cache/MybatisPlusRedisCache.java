@@ -2,20 +2,14 @@ package io.charlie.galaxy.cache;
 
 import cn.hutool.extra.spring.SpringUtil;
 import cn.hutool.json.JSONUtil;
-import io.charlie.galaxy.pojo.CommonEntity;
-import io.lettuce.core.dynamic.annotation.Command;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.cache.Cache;
-import org.dromara.core.trans.vo.TransPojo;
-import org.dromara.core.trans.vo.VO;
-import org.dromara.trans.service.impl.TransService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -27,6 +21,9 @@ public class MybatisPlusRedisCache implements Cache {
     private final String id;
     private RedisTemplate<String, Object> redisTemplate;
 
+    // 添加缓存时间配置（单位：分钟）
+    private final long expireTime = 60; // 默认1小时
+
     public MybatisPlusRedisCache(String id) {
         if (id == null) {
             throw new IllegalArgumentException("Cache instances require an ID");
@@ -36,42 +33,38 @@ public class MybatisPlusRedisCache implements Cache {
 
     @Override
     public String getId() {
-        log.info("获取缓存ID {}", this.id);
+//        log.warn("缓存ID {}", id);
         return this.id;
     }
 
     @Override
     public void putObject(Object key, Object value) {
-        log.info("缓存 {} {}", key, value);
+//        log.warn("缓存保存 {}", key);
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
 
-        Class<?> clazz = value.getClass();
-        System.out.println("类名: " + clazz.getName());
-        System.out.println("简单类名: " + clazz.getSimpleName());
-        if (value instanceof ArrayList<?> arrayList) {
-            System.out.println("列表元素类型: " + arrayList.getFirst().getClass().getName());
-        }
-
         if (value != null) {
-            redisTemplate.opsForValue().set(key.toString(), value, 1, TimeUnit.HOURS);
+            redisTemplate.opsForHash().put(id, key.toString(), value);
+            // 为整个缓存空间设置过期时间
+            redisTemplate.expire(id, expireTime, TimeUnit.MINUTES);
         }
     }
 
     @Override
     public Object getObject(Object key) {
-        log.info("获取缓存 {}", key);
+//        log.warn("缓存获取 {}", key);
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
 
         try {
             if (key != null) {
-                return redisTemplate.opsForValue().get(key.toString());
+                return redisTemplate.opsForHash().get(id, key.toString());
             }
         } catch (Exception e) {
             log.error("缓存获取出错 {}", e.getMessage());
+            // 发生异常时删除可能有问题的缓存
             redisTemplate.delete(key.toString());
         }
         return null;
@@ -79,7 +72,7 @@ public class MybatisPlusRedisCache implements Cache {
 
     @Override
     public Object removeObject(Object key) {
-        log.info("删除缓存 {}", key);
+//        log.warn("删除缓存 {}", key);
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
@@ -92,25 +85,35 @@ public class MybatisPlusRedisCache implements Cache {
 
     @Override
     public void clear() {
-        log.info("清空缓存");
+//        log.warn("清空缓存 {}", this.id);
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
 
-        Set<String> keys = redisTemplate.keys("*:" + this.id + "*");
-        if (!CollectionUtils.isEmpty(keys)) {
-            redisTemplate.delete(keys);
+        Set<Object> hashKeys = redisTemplate.opsForHash().keys(this.id);
+        if (!CollectionUtils.isEmpty(hashKeys)) {
+//            log.warn("删除Hash字段: {}", hashKeys);
+            Long deletedCount = redisTemplate.opsForHash().delete(this.id, hashKeys.toArray());
+            log.warn("删除字段数量: {}", deletedCount);
         }
     }
 
     @Override
     public int getSize() {
-        Set<String> keys = redisTemplate.keys("*:" + this.id + "*");
-        return keys != null ? keys.size() : 0;
+        log.warn("获取缓存大小");
+        if (redisTemplate == null) {
+            redisTemplate = SpringUtil.getBean("redisTemplate");
+        }
+        Long size = redisTemplate.opsForHash().size(id);
+        return size.intValue();
     }
 
     @Override
     public ReadWriteLock getReadWriteLock() {
         return this.readWriteLock;
+    }
+
+    private String getCacheKey(Object key) {
+        return key.toString();
     }
 }

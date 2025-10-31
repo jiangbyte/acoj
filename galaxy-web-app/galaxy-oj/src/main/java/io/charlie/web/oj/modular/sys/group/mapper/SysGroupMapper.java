@@ -16,7 +16,7 @@ import java.util.List;
 * @description 用户组表 Mapper 接口
 */
 @Mapper
-//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface SysGroupMapper extends BaseMapper<SysGroup> {
     /**
      * 查询用户组及其所有子组的ID列表（包含自身）

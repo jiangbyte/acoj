@@ -15,11 +15,14 @@ const totalRankingPageParam = ref({
   keyword: '',
 })
 
+const isLoading = ref(false)
 async function loadData() {
+  isLoading.value = true
   useUserRankingFetch().useUserRankingPage(totalRankingPageParam.value).then(({ data }) => {
     if (data) {
       totalRankingPageData.value = data
     }
+    isLoading.value = false
   })
 
   useUserRankingFetch().useUserActiveTop().then(({ data }) => {
@@ -186,7 +189,7 @@ function rowProps(row: any) {
               :bordered="false"
               :row-key="(row: any) => row.userId"
               :row-props="rowProps"
-              :loading="!totalRankingPageData?.records"
+              :loading="isLoading"
               class="flex-1 h-full"
             />
             <template #footer>
@@ -202,7 +205,10 @@ function rowProps(row: any) {
                 :page-slot="3"
                 class="flex justify-center items-center p-6"
                 @update:page="loadData"
-                @update:page-size="loadData"
+                @update:page-size="() => {
+                  totalRankingPageParam.current = 1
+                  loadData()
+                }"
               />
             </template>
           </n-card>

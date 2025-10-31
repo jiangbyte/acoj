@@ -432,42 +432,7 @@ export class RankColorUtil {
       return this.RANK_COLOR_MAP[rank]
     }
 
-    // 第4-10名使用渐变的蓝色系
-    if (rank <= 10) {
-      const blueShades = [
-        '#1890FF',
-        '#40A9FF',
-        '#69C0FF',
-        '#91D5FF',
-        '#BAE7FF',
-        '#1890FF',
-        '#40A9FF',
-        '#69C0FF',
-        '#91D5FF',
-        '#BAE7FF',
-      ]
-      return blueShades[rank - 1] || '#1890FF'
-    }
-
-    // 第11名及以后使用灰色系
-    if (rank <= 20) {
-      const grayShades = [
-        '#8C8C8C',
-        '#999999',
-        '#A6A6A6',
-        '#B3B3B3',
-        '#BFBFBF',
-        '#CCCCCC',
-        '#D9D9D9',
-        '#E6E6E6',
-        '#F0F0F0',
-        '#F5F5F5',
-      ]
-      return grayShades[rank - 11] || '#D9D9D9'
-    }
-
-    // 20名以后统一用浅灰色
-    return '#F5F5F5'
+    return '#60a5fa'
   }
 
   /**

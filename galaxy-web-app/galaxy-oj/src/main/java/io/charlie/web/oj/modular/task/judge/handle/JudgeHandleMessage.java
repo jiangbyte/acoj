@@ -16,6 +16,7 @@ import io.charlie.web.oj.modular.task.judge.dto.JudgeResultDto;
 import io.charlie.web.oj.modular.task.judge.dto.JudgeSubmitDto;
 import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import io.charlie.web.oj.modular.task.judge.mq.JudgeQueueProperties;
+import io.charlie.web.oj.modular.task.library.DTO.Library;
 import io.charlie.web.oj.modular.task.library.handle.LibraryHandleMessage;
 import io.charlie.web.oj.modular.task.similarity.handle.SimilarityHandleMessage;
 import io.charlie.web.oj.modular.task.similarity.msg.SimilarityMessage;
@@ -27,6 +28,8 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author ZhangJiangHu
@@ -41,16 +44,11 @@ public class JudgeHandleMessage {
     private final RabbitTemplate rabbitTemplate;
     private final DataSubmitMapper dataSubmitMapper;
     private final DataSolvedMapper dataSolvedMapper;
-    private final SimilarityHandleMessage similarityHandleMessage;
     private final LibraryHandleMessage libraryHandleMessage;
 
     private final UserActivityService userActivityService;
 
     private final JudgeQueueProperties judgeQueueProperties;
-
-    private final CodeTokenUtil codeTokenUtil;
-    private final DataProblemMapper dataProblemMapper;
-
 
     public void sendJudge(JudgeSubmitDto judgeSubmitDto) {
         log.info("发送消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
@@ -65,45 +63,82 @@ public class JudgeHandleMessage {
     @Transactional
     @RabbitListener(queues = "${oj.mq.judge.result.queue}", concurrency = "10-20")
     public void receiveJudge(JudgeResultDto judgeResultDto) {
-        log.info("接收到消息：{}", JSONUtil.toJsonStr(judgeResultDto));
+        log.info("接收到判题结果消息：id={}, status={}",
+                judgeResultDto.getId(), judgeResultDto.getStatus());
 
-        // 核心数据库更新
-        DataSubmit dataSubmit = dataSubmitMapper.selectById(judgeResultDto.getId());
-        BeanUtil.copyProperties(judgeResultDto, dataSubmit);
-        dataSubmit.setIsFinish(Boolean.TRUE); // 流转结束
-        dataSubmitMapper.updateById(dataSubmit);
+        // 1. 更新提交记录
+        String s = updateSubmitRecord(judgeResultDto);
 
-        // 正式提交
-        if (judgeResultDto.getSubmitType()) {
-            // ac情况
-            if (JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus())) {
-                log.info("正式提交 AC，进行额外处理");
-                userActivityService.addActivity(judgeResultDto.getUserId(), ActivityScoreCalculator.SUBMIT, true);
-                handleAdditionalTasks(judgeResultDto, dataSubmit);
-            } else {
-                // 非 ac 情况
-                log.info("非 AC 提交，不进行额外处理");
-            }
-        } else {
-            // 测试提交
-            log.info("测试提交，不进行额外处理");
+        // 2. 根据提交类型处理业务逻辑
+        processBusinessLogic(judgeResultDto, s);
+    }
+
+    /**
+     * 处理业务逻辑
+     */
+    private void processBusinessLogic(JudgeResultDto judgeResultDto, String id) {
+        if (!judgeResultDto.getSubmitType()) {
+            log.debug("测试提交，跳过业务处理：id={}", judgeResultDto.getId());
+            return;
         }
+
+        if (JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus())) {
+            log.info("正式提交 AC，进行额外处理：id={}", judgeResultDto.getId());
+            handleAcceptedSubmission(judgeResultDto, id);
+        } else {
+            log.debug("非AC正式提交：id={}, status={}", judgeResultDto.getId(), judgeResultDto.getStatus());
+        }
+    }
+
+    /**
+     * 处理AC提交的额外任务
+     */
+    private void handleAcceptedSubmission(JudgeResultDto judgeResultDto, String sid) {
+        // 异步处理耗时操作，避免阻塞消息消费
+        CompletableFuture.runAsync(() -> {
+            try {
+                // 添加用户活动
+                userActivityService.addActivity(judgeResultDto.getUserId(),
+                        ActivityScoreCalculator.SUBMIT, true);
+                // 处理额外任务
+                handleAdditionalTasks(judgeResultDto, sid);
+            } catch (Exception e) {
+                log.error("处理AC提交额外任务失败：userId={}", judgeResultDto.getUserId(), e);
+            }
+        });
+    }
+
+    /**
+     * 更新提交记录
+     */
+    private String updateSubmitRecord(JudgeResultDto judgeResultDto) {
+        DataSubmit dataSubmit = dataSubmitMapper.selectById(judgeResultDto.getId());
+        if (dataSubmit == null) {
+            log.warn("未找到对应的提交记录：id={}", judgeResultDto.getId());
+            return null;
+        }
+
+        BeanUtil.copyProperties(judgeResultDto, dataSubmit);
+        dataSubmit.setIsFinish(Boolean.TRUE);
+        dataSubmitMapper.updateById(dataSubmit);
+        log.info("更新提交记录成功：id={}", judgeResultDto.getId());
+
+        return dataSubmit.getId();
     }
 
     /**
      * 异步处理附加任务
      */
-    public void handleAdditionalTasks(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
+    public void handleAdditionalTasks(JudgeResultDto judgeResultDto, String id) {
         try {
             log.info("开始处理正式提交的附加任务");
             updateSolved(judgeResultDto);
 
-            // library 保存
-            BeanUtil.copyProperties(judgeResultDto, dataSubmit);
-            libraryHandleMessage.sendLibrary(dataSubmit);
-
-            // similarity 异步任务
-            similarityTask(judgeResultDto, dataSubmit);
+            if (id != null) {
+                Library library = BeanUtil.copyProperties(judgeResultDto, Library.class);
+                library.setSubmitId(id);
+                libraryHandleMessage.sendLibrary(library);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             log.error("异步处理附加任务失败：{}", e.getMessage());
@@ -129,33 +164,5 @@ public class JudgeHandleMessage {
                     .set(DataSolved::getSolved, Boolean.TRUE)
             );
         }
-    }
-
-    public void similarityTask(JudgeResultDto judgeResultDto, DataSubmit dataSubmit) {
-        // 相似度检测
-        String taskId = IdUtil.objectId();
-        dataSubmitMapper.update(new LambdaUpdateWrapper<DataSubmit>().eq(DataSubmit::getId, judgeResultDto.getId()).set(DataSubmit::getTaskId, taskId));
-
-        // 方法
-        DataProblem dataProblem = dataProblemMapper.selectById(dataSubmit.getProblemId());
-        TokenDetail codeTokensDetail = codeTokenUtil.getCodeTokensDetail(judgeResultDto.getLanguage().toLowerCase(), judgeResultDto.getCode());
-
-        SimilarityMessage similarityMessage = new SimilarityMessage();
-        similarityMessage.setTaskId(taskId);
-        similarityMessage.setSubmitId(dataSubmit.getId());
-        similarityMessage.setSetId(dataSubmit.getSetId());
-        similarityMessage.setProblemId(dataSubmit.getProblemId());
-        similarityMessage.setIsSet(judgeResultDto.getIsSet());
-        similarityMessage.setLanguage(judgeResultDto.getLanguage());
-        similarityMessage.setThreshold(dataProblem.getThreshold());
-        similarityMessage.setTaskType(Boolean.FALSE);
-        similarityMessage.setCode(judgeResultDto.getCode());
-        similarityMessage.setCodeLength(judgeResultDto.getCode().length());
-        similarityMessage.setMinMatchLength(5);
-        similarityMessage.setCodeTokens(codeTokensDetail.getTokens());
-        similarityMessage.setCodeTokenNames(codeTokensDetail.getTokenNames());
-        similarityMessage.setCodeTokenTexts(codeTokensDetail.getTokenTexts());
-        similarityMessage.setUserId(dataSubmit.getUserId());
-        similarityHandleMessage.sendSimilarity(similarityMessage);
     }
 }
