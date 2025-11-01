@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -39,6 +40,7 @@ import java.util.*;
 public class SysArticleServiceImpl extends ServiceImpl<SysArticleMapper, SysArticle> implements SysArticleService {
 
     @Override
+    @DS("slave")
     public Page<SysArticle> page(SysArticlePageParam sysArticlePageParam) {
         QueryWrapper<SysArticle> queryWrapper = new QueryWrapper<SysArticle>().checkSqlInjection();
         // 关键字
@@ -90,6 +92,7 @@ public class SysArticleServiceImpl extends ServiceImpl<SysArticleMapper, SysArti
     }
 
     @Override
+    @DS("slave")
     public SysArticle detail(SysArticleIdParam sysArticleIdParam) {
         SysArticle sysArticle = this.getById(sysArticleIdParam.getId());
         if (ObjectUtil.isEmpty(sysArticle)) {

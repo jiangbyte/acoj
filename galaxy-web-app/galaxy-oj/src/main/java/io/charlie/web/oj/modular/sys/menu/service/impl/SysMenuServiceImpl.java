@@ -6,6 +6,7 @@ import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -50,6 +51,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
 
     private final SysRoleMenuMapper sysRoleMenuMapper;
     @Override
+    @DS("slave")
     public Page<SysMenu> page(SysMenuPageParam sysMenuPageParam) {
         QueryWrapper<SysMenu> queryWrapper = new QueryWrapper<SysMenu>().checkSqlInjection();
 
@@ -116,6 +118,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     @Override
+    @DS("slave")
     public SysMenu detail(SysMenuIdParam sysMenuIdParam) {
         SysMenu sysMenu = this.getById(sysMenuIdParam.getId());
         if (ObjectUtil.isEmpty(sysMenu)) {
@@ -125,6 +128,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     @Override
+    @DS("slave")
     public List<SysMenu> menuTree() {
         List<SysMenu> menuList = this.list();
         if (ObjectUtil.isEmpty(menuList)) {
@@ -170,6 +174,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     @Override
+    @DS("slave")
     public List<SysMenu> authMenu() {
         List<String> accessibleMenuIds = dataScopeUtil.getDataScopeContext().getAccessibleMenuIds();
         if (accessibleMenuIds.isEmpty()) {
@@ -179,6 +184,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     @Override
+    @DS("slave")
     public void assignMenuPermission(SysMenuPermissionParam sysMenuPermissionParam) {
         SysMenu byId = this.getById(sysMenuPermissionParam.getId());
         byId.setExJson(sysMenuPermissionParam.getPermissions());

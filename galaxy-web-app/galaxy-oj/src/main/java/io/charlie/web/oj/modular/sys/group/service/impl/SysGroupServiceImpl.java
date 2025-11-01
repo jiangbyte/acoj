@@ -6,6 +6,7 @@ import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -49,6 +50,7 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
     private final SysUserMapper sysUserMapper;
 
     @Override
+    @DS("slave")
     public Page<SysGroup> page(SysGroupPageParam sysGroupPageParam) {
         QueryWrapper<SysGroup> queryWrapper = new QueryWrapper<SysGroup>().checkSqlInjection();
 
@@ -118,6 +120,7 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
     }
 
     @Override
+    @DS("slave")
     public SysGroup detail(SysGroupIdParam sysGroupIdParam) {
         SysGroup sysGroup = this.getById(sysGroupIdParam.getId());
         if (ObjectUtil.isEmpty(sysGroup)) {
@@ -127,6 +130,7 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
     }
 
     @Override
+    @DS("slave")
     public List<LabelOption<String>> options(SysGroupOptionParam sysGroupOptionParam) {
         QueryWrapper<SysGroup> queryWrapper = new QueryWrapper<SysGroup>().checkSqlInjection();
         // 关键字
@@ -137,6 +141,7 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
     }
 
     @Override
+    @DS("slave")
     public List<SysGroup> authTreeGroup(String keyword) {
         DataScopeContext dataScopeContext = dataScopeUtil.getDataScopeContext();
         List<String> accessibleGroupIds = dataScopeContext.getAccessibleGroupIds(); // 可访问的用户组ID列表
@@ -195,6 +200,7 @@ public class SysGroupServiceImpl extends ServiceImpl<SysGroupMapper, SysGroup> i
 
 
     @Override
+    @DS("slave")
     public List<SysGroup> subGroup(String groupId) {
         // 获得某个用户组下的所有用户组（包含该用户组本身）（扁平列表）
         // 如果传入为 null 或者 "" 则返回空

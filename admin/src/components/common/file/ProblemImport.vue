@@ -366,13 +366,20 @@ function handleTagUpdate(newValue: string[], option: any) {
           />
         </n-form-item-gi>
         <n-form-item-gi :span="12" label="阈值" path="threshold">
-          <NInputNumber
+          <!-- <NInputNumber
             v-model:value="formData.threshold"
             :min="0"
             :max="1.0"
             placeholder="请输入阈值"
             :step="0.1"
             :precision="1"
+          /> -->
+          <NSlider
+            v-model:value="formData.threshold"
+            :step="0.1"
+            :min="0.5"
+            :max="1.0"
+            :marks="{ 0.5: '0.5', 0.8: '0.8', 1.0: '1.0' }"
           />
         </n-form-item-gi>
         <n-form-item-gi :span="12" label="使用AI" path="useAi">

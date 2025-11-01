@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -37,6 +38,7 @@ import java.util.*;
 public class SysCategoryServiceImpl extends ServiceImpl<SysCategoryMapper, SysCategory> implements SysCategoryService {
 
     @Override
+    @DS("slave")
     public Page<SysCategory> page(SysCategoryPageParam sysCategoryPageParam) {
         QueryWrapper<SysCategory> queryWrapper = new QueryWrapper<SysCategory>().checkSqlInjection();
         // 关键字
@@ -86,6 +88,7 @@ public class SysCategoryServiceImpl extends ServiceImpl<SysCategoryMapper, SysCa
     }
 
     @Override
+    @DS("slave")
     public SysCategory detail(SysCategoryIdParam sysCategoryIdParam) {
         SysCategory sysCategory = this.getById(sysCategoryIdParam.getId());
         if (ObjectUtil.isEmpty(sysCategory)) {
@@ -95,6 +98,7 @@ public class SysCategoryServiceImpl extends ServiceImpl<SysCategoryMapper, SysCa
     }
 
     @Override
+    @DS("slave")
     public List<LabelOption<String>> options(SysCategoryOptionParam sysCategoryOptionParam) {
         QueryWrapper<SysCategory> queryWrapper = new QueryWrapper<SysCategory>().checkSqlInjection();
         // 关键字

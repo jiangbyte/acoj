@@ -5,6 +5,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -54,6 +55,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     private final SysRoleMenuMapper sysRoleMenuMapper;
 
     @Override
+    @DS("slave")
     public Page<SysRole> page(SysRolePageParam sysRolePageParam) {
         QueryWrapper<SysRole> queryWrapper = new QueryWrapper<SysRole>().checkSqlInjection();
 
@@ -127,6 +129,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @DS("slave")
     public SysRole detail(SysRoleIdParam sysRoleIdParam) {
         SysRole sysRole = this.getById(sysRoleIdParam.getId());
         if (ObjectUtil.isEmpty(sysRole)) {
@@ -137,6 +140,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @DS("slave")
     public List<SysRole> authRoles() {
         List<String> accessibleRoleIds = dataScopeUtil.getDataScopeContext().getAccessibleRoleIds();
         if (accessibleRoleIds.isEmpty()) {
@@ -146,6 +150,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @DS("slave")
     public List<SysRole> authRoles1() {
         List<String> accessibleRoleIds = dataScopeUtil.getDataScopeContext().getAccessibleRoleIds();
         if (accessibleRoleIds.isEmpty()) {
@@ -155,6 +160,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @DS("slave")
     public List<String> getRoleNamesByUserId(String userId) {
         List<SysUserRole> sysUserRoles = sysUserRoleMapper.selectList(new LambdaQueryWrapper<SysUserRole>()
                 .eq(SysUserRole::getUserId, userId)

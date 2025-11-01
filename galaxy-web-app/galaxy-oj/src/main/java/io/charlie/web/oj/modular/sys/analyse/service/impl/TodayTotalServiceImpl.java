@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.analyse.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
@@ -23,6 +24,7 @@ import java.util.Date;
  */
 @Service
 @RequiredArgsConstructor
+@DS("slave")
 public class TodayTotalServiceImpl implements TodayTotalService {
     private final DataSubmitMapper dataSubmitMapper;
     private final SysUserMapper sysUserMapper;

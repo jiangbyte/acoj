@@ -1,9 +1,7 @@
 package io.charlie.web.oj.modular.sys.conversation.mapper;
 
-import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.web.oj.modular.sys.conversation.entity.SysConversation;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.apache.ibatis.annotations.CacheNamespace;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

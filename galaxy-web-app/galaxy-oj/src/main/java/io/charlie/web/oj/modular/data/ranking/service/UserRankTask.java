@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.ranking.service;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.web.oj.modular.data.ranking.param.RankingPageParam;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@DS("slave")
 public class UserRankTask {
 
     @Autowired

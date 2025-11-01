@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -49,6 +50,7 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
     private final DataSetMapper dataSetMapper;
 
     @Override
+    @DS("slave")
     public Page<SysBanner> page(SysBannerPageParam sysBannerPageParam) {
         QueryWrapper<SysBanner> queryWrapper = new QueryWrapper<SysBanner>().checkSqlInjection();
         // 关键字
@@ -98,6 +100,7 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
     }
 
     @Override
+    @DS("slave")
     public SysBanner detail(SysBannerIdParam sysBannerIdParam) {
         SysBanner sysBanner = this.getById(sysBannerIdParam.getId());
         if (ObjectUtil.isEmpty(sysBanner)) {
@@ -107,6 +110,7 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
     }
 
     @Override
+    @DS("slave")
     public List<SysBanner> latestN(int n) {
         return this.list(new QueryWrapper<SysBanner>().checkSqlInjection()
                 .lambda()
@@ -127,6 +131,7 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
     }
 
     @Override
+    @DS("slave")
     public List<SysBannerJumpTargetResult> jumpTargetList(SysBannerJumpTargetParam sysBannerJumpTargetParam) {
         String jumpModule = sysBannerJumpTargetParam.getJumpModule();
         String keyword = sysBannerJumpTargetParam.getKeyword();

@@ -2,12 +2,12 @@ package io.charlie.web.oj.modular.sys.conversation.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import io.charlie.web.oj.modular.llm.param.ChatRequest;
 import io.charlie.web.oj.modular.sys.conversation.entity.SysConversation;
-import io.charlie.web.oj.modular.sys.conversation.param.SysConversationAddParam;
-import io.charlie.web.oj.modular.sys.conversation.param.SysConversationEditParam;
 import io.charlie.web.oj.modular.sys.conversation.param.SysConversationIdParam;
 import io.charlie.web.oj.modular.sys.conversation.param.SysConversationPageParam;
+import io.charlie.web.oj.modular.llm.param.ChatRequest;
+import io.charlie.web.oj.modular.sys.conversation.param.SysConversationAddParam;
+import io.charlie.web.oj.modular.sys.conversation.param.SysConversationEditParam;
 
 import java.util.List;
 

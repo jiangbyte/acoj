@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.submit.mapper;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -22,6 +23,7 @@ public interface DataSubmitMapper extends BaseMapper<DataSubmit> {
     /**
      * 按状态统计提交数量
      */
+    @DS("slave")
     @Select("SELECT status, COUNT(*) as count FROM data_submit WHERE deleted = 0 AND is_set = 0 GROUP BY status")
     List<JudgeStatusCountDTO> countByStatus();
 }

@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.problem.mapper;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -39,6 +40,7 @@ public interface DataProblemMapper extends BaseMapper<DataProblem> {
 //                ORDER BY COALESCE(ds.submit_count, 0) DESC
 //                LIMIT #{topN}
 //            """)
+    @DS("slave")
     @Select("""
         SELECT 
             dp.*,
@@ -58,6 +60,7 @@ public interface DataProblemMapper extends BaseMapper<DataProblem> {
     List<DataProblem> selectTopNBySubmitCount(@Param("topN") Integer topN);
 
 
+    @DS("slave")
     @Select("SELECT " +
             "difficulty, " +
             "COUNT(*) as count, " +

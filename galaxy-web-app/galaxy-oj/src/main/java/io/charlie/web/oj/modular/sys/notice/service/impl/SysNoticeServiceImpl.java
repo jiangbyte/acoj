@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -40,6 +41,7 @@ import java.util.*;
 public class SysNoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice> implements SysNoticeService {
 
     @Override
+    @DS("slave")
     public Page<SysNotice> page(SysNoticePageParam sysNoticePageParam) {
         QueryWrapper<SysNotice> queryWrapper = new QueryWrapper<SysNotice>().checkSqlInjection();
         // 关键字
@@ -89,6 +91,7 @@ public class SysNoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice
     }
 
     @Override
+    @DS("slave")
     public SysNotice detail(SysNoticeIdParam sysNoticeIdParam) {
         SysNotice sysNotice = this.getById(sysNoticeIdParam.getId());
         if (ObjectUtil.isEmpty(sysNotice)) {
@@ -98,6 +101,7 @@ public class SysNoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice
     }
 
     @Override
+    @DS("slave")
     public List<SysNotice> latestN(int n) {
         return this.list(new QueryWrapper<SysNotice>().checkSqlInjection()
                 .lambda()
@@ -107,6 +111,7 @@ public class SysNoticeServiceImpl extends ServiceImpl<SysNoticeMapper, SysNotice
     }
 
     @Override
+    @DS("slave")
     public List<SysNotice> lists(int n) {
         return this.list(new QueryWrapper<SysNotice>().checkSqlInjection()
                 .lambda()

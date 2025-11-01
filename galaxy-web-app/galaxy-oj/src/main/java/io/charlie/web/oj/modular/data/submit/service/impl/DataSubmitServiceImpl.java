@@ -5,20 +5,17 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.context.DataScopeUtil;
-import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
-import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.set.mapper.DataSetMapper;
-import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.event.problem.ProblemSubmitEvent;
@@ -30,26 +27,18 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
-import io.charlie.web.oj.modular.data.testcase.service.DataTestCaseService;
-import io.charlie.web.oj.modular.task.judge.dto.JudgeSubmitDto;
 import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import io.charlie.web.oj.modular.task.judge.handle.JudgeHandleMessage;
-import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DeadlockLoserDataAccessException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -74,6 +63,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
+    @DS("slave")
     public Page<DataSubmit> page(DataSubmitPageParam dataSubmitPageParam) {
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
 
@@ -103,6 +93,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     }
 
     @Override
+    @DS("slave")
     public Page<DataSubmit> problemPage(DataSubmitPageParam dataSubmitPageParam) {
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
         queryWrapper.lambda().eq(DataSubmit::getIsSet, false);
@@ -139,6 +130,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     }
 
     @Override
+    @DS("slave")
     public Page<DataSubmit> setPage(DataSubmitPageParam dataSubmitPageParam) {
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
         queryWrapper.lambda().eq(DataSubmit::getIsSet, true);
@@ -202,6 +194,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     }
 
     @Override
+    @DS("slave")
     public DataSubmit detail(DataSubmitIdParam dataSubmitIdParam) {
         DataSubmit dataSubmit = this.getById(dataSubmitIdParam.getId());
         if (ObjectUtil.isEmpty(dataSubmit)) {
@@ -214,9 +207,18 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     @Override
     public String handleProblemSubmit(DataSubmitExeParam dataSubmitExeParam) {
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam, Boolean.FALSE);
-        CompletableFuture.runAsync(() -> applicationEventPublisher.publishEvent(
-                new ProblemSubmitEvent(dataSubmitExeParam, dataSubmit)
-        ));
+
+        // 事务提交后再发布事件
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        applicationEventPublisher.publishEvent(
+                                new ProblemSubmitEvent(dataSubmitExeParam, dataSubmit)
+                        );
+                    }
+                }
+        );
         return dataSubmit.getId();
     }
 
@@ -238,14 +240,24 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
 
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam, true);
 
-        CompletableFuture.runAsync(() -> applicationEventPublisher.publishEvent(
-                new SetSubmitEvent(dataSubmitExeParam, dataSubmit, dataSubmit.getSetId())
-        ));
+
+        // 事务提交后再发布事件
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        applicationEventPublisher.publishEvent(
+                                new SetSubmitEvent(dataSubmitExeParam, dataSubmit, dataSubmit.getSetId())
+                        );
+                    }
+                }
+        );
 
         return dataSubmit.getId();
     }
 
     @Override
+    @DS("slave")
     public List<StatusCount> countStatusStatistics() {
         List<JudgeStatusCountDTO> countList = this.baseMapper.countByStatus();
         return countList.stream()

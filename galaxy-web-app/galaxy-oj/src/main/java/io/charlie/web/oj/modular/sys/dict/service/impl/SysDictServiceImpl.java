@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -45,6 +46,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
     private final DictionaryTransService dictionaryTransService;
 
     @Override
+    @DS("slave")
     public Page<SysDict> page(SysDictPageParam sysDictPageParam) {
         QueryWrapper<SysDict> queryWrapper = new QueryWrapper<SysDict>().checkSqlInjection();
         if (ObjectUtil.isAllNotEmpty(sysDictPageParam.getSortField(), sysDictPageParam.getSortOrder()) && ISortOrderEnum.isValid(sysDictPageParam.getSortOrder())) {
@@ -116,6 +118,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
     }
 
     @Override
+    @DS("slave")
     public SysDict detail(SysDictIdParam sysDictIdParam) {
         SysDict sysDict = this.getById(sysDictIdParam.getId());
         if (ObjectUtil.isEmpty(sysDict)) {
@@ -125,6 +128,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
     }
 
     @Override
+    @DS("slave")
     public List<LabelOption<String>> options(String dictType) {
         if (GaStringUtil.isEmpty(dictType)) {
             return List.of();
@@ -139,6 +143,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
     }
 
     @Override
+    @DS("slave")
     public List<LabelOption<String>> listLabelOption(SysDictOptionParam sysDictOptionParam) {
         QueryWrapper<SysDict> queryWrapper = new QueryWrapper<SysDict>().checkSqlInjection();
         // 关键字
@@ -158,6 +163,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
     }
 
     @Override
+    @DS("slave")
     public List<LabelOption<String>> treeLabelOption(SysDictTreeParam sysDictTreeParam) {
         QueryWrapper<SysDict> queryWrapper = new QueryWrapper<SysDict>().checkSqlInjection();
         // 关键字
@@ -201,6 +207,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
     }
 
     @Override
+    @DS("slave")
     public List<SysDict> listByDictType(String dictType) {
         if (ObjectUtil.isEmpty(dictType)) {
             return List.of();
@@ -213,6 +220,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
 
 
     @PostConstruct
+    @DS("slave")
     public void initDictCache() {
         CompletableFuture.runAsync(() -> {
             log.info("开始异步初始化字典缓存...");
@@ -238,50 +246,8 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
             }
         });
     }
-//    public void initDictCache() {
-//        log.info("开始异步初始化字典缓存...");
-//
-//        try {
-//            // 一次性查询所有字典数据
-//            List<SysDict> allDicts = this.list();
-//
-//            // 按字典类型分组
-//            Map<String, List<SysDict>> dictsByType = allDicts.stream()
-//                    .collect(Collectors.groupingBy(SysDict::getDictType));
-//
-//            // 批量刷新缓存
-//            dictsByType.forEach((dictType, dictItems) -> {
-//                Map<String, String> transMap = dictItems.stream()
-//                        .collect(Collectors.toMap(SysDict::getDictValue, SysDict::getDictLabel));
-//                dictionaryTransService.refreshCache(dictType, transMap);
-//            });
-//
-//            log.info("字典缓存异步初始化完成，共初始化 {} 个字典类型", dictsByType.size());
-//        } catch (Exception e) {
-//            log.error("字典缓存初始化失败", e);
-//        }
-//    }
 
-////    @PostConstruct
-//    public void initDictCache() {
-//        // 查询所有启用的字典类型
-//        List<String> dictTypes = this.list(new LambdaQueryWrapper<SysDict>())
-//                .stream().map(SysDict::getDictType).toList();
-//
-//        for (String dictType : dictTypes) {
-//            // 查询该类型下的所有字典项
-//            List<SysDict> dictItems = this.list(new LambdaQueryWrapper<SysDict>()
-//                    .eq(SysDict::getDictType, dictType));
-//
-//            // 构建字典Map
-//            Map<String, String> transMap = dictItems.stream()
-//                    .collect(Collectors.toMap(SysDict::getDictValue, SysDict::getDictLabel));
-//
-//            // 刷新缓存
-//            dictionaryTransService.refreshCache(dictType, transMap);
-//        }
-//    }
-
+    @DS("slave")
     public void refreshDictCache(String dictType) {
         List<SysDict> dictItems = this.list(new LambdaQueryWrapper<SysDict>()
                 .eq(SysDict::getDictType, dictType));

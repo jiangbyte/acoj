@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -36,6 +37,7 @@ import java.util.*;
 public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig> implements SysConfigService {
 
     @Override
+    @DS("slave")
     public Page<SysConfig> page(SysConfigPageParam sysConfigPageParam) {
         QueryWrapper<SysConfig> queryWrapper = new QueryWrapper<SysConfig>().checkSqlInjection();
         // 关键字
@@ -65,6 +67,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     }
 
     @Override
+    @DS("slave")
     public List<SysConfig> listAll(SysConfigListParam sysConfigListParam) {
         QueryWrapper<SysConfig> queryWrapper = new QueryWrapper<SysConfig>().checkSqlInjection();
         // 关键字
@@ -104,6 +107,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     }
 
     @Override
+    @DS("slave")
     public SysConfig detail(SysConfigIdParam sysConfigIdParam) {
         SysConfig sysConfig = this.getById(sysConfigIdParam.getId());
         if (ObjectUtil.isEmpty(sysConfig)) {
@@ -113,6 +117,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
     }
 
     @Override
+    @DS("slave")
     public String getValueByCode(String code) {
         SysConfig sysConfig = this.getOne(new LambdaQueryWrapper<SysConfig>().eq(SysConfig::getCode, code));
         if (ObjectUtil.isNotEmpty(sysConfig)) {

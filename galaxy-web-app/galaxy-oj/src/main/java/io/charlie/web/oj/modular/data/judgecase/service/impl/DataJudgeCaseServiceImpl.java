@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -40,6 +41,7 @@ import java.util.*;
 public class DataJudgeCaseServiceImpl extends ServiceImpl<DataJudgeCaseMapper, DataJudgeCase> implements DataJudgeCaseService {
 
     @Override
+    @DS("slave")
     public Page<DataJudgeCase> page(DataJudgeCasePageParam dataJudgeCasePageParam) {
         QueryWrapper<DataJudgeCase> queryWrapper = new QueryWrapper<DataJudgeCase>().checkSqlInjection();
 
@@ -92,6 +94,7 @@ public class DataJudgeCaseServiceImpl extends ServiceImpl<DataJudgeCaseMapper, D
     }
 
     @Override
+    @DS("slave")
     public DataJudgeCase detail(DataJudgeCaseIdParam dataJudgeCaseIdParam) {
         DataJudgeCase dataJudgeCase = this.getById(dataJudgeCaseIdParam.getId());
         if (ObjectUtil.isEmpty(dataJudgeCase)) {

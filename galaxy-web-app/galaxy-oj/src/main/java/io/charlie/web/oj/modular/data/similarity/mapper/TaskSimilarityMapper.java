@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.similarity.mapper;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.web.oj.modular.data.similarity.dto.CloneLevel;
 import io.charlie.web.oj.modular.data.similarity.dto.TaskReportStats;
@@ -21,20 +22,25 @@ import java.util.List;
 @Mapper
 @CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface TaskSimilarityMapper extends BaseMapper<TaskSimilarity> {
+
+    @DS("slave")
     TaskReportStats selectSimilarityStats(String taskId, String problemId, String setId, int isSet);
 
+    @DS("slave")
     TaskReportStats selectSimilarityStatsByTaskId(String taskId);
 
     /**
      * 相似度分布查询 - 0-100分10个区间，返回数量数组
      * 返回格式: [0,0,1,2,5,6,5,4,8,1]
      */
+    @DS("slave")
     List<Integer> selectSimilarityDistribution(@Param("taskId") String taskId);
 
     /**
      * 程度统计查询 - 基于阈值
      * 返回每个可疑程度的统计信息
      */
+    @DS("slave")
     List<CloneLevel> selectDegreeStatistics(
             @Param("taskId") String taskId,
             @Param("threshold") BigDecimal threshold
@@ -43,6 +49,7 @@ public interface TaskSimilarityMapper extends BaseMapper<TaskSimilarity> {
     /**
      * 根据相似度获取所属程度
      */
+    @DS("slave")
     String getDegreeBySimilarity(
             @Param("similarity") BigDecimal similarity,
             @Param("threshold") BigDecimal threshold

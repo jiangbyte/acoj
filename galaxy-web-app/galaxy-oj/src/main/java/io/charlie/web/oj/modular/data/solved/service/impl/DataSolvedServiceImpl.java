@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -48,6 +49,7 @@ public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSol
     private final DataScopeUtil dataScopeUtil;
 
     @Override
+    @DS("slave")
     public Page<DataSolved> page(DataSolvedPageParam dataSolvedPageParam) {
         QueryWrapper<DataSolved> queryWrapper = new QueryWrapper<DataSolved>().checkSqlInjection();
 
@@ -104,6 +106,7 @@ public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSol
     }
 
     @Override
+    @DS("slave")
     public DataSolved detail(DataSolvedIdParam dataSolvedIdParam) {
         DataSolved dataSolved = this.getById(dataSolvedIdParam.getId());
         if (ObjectUtil.isEmpty(dataSolved)) {
@@ -116,6 +119,7 @@ public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSol
      * 获取系统整体通过率统计
      */
     @Override
+    @DS("slave")
     public ProblemOverallStats getProblemOverallStats() {
         try {
             Map<String, Object> stats = this.baseMapper.selectAllProblemAcceptanceStats();
@@ -193,6 +197,7 @@ public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSol
      * 获取批量题目的通过率统计
      */
     @Override
+    @DS("slave")
     public Map<String, ProblemStatistics> getBatchProblemStatistics(List<String> problemIds) {
         if (problemIds == null || problemIds.isEmpty()) {
             return Collections.emptyMap();
@@ -230,6 +235,7 @@ public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSol
     }
 
     @Override
+    @DS("slave")
     public Map<String, ProblemStatistics> getBatchSetProblemStatistics(String setId, List<String> problemIds) {
         if (problemIds == null || problemIds.isEmpty()) {
             return Collections.emptyMap();
@@ -267,6 +273,7 @@ public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSol
     }
 
     @Override
+    @DS("slave")
     public Map<String, SetStatistics> getBatchSetStatistics(List<String> setIds) {
         if (setIds == null || setIds.isEmpty()) {
             return Collections.emptyMap();

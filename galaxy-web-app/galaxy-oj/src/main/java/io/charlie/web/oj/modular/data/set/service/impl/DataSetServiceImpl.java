@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -46,7 +47,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -78,6 +78,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     private final TaskSimilarityMapper taskSimilarityMapper; // 相似度详情
 
     @Override
+    @DS("slave")
     public Page<DataSet> page(DataSetPageParam dataSetPageParam) {
         QueryWrapper<DataSet> queryWrapper = new QueryWrapper<DataSet>().checkSqlInjection();
         // 关键字
@@ -111,6 +112,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     }
 
     @Override
+    @DS("slave")
     public Page<DataSet> pageClient(DataSetPageParam dataSetPageParam) {
         QueryWrapper<DataSet> queryWrapper = new QueryWrapper<DataSet>().checkSqlInjection();
         queryWrapper.lambda().eq(DataSet::getIsVisible, Boolean.TRUE);
@@ -192,6 +194,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     }
 
     @Override
+    @DS("slave")
     public DataSet detail(DataSetIdParam dataSetIdParam) {
         DataSet dataSet = this.getById(dataSetIdParam.getId());
         if (ObjectUtil.isEmpty(dataSet)) {
@@ -202,6 +205,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     }
 
     @Override
+    @DS("slave")
     public List<DataSet> latestN(int n) {
         List<DataSet> list = this.list(new QueryWrapper<DataSet>().checkSqlInjection()
                 .lambda()
@@ -214,6 +218,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     }
 
     @Override
+    @DS("slave")
     public List<DataProblem> getSetProblem(DataSetProblemParam dataSetProblemParam) {
         List<String> problemIdsBySetId = dataSetProblemService.getProblemIdsBySetId(dataSetProblemParam.getId());
         if (ObjectUtil.isEmpty(problemIdsBySetId)) {
@@ -226,6 +231,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     }
 
     @Override
+    @DS("slave")
     public List<DataProblem> getSetProblemWithSearch(DataSetProblemSearchParam dataSetProblemParam) {
         List<String> problemIdsBySetId = dataSetProblemService.getProblemIdsBySetId(dataSetProblemParam.getId());
         if (ObjectUtil.isEmpty(problemIdsBySetId)) {
@@ -242,6 +248,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     }
 
     @Override
+    @DS("slave")
     public DataProblem getSetProblemDetail(DataSetProblemDetailParam dataSetProblemDetailParam) {
         List<String> problemIdsBySetId = dataSetProblemService.getProblemIdsBySetId(dataSetProblemDetailParam.getId());
         if (ObjectUtil.isEmpty(problemIdsBySetId)) {
@@ -263,6 +270,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     }
 
     @Override
+    @DS("slave")
     public List<DataSet> getHotN(int n) {
         List<DataSet> dataSets = this.baseMapper.selectTopNBySubmitCount(10);
         setBuildTool.buildSets(dataSets);
@@ -271,6 +279,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     }
 
     @Override
+    @DS("slave")
     public Page<SysUser> getSetUser(DataSetUserParam dataSetUserParam) {
         List<DataSubmit> dataSubmits = dataSubmitMapper.selectList(new LambdaQueryWrapper<DataSubmit>()
                 .eq(DataSubmit::getSetId, dataSetUserParam.getSetId())
@@ -305,6 +314,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     }
 
     @Override
+    @DS("slave")
     public List<LabelOption<String>> getSetProblemLanguages(DataSetProblemLanguageParam dataSetProblemLanguageParam) {
         if (ObjectUtil.isEmpty(dataSetProblemLanguageParam.getProblemIds())) {
             List<String> problemIdsBySetId = dataSetProblemService.getProblemIdsBySetId(dataSetProblemLanguageParam.getId());
@@ -357,6 +367,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     }
 
     @Override
+    @DS("slave")
     public List<DifficultyDistribution> difficultyDistribution() {
         long totalCount = this.count();
 

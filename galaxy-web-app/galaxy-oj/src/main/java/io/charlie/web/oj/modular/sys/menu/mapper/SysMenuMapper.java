@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.menu.mapper;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.web.oj.modular.sys.menu.entity.SysMenu;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -19,6 +20,7 @@ import java.util.List;
 @CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface SysMenuMapper extends BaseMapper<SysMenu> {
 
+    @DS("slave")
     @Select("SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(m.ex_json, '$[*]')) as permission " +
             "FROM sys_user_role ur " +
             "JOIN sys_role_menu rm ON ur.role_id = rm.role_id " +

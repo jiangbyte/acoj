@@ -2,7 +2,7 @@
 import { AesCrypto, Poller } from '@/utils'
 import { useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
 import type { DataTableColumns, ImageInst } from 'naive-ui'
-import { NAvatar, NButton, NSpace, NTag, NText, NTime } from 'naive-ui'
+import { NAvatar, NButton, NSpace, NEllipsis, NTag, NText, NTime } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 
 const route = useRoute()
@@ -67,6 +67,9 @@ const columns: DataTableColumns<any> = [
   {
     title: '题目',
     key: 'title',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: '分类',
@@ -133,7 +136,9 @@ const submitColumns: DataTableColumns<any> = [
   {
     title: '题目',
     key: 'problemIdName',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
     width: 120,
   },
   {
@@ -156,8 +161,12 @@ const submitColumns: DataTableColumns<any> = [
               {},
             ),
             h(
-              NText,
-              {},
+              NEllipsis,
+              {
+                style: {
+                  maxWidth: '90px',
+                },
+              },
               { default: () => row.userIdName },
             ),
           ],
@@ -222,23 +231,23 @@ const submitColumns: DataTableColumns<any> = [
       return h(NTag, { size: 'small' }, { default: () => row.maxMemory })
     },
   },
-  {
-    title: '相似度(%)',
-    key: 'similarity',
-    width: 80,
-    render: (row) => {
-      return h(NTag, { size: 'small' }, { default: () => row.similarity * 100 })
-    },
-  },
-  {
-    title: '行为标记',
-    key: 'similarityCategoryName',
-    ellipsis: true,
-    width: 80,
-    render: (row) => {
-      return row.similarityCategoryName ? row.similarityCategoryName : '未触发'
-    },
-  },
+  // {
+  //   title: '相似度(%)',
+  //   key: 'similarity',
+  //   width: 80,
+  //   render: (row) => {
+  //     return h(NTag, { size: 'small' }, { default: () => row.similarity * 100 })
+  //   },
+  // },
+  // {
+  //   title: '行为标记',
+  //   key: 'similarityCategoryName',
+  //   ellipsis: true,
+  //   width: 80,
+  //   render: (row) => {
+  //     return row.similarityCategoryName ? row.similarityCategoryName : '未触发'
+  //   },
+  // },
   // {
   //   title: '检测任务',
   //   key: 'taskId',
@@ -247,7 +256,7 @@ const submitColumns: DataTableColumns<any> = [
   {
     title: '提交时间',
     key: 'createTime',
-    width: 120,
+    width: 100,
     render(row: any) {
       return h(NTime, { time: row.createTime, type: 'relative' })
     },
@@ -255,7 +264,7 @@ const submitColumns: DataTableColumns<any> = [
   {
     title: '更新时间',
     key: 'updateTime',
-    width: 120,
+    width: 100,
     render(row: any) {
       return h(NTime, { time: row.createTime, type: 'relative' })
     },
@@ -287,8 +296,12 @@ const userColumns: DataTableColumns<any> = [
               {},
             ),
             h(
-              NText,
-              {},
+              NEllipsis,
+              {
+                style: {
+                  maxWidth: '90px',
+                },
+              },
               { default: () => row.nickname },
             ),
           ],
@@ -299,7 +312,9 @@ const userColumns: DataTableColumns<any> = [
   {
     title: '签名',
     key: 'quote',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
     width: 200,
   },
   {
@@ -319,7 +334,9 @@ const userColumns: DataTableColumns<any> = [
   {
     title: '邮箱',
     key: 'email',
-    ellipsis: true,
+    ellipsis: {
+      tooltip: true,
+    },
     width: 150,
   },
 ]
@@ -586,7 +603,7 @@ function onfinishTime() {
                       :bordered="false"
                       :row-key="(row: any) => row.id"
                       class="flex-1 h-full"
-                      :scroll-x="1000"
+                      :scroll-x="800"
                     />
                   </div>
                 </div>
@@ -599,7 +616,7 @@ function onfinishTime() {
                     :bordered="false"
                     :row-key="(row: any) => row.userId"
                     class="flex-1 h-full"
-                    :scroll-x="1400"
+                    :scroll-x="1200"
                   />
                 </div>
                 <n-pagination
@@ -625,7 +642,7 @@ function onfinishTime() {
                     :bordered="false"
                     :row-key="(row: any) => row.userId"
                     class="flex-1 h-full"
-                    :scroll-x="1400"
+                    :scroll-x="800"
                   />
                 </div>
                 <n-pagination

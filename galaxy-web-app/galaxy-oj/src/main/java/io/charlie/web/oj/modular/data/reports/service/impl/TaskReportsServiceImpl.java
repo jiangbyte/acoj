@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -45,6 +46,7 @@ public class TaskReportsServiceImpl extends ServiceImpl<TaskReportsMapper, TaskR
     private final DataProblemMapper dataProblemMapper;
 
     @Override
+    @DS("slave")
     public Page<TaskReports> page(TaskReportsPageParam taskReportsPageParam) {
         QueryWrapper<TaskReports> queryWrapper = new QueryWrapper<TaskReports>().checkSqlInjection();
         // 降序
@@ -92,6 +94,7 @@ public class TaskReportsServiceImpl extends ServiceImpl<TaskReportsMapper, TaskR
     }
 
     @Override
+    @DS("slave")
     public TaskReports detail(TaskReportsIdParam taskReportsIdParam) {
         TaskReports taskReports = this.getById(taskReportsIdParam.getId());
         if (ObjectUtil.isEmpty(taskReports)) {

@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -37,6 +38,7 @@ import java.util.*;
 public class SysTagServiceImpl extends ServiceImpl<SysTagMapper, SysTag> implements SysTagService {
 
     @Override
+    @DS("slave")
     public Page<SysTag> page(SysTagPageParam sysTagPageParam) {
         QueryWrapper<SysTag> queryWrapper = new QueryWrapper<SysTag>().checkSqlInjection();
         // 关键字
@@ -86,6 +88,7 @@ public class SysTagServiceImpl extends ServiceImpl<SysTagMapper, SysTag> impleme
     }
 
     @Override
+    @DS("slave")
     public SysTag detail(SysTagIdParam sysTagIdParam) {
         SysTag sysTag = this.getById(sysTagIdParam.getId());
         if (ObjectUtil.isEmpty(sysTag)) {
@@ -95,6 +98,7 @@ public class SysTagServiceImpl extends ServiceImpl<SysTagMapper, SysTag> impleme
     }
 
     @Override
+    @DS("slave")
     public List<LabelOption<String>> options(SysTagOptionParam sysTagOptionParam) {
         QueryWrapper<SysTag> queryWrapper = new QueryWrapper<SysTag>().checkSqlInjection();
         // 关键字

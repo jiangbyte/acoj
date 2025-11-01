@@ -5,20 +5,21 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.web.oj.modular.llm.param.ChatRequest;
 import io.charlie.web.oj.modular.sys.conversation.constant.MessageRole;
 import io.charlie.web.oj.modular.sys.conversation.entity.SysConversation;
-import io.charlie.web.oj.modular.sys.conversation.param.SysConversationAddParam;
-import io.charlie.web.oj.modular.sys.conversation.param.SysConversationEditParam;
+import io.charlie.web.oj.modular.sys.conversation.mapper.SysConversationMapper;
 import io.charlie.web.oj.modular.sys.conversation.param.SysConversationIdParam;
 import io.charlie.web.oj.modular.sys.conversation.param.SysConversationPageParam;
-import io.charlie.web.oj.modular.sys.conversation.mapper.SysConversationMapper;
 import io.charlie.web.oj.modular.sys.conversation.service.SysConversationService;
+import io.charlie.web.oj.modular.llm.param.ChatRequest;
+import io.charlie.web.oj.modular.sys.conversation.param.SysConversationAddParam;
+import io.charlie.web.oj.modular.sys.conversation.param.SysConversationEditParam;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
@@ -42,6 +43,7 @@ import java.util.*;
 public class SysConversationServiceImpl extends ServiceImpl<SysConversationMapper, SysConversation> implements SysConversationService {
 
     @Override
+    @DS("slave")
     public Page<SysConversation> page(SysConversationPageParam sysConversationPageParam) {
         QueryWrapper<SysConversation> queryWrapper = new QueryWrapper<SysConversation>().checkSqlInjection();
         if (ObjectUtil.isAllNotEmpty(sysConversationPageParam.getSortField(), sysConversationPageParam.getSortOrder()) && ISortOrderEnum.isValid(sysConversationPageParam.getSortOrder())) {
@@ -89,6 +91,7 @@ public class SysConversationServiceImpl extends ServiceImpl<SysConversationMappe
     }
 
     @Override
+    @DS("slave")
     public SysConversation detail(SysConversationIdParam sysConversationIdParam) {
         SysConversation sysConversation = this.getById(sysConversationIdParam.getId());
         if (ObjectUtil.isEmpty(sysConversation)) {
@@ -148,11 +151,13 @@ public class SysConversationServiceImpl extends ServiceImpl<SysConversationMappe
     }
 
     @Override
+    @DS("slave")
     public List<SysConversation> historyByConversationId(String conversationId) {
         return this.list(new LambdaQueryWrapper<SysConversation>().eq(SysConversation::getConversationId, conversationId));
     }
 
     @Override
+    @DS("slave")
     public Page<SysConversation> userHistorypage(SysConversationPageParam sysConversationPageParam) {
         QueryWrapper<SysConversation> queryWrapper = new QueryWrapper<SysConversation>().checkSqlInjection();
         if (StpUtil.isLogin()) {

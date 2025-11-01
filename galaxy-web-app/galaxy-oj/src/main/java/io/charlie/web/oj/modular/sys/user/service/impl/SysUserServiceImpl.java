@@ -6,6 +6,7 @@ import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -72,6 +73,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private final SysUserRoleMapper sysUserRoleMapper;
 
     @Override
+    @DS("slave")
     public Page<SysUser> page(SysUserPageParam sysUserPageParam) {
 
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<SysUser>().checkSqlInjection();
@@ -191,6 +193,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    @DS("slave")
     public SysUser detail(SysUserIdParam sysUserIdParam) {
         SysUser sysUser = this.getById(sysUserIdParam.getId());
         if (ObjectUtil.isEmpty(sysUser)) {
@@ -201,6 +204,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    @DS("slave")
     public List<SysNoNeUser> options(SysUserOptionParam sysUserOptionParam) {
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<SysUser>().checkSqlInjection();
 
@@ -228,6 +232,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    @DS("slave")
     public SysUser appDetail(SysUserIdParam sysUserIdParam) {
         SysUser sysUser = this.getById(sysUserIdParam.getId());
         if (ObjectUtil.isEmpty(sysUser)) {

@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -42,6 +43,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     private final TransService transService;
 
     @Override
+    @DS("slave")
     public Page<SysLog> page(SysLogPageParam sysLogPageParam) {
         QueryWrapper<SysLog> queryWrapper = new QueryWrapper<SysLog>().checkSqlInjection();
         // 默认倒序
@@ -92,6 +94,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     }
 
     @Override
+    @DS("slave")
     public SysLog detail(SysLogIdParam sysLogIdParam) {
         SysLog sysLog = this.getById(sysLogIdParam.getId());
         if (ObjectUtil.isEmpty(sysLog)) {
@@ -101,6 +104,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
     }
 
     @Override
+    @DS("slave")
     public List<SysLog> recent(int count) {
         List<SysLog> list = this.list(new QueryWrapper<SysLog>().lambda().orderByDesc(SysLog::getCreateTime).last("limit " + count));
         transService.transBatch(list);

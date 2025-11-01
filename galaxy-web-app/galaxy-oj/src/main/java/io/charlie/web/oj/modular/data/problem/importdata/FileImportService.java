@@ -4,7 +4,6 @@ import cn.hutool.core.util.StrUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.problem.param.DataProblemImportParam;
-import io.charlie.web.oj.modular.data.problem.service.DataProblemService;
 import io.charlie.web.oj.modular.data.relation.tag.service.DataProblemTagService;
 import io.charlie.web.oj.modular.data.testcase.entity.DataTestCase;
 import io.charlie.web.oj.modular.data.testcase.mapper.DataTestCaseMapper;

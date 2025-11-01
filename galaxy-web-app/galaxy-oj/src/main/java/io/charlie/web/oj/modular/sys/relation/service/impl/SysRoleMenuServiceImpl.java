@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.relation.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.charlie.web.oj.modular.sys.relation.entity.SysRoleMenu;
@@ -50,6 +51,7 @@ public class SysRoleMenuServiceImpl extends ServiceImpl<SysRoleMenuMapper, SysRo
     }
 
     @Override
+    @DS("slave")
     public List<String> findMenuIdsByRoleId(String roleId) {
         return this.list(new LambdaQueryWrapper<SysRoleMenu>()
                 .eq(SysRoleMenu::getRoleId, roleId)

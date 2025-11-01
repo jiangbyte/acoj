@@ -31,6 +31,7 @@
         <druid.version>1.2.23</druid.version>
         <mybatis-plus.version>3.5.12</mybatis-plus.version>
         <mongo-plus.version>2.1.8</mongo-plus.version>
+        <dynamic-datasource.version>4.3.1</dynamic-datasource.version>
 
         <!-- API 文档 -->
         <knife4j.version>4.4.0</knife4j.version>
@@ -231,6 +232,13 @@
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4</artifactId>
                 <version>${antlr4.version}</version>
+            </dependency>
+
+            <!-- 多数据源插件 -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>dynamic-datasource-spring-boot3-starter</artifactId>
+                <version>${dynamic-datasource.version}</version>
             </dependency>
 
             <!-- 翻译 -->

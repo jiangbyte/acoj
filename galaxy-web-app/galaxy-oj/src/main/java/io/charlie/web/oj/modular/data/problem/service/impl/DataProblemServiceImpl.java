@@ -6,13 +6,13 @@ import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.str.GaStringUtil;
-import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblemCount;
@@ -29,15 +29,12 @@ import io.charlie.web.oj.modular.data.relation.set.mapper.DataSetProblemMapper;
 import io.charlie.web.oj.modular.data.relation.tag.entity.DataProblemTag;
 import io.charlie.web.oj.modular.data.relation.tag.mapper.DataProblemTagMapper;
 import io.charlie.web.oj.modular.data.relation.tag.service.DataProblemTagService;
-import io.charlie.web.oj.modular.data.reports.entity.TaskReports;
 import io.charlie.web.oj.modular.data.reports.mapper.TaskReportsMapper;
-import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
 import io.charlie.web.oj.modular.data.similarity.mapper.TaskSimilarityMapper;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemOverallStats;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.solved.service.DataSolvedService;
-import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.data.testcase.entity.DataTestCase;
 import io.charlie.web.oj.modular.data.testcase.mapper.DataTestCaseMapper;
@@ -47,13 +44,11 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.*;
 
@@ -83,6 +78,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     private final TaskSimilarityMapper taskSimilarityMapper; // 相似度详情
 
     @Override
+    @DS("slave")
     public Page<DataProblem> page(DataProblemPageParam dataProblemPageParam) {
         QueryWrapper<DataProblem> queryWrapper = new QueryWrapper<DataProblem>().checkSqlInjection();
         // 关键字
@@ -124,6 +120,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public Page<DataProblem> pageClient(DataProblemPageParam dataProblemPageParam) {
         QueryWrapper<DataProblem> queryWrapper = new QueryWrapper<DataProblem>().checkSqlInjection();
         queryWrapper.lambda().eq(DataProblem::getIsVisible, true).eq(DataProblem::getIsPublic, true);
@@ -167,6 +164,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public Page<DataProblem> setPage(DataProblemPageParam dataProblemPageParam) {
         QueryWrapper<DataProblem> queryWrapper = new QueryWrapper<DataProblem>().checkSqlInjection();
         queryWrapper.lambda()
@@ -279,6 +277,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public DataProblem detail(DataProblemIdParam dataProblemIdParam) {
         DataProblem dataProblem = this.getById(dataProblemIdParam.getId());
         if (ObjectUtil.isEmpty(dataProblem)) {
@@ -289,6 +288,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public List<DataProblem> latestN(int n) {
         List<DataProblem> list = this.list(new QueryWrapper<DataProblem>().checkSqlInjection()
                 .lambda()
@@ -301,6 +301,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public DataProblemCount getProblemCount() {
         DataProblemCount dataProblemCount = new DataProblemCount();
         long count = this.count(new LambdaQueryWrapper<DataProblem>()
@@ -368,6 +369,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public List<DataProblem> getHotN(int n) {
         List<DataProblem> dataProblems = this.baseMapper.selectTopNBySubmitCount(n);
         problemBuildTool.buildProblems(dataProblems);
@@ -376,11 +378,13 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public List<DifficultyDistribution> difficultyDistribution() {
         return this.baseMapper.selectDifficultyDistribution();
     }
 
     @Override
+    @DS("slave")
     public String llmGetDescription(String id) {
         DataProblem dataProblem = this.getById(id);
         if (dataProblem == null) {
@@ -390,6 +394,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public String llmGetTestCase(String id) {
         DataProblem dataProblem = this.getById(id);
 
@@ -408,6 +413,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public String llmGetResourceConstraints(String id) {
         DataProblem dataProblem = this.getById(id);
 
@@ -426,6 +432,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public String llmGetExample(String id) {
         DataProblem dataProblem = this.getById(id);
         if (dataProblem == null) {
@@ -443,6 +450,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public String getDifficulty(String id) {
         DataProblem dataProblem = this.getById(id);
         if (dataProblem == null) {
@@ -458,6 +466,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public String llmGetSource(String id) {
         DataProblem dataProblem = this.getById(id);
         if (dataProblem == null) {
@@ -467,6 +476,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public String llmGetTags(String id) {
         DataProblem dataProblem = this.getById(id);
         if (dataProblem == null) {
@@ -480,6 +490,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public String llmGetCategory(String id) {
         DataProblem dataProblem = this.getById(id);
         if (dataProblem == null) {
@@ -490,6 +501,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
+    @DS("slave")
     public String llmGetOpenLanguage(String id) {
         DataProblem dataProblem = this.getById(id);
         if (dataProblem == null) {

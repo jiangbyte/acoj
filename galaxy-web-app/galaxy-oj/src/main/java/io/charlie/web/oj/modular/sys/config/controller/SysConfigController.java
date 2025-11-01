@@ -1,6 +1,7 @@
 package io.charlie.web.oj.modular.sys.config.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.annotation.log.Log;
 import io.charlie.web.oj.annotation.log.LogCategory;
@@ -84,6 +85,7 @@ public class SysConfigController {
 
     @Operation(summary = "获取系统配置值")
     @GetMapping("/sys/config/code")
+    @DS("slave")
     public Result<?> getValueByCode(@RequestParam @NotBlank(message = "系统配置编码不能为空") String code) {
         return Result.success(sysConfigService.getValueByCode(code));
     }

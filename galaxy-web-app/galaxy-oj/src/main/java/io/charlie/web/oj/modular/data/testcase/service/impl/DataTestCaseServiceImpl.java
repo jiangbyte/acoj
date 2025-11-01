@@ -5,18 +5,18 @@ import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.testcase.entity.DataTestCase;
+import io.charlie.web.oj.modular.data.testcase.mapper.DataTestCaseMapper;
 import io.charlie.web.oj.modular.data.testcase.param.DataTestCaseAddParam;
 import io.charlie.web.oj.modular.data.testcase.param.DataTestCaseEditParam;
 import io.charlie.web.oj.modular.data.testcase.param.DataTestCaseIdParam;
 import io.charlie.web.oj.modular.data.testcase.param.DataTestCasePageParam;
-import io.charlie.web.oj.modular.data.testcase.mapper.DataTestCaseMapper;
 import io.charlie.web.oj.modular.data.testcase.service.DataTestCaseService;
 import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
@@ -41,6 +41,7 @@ import java.util.*;
 public class DataTestCaseServiceImpl extends ServiceImpl<DataTestCaseMapper, DataTestCase> implements DataTestCaseService {
 
     @Override
+    @DS("slave")
     public Page<DataTestCase> page(DataTestCasePageParam dataTestCasePageParam) {
         QueryWrapper<DataTestCase> queryWrapper = new QueryWrapper<DataTestCase>().checkSqlInjection();
 
@@ -99,6 +100,7 @@ public class DataTestCaseServiceImpl extends ServiceImpl<DataTestCaseMapper, Dat
     }
 
     @Override
+    @DS("slave")
     public DataTestCase detail(DataTestCaseIdParam dataTestCaseIdParam) {
         DataTestCase dataTestCase = this.getById(dataTestCaseIdParam.getId());
         if (ObjectUtil.isEmpty(dataTestCase)) {
@@ -108,6 +110,7 @@ public class DataTestCaseServiceImpl extends ServiceImpl<DataTestCaseMapper, Dat
     }
 
     @Override
+    @DS("slave")
     public List<DataTestCase> getTestCaseByProblemId(String problemId) {
         return this.list(new LambdaQueryWrapper<DataTestCase>().eq(DataTestCase::getProblemId, problemId));
     }

@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.set.mapper;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
@@ -20,6 +21,8 @@ import java.util.List;
 @Mapper
 @CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface DataSetMapper extends BaseMapper<DataSet> {
+
+    @DS("slave")
     @Select("""
      SELECT
          dp.*,

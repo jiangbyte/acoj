@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.solved.mapper;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import io.charlie.galaxy.cache.MybatisPlusRedisCache;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -27,6 +28,7 @@ public interface DataSolvedMapper extends BaseMapper<DataSolved> {
      *
      * @return 统计信息
      */
+    @DS("slave")
     @Select("""
                 SELECT 
                     COUNT(*) as totalProblems, 
@@ -59,6 +61,7 @@ public interface DataSolvedMapper extends BaseMapper<DataSolved> {
      * @param problemIds 题目ID列表
      * @return 统计信息列表
      */
+    @DS("slave")
     @Select("""
                 <script>
                 SELECT 
@@ -80,6 +83,7 @@ public interface DataSolvedMapper extends BaseMapper<DataSolved> {
     List<Map<String, Object>> selectProblemAcceptanceStats(@Param("problemIds") List<String> problemIds);
 
 
+    @DS("slave")
     @Select("""
                 <script>
                 SELECT 
@@ -106,6 +110,7 @@ public interface DataSolvedMapper extends BaseMapper<DataSolved> {
      *
      * @return 用户统计列表
      */
+    @DS("slave")
     @Select("""
                SELECT
                 ds.user_id,
@@ -129,6 +134,7 @@ public interface DataSolvedMapper extends BaseMapper<DataSolved> {
     List<Map<String, Object>> selectUserSolveStatistics();
 
 
+    @DS("slave")
     @Select("""
             SELECT
                 ds.user_id,
@@ -170,6 +176,7 @@ public interface DataSolvedMapper extends BaseMapper<DataSolved> {
 //                WHERE is_set = 0 AND user_id = #{userId}
 //                GROUP BY user_id
 //            """)
+    @DS("slave")
     @Select("""
                SELECT
                 ds.user_id,
@@ -202,6 +209,7 @@ public interface DataSolvedMapper extends BaseMapper<DataSolved> {
      * @param setId 题集ID
      * @return 题集整体统计信息
      */
+    @DS("slave")
     @Select("""
         SELECT 
             COUNT(DISTINCT user_id) as totalParticipants,
@@ -241,6 +249,7 @@ public interface DataSolvedMapper extends BaseMapper<DataSolved> {
 //        """)
 //    List<Map<String, Object>> selectSetAcceptanceStatsBatch(@Param("setIds") List<String> setIds);
 
+    @DS("slave")
     @Select("""
             <script>
             SELECT 

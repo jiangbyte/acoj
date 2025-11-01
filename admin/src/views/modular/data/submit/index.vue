@@ -108,13 +108,13 @@ const columns: DataTableColumns<any> = [
     title: '流转完成',
     key: 'isFinishName',
   },
-  {
-    title: '相似度',
-    key: 'similarity',
-    render(row: any) {
-      return row.similarity * 100
-    },
-  },
+  // {
+  //   title: '相似度',
+  //   key: 'similarity',
+  //   render(row: any) {
+  //     return row.similarity * 100
+  //   },
+  // },
   // {
   //   title: '相似检测任务ID',
   //   key: 'taskId',
@@ -129,13 +129,13 @@ const columns: DataTableColumns<any> = [
   //     tooltip: true,
   //   },
   // },
-  {
-    title: '相似分级',
-    key: 'similarityCategoryName',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
+  // {
+  //   title: '相似分级',
+  //   key: 'similarityCategoryName',
+  //   ellipsis: {
+  //     tooltip: true,
+  //   },
+  // },
   // {
   //   title: '相似检测任务ID',
   //   key: 'judgeTaskId',
@@ -146,7 +146,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 310,
+    width: 220,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -161,18 +161,18 @@ const columns: DataTableColumns<any> = [
           size: 'small',
           onClick: () => judgecaseIndexRef.value.doOpen(row),
         }, () => '用例详情'),
-        h(NButton, {
-          type: 'primary',
-          size: 'small',
-          // submitType为true且similarity大于0时才不禁用
-          // 也就是这两个条件都满足时 disabled 为 false
-          disabled: !(row.submitType && row.similarity > 0),
-          onClick: () => {
-            router.push({
-              path: `/visualization/submit/report/${row.reportId}/task/${row.taskId}`,
-            })
-          },
-        }, () => '相似检测'),
+        // h(NButton, {
+        //   type: 'primary',
+        //   size: 'small',
+        //   // submitType为true且similarity大于0时才不禁用
+        //   // 也就是这两个条件都满足时 disabled 为 false
+        //   disabled: !(row.submitType && row.similarity > 0),
+        //   onClick: () => {
+        //     router.push({
+        //       path: `/visualization/submit/report/${row.reportId}/task/${row.taskId}`,
+        //     })
+        //   },
+        // }, () => '相似检测'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
         }, {
@@ -374,7 +374,6 @@ async function deleteBatchHandle() {
         :row-key="(row: any) => row.id"
         :loading="loading"
         flex-height
-        :scroll-x="1600"
         class="flex-1 h-full"
       />
       <template #action>

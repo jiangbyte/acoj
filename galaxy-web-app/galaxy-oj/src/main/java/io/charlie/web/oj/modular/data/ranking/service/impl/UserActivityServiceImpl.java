@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.ranking.service.impl;
 
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
 import io.charlie.web.oj.modular.data.ranking.utils.ActivityScoreCalculator;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@DS("slave")
 public class UserActivityServiceImpl implements UserActivityService {
     
     @Autowired

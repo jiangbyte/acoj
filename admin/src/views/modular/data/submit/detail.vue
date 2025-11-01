@@ -88,7 +88,7 @@ defineExpose({
         <NDescriptionsItem label="流程流转完成">
           {{ formData.isFinishName }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="相似度">
+        <!-- <NDescriptionsItem label="相似度">
           {{ formData.similarity * 100 }}
         </NDescriptionsItem>
         <NDescriptionsItem label="相似检测任务ID">
@@ -102,7 +102,7 @@ defineExpose({
         </NDescriptionsItem>
         <NDescriptionsItem label="相似检测任务ID">
           {{ formData.judgeTaskId }}
-        </NDescriptionsItem>
+        </NDescriptionsItem> -->
         <NDescriptionsItem label="创建时间">
           <NTime :time="Number(formData.createTime)" />
         </NDescriptionsItem>

@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
@@ -57,6 +58,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
     private final SysUserService sysUserService;
 
     @Override
+    @DS("slave")
     public Page<DataLibrary> page(DataLibraryPageParam dataLibraryPageParam) {
         QueryWrapper<DataLibrary> queryWrapper = new QueryWrapper<DataLibrary>().checkSqlInjection();
         queryWrapper.lambda().orderByDesc(DataLibrary::getCreateTime);
@@ -103,6 +105,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
     }
 
     @Override
+    @DS("slave")
     public DataLibrary detail(DataLibraryIdParam dataLibraryIdParam) {
         DataLibrary dataLibrary = this.getById(dataLibraryIdParam.getId());
         if (ObjectUtil.isEmpty(dataLibrary)) {
@@ -265,6 +268,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
     }
 
     @Override
+    @DS("slave")
     public <R> List<R> processCodeLibrariesInBatches(boolean isSet, String language,
                                                      List<String> problemIds, List<String> setIds,
                                                      List<String> userIds, int batchSize,
@@ -342,6 +346,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
     }
 
     @Override
+    @DS("slave")
     public Page<SysUser> getLibraryUserPage(DataLibraryUserPageParam dataLibraryUserPageParam) {
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<SysUser>().checkSqlInjection();
 
