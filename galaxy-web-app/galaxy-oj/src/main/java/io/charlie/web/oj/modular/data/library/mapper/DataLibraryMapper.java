@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Mapper;
 * @description 提交样本库 Mapper 接口
 */
 @Mapper
-@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface DataLibraryMapper extends BaseMapper<DataLibrary> {
 
 }

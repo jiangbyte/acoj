@@ -232,16 +232,7 @@ func (w *Workspace) Execute() *mq.SimilarityResultMessage {
 		taskSimilarities = append(taskSimilarities, taskSimilarity)
 		mu.Unlock()
 	}
-
-	//// 批量插入 TaskSimilarity 记录
-	//if len(taskSimilarities) > 0 {
-	//	if err := w.svcCtx.TaskSimilarityRepo().BatchCreate(taskSimilarities); err != nil {
-	//		logx.Errorf("批量插入 TaskSimilarity 记录失败: %v", err)
-	//	} else {
-	//		logx.Infof("成功插入 %d 条 TaskSimilarity 记录", len(taskSimilarities))
-	//	}
-	//}
-
+	
 	// 批量插入 TaskSimilarity 记录 - 异步执行
 	if len(taskSimilarities) > 0 {
 		go func(records []*model.TaskSimilarity) {

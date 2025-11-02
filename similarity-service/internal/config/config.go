@@ -44,7 +44,9 @@ type RabbitMQConfig struct {
 // 配置队列
 type Config struct {
 	rest.RestConf
-	Nacos    NacosConfig
-	MySQL    MySQLConfig    `json:",optional"` // MySQL 配置
-	RabbitMQ RabbitMQConfig `json:",optional"`
+	Nacos       NacosConfig
+	MySQL       MySQLConfig    `json:",optional"` // MySQL 配置
+	MasterMySQL MySQLConfig    `json:",optional"`
+	SlaveMySQL  MySQLConfig    `json:",optional"`
+	RabbitMQ    RabbitMQConfig `json:",optional"`
 }

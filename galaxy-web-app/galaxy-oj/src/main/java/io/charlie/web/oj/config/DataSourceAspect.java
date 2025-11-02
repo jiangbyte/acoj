@@ -30,10 +30,10 @@ public class DataSourceAspect {
                 .map(arg -> arg != null ? arg.getClass().getSimpleName() : "null")
                 .collect(Collectors.joining(", "));
 
-        log.info("🔥 {}.{}({}) | 数据源: {}",
-                simpleClassName,
-                methodName,
-                argsInfo,
-                ds != null ? ds : "master（默认）");
+//        log.info("🔥 {}.{}({}) | 数据源: {}",
+//                simpleClassName,
+//                methodName,
+//                argsInfo,
+//                ds != null ? ds : "master（默认）");
     }
 }

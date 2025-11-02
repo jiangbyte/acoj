@@ -5,9 +5,8 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.web.oj.modular.task.similarity.dto.BatchSimilaritySubmitDto;
-import io.charlie.web.oj.modular.task.similarity.enums.ReportTypeEnum;
 import io.charlie.web.oj.modular.task.similarity.handle.BatchSimilarityHandleMessage;
-import io.charlie.web.oj.modular.task.similarity.param.BatchSimilarityParam;
+import io.charlie.web.oj.modular.data.library.param.BatchLibraryParam;
 import io.charlie.web.oj.modular.task.similarity.service.ProblemsSimilarityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +25,7 @@ public class ProblemsSimilarityServiceImpl implements ProblemsSimilarityService 
     private final BatchSimilarityHandleMessage batchSimilarityHandleMessage;
 
     @Override
-    public String batch(BatchSimilarityParam batchSimilarityParam) {
+    public String batch(BatchLibraryParam batchSimilarityParam) {
         if (ObjectUtil.isNotEmpty(batchSimilarityParam.getUserIds())) {
             if (batchSimilarityParam.getUserIds().size() <= 1) {
                 throw new BusinessException("用户数量不能小于2");

@@ -3,10 +3,7 @@ package io.charlie.web.oj.modular.data.similarity.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityAddParam;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityEditParam;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityIdParam;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityPageParam;
+import io.charlie.web.oj.modular.data.similarity.param.*;
 
 import java.util.List;
 
@@ -26,5 +23,4 @@ public interface TaskSimilarityService extends IService<TaskSimilarity> {
     void delete(List<TaskSimilarityIdParam> taskSimilarityIdParamList);
 
     TaskSimilarity detail(TaskSimilarityIdParam taskSimilarityIdParam);
-
 }

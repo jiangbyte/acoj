@@ -4,16 +4,14 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityAddParam;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityEditParam;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityIdParam;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityPageParam;
+import io.charlie.web.oj.modular.data.similarity.param.*;
 import io.charlie.web.oj.modular.data.similarity.mapper.TaskSimilarityMapper;
 import io.charlie.web.oj.modular.data.similarity.service.TaskSimilarityService;
 import io.charlie.galaxy.enums.ISortOrderEnum;
@@ -28,17 +26,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-06-23
-* @description 检测结果任务库 服务实现类
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-06-23
+ * @description 检测结果任务库 服务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TaskSimilarityServiceImpl extends ServiceImpl<TaskSimilarityMapper, TaskSimilarity> implements TaskSimilarityService {
 
     @Override
+    @DS("slave")
     public Page<TaskSimilarity> page(TaskSimilarityPageParam taskSimilarityPageParam) {
         QueryWrapper<TaskSimilarity> queryWrapper = new QueryWrapper<TaskSimilarity>().checkSqlInjection();
         if (ObjectUtil.isNotEmpty(taskSimilarityPageParam.getTaskId())) {
@@ -55,7 +54,7 @@ public class TaskSimilarityServiceImpl extends ServiceImpl<TaskSimilarityMapper,
         return this.page(CommonPageRequest.Page(
                         Optional.ofNullable(taskSimilarityPageParam.getCurrent()).orElse(1),
                         Optional.ofNullable(taskSimilarityPageParam.getSize()).orElse(20),
-                null
+                        null
                 ),
                 queryWrapper);
     }
@@ -88,6 +87,7 @@ public class TaskSimilarityServiceImpl extends ServiceImpl<TaskSimilarityMapper,
     }
 
     @Override
+    @DS("slave")
     public TaskSimilarity detail(TaskSimilarityIdParam taskSimilarityIdParam) {
         TaskSimilarity taskSimilarity = this.getById(taskSimilarityIdParam.getId());
         if (ObjectUtil.isEmpty(taskSimilarity)) {

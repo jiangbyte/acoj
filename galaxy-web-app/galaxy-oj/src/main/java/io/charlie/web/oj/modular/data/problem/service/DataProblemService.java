@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblemCount;
+import io.charlie.web.oj.modular.data.problem.entity.ProblemSourceLimit;
 import io.charlie.web.oj.modular.data.problem.param.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -65,4 +66,8 @@ public interface DataProblemService extends IService<DataProblem> {
 
     // 获取题目支持语言
     String llmGetOpenLanguage(String id);
+
+    ProblemSourceLimit getProblemSourceLimit(String id);
+
+    ProblemSourceLimit refreshProblemSourceLimit(String id);
 }

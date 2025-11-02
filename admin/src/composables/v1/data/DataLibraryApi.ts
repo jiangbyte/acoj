@@ -51,7 +51,9 @@ export function useDataLibraryFetch() {
     dataLibraryAdd(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/add`, data)
     },
-
+    dataLibraryBatchQuery(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/batch/query`, data)
+    },
     /*
      * 提交样本库 修改接口
      */

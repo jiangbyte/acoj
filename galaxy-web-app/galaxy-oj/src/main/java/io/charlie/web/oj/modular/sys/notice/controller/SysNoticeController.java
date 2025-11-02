@@ -80,6 +80,12 @@ public class SysNoticeController {
         return Result.success(sysNoticeService.detail(sysNoticeIdParam));
     }
 
+    @Operation(summary = "获取公告详情")
+    @GetMapping("/sys/notice/detail/client")
+    public Result<?> detailClient(@ParameterObject @Valid SysNoticeIdParam sysNoticeIdParam) {
+        return Result.success(sysNoticeService.detail(sysNoticeIdParam));
+    }
+
 
     @Operation(summary = "获取最新N条公告")
     @GetMapping("/sys/notice/latest")

@@ -5,12 +5,9 @@ import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.annotation.log.Log;
 import io.charlie.web.oj.annotation.log.LogCategory;
 import io.charlie.web.oj.annotation.log.LogModule;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityPageParam;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityAddParam;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityEditParam;
-import io.charlie.web.oj.modular.data.similarity.param.TaskSimilarityIdParam;
+import io.charlie.web.oj.modular.data.library.param.BatchLibraryParam;
+import io.charlie.web.oj.modular.data.similarity.param.*;
 import io.charlie.web.oj.modular.task.similarity.dto.SimilarityProgressDto;
-import io.charlie.web.oj.modular.task.similarity.param.BatchSimilarityParam;
 import io.charlie.web.oj.modular.task.similarity.service.ProblemsSimilarityService;
 import io.charlie.web.oj.modular.task.similarity.service.SimilarityProgressService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -90,7 +87,7 @@ public class TaskSimilarityController {
     }
 
     @PostMapping("/task/similarity/batch")
-    public Result<?> batch(@RequestBody @Valid BatchSimilarityParam batchSimilarityParam) {
+    public Result<?> batch(@RequestBody @Valid BatchLibraryParam batchSimilarityParam) {
         return Result.success(problemsSimilarityService.batch(batchSimilarityParam));
     }
 

@@ -50,7 +50,9 @@ const proSetSolvedUserDataParam = ref({
 const columns: DataTableColumns<any> = [
   {
     title: '状态',
+    align: 'center',
     key: 'currentUserSolved',
+    width: 60,
     render: (row: any) => {
       return row.currentUserSolved
         ? h(Icon, {
@@ -67,6 +69,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '题目',
     key: 'title',
+    width: 150,
     ellipsis: {
       tooltip: true,
     },
@@ -74,6 +77,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '分类',
     key: 'categoryName',
+    width: 90,
     render: (row) => {
       return h(NTag, { size: 'small', type: 'success' }, { default: () => row.categoryName })
     },
@@ -81,6 +85,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '标签',
     key: 'tagNames',
+    width: 180,
     render: (row) => {
       return h(NSpace, { align: 'center' }, { default: () => row.tagNames?.map((tag: any) => h(NTag, { key: tag, size: 'small', type: 'info' }, { default: () => tag })) || [] })
     },
@@ -88,6 +93,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '难度',
     key: 'difficultyName',
+    align: 'center',
+    width: 60,
     render: (row) => {
       return h(NTag, { size: 'small', type: 'error' }, { default: () => row.difficultyName })
     },
@@ -95,6 +102,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '通过率',
     key: 'acceptance',
+    width: 100,
+    align: 'center',
     render: (row) => {
       return h(NTag, { size: 'small' }, { default: () => row.acceptance })
     },
@@ -102,6 +111,8 @@ const columns: DataTableColumns<any> = [
   {
     title: '解决',
     key: 'solved',
+    width: 100,
+    align: 'center',
     render: (row) => {
       return h(NTag, { size: 'small' }, { default: () => row.solved })
     },

@@ -223,7 +223,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
     @DS("slave")
     public void initDictCache() {
         CompletableFuture.runAsync(() -> {
-            log.info("开始异步初始化字典缓存...");
+            log.debug("开始异步初始化字典缓存...");
 
             try {
                 // 一次性查询所有字典数据
@@ -240,7 +240,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
                     dictionaryTransService.refreshCache(dictType, transMap);
                 });
 
-                log.info("字典缓存异步初始化完成，共初始化 {} 个字典类型", dictsByType.size());
+                log.debug("字典缓存异步初始化完成，共初始化 {} 个字典类型", dictsByType.size());
             } catch (Exception e) {
                 log.error("字典缓存初始化失败", e);
             }

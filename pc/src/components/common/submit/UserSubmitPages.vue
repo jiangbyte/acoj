@@ -125,7 +125,9 @@ const pageParam = ref({
   problemId: props.problemId,
   setId: null,
 })
+const isLoading = ref(false)
 async function loadData() {
+  isLoading.value = true
   if (props.isSet) {
     pageParam.value.setId = props.setId as any
     const { data } = await dataSubmitSetPage(pageParam.value)
@@ -136,6 +138,7 @@ async function loadData() {
     pageData.value = data
     console.log(data)
   }
+  isLoading.value = false
 }
 
 loadData()
@@ -154,14 +157,29 @@ const sortOrderOptions = computed(() => [
 
 const showModal = ref(false)
 const modalData = ref()
+
+const similarityData = ref()
 function rowProps(row: any) {
   return {
     style: 'cursor: pointer;',
     onClick: () => {
       showModal.value = true
       modalData.value = row
+      similarityData.value = row
     },
   }
+}
+
+function refreshSimilarityData() {
+  // 调用获取判题结果的API
+  useDataSubmitFetch().dataSubmitDetail({ id: similarityData.value.id }).then(({ data }) => {
+    if (data) {
+      // 更新结果数据
+      similarityData.value = data
+
+      window.$message.success('刷新完成')
+    }
+  })
 }
 </script>
 
@@ -203,6 +221,11 @@ function rowProps(row: any) {
             </template>
           </NButton>
         </NPopselect>
+        <n-button text @click="loadData">
+          <template #icon>
+            <IconParkOutlineRefresh />
+          </template>
+        </n-button>
       </n-flex>
     </n-flex>
     <!-- 题目表格 -->
@@ -214,6 +237,7 @@ function rowProps(row: any) {
       :row-props="rowProps"
       scroll-x="550"
       class="flex-1 h-full"
+      :loading="isLoading"
     />
     <n-flex justify="center">
       <n-pagination
@@ -244,6 +268,10 @@ function rowProps(row: any) {
         <n-space vertical :size="16">
           <!-- 头部信息 -->
           <JudgeResultHeader :result-task-data="modalData" />
+
+          <n-flex justify="end">
+            <n-button size="small" type="primary" @click="refreshSimilarityData">刷新</n-button>
+          </n-flex>
 
           <!-- 判题结果详情 -->
           <JudgeResultStats :result-task-data="modalData" />

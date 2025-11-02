@@ -12,10 +12,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.charlie.galaxy.utils.str.GaStringUtil;
 import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblemCount;
+import io.charlie.web.oj.modular.data.problem.entity.ProblemSourceLimit;
 import io.charlie.web.oj.modular.data.problem.param.*;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.problem.service.DataProblemService;
@@ -40,6 +42,7 @@ import io.charlie.web.oj.modular.data.testcase.entity.DataTestCase;
 import io.charlie.web.oj.modular.data.testcase.mapper.DataTestCaseMapper;
 import io.charlie.web.oj.modular.task.judge.dto.TestCase;
 import org.dromara.trans.service.impl.TransService;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +54,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Charlie Zhang
@@ -76,6 +80,13 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     private final DataLibraryMapper dataLibraryMapper; // 检测代码库
     private final TaskReportsMapper taskReportsMapper; // 任务报告
     private final TaskSimilarityMapper taskSimilarityMapper; // 相似度详情
+
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    private static final String CACHE_KEY_PREFIX = "problem_source_limit:";
+    private static final long CACHE_EXPIRE_HOURS = 24L;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
 
     @Override
     @DS("slave")
@@ -512,6 +523,86 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
             return "未设置提交语言";
         }
         return JSONUtil.toJsonPrettyStr(allowedLanguages);
+    }
+
+    @Override
+    public ProblemSourceLimit getProblemSourceLimit(String id) {
+        String cacheKey = CACHE_KEY_PREFIX + id;
+
+        // 先从Redis缓存中获取
+        try {
+            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                if (cached instanceof ProblemSourceLimit) {
+                    return (ProblemSourceLimit) cached;
+                } else if (cached instanceof String) {
+                    // 如果是字符串格式，反序列化
+                    return objectMapper.readValue((String) cached, ProblemSourceLimit.class);
+                }
+            }
+        } catch (Exception e) {
+            // 缓存获取失败，继续从数据库查询
+        }
+
+        // 缓存中没有，从数据库查询
+        DataProblem dataProblem = this.getById(id);
+        if (dataProblem == null) {
+            return null;
+        }
+
+        ProblemSourceLimit limit = new ProblemSourceLimit();
+        limit.setMaxTime(dataProblem.getMaxTime());
+        limit.setMaxMemory(dataProblem.getMaxMemory());
+
+        // 将查询结果存入缓存
+        try {
+            redisTemplate.opsForValue().set(
+                    cacheKey,
+                    limit,
+                    CACHE_EXPIRE_HOURS,
+                    TimeUnit.HOURS
+            );
+        } catch (Exception e) {
+            // 缓存设置失败，不影响主要功能
+        }
+
+        return limit;
+    }
+
+    @Override
+    public ProblemSourceLimit refreshProblemSourceLimit(String id) {
+        String cacheKey = CACHE_KEY_PREFIX + id;
+
+        // 先删除缓存
+        try {
+            redisTemplate.delete(cacheKey);
+        } catch (Exception e) {
+            // 缓存删除失败，继续执行
+        }
+
+        // 从数据库重新查询最新数据
+        DataProblem dataProblem = this.getById(id);
+        if (dataProblem == null) {
+            return null;
+        }
+
+        ProblemSourceLimit limit = new ProblemSourceLimit();
+        limit.setMaxTime(dataProblem.getMaxTime());
+        limit.setMaxMemory(dataProblem.getMaxMemory());
+
+        // 将最新数据存入缓存
+        try {
+            redisTemplate.opsForValue().set(
+                    cacheKey,
+                    limit,
+                    CACHE_EXPIRE_HOURS,
+                    TimeUnit.HOURS
+            );
+        } catch (Exception e) {
+            // 缓存设置失败，不影响主要功能
+        }
+
+        return limit;
     }
 
 }

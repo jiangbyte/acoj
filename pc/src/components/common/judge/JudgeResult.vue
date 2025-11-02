@@ -76,6 +76,10 @@ function refreshSimilarityData() {
         <!-- 头部信息 -->
         <JudgeResultHeader :result-task-data="resultTaskData" />
 
+        <n-flex justify="end">
+          <n-button size="small" type="primary" @click="refreshSimilarityData">刷新</n-button>
+        </n-flex>
+
         <!-- 判题结果详情 -->
         <JudgeResultStats :result-task-data="resultTaskData" />
 

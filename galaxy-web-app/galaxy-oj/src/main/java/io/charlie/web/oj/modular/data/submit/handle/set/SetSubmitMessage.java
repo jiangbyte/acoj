@@ -1,8 +1,7 @@
-package io.charlie.web.oj.modular.data.submit.event.set;
+package io.charlie.web.oj.modular.data.submit.handle.set;
 
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.param.DataSubmitExeParam;
-import lombok.Data;
 
 /**
  * @author ZhangJiangHu
@@ -10,5 +9,5 @@ import lombok.Data;
  * @date 30/10/2025
  * @description TODO
  */
-public record SetSubmitEvent(DataSubmitExeParam dataSubmitExeParam, DataSubmit dataSubmit, String setId) {
+public record SetSubmitMessage(DataSubmitExeParam dataSubmitExeParam, DataSubmit dataSubmit) {
 }

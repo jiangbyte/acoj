@@ -92,7 +92,7 @@ export function useDataSubmitFetch() {
      * 提交 详情接口
      */
     dataSubmitDetail(data: any) {
-      return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail/client`, {
         params: {
           ...data,
         },

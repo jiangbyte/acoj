@@ -1,11 +1,9 @@
 package io.charlie.web.oj.modular.task.library.handle;
 
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
-import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
-import io.charlie.web.oj.modular.task.library.DTO.Library;
+import io.charlie.web.oj.modular.task.library.dto.Library;
 import io.charlie.web.oj.modular.task.library.mq.LibraryQueueProperties;
 import io.charlie.web.oj.utils.similarity.utils.CodeTokenUtil;
 import io.charlie.web.oj.utils.similarity.utils.TokenDetail;
@@ -40,11 +38,11 @@ public class LibraryHandleMessage {
                 libraryQueueProperties.getCommon().getRoutingKey(),
                 dataSubmit
         );
-        log.info("发送样本库消息成功");
+        log.debug("发送样本库消息成功");
     }
 
     @Transactional
-    @RabbitListener(queues = "${oj.mq.library.common.queue}", concurrency = "5-10")
+    @RabbitListener(queues = "${oj.mq.library.common.queue}", concurrency = "1")
     public void receiveJudge(Library submit) {
         TokenDetail tokensDetail = codeTokenUtil.getCodeTokensDetail(submit.getLanguage().toLowerCase(), submit.getCode());
 
@@ -57,7 +55,7 @@ public class LibraryHandleMessage {
                     .eq(DataLibrary::getIsSet, Boolean.TRUE);
 
             if (dataLibraryMapper.exists(queryWrapper)) {
-                log.info("存在记录，执行更新");
+                log.debug("存在记录，执行更新");
                 DataLibrary library = dataLibraryMapper.selectOne(queryWrapper);
                 library.setSubmitId(submit.getSubmitId());
                 library.setSubmitTime(new Date());
@@ -74,7 +72,7 @@ public class LibraryHandleMessage {
 
                 dataLibraryMapper.updateById(library);
             } else {
-                log.info("不存在记录，创建新记录");
+                log.debug("不存在记录，创建新记录");
 
                 DataLibrary library = new DataLibrary();
 
@@ -104,7 +102,7 @@ public class LibraryHandleMessage {
                     .eq(DataLibrary::getIsSet, Boolean.FALSE);
 
             if (dataLibraryMapper.exists(queryWrapper)) {
-                log.info("存在记录，执行更新");
+                log.debug("存在记录，执行更新");
                 DataLibrary library = dataLibraryMapper.selectOne(queryWrapper);
                 library.setSubmitId(submit.getSubmitId());
                 library.setSubmitTime(new Date());
@@ -120,7 +118,7 @@ public class LibraryHandleMessage {
 
                 dataLibraryMapper.updateById(library);
             } else {
-                log.info("不存在记录，创建新记录");
+                log.debug("不存在记录，创建新记录");
 
                 DataLibrary library = new DataLibrary();
 
@@ -144,6 +142,6 @@ public class LibraryHandleMessage {
             }
         }
 
-        log.info("样本库处理完成");
+        log.debug("样本库处理完成");
     }
 }

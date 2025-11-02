@@ -83,6 +83,13 @@ public class DataSetController {
         return Result.success(dataSetService.detail(dataSetIdParam));
     }
 
+    @Operation(summary = "获取题集详情")
+    @GetMapping("/data/set/detail/client")
+    public Result<?> detailClient(@ParameterObject @Valid DataSetIdParam dataSetIdParam) {
+        return Result.success(dataSetService.detail(dataSetIdParam));
+    }
+
+
     @Operation(summary = "C端-获取最新N题集")
     @GetMapping("/data/set/latest")
     public Result<?> latest10() {

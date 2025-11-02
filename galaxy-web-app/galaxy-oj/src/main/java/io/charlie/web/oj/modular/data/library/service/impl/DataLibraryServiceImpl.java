@@ -2,6 +2,7 @@ package io.charlie.web.oj.modular.data.library.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
@@ -21,12 +22,11 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.data.library.entity.LibraryBatchCount;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.service.SysUserService;
 import io.charlie.web.oj.modular.sys.user.utils.SysUserBuildUtil;
-import io.charlie.web.oj.modular.task.judge.dto.JudgeResultDto;
-import io.micrometer.common.util.StringUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
@@ -34,9 +34,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -447,5 +447,70 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
 
         // 批量更新到数据库
         this.updateBatchById(dataList);
+    }
+
+    @Override
+    public LibraryBatchCount batchQuery(BatchLibraryQueryParam libraryQueryParam) {
+        log.info("开始执行批量查询 {}", JSONUtil.toJsonStr(libraryQueryParam));
+        QueryWrapper<DataLibrary> queryWrapper = new QueryWrapper<DataLibrary>().checkSqlInjection();
+
+        queryWrapper.lambda().eq(DataLibrary::getIsSet, Boolean.TRUE);
+        queryWrapper.lambda().eq(DataLibrary::getSetId, libraryQueryParam.getSetId());
+
+        if (ObjectUtil.isNotEmpty(libraryQueryParam.getProblemId())) {
+            queryWrapper.lambda().eq(DataLibrary::getProblemId, libraryQueryParam.getProblemId());
+        }
+
+        if (ObjectUtil.isNotEmpty(libraryQueryParam.getLanguage())) {
+            queryWrapper.lambda().eq(DataLibrary::getLanguage, libraryQueryParam.getLanguage().toLowerCase());
+        }
+
+        // 时间范围筛选
+        if (ObjectUtil.isAllNotEmpty(libraryQueryParam.getStartTime(), libraryQueryParam.getEndTime())) {
+            queryWrapper.lambda().between(DataLibrary::getUpdateTime, libraryQueryParam.getStartTime(), libraryQueryParam.getEndTime());
+        }
+
+        // 两两对比 PAIR_BY_PAIR，默认情况，不做处理
+
+        if ("GROUP_BY_GROUP".equals(libraryQueryParam.getCompareMode())) {
+            // 组内对比 GROUP_BY_GROUP
+            if (ObjectUtil.isNotEmpty(libraryQueryParam.getGroupId())) {
+                // 使用 EXISTS 子查询的方式（性能更好）
+//                queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id = " + libraryQueryParam.getGroupId());
+                queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id = {0}",
+                        libraryQueryParam.getGroupId());
+            }
+        } else if ("MULTI_BY_MULTI".equals(libraryQueryParam.getCompareMode())) {
+            // 多人对比 MULTI_BY_MULTI
+            if (ObjectUtil.isNotEmpty(libraryQueryParam.getUserIds())) {
+                queryWrapper.lambda().in(DataLibrary::getUserId, libraryQueryParam.getUserIds());
+            }
+        }
+
+        // 代码筛选
+        if (ObjectUtil.isNotEmpty(libraryQueryParam.getCodeFilter())) {
+            // 代码筛选时间窗口（分钟）
+            if ("TIME_WINDOW".equals(libraryQueryParam.getCodeFilter())) {
+                queryWrapper.lambda().ge(DataLibrary::getUpdateTime, DateUtil.offsetMinute(new Date(), -libraryQueryParam.getCodeFilterTimeWindow()));
+            }
+        }
+
+        long count = this.count(queryWrapper);
+
+        // 采样计算
+        BigDecimal checkCount = BigDecimal.ZERO;
+        if (libraryQueryParam.getEnableSampling() && count > 0) {
+            checkCount = BigDecimal.valueOf(count).multiply(libraryQueryParam.getSamplingRatio());
+        }
+
+        LibraryBatchCount batchCount = new LibraryBatchCount();
+        batchCount.setTotalCount(String.valueOf(count)); // 获取有效记录代码总数量
+        batchCount.setCheckCount(String.valueOf(checkCount));
+
+        // 组合数计算
+        long compareCount = count > 1 ? count * (count - 1) / 2 : 0;
+        batchCount.setCompareCount(String.valueOf(compareCount));
+
+        return batchCount;
     }
 }

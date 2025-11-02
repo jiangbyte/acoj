@@ -1,8 +1,7 @@
-package io.charlie.web.oj.modular.data.submit.event.problem;
+package io.charlie.web.oj.modular.data.submit.handle.problem;
 
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.param.DataSubmitExeParam;
-import lombok.Data;
 
 /**
  * @author ZhangJiangHu
@@ -10,5 +9,5 @@ import lombok.Data;
  * @date 30/10/2025
  * @description TODO
  */
-public record ProblemSubmitEvent(DataSubmitExeParam dataSubmitExeParam, DataSubmit dataSubmit) {
+public record ProblemSubmitMessage(DataSubmitExeParam dataSubmitExeParam, DataSubmit dataSubmit) {
 }

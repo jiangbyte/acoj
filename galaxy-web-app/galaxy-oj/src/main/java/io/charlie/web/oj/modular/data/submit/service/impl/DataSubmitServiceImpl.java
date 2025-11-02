@@ -18,8 +18,10 @@ import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.set.mapper.DataSetMapper;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
-import io.charlie.web.oj.modular.data.submit.event.problem.ProblemSubmitEvent;
-import io.charlie.web.oj.modular.data.submit.event.set.SetSubmitEvent;
+import io.charlie.web.oj.modular.data.submit.handle.problem.ProblemSubmitMessage;
+import io.charlie.web.oj.modular.data.submit.handle.problem.ProblemSubmitHandle;
+import io.charlie.web.oj.modular.data.submit.handle.set.SetSubmitHandle;
+import io.charlie.web.oj.modular.data.submit.handle.set.SetSubmitMessage;
 import io.charlie.web.oj.modular.data.submit.param.*;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.data.submit.service.DataSubmitService;
@@ -35,8 +37,6 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -61,6 +61,9 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     private final DataScopeUtil dataScopeUtil;
 
     private final ApplicationEventPublisher applicationEventPublisher;
+
+    private final ProblemSubmitHandle problemSubmitHandle;
+    private final SetSubmitHandle setSubmitHandle;
 
     @Override
     @DS("slave")
@@ -95,7 +98,11 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     @Override
     @DS("slave")
     public Page<DataSubmit> problemPage(DataSubmitPageParam dataSubmitPageParam) {
+        String loginIdAsString = StpUtil.getLoginIdAsString();
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
+
+        queryWrapper.lambda().eq(DataSubmit::getUserId, loginIdAsString);
+
         queryWrapper.lambda().eq(DataSubmit::getIsSet, false);
         if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
             queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
@@ -132,7 +139,11 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     @Override
     @DS("slave")
     public Page<DataSubmit> setPage(DataSubmitPageParam dataSubmitPageParam) {
+        String loginIdAsString = StpUtil.getLoginIdAsString();
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
+
+        queryWrapper.lambda().eq(DataSubmit::getUserId, loginIdAsString);
+
         queryWrapper.lambda().eq(DataSubmit::getIsSet, true);
 
         if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
@@ -207,18 +218,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     @Override
     public String handleProblemSubmit(DataSubmitExeParam dataSubmitExeParam) {
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam, Boolean.FALSE);
-
-        // 事务提交后再发布事件
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        applicationEventPublisher.publishEvent(
-                                new ProblemSubmitEvent(dataSubmitExeParam, dataSubmit)
-                        );
-                    }
-                }
-        );
+        problemSubmitHandle.handle(new ProblemSubmitMessage(dataSubmitExeParam, dataSubmit));
         return dataSubmit.getId();
     }
 
@@ -239,20 +239,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         }
 
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam, true);
-
-
-        // 事务提交后再发布事件
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        applicationEventPublisher.publishEvent(
-                                new SetSubmitEvent(dataSubmitExeParam, dataSubmit, dataSubmit.getSetId())
-                        );
-                    }
-                }
-        );
-
+        setSubmitHandle.handle(new SetSubmitMessage(dataSubmitExeParam, dataSubmit));
         return dataSubmit.getId();
     }
 

@@ -8,37 +8,35 @@
 ├── config
 │   └── config.go
 ├── core
-│   ├── compiler.go
-│   ├── evaluator.go
-│   ├── executor.go
 │   └── workspace.go
 ├── database
 │   ├── model
-│   │   ├── data_judge_case.go
-│   │   └── data_test_case.go
+│   │   ├── data_library.go
+│   │   ├── task_reports.go
+│   │   └── task_similarity.go
 │   ├── mysql.go
 │   └── repository
-│       ├── judgecase_repository.go
-│       └── testcase_repository.go
+│       ├── data_library_repository.go
+│       ├── task_reports_repository.go
+│       └── task_similarity_repository.go
 ├── initializer
 │   └── manager.go
 ├── logic
 │   ├── common.go
 │   └── consume.go
 ├── mq
-│   ├── judge_request.go
-│   ├── judge_response.go
-│   └── rabbitmq.go
+│   ├── rabbitmq.go
+│   ├── similarity_request.go
+│   └── similarity_response.go
 ├── nacos
 │   ├── nacos.go
 │   ├── registry.go
 │   └── service_registry.go
+├── similarity
+│   └── similarity.go
 ├── svc
 │   └── servicecontext.go
 └── utils
-    ├── cgroup.go
-    ├── command.go
-    ├── formate.go
     └── snowflake.go
 
 ==================================================
@@ -50,8 +48,8 @@ package app
 
 import (
 	"fmt"
-	"judge-service/internal/config"
-	"judge-service/internal/nacos"
+	"similarity-service/internal/config"
+	"similarity-service/internal/nacos"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -167,9 +165,9 @@ package app
 
 import (
 	"context"
-	"judge-service/internal/config"
-	"judge-service/internal/logic"
-	"judge-service/internal/svc"
+	"similarity-service/internal/config"
+	"similarity-service/internal/logic"
+	"similarity-service/internal/svc"
 	"sync"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -326,8 +324,8 @@ package app
 
 import (
 	"fmt"
-	"judge-service/internal/config"
-	"judge-service/internal/nacos"
+	"similarity-service/internal/config"
+	"similarity-service/internal/nacos"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -452,16 +450,6 @@ import (
 	"github.com/zeromicro/go-zero/rest"
 )
 
-type LanguageConfig struct {
-	Name        string   `json:"name"`        // 语言名称，如 "go", "python"
-	SourceFile  string   `json:"sourceFile"`  // 源文件名，如 "main", "Main"
-	CompileFile string   `json:"compileFile"` // 编译文件名，如 "main", "Main"
-	Extension   string   `json:"extension"`   // 文件扩展名，如 ".go", ".py"
-	CompileCmd  []string `json:"compileCmd"`  // 编译命令模板，如 ["go", "build", "-o", "{output}", "{source}"]
-	RunCmd      []string `json:"runCmd"`      // 运行命令模板，如 ["./{output}"] 或 ["python3", "{source}"]
-	NeedCompile bool     `json:",default=true"`
-}
-
 type NacosConfig struct {
 	ServerAddr string `json:",optional"` // 120.26.180.149:8848
 	Username   string `json:",optional"` // 可选
@@ -490,709 +478,21 @@ type RabbitMQConfig struct {
 	VirtualHost string `json:",optional"` // 虚拟主机
 	// 常规队列
 	Common struct {
-		JudgeExchange    string `json:",optional"`
-		JudgeQueue       string `json:",optional"`
-		JudgeRoutingKey  string `json:",optional"`
-		ResultExchange   string `json:",optional"`
-		ResultQueue      string `json:",optional"`
-		ResultRoutingKey string `json:",optional"`
+		SimilarityExchange   string `json:",optional"`
+		SimilarityQueue      string `json:",optional"`
+		SimilarityRoutingKey string `json:",optional"`
+		ResultExchange       string `json:",optional"`
+		ResultQueue          string `json:",optional"`
+		ResultRoutingKey     string `json:",optional"`
 	} `json:",optional"`
 }
 
 // 配置队列
 type Config struct {
 	rest.RestConf
-	Workspace string `json:",optional"` // 工作空间(文件工作路径)
-	Nacos     NacosConfig
-	MySQL     MySQLConfig      `json:",optional"` // MySQL 配置
-	Languages []LanguageConfig `json:",optional"` // 支持的语言配置，设为可选
-	RabbitMQ  RabbitMQConfig   `json:",optional"`
-}
-
-
-文件: core\compiler.go
---------------------------------------------------
-package core
-
-import (
-	"bytes"
-	"context"
-	"fmt"
-	"judge-service/internal/utils"
-	"os/exec"
-	"strings"
-	"sync"
-	"syscall"
-	"time"
-
-	"github.com/zeromicro/go-zero/core/logx"
-)
-
-type CompileResult struct {
-	Success   bool
-	Message   string
-	ExitCode  int
-	MaxTime   float64
-	MaxMemory float64
-}
-
-type Compiler interface {
-	Compile(workspace *Workspace) (*CompileResult, error)
-}
-
-type DefaultCompiler struct {
-	mu sync.Mutex
-}
-
-// 编译超时时间常量
-const compileTimeout = 5 * time.Second
-
-func (c *DefaultCompiler) Compile(workspace *Workspace) (*CompileResult, error) {
-	startTime := time.Now()
-	result := &CompileResult{
-		MaxTime: float64(time.Since(startTime).Milliseconds()),
-	}
-
-	cgroupPath, err := utils.CreateCgroupNoMemory()
-	if err != nil {
-		return c.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
-	}
-	defer utils.CleanupCgroup(cgroupPath) // 使用defer确保资源清理
-
-	ctx, cancel := context.WithTimeout(context.Background(), compileTimeout)
-	defer cancel()
-
-	compilerCmd := utils.GetCompileCommand(workspace.langConfig, workspace.SourceFile, workspace.BuildFile)
-	cmd := c.createCommand(ctx, compilerCmd, workspace.BuildPath)
-
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = &stderrBuf
-
-	if err := cmd.Start(); err != nil {
-		return c.handleError(result, fmt.Sprintf("启动进程失败: %v", err), 1, err)
-	}
-
-	// 进程控制逻辑
-	pgid, err := c.controlProcess(cmd, cgroupPath, result)
-	if err != nil {
-		return result, err
-	}
-
-	return c.waitForCompletion(cmd, ctx, pgid, cgroupPath, &stdoutBuf, &stderrBuf, startTime, result)
-}
-
-// 创建命令实例
-func (c *DefaultCompiler) createCommand(ctx context.Context, compilerCmd []string, dir string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, compilerCmd[0], compilerCmd[1:]...)
-	cmd.Dir = dir
-
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-		Cloneflags: syscall.CLONE_NEWNS |
-			syscall.CLONE_NEWUTS |
-			syscall.CLONE_NEWPID |
-			syscall.CLONE_NEWNET |
-			syscall.CLONE_NEWIPC,
-		Unshareflags: syscall.CLONE_NEWNS,
-	}
-
-	return cmd
-}
-
-// 进程控制：暂停、设置cgroup、恢复
-func (c *DefaultCompiler) controlProcess(cmd *exec.Cmd, cgroupPath string, result *CompileResult) (int, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	// 立即暂停进程
-	if err := syscall.Kill(cmd.Process.Pid, syscall.SIGSTOP); err != nil {
-		return 0, fmt.Errorf("暂停进程失败: %v", err)
-	}
-
-	pgid := cmd.Process.Pid
-	if err := utils.SetCgroupForProcess(cgroupPath, pgid); err != nil {
-		syscall.Kill(-pgid, syscall.SIGKILL)
-		return 0, fmt.Errorf("设置cgroup失败: %v", err)
-	}
-
-	// 恢复进程执行
-	if err := syscall.Kill(cmd.Process.Pid, syscall.SIGCONT); err != nil {
-		return 0, fmt.Errorf("恢复进程失败: %v", err)
-	}
-
-	return pgid, nil
-}
-
-// 等待命令完成并处理结果
-func (c *DefaultCompiler) waitForCompletion(cmd *exec.Cmd, ctx context.Context, pgid int,
-	cgroupPath string, stdoutBuf, stderrBuf *bytes.Buffer, startTime time.Time, result *CompileResult) (*CompileResult, error) {
-
-	done := make(chan error, 1)
-	go func() {
-		done <- cmd.Wait()
-	}()
-
-	select {
-	case <-ctx.Done():
-		return c.handleTimeout(pgid, cgroupPath, stderrBuf, startTime, result)
-	case err := <-done:
-		return c.handleCompletion(err, cgroupPath, stdoutBuf, stderrBuf, startTime, result)
-	}
-}
-
-// 处理超时情况
-func (c *DefaultCompiler) handleTimeout(pgid int, cgroupPath string, stderrBuf *bytes.Buffer,
-	startTime time.Time, result *CompileResult) (*CompileResult, error) {
-
-	syscall.Kill(-pgid, syscall.SIGKILL)
-	elapsed := time.Since(startTime)
-
-	memoryUsed, _ := utils.GetMemoryUsage(cgroupPath)
-	result.MaxMemory = utils.FormatBytesKB(memoryUsed)
-	result.MaxTime = float64(elapsed.Milliseconds())
-
-	stderr := strings.TrimSpace(stderrBuf.String())
-	if stderr != "" {
-		result.Message = stderr
-	}
-
-	result.Success = false
-	logx.Errorf("超时杀死整个进程组，运行时间: %v ms", elapsed)
-
-	return result, context.DeadlineExceeded
-}
-
-// 处理正常完成情况
-func (c *DefaultCompiler) handleCompletion(err error, cgroupPath string, stdoutBuf, stderrBuf *bytes.Buffer,
-	startTime time.Time, result *CompileResult) (*CompileResult, error) {
-
-	elapsed := time.Since(startTime)
-	memoryUsed, _ := utils.GetMemoryUsage(cgroupPath)
-	result.MaxMemory = utils.FormatBytesKB(memoryUsed)
-	result.MaxTime = float64(elapsed.Milliseconds())
-
-	stderr := strings.TrimSpace(stderrBuf.String())
-	if stderr != "" || err != nil {
-		result.Success = false
-		result.Message = stderr
-		if err != nil {
-			result.Message = fmt.Sprintf("%v\n\n%s", err, result.Message)
-		}
-		return result, err
-	}
-
-	logx.Infof("编译完成, 内存使用: %d bytes (峰值), %f KB, 用时 %f ms",
-		memoryUsed, result.MaxMemory, result.MaxTime)
-	result.Success = true
-
-	return result, nil
-}
-
-// 统一错误处理
-func (c *DefaultCompiler) handleError(result *CompileResult, message string, exitCode int, err error) (*CompileResult, error) {
-	result.Success = false
-	result.Message = message
-	result.ExitCode = exitCode
-	logx.Errorf(message)
-	return result, err
-}
-
-func (w *Workspace) compile() (*CompileResult, error) {
-	compiler := &DefaultCompiler{}
-	return compiler.Compile(w)
-}
-
-
-文件: core\evaluator.go
---------------------------------------------------
-package core
-
-import (
-	"judge-service/internal/database/model"
-	"judge-service/internal/mq"
-	"judge-service/internal/utils"
-)
-
-type Evaluator interface {
-	Evaluate(workspace *Workspace, results []*model.DataJudgeCase) *mq.JudgeResponse
-}
-
-type DefaultEvaluator struct{}
-
-func (e *DefaultEvaluator) Evaluate(workspace *Workspace, results []*model.DataJudgeCase) *mq.JudgeResponse {
-	judgeRequest := workspace.judgeRequest
-	result := &mq.JudgeResponse{
-		ID:          judgeRequest.ID,
-		UserId:      judgeRequest.UserId,
-		ProblemId:   judgeRequest.ProblemId,
-		SetId:       judgeRequest.SetId,
-		Language:    judgeRequest.Language,
-		Code:        judgeRequest.Code,
-		SubmitType:  judgeRequest.SubmitType,
-		MaxTime:     0,
-		MaxMemory:   0,
-		IsSet:       judgeRequest.IsSet,
-		JudgeTaskId: judgeRequest.JudgeTaskId,
-	}
-
-	err := workspace.svcCtx.JudgeCaseRepo().BatchCreateJudgeCases(workspace.ctx, results)
-	if err != nil {
-		result.Status = "SYSTEM_ERROR"
-		return result
-	}
-
-	maxTime := 0.0
-	maxMemory := 0.0
-	statusCount := make(map[string]int)
-	messageCount := make(map[string]int)
-
-	for _, testCase := range results {
-		// 计算最大值
-		if testCase.MaxTime > maxTime {
-			maxTime = testCase.MaxTime
-		}
-		if testCase.MaxMemory > maxMemory {
-			maxMemory = testCase.MaxMemory
-		}
-
-		if testCase.Status == "RUN_SUCCESS" {
-			if utils.CompareOutput(testCase.ExpectedOutput, testCase.OutputData) {
-				testCase.Status = "ACCEPTED"
-			} else {
-				testCase.Status = "WRONG_ANSWER"
-			}
-		}
-
-		// 统计各种状态的数量
-		statusCount[testCase.Status]++
-		// 消息聚合
-		messageCount[testCase.Message]++
-	}
-
-	// 设置最终的最大值
-	result.MaxTime = maxTime
-	result.MaxMemory = maxMemory
-
-	// 根据状态统计结果设置最终状态
-	result.Status = e.aggregateStatus(statusCount, len(results))
-	result.Message = e.aggregateMessage(messageCount)
-	return result
-}
-
-func (w *Workspace) evaluate(results []*model.DataJudgeCase) *mq.JudgeResponse {
-	evaluator := &DefaultEvaluator{}
-	return evaluator.Evaluate(w, results)
-}
-
-// 聚合状态，优先异常状态，然后选择数量最多的状态
-func (e *DefaultEvaluator) aggregateStatus(statusCount map[string]int, lens int) string {
-	if len(statusCount) == 0 {
-		return "PENDING"
-	}
-
-	// 定义异常状态优先级（从高到低）
-	exceptionStatuses := []string{
-		"COMPILATION_ERROR",
-		"RUNTIME_ERROR",
-		"TIME_LIMIT_EXCEEDED",
-		"MEMORY_LIMIT_EXCEEDED",
-		"SYSTEM_ERROR",
-	}
-
-	// 首先检查是否有异常状态
-	for _, status := range exceptionStatuses {
-		if count, exists := statusCount[status]; exists && count > 0 {
-			return status
-		}
-	}
-
-	// 如果没有异常状态，则按照AC、PC、WA的优先级处理
-	acCount := statusCount["ACCEPTED"]
-	pcCount := statusCount["PARTIAL_ACCEPTED"]
-	waCount := statusCount["WRONG_ANSWER"]
-	otherCount := 0
-
-	// 计算其他状态的总数
-	for status, count := range statusCount {
-		if status != "ACCEPTED" &&
-			status != "PARTIAL_ACCEPTED" &&
-			status != "WRONG_ANSWER" &&
-			status != "PENDING" {
-			otherCount += count
-		}
-	}
-
-	// 判断逻辑
-	if acCount == lens {
-		// 全部正确
-		return "ACCEPTED"
-	} else if acCount > 0 && (acCount+pcCount+waCount+otherCount == lens) {
-		if pcCount > 0 || waCount > 0 || otherCount > 0 {
-			// 有部分正确，也有错误
-			return "PARTIAL_ACCEPTED"
-		}
-	} else if waCount == lens {
-		// 全部错误
-		return "WRONG_ANSWER"
-	} else if pcCount > 0 {
-		// 有部分正确的情况
-		return "PARTIAL_ACCEPTED"
-	}
-
-	// 默认情况：选择数量最多的状态（排除跳过和待判状态）
-	maxCount := 0
-	mostCommonStatus := "PENDING"
-
-	for status, count := range statusCount {
-		if status != "PENDING" &&
-			count > maxCount {
-			maxCount = count
-			mostCommonStatus = status
-		}
-	}
-
-	// 如果所有测试用例都是跳过或待判状态
-	if mostCommonStatus == "PENDING" &&
-		(statusCount["PENDING"] > 0) {
-		// 检查是否有实际的状态
-		hasActualStatus := false
-		for status := range statusCount {
-			if status != "PENDING" {
-				hasActualStatus = true
-				break
-			}
-		}
-		if !hasActualStatus {
-			return "PENDING"
-		}
-	}
-
-	return mostCommonStatus
-}
-
-// aggregateMessage 聚合消息
-func (e *DefaultEvaluator) aggregateMessage(messageCount map[string]int) string {
-	if len(messageCount) == 0 {
-		return ""
-	}
-
-	var maxCount int
-	var mostFrequentMessage string
-
-	for message, count := range messageCount {
-		if count > maxCount {
-			maxCount = count
-			mostFrequentMessage = message
-		}
-	}
-
-	return mostFrequentMessage
-}
-
-
-文件: core\executor.go
---------------------------------------------------
-package core
-
-import (
-	"bytes"
-	"context"
-	"fmt"
-	model2 "judge-service/internal/database/model"
-	"judge-service/internal/utils"
-	"os/exec"
-	"strings"
-	"sync"
-	"syscall"
-	"time"
-
-	"github.com/zeromicro/go-zero/core/logx"
-)
-
-// Executor 执行器接口
-type Executor interface {
-	Execute(workspace *Workspace, testCase *model2.DataTestCase) (*model2.DataJudgeCase, error)
-}
-
-// SandboxExecutor 沙箱执行器
-type SandboxExecutor struct {
-	mu sync.Mutex
-}
-
-// Execute 执行测试用例
-func (e *SandboxExecutor) Execute(workspace *Workspace, testCase *model2.DataTestCase) (*model2.DataJudgeCase, error) {
-	startTime := time.Now()
-
-	// 初始化结果对象
-	result := e.initResult(workspace, testCase)
-
-	// 创建cgroup进行资源限制
-	cgroupPath, err := utils.CreateCgroup(workspace.judgeRequest.MaxMemory)
-	if err != nil {
-		return e.handleError(result, fmt.Sprintf("创建cgroup失败: %v", err), 1, err)
-	}
-	defer utils.CleanupCgroup(cgroupPath)
-
-	// 执行命令并获取结果
-	return e.executeCommand(workspace, testCase, result, cgroupPath, startTime)
-}
-
-// initResult 初始化结果对象
-func (e *SandboxExecutor) initResult(workspace *Workspace, testCase *model2.DataTestCase) *model2.DataJudgeCase {
-	now := time.Now()
-	return &model2.DataJudgeCase{
-		ID:             utils.GenerateID(),
-		SubmitID:       workspace.judgeRequest.ID,
-		CaseSign:       testCase.CaseSign,
-		InputData:      testCase.InputData,
-		ExpectedOutput: testCase.ExpectedOutput,
-		IsSample:       testCase.IsSample,
-		Score:          testCase.Score,
-		Status:         "PENDING",
-		// 文件相关字段
-		InputFilePath:  "", // 初始化为空字符串
-		InputFileSize:  0,  // 使用默认值
-		OutputFilePath: "", // 初始化为空字符串
-		OutputFileSize: 0,  // 使用默认值
-		// 执行结果相关字段
-		MaxTime:   0.00,
-		MaxMemory: 0.00,
-		Message:   "",
-		ExitCode:  0,
-		Deleted:   false,
-		// 时间相关字段
-		CreateTime: &now,
-		CreateUser: "0",
-		UpdateTime: &now,
-		UpdateUser: "0",
-	}
-}
-
-// executeCommand 执行命令并处理结果
-func (e *SandboxExecutor) executeCommand(workspace *Workspace, testCase *model2.DataTestCase,
-	result *model2.DataJudgeCase, cgroupPath string, startTime time.Time) (*model2.DataJudgeCase, error) {
-
-	// 准备命令执行环境
-	cmd, stdoutBuf, stderrBuf, ctx, cancel, err := e.prepareCommand(workspace, testCase)
-	if err != nil {
-		return e.handleError(result, fmt.Sprintf("准备命令失败: %v", err), 1, err)
-	}
-	defer cancel()
-
-	// 启动并管理进程
-	pgid, err := e.startAndManageProcess(cmd, cgroupPath)
-	if err != nil {
-		return e.handleError(result, fmt.Sprintf("进程管理失败: %v", err), 1, err)
-	}
-
-	// 等待命令完成并收集结果
-	return e.waitForCompletion(cmd, ctx, workspace, testCase, result, cgroupPath, pgid, startTime, stdoutBuf, stderrBuf)
-}
-
-// prepareCommand 准备命令执行环境
-func (e *SandboxExecutor) prepareCommand(workspace *Workspace, testCase *model2.DataTestCase) (
-	*exec.Cmd, *bytes.Buffer, *bytes.Buffer, context.Context, context.CancelFunc, error) {
-
-	runCmd := utils.GetRunCommand(workspace.langConfig, workspace.SourceFile, workspace.BuildFile)
-
-	// 设置超时上下文（执行时间限制 + 安全余量）
-	timeout := time.Duration(workspace.judgeRequest.MaxTime)*time.Millisecond + 30*time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-
-	cmd := exec.CommandContext(ctx, runCmd[0], runCmd[1:]...)
-	e.setProcessAttributes(cmd)
-
-	// 设置输入输出缓冲区
-	cmd.Stdin = strings.NewReader(testCase.InputData)
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = &stderrBuf
-
-	return cmd, &stdoutBuf, &stderrBuf, ctx, cancel, nil
-}
-
-// setProcessAttributes 设置进程属性
-func (e *SandboxExecutor) setProcessAttributes(cmd *exec.Cmd) {
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-		Cloneflags: syscall.CLONE_NEWNS |
-			syscall.CLONE_NEWUTS |
-			syscall.CLONE_NEWPID |
-			syscall.CLONE_NEWNET |
-			syscall.CLONE_NEWIPC,
-		Unshareflags: syscall.CLONE_NEWNS,
-	}
-}
-
-// startAndManageProcess 启动并管理进程
-func (e *SandboxExecutor) startAndManageProcess(cmd *exec.Cmd, cgroupPath string) (int, error) {
-	// 启动命令
-	if err := cmd.Start(); err != nil {
-		return 0, fmt.Errorf("启动进程失败: %w", err)
-	}
-
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	pgid := cmd.Process.Pid
-
-	// 暂停进程以便设置cgroup
-	if err := syscall.Kill(pgid, syscall.SIGSTOP); err != nil {
-		syscall.Kill(-pgid, syscall.SIGKILL)
-		return 0, fmt.Errorf("暂停进程失败: %w", err)
-	}
-
-	// 设置cgroup
-	if err := utils.SetCgroupForProcess(cgroupPath, pgid); err != nil {
-		syscall.Kill(-pgid, syscall.SIGKILL)
-		return 0, fmt.Errorf("设置cgroup失败: %w", err)
-	}
-
-	// 恢复进程执行
-	if err := syscall.Kill(pgid, syscall.SIGCONT); err != nil {
-		syscall.Kill(-pgid, syscall.SIGKILL)
-		return 0, fmt.Errorf("恢复进程失败: %w", err)
-	}
-
-	return pgid, nil
-}
-
-// waitForCompletion 等待命令完成并收集结果
-func (e *SandboxExecutor) waitForCompletion(cmd *exec.Cmd, ctx context.Context, workspace *Workspace,
-	testCase *model2.DataTestCase, result *model2.DataJudgeCase, cgroupPath string, pgid int,
-	startTime time.Time, stdoutBuf, stderrBuf *bytes.Buffer) (*model2.DataJudgeCase, error) {
-
-	done := make(chan error, 1)
-	go func() {
-		done <- cmd.Wait()
-	}()
-
-	select {
-	case <-ctx.Done():
-		return e.handleTimeout(workspace, result, cgroupPath, pgid, startTime, stdoutBuf, stderrBuf)
-	case err := <-done:
-		return e.handleCommandResult(workspace, testCase, result, cgroupPath, startTime, stdoutBuf, stderrBuf, err)
-	}
-}
-
-// handleTimeout 处理超时情况
-func (e *SandboxExecutor) handleTimeout(workspace *Workspace, result *model2.DataJudgeCase,
-	cgroupPath string, pgid int, startTime time.Time, stdoutBuf, stderrBuf *bytes.Buffer) (*model2.DataJudgeCase, error) {
-
-	// 杀死进程组
-	syscall.Kill(-pgid, syscall.SIGKILL)
-
-	// 收集执行结果
-	elapsed := time.Since(startTime)
-	e.collectExecutionMetrics(result, cgroupPath, elapsed)
-
-	result.OutputData = stdoutBuf.String()
-	result.Status = "TIME_LIMIT_EXCEEDED"
-
-	// 检查错误输出
-	if stderr := strings.TrimSpace(stderrBuf.String()); stderr != "" {
-		result.Message = stderr
-	}
-
-	logx.Errorf("超时杀死进程组，运行时间: %v ms，时间限制: %v ms", elapsed.Milliseconds(), workspace.judgeRequest.MaxTime)
-	return result, nil
-}
-
-// handleCommandResult 处理命令执行结果
-func (e *SandboxExecutor) handleCommandResult(workspace *Workspace, testCase *model2.DataTestCase,
-	result *model2.DataJudgeCase, cgroupPath string, startTime time.Time,
-	stdoutBuf, stderrBuf *bytes.Buffer, cmdErr error) (*model2.DataJudgeCase, error) {
-
-	elapsed := time.Since(startTime)
-	e.collectExecutionMetrics(result, cgroupPath, elapsed)
-
-	result.OutputData = stdoutBuf.String()
-
-	// 判断执行状态
-	result.Status = e.determineExecutionStatus(workspace, result, cgroupPath, elapsed, cmdErr, stderrBuf.String())
-
-	logx.Infof("运行完成 - 状态: %s, 时间: %.2f ms, 内存: %.2f KB",
-		result.Status, result.MaxTime, result.MaxMemory)
-
-	return result, nil
-}
-
-// collectExecutionMetrics 收集执行指标
-func (e *SandboxExecutor) collectExecutionMetrics(result *model2.DataJudgeCase,
-	cgroupPath string, elapsed time.Duration) {
-
-	result.MaxTime = float64(elapsed.Milliseconds())
-
-	if memoryUsed, err := utils.GetMemoryUsage(cgroupPath); err == nil {
-		result.MaxMemory = utils.FormatBytesKB(memoryUsed)
-	}
-}
-
-// determineExecutionStatus 判断执行状态
-func (e *SandboxExecutor) determineExecutionStatus(workspace *Workspace, result *model2.DataJudgeCase,
-	cgroupPath string, elapsed time.Duration, cmdErr error, stderr string) string {
-
-	// 检查时间限制
-	if elapsed > time.Duration(workspace.judgeRequest.MaxTime)*time.Millisecond {
-		return "TIME_LIMIT_EXCEEDED"
-	}
-
-	// 检查内存限制
-	if utils.CheckOOMEvent(cgroupPath) {
-		return "MEMORY_LIMIT_EXCEEDED"
-	}
-
-	// 检查运行时错误
-	if cmdErr != nil {
-		result.Message = cmdErr.Error()
-		return "RUNTIME_ERROR"
-	}
-
-	// 检查错误输出
-	if strings.TrimSpace(stderr) != "" {
-		result.Message = stderr
-		return "RUNTIME_ERROR"
-	}
-
-	return "RUN_SUCCESS"
-}
-
-// executeTestCases 执行测试用例集
-func (w *Workspace) executeTestCases() ([]*model2.DataJudgeCase, error) {
-	// testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemID(w.ctx, w.judgeRequest.ProblemId)
-	testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemIDWithSample(w.ctx, w.judgeRequest.ProblemId, w.judgeRequest.SubmitType)
-	if err != nil {
-		return nil, fmt.Errorf("获取测试用例失败: %w", err)
-	}
-
-	executor := &SandboxExecutor{}
-	results := make([]*model2.DataJudgeCase, 0, len(testCases))
-
-	for _, testCase := range testCases {
-		result, err := executor.Execute(w, &testCase)
-		if err != nil {
-			// 记录错误但继续执行其他测试用例
-			logx.Errorf("执行测试用例 %s 失败: %v", testCase.CaseSign, err)
-			continue
-		}
-		results = append(results, result)
-	}
-
-	if len(results) == 0 && len(testCases) > 0 {
-		return nil, fmt.Errorf("所有测试用例执行失败")
-	}
-
-	return results, nil
-}
-
-// handleError 统一错误处理
-func (e *SandboxExecutor) handleError(result *model2.DataJudgeCase, message string, exitCode int, err error) (*model2.DataJudgeCase, error) {
-	result.Status = "SystemError"
-	result.Message = message
-	result.ExitCode = exitCode
-	logx.Errorf("执行错误: %s, 原始错误: %v", message, err)
-	return result, fmt.Errorf("%s: %w", message, err)
+	Nacos    NacosConfig
+	MySQL    MySQLConfig    `json:",optional"` // MySQL 配置
+	RabbitMQ RabbitMQConfig `json:",optional"`
 }
 
 
@@ -1202,176 +502,468 @@ package core
 
 import (
 	"context"
-	"fmt"
-	"judge-service/internal/config"
-	"judge-service/internal/mq"
-	"judge-service/internal/svc"
-	"judge-service/internal/utils"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-
-	"github.com/google/uuid"
+	"encoding/json"
 	"github.com/zeromicro/go-zero/core/logx"
+	"math"
+	"runtime"
+	"similarity-service/internal/config"
+	"similarity-service/internal/database/model"
+	"similarity-service/internal/mq"
+	"similarity-service/internal/similarity"
+	"similarity-service/internal/svc"
+	"similarity-service/internal/utils"
+	"sync"
+	"time"
 )
 
+// WorkspaceManager 工作空间管理器，负责工作空间的创建和清理
+type WorkspaceManager struct {
+	workspaces sync.Map // 存储活跃的工作空间
+	basePath   string
+	mu         sync.RWMutex
+}
+
+var (
+	workspaceManager *WorkspaceManager
+	once             sync.Once
+)
+
+func GetWorkspaceManager(basePath string) *WorkspaceManager {
+	once.Do(func() {
+		workspaceManager = &WorkspaceManager{
+			basePath: basePath,
+		}
+	})
+	return workspaceManager
+}
+
 type Workspace struct {
-	ctx          context.Context
-	config       config.Config
-	startTime    time.Time
-	langConfig   config.LanguageConfig
-	judgeRequest mq.JudgeRequest
-	RootPath     string // 工作空间根目录
-	SourcePath   string // 源代码目录
-	SourceFile   string // 源代码文件
-	BuildPath    string // 编译目录
-	BuildFile    string // 编译文件
-	RunsPath     string // 运行目录
-	svcCtx       *svc.ServiceContext
+	ctx               context.Context
+	config            config.Config
+	startTime         time.Time
+	similarityMessage mq.SimilarityMessage
+	svcCtx            *svc.ServiceContext
+	mu                sync.RWMutex // 工作空间内部锁
+	isCleaned         bool         // 标记是否已清理
 }
 
 // NewWorkspace 创建工作空间,上下文/配置/提交信息,返回 工作空间实例 和 提交信息
-func NewWorkspace(ctx context.Context, config config.Config, judgeRequest mq.JudgeRequest, svcCtx *svc.ServiceContext) (*Workspace, *mq.JudgeResponse) {
-	submissionID := generateSubmissionID()
-	workDir := config.Workspace
-	root := filepath.Join(workDir, submissionID) // 本次工作空间根目录
-
+func NewWorkspace(ctx context.Context, config config.Config, similarityMessage mq.SimilarityMessage, svcCtx *svc.ServiceContext) (*Workspace, *mq.SimilarityResultMessage) {
 	ws := &Workspace{
-		ctx:          ctx,                           // 使用传入的ctx
-		startTime:    time.Now(),                    // 记录开始时间，用来计算任务总耗时
-		config:       config,                        // 系统配置
-		judgeRequest: judgeRequest,                  // 提交信息
-		RootPath:     root,                          // 根目录
-		SourcePath:   filepath.Join(root, "source"), // 源代码目录
-		BuildPath:    filepath.Join(root, "build"),  // 编译目录
-		RunsPath:     filepath.Join(root, "runs"),   // 运行目录
-		svcCtx:       svcCtx,
+		ctx:               ctx,        // 使用传入的ctx
+		startTime:         time.Now(), // 记录开始时间，用来计算任务总耗时
+		config:            config,     // 系统配置
+		similarityMessage: similarityMessage,
+		svcCtx:            svcCtx,
+		isCleaned:         false,
 	}
-
-	// 创建目录
-	if err := ws.createDirs(); err != nil {
-		return nil, ws.buildErrorResponse("创建工作空间失败: "+err.Error(), "SYSTEM_ERROR")
-	}
-
 	return ws, nil
 }
 
-// generateSubmissionID 生成提交ID
-func generateSubmissionID() string {
-	return strings.ReplaceAll(uuid.New().String(), "-", "")
+// buildErrorResponse 构建错误响应
+func (w *Workspace) buildErrorResponse() *mq.SimilarityResultMessage {
+	return &mq.SimilarityResultMessage{
+		TaskID:         w.similarityMessage.TaskID,
+		SubmitID:       w.similarityMessage.SubmitID,
+		SetID:          w.similarityMessage.SetID,
+		ProblemID:      w.similarityMessage.ProblemID,
+		IsSet:          w.similarityMessage.IsSet,
+		Language:       w.similarityMessage.Language,
+		UserID:         w.similarityMessage.UserID,
+		MinMatchLength: w.similarityMessage.MinMatchLength,
+		Threshold:      w.similarityMessage.Threshold,
+		TaskType:       w.similarityMessage.TaskType,
+		CodeTokens:     w.similarityMessage.CodeTokens,
+		CodeTokenNames: w.similarityMessage.CodeTokenNames,
+		CodeTokenTexts: w.similarityMessage.CodeTokenTexts,
+		Similarity:     0.0,
+		Skip:           false,
+	}
 }
 
 // buildErrorResponse 构建错误响应
-func (w *Workspace) buildErrorResponse(message string, status string) *mq.JudgeResponse {
-	return &mq.JudgeResponse{
-		UserId:      w.judgeRequest.UserId,
-		ProblemId:   w.judgeRequest.ProblemId,
-		Language:    w.judgeRequest.Language,
-		SetId:       w.judgeRequest.SetId,
-		Code:        w.judgeRequest.Code,
-		SubmitType:  w.judgeRequest.SubmitType,
-		MaxTime:     0,
-		MaxMemory:   0,
-		Message:     message,
-		ID:          w.judgeRequest.ID,
-		IsSet:       w.judgeRequest.IsSet,
-		Status:      status,
-		ExitCode:    1,
-		JudgeTaskId: w.judgeRequest.JudgeTaskId,
+func (w *Workspace) buildSkipResponse() *mq.SimilarityResultMessage {
+	return &mq.SimilarityResultMessage{
+		TaskID:         w.similarityMessage.TaskID,
+		SubmitID:       w.similarityMessage.SubmitID,
+		SetID:          w.similarityMessage.SetID,
+		ProblemID:      w.similarityMessage.ProblemID,
+		IsSet:          w.similarityMessage.IsSet,
+		Language:       w.similarityMessage.Language,
+		UserID:         w.similarityMessage.UserID,
+		MinMatchLength: w.similarityMessage.MinMatchLength,
+		Threshold:      w.similarityMessage.Threshold,
+		TaskType:       w.similarityMessage.TaskType,
+		CodeTokens:     w.similarityMessage.CodeTokens,
+		CodeTokenNames: w.similarityMessage.CodeTokenNames,
+		CodeTokenTexts: w.similarityMessage.CodeTokenTexts,
+		Similarity:     0.0,
+		Skip:           true,
 	}
 }
 
-// createDirs 创建目录
-func (w *Workspace) createDirs() error {
-	dirs := []string{w.SourcePath, w.BuildPath, w.RunsPath}
-	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("创建目录 %s 失败: %w", dir, err)
-		}
+// buildErrorResponse 构建响应
+func (w *Workspace) buildResponse(similarity float64) *mq.SimilarityResultMessage {
+	return &mq.SimilarityResultMessage{
+		TaskID:         w.similarityMessage.TaskID,
+		SubmitID:       w.similarityMessage.SubmitID,
+		SetID:          w.similarityMessage.SetID,
+		ProblemID:      w.similarityMessage.ProblemID,
+		IsSet:          w.similarityMessage.IsSet,
+		Language:       w.similarityMessage.Language,
+		UserID:         w.similarityMessage.UserID,
+		MinMatchLength: w.similarityMessage.MinMatchLength,
+		Threshold:      w.similarityMessage.Threshold,
+		TaskType:       w.similarityMessage.TaskType,
+		CodeTokens:     w.similarityMessage.CodeTokens,
+		CodeTokenNames: w.similarityMessage.CodeTokenNames,
+		CodeTokenTexts: w.similarityMessage.CodeTokenTexts,
+		Similarity:     similarity,
+		Skip:           false,
 	}
-	return nil
 }
 
-// getLanguageConfig 获取语言配置
-func (w *Workspace) getLanguageConfig() (*config.LanguageConfig, error) {
-	for _, lang := range w.config.Languages {
-		if lang.Name == w.judgeRequest.Language {
-			return &lang, nil
-		}
-	}
-	return nil, fmt.Errorf("不支持的语言: %s", w.judgeRequest.Language)
-}
-
-// writeSourceCode 写入源代码
-func (w *Workspace) writeSourceCode() error {
-	langConfig, err := w.getLanguageConfig()
-	if err != nil {
-		return err
-	}
-	w.langConfig = *langConfig
-
-	fileName := langConfig.SourceFile + langConfig.Extension
-	filePath := filepath.Join(w.SourcePath, fileName)
-
-	if err := os.WriteFile(filePath, []byte(w.judgeRequest.Code), 0644); err != nil {
-		return fmt.Errorf("写入源代码文件失败: %w", err)
+func calculateSimilarityScorePrecise(matches int, submitTokens, libraryTokens []int) float64 {
+	if matches == 0 {
+		return 0.0
 	}
 
-	w.SourceFile = filePath
-	w.BuildFile = filepath.Join(w.RunsPath, langConfig.CompileFile)
-	logx.Infof("源代码保存成功: %s", filePath)
+	// 使用 int64 避免溢出
+	matchesBig := int64(matches * 2)
+	submitSize := int64(len(submitTokens))
+	librarySize := int64(len(libraryTokens))
 
-	return nil
+	denominator := submitSize + librarySize
+	if denominator == 0 {
+		return 0.0
+	}
+
+	similarity := float64(matchesBig) / float64(denominator)
+	return math.Round(similarity*10000) / 10000 // 保留4位小数
 }
 
 // 执行代码
-func (w *Workspace) Execute() *mq.JudgeResponse {
+func (w *Workspace) Execute() *mq.SimilarityResultMessage {
+	startTime := time.Now()
+	logx.Infof("开始执行 %v", w.similarityMessage.TaskID)
+	w.mu.Lock()
+	defer w.mu.Unlock()
 
-	// 1. 写入源代码
-	if err := w.writeSourceCode(); err != nil {
-		return w.buildErrorResponse(err.Error(), "SYSTEM_ERROR")
-	}
+	sampleLibraries, err := w.svcCtx.DataLibraryRepo().GetSimilarityLibraries(
+		w.similarityMessage.IsSet,
+		w.similarityMessage.ProblemID,
+		w.similarityMessage.Language,
+		w.similarityMessage.UserID,
+		w.similarityMessage.SetID,
+		100,
+	)
 
-	// 2. 编译（如果需要）
-	if w.langConfig.NeedCompile {
-		// TODO 执行编译
-		compileResult, err := w.compile()
-		if err != nil {
-			logx.Error("编译失败", err.Error())
-			compileResult.Message = utils.AutoMaskAllFilePaths(compileResult.Message)
-			return w.buildErrorResponse(compileResult.Message, "COMPILATION_ERROR")
-		}
-		if !compileResult.Success {
-			compileResult.Message = utils.AutoMaskAllFilePaths(compileResult.Message)
-			return w.buildErrorResponse(compileResult.Message, "COMPILATION_ERROR")
-		}
-	}
-
-	// 3. 执行测试用例
-	executeResult, err := w.executeTestCases()
 	if err != nil {
-		return w.buildErrorResponse("执行失败: "+err.Error(), "RUNTIME_ERROR")
+		logx.Errorf("获取样本库失败: %v", err)
+		return nil
 	}
 
-	// 4. 评估结果
-	evaluationResult := w.evaluate(executeResult)
+	logx.Infof("样本库数量: %d", len(sampleLibraries))
 
-	// 5. 返回最终结果
-	return evaluationResult
+	if len(sampleLibraries) == 0 {
+		return w.buildSkipResponse()
+	}
+
+	var (
+		maxSimilarityScore float64
+		mu                 sync.Mutex
+		taskSimilarities   []*model.TaskSimilarity // 用于收集 TaskSimilarity 记录
+	)
+	// 定义结果结构
+	type similarityResult struct {
+		similarityScore float64
+		library         model.DataLibrary
+	}
+
+	// 使用 worker pool
+	numWorkers := runtime.NumCPU() * 2
+	jobs := make(chan model.DataLibrary, len(sampleLibraries))
+	results := make(chan *similarityResult, len(sampleLibraries))
+
+	// 启动 worker
+	for i := 0; i < numWorkers; i++ {
+		go func() {
+			for library := range jobs {
+				// 解析 CodeToken JSON 字符串为 []int
+				var codeTokens []int
+				if err := json.Unmarshal([]byte(library.CodeToken), &codeTokens); err != nil {
+					logx.Infof("解析 CodeToken JSON 失败 (ID: %s): %v", library.ID, err)
+					results <- &similarityResult{similarityScore: 0.0, library: library}
+					continue
+				}
+
+				matches := similarity.GreedyStringTiling(w.similarityMessage.CodeTokens, codeTokens, 5)
+				similarityScore := calculateSimilarityScorePrecise(
+					matches,
+					w.similarityMessage.CodeTokens,
+					codeTokens,
+				)
+				results <- &similarityResult{similarityScore: similarityScore, library: library}
+			}
+		}()
+	}
+
+	// 分发任务
+	go func() {
+		for _, library := range sampleLibraries {
+			jobs <- library
+		}
+		close(jobs)
+	}()
+
+	// 收集结果
+	for i := 0; i < len(sampleLibraries); i++ {
+		result := <-results
+
+		// 更新最大相似度
+		if result.similarityScore > maxSimilarityScore {
+			maxSimilarityScore = result.similarityScore
+		}
+
+		// 创建 TaskSimilarity 记录
+		taskSimilarity := w.createTaskSimilarity(result.library, result.similarityScore)
+
+		mu.Lock()
+		taskSimilarities = append(taskSimilarities, taskSimilarity)
+		mu.Unlock()
+	}
+
+	//// 批量插入 TaskSimilarity 记录
+	//if len(taskSimilarities) > 0 {
+	//	if err := w.svcCtx.TaskSimilarityRepo().BatchCreate(taskSimilarities); err != nil {
+	//		logx.Errorf("批量插入 TaskSimilarity 记录失败: %v", err)
+	//	} else {
+	//		logx.Infof("成功插入 %d 条 TaskSimilarity 记录", len(taskSimilarities))
+	//	}
+	//}
+
+	// 批量插入 TaskSimilarity 记录 - 异步执行
+	if len(taskSimilarities) > 0 {
+		go func(records []*model.TaskSimilarity) {
+			defer func() {
+				if r := recover(); r != nil {
+					logx.Errorf("异步插入 TaskSimilarity 时发生 panic: %v", r)
+				}
+			}()
+
+			if err := w.svcCtx.TaskSimilarityRepo().BatchCreate(records); err != nil {
+				logx.Errorf("批量插入 TaskSimilarity 记录失败: %v", err)
+			} else {
+				logx.Infof("成功插入 %d 条 TaskSimilarity 记录", len(records))
+			}
+		}(taskSimilarities) // 注意：这里传递副本，避免数据竞争
+	}
+
+	// 立即返回响应，不等待插入完成
+	response := w.buildResponse(maxSimilarityScore)
+
+	totalTime := time.Since(startTime)
+	logx.Infof("Execute函数总执行耗时: %v", totalTime)
+	return response
 }
 
-// Cleanup 清理工作空间
-func (w *Workspace) Cleanup() error {
-	logx.Infof("开始清理工作空间 路径: %s", w.RootPath)
+//// 创建 TaskSimilarity 记录
+//func (w *Workspace) createTaskSimilarity(library model.DataLibrary, similarityScore float64) *model.TaskSimilarity {
+//	now := time.Now()
+//
+//	// 确保 token 数组正确序列化为 JSON 数组
+//	var submitCodeTokenJSON, originCodeTokenJSON []byte
+//	var err error
+//
+//	//// 将 token 数组转换为 JSON 字符串
+//	//submitCodeTokenJSON, _ := json.Marshal(w.similarityMessage.CodeTokens)
+//	//originCodeTokenJSON, _ := json.Marshal(library.CodeToken)
+//
+//	// 处理 submitCodeToken - 确保是 []int 类型
+//	if w.similarityMessage.CodeTokens == nil {
+//		submitCodeTokenJSON, _ = json.Marshal([]int{})
+//	} else {
+//		submitCodeTokenJSON, err = json.Marshal(w.similarityMessage.CodeTokens)
+//		if err != nil {
+//			// 处理错误，确保是整数数组
+//			submitCodeTokenJSON, _ = json.Marshal([]int{})
+//		}
+//	}
+//
+//	// 处理 originCodeToken - 确保是 []int 类型
+//	if library.CodeToken == nil {
+//		originCodeTokenJSON, _ = json.Marshal([]int{})
+//	} else {
+//		// 确保 library.CodeToken 是整数切片
+//		originCodeTokenJSON, err = json.Marshal(library.CodeToken)
+//		if err != nil {
+//			originCodeTokenJSON, _ = json.Marshal([]int{})
+//		}
+//	}
+//
+//	submitTokenNames, _ := json.Marshal(w.similarityMessage.CodeTokenNames)
+//	submitTokenTexts, _ := json.Marshal(w.similarityMessage.CodeTokenTexts)
+//
+//	return &model.TaskSimilarity{
+//		ID:               utils.GenerateID(),
+//		TaskID:           w.similarityMessage.TaskID,
+//		TaskType:         w.similarityMessage.IsSet,
+//		ProblemID:        w.similarityMessage.ProblemID,
+//		SetID:            w.similarityMessage.SetID,
+//		IsSet:            w.similarityMessage.IsSet,
+//		Language:         w.similarityMessage.Language,
+//		Similarity:       similarityScore,
+//		SubmitUser:       w.similarityMessage.UserID,
+//		SubmitCode:       w.similarityMessage.Code,
+//		SubmitCodeLength: w.similarityMessage.CodeLength,
+//		SubmitID:         w.similarityMessage.SubmitID,
+//		SubmitTime:       &now,
+//		SubmitCodeToken:  string(submitCodeTokenJSON),
+//		SubmitTokenName:  string(submitTokenNames), // 根据实际情况设置
+//		SubmitTokenTexts: string(submitTokenTexts), // 根据实际情况设置
+//		OriginUser:       library.UserID,
+//		OriginCode:       library.Code,
+//		OriginCodeLength: len(library.Code),
+//		OriginID:         library.ID,
+//		OriginTime:       library.SubmitTime,
+//		OriginCodeToken:  string(originCodeTokenJSON),
+//		OriginTokenName:  library.CodeTokenName,  // 根据实际情况设置
+//		OriginTokenTexts: library.CodeTokenTexts, // 根据实际情况设置
+//		CreateTime:       &now,
+//		CreateUser:       "0", // 根据实际情况设置
+//		UpdateTime:       &now,
+//		UpdateUser:       "0",
+//	}
+//}
 
-	// if err := os.RemoveAll(w.RootPath); err != nil {
-	// 	logx.Errorf("清理工作空间失败 路径: %s, 错误: %v", w.RootPath, err)
-	// 	return err
-	// }
+// 创建 TaskSimilarity 记录
+func (w *Workspace) createTaskSimilarity(library model.DataLibrary, similarityScore float64) *model.TaskSimilarity {
+	now := time.Now()
 
-	logx.Infof("工作空间清理完毕: %s", w.RootPath)
+	// 处理 submitCodeToken - 确保是有效的JSON数组
+	var submitCodeTokenJSON []byte
+	if w.similarityMessage.CodeTokens == nil {
+		submitCodeTokenJSON, _ = json.Marshal([]int{})
+	} else {
+		submitCodeTokenJSON, _ = json.Marshal(w.similarityMessage.CodeTokens)
+	}
+
+	// 处理 originCodeToken - 确保是有效的JSON数组
+	var originCodeTokenJSON []byte
+	if library.CodeToken == "" {
+		// 如果CodeToken是空字符串，存储空数组
+		originCodeTokenJSON, _ = json.Marshal([]int{})
+	} else {
+		// 如果CodeToken已经有值，需要验证它是否是有效的JSON数组
+		// 如果不是有效的JSON数组，可能需要解析并重新序列化
+		var tokenArray []int
+		err := json.Unmarshal([]byte(library.CodeToken), &tokenArray)
+		if err != nil {
+			// 如果不是有效的JSON，尝试其他解析方式或存储为空数组
+			originCodeTokenJSON, _ = json.Marshal([]int{})
+		} else {
+			// 重新序列化确保格式正确
+			originCodeTokenJSON, _ = json.Marshal(tokenArray)
+		}
+	}
+
+	// 处理其他JSON字段
+	submitTokenNames, _ := json.Marshal(w.similarityMessage.CodeTokenNames)
+	if submitTokenNames == nil {
+		submitTokenNames, _ = json.Marshal([]string{})
+	}
+
+	submitTokenTexts, _ := json.Marshal(w.similarityMessage.CodeTokenTexts)
+	if submitTokenTexts == nil {
+		submitTokenTexts, _ = json.Marshal([]string{})
+	}
+
+	// 处理OriginTokenName和OriginTokenTexts
+	var originTokenNameJSON, originTokenTextsJSON []byte
+	if library.CodeTokenName == "" {
+		originTokenNameJSON, _ = json.Marshal([]string{})
+	} else {
+		originTokenNameJSON = []byte(library.CodeTokenName)
+	}
+
+	if library.CodeTokenTexts == "" {
+		originTokenTextsJSON, _ = json.Marshal([]string{})
+	} else {
+		originTokenTextsJSON = []byte(library.CodeTokenTexts)
+	}
+
+	return &model.TaskSimilarity{
+		ID:               utils.GenerateID(),
+		TaskID:           w.similarityMessage.TaskID,
+		TaskType:         w.similarityMessage.IsSet,
+		ProblemID:        w.similarityMessage.ProblemID,
+		SetID:            w.similarityMessage.SetID,
+		IsSet:            w.similarityMessage.IsSet,
+		Language:         w.similarityMessage.Language,
+		Similarity:       similarityScore,
+		SubmitUser:       w.similarityMessage.UserID,
+		SubmitCode:       w.similarityMessage.Code,
+		SubmitCodeLength: w.similarityMessage.CodeLength,
+		SubmitID:         w.similarityMessage.SubmitID,
+		SubmitTime:       &now,
+		SubmitCodeToken:  string(submitCodeTokenJSON),
+		SubmitTokenName:  string(submitTokenNames),
+		SubmitTokenTexts: string(submitTokenTexts),
+		OriginUser:       library.UserID,
+		OriginCode:       library.Code,
+		OriginCodeLength: len(library.Code),
+		OriginID:         library.ID,
+		OriginTime:       library.SubmitTime,
+		OriginCodeToken:  string(originCodeTokenJSON),
+		OriginTokenName:  string(originTokenNameJSON),
+		OriginTokenTexts: string(originTokenTextsJSON),
+		CreateTime:       &now,
+		CreateUser:       "0",
+		UpdateTime:       &now,
+		UpdateUser:       "0",
+	}
+}
+
+// 在Workspace结构体中添加报告生成方法
+func (w *Workspace) GenerateReport(similarityResult *mq.SimilarityResultMessage) error {
+	logx.Infof("开始生成报告 taskID: %s", w.similarityMessage.TaskID)
+	// 设置阈值
+	threshold := w.similarityMessage.Threshold
+	now := time.Now()
+	// 创建TaskReports记录
+	taskReport := &model.TaskReports{
+		ID:                     utils.GenerateID(),
+		TaskID:                 w.similarityMessage.TaskID,
+		ProblemID:              w.similarityMessage.ProblemID,
+		SetID:                  w.similarityMessage.SetID,
+		SimilarityDistribution: "[]",
+		DegreeStatistics:       "[]",
+		Threshold:              threshold,
+		CreateTime:             &now,
+		UpdateTime:             &now,
+	}
+	similarityResult.ReportID = taskReport.ID
+
+	// 插入TaskReports记录
+	if err := w.svcCtx.TaskReportsRepo().Create(taskReport); err != nil {
+		logx.Errorf("插入TaskReports记录失败: %v", err)
+		return err
+	}
+
+	logx.Infof("成功生成报告，报告ID: %s", taskReport.ID)
 	return nil
+}
+
+// GetAllWorkspaces 获取所有工作空间（用于监控）
+func (wm *WorkspaceManager) GetAllWorkspaces() []*Workspace {
+	var workspaces []*Workspace
+	wm.workspaces.Range(func(key, value interface{}) bool {
+		if ws, ok := value.(*Workspace); ok {
+			workspaces = append(workspaces, ws)
+		}
+		return true
+	})
+	return workspaces
 }
 
 
@@ -1384,7 +976,7 @@ import (
 	"log"
 	"time"
 
-	"judge-service/internal/config"
+	"similarity-service/internal/config"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/driver/mysql"
@@ -1402,6 +994,22 @@ func NewMySQLManager(c config.MySQLConfig) (*MySQLManager, error) {
 	db, err := connectMySQL(dsn, c)
 	if err != nil {
 		return nil, err
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	// 优化连接池配置以适应高并发
+	sqlDB.SetMaxIdleConns(50)                 // 增加最大空闲连接数
+	sqlDB.SetMaxOpenConns(200)                // 增加最大打开连接数
+	sqlDB.SetConnMaxLifetime(5 * time.Minute) // 减少连接最大生存时间
+	sqlDB.SetConnMaxIdleTime(2 * time.Minute) // 设置连接最大空闲时间
+
+	// 测试连接
+	if err := sqlDB.Ping(); err != nil {
+		return nil, fmt.Errorf("数据库连接测试失败: %v", err)
 	}
 
 	logx.Info("MySQL 连接成功")
@@ -1476,7 +1084,7 @@ func (m *MySQLManager) Close() error {
 }
 
 
-文件: database\model\data_judge_case.go
+文件: database\model\data_library.go
 --------------------------------------------------
 package model
 
@@ -1484,25 +1092,22 @@ import (
 	"time"
 )
 
-// 判题结果用例表
-type DataJudgeCase struct {
+// 提交样本库
+type DataLibrary struct {
 	ID             string     `gorm:"column:id;primaryKey;type:varchar(32)"`
-	SubmitID       string     `gorm:"column:submit_id;type:varchar(32);not null"`
-	CaseSign       string     `gorm:"column:case_sign;type:varchar(255)"`
-	InputData      string     `gorm:"column:input_data;type:longtext"`
-	OutputData     string     `gorm:"column:output_data;type:longtext"`
-	ExpectedOutput string     `gorm:"column:expected_output;type:longtext"`
-	InputFilePath  string     `gorm:"column:input_file_path;type:varchar(500)"`
-	InputFileSize  int64      `gorm:"column:input_file_size;default:0"`
-	OutputFilePath string     `gorm:"column:output_file_path;type:varchar(500)"`
-	OutputFileSize int64      `gorm:"column:output_file_size;default:0"`
-	MaxTime        float64    `gorm:"column:max_time;type:decimal(10,2);default:0.00"`
-	MaxMemory      float64    `gorm:"column:max_memory;type:decimal(10,2);default:0.00"`
-	IsSample       bool       `gorm:"column:is_sample;default:false"`
-	Score          float64    `gorm:"column:score;type:decimal(10,2);default:0.00"`
-	Status         string     `gorm:"column:status;type:varchar(32)"`
-	Message        string     `gorm:"column:message;type:text"`
-	ExitCode       int        `gorm:"column:exit_code;default:0"`
+	UserID         string     `gorm:"column:user_id;type:varchar(32)"`
+	SetID          string     `gorm:"column:set_id;type:varchar(32)"`
+	IsSet          bool       `gorm:"column:is_set;default:false"`
+	ProblemID      string     `gorm:"column:problem_id;type:varchar(32)"`
+	SubmitID       string     `gorm:"column:submit_id;type:varchar(32)"`
+	SubmitTime     *time.Time `gorm:"column:submit_time"`
+	Language       string     `gorm:"column:language;type:varchar(64)"`
+	Code           string     `gorm:"column:code;type:longtext"`
+	CodeToken      string     `gorm:"column:code_token;type:json"` // 实际使用时可定义为具体的结构体类型
+	CodeTokenName  string     `gorm:"column:code_token_name;type:json"`
+	CodeTokenTexts string     `gorm:"column:code_token_texts;type:json"`
+	CodeLength     int        `gorm:"column:code_length;default:0"`
+	AccessCount    int        `gorm:"column:access_count;default:0"`
 	Deleted        bool       `gorm:"column:deleted;default:false"`
 	CreateTime     *time.Time `gorm:"column:create_time"`
 	CreateUser     string     `gorm:"column:create_user;type:varchar(32)"`
@@ -1510,12 +1115,12 @@ type DataJudgeCase struct {
 	UpdateUser     string     `gorm:"column:update_user;type:varchar(32)"`
 }
 
-func (DataJudgeCase) TableName() string {
-	return "data_judge_case"
+func (DataLibrary) TableName() string {
+	return "data_library"
 }
 
 
-文件: database\model\data_test_case.go
+文件: database\model\task_reports.go
 --------------------------------------------------
 package model
 
@@ -1523,236 +1128,466 @@ import (
 	"time"
 )
 
-// 题目测试用例表
-type DataTestCase struct {
-	ID             string     `gorm:"column:id;primaryKey;type:varchar(32)"`
-	ProblemID      string     `gorm:"column:problem_id;type:varchar(32);not null"`
-	CaseSign       string     `gorm:"column:case_sign;type:varchar(255)"`
-	InputData      string     `gorm:"column:input_data;type:longtext"`
-	ExpectedOutput string     `gorm:"column:expected_output;type:longtext"`
-	InputFilePath  string     `gorm:"column:input_file_path;type:varchar(500)"`
-	InputFileSize  int64      `gorm:"column:input_file_size;default:0"`
-	OutputFilePath string     `gorm:"column:output_file_path;type:varchar(500)"`
-	OutputFileSize int64      `gorm:"column:output_file_size;default:0"`
-	IsSample       bool       `gorm:"column:is_sample;default:false"`
-	Score          float64    `gorm:"column:score;type:decimal(10,2);default:0.00"`
-	Deleted        bool       `gorm:"column:deleted;default:false"`
-	CreateTime     *time.Time `gorm:"column:create_time"`
-	CreateUser     string     `gorm:"column:create_user;type:varchar(32)"`
-	UpdateTime     *time.Time `gorm:"column:update_time"`
-	UpdateUser     string     `gorm:"column:update_user;type:varchar(32)"`
+// 报告库表
+type TaskReports struct {
+	ID                     string     `gorm:"column:id;primaryKey;type:varchar(32)"`
+	ReportType             int        `gorm:"column:report_type;default:0"`
+	TaskID                 string     `gorm:"column:task_id;type:varchar(32)"`
+	SetID                  string     `gorm:"column:set_id;type:varchar(32)"`
+	IsSet                  bool       `gorm:"column:is_set;default:false"`
+	ProblemID              string     `gorm:"column:problem_id;type:varchar(32)"`
+	SampleCount            int        `gorm:"column:sample_count;default:0"`
+	SimilarityGroupCount   int        `gorm:"column:similarity_group_count;default:0"`
+	AvgSimilarity          float64    `gorm:"column:avg_similarity;type:decimal(10,2);default:0.00"`
+	MaxSimilarity          float64    `gorm:"column:max_similarity;type:decimal(10,2);default:0.00"`
+	Threshold              float64    `gorm:"column:threshold;type:decimal(10,2);default:0.50"`
+	SimilarityDistribution string     `gorm:"column:similarity_distribution;type:json"`
+	DegreeStatistics       string     `gorm:"column:degree_statistics;type:json"`
+	CheckMode              int        `gorm:"column:check_mode;default:1"`
+	Deleted                bool       `gorm:"column:deleted;default:false"`
+	CreateTime             *time.Time `gorm:"column:create_time"`
+	CreateUser             string     `gorm:"column:create_user;type:varchar(32)"`
+	UpdateTime             *time.Time `gorm:"column:update_time"`
+	UpdateUser             string     `gorm:"column:update_user;type:varchar(32)"`
 }
 
-func (DataTestCase) TableName() string {
-	return "data_test_case"
+func (TaskReports) TableName() string {
+	return "task_reports"
 }
 
 
-文件: database\repository\judgecase_repository.go
+文件: database\model\task_similarity.go
+--------------------------------------------------
+package model
+
+import (
+	"database/sql"
+	"time"
+)
+
+type CloneLevel struct {
+	CloneLevel     string          `json:"cloneLevel"`
+	CloneLevelName string          `json:"cloneLevelName"`
+	Similarity     sql.NullFloat64 `json:"similarity"`
+	Count          int             `json:"count"`
+	Percentage     float64         `json:"percentage"`
+}
+
+type TaskReportStats struct {
+	SampleCount   int     `json:"sampleCount"`
+	GroupCount    int     `json:"groupCount"`
+	AvgSimilarity float64 `json:"avgSimilarity"`
+	MaxSimilarity float64 `json:"maxSimilarity"`
+}
+
+// 检测结果任务库
+type TaskSimilarity struct {
+	ID               string     `gorm:"column:id;primaryKey;type:varchar(32)"`
+	TaskID           string     `gorm:"column:task_id;type:varchar(32)"`
+	TaskType         bool       `gorm:"column:task_type;default:false"`
+	ProblemID        string     `gorm:"column:problem_id;type:varchar(32)"`
+	SetID            string     `gorm:"column:set_id;type:varchar(32)"`
+	IsSet            bool       `gorm:"column:is_set;default:false"`
+	Language         string     `gorm:"column:language;type:varchar(64)"`
+	Similarity       float64    `gorm:"column:similarity;type:decimal(10,2);default:0.00"`
+	SubmitUser       string     `gorm:"column:submit_user;type:varchar(32)"`
+	SubmitCode       string     `gorm:"column:submit_code;type:longtext"`
+	SubmitCodeLength int        `gorm:"column:submit_code_length;default:0"`
+	SubmitID         string     `gorm:"column:submit_id;type:varchar(32)"`
+	SubmitTime       *time.Time `gorm:"column:submit_time"`
+	SubmitCodeToken  string     `gorm:"column:submit_code_token;type:json"`
+	SubmitTokenName  string     `gorm:"column:submit_token_name;type:json"`
+	SubmitTokenTexts string     `gorm:"column:submit_token_texts;type:json"`
+	OriginUser       string     `gorm:"column:origin_user;type:varchar(32)"`
+	OriginCode       string     `gorm:"column:origin_code;type:longtext"`
+	OriginCodeLength int        `gorm:"column:origin_code_length;default:0"`
+	OriginID         string     `gorm:"column:origin_id;type:varchar(32)"`
+	OriginTime       *time.Time `gorm:"column:origin_time"`
+	OriginCodeToken  string     `gorm:"column:origin_code_token;type:json"`
+	OriginTokenName  string     `gorm:"column:origin_token_name;type:json"`
+	OriginTokenTexts string     `gorm:"column:origin_token_texts;type:json"`
+	Deleted          bool       `gorm:"column:deleted;default:false"`
+	CreateTime       *time.Time `gorm:"column:create_time"`
+	CreateUser       string     `gorm:"column:create_user;type:varchar(32)"`
+	UpdateTime       *time.Time `gorm:"column:update_time"`
+	UpdateUser       string     `gorm:"column:update_user;type:varchar(32)"`
+}
+
+func (TaskSimilarity) TableName() string {
+	return "task_similarity"
+}
+
+
+文件: database\repository\data_library_repository.go
 --------------------------------------------------
 package repository
 
 import (
-	"context"
-	"fmt"
-	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
-	"judge-service/internal/database/model"
+	"similarity-service/internal/database/model"
 )
 
-type JudgeCaseRepository interface {
-	// 单个操作
-	CreateJudgeCase(ctx context.Context, judgeCase *model.DataJudgeCase) error
-
-	// 批量操作
-	BatchCreateJudgeCases(ctx context.Context, judgeCases []*model.DataJudgeCase) error
+type DataLibraryRepository interface {
+	// 操作接口
+	GetSimilarityLibraries(isSet bool, problemID, language, userID, setId string, limit int) ([]model.DataLibrary, error)
 }
 
-type judgeCaseRepository struct {
+type dataLibraryRepository struct {
 	db *gorm.DB
 }
 
-func NewJudgeCaseRepository(db *gorm.DB) JudgeCaseRepository {
-	return &judgeCaseRepository{
+func NewDataLibraryRepository(db *gorm.DB) DataLibraryRepository {
+	return &dataLibraryRepository{
 		db: db,
 	}
 }
 
-// CreateJudgeCase 创建单个判题用例
-func (r *judgeCaseRepository) CreateJudgeCase(ctx context.Context, judgeCase *model.DataJudgeCase) error {
-	if r.db == nil {
-		return fmt.Errorf("数据库未准备好")
-	}
+// GetSimilarityLibraries 根据条件查询相似代码库
+func (r *dataLibraryRepository) GetSimilarityLibraries(isSet bool, problemID, language, userID, setId string, limit int) ([]model.DataLibrary, error) {
+	var dataLibraries []model.DataLibrary
 
-	logx.Infof("开始创建判题用例，问题ID: %s", judgeCase.SubmitID)
-
-	err := r.db.WithContext(ctx).Create(judgeCase).Error
-	if err != nil {
-		logx.Errorf("创建判题用例失败: %v", err)
-		return fmt.Errorf("创建判题用例失败: %v", err)
-	}
-
-	logx.Infof("成功创建判题用例，ID: %s", judgeCase.ID)
-	return nil
-}
-
-// BatchCreateJudgeCases 批量创建判题用例
-func (r *judgeCaseRepository) BatchCreateJudgeCases(ctx context.Context, judgeCases []*model.DataJudgeCase) error {
-	if r.db == nil {
-		return fmt.Errorf("数据库未准备好")
-	}
-
-	if len(judgeCases) == 0 {
-		logx.Info("判题用例列表为空，跳过批量创建")
-		return nil
-	}
-
-	// 获取第一个用例的问题ID用于日志
-	submitID := ""
-	if len(judgeCases) > 0 && judgeCases[0] != nil {
-		submitID = judgeCases[0].SubmitID
-	}
-
-	logx.Infof("开始批量创建判题用例，问题ID: %s，数量: %d", submitID, len(judgeCases))
-
-	// 使用事务确保批量操作的原子性
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.CreateInBatches(judgeCases, 100).Error; err != nil {
-			return fmt.Errorf("批量创建判题用例失败: %v", err)
-		}
-		return nil
-	})
-
-	if err != nil {
-		logx.Errorf("批量创建判题用例失败: %v", err)
-		return err
-	}
-
-	logx.Infof("成功批量创建判题用例，问题ID: %s，数量: %d", submitID, len(judgeCases))
-	return nil
-}
-
-
-文件: database\repository\testcase_repository.go
---------------------------------------------------
-package repository
-
-import (
-	"context"
-	"fmt"
-	"judge-service/internal/database/model"
-
-	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
-)
-
-type TestCaseRepository interface {
-	GetTestCasesByProblemID(ctx context.Context, problemID string) ([]model.DataTestCase, error)
-	GetTestCasesByProblemIDWithSample(ctx context.Context, problemID string, isSample bool) ([]model.DataTestCase, error)
-}
-
-type testCaseRepository struct {
-	db *gorm.DB
-}
-
-func NewTestCaseRepository(db *gorm.DB) TestCaseRepository {
-	return &testCaseRepository{
-		db: db,
-	}
-}
-
-func (r *testCaseRepository) GetTestCasesByProblemID(ctx context.Context, problemID string) ([]model.DataTestCase, error) {
-	if r.db == nil {
-		return nil, fmt.Errorf("数据库未准备好")
-	}
-
-	// 添加调试日志
-	logx.Infof("开始查询题目 %s 的测试用例", problemID)
-
-	var testCases []model.DataTestCase
-	err := r.db.
+	query := r.db.Model(&model.DataLibrary{}).
 		Where("problem_id = ?", problemID).
-		Order("create_time ASC").
-		Find(&testCases).Error
+		Where("language = ?", language).
+		Where("user_id != ?", userID).
+		Order("update_time DESC").
+		Limit(limit)
 
-	if err != nil {
-		return nil, fmt.Errorf("获取测试用例失败: %v", err)
-	}
-
-	logx.Infof("成功获取题目 %s 的测试用例，共 %d 条", problemID, len(testCases))
-
-	// 如果没有数据，记录警告
-	if len(testCases) == 0 {
-		logx.Infof("题目 %s 没有找到未删除的测试用例", problemID)
-	}
-
-	return testCases, nil
-}
-
-func (r *testCaseRepository) GetTestCasesByProblemIDWithSample(ctx context.Context, problemID string, submitType bool) ([]model.DataTestCase, error) {
-	if r.db == nil {
-		return nil, fmt.Errorf("数据库未准备好")
-	}
-
-	// 添加调试日志
-	logx.Infof("开始查询题目 %s 的测试用例, submitType: %t", problemID, submitType)
-
-	var testCases []model.DataTestCase
-	var err error
-
-	baseQuery := r.db.
-		Where("problem_id = ?", problemID).
-		Where("deleted = 0")
-
-	// 正式提交
-	if submitType {
-		// 正式提交：获取所有非样例测试用例
-		testCases, err = r.getTestCases(baseQuery, 0, "ASC")
+	if isSet {
+		query = query.
+			Where("is_set = ?", true).
+			Where("set_id = ?", setId)
 	} else {
-		// 测试提交：先获取样例，如果没有则回退
-		testCases, err = r.getTestCases(baseQuery, 1, "ASC")
-		if err == nil && len(testCases) == 0 {
-			logx.Infof("题目 %s 没有找到样例测试用例，尝试获取1条测试用例", problemID)
-			testCases, err = r.getFallbackTestCase(baseQuery)
-		}
+		query = query.
+			Where("is_set = ?", false)
 	}
+
+	err := query.Find(&dataLibraries).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return dataLibraries, nil
+}
+
+
+文件: database\repository\task_reports_repository.go
+--------------------------------------------------
+package repository
+
+import (
+	"similarity-service/internal/database/model"
+
+	"gorm.io/gorm"
+)
+
+type TaskReportsRepository interface {
+	// 单个创建
+	Create(taskReport *model.TaskReports) error
+}
+
+type taskReportsRepository struct {
+	db *gorm.DB
+}
+
+func NewTaskReportsRepository(db *gorm.DB) TaskReportsRepository {
+	return &taskReportsRepository{
+		db: db,
+	}
+}
+
+// Create 单个创建
+func (r *taskReportsRepository) Create(taskReport *model.TaskReports) error {
+	if taskReport == nil {
+		return nil
+	}
+	return r.db.Create(taskReport).Error
+}
+
+
+文件: database\repository\task_similarity_repository.go
+--------------------------------------------------
+package repository
+
+import (
+	"math"
+	"similarity-service/internal/database/model"
+
+	"gorm.io/gorm"
+)
+
+type TaskSimilarityRepository interface {
+	SelectSimilarityStats(taskID, problemID, setID string, isSet int) (*model.TaskReportStats, error)
+	SelectSimilarityDistribution(taskID string) ([]int, error)
+	SelectDegreeStatistics(taskID string, threshold float64) ([]model.CloneLevel, error)
+	GetDegreeBySimilarity(similarity, threshold float64) (string, error)
+
+	// 批量插入
+	BatchCreate(tasks []*model.TaskSimilarity) error
+}
+
+type taskSimilarityRepository struct {
+	db *gorm.DB
+}
+
+func NewTaskSimilarityRepository(db *gorm.DB) TaskSimilarityRepository {
+	return &taskSimilarityRepository{
+		db: db,
+	}
+}
+
+// BatchCreate 批量插入
+func (r *taskSimilarityRepository) BatchCreate(tasks []*model.TaskSimilarity) error {
+	if len(tasks) == 0 {
+		return nil
+	}
+	return r.db.Create(&tasks).Error
+}
+
+// SelectSimilarityStats 查询相似度统计
+func (r *taskSimilarityRepository) SelectSimilarityStats(taskID, problemID, setID string, isSet int) (*model.TaskReportStats, error) {
+	var stats model.TaskReportStats
+
+	query := r.db.Model(&model.TaskSimilarity{})
+
+	if taskID != "" {
+		query = query.Where("task_id = ?", taskID)
+	}
+	if problemID != "" {
+		query = query.Where("problem_id = ?", problemID)
+	}
+	if setID != "" {
+		query = query.Where("set_id = ?", setID)
+	}
+
+	// 注意：这里根据您的业务逻辑决定是否添加 isSet 条件
+	// 如果 isSet 为0表示不筛选，可以省略这个条件
+	if isSet != 0 {
+		query = query.Where("is_set = ?", isSet)
+	}
+
+	err := query.Select("COUNT(*) as sample_count, " +
+		"COUNT(DISTINCT similarity) as group_count, " +
+		"MAX(similarity) as max_similarity, " +
+		"AVG(similarity) as avg_similarity").
+		Scan(&stats).Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	logx.Infof("成功获取题目 %s 的测试用例，共 %d 条", problemID, len(testCases))
-
-	if len(testCases) == 0 {
-		logx.Errorf("题目 %s 没有找到测试用例", problemID)
-	}
-
-	return testCases, nil
-}
-	
-// 辅助方法
-func (r *testCaseRepository) getTestCases(baseQuery *gorm.DB, isSample int, order string) ([]model.DataTestCase, error) {
-	var testCases []model.DataTestCase
-	err := baseQuery.
-		Where("is_sample = ?", isSample).
-		Order("create_time " + order).
-		Find(&testCases).Error
-	if err != nil {
-		return nil, fmt.Errorf("获取测试用例失败: %v", err)
-	}
-	return testCases, nil
+	return &stats, nil
 }
 
-func (r *testCaseRepository) getFallbackTestCase(baseQuery *gorm.DB) ([]model.DataTestCase, error) {
-	var testCases []model.DataTestCase
-	err := baseQuery.
-		Order("create_time DESC").
-		Limit(1).
-		Find(&testCases).Error
-	if err != nil {
-		return nil, fmt.Errorf("获取回退测试用例失败: %v", err)
+// SelectSimilarityDistribution 查询相似度分布
+func (r *taskSimilarityRepository) SelectSimilarityDistribution(taskID string) ([]int, error) {
+	type RangeResult struct {
+		RangeIndex int
+		Count      int
 	}
-	return testCases, nil
+
+	var results []RangeResult
+
+	// 使用原生SQL查询
+	query := `
+		WITH ranges AS (
+			SELECT 0 as range_start, 10 as range_end, 1 as range_index
+			UNION ALL SELECT 10, 20, 2
+			UNION ALL SELECT 20, 30, 3
+			UNION ALL SELECT 30, 40, 4
+			UNION ALL SELECT 40, 50, 5
+			UNION ALL SELECT 50, 60, 6
+			UNION ALL SELECT 60, 70, 7
+			UNION ALL SELECT 70, 80, 8
+			UNION ALL SELECT 80, 90, 9
+			UNION ALL SELECT 90, 101, 10
+		)
+		SELECT r.range_index, COALESCE(COUNT(ts.similarity), 0) as count
+		FROM ranges r
+		LEFT JOIN task_similarity ts ON ts.task_id = ? 
+			AND ts.similarity >= r.range_start / 100.0 
+			AND ts.similarity < r.range_end / 100.0
+		GROUP BY r.range_index
+		ORDER BY r.range_index
+	`
+
+	err := r.db.Raw(query, taskID).Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 转换为数量数组
+	counts := make([]int, 10)
+	for _, result := range results {
+		if result.RangeIndex >= 1 && result.RangeIndex <= 10 {
+			counts[result.RangeIndex-1] = result.Count
+		}
+	}
+
+	return counts, nil
+}
+
+//// SelectDegreeStatistics 查询程度统计
+//func (r *taskSimilarityRepository) SelectDegreeStatistics(taskID string, threshold float64) ([]model.CloneLevel, error) {
+//	var cloneLevels []model.CloneLevel
+//
+//	query := `
+//		WITH degree_categories AS (
+//			SELECT 'HIGHLY_SUSPECTED' as degree, 1 as sort_order
+//			UNION ALL SELECT 'MEDIUM_SUSPECTED', 2
+//			UNION ALL SELECT 'LOW_SUSPECTED', 3
+//			UNION ALL SELECT 'NOT_REACHED', 4
+//		),
+//		degree_stats AS (
+//			SELECT
+//				CASE
+//					WHEN similarity >= ? * 0.9 THEN 'HIGHLY_SUSPECTED'
+//					WHEN similarity >= ? * 0.7 THEN 'MEDIUM_SUSPECTED'
+//					WHEN similarity >= ? * 0.5 THEN 'LOW_SUSPECTED'
+//					WHEN similarity >= ? THEN 'NOT_REACHED'
+//					ELSE 'NOT_DETECTED'
+//				END as degree,
+//				COUNT(*) as count
+//			FROM task_similarity
+//			WHERE task_id = ?
+//			GROUP BY
+//				CASE
+//					WHEN similarity >= ? * 0.9 THEN 'HIGHLY_SUSPECTED'
+//					WHEN similarity >= ? * 0.7 THEN 'MEDIUM_SUSPECTED'
+//					WHEN similarity >= ? * 0.5 THEN 'LOW_SUSPECTED'
+//					WHEN similarity >= ? THEN 'NOT_REACHED'
+//					ELSE 'NOT_DETECTED'
+//				END
+//		),
+//		total_stats AS (
+//			SELECT COUNT(*) as total_count
+//			FROM task_similarity
+//			WHERE task_id = ?
+//		)
+//		SELECT
+//			dc.degree as clone_level,
+//			CASE dc.degree
+//				WHEN 'HIGHLY_SUSPECTED' THEN '高度可疑'
+//				WHEN 'MEDIUM_SUSPECTED' THEN '中度可疑'
+//				WHEN 'LOW_SUSPECTED' THEN '轻度可疑'
+//				WHEN 'NOT_REACHED' THEN '未达阈值'
+//			END as clone_level_name,
+//			NULL as similarity,
+//			COALESCE(ds.count, 0) as count,
+//			CASE
+//				WHEN ts.total_count > 0 THEN
+//					ROUND((COALESCE(ds.count, 0) * 100.0 / ts.total_count), 2)
+//				ELSE 0
+//			END as percentage
+//		FROM degree_categories dc
+//		LEFT JOIN degree_stats ds ON dc.degree = ds.degree
+//		CROSS JOIN total_stats ts
+//		ORDER BY dc.sort_order
+//	`
+//
+//	err := r.db.Raw(query,
+//		threshold, threshold, threshold, threshold, taskID,
+//		threshold, threshold, threshold, threshold, taskID).Scan(&cloneLevels).Error
+//
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return cloneLevels, nil
+//}
+
+// SelectDegreeStatistics 查询程度统计
+func (r *taskSimilarityRepository) SelectDegreeStatistics(taskID string, threshold float64) ([]model.CloneLevel, error) {
+	var cloneLevels []model.CloneLevel
+
+	// 首先获取总记录数
+	var totalCount int64
+	err := r.db.Model(&model.TaskSimilarity{}).
+		Where("task_id = ?", taskID).
+		Count(&totalCount).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 定义程度分类
+	degreeCategories := []struct {
+		degree     string
+		name       string
+		sortOrder  int
+		minPercent float64
+		maxPercent float64
+	}{
+		{"HIGHLY_SUSPECTED", "高度可疑", 1, 0.9, 1.0},
+		{"MEDIUM_SUSPECTED", "中度可疑", 2, 0.7, 0.9},
+		{"LOW_SUSPECTED", "轻度可疑", 3, 0.5, 0.7},
+		{"NOT_REACHED", "未达阈值", 4, 1.0, 1.0}, // 特殊处理
+	}
+
+	// 查询每个程度的数量
+	for _, category := range degreeCategories {
+		var count int64
+		var query *gorm.DB
+
+		if category.degree == "NOT_REACHED" {
+			// NOT_REACHED 特殊处理：>= threshold 但 < threshold * 0.5
+			query = r.db.Model(&model.TaskSimilarity{}).
+				Where("task_id = ? AND similarity >= ? AND similarity < ?",
+					taskID, threshold, threshold*0.5)
+		} else {
+			// 其他程度
+			query = r.db.Model(&model.TaskSimilarity{}).
+				Where("task_id = ? AND similarity >= ? AND similarity < ?",
+					taskID, threshold*category.minPercent, threshold*category.maxPercent)
+		}
+
+		err := query.Count(&count).Error
+		if err != nil {
+			return nil, err
+		}
+
+		// 计算百分比
+		percentage := 0.0
+		if totalCount > 0 {
+			percentage = float64(count) * 100.0 / float64(totalCount)
+			percentage = math.Round(percentage*100) / 100 // 保留2位小数
+		}
+
+		cloneLevels = append(cloneLevels, model.CloneLevel{
+			CloneLevel:     category.degree,
+			CloneLevelName: category.name,
+			Count:          int(count),
+			Percentage:     percentage,
+		})
+	}
+
+	return cloneLevels, nil
+}
+
+// GetDegreeBySimilarity 根据相似度获取程度
+func (r *taskSimilarityRepository) GetDegreeBySimilarity(similarity, threshold float64) (string, error) {
+	var degree string
+
+	query := `
+		SELECT CASE
+			WHEN ? >= ? * 0.9 THEN 'HIGHLY_SUSPECTED'
+			WHEN ? >= ? * 0.7 THEN 'MEDIUM_SUSPECTED'
+			WHEN ? >= ? * 0.5 THEN 'LOW_SUSPECTED'
+			WHEN ? >= ? THEN 'NOT_REACHED'
+			ELSE 'NOT_DETECTED'
+		END as degree
+	`
+
+	err := r.db.Raw(query,
+		similarity, threshold,
+		similarity, threshold,
+		similarity, threshold,
+		similarity, threshold).Scan(&degree).Error
+
+	if err != nil {
+		return "", err
+	}
+
+	return degree, nil
 }
 
 
@@ -1762,23 +1597,24 @@ package initializer
 
 import (
 	"fmt"
-	"judge-service/internal/config"
-	"judge-service/internal/database"
-	repository2 "judge-service/internal/database/repository"
-	"judge-service/internal/mq"
-	"judge-service/internal/nacos"
+	"similarity-service/internal/config"
+	"similarity-service/internal/database"
+	repository2 "similarity-service/internal/database/repository"
+	"similarity-service/internal/mq"
+	"similarity-service/internal/nacos"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type InitializerManager struct {
-	config              config.Config
-	mysqlManager        *database.MySQLManager
-	rabbitMQManager     *mq.RabbitMQManager
-	serviceRegistry     *nacos.ServiceRegistryManager
-	testCaseRepo        repository2.TestCaseRepository
-	judgeCaseRepository repository2.JudgeCaseRepository
+	config                   config.Config
+	mysqlManager             *database.MySQLManager
+	rabbitMQManager          *mq.RabbitMQManager
+	serviceRegistry          *nacos.ServiceRegistryManager
+	dataLibraryRepository    repository2.DataLibraryRepository
+	taskSimilarityRepository repository2.TaskSimilarityRepository
+	taskReportsRepository    repository2.TaskReportsRepository
 }
 
 func NewInitializerManager(c config.Config) *InitializerManager {
@@ -1839,8 +1675,9 @@ func (im *InitializerManager) initMySQLWithRetry() {
 		}
 
 		im.mysqlManager = mysqlManager
-		im.testCaseRepo = repository2.NewTestCaseRepository(mysqlManager.DB)
-		im.judgeCaseRepository = repository2.NewJudgeCaseRepository(mysqlManager.DB)
+		im.dataLibraryRepository = repository2.NewDataLibraryRepository(mysqlManager.DB)
+		im.taskSimilarityRepository = repository2.NewTaskSimilarityRepository(mysqlManager.DB)
+		im.taskReportsRepository = repository2.NewTaskReportsRepository(mysqlManager.DB)
 		logx.Info("MySQL 连接成功")
 		return
 	}
@@ -1882,12 +1719,16 @@ func (im *InitializerManager) GetRabbitMQManager() *mq.RabbitMQManager {
 	return im.rabbitMQManager
 }
 
-func (im *InitializerManager) GetTestCaseRepo() repository2.TestCaseRepository {
-	return im.testCaseRepo
+func (im *InitializerManager) GetDataLibraryRepo() repository2.DataLibraryRepository {
+	return im.dataLibraryRepository
 }
 
-func (im *InitializerManager) GetJudgeCaseRepo() repository2.JudgeCaseRepository {
-	return im.judgeCaseRepository
+func (im *InitializerManager) GetTaskSimilarityRepo() repository2.TaskSimilarityRepository {
+	return im.taskSimilarityRepository
+}
+
+func (im *InitializerManager) GetTaskReportsRepo() repository2.TaskReportsRepository {
+	return im.taskReportsRepository
 }
 
 func (im *InitializerManager) GetServiceReRegistry() *nacos.ServiceRegistryManager {
@@ -1906,9 +1747,9 @@ package logic
 import (
 	"context"
 	"encoding/json"
-	"judge-service/internal/core"
-	"judge-service/internal/mq"
-	"judge-service/internal/svc"
+	"similarity-service/internal/core"
+	"similarity-service/internal/mq"
+	"similarity-service/internal/svc"
 	"sync"
 	"time"
 
@@ -1917,24 +1758,24 @@ import (
 )
 
 type CommonLogic struct {
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
+	ctx       context.Context
+	svcCtx    *svc.ServiceContext
+	semaphore chan struct{} // 控制并发数量的信号量
 }
 
-// 题目逻辑
 func NewCommonLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CommonLogic {
 	return &CommonLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		ctx:       ctx,
+		svcCtx:    svcCtx,
+		semaphore: make(chan struct{}, 20), // 控制并发数量
 	}
 }
 
-// 开始消费者
 func (l *CommonLogic) StartConsumer() {
 	CommonChannel := l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel
-	// 声明队列（确保存在）
+
 	_, err := CommonChannel.QueueDeclare(
-		l.svcCtx.Config.RabbitMQ.Common.JudgeQueue,
+		l.svcCtx.Config.RabbitMQ.Common.SimilarityQueue,
 		true, false, false, false, nil,
 	)
 	if err != nil {
@@ -1942,11 +1783,11 @@ func (l *CommonLogic) StartConsumer() {
 		return
 	}
 
-	// 设置预取计数，控制并发度
+	// 增加预取计数，提高并发度
 	err = CommonChannel.Qos(
-		10,    // 预取计数，控制并发处理的消息数量
-		0,     // 预取大小，0表示无限制
-		false, // 全局设置，false表示只对当前channel有效
+		50, // 增加预取计数
+		0,
+		false,
 	)
 	if err != nil {
 		logx.Errorf("设置Qos失败: %v", err)
@@ -1954,80 +1795,71 @@ func (l *CommonLogic) StartConsumer() {
 	}
 
 	msgs, err := CommonChannel.Consume(
-		l.svcCtx.Config.RabbitMQ.Common.JudgeQueue,
+		l.svcCtx.Config.RabbitMQ.Common.SimilarityQueue,
 		"", false, false, false, false, nil,
 	)
 	if err != nil {
-		logx.Errorf("注册题目消费者失败: %v", err)
+		logx.Errorf("注册相似消费者失败: %v", err)
 		return
 	}
 
-	logx.Info("题目消费者已成功启动")
+	logx.Info("相似消费者已成功启动")
 
 	var wg sync.WaitGroup
-	semaphore := make(chan struct{}, 10) // 控制并发数量的信号量
 
 	for d := range msgs {
-		semaphore <- struct{}{} // 获取信号量
 		wg.Add(1)
+		l.semaphore <- struct{}{} // 获取信号量
 
 		go func(delivery amqp.Delivery) {
 			defer wg.Done()
-			defer func() { <-semaphore }() // 释放信号量
+			defer func() { <-l.semaphore }() // 释放信号量
 
 			l.processMessage(delivery)
 		}(d)
 	}
 
-	wg.Wait() // 等待所有处理完成
+	wg.Wait()
 }
 
+// 为每个消息创建独立的上下文，避免上下文取消影响其他处理
 func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
+	// 为每个消息创建独立的上下文
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
 	defer func() {
 		if err := delivery.Ack(false); err != nil {
-			logx.Errorf("未能确认题目消息: %v", err)
+			logx.Errorf("未能确认相似消息: %v", err)
 		}
 	}()
 
-	var judgeSubmit mq.JudgeRequest
-	if err := json.Unmarshal(delivery.Body, &judgeSubmit); err != nil {
+	var similarityMessage mq.SimilarityMessage
+	if err := json.Unmarshal(delivery.Body, &similarityMessage); err != nil {
 		logx.Errorf("解码 JSON 出错: %v", err)
 		return
 	}
 
-	workspace, result := core.NewWorkspace(l.ctx, l.svcCtx.Config, judgeSubmit, l.svcCtx)
+	// 使用新的上下文创建工作空间
+	workspace, result := core.NewWorkspace(ctx, l.svcCtx.Config, similarityMessage, l.svcCtx)
 	if result != nil {
-		err := l.sendResultToMQ(result)
-		if err != nil {
+		if err := l.sendResultToMQ(result); err != nil {
 			logx.Errorf("发送结果到MQ失败: %v", err)
 		}
 		return
 	}
 
 	// 程序执行
-	judgeResponse := workspace.Execute()
+	resultMessage := workspace.Execute()
 
-	// 如果正常会执行到这里
-	err := l.sendResultToMQ(judgeResponse)
-	if err != nil {
+	// 发送结果
+	if err := l.sendResultToMQ(resultMessage); err != nil {
 		logx.Errorf("发送结果到MQ失败: %v", err)
-		err = workspace.Cleanup()
-		if err != nil {
-			logx.Errorf("删除工作空间失败: %v", err)
-		}
-		return
-	}
-
-	err = workspace.Cleanup()
-	if err != nil {
-		logx.Errorf("删除工作空间失败: %v", err)
-		return
 	}
 }
 
-func (l *CommonLogic) sendResultToMQ(result *mq.JudgeResponse) error {
+func (l *CommonLogic) sendResultToMQ(result *mq.SimilarityResultMessage) error {
 	body, err := json.Marshal(result)
-
 	if err != nil {
 		return err
 	}
@@ -2035,7 +1867,7 @@ func (l *CommonLogic) sendResultToMQ(result *mq.JudgeResponse) error {
 	exchange := l.svcCtx.Config.RabbitMQ.Common.ResultExchange
 	routingKey := l.svcCtx.Config.RabbitMQ.Common.ResultRoutingKey
 
-	err = l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel.Publish(
+	return l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel.Publish(
 		exchange,
 		routingKey,
 		false,
@@ -2046,7 +1878,6 @@ func (l *CommonLogic) sendResultToMQ(result *mq.JudgeResponse) error {
 			Timestamp:   time.Now(),
 		},
 	)
-	return err
 }
 
 
@@ -2056,7 +1887,7 @@ package logic
 
 import (
 	"context"
-	"judge-service/internal/svc"
+	"similarity-service/internal/svc"
 )
 
 type ConsumeLogic struct {
@@ -2081,54 +1912,13 @@ func (l *ConsumeLogic) StartConsuming() {
 }
 
 
-文件: mq\judge_request.go
---------------------------------------------------
-package mq
-
-type JudgeRequest struct {
-	UserId      string  `json:"userId"`
-	ProblemId   string  `json:"problemId"`
-	SetId       string  `json:"setId"`
-	Language    string  `json:"language"`
-	Code        string  `json:"code"`
-	SubmitType  bool    `json:"submitType"`
-	MaxTime     float64 `json:"maxTime"`   // ms
-	MaxMemory   float64 `json:"maxMemory"` // kb
-	ID          string  `json:"id"`
-	IsSet       bool    `json:"isSet"`
-	JudgeTaskId string  `json:"judgeTaskId"`
-}
-
-
-文件: mq\judge_response.go
---------------------------------------------------
-package mq
-
-type JudgeResponse struct {
-	UserId      string  `json:"userId"`
-	ProblemId   string  `json:"problemId"`
-	Language    string  `json:"language"`
-	SetId       string  `json:"setId"`
-	Code        string  `json:"code"`
-	SubmitType  bool    `json:"submitType"`
-	MaxTime     float64 `json:"maxTime"`   // ms
-	MaxMemory   float64 `json:"maxMemory"` // kb
-	Message     string  `json:"message"`
-	ID          string  `json:"id"`
-	IsSet       bool    `json:"isSet"`
-	Status      string  `json:"status"`
-	ExitCode    int     `json:"exitCode"` // 程序退出码
-	JudgeTaskId string  `json:"judgeTaskId"`
-}
-
-
 文件: mq\rabbitmq.go
 --------------------------------------------------
 package mq
 
 import (
 	"fmt"
-	"judge-service/internal/config"
+	"similarity-service/internal/config"
 
 	"github.com/streadway/amqp"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -2181,6 +1971,55 @@ func (r *RabbitMQManager) GetChannel() (*amqp.Channel, error) {
 		return nil, fmt.Errorf("RabbitMQ 连接不可用")
 	}
 	return r.Conn.Channel()
+}
+
+
+文件: mq\similarity_request.go
+--------------------------------------------------
+package mq
+
+type SimilarityMessage struct {
+	TaskID         string   `json:"taskId"`         // 任务ID
+	SubmitID       string   `json:"submitId"`       // 提交ID
+	SetID          string   `json:"setId"`          // 题集
+	ProblemID      string   `json:"problemId"`      // 多个或单个题目
+	UserID         string   `json:"userId"`         // 多个或单个题目
+	IsSet          bool     `json:"isSet"`          // 是否是题集
+	Language       string   `json:"language"`       // 语言
+	MinMatchLength int      `json:"minMatchLength"` // 敏感度
+	Threshold      float64  `json:"threshold"`      // 阈值
+	TaskType       bool     `json:"taskType"`       // 是否手动
+	Code           string   `json:"code"`
+	CodeLength     int      `json:"codeLength"`
+	CodeTokens     []int    `json:"codeTokens"`
+	CodeTokenNames []string `json:"codeTokenNames"`
+	CodeTokenTexts []string `json:"codeTokenTexts"`
+}
+
+
+文件: mq\similarity_response.go
+--------------------------------------------------
+package mq
+
+type SimilarityResultMessage struct {
+	TaskID         string   `json:"taskId"`         // 任务ID
+	SubmitID       string   `json:"submitId"`       // 提交ID
+	SetID          string   `json:"setId"`          // 题集
+	ProblemID      string   `json:"problemId"`      // 多个或单个题目
+	IsSet          bool     `json:"isSet"`          // 是否是题集
+	UserID         string   `json:"userId"`         // 多个或单个题目
+	Language       string   `json:"language"`       // 语言
+	MinMatchLength int      `json:"minMatchLength"` // 敏感度
+	Threshold      float64  `json:"threshold"`      // 阈值
+	TaskType       bool     `json:"taskType"`       // 是否手动
+	Code           string   `json:"code"`
+	CodeLength     int      `json:"codeLength"`
+	CodeTokens     []int    `json:"codeTokens"`
+	CodeTokenNames []string `json:"codeTokenNames"`
+	CodeTokenTexts []string `json:"codeTokenTexts"`
+	Similarity     float64  `json:"similarity"` // 相似度
+	ReportID       string   `json:"reportId"`
+	Skip           bool     `json:"skip"`
 }
 
 
@@ -2363,8 +2202,8 @@ package nacos
 
 import (
 	"fmt"
-	"judge-service/internal/config"
 	"net"
+	"similarity-service/internal/config"
 	"strconv"
 	"time"
 
@@ -2477,7 +2316,6 @@ func NewServiceRegistry(nacosConfig config.NacosConfig, serviceConfig config.Con
 		port:        port,
 		metadata: map[string]string{
 			"version":   "1.0.0",
-			"workspace": serviceConfig.Workspace,
 			"port":      strconv.Itoa(serviceConfig.Port),
 			"startTime": time.Now().Format(time.RFC3339),
 		},
@@ -2683,7 +2521,7 @@ func (r *ServiceRegistry) GetServiceInfo() ServiceInstance {
 package nacos
 
 import (
-	"judge-service/internal/config"
+	"similarity-service/internal/config"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -2740,6 +2578,242 @@ func (s *ServiceRegistryManager) IsEnabled() bool {
 }
 
 
+文件: similarity\similarity.go
+--------------------------------------------------
+package similarity
+
+// MatchTile 表示匹配的区块
+type MatchTile struct {
+	Start1 int
+	Start2 int
+	Length int
+}
+
+// GreedyStringTiling 优化后的贪婪字符串匹配算法
+func GreedyStringTiling(token1, token2 []int, minMatchLength int) int {
+	if len(token1) == 0 || len(token2) == 0 {
+		return 0
+	}
+
+	matched1 := make([]bool, len(token1))
+	matched2 := make([]bool, len(token2))
+	var tiles []MatchTile
+
+	maxMatch := minMatchLength
+
+	for {
+		maxMatch = minMatchLength
+		var maxTiles []MatchTile
+
+		// 使用更高效的方式寻找最大匹配块
+		findMaxMatches(token1, token2, matched1, matched2, minMatchLength, &maxMatch, &maxTiles)
+
+		if maxMatch <= minMatchLength {
+			break
+		}
+
+		// 标记已匹配的块
+		for _, tile := range maxTiles {
+			for k := 0; k < tile.Length; k++ {
+				matched1[tile.Start1+k] = true
+				matched2[tile.Start2+k] = true
+			}
+			tiles = append(tiles, tile)
+		}
+	}
+
+	// 计算总匹配数
+	totalMatches := 0
+	for _, tile := range tiles {
+		totalMatches += tile.Length
+	}
+
+	return totalMatches
+}
+
+// findMaxMatches 优化后的最大匹配查找
+func findMaxMatches(token1, token2 []int, matched1, matched2 []bool,
+	minMatchLength int, maxMatch *int, maxTiles *[]MatchTile) {
+
+	n1, n2 := len(token1), len(token2)
+
+	// 预计算可匹配的起始位置
+	availableStarts1 := getAvailableStarts(matched1, n1)
+	availableStarts2 := getAvailableStarts(matched2, n2)
+
+	// 使用更智能的搜索策略
+	for _, i := range availableStarts1 {
+		if matched1[i] {
+			continue
+		}
+
+		// 提前终止检查
+		if n1-i < *maxMatch {
+			continue
+		}
+
+		for _, j := range availableStarts2 {
+			if matched2[j] {
+				continue
+			}
+
+			// 提前终止检查
+			if n2-j < *maxMatch {
+				continue
+			}
+
+			// 快速检查前maxMatch个字符是否可能匹配
+			if !quickCheck(token1, token2, i, j, *maxMatch) {
+				continue
+			}
+
+			// 计算实际匹配长度
+			k := computeMatchLength(token1, token2, matched1, matched2, i, j, n1, n2)
+
+			if k > *maxMatch {
+				*maxMatch = k
+				*maxTiles = (*maxTiles)[:0] // 清空切片
+				*maxTiles = append(*maxTiles, MatchTile{i, j, k})
+			} else if k == *maxMatch && k > minMatchLength {
+				*maxTiles = append(*maxTiles, MatchTile{i, j, k})
+			}
+		}
+	}
+}
+
+// getAvailableStarts 获取可用的起始位置
+func getAvailableStarts(matched []bool, length int) []int {
+	var starts []int
+	for i := 0; i < length; i++ {
+		if !matched[i] {
+			starts = append(starts, i)
+		}
+	}
+	return starts
+}
+
+// quickCheck 快速检查前n个字符是否可能匹配
+func quickCheck(token1, token2 []int, i, j, n int) bool {
+	if i+n > len(token1) || j+n > len(token2) {
+		return false
+	}
+
+	// 检查前n个字符
+	for k := 0; k < n; k++ {
+		if token1[i+k] != token2[j+k] {
+			return false
+		}
+	}
+	return true
+}
+
+// computeMatchLength 计算匹配长度
+func computeMatchLength(token1, token2 []int, matched1, matched2 []bool,
+	i, j, n1, n2 int) int {
+
+	k := 0
+	for i+k < n1 && j+k < n2 {
+		if matched1[i+k] || matched2[j+k] {
+			break
+		}
+		if token1[i+k] != token2[j+k] {
+			break
+		}
+		k++
+	}
+	return k
+}
+
+// GreedyStringTilingOptimized 进一步优化的版本，使用更少的内存分配
+func GreedyStringTilingOptimized(token1, token2 []int, minMatchLength int) int {
+	if len(token1) == 0 || len(token2) == 0 {
+		return 0
+	}
+
+	n1, n2 := len(token1), len(token2)
+	matched1 := make([]bool, n1)
+	matched2 := make([]bool, n2)
+
+	totalMatches := 0
+	maxMatch := minMatchLength
+
+	// 预分配切片以避免重复分配
+	maxTiles := make([]MatchTile, 0, min(n1, n2)/minMatchLength+1)
+
+	for {
+		maxMatch = minMatchLength
+		maxTiles = maxTiles[:0] // 重用切片
+
+		// 优化的匹配查找
+		findMaxMatchesOptimized(token1, token2, matched1, matched2,
+			minMatchLength, &maxMatch, &maxTiles)
+
+		if maxMatch <= minMatchLength {
+			break
+		}
+
+		// 标记匹配并计数
+		for _, tile := range maxTiles {
+			for k := 0; k < tile.Length; k++ {
+				matched1[tile.Start1+k] = true
+				matched2[tile.Start2+k] = true
+			}
+			totalMatches += tile.Length
+		}
+	}
+
+	return totalMatches
+}
+
+// findMaxMatchesOptimized 进一步优化的匹配查找
+func findMaxMatchesOptimized(token1, token2 []int, matched1, matched2 []bool,
+	minMatchLength int, maxMatch *int, maxTiles *[]MatchTile) {
+
+	n1, n2 := len(token1), len(token2)
+
+	for i := 0; i < n1; i++ {
+		if matched1[i] || n1-i < *maxMatch {
+			continue
+		}
+
+		for j := 0; j < n2; j++ {
+			if matched2[j] || n2-j < *maxMatch {
+				continue
+			}
+
+			// 快速路径：检查是否可能产生更长的匹配
+			if token1[i] != token2[j] {
+				continue
+			}
+
+			// 计算匹配长度
+			k := 1
+			for i+k < n1 && j+k < n2 &&
+				!matched1[i+k] && !matched2[j+k] &&
+				token1[i+k] == token2[j+k] {
+				k++
+			}
+
+			if k > *maxMatch {
+				*maxMatch = k
+				*maxTiles = (*maxTiles)[:0]
+				*maxTiles = append(*maxTiles, MatchTile{i, j, k})
+			} else if k == *maxMatch && k > minMatchLength {
+				*maxTiles = append(*maxTiles, MatchTile{i, j, k})
+			}
+		}
+	}
+}
+
+// min 返回两个整数中的较小值
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+
 文件: svc\servicecontext.go
 --------------------------------------------------
 package svc
@@ -2748,9 +2822,9 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	"gorm.io/gorm"
-	"judge-service/internal/config"
-	repository2 "judge-service/internal/database/repository"
-	"judge-service/internal/initializer"
+	"similarity-service/internal/config"
+	repository2 "similarity-service/internal/database/repository"
+	"similarity-service/internal/initializer"
 )
 
 type ServiceContext struct {
@@ -2793,11 +2867,16 @@ func (s *ServiceContext) CommonChannel() *amqp.Channel {
 	return nil
 }
 
-func (s *ServiceContext) TestCaseRepo() repository2.TestCaseRepository {
-	return s.Initializer.GetTestCaseRepo()
+func (s *ServiceContext) TaskSimilarityRepo() repository2.TaskSimilarityRepository {
+	return s.Initializer.GetTaskSimilarityRepo()
 }
-func (s *ServiceContext) JudgeCaseRepo() repository2.JudgeCaseRepository {
-	return s.Initializer.GetJudgeCaseRepo()
+
+func (s *ServiceContext) TaskReportsRepo() repository2.TaskReportsRepository {
+	return s.Initializer.GetTaskReportsRepo()
+}
+
+func (s *ServiceContext) DataLibraryRepo() repository2.DataLibraryRepository {
+	return s.Initializer.GetDataLibraryRepo()
 }
 
 func (s *ServiceContext) IsDBReady() bool {
@@ -2813,306 +2892,6 @@ func (s *ServiceContext) SafeDB() (*gorm.DB, error) {
 
 func (s *ServiceContext) Close() error {
 	return s.Initializer.Close()
-}
-
-
-文件: utils\cgroup.go
---------------------------------------------------
-package utils
-
-import (
-	"crypto/rand"
-	"encoding/base64"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/zeromicro/go-zero/core/logx"
-)
-
-// createCgroup 创建cgroup
-func CreateCgroup(maxMemory float64) (string, error) {
-	cgroupName := GenerateCgroupName()
-	cgroupPath := filepath.Join("/sys/fs/cgroup", cgroupName)
-
-	// 创建cgroup目录
-	if err := os.MkdirAll(cgroupPath, 0755); err != nil {
-		return "", fmt.Errorf("创建cgroup目录失败: %v", err)
-	}
-
-	// 设置内存限制（单位：字节）
-	memoryLimit := maxMemory * 1024 // KB 转字节
-	memoryMaxPath := filepath.Join(cgroupPath, "memory.max")
-	if err := os.WriteFile(memoryMaxPath, []byte(strconv.FormatFloat(memoryLimit, 'f', -1, 64)), 0644); err != nil {
-		return "", fmt.Errorf("设置内存限制失败: %v", err)
-	}
-
-	// 禁用swap
-	memorySwapMaxPath := filepath.Join(cgroupPath, "memory.swap.max")
-	if err := os.WriteFile(memorySwapMaxPath, []byte("0"), 0644); err != nil {
-		logx.Errorf("禁用swap失败: %v", err)
-	}
-
-	// 验证内存限制是否设置成功
-	setLimit, err := os.ReadFile(memoryMaxPath)
-	if err != nil {
-		return "", fmt.Errorf("验证内存限制失败: %v", err)
-	}
-	logx.Infof("设置的内存限制: %s bytes", strings.TrimSpace(string(setLimit)))
-	return cgroupPath, nil
-}
-
-// createCgroup 创建cgroup
-func CreateCgroupNoMemory() (string, error) {
-	cgroupName := GenerateCgroupName()
-	cgroupPath := filepath.Join("/sys/fs/cgroup", cgroupName)
-
-	// 创建cgroup目录
-	if err := os.MkdirAll(cgroupPath, 0755); err != nil {
-		return "", fmt.Errorf("创建cgroup目录失败: %v", err)
-	}
-
-	// 禁用swap
-	memorySwapMaxPath := filepath.Join(cgroupPath, "memory.swap.max")
-	if err := os.WriteFile(memorySwapMaxPath, []byte("0"), 0644); err != nil {
-		logx.Errorf("禁用swap失败: %v", err)
-	}
-
-	return cgroupPath, nil
-}
-
-// getMemoryUsage 从cgroup读取峰值内存使用
-func GetMemoryUsage(cgroupPath string) (uint64, error) {
-	// 首先检查cgroup目录是否存在
-	if _, err := os.Stat(cgroupPath); os.IsNotExist(err) {
-		logx.Errorf("cgroup目录不存在: %s", cgroupPath)
-		return 0, fmt.Errorf("cgroup目录不存在")
-	}
-
-	// 读取 memory.peak 文件
-	peakPath := filepath.Join(cgroupPath, "memory.peak")
-	content, err := os.ReadFile(peakPath)
-	if err != nil {
-		logx.Errorf("读取memory.peak失败: %s, 错误: %v", peakPath, err)
-		return 0, fmt.Errorf("读取memory.peak失败: %v", err)
-	}
-
-	peakContent := strings.TrimSpace(string(content))
-	logx.Infof("memory.peak 内容: '%s'", peakContent)
-
-	// 读取 memory.current 文件
-	currentPath := filepath.Join(cgroupPath, "memory.current")
-	currentContent, err := os.ReadFile(currentPath)
-	if err != nil {
-		logx.Errorf("读取memory.current失败: %v", err)
-	} else {
-		logx.Infof("memory.current 内容: '%s'", strings.TrimSpace(string(currentContent)))
-	}
-
-	// 解析内存使用量
-	memoryUsed, err := strconv.ParseUint(peakContent, 10, 64)
-	if err != nil {
-		logx.Errorf("解析内存使用量失败: '%s', 错误: %v", peakContent, err)
-		return 0, fmt.Errorf("解析内存使用量失败: %v", err)
-	}
-
-	logx.Infof("解析后的内存使用量: %d bytes", memoryUsed)
-	return memoryUsed, nil
-}
-
-func GenerateCgroupName() string {
-	pid := os.Getpid()
-	timestamp := time.Now().Format("150405") // 时分秒
-
-	// 生成3字节随机数
-	randomBytes := make([]byte, 3)
-	rand.Read(randomBytes)
-	randomStr := base64.RawURLEncoding.EncodeToString(randomBytes)
-
-	return fmt.Sprintf("judge-p%d-%s-%s", pid, timestamp, randomStr)
-}
-
-// setCgroupForProcess 将进程添加到cgroup
-func SetCgroupForProcess(cgroupPath string, pid int) error {
-	procsFile := filepath.Join(cgroupPath, "cgroup.procs")
-	// 检查进程是否存在
-	if _, err := os.FindProcess(pid); err != nil {
-		return fmt.Errorf("进程不存在: %d", pid)
-	}
-
-	// 将进程PID写入cgroup.procs文件
-	return os.WriteFile(procsFile, []byte(strconv.Itoa(pid)), 0644)
-}
-
-// cleanupCgroup 清理cgroup
-func CleanupCgroup(cgroupPath string) {
-	if err := os.RemoveAll(cgroupPath); err != nil {
-		logx.Errorf("清理cgroup失败: %v", err)
-	} else {
-		logx.Infof("清理cgroup: %s", cgroupPath)
-	}
-}
-
-// checkOOMEvent 检查cgroup是否发生了OOM事件
-func CheckOOMEvent(cgroupPath string) bool {
-	eventsPath := filepath.Join(cgroupPath, "memory.events")
-	content, err := os.ReadFile(eventsPath)
-	if err != nil {
-		logx.Errorf("读取memory.events失败: %v", err)
-		return false
-	}
-
-	// 解析事件文件
-	lines := strings.Split(string(content), "\n")
-	for _, line := range lines {
-		if strings.HasPrefix(line, "oom ") {
-			parts := strings.Split(line, " ")
-			if len(parts) >= 2 {
-				count, err := strconv.Atoi(strings.TrimSpace(parts[1]))
-				if err == nil && count > 0 {
-					logx.Infof("检测到OOM事件: %s", line)
-					return true
-				}
-			}
-		}
-	}
-
-	return false
-}
-
-
-文件: utils\command.go
---------------------------------------------------
-package utils
-
-import (
-	"judge-service/internal/config"
-	"strings"
-
-	"github.com/zeromicro/go-zero/core/logx"
-)
-
-// getRunCommand 获取执行命令
-func GetRunCommand(config config.LanguageConfig, sourceFile string, buildFile string) []string {
-	runCmd := make([]string, len(config.RunCmd))
-	for i, part := range config.RunCmd {
-		// runCmd[i] = strings.ReplaceAll(part, "{exec}", buildFile)
-		runCmd[i] = strings.ReplaceAll(part, "{source}", sourceFile)
-		runCmd[i] = strings.ReplaceAll(runCmd[i], "{exec}", buildFile)
-	}
-
-	logx.Infof("得到运行命令: %s", runCmd)
-	return runCmd
-}
-
-func GetCompileCommand(config config.LanguageConfig, sourceFile string, buildFile string) []string {
-	compileCmd := make([]string, len(config.CompileCmd))
-	for i, part := range config.CompileCmd {
-		compileCmd[i] = strings.ReplaceAll(part, "{source}", sourceFile)
-		compileCmd[i] = strings.ReplaceAll(compileCmd[i], "{exec}", buildFile)
-	}
-
-	logx.Infof("得到编译命令: %s", compileCmd)
-	return compileCmd
-}
-
-
-文件: utils\formate.go
---------------------------------------------------
-package utils
-
-import (
-	"regexp"
-	"strings"
-)
-
-func FormatBytesKB(bytes uint64) float64 {
-	return float64(bytes) / 1024
-}
-
-// SplitAndNormalize 将文本按行分割并标准化每行
-func SplitAndNormalize(str string) []string {
-	// 标准化换行符
-	str = strings.ReplaceAll(str, "\r\n", "\n")
-	str = strings.ReplaceAll(str, "\r", "\n")
-
-	lines := strings.Split(str, "\n")
-	normalized := make([]string, 0, len(lines))
-
-	for _, line := range lines {
-		// 移除每行的首尾空白
-		line = strings.TrimSpace(line)
-		if line != "" { // 可选：是否忽略空行
-			normalized = append(normalized, line)
-		}
-	}
-
-	return normalized
-}
-
-// 评估两个标准答案与用户提交是否相同
-func CompareOutput(ans string, output string) bool {
-	// if NormalizeLineEndings(ans) == NormalizeLineEndings(output) {
-	// 	return true
-	// } else {
-	// 	return false
-	// }
-	// CompareOutput 按行比较，忽略行尾差异
-	ansLines := SplitAndNormalize(ans)
-	outputLines := SplitAndNormalize(output)
-
-	if len(ansLines) != len(outputLines) {
-		return false
-	}
-
-	for i := range ansLines {
-		if ansLines[i] != outputLines[i] {
-			return false
-		}
-	}
-
-	return true
-}
-
-// 综合自动屏蔽文件路径
-func AutoMaskAllFilePaths(text string) string {
-	// 首先处理编译错误格式的路径
-	result := maskCompilerErrorPaths(text)
-	// 然后处理普通文件路径
-	result = maskGeneralFilePaths(result)
-	return result
-}
-
-// 屏蔽编译错误中的文件路径
-func maskCompilerErrorPaths(text string) string {
-	// 匹配: 路径:行号:列号: 消息
-	re := regexp.MustCompile(`([/\w\.-]+(/[/\w\.-]+)*):(\d+):(\d+):`)
-	return re.ReplaceAllStringFunc(text, func(match string) string {
-		parts := strings.Split(match, ":")
-		if len(parts) >= 3 {
-			filePath := parts[0]
-			pathParts := strings.Split(filePath, "/")
-			filename := pathParts[len(pathParts)-1]
-			return "/" + filename + ":" + strings.Join(parts[1:], ":")
-		}
-		return ""
-	})
-}
-
-// 屏蔽普通文件路径
-func maskGeneralFilePaths(text string) string {
-	// 匹配绝对路径
-	re := regexp.MustCompile(`(/[^\s:]+)+`)
-	return re.ReplaceAllStringFunc(text, func(match string) string {
-		pathParts := strings.Split(match, "/")
-		if len(pathParts) > 1 {
-			return "/" + pathParts[len(pathParts)-1]
-		}
-		return ""
-	})
 }
 
 

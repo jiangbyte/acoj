@@ -222,16 +222,6 @@ func (wm *WorkspaceManager) GetAllWorkspaces() []*Workspace {
 
 // Cleanup 清理工作空间
 func (w *Workspace) Cleanup() error {
-	// logx.Infof("开始清理工作空间 路径: %s", w.RootPath)
-
-	// if err := os.RemoveAll(w.RootPath); err != nil {
-	// 	logx.Errorf("清理工作空间失败 路径: %s, 错误: %v", w.RootPath, err)
-	// 	return err
-	// }
-
-	// logx.Infof("工作空间清理完毕: %s", w.RootPath)
-	// return nil
-
 	w.mu.Lock()
 	defer w.mu.Unlock()
 

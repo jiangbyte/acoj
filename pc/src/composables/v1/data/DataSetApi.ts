@@ -69,7 +69,7 @@ export function useDataSetFetch() {
      * 题集 详情接口
      */
     dataSetDetail(data: any) {
-      return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail`, {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail/client`, {
         params: {
           ...data,
         },

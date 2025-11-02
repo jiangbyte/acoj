@@ -6,7 +6,6 @@ import io.charlie.web.oj.annotation.log.Log;
 import io.charlie.web.oj.annotation.log.LogCategory;
 import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.data.library.param.*;
-import io.charlie.web.oj.modular.sys.user.param.SysUserPageParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -83,6 +82,11 @@ public class DataLibraryController {
     @GetMapping("/data/library/userPage")
     public Result<?> userPage(@ParameterObject DataLibraryUserPageParam dataLibraryUserPageParam) {
         return Result.success(dataLibraryService.getLibraryUserPage(dataLibraryUserPageParam));
+    }
+
+    @PostMapping("/data/library/batch/query")
+    public Result<?> batchQuery(@RequestBody @Valid BatchLibraryQueryParam libraryQueryParam) {
+        return Result.success(dataLibraryService.batchQuery(libraryQueryParam));
     }
 
 }

@@ -94,7 +94,7 @@ public class MybatisPlusRedisCache implements Cache {
         if (!CollectionUtils.isEmpty(hashKeys)) {
 //            log.warn("删除Hash字段: {}", hashKeys);
             Long deletedCount = redisTemplate.opsForHash().delete(this.id, hashKeys.toArray());
-            log.warn("删除字段数量: {}", deletedCount);
+//            log.warn("删除字段数量: {}", deletedCount);
         }
     }
 

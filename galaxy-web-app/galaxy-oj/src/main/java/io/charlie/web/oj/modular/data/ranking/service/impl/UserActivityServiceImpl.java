@@ -66,7 +66,7 @@ public class UserActivityServiceImpl implements UserActivityService {
         // 检查每日限制
         Integer dailyScore = (Integer) redisTemplate.opsForValue().get(dailyLimitKey);
         if (dailyScore != null && dailyScore >= ActivityScoreCalculator.DAILY_LIMIT) {
-            log.info("用户 {} 今日活跃度已达上限", userId);
+            log.debug("用户 {} 今日活跃度已达上限", userId);
             return;
         }
         
@@ -106,7 +106,7 @@ public class UserActivityServiceImpl implements UserActivityService {
                                                ActivityScoreCalculator.DAILY_LIMIT);
         
         if (actualAdded != null && actualAdded > 0) {
-            log.info("用户 {} {} 操作增加活跃度 {} 分", userId, actionType, actualAdded);
+            log.debug("用户 {} {} 操作增加活跃度 {} 分", userId, actionType, actualAdded);
         }
     }
     

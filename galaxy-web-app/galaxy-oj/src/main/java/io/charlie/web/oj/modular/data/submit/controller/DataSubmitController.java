@@ -45,14 +45,12 @@ public class DataSubmitController {
     }
 
     @Operation(summary = "获取题目提交分页")
-//    @SaCheckPermission("/data/submit/problem/page")
     @GetMapping("/data/submit/problem/page")
     public Result<?> problemPage(@ParameterObject DataSubmitPageParam dataSubmitPageParam) {
         return Result.success(dataSubmitService.problemPage(dataSubmitPageParam));
     }
 
     @Operation(summary = "获取题集提交分页")
-//    @SaCheckPermission("/data/submit/set/page")
     @GetMapping("/data/submit/set/page")
     public Result<?> setPage(@ParameterObject DataSubmitPageParam dataSubmitPageParam) {
         return Result.success(dataSubmitService.setPage(dataSubmitPageParam));
@@ -89,6 +87,13 @@ public class DataSubmitController {
     @SaCheckPermission("/data/submit/detail")
     @GetMapping("/data/submit/detail")
     public Result<?> detail(@ParameterObject @Valid DataSubmitIdParam dataSubmitIdParam) {
+        return Result.success(dataSubmitService.detail(dataSubmitIdParam));
+    }
+
+    @Operation(summary = "获取提交详情")
+    @GetMapping("/data/submit/detail/client")
+    public Result<?> detailClient(@ParameterObject @Valid DataSubmitIdParam dataSubmitIdParam) {
+        log.debug("获取提交详情 {}", dataSubmitIdParam.getId());
         return Result.success(dataSubmitService.detail(dataSubmitIdParam));
     }
 

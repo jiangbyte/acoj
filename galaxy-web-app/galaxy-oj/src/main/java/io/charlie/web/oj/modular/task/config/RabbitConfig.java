@@ -20,12 +20,12 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 @Configuration
 public class RabbitConfig {
-    private final int MAX_CONCURRENT_CONSUMERS = 10; // 设置最大并发消费者数量
-
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
+        rabbitTemplate.setChannelTransacted(true);
+        rabbitTemplate.setUsePublisherConnection(true);
         return rabbitTemplate;
     }
 
@@ -35,8 +35,9 @@ public class RabbitConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(new Jackson2JsonMessageConverter());
-        factory.setConcurrentConsumers(1); // 初始消费者数量
-        factory.setMaxConcurrentConsumers(MAX_CONCURRENT_CONSUMERS); // 最大消费者数量
+        factory.setConcurrentConsumers(10); // 初始消费者数量
+        factory.setMaxConcurrentConsumers(20); // 最大消费者数量
+        factory.setPrefetchCount(50); // 控制预取数量
         // 设置重试机制
         factory.setAdviceChain(RetryInterceptorBuilder.stateless()
                 .maxAttempts(5) // 最大重试次数
@@ -46,12 +47,4 @@ public class RabbitConfig {
 
         return factory;
     }
-
-//    @Bean
-//    public RetryOperationsInterceptor retryOperationsInterceptor() {
-//        return RetryInterceptorBuilder.stateless()
-//                .maxAttempts(3)
-//                .backOffOptions(1000, 2.0, 10000)
-//                .build();
-//    }
 }

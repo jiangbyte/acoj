@@ -963,8 +963,8 @@ INSERT INTO `sys_menu` VALUES ('500', '0', 'reports', '/reports', '/modular/repo
 INSERT INTO `sys_menu` VALUES ('600', '0', 'mine', '/mine', NULL, '个人中心', 'icon-park-outline:user', 0, 0, 99, 0, 0, NULL, 0, '2025-09-24 13:30:02', NULL, '2025-09-25 10:18:05', '1');
 INSERT INTO `sys_menu` VALUES ('700', '0', 'about', '/about', '/about.vue', '关于', 'icon-park-outline:info', 0, 1, 80, 0, 1, NULL, 0, '2025-09-24 13:30:02', NULL, '2025-09-25 10:20:12', '1');
 INSERT INTO `sys_menu` VALUES ('7870', '0', 'report', '/problem/submit/report/:reportId/task/:taskId', '/modular/problem/submit/report.vue', '检测报告详情', 'icon-park-outline:info', 0, 0, 99, 0, 1, NULL, 0, '2025-09-24 13:30:02', NULL, '2025-09-25 10:17:56', '1');
-INSERT INTO `sys_menu` VALUES ('800', '0', 'test-1', '/test-1', '/modular/test/test1.vue', 'Test-1', 'icon-park-outline:info', 0, 0, 99, 0, 1, NULL, 0, '2025-09-24 13:30:02', NULL, '2025-09-25 10:17:53', '1');
-INSERT INTO `sys_menu` VALUES ('801', '0', 'test-2', '/test-2', '/modular/test/test2.vue', 'Test-2', 'icon-park-outline:info', 0, 0, 99, 0, 1, NULL, 0, '2025-09-24 13:30:02', NULL, '2025-09-25 10:17:50', '1');
+INSERT INTO `sys_menu` VALUES ('800', '0', 'nginx.conf-1', '/nginx.conf-1', '/modular/nginx.conf/test1.vue', 'Test-1', 'icon-park-outline:info', 0, 0, 99, 0, 1, NULL, 0, '2025-09-24 13:30:02', NULL, '2025-09-25 10:17:53', '1');
+INSERT INTO `sys_menu` VALUES ('801', '0', 'nginx.conf-2', '/nginx.conf-2', '/modular/nginx.conf/test2.vue', 'Test-2', 'icon-park-outline:info', 0, 0, 99, 0, 1, NULL, 0, '2025-09-24 13:30:02', NULL, '2025-09-25 10:17:50', '1');
 
 -- ----------------------------
 -- Table structure for sys_notice

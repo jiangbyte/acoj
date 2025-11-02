@@ -1,6 +1,6 @@
 package io.charlie.web.oj.modular.task.similarity.service.impl;
 
-import io.charlie.web.oj.modular.task.similarity.param.BatchSimilarityParam;
+import io.charlie.web.oj.modular.data.library.param.BatchLibraryParam;
 import io.charlie.web.oj.modular.task.similarity.service.SetsSimilarityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class SetsSimilarityServiceImpl implements SetsSimilarityService {
     @Override
-    public void batch(BatchSimilarityParam batchSimilarityParam) {
+    public void batch(BatchLibraryParam batchSimilarityParam) {
 
     }
 }

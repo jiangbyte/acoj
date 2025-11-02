@@ -54,7 +54,7 @@ public class UserRankTask {
 
     private void doSyncUserRank() {
         try {
-            log.info("开始同步用户排行榜数据到Redis");
+            log.debug("开始同步用户排行榜数据到Redis");
 
             // 清空旧的排行榜数据
             redisTemplate.delete(USER_RANK_SORTED_SET_KEY);
@@ -68,11 +68,11 @@ public class UserRankTask {
                 List<Map<String, Object>> userStats = dataSolvedMapper.selectUserSolveStatisticsBatch(offset, batchSize);
 
                 if (userStats.isEmpty()) {
-                    log.info("已处理完成，共处理 {} 个用户", totalProcessed);
+                    log.debug("已处理完成，共处理 {} 个用户", totalProcessed);
                     break;
                 }
 
-                log.info("正在处理第 {} 批数据，共 {} 个用户", (offset / batchSize) + 1, userStats.size());
+                log.debug("正在处理第 {} 批数据，共 {} 个用户", (offset / batchSize) + 1, userStats.size());
 
                 // 使用Pipeline批量更新Redis
                 redisTemplate.executePipelined(new SessionCallback<Object>() {
@@ -115,7 +115,7 @@ public class UserRankTask {
                 }
             }
 
-            log.info("用户排行榜数据同步完成，共同步 {} 个用户", totalProcessed);
+            log.debug("用户排行榜数据同步完成，共同步 {} 个用户", totalProcessed);
         } catch (Exception e) {
             log.error("同步用户排行榜数据失败", e);
         }
@@ -123,7 +123,7 @@ public class UserRankTask {
 
 //    private void doSyncUserRank() {
 //        try {
-//            log.info("开始同步用户排行榜数据到Redis");
+//            log.debug("开始同步用户排行榜数据到Redis");
 //
 //            // 从数据库获取用户统计信息
 //            List<Map<String, Object>> userStats = dataSolvedMapper.selectUserSolveStatistics();
@@ -155,7 +155,7 @@ public class UserRankTask {
 //                redisTemplate.opsForZSet().add(USER_RANK_SORTED_SET_KEY, userId, compositeScore);
 //            }
 //
-//            log.info("用户排行榜数据同步完成，共同步 {} 个用户", userStats.size());
+//            log.debug("用户排行榜数据同步完成，共同步 {} 个用户", userStats.size());
 //        } catch (Exception e) {
 //            log.error("同步用户排行榜数据失败", e);
 //        }

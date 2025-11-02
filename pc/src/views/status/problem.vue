@@ -51,6 +51,18 @@ async function loadData() {
 }
 
 loadData()
+
+function refreshSimilarityData() {
+  // 调用获取判题结果的API
+  useDataSubmitFetch().dataSubmitDetail({ id: detailData.value.id }).then(({ data }) => {
+    if (data) {
+      // 更新结果数据
+      detailData.value = data
+
+      window.$message.success('刷新完成')
+    }
+  })
+}
 </script>
 
 <template>
@@ -73,10 +85,14 @@ loadData()
                 提交信息
               </n-h2>
             </template>
-            <JudgeResultHeader :result-task-data="detailData" class="mb-4" />
-
-            <!-- 判题结果详情 -->
-            <JudgeResultStats :result-task-data="detailData" class="w-full" />
+            <n-space vertical :size="16">
+              <JudgeResultHeader :result-task-data="detailData" />
+              <n-flex justify="end">
+                <n-button size="small" type="primary" @click="refreshSimilarityData">刷新</n-button>
+              </n-flex>
+              <!-- 判题结果详情 -->
+              <JudgeResultStats :result-task-data="detailData" class="w-full" />
+            </n-space>
             <!-- <n-space v-if="detailData?.submitType" vertical class="w-full mt-4" :size="16">
               <n-space align="center" justify="space-between">
                 <n-text>代码相似度</n-text>

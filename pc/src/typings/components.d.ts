@@ -36,6 +36,7 @@ declare module 'vue' {
     IconParkOutlineHamburgerButton: typeof import('~icons/icon-park-outline/hamburger-button')['default']
     IconParkOutlineHandRight: typeof import('~icons/icon-park-outline/hand-right')['default']
     IconParkOutlineInfo: typeof import('~icons/icon-park-outline/info')['default']
+    IconParkOutlineRefresh: typeof import('~icons/icon-park-outline/refresh')['default']
     IconParkOutlineSend: typeof import('~icons/icon-park-outline/send')['default']
     IconParkOutlineSort: typeof import('~icons/icon-park-outline/sort')['default']
     IconParkOutlineSortOne: typeof import('~icons/icon-park-outline/sort-one')['default']

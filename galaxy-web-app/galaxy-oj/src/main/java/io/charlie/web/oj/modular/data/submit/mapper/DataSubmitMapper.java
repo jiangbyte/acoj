@@ -18,7 +18,7 @@ import java.util.List;
 * @description 提交表 Mapper 接口
 */
 @Mapper
-@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface DataSubmitMapper extends BaseMapper<DataSubmit> {
     /**
      * 按状态统计提交数量
