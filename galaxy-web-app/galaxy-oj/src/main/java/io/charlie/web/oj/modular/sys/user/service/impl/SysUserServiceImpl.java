@@ -14,7 +14,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.str.GalaxyStringUtil;
-import io.charlie.web.oj.modular.context.DataScopeUtil;
+import io.charlie.web.oj.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
@@ -25,8 +25,8 @@ import io.charlie.web.oj.modular.sys.config.service.SysConfigService;
 import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysUserRoleMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
-import io.charlie.web.oj.constant.DefaultRoleData;
-import io.charlie.web.oj.constant.DefaultUserData;
+import io.charlie.web.oj.constant.ERoleConstant;
+import io.charlie.web.oj.constant.EUserConstant;
 import io.charlie.web.oj.modular.sys.user.entity.ACRecord;
 import io.charlie.web.oj.modular.sys.user.entity.SysNoNeUser;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
@@ -137,7 +137,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             UserValidationUtil.validatePhone(sysUserAddParam.getTelephone()).throwIfFailed();
         }
         // 加密密码
-        String encodePassword = BCrypt.hashpw(DefaultUserData.DEFAULT_PASSWORD);
+        String encodePassword = BCrypt.hashpw(EUserConstant.DEFAULT_PASSWORD);
         SysUser bean = BeanUtil.toBean(sysUserAddParam, SysUser.class);
         bean.setPassword(encodePassword);
 
@@ -153,7 +153,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         bean.setUsername(sysUserAddParam.getUsername().toLowerCase());
         this.save(bean);
         // 分配角色
-        sysUserRoleService.assignRoles(bean.getId(), List.of(DefaultRoleData.DEFAULT_USER_ROLE_ID));
+        sysUserRoleService.assignRoles(bean.getId(), List.of(ERoleConstant.DEFAULT_USER_ROLE_ID));
     }
 
     @Transactional(rollbackFor = Exception.class)

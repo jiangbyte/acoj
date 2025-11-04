@@ -1,19 +1,16 @@
 package io.charlie.web.oj.modular.sys.menu.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.web.oj.modular.context.DataScopeUtil;
+import io.charlie.web.oj.context.DataScopeUtil;
 import io.charlie.web.oj.modular.sys.menu.entity.SysMenu;
 import io.charlie.web.oj.modular.sys.menu.param.*;
 import io.charlie.web.oj.modular.sys.menu.mapper.SysMenuMapper;
@@ -24,10 +21,6 @@ import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.sys.relation.entity.SysRoleMenu;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysRoleMenuMapper;
-import io.charlie.web.oj.modular.sys.relation.service.SysRoleMenuService;
-import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
-import io.charlie.web.oj.modular.sys.role.entity.SysRole;
-import io.charlie.web.oj.modular.sys.role.param.SysRoleIdParam;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -184,7 +177,6 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     }
 
     @Override
-    @DS("slave")
     public void assignMenuPermission(SysMenuPermissionParam sysMenuPermissionParam) {
         SysMenu byId = this.getById(sysMenuPermissionParam.getId());
         byId.setExJson(sysMenuPermissionParam.getPermissions());

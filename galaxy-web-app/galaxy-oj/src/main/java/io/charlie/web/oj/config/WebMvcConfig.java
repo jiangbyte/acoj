@@ -22,9 +22,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Bean
     public AsyncTaskExecutor asyncTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(20);
-        executor.setQueueCapacity(50);
+        executor.setCorePoolSize(100);
+        executor.setMaxPoolSize(200);
+        executor.setQueueCapacity(500);
         executor.setThreadNamePrefix("MvcAsync-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.setWaitForTasksToCompleteOnShutdown(true);

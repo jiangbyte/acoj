@@ -10,7 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.web.oj.modular.context.DataScopeUtil;
+import io.charlie.web.oj.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemOverallStats;
 import io.charlie.web.oj.modular.data.solved.entity.ProblemStatistics;

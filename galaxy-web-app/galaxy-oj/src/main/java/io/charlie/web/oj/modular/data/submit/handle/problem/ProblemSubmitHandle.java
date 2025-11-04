@@ -40,7 +40,6 @@ public class ProblemSubmitHandle {
     private final JudgeHandleMessage judgeHandleMessage;
     private final DataProblemMapper dataProblemMapper;
 
-//    @Async("judgeTaskExecutorPro")
     public void handle(ProblemSubmitMessage message1) {
         log.debug("处理题目提交，提交ID: {}", message1.dataSubmit().getId());
         try {

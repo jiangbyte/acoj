@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -95,7 +96,7 @@ public class JudgeHandleMessage {
     /**
      * 处理业务逻辑
      */
-    private void processBusinessLogic(JudgeResultDto judgeResultDto, String id) {
+    public void processBusinessLogic(JudgeResultDto judgeResultDto, String id) {
         if (!judgeResultDto.getSubmitType()) {
             log.debug("测试提交，跳过业务处理：id={}", judgeResultDto.getId());
             return;

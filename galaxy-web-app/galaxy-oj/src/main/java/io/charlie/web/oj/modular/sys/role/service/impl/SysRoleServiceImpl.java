@@ -1,6 +1,5 @@
 package io.charlie.web.oj.modular.sys.role.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -11,12 +10,11 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.web.oj.modular.context.DataScopeUtil;
+import io.charlie.web.oj.context.DataScopeUtil;
 import io.charlie.web.oj.modular.sys.relation.entity.SysRoleMenu;
 import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysRoleMenuMapper;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysUserRoleMapper;
-import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
 import io.charlie.web.oj.modular.sys.role.entity.SysRole;
 import io.charlie.web.oj.modular.sys.role.param.SysRoleAddParam;
 import io.charlie.web.oj.modular.sys.role.param.SysRoleEditParam;

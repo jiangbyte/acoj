@@ -1,6 +1,5 @@
 package io.charlie.web.oj.modular.sys.group.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.collection.CollectionUtil;
@@ -13,8 +12,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
-import io.charlie.web.oj.modular.context.DataScopeContext;
-import io.charlie.web.oj.modular.context.DataScopeUtil;
+import io.charlie.web.oj.context.DataScopeContext;
+import io.charlie.web.oj.context.DataScopeUtil;
 import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
 import io.charlie.web.oj.modular.sys.group.param.*;
 import io.charlie.web.oj.modular.sys.group.mapper.SysGroupMapper;
@@ -23,9 +22,6 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
-import io.charlie.web.oj.modular.sys.relation.entity.SysUserRole;
-import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
-import io.charlie.web.oj.modular.sys.role.entity.SysRole;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.mapper.SysUserMapper;
 import org.springframework.stereotype.Service;

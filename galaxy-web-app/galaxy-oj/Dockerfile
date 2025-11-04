@@ -13,7 +13,10 @@
 #ENTRYPOINT ["java","-jar","galaxy-oj-1.0.0.jar"]
 
 
-FROM openjdk:21
+#FROM openjdk:21
+#FROM docker.io/openjdk:21
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/openjdk:21
+#FROM  docker.1ms.run/astita/openjdk21-alpine:latest
 
 WORKDIR /app
 

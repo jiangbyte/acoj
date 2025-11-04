@@ -2,8 +2,8 @@ package io.charlie.web.oj.config;
 
 import cn.dev33.satoken.stp.StpInterface;
 import cn.hutool.json.JSONUtil;
-import io.charlie.web.oj.modular.context.DataScopeContext;
-import io.charlie.web.oj.modular.context.DataScopeUtil;
+import io.charlie.web.oj.context.DataScopeContext;
+import io.charlie.web.oj.context.DataScopeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

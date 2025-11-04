@@ -40,7 +40,6 @@ public class SetSubmitHandle {
     private final JudgeHandleMessage judgeHandleMessage;
     private final DataProblemMapper dataProblemMapper;
 
-//    @Async("judgeTaskExecutorSet")
     public void handle(SetSubmitMessage message1) {
         log.info("处理提交，提交ID: {}", message1.dataSubmit().getId());
         try {

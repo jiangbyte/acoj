@@ -10,8 +10,8 @@ import cn.hutool.core.util.*;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import io.charlie.web.oj.constant.DefaultGroupData;
-import io.charlie.web.oj.modular.context.DataScopeUtil;
+import io.charlie.web.oj.constant.EGroupConstant;
+import io.charlie.web.oj.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.ranking.utils.ActivityScoreCalculator;
 import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
 import io.charlie.web.oj.modular.sys.auth.enums.PlatformEnum;
@@ -28,10 +28,10 @@ import io.charlie.web.oj.modular.sys.menu.mapper.SysMenuMapper;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysRoleMenuMapper;
 import io.charlie.web.oj.modular.sys.relation.mapper.SysUserRoleMapper;
 import io.charlie.web.oj.modular.sys.relation.service.SysUserRoleService;
-import io.charlie.web.oj.constant.DefaultRoleData;
+import io.charlie.web.oj.constant.ERoleConstant;
 import io.charlie.web.oj.modular.sys.role.mapper.SysRoleMapper;
 import io.charlie.web.oj.modular.sys.role.service.SysRoleService;
-import io.charlie.web.oj.constant.DefaultUserData;
+import io.charlie.web.oj.constant.EUserConstant;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.mapper.SysUserMapper;
 import io.charlie.galaxy.exception.BusinessException;
@@ -213,24 +213,24 @@ public class AuthServiceImpl implements AuthService {
         sysUser.setPassword(encodePassword);
         sysUser.setEmail(email);
         // 默认用户组
-        sysUser.setGroupId(DefaultGroupData.DEFAULT_USER_GROUP_ID);
+        sysUser.setGroupId(EGroupConstant.DEFAULT_USER_GROUP_ID);
         // 默认昵称
-        sysUser.setNickname(DefaultUserData.USER_DEFAULT_NICKNAME);
+        sysUser.setNickname(EUserConstant.USER_DEFAULT_NICKNAME);
         // 默认头像
         sysUser.setAvatar(sysConfigService.getValueByCode("APP_DEFAULT_AVATAR"));
         // 默认背景图片
         sysUser.setBackground(sysConfigService.getValueByCode("APP_DEFAULT_USER_BACKGROUND"));
         // 默认 性别
-        sysUser.setGender(DefaultUserData.USER_DEFAULT_GENDER);
+        sysUser.setGender(EUserConstant.USER_DEFAULT_GENDER);
         // 默认 签名
-        sysUser.setQuote(DefaultUserData.USER_DEFAULT_QUOTE);
+        sysUser.setQuote(EUserConstant.USER_DEFAULT_QUOTE);
         // 默认数据
         sysUser.setDeleted(false);
         sysUser.setLoginTime(new Date());
         sysUserMapper.insert(sysUser);
 
         // 分配角色
-        sysUserRoleService.assignRoles(sysUser.getId(), List.of(DefaultRoleData.DEFAULT_USER_ROLE_ID));
+        sysUserRoleService.assignRoles(sysUser.getId(), List.of(ERoleConstant.DEFAULT_USER_ROLE_ID));
 
         // 登录
         StpUtil.login(sysUser.getId(), PlatformEnum.CLIENT.getValue());

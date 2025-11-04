@@ -30,7 +30,7 @@ public class SimilarityResultQueue {
     }
 
     @Bean
-    public Binding similarityMessageBinding() {
+    public Binding similarityResultMessageBinding() {
         return BindingBuilder.bind(similarityResultMessageQueue())
                 .to(similarityResultMessageExchange())
                 .with(similarlyQueueProperties.getResult().getRoutingKey());
