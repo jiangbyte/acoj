@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Mapper;
 * @description 用户-角色 关联表(1-N) Mapper 接口
 */
 @Mapper
-@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface SysUserRoleMapper extends BaseMapper<SysUserRole> {
 
 }

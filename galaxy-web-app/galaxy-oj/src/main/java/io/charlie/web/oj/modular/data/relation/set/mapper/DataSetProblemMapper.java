@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Mapper;
 * @date 2025-07-05
 */
 @Mapper
-@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface DataSetProblemMapper extends BaseMapper<DataSetProblem> {
 
 }

@@ -116,16 +116,16 @@ const allQuickActions = [
     permission: '/data/problem/add', // 根据实际权限配置
   },
   {
-    path: '/system/user',
-    text: '用户管理',
-    type: 'info' as const,
-    permission: '/sys/user/add',
-  },
-  {
     path: '/set/list',
     text: '题集管理',
     type: 'success' as const,
     permission: '/data/set/add',
+  },
+  {
+    path: '/system/user',
+    text: '用户管理',
+    type: 'info' as const,
+    permission: '/sys/user/add',
   },
   {
     path: '/system/log',

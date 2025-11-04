@@ -21,16 +21,16 @@ public class BatchSimilaritySubmitDto implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private List<String> problemIds;
-    private String setId;
-    private String language;
-//    private Boolean isSet;
-    private List<String> userIds;
-    private String taskId;
-//    private Boolean isGroup;
-    private String groupId;
-    private String batchTaskId;
+    private String reportId; // 统计ID
+
+    private String taskId; // 任务ID
+
+    private List<String> libIds; // 代码库ID
+
+    // 敏感度
     private Integer minMatchLength;
+
+    // 检测阈值
     private BigDecimal threshold;
 
     @Schema(description = "手动")

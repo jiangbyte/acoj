@@ -84,15 +84,18 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	defer func() {
-		if err := delivery.Ack(false); err != nil {
-			logx.Errorf("未能确认题目消息: %v", err)
-		}
-	}()
+	//// 提前确认消息，确保即使后续处理失败也不会重复消费
+	//if err := delivery.Ack(false); err != nil {
+	//	logx.Errorf("未能确认题目消息: %v", err)
+	//}
 
 	var judgeSubmit mq.JudgeRequest
 	if err := json.Unmarshal(delivery.Body, &judgeSubmit); err != nil {
 		logx.Errorf("解码 JSON 出错: %v", err)
+		// JSON 解析失败，拒绝消息（不重新入队）
+		if err := delivery.Nack(false, false); err != nil {
+			logx.Errorf("拒绝消息失败: %v", err)
+		}
 		return
 	}
 
@@ -101,6 +104,14 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 	if result != nil {
 		if err := l.sendResultToMQ(result); err != nil {
 			logx.Errorf("发送结果到MQ失败: %v", err)
+			// 发送失败，拒绝消息（重新入队）
+			if err := delivery.Nack(false, true); err != nil {
+				logx.Errorf("拒绝消息失败: %v", err)
+			}
+		}
+		// 成功发送结果，确认消息
+		if err := delivery.Ack(false); err != nil {
+			logx.Errorf("确认消息失败: %v", err)
 		}
 		return
 	}
@@ -111,6 +122,17 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 	// 发送结果
 	if err := l.sendResultToMQ(judgeResponse); err != nil {
 		logx.Errorf("发送结果到MQ失败: %v", err)
+		// 发送失败，拒绝消息（重新入队）
+		if err := delivery.Nack(false, true); err != nil {
+			logx.Errorf("拒绝消息失败: %v", err)
+		}
+		workspace.Cleanup()
+		return
+	}
+
+	// 整个处理流程成功完成，确认消息
+	if err := delivery.Ack(false); err != nil {
+		logx.Errorf("确认消息失败: %v", err)
 	}
 
 	// 异步清理工作空间
@@ -120,6 +142,7 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 		}
 	}()
 
+	logx.Infof("============【任务结束】============")
 	// 异步处理消息
 	//go l.processMessageAsync(ctx, judgeSubmit)
 }
@@ -172,7 +195,7 @@ func (l *CommonLogic) sendResultToMQ(result *mq.JudgeResponse) error {
 	exchange := l.svcCtx.Config.RabbitMQ.Common.ResultExchange
 	routingKey := l.svcCtx.Config.RabbitMQ.Common.ResultRoutingKey
 
-	return l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel.Publish(
+	err = l.svcCtx.Initializer.GetRabbitMQManager().CommonChannel.Publish(
 		exchange,
 		routingKey,
 		false,
@@ -183,4 +206,10 @@ func (l *CommonLogic) sendResultToMQ(result *mq.JudgeResponse) error {
 			Timestamp:   time.Now(),
 		},
 	)
+
+	if err != nil {
+		logx.Infof("============【消息已发送】============")
+	}
+
+	return err
 }

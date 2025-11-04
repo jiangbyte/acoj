@@ -6,6 +6,7 @@ import io.charlie.web.oj.annotation.log.Log;
 import io.charlie.web.oj.annotation.log.LogCategory;
 import io.charlie.web.oj.annotation.log.LogModule;
 import io.charlie.web.oj.modular.data.library.param.BatchLibraryParam;
+import io.charlie.web.oj.modular.data.library.param.BatchLibraryQueryParam;
 import io.charlie.web.oj.modular.data.similarity.param.*;
 import io.charlie.web.oj.modular.task.similarity.dto.SimilarityProgressDto;
 import io.charlie.web.oj.modular.task.similarity.service.ProblemsSimilarityService;
@@ -87,7 +88,7 @@ public class TaskSimilarityController {
     }
 
     @PostMapping("/task/similarity/batch")
-    public Result<?> batch(@RequestBody @Valid BatchLibraryParam batchSimilarityParam) {
+    public Result<?> batch(@RequestBody @Valid BatchLibraryQueryParam batchSimilarityParam) {
         return Result.success(problemsSimilarityService.batch(batchSimilarityParam));
     }
 

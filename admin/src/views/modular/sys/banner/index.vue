@@ -90,6 +90,11 @@ const columns: DataTableColumns<any> = [
   {
     title: '排序',
     key: 'sort',
+    render: (row) => {
+      return h(NTag, {
+        type: 'success',
+      }, { default: () => row.sort })
+    },
   },
   {
     title: '上架',

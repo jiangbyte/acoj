@@ -1,16 +1,16 @@
 package io.charlie.web.oj.modular.data.library.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.param.*;
 import io.charlie.web.oj.modular.data.library.entity.LibraryBatchCount;
 import io.charlie.web.oj.modular.data.library.param.BatchLibraryQueryParam;
-import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
+import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 
 import java.util.List;
-import java.util.function.Function;
 
 /**
  * @author Charlie Zhang
@@ -29,19 +29,14 @@ public interface DataLibraryService extends IService<DataLibrary> {
 
     DataLibrary detail(DataLibraryIdParam dataLibraryIdParam);
 
-    void addLibrary(DataSubmit submit);
-
-    // 修改原方法，返回处理结果
-    <R> List<R> processCodeLibrariesInBatches(boolean isSet, String language,
-                                              List<String> problemIds, List<String> setIds,
-                                              List<String> userIds, int batchSize,
-                                              String filterProblemId, String filterSetId,
-                                              String filterUserId,
-                                              int maxBatches,
-                                              Function<List<DataLibrary>, List<R>> processor);
+    List<SysGroup> getLibraryUserGroupList(String keyword);
 
     Page<SysUser> getLibraryUserPage(DataLibraryUserPageParam dataLibraryUserPageParam);
 
+    QueryWrapper<DataLibrary> queryLibrary(BatchLibraryQueryParam libraryQueryParam);
+
     LibraryBatchCount batchQuery(BatchLibraryQueryParam libraryQueryParam);
+
+    List<String> libraryIds(BatchLibraryQueryParam libraryQueryParam);
 
 }

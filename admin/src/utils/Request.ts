@@ -79,7 +79,7 @@ const alovaInstance = createAlova({
   requestAdapter: adapterFetch(),
   cacheFor: null,
   baseURL: gateway,
-  timeout: 15 * 1000,
+  timeout: 60 * 1000,
 
   beforeRequest: onAuthRequired((method) => {
     if (method.meta?.isFormPost) {
@@ -105,7 +105,13 @@ const alovaInstance = createAlova({
       const { status } = response
 
       // 获取json数据
+      // const jsonData = await response.clone().json()
       const jsonData = await response.clone().json()
+
+      // 如果 jsonData 为空或者里面没有 data 字段，则返回一个包含默认 data 的对象
+      if (!jsonData || !jsonData.data) {
+        return { data: null }
+      }
 
       if (status === 200) {
         if (method.meta?.isBlob) {

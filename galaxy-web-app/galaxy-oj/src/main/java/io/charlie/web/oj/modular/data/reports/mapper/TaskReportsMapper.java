@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Mapper;
 * @description 报告库表 Mapper 接口
 */
 @Mapper
-@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface TaskReportsMapper extends BaseMapper<TaskReports> {
 
 }

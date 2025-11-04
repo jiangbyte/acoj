@@ -23,7 +23,7 @@ func GreedyStringTiling(token1, token2 []int, minMatchLength int) int {
 		maxMatch = minMatchLength
 		var maxTiles []MatchTile
 
-		// 使用更高效的方式寻找最大匹配块
+		// 寻找最大匹配块
 		findMaxMatches(token1, token2, matched1, matched2, minMatchLength, &maxMatch, &maxTiles)
 
 		if maxMatch <= minMatchLength {

@@ -43,14 +43,8 @@ public interface DataProblemService extends IService<DataProblem> {
     // 获取题目描述
     String llmGetDescription(String id);
 
-    // 获取题目测试用例（随机一个）
-    String llmGetTestCase(String id);
-
-    // 获取题目约束条件
+    // 获取题目资源约束条件
     String llmGetResourceConstraints(String id);
-
-    // 获取题目示例（第一个测试用例）
-    String llmGetExample(String id);
 
     // 获取题目难度
     String getDifficulty(String id);
@@ -67,7 +61,4 @@ public interface DataProblemService extends IService<DataProblem> {
     // 获取题目支持语言
     String llmGetOpenLanguage(String id);
 
-    ProblemSourceLimit getProblemSourceLimit(String id);
-
-    ProblemSourceLimit refreshProblemSourceLimit(String id);
 }

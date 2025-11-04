@@ -8,6 +8,7 @@ import (
 type DataLibraryRepository interface {
 	// 操作接口
 	GetSimilarityLibraries(isSet bool, problemID, language, userID, setId string, limit int) ([]model.DataLibrary, error)
+	GetLibrariesByIDs(libIDs []string) ([]model.DataLibrary, error) // 新增：通过ID数组查询
 }
 
 type dataLibraryRepository struct {
@@ -41,6 +42,25 @@ func (r *dataLibraryRepository) GetSimilarityLibraries(isSet bool, problemID, la
 	}
 
 	err := query.Find(&dataLibraries).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return dataLibraries, nil
+}
+
+// GetLibrariesByIDs 通过ID数组查询代码库
+func (r *dataLibraryRepository) GetLibrariesByIDs(libIDs []string) ([]model.DataLibrary, error) {
+	var dataLibraries []model.DataLibrary
+
+	if len(libIDs) == 0 {
+		return dataLibraries, nil
+	}
+
+	err := r.db.Model(&model.DataLibrary{}).
+		Where("id IN ?", libIDs). // 假设主键字段是id，如果不是请调整字段名
+		Find(&dataLibraries).Error
+
 	if err != nil {
 		return nil, err
 	}

@@ -23,7 +23,7 @@ func NewCommonLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CommonLogi
 	return &CommonLogic{
 		ctx:       ctx,
 		svcCtx:    svcCtx,
-		semaphore: make(chan struct{}, 20), // 控制并发数量
+		semaphore: make(chan struct{}, 100), // 控制并发数量
 	}
 }
 
@@ -41,7 +41,7 @@ func (l *CommonLogic) StartConsumer() {
 
 	// 增加预取计数，提高并发度
 	err = CommonChannel.Qos(
-		50, // 增加预取计数
+		100, // 增加预取计数
 		0,
 		false,
 	)
@@ -84,15 +84,17 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	defer func() {
-		if err := delivery.Ack(false); err != nil {
-			logx.Errorf("未能确认相似消息: %v", err)
-		}
-	}()
+	//if err := delivery.Ack(false); err != nil {
+	//	logx.Errorf("未能确认相似消息: %v", err)
+	//}
 
 	var similarityMessage mq.SimilarityMessage
 	if err := json.Unmarshal(delivery.Body, &similarityMessage); err != nil {
 		logx.Errorf("解码 JSON 出错: %v", err)
+		// JSON 解析失败，拒绝消息（不重新入队）
+		if err := delivery.Nack(false, false); err != nil {
+			logx.Errorf("拒绝消息失败: %v", err)
+		}
 		return
 	}
 
@@ -101,6 +103,14 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 	if result != nil {
 		if err := l.sendResultToMQ(result); err != nil {
 			logx.Errorf("发送结果到MQ失败: %v", err)
+			// 发送失败，拒绝消息（重新入队）
+			if err := delivery.Nack(false, true); err != nil {
+				logx.Errorf("拒绝消息失败: %v", err)
+			}
+		}
+		// 成功发送结果，确认消息
+		if err := delivery.Ack(false); err != nil {
+			logx.Errorf("确认消息失败: %v", err)
 		}
 		return
 	}
@@ -110,8 +120,23 @@ func (l *CommonLogic) processMessage(delivery amqp.Delivery) {
 
 	// 发送结果
 	if err := l.sendResultToMQ(resultMessage); err != nil {
+		//logx.Errorf("发送结果到MQ失败: %v", err)
 		logx.Errorf("发送结果到MQ失败: %v", err)
+		// 发送失败，拒绝消息（重新入队）
+		if err := delivery.Nack(false, true); err != nil {
+			logx.Errorf("拒绝消息失败: %v", err)
+		}
+		workspace.Cleanup()
+		return
 	}
+
+	// 整个处理流程成功完成，确认消息
+	if err := delivery.Ack(false); err != nil {
+		logx.Errorf("确认消息失败: %v", err)
+	}
+	workspace.Cleanup()
+
+	logx.Infof("========== OK ==========")
 }
 
 func (l *CommonLogic) sendResultToMQ(result *mq.SimilarityResultMessage) error {

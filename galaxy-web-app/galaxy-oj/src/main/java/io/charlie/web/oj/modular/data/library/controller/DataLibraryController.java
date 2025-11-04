@@ -84,6 +84,12 @@ public class DataLibraryController {
         return Result.success(dataLibraryService.getLibraryUserPage(dataLibraryUserPageParam));
     }
 
+    @Operation(summary = "获取用户分页")
+    @GetMapping("/data/library/userGroupList")
+    public Result<?> userGroupList(@RequestParam("keyword") String keyword) {
+        return Result.success(dataLibraryService.getLibraryUserGroupList(keyword));
+    }
+
     @PostMapping("/data/library/batch/query")
     public Result<?> batchQuery(@RequestBody @Valid BatchLibraryQueryParam libraryQueryParam) {
         return Result.success(dataLibraryService.batchQuery(libraryQueryParam));

@@ -27,7 +27,7 @@ const columns: DataTableColumns<any> = [
     render: (row: any) => {
       return h('div', { class: 'inline-flex items-center justify-center' }, [
         h(NIcon, { }, { default: () => h(Icon, { icon: row.icon }) }),
-        h(NEllipsis, { style: { width: '80px' }, class: 'ml-2' }, row.title || row.name),
+        h(NEllipsis, { style: { width: '80px' }, class: 'ml-2' }, () => row.title || row.name),
       ])
     },
   },

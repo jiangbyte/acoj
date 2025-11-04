@@ -88,10 +88,10 @@ const columns: DataTableColumns<any> = [
     title: '源代码长度',
     key: 'codeLength',
   },
-  {
-    title: '检测热度',
-    key: 'accessCount',
-  },
+  // {
+  //   title: '检测热度',
+  //   key: 'accessCount',
+  // },
   {
     title: '操作',
     key: 'action',

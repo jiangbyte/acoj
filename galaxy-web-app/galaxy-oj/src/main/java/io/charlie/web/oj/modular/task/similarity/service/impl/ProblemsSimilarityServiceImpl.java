@@ -3,7 +3,15 @@ package io.charlie.web.oj.modular.task.similarity.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.charlie.galaxy.exception.BusinessException;
+import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
+import io.charlie.web.oj.modular.data.library.param.BatchLibraryQueryParam;
+import io.charlie.web.oj.modular.data.library.service.DataLibraryService;
+import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
+import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
+import io.charlie.web.oj.modular.data.reports.entity.TaskReports;
+import io.charlie.web.oj.modular.data.reports.mapper.TaskReportsMapper;
 import io.charlie.web.oj.modular.task.similarity.dto.BatchSimilaritySubmitDto;
 import io.charlie.web.oj.modular.task.similarity.handle.BatchSimilarityHandleMessage;
 import io.charlie.web.oj.modular.data.library.param.BatchLibraryParam;
@@ -11,6 +19,8 @@ import io.charlie.web.oj.modular.task.similarity.service.ProblemsSimilarityServi
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * @author ZhangJiangHu
@@ -24,20 +34,44 @@ import org.springframework.stereotype.Service;
 public class ProblemsSimilarityServiceImpl implements ProblemsSimilarityService {
     private final BatchSimilarityHandleMessage batchSimilarityHandleMessage;
 
+    private final DataLibraryService dataLibraryService;
+    private final DataProblemMapper dataProblemMapper;
+
+    private final TaskReportsMapper taskReportsMapper;
+
     @Override
-    public String batch(BatchLibraryParam batchSimilarityParam) {
-        if (ObjectUtil.isNotEmpty(batchSimilarityParam.getUserIds())) {
-            if (batchSimilarityParam.getUserIds().size() <= 1) {
-                throw new BusinessException("用户数量不能小于2");
-            }
+    public String batch(BatchLibraryQueryParam batchSimilarityParam) {
+        List<String> list = dataLibraryService.libraryIds(batchSimilarityParam);
+        if (ObjectUtil.isEmpty(list)) {
+            throw new BusinessException("参数错误");
         }
 
+        DataProblem dataProblem = dataProblemMapper.selectById(batchSimilarityParam.getProblemId());
+
         String taskId = IdUtil.objectId();
+
+        TaskReports taskReports = new TaskReports();
+        taskReports.setTaskId(taskId);
+        taskReports.setSetId(batchSimilarityParam.getSetId());
+        taskReports.setProblemId(batchSimilarityParam.getProblemId());
+        taskReports.setSampleCount(Math.toIntExact(list.size()));
+        taskReports.setIsSet(Boolean.TRUE);
+        taskReports.setThreshold(dataProblem.getThreshold());
+
+        taskReportsMapper.insert(taskReports);
+
         log.info("开始处理任务: {}", taskId);
+
         BatchSimilaritySubmitDto batchSimilaritySubmitDto = BeanUtil.toBean(batchSimilarityParam, BatchSimilaritySubmitDto.class);
-        batchSimilaritySubmitDto.setTaskType(Boolean.TRUE);
+        batchSimilaritySubmitDto.setReportId(taskReports.getId());
         batchSimilaritySubmitDto.setTaskId(taskId);
+        batchSimilaritySubmitDto.setLibIds(list);
+        batchSimilaritySubmitDto.setMinMatchLength(batchSimilarityParam.getMinMatchLength());
+        batchSimilaritySubmitDto.setThreshold(dataProblem.getThreshold());
+        batchSimilaritySubmitDto.setTaskType(Boolean.TRUE);
+
         batchSimilarityHandleMessage.sendSimilarity(batchSimilaritySubmitDto);
-        return taskId;
+
+        return taskReports.getId();
     }
 }

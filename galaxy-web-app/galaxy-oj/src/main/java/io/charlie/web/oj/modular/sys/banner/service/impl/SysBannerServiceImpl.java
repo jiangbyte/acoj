@@ -10,7 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.galaxy.utils.str.GalaxyStringUtil;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
@@ -136,7 +136,7 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
         String jumpModule = sysBannerJumpTargetParam.getJumpModule();
         String keyword = sysBannerJumpTargetParam.getKeyword();
 
-        if (GaStringUtil.isEmpty(jumpModule)) {
+        if (GalaxyStringUtil.isEmpty(jumpModule)) {
             return List.of();
         }
 
@@ -145,7 +145,7 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
             case "NOTICE":
                 List<SysNotice> sysNotices = sysNoticeMapper.selectList(new QueryWrapper<SysNotice>().checkSqlInjection()
                         .lambda()
-                        .like(GaStringUtil.isNotEmpty(keyword), SysNotice::getTitle, keyword)
+                        .like(GalaxyStringUtil.isNotEmpty(keyword), SysNotice::getTitle, keyword)
                         .eq(SysNotice::getIsVisible, Boolean.TRUE)
                 );
                 if (ObjectUtil.isEmpty(sysNotices)) {
@@ -161,7 +161,7 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
             case "PERSONAL":
                 List<SysUser> sysUsers = sysUserMapper.selectList(new QueryWrapper<SysUser>().checkSqlInjection()
                         .lambda()
-                        .like(GaStringUtil.isNotEmpty(keyword), SysUser::getUsername, keyword)
+                        .like(GalaxyStringUtil.isNotEmpty(keyword), SysUser::getUsername, keyword)
                 );
                 if (ObjectUtil.isEmpty(sysUsers)) {
                     return List.of();
@@ -176,7 +176,7 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
             case "PROBLEM":
                 List<DataProblem> dataProblems = dataProblemMapper.selectList(new QueryWrapper<DataProblem>().checkSqlInjection()
                         .lambda()
-                        .like(GaStringUtil.isNotEmpty(keyword), DataProblem::getTitle, keyword)
+                        .like(GalaxyStringUtil.isNotEmpty(keyword), DataProblem::getTitle, keyword)
                         .eq(DataProblem::getIsVisible, Boolean.TRUE)
                         .eq(DataProblem::getIsPublic, Boolean.TRUE)
                 );
@@ -194,7 +194,7 @@ public class SysBannerServiceImpl extends ServiceImpl<SysBannerMapper, SysBanner
             case "SET":
                 List<DataSet> dataSets = dataSetMapper.selectList(new QueryWrapper<DataSet>().checkSqlInjection()
                         .lambda()
-                        .like(GaStringUtil.isNotEmpty(keyword), DataSet::getTitle, keyword)
+                        .like(GalaxyStringUtil.isNotEmpty(keyword), DataSet::getTitle, keyword)
                         .eq(DataSet::getIsVisible, Boolean.TRUE)
                 );
 

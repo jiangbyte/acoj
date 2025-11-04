@@ -331,20 +331,21 @@ function handleUserGroupChange(value: any) {
 </style> -->
 
 <script lang="ts" setup>
-import { useDataLibraryFetch, useDataSetFetch } from '@/composables/v1'
+import { useDataLibraryFetch, useDataSetFetch, useTaskSimilarityFetch } from '@/composables/v1'
 import type { DataTableColumns, SelectOption } from 'naive-ui'
-import { NAlert, NAvatar, NButton, NCard, NDatePicker, NDrawer, NDrawerContent, NForm, NInputNumber, NProgress, NRadio, NRadioGroup, NSlider, NSpace, NTag, NText, NTreeSelect } from 'naive-ui'
+import { NAlert, NAvatar, NButton, NCard, NDatePicker, NDrawer, NDrawerContent, NForm, NInputNumber, NRadio, NRadioGroup, NSlider, NSpace, NTag, NText, NTreeSelect } from 'naive-ui'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
 const loading = ref(false)
 const formRef = ref()
 
+const { dataLibraryiUserPage, dataLibraryiUserGroupList } = useDataLibraryFetch()
 const defaultFormData = {
   // 基础范围
   setId: null,
   problemId: null,
-  language: null,
+  language: null as any,
 
   startTime: 0,
   endTime: 0,
@@ -377,6 +378,13 @@ const rules = {
   ],
 }
 
+const libraryBatchCount = ref({
+  totalCount: '0',
+  checkCount: '0',
+  expectTime: '0',
+  compareCount: '0',
+})
+
 function doClose() {
   emit('close')
   show.value = false
@@ -384,39 +392,46 @@ function doClose() {
 }
 
 async function doSubmit() {
-  // if (submissionEstimate.value.isOverLimit) {
-  //   window.$message.error(`检测数量超过系统限制（${SYSTEM_LIMITS.MAX_SUBMISSIONS}），请调整筛选条件`)
-  //   return
-  // }
+  if (Number(libraryBatchCount.value.checkCount) <= 1 || Number(libraryBatchCount.value.checkCount) > 200) {
+    window.$message.warning(`检测份数 ${libraryBatchCount.value.checkCount} 为边界值，无法提交`)
+    return
+  }
 
-  // formRef.value?.validate(async (errors: any) => {
-  //   if (!errors) {
-  //     loading.value = true
+  formRef.value?.validate(async (errors: any) => {
+    if (!errors) {
+      loading.value = true
+      try {
+        const { data } = await useTaskSimilarityFetch().taskSimilarityBatch(formData.value)
+        if (data) {
+          window.$message.success(`检测任务已提交，将处理 ${libraryBatchCount.value.checkCount} 份提交`)
+          emit('submit', data)
+          doClose()
+        }
+      }
+      // eslint-disable-next-line unused-imports/no-unused-vars
+      catch (error) {
+        window.$message.error('任务提交失败')
+      }
+      finally {
+        loading.value = false
+      }
+    }
+  })
+}
 
-  //     const taskParams = {
-  //       ...formData.value,
-  //       batchTaskId: `task-${uuidv4()}`,
-  //       estimatedCount: submissionEstimate.value.actual,
-  //       riskLevel: submissionEstimate.value.riskLevel,
-  //       systemLimits: SYSTEM_LIMITS,
-  //     }
-
-  //     try {
-  //       const { data } = await useTaskSimilarityFetch().taskSimilarityBatch(taskParams)
-  //       if (data) {
-  //         window.$message.success(`检测任务已提交，将处理 ${submissionEstimate.value.actual} 份提交`)
-  //         emit('submit', data)
-  //         doClose()
-  //       }
-  //     }
-  //     catch (error) {
-  //       window.$message.error('任务提交失败')
-  //     }
-  //     finally {
-  //       loading.value = false
-  //     }
-  //   }
-  // })
+function handleConfirm() {
+  window.$dialog.info({
+    title: '提示',
+    content: `将处理 ${libraryBatchCount.value.checkCount} 份提交，稍后可在【检测统计】中查看详情`,
+    positiveText: '确定',
+    negativeText: '取消（该操作将关闭检测窗口）',
+    onPositiveClick: () => {
+      doSubmit()
+    },
+    onNegativeClick: () => {
+      doClose()
+    },
+  })
 }
 
 const setProblemOptions = ref<SelectOption[]>([])
@@ -443,6 +458,13 @@ function doOpen(sId: string = '', _pid: string = '', _isSet: boolean) {
   loadProblems('')
   loadLanguages('')
   loadUserData()
+  getGroupLists('')
+}
+
+function getGroupLists(query: string) {
+  dataLibraryiUserGroupList({ keyword: query }).then(({ data }) => {
+    groupOptions.value = data
+  })
 }
 
 function loadProblems(query: string) {
@@ -500,7 +522,6 @@ const columns: DataTableColumns<any> = [
   },
 ]
 
-const { dataLibraryiUserPage } = useDataLibraryFetch()
 const pageLoading = ref(false)
 async function loadUserData() {
   pageLoading.value = true
@@ -511,7 +532,7 @@ async function loadUserData() {
   }
 }
 function handleUserGroupChange(value: any) {
-  pageParam.value.groupId = value
+  formData.value.groupId = value
   loadUserData()
 }
 
@@ -519,21 +540,22 @@ defineExpose({
   doOpen,
 })
 
-const libraryBatchCount = ref({
-  totalCount: '',
-  checkCount: '',
-  expectTime: '',
-  compareCount: '',
-})
+watch(
+  () => formData.value.problemId, // 更推荐使用函数形式监听深层属性
+  () => {
+    loadLanguages('')
+  },
+  { immediate: true }, // 初始化时执行一次
+)
 
-watch(formData, (_newValue, _) => {
+function updateQcount() {
   formData.value.startTime = formData.value.timeRange[0]
   formData.value.endTime = formData.value.timeRange[1]
   useDataLibraryFetch().dataLibraryBatchQuery(formData.value).then(({ data }) => {
     libraryBatchCount.value = data
+    console.log(data)
   })
-  loadLanguages('')
-}, { deep: true })
+}
 </script>
 
 <template>
@@ -545,7 +567,7 @@ watch(formData, (_newValue, _) => {
         </NTag> 份提交
       </NAlert>
 
-      <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="140">
+      <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="130">
         <!-- 基础检测范围 -->
         <NCard title="检测范围" size="small" class="mb-4">
           <NFormItem label="题目选择" path="problemId">
@@ -557,9 +579,10 @@ watch(formData, (_newValue, _) => {
               filterable
               :options="setProblemOptions"
               @search="loadProblems"
-              @change="(e) => {
-                pageParam.problemIds = [e]
+              @update-value="(e) => {
+                formData.problemIds = [e]
                 loadUserData()
+                updateQcount()
               }"
             />
           </NFormItem>
@@ -569,9 +592,12 @@ watch(formData, (_newValue, _) => {
               v-model:value="formData.language"
               placeholder="请选择检测语言"
               :options="languageOptions"
-              filterable
               :disabled="!formData.problemId"
-              @search="loadLanguages"
+              @update-value="(e) => {
+                formData.language = e
+                loadUserData()
+                updateQcount()
+              }"
             />
           </NFormItem>
 
@@ -581,6 +607,7 @@ watch(formData, (_newValue, _) => {
               type="datetimerange"
               clearable
               placeholder="选择时间范围（可选）"
+              @update-value="(e) => updateQcount()"
             />
           </NFormItem>
         </NCard>
@@ -593,17 +620,17 @@ watch(formData, (_newValue, _) => {
                 <NRadio value="PAIR_BY_PAIR">
                   两两对比
                 </NRadio>
-                <NRadio value="GROUP_BY_GROUP">
+                <!-- <NRadio value="GROUP_BY_GROUP">
                   组内对比
-                </NRadio>
+                </NRadio> -->
                 <NRadio value="MULTI_BY_MULTI">
-                  多人对比
+                  用户对比
                 </NRadio>
               </NSpace>
             </NRadioGroup>
           </NFormItem>
 
-          <NFormItem v-if="formData.compareMode === 'GROUP_BY_GROUP'" label="用户组">
+          <!-- <NFormItem v-if="formData.compareMode === 'GROUP_BY_GROUP'" label="用户组">
             <NTreeSelect
               v-model:value="formData.groupId"
               :options="groupOptions"
@@ -612,7 +639,7 @@ watch(formData, (_newValue, _) => {
               placeholder="选择用户组"
               clearable
             />
-          </NFormItem>
+          </NFormItem> -->
 
           <NFormItem v-if="formData.compareMode === 'MULTI_BY_MULTI'" label="用户列表">
             <NCard size="small" class="flex-1 mb-4">
@@ -622,15 +649,21 @@ watch(formData, (_newValue, _) => {
                     <NText>
                       用户组筛选
                     </NText>
-                    <n-tree-select
+                    <NTreeSelect
                       v-model:value="formData.groupId"
                       :options="groupOptions"
                       label-field="name"
                       key-field="id"
+                      filterable
                       :indent="12"
                       class="w-60"
+                      clearable
                       placeholder="请选择用户组"
-                      @update:value="handleUserGroupChange"
+                      @update:value="(e) => {
+                        updateQcount()
+                        handleUserGroupChange(e)
+                      }"
+                      @search="getGroupLists"
                     />
                   </NSpace>
                   <NP type="info" show-icon>
@@ -646,6 +679,9 @@ watch(formData, (_newValue, _) => {
                   :loading="pageLoading"
                   flex-height
                   class="h-90"
+                  @update:checked-row-keys="(e) => {
+                    updateQcount()
+                  }"
                 />
               </NSpace>
               <template #action>
@@ -668,29 +704,27 @@ watch(formData, (_newValue, _) => {
             </NCard>
           </NFormItem>
 
-          <NFormItem label="代码筛选">
-            <NRadioGroup v-model:value="formData.codeFilter">
-              <NSpace vertical>
-                <NRadio value="VALID_SUBMIT">
-                  有效提交（推荐）
-                </NRadio>
-                <NRadio value="TIME_WINDOW">
-                  时间窗口（{{ formData.codeFilterTimeWindow }}分钟内）
-                </NRadio>
-              </NSpace>
+          <NFormItem v-if="formData.compareMode === 'PAIR_BY_PAIR'" label="代码筛选">
+            <NRadioGroup v-model:value="formData.codeFilter" @update-value="(e) => updateQcount()">
+              <NRadio value="VALID_SUBMIT">
+                有效提交
+              </NRadio>
+              <NRadio value="TIME_WINDOW">
+                时间窗口（{{ formData.codeFilterTimeWindow }}分钟内）
+              </NRadio>
             </NRadioGroup>
           </NFormItem>
 
-          <n-grid v-if="formData.codeFilter === 'TIME_WINDOW'" :cols="12" :x-gap="12">
+          <n-grid v-if="formData.compareMode === 'PAIR_BY_PAIR' && formData.codeFilter === 'TIME_WINDOW'" :cols="12" :x-gap="12">
             <n-form-item-gi :span="8" label="时间窗口（分钟）">
-              <NInputNumber v-model:value="formData.codeFilterTimeWindow" :min="1" :max="120" />
+              <NInputNumber v-model:value="formData.codeFilterTimeWindow" :min="1" :max="120" @update:value="updateQcount" />
             </n-form-item-gi>
           </n-grid>
         </NCard>
 
         <!-- 性能控制 -->
-        <NCard title="性能控制" size="small" class="mb-4">
-          <NFormItem label="启用采样">
+        <NCard title="参数控制" size="small" class="mb-4">
+          <!-- <NFormItem label="启用采样">
             <NRadioGroup v-model:value="formData.enableSampling">
               <NSpace>
                 <NRadio :value="true">
@@ -703,14 +737,14 @@ watch(formData, (_newValue, _) => {
             </NRadioGroup>
           </NFormItem>
 
-          <NFormItem v-if="formData.samplingRatio" label="采样比例">
+          <NFormItem v-if="formData.enableSampling" label="采样比例">
             <NSpace vertical class="w-full">
               <NSlider
                 v-model:value="formData.samplingRatio"
-                :step="10"
-                :min="10"
-                :max="100"
-                :marks="{ 10: '10%', 50: '50%', 100: '100%' }"
+                :step="0.1"
+                :min="0.1"
+                :max="1.0"
+                :marks="{ 0.1: '10%', 0.5: '50%', 1.0: '100%' }"
               />
               <NSpace justify="space-between">
                 <NText depth="3">
@@ -721,7 +755,7 @@ watch(formData, (_newValue, _) => {
                 </NText>
               </NSpace>
             </NSpace>
-          </NFormItem>
+          </NFormItem> -->
 
           <NFormItem label="匹配敏感度">
             <NSpace vertical class="w-full">
@@ -739,7 +773,6 @@ watch(formData, (_newValue, _) => {
         <!-- 估算信息 -->
         <NCard title="检测预览" size="small">
           <NSpace vertical class="w-full">
-            <!-- 数据统计 -->
             <NSpace vertical>
               <NSpace justify="space-between">
                 <NText>总提交数量：</NText>
@@ -749,15 +782,14 @@ watch(formData, (_newValue, _) => {
                 <NText>实际检测数量：</NText>
                 <NTag>
                   {{ libraryBatchCount.checkCount }}
-                  <span v-if="formData.enableSampling">(采样{{ formData.samplingRatio }}%)</span>
                 </NTag>
               </NSpace>
-              <NSpace justify="space-between">
+              <!-- <NSpace justify="space-between">
                 <NText>预计处理时间：</NText>
                 <NTag>
                   {{ libraryBatchCount.expectTime }}秒
                 </NTag>
-              </NSpace>
+              </NSpace> -->
               <NSpace justify="space-between">
                 <NText>对比组合数：</NText>
                 <NTag type="info">
@@ -777,7 +809,8 @@ watch(formData, (_newValue, _) => {
           <NButton
             type="primary"
             :loading="loading"
-            @click="doSubmit"
+            :disabled="Number(libraryBatchCount.checkCount) <= 1 || Number(libraryBatchCount.checkCount) > 200"
+            @click="handleConfirm"
           >
             {{ `开始检测 (${libraryBatchCount.checkCount}份)` }}
           </NButton>

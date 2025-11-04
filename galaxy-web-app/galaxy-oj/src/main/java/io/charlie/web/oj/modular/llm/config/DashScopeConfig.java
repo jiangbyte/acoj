@@ -6,17 +6,14 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetriever;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
 import com.alibaba.cloud.ai.memory.jdbc.MysqlChatMemoryRepository;
-import com.alibaba.cloud.ai.prompt.ConfigurablePromptTemplateFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
-import org.springframework.core.io.ResourceLoader;
 
 /**
  * @author Charlie Zhang
@@ -27,15 +24,13 @@ import org.springframework.core.io.ResourceLoader;
 @Configuration
 @RequiredArgsConstructor
 public class DashScopeConfig {
-    //    private final ResourceLoader resourceLoader;
     private final ProblemTools problemTool;
     private final Environment env;
-    private final LLMProperties systemPromptProperties;
+    private final LLMProperties llmProperties;
 
     private final MysqlChatMemoryRepository mysqlChatMemoryRepository;
 
     private static final int MAX_MESSAGES = 100;
-
 
     @Bean
     public DashScopeApi dashScopeApi() {
@@ -57,7 +52,7 @@ public class DashScopeConfig {
                 dashScopeApi(),
                 DashScopeDocumentRetrieverOptions
                         .builder()
-                        .withIndexName(systemPromptProperties.getExternalKnowledgeBase().getIndexName())
+                        .withIndexName(llmProperties.getExternalKnowledgeBase().getIndexName())
                         .build());
         DocumentRetrievalAdvisor documentRetrievalAdvisor = new DocumentRetrievalAdvisor(dashScopeDocumentRetriever);
 
@@ -67,7 +62,7 @@ public class DashScopeConfig {
                 .build();
 
         return builder
-                .defaultSystem(systemPromptProperties.getPrompts().getDefaultPrompt())
+                .defaultSystem(llmProperties.getPrompts().getDefaultPrompt())
                 .defaultAdvisors(new SimpleLoggerAdvisor(), messageChatMemoryAdvisor, documentRetrievalAdvisor)
                 .defaultOptions(dashScopeChatOptions)
                 .defaultTools(problemTool)

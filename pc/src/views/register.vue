@@ -199,8 +199,8 @@ const version = import.meta.env.VITE_VERSION
         <NButton
           block
           type="primary"
-          @click="handleRegister"
           data-testid="register-execute"
+          @click="handleRegister"
         >
           注册
         </NButton>

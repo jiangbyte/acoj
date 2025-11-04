@@ -10,7 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.galaxy.utils.str.GalaxyStringUtil;
 import io.charlie.web.oj.modular.data.judgecase.entity.DataJudgeCase;
 import io.charlie.web.oj.modular.data.judgecase.param.DataJudgeCaseAddParam;
 import io.charlie.web.oj.modular.data.judgecase.param.DataJudgeCaseEditParam;
@@ -45,7 +45,7 @@ public class DataJudgeCaseServiceImpl extends ServiceImpl<DataJudgeCaseMapper, D
     public Page<DataJudgeCase> page(DataJudgeCasePageParam dataJudgeCasePageParam) {
         QueryWrapper<DataJudgeCase> queryWrapper = new QueryWrapper<DataJudgeCase>().checkSqlInjection();
 
-        if (GaStringUtil.isNotEmpty(dataJudgeCasePageParam.getSubmitId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataJudgeCasePageParam.getSubmitId())) {
             queryWrapper.lambda().eq(DataJudgeCase::getSubmitId, dataJudgeCasePageParam.getSubmitId());
         } else {
             return new Page<>();

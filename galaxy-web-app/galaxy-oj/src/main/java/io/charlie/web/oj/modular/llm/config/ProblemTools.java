@@ -22,17 +22,10 @@ public class ProblemTools {
     public String getProblemDescriptionById(@ToolParam(description = "题目ID") String id) {
         return dataProblemService.llmGetDescription(id);
     }
-    @Tool(description = "通过题目id随机获取一个测试用例")
-    public String getProblemTestCaseById(@ToolParam(description = "题目ID") String id) {
-        return dataProblemService.llmGetTestCase(id);
-    }
+
     @Tool(description = "通过题目id获取题目资源使用约束条件")
     public String getProblemResourceConstraintsById(@ToolParam(description = "题目ID") String id) {
         return dataProblemService.llmGetResourceConstraints(id);
-    }
-    @Tool(description = "通过题目id获取题目示例")
-    public String getProblemExampleById(@ToolParam(description = "题目ID") String id) {
-        return dataProblemService.llmGetExample(id);
     }
     @Tool(description = "通过题目id获取题目难度")
     public String getProblemDifficultyById(@ToolParam(description = "题目ID") String id) {
@@ -46,14 +39,13 @@ public class ProblemTools {
     public String getProblemTagsById(@ToolParam(description = "题目ID") String id) {
         return dataProblemService.llmGetTags(id);
     }
-
     @Tool(description = "通过题目id获取题目分类")
     public String getProblemCategoryById(@ToolParam(description = "题目ID") String id) {
         return dataProblemService.llmGetCategory(id);
     }
-
     @Tool(description = "通过题目id获取题目设置的允许提交语言")
     public String getProblemOpenLanguageById(@ToolParam(description = "题目ID") String id) {
         return dataProblemService.llmGetOpenLanguage(id);
     }
 }
+

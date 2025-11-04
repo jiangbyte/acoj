@@ -189,8 +189,8 @@ const version = import.meta.env.VITE_VERSION
         <NButton
           block
           type="primary"
-          @click="handleLogin"
           data-testid="login-execute"
+          @click="handleLogin"
         >
           登录
         </NButton>

@@ -21,6 +21,7 @@ export function useSysRoleFetch() {
     createUser: '',
     updateTime: '',
     updateUser: '',
+    assignGroupIds: [],
   }
   return {
     /*

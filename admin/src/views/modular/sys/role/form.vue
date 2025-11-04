@@ -1,6 +1,7 @@
 <script lang="ts" setup>
+import type { SelectOption } from 'naive-ui'
 import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput } from 'naive-ui'
-import { useSysDictFetch, useSysRoleFetch } from '@/composables/v1'
+import { useSysDictFetch, useSysGroupFetch, useSysRoleFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const show = ref(false)
@@ -60,6 +61,8 @@ async function doSubmit() {
 }
 
 const dataScopeRef = ref()
+const groupOptionsLoading = ref(false)
+const groupOptions = ref<SelectOption[]>([])
 function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
@@ -68,10 +71,24 @@ function doOpen(row: any = null, edit: boolean = false) {
   useSysDictFetch().sysDictOptions({ dictType: 'DATA_SCOPE' }).then(({ data }) => {
     dataScopeRef.value = data
   })
+  useSysGroupFetch().sysGroupAuthTree({ keyword: '' }).then(({ data }) => {
+    groupOptions.value = data
+    groupOptionsLoading.value = false
+  })
 }
 defineExpose({
   doOpen,
 })
+
+watch(
+  () => formData.value.dataScope,
+  (newValue) => {
+    if (newValue !== 'SPECIFIED_GROUP') {
+      formData.value.assignGroupIds = []
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -101,6 +118,16 @@ defineExpose({
             v-model:value="formData.dataScope"
             placeholder="请选择数据范围"
             :options="dataScopeRef"
+          />
+        </NFormItem>
+        <NFormItem v-if="formData.dataScope === 'SPECIFIED_GROUP'" label="用户组" path="assignGroupIds">
+          <n-tree-select
+            v-model:value="formData.assignGroupIds"
+            :options="groupOptions"
+            label-field="name"
+            key-field="id"
+            :indent="12"
+            multiple
           />
         </NFormItem>
         <!-- 数字输入 -->

@@ -6,7 +6,7 @@ package io.charlie.galaxy.utils.str;
  * @date 31/07/2025
  * @description 增强版字符串工具类
  */
-public class GaStringUtil {
+public class GalaxyStringUtil {
 
     /**
      * 判断字符串是否为空（包括 null、""、"null"）

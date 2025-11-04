@@ -85,5 +85,12 @@ export function useDataLibraryFetch() {
         },
       })
     },
+    dataLibraryiUserGroupList(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/userGroupList`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

@@ -20,13 +20,13 @@ const columns: DataTableColumns<any> = [
       tooltip: true,
     },
   },
-  {
-    title: '用户名',
-    key: 'username',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
+  // {
+  //   title: '用户名',
+  //   key: 'username',
+  //   ellipsis: {
+  //     tooltip: true,
+  //   },
+  // },
   {
     title: '昵称',
     key: 'nickname',
@@ -41,13 +41,13 @@ const columns: DataTableColumns<any> = [
       return h(NImage, { src: row.avatar, width: 50, height: 50, objectFit: 'cover' })
     },
   },
-  {
-    title: '背景图片',
-    key: 'background',
-    render: (row) => {
-      return h(NImage, { src: row.background, width: 50, height: 50, objectFit: 'cover' })
-    },
-  },
+  // {
+  //   title: '背景图片',
+  //   key: 'background',
+  //   render: (row) => {
+  //     return h(NImage, { src: row.background, width: 50, height: 50, objectFit: 'cover' })
+  //   },
+  // },
   {
     title: '签名',
     key: 'quote',
@@ -68,13 +68,13 @@ const columns: DataTableColumns<any> = [
       return '未知'
     },
   },
-  {
-    title: '学号',
-    key: 'studentNumber',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
+  // {
+  //   title: '学号',
+  //   key: 'studentNumber',
+  //   ellipsis: {
+  //     tooltip: true,
+  //   },
+  // },
   {
     title: '邮箱',
     key: 'email',
@@ -82,13 +82,13 @@ const columns: DataTableColumns<any> = [
       tooltip: true,
     },
   },
-  {
-    title: '电话',
-    key: 'telephone',
-    ellipsis: {
-      tooltip: true,
-    },
-  },
+  // {
+  //   title: '电话',
+  //   key: 'telephone',
+  //   ellipsis: {
+  //     tooltip: true,
+  //   },
+  // },
   {
     title: '操作',
     key: 'action',

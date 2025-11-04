@@ -61,4 +61,5 @@ public class BatchLibraryQueryParam {
     private Integer minMatchLength; // 5-15,宽松，标准，严格
 
     private String taskId;
+
 }

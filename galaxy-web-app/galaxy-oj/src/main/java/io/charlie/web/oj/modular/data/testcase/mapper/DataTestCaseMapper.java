@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Mapper;
 * @description 题目测试用例表 Mapper 接口
 */
 @Mapper
-@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface DataTestCaseMapper extends BaseMapper<DataTestCase> {
 
 }

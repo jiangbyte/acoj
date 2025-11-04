@@ -6,7 +6,7 @@ import { request as $alova } from '@/utils'
 export function useDataTestCaseFetch() {
   const context = import.meta.env.VITE_MAIN_SERVICE_CONTEXT
   const pathPrefix = `${context}/api/v1/`
-  const table = 'data/nginx.conf/case'
+  const table = 'data/test/case'
 
   /*
      * 题目测试用例 默认数据

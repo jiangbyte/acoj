@@ -2,6 +2,7 @@ package io.charlie.web.oj.modular.data.library.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -12,7 +13,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.galaxy.utils.str.GalaxyStringUtil;
+import io.charlie.web.oj.modular.context.DataScopeContext;
 import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.param.*;
@@ -24,6 +26,8 @@ import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.data.library.entity.LibraryBatchCount;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
+import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
+import io.charlie.web.oj.modular.sys.group.mapper.SysGroupMapper;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.service.SysUserService;
 import io.charlie.web.oj.modular.sys.user.utils.SysUserBuildUtil;
@@ -35,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -50,12 +55,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataLibrary> implements DataLibraryService {
-    private final RedissonClient redissonClient;
-
     private final SysUserBuildUtil sysUserBuildUtil;
     private final DataScopeUtil dataScopeUtil;
 
     private final SysUserService sysUserService;
+
+    private final SysGroupMapper sysGroupMapper;
 
     @Override
     @DS("slave")
@@ -114,235 +119,71 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         return dataLibrary;
     }
 
-    //    @Override
-//    public void addLibrary(DataSubmit submit) {
-//        // 构建查询条件
-//        LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
-//                .eq(DataLibrary::getUserId, submit.getUserId())
-//                .eq(DataLibrary::getLanguage, submit.getLanguage())
-//                .eq(DataLibrary::getProblemId, submit.getProblemId());
-//
-//        // 如果是set模式，需要额外匹配setId
-//        if (submit.getIsSet()) {
-//            queryWrapper.eq(DataLibrary::getSetId, submit.getSetId());
-//            queryWrapper.eq(DataLibrary::getIsSet, Boolean.TRUE);
-//        } else {
-//            queryWrapper.eq(DataLibrary::getIsSet, Boolean.FALSE);
-//        }
-//
-//        // 查找已存在的记录
-//        DataLibrary library = this.getOne(queryWrapper);
-//
-//        if (library != null) {
-//            log.info("存在记录，执行更新");
-//            // 更新现有记录
-//            library.setSubmitId(submit.getId());
-//            library.setSubmitTime(submit.getCreateTime());
-//            library.setCode(submit.getCode());
-//            library.setCodeLength(submit.getCodeLength());
-//            this.updateById(library);
-//        } else {
-//            log.info("不存在记录，创建新记录");
-//            // 创建新记录
-//            library = new DataLibrary();
-//            library.setUserId(submit.getUserId());
-//            library.setSetId(submit.getIsSet() ? submit.getSetId() : null);
-//            library.setProblemId(submit.getProblemId());
-//            library.setLanguage(submit.getLanguage());
-//            library.setSubmitId(submit.getId());
-//            library.setSubmitTime(submit.getCreateTime());
-//            library.setCode(submit.getCode());
-//            library.setCodeLength(submit.getCodeLength());
-//            library.setIsSet(submit.getIsSet());
-//            library.setAccessCount(0);
-//
-//            this.save(library);
-//        }
-//    }
     @Override
-    public void addLibrary(DataSubmit submit) {
+    public List<SysGroup> getLibraryUserGroupList(String keyword) {
+        DataScopeContext dataScopeContext = dataScopeUtil.getDataScopeContext();
+        List<String> accessibleGroupIds = dataScopeContext.getAccessibleGroupIds(); // 可访问的用户组ID列表
+        // 构建查询条件
+        LambdaQueryWrapper<SysGroup> queryWrapper = new LambdaQueryWrapper<SysGroup>()
+                .orderByAsc(SysGroup::getSort);
 
-        String lockKey = buildLockKey(submit);
-        RLock lock = redissonClient.getLock(lockKey);
-
-        try {
-            // 尝试获取锁，等待5秒，锁超时时间30秒
-            boolean locked = lock.tryLock(5, 30, TimeUnit.SECONDS);
-            if (!locked) {
-                throw new RuntimeException("获取分布式锁失败");
-            }
-
-            try {
-                // 在锁保护下执行原有逻辑
-                doAddLibrary(submit);
-            } finally {
-                lock.unlock();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("操作被中断", e);
-        }
-    }
-
-    private void doAddLibrary(DataSubmit submit) {
-        // 原有的业务逻辑
-        LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
-                .eq(DataLibrary::getUserId, submit.getUserId())
-                .eq(DataLibrary::getLanguage, submit.getLanguage())
-                .eq(DataLibrary::getProblemId, submit.getProblemId())
-                .eq(DataLibrary::getIsSet, submit.getIsSet());
-
-        if (submit.getIsSet()) {
-            queryWrapper.eq(DataLibrary::getSetId, submit.getSetId());
+        // 添加关键字过滤
+        if (ObjectUtil.isNotEmpty(keyword)) {
+            queryWrapper.like(SysGroup::getName, keyword);
         }
 
-        DataLibrary library = this.getOne(queryWrapper);
-
-        if (library != null) {
-            log.info("存在记录，执行更新");
-            library.setSubmitId(submit.getId());
-            library.setSubmitTime(submit.getCreateTime());
-            library.setCodeLength(submit.getCodeLength());
-            if (!submit.getCode().equals(library.getCode())) {
-                library.setCode(submit.getCode());
-                library.setAccessCount(0);// 重置访问次数
-            }
-            this.updateById(library);
-        } else {
-            log.info("不存在记录，创建新记录");
-            library = new DataLibrary();
-            library.setUserId(submit.getUserId());
-            library.setSetId(submit.getIsSet() ? submit.getSetId() : null);
-            library.setProblemId(submit.getProblemId());
-            library.setLanguage(submit.getLanguage());
-            library.setSubmitId(submit.getId());
-            library.setSubmitTime(submit.getCreateTime());
-            library.setCode(submit.getCode());
-            library.setCodeLength(submit.getCodeLength());
-            library.setIsSet(submit.getIsSet());
-            library.setAccessCount(0);
-            this.save(library);
-        }
-    }
-
-    private String buildLockKey(DataSubmit submit) {
-        if (submit.getIsSet()) {
-            return String.format("library:lock:%s:%s:%s:%s",
-                    submit.getUserId(), submit.getLanguage(),
-                    submit.getProblemId(), submit.getSetId());
-        } else {
-            return String.format("library:lock:%s:%s:%s",
-                    submit.getUserId(), submit.getLanguage(), submit.getProblemId());
-        }
-    }
-
-    private LambdaQueryWrapper<DataLibrary> buildSampleQuery(
-            boolean isSet,
-            String language,
-            List<String> problemIds,
-            List<String> setIds,
-            List<String> userIds
-    ) {
-
-        LambdaQueryWrapper<DataLibrary> query = new LambdaQueryWrapper<DataLibrary>()
-                .eq(DataLibrary::getIsSet, isSet);
-
-        if (GaStringUtil.isNotEmpty(language)) {
-            query.eq(DataLibrary::getLanguage, language);
-        }
-        if (ObjectUtil.isNotEmpty(problemIds)) {
-            query.in(DataLibrary::getProblemId, problemIds);
-        }
-        if (ObjectUtil.isNotEmpty(setIds)) {
-            query.in(DataLibrary::getSetId, setIds);
-        }
-        if (ObjectUtil.isNotEmpty(userIds)) {
-            query.in(DataLibrary::getUserId, userIds);
+        // 添加权限过滤 - 只查询可访问的用户组
+        if (ObjectUtil.isNotEmpty(accessibleGroupIds)) {
+            queryWrapper.in(SysGroup::getId, accessibleGroupIds);
         }
 
-        // 按时间降序，优先更新时间
-        query.orderByDesc(DataLibrary::getUpdateTime);
-        query.orderByDesc(DataLibrary::getCreateTime);
+        // 调整 exists 条件
+//        queryWrapper.exists(
+//                "SELECT 1 FROM data_library dl " +
+//                        "JOIN sys_user su ON dl.user_id = su.id " +
+//                        "WHERE su.group_id = sys_group.id " +
+//                        "AND dl.is_set = 1 " +
+//                        "AND dl.set_id IS NOT NULL " +
+//                        "AND dl.user_id IS NOT NULL"  // 明确 user_id 不为空
+//        );
 
-        return query;
-    }
+        // 查询所有符合条件的用户组
+        List<SysGroup> allGroups = sysGroupMapper.selectList(queryWrapper);
 
-    @Override
-    @DS("slave")
-    public <R> List<R> processCodeLibrariesInBatches(boolean isSet, String language,
-                                                     List<String> problemIds, List<String> setIds,
-                                                     List<String> userIds, int batchSize,
-                                                     String filterProblemId, String filterSetId,
-                                                     String filterUserId,
-                                                     int maxBatches, // 最大批次数限制
-                                                     Function<List<DataLibrary>, List<R>> processor) {
-
-        LambdaQueryWrapper<DataLibrary> queryWrapper = buildSampleQuery(isSet, language, problemIds, setIds, userIds);
-
-        // 添加过滤条件
-        if (filterProblemId != null) {
-            log.info("添加 filterProblemId 过滤条件：{}", filterProblemId);
-            queryWrapper.ne(DataLibrary::getProblemId, filterProblemId);
-        }
-        if (filterSetId != null) {
-            log.info("添加 filterSetId 过滤条件：{}", filterSetId);
-            queryWrapper.ne(DataLibrary::getSetId, filterSetId);
-        }
-        if (filterUserId != null) {
-            log.info("添加 filterUserId 过滤条件：{}", filterUserId);
-            queryWrapper.ne(DataLibrary::getUserId, filterUserId);
+        // 如果没有数据直接返回空列表
+        if (CollectionUtil.isEmpty(allGroups)) {
+            return List.of();
         }
 
-        List<R> allResults = new ArrayList<>();
+        // 使用Map构建树结构
+        Map<String, SysGroup> groupMap = allGroups.stream()
+                .collect(Collectors.toMap(SysGroup::getId, group -> group));
 
-        // 如果批次数为0，则一次性处理所有数据
-        if (batchSize <= 0) {
-            log.info("处理所有数据 批次大小 {}", batchSize);
-            List<DataLibrary> allData = this.list(queryWrapper);
-            if (allData != null && !allData.isEmpty()) {
-                // 先增加访问量
-                incrementAccessCount(allData);
-                // 然后执行处理逻辑并收集结果
-                List<R> results = processor.apply(allData);
-                if (results != null) {
-                    allResults.addAll(results);
-                }
-            }
-            return allResults; // 直接返回全量结果
-        }
+        // 存储根节点
+        List<SysGroup> roots = new ArrayList<>();
 
-        // 正常分批处理
-        long total = this.count(queryWrapper);
-        log.info("总记录数：{}", total);
-        long pages = (total + batchSize - 1) / batchSize;
-        log.info("总页数：{}", pages);
+        // 构建树形结构
+        for (SysGroup group : allGroups) {
+            String parentId = group.getParentId();
 
-        // 如果设置了最大批次数，则限制处理的页数
-        if (maxBatches > 0) {
-            pages = Math.min(pages, maxBatches);
-            log.info("限制最大批次数：{}，实际处理页数：{}", maxBatches, pages);
-        } else {
-            log.info("总页数：{}", pages);
-        }
-
-        for (long current = 1; current <= pages; current++) {
-            log.info("处理分页 {} 批次大小 {}", current, batchSize);
-            Page<DataLibrary> page = this.page(new Page<>(current, batchSize), queryWrapper);
-            if (page.getRecords() != null && !page.getRecords().isEmpty()) {
-                List<DataLibrary> batch = page.getRecords();
-
-                // 增加访问量
-                incrementAccessCount(batch);
-
-                // 然后执行处理逻辑并收集结果
-                List<R> batchResults = processor.apply(batch);
-                if (batchResults != null) {
-                    allResults.addAll(batchResults);
+            // 如果父ID为空或者是自己（防止循环），或者父节点不存在于当前列表中，则作为根节点
+            if (ObjectUtil.isEmpty(parentId) ||
+                    group.getId().equals(parentId) ||
+                    !groupMap.containsKey(parentId)) {
+                roots.add(group);
+            } else {
+                // 找到父组并添加到其children中
+                SysGroup parent = groupMap.get(parentId);
+                if (parent != null) {
+                    if (parent.getChildren() == null) {
+                        parent.setChildren(new ArrayList<>());
+                    }
+                    parent.getChildren().add(group);
                 }
             }
         }
 
-        return allResults;
+        return roots;
     }
 
     @Override
@@ -358,10 +199,9 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         queryWrapper.lambda().in(SysUser::getGroupId, accessibleGroupIds);
 
         // 统一的 EXISTS 条件构建
-        StringBuilder existsSql = new StringBuilder("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id");
+        StringBuilder existsSql = new StringBuilder("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id AND dl.is_set = 1 ");
 
         boolean hasCondition = false;
-
 
         // 添加 problemIds 条件
         if (ObjectUtil.isNotEmpty(dataLibraryUserPageParam.getProblemIds())) {
@@ -374,15 +214,17 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         }
 
         // 添加 setId 条件
-        if (GaStringUtil.isNotEmpty(dataLibraryUserPageParam.getSetId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataLibraryUserPageParam.getSetId())) {
             existsSql.append(" AND dl.set_id = '").append(dataLibraryUserPageParam.getSetId()).append("'");
             hasCondition = true;
         }
 
         // 添加 language 条件
-        if (GaStringUtil.isNotEmpty(dataLibraryUserPageParam.getLanguage())) {
-            existsSql.append(" AND dl.language = '").append(dataLibraryUserPageParam.getLanguage()).append("'");
-            hasCondition = true;
+        if (GalaxyStringUtil.isNotEmpty(dataLibraryUserPageParam.getLanguage())) {
+            if (!dataLibraryUserPageParam.getLanguage().equals("null")) {
+                existsSql.append(" AND dl.language = '").append(dataLibraryUserPageParam.getLanguage()).append("'");
+                hasCondition = true;
+            }
         }
 
         // 只有当有具体条件时才添加 EXISTS，或者保持原样查询所有有 data_library 记录的用户
@@ -390,32 +232,11 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
             queryWrapper.exists(existsSql.toString());
         } else {
             // 如果没有特定条件，但想查询所有在 data_library 中有记录的用户
-            queryWrapper.exists("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id");
+            queryWrapper.exists("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id AND dl.is_set = 1 ");
         }
 
-        if (ObjectUtil.isNotEmpty(dataLibraryUserPageParam.getType())) {
-            String type = dataLibraryUserPageParam.getType();
-            if (type.equals("username")) {
-                queryWrapper.lambda()
-                        .like(SysUser::getUsername, dataLibraryUserPageParam.getKeyword());
-            } else if (type.equals("nickname")) {
-                queryWrapper.lambda()
-                        .like(SysUser::getNickname, dataLibraryUserPageParam.getKeyword());
-            } else if (type.equals("email")) {
-                queryWrapper.lambda()
-                        .like(SysUser::getEmail, dataLibraryUserPageParam.getKeyword());
-            } else if (type.equals("telephone")) {
-                queryWrapper.lambda()
-                        .like(SysUser::getTelephone, dataLibraryUserPageParam.getKeyword());
-            } else if (type.equals("studentNumber")) {
-                queryWrapper.lambda()
-                        .like(SysUser::getStudentNumber, dataLibraryUserPageParam.getKeyword());
-            }
-        }
-
-        if (GaStringUtil.isNotEmpty(dataLibraryUserPageParam.getGroupId())) {
-            queryWrapper.lambda()
-                    .eq(SysUser::getGroupId, dataLibraryUserPageParam.getGroupId());
+        if (GalaxyStringUtil.isNotEmpty(dataLibraryUserPageParam.getGroupId())) {
+            queryWrapper.lambda().eq(SysUser::getGroupId, dataLibraryUserPageParam.getGroupId());
         }
         if (ObjectUtil.isAllNotEmpty(dataLibraryUserPageParam.getSortField(), dataLibraryUserPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataLibraryUserPageParam.getSortOrder())) {
             queryWrapper.orderBy(
@@ -434,24 +255,9 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         return page;
     }
 
-    // 增加访问量
-    private void incrementAccessCount(List<DataLibrary> dataList) {
-        if (dataList == null || dataList.isEmpty()) {
-            return;
-        }
-
-        // 方式1: 逐条更新
-        for (DataLibrary data : dataList) {
-            data.setAccessCount(data.getAccessCount() + 1);
-        }
-
-        // 批量更新到数据库
-        this.updateBatchById(dataList);
-    }
-
     @Override
-    public LibraryBatchCount batchQuery(BatchLibraryQueryParam libraryQueryParam) {
-        log.info("开始执行批量查询 {}", JSONUtil.toJsonStr(libraryQueryParam));
+    public QueryWrapper<DataLibrary> queryLibrary(BatchLibraryQueryParam libraryQueryParam) {
+        log.debug("开始执行批量查询 {}", JSONUtil.toJsonStr(libraryQueryParam));
         QueryWrapper<DataLibrary> queryWrapper = new QueryWrapper<DataLibrary>().checkSqlInjection();
 
         queryWrapper.lambda().eq(DataLibrary::getIsSet, Boolean.TRUE);
@@ -471,8 +277,15 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         }
 
         // 两两对比 PAIR_BY_PAIR，默认情况，不做处理
-
-        if ("GROUP_BY_GROUP".equals(libraryQueryParam.getCompareMode())) {
+        if ("PAIR_BY_PAIR".equals(libraryQueryParam.getCompareMode())) {
+            // 代码筛选
+            if (ObjectUtil.isNotEmpty(libraryQueryParam.getCodeFilter())) {
+                // 代码筛选时间窗口（分钟）
+                if ("TIME_WINDOW".equals(libraryQueryParam.getCodeFilter())) {
+                    queryWrapper.lambda().ge(DataLibrary::getUpdateTime, DateUtil.offsetMinute(new Date(), -libraryQueryParam.getCodeFilterTimeWindow()));
+                }
+            }
+        } else if ("GROUP_BY_GROUP".equals(libraryQueryParam.getCompareMode())) {
             // 组内对比 GROUP_BY_GROUP
             if (ObjectUtil.isNotEmpty(libraryQueryParam.getGroupId())) {
                 // 使用 EXISTS 子查询的方式（性能更好）
@@ -487,30 +300,38 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
             }
         }
 
-        // 代码筛选
-        if (ObjectUtil.isNotEmpty(libraryQueryParam.getCodeFilter())) {
-            // 代码筛选时间窗口（分钟）
-            if ("TIME_WINDOW".equals(libraryQueryParam.getCodeFilter())) {
-                queryWrapper.lambda().ge(DataLibrary::getUpdateTime, DateUtil.offsetMinute(new Date(), -libraryQueryParam.getCodeFilterTimeWindow()));
-            }
-        }
+        return queryWrapper;
+    }
 
-        long count = this.count(queryWrapper);
+    @Override
+    public LibraryBatchCount batchQuery(BatchLibraryQueryParam libraryQueryParam) {
+        QueryWrapper<DataLibrary> dataLibraryQueryWrapper = this.queryLibrary(libraryQueryParam);
+        long count = this.count(dataLibraryQueryWrapper);
 
-        // 采样计算
-        BigDecimal checkCount = BigDecimal.ZERO;
-        if (libraryQueryParam.getEnableSampling() && count > 0) {
-            checkCount = BigDecimal.valueOf(count).multiply(libraryQueryParam.getSamplingRatio());
-        }
+        long checkCount = count > 200 ? 200 : count;
 
         LibraryBatchCount batchCount = new LibraryBatchCount();
         batchCount.setTotalCount(String.valueOf(count)); // 获取有效记录代码总数量
         batchCount.setCheckCount(String.valueOf(checkCount));
 
-        // 组合数计算
-        long compareCount = count > 1 ? count * (count - 1) / 2 : 0;
+        // 组合数计算（基于实际检查数量）
+        long compareCount = checkCount > 1 ? checkCount * (checkCount - 1) / 2 : 0;
         batchCount.setCompareCount(String.valueOf(compareCount));
 
         return batchCount;
+    }
+
+    @Override
+    public List<String> libraryIds(BatchLibraryQueryParam libraryQueryParam) {
+        QueryWrapper<DataLibrary> dataLibraryQueryWrapper = this.queryLibrary(libraryQueryParam);
+        List<DataLibrary> list = this.list(dataLibraryQueryWrapper);
+        if (ObjectUtil.isNotEmpty(list)) {
+            return list.stream()
+                    .map(DataLibrary::getId)
+                    .distinct()
+                    .toList();
+        }
+
+        return List.of();
     }
 }

@@ -13,7 +13,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.galaxy.utils.str.GalaxyStringUtil;
 import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblemCount;
@@ -96,14 +96,14 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         if (ObjectUtil.isNotEmpty(dataProblemPageParam.getKeyword())) {
             queryWrapper.lambda().like(DataProblem::getTitle, dataProblemPageParam.getKeyword());
         }
-        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getCategoryId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataProblemPageParam.getCategoryId())) {
             queryWrapper.lambda().eq(DataProblem::getCategoryId, dataProblemPageParam.getCategoryId());
         }
-        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getDifficulty())) {
+        if (GalaxyStringUtil.isNotEmpty(dataProblemPageParam.getDifficulty())) {
             queryWrapper.lambda().eq(DataProblem::getDifficulty, dataProblemPageParam.getDifficulty());
         }
         // 标签查询
-        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getTagId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataProblemPageParam.getTagId())) {
             List<String> idsByTagId = dataProblemTagService.getProblemIdsByTagId(dataProblemPageParam.getTagId());
             // 如果TagId有值但关联的ID列表为空，则设置一个不可能满足的条件
             if (ObjectUtil.isEmpty(idsByTagId)) {
@@ -131,24 +131,25 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
     }
 
     @Override
-    @DS("slave")
+    @DS("slave") // 从库读取
     public Page<DataProblem> pageClient(DataProblemPageParam dataProblemPageParam) {
         QueryWrapper<DataProblem> queryWrapper = new QueryWrapper<DataProblem>().checkSqlInjection();
-        queryWrapper.lambda().eq(DataProblem::getIsVisible, true).eq(DataProblem::getIsPublic, true);
+        queryWrapper.lambda()
+                .eq(DataProblem::getIsVisible, Boolean.TRUE) // 仅显示可见的
+                .eq(DataProblem::getIsPublic, Boolean.TRUE); // 公开性题目
 
-        // 关键字
-        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getKeyword())) {
+        if (GalaxyStringUtil.isNotEmpty(dataProblemPageParam.getKeyword())) {
             queryWrapper.lambda().like(DataProblem::getTitle, dataProblemPageParam.getKeyword());
         }
-        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getCategoryId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataProblemPageParam.getCategoryId())) {
             queryWrapper.lambda().eq(DataProblem::getCategoryId, dataProblemPageParam.getCategoryId());
         }
-        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getDifficulty())) {
+        if (GalaxyStringUtil.isNotEmpty(dataProblemPageParam.getDifficulty())) {
             queryWrapper.lambda().eq(DataProblem::getDifficulty, dataProblemPageParam.getDifficulty());
         }
         // 标签查询
-        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getTagId())) {
-            List<String> idsByTagId = dataProblemTagService.getProblemIdsByTagId(dataProblemPageParam.getTagId());
+        if (GalaxyStringUtil.isNotEmpty(dataProblemPageParam.getTagId())) {
+            List<String> idsByTagId = dataProblemTagService.getProblemIdsByTagId(dataProblemPageParam.getTagId()); // 缓存读取
             // 如果TagId有值但关联的ID列表为空，则设置一个不可能满足的条件
             if (ObjectUtil.isEmpty(idsByTagId)) {
                 queryWrapper.lambda().eq(DataProblem::getId, "-1"); // 确保查询不到结果
@@ -157,7 +158,8 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
             }
         }
 
-        if (ObjectUtil.isAllNotEmpty(dataProblemPageParam.getSortField(), dataProblemPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataProblemPageParam.getSortOrder())) {
+        if (ObjectUtil.isAllNotEmpty(dataProblemPageParam.getSortField(), dataProblemPageParam.getSortOrder()) &&
+                ISortOrderEnum.isValid(dataProblemPageParam.getSortOrder())) {
             queryWrapper.orderBy(
                     true,
                     dataProblemPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
@@ -165,14 +167,14 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         }
 
         Page<DataProblem> page = this.page(CommonPageRequest.Page(
-                        Optional.ofNullable(dataProblemPageParam.getCurrent()).orElse(1),
-                        Optional.ofNullable(dataProblemPageParam.getSize()).orElse(10),
-                        null
-                ),
-                queryWrapper);
-        problemBuildTool.buildProblems(page.getRecords());
+                Optional.ofNullable(dataProblemPageParam.getCurrent()).orElse(1),
+                Optional.ofNullable(dataProblemPageParam.getSize()).orElse(10),
+                null
+        ), queryWrapper);
+        problemBuildTool.buildProblems(page.getRecords()); // 题目批量构建工具
         return page;
     }
+
 
     @Override
     @DS("slave")
@@ -184,14 +186,14 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
         if (ObjectUtil.isNotEmpty(dataProblemPageParam.getKeyword())) {
             queryWrapper.lambda().like(DataProblem::getTitle, dataProblemPageParam.getKeyword());
         }
-        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getCategoryId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataProblemPageParam.getCategoryId())) {
             queryWrapper.lambda().eq(DataProblem::getCategoryId, dataProblemPageParam.getCategoryId());
         }
-        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getDifficulty())) {
+        if (GalaxyStringUtil.isNotEmpty(dataProblemPageParam.getDifficulty())) {
             queryWrapper.lambda().eq(DataProblem::getDifficulty, dataProblemPageParam.getDifficulty());
         }
         // 标签查询
-        if (GaStringUtil.isNotEmpty(dataProblemPageParam.getTagId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataProblemPageParam.getTagId())) {
             List<String> idsByTagId = dataProblemTagService.getProblemIdsByTagId(dataProblemPageParam.getTagId());
             // 如果TagId有值但关联的ID列表为空，则设置一个不可能满足的条件
             if (ObjectUtil.isEmpty(idsByTagId)) {
@@ -406,25 +408,6 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
 
     @Override
     @DS("slave")
-    public String llmGetTestCase(String id) {
-        DataProblem dataProblem = this.getById(id);
-
-        if (dataProblem == null) {
-            return "该题目不存在";
-        }
-        // 获得测试用例
-        if (ObjectUtil.isEmpty(dataProblem.getTestCase())) {
-            return "测试用例为空";
-        }
-
-        List<TestCase> testCases = dataProblem.getTestCase();
-        // 随机获取一个测试用例
-        TestCase testCase = testCases.get(new Random().nextInt(testCases.size()));
-        return JSONUtil.toJsonPrettyStr(testCase);
-    }
-
-    @Override
-    @DS("slave")
     public String llmGetResourceConstraints(String id) {
         DataProblem dataProblem = this.getById(id);
 
@@ -432,32 +415,10 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
             return "该题目不存在";
         }
 
-        class Constraints {
-            String time;
-            String memory;
-        }
-        Constraints constraints = new Constraints();
-        constraints.time = dataProblem.getMaxTime() + "ms";
-        constraints.memory = dataProblem.getMaxMemory() + "KB";
-        return JSONUtil.toJsonPrettyStr(constraints);
-    }
-
-    @Override
-    @DS("slave")
-    public String llmGetExample(String id) {
-        DataProblem dataProblem = this.getById(id);
-        if (dataProblem == null) {
-            return "该题目不存在";
-        }
-
-        if (ObjectUtil.isEmpty(dataProblem.getTestCase())) {
-            return "无示例";
-        }
-
-        List<TestCase> testCases = dataProblem.getTestCase();
-        // 获得第一个测试用例
-        TestCase testCase = testCases.getFirst();
-        return JSONUtil.toJsonPrettyStr(testCase);
+        return "{\n" +
+                "  \"时间限制\": \"" + dataProblem.getMaxTime() + "ms\",\n" +
+                "  \"内存限制\": \"" + dataProblem.getMaxMemory() + "KB\"\n" +
+                "}";
     }
 
     @Override
@@ -523,86 +484,6 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
             return "未设置提交语言";
         }
         return JSONUtil.toJsonPrettyStr(allowedLanguages);
-    }
-
-    @Override
-    public ProblemSourceLimit getProblemSourceLimit(String id) {
-        String cacheKey = CACHE_KEY_PREFIX + id;
-
-        // 先从Redis缓存中获取
-        try {
-            Object cached = redisTemplate.opsForValue().get(cacheKey);
-            if (cached != null) {
-                if (cached instanceof ProblemSourceLimit) {
-                    return (ProblemSourceLimit) cached;
-                } else if (cached instanceof String) {
-                    // 如果是字符串格式，反序列化
-                    return objectMapper.readValue((String) cached, ProblemSourceLimit.class);
-                }
-            }
-        } catch (Exception e) {
-            // 缓存获取失败，继续从数据库查询
-        }
-
-        // 缓存中没有，从数据库查询
-        DataProblem dataProblem = this.getById(id);
-        if (dataProblem == null) {
-            return null;
-        }
-
-        ProblemSourceLimit limit = new ProblemSourceLimit();
-        limit.setMaxTime(dataProblem.getMaxTime());
-        limit.setMaxMemory(dataProblem.getMaxMemory());
-
-        // 将查询结果存入缓存
-        try {
-            redisTemplate.opsForValue().set(
-                    cacheKey,
-                    limit,
-                    CACHE_EXPIRE_HOURS,
-                    TimeUnit.HOURS
-            );
-        } catch (Exception e) {
-            // 缓存设置失败，不影响主要功能
-        }
-
-        return limit;
-    }
-
-    @Override
-    public ProblemSourceLimit refreshProblemSourceLimit(String id) {
-        String cacheKey = CACHE_KEY_PREFIX + id;
-
-        // 先删除缓存
-        try {
-            redisTemplate.delete(cacheKey);
-        } catch (Exception e) {
-            // 缓存删除失败，继续执行
-        }
-
-        // 从数据库重新查询最新数据
-        DataProblem dataProblem = this.getById(id);
-        if (dataProblem == null) {
-            return null;
-        }
-
-        ProblemSourceLimit limit = new ProblemSourceLimit();
-        limit.setMaxTime(dataProblem.getMaxTime());
-        limit.setMaxMemory(dataProblem.getMaxMemory());
-
-        // 将最新数据存入缓存
-        try {
-            redisTemplate.opsForValue().set(
-                    cacheKey,
-                    limit,
-                    CACHE_EXPIRE_HOURS,
-                    TimeUnit.HOURS
-            );
-        } catch (Exception e) {
-            // 缓存设置失败，不影响主要功能
-        }
-
-        return limit;
     }
 
 }

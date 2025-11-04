@@ -22,7 +22,7 @@ public class MybatisPlusRedisCache implements Cache {
     private RedisTemplate<String, Object> redisTemplate;
 
     // 添加缓存时间配置（单位：分钟）
-    private final long expireTime = 60; // 默认1小时
+    private final long expireTime = 30; // 默认30分钟
 
     public MybatisPlusRedisCache(String id) {
         if (id == null) {
@@ -34,6 +34,7 @@ public class MybatisPlusRedisCache implements Cache {
     @Override
     public String getId() {
 //        log.warn("缓存ID {}", id);
+//        System.out.println("缓存ID " + id);
         return this.id;
     }
 
@@ -54,6 +55,7 @@ public class MybatisPlusRedisCache implements Cache {
     @Override
     public Object getObject(Object key) {
 //        log.warn("缓存获取 {}", key);
+//        System.out.println("缓存获取 " + key);
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
@@ -73,6 +75,7 @@ public class MybatisPlusRedisCache implements Cache {
     @Override
     public Object removeObject(Object key) {
 //        log.warn("删除缓存 {}", key);
+//        System.out.println("删除缓存 " + key);
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
@@ -86,6 +89,7 @@ public class MybatisPlusRedisCache implements Cache {
     @Override
     public void clear() {
 //        log.warn("清空缓存 {}", this.id);
+//        System.out.println("清空缓存 " + this.id);
         if (redisTemplate == null) {
             redisTemplate = SpringUtil.getBean("redisTemplate");
         }
@@ -93,8 +97,10 @@ public class MybatisPlusRedisCache implements Cache {
         Set<Object> hashKeys = redisTemplate.opsForHash().keys(this.id);
         if (!CollectionUtils.isEmpty(hashKeys)) {
 //            log.warn("删除Hash字段: {}", hashKeys);
+//            System.out.println("删除Hash字段 " + hashKeys);
             Long deletedCount = redisTemplate.opsForHash().delete(this.id, hashKeys.toArray());
 //            log.warn("删除字段数量: {}", deletedCount);
+//            System.out.println("删除字段数量 " + deletedCount);
         }
     }
 
@@ -111,9 +117,5 @@ public class MybatisPlusRedisCache implements Cache {
     @Override
     public ReadWriteLock getReadWriteLock() {
         return this.readWriteLock;
-    }
-
-    private String getCacheKey(Object key) {
-        return key.toString();
     }
 }

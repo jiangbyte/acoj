@@ -2,7 +2,7 @@
 import { AesCrypto, Poller } from '@/utils'
 import { useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
 import type { DataTableColumns, ImageInst } from 'naive-ui'
-import { NAvatar, NButton, NSpace, NEllipsis, NTag, NText, NTime } from 'naive-ui'
+import { NAvatar, NButton, NEllipsis, NSpace, NTag, NText, NTime } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 
 const route = useRoute()
@@ -34,6 +34,7 @@ const submitPageParam = ref({
   language: null,
   submitType: null,
   status: null,
+  isAuth: false,
 })
 const proSetSolvedUserDataParam = ref({
   current: 1,

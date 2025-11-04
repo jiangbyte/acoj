@@ -21,6 +21,7 @@ const pageParam = ref({
   language: null,
   submitType: null,
   status: null,
+  isAuth: false,
 })
 
 const pageData = ref()

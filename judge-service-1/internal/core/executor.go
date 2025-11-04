@@ -158,9 +158,6 @@ func (e *SandboxExecutor) startAndManageProcess(cmd *exec.Cmd, cgroupPath string
 		return 0, fmt.Errorf("启动进程失败: %w", err)
 	}
 
-	// e.mu.Lock()
-	// defer e.mu.Unlock()
-
 	pgid := cmd.Process.Pid
 
 	// 暂停进程以便设置cgroup
@@ -321,7 +318,6 @@ func (w *Workspace) executeTestCases() ([]*model2.DataJudgeCase, error) {
 
 	results := make([]*model2.DataJudgeCase, 0, len(testCases))
 	var wg sync.WaitGroup
-	// var mu sync.Mutex
 	resultChan := make(chan *model2.DataJudgeCase, len(testCases))
 	errChan := make(chan error, len(testCases))
 

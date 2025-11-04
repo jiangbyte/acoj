@@ -1,6 +1,7 @@
 package io.charlie.web.oj.modular.task.similarity.service;
 
 import io.charlie.web.oj.modular.data.library.param.BatchLibraryParam;
+import io.charlie.web.oj.modular.data.library.param.BatchLibraryQueryParam;
 
 /**
  * @author ZhangJiangHu
@@ -9,5 +10,5 @@ import io.charlie.web.oj.modular.data.library.param.BatchLibraryParam;
  * @description 题目相似度
  */
 public interface ProblemsSimilarityService {
-    String batch(BatchLibraryParam batchSimilarityParam);
+    String batch(BatchLibraryQueryParam batchSimilarityParam);
 }

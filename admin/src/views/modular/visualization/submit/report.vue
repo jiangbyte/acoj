@@ -26,7 +26,7 @@ const columns: DataTableColumns<any> = [
     key: 'similarity',
     width: 100,
     render: (row) => {
-      return h(NTag, { type: 'success' }, () => row.similarity * 100)
+      return h(NTag, { type: 'success' }, () => (row.similarity * 100).toFixed(2))
     },
   },
   {
@@ -302,12 +302,12 @@ loadData()
                   <NSpace :size="1" vertical>
                     <p class="font-medium">
                       平均相似度：<NTag size="small">
-                        {{ detailData?.avgSimilarity ? detailData?.avgSimilarity * 100 : 0 }} %
+                        {{ detailData?.avgSimilarity ? (detailData?.avgSimilarity * 100).toFixed(2) : 0 }} %
                       </NTag>
                     </p>
                     <p class="font-medium">
                       最高相似度：<NTag size="small">
-                        {{ detailData?.maxSimilarity ? detailData?.maxSimilarity * 100 : 0 }} %
+                        {{ detailData?.maxSimilarity ? (detailData?.maxSimilarity * 100).toFixed(2) : 0 }} %
                       </NTag>
                     </p>
                   </NSpace>
@@ -325,7 +325,7 @@ loadData()
                 <div v-for="(item, index) in detailData?.degreeStatistics" :key="index">
                   <div class="flex items-center justify-between w-full">
                     <NText>
-                      {{ item.cloneLevelName }} (≥{{ item.similarity * 100 }}%)
+                      {{ item.cloneLevelName }} (≥{{ (item.similarity * 100).toFixed(2) }}%)
                     </NText>
                     <NText class="mr-4">
                       {{ item.count }}组
@@ -334,7 +334,7 @@ loadData()
                   <n-progress
                     type="line"
                     indicator-placement="inside"
-                    :percentage="item.percentage"
+                    :percentage="(item.percentage).toFixed(2)"
                   />
                 </div>
               </div>

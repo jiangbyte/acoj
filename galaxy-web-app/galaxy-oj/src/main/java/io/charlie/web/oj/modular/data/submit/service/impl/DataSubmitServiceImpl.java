@@ -11,7 +11,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.galaxy.utils.str.GalaxyStringUtil;
 import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
@@ -98,23 +98,36 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     @Override
     @DS("slave")
     public Page<DataSubmit> problemPage(DataSubmitPageParam dataSubmitPageParam) {
-        String loginIdAsString = StpUtil.getLoginIdAsString();
+
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
 
-        queryWrapper.lambda().eq(DataSubmit::getUserId, loginIdAsString);
+
+        if (dataSubmitPageParam.getIsAuth()) {
+            String userId = null;
+            try {
+                if (StpUtil.isLogin()) {
+                    userId = StpUtil.getLoginIdAsString();
+                }
+            } catch (Exception e) {
+                log.debug("未登录");
+            }
+            if (userId != null) {
+                queryWrapper.lambda().eq(DataSubmit::getUserId, userId);
+            }
+        }
 
         queryWrapper.lambda().eq(DataSubmit::getIsSet, false);
-        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
             queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
         }
 
         if (ObjectUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
             queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
         }
-        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getLanguage())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getLanguage())) {
             queryWrapper.lambda().eq(DataSubmit::getLanguage, dataSubmitPageParam.getLanguage());
         }
-        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getStatus())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getStatus())) {
             queryWrapper.lambda().eq(DataSubmit::getStatus, dataSubmitPageParam.getStatus());
         }
         if (ObjectUtil.isNotEmpty(dataSubmitPageParam.getSubmitType())) {
@@ -139,23 +152,34 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     @Override
     @DS("slave")
     public Page<DataSubmit> setPage(DataSubmitPageParam dataSubmitPageParam) {
-        String loginIdAsString = StpUtil.getLoginIdAsString();
         QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
 
-        queryWrapper.lambda().eq(DataSubmit::getUserId, loginIdAsString);
+        if (dataSubmitPageParam.getIsAuth()) {
+            String userId = null;
+            try {
+                if (StpUtil.isLogin()) {
+                    userId = StpUtil.getLoginIdAsString();
+                }
+            } catch (Exception e) {
+                log.debug("未登录");
+            }
+            if (userId != null) {
+                queryWrapper.lambda().eq(DataSubmit::getUserId, userId);
+            }
+        }
 
         queryWrapper.lambda().eq(DataSubmit::getIsSet, true);
 
-        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
             queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
         }
-        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getSetId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getSetId())) {
             queryWrapper.lambda().eq(DataSubmit::getSetId, dataSubmitPageParam.getSetId());
         }
-        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getLanguage())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getLanguage())) {
             queryWrapper.lambda().eq(DataSubmit::getLanguage, dataSubmitPageParam.getLanguage());
         }
-        if (GaStringUtil.isNotEmpty(dataSubmitPageParam.getStatus())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getStatus())) {
             queryWrapper.lambda().eq(DataSubmit::getStatus, dataSubmitPageParam.getStatus());
         }
         if (ObjectUtil.isNotEmpty(dataSubmitPageParam.getSubmitType())) {
@@ -205,7 +229,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     }
 
     @Override
-    @DS("slave")
+//    @DS("slave") // 需要立即返回，故去除从库
     public DataSubmit detail(DataSubmitIdParam dataSubmitIdParam) {
         DataSubmit dataSubmit = this.getById(dataSubmitIdParam.getId());
         if (ObjectUtil.isEmpty(dataSubmit)) {

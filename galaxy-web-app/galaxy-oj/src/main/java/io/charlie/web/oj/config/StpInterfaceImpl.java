@@ -2,7 +2,6 @@ package io.charlie.web.oj.config;
 
 import cn.dev33.satoken.stp.StpInterface;
 import cn.hutool.json.JSONUtil;
-import io.charlie.permission.PermissionService;
 import io.charlie.web.oj.modular.context.DataScopeContext;
 import io.charlie.web.oj.modular.context.DataScopeUtil;
 import lombok.RequiredArgsConstructor;

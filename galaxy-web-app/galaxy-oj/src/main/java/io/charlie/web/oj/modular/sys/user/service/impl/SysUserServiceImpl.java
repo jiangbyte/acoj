@@ -13,8 +13,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.charlie.galaxy.option.LabelOption;
-import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.galaxy.utils.str.GalaxyStringUtil;
 import io.charlie.web.oj.modular.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
 import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
@@ -142,11 +141,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         SysUser bean = BeanUtil.toBean(sysUserAddParam, SysUser.class);
         bean.setPassword(encodePassword);
 
-        if (GaStringUtil.isEmpty(bean.getAvatar())) {
+        if (GalaxyStringUtil.isEmpty(bean.getAvatar())) {
             // 默认头像
             bean.setAvatar(sysConfigService.getValueByCode("APP_DEFAULT_AVATAR"));
         }
-        if (GaStringUtil.isEmpty(bean.getBackground())) {
+        if (GalaxyStringUtil.isEmpty(bean.getBackground())) {
             // 默认背景图片
             bean.setBackground(sysConfigService.getValueByCode("APP_DEFAULT_USER_BACKGROUND"));
         }

@@ -344,11 +344,11 @@ onUnmounted(() => {
                   :options="languageOptions"
                   placeholder="请选择语言"
                   class="w-50"
+                  data-testid="language-select"
                   @update:value="handleLanguageChange"
-                 data-testid="language-select"
                 />
                 <n-space align="center">
-                  <n-button v-if="isPolling" size="small" @click="stopPollingManually" data-testid="polling-stop-button">
+                  <n-button v-if="isPolling" size="small" data-testid="polling-stop-button" @click="stopPollingManually">
                     停止
                   </n-button>
                   <n-button data-testid="test-submit-button" :disabled="!submitParam.language || !submitParam.code || isPolling" @click="executeCode(false)">

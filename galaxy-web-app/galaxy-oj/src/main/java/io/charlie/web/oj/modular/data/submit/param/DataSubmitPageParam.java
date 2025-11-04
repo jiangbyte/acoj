@@ -47,4 +47,6 @@ public class DataSubmitPageParam implements Serializable {
 
     @Schema(description = "执行状态")
     private String status;
+
+    private Boolean isAuth;
 }

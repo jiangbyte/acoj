@@ -38,9 +38,9 @@ func (im *InitializerManager) Initialize() error {
 	im.initServiceRegistry()
 
 	// 异步初始化 MySQL
-	go im.initMySQLWithRetry()
+	im.initMySQLWithRetry()
 
-	go im.initRedisWithRetry() // 新增
+	im.initRedisWithRetry() // 新增
 
 	return nil
 }

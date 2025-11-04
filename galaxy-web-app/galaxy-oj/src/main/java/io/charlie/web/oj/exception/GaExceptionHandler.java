@@ -1,6 +1,7 @@
 package io.charlie.web.oj.exception;
 
 import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.NotPermissionException;
 import io.charlie.galaxy.result.IResultCode;
 import io.charlie.galaxy.result.Result;
 import io.charlie.galaxy.result.ResultCode;
@@ -16,7 +17,13 @@ public class GaExceptionHandler {
 
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(NotLoginException.class)
-    public <T> Result<T> handleException(NotLoginException e) {
+    public <T> Result<T> handleException1(NotLoginException e) {
+        return Result.failure(ResultCode.UNAUTHORIZED);
+    }
+
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(NotPermissionException.class)
+    public <T> Result<T> handleException2(NotPermissionException e) {
         return Result.failure(ResultCode.UNAUTHORIZED);
     }
 }

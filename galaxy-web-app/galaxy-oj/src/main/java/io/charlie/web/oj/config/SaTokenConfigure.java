@@ -32,7 +32,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new SaInterceptor(handle -> {
-            log.debug("请求 path={} 提交 token={}", SaHolder.getRequest().getRequestPath(), StpUtil.getTokenValue());
+//            log.debug("请求 path={} 提交 token={}", SaHolder.getRequest().getRequestPath(), StpUtil.getTokenValue());
             SaRouter
                     .match("/**")
                     .notMatch(properties.getIgnore().getUrls())
@@ -55,8 +55,6 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 //                })
                 // 前置函数：在每次认证函数之前执行
                 .setBeforeAuth(obj -> {
-
-
                     SaHolder.getResponse()
 
                             // ---------- 设置跨域响应头 ----------
@@ -80,7 +78,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
 
                     //                     如果是预检请求，则立即返回到前端
                     SaRouter.match(SaHttpMethod.OPTIONS)
-                            .free(r -> log.info("OPTIONS 预检请求(不做处理) 请求 path={}  提交 token={}", SaHolder.getRequest().getRequestPath(), StpUtil.getTokenValue()))
+//                            .free(r -> log.info("OPTIONS 预检请求(不做处理) 请求 path={}  提交 token={}", SaHolder.getRequest().getRequestPath(), StpUtil.getTokenValue()))
                             .back();
                 })
                 .setError(e -> JSONUtil.toJsonStr(Result.failure(ResultCode.UNAUTHORIZED, ResultCode.UNAUTHORIZED.getMessage())));

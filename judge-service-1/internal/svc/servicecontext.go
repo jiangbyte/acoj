@@ -2,12 +2,13 @@ package svc
 
 import (
 	"fmt"
-	"github.com/streadway/amqp"
-	"gorm.io/gorm"
 	"judge-service/internal/config"
 	"judge-service/internal/database"
 	repository2 "judge-service/internal/database/repository"
 	"judge-service/internal/initializer"
+
+	"github.com/streadway/amqp"
+	"gorm.io/gorm"
 )
 
 type ServiceContext struct {
@@ -60,7 +61,7 @@ func (s *ServiceContext) CommonChannel() *amqp.Channel {
 }
 
 func (s *ServiceContext) TestCaseRepo() repository2.TestCaseRepository {
-	//return s.Initializer.GetTestCaseRepo()
+	// return s.Initializer.GetTestCaseRepo()
 	baseRepo := s.Initializer.GetTestCaseRepo()
 	redisMgr := s.Initializer.GetRedisManager()
 

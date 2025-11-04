@@ -3,10 +3,9 @@ package io.charlie.web.oj.modular.task.judge.handle;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import io.charlie.web.oj.modular.data.ranking.utils.ActivityScoreCalculator;
 import io.charlie.web.oj.modular.data.ranking.service.UserActivityService;
-import io.charlie.web.oj.modular.data.solved.entity.DataSolved;
-import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.task.judge.dto.JudgeResultDto;
@@ -47,7 +46,7 @@ public class JudgeHandleMessage {
     private final SolvedHandleMessage solvedHandleMessage;
 
     public void sendJudge(JudgeSubmitDto judgeSubmitDto) {
-        log.debug("发送消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
+        log.info("发送判题消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
         rabbitTemplate.convertAndSend(
                 judgeQueueProperties.getCommon().getExchange(),
                 judgeQueueProperties.getCommon().getRoutingKey(),
@@ -57,16 +56,40 @@ public class JudgeHandleMessage {
     }
 
     @Transactional
-    @RabbitListener(queues = "${oj.mq.judge.result.queue}", concurrency = "10-20")
+    @RabbitListener(queues = "${oj.mq.judge.result.queue}", containerFactory = "judgeResultContainerFactory")
     public void receiveJudge(JudgeResultDto judgeResultDto) {
-        log.debug("接收到判题结果消息：id={}, status={}",
-                judgeResultDto.getId(), judgeResultDto.getStatus());
+        log.info("接收到判题结果消息：id={}, status={}", judgeResultDto.getId(), judgeResultDto.getStatus());
 
         // 1. 更新提交记录
         String submitRecord = updateSubmitRecord(judgeResultDto);
 
         // 2. 根据提交类型处理业务逻辑
         processBusinessLogic(judgeResultDto, submitRecord);
+    }
+
+    /**
+     * 更新提交记录
+     */
+    public String updateSubmitRecord(JudgeResultDto judgeResultDto) {
+        LambdaUpdateWrapper<DataSubmit> lambda = new UpdateWrapper<DataSubmit>().checkSqlInjection().lambda();
+        lambda.eq(DataSubmit::getId, judgeResultDto.getId())
+                .set(DataSubmit::getIsFinish, Boolean.TRUE)
+                .set(DataSubmit::getMaxMemory, judgeResultDto.getMaxMemory())
+                .set(DataSubmit::getMaxTime, judgeResultDto.getMaxTime())
+                .set(DataSubmit::getMessage, judgeResultDto.getMessage())
+                .set(DataSubmit::getStatus, judgeResultDto.getStatus())
+                .set(DataSubmit::getJudgeTaskId, judgeResultDto.getJudgeTaskId())
+        ;
+
+        int updated = dataSubmitMapper.update(lambda);
+
+        if (updated > 0) {
+            log.debug("更新提交记录成功：id={}", judgeResultDto.getId());
+            return judgeResultDto.getId();
+        } else {
+            log.warn("未找到对应的提交记录：id={}", judgeResultDto.getId());
+            return null;
+        }
     }
 
     /**
@@ -113,26 +136,12 @@ public class JudgeHandleMessage {
             }
         }
 
-        solvedHandleMessage.sendSolved(solvedMesage);
+        CompletableFuture.runAsync(() -> {
+            try {
+                solvedHandleMessage.sendSolved(solvedMesage);
+            } catch (Exception e) {
+                log.error("更改解决记录失败：userId={}", judgeResultDto.getUserId(), e);
+            }
+        });
     }
-
-    /**
-     * 更新提交记录
-     */
-    private String updateSubmitRecord(JudgeResultDto judgeResultDto) {
-        DataSubmit dataSubmit = dataSubmitMapper.selectById(judgeResultDto.getId());
-        if (dataSubmit == null) {
-            log.warn("未找到对应的提交记录：id={}", judgeResultDto.getId());
-            return null;
-        }
-
-        BeanUtil.copyProperties(judgeResultDto, dataSubmit);
-        dataSubmit.setIsFinish(Boolean.TRUE);
-        dataSubmitMapper.updateById(dataSubmit);
-        log.debug("更新提交记录成功：id={}", judgeResultDto.getId());
-
-        return dataSubmit.getId();
-    }
-
-
 }

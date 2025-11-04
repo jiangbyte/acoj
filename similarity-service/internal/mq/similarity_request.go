@@ -1,19 +1,10 @@
 package mq
 
 type SimilarityMessage struct {
+	ReportID       string   `json:"reportId"`       // 统计ID
 	TaskID         string   `json:"taskId"`         // 任务ID
-	SubmitID       string   `json:"submitId"`       // 提交ID
-	SetID          string   `json:"setId"`          // 题集
-	ProblemID      string   `json:"problemId"`      // 多个或单个题目
-	UserID         string   `json:"userId"`         // 多个或单个题目
-	IsSet          bool     `json:"isSet"`          // 是否是题集
-	Language       string   `json:"language"`       // 语言
+	LibIDs         []string `json:"libIds"`         // 代码库ID
 	MinMatchLength int      `json:"minMatchLength"` // 敏感度
-	Threshold      float64  `json:"threshold"`      // 阈值
-	TaskType       bool     `json:"taskType"`       // 是否手动
-	Code           string   `json:"code"`
-	CodeLength     int      `json:"codeLength"`
-	CodeTokens     []int    `json:"codeTokens"`
-	CodeTokenNames []string `json:"codeTokenNames"`
-	CodeTokenTexts []string `json:"codeTokenTexts"`
+	Threshold      float64  `json:"threshold"`      // 检测阈值
+	TaskType       bool     `json:"taskType"`       // 手动
 }

@@ -17,7 +17,7 @@ import java.util.List;
  * @description 菜单表 Mapper 接口
  */
 @Mapper
-@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
+//@CacheNamespace(implementation = MybatisPlusRedisCache.class, eviction = MybatisPlusRedisCache.class)
 public interface SysMenuMapper extends BaseMapper<SysMenu> {
 
     @DS("slave")

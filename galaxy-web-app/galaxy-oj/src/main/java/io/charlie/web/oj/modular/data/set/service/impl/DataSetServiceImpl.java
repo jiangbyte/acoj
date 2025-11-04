@@ -11,7 +11,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
-import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.galaxy.utils.str.GalaxyStringUtil;
 import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
@@ -82,16 +82,16 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     public Page<DataSet> page(DataSetPageParam dataSetPageParam) {
         QueryWrapper<DataSet> queryWrapper = new QueryWrapper<DataSet>().checkSqlInjection();
         // 关键字
-        if (GaStringUtil.isNotEmpty(dataSetPageParam.getKeyword())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSetPageParam.getKeyword())) {
             queryWrapper.lambda().like(DataSet::getTitle, dataSetPageParam.getKeyword());
         }
-        if (GaStringUtil.isNotEmpty(dataSetPageParam.getCategoryId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSetPageParam.getCategoryId())) {
             queryWrapper.lambda().eq(DataSet::getCategoryId, dataSetPageParam.getCategoryId());
         }
-        if (GaStringUtil.isNotEmpty(dataSetPageParam.getDifficulty())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSetPageParam.getDifficulty())) {
             queryWrapper.lambda().eq(DataSet::getDifficulty, dataSetPageParam.getDifficulty());
         }
-        if (GaStringUtil.isNotEmpty(dataSetPageParam.getSetType())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSetPageParam.getSetType())) {
             queryWrapper.lambda().eq(DataSet::getSetType, dataSetPageParam.getSetType());
         }
         if (ObjectUtil.isAllNotEmpty(dataSetPageParam.getSortField(), dataSetPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataSetPageParam.getSortOrder())) {
@@ -121,13 +121,13 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         if (ObjectUtil.isNotEmpty(dataSetPageParam.getKeyword())) {
             queryWrapper.lambda().like(DataSet::getTitle, dataSetPageParam.getKeyword());
         }
-        if (GaStringUtil.isNotEmpty(dataSetPageParam.getCategoryId())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSetPageParam.getCategoryId())) {
             queryWrapper.lambda().eq(DataSet::getCategoryId, dataSetPageParam.getCategoryId());
         }
-        if (GaStringUtil.isNotEmpty(dataSetPageParam.getDifficulty())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSetPageParam.getDifficulty())) {
             queryWrapper.lambda().eq(DataSet::getDifficulty, dataSetPageParam.getDifficulty());
         }
-        if (GaStringUtil.isNotEmpty(dataSetPageParam.getSetType())) {
+        if (GalaxyStringUtil.isNotEmpty(dataSetPageParam.getSetType())) {
             queryWrapper.lambda().eq(DataSet::getSetType, dataSetPageParam.getSetType());
         }
         if (ObjectUtil.isAllNotEmpty(dataSetPageParam.getSortField(), dataSetPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataSetPageParam.getSortOrder())) {

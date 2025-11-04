@@ -58,10 +58,13 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
                 .eq(DataSetProblem::getSetId, setId)
                 .orderByAsc(DataSetProblem::getSort)
         );
-        return dataSetProblems.stream()
-                .map(DataSetProblem::getProblemId)
-                .sorted(Comparator.naturalOrder())
-                .toList();
+        if (ObjectUtil.isNotEmpty(dataSetProblems)) {
+            return dataSetProblems.stream()
+                    .map(DataSetProblem::getProblemId)
+                    .sorted(Comparator.naturalOrder())
+                    .toList();
+        }
+        return new ArrayList<>();
     }
 
     @Override
@@ -79,17 +82,21 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
                 .orderByAsc(DataSetProblem::getSort)
         );
 
-        // 按setId分组
-        Map<String, List<DataSetProblem>> setProblemsMap = dataSetProblems.stream()
-                .collect(Collectors.groupingBy(DataSetProblem::getSetId));
+        if (ObjectUtil.isNotEmpty(dataSetProblems)) {
+            // 按setId分组
+            Map<String, List<DataSetProblem>> setProblemsMap = dataSetProblems.stream()
+                    .collect(Collectors.groupingBy(DataSetProblem::getSetId));
 
-        // 第三步：处理每个setId的数据
-        for (String setId : setIds) {
-            List<DataSetProblem> problems = setProblemsMap.get(setId);
-            result.put(setId, problems.stream()
-                    .map(DataSetProblem::getProblemId)
-                    .sorted(Comparator.naturalOrder())
-                    .toList());
+            // 第三步：处理每个setId的数据
+            for (String setId : setIds) {
+                List<DataSetProblem> problems = setProblemsMap.get(setId);
+                if (ObjectUtil.isNotEmpty(problems)) {
+                    result.put(setId, problems.stream()
+                            .map(DataSetProblem::getProblemId)
+                            .sorted(Comparator.naturalOrder())
+                            .toList());
+                }
+            }
         }
 
         return result;
@@ -103,15 +110,6 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
         );
 
         if (ObjectUtil.isNotEmpty(problemIds)) {
-//            problemIds.forEach(item -> {
-//                DataSetProblem dataSetProblem = new DataSetProblem();
-//                dataSetProblem.setSetId(setId);
-//                dataSetProblem.setProblemId(item);
-//                dataSetProblem.setSort(problemIds.indexOf(item));
-//                // 添加
-//                this.save(dataSetProblem);
-//            });
-
             List<DataSetProblem> list = problemIds.stream().map(item -> {
                 DataSetProblem dataSetProblem = new DataSetProblem();
                 dataSetProblem.setSetId(setId);
@@ -121,6 +119,7 @@ public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSe
             }).toList();
             return this.saveBatch(list);
         }
+
         return true;
     }
 

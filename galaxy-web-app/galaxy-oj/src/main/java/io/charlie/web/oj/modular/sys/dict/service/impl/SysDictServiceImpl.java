@@ -11,7 +11,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.option.LabelOption;
-import io.charlie.galaxy.utils.str.GaStringUtil;
+import io.charlie.galaxy.utils.str.GalaxyStringUtil;
 import io.charlie.web.oj.modular.sys.dict.entity.SysDict;
 import io.charlie.web.oj.modular.sys.dict.param.*;
 import io.charlie.web.oj.modular.sys.dict.mapper.SysDictMapper;
@@ -22,8 +22,6 @@ import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import jakarta.annotation.PostConstruct;
 import org.dromara.trans.service.impl.DictionaryTransService;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -130,7 +128,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictMapper, SysDict> impl
     @Override
     @DS("slave")
     public List<LabelOption<String>> options(String dictType) {
-        if (GaStringUtil.isEmpty(dictType)) {
+        if (GalaxyStringUtil.isEmpty(dictType)) {
             return List.of();
         }
 
