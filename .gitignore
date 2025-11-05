@@ -101,3 +101,10 @@ depoloy/
 **/test/
 **/logs/
 **/doc/
+
+**/etc/**.yaml
+**/**.yml
+**/**.yaml
+**/**.dev
+**/**.production
+**/**.xml
