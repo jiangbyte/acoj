@@ -47,7 +47,7 @@ public class JudgeHandleMessage {
     private final SolvedHandleMessage solvedHandleMessage;
 
     public void sendJudge(JudgeSubmitDto judgeSubmitDto) {
-        log.info("发送判题消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
+        log.debug("发送判题消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
         rabbitTemplate.convertAndSend(
                 judgeQueueProperties.getCommon().getExchange(),
                 judgeQueueProperties.getCommon().getRoutingKey(),
@@ -59,7 +59,7 @@ public class JudgeHandleMessage {
     @Transactional
     @RabbitListener(queues = "${oj.mq.judge.result.queue}", containerFactory = "judgeResultContainerFactory")
     public void receiveJudge(JudgeResultDto judgeResultDto) {
-        log.info("接收到判题结果消息：id={}, status={}", judgeResultDto.getId(), judgeResultDto.getStatus());
+        log.debug("接收到判题结果消息：id={}, status={}", judgeResultDto.getId(), judgeResultDto.getStatus());
 
         // 1. 更新提交记录
         String submitRecord = updateSubmitRecord(judgeResultDto);

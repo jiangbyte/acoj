@@ -19,25 +19,8 @@ import java.util.List;
 public class CodeTokenUtil {
     private final LanguageStrategyFactory languageStrategyFactory;
 
-    private LanguageStrategy languageStrategy;
-
-    public List<String> getCodeTokensNames(String language, String code) {
-        languageStrategy = languageStrategyFactory.languageStrategy(language);
-        return languageStrategy.getTokenNames(languageStrategy.getTokenInfo(code));
-    }
-
-    public List<String> getCodeTokensTexts(String language, String code) {
-        languageStrategy = languageStrategyFactory.languageStrategy(language);
-        return languageStrategy.getTokenTexts(languageStrategy.getTokenInfo(code), code);
-    }
-
-    public List<Integer> getCodeTokens(String language, String code) {
-        languageStrategy = languageStrategyFactory.languageStrategy(language);
-        return languageStrategy.getTokenInfo(code);
-    }
-
     public TokenDetail getCodeTokensDetail(String language, String code) {
-        languageStrategy = languageStrategyFactory.languageStrategy(language);
+        LanguageStrategy  languageStrategy = languageStrategyFactory.languageStrategy(language);
         TokenDetail tokenDetail = new TokenDetail();
         tokenDetail.setTokens(languageStrategy.getTokenInfo(code));
         tokenDetail.setTokenNames(languageStrategy.getTokenNames(tokenDetail.getTokens()));

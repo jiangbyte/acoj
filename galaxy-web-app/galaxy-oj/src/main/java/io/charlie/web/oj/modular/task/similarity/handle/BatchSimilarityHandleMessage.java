@@ -207,7 +207,7 @@ public class BatchSimilarityHandleMessage {
     }
 
     @Transactional
-    @RabbitListener(queues = "${oj.mq.similarity.result.queue}", concurrency = "5-10")
+    @RabbitListener(queues = "${oj.mq.similarity.result.queue}", concurrency = "1")
     public void receiveSimilarity(BatchSimilaritySubmitResultDto batchSimilaritySubmitDto) {
         log.info("收到相似检测任务消息，任务ID: {}, 报告ID: {}",
                 batchSimilaritySubmitDto.getTaskId(),

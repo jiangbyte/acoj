@@ -22,8 +22,4 @@ public class LanguageStrategyFactory {
         }
         return languageStrategyMap.get(strategyKey);
     }
-    public boolean hasLanguageStrategy(String language) {
-        String strategyKey = language.toLowerCase() + "LanguageStrategy";
-        return languageStrategyMap.containsKey(strategyKey);
-    }
 }
