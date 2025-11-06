@@ -19,7 +19,6 @@ type InitializerManager struct {
 	serviceRegistry          *nacos.ServiceRegistryManager
 	dataLibraryRepository    repository2.DataLibraryRepository
 	taskSimilarityRepository repository2.TaskSimilarityRepository
-	taskReportsRepository    repository2.TaskReportsRepository
 }
 
 func NewInitializerManager(c config.Config) *InitializerManager {
@@ -82,7 +81,6 @@ func (im *InitializerManager) initMySQLWithRetry() {
 		im.mysqlManager = mysqlManager
 		im.dataLibraryRepository = repository2.NewDataLibraryRepository(mysqlManager.DB)
 		im.taskSimilarityRepository = repository2.NewTaskSimilarityRepository(mysqlManager.DB)
-		im.taskReportsRepository = repository2.NewTaskReportsRepository(mysqlManager.DB)
 		logx.Info("MySQL 连接成功")
 		return
 	}
@@ -130,10 +128,6 @@ func (im *InitializerManager) GetDataLibraryRepo() repository2.DataLibraryReposi
 
 func (im *InitializerManager) GetTaskSimilarityRepo() repository2.TaskSimilarityRepository {
 	return im.taskSimilarityRepository
-}
-
-func (im *InitializerManager) GetTaskReportsRepo() repository2.TaskReportsRepository {
-	return im.taskReportsRepository
 }
 
 func (im *InitializerManager) GetServiceReRegistry() *nacos.ServiceRegistryManager {

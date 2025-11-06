@@ -242,29 +242,29 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         Long solvedProblemCount = dataSolvedMapper.selectCount(new LambdaQueryWrapper<DataSolved>()
                 .eq(DataSolved::getUserId, sysUser.getId())
-                .eq(DataSolved::getIsSet, false)
+                .eq(DataSolved::getModuleType, "PROBLEM")
                 .eq(DataSolved::getSolved, true)
         );
         sysUser.setSolvedProblem(solvedProblemCount);
         Long tryProblemCount = dataSolvedMapper.selectCount(new LambdaQueryWrapper<DataSolved>()
                 .eq(DataSolved::getUserId, sysUser.getId())
-                .eq(DataSolved::getIsSet, false)
+                .eq(DataSolved::getModuleType, "PROBLEM")
                 .eq(DataSolved::getSolved, false)
         );
         sysUser.setTryProblem(tryProblemCount);
         long participatedSetCount = dataSolvedMapper.selectCount(
                 new QueryWrapper<DataSolved>()
-                        .select("DISTINCT set_id")
+                        .select("DISTINCT module_id")
                         .lambda()
                         .eq(DataSolved::getUserId, sysUser.getId())
-                        .eq(DataSolved::getIsSet, true)
+                        .eq(DataSolved::getModuleType, "SET")
         );
         sysUser.setParticipatedSet(participatedSetCount);
         sysUser.setActiveScore(userActivityService.getUserActivityScore(sysUser.getId()));
 
         List<DataSubmit> dataSubmits = dataSubmitMapper.selectList(new LambdaQueryWrapper<DataSubmit>()
                 .eq(DataSubmit::getUserId, sysUser.getId())
-                .eq(DataSubmit::getIsSet, false)
+                .eq(DataSubmit::getModuleType, "PROBLEM")
                 .eq(DataSubmit::getStatus, JudgeStatus.ACCEPTED.getValue())
                 .eq(DataSubmit::getSubmitType, true)
                 // 近两年的

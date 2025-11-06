@@ -8,8 +8,8 @@ import (
 type DataLibrary struct {
 	ID             string     `gorm:"column:id;primaryKey;type:varchar(32)"`
 	UserID         string     `gorm:"column:user_id;type:varchar(32)"`
-	SetID          string     `gorm:"column:set_id;type:varchar(32)"`
-	IsSet          bool       `gorm:"column:is_set;default:false"`
+	ModuleId       string     `gorm:"column:module_id;type:varchar(32)"`
+	ModuleType     string     `gorm:"column:module_Type;type:varchar(32)"`
 	ProblemID      string     `gorm:"column:problem_id;type:varchar(32)"`
 	SubmitID       string     `gorm:"column:submit_id;type:varchar(32)"`
 	SubmitTime     *time.Time `gorm:"column:submit_time"`

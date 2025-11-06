@@ -33,8 +33,10 @@ public class DataSubmitExeParam implements Serializable {
     @NotEmpty(message = "题目ID不能为空")
     private String problemId;
 
-    @Schema(description = "题集ID")
-    private String setId;
+    @Schema(description = "模块类型")
+    private String moduleType;
+    @Schema(description = "模块ID")
+    private String moduleId;
 
     @Schema(description = "语言")
     @NotEmpty(message = "语言不能为空")

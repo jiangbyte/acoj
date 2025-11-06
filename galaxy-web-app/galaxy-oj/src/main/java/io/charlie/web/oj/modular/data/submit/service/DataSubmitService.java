@@ -20,6 +20,8 @@ public interface DataSubmitService extends IService<DataSubmit> {
 
     Page<DataSubmit> setPage(DataSubmitPageParam dataSubmitPageParam);
 
+    Page<DataSubmit> modulePage(DataSubmitPageParam dataSubmitPageParam);
+
     void add(DataSubmitAddParam dataSubmitAddParam);
 
     void edit(DataSubmitEditParam dataSubmitEditParam);

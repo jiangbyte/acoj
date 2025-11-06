@@ -66,6 +66,13 @@ export function useDataSubmitFetch() {
         },
       })
     },
+    dataModuleSubmitPage(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/module/page`, {
+        params: {
+          ...data,
+        },
+      })
+    },
 
     /*
      * 提交 新增接口

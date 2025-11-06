@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.data.relation.set.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -17,7 +18,11 @@ import java.io.Serializable;
 @Schema(name = "DataSetProblem")
 public class DataSetProblem implements Serializable {
     @Serial
+    @TableField(exist = false)
     private static final long serialVersionUID = 1L;
+
+    @Schema(description = "菜单ID")
+    private String id;
 
     private String setId;
 

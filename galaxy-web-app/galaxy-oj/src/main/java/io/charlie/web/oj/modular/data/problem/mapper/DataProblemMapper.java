@@ -26,20 +26,6 @@ public interface DataProblemMapper extends BaseMapper<DataProblem> {
      * @param topN 前N名
      * @return 题目列表（包含排名）
      */
-//    @Select("""
-//                SELECT
-//                    dp.*,
-//                    ROW_NUMBER() OVER (ORDER BY COALESCE(ds.submit_count, 0) DESC) as `rank`
-//                FROM data_problem dp
-//                LEFT JOIN (
-//                    SELECT problem_id, COUNT(DISTINCT user_id) as submit_count
-//                    FROM data_solved
-//                    WHERE is_set = 0
-//                    GROUP BY problem_id
-//                ) ds ON dp.id = ds.problem_id
-//                ORDER BY COALESCE(ds.submit_count, 0) DESC
-//                LIMIT #{topN}
-//            """)
     @DS("slave")
     @Select("""
         SELECT 
@@ -49,7 +35,7 @@ public interface DataProblemMapper extends BaseMapper<DataProblem> {
         INNER JOIN (
             SELECT problem_id, COUNT(DISTINCT user_id) as submit_count
             FROM data_solved
-            WHERE is_set = 0
+            WHERE module_type = 'PROBLEM'
             GROUP BY problem_id
             HAVING COUNT(DISTINCT user_id) > 0
         ) ds ON dp.id = ds.problem_id

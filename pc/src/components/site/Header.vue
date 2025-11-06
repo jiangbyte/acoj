@@ -64,7 +64,7 @@ const menuOptions = [
             path: '/sets',
           },
         },
-        { default: () => '题集' },
+        { default: () => '题集/训练' },
       ),
     key: 'sets',
     icon: iconRender('icon-park-outline:folder-open'),
@@ -82,6 +82,20 @@ const menuOptions = [
   //     ),
   //   key: 'groups',
   // },
+  {
+    label: () =>
+      h(
+        RouterLink,
+        {
+          to: {
+            path: '/contests',
+          },
+        },
+        { default: () => '竞赛' },
+      ),
+    key: 'contests',
+    icon: iconRender('icon-park-outline:folder-open'),
+  },
   {
     label: () =>
       h(

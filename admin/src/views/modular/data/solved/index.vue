@@ -44,12 +44,8 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '题集提交',
-    key: 'isSetName',
-  },
-  {
-    title: '题集',
-    key: 'setIdName',
+    title: '提交模块',
+    key: 'moduleTypeName',
     ellipsis: {
       tooltip: true,
     },

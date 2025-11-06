@@ -53,10 +53,6 @@ func (s *ServiceContext) TaskSimilarityRepo() repository2.TaskSimilarityReposito
 	return s.Initializer.GetTaskSimilarityRepo()
 }
 
-func (s *ServiceContext) TaskReportsRepo() repository2.TaskReportsRepository {
-	return s.Initializer.GetTaskReportsRepo()
-}
-
 func (s *ServiceContext) DataLibraryRepo() repository2.DataLibraryRepository {
 	return s.Initializer.GetDataLibraryRepo()
 }

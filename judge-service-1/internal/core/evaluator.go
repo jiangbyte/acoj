@@ -19,13 +19,13 @@ func (e *DefaultEvaluator) Evaluate(workspace *Workspace, results []*model.DataJ
 		ID:          judgeRequest.ID,
 		UserId:      judgeRequest.UserId,
 		ProblemId:   judgeRequest.ProblemId,
-		SetId:       judgeRequest.SetId,
+		ModuleId:       judgeRequest.ModuleId,
 		Language:    judgeRequest.Language,
 		Code:        judgeRequest.Code,
 		SubmitType:  judgeRequest.SubmitType,
 		MaxTime:     0,
 		MaxMemory:   0,
-		IsSet:       judgeRequest.IsSet,
+		ModuleType:       judgeRequest.ModuleType,
 		JudgeTaskId: judgeRequest.JudgeTaskId,
 	}
 

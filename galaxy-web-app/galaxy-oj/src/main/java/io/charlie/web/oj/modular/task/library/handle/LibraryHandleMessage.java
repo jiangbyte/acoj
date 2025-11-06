@@ -46,100 +46,55 @@ public class LibraryHandleMessage {
     public void receiveJudge(Library submit) {
         TokenDetail tokensDetail = codeTokenUtil.getCodeTokensDetail(submit.getLanguage().toLowerCase(), submit.getCode());
 
-        if (submit.getIsSet()) {
-            LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
-                    .eq(DataLibrary::getUserId, submit.getUserId())
-                    .eq(DataLibrary::getSetId, submit.getSetId())
-                    .eq(DataLibrary::getProblemId, submit.getProblemId())
-                    .eq(DataLibrary::getLanguage, submit.getLanguage())
-                    .eq(DataLibrary::getIsSet, Boolean.TRUE);
+        LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
+                .eq(DataLibrary::getUserId, submit.getUserId())
+                .eq(DataLibrary::getModuleType, submit.getModuleType())
+                .eq(DataLibrary::getModuleId, submit.getModuleId())
+                .eq(DataLibrary::getProblemId, submit.getProblemId())
+                .eq(DataLibrary::getLanguage, submit.getLanguage())
+                .eq(DataLibrary::getModuleType, submit.getModuleType());
 
-            if (dataLibraryMapper.exists(queryWrapper)) {
-                log.debug("存在记录，执行更新");
-                DataLibrary library = dataLibraryMapper.selectOne(queryWrapper);
-                library.setSubmitId(submit.getSubmitId());
-                library.setSubmitTime(new Date());
+        if (dataLibraryMapper.exists(queryWrapper)) {
+            log.debug("存在记录，执行更新");
+            DataLibrary library = dataLibraryMapper.selectOne(queryWrapper);
+            library.setSubmitId(submit.getSubmitId());
+            library.setSubmitTime(new Date());
 
-                // 如果代码长度和原本的代码长度不一致，则更新代码
-                if (!library.getCodeLength().equals(submit.getCode().length())) {
-                    library.setCodeLength(submit.getCode().length());
-                    library.setCode(submit.getCode());
-                    library.setCodeToken(tokensDetail.getTokens());
-                    library.setCodeTokenName(tokensDetail.getTokenNames());
-                    library.setCodeTokenTexts(tokensDetail.getTokenTexts());
-                    library.setAccessCount(0);// 重置访问次数
-                }
-
-                dataLibraryMapper.updateById(library);
-            } else {
-                log.debug("不存在记录，创建新记录");
-
-                DataLibrary library = new DataLibrary();
-
-                library.setUserId(submit.getUserId());
-                library.setSetId(submit.getIsSet() ? submit.getSetId() : null);
-                library.setProblemId(submit.getProblemId());
-                library.setLanguage(submit.getLanguage());
-                library.setSubmitId(submit.getSubmitId());
-                library.setSubmitTime(new Date());
+            // 如果代码长度和原本的代码长度不一致，则更新代码
+            if (!library.getCodeLength().equals(submit.getCode().length())) {
+                library.setCodeLength(submit.getCode().length());
                 library.setCode(submit.getCode());
-
                 library.setCodeToken(tokensDetail.getTokens());
                 library.setCodeTokenName(tokensDetail.getTokenNames());
                 library.setCodeTokenTexts(tokensDetail.getTokenTexts());
-
-                library.setCodeLength(submit.getCode().length());
-                library.setIsSet(submit.getIsSet());
-                library.setAccessCount(0);
-
-                dataLibraryMapper.insert(library);
-            }
-        } else {
-            LambdaQueryWrapper<DataLibrary> queryWrapper = new LambdaQueryWrapper<DataLibrary>()
-                    .eq(DataLibrary::getUserId, submit.getUserId())
-                    .eq(DataLibrary::getProblemId, submit.getProblemId())
-                    .eq(DataLibrary::getLanguage, submit.getLanguage())
-                    .eq(DataLibrary::getIsSet, Boolean.FALSE);
-
-            if (dataLibraryMapper.exists(queryWrapper)) {
-                log.debug("存在记录，执行更新");
-                DataLibrary library = dataLibraryMapper.selectOne(queryWrapper);
-                library.setSubmitId(submit.getSubmitId());
-                library.setSubmitTime(new Date());
-
-                library.setCodeLength(submit.getCode().length());
-                library.setCode(submit.getCode());
-
-                library.setCodeToken(tokensDetail.getTokens());
-                library.setCodeTokenName(tokensDetail.getTokenNames());
-                library.setCodeTokenTexts(tokensDetail.getTokenTexts());
-
                 library.setAccessCount(0);// 重置访问次数
-
-                dataLibraryMapper.updateById(library);
-            } else {
-                log.debug("不存在记录，创建新记录");
-
-                DataLibrary library = new DataLibrary();
-
-                library.setUserId(submit.getUserId());
-                library.setSetId(submit.getIsSet() ? submit.getSetId() : null);
-                library.setProblemId(submit.getProblemId());
-                library.setLanguage(submit.getLanguage());
-                library.setSubmitId(submit.getSubmitId());
-                library.setSubmitTime(new Date());
-                library.setCode(submit.getCode());
-
-                library.setCodeToken(tokensDetail.getTokens());
-                library.setCodeTokenName(tokensDetail.getTokenNames());
-                library.setCodeTokenTexts(tokensDetail.getTokenTexts());
-
-                library.setCodeLength(submit.getCode().length());
-                library.setIsSet(submit.getIsSet());
-                library.setAccessCount(0);
-
-                dataLibraryMapper.insert(library);
             }
+
+            dataLibraryMapper.updateById(library);
+        } else {
+            log.debug("不存在记录，创建新记录");
+
+            DataLibrary library = new DataLibrary();
+
+            library.setUserId(submit.getUserId());
+
+            library.setModuleType(submit.getModuleType());
+            library.setModuleId(submit.getModuleId());
+
+            library.setProblemId(submit.getProblemId());
+            library.setLanguage(submit.getLanguage());
+            library.setSubmitId(submit.getSubmitId());
+            library.setSubmitTime(new Date());
+            library.setCode(submit.getCode());
+
+            library.setCodeToken(tokensDetail.getTokens());
+            library.setCodeTokenName(tokensDetail.getTokenNames());
+            library.setCodeTokenTexts(tokensDetail.getTokenTexts());
+
+            library.setCodeLength(submit.getCode().length());
+            library.setAccessCount(0);
+
+            dataLibraryMapper.insert(library);
         }
 
         log.debug("样本库处理完成");

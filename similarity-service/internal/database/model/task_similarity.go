@@ -26,8 +26,8 @@ type TaskSimilarity struct {
 	TaskID           string     `gorm:"column:task_id;type:varchar(32)"`
 	TaskType         bool       `gorm:"column:task_type;default:false"`
 	ProblemID        string     `gorm:"column:problem_id;type:varchar(32)"`
-	SetID            string     `gorm:"column:set_id;type:varchar(32)"`
-	IsSet            bool       `gorm:"column:is_set;default:false"`
+	ModuleId         string     `gorm:"column:module_id;type:varchar(32)"`
+	ModuleType       string     `gorm:"column:module_Type;type:varchar(32)"`
 	Language         string     `gorm:"column:language;type:varchar(64)"`
 	Similarity       float64    `gorm:"column:similarity;type:decimal(10,2);default:0.00"`
 	SubmitUser       string     `gorm:"column:submit_user;type:varchar(32)"`

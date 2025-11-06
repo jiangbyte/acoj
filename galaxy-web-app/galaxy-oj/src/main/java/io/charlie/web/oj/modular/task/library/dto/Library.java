@@ -24,8 +24,6 @@ public class Library implements Serializable {
     @Schema(description = "题目ID")
     private String problemId;
 
-    @Schema(description = "题集ID")
-    private String setId;
 
     @Schema(description = "语言")
     private String language;
@@ -33,8 +31,9 @@ public class Library implements Serializable {
     @Schema(description = "代码")
     private String code;
 
-    @Schema(description = "是否是题集")
-    private Boolean isSet;
-
+    @Schema(description = "模块类型")
+    private String moduleType;
+    @Schema(description = "模块ID")
+    private String moduleId;
 
 }

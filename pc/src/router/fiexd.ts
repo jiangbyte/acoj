@@ -28,6 +28,24 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/views/groups/index.vue'),
         meta: { title: '群组', icon: 'book' },
       },
+      {
+        path: 'contests',
+        name: 'contests',
+        component: () => import('@/views/contests/index.vue'),
+        meta: { title: '竞赛', icon: 'folder' },
+      },
+      // 题单详情
+      {
+        path: 'contests/detail',
+        name: 'contest_detail',
+        component: () => import('@/views/contests/detail.vue'),
+        meta: { title: '竞赛详情', icon: 'folder' },
+        beforeEnter: (to) => {
+          if (!to.query.contestId) {
+            return '/'
+          }
+        },
+      },
       // 排行榜
       {
         path: 'ranking',
@@ -40,14 +58,14 @@ export const routes: RouteRecordRaw[] = [
         path: 'sets',
         name: 'sets',
         component: () => import('@/views/sets/index.vue'),
-        meta: { title: '题单', icon: 'folder' },
+        meta: { title: '题集/训练', icon: 'folder' },
       },
       // 题单详情
       {
         path: 'sets/detail',
         name: 'proset_detail',
         component: () => import('@/views/sets/detail.vue'),
-        meta: { title: '题单', icon: 'folder' },
+        meta: { title: '题集/训练详情', icon: 'folder' },
         beforeEnter: (to) => {
           if (!to.query.set) {
             return '/'

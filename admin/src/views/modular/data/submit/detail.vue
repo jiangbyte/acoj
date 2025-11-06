@@ -39,11 +39,8 @@ defineExpose({
             <NText>{{ formData.userIdName }}</NText>
           </NSpace>
         </NDescriptionsItem>
-        <NDescriptionsItem label="题集">
-          {{ formData.setIdName }}
-        </NDescriptionsItem>
-        <NDescriptionsItem label="题集提交">
-          {{ formData.isSetName }}
+        <NDescriptionsItem label="提交模块">
+          {{ formData.moduleTypeName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="题目">
           {{ formData.problemIdName }}

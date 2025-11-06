@@ -192,7 +192,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         queryWrapper.lambda().in(SysUser::getGroupId, accessibleGroupIds);
 
         // 统一的 EXISTS 条件构建
-        StringBuilder existsSql = new StringBuilder("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id AND dl.is_set = 1 ");
+        StringBuilder existsSql = new StringBuilder("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id AND dl.module_type = 'SET' ");
 
         boolean hasCondition = false;
 
@@ -208,7 +208,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
 
         // 添加 setId 条件
         if (GalaxyStringUtil.isNotEmpty(dataLibraryUserPageParam.getSetId())) {
-            existsSql.append(" AND dl.set_id = '").append(dataLibraryUserPageParam.getSetId()).append("'");
+            existsSql.append(" AND dl.module_id = '").append(dataLibraryUserPageParam.getSetId()).append("'");
             hasCondition = true;
         }
 
@@ -225,7 +225,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
             queryWrapper.exists(existsSql.toString());
         } else {
             // 如果没有特定条件，但想查询所有在 data_library 中有记录的用户
-            queryWrapper.exists("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id AND dl.is_set = 1 ");
+            queryWrapper.exists("SELECT 1 FROM data_library dl WHERE dl.user_id = sys_user.id AND dl.module_type = 'SET' ");
         }
 
         if (GalaxyStringUtil.isNotEmpty(dataLibraryUserPageParam.getGroupId())) {
@@ -253,8 +253,8 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         log.debug("开始执行批量查询 {}", JSONUtil.toJsonStr(libraryQueryParam));
         QueryWrapper<DataLibrary> queryWrapper = new QueryWrapper<DataLibrary>().checkSqlInjection();
 
-        queryWrapper.lambda().eq(DataLibrary::getIsSet, Boolean.TRUE);
-        queryWrapper.lambda().eq(DataLibrary::getSetId, libraryQueryParam.getSetId());
+        queryWrapper.lambda().eq(DataLibrary::getModuleType, "SET");
+        queryWrapper.lambda().eq(DataLibrary::getModuleId, libraryQueryParam.getSetId());
 
         if (ObjectUtil.isNotEmpty(libraryQueryParam.getProblemId())) {
             queryWrapper.lambda().eq(DataLibrary::getProblemId, libraryQueryParam.getProblemId());
@@ -281,9 +281,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         } else if ("GROUP_BY_GROUP".equals(libraryQueryParam.getCompareMode())) {
             // 组内对比 GROUP_BY_GROUP
             if (ObjectUtil.isNotEmpty(libraryQueryParam.getGroupId())) {
-                // 使用 EXISTS 子查询的方式（性能更好）
-//                queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id = " + libraryQueryParam.getGroupId());
-                queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id = {0}",
+               queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id = {0}",
                         libraryQueryParam.getGroupId());
             }
         } else if ("MULTI_BY_MULTI".equals(libraryQueryParam.getCompareMode())) {

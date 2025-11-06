@@ -24,6 +24,6 @@ public interface DataSubmitMapper extends BaseMapper<DataSubmit> {
      * 按状态统计提交数量
      */
     @DS("slave")
-    @Select("SELECT status, COUNT(*) as count FROM data_submit WHERE deleted = 0 AND is_set = 0 GROUP BY status")
+    @Select("SELECT status, COUNT(*) as count FROM data_submit WHERE deleted = 0 AND module_type = 'PROBLEM' GROUP BY status")
     List<JudgeStatusCountDTO> countByStatus();
 }

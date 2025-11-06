@@ -100,12 +100,12 @@ EXPOSE 89
 
 
 ENTRYPOINT ["java", \
-    "-Xmx4G", \
-    "-Xms4G", \
-    "-XX:MaxMetaspaceSize=256M", \
+    "-Xmx8G", \
+    "-Xms8G", \
+    "-XX:MaxMetaspaceSize=512M", \
     "-XX:+UseZGC", \
-    "-XX:ConcGCThreads=1", \
-    "-XX:ParallelGCThreads=2", \
+    "-XX:ConcGCThreads=2", \
+    "-XX:ParallelGCThreads=4", \
     "-XX:+UseContainerSupport", \
     "-XX:+DisableExplicitGC", \
     "-XX:+HeapDumpOnOutOfMemoryError", \
@@ -113,9 +113,7 @@ ENTRYPOINT ["java", \
     "-Djava.security.egd=file:/dev/./urandom", \
     "-Dfile.encoding=UTF-8", \
     "-Dio.undertow.no-host-header=true", \
-    "-Djava.util.concurrent.ForkJoinPool.common.parallelism=1", \
+    "-Djava.util.concurrent.ForkJoinPool.common.parallelism=4", \
     "-Dorg.jboss.threads.enqueue-batching=true", \
     "-Dio.netty.leakDetectionLevel=disabled", \
-    "-Dundertow.worker-threads=40", \
-    "-Dundertow.worker-keep-alive=60000", \
     "-jar", "galaxy-oj-1.0.0.jar"]

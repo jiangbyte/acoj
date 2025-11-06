@@ -9,6 +9,9 @@ export * from './data/DataSolvedApi'
 export * from './data/DataSubmitApi'
 export * from './data/TaskReportsApi'
 export * from './data/TaskSimilarityApi'
+export * from './data/DataContestApi'
+export * from './data/DataContestParticipantApi'
+export * from './data/DataContestProblemApi'
 
 // 导出 sys 目录下的所有 API
 export * from './sys/SysArticleApi'

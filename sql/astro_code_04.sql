@@ -76,8 +76,8 @@ DROP TABLE IF EXISTS `data_library`;
 CREATE TABLE `data_library`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '用户ID',
-  `set_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题集ID',
-  `is_set` tinyint(1) NULL DEFAULT 0 COMMENT '是否是题集提交',
+  `module_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块类型', -- CONTEST SET
+  `module_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块ID',
   `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题目ID',
   `submit_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '提交ID',
   `submit_time` datetime NULL DEFAULT NULL COMMENT '提交时间',
@@ -94,8 +94,9 @@ CREATE TABLE `data_library`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_set_id`(`is_set` ASC, `set_id` ASC) USING BTREE,
-  INDEX `idx_problem_id`(`problem_id` ASC) USING BTREE
+  INDEX `idx_set_id`(`module_type` ASC, `module_id` ASC) USING BTREE,
+  INDEX `idx_problem_id`(`problem_id` ASC) USING BTREE,
+  INDEX `idx_language`(`language` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '提交样本库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -147,8 +148,10 @@ CREATE TABLE `data_problem`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `data_problem_tag`;
 CREATE TABLE `data_problem_tag`  (
+ `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '题目ID',
-  `tag_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '标签ID'
+  `tag_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '标签ID',
+ PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '题目标签关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -162,7 +165,8 @@ DROP TABLE IF EXISTS `data_progress`;
 CREATE TABLE `data_progress`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '用户ID',
-  `set_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题集ID',
+  `module_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块类型', -- CONTEST SET
+  `module_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块ID',
   `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题目ID',
   `status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '状态',
   `extra_json` json NULL COMMENT '额外信息',
@@ -195,13 +199,13 @@ CREATE TABLE `data_set`  (
   `start_time` datetime NULL DEFAULT NULL COMMENT '开始时间',
   `end_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
   `ex_json` json NULL COMMENT '额外的信息',
+  `is_visible` tinyint(1) NULL DEFAULT 1 COMMENT '是否可见',
+  `use_ai` tinyint(1) NULL DEFAULT 0 COMMENT '是否使用AI',
   `deleted` tinyint(1) NULL DEFAULT 0 COMMENT '删除状态',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间戳',
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
-  `is_visible` tinyint(1) NULL DEFAULT 1 COMMENT '是否可见',
-  `use_ai` tinyint(1) NULL DEFAULT 0 COMMENT '是否使用AI',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_set_type`(`set_type` ASC) USING BTREE,
   INDEX `idx_category_id`(`category_id` ASC) USING BTREE,
@@ -217,9 +221,11 @@ CREATE TABLE `data_set`  (
 -- ----------------------------
 DROP TABLE IF EXISTS `data_set_problem`;
 CREATE TABLE `data_set_problem`  (
+                                     `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `set_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '题集ID',
   `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '题目ID',
-  `sort` int NOT NULL DEFAULT 0 COMMENT '排序'
+  `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
+                                     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '题集题目' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -227,13 +233,98 @@ CREATE TABLE `data_set_problem`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for data_contest
+-- ----------------------------
+DROP TABLE IF EXISTS `data_contest`;
+CREATE TABLE `data_contest` (
+    `id` varchar(32) NOT NULL COMMENT '主键',
+    `title` varchar(255) NOT NULL COMMENT '竞赛标题',
+    `description` text COMMENT '竞赛描述',
+    `contest_type` varchar(50)  NULL COMMENT '竞赛类型: ACM/OI/OIO',
+    `rule_type` varchar(50) NULL COMMENT '规则类型',
+    `category` varchar(32) DEFAULT NULL COMMENT '分类',
+    `cover` varchar(255) DEFAULT NULL COMMENT '封面',
+    `max_team_members` int DEFAULT 1 COMMENT '最大团队成员数',
+    `is_team_contest` tinyint(1) DEFAULT 0 COMMENT '是否团队赛',
+    `is_public` tinyint(1) DEFAULT 0 COMMENT '是否公开',
+    `password` varchar(100) DEFAULT NULL COMMENT '访问密码',
+    `register_start_time` datetime DEFAULT NULL COMMENT '报名开始时间',
+    `register_end_time` datetime DEFAULT NULL COMMENT '报名结束时间',
+    `contest_start_time` datetime NOT NULL COMMENT '竞赛开始时间',
+    `contest_end_time` datetime NOT NULL COMMENT '竞赛结束时间',
+    `frozen_time` int DEFAULT 0 COMMENT '封榜时间(分钟)',
+    `penalty_time` int DEFAULT 20 COMMENT '罚时(分钟)',
+    `allowed_languages` json COMMENT '允许语言',
+    `status` varchar(32) DEFAULT 'DRAFT' COMMENT '状态',
+    `sort` int DEFAULT 0 COMMENT '排序',
+    `deleted` tinyint(1) NULL DEFAULT 0 COMMENT '删除状态',
+    `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间戳',
+    `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
+    `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
+    `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞赛表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of data_contest
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for data_contest_problem
+-- ----------------------------
+DROP TABLE IF EXISTS `data_contest_problem`;
+CREATE TABLE `data_contest_problem` (
+    `id` varchar(32) NOT NULL,
+    `contest_id` varchar(32) NOT NULL COMMENT '竞赛ID',
+    `problem_id` varchar(32) NOT NULL COMMENT '题目ID',
+    `problem_code` varchar(10) NOT NULL COMMENT '题目在竞赛中的编号(A,B,C...)',
+    `display_id` varchar(32) DEFAULT NULL COMMENT '显示ID',
+    `score` int DEFAULT 0 COMMENT '题目分数(OI模式)',
+    `sort` int DEFAULT 0 COMMENT '排序',
+    `submit_count` int DEFAULT 0 COMMENT '提交次数',
+    `accept_count` int DEFAULT 0 COMMENT '通过次数',
+    `deleted` tinyint(1) NULL DEFAULT 0 COMMENT '删除状态',
+    `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间戳',
+    `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
+    `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
+    `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
+    PRIMARY KEY (`id`),
+    INDEX `idx_contest_id` (`contest_id`),
+    INDEX `idx_problem_code` (`problem_code`)
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞赛题目表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for data_contest_participant
+-- ----------------------------
+DROP TABLE IF EXISTS `data_contest_participant`;
+CREATE TABLE `data_contest_participant` (
+    `id` varchar(32) NOT NULL,
+    `contest_id` varchar(32) NOT NULL COMMENT '竞赛ID',
+    `user_id` varchar(32) NOT NULL COMMENT '用户ID',
+    `team_id` varchar(32) DEFAULT NULL COMMENT '团队ID',
+    `team_name` varchar(255) DEFAULT NULL COMMENT '团队名称',
+    `is_team_leader` tinyint(1) DEFAULT 0 COMMENT '是否队长',
+    `register_time` datetime DEFAULT NULL COMMENT '报名时间',
+    `status` varchar(32) DEFAULT NULL COMMENT '状态',
+    `deleted` tinyint(1) NULL DEFAULT 0 COMMENT '删除状态',
+    `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间戳',
+    `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
+    `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
+    `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_contest_user` (`contest_id`, `user_id`),
+    INDEX `idx_contest_id` (`contest_id`),
+    INDEX `idx_user_id` (`user_id`)
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞赛参与表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
 -- Table structure for data_solved
 -- ----------------------------
 DROP TABLE IF EXISTS `data_solved`;
 CREATE TABLE `data_solved`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
-  `set_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题集ID',
-  `is_set` tinyint(1) NULL DEFAULT 0 COMMENT '是否是题集提交',
+  `module_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块类型', -- CONTEST SET
+  `module_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块ID',
   `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '用户ID',
   `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题目ID',
   `submit_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '提交ID',
@@ -257,8 +348,8 @@ DROP TABLE IF EXISTS `data_submit`;
 CREATE TABLE `data_submit`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '用户ID',
-  `set_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题集ID',
-  `is_set` tinyint(1) NULL DEFAULT 0 COMMENT '是否是题集提交',
+  `module_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块类型', -- CONTEST SET
+  `module_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块ID',
   `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题目ID',
   `language` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '编程语言',
   `code` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '源代码',
@@ -284,9 +375,7 @@ CREATE TABLE `data_submit`  (
   INDEX `problem_id`(`problem_id` ASC) USING BTREE,
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
   INDEX `idx_problem_id`(`problem_id` ASC) USING BTREE,
-  INDEX `idx_set_id`(`set_id` ASC) USING BTREE,
-  INDEX `idx_language`(`language` ASC) USING BTREE,
-  INDEX `idx_is_set`(`is_set` ASC) USING BTREE
+  INDEX `idx_language`(`language` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '提交表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -772,90 +861,92 @@ INSERT INTO `sys_role` VALUES ('5', '用户组管理员', 'GROUP', 'SELF_GROUP_O
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_role_menu`;
 CREATE TABLE `sys_role_menu`  (
+                                  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `role_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色ID',
-  `menu_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '菜单ID'
+  `menu_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '菜单ID',
+                                  PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '角色-菜单 关联表(1-N)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_role_menu
 -- ----------------------------
-INSERT INTO `sys_role_menu` VALUES ('1', '1');
-INSERT INTO `sys_role_menu` VALUES ('1', '100');
-INSERT INTO `sys_role_menu` VALUES ('1', '10019');
-INSERT INTO `sys_role_menu` VALUES ('1', '101');
-INSERT INTO `sys_role_menu` VALUES ('1', '102');
-INSERT INTO `sys_role_menu` VALUES ('1', '103');
-INSERT INTO `sys_role_menu` VALUES ('1', '104');
-INSERT INTO `sys_role_menu` VALUES ('1', '105');
-INSERT INTO `sys_role_menu` VALUES ('1', '10574');
-INSERT INTO `sys_role_menu` VALUES ('1', '106');
-INSERT INTO `sys_role_menu` VALUES ('1', '107');
-INSERT INTO `sys_role_menu` VALUES ('1', '108');
-INSERT INTO `sys_role_menu` VALUES ('1', '1979358311883591681');
-INSERT INTO `sys_role_menu` VALUES ('1', '1979359562444050434');
-INSERT INTO `sys_role_menu` VALUES ('1', '1979779968216379394');
-INSERT INTO `sys_role_menu` VALUES ('1', '1979781411367333889');
-INSERT INTO `sys_role_menu` VALUES ('1', '1979784519254323202');
-INSERT INTO `sys_role_menu` VALUES ('1', '1979788036882870274');
-INSERT INTO `sys_role_menu` VALUES ('1', '1979792211910332418');
-INSERT INTO `sys_role_menu` VALUES ('1', '1980094089497628673');
-INSERT INTO `sys_role_menu` VALUES ('1', '1980165871264997378');
-INSERT INTO `sys_role_menu` VALUES ('1', '3');
-INSERT INTO `sys_role_menu` VALUES ('1', '301');
-INSERT INTO `sys_role_menu` VALUES ('1', '302');
-INSERT INTO `sys_role_menu` VALUES ('1', '303');
-INSERT INTO `sys_role_menu` VALUES ('1', '306');
-INSERT INTO `sys_role_menu` VALUES ('1', '4');
-INSERT INTO `sys_role_menu` VALUES ('1', '401');
-INSERT INTO `sys_role_menu` VALUES ('1', '500');
-INSERT INTO `sys_role_menu` VALUES ('1', '600');
-INSERT INTO `sys_role_menu` VALUES ('1', '700');
-INSERT INTO `sys_role_menu` VALUES ('2', '1');
-INSERT INTO `sys_role_menu` VALUES ('2', '100');
-INSERT INTO `sys_role_menu` VALUES ('2', '10019');
-INSERT INTO `sys_role_menu` VALUES ('2', '101');
-INSERT INTO `sys_role_menu` VALUES ('2', '102');
-INSERT INTO `sys_role_menu` VALUES ('2', '103');
-INSERT INTO `sys_role_menu` VALUES ('2', '104');
-INSERT INTO `sys_role_menu` VALUES ('2', '105');
-INSERT INTO `sys_role_menu` VALUES ('2', '106');
-INSERT INTO `sys_role_menu` VALUES ('2', '107');
-INSERT INTO `sys_role_menu` VALUES ('2', '108');
-INSERT INTO `sys_role_menu` VALUES ('2', '1980094089497628673');
-INSERT INTO `sys_role_menu` VALUES ('2', '1980165871264997378');
-INSERT INTO `sys_role_menu` VALUES ('2', '3');
-INSERT INTO `sys_role_menu` VALUES ('2', '301');
-INSERT INTO `sys_role_menu` VALUES ('2', '302');
-INSERT INTO `sys_role_menu` VALUES ('2', '303');
-INSERT INTO `sys_role_menu` VALUES ('2', '306');
-INSERT INTO `sys_role_menu` VALUES ('2', '4');
-INSERT INTO `sys_role_menu` VALUES ('2', '401');
-INSERT INTO `sys_role_menu` VALUES ('2', '500');
-INSERT INTO `sys_role_menu` VALUES ('2', '600');
-INSERT INTO `sys_role_menu` VALUES ('2', '700');
-INSERT INTO `sys_role_menu` VALUES ('4', '1');
-INSERT INTO `sys_role_menu` VALUES ('4', '100');
-INSERT INTO `sys_role_menu` VALUES ('4', '101');
-INSERT INTO `sys_role_menu` VALUES ('4', '102');
-INSERT INTO `sys_role_menu` VALUES ('4', '104');
-INSERT INTO `sys_role_menu` VALUES ('4', '105');
-INSERT INTO `sys_role_menu` VALUES ('4', '301');
-INSERT INTO `sys_role_menu` VALUES ('4', '302');
-INSERT INTO `sys_role_menu` VALUES ('4', '401');
-INSERT INTO `sys_role_menu` VALUES ('4', '600');
-INSERT INTO `sys_role_menu` VALUES ('4', '700');
-INSERT INTO `sys_role_menu` VALUES ('5', '1');
-INSERT INTO `sys_role_menu` VALUES ('5', '100');
-INSERT INTO `sys_role_menu` VALUES ('5', '101');
-INSERT INTO `sys_role_menu` VALUES ('5', '102');
-INSERT INTO `sys_role_menu` VALUES ('5', '301');
-INSERT INTO `sys_role_menu` VALUES ('5', '302');
-INSERT INTO `sys_role_menu` VALUES ('5', '303');
-INSERT INTO `sys_role_menu` VALUES ('5', '306');
-INSERT INTO `sys_role_menu` VALUES ('5', '401');
-INSERT INTO `sys_role_menu` VALUES ('5', '500');
-INSERT INTO `sys_role_menu` VALUES ('5', '600');
-INSERT INTO `sys_role_menu` VALUES ('5', '700');
+INSERT INTO `sys_role_menu` VALUES (1, '1', '1');
+INSERT INTO `sys_role_menu` VALUES (2,'1', '100');
+INSERT INTO `sys_role_menu` VALUES (3,'1', '10019');
+INSERT INTO `sys_role_menu` VALUES (4,'1', '101');
+INSERT INTO `sys_role_menu` VALUES (5,'1', '102');
+INSERT INTO `sys_role_menu` VALUES (6,'1', '103');
+INSERT INTO `sys_role_menu` VALUES (7,'1', '104');
+INSERT INTO `sys_role_menu` VALUES (8,'1', '105');
+INSERT INTO `sys_role_menu` VALUES (9,'1', '10574');
+INSERT INTO `sys_role_menu` VALUES (10,'1', '106');
+INSERT INTO `sys_role_menu` VALUES (11,'1', '107');
+INSERT INTO `sys_role_menu` VALUES (12,'1', '108');
+INSERT INTO `sys_role_menu` VALUES (13,'1', '1979358311883591681');
+INSERT INTO `sys_role_menu` VALUES (14,'1', '1979359562444050434');
+INSERT INTO `sys_role_menu` VALUES (15,'1', '1979779968216379394');
+INSERT INTO `sys_role_menu` VALUES (16,'1', '1979781411367333889');
+INSERT INTO `sys_role_menu` VALUES (17,'1', '1979784519254323202');
+INSERT INTO `sys_role_menu` VALUES (18,'1', '1979788036882870274');
+INSERT INTO `sys_role_menu` VALUES (19,'1', '1979792211910332418');
+INSERT INTO `sys_role_menu` VALUES (20,'1', '1980094089497628673');
+INSERT INTO `sys_role_menu` VALUES (21,'1', '1980165871264997378');
+INSERT INTO `sys_role_menu` VALUES (22,'1', '3');
+INSERT INTO `sys_role_menu` VALUES (23,'1', '301');
+INSERT INTO `sys_role_menu` VALUES (24,'1', '302');
+INSERT INTO `sys_role_menu` VALUES (25,'1', '303');
+INSERT INTO `sys_role_menu` VALUES (26,'1', '306');
+INSERT INTO `sys_role_menu` VALUES (27,'1', '4');
+INSERT INTO `sys_role_menu` VALUES (28,'1', '401');
+INSERT INTO `sys_role_menu` VALUES (29,'1', '500');
+INSERT INTO `sys_role_menu` VALUES (30,'1', '600');
+INSERT INTO `sys_role_menu` VALUES (31,'1', '700');
+INSERT INTO `sys_role_menu` VALUES (32,'2', '1');
+INSERT INTO `sys_role_menu` VALUES (33,'2', '100');
+INSERT INTO `sys_role_menu` VALUES (34,'2', '10019');
+INSERT INTO `sys_role_menu` VALUES (35,'2', '101');
+INSERT INTO `sys_role_menu` VALUES (36,'2', '102');
+INSERT INTO `sys_role_menu` VALUES (37,'2', '103');
+INSERT INTO `sys_role_menu` VALUES (38,'2', '104');
+INSERT INTO `sys_role_menu` VALUES (39,'2', '105');
+INSERT INTO `sys_role_menu` VALUES (40,'2', '106');
+INSERT INTO `sys_role_menu` VALUES (41,'2', '107');
+INSERT INTO `sys_role_menu` VALUES (42,'2', '108');
+INSERT INTO `sys_role_menu` VALUES (43,'2', '1980094089497628673');
+INSERT INTO `sys_role_menu` VALUES (44,'2', '1980165871264997378');
+INSERT INTO `sys_role_menu` VALUES (45,'2', '3');
+INSERT INTO `sys_role_menu` VALUES (46,'2', '301');
+INSERT INTO `sys_role_menu` VALUES (47,'2', '302');
+INSERT INTO `sys_role_menu` VALUES (49,'2', '303');
+INSERT INTO `sys_role_menu` VALUES (50,'2', '306');
+INSERT INTO `sys_role_menu` VALUES (51,'2', '4');
+INSERT INTO `sys_role_menu` VALUES (52,'2', '401');
+INSERT INTO `sys_role_menu` VALUES (53,'2', '500');
+INSERT INTO `sys_role_menu` VALUES (54,'2', '600');
+INSERT INTO `sys_role_menu` VALUES (55,'2', '700');
+INSERT INTO `sys_role_menu` VALUES (56,'4', '1');
+INSERT INTO `sys_role_menu` VALUES (57,'4', '100');
+INSERT INTO `sys_role_menu` VALUES (58,'4', '101');
+INSERT INTO `sys_role_menu` VALUES (59,'4', '102');
+INSERT INTO `sys_role_menu` VALUES (60,'4', '104');
+INSERT INTO `sys_role_menu` VALUES (61,'4', '105');
+INSERT INTO `sys_role_menu` VALUES (62,'4', '301');
+INSERT INTO `sys_role_menu` VALUES (63,'4', '302');
+INSERT INTO `sys_role_menu` VALUES (64,'4', '401');
+INSERT INTO `sys_role_menu` VALUES (65,'4', '600');
+INSERT INTO `sys_role_menu` VALUES (66,'4', '700');
+INSERT INTO `sys_role_menu` VALUES (67,'5', '1');
+INSERT INTO `sys_role_menu` VALUES (68,'5', '100');
+INSERT INTO `sys_role_menu` VALUES (69,'5', '101');
+INSERT INTO `sys_role_menu` VALUES (70,'5', '102');
+INSERT INTO `sys_role_menu` VALUES (71,'5', '301');
+INSERT INTO `sys_role_menu` VALUES (72,'5', '302');
+INSERT INTO `sys_role_menu` VALUES (73,'5', '303');
+INSERT INTO `sys_role_menu` VALUES (74,'5', '306');
+INSERT INTO `sys_role_menu` VALUES (75,'5', '401');
+INSERT INTO `sys_role_menu` VALUES (76,'5', '500');
+INSERT INTO `sys_role_menu` VALUES (77,'5', '600');
+INSERT INTO `sys_role_menu` VALUES (78,'5', '700');
 
 -- ----------------------------
 -- Table structure for sys_tag
@@ -918,22 +1009,24 @@ INSERT INTO `sys_user` VALUES ('2', '3', 'adminadmin', '$2a$10$hS6E7n8tqGZMX2qOz
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_user_role`;
 CREATE TABLE `sys_user_role`  (
+                                  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '用户ID',
-  `role_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色ID'
+  `role_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色ID',
+                                  PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户-角色 关联表(1-N)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user_role
 -- ----------------------------
-INSERT INTO `sys_user_role` VALUES ('0', '3');
-INSERT INTO `sys_user_role` VALUES ('1', '1');
-INSERT INTO `sys_user_role` VALUES ('2', '2');
-INSERT INTO `sys_user_role` VALUES ('3', '1');
-INSERT INTO `sys_user_role` VALUES ('3', '2');
-INSERT INTO `sys_user_role` VALUES ('4', '1');
-INSERT INTO `sys_user_role` VALUES ('4', '2');
-INSERT INTO `sys_user_role` VALUES ('5', '1');
-INSERT INTO `sys_user_role` VALUES ('5', '2');
+INSERT INTO `sys_user_role` VALUES (1,'0', '3');
+INSERT INTO `sys_user_role` VALUES (2,'1', '1');
+INSERT INTO `sys_user_role` VALUES (3,'2', '2');
+INSERT INTO `sys_user_role` VALUES (4,'3', '1');
+INSERT INTO `sys_user_role` VALUES (5,'3', '2');
+INSERT INTO `sys_user_role` VALUES (6,'4', '1');
+INSERT INTO `sys_user_role` VALUES (7,'4', '2');
+INSERT INTO `sys_user_role` VALUES (8,'5', '1');
+INSERT INTO `sys_user_role` VALUES (9,'5', '2');
 
 -- ----------------------------
 -- Table structure for task_reports
@@ -943,8 +1036,8 @@ CREATE TABLE `task_reports`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `report_type` int NULL DEFAULT 0 COMMENT '报告类型',
   `task_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '任务ID',
-  `set_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题集ID',
-  `is_set` tinyint(1) NULL DEFAULT 0 COMMENT '是否是题集提交',
+  `module_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块类型', -- CONTEST SET
+  `module_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块ID',
   `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题目ID',
   `sample_count` int NULL DEFAULT 0 COMMENT '样例数量',
   `similarity_group_count` int NULL DEFAULT 0 COMMENT '相似组数量',
@@ -961,10 +1054,7 @@ CREATE TABLE `task_reports`  (
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_id`(`task_id` ASC) USING BTREE,
-  INDEX `idx_problem_id`(`problem_id` ASC) USING BTREE,
-  INDEX `idx_set_id`(`set_id` ASC) USING BTREE,
-  INDEX `idx_report_type`(`report_type` ASC) USING BTREE,
-  INDEX `idx_is_set`(`is_set` ASC) USING BTREE
+  INDEX `idx_problem_id`(`problem_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '报告库表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -980,8 +1070,8 @@ CREATE TABLE `task_similarity`  (
   `task_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '任务ID',
   `task_type` tinyint(1) NULL DEFAULT 0 COMMENT '手动',
   `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题目ID',
-  `set_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题集ID',
-  `is_set` tinyint(1) NULL DEFAULT 0 COMMENT '是否是题集提交',
+  `module_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块类型', -- CONTEST SET
+  `module_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '模块ID',
   `language` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '编程语言',
   `similarity` decimal(10, 2) UNSIGNED NULL DEFAULT 0.00 COMMENT '相似度',
   `submit_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '提交用户',

@@ -52,10 +52,10 @@ public class ProblemsSimilarityServiceImpl implements ProblemsSimilarityService 
 
         TaskReports taskReports = new TaskReports();
         taskReports.setTaskId(taskId);
-        taskReports.setSetId(batchSimilarityParam.getSetId());
+        taskReports.setModuleId(batchSimilarityParam.getSetId());
         taskReports.setProblemId(batchSimilarityParam.getProblemId());
         taskReports.setSampleCount(Math.toIntExact(list.size()));
-        taskReports.setIsSet(Boolean.TRUE);
+        taskReports.setModuleType("SET");
         taskReports.setThreshold(dataProblem.getThreshold());
 
         taskReportsMapper.insert(taskReports);

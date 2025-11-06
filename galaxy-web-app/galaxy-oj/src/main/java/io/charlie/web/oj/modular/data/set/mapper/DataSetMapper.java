@@ -29,12 +29,12 @@ public interface DataSetMapper extends BaseMapper<DataSet> {
          ROW_NUMBER() OVER (ORDER BY ds.submit_count DESC) as `rank`
      FROM data_set dp
               INNER JOIN (
-         SELECT set_id, COUNT(DISTINCT user_id) as submit_count
+         SELECT module_id, COUNT(DISTINCT user_id) as submit_count
          FROM data_solved
-         WHERE is_set = 1
-         GROUP BY set_id
+         WHERE module_type = 'SET'
+         GROUP BY module_id
          HAVING COUNT(DISTINCT user_id) > 0
-     ) ds ON dp.id = ds.set_id
+     ) ds ON dp.id = ds.module_id
       WHERE dp.is_visible = 1 
      ORDER BY ds.submit_count DESC
         LIMIT #{topN}

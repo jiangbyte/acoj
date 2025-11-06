@@ -14,7 +14,6 @@ import java.util.Date;
 import java.util.List;
 
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
-import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -52,17 +51,12 @@ public class DataLibrary extends CommonEntity {
     @TableField(exist = false)
     private String userAvatar;
 
-    @Schema(description = "题集ID")
-    @Trans(type = TransType.SIMPLE, target = DataSet.class, fields = "title", ref = "setIdName")
-    private String setId;
+    @Schema(description = "模块ID")
+    private String moduleId;
 
-    @Schema(description = "题集名称")
-    @TableField(exist = false)
-    private String setIdName;
-
-    @Schema(description = "是否是题集提交")
-    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
-    private Boolean isSet;
+    @Schema(description = "模块类型")
+    @Trans(type = TransType.DICTIONARY, key = "CODE_SUBMIT_MODULE")
+    private String moduleType;
 
     @Schema(description = "题目ID")
     @Trans(type = TransType.SIMPLE, target = DataProblem.class, fields = "title", ref = "problemIdName")

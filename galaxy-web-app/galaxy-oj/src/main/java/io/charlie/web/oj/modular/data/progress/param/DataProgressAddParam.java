@@ -25,8 +25,10 @@ public class DataProgressAddParam implements Serializable {
     @Schema(description = "用户ID")
     private String userId;
 
-    @Schema(description = "题集ID")
-    private String setId;
+    @Schema(description = "模块类型")
+    private String moduleType;
+    @Schema(description = "模块ID")
+    private String moduleId;
 
     @Schema(description = "题目ID")
     private String problemId;

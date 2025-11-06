@@ -1,5 +1,6 @@
 package io.charlie.web.oj.modular.sys.relation.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -18,7 +19,11 @@ import java.io.Serializable;
 @Schema(name = "SysUserRole", description = "用户-角色 关联表(1-N)")
 public class SysUserRole implements Serializable {
     @Serial
+    @TableField(exist = false)
     private static final long serialVersionUID = 1L;
+
+    @Schema(description = "菜单ID")
+    private String id;
 
     @Schema(description = "用户ID")
     private String userId;

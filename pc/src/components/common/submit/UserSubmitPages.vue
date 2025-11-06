@@ -4,29 +4,18 @@ import { NSpin, NTag } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
 
 const props = defineProps({
-  problemId: {
+  moduleType: {
     type: String,
     required: true,
   },
-  isSet: {
-    type: Boolean,
-    default: false,
-  },
-  setId: {
-    type: [String, null],
-    default: null,
+  moduleId: {
+    type: String,
+    required: true,
   },
 })
 
 const CodeEditor = defineAsyncComponent({
   loader: () => import('@/components/common/editor/code/CodeEditor.vue'),
-  // loader: () =>
-  //   new Promise((resolve) => {
-  //     // 模拟 3 秒延迟
-  //     setTimeout(() => {
-  //       resolve(import('@/components/common/editor/code/CodeEditor.vue'))
-  //     }, 3000)
-  //   }),
   loadingComponent: {
     setup() {
       return () => h('div', {
@@ -45,13 +34,9 @@ const CodeEditor = defineAsyncComponent({
   timeout: 10000,
 })
 
-const { dataSubmitProblemPage, dataSubmitSetPage } = useDataSubmitFetch()
+const { dataModuleSubmitPage } = useDataSubmitFetch()
 
 const columns: DataTableColumns<any> = [
-  // {
-  //   title: '题目',
-  //   key: 'problemIdName',
-  // },
   {
     title: '语言',
     key: 'languageName',
@@ -103,17 +88,6 @@ const columns: DataTableColumns<any> = [
         : 'success' }, { default: () => row.statusName })
     },
   },
-  // {
-  //   title: '相似度',
-  //   key: 'similarity',
-  //   render: (row) => {
-  //     return h(NTag, { size: 'small' }, { default: () => row.similarity * 100 })
-  //   },
-  // },
-  // {
-  //   title: '检测任务',
-  //   key: 'taskId',
-  // },
 ]
 
 const pageData = ref()
@@ -122,23 +96,16 @@ const pageParam = ref({
   size: 10,
   sortField: 'id',
   sortOrder: 'DESCEND',
-  problemId: props.problemId,
-  setId: null,
+  moduleId: props.moduleId,
+  moduleType: props.moduleType,
   isAuth: true,
 })
 const isLoading = ref(false)
 async function loadData() {
   isLoading.value = true
-  if (props.isSet) {
-    pageParam.value.setId = props.setId as any
-    const { data } = await dataSubmitSetPage(pageParam.value)
-    pageData.value = data
-  }
-  else {
-    const { data } = await dataSubmitProblemPage(pageParam.value)
-    pageData.value = data
-    console.log(data)
-  }
+  const { data } = await dataModuleSubmitPage(pageParam.value)
+  pageData.value = data
+  console.log(data)
   isLoading.value = false
 }
 
@@ -279,9 +246,6 @@ function refreshSimilarityData() {
           <!-- 判题结果详情 -->
           <JudgeResultStats :result-task-data="modalData" />
 
-          <!-- 代码相似度 -->
-          <!-- <SimilarityReport v-if="modalData.submitType" :result-task-data="modalData" /> -->
-
           <NSpace vertical :size="24">
             <n-card v-if="modalData?.message" size="small" class="rounded-xl">
               <template #header>
@@ -289,7 +253,6 @@ function refreshSimilarityData() {
                   错误信息
                 </n-h2>
               </template>
-              <!-- <n-code :language="detailData?.language" :code="detailData?.message" show-line-numbers word-wrap /> -->
               <CodeEditor
                 :model-value="modalData?.message"
                 :language="modalData?.language"

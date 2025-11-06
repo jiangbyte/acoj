@@ -43,11 +43,9 @@ public class SolvedHandleMessage {
     public void receiveSolved(SolvedMessage submit) {
         try {
             processSolvedRecord(submit);
-            log.debug("处理解题记录成功, userId: {}, problemId: {}",
-                    submit.getUserId(), submit.getProblemId());
+            log.debug("处理解题记录成功, userId: {}, problemId: {}", submit.getUserId(), submit.getProblemId());
         } catch (Exception e) {
-            log.error("处理解题记录失败, userId: {}, problemId: {}, submitId: {}",
-                    submit.getUserId(), submit.getProblemId(), submit.getSubmitId(), e);
+            log.error("处理解题记录失败, userId: {}, problemId: {}, submitId: {}", submit.getUserId(), submit.getProblemId(), submit.getSubmitId(), e);
             throw new RuntimeException("处理解题记录失败", e); // 必须抛出异常
         }
     }
@@ -57,15 +55,16 @@ public class SolvedHandleMessage {
         String userId = submit.getUserId();
         String problemId = submit.getProblemId();
         String submitId = submit.getSubmitId();
-        String setId = submit.getSetId();
-        Boolean isSet = submit.getIsSet();
+        String moduleType = submit.getModuleType();
+        String moduleId = submit.getModuleId();
+        Boolean solved = submit.getSolved();
 
         // 检查记录是否存在
         LambdaQueryWrapper<DataSolved> eq = new LambdaQueryWrapper<DataSolved>()
                 .eq(DataSolved::getUserId, userId)
                 .eq(DataSolved::getProblemId, problemId)
-                .eq(DataSolved::getIsSet, isSet)
-                .eq(isSet != null && isSet, DataSolved::getSetId, setId);
+                .eq(DataSolved::getModuleType, moduleType)
+                .eq(DataSolved::getModuleId, moduleId);
 
         DataSolved dataSolved1 = dataSolvedMapper.selectOne(eq);
 
@@ -74,11 +73,11 @@ public class SolvedHandleMessage {
             dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
                     .eq(DataSolved::getUserId, userId)
                     .eq(DataSolved::getProblemId, problemId)
-                    .eq(DataSolved::getIsSet, isSet)
-                    .eq(isSet != null && isSet, DataSolved::getSetId, setId)
+                    .eq(DataSolved::getModuleType, moduleType)
+                    .eq(DataSolved::getModuleId, moduleId)
                     .set(DataSolved::getSubmitId, submitId)
                     .set(DataSolved::getUpdateTime, new Date())
-                    .set(!dataSolved1.getSolved(), DataSolved::getSolved, submit.getSolved()) // 如果已解决，则不更新
+                    .set(!dataSolved1.getSolved(), DataSolved::getSolved, solved) // 如果已解决，则不更新
             );
         } else {
             // 插入新记录
@@ -86,9 +85,9 @@ public class SolvedHandleMessage {
             dataSolved.setUserId(userId);
             dataSolved.setProblemId(problemId);
             dataSolved.setSubmitId(submitId);
-            dataSolved.setSolved(submit.getSolved());
-            dataSolved.setIsSet(isSet);
-            dataSolved.setSetId(setId);
+            dataSolved.setSolved(solved);
+            dataSolved.setModuleType(moduleType);
+            dataSolved.setModuleId(moduleId);
             dataSolved.setCreateTime(new Date());
             dataSolved.setUpdateTime(new Date());
             dataSolvedMapper.insert(dataSolved);

@@ -180,121 +180,144 @@ const profileRules = {
 </script>
 
 <template>
-  <!-- 主内容区 -->
-  <div class="container mx-auto px-2 py-6">
-    <n-space vertical :size="16">
-      <n-card size="small" class="rounded-xl">
-        <template #header>
-          <n-h3 class="pb-0 mb-0">
-            头像设置
-          </n-h3>
-        </template>
-        <n-space align="center">
-          <div class="w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-            <img :src="profileData?.avatar" alt="当前头像" class="w-full h-full object-cover">
-          </div>
-          <n-space vertical>
-            <FileUploadButton v-model="profileData.avatar" type="primary" :is-image="true" buttontext="上传新头像" @success="updateAvatar" />
-            <n-text depth="3">
-              推荐尺寸: 200x200像素，支持JPG、PNG格式，文件大小不超过2MB
-            </n-text>
-          </n-space>
-        </n-space>
-      </n-card>
+  <main class="container mx-auto px-2 py-6">
+    <n-grid
+      cols="1 l:6"
+      :x-gap="24"
+      :y-gap="24"
+      responsive="screen"
+    >
+      <!-- 左侧主内容 -->
+      <n-gi span="1 l:2">
+        <!-- 公告内容 -->
+        <NSpace vertical :size="24">
+          <n-card size="small" class="rounded-xl">
+            <template #header>
+              <n-h3 class="pb-0 mb-0">
+                头像设置
+              </n-h3>
+            </template>
+            <n-space align="center">
+              <div class="w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+                <img :src="profileData?.avatar" alt="当前头像" class="w-full h-full object-cover">
+              </div>
+              <n-space vertical>
+                <FileUploadButton v-model="profileData.avatar" type="primary" :is-image="true" buttontext="上传新头像" @success="updateAvatar" />
+                <n-text depth="3">
+                  推荐尺寸: 200x200像素，支持JPG、PNG格式，文件大小不超过2MB
+                </n-text>
+              </n-space>
+            </n-space>
+          </n-card>
 
-      <n-card size="small" class="rounded-xl">
-        <template #header>
-          <n-h3 class="pb-0 mb-0">
-            封面背景
-          </n-h3>
-        </template>
-        <n-space vertical>
-          <div class="relative h-50 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-            <img :src="profileData?.background" class="w-full h-full object-cover">
-            <div class="absolute right-3 bottom-3 px-3 py-1.5 text-sm transition-colors">
-              <FileUploadButton v-model="profileData.background" :is-image="true" buttontext="更换封面" type="primary" @success="updateBackground" />
-            </div>
-          </div>
-          <n-text depth="3" class="w-full">
-            推荐尺寸: 1920x500像素，支持JPG、PNG格式，文件大小不超过5MB
-          </n-text>
-        </n-space>
-      </n-card>
-
-      <n-card size="small" class="rounded-xl">
-        <template #header>
-          <n-h3 class="pb-0 mb-0">
-            个人信息
-          </n-h3>
-        </template>
-        <n-form
-          ref="formRef"
-          inline
-          :label-width="80"
-          :model="profileData"
-          :rules="profileRules"
+          <n-card size="small" class="rounded-xl">
+            <template #header>
+              <n-h3 class="pb-0 mb-0">
+                卡片背景
+              </n-h3>
+            </template>
+            <n-space vertical>
+              <div class="relative h-40 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+                <img :src="profileData?.background" class="w-full h-full object-cover">
+                <div class="absolute right-3 bottom-3 px-3 py-1.5 text-sm transition-colors">
+                  <FileUploadButton v-model="profileData.background" :is-image="true" buttontext="更换封面" type="primary" @success="updateBackground" />
+                </div>
+              </div>
+              <n-text depth="3" class="w-full">
+                推荐尺寸: 1920x500像素，支持JPG、PNG格式，文件大小不超过5MB
+              </n-text>
+            </n-space>
+          </n-card>
+        </NSpace>
+      </n-gi>
+      <!-- 右侧边栏 -->
+      <n-gi span="1 l:4">
+        <NSpace
+          vertical
+          :size="24"
         >
-          <n-grid cols="4 m:12" :x-gap="24" responsive="screen">
-            <n-form-item-gi :span="4" label="用户名" path="username">
-              <n-input v-model:value="profileData.username" placeholder="请输入用户名" :disabled="!isEdit" />
-            </n-form-item-gi>
-            <n-form-item-gi :span="4" label="昵称" path="nickname">
-              <n-input v-model:value="profileData.nickname" placeholder="请输入昵称" :disabled="!isEdit" />
-            </n-form-item-gi>
-            <n-form-item-gi :span="4" label="电子邮箱" path="email">
-              <n-input v-model:value="profileData.email" placeholder="请输入电子邮箱" :disabled="!isEdit" />
-            </n-form-item-gi>
-            <n-form-item-gi :span="4" label="学号" path="studentNumber">
-              <n-input v-model:value="profileData.studentNumber" placeholder="请输入学号" :disabled="!isEdit" />
-            </n-form-item-gi>
-            <n-form-item-gi :span="4" label="手机号" path="telephone">
-              <n-input v-model:value="profileData.telephone" placeholder="请输入手机号" :disabled="!isEdit" />
-            </n-form-item-gi>
-            <n-form-item-gi :span="4" label="性别" path="gender">
-              <NSelect
-                v-model:value="profileData.gender"
-                placeholder="请选择性别"
-                :options="genderRef"
-                :disabled="!isEdit"
-              />
-            </n-form-item-gi>
-            <n-form-item-gi span="12 m:24" label="个人签名" path="quote">
-              <n-input v-model:value="profileData.quote" type="textarea" placeholder="请输入个人签名" :disabled="!isEdit" />
-            </n-form-item-gi>
-          </n-grid>
-        </n-form>
-        <template #footer>
-          <n-flex justify="end">
-            <n-button v-if="isEdit" @click="isEdit = false">
-              取消
-            </n-button>
-            <n-button v-if="!isEdit" type="primary" @click="isEdit = true">
-              编辑
-            </n-button>
-            <n-button v-if="isEdit" type="primary" @click="updateProfile">
-              保存更改
-            </n-button>
-          </n-flex>
-        </template>
-      </n-card>
+          <n-card size="small" class="rounded-xl">
+            <template #header>
+              <n-h3 class="pb-0 mb-0">
+                个人信息
+              </n-h3>
+            </template>
+            <n-form
+              ref="formRef"
+              inline
+              :label-width="80"
+              :model="profileData"
+              :rules="profileRules"
+            >
+              <n-grid cols="4 m:8" :x-gap="24" responsive="screen">
+                <n-form-item-gi :span="4" label="用户名" path="username">
+                  <n-input v-model:value="profileData.username" placeholder="请输入用户名" :disabled="!isEdit" />
+                </n-form-item-gi>
+                <n-form-item-gi :span="4" label="昵称" path="nickname">
+                  <n-input v-model:value="profileData.nickname" placeholder="请输入昵称" :disabled="!isEdit" />
+                </n-form-item-gi>
+                <n-form-item-gi :span="4" label="电子邮箱" path="email">
+                  <n-input v-model:value="profileData.email" placeholder="请输入电子邮箱" :disabled="!isEdit" />
+                </n-form-item-gi>
+                <n-form-item-gi :span="4" label="学号" path="studentNumber">
+                  <n-input v-model:value="profileData.studentNumber" placeholder="请输入学号" :disabled="!isEdit" />
+                </n-form-item-gi>
+                <n-form-item-gi :span="4" label="手机号" path="telephone">
+                  <n-input v-model:value="profileData.telephone" placeholder="请输入手机号" :disabled="!isEdit" />
+                </n-form-item-gi>
+                <n-form-item-gi :span="4" label="性别" path="gender">
+                  <NSelect
+                    v-model:value="profileData.gender"
+                    placeholder="请选择性别"
+                    :options="genderRef"
+                    :disabled="!isEdit"
+                  />
+                </n-form-item-gi>
+                <n-form-item-gi span="12 m:24" label="个人签名" path="quote">
+                  <n-input v-model:value="profileData.quote" type="textarea" placeholder="请输入个人签名" :disabled="!isEdit" />
+                </n-form-item-gi>
+              </n-grid>
+            </n-form>
+            <template #footer>
+              <n-flex justify="end">
+                <n-button v-if="isEdit" @click="isEdit = false">
+                  取消
+                </n-button>
+                <n-button v-if="!isEdit" type="primary" @click="isEdit = true">
+                  编辑
+                </n-button>
+                <n-button v-if="isEdit" type="primary" @click="updateProfile">
+                  保存更改
+                </n-button>
+              </n-flex>
+            </template>
+          </n-card>
+        </NSpace>
+      </n-gi>
 
-      <n-card size="small" class="rounded-xl">
-        <template #header>
-          <n-h3 class="pb-0 mb-0">
-            安全设置
-          </n-h3>
-        </template>
-        <n-space align="center" justify="space-between">
-          <n-text depth="3" class="w-full">
-            建议定期更换密码以保证账户安全
-          </n-text>
-          <n-button type="warning" @click="showPasswordModal = true">
-            修改密码
-          </n-button>
-        </n-space>
-      </n-card>
-    </n-space>
-
+      <n-gi span="6 l:6">
+        <NSpace
+          vertical
+          :size="24"
+        >
+          <n-card size="small" class="rounded-xl">
+            <template #header>
+              <n-h3 class="pb-0 mb-0">
+                安全设置
+              </n-h3>
+            </template>
+            <n-space align="center" justify="space-between">
+              <n-text depth="3" class="w-full">
+                建议定期更换密码以保证账户安全
+              </n-text>
+              <n-button type="warning" @click="showPasswordModal = true">
+                修改密码
+              </n-button>
+            </n-space>
+          </n-card>
+        </NSpace>
+      </n-gi>
+    </n-grid>
     <n-modal
       v-model:show="showPasswordModal"
       :mask-closable="false"
@@ -334,7 +357,7 @@ const profileRules = {
         </n-flex>
       </n-flex>
     </n-modal>
-  </div>
+  </main>
 </template>
 
 <style scoped>

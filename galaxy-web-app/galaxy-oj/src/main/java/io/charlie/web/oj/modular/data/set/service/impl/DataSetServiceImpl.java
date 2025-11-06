@@ -282,8 +282,8 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
     @DS("slave")
     public Page<SysUser> getSetUser(DataSetUserParam dataSetUserParam) {
         List<DataSubmit> dataSubmits = dataSubmitMapper.selectList(new LambdaQueryWrapper<DataSubmit>()
-                .eq(DataSubmit::getSetId, dataSetUserParam.getSetId())
-                .eq(DataSubmit::getIsSet, true)
+                .eq(DataSubmit::getModuleId, dataSetUserParam.getSetId())
+                .eq(DataSubmit::getModuleType, "SET")
         );
         if (ObjectUtil.isEmpty(dataSubmits)) {
             return Page.of(dataSetUserParam.getCurrent(), dataSetUserParam.getSize());

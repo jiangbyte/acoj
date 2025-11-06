@@ -25,11 +25,10 @@ public class DataSolvedEditParam implements Serializable {
     @Schema(description = "主键")
     private String id;
 
-    @Schema(description = "题集ID")
-    private String setId;
-
-    @Schema(description = "是否是题集提交")
-    private Boolean isSet;
+    @Schema(description = "模块类型")
+    private String moduleType;
+    @Schema(description = "模块ID")
+    private String moduleId;
 
     @Schema(description = "用户ID")
     private String userId;

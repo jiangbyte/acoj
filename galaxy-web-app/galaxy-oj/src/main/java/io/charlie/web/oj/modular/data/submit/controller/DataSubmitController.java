@@ -50,6 +50,12 @@ public class DataSubmitController {
         return Result.success(dataSubmitService.problemPage(dataSubmitPageParam));
     }
 
+    @Operation(summary = "获取题目提交分页")
+    @GetMapping("/data/submit/module/page")
+    public Result<?> modulePage(@ParameterObject DataSubmitPageParam dataSubmitPageParam) {
+        return Result.success(dataSubmitService.modulePage(dataSubmitPageParam));
+    }
+
     @Operation(summary = "获取题集提交分页")
     @GetMapping("/data/submit/set/page")
     public Result<?> setPage(@ParameterObject DataSubmitPageParam dataSubmitPageParam) {

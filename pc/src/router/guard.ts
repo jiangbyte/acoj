@@ -6,7 +6,7 @@ export function setupRouterGuard(router: Router) {
   const routerStore = useRouterStore()
   const tabStore = useTabStore()
 
-  const publicRoutes = ['/', '/home', '/problems', '/sets', '/status', '/ranking', '/login', '/register', '/status/problem', '/notice', '/sets/detail', '/user']
+  const publicRoutes = ['/', '/home', '/problems', '/sets', '/status', '/ranking', '/login', '/register', '/status/problem', '/notice', '/sets/detail', '/user', '/contests']
 
   router.beforeEach(async (to, _from, next) => {
     // 外部链接

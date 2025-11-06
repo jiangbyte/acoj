@@ -36,8 +36,10 @@ public class DataSubmitPageParam implements Serializable {
     @Schema(description = "题目")
     private String problemId;
 
-    @Schema(description = "题集")
-    private String setId;
+    @Schema(description = "模块类型")
+    private String moduleType;
+    @Schema(description = "模块ID")
+    private String moduleId;
 
     @Schema(description = "编程语言")
     private String language;

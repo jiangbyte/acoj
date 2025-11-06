@@ -13,15 +13,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.str.GalaxyStringUtil;
 import io.charlie.web.oj.context.DataScopeUtil;
+import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.set.mapper.DataSetMapper;
 import io.charlie.web.oj.modular.data.solved.mapper.DataSolvedMapper;
 import io.charlie.web.oj.modular.data.submit.entity.DataSubmit;
-import io.charlie.web.oj.modular.data.submit.handle.problem.ProblemSubmitMessage;
-import io.charlie.web.oj.modular.data.submit.handle.problem.ProblemSubmitHandle;
-import io.charlie.web.oj.modular.data.submit.handle.set.SetSubmitHandle;
-import io.charlie.web.oj.modular.data.submit.handle.set.SetSubmitMessage;
 import io.charlie.web.oj.modular.data.submit.param.*;
 import io.charlie.web.oj.modular.data.submit.mapper.DataSubmitMapper;
 import io.charlie.web.oj.modular.data.submit.service.DataSubmitService;
@@ -29,6 +26,7 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.task.judge.dto.JudgeSubmitDto;
 import io.charlie.web.oj.modular.task.judge.enums.JudgeStatus;
 import io.charlie.web.oj.modular.task.judge.handle.JudgeHandleMessage;
 import org.redisson.api.RedissonClient;
@@ -61,9 +59,6 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     private final DataScopeUtil dataScopeUtil;
 
     private final ApplicationEventPublisher applicationEventPublisher;
-
-    private final ProblemSubmitHandle problemSubmitHandle;
-    private final SetSubmitHandle setSubmitHandle;
 
     @Override
     @DS("slave")
@@ -116,7 +111,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
             }
         }
 
-        queryWrapper.lambda().eq(DataSubmit::getIsSet, false);
+        queryWrapper.lambda().eq(DataSubmit::getModuleType, "PROBLEM");
         if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
             queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
         }
@@ -168,13 +163,66 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
             }
         }
 
-        queryWrapper.lambda().eq(DataSubmit::getIsSet, true);
+        queryWrapper.lambda().eq(DataSubmit::getModuleType, "SET");
 
         if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
             queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
         }
-        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getSetId())) {
-            queryWrapper.lambda().eq(DataSubmit::getSetId, dataSubmitPageParam.getSetId());
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getModuleId())) {
+            queryWrapper.lambda().eq(DataSubmit::getModuleId, dataSubmitPageParam.getModuleId());
+        }
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getLanguage())) {
+            queryWrapper.lambda().eq(DataSubmit::getLanguage, dataSubmitPageParam.getLanguage());
+        }
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getStatus())) {
+            queryWrapper.lambda().eq(DataSubmit::getStatus, dataSubmitPageParam.getStatus());
+        }
+        if (ObjectUtil.isNotEmpty(dataSubmitPageParam.getSubmitType())) {
+            queryWrapper.lambda().eq(DataSubmit::getSubmitType, dataSubmitPageParam.getSubmitType());
+        }
+
+        if (ObjectUtil.isAllNotEmpty(dataSubmitPageParam.getSortField(), dataSubmitPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataSubmitPageParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    dataSubmitPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(dataSubmitPageParam.getSortField()));
+        }
+
+        return this.page(CommonPageRequest.Page(
+                        Optional.ofNullable(dataSubmitPageParam.getCurrent()).orElse(1),
+                        Optional.ofNullable(dataSubmitPageParam.getSize()).orElse(20),
+                        null
+                ),
+                queryWrapper);
+    }
+
+    @Override
+    public Page<DataSubmit> modulePage(DataSubmitPageParam dataSubmitPageParam) {
+        QueryWrapper<DataSubmit> queryWrapper = new QueryWrapper<DataSubmit>().checkSqlInjection();
+
+        if (dataSubmitPageParam.getIsAuth()) {
+            String userId = null;
+            try {
+                if (StpUtil.isLogin()) {
+                    userId = StpUtil.getLoginIdAsString();
+                }
+            } catch (Exception e) {
+                log.debug("未登录");
+            }
+            if (userId != null) {
+                queryWrapper.lambda().eq(DataSubmit::getUserId, userId);
+            }
+        }
+
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getModuleType())) {
+            queryWrapper.lambda().eq(DataSubmit::getModuleType, dataSubmitPageParam.getModuleType());
+        }
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getModuleId())) {
+            queryWrapper.lambda().eq(DataSubmit::getModuleId, dataSubmitPageParam.getModuleId());
+        }
+
+        if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
+            queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
         }
         if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getLanguage())) {
             queryWrapper.lambda().eq(DataSubmit::getLanguage, dataSubmitPageParam.getLanguage());
@@ -241,15 +289,33 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     @Transactional(rollbackFor = Exception.class)
     @Override
     public String handleProblemSubmit(DataSubmitExeParam dataSubmitExeParam) {
-        DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam, Boolean.FALSE);
-        problemSubmitHandle.handle(new ProblemSubmitMessage(dataSubmitExeParam, dataSubmit));
+        DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam);
+
+        DataProblem problem = dataProblemMapper.selectById(dataSubmit.getProblemId());
+
+        JudgeSubmitDto message = new JudgeSubmitDto();
+
+        message.setId(dataSubmit.getId());
+        message.setUserId(dataSubmit.getUserId());
+        message.setJudgeTaskId(dataSubmitExeParam.getJudgeTaskId());
+        message.setModuleType(dataSubmitExeParam.getModuleType());
+        message.setModuleId(dataSubmitExeParam.getModuleId());
+        message.setMaxTime(problem.getMaxTime());
+        message.setMaxMemory(problem.getMaxMemory());
+        message.setProblemId(dataSubmitExeParam.getProblemId());
+        message.setLanguage(dataSubmitExeParam.getLanguage());
+        message.setSubmitType(dataSubmitExeParam.getSubmitType());
+        message.setCode(dataSubmitExeParam.getCode());
+
+        judgeHandleMessage.sendJudge(message);
+
         return dataSubmit.getId();
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
     public String handleSetSubmit(DataSubmitExeParam dataSubmitExeParam) {
-        DataSet dataSet = dataSetMapper.selectById(dataSubmitExeParam.getSetId());
+        DataSet dataSet = dataSetMapper.selectById(dataSubmitExeParam.getModuleId());
 
         if (dataSet.getSetType().equals(2)) {
             Date now = new Date();
@@ -262,8 +328,25 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
             }
         }
 
-        DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam, true);
-        setSubmitHandle.handle(new SetSubmitMessage(dataSubmitExeParam, dataSubmit));
+        DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam);
+        DataProblem problem = dataProblemMapper.selectById(dataSubmitExeParam.getProblemId());
+
+        JudgeSubmitDto message = new JudgeSubmitDto();
+
+        message.setId(dataSubmit.getId());
+        message.setUserId(dataSubmit.getUserId());
+        message.setJudgeTaskId(dataSubmitExeParam.getJudgeTaskId());
+        message.setModuleType(dataSubmitExeParam.getModuleType());
+        message.setModuleId(dataSubmitExeParam.getModuleId());
+        message.setMaxTime(problem.getMaxTime());
+        message.setMaxMemory(problem.getMaxMemory());
+        message.setProblemId(dataSubmitExeParam.getProblemId());
+        message.setLanguage(dataSubmitExeParam.getLanguage());
+        message.setSubmitType(dataSubmitExeParam.getSubmitType());
+        message.setCode(dataSubmitExeParam.getCode());
+
+        judgeHandleMessage.sendJudge(message);
+
         return dataSubmit.getId();
     }
 
@@ -282,9 +365,8 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
                 .toList();
     }
 
-    public DataSubmit handleSubmit(DataSubmitExeParam dataSubmitExeParam, Boolean isSet) {
+    public DataSubmit handleSubmit(DataSubmitExeParam dataSubmitExeParam) {
         DataSubmit submit = BeanUtil.toBean(dataSubmitExeParam, DataSubmit.class);
-        submit.setIsSet(isSet);
         submit.setUserId(StpUtil.getLoginIdAsString());
         submit.setStatus(JudgeStatus.PENDING.getValue()); // 待处理
         submit.setIsFinish(Boolean.FALSE); // 流程流转未结束

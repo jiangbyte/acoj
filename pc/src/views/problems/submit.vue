@@ -2,7 +2,7 @@
 </script>
 
 <template>
-  <SubmitPage :is-set="false" />
+  <SubmitPage module-type="PROBLEM" />
 </template>
 
 <style scoped>

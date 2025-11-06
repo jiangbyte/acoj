@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-// import CodeEditor from '@/components/common/editor/code/CodeEditor.vue'
 import { useDataProblemFetch, useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
 import { AesCrypto, Poller } from '@/utils'
 import { useUserStore } from '@/stores'
@@ -12,16 +11,13 @@ defineOptions({
 
 const props = defineProps<Props>()
 
+interface Props {
+  moduleType: string
+}
+
 // 懒加载重量级组件
 const CodeEditor = defineAsyncComponent({
   loader: () => import('@/components/common/editor/code/CodeEditor.vue'),
-  // loader: () =>
-  //   new Promise((resolve) => {
-  //     // 模拟 3 秒延迟
-  //     setTimeout(() => {
-  //       resolve(import('@/components/common/editor/code/CodeEditor.vue'))
-  //     }, 3000)
-  //   }),
   loadingComponent: {
     setup() {
       return () => h('div', {
@@ -40,37 +36,41 @@ const CodeEditor = defineAsyncComponent({
   timeout: 10000,
 })
 
-interface Props {
-  isSet: boolean
-}
-
 const userStore = useUserStore()
 
 const route = useRoute()
 const activeTab = ref('description')
 const detailData = ref()
-const originalId = AesCrypto.decrypt(route.query.problemId as string)
-const originalSetId = AesCrypto.decrypt(route.query.setId as string) || null
+
+const routeProblemId = AesCrypto.decrypt(route.query.problemId as string)
+const routeSetId = AesCrypto.decrypt(route.query.setId as string) || null
+
 async function loadData() {
-  if (props.isSet) {
-    useDataSetFetch().dataSetProblemDetail({ problemId: originalId, id: originalSetId }).then(({ data }) => {
+  if (props.moduleType === 'SET') {
+    useDataSetFetch().dataSetProblemDetail({ problemId: routeProblemId, id: routeSetId }).then(({ data }) => {
       if (data) {
         detailData.value = data
         console.log(data)
       }
     })
   }
-  else {
-    useDataProblemFetch().dataProblemClientDetail({ id: originalId }).then(({ data }) => {
+  else if (props.moduleType === 'PROBLEM') {
+    useDataProblemFetch().dataProblemClientDetail({ id: routeProblemId }).then(({ data }) => {
       detailData.value = data
     })
+  }
+  else if (props.moduleType === 'CONTEST') {
+    // useDataProblemFetch().dataProblemClientDetail({ id: originalId }).then(({ data }) => {
+    //   detailData.value = data
+    // })
   }
 }
 loadData()
 
 const submitParam = ref({
-  problemId: originalId,
-  setId: originalSetId,
+  problemId: routeProblemId,
+  moduleId: undefined,
+  moduleType: props.moduleType,
   language: null,
   code: '',
   submitType: null,
@@ -83,9 +83,8 @@ const resultTaskData = ref({
   userId: undefined,
   userIdName: '未知用户',
   userAvatar: undefined,
-  setId: undefined,
-  setIdName: undefined,
-  isSet: false,
+  moduleId: undefined,
+  moduleType: undefined,
   problemId: undefined,
   problemIdName: '未知题目',
   language: undefined,
@@ -118,7 +117,6 @@ const isPolling = ref(false)
 const pollingCount = ref(0)
 const MAX_POLLING_COUNT = 40 // 最大轮询次数，防止无限轮询
 
-const showSimilarityTip = ref(false)
 // 判题结果轮询函数
 async function startResultPolling(taskId: string) {
   // 如果已有轮询器在运行，先停止
@@ -228,7 +226,9 @@ function executeCode(type: boolean) {
   // 任务ID生成
   submitParam.value.judgeTaskId = `task-${uuidv4()}`
 
-  if (props.isSet) {
+  if (props.moduleType === 'SET') {
+    submitParam.value.moduleType = 'SET'
+    submitParam.value.moduleId = routeSetId as any
     useDataSubmitFetch().dataSubmitSetExecute(submitParam.value).then(({ data }) => {
       if (data) {
         submitTaskId.value = data
@@ -244,7 +244,9 @@ function executeCode(type: boolean) {
       })
     })
   }
-  else {
+  else if (props.moduleType === 'PROBLEM') {
+    submitParam.value.moduleType = 'PROBLEM'
+    submitParam.value.moduleId = routeProblemId as any
     useDataSubmitFetch().dataSubmitExecute(submitParam.value).then(({ data }) => {
       if (data) {
         submitTaskId.value = data
@@ -259,6 +261,9 @@ function executeCode(type: boolean) {
         duration: 3000,
       })
     })
+  }
+  else if (props.moduleType === 'CONTEST') {
+    // TODO
   }
 }
 // 在组件卸载时清理轮询器
@@ -332,9 +337,8 @@ onUnmounted(() => {
             <ProblemDescription :detail-data="detailData" />
           </NTabPane>
           <NTabPane name="submissions" tab="提交历史">
-            <!-- <SetUserSubmit v-if="props.isSet && originalSetId" :problem="originalId" :set="originalSetId" />
-            <ProblemUserSubmit v-if="!props.isSet" :problem="originalId" /> -->
-            <UserSubmitPages :is-set="props.isSet" :problem-id="originalId" :set-id="originalSetId" />
+            <UserSubmitPages v-if="props.moduleType === 'PROBLEM'" :module-id="routeProblemId" module-type="PROBLEM" />
+            <UserSubmitPages v-if="props.moduleType === 'SET'" :module-id="String(routeSetId)" module-type="SET" />
           </NTabPane>
           <NTabPane name="submit" tab="提交代码">
             <n-card size="small">
@@ -381,19 +385,14 @@ onUnmounted(() => {
             题集时 也就是 isSet = true 时，使用 setUseAi 来判断是否要启用 LLM 聊天
             -->
           <NTabPane
-            v-if="props.isSet ? detailData?.setUseAi : detailData?.useAi"
+            v-if="props.moduleType === 'SET' ? detailData?.setUseAi : detailData?.useAi"
             name="assistant"
             tab="增强解析"
           >
-            <!-- <LLMChat
-              :problem-id="originalId"
-              :language="submitParam.language || ''"
-              :user-code="submitParam.code"
-            /> -->
             <KeepAlive>
               <LLMChat
-                :key="`llm-chat-${originalId}`"
-                :problem-id="originalId"
+                :key="`llm-chat-${routeProblemId}`"
+                :problem-id="routeProblemId"
                 :language="submitParam.language || ''"
                 :user-code="submitParam.code"
               />
@@ -438,9 +437,8 @@ onUnmounted(() => {
                 name="submissions"
                 tab="提交历史"
               >
-                <!-- <SetUserSubmit v-if="props.isSet && originalSetId" :problem="originalId" :set="originalSetId" />
-                <ProblemUserSubmit v-if="!props.isSet" :problem="originalId" /> -->
-                <UserSubmitPages :is-set="props.isSet" :problem-id="originalId" :set-id="originalSetId" />
+                <UserSubmitPages v-if="props.moduleType === 'PROBLEM'" :module-id="routeProblemId" module-type="PROBLEM" />
+                <UserSubmitPages v-if="props.moduleType === 'SET'" :module-id="String(routeSetId)" module-type="SET" />
               </NTabPane>
               <NTabPane
                 name="result"
@@ -454,7 +452,7 @@ onUnmounted(() => {
                 />
               </NTabPane>
               <NTabPane
-                v-if="props.isSet ? detailData?.setUseAi : detailData?.useAi"
+                v-if="props.moduleType === 'SET' ? detailData?.setUseAi : detailData?.useAi"
                 name="assistant"
                 tab="增强解析"
               >
@@ -465,8 +463,8 @@ onUnmounted(() => {
                 /> -->
                 <KeepAlive>
                   <LLMChat
-                    :key="`llm-chat-${originalId}`"
-                    :problem-id="originalId"
+                    :key="`llm-chat-${routeProblemId}`"
+                    :problem-id="routeProblemId"
                     :language="submitParam.language || ''"
                     :user-code="submitParam.code"
                   />

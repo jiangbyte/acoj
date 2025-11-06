@@ -48,15 +48,11 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '题集',
-    key: 'setIdName',
+    title: '提交模块',
+    key: 'moduleTypeName',
     ellipsis: {
       tooltip: true,
     },
-  },
-  {
-    title: '题集提交',
-    key: 'isSetName',
   },
   {
     title: '题目',
@@ -242,6 +238,7 @@ async function loadData() {
   if (data) {
     pageData.value = data
     loading.value = false
+    console.log(data)
   }
 }
 

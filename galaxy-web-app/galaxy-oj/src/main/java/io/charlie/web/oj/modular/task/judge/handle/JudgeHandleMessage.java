@@ -121,7 +121,7 @@ public class JudgeHandleMessage {
                 }
             });
 
-            if (!judgeResultDto.getIsSet()) {
+            if (judgeResultDto.getModuleType().equals("PROBLEM")) {
                 // 添加用户活动
                 userActivityService.addActivity(judgeResultDto.getUserId(),
                         ActivityScoreCalculator.SUBMIT, Boolean.TRUE);
@@ -130,7 +130,7 @@ public class JudgeHandleMessage {
             log.debug("非AC正式提交：id={}, status={}", judgeResultDto.getId(), judgeResultDto.getStatus());
             solvedMesage.setSolved(Boolean.FALSE);
 
-            if (!judgeResultDto.getIsSet()) {
+            if (judgeResultDto.getModuleType().equals("PROBLEM")) {
                 // 添加用户活动
                 userActivityService.addActivity(judgeResultDto.getUserId(),
                         ActivityScoreCalculator.SUBMIT, Boolean.FALSE);

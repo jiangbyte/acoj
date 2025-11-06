@@ -125,13 +125,6 @@ public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSol
             Map<String, Object> stats = this.baseMapper.selectAllProblemAcceptanceStats();
 
             ProblemOverallStats overallStats = new ProblemOverallStats();
-//            overallStats.setTotalProblems((BigDecimal) stats.get("totalProblems"));
-//            overallStats.setProblemsWithSubmissions((BigDecimal) stats.get("problemsWithSubmissions"));
-//            overallStats.setTotalParticipants((BigDecimal) stats.get("totalParticipants"));
-//            overallStats.setTotalAcceptedParticipants((BigDecimal) stats.get("totalAcceptedParticipants"));
-//            overallStats.setAverageAcceptanceRate((BigDecimal) stats.get("averageAcceptanceRate"));
-//            overallStats.setMinAcceptanceRate((BigDecimal) stats.get("minAcceptanceRate"));
-//            overallStats.setMaxAcceptanceRate((BigDecimal) stats.get("maxAcceptanceRate"));
 
             // 根据实际返回类型进行转换
             overallStats.setTotalProblems(toBigDecimal(stats.get("totalProblems")));
@@ -141,28 +134,6 @@ public class DataSolvedServiceImpl extends ServiceImpl<DataSolvedMapper, DataSol
             overallStats.setAverageAcceptanceRate(toBigDecimal(stats.get("averageAcceptanceRate")));
             overallStats.setMinAcceptanceRate(toBigDecimal(stats.get("minAcceptanceRate")));
             overallStats.setMaxAcceptanceRate(toBigDecimal(stats.get("maxAcceptanceRate")));
-
-//            // 计算有提交题目的比例
-//            if (overallStats.getTotalProblems() > 0) {
-//                BigDecimal submissionRatio = BigDecimal.valueOf(overallStats.getProblemsWithSubmissions())
-//                        .divide(BigDecimal.valueOf(overallStats.getTotalProblems()), 4, RoundingMode.HALF_UP)
-//                        .multiply(BigDecimal.valueOf(100))
-//                        .setScale(2, RoundingMode.HALF_UP);
-//                overallStats.setSubmissionRatio(submissionRatio);
-//            } else {
-//                overallStats.setSubmissionRatio(BigDecimal.ZERO);
-//            }
-            // 计算有提交题目的比例
-//            if (overallStats.getTotalProblems() != null && overallStats.getTotalProblems().compareTo(BigDecimal.ZERO) > 0) {
-//
-//                BigDecimal submissionRatio = overallStats.getProblemsWithSubmissions()
-//                        .divide(overallStats.getTotalProblems(), 4, RoundingMode.HALF_UP)
-//                        .multiply(BigDecimal.valueOf(100))
-//                        .setScale(2, RoundingMode.HALF_UP);
-//                overallStats.setSubmissionRatio(submissionRatio);
-//            } else {
-//                overallStats.setSubmissionRatio(BigDecimal.ZERO);
-//            }
 
             if (overallStats.getTotalProblems() != null &&
                     overallStats.getTotalProblems().compareTo(BigDecimal.ZERO) > 0 &&

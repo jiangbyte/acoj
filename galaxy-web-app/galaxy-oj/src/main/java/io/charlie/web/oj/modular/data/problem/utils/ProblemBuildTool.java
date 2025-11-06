@@ -96,7 +96,7 @@ public class ProblemBuildTool {
             List<DataSolved> solvedList = dataSolvedMapper.selectList(new LambdaQueryWrapper<DataSolved>()
                     .eq(DataSolved::getUserId, loginIdAsString)
                     .in(DataSolved::getProblemId, problemIds)
-                    .eq(DataSolved::getIsSet, Boolean.FALSE)
+//                    .eq(DataSolved::getIsSet, Boolean.FALSE)
                     .eq(DataSolved::getSolved, Boolean.TRUE)
             );
 
@@ -120,8 +120,8 @@ public class ProblemBuildTool {
             List<DataSolved> solvedList = dataSolvedMapper.selectList(new LambdaQueryWrapper<DataSolved>()
                     .eq(DataSolved::getUserId, loginIdAsString)
                     .in(DataSolved::getProblemId, problemIds)
-                    .eq(DataSolved::getSetId, setId)
-                    .eq(DataSolved::getIsSet, Boolean.TRUE)
+//                    .eq(DataSolved::getSetId, setId)
+//                    .eq(DataSolved::getIsSet, Boolean.TRUE)
                     .eq(DataSolved::getSolved, Boolean.TRUE)
             );
 

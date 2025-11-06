@@ -28,11 +28,8 @@ defineExpose({
         <NDescriptionsItem label="主键">
           {{ formData.id }}
         </NDescriptionsItem>
-        <NDescriptionsItem label="题集">
-          {{ formData.setIdName }}
-        </NDescriptionsItem>
-        <NDescriptionsItem label="题集提交">
-          {{ formData.isSetName }}
+        <NDescriptionsItem label="提交模块">
+          {{ formData.moduleTypeName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="用户">
           <!-- {{ formData.userId }} -->

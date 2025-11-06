@@ -36,17 +36,11 @@ public class DataSolved extends CommonEntity {
     @Schema(description = "主键")
     private String id;
 
-    @Schema(description = "题集ID")
-    @Trans(type = TransType.SIMPLE, target = DataSet.class, fields = "title", ref = "setIdName")
-    private String setId;
-
-    @Schema(description = "题集名称")
-    @TableField(exist = false)
-    private String setIdName;
-
-    @Schema(description = "是否是题集提交")
-    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
-    private Boolean isSet;
+    @Schema(description = "模块类型")
+    @Trans(type = TransType.DICTIONARY, key = "CODE_SUBMIT_MODULE")
+    private String moduleType;
+    @Schema(description = "模块ID")
+    private String moduleId;
 
     @Schema(description = "用户ID")
     @Trans(type = TransType.SIMPLE, target = SysUser.class, fields = {"nickname", "avatar"}, refs = {"userIdName", "userAvatar"})
