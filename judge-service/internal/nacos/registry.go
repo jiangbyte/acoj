@@ -3,6 +3,7 @@ package nacos
 import (
 	"fmt"
 	"judge-service/internal/config"
+	"net"
 	"strconv"
 	"time"
 
@@ -42,7 +43,7 @@ type ServiceRegistry struct {
 // NewServiceRegistry 创建服务注册器
 func NewServiceRegistry(nacosConfig config.NacosConfig, serviceConfig config.Config) (*ServiceRegistry, error) {
 	if nacosConfig.ServerAddr == "" {
-		return nil, fmt.Errorf("nacos server address is required")
+		return nil, fmt.Errorf("Nacos服务器地址不能为空")
 	}
 
 	// 解析服务器地址
@@ -58,7 +59,7 @@ func NewServiceRegistry(nacosConfig config.NacosConfig, serviceConfig config.Con
 		NotLoadCacheAtStart: true,
 		LogDir:              "/tmp/nacos/log",
 		CacheDir:            "/tmp/nacos/cache",
-		LogLevel:            "info",
+		LogLevel:            "error",
 		Username:            nacosConfig.Username,
 		Password:            nacosConfig.Password,
 	}
@@ -77,29 +78,41 @@ func NewServiceRegistry(nacosConfig config.NacosConfig, serviceConfig config.Con
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create nacos naming client: %v", err)
+		return nil, fmt.Errorf("创建Nacos命名客户端失败: %v", err)
 	}
 
 	// 解析服务端口
 	port, err := strconv.ParseUint(strconv.Itoa(serviceConfig.Port), 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid port: %v", err)
+		return nil, fmt.Errorf("端口号无效: %v", err)
 	}
 
-	// 获取本机IP（这里简化处理，实际生产环境可能需要更复杂的IP获取逻辑）
-	ip := "0.0.0.0"
-	if serviceConfig.Host != "0.0.0.0" && serviceConfig.Host != "" {
-		ip = serviceConfig.Host
+	// 获取自动检测的IP
+	autoIP, err := getLocalIP()
+	if err != nil {
+		logx.Errorf("自动获取IP失败: %v，使用默认配置", err)
+		autoIP = "0.0.0.0"
 	}
+
+	// 确定最终使用的IP
+	finalIP := autoIP
+	if serviceConfig.Host != "0.0.0.0" && serviceConfig.Host != "" {
+		finalIP = serviceConfig.Host
+		logx.Infof("使用配置的IP: %s (自动检测的IP: %s)", finalIP, autoIP)
+	} else {
+		logx.Infof("使用自动检测的IP: %s", finalIP)
+	}
+
+	logx.Infof("服务注册 IP: %s", finalIP)
 
 	// 生成实例ID
-	instanceId := fmt.Sprintf("%s-%s-%d", serviceConfig.Name, ip, port)
+	instanceId := fmt.Sprintf("%s-%s-%d", serviceConfig.Name, finalIP, port)
 
 	return &ServiceRegistry{
 		client:      namingClient,
 		group:       nacosConfig.Group,
 		serviceName: serviceConfig.Name,
-		ip:          ip,
+		ip:          finalIP,
 		port:        port,
 		metadata: map[string]string{
 			"version":   "1.0.0",
@@ -110,6 +123,23 @@ func NewServiceRegistry(nacosConfig config.NacosConfig, serviceConfig config.Con
 		clusterName: "DEFAULT",
 		instanceId:  instanceId,
 	}, nil
+}
+
+// 获取本机第一个非回环的IPv4地址
+func getLocalIP() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+
+	for _, addr := range addrs {
+		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			if ipNet.IP.To4() != nil {
+				return ipNet.IP.String(), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("不能获取 IP 地址")
 }
 
 // Register 注册服务
@@ -129,14 +159,14 @@ func (r *ServiceRegistry) Register() error {
 
 	success, err := r.client.RegisterInstance(param)
 	if err != nil {
-		return fmt.Errorf("failed to register service: %v", err)
+		return fmt.Errorf("服务注册失败: %v", err)
 	}
 
 	if !success {
-		return fmt.Errorf("service registration failed")
+		return fmt.Errorf("服务注册未成功")
 	}
 
-	logx.Infof("Service registered successfully: %s:%d, instanceId: %s", r.ip, r.port, r.instanceId)
+	logx.Infof("服务注册成功: %s:%d, 实例ID: %s", r.ip, r.port, r.instanceId)
 	return nil
 }
 
@@ -153,14 +183,14 @@ func (r *ServiceRegistry) Deregister() error {
 
 	success, err := r.client.DeregisterInstance(param)
 	if err != nil {
-		return fmt.Errorf("failed to deregister service: %v", err)
+		return fmt.Errorf("服务注销失败: %v", err)
 	}
 
 	if !success {
-		return fmt.Errorf("service deregistration failed")
+		return fmt.Errorf("服务注销未成功")
 	}
 
-	logx.Infof("Service deregistered successfully: %s:%d", r.ip, r.port)
+	logx.Infof("服务注销成功: %s:%d", r.ip, r.port)
 	return nil
 }
 
@@ -178,7 +208,7 @@ func (r *ServiceRegistry) GetServiceInstances(serviceName string) ([]ServiceInst
 		HealthyOnly: true,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get service instances: %v", err)
+		return nil, fmt.Errorf("获取服务实例列表失败: %v", err)
 	}
 
 	var result []ServiceInstance
@@ -206,7 +236,7 @@ func (r *ServiceRegistry) Subscribe(serviceName string, callback func([]ServiceI
 		Clusters:    []string{r.clusterName},
 		SubscribeCallback: func(services []model.Instance, err error) {
 			if err != nil {
-				logx.Errorf("Service subscription callback error: %v", err)
+				logx.Errorf("服务订阅回调错误: %v", err)
 				return
 			}
 
@@ -228,7 +258,7 @@ func (r *ServiceRegistry) Subscribe(serviceName string, callback func([]ServiceI
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to subscribe service: %v", err)
+		return fmt.Errorf("服务订阅失败: %v", err)
 	}
 	return nil
 }
@@ -241,7 +271,7 @@ func (r *ServiceRegistry) Unsubscribe(serviceName string) error {
 		Clusters:    []string{r.clusterName},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to unsubscribe service: %v", err)
+		return fmt.Errorf("取消服务订阅失败: %v", err)
 	}
 	return nil
 }
@@ -258,15 +288,15 @@ func (r *ServiceRegistry) HealthCheck() {
 			GroupName:   r.group,
 		})
 		if err != nil {
-			logx.Errorf("Health check failed: %v", err)
+			logx.Errorf("健康检查失败: %v", err)
 			// 尝试重新注册
 			if err := r.Register(); err != nil {
-				logx.Errorf("Failed to re-register service: %v", err)
+				logx.Errorf("健康检查失败后重新注册服务失败: %v", err)
 			} else {
-				logx.Info("Service re-registered successfully after health check failure")
+				logx.Info("健康检查失败后服务重新注册成功")
 			}
 		} else {
-			logx.Debugf("Service health check passed: %s", r.serviceName)
+			logx.Debugf("服务健康检查通过: %s", r.serviceName)
 		}
 	}
 }

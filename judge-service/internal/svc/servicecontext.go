@@ -1,83 +1,93 @@
 package svc
 
 import (
+	"fmt"
 	"judge-service/internal/config"
-	"judge-service/internal/nacos"
+	"judge-service/internal/database"
+	repository2 "judge-service/internal/database/repository"
+	"judge-service/internal/initializer"
 
 	"github.com/streadway/amqp"
-	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 type ServiceContext struct {
-	Config   config.Config
-	RabbitMQ *amqp.Connection
-	// 两个通道分别处理题目和题集
-	ProblemChannel    *amqp.Channel
-	ProblemSetChannel *amqp.Channel
-	CommonChannel     *amqp.Channel
-	ServiceRegistry   *nacos.ServiceRegistry // 服务注册器
+	Config      config.Config
+	Initializer *initializer.InitializerManager
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	// 创建连接
-	conn, err := amqp.DialConfig(c.RabbitMQ.Host, amqp.Config{
-		Vhost: c.RabbitMQ.VirtualHost,
-	})
-	if err != nil {
-		logx.Errorf("无法连接到 RabbitMQ: %v", err)
+	initializer := initializer.NewInitializerManager(c)
+
+	if err := initializer.Initialize(); err != nil {
 		panic(err)
-	}
-
-	// // 创建题目通道
-	// problemCh, err := conn.Channel()
-	// if err != nil {
-	// 	logx.Errorf("无法打开题目通道: %v", err)
-	// 	panic(err)
-	// }
-
-	// // 创建题集通道
-	// problemSetCh, err := conn.Channel()
-	// if err != nil {
-	// 	logx.Errorf("无法打开题集通道: %v", err)
-	// 	panic(err)
-	// }
-
-	// 常规通道
-	commonCh, err := conn.Channel()
-	if err != nil {
-		logx.Errorf("无法打开通道: %v", err)
-		panic(err)
-	}
-
-	// 创建服务注册器
-	var serviceRegistry *nacos.ServiceRegistry
-	if c.Nacos.ServerAddr != "" {
-		registry, err := nacos.NewServiceRegistry(c.Nacos, c)
-		if err != nil {
-			logx.Errorf("Failed to create service registry: %v", err)
-			// 不 panic，让服务继续运行
-		} else {
-			serviceRegistry = registry
-
-			// 注册服务到 Nacos
-			if err := serviceRegistry.Register(); err != nil {
-				logx.Errorf("Failed to register service: %v", err)
-			} else {
-				logx.Info("Service registered to Nacos successfully")
-
-				// 启动健康检查
-				go serviceRegistry.HealthCheck()
-			}
-		}
 	}
 
 	return &ServiceContext{
-		Config:   c,
-		RabbitMQ: conn,
-
-		// ProblemChannel:    problemCh,
-		// ProblemSetChannel: problemSetCh,
-		CommonChannel: commonCh,
-		ServiceRegistry: serviceRegistry,
+		Config:      c,
+		Initializer: initializer,
 	}
+}
+
+// 新增 Redis 相关方法
+func (s *ServiceContext) Redis() *database.RedisManager {
+	return s.Initializer.GetRedisManager()
+}
+
+func (s *ServiceContext) IsRedisReady() bool {
+	return s.Initializer.IsRedisReady()
+}
+
+// 便捷方法
+func (s *ServiceContext) DB() *gorm.DB {
+	if s.Initializer.GetMySQLManager() != nil {
+		return s.Initializer.GetMySQLManager().DB
+	}
+	return nil
+}
+
+func (s *ServiceContext) RabbitMQ() *amqp.Connection {
+	if s.Initializer.GetRabbitMQManager() != nil {
+		return s.Initializer.GetRabbitMQManager().Conn
+	}
+	return nil
+}
+
+func (s *ServiceContext) CommonChannel() *amqp.Channel {
+	if s.Initializer.GetRabbitMQManager() != nil {
+		return s.Initializer.GetRabbitMQManager().CommonChannel
+	}
+	return nil
+}
+
+func (s *ServiceContext) TestCaseRepo() repository2.TestCaseRepository {
+	// return s.Initializer.GetTestCaseRepo()
+	baseRepo := s.Initializer.GetTestCaseRepo()
+	redisMgr := s.Initializer.GetRedisManager()
+
+	// 如果 Redis 可用，返回带缓存的版本
+	if redisMgr != nil && redisMgr.IsReady() {
+		return repository2.NewTestCaseRepositoryWithCache(baseRepo, redisMgr)
+	}
+
+	// 否则返回基础版本
+	return baseRepo
+}
+func (s *ServiceContext) JudgeCaseRepo() repository2.JudgeCaseRepository {
+	return s.Initializer.GetJudgeCaseRepo()
+}
+
+func (s *ServiceContext) IsDBReady() bool {
+	return s.Initializer.IsDBReady()
+}
+
+func (s *ServiceContext) SafeDB() (*gorm.DB, error) {
+	if s.Initializer.GetMySQLManager() != nil {
+		return s.Initializer.GetMySQLManager().SafeDB()
+	}
+	return nil, fmt.Errorf("数据库未初始化")
+}
+
+func (s *ServiceContext) Close() error {
+	return s.Initializer.Close()
 }

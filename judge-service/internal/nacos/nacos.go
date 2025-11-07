@@ -18,7 +18,7 @@ type ConfigManager struct {
 
 func NewNacosConfigManager(serverAddr, username, password, namespace, group string) (*ConfigManager, error) {
 	if serverAddr == "" {
-		return nil, fmt.Errorf("nacos server address is required")
+		return nil, fmt.Errorf("Nacos服务器地址不能为空")
 	}
 
 	// 解析服务器地址，处理端口
@@ -34,7 +34,7 @@ func NewNacosConfigManager(serverAddr, username, password, namespace, group stri
 		NotLoadCacheAtStart: true,
 		LogDir:              "/tmp/nacos/log",
 		CacheDir:            "/tmp/nacos/cache",
-		LogLevel:            "info", // 降低日志级别
+		LogLevel:            "error", // 降低日志级别
 		Username:            username,
 		Password:            password,
 	}
@@ -53,7 +53,7 @@ func NewNacosConfigManager(serverAddr, username, password, namespace, group stri
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create nacos config client: %v", err)
+		return nil, fmt.Errorf("创建Nacos配置客户端失败: %v", err)
 	}
 
 	return &ConfigManager{
@@ -81,7 +81,7 @@ func parseServerConfigs(serverAddr string) ([]constant.ServerConfig, error) {
 		if strings.Contains(addr, ":") {
 			parts := strings.Split(addr, ":")
 			if len(parts) != 2 {
-				return nil, fmt.Errorf("invalid server address format: %s", addr)
+				return nil, fmt.Errorf("服务器地址格式无效: %s", addr)
 			}
 			host = parts[0]
 			// 这里可以解析端口，但 Nacos SDK 通常使用默认端口
@@ -100,7 +100,7 @@ func parseServerConfigs(serverAddr string) ([]constant.ServerConfig, error) {
 	}
 
 	if len(serverConfigs) == 0 {
-		return nil, fmt.Errorf("no valid server addresses found")
+		return nil, fmt.Errorf("未找到有效的服务器地址")
 	}
 
 	return serverConfigs, nil
@@ -109,7 +109,7 @@ func parseServerConfigs(serverAddr string) ([]constant.ServerConfig, error) {
 // GetConfig 从 Nacos 获取配置
 func (m *ConfigManager) GetConfig(dataId string) (string, error) {
 	if dataId == "" {
-		return "", fmt.Errorf("dataId is required")
+		return "", fmt.Errorf("dataId不能为空")
 	}
 
 	content, err := m.client.GetConfig(vo.ConfigParam{
@@ -117,11 +117,11 @@ func (m *ConfigManager) GetConfig(dataId string) (string, error) {
 		Group:  m.group,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to get config from nacos: %v", err)
+		return "", fmt.Errorf("从Nacos获取配置失败: %v", err)
 	}
 
 	if content == "" {
-		return "", fmt.Errorf("config content is empty, dataId: %s, group: %s", dataId, m.group)
+		return "", fmt.Errorf("配置内容为空, dataId: %s, group: %s", dataId, m.group)
 	}
 
 	return content, nil
@@ -140,39 +140,30 @@ func (m *ConfigManager) CheckConfigExists(dataId string) (bool, error) {
 }
 
 func (m *ConfigManager) ListenConfig(dataId string, onConfigChange func(string)) error {
-// 	return m.client.ListenConfig(vo.ConfigParam{
-// 		DataId: dataId,
-// 		Group:  m.group,
-// 		OnChange: func(namespace, group, dataId, data string) {
-// 			logx.Infof("Config changed: namespace=%s, group=%s, dataId=%s", namespace, group, dataId)
-// 			onConfigChange(data)
-// 		},
-// 	})
-
- err := m.client.ListenConfig(vo.ConfigParam{
-        DataId: dataId,
-        Group:  m.group,
-        OnChange: func(namespace, group, dataId, data string) {
-            logx.Infof("Config changed: namespace=%s, group=%s, dataId=%s", namespace, group, dataId)
-            onConfigChange(data)
-        },
-    })
-    if err != nil {
-        return fmt.Errorf("failed to listen config: %v", err)
-    }
-    logx.Infof("Started listening config changes, dataId: %s, group: %s", dataId, m.group)
-    return nil
+	err := m.client.ListenConfig(vo.ConfigParam{
+		DataId: dataId,
+		Group:  m.group,
+		OnChange: func(namespace, group, dataId, data string) {
+			logx.Infof("配置已更新：命名空间=%s，组别=%s，数据ID=%s", namespace, group, dataId)
+			onConfigChange(data)
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("监听配置失败: %v", err)
+	}
+	logx.Infof("开始监听配置变更，数据ID：%s，组别：%s", dataId, m.group)
+	return nil
 }
 
 // CancelListenConfig 取消监听配置
 func (m *ConfigManager) CancelListenConfig(dataId string) error {
-    err := m.client.CancelListenConfig(vo.ConfigParam{
-        DataId: dataId,
-        Group:  m.group,
-    })
-    if err != nil {
-        return fmt.Errorf("failed to cancel listen config: %v", err)
-    }
-    logx.Infof("Canceled listening config changes, dataId: %s, group: %s", dataId, m.group)
-    return nil
+	err := m.client.CancelListenConfig(vo.ConfigParam{
+		DataId: dataId,
+		Group:  m.group,
+	})
+	if err != nil {
+		return fmt.Errorf("取消监听配置失败: %v", err)
+	}
+	logx.Infof("已取消监听配置变更，数据ID：%s，组别：%s", dataId, m.group)
+	return nil
 }
