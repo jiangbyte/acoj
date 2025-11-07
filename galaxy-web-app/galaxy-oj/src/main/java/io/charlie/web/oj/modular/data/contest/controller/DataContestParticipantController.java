@@ -2,10 +2,7 @@ package io.charlie.web.oj.modular.data.contest.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantPageParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantAddParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantEditParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantIdParam;
+import io.charlie.web.oj.modular.data.contest.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

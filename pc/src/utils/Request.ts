@@ -96,9 +96,9 @@ const alovaInstance = createAlova({
       const jsonData = await response.clone().json()
 
       // 如果 jsonData 为空或者里面没有 data 字段，则返回一个包含默认 data 的对象
-      if (!jsonData || !jsonData.data) {
-        return { data: null }
-      }
+      // if (!jsonData || !jsonData.data) {
+      //   return { data: null }
+      // }
 
       if (status === 200) {
         if (method.meta?.isBlob) {

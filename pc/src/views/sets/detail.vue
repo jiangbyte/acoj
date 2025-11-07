@@ -31,6 +31,7 @@ const submitPageParam = ref({
   keyword: '',
   problem: '',
   moduleId: originalId,
+  moduleType: 'SET',
   language: null,
   submitType: null,
   status: null,
@@ -423,7 +424,7 @@ async function loadData() {
     })
   })
 
-  useDataSubmitFetch().dataSubmitSetPage(submitPageParam.value).then(({ data }) => {
+  useDataSubmitFetch().dataModuleSubmitPage(submitPageParam.value).then(({ data }) => {
     submitPageData.value = data
   })
   useDataSetFetch().dataSetUserPage(proSetSolvedUserDataParam.value).then(({ data }) => {

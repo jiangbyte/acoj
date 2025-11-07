@@ -9,11 +9,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.charlie.web.oj.modular.data.contest.entity.DataContest;
 import io.charlie.web.oj.modular.data.contest.entity.DataContestParticipant;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantAddParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantEditParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantIdParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantPageParam;
+import io.charlie.web.oj.modular.data.contest.mapper.DataContestMapper;
+import io.charlie.web.oj.modular.data.contest.param.*;
 import io.charlie.web.oj.modular.data.contest.mapper.DataContestParticipantMapper;
 import io.charlie.web.oj.modular.data.contest.service.DataContestParticipantService;
 import io.charlie.galaxy.enums.ISortOrderEnum;
@@ -37,6 +36,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class DataContestParticipantServiceImpl extends ServiceImpl<DataContestParticipantMapper, DataContestParticipant> implements DataContestParticipantService {
+    private final DataContestMapper dataContestMapper;
 
     @Override
     public Page<DataContestParticipant> page(DataContestParticipantPageParam dataContestParticipantPageParam) {

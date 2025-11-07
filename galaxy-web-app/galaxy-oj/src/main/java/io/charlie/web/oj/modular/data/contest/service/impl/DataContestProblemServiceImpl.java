@@ -20,6 +20,9 @@ import io.charlie.galaxy.enums.ISortOrderEnum;
 import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
+import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
+import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
+import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +40,8 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class DataContestProblemServiceImpl extends ServiceImpl<DataContestProblemMapper, DataContestProblem> implements DataContestProblemService {
+    private final DataProblemMapper dataProblemMapper;
+    private final TransService transService;
 
     @Override
     public Page<DataContestProblem> page(DataContestProblemPageParam dataContestProblemPageParam) {
@@ -96,6 +101,28 @@ public class DataContestProblemServiceImpl extends ServiceImpl<DataContestProble
             throw new BusinessException(ResultCode.PARAM_ERROR);
         }
         return dataContestProblem;
+    }
+
+    @Override
+    public List<DataContestProblem> lists(String contestId) {
+        if (ObjectUtil.isEmpty(contestId)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+        return this.list(new LambdaQueryWrapper<DataContestProblem>().eq(DataContestProblem::getContestId, contestId));
+    }
+
+    @Override
+    public DataProblem getProblemDetail(String contestId, String problemId) {
+        boolean exists = this.exists(new LambdaQueryWrapper<DataContestProblem>()
+                .eq(DataContestProblem::getContestId, contestId)
+                .eq(DataContestProblem::getProblemId, problemId));
+        if (!exists) {
+            throw new BusinessException("该题集没有题目");
+        }
+
+        DataProblem dataProblem = dataProblemMapper.selectById(problemId);
+        transService.transOne(dataProblem);
+        return dataProblem;
     }
 
 }

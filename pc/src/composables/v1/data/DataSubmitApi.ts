@@ -108,6 +108,9 @@ export function useDataSubmitFetch() {
     dataSubmitSetExecute(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/set/execute`, data)
     },
+    dataSubmitContestExecute(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/contest/execute`, data)
+    },
     dataSubmitExecute(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/execute`, data)
     },

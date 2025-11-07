@@ -1,10 +1,11 @@
 package core
 
 import (
-	"github.com/zeromicro/go-zero/core/logx"
 	"judge-service/internal/database/model"
 	"judge-service/internal/mq"
 	"judge-service/internal/utils"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type Evaluator interface {
@@ -19,14 +20,16 @@ func (e *DefaultEvaluator) Evaluate(workspace *Workspace, results []*model.DataJ
 		ID:          judgeRequest.ID,
 		UserId:      judgeRequest.UserId,
 		ProblemId:   judgeRequest.ProblemId,
-		ModuleId:       judgeRequest.ModuleId,
+		ModuleId:    judgeRequest.ModuleId,
 		Language:    judgeRequest.Language,
 		Code:        judgeRequest.Code,
 		SubmitType:  judgeRequest.SubmitType,
 		MaxTime:     0,
 		MaxMemory:   0,
-		ModuleType:       judgeRequest.ModuleType,
+		ModuleType:  judgeRequest.ModuleType,
 		JudgeTaskId: judgeRequest.JudgeTaskId,
+		// 分数
+		Score: 0.0,
 	}
 
 	// 异步插入 JudgeCase 记录
@@ -43,6 +46,7 @@ func (e *DefaultEvaluator) Evaluate(workspace *Workspace, results []*model.DataJ
 	maxMemory := 0.0
 	statusCount := make(map[string]int)
 	messageCount := make(map[string]int)
+	score := 0.0
 
 	for _, testCase := range results {
 		// 计算最大值
@@ -65,7 +69,11 @@ func (e *DefaultEvaluator) Evaluate(workspace *Workspace, results []*model.DataJ
 		statusCount[testCase.Status]++
 		// 消息聚合
 		messageCount[testCase.Message]++
+
+		score = score + testCase.Score
 	}
+
+	result.Score = score
 
 	// 设置最终的最大值
 	result.MaxTime = maxTime

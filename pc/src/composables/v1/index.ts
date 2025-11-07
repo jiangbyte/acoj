@@ -12,6 +12,7 @@ export * from './data/TaskSimilarityApi'
 export * from './data/DataContestApi'
 export * from './data/DataContestParticipantApi'
 export * from './data/DataContestProblemApi'
+export * from './data/DataContestAuthApi'
 
 // 导出 sys 目录下的所有 API
 export * from './sys/SysArticleApi'

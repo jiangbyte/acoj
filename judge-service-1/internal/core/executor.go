@@ -233,7 +233,7 @@ func (e *SandboxExecutor) handleCommandResult(workspace *Workspace, testCase *mo
 	result.OutputData = stdoutBuf.String()
 
 	// 判断执行状态
-	result.Status = e.determineExecutionStatus(workspace, result, cgroupPath, elapsed, cmdErr, stderrBuf.String())
+	result.Status = e.determineExecutionStatus(workspace, result, cgroupPath, elapsed, cmdErr, stderrBuf.String(), testCase)
 
 	logx.Infof("运行完成 - 状态: %s, 时间: %.2f ms, 内存: %.2f KB",
 		result.Status, result.MaxTime, result.MaxMemory)
@@ -254,60 +254,37 @@ func (e *SandboxExecutor) collectExecutionMetrics(result *model2.DataJudgeCase,
 
 // determineExecutionStatus 判断执行状态
 func (e *SandboxExecutor) determineExecutionStatus(workspace *Workspace, result *model2.DataJudgeCase,
-	cgroupPath string, elapsed time.Duration, cmdErr error, stderr string) string {
+	cgroupPath string, elapsed time.Duration, cmdErr error, stderr string, testCase *model2.DataTestCase) string {
 
 	// 检查时间限制
 	if elapsed > time.Duration(workspace.judgeRequest.MaxTime)*time.Millisecond {
+		result.Score = 0
 		return "TIME_LIMIT_EXCEEDED"
 	}
 
 	// 检查内存限制
 	if utils.CheckOOMEvent(cgroupPath) {
+		result.Score = 0
 		return "MEMORY_LIMIT_EXCEEDED"
 	}
 
 	// 检查运行时错误
 	if cmdErr != nil {
+		result.Score = 0
 		result.Message = cmdErr.Error()
 		return "RUNTIME_ERROR"
 	}
 
 	// 检查错误输出
 	if strings.TrimSpace(stderr) != "" {
+		result.Score = 0
 		result.Message = stderr
 		return "RUNTIME_ERROR"
 	}
 
+	result.Score = testCase.Score
 	return "RUN_SUCCESS"
 }
-
-// executeTestCases 执行测试用例集
-// func (w *Workspace) executeTestCases() ([]*model2.DataJudgeCase, error) {
-// 	// testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemID(w.ctx, w.judgeRequest.ProblemId)
-// 	testCases, err := w.svcCtx.TestCaseRepo().GetTestCasesByProblemIDWithSample(w.ctx, w.judgeRequest.ProblemId, w.judgeRequest.SubmitType)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("获取测试用例失败: %w", err)
-// 	}
-
-// 	executor := &SandboxExecutor{}
-// 	results := make([]*model2.DataJudgeCase, 0, len(testCases))
-
-// 	for _, testCase := range testCases {
-// 		result, err := executor.Execute(w, &testCase)
-// 		if err != nil {
-// 			// 记录错误但继续执行其他测试用例
-// 			logx.Errorf("执行测试用例 %s 失败: %v", testCase.CaseSign, err)
-// 			continue
-// 		}
-// 		results = append(results, result)
-// 	}
-
-// 	if len(results) == 0 && len(testCases) > 0 {
-// 		return nil, fmt.Errorf("所有测试用例执行失败")
-// 	}
-
-// 	return results, nil
-// }
 
 // executeTestCases 并发执行测试用例
 func (w *Workspace) executeTestCases() ([]*model2.DataJudgeCase, error) {

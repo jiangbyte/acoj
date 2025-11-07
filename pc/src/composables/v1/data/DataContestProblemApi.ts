@@ -74,5 +74,19 @@ export function useDataContestProblemFetch() {
         },
       })
     },
+    dataContestProblemList(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/lists`, {
+        params: {
+          ...data,
+        },
+      })
+    },
+    dataContestProblemDetailClient(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/detail/client`, {
+        params: {
+          ...data,
+        },
+      })
+    },
   }
 }

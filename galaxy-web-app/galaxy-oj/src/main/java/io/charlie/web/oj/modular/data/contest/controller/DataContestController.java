@@ -2,10 +2,7 @@ package io.charlie.web.oj.modular.data.contest.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.charlie.galaxy.result.Result;
-import io.charlie.web.oj.modular.data.contest.param.DataContestPageParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestAddParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestEditParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestIdParam;
+import io.charlie.web.oj.modular.data.contest.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -22,11 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-11-06
-* @description 竞赛表 控制器
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-11-06
+ * @description 竞赛表 控制器
+ */
 @Tag(name = "竞赛表控制器")
 @Slf4j
 @RequiredArgsConstructor
@@ -85,4 +82,12 @@ public class DataContestController {
     public Result<?> getHot() {
         return Result.success(dataContestService.getHotN(5));
     }
+
+    // 竞赛报名
+    @Operation(summary = "C端-报名")
+    @PostMapping("/data/contest/signUp")
+    public Result<?> signUp(@RequestBody @Valid DataContestSignUpParam dataContestSignUpParam) {
+        return Result.success(dataContestService.signUp(dataContestSignUpParam));
+    }
+
 }

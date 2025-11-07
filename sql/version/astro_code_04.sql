@@ -246,6 +246,7 @@ CREATE TABLE `data_contest` (
     `cover` varchar(255) DEFAULT NULL COMMENT '封面',
     `max_team_members` int DEFAULT 1 COMMENT '最大团队成员数',
     `is_team_contest` tinyint(1) DEFAULT 0 COMMENT '是否团队赛',
+    `is_visible` tinyint(1) NULL DEFAULT 1 COMMENT '是否可见',
     `is_public` tinyint(1) DEFAULT 0 COMMENT '是否公开',
     `password` varchar(100) DEFAULT NULL COMMENT '访问密码',
     `register_start_time` datetime DEFAULT NULL COMMENT '报名开始时间',
@@ -294,6 +295,26 @@ CREATE TABLE `data_contest_problem` (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞赛题目表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
+-- Table structure for data_contest_pwd_visit
+-- ----------------------------
+DROP TABLE IF EXISTS `data_contest_auth`;
+CREATE TABLE `data_contest_auth` (
+    `id` varchar(32) NOT NULL,
+    `contest_id` varchar(32) NOT NULL COMMENT '竞赛ID',
+    `user_id` varchar(32) NOT NULL COMMENT '用户ID',
+    `is_auth` tinyint(1) NULL DEFAULT 0 COMMENT '是否已经认证',
+    `deleted` tinyint(1) NULL DEFAULT 0 COMMENT '删除状态',
+    `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间戳',
+    `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
+    `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
+    `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_contest_user` (`contest_id`, `user_id`),
+    INDEX `idx_contest_id` (`contest_id`),
+    INDEX `idx_user_id` (`user_id`)
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞赛认证表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
 -- Table structure for data_contest_participant
 -- ----------------------------
 DROP TABLE IF EXISTS `data_contest_participant`;
@@ -330,6 +351,8 @@ CREATE TABLE `data_solved`  (
   `submit_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '提交ID',
   `solved` tinyint(1) NULL DEFAULT 0 COMMENT '是否解决',
   `deleted` tinyint(1) NULL DEFAULT 0 COMMENT '删除状态',
+  `first_solved_time` datetime NULL DEFAULT NULL COMMENT '创建时间戳',
+  `first_submit_time` datetime NULL DEFAULT NULL COMMENT '创建时间戳',
   `create_time` datetime NULL DEFAULT NULL COMMENT '创建时间戳',
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',

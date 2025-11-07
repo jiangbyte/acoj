@@ -213,6 +213,9 @@ function resetHandle() {
                             <n-flex vertical>
                               <n-flex align="center">
                                 <NTag size="small" type="error">
+                                  {{ item.isPublic ? '公开竞赛' : '私密竞赛' }}
+                                </NTag>
+                                <NTag size="small" type="warning">
                                   {{ item.contestTypeName }}
                                 </NTag>
                                 <NTag size="small" type="success">

@@ -17,4 +17,6 @@ type JudgeResponse struct {
 	Status      string `json:"status"`
 	ExitCode    int    `json:"exitCode"` // 程序退出码
 	JudgeTaskId string `json:"judgeTaskId"`
+
+	Score float64 `json:"score"`
 }

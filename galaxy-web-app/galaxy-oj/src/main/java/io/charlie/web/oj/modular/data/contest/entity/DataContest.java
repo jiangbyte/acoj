@@ -65,6 +65,10 @@ public class DataContest extends CommonEntity {
     @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean isTeamContest;
 
+    @Schema(description = "是否可见")
+    @Trans(type = TransType.DICTIONARY, key = "YES_NO")
+    private Boolean isVisible;
+
     @Schema(description = "是否公开")
     @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean isPublic;
@@ -107,4 +111,7 @@ public class DataContest extends CommonEntity {
 
     @Schema(description = "排序")
     private Integer sort;
+
+    @TableField(exist = false)
+    private Boolean isAuth;
 }

@@ -17,13 +17,15 @@ WORKDIR /app
 # 创建名为 prod-deps 的新阶段，用于安装生产依赖
 FROM base AS prod-deps
 # 使用缓存挂载来加速 pnpm 安装，只安装生产依赖，使用冻结的 lockfile
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+# RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --no-frozen-lockfile
 #RUN pnpm install --prod --frozen-lockfile
 
 # 创建名为 builder 的新阶段，用于构建项目
 FROM base AS builder
 # 使用缓存挂载安装所有依赖（包括开发依赖），使用冻结的 lockfile
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --no-frozen-lockfile
 #RUN pnpm install --frozen-lockfile
 # 运行构建命令
 RUN pnpm run build

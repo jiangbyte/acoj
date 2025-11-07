@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { DataTableColumns } from 'naive-ui'
-import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace, NTime } from 'naive-ui'
+import { NButton, NCard, NDataTable, NImage, NPagination, NPopconfirm, NSpace, NTag, NTime } from 'naive-ui'
 import { useDataContestFetch } from '@/composables/v1'
 import Form from './form.vue'
 import Detail from './detail.vue'
@@ -15,7 +15,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '竞赛标题',
     key: 'title',
-    width: 90,
+    width: 120,
     ellipsis: {
       tooltip: true,
     },
@@ -27,7 +27,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '竞赛类型',
     key: 'contestTypeName',
-    width: 90,
+    width: 120,
     ellipsis: {
       tooltip: true,
     },
@@ -39,7 +39,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '分类',
     key: 'category',
-    width: 90,
+    width: 120,
     ellipsis: {
       tooltip: true,
     },
@@ -56,36 +56,31 @@ const columns: DataTableColumns<any> = [
   //   title: '最大团队成员数',
   //   key: 'maxTeamMembers',
   // },
-  {
-    title: '团队赛',
-    key: 'isTeamContestName',
-    width: 90,
-  },
-  {
-    title: '公开',
-    key: 'isPublicName',
-    width: 90,
-  },
+  // {
+  //   title: '团队赛',
+  //   key: 'isTeamContestName',
+  //   width: 90,
+  // },
   // {
   //   title: '访问密码',
   //   key: 'password',
   // },
-  {
-    title: '报名开始时间',
-    key: 'registerStartTime',
-    width: 180,
-    render: (row) => {
-      return h(NTime, { time: row.registerStartTime })
-    },
-  },
-  {
-    title: '报名结束时间',
-    key: 'registerEndTime',
-    width: 180,
-    render: (row) => {
-      return h(NTime, { time: row.registerEndTime })
-    },
-  },
+  // {
+  //   title: '报名开始时间',
+  //   key: 'registerStartTime',
+  //   width: 180,
+  //   render: (row) => {
+  //     return h(NTime, { time: row.registerStartTime })
+  //   },
+  // },
+  // {
+  //   title: '报名结束时间',
+  //   key: 'registerEndTime',
+  //   width: 180,
+  //   render: (row) => {
+  //     return h(NTime, { time: row.registerEndTime })
+  //   },
+  // },
   {
     title: '竞赛开始时间',
     key: 'contestStartTime',
@@ -102,16 +97,16 @@ const columns: DataTableColumns<any> = [
       return h(NTime, { time: row.contestEndTime })
     },
   },
-  {
-    title: '封榜时间(分钟)',
-    width: 120,
-    key: 'frozenTime',
-  },
-  {
-    title: '罚时(分钟)',
-    width: 110,
-    key: 'penaltyTime',
-  },
+  // {
+  //   title: '封榜时间(分钟)',
+  //   width: 120,
+  //   key: 'frozenTime',
+  // },
+  // {
+  //   title: '罚时(分钟)',
+  //   width: 110,
+  //   key: 'penaltyTime',
+  // },
   // {
   //   title: '允许语言',
   //   key: 'allowedLanguages',
@@ -120,9 +115,23 @@ const columns: DataTableColumns<any> = [
   //   title: '状态',
   //   key: 'status',
   // },
+  // {
+  //   title: '排序',
+  //   key: 'sort',
+  // },
   {
-    title: '排序',
-    key: 'sort',
+    title: '公开',
+    key: 'isPublicName',
+    width: 90,
+  },
+  {
+    title: '上架',
+    key: 'isVisibleName',
+    render: (row) => {
+      return h(NTag, {
+        type: row.isVisible ? 'primary' : 'error',
+      }, () => row.isVisibleName)
+    },
   },
   {
     title: '操作',
@@ -343,7 +352,7 @@ async function deleteBatchHandle() {
         :bordered="false"
         :row-key="(row: any) => row.id"
         :loading="loading"
-        :scroll-x="1800"
+        :scroll-x="1400"
         flex-height
         class="flex-1 h-full"
       />

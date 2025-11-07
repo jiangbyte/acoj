@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useDataProblemFetch, useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
+import { useDataContestProblemFetch, useDataProblemFetch, useDataSetFetch, useDataSubmitFetch } from '@/composables/v1'
 import { AesCrypto, Poller } from '@/utils'
 import { useUserStore } from '@/stores'
 import { v4 as uuidv4 } from 'uuid'
@@ -44,9 +44,13 @@ const detailData = ref()
 
 const routeProblemId = AesCrypto.decrypt(route.query.problemId as string)
 const routeSetId = AesCrypto.decrypt(route.query.setId as string) || null
+const routeContestId = AesCrypto.decrypt(route.query.contestId as string) || null
+
+const theModuleId = ref()
 
 async function loadData() {
   if (props.moduleType === 'SET') {
+    theModuleId.value = routeSetId
     useDataSetFetch().dataSetProblemDetail({ problemId: routeProblemId, id: routeSetId }).then(({ data }) => {
       if (data) {
         detailData.value = data
@@ -60,9 +64,10 @@ async function loadData() {
     })
   }
   else if (props.moduleType === 'CONTEST') {
-    // useDataProblemFetch().dataProblemClientDetail({ id: originalId }).then(({ data }) => {
-    //   detailData.value = data
-    // })
+    theModuleId.value = routeContestId
+    useDataContestProblemFetch().dataContestProblemDetailClient({ id: routeContestId, problemId: routeProblemId }).then(({ data }) => {
+      detailData.value = data
+    })
   }
 }
 loadData()
@@ -263,7 +268,22 @@ function executeCode(type: boolean) {
     })
   }
   else if (props.moduleType === 'CONTEST') {
-    // TODO
+    submitParam.value.moduleType = 'CONTEST'
+    submitParam.value.moduleId = routeContestId as any
+    useDataSubmitFetch().dataSubmitContestExecute(submitParam.value).then(({ data }) => {
+      if (data) {
+        submitTaskId.value = data
+        // 开始轮询判题结果
+        startResultPolling(data)
+      }
+    }).catch((error) => {
+      console.error('提交代码失败:', error)
+      // window.$message.error('提交失败，请重试')
+      window.$notification.error({
+        title: '提交失败',
+        duration: 3000,
+      })
+    })
   }
 }
 // 在组件卸载时清理轮询器
@@ -325,6 +345,8 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
+
+const problemListRef = ref()
 </script>
 
 <template>
@@ -337,8 +359,9 @@ onUnmounted(() => {
             <ProblemDescription :detail-data="detailData" />
           </NTabPane>
           <NTabPane name="submissions" tab="提交历史">
-            <UserSubmitPages v-if="props.moduleType === 'PROBLEM'" :module-id="routeProblemId" module-type="PROBLEM" />
-            <UserSubmitPages v-if="props.moduleType === 'SET'" :module-id="String(routeSetId)" module-type="SET" />
+            <UserSubmitPages v-if="props.moduleType === 'PROBLEM'" :module-id="routeProblemId" :problem-id="routeProblemId" module-type="PROBLEM" />
+            <UserSubmitPages v-if="props.moduleType === 'SET'" :module-id="String(routeSetId)" :problem-id="routeProblemId" module-type="SET" />
+            <UserSubmitPages v-if="props.moduleType === 'CONTEST'" :module-id="String(routeContestId)" :problem-id="routeProblemId" module-type="CONTEST" />
           </NTabPane>
           <NTabPane name="submit" tab="提交代码">
             <n-card size="small">
@@ -385,7 +408,7 @@ onUnmounted(() => {
             题集时 也就是 isSet = true 时，使用 setUseAi 来判断是否要启用 LLM 聊天
             -->
           <NTabPane
-            v-if="props.moduleType === 'SET' ? detailData?.setUseAi : detailData?.useAi"
+            v-if="props.moduleType !== 'CONTEST' && (props.moduleType === 'SET' ? detailData?.setUseAi : detailData?.useAi)"
             name="assistant"
             tab="增强解析"
           >
@@ -398,6 +421,11 @@ onUnmounted(() => {
               />
             </KeepAlive>
           </NTabPane>
+          <template v-if="props.moduleType !== 'PROBLEM'" #suffix>
+            <n-button text @click="problemListRef.doOpen(props.moduleType, theModuleId)">
+              题目列表
+            </n-button>
+          </template>
         </NTabs>
       </NFlex>
     </NCard>
@@ -437,8 +465,9 @@ onUnmounted(() => {
                 name="submissions"
                 tab="提交历史"
               >
-                <UserSubmitPages v-if="props.moduleType === 'PROBLEM'" :module-id="routeProblemId" module-type="PROBLEM" />
-                <UserSubmitPages v-if="props.moduleType === 'SET'" :module-id="String(routeSetId)" module-type="SET" />
+                <UserSubmitPages v-if="props.moduleType === 'PROBLEM'" :module-id="routeProblemId" :problem-id="routeProblemId" module-type="PROBLEM" />
+                <UserSubmitPages v-if="props.moduleType === 'SET'" :module-id="String(routeSetId)" :problem-id="routeProblemId" module-type="SET" />
+                <UserSubmitPages v-if="props.moduleType === 'CONTEST'" :module-id="String(routeContestId)" :problem-id="routeProblemId" module-type="CONTEST" />
               </NTabPane>
               <NTabPane
                 name="result"
@@ -452,7 +481,7 @@ onUnmounted(() => {
                 />
               </NTabPane>
               <NTabPane
-                v-if="props.moduleType === 'SET' ? detailData?.setUseAi : detailData?.useAi"
+                v-if="props.moduleType !== 'CONTEST' && (props.moduleType === 'SET' ? detailData?.setUseAi : detailData?.useAi)"
                 name="assistant"
                 tab="增强解析"
               >
@@ -470,6 +499,11 @@ onUnmounted(() => {
                   />
                 </KeepAlive>
               </NTabPane>
+              <template v-if="props.moduleType !== 'PROBLEM'" #suffix>
+                <n-button text @click="problemListRef.doOpen(props.moduleType, theModuleId)">
+                  题目列表
+                </n-button>
+              </template>
             </NTabs>
           </NFlex>
         </NCard>
@@ -506,6 +540,7 @@ onUnmounted(() => {
       </template>
     </NSplit>
   </template>
+  <ProblemLists ref="problemListRef" />
 </template>
 
 <style scoped>

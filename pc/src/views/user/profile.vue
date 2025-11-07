@@ -197,7 +197,7 @@ const profileRules = {
                 头像设置
               </n-h3>
             </template>
-            <n-space align="center">
+            <n-space align="center" :wrap="false">
               <div class="w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
                 <img :src="profileData?.avatar" alt="当前头像" class="w-full h-full object-cover">
               </div>

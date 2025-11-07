@@ -15,7 +15,7 @@ export function useDataContestFetch() {
     id: '',
     title: '',
     description: '',
-    contestType: '',
+    contestType: null,
     ruleType: '',
     categoryId: '',
     cover: '',
@@ -36,6 +36,8 @@ export function useDataContestFetch() {
     createUser: '',
     updateTime: '',
     updateUser: '',
+    isVisible: false,
+    problemIds: [],
   }
   return {
     /*

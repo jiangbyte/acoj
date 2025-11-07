@@ -103,6 +103,14 @@ public class DataSubmitController {
         return Result.success(dataSubmitService.detail(dataSubmitIdParam));
     }
 
+
+    //    @SubmitLimit(limit = 2, message = "提交过于频繁，请2秒后再试")
+    @Operation(summary = "执行竞赛提交")
+    @PostMapping("/data/submit/contest/execute")
+    public Result<?> contestExecute(@RequestBody @Valid DataSubmitExeParam dataSubmitExeParam) {
+        return Result.success(dataSubmitService.handleContestSubmit(dataSubmitExeParam));
+    }
+
 //    @SubmitLimit(limit = 2, message = "提交过于频繁，请2秒后再试")
     @Operation(summary = "执行题集提交")
     @PostMapping("/data/submit/set/execute")

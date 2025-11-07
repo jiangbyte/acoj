@@ -67,4 +67,6 @@ public class JudgeResultDto implements Serializable {
 
     @Schema(description = "任务ID")
     private String judgeTaskId;
+
+    private BigDecimal score;
 }

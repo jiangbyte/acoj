@@ -12,6 +12,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  problemId: {
+    type: String,
+    required: true,
+  },
 })
 
 const CodeEditor = defineAsyncComponent({
@@ -98,6 +102,7 @@ const pageParam = ref({
   sortOrder: 'DESCEND',
   moduleId: props.moduleId,
   moduleType: props.moduleType,
+  problemId: props.problemId,
   isAuth: true,
 })
 const isLoading = ref(false)

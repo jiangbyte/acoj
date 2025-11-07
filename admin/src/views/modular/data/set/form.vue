@@ -76,6 +76,8 @@ const problemsPageParam = ref({
 const problemsPageData = ref()
 const { dataProblemSetPage, dataProblemListIds } = useDataProblemFetch()
 async function loadData() {
+  formData.value.startTime = formData.value.time[0]
+  formData.value.endTime = formData.value.time[1]
   const { data } = await dataProblemSetPage(problemsPageParam.value)
   if (data) {
     problemsPageData.value = data
@@ -90,6 +92,7 @@ async function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
+  formData.value.time = [formData.value.startTime, formData.value.endTime]
   loadData()
   const param = formData.value.problemIds.map((id: any) => ({ id }))
   if (param.length > 0) {
@@ -280,13 +283,14 @@ function removeProblem(index: string | number) {
             remote
           />
         </NFormItem>
-        <!-- 日期选择 -->
-        <NFormItem v-if="formData.setType === 2" label="开始时间" path="startTime">
+        <!-- <NFormItem v-if="formData.setType === 2" label="开始时间" path="startTime">
           <NDatePicker v-model:value="formData.startTime" type="datetime" />
         </NFormItem>
-        <!-- 日期选择 -->
         <NFormItem v-if="formData.setType === 2" label="结束时间" path="endTime">
           <NDatePicker v-model:value="formData.endTime" type="datetime" />
+        </NFormItem> -->
+        <NFormItem v-if="formData.setType === 2" label="限制时间" path="time">
+          <NDatePicker v-model:value="formData.time" type="datetimerange" />
         </NFormItem>
         <!-- Boolean 选择框 -->
         <NFormItem label="上架" path="isVisible">

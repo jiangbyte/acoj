@@ -154,6 +154,17 @@ export const routes: RouteRecordRaw[] = [
         //   }
         // },
       },
+      {
+        path: '/c',
+        name: 'contest_submit',
+        component: () => import('@/views/contests/submit.vue'),
+        meta: { title: '提交代码' },
+        // beforeEnter: (to) => {
+        //   if (!to.query.setId || !to.query.problemId) {
+        //     return '/'
+        //   }
+        // },
+      },
     ],
   },
   // 公开路由（无布局）

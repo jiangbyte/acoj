@@ -7,6 +7,7 @@ import io.charlie.web.oj.modular.data.contest.param.DataContestProblemAddParam;
 import io.charlie.web.oj.modular.data.contest.param.DataContestProblemEditParam;
 import io.charlie.web.oj.modular.data.contest.param.DataContestProblemIdParam;
 import io.charlie.web.oj.modular.data.contest.param.DataContestProblemPageParam;
+import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 
 import java.util.List;
 
@@ -27,4 +28,7 @@ public interface DataContestProblemService extends IService<DataContestProblem> 
 
     DataContestProblem detail(DataContestProblemIdParam dataContestProblemIdParam);
 
+    List<DataContestProblem> lists(String contestId);
+
+    DataProblem getProblemDetail(String contestId, String problemId);
 }

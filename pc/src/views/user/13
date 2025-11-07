@@ -1,49 +1,9 @@
-<script setup lang="ts">
-import { useSysUserFetch } from '@/composables/v1'
-import { AesCrypto } from '@/utils'
-import { CalendarHeatmap } from 'vue3-calendar-heatmap'
-
-defineOptions({
-  inheritAttrs: false,
-})
-
-const endDate = ref(new Date())
-
-const route = useRoute()
-const originalId = AesCrypto.decrypt(route.query.userId as string)
-
-const detailData = ref()
-
-const setPageData = ref()
-const acRecordRef = ref()
-async function loadData() {
-  const { sysUserDetailClient } = useSysUserFetch()
-  sysUserDetailClient({ id: originalId }).then(({ data }) => {
-    detailData.value = data
-    console.log(data.acRecord)
-
-    if (data.acRecord && Array.isArray(data.acRecord)) {
-      acRecordRef.value = data.acRecord.map(item => ({
-        timestamp: new Date(item.date).getTime(),
-        value: item.count !== undefined ? item.count : null,
-      }))
-    }
-  })
-  setPageData.value = {
-    records: [],
-  }
-}
-loadData()
-</script>
-
-<template>
-  <main class="container mx-auto px-2 py-6 mt-72px">
+  <main class="container mx-auto px-2 py-6">
     <n-grid
       cols="1 l:6"
       :x-gap="24"
       :y-gap="24"
       responsive="screen"
-      class="min-h-[calc(100vh-10rem)]"
     >
       <!-- 左侧主内容 -->
       <n-gi span="1 l:2">
@@ -165,7 +125,7 @@ loadData()
             </n-gi>
           </n-grid>
 
-          <n-card class="rounded-xl" size="small">
+          <n-card class="mt-2 rounded-xl" size="small">
             <div class="overflow-scroll">
               <CalendarHeatmap
                 :values="detailData?.acRecord ? detailData?.acRecord : []"
@@ -183,26 +143,3 @@ loadData()
       </n-gi>
     </n-grid>
   </main>
-</template>
-
-<style scoped>
-/* 使用深度选择器修改子组件样式 */
-:deep(.custom-heatmap .vch__day__label) {
-  font-size: 8px;
-}
-:deep(.custom-heatmap .vch__month__label) {
-  font-size: 8px;
-}
-:deep(.custom-heatmap .vch__legend) {
-  font-size: 10px;
-}
-
-/* 图片悬停效果 */
-img {
-  transition: transform 0.3s ease;
-}
-
-img:hover {
-  transform: scale(1.03);
-}
-</style>

@@ -3,10 +3,7 @@ package io.charlie.web.oj.modular.data.contest.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.data.contest.entity.DataContestParticipant;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantAddParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantEditParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantIdParam;
-import io.charlie.web.oj.modular.data.contest.param.DataContestParticipantPageParam;
+import io.charlie.web.oj.modular.data.contest.param.*;
 
 import java.util.List;
 

@@ -1,8 +1,13 @@
 package io.charlie.web.oj.modular.data.solved.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
+import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -68,4 +73,12 @@ public class DataSolved extends CommonEntity {
     @Schema(description = "是否解决")
     @Trans(type = TransType.DICTIONARY, key = "YES_NO")
     private Boolean solved;
+
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
+    private Date firstSolvedTime;
+
+    @JsonSerialize(using = DateToTimestampSerializer.class)
+    @JsonDeserialize(using = TimestampToDateDeserializer.class)
+    private Date firstSubmitTime;
 }

@@ -13,6 +13,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.str.GalaxyStringUtil;
 import io.charlie.web.oj.context.DataScopeUtil;
+import io.charlie.web.oj.modular.data.contest.entity.DataContest;
+import io.charlie.web.oj.modular.data.contest.mapper.DataContestMapper;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
@@ -57,6 +59,8 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     private final RedissonClient redissonClient;
 
     private final DataScopeUtil dataScopeUtil;
+
+    private final DataContestMapper dataContestMapper;
 
     private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -220,7 +224,6 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getModuleId())) {
             queryWrapper.lambda().eq(DataSubmit::getModuleId, dataSubmitPageParam.getModuleId());
         }
-
         if (GalaxyStringUtil.isNotEmpty(dataSubmitPageParam.getProblemId())) {
             queryWrapper.lambda().eq(DataSubmit::getProblemId, dataSubmitPageParam.getProblemId());
         }
@@ -327,6 +330,32 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
                 }
             }
         }
+
+        DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam);
+        DataProblem problem = dataProblemMapper.selectById(dataSubmitExeParam.getProblemId());
+
+        JudgeSubmitDto message = new JudgeSubmitDto();
+
+        message.setId(dataSubmit.getId());
+        message.setUserId(dataSubmit.getUserId());
+        message.setJudgeTaskId(dataSubmitExeParam.getJudgeTaskId());
+        message.setModuleType(dataSubmitExeParam.getModuleType());
+        message.setModuleId(dataSubmitExeParam.getModuleId());
+        message.setMaxTime(problem.getMaxTime());
+        message.setMaxMemory(problem.getMaxMemory());
+        message.setProblemId(dataSubmitExeParam.getProblemId());
+        message.setLanguage(dataSubmitExeParam.getLanguage());
+        message.setSubmitType(dataSubmitExeParam.getSubmitType());
+        message.setCode(dataSubmitExeParam.getCode());
+
+        judgeHandleMessage.sendJudge(message);
+
+        return dataSubmit.getId();
+    }
+
+    @Override
+    public String handleContestSubmit(DataSubmitExeParam dataSubmitExeParam) {
+        DataContest dataContest = dataContestMapper.selectById(dataSubmitExeParam.getModuleId());
 
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam);
         DataProblem problem = dataProblemMapper.selectById(dataSubmitExeParam.getProblemId());

@@ -61,6 +61,10 @@ function doClose() {
 
 const isEdit = ref(false)
 async function doSubmit() {
+  formData.value.registerStartTime = formData.value.registerTime[0]
+  formData.value.registerEndTime = formData.value.registerTime[1]
+  formData.value.contestStartTime = formData.value.contestTime[0]
+  formData.value.contestEndTime = formData.value.contestTime[1]
   formRef.value?.validate(async (errors: any) => {
     if (!errors) {
       loading.value = true
@@ -94,6 +98,8 @@ async function doOpen(row: any = null, edit: boolean = false) {
   show.value = true
   isEdit.value = edit
   formData.value = Object.assign(formData.value, row)
+  formData.value.registerTime = [formData.value.registerStartTime, formData.value.registerEndTime]
+  formData.value.contestTime = [formData.value.contestStartTime, formData.value.contestEndTime]
 
   const { data: allowLanguageData } = await sysDictOptions({ dictType: 'ALLOW_LANGUAGE' })
   if (allowLanguageData) {
@@ -139,9 +145,9 @@ defineExpose({
           />
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="规则类型" path="ruleType">
+        <!-- <NFormItem label="规则类型" path="ruleType">
           <NInput v-model:value="formData.ruleType" placeholder="请输入规则类型" />
-        </NFormItem>
+        </NFormItem> -->
         <!-- 输入框 -->
         <NFormItem label="分类" path="category">
           <NInput v-model:value="formData.category" placeholder="请输入分类" />
@@ -151,11 +157,11 @@ defineExpose({
           <FileUpload v-model="formData.cover" :is-image="true" />
         </NFormItem>
         <!-- 数字输入 -->
-        <NFormItem label="最大团队成员数" path="maxTeamMembers">
+        <!-- <NFormItem label="最大团队成员数" path="maxTeamMembers">
           <NInputNumber v-model:value="formData.maxTeamMembers" :min="0" :max="100" placeholder="请输入最大团队成员数" />
-        </NFormItem>
+        </NFormItem> -->
         <!-- Boolean 选择框 -->
-        <NFormItem label="是否团队赛" path="isTeamContest">
+        <!-- <NFormItem label="是否团队赛" path="isTeamContest">
           <NRadioGroup v-model:value="formData.isTeamContest">
             <NRadio :value="true">
               是
@@ -164,7 +170,7 @@ defineExpose({
               否
             </NRadio>
           </NRadioGroup>
-        </NFormItem>
+        </NFormItem> -->
         <!-- Boolean 选择框 -->
         <NFormItem label="是否公开" path="isPublic">
           <NRadioGroup v-model:value="formData.isPublic">
@@ -177,35 +183,48 @@ defineExpose({
           </NRadioGroup>
         </NFormItem>
         <!-- 输入框 -->
-        <NFormItem label="访问密码" path="password">
+        <NFormItem v-if="!formData.isPublic" label="访问密码" path="password">
           <NInput v-model:value="formData.password" placeholder="请输入访问密码" />
         </NFormItem>
-        <!-- 日期选择 -->
-        <NFormItem label="报名开始时间" path="registerStartTime">
-          <NDatePicker v-model:value="formData.registerStartTime" type="datetime" />
+        <NFormItem label="上架" path="isVisible">
+          <NRadioGroup v-model:value="formData.isVisible">
+            <NRadio :value="true">
+              是
+            </NRadio>
+            <NRadio :value="false">
+              否
+            </NRadio>
+          </NRadioGroup>
         </NFormItem>
         <!-- 日期选择 -->
+        <NFormItem label="报名时间" path="registerTime">
+          <NDatePicker v-model:value="formData.registerTime" type="datetimerange" />
+        </NFormItem>
+        <NFormItem label="竞赛时间" path="contestTime">
+          <NDatePicker v-model:value="formData.contestTime" type="datetimerange" />
+        </NFormItem>
+        <!-- <NFormItem label="报名开始时间" path="registerStartTime">
+          <NDatePicker v-model:value="formData.registerStartTime" type="datetime" />
+        </NFormItem>
         <NFormItem label="报名结束时间" path="registerEndTime">
           <NDatePicker v-model:value="formData.registerEndTime" type="datetime" />
         </NFormItem>
-        <!-- 日期选择 -->
         <NFormItem label="竞赛开始时间" path="contestStartTime">
           <NDatePicker v-model:value="formData.contestStartTime" type="datetime" />
         </NFormItem>
-        <!-- 日期选择 -->
         <NFormItem label="竞赛结束时间" path="contestEndTime">
           <NDatePicker v-model:value="formData.contestEndTime" type="datetime" />
-        </NFormItem>
+        </NFormItem> -->
         <!-- 数字输入 -->
-        <NFormItem label="封榜时间(分钟)" path="frozenTime">
+        <!-- <NFormItem label="封榜时间(分钟)" path="frozenTime">
           <NInputNumber v-model:value="formData.frozenTime" :min="0" :max="100" placeholder="请输入封榜时间(分钟)" />
-        </NFormItem>
+        </NFormItem> -->
         <!-- 数字输入 -->
-        <NFormItem label="罚时(分钟)" path="penaltyTime">
+        <!-- <NFormItem label="罚时(分钟)" path="penaltyTime">
           <NInputNumber v-model:value="formData.penaltyTime" :min="0" :max="100" placeholder="请输入罚时(分钟)" />
-        </NFormItem>
+        </NFormItem> -->
         <!-- 输入框 -->
-        <NFormItem label="允许语言" path="allowedLanguages">
+        <!-- <NFormItem label="允许语言" path="allowedLanguages">
           <NSelect
             v-model:value="formData.allowedLanguages"
             placeholder="请选择允许语言"
@@ -214,7 +233,7 @@ defineExpose({
             clearable
             remote
           />
-        </NFormItem>
+        </NFormItem> -->
         <!-- 输入框 -->
 <!--        <NFormItem label="状态" path="status">-->
 <!--          <NInput v-model:value="formData.status" placeholder="请输入状态" />-->
