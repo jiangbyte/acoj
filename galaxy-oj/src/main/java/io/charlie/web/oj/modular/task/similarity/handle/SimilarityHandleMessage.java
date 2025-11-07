@@ -145,41 +145,26 @@
 
 package io.charlie.web.oj.modular.task.similarity.handle;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
-import io.charlie.web.oj.modular.data.library.mapper.DataLibraryMapper;
 import io.charlie.web.oj.modular.data.reports.entity.TaskReports;
 import io.charlie.web.oj.modular.data.reports.mapper.TaskReportsMapper;
 import io.charlie.web.oj.modular.data.similarity.dto.CloneLevel;
 import io.charlie.web.oj.modular.data.similarity.dto.TaskReportStats;
-import io.charlie.web.oj.modular.data.similarity.entity.TaskSimilarity;
 import io.charlie.web.oj.modular.data.similarity.mapper.TaskSimilarityMapper;
-import io.charlie.web.oj.modular.task.similarity.dto.BatchSimilaritySubmitDto;
-import io.charlie.web.oj.modular.task.similarity.dto.BatchSimilaritySubmitResultDto;
-import io.charlie.web.oj.modular.task.similarity.enums.ReportTypeEnum;
+import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
+import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitResultDto;
 import io.charlie.web.oj.modular.task.similarity.mq.SimilarlyQueueProperties;
-import io.charlie.web.oj.modular.task.similarity.service.SimilarityProgressService;
-import io.charlie.web.oj.utils.similarity.utils.SimilarityCalculator;
-import io.charlie.web.oj.utils.similarity.utils.SimilarityDetail;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StopWatch;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 /**
  * @author ZhangJiangHu
@@ -190,51 +175,51 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class BatchSimilarityHandleMessage {
+public class SimilarityHandleMessage {
     private final RabbitTemplate rabbitTemplate;
     private final TaskSimilarityMapper taskSimilarityMapper;
     private final TaskReportsMapper taskReportsMapper;
 
     private final SimilarlyQueueProperties properties;
 
-    public void sendSimilarity(BatchSimilaritySubmitDto batchSimilaritySubmitDto) {
-        log.info("代码克隆检测 -> 发送检测消息：{}", JSONUtil.toJsonStr(batchSimilaritySubmitDto));
+    public void sendSimilarity(SimilaritySubmitDto similaritySubmitDto) {
+        log.info("代码克隆检测 -> 发送检测消息：{}", JSONUtil.toJsonStr(similaritySubmitDto));
         rabbitTemplate.convertAndSend(
                 properties.getCommon().getExchange(),
                 properties.getCommon().getRoutingKey(),
-                batchSimilaritySubmitDto
+                similaritySubmitDto
         );
     }
 
     @Transactional
     @RabbitListener(queues = "${oj.mq.similarity.result.queue}", concurrency = "1")
-    public void receiveSimilarity(BatchSimilaritySubmitResultDto batchSimilaritySubmitDto) {
+    public void receiveSimilarity(SimilaritySubmitResultDto submitResultDto) {
         log.info("收到相似检测任务消息，任务ID: {}, 报告ID: {}",
-                batchSimilaritySubmitDto.getTaskId(),
-                batchSimilaritySubmitDto.getReportId());
+                submitResultDto.getTaskId(),
+                submitResultDto.getReportId());
 
         try {
             // 1. 参数基础校验
-            if (batchSimilaritySubmitDto == null) {
+            if (submitResultDto == null) {
                 log.error("接收到的消息为空");
                 return;
             }
 
-            if (batchSimilaritySubmitDto.getTaskId() == null || batchSimilaritySubmitDto.getReportId() == null) {
+            if (submitResultDto.getTaskId() == null || submitResultDto.getReportId() == null) {
                 log.error("任务ID或报告ID为空，任务ID: {}, 报告ID: {}",
-                        batchSimilaritySubmitDto.getTaskId(),
-                        batchSimilaritySubmitDto.getReportId());
+                        submitResultDto.getTaskId(),
+                        submitResultDto.getReportId());
                 return;
             }
 
             UpdateWrapper<TaskReports> updateWrapper = new UpdateWrapper<TaskReports>().checkSqlInjection();
 
             // 2. 从数据库中查询统计信息
-            TaskReportStats taskReportStats = taskSimilarityMapper.selectSimilarityStatsByTaskId(batchSimilaritySubmitDto.getTaskId());
+            TaskReportStats taskReportStats = taskSimilarityMapper.selectSimilarityStatsByTaskId(submitResultDto.getTaskId());
 
             // 处理统计信息为空的情况
             if (taskReportStats == null) {
-                log.warn("未找到任务 {} 的统计信息，使用默认值", batchSimilaritySubmitDto.getTaskId());
+                log.warn("未找到任务 {} 的统计信息，使用默认值", submitResultDto.getTaskId());
                 taskReportStats = new TaskReportStats();
                 taskReportStats.setSampleCount(0);
                 taskReportStats.setGroupCount(0);
@@ -243,26 +228,26 @@ public class BatchSimilarityHandleMessage {
             }
 
             // 3. 获取相似度分布数组
-            List<Integer> distributionArray = taskSimilarityMapper.selectSimilarityDistribution(batchSimilaritySubmitDto.getTaskId());
+            List<Integer> distributionArray = taskSimilarityMapper.selectSimilarityDistribution(submitResultDto.getTaskId());
             if (distributionArray == null) {
                 distributionArray = new ArrayList<>();
-                log.info("任务 {} 的相似度分布为空，使用空列表", batchSimilaritySubmitDto.getTaskId());
+                log.info("任务 {} 的相似度分布为空，使用空列表", submitResultDto.getTaskId());
             }
 
             // 4. 获取程度统计
             List<CloneLevel> degreeStats = taskSimilarityMapper.selectDegreeStatistics(
-                    batchSimilaritySubmitDto.getTaskId(),
-                    batchSimilaritySubmitDto.getThreshold()
+                    submitResultDto.getTaskId(),
+                    submitResultDto.getThreshold()
             );
             if (degreeStats == null) {
                 degreeStats = new ArrayList<>();
-                log.info("任务 {} 的程度统计为空，使用空列表", batchSimilaritySubmitDto.getTaskId());
+                log.info("任务 {} 的程度统计为空，使用空列表", submitResultDto.getTaskId());
             }
 
             // 5. 构建更新条件
             TaskReports taskReports = new TaskReports();
-            taskReports.setId(batchSimilaritySubmitDto.getReportId());
-            taskReports.setTaskId(batchSimilaritySubmitDto.getTaskId());
+            taskReports.setId(submitResultDto.getReportId());
+            taskReports.setTaskId(submitResultDto.getTaskId());
             taskReports.setSampleCount(taskReportStats.getSampleCount());
             taskReports.setSimilarityGroupCount(taskReportStats.getGroupCount());
             taskReports.setAvgSimilarity(taskReportStats.getAvgSimilarity());
@@ -274,14 +259,14 @@ public class BatchSimilarityHandleMessage {
             int updateCount = taskReportsMapper.updateById(taskReports);
             if (updateCount == 0) {
                 log.warn("未更新任何记录，报告ID: {}, 任务ID: {}",
-                        batchSimilaritySubmitDto.getReportId(),
-                        batchSimilaritySubmitDto.getTaskId());
+                        submitResultDto.getReportId(),
+                        submitResultDto.getTaskId());
             } else {
                 log.info("成功更新 {} 条记录", updateCount);
             }
 
             log.info("任务 {} 统计完成 - 样本数: {}, 相似组数: {}, 最大相似度: {}, 平均相似度: {}",
-                    batchSimilaritySubmitDto.getTaskId(),
+                    submitResultDto.getTaskId(),
                     taskReportStats.getSampleCount(),
                     taskReportStats.getGroupCount(),
                     taskReportStats.getMaxSimilarity(),
@@ -289,8 +274,8 @@ public class BatchSimilarityHandleMessage {
 
         } catch (Exception e) {
             log.error("处理相似检测任务失败，任务ID: {}, 报告ID: {}, 错误信息: {}",
-                    batchSimilaritySubmitDto != null ? batchSimilaritySubmitDto.getTaskId() : "null",
-                    batchSimilaritySubmitDto != null ? batchSimilaritySubmitDto.getReportId() : "null",
+                    submitResultDto != null ? submitResultDto.getTaskId() : "null",
+                    submitResultDto != null ? submitResultDto.getReportId() : "null",
                     e.getMessage(), e);
             // 异常重试
             throw e;

@@ -5,11 +5,10 @@ import io.charlie.galaxy.result.Result;
 import io.charlie.web.oj.annotation.log.Log;
 import io.charlie.web.oj.annotation.log.LogCategory;
 import io.charlie.web.oj.annotation.log.LogModule;
-import io.charlie.web.oj.modular.data.library.param.BatchLibraryParam;
 import io.charlie.web.oj.modular.data.library.param.BatchLibraryQueryParam;
 import io.charlie.web.oj.modular.data.similarity.param.*;
 import io.charlie.web.oj.modular.task.similarity.dto.SimilarityProgressDto;
-import io.charlie.web.oj.modular.task.similarity.service.ProblemsSimilarityService;
+import io.charlie.web.oj.modular.task.similarity.service.SimilarityService;
 import io.charlie.web.oj.modular.task.similarity.service.SimilarityProgressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,7 +41,7 @@ import java.util.stream.Collectors;
 @Validated
 public class TaskSimilarityController {
     private final TaskSimilarityService taskSimilarityService;
-    private final ProblemsSimilarityService problemsSimilarityService;
+    private final SimilarityService problemsSimilarityService;
 
     private final SimilarityProgressService progressService;
 

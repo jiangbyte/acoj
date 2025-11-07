@@ -3,19 +3,16 @@ package io.charlie.web.oj.modular.task.similarity.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import io.charlie.galaxy.exception.BusinessException;
-import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.param.BatchLibraryQueryParam;
 import io.charlie.web.oj.modular.data.library.service.DataLibraryService;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.reports.entity.TaskReports;
 import io.charlie.web.oj.modular.data.reports.mapper.TaskReportsMapper;
-import io.charlie.web.oj.modular.task.similarity.dto.BatchSimilaritySubmitDto;
-import io.charlie.web.oj.modular.task.similarity.handle.BatchSimilarityHandleMessage;
-import io.charlie.web.oj.modular.data.library.param.BatchLibraryParam;
-import io.charlie.web.oj.modular.task.similarity.service.ProblemsSimilarityService;
+import io.charlie.web.oj.modular.task.similarity.dto.SimilaritySubmitDto;
+import io.charlie.web.oj.modular.task.similarity.handle.SimilarityHandleMessage;
+import io.charlie.web.oj.modular.task.similarity.service.SimilarityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,8 +28,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ProblemsSimilarityServiceImpl implements ProblemsSimilarityService {
-    private final BatchSimilarityHandleMessage batchSimilarityHandleMessage;
+public class SimilarityServiceImpl implements SimilarityService {
+    private final SimilarityHandleMessage batchSimilarityHandleMessage;
 
     private final DataLibraryService dataLibraryService;
     private final DataProblemMapper dataProblemMapper;
@@ -62,7 +59,7 @@ public class ProblemsSimilarityServiceImpl implements ProblemsSimilarityService 
 
         log.info("开始处理任务: {}", taskId);
 
-        BatchSimilaritySubmitDto batchSimilaritySubmitDto = BeanUtil.toBean(batchSimilarityParam, BatchSimilaritySubmitDto.class);
+        SimilaritySubmitDto batchSimilaritySubmitDto = BeanUtil.toBean(batchSimilarityParam, SimilaritySubmitDto.class);
         batchSimilaritySubmitDto.setReportId(taskReports.getId());
         batchSimilaritySubmitDto.setTaskId(taskId);
         batchSimilaritySubmitDto.setLibIds(list);

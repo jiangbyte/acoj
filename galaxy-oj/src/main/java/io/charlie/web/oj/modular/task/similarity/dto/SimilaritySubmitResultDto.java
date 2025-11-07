@@ -6,7 +6,6 @@ import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.List;
 
 /**
  * @author ZhangJiangHu
@@ -15,7 +14,7 @@ import java.util.List;
  * @description 批量
  */
 @Data
-public class BatchSimilaritySubmitDto implements Serializable {
+public class SimilaritySubmitResultDto implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -23,14 +22,17 @@ public class BatchSimilaritySubmitDto implements Serializable {
 
     private String taskId; // 任务ID
 
-    private List<String> libIds; // 代码库ID
+//    private List<String> libIds; // 代码库ID
 
     // 敏感度
-    private Integer minMatchLength;
+//    private Integer minMatchLength;
 
     // 检测阈值
     private BigDecimal threshold;
 
     @Schema(description = "手动")
     private Boolean taskType;
+
+
+    private Boolean isOk;
 }

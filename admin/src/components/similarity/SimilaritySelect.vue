@@ -34,6 +34,11 @@ const defaultFormData = {
   samplingRatio: 0.1,
 
   minMatchLength: 8,
+
+  current: 1,
+  size: 20,
+  sortField: 'id',
+  sortOrder: 'ASCEND',
 }
 
 const formData = ref({ ...defaultFormData })
@@ -107,25 +112,12 @@ const setProblemOptions = ref<SelectOption[]>([])
 const languageOptions = ref<SelectOption[]>([])
 const groupOptions = ref<SelectOption[]>([])
 const pageData = ref()
-const pageParam = ref({
-  current: 1,
-  size: 20,
-  sortField: 'id',
-  sortOrder: 'ASCEND',
-  keyword: '',
-  groupId: '',
-  problemIds: [],
-  setId: '',
-  language: '',
-})
-
 function doOpen(row: any, moduleType: string) {
   show.value = true
   formData.value.moduleId = row.id as any
-  pageParam.value.moduleId = row.id as any
   formData.value.moduleType = moduleType as any
-  pageParam.value.moduleType = moduleType as any
 
+  // 仓库中有效的代码
   useDataLibraryFetch().dataLibraryProblems({
     moduleType,
     moduleId: row.id as any,
@@ -200,7 +192,7 @@ defineExpose({
 })
 
 watch(
-  () => formData.value.problemId, // 更推荐使用函数形式监听深层属性
+  () => formData.value.problemId,
   () => {
     const problem = setProblemOptions.value.find((problem: any) => problem.id === formData.value.problemId)
     languageOptions.value = problem?.allowedLanguages?.map((language: any) => ({
@@ -224,14 +216,9 @@ function updateQcount() {
 <template>
   <NDrawer v-model:show="show" :mask-closable="false" placement="right" width="800" @after-leave="doClose">
     <NDrawerContent title="代码相似度检测配置">
-      <NAlert type="info" class="mb-4">
-        系统限制：最多处理 <NTag size="small" type="info">
-          200
-        </NTag> 份提交
-      </NAlert>
+      <NAlert type="info" class="mb-4">系统限制：最多处理 <NTag size="small" type="info">200</NTag>份提交</NAlert>
 
       <NForm ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="130">
-        <!-- 基础检测范围 -->
         <NCard title="检测范围" size="small" class="mb-4">
           <NFormItem label="题目选择" path="problemId">
             <NSelect
@@ -241,13 +228,11 @@ function updateQcount() {
               value-field="id"
               :options="setProblemOptions"
               @update-value="(e) => {
-                formData.problemIds = [e]
                 loadUserData()
                 updateQcount()
               }"
             />
           </NFormItem>
-
           <NFormItem label="编程语言" path="language">
             <NSelect
               v-model:value="formData.language"
@@ -255,13 +240,11 @@ function updateQcount() {
               :options="languageOptions"
               :disabled="!formData.problemId"
               @update-value="(e) => {
-                formData.language = e
                 loadUserData()
                 updateQcount()
               }"
             />
           </NFormItem>
-
           <NFormItem label="时间范围">
             <NDatePicker
               v-model:value="formData.timeRange"
@@ -272,8 +255,6 @@ function updateQcount() {
             />
           </NFormItem>
         </NCard>
-
-        <!-- 检测策略 -->
         <NCard title="检测策略" size="small" class="mb-4">
           <NFormItem label="对比模式">
             <NRadioGroup v-model:value="formData.compareMode">
@@ -281,27 +262,12 @@ function updateQcount() {
                 <NRadio value="PAIR_BY_PAIR">
                   两两对比
                 </NRadio>
-                <!-- <NRadio value="GROUP_BY_GROUP">
-                  组内对比
-                </NRadio> -->
                 <NRadio value="MULTI_BY_MULTI">
                   用户对比
                 </NRadio>
               </NSpace>
             </NRadioGroup>
           </NFormItem>
-
-          <!-- <NFormItem v-if="formData.compareMode === 'GROUP_BY_GROUP'" label="用户组">
-            <NTreeSelect
-              v-model:value="formData.groupId"
-              :options="groupOptions"
-              label-field="label"
-              key-field="value"
-              placeholder="选择用户组"
-              clearable
-            />
-          </NFormItem> -->
-
           <NFormItem v-if="formData.compareMode === 'MULTI_BY_MULTI'" label="用户列表">
             <NCard size="small" class="flex-1 mb-4">
               <NSpace vertical>
@@ -353,8 +319,8 @@ function updateQcount() {
                     </NP>
                   </NSpace>
                   <NPagination
-                    v-model:page="pageParam.current"
-                    v-model:page-size="pageParam.size"
+                    v-model:page="formData.current"
+                    v-model:page-size="formData.size"
                     class="flex justify-end"
                     :page-count="pageData ? Number(pageData.pages) : 0"
                     @update:page="loadUserData"
@@ -364,7 +330,6 @@ function updateQcount() {
               </template>
             </NCard>
           </NFormItem>
-
           <NFormItem v-if="formData.compareMode === 'PAIR_BY_PAIR'" label="代码筛选">
             <NRadioGroup v-model:value="formData.codeFilter" @update-value="(e) => updateQcount()">
               <NRadio value="VALID_SUBMIT">
@@ -375,49 +340,13 @@ function updateQcount() {
               </NRadio>
             </NRadioGroup>
           </NFormItem>
-
           <n-grid v-if="formData.compareMode === 'PAIR_BY_PAIR' && formData.codeFilter === 'TIME_WINDOW'" :cols="12" :x-gap="12">
             <n-form-item-gi :span="8" label="时间窗口（分钟）">
               <NInputNumber v-model:value="formData.codeFilterTimeWindow" :min="1" :max="120" @update:value="updateQcount" />
             </n-form-item-gi>
           </n-grid>
         </NCard>
-
-        <!-- 性能控制 -->
         <NCard title="参数控制" size="small" class="mb-4">
-          <!-- <NFormItem label="启用采样">
-            <NRadioGroup v-model:value="formData.enableSampling">
-              <NSpace>
-                <NRadio :value="true">
-                  是
-                </NRadio>
-                <NRadio :value="false">
-                  否
-                </NRadio>
-              </NSpace>
-            </NRadioGroup>
-          </NFormItem>
-
-          <NFormItem v-if="formData.enableSampling" label="采样比例">
-            <NSpace vertical class="w-full">
-              <NSlider
-                v-model:value="formData.samplingRatio"
-                :step="0.1"
-                :min="0.1"
-                :max="1.0"
-                :marks="{ 0.1: '10%', 0.5: '50%', 1.0: '100%' }"
-              />
-              <NSpace justify="space-between">
-                <NText depth="3">
-                  较低精度
-                </NText>
-                <NText depth="3">
-                  较高精度
-                </NText>
-              </NSpace>
-            </NSpace>
-          </NFormItem> -->
-
           <NFormItem label="匹配敏感度">
             <NSpace vertical class="w-full">
               <NSlider
@@ -430,8 +359,6 @@ function updateQcount() {
             </NSpace>
           </NFormItem>
         </NCard>
-
-        <!-- 估算信息 -->
         <NCard title="检测预览" size="small">
           <NSpace vertical class="w-full">
             <NSpace vertical>
@@ -445,12 +372,6 @@ function updateQcount() {
                   {{ libraryBatchCount.checkCount }}
                 </NTag>
               </NSpace>
-              <!-- <NSpace justify="space-between">
-                <NText>预计处理时间：</NText>
-                <NTag>
-                  {{ libraryBatchCount.expectTime }}秒
-                </NTag>
-              </NSpace> -->
               <NSpace justify="space-between">
                 <NText>对比组合数：</NText>
                 <NTag type="info">

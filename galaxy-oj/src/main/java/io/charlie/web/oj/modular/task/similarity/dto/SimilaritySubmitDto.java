@@ -15,7 +15,7 @@ import java.util.List;
  * @description 批量
  */
 @Data
-public class BatchSimilaritySubmitResultDto implements Serializable {
+public class SimilaritySubmitDto implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -23,17 +23,14 @@ public class BatchSimilaritySubmitResultDto implements Serializable {
 
     private String taskId; // 任务ID
 
-//    private List<String> libIds; // 代码库ID
+    private List<String> libIds; // 代码库ID
 
     // 敏感度
-//    private Integer minMatchLength;
+    private Integer minMatchLength;
 
     // 检测阈值
     private BigDecimal threshold;
 
     @Schema(description = "手动")
     private Boolean taskType;
-
-
-    private Boolean isOk;
 }
