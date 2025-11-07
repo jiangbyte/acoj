@@ -153,7 +153,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         DataSet bean = BeanUtil.toBean(dataSetAddParam, DataSet.class);
         this.save(bean);
 
-        dataSetProblemService.addOrUpdate(bean.getId(), dataSetAddParam.getProblemIds());
+//        dataSetProblemService.addOrUpdate(bean.getId(), dataSetAddParam.getProblemIds());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -166,7 +166,7 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
         BeanUtil.copyProperties(dataSetEditParam, bean);
         this.updateById(bean);
 
-        dataSetProblemService.addOrUpdate(bean.getId(), dataSetEditParam.getProblemIds());
+//        dataSetProblemService.addOrUpdate(bean.getId(), dataSetEditParam.getProblemIds());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -225,8 +225,10 @@ public class DataSetServiceImpl extends ServiceImpl<DataSetMapper, DataSet> impl
             return List.of();
         }
         List<DataProblem> dataProblems = dataProblemMapper.selectByIds(problemIdsBySetId);
+
         transService.transBatch(dataProblems);
         problemBuildTool.buildSetProblems(dataSetProblemParam.getId(), dataProblems);
+
         return dataProblems;
     }
 

@@ -304,7 +304,7 @@ function removeProblem(index: string | number) {
           </NRadioGroup>
         </NFormItem>
         <!-- Boolean 选择框 -->
-        <NFormItem label="题目选择" path="problems">
+        <!-- <NFormItem label="题目选择" path="problems">
           <NSpace vertical class="w-full">
             <NSpace class="w-full">
               <NInput v-model:value="problemsPageParam.keyword" placeholder="请输入关键词" clearable @clear="clearProblemsPageParamHandle" />
@@ -357,17 +357,12 @@ function removeProblem(index: string | number) {
                   <NTag type="warning">
                     # {{ index + 1 }}
                   </NTag>
-                  <!-- <NInput
-                    v-model:value="value.key"
-                    style="width: 100%"
-                    disabled
-                  /> -->
                   <NInput v-model:value="value.value" style="width: 100%" disabled />
                 </div>
               </template>
             </n-dynamic-input>
           </NSpace>
-        </NFormItem>
+        </NFormItem> -->
         <!-- Boolean 选择框 -->
         <NFormItem label="是否使用AI" path="useAi">
           <NRadioGroup v-model:value="formData.useAi">

@@ -44,6 +44,13 @@ export function useDataLibraryFetch() {
         },
       })
     },
+    dataLibraryProblems(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/module/problems`, {
+        params: {
+          ...data,
+        },
+      })
+    },
 
     /*
      * 提交样本库 新增接口

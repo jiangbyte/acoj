@@ -22,11 +22,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 /**
-* @author Charlie Zhang
-* @version v1.0
-* @date 2025-09-20
-* @description 提交样本库 控制器
-*/
+ * @author Charlie Zhang
+ * @version v1.0
+ * @date 2025-09-20
+ * @description 提交样本库 控制器
+ */
 @Tag(name = "提交样本库控制器")
 @Slf4j
 @RequiredArgsConstructor
@@ -93,6 +93,14 @@ public class DataLibraryController {
     @PostMapping("/data/library/batch/query")
     public Result<?> batchQuery(@RequestBody @Valid BatchLibraryQueryParam libraryQueryParam) {
         return Result.success(dataLibraryService.batchQuery(libraryQueryParam));
+    }
+
+    @GetMapping("/data/library/module/problems")
+    public Result<?> getModuleProblem(
+            @RequestParam @NotBlank(message = "模块类型不能为空") String moduleType,
+            @RequestParam @NotBlank(message = "模块ID不能为空") String moduleId
+    ) {
+        return Result.success(dataLibraryService.getLibraryProblemList(moduleType, moduleId));
     }
 
 }

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useDataLibraryFetch, useDataSetFetch, useTaskSimilarityFetch } from '@/composables/v1'
+import { useDataLibraryFetch, useTaskSimilarityFetch } from '@/composables/v1'
 import type { DataTableColumns, SelectOption } from 'naive-ui'
 import { NAlert, NAvatar, NButton, NCard, NDatePicker, NDrawer, NDrawerContent, NForm, NInputNumber, NRadio, NRadioGroup, NSlider, NSpace, NTag, NText, NTreeSelect } from 'naive-ui'
 
@@ -11,7 +11,8 @@ const formRef = ref()
 const { dataLibraryiUserPage, dataLibraryiUserGroupList } = useDataLibraryFetch()
 const defaultFormData = {
   // 基础范围
-  setId: null,
+  moduleType: null,
+  moduleId: null,
   problemId: null,
   language: null as any,
 
@@ -120,11 +121,18 @@ const pageParam = ref({
 
 function doOpen(row: any, moduleType: string) {
   show.value = true
-  formData.value.setId = row.id as any
-  pageParam.value.setId = row.id as any
+  formData.value.moduleId = row.id as any
+  pageParam.value.moduleId = row.id as any
+  formData.value.moduleType = moduleType as any
+  pageParam.value.moduleType = moduleType as any
 
-  loadProblems('')
-  loadLanguages('')
+  useDataLibraryFetch().dataLibraryProblems({
+    moduleType,
+    moduleId: row.id as any,
+  }).then(({ data }) => {
+    setProblemOptions.value = data
+  })
+
   loadUserData()
   getGroupLists('')
 }
@@ -133,23 +141,6 @@ function getGroupLists(query: string) {
   dataLibraryiUserGroupList({ keyword: query }).then(({ data }) => {
     groupOptions.value = data
   })
-}
-
-function loadProblems(query: string) {
-  useDataSetFetch().dataSetProblemWithSearch({ id: formData.value.setId, keyword: query }).then(({ data }) => {
-    console.log(data)
-    setProblemOptions.value = data
-  })
-}
-function loadLanguages(query: string) {
-  if (formData.value.problemId) {
-    useDataSetFetch().dataProblemGetSetProblemLanguages({ id: formData.value.setId, problemIds: [formData.value.problemId], keyword: query }).then(({ data }) => {
-      languageOptions.value = data.map((item: any) => {
-        item.label = item.label.charAt(0).toUpperCase() + item.label.slice(1)
-        return item
-      })
-    })
-  }
 }
 
 const columns: DataTableColumns<any> = [
@@ -211,7 +202,11 @@ defineExpose({
 watch(
   () => formData.value.problemId, // 更推荐使用函数形式监听深层属性
   () => {
-    loadLanguages('')
+    const problem = setProblemOptions.value.find((problem: any) => problem.id === formData.value.problemId)
+    languageOptions.value = problem?.allowedLanguages?.map((language: any) => ({
+      label: language.charAt(0).toUpperCase() + language.slice(1),
+      value: language,
+    }))
   },
   { immediate: true }, // 初始化时执行一次
 )
@@ -244,9 +239,7 @@ function updateQcount() {
               placeholder="请选择要检测的题目"
               label-field="title"
               value-field="id"
-              filterable
               :options="setProblemOptions"
-              @search="loadProblems"
               @update-value="(e) => {
                 formData.problemIds = [e]
                 loadUserData()

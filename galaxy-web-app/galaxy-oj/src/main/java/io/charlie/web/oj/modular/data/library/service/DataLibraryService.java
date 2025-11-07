@@ -7,6 +7,7 @@ import io.charlie.web.oj.modular.data.library.entity.DataLibrary;
 import io.charlie.web.oj.modular.data.library.param.*;
 import io.charlie.web.oj.modular.data.library.entity.LibraryBatchCount;
 import io.charlie.web.oj.modular.data.library.param.BatchLibraryQueryParam;
+import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 
@@ -39,4 +40,5 @@ public interface DataLibraryService extends IService<DataLibrary> {
 
     List<String> libraryIds(BatchLibraryQueryParam libraryQueryParam);
 
+    List<DataProblem> getLibraryProblemList(String moduleType, String moduleId);
 }

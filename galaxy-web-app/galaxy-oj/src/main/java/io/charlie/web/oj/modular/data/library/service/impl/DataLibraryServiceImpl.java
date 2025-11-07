@@ -25,11 +25,14 @@ import io.charlie.galaxy.exception.BusinessException;
 import io.charlie.galaxy.pojo.CommonPageRequest;
 import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.data.library.entity.LibraryBatchCount;
+import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
+import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.sys.group.entity.SysGroup;
 import io.charlie.web.oj.modular.sys.group.mapper.SysGroupMapper;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
 import io.charlie.web.oj.modular.sys.user.service.SysUserService;
 import io.charlie.web.oj.modular.sys.user.utils.SysUserBuildUtil;
+import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +57,8 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
     private final SysUserService sysUserService;
 
     private final SysGroupMapper sysGroupMapper;
+    private final DataProblemMapper dataProblemMapper;
+    private final TransService transService;
 
     @Override
     @DS("slave")
@@ -253,8 +258,8 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         log.debug("开始执行批量查询 {}", JSONUtil.toJsonStr(libraryQueryParam));
         QueryWrapper<DataLibrary> queryWrapper = new QueryWrapper<DataLibrary>().checkSqlInjection();
 
-        queryWrapper.lambda().eq(DataLibrary::getModuleType, "SET");
-        queryWrapper.lambda().eq(DataLibrary::getModuleId, libraryQueryParam.getSetId());
+        queryWrapper.lambda().eq(DataLibrary::getModuleType, libraryQueryParam.getModuleType());
+        queryWrapper.lambda().eq(DataLibrary::getModuleId, libraryQueryParam.getModuleId());
 
         if (ObjectUtil.isNotEmpty(libraryQueryParam.getProblemId())) {
             queryWrapper.lambda().eq(DataLibrary::getProblemId, libraryQueryParam.getProblemId());
@@ -281,7 +286,7 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         } else if ("GROUP_BY_GROUP".equals(libraryQueryParam.getCompareMode())) {
             // 组内对比 GROUP_BY_GROUP
             if (ObjectUtil.isNotEmpty(libraryQueryParam.getGroupId())) {
-               queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id = {0}",
+                queryWrapper.exists("SELECT 1 FROM sys_user u WHERE u.id = user_id AND u.group_id = {0}",
                         libraryQueryParam.getGroupId());
             }
         } else if ("MULTI_BY_MULTI".equals(libraryQueryParam.getCompareMode())) {
@@ -324,5 +329,24 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
         }
 
         return List.of();
+    }
+
+    @Override
+    public List<DataProblem> getLibraryProblemList(String moduleType, String moduleId) {
+        QueryWrapper<DataLibrary> queryWrapper = new QueryWrapper<DataLibrary>().checkSqlInjection();
+        queryWrapper.lambda().eq(DataLibrary::getModuleType, moduleType);
+        queryWrapper.lambda().eq(DataLibrary::getModuleId, moduleId);
+        List<DataLibrary> list = this.list(queryWrapper);
+        if (ObjectUtil.isEmpty(list)) {
+            return List.of();
+        }
+
+        List<String> stringList = list.stream()
+                .map(DataLibrary::getProblemId)
+                .distinct()
+                .toList();
+        List<DataProblem> dataProblems = dataProblemMapper.selectByIds(stringList);
+        transService.transBatch(dataProblems);
+        return dataProblems;
     }
 }

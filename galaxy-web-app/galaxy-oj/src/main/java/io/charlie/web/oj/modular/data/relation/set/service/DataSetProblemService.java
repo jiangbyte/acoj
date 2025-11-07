@@ -1,8 +1,13 @@
 package io.charlie.web.oj.modular.data.relation.set.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.relation.set.entity.DataSetProblem;
+import io.charlie.web.oj.modular.data.relation.set.param.DataSetProblemAddParam;
+import io.charlie.web.oj.modular.data.relation.set.param.DataSetProblemEditParam;
+import io.charlie.web.oj.modular.data.relation.set.param.DataSetProblemIdParam;
+import io.charlie.web.oj.modular.data.relation.set.param.DataSetProblemPageParam;
 import io.charlie.web.oj.modular.data.relation.tag.entity.DataProblemTag;
 
 import java.util.List;
@@ -14,6 +19,18 @@ import java.util.Map;
  * @date 21/09/2025
  */
 public interface DataSetProblemService extends IService<DataSetProblem> {
+    Page<DataSetProblem> page(DataSetProblemPageParam dataSetProblemPageParam);
+
+    void add(DataSetProblemAddParam dataSetProblemAddParam);
+
+    void edit(DataSetProblemEditParam dataSetProblemEditParam);
+
+    void delete(List<DataSetProblemIdParam> dataSetProblemIdParamList);
+
+    DataSetProblem detail(DataSetProblemIdParam dataSetProblemIdParam);
+
+    List<DataSetProblem> getSetProblems(String setId);
+
     // 得到某个集合下的所有题目
     List<DataProblem> getProblemsBySetId(String setId);
 

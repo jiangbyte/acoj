@@ -1,17 +1,32 @@
 package io.charlie.web.oj.modular.data.relation.set.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import io.charlie.galaxy.enums.ISortOrderEnum;
+import io.charlie.galaxy.exception.BusinessException;
+import io.charlie.galaxy.pojo.CommonPageRequest;
+import io.charlie.galaxy.result.ResultCode;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.relation.set.entity.DataSetProblem;
 import io.charlie.web.oj.modular.data.relation.set.mapper.DataSetProblemMapper;
+import io.charlie.web.oj.modular.data.relation.set.param.DataSetProblemAddParam;
+import io.charlie.web.oj.modular.data.relation.set.param.DataSetProblemEditParam;
+import io.charlie.web.oj.modular.data.relation.set.param.DataSetProblemIdParam;
+import io.charlie.web.oj.modular.data.relation.set.param.DataSetProblemPageParam;
 import io.charlie.web.oj.modular.data.relation.set.service.DataSetProblemService;
 import lombok.RequiredArgsConstructor;
+import org.dromara.trans.service.impl.TransService;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +41,73 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DataSetProblemImpl extends ServiceImpl<DataSetProblemMapper, DataSetProblem> implements DataSetProblemService {
     private final DataProblemMapper dataProblemMapper;
+    private final TransService transService;
 
+    @Override
+    public Page<DataSetProblem> page(DataSetProblemPageParam dataSetProblemPageParam) {
+        QueryWrapper<DataSetProblem> queryWrapper = new QueryWrapper<DataSetProblem>().checkSqlInjection();
+        if (ObjectUtil.isAllNotEmpty(dataSetProblemPageParam.getSortField(), dataSetProblemPageParam.getSortOrder()) && ISortOrderEnum.isValid(dataSetProblemPageParam.getSortOrder())) {
+            queryWrapper.orderBy(
+                    true,
+                    dataSetProblemPageParam.getSortOrder().equals(ISortOrderEnum.ASCEND.getValue()),
+                    StrUtil.toUnderlineCase(dataSetProblemPageParam.getSortField()));
+        } else {
+            queryWrapper.lambda().orderByAsc(DataSetProblem::getSort);
+        }
+
+        return this.page(CommonPageRequest.Page(
+                        Optional.ofNullable(dataSetProblemPageParam.getCurrent()).orElse(1),
+                        Optional.ofNullable(dataSetProblemPageParam.getSize()).orElse(20),
+                        null
+                ),
+                queryWrapper);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void add(DataSetProblemAddParam dataSetProblemAddParam) {
+        DataSetProblem bean = BeanUtil.toBean(dataSetProblemAddParam, DataSetProblem.class);
+        this.save(bean);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void edit(DataSetProblemEditParam dataSetProblemEditParam) {
+        if (!this.exists(new LambdaQueryWrapper<DataSetProblem>().eq(DataSetProblem::getId, dataSetProblemEditParam.getId()))) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+        DataSetProblem bean = BeanUtil.toBean(dataSetProblemEditParam, DataSetProblem.class);
+        BeanUtil.copyProperties(dataSetProblemEditParam, bean);
+        this.updateById(bean);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void delete(List<DataSetProblemIdParam> dataSetProblemIdParamList) {
+        if (ObjectUtil.isEmpty(dataSetProblemIdParamList)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+        this.removeByIds(CollStreamUtil.toList(dataSetProblemIdParamList, DataSetProblemIdParam::getId));
+    }
+
+    @Override
+    public DataSetProblem detail(DataSetProblemIdParam dataSetProblemIdParam) {
+        DataSetProblem dataSetProblem = this.getById(dataSetProblemIdParam.getId());
+        if (ObjectUtil.isEmpty(dataSetProblem)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR);
+        }
+        return dataSetProblem;
+    }
+
+    @Override
+    public List<DataSetProblem> getSetProblems(String setId) {
+        List<DataSetProblem> dataSetProblems = this.baseMapper.selectList(new LambdaQueryWrapper<DataSetProblem>()
+                .eq(DataSetProblem::getSetId, setId)
+                .orderByAsc(DataSetProblem::getSort)
+        );
+        transService.transBatch(dataSetProblems);
+        return dataSetProblems;
+    }
 
     @Override
     @DS("slave")

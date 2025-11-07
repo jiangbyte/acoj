@@ -4,7 +4,6 @@ import { useSysRoleFetch } from '@/composables/v1'
 
 const emit = defineEmits(['close', 'submit'])
 const loading = ref(false)
-const formRef = ref()
 const userIdR = ref('')
 const show = ref(false)
 const authRoles = ref<any>([])

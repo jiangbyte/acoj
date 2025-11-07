@@ -63,6 +63,13 @@ export function useDataContestProblemFetch() {
     dataContestProblemDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
+    dataContestProblemList(data: any) {
+      return $alova.Get<IResult<any>>(`${pathPrefix + table}/lists`, {
+        params: {
+          ...data,
+        },
+      })
+    },
 
     /*
      * 竞赛题目 详情接口

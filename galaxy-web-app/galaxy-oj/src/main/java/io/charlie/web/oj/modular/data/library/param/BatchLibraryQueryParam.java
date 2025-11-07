@@ -6,6 +6,8 @@ import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
 import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import org.dromara.core.trans.anno.Trans;
+import org.dromara.core.trans.constant.TransType;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -20,7 +22,10 @@ import java.util.List;
 @Data
 public class BatchLibraryQueryParam {
 
-    private String setId; // 检测的集合id
+    @Schema(description = "模块类型")
+    private String moduleType;
+    @Schema(description = "模块ID")
+    private String moduleId;
 
     private String problemId; // 检测的题目
     private String language; // 检测的语言

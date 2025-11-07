@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import io.charlie.galaxy.option.LabelOption;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.param.DifficultyDistribution;
+import io.charlie.web.oj.modular.data.relation.set.entity.DataSetProblem;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
 import io.charlie.web.oj.modular.data.set.param.*;
 import io.charlie.web.oj.modular.sys.user.entity.SysUser;
