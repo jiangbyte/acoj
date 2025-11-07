@@ -169,11 +169,6 @@ public class ProblemBuildTool {
         // 3. 批量获取题目统计信息
         Map<String, ProblemStatistics> stringProblemStatisticsMap = dataSolvedService.getBatchSetProblemStatistics(setId, problemIds);
 
-//        Map<String, Double> acceptanceMap = problemSetCacheService.batchGetAcceptRate(setId, problemIds);
-//        Map<String, Long> solvedMap = problemSetCacheService.batchGetAcceptCount(setId, problemIds);
-//        Map<String, Long> submitUserCountMap = problemSetCacheService.batchGetSubmitCount(setId, problemIds);
-//        Map<String, Long> participantCountMap = problemSetCacheService.batchGetParticipantCount(setId, problemIds);
-
         // 批量设置属性
         for (DataProblem dataProblem : dataProblems) {
             String problemId = dataProblem.getId();
