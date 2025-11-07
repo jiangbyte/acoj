@@ -121,7 +121,7 @@ public class ProblemBuildTool {
                     .eq(DataSolved::getUserId, loginIdAsString)
                     .in(DataSolved::getProblemId, problemIds)
                     .eq(DataSolved::getModuleId, setId)
-                    .eq(DataSolved::getModuleType, "PROBLEM")
+                    .eq(DataSolved::getModuleType, "SET")
                     .eq(DataSolved::getSolved, Boolean.TRUE)
             );
 
