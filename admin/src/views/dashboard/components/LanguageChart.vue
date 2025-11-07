@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { useEcharts } from '@/hooks'
 import type { ECOption } from '@/hooks'
-import { useAnalyseFetch } from '@/composables'
-
-const { getLanguageDistribution } = useAnalyseFetch()
 
 const option = ref<ECOption>({
   tooltip: {
@@ -40,13 +37,13 @@ const option = ref<ECOption>({
 useEcharts('lineRef', option)
 
 async function loadData() {
-  const { data } = await getLanguageDistribution()
-  option.value = {
-    ...option.value,
-    series: [{
-      data,
-    }],
-  }
+  // const { data } = await getLanguageDistribution()
+  // option.value = {
+  //   ...option.value,
+  //   series: [{
+  //     data,
+  //   }],
+  // }
 }
 
 loadData()

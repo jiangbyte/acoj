@@ -6,22 +6,18 @@ import ProblemRateChart from './components/ProblemRateChart.vue'
 import LanguageChart from './components/LanguageChart.vue'
 import WeeklySubmitTrend from './components/WeeklySubmitTrend.vue'
 
-import { useAnalyseFetch } from '@/composables'
-
-const { getTotalUserAnalyse, getTotalProblemAnalyse, getTotalProblemSubmitAnalyse } = useAnalyseFetch()
-
 const totalUserAnalyse = ref()
 const totalProblemAnalyse = ref()
 const totalProblemSubmitAnalyse = ref()
 async function loadData() {
-  const { data: totalUserAnalyseData } = await getTotalUserAnalyse()
-  totalUserAnalyse.value = totalUserAnalyseData
+  // const { data: totalUserAnalyseData } = await getTotalUserAnalyse()
+  // totalUserAnalyse.value = totalUserAnalyseData
 
-  const { data: totalProblemAnalyseData } = await getTotalProblemAnalyse()
-  totalProblemAnalyse.value = totalProblemAnalyseData
+  // const { data: totalProblemAnalyseData } = await getTotalProblemAnalyse()
+  // totalProblemAnalyse.value = totalProblemAnalyseData
 
-  const { data: totalProblemSubmitAnalyseData } = await getTotalProblemSubmitAnalyse()
-  totalProblemSubmitAnalyse.value = totalProblemSubmitAnalyseData
+  // const { data: totalProblemSubmitAnalyseData } = await getTotalProblemSubmitAnalyse()
+  // totalProblemSubmitAnalyse.value = totalProblemSubmitAnalyseData
 }
 
 loadData()

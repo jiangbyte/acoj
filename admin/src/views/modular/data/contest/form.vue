@@ -235,13 +235,13 @@ defineExpose({
           />
         </NFormItem> -->
         <!-- 输入框 -->
-<!--        <NFormItem label="状态" path="status">-->
-<!--          <NInput v-model:value="formData.status" placeholder="请输入状态" />-->
-<!--        </NFormItem>-->
+        <!--        <NFormItem label="状态" path="status"> -->
+        <!--          <NInput v-model:value="formData.status" placeholder="请输入状态" /> -->
+        <!--        </NFormItem> -->
         <!-- 数字输入 -->
-<!--        <NFormItem label="排序" path="sort">-->
-<!--          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" />-->
-<!--        </NFormItem>-->
+        <!--        <NFormItem label="排序" path="sort"> -->
+        <!--          <NInputNumber v-model:value="formData.sort" :min="0" :max="100" placeholder="请输入排序" /> -->
+        <!--        </NFormItem> -->
       </NForm>
       <template #footer>
         <NSpace align="center" justify="end">

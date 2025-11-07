@@ -8,6 +8,7 @@ import Detail from './detail.vue'
 const formRef = ref()
 const detailRef = ref()
 const similaritySelectFormRef = ref()
+const problemManageSelectModalRef = ref()
 const columns: DataTableColumns<any> = [
   {
     type: 'selection',
@@ -82,7 +83,7 @@ const columns: DataTableColumns<any> = [
   {
     title: '操作',
     key: 'action',
-    width: 280,
+    width: 380,
     fixed: 'right',
     render(row: any) {
       return h(NSpace, { align: 'center' }, () => [
@@ -91,12 +92,16 @@ const columns: DataTableColumns<any> = [
           size: 'small',
           onClick: () => formRef.value.doOpen(row, true),
         }, () => '编辑'),
+        h(NButton, {
+          type: 'success',
+          size: 'small',
+          onClick: () => problemManageSelectModalRef.value.doOpen(row, 'SET'),
+        }, () => '题目管理'),
         h(NButton, { size: 'small', onClick: () => detailRef.value.doOpen(row) }, () => '详情'),
         h(NButton, {
           type: 'primary',
           size: 'small',
-          // disabled: row.canUseSimilarReport !== true,
-          onClick: () => similaritySelectFormRef.value.doOpen(row.id, null, true),
+          onClick: () => similaritySelectFormRef.value.doOpen(row, 'SET'),
         }, () => '相似检测'),
         h(NPopconfirm, {
           onPositiveClick: () => deleteHandle(row),
@@ -333,6 +338,7 @@ async function deleteBatchHandle() {
     <Form ref="formRef" @submit="loadData" />
     <Detail ref="detailRef" @submit="loadData" />
     <SimilaritySelect ref="similaritySelectFormRef" />
+    <ProblemManageSelectModal ref="problemManageSelectModalRef" />
   </div>
 </template>
 

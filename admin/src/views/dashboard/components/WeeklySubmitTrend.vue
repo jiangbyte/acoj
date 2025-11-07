@@ -2,16 +2,12 @@
 import { useEcharts } from '@/hooks'
 import type { ECOption } from '@/hooks'
 
-import { useAnalyseFetch } from '@/composables'
-
-const { getWeeklySubmitTrend } = useAnalyseFetch()
-
 const chartData = ref()
 
 async function loadData() {
-  const { data } = await getWeeklySubmitTrend()
-  chartData.value = data
-  updateOption()
+  // const { data } = await getWeeklySubmitTrend()
+  // chartData.value = data
+  // updateOption()
 }
 loadData()
 const submitDate = computed(() => chartData.value?.map((v: any) => v.data))

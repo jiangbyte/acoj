@@ -2,16 +2,13 @@
 import { useEcharts } from '@/hooks'
 import type { ECOption } from '@/hooks'
 import { graphic } from 'echarts'
-import { useAnalyseFetch } from '@/composables'
-
-const { getProblemRateDistribution } = useAnalyseFetch()
 
 const chartData = ref()
 
 async function loadData() {
-  const { data } = await getProblemRateDistribution()
-  chartData.value = data
-  updateOption()
+  // const { data } = await getProblemRateDistribution()
+  // chartData.value = data
+  // updateOption()
 }
 loadData()
 

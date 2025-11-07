@@ -2,16 +2,12 @@
 import { useEcharts } from '@/hooks'
 import type { ECOption } from '@/hooks'
 
-import { useAnalyseFetch } from '@/composables'
-
-const { getTodayHourlySubmitTrend } = useAnalyseFetch()
-
 const chartData = ref()
 
 async function loadData() {
-  const { data } = await getTodayHourlySubmitTrend()
-  chartData.value = data
-  updateOption()
+  // const { data } = await getTodayHourlySubmitTrend()
+  // chartData.value = data
+  // updateOption()
 }
 loadData()
 const submitDate = computed(() => chartData.value?.map((v: any) => `${v.data} 时`))
