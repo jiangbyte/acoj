@@ -5,8 +5,10 @@ import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.charlie.web.oj.modular.data.contest.entity.DataContest;
 import io.charlie.web.oj.modular.data.contest.entity.DataContestAuth;
+import io.charlie.web.oj.modular.data.contest.entity.DataContestParticipant;
 import io.charlie.web.oj.modular.data.contest.mapper.DataContestAuthMapper;
 import io.charlie.web.oj.modular.data.contest.mapper.DataContestMapper;
+import io.charlie.web.oj.modular.data.contest.mapper.DataContestParticipantMapper;
 import io.charlie.web.oj.modular.data.contest.service.DataContestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,8 +24,8 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class ContestBuildTool {
-    private final DataContestMapper dataContestMapper;
     private final DataContestAuthMapper dataContestAuthMapper;
+    private final DataContestParticipantMapper dataContestParticipantMapper;
 
     public void buildContests(List<DataContest> dataContests) {
         if (CollectionUtil.isEmpty(dataContests)) {
@@ -80,8 +82,28 @@ public class ContestBuildTool {
                     ));
         }
 
+        // 查询报名信息
+        Map<String, Boolean> haveRegisterMap = new HashMap<>();
+        if (userId != null) {
+            List<DataContestParticipant> dataContestParticipants = dataContestParticipantMapper.selectList(
+                    new LambdaQueryWrapper<DataContestParticipant>()
+                            .in(DataContestParticipant::getContestId, contestIds)
+                            .eq(DataContestParticipant::getUserId, userId)
+            );
+            haveRegisterMap = contestIds.stream()
+                    .collect(Collectors.toMap(
+                            contestId -> contestId,
+                            contestId -> dataContestParticipants.stream()
+                                    .anyMatch(participant -> participant != null
+                                            && contestId.equals(participant.getContestId()))
+                    ));
+        }
+
         // 设置每个竞赛的权限状态
         for (DataContest dataContest : dataContests) {
+            Boolean haveRegister = haveRegisterMap.getOrDefault(dataContest.getId(), false);
+            dataContest.setIsRegister(haveRegister);
+
             if (dataContest == null || dataContest.getId() == null) {
                 continue; // 跳过空对象或空ID的竞赛
             }

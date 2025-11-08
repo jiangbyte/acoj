@@ -114,4 +114,7 @@ public class DataContest extends CommonEntity {
 
     @TableField(exist = false)
     private Boolean isAuth;
+
+    @TableField(exist = false)
+    private Boolean isRegister;
 }
