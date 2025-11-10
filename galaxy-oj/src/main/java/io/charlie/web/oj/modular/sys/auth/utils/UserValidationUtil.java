@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  */
 public class UserValidationUtil {
 
-    // 用户名规则：6-20位，字母开头，只能包含字母、数字、下划线
+    // 用户名规则：2-15位，字母开头，只能包含字母、数字、下划线
     private static final String USERNAME_PATTERN = "^[a-zA-Z][a-zA-Z0-9_]{5,19}$";
     private static final Pattern USERNAME_REGEX = Pattern.compile(USERNAME_PATTERN);
 
