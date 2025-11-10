@@ -13,7 +13,7 @@ const props = defineProps({
 <template>
   <div
     v-if="Number(props.rank) <= 100"
-    class="w-10 h-10 rounded-full text-white flex items-center justify-center mr-3 text-1.2rem"
+    class="w-8 h-8 rounded-full text-white flex items-center justify-center mr-2 text-1rem"
     :style="{ backgroundColor: RankColorUtil.getColor(props.rank) }"
   >
     {{ RankColorUtil.getDisplayTextAPE(props.rank) }}

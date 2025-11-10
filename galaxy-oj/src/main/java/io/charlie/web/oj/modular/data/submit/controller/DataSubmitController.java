@@ -6,6 +6,7 @@ import io.charlie.web.oj.annotation.limit.SubmitLimit;
 import io.charlie.web.oj.annotation.log.Log;
 import io.charlie.web.oj.annotation.log.LogCategory;
 import io.charlie.web.oj.annotation.log.LogModule;
+import io.charlie.web.oj.modular.data.contest.mapper.DataContestParticipantMapper;
 import io.charlie.web.oj.modular.data.submit.param.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

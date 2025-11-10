@@ -14,7 +14,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.charlie.galaxy.utils.str.GalaxyStringUtil;
 import io.charlie.web.oj.context.DataScopeUtil;
 import io.charlie.web.oj.modular.data.contest.entity.DataContest;
+import io.charlie.web.oj.modular.data.contest.entity.DataContestParticipant;
 import io.charlie.web.oj.modular.data.contest.mapper.DataContestMapper;
+import io.charlie.web.oj.modular.data.contest.mapper.DataContestParticipantMapper;
 import io.charlie.web.oj.modular.data.problem.entity.DataProblem;
 import io.charlie.web.oj.modular.data.problem.mapper.DataProblemMapper;
 import io.charlie.web.oj.modular.data.set.entity.DataSet;
@@ -55,6 +57,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     private final JudgeHandleMessage judgeHandleMessage;
     private final DataProblemMapper dataProblemMapper;
     private final DataSetMapper dataSetMapper;
+    private final DataContestParticipantMapper dataContestParticipantMapper;
 
     private final RedissonClient redissonClient;
 
@@ -356,6 +359,25 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     @Override
     public String handleContestSubmit(DataSubmitExeParam dataSubmitExeParam) {
         DataContest dataContest = dataContestMapper.selectById(dataSubmitExeParam.getModuleId());
+
+        Date now = new Date();
+        if (dataContest.getContestStartTime() != null && dataContest.getContestEndTime() != null) {
+            if (now.before(dataContest.getContestStartTime())) {
+                throw new BusinessException("竞赛未开始，不能提交");
+            } else if (now.after(dataContest.getContestEndTime())) {
+                throw new BusinessException("竞赛已结束，不能提交");
+            }
+        }
+
+        String loginIdAsString = StpUtil.getLoginIdAsString();
+        boolean exists = dataContestParticipantMapper.exists(
+                new LambdaQueryWrapper<DataContestParticipant>()
+                        .eq(DataContestParticipant::getContestId, dataSubmitExeParam.getModuleId())
+                        .eq(DataContestParticipant::getUserId, loginIdAsString)
+        );
+        if (!exists) {
+            throw new BusinessException("请先加入竞赛");
+        }
 
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam);
         DataProblem problem = dataProblemMapper.selectById(dataSubmitExeParam.getProblemId());

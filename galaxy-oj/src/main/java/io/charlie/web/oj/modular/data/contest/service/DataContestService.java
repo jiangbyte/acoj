@@ -28,4 +28,6 @@ public interface DataContestService extends IService<DataContest> {
 
     Object signUp(DataContestSignUpParam dataContestParticipantSignUpParam);
 
+    // 取消报名
+    void cancelSignUp(DataContestSignUpParam dataContestParticipantSignUpParam);
 }

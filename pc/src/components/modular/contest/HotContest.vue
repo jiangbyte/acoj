@@ -10,8 +10,8 @@ defineProps<{
   <n-list hoverable class="rounded-xl p-0">
     <n-list-item
       v-for="item in listData" :key="item.id" @click="$router.push({
-        name: 'proset_detail',
-        query: { set: AesCrypto.encrypt(item.id) },
+        name: 'contest_detail',
+        query: { contestId: AesCrypto.encrypt(item.id) },
       })"
     >
       <template #prefix>
@@ -23,21 +23,11 @@ defineProps<{
             {{ item.title }}
           </n-ellipsis>
         </template>
-        <!-- <template #header-extra>
-          <n-tag size="small" type="info">
-            {{ item.difficultyName }}
-          </n-tag>
-        </template> -->
         <template #description>
           <n-space align="center">
             <n-space align="center" :size="0">
               <n-text depth="3">
                 参与人数：{{ item.participantUserCount ? item.participantUserCount : 0 }}
-              </n-text>
-            </n-space>
-            <n-space align="center" :size="0">
-              <n-text depth="3">
-                通过率：{{ item.avgAcceptance ? item.avgAcceptance : 0 }} %
               </n-text>
             </n-space>
           </n-space>

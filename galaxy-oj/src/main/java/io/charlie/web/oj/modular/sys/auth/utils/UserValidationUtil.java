@@ -17,9 +17,9 @@ public class UserValidationUtil {
     private static final Pattern USERNAME_REGEX = Pattern.compile(USERNAME_PATTERN);
 
     // 用户名最小长度
-    private static final int USERNAME_MIN_LENGTH = 6;
+    private static final int USERNAME_MIN_LENGTH = 2;
     // 用户名最大长度
-    private static final int USERNAME_MAX_LENGTH = 20;
+    private static final int USERNAME_MAX_LENGTH = 15;
 
     /**
      * 校验用户名格式
@@ -45,6 +45,11 @@ public class UserValidationUtil {
         // 校验只能包含字母、数字、下划线
         if (!USERNAME_REGEX.matcher(username).matches()) {
             return ValidationResult.failure("用户名只能包含字母、数字和下划线");
+        }
+
+        // 不能是中文
+        if (Validator.isChinese(username)) {
+            return ValidationResult.failure("用户名不能包含中文");
         }
 
         return ValidationResult.success();

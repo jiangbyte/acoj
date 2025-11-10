@@ -17,6 +17,7 @@ declare module 'vue' {
     FileUploadButton: typeof import('./../components/common/file/FileUploadButton.vue')['default']
     Footer: typeof import('./../components/site/Footer.vue')['default']
     Header: typeof import('./../components/site/Header.vue')['default']
+    HotContest: typeof import('./../components/modular/contest/HotContest.vue')['default']
     HotProblem: typeof import('./../components/modular/problem/problem/HotProblem.vue')['default']
     HotSet: typeof import('./../components/modular/set/set/HotSet.vue')['default']
     IconParkOutlineClose: typeof import('~icons/icon-park-outline/close')['default']

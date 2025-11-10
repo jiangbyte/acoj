@@ -10,6 +10,7 @@ import io.charlie.galaxy.config.timestamp.DateToTimestampSerializer;
 import io.charlie.galaxy.config.timestamp.TimestampToDateDeserializer;
 import io.charlie.galaxy.pojo.CommonEntity;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.io.Serial;
 import java.util.Date;
@@ -107,6 +108,7 @@ public class DataContest extends CommonEntity {
     private List<String> allowedLanguages;
 
     @Schema(description = "状态")
+    @Trans(type = TransType.DICTIONARY, key = "CONTEST_STATUS")
     private String status;
 
     @Schema(description = "排序")
@@ -117,4 +119,12 @@ public class DataContest extends CommonEntity {
 
     @TableField(exist = false)
     private Boolean isRegister;
+
+    @Schema(description = "排行")
+    @TableField(exist = false)
+    private Long rank;
+    // 参与人数
+    @Schema(description = "参与人数")
+    @TableField(exist = false)
+    private Long participantUserCount;
 }

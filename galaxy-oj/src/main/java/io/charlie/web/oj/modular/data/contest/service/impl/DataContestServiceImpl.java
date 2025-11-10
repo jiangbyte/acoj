@@ -1,6 +1,7 @@
 package io.charlie.web.oj.modular.data.contest.service.impl;
 
 import cn.dev33.satoken.secure.BCrypt;
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -152,9 +153,11 @@ public class DataContestServiceImpl extends ServiceImpl<DataContestMapper, DataC
             throw new BusinessException("该竞赛已结束报名");
         }
 
+        String loginIdAsString = StpUtil.getLoginIdAsString();
+
         boolean exists = dataContestParticipantMapper.exists(new LambdaQueryWrapper<DataContestParticipant>()
                 .eq(DataContestParticipant::getContestId, signUpParam.getContestId())
-                .eq(DataContestParticipant::getUserId, signUpParam.getUserId())
+                .eq(DataContestParticipant::getUserId, loginIdAsString)
         );
         if (exists) {
             throw new BusinessException("已报名");
@@ -162,12 +165,20 @@ public class DataContestServiceImpl extends ServiceImpl<DataContestMapper, DataC
 
         DataContestParticipant dataContestParticipant = new DataContestParticipant();
         dataContestParticipant.setContestId(signUpParam.getContestId());
-        dataContestParticipant.setUserId(signUpParam.getUserId());
+        dataContestParticipant.setUserId(loginIdAsString);
         dataContestParticipant.setTeamId(signUpParam.getTeamId());
         dataContestParticipant.setRegisterTime(new Date());
         dataContestParticipantMapper.insert(dataContestParticipant);
 
         return null;
+    }
+
+    @Override
+    public void cancelSignUp(DataContestSignUpParam dataContestParticipantSignUpParam) {
+        dataContestParticipantMapper.delete(new LambdaQueryWrapper<DataContestParticipant>()
+                .eq(DataContestParticipant::getContestId, dataContestParticipantSignUpParam.getContestId())
+                .eq(DataContestParticipant::getUserId, StpUtil.getLoginIdAsString())
+        );
     }
 
 }

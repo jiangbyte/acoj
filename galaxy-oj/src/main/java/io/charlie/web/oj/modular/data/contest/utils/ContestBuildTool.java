@@ -7,10 +7,9 @@ import io.charlie.web.oj.modular.data.contest.entity.DataContest;
 import io.charlie.web.oj.modular.data.contest.entity.DataContestAuth;
 import io.charlie.web.oj.modular.data.contest.entity.DataContestParticipant;
 import io.charlie.web.oj.modular.data.contest.mapper.DataContestAuthMapper;
-import io.charlie.web.oj.modular.data.contest.mapper.DataContestMapper;
 import io.charlie.web.oj.modular.data.contest.mapper.DataContestParticipantMapper;
-import io.charlie.web.oj.modular.data.contest.service.DataContestService;
 import lombok.RequiredArgsConstructor;
+import org.dromara.trans.service.impl.TransService;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -26,6 +25,7 @@ import java.util.stream.Collectors;
 public class ContestBuildTool {
     private final DataContestAuthMapper dataContestAuthMapper;
     private final DataContestParticipantMapper dataContestParticipantMapper;
+    private final TransService transService;
 
     public void buildContests(List<DataContest> dataContests) {
         if (CollectionUtil.isEmpty(dataContests)) {
@@ -117,6 +117,68 @@ public class ContestBuildTool {
                 // 公开竞赛默认给权限
                 dataContest.setIsAuth(true);
             }
+
+
+            // 竞赛状态计算
+            String status = calculateContestStatus(dataContest);
+            dataContest.setStatus(status);
         }
+
+        transService.transBatch(dataContests);
+    }
+
+    /**
+     * 计算竞赛状态
+     * 状态说明：
+     * - NOT_STARTED: 报名和竞赛都未开始
+     * - REGISTERING: 报名进行中，竞赛未开始
+     * - REGISTER_END: 报名结束，竞赛未开始
+     * - RUNNING: 竞赛进行中
+     * - FROZEN: 竞赛封榜中（如果设置了封榜时间）
+     * - FINISHED: 竞赛已结束
+     */
+    private String calculateContestStatus(DataContest contest) {
+        Date now = new Date();
+
+        // 检查时间字段是否为空
+        if (contest.getRegisterStartTime() == null || contest.getRegisterEndTime() == null ||
+                contest.getContestStartTime() == null || contest.getContestEndTime() == null) {
+            return "UNKNOWN"; // 时间信息不完整
+        }
+
+        // 竞赛已结束
+        if (now.after(contest.getContestEndTime())) {
+            return "FINISHED";
+        }
+
+        // 竞赛进行中
+        if (now.after(contest.getContestStartTime()) && now.before(contest.getContestEndTime())) {
+            // 检查是否处于封榜状态
+//            if (contest.getFrozenTime() != null && contest.getFrozenTime() > 0) {
+//                Date frozenStartTime = new Date(contest.getContestEndTime().getTime() -
+//                        contest.getFrozenTime() * 60 * 1000L);
+//                if (now.after(frozenStartTime)) {
+//                    return "FROZEN";
+//                }
+//            }
+            return "RUNNING";
+        }
+
+        // 报名进行中，竞赛未开始
+        if (now.after(contest.getRegisterStartTime()) && now.before(contest.getRegisterEndTime())) {
+            return "REGISTERING";
+        }
+
+        // 报名结束，竞赛未开始
+        if (now.after(contest.getRegisterEndTime()) && now.before(contest.getContestStartTime())) {
+            return "REGISTER_END";
+        }
+
+        // 报名和竞赛都未开始
+        if (now.before(contest.getRegisterStartTime())) {
+            return "NOT_STARTED";
+        }
+
+        return "UNKNOWN";
     }
 }

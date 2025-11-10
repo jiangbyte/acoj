@@ -68,6 +68,7 @@ async function loadData() {
 
   dataContestHot().then(({ data }) => {
     setRankingListData.value = data
+    console.log(data)
   })
 
   useDataSetFetch().dataSetDifficultyDistribution().then(({ data }) => {
@@ -195,7 +196,7 @@ function resetHandle() {
                     responsive="screen"
                   >
                     <n-gi span="1 l:3">
-                      <img :src="item?.cover" class="w-full h-50 l:h-50 rounded-xl object-cover">
+                      <img :src="item?.cover" class="w-full h-52 l:h-52 rounded-xl object-cover">
                     </n-gi>
                     <n-gi span="1 l:5" class="flex items-center w-full">
                       <n-thing class="w-full">
@@ -215,6 +216,11 @@ function resetHandle() {
                                 <NTag size="small" type="error">
                                   {{ item.isPublic ? '公开竞赛' : '私密竞赛' }}
                                 </NTag>
+                                <NTag size="small" type="error">
+                                  {{ item.statusName }}
+                                </NTag>
+                              </n-flex>
+                              <n-flex align="center">
                                 <NTag size="small" type="warning">
                                   {{ item.contestTypeName }}
                                 </NTag>
@@ -225,14 +231,7 @@ function resetHandle() {
                               <n-flex vertical :size="0">
                                 <n-flex>
                                   <n-text>
-                                    开始时间：
-                                    <NTime :time="Number(item.contestStartTime)" />
-                                  </n-text>
-                                </n-flex>
-                                <n-flex>
-                                  <n-text>
-                                    结束时间：
-                                    <NTime :time="Number(item.contestEndTime)" />
+                                    竞赛时间 <NTime :time="Number(item.contestStartTime)" /> - <NTime :time="Number(item.contestEndTime)" />
                                   </n-text>
                                 </n-flex>
                               </n-flex>
@@ -298,7 +297,7 @@ function resetHandle() {
             </template>
             <ListSkeleton02 v-if="!setRankingListData" />
             <EmptyData v-else-if="setRankingListData.length === 0" />
-            <HotSet v-else :list-data="setRankingListData" />
+            <HotContest v-else :list-data="setRankingListData" />
           </n-card>
         </NSpace>
       </n-gi>

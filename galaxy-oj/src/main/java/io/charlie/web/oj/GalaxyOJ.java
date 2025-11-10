@@ -22,5 +22,7 @@ public class GalaxyOJ {
 
     public static void main(String[] args) {
         SpringApplication.run(GalaxyOJ.class, args);
+
+        log.info("======== 启动成功 ========");
     }
 }

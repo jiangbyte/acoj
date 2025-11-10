@@ -74,6 +74,12 @@ export function useDataContestFetch() {
     dataContestDelete(data: any) {
       return $alova.Post<IResult<any>>(`${pathPrefix + table}/delete`, data)
     },
+    dataContestSignUp(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/signUp`, data)
+    },
+    dataContestCancelSignUp(data: any) {
+      return $alova.Post<IResult<any>>(`${pathPrefix + table}/cancelSignUp`, data)
+    },
 
     dataContestHot() {
       return $alova.Get<IResult<any>>(`${pathPrefix + table}/hot`)

@@ -367,7 +367,7 @@ public class DataProblemServiceImpl extends ServiceImpl<DataProblemMapper, DataP
             Long userAcceptedCount = dataSolvedMapper.selectCount(new LambdaQueryWrapper<DataSolved>()
                     .eq(DataSolved::getUserId, userId)
                     .eq(DataSolved::getSolved, Boolean.TRUE)
-//                    .eq(DataSolved::getIsSet, Boolean.FALSE)
+                    .eq(DataSolved::getModuleType, "PROBLEM")
             );
             dataProblemCount.setSolved(userAcceptedCount);
         } catch (Exception e) {

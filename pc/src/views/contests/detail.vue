@@ -82,7 +82,8 @@ const columns: DataTableColumns<any> = [
       return h(NButton, {
         size: 'small',
         type: 'primary',
-        // disabled: detailData.value.setType === 2 ? detailData.value.timeStatus !== 2 : false,
+        // 报名并且运行中才可点击开始
+        disabled: !detailData.value.isRegister || detailData.value.status !== 'RUNNING',
         onClick: () => {
           router.push({
             name: 'contest_submit',
@@ -286,6 +287,7 @@ async function loadData() {
 
   if (data) {
     detailData.value = data
+    console.log(data)
 
     if (data.isPublic) {
       console.log('公开竞赛')
@@ -317,32 +319,69 @@ function handleClickImage() {
   imageRef.value?.showPreview()
 }
 
-// 倒计时相关
+// ===================================== 倒计时相关 =====================================
 const countdownDuration = ref(0)
 const countdownActive = ref(false)
-const countdownType = ref<'start' | 'end'>('start')
+const countdownType = ref<'register_start' | 'register_end' | 'contest_start' | 'contest_end'>('contest_start')
 
 // 计算倒计时持续时间
 function calculateCountdown() {
   const now = Date.now()
-  const startTime = Number(detailData.value.startTime)
-  const endTime = Number(detailData.value.endTime)
+  const registerStartTime = Number(detailData.value.registerStartTime)
+  const registerEndTime = Number(detailData.value.registerEndTime)
+  const contestStartTime = Number(detailData.value.contestStartTime)
+  const contestEndTime = Number(detailData.value.contestEndTime)
 
-  // 如果当前时间在开始时间之前，显示开始倒计时
-  if (now < startTime) {
-    countdownDuration.value = startTime - now
-    countdownType.value = 'start'
-    countdownActive.value = true
+  // 根据竞赛状态设置不同的倒计时类型
+  switch (detailData.value.status) {
+    case 'NOT_STARTED':
+      // 报名未开始，显示报名开始倒计时
+      countdownDuration.value = registerStartTime - now
+      countdownType.value = 'register_start'
+      countdownActive.value = true
+      break
+    case 'REGISTERING':
+      // 报名进行中，显示报名结束倒计时
+      countdownDuration.value = registerEndTime - now
+      countdownType.value = 'register_end'
+      countdownActive.value = true
+      break
+    case 'REGISTER_END':
+      // 报名结束，竞赛未开始，显示竞赛开始倒计时
+      countdownDuration.value = contestStartTime - now
+      countdownType.value = 'contest_start'
+      countdownActive.value = true
+      break
+    case 'RUNNING':
+    case 'FROZEN':
+      // 竞赛进行中，显示竞赛结束倒计时
+      countdownDuration.value = contestEndTime - now
+      countdownType.value = 'contest_end'
+      countdownActive.value = true
+      break
+    case 'FINISHED':
+    default:
+      // 竞赛已结束，停止倒计时
+      countdownActive.value = false
+      break
   }
-  // 如果当前时间在开始时间和结束时间之间，显示结束倒计时
-  else if (now >= startTime && now < endTime) {
-    countdownDuration.value = endTime - now
-    countdownType.value = 'end'
-    countdownActive.value = true
-  }
-  // 如果已经结束，停止倒计时
-  else {
-    countdownActive.value = false
+}
+
+// 格式化倒计时显示文本
+function getCountdownText() {
+  if (!countdownActive.value)
+    return ''
+  switch (countdownType.value) {
+    case 'register_start':
+      return `报名开始倒计时：`
+    case 'register_end':
+      return `报名结束倒计时：`
+    case 'contest_start':
+      return `竞赛开始倒计时：`
+    case 'contest_end':
+      return `竞赛结束倒计时：`
+    default:
+      return ''
   }
 }
 
@@ -369,9 +408,7 @@ function renderCountdown({ hours, minutes, seconds }: { hours: number, minutes: 
   return `${hours.toString().padStart(2, '0')} 时 ${minutes.toString().padStart(2, '0')} 分 ${seconds.toString().padStart(2, '0')} 秒`
 }
 onMounted(() => {
-  if (detailData.value?.setType === 2) {
-    countdownPoller.start()
-  }
+  countdownPoller.start()
 })
 
 onUnmounted(() => {
@@ -410,6 +447,28 @@ function handlePasswordSubmit() {
           passwordFormLoading.value = false
         }
       })
+    }
+  })
+}
+
+function signUp() {
+  const siup = {
+    contestId: routeContestId,
+  }
+  useDataContestFetch().dataContestSignUp(siup).then(({ success }) => {
+    if (success) {
+      window.location.reload()
+    }
+  })
+}
+
+function cancelSignUp() {
+  const siup = {
+    contestId: routeContestId,
+  }
+  useDataContestFetch().dataContestCancelSignUp(siup).then(({ success }) => {
+    if (success) {
+      window.location.reload()
     }
   })
 }
@@ -474,14 +533,20 @@ function handlePasswordSubmit() {
                     </template>
                     <template #header-extra>
                       <n-flex align="center">
-                        <NButton type="primary">
+                        <NButton @click="signUp" v-if="detailData?.status === 'REGISTERING' && !detailData?.isRegister" type="primary">
                           报名
+                        </NButton>
+                        <NButton @click="cancelSignUp" v-if="detailData?.status === 'REGISTERING' && detailData?.isRegister" type="warning">
+                          取消报名
                         </NButton>
                       </n-flex>
                     </template>
                     <template #description>
                       <NSpace vertical>
                         <n-flex>
+                          <NTag size="small" type="error">
+                            {{ detailData?.statusName }}
+                          </NTag>
                           <NTag size="small" type="error">
                             {{ detailData?.isPublic ? '公开竞赛' : '私密竞赛' }}
                           </NTag>
@@ -529,6 +594,7 @@ function handlePasswordSubmit() {
                   <div class="bg-white p-y-2">
                     <div class="divide-y divide-gray-100 dark:divide-gray-700">
                       <n-data-table
+                        v-if="detailData?.status === 'RUNNING'"
                         :columns="columns"
                         :data="setProblemPageData"
                         :bordered="false"
@@ -536,12 +602,16 @@ function handlePasswordSubmit() {
                         class="flex-1 h-full"
                         :scroll-x="800"
                       />
+                      <NText v-else>
+                        竞赛未开始，暂时无法查看题目
+                      </NText>
                     </div>
                   </div>
                 </n-tab-pane>
                 <n-tab-pane name="submissions" tab="提交">
                   <div class="divide-y divide-gray-100 dark:divide-gray-700">
                     <n-data-table
+                      v-if="detailData?.status === 'RUNNING'"
                       :columns="submitColumns"
                       :data="submitPageData?.records"
                       :bordered="false"
@@ -549,8 +619,12 @@ function handlePasswordSubmit() {
                       class="flex-1 h-full"
                       :scroll-x="1200"
                     />
+                    <NText v-else>
+                      竞赛未开始，暂时无法查看提交
+                    </NText>
                   </div>
                   <n-pagination
+                    v-if="detailData?.status === 'RUNNING'"
                     v-model:page="submitPageParam.current"
                     v-model:page-size="submitPageParam.size"
                     show-size-picker
@@ -565,32 +639,6 @@ function handlePasswordSubmit() {
                     @update:page-size="loadData"
                   />
                 </n-tab-pane>
-                <!-- <n-tab-pane name="users" tab="用户">
-                  <div class="divide-y divide-gray-100 dark:divide-gray-700">
-                    <n-data-table
-                      :columns="userColumns"
-                      :data="proSetSolvedUserData?.records"
-                      :bordered="false"
-                      :row-key="(row: any) => row.userId"
-                      class="flex-1 h-full"
-                      :scroll-x="800"
-                    />
-                  </div>
-                  <n-pagination
-                    v-model:page="proSetSolvedUserDataParam.current"
-                    v-model:page-size="proSetSolvedUserDataParam.size"
-                    show-size-picker
-                    :page-count="proSetSolvedUserData ? Number(proSetSolvedUserData.pages) : 0"
-                    :page-sizes="Array.from({ length: 10 }, (_, i) => ({
-                      label: `${(i + 1) * 10} 每页`,
-                      value: (i + 1) * 10,
-                    }))"
-                    :page-slot="3"
-                    class="flex justify-center items-center pt-6"
-                    @update:page="loadData"
-                    @update:page-size="loadData"
-                  />
-                </n-tab-pane> -->
               </n-tabs>
             </n-card>
           </NSpace>
@@ -609,7 +657,7 @@ function handlePasswordSubmit() {
                 <!-- 倒计时显示 -->
                 <NSpace v-if="countdownActive" align="center" :size="0">
                   <NText depth="3">
-                    {{ countdownType === 'start' ? '开始倒计时：' : '结束倒计时：' }}
+                    {{ getCountdownText() }}
                   </NText>
                   <NCountdown
                     :duration="countdownDuration"
@@ -658,14 +706,6 @@ function handlePasswordSubmit() {
                     {{ setProblemPageData?.length ? setProblemPageData.length : 0 }}
                   </NText>
                 </NSpace>
-                <!-- <NSpace align="center" :size="0">
-                  <NText depth="3">
-                    参与人数：
-                  </NText>
-                  <NText>
-                    {{ detailData?.participantUserCount ? detailData?.participantUserCount : 0 }}
-                  </NText>
-                </NSpace> -->
                 <n-alert show-icon type="warning">
                   竞赛请注意时间及时刷新页面：开始时间到达时请刷新页面，结束时间到达将锁定竞赛，无法提交。
                 </n-alert>

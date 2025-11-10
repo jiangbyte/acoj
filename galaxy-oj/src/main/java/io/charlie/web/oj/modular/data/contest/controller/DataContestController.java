@@ -89,5 +89,11 @@ public class DataContestController {
     public Result<?> signUp(@RequestBody @Valid DataContestSignUpParam dataContestSignUpParam) {
         return Result.success(dataContestService.signUp(dataContestSignUpParam));
     }
+    @Operation(summary = "C端-取消报名")
+    @PostMapping("/data/contest/cancelSignUp")
+    public Result<?> cancelSignUp(@RequestBody @Valid DataContestSignUpParam dataContestSignUpParam) {
+        dataContestService.cancelSignUp(dataContestSignUpParam);
+        return Result.success();
+    }
 
 }

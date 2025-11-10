@@ -43,7 +43,7 @@ loadData()
       :x-gap="24"
       :y-gap="24"
       responsive="screen"
-      class="min-h-[calc(100vh-10rem)]"
+      class="min-h-[calc(100vh-12rem)]"
     >
       <!-- 左侧主内容 -->
       <n-gi span="1 l:2">
