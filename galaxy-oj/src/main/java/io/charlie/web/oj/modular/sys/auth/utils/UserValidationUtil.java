@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Validator;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import io.charlie.galaxy.exception.BusinessException;
+import lombok.Getter;
 
 import java.util.regex.Pattern;
 
@@ -47,8 +48,8 @@ public class UserValidationUtil {
             return ValidationResult.failure("用户名只能包含字母、数字和下划线");
         }
 
-        // 不能是中文
-        if (Validator.isChinese(username)) {
+        // 不能包含中文
+        if (Validator.hasChinese(username)) {
             return ValidationResult.failure("用户名不能包含中文");
         }
 
@@ -102,6 +103,11 @@ public class UserValidationUtil {
             return ValidationResult.failure("密码长度不能大于20位");
         }
 
+        // 不能含有中文
+        if (Validator.hasChinese(password)) {
+            return ValidationResult.failure("密码不能包含中文");
+        }
+
         return ValidationResult.success();
     }
 
@@ -138,6 +144,7 @@ public class UserValidationUtil {
     /**
      * 校验结果封装类
      */
+    @Getter
     public static class ValidationResult {
         private final boolean success;
         private final String message;
@@ -153,14 +160,6 @@ public class UserValidationUtil {
 
         public static ValidationResult failure(String message) {
             return new ValidationResult(false, message);
-        }
-
-        public boolean isSuccess() {
-            return success;
-        }
-
-        public String getMessage() {
-            return message;
         }
 
         /**
