@@ -64,7 +64,7 @@ const menuOptions = [
             path: '/sets',
           },
         },
-        { default: () => '题集/训练' },
+        { default: () => '题集训练' },
       ),
     key: 'sets',
     icon: iconRender('icon-park-outline:folder-open'),
@@ -94,7 +94,7 @@ const menuOptions = [
         { default: () => '竞赛' },
       ),
     key: 'contests',
-    icon: iconRender('icon-park-outline:folder-open'),
+    icon: iconRender('icon-park-outline:fireworks'),
   },
   {
     label: () =>

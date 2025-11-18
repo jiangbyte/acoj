@@ -5,7 +5,6 @@ import { useDataProblemFetch, useDataSetFetch, useSysBannerFetch, useSysNoticeFe
 const bannerListData = ref()
 const noticeListData = ref()
 const problemListData = ref()
-const setListData = ref()
 const problemUserRankingListData = ref()
 const problemRankingListData = ref()
 const setRankingListData = ref()
@@ -23,11 +22,6 @@ async function loadData() {
   // 获取最新题目数据
   useDataProblemFetch().dataProblemLatest().then(({ data }) => {
     problemListData.value = data
-  })
-
-  // 获取最新题集数据
-  useDataSetFetch().dataSetLatest().then(({ data }) => {
-    setListData.value = data
   })
 
   // 获取Top10排行榜
@@ -63,13 +57,11 @@ loadData()
       <n-gi span="1 l:6">
         <BannerSkeleton01 v-if="!bannerListData" />
         <EmptyData v-else-if="!bannerListData.length" />
-        <!-- 轮播图 -->
         <LatestBanner v-else :banner-list-data="bannerListData" />
       </n-gi>
       <!-- 左侧主内容 -->
       <n-gi span="1 l:4">
         <n-space vertical :size="24">
-          <!-- 公告内容 -->
           <n-card class="rounded-xl" size="small" content-style="padding: 0">
             <template #header>
               <n-h2 class="pb-0 mb-0">
@@ -96,22 +88,6 @@ loadData()
             <EmptyData v-else-if="problemListData.length === 0" />
             <LatestProblem v-else :list-data="problemListData" />
           </n-card>
-          <!-- <n-card class="rounded-xl" size="small" content-style="padding: 0;">
-            <template #header>
-              <n-h2 class="pb-0 mb-0">
-                最新题集
-              </n-h2>
-            </template>
-            <template #header-extra>
-              <n-button text @click="$router.push({ path: '/sets' })">
-                查看全部
-              </n-button>
-            </template>
-
-            <SetSkeleton01 v-if="!setListData" />
-            <EmptyData v-else-if="setListData.length === 0" />
-            <LatestSet v-else :set-list-data="setListData" />
-          </n-card> -->
         </n-space>
       </n-gi>
 

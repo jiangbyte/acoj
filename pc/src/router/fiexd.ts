@@ -58,14 +58,14 @@ export const routes: RouteRecordRaw[] = [
         path: 'sets',
         name: 'sets',
         component: () => import('@/views/sets/index.vue'),
-        meta: { title: '题集/训练', icon: 'folder' },
+        meta: { title: '题集训练', icon: 'folder' },
       },
       // 题单详情
       {
         path: 'sets/detail',
         name: 'proset_detail',
         component: () => import('@/views/sets/detail.vue'),
-        meta: { title: '题集/训练详情', icon: 'folder' },
+        meta: { title: '题集训练详情', icon: 'folder' },
         beforeEnter: (to) => {
           if (!to.query.set) {
             return '/'
