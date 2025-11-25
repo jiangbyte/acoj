@@ -1,74 +1,92 @@
+<div align="center">
+    <img src="./docs/logo2.png" width="150" height="150" />
+</div>
+
 # Astro Code OJ
 
-## 简介
+## 🌟 项目简介
 
-基于 Java 的在线评测系统，支持题目管理、用户管理、题集管理、代码提交与评测、AI 聊天辅助等功能。系统采用 Spring Boot + MyBatis Plus 构建后端服务，前端使用 Vue 3 + TypeScript + Vite 构建管理界面。
+Astro Code OJ 是一款基于 Java 生态与 Vue 3 构建的在线评测系统，提供从题目管理、代码评测到用户体系的全流程解决方案。系统融合了 AI 辅助编程能力，支持多语言代码实时评测，为编程学习、算法训练提供学习平台。
 
-- **题目管理**：支持题目增删改查、代码提交与评测。
-- **题集管理**：支持题集创建、进度跟踪、提交与评测。
-- **用户管理**：支持用户注册、登录、用户管理。
-- **系统管理**：支持公告、横幅、配置、字典、角色等系统级管理。
-- **AI 聊天**：集成 DashScope AI 接口，提供题目解析辅助。
-- **文件管理**：支持文件上传、预览。
-- **消息队列**：使用 RabbitMQ 实现异步评测任务处理。
+## 🚀 核心特性
 
-## 技术栈
+### 核心功能
 
-### 后端
-- Java 21
-- Spring Boot
-- MyBatis Plus
-- Redis
-- RabbitMQ
-- Nacos
-- Maven
-- Spring Cloud
-- GoZero
+- **📚 完善的题目体系**：支持题目增删改查、分类标签、样例管理与难度分级
+- **⚡ 多语言评测引擎**：支持 C/C++、Java、Python、Go 等主流编程语言
+- **👥 用户管理**：角色权限控制、用户排名、进度跟踪与学习统计
+- **🤖 AI 智能辅助**：集成 DashScope AI 接口，提供题目解析、代码优化建议
+- **📦 灵活的题集管理**：支持自定义题集创建、学习进度追踪与批量评测
+- **🔄 异步任务处理**：基于 RabbitMQ 的分布式评测任务调度，支持高并发场景
 
-### 前端
-- Vue 3
-- TypeScript
-- Vite
-- Naive UI
-- Vue Router
-- Pinia
+## 🛠️ 技术栈
 
-## 预览
+### 后端技术
 
-**首页**
+| 技术              | 说明        |
+|-----------------|-----------|
+| Java 21         | 核心开发语言    |
+| Spring Boot 3.x | 应用开发框架    |
+| Spring Cloud    | 微服务架构支持   |
+| MyBatis Plus    | ORM 框架    |
+| Redis           | 缓存与会话存储   |
+| RabbitMQ        | 消息队列      |
+| Nacos           | 配置中心与服务发现 |
+| GoZero          | 高性能微服务框架  |
 
-![](docs/images/75530295.png)
+### 前端技术
 
-**题库**
+| 技术            | 说明    |
+|---------------|-------|
+| Vue 3         | 前端框架  |
+| TypeScript    | 类型系统  |
+| Vite          | 构建工具  |
+| Naive UI      | 组件库   |
+| Pinia         | 状态管理  |
+| Vue Router    | 路由管理  |
+| Monaco Editor | 代码编辑器 |
 
-![](docs/images/645a02dd.png)
+## 🖼️ 界面预览
 
-**排行榜**
+| 功能模块  | 预览图                                 |
+|-------|-------------------------------------|
+| 系统首页  | ![首页](docs/images/75530295.png)     |
+| 题库浏览  | ![题库](docs/images/645a02dd.png)     |
+| 用户排行  | ![排行榜](docs/images/6e953a5e.png)    |
+| 提交状态  | ![提交状态](docs/images/736143f5.png)   |
+| 题目管理  | ![题目管理](docs/images/ecd667e6.png)   |
+| 系统配置  | ![字典管理](docs/images/7ae535cf.png)   |
+| 代码提交  | ![代码提交](docs/images/1df49fea.png)   |
+| 评测结果  | ![测评结果](docs/images/33ec11b0.png)   |
+| AI 辅助 | ![LLM 辅助](docs/images/e126115c.png) |
 
-![](docs/images/6e953a5e.png)
+## 📋 快速开始
 
-**提交状态**
+### 环境要求
 
-![](docs/images/736143f5.png)
+- **后端**：JDK 21+, MySQL 8.0+, Redis 6.0+, RabbitMQ 3.8+
+- **前端**：Node.js 18+, pnpm
+- **构建工具**：Maven 3.8+, Docker 20.10+ (可选)
 
-**题目管理**
+### 一键部署（Docker Compose）
 
-![](docs/images/ecd667e6.png)
+> 暂时不支持一键部署
 
-**字典管理**
+## 📖 使用文档
 
-![](docs/images/7ae535cf.png)
+> 待完善
 
-**提交页**
+## 🎯 应用场景
 
-代码提交
+- 高校编程教学与作业评测
+- 算法训练平台搭建
+- 个人编程技能训练
 
-![](docs/images/1df49fea.png)
+## 🔧 扩展与定制
 
-测评结果
+- **评测语言扩展**：通过配置添加新的编程语言支持
+- **存储方案定制**：支持本地存储、MinIO 等多种存储方案
 
-![](docs/images/33ec11b0.png)
+---
 
-LLM 辅助
-
-![](docs/images/e126115c.png)
+⭐️ 如果这个项目对你有帮助，请给我们一个 Star！
