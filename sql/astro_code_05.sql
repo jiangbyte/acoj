@@ -66,7 +66,20 @@ CREATE TABLE `data_contest`  (
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_title` (`title`),
+  INDEX `idx_visibility_register_time` (
+                                        `is_visible`,
+                                        `is_public`,
+                                        `register_start_time`,
+                                        `register_end_time`
+      ),
+  INDEX `idx_status_contest_time` (
+                                   `status`,
+                                   `contest_start_time`,
+                                   `contest_end_time`
+      ),
+  INDEX `idx_sort` (`sort`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞赛表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -88,9 +101,9 @@ CREATE TABLE `data_contest_auth`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_contest_user`(`contest_id` ASC, `user_id` ASC) USING BTREE,
-  INDEX `idx_contest_id`(`contest_id` ASC) USING BTREE,
-  INDEX `idx_user_id`(`user_id` ASC) USING BTREE
+  UNIQUE INDEX `uk_contest_user`(`contest_id` ASC, `user_id` ASC) ,
+  INDEX `idx_contest_id`(`contest_id` ASC),
+  INDEX `idx_user_id`(`user_id` ASC)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞赛认证表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -116,9 +129,10 @@ CREATE TABLE `data_contest_participant`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_contest_user`(`contest_id` ASC, `user_id` ASC) USING BTREE,
-  INDEX `idx_contest_id`(`contest_id` ASC) USING BTREE,
-  INDEX `idx_user_id`(`user_id` ASC) USING BTREE
+  UNIQUE INDEX `uk_contest_user`(`contest_id` ASC, `user_id` ASC) ,
+  INDEX `idx_contest_id`(`contest_id` ASC) ,
+  INDEX `idx_user_id`(`user_id` ASC),
+  INDEX `idx_contest_register_time` (`contest_id`, `register_time`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞赛参与表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -145,8 +159,9 @@ CREATE TABLE `data_contest_problem`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_contest_id`(`contest_id` ASC) USING BTREE,
-  INDEX `idx_problem_code`(`problem_code` ASC) USING BTREE
+  UNIQUE INDEX `uk_contest_problem` (`contest_id`, `problem_id`),
+  INDEX `idx_submit_count` (`submit_count` DESC),
+  INDEX `idx_contest_sort` (`contest_id`, `sort`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞赛题目表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -180,7 +195,11 @@ CREATE TABLE `data_judge_case`  (
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `update_time` datetime(3) NULL DEFAULT NULL,
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_submit_create_time` (`submit_id`, `create_time`),
+ INDEX `idx_submit_case_sign` (`submit_id`, `case_sign`),
+ INDEX `idx_submit_score` (`submit_id`, `score`),
+ INDEX `idx_submit_status` (`submit_id`, `status`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '判题结果用例表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -212,9 +231,27 @@ CREATE TABLE `data_library`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_set_id`(`module_type` ASC, `module_id` ASC) USING BTREE,
-  INDEX `idx_problem_id`(`problem_id` ASC) USING BTREE,
-  INDEX `idx_language`(`language` ASC) USING BTREE
+  UNIQUE INDEX `uk_user_module_problem_lang` (
+                                              `user_id`,
+                                              `module_type`,
+                                              `module_id`,
+                                              `problem_id`,
+                                              `language`
+      ),
+  INDEX `idx_module_problem_lang_time` (
+                                        `module_type`,
+                                        `module_id`,
+                                        `problem_id`,
+                                        `language`,
+                                        `update_time`
+      ),
+  INDEX `idx_user_module_lang` (
+                                `user_id`,
+                                `module_type`,
+                                `module_id`,
+                                `language`
+      ),
+  INDEX `idx_user_id` (`user_id`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '提交样本库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -251,10 +288,23 @@ CREATE TABLE `data_problem`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_category_id`(`category_id` ASC) USING BTREE,
-  INDEX `idx_is_public`(`is_public` ASC) USING BTREE,
-  INDEX `idx_is_visible`(`is_visible` ASC) USING BTREE,
-  INDEX `idx_difficulty`(`difficulty` ASC) USING BTREE
+  INDEX `idx_visibility_public_category_difficulty` (
+                                                     `is_visible`,
+                                                     `is_public`,
+                                                     `category_id`,
+                                                     `difficulty`
+      ),
+  INDEX `idx_visibility_public_create_time` (
+                                             `is_visible`,
+                                             `is_public`,
+                                             `create_time`
+      ),
+  INDEX `idx_visibility_public_difficulty` (
+                                            `is_visible`,
+                                            `is_public`,
+                                            `difficulty`
+      ),
+  FULLTEXT INDEX   `idx_title_prefix` (`title`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '题目表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -269,7 +319,15 @@ CREATE TABLE `data_problem_tag`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '题目ID',
   `tag_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '标签ID',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+    INDEX `idx_problem_tag` (
+                             `problem_id`,
+                             `tag_id`
+      ),
+    INDEX `idx_tag_problem` (
+                             `tag_id`,
+                             `problem_id`
+      )
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '题目标签关联表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -325,9 +383,15 @@ CREATE TABLE `data_set`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_set_type`(`set_type` ASC) USING BTREE,
-  INDEX `idx_category_id`(`category_id` ASC) USING BTREE,
-  INDEX `idx_difficulty`(`difficulty` ASC) USING BTREE
+  INDEX `idx_visible_category_difficulty_type` (
+                                                `is_visible`,
+                                                `category_id`,
+                                                `difficulty`,
+                                                `set_type`
+      ),
+  INDEX `idx_title_prefix` (`title`),
+  INDEX `idx_visible_create_time` (`is_visible`, `create_time`),
+  INDEX `idx_visible_difficulty` (`is_visible`, `difficulty`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '题集' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -343,7 +407,20 @@ CREATE TABLE `data_set_problem`  (
   `set_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '题集ID',
   `problem_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '题目ID',
   `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+    INDEX `idx_set_problem` (
+                             `set_id`,
+                             `problem_id`
+      ),
+    INDEX `idx_problem_set` (
+                             `problem_id`,
+                             `set_id`
+        ),
+    INDEX `idx_set_problem_sort` (
+                                  `set_id`,
+                                  `problem_id`,
+                                  `sort`
+        )
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '题集题目' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -369,7 +446,29 @@ CREATE TABLE `data_solved`  (
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+    INDEX `idx_module_type_module_id` (
+                                       `module_type`,
+                                       `module_id`
+      ),
+    INDEX `idx_user_module_type_module_id` (
+                                           `user_id`,
+                                           `module_type`,
+                                           `module_id`
+        ),
+    INDEX `idx_user_module_type_module_id_problem_id` (
+                                                      `user_id`,
+                                                      `module_type`,
+                                                      `module_id`,
+                                                      `problem_id`
+        ),
+    INDEX `idx_user_module_type_module_id_problem_id_solved` (
+                                                             `user_id`,
+                                                             `module_type`,
+                                                             `module_id`,
+                                                             `problem_id`,
+                                                             `solved`
+        )
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户解决表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -407,10 +506,17 @@ CREATE TABLE `data_submit`  (
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   `judge_task_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '相似检测任务ID',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `problem_id`(`problem_id` ASC) USING BTREE,
-  INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
-  INDEX `idx_problem_id`(`problem_id` ASC) USING BTREE,
-  INDEX `idx_language`(`language` ASC) USING BTREE
+   INDEX `idx_user_module_problem_lang_status_type` (
+      `user_id`,
+      `module_type`,
+      `module_id`,
+      `problem_id`,
+      `language`,
+      `status`,
+      `submit_type`
+      ),
+ INDEX `idx_status` (`status`),
+ INDEX `idx_create_time` (`create_time`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '提交表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -438,8 +544,7 @@ CREATE TABLE `data_test_case`  (
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `update_time` datetime(3) NULL DEFAULT NULL,
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_problem_id`(`problem_id` ASC) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE, INDEX `idx_problem_id` (`problem_id`), INDEX `idx_problem_case_sign` (`problem_id`, `case_sign`), INDEX `idx_problem_create_time` (`problem_id`, `create_time`), INDEX `idx_problem_score` (`problem_id`, `score`),INDEX `idx_problem_is_sample` (`problem_id`, `is_sample`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '题目测试用例表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -468,7 +573,14 @@ CREATE TABLE `sys_article`  (
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_category_type_deleted`(`category`, `type`, `deleted`) USING BTREE,
+  INDEX `idx_parent_id_deleted`(`parent_id`, `deleted`) USING BTREE,
+  INDEX `idx_category_deleted_sort`(`category`, `deleted`, `sort`) USING BTREE,
+  INDEX `idx_deleted_create_time`(`deleted`, `create_time`) USING BTREE,
+  UNIQUE INDEX `uk_to_url`(`to_url`) USING BTREE,
+  INDEX `idx_title_prefix`(`title`) USING BTREE,
+  INDEX `idx_summary_prefix`(`summary`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统文章表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -498,7 +610,9 @@ CREATE TABLE `sys_banner`  (
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_visible_sort`(`is_visible`, `sort`) USING BTREE,
+  INDEX `idx_jump_module_type`(`jump_module`, `jump_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '横幅表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -521,7 +635,8 @@ CREATE TABLE `sys_category`  (
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_name`(`name`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '分类表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -548,7 +663,9 @@ CREATE TABLE `sys_config`  (
   `config_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '配置分类',
   `sort` int NULL DEFAULT 0 COMMENT '排序',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `idx_code`(`code` ASC) USING BTREE
+  UNIQUE INDEX `idx_code`(`code`) USING BTREE,
+  INDEX `idx_config_type_sort`(`config_type`, `sort`) USING BTREE,
+    INDEX `idx_code_config_type`(`code`, `config_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统配置表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -594,7 +711,11 @@ CREATE TABLE `sys_conversation`  (
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_conversation_id`(`conversation_id`) USING BTREE,
+  INDEX `idx_user_id_create_time`(`user_id`, `create_time`) USING BTREE,
+  INDEX `idx_problem_id`(`problem_id`) USING BTREE,
+  INDEX `idx_set_id`(`set_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '大模型对话表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -618,7 +739,8 @@ CREATE TABLE `sys_dict`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_type_code`(`dict_type` ASC, `dict_value` ASC) USING BTREE COMMENT '类型和编码唯一索引'
+  UNIQUE INDEX `uk_type_code`(`dict_type`, `dict_value`) USING BTREE,
+  INDEX `idx_dict_type`(`dict_type`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '系统字典表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -729,7 +851,9 @@ CREATE TABLE `sys_group`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `idx_group_code`(`code` ASC) USING BTREE
+  UNIQUE INDEX `idx_group_code`(`code`) USING BTREE,
+  INDEX `idx_parent_id`(`parent_id`) USING BTREE,
+  INDEX `idx_name`(`name`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户组表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -762,7 +886,12 @@ CREATE TABLE `sys_log`  (
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_user_id`(`user_id`) USING BTREE,
+  INDEX `idx_operation_time`(`operation_time`) USING BTREE,
+  INDEX `idx_category`(`category`) USING BTREE,
+  INDEX `idx_module`(`module`) USING BTREE,
+  INDEX `idx_status`(`status`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '系统活动/日志记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -794,9 +923,10 @@ CREATE TABLE `sys_menu`  (
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   `parameters` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '菜单头部参数',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_pid`(`pid` ASC) USING BTREE,
-  INDEX `idx_sort`(`sort` ASC) USING BTREE,
-  INDEX `idx_menu_type`(`menu_type` ASC) USING BTREE
+  INDEX `idx_pid`(`pid`) USING BTREE,
+  INDEX `idx_sort`(`sort`) USING BTREE,
+  INDEX `idx_menu_type`(`menu_type`) USING BTREE,
+  INDEX `idx_visible`(`visible`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '菜单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -855,7 +985,9 @@ CREATE TABLE `sys_notice`  (
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
   `is_visible` tinyint(1) NULL DEFAULT 1 COMMENT '是否可见',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_visible_sort`(`is_visible`, `sort`) USING BTREE,
+  INDEX `idx_create_time`(`create_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '公告表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -903,7 +1035,14 @@ CREATE TABLE `sys_role_menu`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '主键',
   `role_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色ID',
   `menu_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '菜单ID',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+    INDEX `idx_role_menu_id`(
+                            `role_id`,
+                            `menu_id`
+        ) USING BTREE,
+    INDEX `idx_role_menu_menu_id`(`menu_id`) USING BTREE
+                              ,
+    INDEX `idx_role_menu_role_id`(`role_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '角色-菜单 关联表(1-N)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -999,7 +1138,9 @@ CREATE TABLE `sys_tag`  (
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+    INDEX `idx_tag_name`(`name`) USING BTREE
+
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '标签表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1134,7 +1275,12 @@ CREATE TABLE `task_similarity`  (
   `create_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '创建者',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间戳',
   `update_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '更新者',
-  PRIMARY KEY (`id`) USING BTREE
+      PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_task_id_similarity`(`task_id`, `similarity`) USING BTREE,
+  INDEX `idx_problem_submit_user`(`problem_id`, `submit_user`) USING BTREE,
+  INDEX `idx_problem_similarity`(`problem_id`, `similarity`) USING BTREE,
+  INDEX `idx_module_type_id`(`module_type`, `module_id`) USING BTREE,
+  INDEX `idx_submit_time`(`submit_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '检测结果任务库' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
