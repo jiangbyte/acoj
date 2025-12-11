@@ -533,10 +533,10 @@ function cancelSignUp() {
                     </template>
                     <template #header-extra>
                       <n-flex align="center">
-                        <NButton @click="signUp" v-if="detailData?.status === 'REGISTERING' && !detailData?.isRegister" type="primary">
+                        <NButton v-if="detailData?.status === 'REGISTERING' && !detailData?.isRegister" type="primary" @click="signUp">
                           报名
                         </NButton>
-                        <NButton @click="cancelSignUp" v-if="detailData?.status === 'REGISTERING' && detailData?.isRegister" type="warning">
+                        <NButton v-if="detailData?.status === 'REGISTERING' && detailData?.isRegister" type="warning" @click="cancelSignUp">
                           取消报名
                         </NButton>
                       </n-flex>

@@ -25,14 +25,6 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '来源',
-    key: 'source',
-    width: 120,
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
     title: '题目',
     key: 'title',
     width: 150,
@@ -72,7 +64,14 @@ const columns: DataTableColumns<any> = [
     align: 'center',
     width: 60,
     render: (row) => {
-      return h(NTag, { size: 'small', type: 'error' }, { default: () => row.difficultyName })
+      // return h(NTag, { size: 'small', type: 'error' }, { default: () => row.difficultyName })
+      const typeMap = {
+        1: 'success',
+        2: 'warning',
+        3: 'error',
+      }
+      const tagType = typeMap[row.difficulty] || 'default'
+      return h(NTag, { size: 'small', type: tagType }, { default: () => row.difficultyName })
     },
   },
   {
@@ -108,8 +107,8 @@ const columns: DataTableColumns<any> = [
 const pageParam = ref({
   current: 1,
   size: 10,
-  sortField: null,
-  sortOrder: null,
+  sortField: 'id',
+  sortOrder: 'ASCEND',
   keyword: '',
   tagId: null,
   categoryId: null,
@@ -134,7 +133,7 @@ async function loadData() {
   // 获取Top10排行榜
   useDataProblemFetch().dataProblemHot().then(({ data }) => {
     problemRankingListData.value = data
-    console.log(data)
+    console.log('r', data)
   })
 
   useDataProblemFetch().dataProblemDifficultyDistribution().then(({ data }) => {

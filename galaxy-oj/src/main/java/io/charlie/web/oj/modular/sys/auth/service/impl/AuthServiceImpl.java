@@ -215,7 +215,9 @@ public class AuthServiceImpl implements AuthService {
         // 默认用户组
         sysUser.setGroupId(EGroupConstant.DEFAULT_USER_GROUP_ID);
         // 默认昵称
-        sysUser.setNickname(EUserConstant.USER_DEFAULT_NICKNAME);
+        long timestamp = System.currentTimeMillis(); // 获取当前时间戳（毫秒）
+        String last5Digits = String.format("%05d", timestamp % 100000); // 取模保留后5位，不足补0
+        sysUser.setNickname("用户_" + last5Digits);
         // 默认头像
         sysUser.setAvatar(sysConfigService.getValueByCode("APP_DEFAULT_AVATAR"));
         // 默认背景图片
@@ -291,6 +293,7 @@ public class AuthServiceImpl implements AuthService {
         // 获取用户信息
         SysUser sysUser = sysUserMapper.selectById(loginIdAsString);
 
+
         // 验证旧密码
         if (!BCrypt.checkpw(passwordChangeParam.getOldPassword(), sysUser.getPassword())) {
             throw new BusinessException("旧密码错误");
@@ -301,6 +304,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException("新密码不一样");
         }
 
+        UserValidationUtil.validatePassword(passwordChangeParam.getNewPassword()).throwIfFailed();
         sysUser.setPassword(BCrypt.hashpw(passwordChangeParam.getNewPassword()));
 
         sysUserMapper.updateById(sysUser);

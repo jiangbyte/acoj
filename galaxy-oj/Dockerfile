@@ -99,13 +99,35 @@ EXPOSE 89
 
 
 
+#ENTRYPOINT ["java", \
+#    "-Xmx8G", \
+#    "-Xms8G", \
+#    "-XX:MaxMetaspaceSize=512M", \
+#    "-XX:+UseZGC", \
+#    "-XX:ConcGCThreads=1", \
+#    "-XX:ParallelGCThreads=2", \
+#    "-XX:+ZProactive", \
+#    "-XX:+UseContainerSupport", \
+#    "-XX:+DisableExplicitGC", \
+#    "-XX:+HeapDumpOnOutOfMemoryError", \
+#    "-Xlog:gc*:file=/app/logs/gc.log:time:filecount=3,filesize=10M", \
+#    "-Djava.security.egd=file:/dev/./urandom", \
+#    "-Dfile.encoding=UTF-8", \
+#    "-Dio.undertow.no-host-header=true", \
+#    "-Djava.util.concurrent.ForkJoinPool.common.parallelism=2", \
+#    "-Dorg.jboss.threads.enqueue-batching=true", \
+#    "-Dio.netty.leakDetectionLevel=disabled", \
+#    "-jar", "galaxy-oj-1.0.0.jar"]
+
+
 ENTRYPOINT ["java", \
     "-Xmx8G", \
     "-Xms8G", \
     "-XX:MaxMetaspaceSize=512M", \
     "-XX:+UseZGC", \
-    "-XX:ConcGCThreads=2", \
-    "-XX:ParallelGCThreads=4", \
+    "-XX:ConcGCThreads=1", \
+    "-XX:ParallelGCThreads=2", \
+    "-XX:+ZProactive", \
     "-XX:+UseContainerSupport", \
     "-XX:+DisableExplicitGC", \
     "-XX:+HeapDumpOnOutOfMemoryError", \
@@ -113,7 +135,7 @@ ENTRYPOINT ["java", \
     "-Djava.security.egd=file:/dev/./urandom", \
     "-Dfile.encoding=UTF-8", \
     "-Dio.undertow.no-host-header=true", \
-    "-Djava.util.concurrent.ForkJoinPool.common.parallelism=4", \
+    "-Djava.util.concurrent.ForkJoinPool.common.parallelism=2", \
     "-Dorg.jboss.threads.enqueue-batching=true", \
     "-Dio.netty.leakDetectionLevel=disabled", \
     "-jar", "galaxy-oj-1.0.0.jar"]

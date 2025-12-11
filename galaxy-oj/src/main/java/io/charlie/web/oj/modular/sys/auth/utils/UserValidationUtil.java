@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 public class UserValidationUtil {
 
     // 用户名规则：2-15位，字母开头，只能包含字母、数字、下划线
-    private static final String USERNAME_PATTERN = "^[a-zA-Z][a-zA-Z0-9_]{5,19}$";
+    private static final String USERNAME_PATTERN = "^[a-zA-Z][a-zA-Z0-9_]*$";
     private static final Pattern USERNAME_REGEX = Pattern.compile(USERNAME_PATTERN);
 
     // 用户名最小长度
@@ -35,7 +35,7 @@ public class UserValidationUtil {
 
         // 校验长度
         if (username.length() < USERNAME_MIN_LENGTH || username.length() > USERNAME_MAX_LENGTH) {
-            return ValidationResult.failure("用户名长度必须在6-20位之间");
+            return ValidationResult.failure("用户名长度必须在2-15位之间");
         }
 
         // 校验必须以字母开头
