@@ -1,3 +1,5 @@
+> 【该仓库已遗弃，为历史版本v3.0】本版本仅提供了OJ的核心功能，v4.0正在云效平台持续开发中
+
 <div align="center">
     <img src="./docs/logo2.png" width="150" height="150" />
 </div>
