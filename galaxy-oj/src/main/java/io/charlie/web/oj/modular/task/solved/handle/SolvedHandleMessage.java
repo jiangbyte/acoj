@@ -52,6 +52,9 @@ public class SolvedHandleMessage {
 
     @Transactional(rollbackFor = Exception.class)
     public void processSolvedRecord(SolvedMessage submit) {
+//        ALTER TABLE data_solved
+//    ADD UNIQUE INDEX uk_user_problem_module (user_id, problem_id, module_type, module_id);
+
         String userId = submit.getUserId();
         String problemId = submit.getProblemId();
         String submitId = submit.getSubmitId();
@@ -59,38 +62,73 @@ public class SolvedHandleMessage {
         String moduleId = submit.getModuleId();
         Boolean solved = submit.getSolved();
 
-        // 检查记录是否存在
-        LambdaQueryWrapper<DataSolved> eq = new LambdaQueryWrapper<DataSolved>()
-                .eq(DataSolved::getUserId, userId)
-                .eq(DataSolved::getProblemId, problemId)
-                .eq(DataSolved::getModuleType, moduleType)
-                .eq(DataSolved::getModuleId, moduleId);
+        DataSolved dataSolved = new DataSolved();
+        dataSolved.setUserId(userId);
+        dataSolved.setProblemId(problemId);
+        dataSolved.setSubmitId(submitId);
+        dataSolved.setSolved(solved);
+        dataSolved.setModuleType(moduleType);
+        dataSolved.setModuleId(moduleId);
+        dataSolved.setCreateTime(new Date());
+        dataSolved.setUpdateTime(new Date());
 
-        DataSolved dataSolved1 = dataSolvedMapper.selectOne(eq);
+//        // 检查记录是否存在
+//        LambdaQueryWrapper<DataSolved> eq = new LambdaQueryWrapper<DataSolved>()
+//                .eq(DataSolved::getUserId, userId)
+//                .eq(DataSolved::getProblemId, problemId)
+//                .eq(DataSolved::getModuleType, moduleType)
+//                .eq(DataSolved::getModuleId, moduleId);
+//
+//        DataSolved dataSolved1 = dataSolvedMapper.selectOne(eq);
+//
+//        if (dataSolved1 != null) {
+//            // 更新现有记录
+//            dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+//                    .eq(DataSolved::getUserId, userId)
+//                    .eq(DataSolved::getProblemId, problemId)
+//                    .eq(DataSolved::getModuleType, moduleType)
+//                    .eq(DataSolved::getModuleId, moduleId)
+//                    .set(DataSolved::getSubmitId, submitId)
+//                    .set(DataSolved::getUpdateTime, new Date())
+//                    .set(!dataSolved1.getSolved(), DataSolved::getSolved, solved) // 如果已解决，则不更新
+//            );
+//        } else {
+//            // 插入新记录
+//            DataSolved dataSolved = new DataSolved();
+//            dataSolved.setUserId(userId);
+//            dataSolved.setProblemId(problemId);
+//            dataSolved.setSubmitId(submitId);
+//            dataSolved.setSolved(solved);
+//            dataSolved.setModuleType(moduleType);
+//            dataSolved.setModuleId(moduleId);
+//            dataSolved.setCreateTime(new Date());
+//            dataSolved.setUpdateTime(new Date());
+//            dataSolvedMapper.insert(dataSolved);
+//        }
 
-        if (dataSolved1 != null) {
-            // 更新现有记录
-            dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
-                    .eq(DataSolved::getUserId, userId)
-                    .eq(DataSolved::getProblemId, problemId)
-                    .eq(DataSolved::getModuleType, moduleType)
-                    .eq(DataSolved::getModuleId, moduleId)
-                    .set(DataSolved::getSubmitId, submitId)
-                    .set(DataSolved::getUpdateTime, new Date())
-                    .set(!dataSolved1.getSolved(), DataSolved::getSolved, solved) // 如果已解决，则不更新
-            );
-        } else {
-            // 插入新记录
-            DataSolved dataSolved = new DataSolved();
-            dataSolved.setUserId(userId);
-            dataSolved.setProblemId(problemId);
-            dataSolved.setSubmitId(submitId);
-            dataSolved.setSolved(solved);
-            dataSolved.setModuleType(moduleType);
-            dataSolved.setModuleId(moduleId);
-            dataSolved.setCreateTime(new Date());
-            dataSolved.setUpdateTime(new Date());
+        try {
             dataSolvedMapper.insert(dataSolved);
+        } catch (Exception e) {
+            if (isDuplicateKeyException(e)) {
+                // 插入失败，说明已存在，执行更新
+                dataSolvedMapper.update(new LambdaUpdateWrapper<DataSolved>()
+                        .eq(DataSolved::getUserId, userId)
+                        .eq(DataSolved::getProblemId, problemId)
+                        .eq(DataSolved::getModuleType, moduleType)
+                        .eq(DataSolved::getModuleId, moduleId)
+                        .set(DataSolved::getSubmitId, submitId)
+                        .set(DataSolved::getUpdateTime, new Date())
+                        .setSql("solved = CASE WHEN solved = 1 THEN 1 ELSE " + (solved ? 1 : 0) + " END")
+                );
+            } else {
+                throw e;
+            }
         }
+    }
+
+    private boolean isDuplicateKeyException(Exception e) {
+        // 根据数据库类型判断，例如 MySQL 的 error code 1062
+        return e.getMessage().contains("Duplicate entry") ||
+                (e.getCause() != null && e.getCause().getMessage().contains("1062"));
     }
 }

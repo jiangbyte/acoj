@@ -71,6 +71,10 @@ defineExpose({
           <CodeEditor :model-value="formData.expectedOutput" height="200px" />
           <!-- {{ formData.expectedOutput }} -->
         </NDescriptionsItem>
+
+        <NDescriptionsItem label="是否样例">
+          {{ formData.isSampleName }}
+        </NDescriptionsItem>
         <!-- <NDescriptionsItem label="输入文件路径">
           {{ formData.inputFilePath }}
         </NDescriptionsItem>
@@ -82,9 +86,6 @@ defineExpose({
         </NDescriptionsItem>
         <NDescriptionsItem label="输出文件大小">
           {{ formData.outputFileSize }}
-        </NDescriptionsItem>
-        <NDescriptionsItem label="是否样例">
-          {{ formData.isSampleName }}
         </NDescriptionsItem>
         <NDescriptionsItem label="分值">
           {{ formData.score }}

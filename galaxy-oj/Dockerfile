@@ -15,7 +15,8 @@
 
 #FROM openjdk:21
 #FROM docker.io/openjdk:21
-FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/openjdk:21
+#FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/openjdk:21
+FROM docker.xuanyuan.run/bellsoft/liberica-openjdk-alpine:21.0.8-cds
 #FROM  docker.1ms.run/astita/openjdk21-alpine:latest
 
 WORKDIR /app
@@ -131,7 +132,6 @@ ENTRYPOINT ["java", \
     "-XX:+UseContainerSupport", \
     "-XX:+DisableExplicitGC", \
     "-XX:+HeapDumpOnOutOfMemoryError", \
-    "-Xlog:gc*:file=/app/logs/gc.log:time:filecount=3,filesize=10M", \
     "-Djava.security.egd=file:/dev/./urandom", \
     "-Dfile.encoding=UTF-8", \
     "-Dio.undertow.no-host-header=true", \

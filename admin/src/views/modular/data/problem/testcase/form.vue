@@ -136,18 +136,18 @@ defineExpose({
         <NFormItem label="期望输出" path="expectedOutput">
           <CodeEditor v-model="formData.expectedOutput" height="200px" />
         </NFormItem>
-        <!-- <NFormItem label="输入文件路径" path="inputFilePath">
-          <NInput v-model:value="formData.inputFilePath" placeholder="请输入输入文件路径" />
-        </NFormItem>
-        <NFormItem label="输入文件大小" path="inputFileSize">
-          <NInputNumber v-model:value="formData.inputFileSize" :min="0" :max="100" placeholder="请输入输入文件大小" />
-        </NFormItem>
-        <NFormItem label="输出文件路径" path="outputFilePath">
-          <NInput v-model:value="formData.outputFilePath" placeholder="请输入输出文件路径" />
-        </NFormItem>
-        <NFormItem label="输出文件大小" path="outputFileSize">
-          <NInputNumber v-model:value="formData.outputFileSize" :min="0" :max="100" placeholder="请输入输出文件大小" />
-        </NFormItem>
+<!--        <NFormItem label="输入文件路径" path="inputFilePath">-->
+<!--          <NInput v-model:value="formData.inputFilePath" placeholder="请输入输入文件路径" />-->
+<!--        </NFormItem>-->
+<!--        <NFormItem label="输入文件大小" path="inputFileSize">-->
+<!--          <NInputNumber v-model:value="formData.inputFileSize" :min="0" :max="100" placeholder="请输入输入文件大小" />-->
+<!--        </NFormItem>-->
+<!--        <NFormItem label="输出文件路径" path="outputFilePath">-->
+<!--          <NInput v-model:value="formData.outputFilePath" placeholder="请输入输出文件路径" />-->
+<!--        </NFormItem>-->
+<!--        <NFormItem label="输出文件大小" path="outputFileSize">-->
+<!--          <NInputNumber v-model:value="formData.outputFileSize" :min="0" :max="100" placeholder="请输入输出文件大小" />-->
+<!--        </NFormItem>-->
         <NFormItem label="是否样例" path="isSample">
           <NRadioGroup v-model:value="formData.isSample">
             <NRadio :value="true">
@@ -158,9 +158,9 @@ defineExpose({
             </NRadio>
           </NRadioGroup>
         </NFormItem>
-        <NFormItem label="分值" path="score">
-          <NInputNumber v-model:value="formData.score" :min="0" :max="100" placeholder="请输入分值" />
-        </NFormItem> -->
+<!--        <NFormItem label="分值" path="score">-->
+<!--          <NInputNumber v-model:value="formData.score" :min="0" :max="100" placeholder="请输入分值" />-->
+<!--        </NFormItem> -->
       </NForm>
       <template #footer>
         <NSpace align="center" justify="end">

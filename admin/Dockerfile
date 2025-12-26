@@ -1,5 +1,6 @@
 # 使用 Node.js 22 alpine 版本作为基础镜像，命名为 base 阶段
-FROM node:22-alpine AS base
+#FROM node:22-alpine AS base
+FROM docker.xuanyuan.run/library/node:22-alpine AS base
 # 设置 pnpm 的安装路径环境变量
 ENV PNPM_HOME="/pnpm"
 # 将 pnpm 路径添加到系统 PATH 环境变量中
@@ -31,7 +32,8 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --no-frozen-lockf
 RUN pnpm run build
 
 # 使用 nginx alpine 版本作为最终运行环境
-FROM nginx:1.23.1-alpine
+#FROM nginx:1.23.1-alpine
+FROM nginx:latest
 
 # 设置工作目录为 /www
 WORKDIR /www
