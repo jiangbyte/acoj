@@ -1,5 +1,7 @@
 # Hei Admin Vue
 
+<img width="120" src="https://jiangbyte.github.io/hei-docs/logo.png">
+
 **Hei Admin Vue** 是 HEI 快速开发框架的 Vue3 前端管理后台解决方案，基于 Vue 3 + Vite + TypeScript 构建。
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
