@@ -63,7 +63,7 @@ public class DashScopeConfig {
 
         return builder
                 .defaultSystem(llmProperties.getPrompts().getDefaultPrompt())
-                .defaultAdvisors(new SimpleLoggerAdvisor(), messageChatMemoryAdvisor, documentRetrievalAdvisor)
+                .defaultAdvisors(new SimpleLoggerAdvisor(), messageChatMemoryAdvisor)
                 .defaultOptions(dashScopeChatOptions)
                 .defaultTools(problemTool)
                 .build();

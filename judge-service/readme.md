@@ -2,7 +2,7 @@
 
 go run main.go -f etc/judge.yaml -nacos
 
-go build -o JudgeService main.go
+go build -o SService main.go
 
 docker run -itd --privileged --name ubuntu_golang --hostname ubuntu_golang ubuntu:latest
 

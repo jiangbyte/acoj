@@ -112,18 +112,28 @@ const setProblemOptions = ref<SelectOption[]>([])
 const languageOptions = ref<SelectOption[]>([])
 const groupOptions = ref<SelectOption[]>([])
 const pageData = ref()
-function doOpen(row: any, moduleType: string) {
+async function doOpen(row: any, moduleType: string) {
   show.value = true
   formData.value.moduleId = row.id as any
   formData.value.moduleType = moduleType as any
 
+  console.log('=============')
   // 仓库中有效的代码
-  useDataLibraryFetch().dataLibraryProblems({
+  // useDataLibraryFetch().dataLibraryProblems({
+  //   moduleType,
+  //   moduleId: row.id as any,
+  // }).then(({ data }) => {
+  //   setProblemOptions.value = data
+  //   console.log(data)
+  // })
+  const { data } = await useDataLibraryFetch().dataLibraryProblems({
     moduleType,
     moduleId: row.id as any,
-  }).then(({ data }) => {
-    setProblemOptions.value = data
   })
+  console.log(data)
+  setProblemOptions.value = data
+
+  console.log('----------')
 
   loadUserData()
   getGroupLists('')

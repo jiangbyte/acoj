@@ -239,7 +239,7 @@
 
 
 # syntax=docker/dockerfile:1.4
-FROM ubuntu:22.04
+FROM docker.xuanyuan.run/library/ubuntu:22.04
 LABEL authors="Charlie"
 
 # 启用 BuildKit 缓存挂载（需要 DOCKER_BUILDKIT=1）

@@ -38,7 +38,7 @@ const columns: DataTableColumns<any> = [
     },
   },
   {
-    title: '样例数量',
+    title: '克隆对数',
     key: 'sampleCount',
   },
   // {

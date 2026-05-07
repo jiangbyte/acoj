@@ -41,7 +41,7 @@ public class LibraryHandleMessage {
         log.debug("发送样本库消息成功");
     }
 
-    @Transactional
+//    @Transactional
     @RabbitListener(queues = "${oj.mq.library.common.queue}", concurrency = "1")
     public void receiveJudge(Library submit) {
 //        ALTER TABLE data_library

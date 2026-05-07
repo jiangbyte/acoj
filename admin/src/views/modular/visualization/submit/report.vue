@@ -201,10 +201,10 @@ loadData()
           <div class="flex justify-between items-center">
             <div>
               <h2 class="text-[clamp(1.25rem,3vw,1.75rem)] font-bold mb-2">
-                代码克隆检测统计
+                克隆统计
               </h2>
               <NSpace align="center">
-                <NTag>
+                <NTag v-if="detailData?.reportTypeName">
                   {{ detailData?.reportTypeName ? detailData.reportTypeName : '-' }}
                 </NTag>
                 <NTag>
@@ -280,9 +280,9 @@ loadData()
                 <NSpace class="w-full" justify="space-between">
                   <NSpace :size="1" vertical>
                     <p class="font-medium">
-                      共检测 <NTag size="small">
+                      共生成 <NTag size="small">
                         {{ detailData?.sampleCount ? detailData.sampleCount : 0 }}
-                      </NTag> 份有效代码
+                      </NTag> 份克隆对
                     </p>
                     <p class="font-medium">
                       发现 <NTag size="small">
@@ -328,7 +328,7 @@ loadData()
                       {{ item.cloneLevelName }} (≥{{ (item.similarity * 100).toFixed(2) }}%)
                     </NText>
                     <NText class="mr-4">
-                      {{ item.count }}组
+                      {{ item.count }} 对
                     </NText>
                   </div>
                   <n-progress
