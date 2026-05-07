@@ -120,6 +120,7 @@ func (w *Workspace) computeSimilarities(validSamples []model.DataLibrary, tokenC
 
 	// 修改循环逻辑，确保每个组合只比较一次
 	for i := 0; i < len(validSamples); i++ {
+		logx.Infof("开始处理 %s", validSamples[i].ID)
 		for j := i + 1; j < len(validSamples); j++ {
 			sample1 := validSamples[i]
 			sample2 := validSamples[j]
@@ -172,18 +173,33 @@ func (w *Workspace) Execute() *mq.SimilarityResultMessage {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
+	// === 新增：关键 nil 检查 ===
+	if w.svcCtx == nil {
+		logx.Error("svcCtx 为 nil，无法执行任务")
+		return w.buildResponse(false)
+	}
+
+	repo := w.svcCtx.DataLibraryRepo()
+	if repo == nil {
+		logx.Error("DataLibraryRepo 为 nil")
+		return w.buildResponse(false)
+	}
+	// ==========================
+
 	// 检查上下文是否已取消
 	if err := w.ctx.Err(); err != nil {
 		logx.Errorf("任务执行前上下文已取消: %v", err)
 		return w.buildResponse(false)
 	}
 
+	logx.Infof("开始获取样本库数据 %v", w.similarityMessage.LibIDs)
 	sampleLibraries, err := w.svcCtx.DataLibraryRepo().GetLibrariesByIDs(w.similarityMessage.LibIDs)
 	if err != nil {
 		logx.Errorf("%s: %v", ErrGetLibrariesFailed, err)
 		return w.buildResponse(false)
 	}
 
+	logx.Infof("成功获取样本库数据 %v", len(w.similarityMessage.LibIDs))
 	if len(sampleLibraries) == 0 {
 		logx.Info("未找到有效的样本库数据")
 		return w.buildResponse(false) // 空数据
@@ -196,17 +212,43 @@ func (w *Workspace) Execute() *mq.SimilarityResultMessage {
 		return w.buildResponse(false)
 	}
 
+	logx.Infof("开始计算相似度 %v", w.similarityMessage.TaskID)
 	// 并行计算相似度
 	taskSimilarities := w.computeSimilarities(validSamples, tokenCache)
 
+	logx.Infof("成功计算 %d 个样本的相似度", len(taskSimilarities))
 	// 批量插入数据库
+	// 	if len(taskSimilarities) > 0 {
+	// 		if err := w.svcCtx.TaskSimilarityRepo().BatchCreate(taskSimilarities); err != nil {
+	// 			logx.Errorf("%s: %v", ErrBatchCreateFailed, err)
+	// 			// 这里可以根据业务需求决定是否返回失败
+	// 		} else {
+	// 			logx.Infof("成功插入 %d 条 TaskSimilarity 记录", len(taskSimilarities))
+	// 		}
+	// 	}
+	const batchSize = 2000 // 每批最多2000条
+	// 批量插入数据库（分批）
 	if len(taskSimilarities) > 0 {
-		if err := w.svcCtx.TaskSimilarityRepo().BatchCreate(taskSimilarities); err != nil {
-			logx.Errorf("%s: %v", ErrBatchCreateFailed, err)
-			// 这里可以根据业务需求决定是否返回失败
-		} else {
-			logx.Infof("成功插入 %d 条 TaskSimilarity 记录", len(taskSimilarities))
+		logx.Infof("开始分批插入 %d 条 TaskSimilarity 记录", len(taskSimilarities))
+		totalInserted := 0
+		for i := 0; i < len(taskSimilarities); i += batchSize {
+			end := i + batchSize
+			logx.Infof("1 开始处理批次 %d-%d", i, end-1)
+			if end > len(taskSimilarities) {
+				end = len(taskSimilarities)
+			}
+
+			logx.Infof("2 开始处理批次 %d-%d", i, end-1)
+
+			batch := taskSimilarities[i:end]
+			if err := w.svcCtx.TaskSimilarityRepo().BatchCreate(batch); err != nil {
+				logx.Errorf("%s (批次 %d-%d): %v", ErrBatchCreateFailed, i, end-1, err)
+				// 可选择继续或中断，这里建议继续（避免全失败）
+			} else {
+				totalInserted += len(batch)
+			}
 		}
+		logx.Infof("成功分批插入 %d / %d 条 TaskSimilarity 记录", totalInserted, len(taskSimilarities))
 	}
 
 	response := w.buildResponse(true)
@@ -225,8 +267,8 @@ func (w *Workspace) createTaskSimilarity(sample1, sample2 *model.DataLibrary, si
 		TaskID:     w.similarityMessage.TaskID,
 		TaskType:   true,
 		ProblemID:  sample1.ProblemID,
-		ModuleId:      sample1.ModuleId,
-		ModuleType:      sample1.ModuleType,
+		ModuleId:   sample1.ModuleId,
+		ModuleType: sample1.ModuleType,
 		Language:   sample1.Language,
 		Similarity: similarityScore,
 

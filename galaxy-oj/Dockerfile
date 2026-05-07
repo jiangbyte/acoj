@@ -15,8 +15,8 @@
 
 #FROM openjdk:21
 #FROM docker.io/openjdk:21
-#FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/openjdk:21
-FROM docker.xuanyuan.run/bellsoft/liberica-openjdk-alpine:21.0.8-cds
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/openjdk:21
+#FROM docker.xuanyuan.run/bellsoft/liberica-openjdk-alpine:21.0.8-cds
 #FROM  docker.1ms.run/astita/openjdk21-alpine:latest
 
 WORKDIR /app

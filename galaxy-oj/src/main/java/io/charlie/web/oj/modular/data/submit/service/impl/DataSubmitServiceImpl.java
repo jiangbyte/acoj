@@ -255,7 +255,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
                 queryWrapper);
     }
 
-    @Transactional(rollbackFor = Exception.class)
+//    @Transactional(rollbackFor = Exception.class)
     @Override
     public void add(DataSubmitAddParam dataSubmitAddParam) {
         DataSubmit bean = BeanUtil.toBean(dataSubmitAddParam, DataSubmit.class);
@@ -283,7 +283,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
     }
 
     @Override
-//    @DS("slave") // 需要立即返回，故去除从库
+//    @DS("slave") // 需要立即返回，故去除从库，TODO 这里有一个主从库的一个常见问题：读写分离，数据同步会存在一定的延时，所以立即读会导致错误，找不到这个数据
     public DataSubmit detail(DataSubmitIdParam dataSubmitIdParam) {
         DataSubmit dataSubmit = this.getById(dataSubmitIdParam.getId());
         if (ObjectUtil.isEmpty(dataSubmit)) {
@@ -292,7 +292,7 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         return dataSubmit;
     }
 
-    @Transactional(rollbackFor = Exception.class)
+//    @Transactional(rollbackFor = Exception.class)
     @Override
     public String handleProblemSubmit(DataSubmitExeParam dataSubmitExeParam) {
         DataSubmit dataSubmit = this.handleSubmit(dataSubmitExeParam);
@@ -314,6 +314,9 @@ public class DataSubmitServiceImpl extends ServiceImpl<DataSubmitMapper, DataSub
         message.setCode(dataSubmitExeParam.getCode());
 
         judgeHandleMessage.sendJudge(message);
+
+        // -- DEBUG --
+//        log.info("提交成功，提交ID：{}", dataSubmit.getId());
 
         return dataSubmit.getId();
     }

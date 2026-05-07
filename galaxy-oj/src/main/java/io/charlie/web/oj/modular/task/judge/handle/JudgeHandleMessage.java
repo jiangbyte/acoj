@@ -47,19 +47,19 @@ public class JudgeHandleMessage {
     private final SolvedHandleMessage solvedHandleMessage;
 
     public void sendJudge(JudgeSubmitDto judgeSubmitDto) {
-        log.debug("发送判题消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
+//        log.info("发送判题消息：{}", JSONUtil.toJsonStr(judgeSubmitDto));
         rabbitTemplate.convertAndSend(
                 judgeQueueProperties.getCommon().getExchange(),
                 judgeQueueProperties.getCommon().getRoutingKey(),
                 judgeSubmitDto
         );
-        log.debug("发送消息成功");
+//        log.info("发送消息成功");
     }
 
-    @Transactional
+//    @Transactional
     @RabbitListener(queues = "${oj.mq.judge.result.queue}", containerFactory = "judgeResultContainerFactory")
     public void receiveJudge(JudgeResultDto judgeResultDto) {
-        log.debug("接收到判题结果消息：id={}, status={}", judgeResultDto.getId(), judgeResultDto.getStatus());
+//        log.info("接收到判题结果消息：id={}, status={}", judgeResultDto.getId(), judgeResultDto.getStatus());
 
         // 1. 更新提交记录
         String submitRecord = updateSubmitRecord(judgeResultDto);
@@ -85,7 +85,7 @@ public class JudgeHandleMessage {
         int updated = dataSubmitMapper.update(lambda);
 
         if (updated > 0) {
-            log.debug("更新提交记录成功：id={}", judgeResultDto.getId());
+//            log.info("更新提交记录成功：id={}", judgeResultDto.getId());
             return judgeResultDto.getId();
         } else {
             log.warn("未找到对应的提交记录：id={}", judgeResultDto.getId());
@@ -98,16 +98,16 @@ public class JudgeHandleMessage {
      */
     public void processBusinessLogic(JudgeResultDto judgeResultDto, String id) {
         if (!judgeResultDto.getSubmitType()) {
-            log.debug("测试提交，跳过业务处理：id={}", judgeResultDto.getId());
+            log.info("测试提交，跳过业务处理：id={}", judgeResultDto.getId());
             return;
         }
 
-        SolvedMessage solvedMesage = BeanUtil.copyProperties(judgeResultDto, SolvedMessage.class);
-        solvedMesage.setSubmitId(id);
+        SolvedMessage solvedMessage = BeanUtil.copyProperties(judgeResultDto, SolvedMessage.class);
+        solvedMessage.setSubmitId(id);
 
         if (JudgeStatus.ACCEPTED.getValue().equals(judgeResultDto.getStatus())) {
-            log.debug("正式提交 AC，进行额外处理：id={}", judgeResultDto.getId());
-            solvedMesage.setSolved(Boolean.TRUE);
+//            log.info("正式提交 AC，进行额外处理：id={}", judgeResultDto.getId());
+            solvedMessage.setSolved(Boolean.TRUE);
 
             CompletableFuture.runAsync(() -> {
                 try {
@@ -127,8 +127,8 @@ public class JudgeHandleMessage {
                         ActivityScoreCalculator.SUBMIT, Boolean.TRUE);
             }
         } else {
-            log.debug("非AC正式提交：id={}, status={}", judgeResultDto.getId(), judgeResultDto.getStatus());
-            solvedMesage.setSolved(Boolean.FALSE);
+//            log.info("非AC正式提交：id={}, status={}", judgeResultDto.getId(), judgeResultDto.getStatus());
+            solvedMessage.setSolved(Boolean.FALSE);
 
             if (judgeResultDto.getModuleType().equals("PROBLEM")) {
                 // 添加用户活动
@@ -139,7 +139,7 @@ public class JudgeHandleMessage {
 
         CompletableFuture.runAsync(() -> {
             try {
-                solvedHandleMessage.sendSolved(solvedMesage);
+                solvedHandleMessage.sendSolved(solvedMessage);
             } catch (Exception e) {
                 log.error("更改解决记录失败：userId={}", judgeResultDto.getUserId(), e);
             }

@@ -319,15 +319,29 @@ public class DataLibraryServiceImpl extends ServiceImpl<DataLibraryMapper, DataL
 
     @Override
     public List<String> libraryIds(BatchLibraryQueryParam libraryQueryParam) {
+//        QueryWrapper<DataLibrary> dataLibraryQueryWrapper = this.queryLibrary(libraryQueryParam);
+//        List<DataLibrary> list = this.list(dataLibraryQueryWrapper);
+//        if (ObjectUtil.isNotEmpty(list)) {
+//            return list.stream()
+//                    .map(DataLibrary::getId)
+//                    .distinct()
+//                    .toList();
+//        }
+//
+//        return List.of();
+
         QueryWrapper<DataLibrary> dataLibraryQueryWrapper = this.queryLibrary(libraryQueryParam);
+        // 限制最多查200条
+        dataLibraryQueryWrapper.last("LIMIT 250");
+
         List<DataLibrary> list = this.list(dataLibraryQueryWrapper);
         if (ObjectUtil.isNotEmpty(list)) {
             return list.stream()
                     .map(DataLibrary::getId)
                     .distinct()
+                    .limit(200) // 再加一层保险（因为 distinct 可能减少数量，但不会超过200）
                     .toList();
         }
-
         return List.of();
     }
 
