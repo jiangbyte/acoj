@@ -11,8 +11,6 @@ __pycache__/
 # 任意一级的node_modules目录
 /**/node_modules/
 
-.env
-
 web/
 
 .idea/
