@@ -48,7 +48,7 @@ const form = reactive({
 async function loadCaptcha() {
   const { data } = await fetchCaptcha()
   if (data) {
-    captcha.value = data.captcha_image
+    captcha.value = data.captcha_base64 || data.captcha_image
     captchaId.value = data.captcha_id
   }
 }

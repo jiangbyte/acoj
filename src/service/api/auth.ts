@@ -1,29 +1,29 @@
 import { request } from '../http'
 
 export function fetchCaptcha() {
-  return request.Get('/public/b/captcha')
+  return request.Get('/api/v1/public/b/captcha')
 }
 
 export function fetchLogin(data: any) {
-  return request.Post('/public/b/login', data)
+  return request.Post('/api/v1/public/b/login', data)
 }
 
 export function fetchRegister(data: any) {
-  return request.Post('/public/b/register', data)
+  return request.Post('/api/v1/public/b/register', data)
 }
 
 export function fetchLogout() {
-  return request.Post('/b/logout')
+  return request.Post('/api/v1/b/logout')
 }
 
 export function fetchCurrentUser() {
-  return request.Get('/sys/user/current')
+  return request.Get('/api/v1/sys/user/current')
 }
 
 export function fetchUserMenus() {
-  return request.Get('/sys/user/menus')
+  return request.Get('/api/v1/sys/user/menus')
 }
 
 export function fetchUserPermissions() {
-  return request.Get('/sys/user/permissions')
+  return request.Get('/api/v1/sys/user/permissions')
 }

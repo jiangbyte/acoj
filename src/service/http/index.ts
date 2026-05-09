@@ -4,7 +4,7 @@ import VueHook from 'alova/vue'
 import { BACKEND_CONFIG } from './config'
 import { useAuthStore } from '@/store/auth'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL as string || '/api'
+const baseURL = import.meta.env.VITE_API_BASE_URL as string || ''
 
 export const request = createAlova({
   statesHook: VueHook,
