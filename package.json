@@ -13,6 +13,7 @@
     "format:check": "prettier --check \"src/**/*.{js,ts,vue,css,json}\""
   },
   "dependencies": {
+    "@ant-design/colors": "^7.1.0",
     "@ant-design/icons-vue": "^7.0.1",
     "alova": "^3.5.1",
     "ant-design-vue": "^4.2.6",

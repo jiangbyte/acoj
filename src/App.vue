@@ -1,18 +1,44 @@
 <template>
-  <AConfigProvider :theme="themeConfig">
-    <router-view />
+  <AConfigProvider :theme="themeConfig" :locale="zhCN">
+    <div :class="app.roundedCorners ? 'rounded-style' : ''">
+      <router-view />
+    </div>
   </AConfigProvider>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
+import zhCN from 'ant-design-vue/es/locale/zh_CN'
+import { theme } from 'ant-design-vue'
 import { useAppStore } from '@/store/app'
+import { changeColor, toggleGrayMode, toggleColorWeak } from '@/utils/themeUtil'
 
 const app = useAppStore()
 
+const { darkAlgorithm, defaultAlgorithm } = theme
+
 const themeConfig = computed(() => ({
+  algorithm: app.theme === 'realDark' ? darkAlgorithm : defaultAlgorithm,
   token: {
     colorPrimary: app.colorPrimary,
+    borderRadius: app.roundedCorners ? 6 : 2,
   },
 }))
+
+// Init theme on mount
+changeColor(app.colorPrimary, app.theme)
+toggleGrayMode(app.grayMode)
+toggleColorWeak(app.colorWeak)
+
+// Watch theme changes
+watch(() => app.colorPrimary, (color) => {
+  changeColor(color, app.theme)
+})
+
+watch(() => app.theme, (t) => {
+  changeColor(app.colorPrimary, t)
+})
+
+watch(() => app.grayMode, toggleGrayMode)
+watch(() => app.colorWeak, toggleColorWeak)
 </script>

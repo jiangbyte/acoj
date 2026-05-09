@@ -21,13 +21,13 @@ export function setupRouterGuard(router: Router) {
       return
     }
 
-    if (!routeStore.isInitAuthRoute && routeStore.menus.length) {
-      try {
+    if (!routeStore.isInitAuthRoute) {
+      if (!routeStore.menus.length) {
+        await authStore.loadMenusAndPermissions()
+      }
+      if (routeStore.menus.length) {
         await routeStore.initAuthRoute()
         next({ ...to, replace: true })
-        return
-      } catch {
-        next({ name: 'login' })
         return
       }
     }

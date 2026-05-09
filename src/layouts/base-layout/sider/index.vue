@@ -1,13 +1,21 @@
 <template>
-  <ALayoutSider v-model:collapsed="app.collapsed" :width="220" theme="light" collapsible>
+  <ALayoutSider
+    v-model:collapsed="app.collapsed"
+    :width="220"
+    :theme="siderTheme"
+    collapsible
+    :trigger="null"
+    :style="{ overflow: 'auto' }"
+  >
     <Logo :collapsed="app.collapsed" />
     <AMenu
       mode="inline"
       :selectedKeys="[route.path]"
       :openKeys="openKeys"
-      theme="light"
+      :theme="menuTheme"
       :items="menuItems"
       @click="handleMenuClick"
+      @openChange="handleOpenChange"
     />
   </ALayoutSider>
 </template>
@@ -27,14 +35,33 @@ const routeStore = useRouteStore()
 
 const openKeys = ref<string[]>([])
 
+const siderTheme = computed(() => app.theme === 'light' ? 'light' : 'dark')
+const menuTheme = computed(() => siderTheme.value)
+
 const menuItems = computed(() => menuToItems(routeStore.menus))
 
+// Expand parent submenu when navigating to a child page
 watch(() => route.path, (path) => {
-  const segments = path.split('/').filter(Boolean)
-  openKeys.value = segments.slice(0, -1).map((_, i) => '/' + segments.slice(0, i + 1).join('/'))
-}, { immediate: true })
+  for (const item of menuItems.value) {
+    if (item.children?.length && item.children.some((c: any) => c.key === path)) {
+      openKeys.value = [item.key]
+      return
+    }
+  }
+  openKeys.value = []
+})
 
 function handleMenuClick({ key }: { key: string }) {
   router.push(key)
+}
+
+function handleOpenChange(keys: string[]) {
+  // Accordion: keep only the most recently opened submenu
+  if (keys.length > 1) {
+    const added = keys.filter(k => !openKeys.value.includes(k))
+    openKeys.value = added.length ? [added[0]] : keys.slice(-1)
+  } else {
+    openKeys.value = keys
+  }
 }
 </script>

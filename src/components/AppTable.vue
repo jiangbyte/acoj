@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-card class="mb-4" v-if="$slots.search">
-      <a-form layout="inline" :model="searchForm" @finish="$emit('search', searchForm)">
+      <a-form layout="inline" :model="searchForm" @finish="handleSearch">
         <slot name="search" />
         <a-form-item>
           <a-space>
@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 
 const props = defineProps<{
   columns: any[]
@@ -45,6 +45,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   search: [form: any]
 }>()
+
+onMounted(() => {
+  loadData()
+})
 
 const dataSource = ref<any[]>([])
 const loading = ref(false)
@@ -78,6 +82,12 @@ async function loadData() {
 function handleTableChange(pag: any) {
   pagination.current = pag.current
   pagination.pageSize = pag.pageSize
+  loadData()
+}
+
+function handleSearch() {
+  queryParams.value = { ...props.searchForm }
+  pagination.current = 1
   loadData()
 }
 
