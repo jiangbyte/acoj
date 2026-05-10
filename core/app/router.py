@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from .health import router as health_router
-from modules.sys.auth import captcha_router, username_auth_router
+from modules.sys.auth import captcha_router, sm2_public_key_router, username_auth_router
 from modules.client.auth.captcha import router as client_captcha_router
 from modules.client.auth.username import router as client_username_router
 from modules.sys.banner import router as banner_router
@@ -23,6 +23,7 @@ from modules.sys.file import router as file_router
 def setup_routers(app: FastAPI):
     app.include_router(health_router)
     app.include_router(captcha_router)
+    app.include_router(sm2_public_key_router)
     app.include_router(username_auth_router)
     app.include_router(client_captcha_router)
     app.include_router(client_username_router)
