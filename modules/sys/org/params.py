@@ -58,8 +58,25 @@ class GrantOrgRoleParam(BaseModel):
     custom_scope_group_ids: Optional[str] = None
 
 
+class OrgTreeVO(BaseModel):
+    """Org tree node with children"""
+    id: Optional[str] = None
+    code: Optional[str] = None
+    name: Optional[str] = None
+    category: Optional[str] = None
+    parent_id: Optional[str] = None
+    status: Optional[str] = None
+    sort_code: Optional[int] = 0
+    children: List["OrgTreeVO"] = []
+
+
+class OrgTreeParam(BaseModel):
+    category: Optional[str] = None
+
+
 class OrgPageParam(PageBounds):
-    pass
+    parent_id: Optional[str] = None
+    keyword: Optional[str] = None
 
 
 class OrgExportParam(BaseModel):

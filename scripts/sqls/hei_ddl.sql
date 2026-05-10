@@ -914,6 +914,7 @@ VALUES
 
 -- 组织管理
 ('p_sys_org_page', 'sys:org:page', '组织分页查询', 'sys/org', 'BACKEND', 'ENABLED', 36, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('p_sys_org_tree', 'sys:org:tree', '组织树查询', 'sys/org', 'BACKEND', 'ENABLED', 36, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('p_sys_org_create', 'sys:org:create', '组织新增', 'sys/org', 'BACKEND', 'ENABLED', 37, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('p_sys_org_modify', 'sys:org:modify', '组织修改', 'sys/org', 'BACKEND', 'ENABLED', 38, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('p_sys_org_remove', 'sys:org:remove', '组织删除', 'sys/org', 'BACKEND', 'ENABLED', 39, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
@@ -932,6 +933,7 @@ VALUES
 
 -- 用户组管理
 ('p_sys_group_page', 'sys:group:page', '用户组分页查询', 'sys/group', 'BACKEND', 'ENABLED', 50, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('p_sys_group_tree', 'sys:group:tree', '用户组树查询', 'sys/group', 'BACKEND', 'ENABLED', 50, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('p_sys_group_create', 'sys:group:create', '用户组新增', 'sys/group', 'BACKEND', 'ENABLED', 51, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('p_sys_group_modify', 'sys:group:modify', '用户组修改', 'sys/group', 'BACKEND', 'ENABLED', 52, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('p_sys_group_remove', 'sys:group:remove', '用户组删除', 'sys/group', 'BACKEND', 'ENABLED', 53, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
@@ -1121,9 +1123,9 @@ WHERE p.`code` IN (
     'sys:user:page', 'sys:user:detail', 'sys:user:create', 'sys:user:modify', 'sys:user:remove',
     'sys:role:page', 'sys:role:detail', 'sys:role:create', 'sys:role:modify', 'sys:role:remove',
     'sys:permission:page', 'sys:permission:detail',
-    'sys:org:page', 'sys:org:detail', 'sys:org:create', 'sys:org:modify', 'sys:org:remove',
+    'sys:org:page', 'sys:org:tree', 'sys:org:detail', 'sys:org:create', 'sys:org:modify', 'sys:org:remove',
     'sys:position:page', 'sys:position:detail',
-    'sys:group:page', 'sys:group:detail',
+     'sys:group:page', 'sys:group:tree', 'sys:group:detail', 'sys:group:create', 'sys:group:modify', 'sys:group:remove',
     'sys:dict:page', 'sys:dict:list', 'sys:dict:tree', 'sys:dict:create', 'sys:dict:modify', 'sys:dict:remove',
     'sys:config:page', 'sys:config:list', 'sys:config:create', 'sys:config:modify', 'sys:config:remove',
     'sys:notice:page', 'sys:notice:detail',

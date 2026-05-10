@@ -5,7 +5,7 @@ from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission
 from core.utils.excel_utils import validate_import_file
-from ...params import OrgVO, OrgPageParam, OrgExportParam, OrgImportParam, GrantOrgRoleParam
+from ...params import OrgVO, OrgPageParam, OrgTreeParam, OrgExportParam, OrgImportParam, GrantOrgRoleParam
 from ...service import OrgService
 from openpyxl import load_workbook
 import io
@@ -26,6 +26,21 @@ async def page(
 ):
     service = OrgService(db)
     return success(service.page(param))
+
+
+@router.get(
+    "/api/v1/sys/org/tree",
+    summary="获取组织树",
+    response_model=Result[list[dict]]
+)
+@HeiCheckPermission("sys:org:tree")
+async def tree(
+    request: Request,
+    param: OrgTreeParam = Depends(),
+    db: Session = Depends(get_db)
+):
+    service = OrgService(db)
+    return success(service.tree(param))
 
 
 @router.post(

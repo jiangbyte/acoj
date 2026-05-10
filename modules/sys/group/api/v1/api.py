@@ -5,7 +5,7 @@ from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission
 from core.utils.excel_utils import validate_import_file
-from ...params import GroupVO, GroupPageParam, GroupExportParam, GroupImportParam, GrantGroupRoleParam
+from ...params import GroupVO, GroupPageParam, GroupTreeParam, GroupExportParam, GroupImportParam, GrantGroupRoleParam
 from ...service import GroupService
 from openpyxl import load_workbook
 import io
@@ -26,6 +26,35 @@ async def page(
 ):
     service = GroupService(db)
     return success(service.page(param))
+
+
+@router.get(
+    "/api/v1/sys/group/union-tree",
+    summary="获取组织与用户组联合树",
+    response_model=Result[list[dict]]
+)
+@HeiCheckPermission("sys:group:tree")
+async def union_tree(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    service = GroupService(db)
+    return success(service.union_tree())
+
+
+@router.get(
+    "/api/v1/sys/group/tree",
+    summary="获取用户组树",
+    response_model=Result[list[dict]]
+)
+@HeiCheckPermission("sys:group:tree")
+async def tree(
+    request: Request,
+    param: GroupTreeParam = Depends(),
+    db: Session = Depends(get_db)
+):
+    service = GroupService(db)
+    return success(service.tree(param))
 
 
 @router.post(

@@ -1,13 +1,14 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
+from sqlalchemy import select, func
 from fastapi import Request
 from .models import SysOrg
-from .params import OrgVO, OrgPageParam, OrgExportParam, OrgImportParam, GrantOrgRoleParam
+from .params import OrgVO, OrgTreeVO, OrgPageParam, OrgExportParam, OrgImportParam, GrantOrgRoleParam, OrgTreeParam
 from .dao import OrgDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data
+from core.enums import ExportTypeEnum, SoftDeleteEnum
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum
 from core.utils import export_excel, strip_system_fields, apply_update, make_template, generate_id
 from core.auth import HeiAuthTool
 import logging
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 class OrgService:
     def __init__(self, db: Session):
         self.dao = OrgDao(db)
+        self.db = db
 
     async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:
@@ -28,13 +30,62 @@ class OrgService:
             return None
 
     def page(self, param: OrgPageParam) -> dict:
-        result = self.dao.find_page(param)
+        from sqlalchemy import select as q, func
+
+        base_filters = [SysOrg.is_deleted == SoftDeleteEnum.NO]
+        if param.parent_id:
+            base_filters.append(
+                (SysOrg.parent_id == param.parent_id) | (SysOrg.id == param.parent_id)
+            )
+        if param.keyword:
+            keyword = f"%{param.keyword}%"
+            base_filters.append(SysOrg.name.ilike(keyword))
+
+        count_query = select(func.count()).select_from(SysOrg).where(*base_filters)
+        total = self.db.execute(count_query).scalar() or 0
+
+        offset = (param.current - 1) * param.size
+        query = select(SysOrg).where(*base_filters).order_by(SysOrg.sort_code).offset(offset).limit(param.size)
+        records = [OrgVO.model_validate(r).model_dump() for r in self.db.execute(query).scalars().all()]
         return page_data(
-            records=[OrgVO.model_validate(r).model_dump() for r in result["records"]],
-            total=result["total"],
+            records=records,
+            total=total,
             page=param.current,
             size=param.size
         )
+
+    def tree(self, param: OrgTreeParam) -> List[dict]:
+        base_filters = [SysOrg.is_deleted == SoftDeleteEnum.NO]
+        if param.category:
+            base_filters.append(SysOrg.category == param.category)
+
+        query = select(SysOrg).where(*base_filters).order_by(SysOrg.sort_code)
+        records = list(self.db.execute(query).scalars().all())
+
+        node_map = {}
+        roots = []
+        for r in records:
+            r_dict = OrgVO.model_validate(r).model_dump()
+            r_dict["children"] = []
+            node_map[r.id] = r_dict
+
+        for r_dict in node_map.values():
+            pid = r_dict.get("parent_id")
+            if pid and pid in node_map:
+                node_map[pid]["children"].append(r_dict)
+            else:
+                roots.append(r_dict)
+
+        self._sort_tree(roots)
+        return roots
+
+    @staticmethod
+    def _sort_tree(nodes: List[dict]):
+        nodes.sort(key=lambda x: x.get("sort_code", 0) or 0)
+        for n in nodes:
+            children = n.get("children")
+            if children:
+                OrgService._sort_tree(children)
 
     async def create(self, vo: OrgVO, request: Optional[Request] = None) -> None:
         created_by = await self._get_current_user_id(request)
@@ -66,7 +117,8 @@ class OrgService:
         records: List[SysOrg] = []
 
         if param.export_type == ExportTypeEnum.CURRENT.value:
-            result = self.dao.find_page(param.current or 1, param.size or 10)
+            page_param = OrgPageParam(current=param.current or 1, size=param.size or 10)
+            result = self.dao.find_page(page_param)
             records = result["records"]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
             records = self.dao.find_by_ids(param.selected_ids or [])

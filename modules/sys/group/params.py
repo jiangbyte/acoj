@@ -52,8 +52,28 @@ class GroupVO(BaseModel):
         return result
 
 
+class GroupTreeVO(BaseModel):
+    """Group tree node with children"""
+    id: Optional[str] = None
+    code: Optional[str] = None
+    name: Optional[str] = None
+    category: Optional[str] = None
+    parent_id: Optional[str] = None
+    org_id: Optional[str] = None
+    status: Optional[str] = None
+    sort_code: Optional[int] = 0
+    children: List["GroupTreeVO"] = []
+
+
+class GroupTreeParam(BaseModel):
+    org_id: Optional[str] = None
+    keyword: Optional[str] = None
+
+
 class GroupPageParam(PageBounds):
-    pass
+    parent_id: Optional[str] = None
+    keyword: Optional[str] = None
+    org_id: Optional[str] = None
 
 
 class GroupExportParam(BaseModel):

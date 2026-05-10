@@ -1,11 +1,13 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
+from sqlalchemy import select, func
 from fastapi import Request
 from .models import SysPosition
 from .params import PositionVO, PositionPageParam, PositionExportParam, PositionImportParam
 from .dao import PositionDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data
+from core.enums import SoftDeleteEnum
 from core.exception import BusinessException
 from core.enums import ExportTypeEnum
 from core.utils import export_excel, strip_system_fields, apply_update, make_template, generate_id
@@ -18,6 +20,7 @@ logger = logging.getLogger(__name__)
 class PositionService:
     def __init__(self, db: Session):
         self.dao = PositionDao(db)
+        self.db = db
 
     async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:
@@ -28,10 +31,25 @@ class PositionService:
             return None
 
     def page(self, param: PositionPageParam) -> dict:
-        result = self.dao.find_page(param)
+        filters = [SysPosition.is_deleted == SoftDeleteEnum.NO]
+        if param.keyword:
+            keyword = f"%{param.keyword}%"
+            filters.append(SysPosition.name.ilike(keyword))
+        if param.group_id:
+            filters.append(SysPosition.group_id == param.group_id)
+        if param.org_id:
+            filters.append(SysPosition.org_id == param.org_id)
+
+        count_query = select(func.count()).select_from(SysPosition).where(*filters)
+        total = self.db.execute(count_query).scalar() or 0
+
+        offset = (param.current - 1) * param.size
+        query = select(SysPosition).where(*filters).order_by(SysPosition.sort_code).offset(offset).limit(param.size)
+        records = [PositionVO.model_validate(r).model_dump() for r in self.db.execute(query).scalars().all()]
+
         return page_data(
-            records=[PositionVO.model_validate(r).model_dump() for r in result["records"]],
-            total=result["total"],
+            records=records,
+            total=total,
             page=param.current,
             size=param.size
         )
@@ -66,7 +84,8 @@ class PositionService:
         records: List[SysPosition] = []
 
         if param.export_type == ExportTypeEnum.CURRENT.value:
-            result = self.dao.find_page(param.current or 1, param.size or 10)
+            page_param = PositionPageParam(current=param.current or 1, size=param.size or 10)
+            result = self.dao.find_page(page_param)
             records = result["records"]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
             records = self.dao.find_by_ids(param.selected_ids or [])
