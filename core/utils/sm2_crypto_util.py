@@ -26,8 +26,6 @@ def init(private_key: str, public_key: str):
     global _private_key, _public_key, _sm2_crypt
     _private_key = private_key.strip().lower().replace('0x', '')
     public_key = public_key.strip().lower().replace('0x', '')
-    if public_key.startswith('04'):
-        public_key = public_key[2:]
     _public_key = public_key
     
     _sm2_crypt = sm2.CryptSM2(
@@ -127,4 +125,4 @@ def gen_keypair() -> Tuple[str, str]:
 def get_public_key() -> str:
     if not _public_key:
         raise RuntimeError("SM2 has not been initialized.")
-    return '04' + _public_key
+    return _public_key
