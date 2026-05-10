@@ -42,6 +42,10 @@ const menuItems = computed(() => menuToItems(routeStore.menus))
 
 // Expand parent submenu when navigating to a child page
 watch(() => route.path, (path) => {
+  if (app.collapsed) {
+    openKeys.value = []
+    return
+  }
   for (const item of menuItems.value) {
     if (item.children?.length && item.children.some((c: any) => c.key === path)) {
       openKeys.value = [item.key]
@@ -49,6 +53,11 @@ watch(() => route.path, (path) => {
     }
   }
   openKeys.value = []
+})
+
+// 收起侧边栏时清空 openKeys，避免弹出子菜单
+watch(() => app.collapsed, (collapsed) => {
+  if (collapsed) openKeys.value = []
 })
 
 function handleMenuClick({ key }: { key: string }) {

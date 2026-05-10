@@ -27,6 +27,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.2",
+    "@types/sm-crypto": "^0.3.4",
     "@unocss/preset-attributify": "^66.6.8",
     "@unocss/preset-icons": "^66.6.8",
     "@unocss/preset-uno": "^66.6.8",

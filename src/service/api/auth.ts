@@ -1,29 +1,34 @@
 import { request } from '../http'
 
 export function fetchCaptcha() {
-  return request.Get('/api/v1/public/b/captcha')
+  return request.Get<Service.ResponseResult>('/api/v1/public/b/captcha')
 }
 
-export function fetchLogin(data: any) {
-  return request.Post('/api/v1/public/b/login', data)
+export function fetchLogin(data: {
+  username: string
+  password: string
+  captcha_code?: string
+  captcha_id?: string
+}) {
+  return request.Post<Service.ResponseResult<{ token: string }>>('/api/v1/public/b/login', data)
 }
 
 export function fetchRegister(data: any) {
-  return request.Post('/api/v1/public/b/register', data)
+  return request.Post<Service.ResponseResult>('/api/v1/public/b/register', data)
 }
 
 export function fetchLogout() {
-  return request.Post('/api/v1/b/logout')
+  return request.Post<Service.ResponseResult>('/api/v1/b/logout')
 }
 
 export function fetchCurrentUser() {
-  return request.Get('/api/v1/sys/user/current')
+  return request.Get<Service.ResponseResult>('/api/v1/sys/user/current')
 }
 
 export function fetchUserMenus() {
-  return request.Get('/api/v1/sys/user/menus')
+  return request.Get<Service.ResponseResult>('/api/v1/sys/user/menus')
 }
 
 export function fetchUserPermissions() {
-  return request.Get('/api/v1/sys/user/permissions')
+  return request.Get<Service.ResponseResult<string[]>>('/api/v1/sys/user/permissions')
 }

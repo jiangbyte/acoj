@@ -44,8 +44,8 @@ async function handleDelete(id: string) {
 }
 
 async function handleUpload(file: File) {
-  const { isSuccess } = await uploadFile(file)
-  if (isSuccess) {
+  const { success } = await uploadFile(file)
+  if (success) {
     message.success('上传成功')
     tableRef.value?.refresh()
   }

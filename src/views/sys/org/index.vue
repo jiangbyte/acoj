@@ -41,7 +41,7 @@ const columns = [
 async function loadData() {
   loading.value = true
   try {
-    const { data } = await fetchOrgPage({ current: 1, size: 999 })
+    const { data } = await fetchOrgPage({ page: 1, size: 999 })
     if (data?.records) dataSource.value = data.records
   } finally {
     loading.value = false

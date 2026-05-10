@@ -51,7 +51,7 @@ function openEdit(id: string) { currentId.value = id; formOpen.value = true }
 function openPermission(id: string) { currentId.value = id; permOpen.value = true }
 
 async function handleDelete(id: string) {
-  const { isSuccess } = await fetchRoleRemove({ ids: [id] })
-  if (isSuccess) tableRef.value?.refresh()
+  const { success } = await fetchRoleRemove({ ids: [id] })
+  if (success) tableRef.value?.refresh()
 }
 </script>

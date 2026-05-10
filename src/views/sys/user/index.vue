@@ -64,7 +64,7 @@ function openEdit(id: string) { currentId.value = id; formOpen.value = true }
 function openCreate() { currentId.value = ''; formOpen.value = true }
 
 async function handleDelete(id: string) {
-  const { isSuccess } = await fetchUserRemove({ ids: [id] })
-  if (isSuccess) tableRef.value?.refresh()
+  const { success } = await fetchUserRemove({ ids: [id] })
+  if (success) tableRef.value?.refresh()
 }
 </script>

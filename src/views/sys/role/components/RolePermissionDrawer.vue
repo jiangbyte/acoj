@@ -57,11 +57,11 @@ function handleCheck(keys: any[]) {
 async function handleSave() {
   saving.value = true
   try {
-    const { isSuccess } = await fetchRoleGrantPermission({
+    const { success } = await fetchRoleGrantPermission({
       role_id: props.id,
       permission_ids: checkedKeys.value,
     })
-    if (isSuccess) {
+    if (success) {
       emit('success')
       closeDrawer()
     }

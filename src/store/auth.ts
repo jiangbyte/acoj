@@ -27,13 +27,13 @@ export const useAuthStore = defineStore('auth', {
     },
     async login(username: string, password: string, captchaCode?: string, captchaId?: string) {
       const encryptedPwd = this.encryptPassword(password)
-      const { isSuccess, data } = await fetchLogin({
+      const { success, data } = await fetchLogin({
         username,
         password: encryptedPwd,
         captcha_code: captchaCode,
         captcha_id: captchaId,
       })
-      if (!isSuccess) return false
+      if (!success) return false
       this.token = data.token
       await this.loadUserInfo()
       return true

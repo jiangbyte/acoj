@@ -1,8 +1,10 @@
 <template>
   <AConfigProvider :theme="themeConfig" :locale="zhCN">
-    <div :class="app.roundedCorners ? 'rounded-style' : ''">
-      <router-view />
-    </div>
+    <AppLoading :loading="app.loading">
+      <div :class="app.roundedCorners ? 'rounded-style' : ''">
+        <router-view :key="app.reloadCounter" />
+      </div>
+    </AppLoading>
   </AConfigProvider>
 </template>
 
@@ -10,6 +12,7 @@
 import { computed, watch } from 'vue'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
 import { theme } from 'ant-design-vue'
+import AppLoading from '@/components/AppLoading.vue'
 import { useAppStore } from '@/store/app'
 import { changeColor, toggleGrayMode, toggleColorWeak } from '@/utils/themeUtil'
 

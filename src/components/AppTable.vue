@@ -65,12 +65,12 @@ const queryParams = ref<any>({})
 async function loadData() {
   loading.value = true
   try {
-    const { isSuccess, data } = await props.fetchData({
-      current: pagination.current,
+    const { success, data } = await props.fetchData({
+      page: pagination.current,
       size: pagination.pageSize,
       ...queryParams.value,
     })
-    if (isSuccess && data) {
+    if (success && data) {
       dataSource.value = data.records || []
       pagination.total = data.total || 0
     }

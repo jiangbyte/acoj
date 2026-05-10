@@ -20,6 +20,10 @@ interface AppState {
   fixedWidth: boolean
   collapseOnOpen: boolean
   showSettings: boolean
+  /** 全局加载中（登录后、路由初始化等过渡场景） */
+  loading: boolean
+  /** 页面刷新计数器 */
+  reloadCounter: number
 }
 
 export const useAppStore = defineStore('app', {
@@ -40,6 +44,8 @@ export const useAppStore = defineStore('app', {
     fixedWidth: false,
     collapseOnOpen: true,
     showSettings: false,
+    loading: false,
+    reloadCounter: 0,
   }),
   actions: {
     toggleCollapsed() { this.collapsed = !this.collapsed },
@@ -52,6 +58,10 @@ export const useAppStore = defineStore('app', {
     setShowBreadcrumb(v: boolean) { this.showBreadcrumb = v },
     setShowTabs(v: boolean) { this.showTabs = v },
     setShowFooter(v: boolean) { this.showFooter = v },
+    setLoading(v: boolean) { this.loading = v },
+    reloadPage() {
+      this.reloadCounter++
+    },
   },
   persist: true,
 })

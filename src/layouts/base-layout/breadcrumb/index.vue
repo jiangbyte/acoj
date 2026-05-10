@@ -26,10 +26,12 @@ function resolveIcon(name: string) {
 
 const breadcrumbs = computed(() => {
   const matched = route.matched.filter((r) => r.path !== '/')
-  return matched.map((r) => ({
-    path: r.path,
-    title: (r.meta?.title as string) || r.name as string || '',
-    icon: r.meta?.icon ? resolveIcon(r.meta.icon as string) : null,
-  }))
+  return matched
+    .filter((r) => (r.meta?.breadcrumb as boolean) ?? true)
+    .map((r) => ({
+      path: r.path,
+      title: (r.meta?.title as string) || r.name as string || '',
+      icon: r.meta?.icon ? resolveIcon(r.meta.icon as string) : null,
+    }))
 })
 </script>

@@ -58,7 +58,7 @@ async function handleLogin() {
   try {
     const ok = await auth.login(form.username, form.password, form.captcha, captchaId.value)
     if (ok) {
-      const redirect = (route.query.redirect as string) || '/'
+      const redirect = (route.query.redirect as string) || import.meta.env.VITE_HOME_PATH || '/dashboard'
       router.push(redirect)
     }
   } finally {

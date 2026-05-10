@@ -10,10 +10,17 @@ function resolveIcon(name: string): any {
 }
 
 export function menuToItems(menus: any[]): any[] {
-  return menus.filter((m: any) => !m.is_hidden || m.is_hidden === 'NO').map((m: any) => ({
-    key: m.route_path,
-    icon: m.icon ? () => h(resolveIcon(m.icon)) : undefined,
-    label: m.name,
-    children: m.children?.length ? menuToItems(m.children) : undefined,
-  }))
+  const sorted = [...menus].sort((a, b) => (a.sort_code ?? 0) - (b.sort_code ?? 0))
+
+  return sorted
+    .filter((m: any) => {
+      if (m.type === 'BUTTON') return false
+      return !m.is_hidden || m.is_hidden === 'NO'
+    })
+    .map((m: any) => ({
+      key: m.route_path,
+      icon: m.icon ? () => h(resolveIcon(m.icon)) : undefined,
+      label: m.name,
+      children: m.children?.length ? menuToItems(m.children) : undefined,
+    }))
 }

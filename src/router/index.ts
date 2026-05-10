@@ -7,14 +7,12 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      name: 'root',
       component: () => import('@/layouts/base-layout/index.vue'),
-      name: 'layout',
-      redirect: '/dashboard',
-      children: [
-        { path: 'dashboard', name: 'dashboard', component: () => import('@/views/dashboard/index.vue'), meta: { title: '首页', icon: 'DashboardOutlined' } },
-      ],
+      children: [],
     },
     ...staticRoutes,
+    { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/error/404.vue') },
   ],
 })
 

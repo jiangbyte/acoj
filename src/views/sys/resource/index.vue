@@ -42,7 +42,7 @@ const columns = [
 async function loadData() {
   loading.value = true
   try {
-    const { data } = await fetchResourcePage({ current: 1, size: 999 })
+    const { data } = await fetchResourcePage({ page: 1, size: 999 })
     if (data?.records) dataSource.value = data.records
   } finally {
     loading.value = false
