@@ -53,7 +53,9 @@ class PositionVO(BaseModel):
 
 
 class PositionPageParam(PageBounds):
-    pass
+    keyword: Optional[str] = None
+    group_id: Optional[str] = None
+    org_id: Optional[str] = None
 
 
 class PositionExportParam(BaseModel):

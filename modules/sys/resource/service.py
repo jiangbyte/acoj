@@ -67,7 +67,8 @@ class ModuleService:
         records: List[SysModule] = []
 
         if param.export_type == ExportTypeEnum.CURRENT.value:
-            result = self.dao.find_page(param.current or 1, param.size or 10)
+            page_param = ModulePageParam(current=param.current or 1, size=param.size or 10)
+            result = self.dao.find_page(page_param)
             records = result["records"]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
             records = self.dao.find_by_ids(param.selected_ids or [])
@@ -148,7 +149,8 @@ class ResourceService:
         records: List[SysResource] = []
 
         if param.export_type == ExportTypeEnum.CURRENT.value:
-            result = self.dao.find_page(param.current or 1, param.size or 10)
+            page_param = ResourcePageParam(current=param.current or 1, size=param.size or 10)
+            result = self.dao.find_page(page_param)
             records = result["records"]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
             records = self.dao.find_by_ids(param.selected_ids or [])

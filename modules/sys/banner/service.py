@@ -67,7 +67,8 @@ class BannerService:
         records: List[SysBanner] = []
         
         if param.export_type == ExportTypeEnum.CURRENT.value:
-            result = self.dao.find_page(param.current or 1, param.size or 10)
+            page_param = BannerPageParam(current=param.current or 1, size=param.size or 10)
+            result = self.dao.find_page(page_param)
             records = result["records"]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
             records = self.dao.find_by_ids(param.selected_ids or [])
