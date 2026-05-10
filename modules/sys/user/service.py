@@ -73,7 +73,7 @@ class UserService:
         )
 
     def page(self, param: UserPageParam) -> dict:
-        result = self.dao.find_page(param.current, param.size)
+        result = self.dao.find_page(param)
         records = []
         for r in result["records"]:
             vo = UserVO.model_validate(r).model_dump()
@@ -144,10 +144,11 @@ class UserService:
     def export(self, param: UserExportParam):
         records: List[SysUser] = []
         if param.export_type == ExportTypeEnum.CURRENT.value:
-            result = self.dao.find_page(param.current or 1, param.size or 10)
+            page_param = UserPageParam(current=param.current or 1, size=param.size or 10)
+            result = self.dao.find_page(page_param)
             records = result["records"]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
-            records = self.dao.find_by_ids(param.selected_id or [])
+            records = self.dao.find_by_ids(param.selected_ids or [])
         elif param.export_type == ExportTypeEnum.ALL.value:
             records = self.dao.find_all()
         else:

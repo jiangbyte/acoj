@@ -21,7 +21,7 @@ class ConfigPageParam(PageBounds):
 
 
 class ConfigListParam(BaseModel):
-    category: Optional[str] = None
+    category: str
 
 
 class ConfigBatchEditParam(BaseModel):

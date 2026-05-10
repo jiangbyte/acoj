@@ -58,12 +58,7 @@ class ConfigService:
         return None
 
     def page(self, param: ConfigPageParam) -> dict:
-        result = self.dao.find_page(
-            category=param.category,
-            keyword=param.keyword,
-            current=param.current,
-            size=param.size,
-        )
+        result = self.dao.find_page(param)
         records = result["records"]
         total = result["total"]
         vo_list = [ConfigVO.model_validate(r).model_dump() for r in records]

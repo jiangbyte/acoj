@@ -1,7 +1,9 @@
-from typing import TypeVar, Type, List, Optional, Dict, Any
+from typing import TypeVar, Type, List, Optional, Dict, Any, Callable
 from sqlalchemy.orm import Session
-from sqlalchemy import select, update, delete, func
+from sqlalchemy import select, func
+from sqlalchemy.sql.selectable import Select
 from config.settings import settings
+from core.pojo import PageBounds
 
 T = TypeVar('T')
 
@@ -54,19 +56,22 @@ class BaseDAO:
         query = self._apply_soft_delete_filter(query)
         return self.db.execute(query).scalar() or 0
 
-    def find_page(self, current: int = 1, size: int = 10) -> Dict[str, Any]:
-        current = max(1, current)
-        size = max(1, size)
+    def find_page(self, page_bounds: PageBounds,
+                  query_builder: Optional[Callable[[Select], Select]] = None) -> Dict[str, Any]:
+        current = max(1, page_bounds.current)
+        size = max(1, page_bounds.size)
         offset = (current - 1) * size
-        
-        count_query = select(func.count()).select_from(self.model)
-        count_query = self._apply_soft_delete_filter(count_query)
-        total = self.db.execute(count_query).scalar() or 0
-        
+
         query = select(self.model)
         query = self._apply_soft_delete_filter(query)
+        if query_builder:
+            query = query_builder(query)
+
+        count_query = select(func.count()).select_from(query.subquery())
+        total = self.db.execute(count_query).scalar() or 0
+
         records = list(self.db.execute(query.offset(offset).limit(size)).scalars().all())
-        
+
         return {"records": records, "total": total}
 
     def insert(self, entity: T) -> T:
