@@ -1,4 +1,3 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
@@ -22,18 +21,10 @@ router = APIRouter()
 @HeiCheckPermission("sys:dict:page")
 async def page(
     request: Request,
-    current: int = Query(default=1),
-    size: int = Query(default=10),
-    parent_id: Optional[str] = Query(default=None),
-    category: Optional[str] = Query(default=None),
-    keyword: Optional[str] = Query(default=None),
+    param: DictPageParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = DictService(db)
-    param = DictPageParam(
-        current=current, size=size,
-        parent_id=parent_id, category=category, keyword=keyword
-    )
     return success(service.page(param))
 
 
@@ -45,12 +36,10 @@ async def page(
 @HeiCheckPermission("sys:dict:list")
 async def dict_list(
     request: Request,
-    parent_id: Optional[str] = Query(default=None),
-    category: Optional[str] = Query(default=None),
+    param: DictListParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = DictService(db)
-    param = DictListParam(parent_id=parent_id, category=category)
     return success(service.list(param))
 
 
@@ -62,11 +51,10 @@ async def dict_list(
 @HeiCheckPermission("sys:dict:tree")
 async def tree(
     request: Request,
-    category: Optional[str] = Query(default=None),
+    param: DictTreeParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = DictService(db)
-    param = DictTreeParam(category=category)
     return success(service.tree(param))
 
 
@@ -170,19 +158,10 @@ async def get_dict_children(
 @HeiCheckPermission("sys:dict:export")
 async def export(
     request: Request,
-    export_type: str = Query(default="current"),
-    current: Optional[int] = Query(default=None),
-    size: Optional[int] = Query(default=None),
-    selected_id: Optional[str] = Query(default=None),
+    param: DictExportParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = DictService(db)
-    param = DictExportParam(
-        export_type=export_type,
-        current=current,
-        size=size,
-        selected_id=selected_id.split(",") if selected_id else None
-    )
     return service.export(param)
 
 

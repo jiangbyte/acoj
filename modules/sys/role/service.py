@@ -28,7 +28,7 @@ class RoleService:
             return None
 
     def page(self, param: RolePageParam) -> dict:
-        result = self.dao.find_page(param.current, param.size)
+        result = self.dao.find_page(param)
         return page_data(
             records=[RoleVO.model_validate(r).model_dump() for r in result["records"]],
             total=result["total"],
@@ -83,7 +83,7 @@ class RoleService:
             result = self.dao.find_page(param.current or 1, param.size or 10)
             records = result["records"]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
-            records = self.dao.find_by_ids(param.selected_id or [])
+            records = self.dao.find_by_ids(param.selected_ids or [])
         elif param.export_type == ExportTypeEnum.ALL.value:
             records = self.dao.find_all()
         else:

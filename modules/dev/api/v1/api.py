@@ -22,12 +22,11 @@ router = APIRouter()
 @HeiCheckPermission("sys:dev:gen-basic-page")
 async def gen_basic_page(
     request: Request,
-    current: int = 1,
-    size: int = 10,
+    param: GenBasicPageParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = GenBasicService(db)
-    return success(service.page(GenBasicPageParam(current=current, size=size)))
+    return success(service.page(param))
 
 
 @router.post("/api/v1/sys/dev/gen/basic/create", summary="添加代码生成基础", response_model=Result)

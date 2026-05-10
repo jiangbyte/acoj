@@ -1,4 +1,3 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
@@ -25,12 +24,11 @@ router = APIRouter()
 @HeiCheckPermission("sys:module:page")
 async def module_page(
     request: Request,
-    current: int = Query(default=1),
-    size: int = Query(default=10),
+    param: ModulePageParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = ModuleService(db)
-    return success(service.page(ModulePageParam(current=current, size=size)))
+    return success(service.page(param))
 
 
 @router.post(
@@ -103,19 +101,10 @@ async def module_detail(
 @HeiCheckPermission("sys:module:export")
 async def module_export(
     request: Request,
-    export_type: str = Query(default="current"),
-    current: Optional[int] = Query(default=None),
-    size: Optional[int] = Query(default=None),
-    selected_id: Optional[str] = Query(default=None),
+    param: ModuleExportParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = ModuleService(db)
-    param = ModuleExportParam(
-        export_type=export_type,
-        current=current,
-        size=size,
-        selected_id=selected_id.split(",") if selected_id else None
-    )
     return service.export(param)
 
 
@@ -174,12 +163,11 @@ async def module_import_data(
 @HeiCheckPermission("sys:resource:page")
 async def resource_page(
     request: Request,
-    current: int = Query(default=1),
-    size: int = Query(default=10),
+    param: ResourcePageParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = ResourceService(db)
-    return success(service.page(ResourcePageParam(current=current, size=size)))
+    return success(service.page(param))
 
 
 @router.post(
@@ -252,19 +240,10 @@ async def resource_detail(
 @HeiCheckPermission("sys:resource:export")
 async def resource_export(
     request: Request,
-    export_type: str = Query(default="current"),
-    current: Optional[int] = Query(default=None),
-    size: Optional[int] = Query(default=None),
-    selected_id: Optional[str] = Query(default=None),
+    param: ResourceExportParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = ResourceService(db)
-    param = ResourceExportParam(
-        export_type=export_type,
-        current=current,
-        size=size,
-        selected_id=selected_id.split(",") if selected_id else None
-    )
     return service.export(param)
 
 
