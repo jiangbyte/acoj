@@ -4,19 +4,19 @@
     placement="left"
     width="220"
     :closable="false"
-    :bodyStyle="{ padding: 0, height: '100%' }"
+    :body-style="{ padding: 0, height: '100%' }"
     @update:open="$emit('update:open', $event)"
   >
     <div class="flex flex-col h-full">
       <Logo :collapsed="false" />
       <AMenu
         mode="inline"
-        :selectedKeys="[route.path]"
-        :openKeys="openKeys"
+        :selected-keys="[route.path]"
+        :open-keys="openKeys"
         :items="menuItems"
-        @click="handleClick"
-        @openChange="handleOpenChange"
         class="flex-1 overflow-auto"
+        @click="handleClick"
+        @open-change="handleOpenChange"
       />
     </div>
   </ADrawer>

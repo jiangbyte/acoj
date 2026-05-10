@@ -4,7 +4,7 @@
     placement="right"
     width="260"
     :closable="false"
-    :bodyStyle="{ padding: 0, height: '100%' }"
+    :body-style="{ padding: 0, height: '100%' }"
     @update:open="$emit('update:open', $event)"
   >
     <div class="flex flex-col h-full">

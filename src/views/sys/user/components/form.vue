@@ -1,21 +1,21 @@
 <template>
   <AppDrawerForm
     :open="open"
-    :title="id ? '编辑用户' : '新增用户'"
+    :title="isEdit ? '编辑用户' : '新增用户'"
     :form="form"
-    :onSubmit="handleSubmit"
-    @close="closeDrawer"
+    :on-submit="handleSubmit"
+    @close="handleClose"
     @success="emit('success')"
   >
-    <template #default="{ form }">
+    <template #default>
       <a-form-item label="账号" name="account" :rules="[{ required: true, message: '请输入账号' }]">
-        <a-input v-model:value="form.account" />
+        <a-input v-model:value="form.account" placeholder="请输入账号" />
       </a-form-item>
       <a-form-item label="昵称" name="nickname">
-        <a-input v-model:value="form.nickname" />
+        <a-input v-model:value="form.nickname" placeholder="请输入昵称" />
       </a-form-item>
       <a-form-item label="邮箱" name="email">
-        <a-input v-model:value="form.email" />
+        <a-input v-model:value="form.email" placeholder="请输入邮箱" />
       </a-form-item>
       <a-form-item label="状态" name="status">
         <a-radio-group v-model:value="form.status">
@@ -28,14 +28,18 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+defineOptions({ name: 'UserForm' })
+import { reactive, ref } from 'vue'
 import { fetchUserDetail, fetchUserCreate, fetchUserModify } from '@/api/user'
-import AppDrawerForm from '@/components/AppDrawerForm.vue'
+import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
-const props = defineProps<{ open: boolean; id: string }>()
+defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
 
-const form = reactive({
+const isEdit = ref(false)
+const currentId = ref<string | null>(null)
+
+const initialForm = () => ({
   account: '',
   nickname: '',
   email: '',
@@ -43,27 +47,33 @@ const form = reactive({
   status: 'ACTIVE',
 })
 
-watch(
-  () => props.open,
-  async v => {
-    if (v && props.id) {
-      const { data } = await fetchUserDetail({ id: props.id })
-      if (data) Object.assign(form, data)
-    } else {
-      Object.assign(form, { account: '', nickname: '', email: '', phone: '', status: 'ACTIVE' })
-    }
+const form = reactive(initialForm())
+
+async function doOpen(row?: any) {
+  if (row) {
+    isEdit.value = true
+    currentId.value = row.id
+    const { data } = await fetchUserDetail({ id: row.id })
+    if (data) Object.assign(form, data)
+  } else {
+    isEdit.value = false
+    currentId.value = null
+    Object.assign(form, initialForm())
   }
-)
+  emit('update:open', true)
+}
 
 async function handleSubmit(f: any) {
-  if (props.id) {
-    return await fetchUserModify({ ...f, id: props.id })
+  if (currentId.value) {
+    return await fetchUserModify({ ...f, id: currentId.value })
   } else {
     return await fetchUserCreate(f)
   }
 }
 
-function closeDrawer() {
+function handleClose() {
   emit('update:open', false)
 }
+
+defineExpose({ doOpen })
 </script>

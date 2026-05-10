@@ -2,11 +2,11 @@
   <a-row :gutter="16">
     <a-col :span="6">
       <a-card title="分类" size="small">
-        <a-tree :treeData="treeData" :defaultExpandAll="true" @select="handleTreeSelect" />
+        <a-tree :tree-data="treeData" :default-expand-all="true" @select="handleTreeSelect" />
       </a-card>
     </a-col>
     <a-col :span="18">
-      <slot :selectedKey="selectedKey" />
+      <slot :selected-key="selectedKey" />
     </a-col>
   </a-row>
 </template>

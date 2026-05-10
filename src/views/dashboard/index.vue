@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-row :gutter="[16, 16]">
-      <a-col :span="6" v-for="card in stats" :key="card.title">
+      <a-col v-for="card in stats" :key="card.title" :span="6">
         <a-card>
           <div class="flex items-center gap-3">
             <component :is="card.icon" class="text-2xl" :style="{ color: card.color }" />

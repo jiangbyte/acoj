@@ -8,33 +8,38 @@
   >
     <div class="px-2">
       <!-- Theme Mode -->
-      <h3 class="setting-section-title">整体风格</h3>
+      <h3 class="text-sm font-semibold mb-3">整体风格</h3>
       <div class="flex gap-3 mb-6">
         <div
           v-for="item in themeList"
           :key="item.value"
-          class="setting-card"
-          :class="{ 'setting-card-active': app.theme === item.value }"
+          class="cursor-pointer text-center"
           @click="app.setTheme(item.value)"
         >
-          <div class="setting-card-preview" :class="item.previewClass">
-            <span class="preview-sider" />
-            <span class="preview-header" />
+          <div
+            class="w-12 h-10 rounded border-2 overflow-hidden relative shadow-[0_1px_2.5px_rgba(0,0,0,0.12)] mb-1 transition-colors duration-200"
+            :class="[
+              app.theme === item.value ? 'border-[var(--primary-color)]' : 'border-[#d9d9d9]',
+              item.containerClass || 'bg-[#f0f0f0]',
+            ]"
+          >
+            <span class="absolute top-0 left-0 w-[33%] h-full z-1" :class="item.siderClass" />
+            <span class="absolute top-0 left-0 w-full h-[25%]" :class="item.headerClass" />
           </div>
-          <div class="setting-card-label">{{ item.label }}</div>
+          <div class="text-xs text-[#999]">{{ item.label }}</div>
         </div>
       </div>
 
       <ADivider />
 
       <!-- Primary Color -->
-      <h3 class="setting-section-title">主题色</h3>
+      <h3 class="text-sm font-semibold mb-3">主题色</h3>
       <div class="flex flex-wrap gap-3 mb-6">
         <ATooltip v-for="c in colorList" :key="c.color" :title="c.name">
           <ATag
             :color="c.color"
             class="!w-7 !h-7 !flex !items-center !justify-center !rounded-full !cursor-pointer !border-2 !p-0"
-            :class="app.colorPrimary === c.color ? 'border-primary-dynamic' : 'border-transparent'"
+            :class="app.colorPrimary === c.color ? '!border-[var(--primary-color)]' : '!border-transparent'"
             @click="app.setColorPrimary(c.color)"
           >
             <CheckOutlined
@@ -95,10 +100,24 @@ import { useAppStore } from '@/store'
 
 const app = useAppStore()
 
-const themeList = [
-  { value: 'light' as const, label: '亮色', previewClass: 'theme-light' },
-  { value: 'dark' as const, label: '暗色侧栏', previewClass: 'theme-dark' },
-  { value: 'realDark' as const, label: '暗黑模式', previewClass: 'theme-realdark' },
+interface ThemeItem {
+  value: 'light' | 'dark' | 'realDark'
+  label: string
+  siderClass: string
+  headerClass: string
+  containerClass?: string
+}
+
+const themeList: ThemeItem[] = [
+  { value: 'light', label: '亮色', siderClass: 'bg-white', headerClass: 'bg-white' },
+  { value: 'dark', label: '暗色侧栏', siderClass: 'bg-[#001529]', headerClass: 'bg-white' },
+  {
+    value: 'realDark',
+    label: '暗黑模式',
+    siderClass: 'bg-[#16213e]',
+    headerClass: 'bg-[#1a1a2e]',
+    containerClass: 'bg-[#1a1a2e]',
+  },
 ]
 
 const colorList = [
@@ -115,88 +134,3 @@ const colorList = [
   { color: '#001529', name: '主题黑' },
 ]
 </script>
-
-<style scoped>
-.setting-section-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
-.setting-card {
-  cursor: pointer;
-  text-align: center;
-}
-
-.setting-card-preview {
-  width: 48px;
-  height: 40px;
-  border-radius: 4px;
-  border: 2px solid #d9d9d9;
-  overflow: hidden;
-  position: relative;
-  background-color: #f0f0f0;
-  box-shadow: 0 1px 2.5px rgba(0, 0, 0, 0.12);
-  margin-bottom: 4px;
-  transition: border-color 0.2s;
-}
-
-.setting-card-active .setting-card-preview {
-  border-color: var(--primary-color);
-}
-
-.setting-card-label {
-  font-size: 12px;
-  color: #999;
-}
-
-/* ===== Shared preview element styles ===== */
-.preview-sider,
-.preview-header {
-  position: absolute;
-  display: block;
-}
-
-.preview-sider {
-  top: 0;
-  left: 0;
-  width: 33%;
-  height: 100%;
-  z-index: 1;
-}
-
-.preview-header {
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 25%;
-}
-
-/* ===== Theme previews ===== */
-/* Light */
-.theme-light .preview-sider {
-  background-color: #fff;
-}
-.theme-light .preview-header {
-  background-color: #fff;
-}
-
-/* Dark (dark sider, light header) */
-.theme-dark .preview-sider {
-  background-color: #001529;
-}
-.theme-dark .preview-header {
-  background-color: #fff;
-}
-
-/* realDark (dark all) */
-.theme-realdark {
-  background-color: #1a1a2e;
-}
-.theme-realdark .preview-sider {
-  background-color: #16213e;
-}
-.theme-realdark .preview-header {
-  background-color: #1a1a2e;
-}
-</style>

@@ -2,16 +2,16 @@
   <a-row :gutter="16">
     <a-col :span="6">
       <a-card title="字典分类" size="small">
-        <a-tree :treeData="dictTree" :defaultExpandAll="true" @select="handleTreeSelect" />
+        <a-tree :tree-data="dictTree" :default-expand-all="true" @select="handleTreeSelect" />
       </a-card>
     </a-col>
     <a-col :span="18">
       <AppTable
+        v-if="selectedCategory"
         ref="tableRef"
         :columns="columns"
-        :fetchData="fetchDictPage"
-        :searchForm="searchForm"
-        v-if="selectedCategory"
+        :fetch-data="fetchDictPage"
+        :search-form="searchForm"
       >
         <template #search>
           <a-form-item label="关键词" name="keyword">
@@ -40,7 +40,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { fetchDictTree, fetchDictPage, fetchDictRemove } from '@/api/dict'
-import AppTable from '@/components/AppTable.vue'
+import AppTable from '@/components/table/AppTable.vue'
 
 const dictTree = ref<any[]>([])
 const selectedCategory = ref('')

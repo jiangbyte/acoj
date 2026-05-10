@@ -4,8 +4,8 @@
       <Sider v-if="!app.isMobile" />
       <ALayout>
         <Header
-          @toggleMobileMenu="showMobileDrawer = true"
-          @toggleUserDrawer="showUserDrawer = true"
+          @toggle-mobile-menu="showMobileDrawer = true"
+          @toggle-user-drawer="showUserDrawer = true"
         />
         <Breadcrumb />
         <Tab />

@@ -9,10 +9,10 @@
       <template v-else>
         <MenuUnfoldOutlined
           v-if="app.collapsed"
-          @click="app.toggleCollapsed()"
           class="text-lg cursor-pointer"
+          @click="app.toggleCollapsed()"
         />
-        <MenuFoldOutlined v-else @click="app.toggleCollapsed()" class="text-lg cursor-pointer" />
+        <MenuFoldOutlined v-else class="text-lg cursor-pointer" @click="app.toggleCollapsed()" />
       </template>
     </div>
     <div class="flex items-center gap-4">
@@ -33,7 +33,7 @@
         </ATooltip>
         <SettingOutlined class="text-lg cursor-pointer" @click="app.showSettings = true" />
       </template>
-      <UserAvatar @toggleUserDrawer="$emit('toggleUserDrawer')" />
+      <UserAvatar @toggle-user-drawer="$emit('toggleUserDrawer')" />
     </div>
   </ALayoutHeader>
 </template>

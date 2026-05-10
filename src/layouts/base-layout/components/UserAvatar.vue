@@ -1,5 +1,5 @@
 <template>
-  <ADropdown :trigger="['click']" v-if="!app.isMobile">
+  <ADropdown v-if="!app.isMobile" :trigger="['click']">
     <div class="flex items-center gap-2 cursor-pointer">
       <AAvatar :size="32" :src="auth.userInfo?.avatar || undefined">
         {{ auth.userInfo?.nickname?.[0] || 'U' }}

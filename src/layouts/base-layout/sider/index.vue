@@ -10,12 +10,12 @@
     <Logo :collapsed="app.collapsed" />
     <AMenu
       mode="inline"
-      :selectedKeys="[route.path]"
-      :openKeys="openKeys"
+      :selected-keys="[route.path]"
+      :open-keys="openKeys"
       :theme="menuTheme"
       :items="menuItems"
       @click="handleMenuClick"
-      @openChange="handleOpenChange"
+      @open-change="handleOpenChange"
     />
   </ALayoutSider>
 </template>

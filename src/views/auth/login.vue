@@ -3,20 +3,14 @@
     <h2 class="form-title">欢迎回来</h2>
     <p class="form-subtitle">请登录您的账号</p>
 
-    <a-form :model="form" layout="vertical" @finish="handleLogin" size="large">
-      <a-form-item
-        name="username"
-        :rules="[{ required: true, message: '请输入用户名' }]"
-      >
+    <a-form :model="form" layout="vertical" size="large" @finish="handleLogin">
+      <a-form-item name="username" :rules="[{ required: true, message: '请输入用户名' }]">
         <a-input v-model:value="form.username" placeholder="用户名">
           <template #prefix><UserOutlined /></template>
         </a-input>
       </a-form-item>
 
-      <a-form-item
-        name="password"
-        :rules="[{ required: true, message: '请输入密码' }]"
-      >
+      <a-form-item name="password" :rules="[{ required: true, message: '请输入密码' }]">
         <a-input-password v-model:value="form.password" placeholder="密码">
           <template #prefix><LockOutlined /></template>
         </a-input-password>
@@ -41,9 +35,7 @@
       </div>
 
       <a-form-item>
-        <a-button type="primary" html-type="submit" block :loading="loading">
-          登 录
-        </a-button>
+        <a-button type="primary" html-type="submit" block :loading="loading">登 录</a-button>
       </a-form-item>
     </a-form>
 
@@ -89,7 +81,8 @@ async function handleLogin() {
   try {
     const ok = await auth.login(form.username, form.password, form.captcha, captchaId.value)
     if (ok) {
-      const redirect = (route.query.redirect as string) || import.meta.env.VITE_HOME_PATH || '/dashboard'
+      const redirect =
+        (route.query.redirect as string) || import.meta.env.VITE_HOME_PATH || '/dashboard'
       router.push(redirect)
     }
   } finally {

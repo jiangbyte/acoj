@@ -1,13 +1,13 @@
 <template>
-  <div class="layout-tabs" v-if="app.showTabs">
+  <div v-if="app.showTabs" class="bg-[var(--container-bg)] border-b border-[var(--border-color)] flex items-center [&_.ant-tabs-nav]:mb-0">
     <ATabs
       type="editable-card"
-      :activeKey="tabStore.activeKey"
-      hideAdd
+      :active-key="tabStore.activeKey"
+      hide-add
       size="small"
+      style="flex: 1"
       @change="handleTabChange"
       @edit="handleTabRemove"
-      style="flex: 1"
     >
       <ATabPane v-for="t in tabStore.tabs" :key="t.key" :closable="t.closable">
         <template #tab>
@@ -18,7 +18,7 @@
         </template>
       </ATabPane>
 
-      <template #tabBarExtraContent>
+      <template #rightExtra>
         <ADropdown v-model:open="menuOpen" placement="bottomRight" trigger="click">
           <AButton size="small" type="text">
             <DownOutlined />
@@ -127,13 +127,3 @@ function handleMenuClick({ key }: { key: string }) {
   }
 }
 </script>
-
-<style scoped>
-.layout-tabs {
-  display: flex;
-  align-items: center;
-}
-.layout-tabs :deep(.ant-tabs-nav) {
-  margin-bottom: 0;
-}
-</style>

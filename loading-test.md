@@ -1,0 +1,35 @@
+- generic [ref=e7]:
+  - generic [ref=e9]:
+    - generic [ref=e10]: H
+    - heading "Hei Admin" [level=1] [ref=e11]
+  - generic [ref=e16]:
+    - heading "欢迎回来" [level=2] [ref=e17]
+    - paragraph [ref=e18]: 请登录您的账号
+    - generic [ref=e19]:
+      - generic [ref=e25]:
+        - img "user" [ref=e27]:
+          - img [ref=e28]
+        - textbox "用户名" [ref=e30]
+      - generic [ref=e36]:
+        - img "lock" [ref=e38]:
+          - img [ref=e39]
+        - textbox "密码" [ref=e41]
+        - img "eye-invisible" [ref=e43] [cursor=pointer]:
+          - img [ref=e44]
+      - generic [ref=e52]:
+        - img "safety" [ref=e54]:
+          - img [ref=e55]
+        - textbox "验证码" [ref=e58]
+        - img [ref=e60] [cursor=pointer]
+      - generic [ref=e61]:
+        - generic [ref=e62] [cursor=pointer]:
+          - checkbox "记住我" [checked] [ref=e64]
+          - generic [ref=e66]: 记住我
+        - button "忘记密码？" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]: 忘记密码？
+      - button "登 录" [ref=e74] [cursor=pointer]:
+        - generic [ref=e75]: 登 录
+    - generic [ref=e76]:
+      - text: 还没有账号？
+      - link "立即注册" [ref=e77] [cursor=pointer]:
+        - /url: /auth/register

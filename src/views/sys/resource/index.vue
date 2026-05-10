@@ -4,10 +4,10 @@
       <a-button type="primary" @click="openCreate">新增</a-button>
     </a-space>
     <a-table
-      :dataSource="dataSource"
+      :data-source="dataSource"
       :columns="columns"
       :loading="loading"
-      rowKey="id"
+      row-key="id"
       :pagination="false"
     >
       <template #bodyCell="{ column, record }">

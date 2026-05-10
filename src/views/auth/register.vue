@@ -3,20 +3,14 @@
     <h2 class="form-title">注册账号</h2>
     <p class="form-subtitle">创建您的账号开始使用</p>
 
-    <a-form :model="form" layout="vertical" @finish="handleRegister" size="large">
-      <a-form-item
-        name="username"
-        :rules="[{ required: true, message: '请输入用户名' }]"
-      >
+    <a-form :model="form" layout="vertical" size="large" @finish="handleRegister">
+      <a-form-item name="username" :rules="[{ required: true, message: '请输入用户名' }]">
         <a-input v-model:value="form.username" placeholder="用户名">
           <template #prefix><UserOutlined /></template>
         </a-input>
       </a-form-item>
 
-      <a-form-item
-        name="password"
-        :rules="[{ required: true, message: '请输入密码' }]"
-      >
+      <a-form-item name="password" :rules="[{ required: true, message: '请输入密码' }]">
         <a-input-password v-model:value="form.password" placeholder="密码">
           <template #prefix><LockOutlined /></template>
         </a-input-password>
@@ -36,9 +30,7 @@
       </a-form-item>
 
       <a-form-item>
-        <a-button type="primary" html-type="submit" block :loading="loading">
-          注 册
-        </a-button>
+        <a-button type="primary" html-type="submit" block :loading="loading">注 册</a-button>
       </a-form-item>
     </a-form>
 
