@@ -156,6 +156,20 @@ async def module_import_data(
 # ---- Resource APIs ----
 
 @router.get(
+    "/api/v1/sys/resource/tree",
+    summary="获取资源树",
+    response_model=Result[list]
+)
+@HeiCheckPermission("sys:resource:tree")
+async def resource_tree(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    service = ResourceService(db)
+    return success(service.tree())
+
+
+@router.get(
     "/api/v1/sys/resource/page",
     summary="获取资源分页",
     response_model=Result[PageData[ResourceVO]]

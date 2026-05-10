@@ -119,6 +119,22 @@ class ResourceService:
             size=param.size
         )
 
+    def tree(self) -> list:
+        records = self.dao.find_all()
+        records.sort(key=lambda r: r.sort_code or 0)
+        nodes = [ResourceVO.model_validate(r).model_dump() for r in records]
+        children_map: dict[str, list] = {}
+        for n in nodes:
+            pid = n.get("parent_id") or ""
+            children_map.setdefault(pid, []).append(n)
+        def build(pid: str) -> list:
+            result = []
+            for n in children_map.get(pid, []):
+                n["children"] = build(n["id"])
+                result.append(n)
+            return result
+        return build("")
+
     async def create(self, vo: ResourceVO, request: Optional[Request] = None) -> None:
         created_by = await self._get_current_user_id(request)
         entity = SysResource(**strip_system_fields(vo.model_dump()))
