@@ -3,8 +3,18 @@ export const staticRoutes = [
     path: '/auth',
     component: () => import('@/layouts/blank-layout/index.vue'),
     children: [
-      { path: 'login', name: 'login', component: () => import('@/views/auth/login.vue'), meta: { title: '登录' } },
-      { path: 'register', name: 'register', component: () => import('@/views/auth/register.vue'), meta: { title: '注册' } },
+      {
+        path: 'login',
+        name: 'login',
+        component: () => import('@/views/auth/login.vue'),
+        meta: { title: '登录' },
+      },
+      {
+        path: 'register',
+        name: 'register',
+        component: () => import('@/views/auth/register.vue'),
+        meta: { title: '注册' },
+      },
     ],
   },
   {

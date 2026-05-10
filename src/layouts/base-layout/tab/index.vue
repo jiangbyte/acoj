@@ -26,17 +26,21 @@
           <template #overlay>
             <AMenu @click="handleMenuClick">
               <AMenuItem key="refresh" :disabled="tabStore.tabs.length === 0">
-                <ReloadOutlined /> 刷新当前页面
+                <ReloadOutlined />
+                刷新当前页面
               </AMenuItem>
               <AMenuItem key="closeCurrent" :disabled="tabStore.tabs.length <= 1">
-                <CloseOutlined /> 关闭当前页面
+                <CloseOutlined />
+                关闭当前页面
               </AMenuItem>
               <AMenuItem key="closeOthers" :disabled="tabStore.tabs.length <= 1">
-                <MinusOutlined /> 关闭其他页面
+                <MinusOutlined />
+                关闭其他页面
               </AMenuItem>
               <AMenuDivider />
               <AMenuItem key="closeAll">
-                <DeleteOutlined /> 关闭全部页面
+                <DeleteOutlined />
+                关闭全部页面
               </AMenuItem>
             </AMenu>
           </template>
@@ -55,7 +59,7 @@ import { resolveIcon } from '@/utils'
 
 const { DownOutlined, ReloadOutlined, CloseOutlined, MinusOutlined, DeleteOutlined } = Icons
 
-const HOME_PATH = import.meta.env.VITE_HOME_PATH as string || '/dashboard'
+const HOME_PATH = (import.meta.env.VITE_HOME_PATH as string) || '/dashboard'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,24 +69,28 @@ const tabStore = useTabStore()
 const menuOpen = ref(false)
 
 // Track route changes to add/switch tabs
-watch(() => route.path, (path) => {
-  const title = (route.meta?.title as string) || ''
-  const icon = (route.meta?.icon as string) || undefined
-  const affix = (route.meta?.affix as boolean) || false
-  const visible = (route.meta?.visible as boolean) ?? true
-  if (title && path !== HOME_PATH) {
-    // is_visible === 'NO' 的路由不添加到 tab
-    if (!visible) return
-    tabStore.addTab({ title, icon, path, key: path, closable: !affix, affix })
-  } else if (path === HOME_PATH) {
-    tabStore.activeKey = HOME_PATH
-    // 首页 tab 同步 icon
-    const homeTab = tabStore.tabs[0]
-    if (homeTab && icon) {
-      homeTab.icon = icon
+watch(
+  () => route.path,
+  path => {
+    const title = (route.meta?.title as string) || ''
+    const icon = (route.meta?.icon as string) || undefined
+    const affix = (route.meta?.affix as boolean) || false
+    const visible = (route.meta?.visible as boolean) ?? true
+    if (title && path !== HOME_PATH) {
+      // is_visible === 'NO' 的路由不添加到 tab
+      if (!visible) return
+      tabStore.addTab({ title, icon, path, key: path, closable: !affix, affix })
+    } else if (path === HOME_PATH) {
+      tabStore.activeKey = HOME_PATH
+      // 首页 tab 同步 icon
+      const homeTab = tabStore.tabs[0]
+      if (homeTab && icon) {
+        homeTab.icon = icon
+      }
     }
-  }
-}, { immediate: true })
+  },
+  { immediate: true }
+)
 
 function handleTabChange(key: string) {
   router.push(key)
@@ -105,7 +113,7 @@ function handleMenuClick({ key }: { key: string }) {
       break
     case 'closeOthers': {
       const activeKey = tabStore.activeKey
-      tabStore.tabs.forEach((t) => {
+      tabStore.tabs.forEach(t => {
         if (t.key !== activeKey && t.closable) {
           tabStore.removeTab(t.key)
         }

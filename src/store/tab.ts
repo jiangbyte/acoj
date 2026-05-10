@@ -9,12 +9,14 @@ interface TabItem {
   affix?: boolean
 }
 
-const HOME_PATH = import.meta.env.VITE_HOME_PATH as string || '/dashboard'
+const HOME_PATH = (import.meta.env.VITE_HOME_PATH as string) || '/dashboard'
 
 export const useTabStore = defineStore('tab', {
   state: () => {
     return {
-      tabs: [{ title: '首页', path: HOME_PATH, key: HOME_PATH, closable: false, affix: true }] as TabItem[],
+      tabs: [
+        { title: '首页', path: HOME_PATH, key: HOME_PATH, closable: false, affix: true },
+      ] as TabItem[],
       activeKey: HOME_PATH,
     }
   },

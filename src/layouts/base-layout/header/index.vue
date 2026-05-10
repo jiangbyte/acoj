@@ -7,7 +7,11 @@
       </template>
       <!-- 桌面端：侧边栏折叠按钮 -->
       <template v-else>
-        <MenuUnfoldOutlined v-if="app.collapsed" @click="app.toggleCollapsed()" class="text-lg cursor-pointer" />
+        <MenuUnfoldOutlined
+          v-if="app.collapsed"
+          @click="app.toggleCollapsed()"
+          class="text-lg cursor-pointer"
+        />
         <MenuFoldOutlined v-else @click="app.toggleCollapsed()" class="text-lg cursor-pointer" />
       </template>
     </div>
@@ -15,8 +19,16 @@
       <template v-if="!app.isMobile">
         <FullscreenOutlined class="text-lg cursor-pointer" @click="toggleFullscreen" />
         <ATooltip title="切换主题">
-          <BulbOutlined v-if="app.theme === 'realDark'" class="text-lg cursor-pointer" @click="cycleTheme" />
-          <HighlightOutlined v-else-if="app.theme === 'dark'" class="text-lg cursor-pointer" @click="cycleTheme" />
+          <BulbOutlined
+            v-if="app.theme === 'realDark'"
+            class="text-lg cursor-pointer"
+            @click="cycleTheme"
+          />
+          <HighlightOutlined
+            v-else-if="app.theme === 'dark'"
+            class="text-lg cursor-pointer"
+            @click="cycleTheme"
+          />
           <BulbOutlined v-else class="text-lg cursor-pointer" @click="cycleTheme" />
         </ATooltip>
         <SettingOutlined class="text-lg cursor-pointer" @click="app.showSettings = true" />

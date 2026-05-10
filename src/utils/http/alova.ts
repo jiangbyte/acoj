@@ -9,7 +9,7 @@ import { handleBusinessError, handleResponseError } from './handle'
 import { useAuthStore } from '@/store'
 
 const { onAuthRequired } = createServerTokenAuthentication<VueHookType>({
-  assignToken: (method) => {
+  assignToken: method => {
     const authStore = useAuthStore()
     if (authStore.token) {
       method.config.headers.Authorization = `${authStore.token}`
@@ -19,7 +19,7 @@ const { onAuthRequired } = createServerTokenAuthentication<VueHookType>({
 
 export function createAlovaInstance(
   baseURL: string,
-  backendConfig?: Partial<Service.BackendConfig>,
+  backendConfig?: Partial<Service.BackendConfig>
 ) {
   const bc = { ...DEFAULT_BACKEND_OPTIONS, ...backendConfig }
 

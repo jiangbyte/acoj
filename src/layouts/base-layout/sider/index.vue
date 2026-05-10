@@ -32,6 +32,6 @@ const app = useAppStore()
 
 const { openKeys, menuItems, handleMenuClick, handleOpenChange } = useMenu()
 
-const siderTheme = computed(() => app.theme === 'light' ? 'light' : 'dark')
+const siderTheme = computed(() => (app.theme === 'light' ? 'light' : 'dark'))
 const menuTheme = computed(() => siderTheme.value)
 </script>

@@ -12,7 +12,11 @@ const router = createRouter({
       children: [],
     },
     ...staticRoutes,
-    { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/error/404.vue') },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('@/views/error/404.vue'),
+    },
   ],
 })
 

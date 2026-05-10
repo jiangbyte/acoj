@@ -1,7 +1,7 @@
 import type { Router } from 'vue-router'
 import { useAppStore, useAuthStore, useRouteStore } from '@/store'
 
-const HOME_PATH = import.meta.env.VITE_HOME_PATH as string || '/dashboard'
+const HOME_PATH = (import.meta.env.VITE_HOME_PATH as string) || '/dashboard'
 
 export function setupRouterGuard(router: Router) {
   router.beforeEach(async (to, _from, next) => {

@@ -12,7 +12,9 @@
     <template #footer>
       <a-space>
         <a-button @click="handleClose">取消</a-button>
-        <a-button type="primary" :loading="submitLoading" @click="handleSubmit" v-if="showSubmit">{{ submitText }}</a-button>
+        <a-button type="primary" :loading="submitLoading" @click="handleSubmit" v-if="showSubmit">
+          {{ submitText }}
+        </a-button>
       </a-space>
     </template>
   </a-drawer>

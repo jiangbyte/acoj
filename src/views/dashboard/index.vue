@@ -20,7 +20,12 @@
 </template>
 
 <script setup lang="ts">
-import { UserOutlined, TeamOutlined, AppstoreOutlined, SettingOutlined } from '@ant-design/icons-vue'
+import {
+  UserOutlined,
+  TeamOutlined,
+  AppstoreOutlined,
+  SettingOutlined,
+} from '@ant-design/icons-vue'
 
 const stats = [
   { title: '用户数', value: '--', icon: UserOutlined, color: '#1677ff' },

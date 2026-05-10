@@ -19,12 +19,12 @@ const route = useRoute()
 const app = useAppStore()
 
 const breadcrumbs = computed(() => {
-  const matched = route.matched.filter((r) => r.path !== '/')
+  const matched = route.matched.filter(r => r.path !== '/')
   return matched
-    .filter((r) => (r.meta?.breadcrumb as boolean) ?? true)
-    .map((r) => ({
+    .filter(r => (r.meta?.breadcrumb as boolean) ?? true)
+    .map(r => ({
       path: r.path,
-      title: (r.meta?.title as string) || r.name as string || '',
+      title: (r.meta?.title as string) || (r.name as string) || '',
       icon: r.meta?.icon ? resolveIcon(r.meta.icon as string) : null,
     }))
 })

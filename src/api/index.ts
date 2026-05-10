@@ -1,6 +1,26 @@
-export { fetchLogin, fetchCurrentUser, fetchUserMenus, fetchUserPermissions, fetchLogout } from './auth'
-export { fetchUserPage, fetchUserRemove, fetchUserDetail, fetchUserCreate, fetchUserModify } from './user'
-export { fetchRolePage, fetchRoleRemove, fetchRoleDetail, fetchRoleCreate, fetchRoleModify, fetchRoleOwnPermission, fetchRoleGrantPermission } from './role'
+export {
+  fetchLogin,
+  fetchCurrentUser,
+  fetchUserMenus,
+  fetchUserPermissions,
+  fetchLogout,
+} from './auth'
+export {
+  fetchUserPage,
+  fetchUserRemove,
+  fetchUserDetail,
+  fetchUserCreate,
+  fetchUserModify,
+} from './user'
+export {
+  fetchRolePage,
+  fetchRoleRemove,
+  fetchRoleDetail,
+  fetchRoleCreate,
+  fetchRoleModify,
+  fetchRoleOwnPermission,
+  fetchRoleGrantPermission,
+} from './role'
 export { fetchOrgPage, fetchOrgRemove } from './org'
 export { fetchGroupPage, fetchGroupRemove } from './group'
 export { fetchPositionPage, fetchPositionRemove } from './position'

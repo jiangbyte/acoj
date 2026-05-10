@@ -8,7 +8,9 @@ export type LayoutMode = 'vertical'
 const isMobileRef = ref(window.matchMedia('(max-width: 700px)').matches)
 if (typeof window !== 'undefined') {
   const mql = window.matchMedia('(max-width: 700px)')
-  mql.addEventListener('change', (e) => { isMobileRef.value = e.matches })
+  mql.addEventListener('change', e => {
+    isMobileRef.value = e.matches
+  })
 }
 
 interface AppState {
@@ -61,17 +63,39 @@ export const useAppStore = defineStore('app', {
     },
   },
   actions: {
-    toggleCollapsed() { this.collapsed = !this.collapsed },
-    setLayoutMode(mode: LayoutMode) { this.layoutMode = mode },
-    setTheme(theme: ThemeMode) { this.theme = theme },
-    setColorPrimary(color: string) { this.colorPrimary = color },
-    toggleGrayMode() { this.grayMode = !this.grayMode },
-    toggleColorWeak() { this.colorWeak = !this.colorWeak },
-    toggleRoundedCorners() { this.roundedCorners = !this.roundedCorners },
-    setShowBreadcrumb(v: boolean) { this.showBreadcrumb = v },
-    setShowTabs(v: boolean) { this.showTabs = v },
-    setShowFooter(v: boolean) { this.showFooter = v },
-    setLoading(v: boolean) { this.loading = v },
+    toggleCollapsed() {
+      this.collapsed = !this.collapsed
+    },
+    setLayoutMode(mode: LayoutMode) {
+      this.layoutMode = mode
+    },
+    setTheme(theme: ThemeMode) {
+      this.theme = theme
+    },
+    setColorPrimary(color: string) {
+      this.colorPrimary = color
+    },
+    toggleGrayMode() {
+      this.grayMode = !this.grayMode
+    },
+    toggleColorWeak() {
+      this.colorWeak = !this.colorWeak
+    },
+    toggleRoundedCorners() {
+      this.roundedCorners = !this.roundedCorners
+    },
+    setShowBreadcrumb(v: boolean) {
+      this.showBreadcrumb = v
+    },
+    setShowTabs(v: boolean) {
+      this.showTabs = v
+    },
+    setShowFooter(v: boolean) {
+      this.showFooter = v
+    },
+    setLoading(v: boolean) {
+      this.loading = v
+    },
     reloadPage() {
       this.reloadCounter++
     },

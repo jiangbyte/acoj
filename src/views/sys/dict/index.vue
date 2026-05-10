@@ -2,17 +2,21 @@
   <a-row :gutter="16">
     <a-col :span="6">
       <a-card title="字典分类" size="small">
-        <a-tree
-          :treeData="dictTree"
-          :defaultExpandAll="true"
-          @select="handleTreeSelect"
-        />
+        <a-tree :treeData="dictTree" :defaultExpandAll="true" @select="handleTreeSelect" />
       </a-card>
     </a-col>
     <a-col :span="18">
-      <AppTable ref="tableRef" :columns="columns" :fetchData="fetchDictPage" :searchForm="searchForm" v-if="selectedCategory">
+      <AppTable
+        ref="tableRef"
+        :columns="columns"
+        :fetchData="fetchDictPage"
+        :searchForm="searchForm"
+        v-if="selectedCategory"
+      >
         <template #search>
-          <a-form-item label="关键词" name="keyword"><a-input v-model:value="searchForm.keyword" /></a-form-item>
+          <a-form-item label="关键词" name="keyword">
+            <a-input v-model:value="searchForm.keyword" />
+          </a-form-item>
         </template>
         <template #toolbar>
           <a-button type="primary" @click="openCreate">新增</a-button>

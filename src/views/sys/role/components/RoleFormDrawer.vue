@@ -8,10 +8,18 @@
     @success="emit('success')"
   >
     <template #default="{ form }">
-      <a-form-item label="角色编码" name="code" :rules="[{ required: true, message: '请输入角色编码' }]">
+      <a-form-item
+        label="角色编码"
+        name="code"
+        :rules="[{ required: true, message: '请输入角色编码' }]"
+      >
         <a-input v-model:value="form.code" />
       </a-form-item>
-      <a-form-item label="角色名称" name="name" :rules="[{ required: true, message: '请输入角色名称' }]">
+      <a-form-item
+        label="角色名称"
+        name="name"
+        :rules="[{ required: true, message: '请输入角色名称' }]"
+      >
         <a-input v-model:value="form.name" />
       </a-form-item>
       <a-form-item label="描述" name="description">
@@ -31,14 +39,17 @@ const emit = defineEmits(['update:open', 'success'])
 
 const form = reactive({ code: '', name: '', description: '' })
 
-watch(() => props.open, async (v) => {
-  if (v && props.id) {
-    const { data } = await fetchRoleDetail({ id: props.id })
-    if (data) Object.assign(form, data)
-  } else {
-    Object.assign(form, { code: '', name: '', description: '' })
+watch(
+  () => props.open,
+  async v => {
+    if (v && props.id) {
+      const { data } = await fetchRoleDetail({ id: props.id })
+      if (data) Object.assign(form, data)
+    } else {
+      Object.assign(form, { code: '', name: '', description: '' })
+    }
   }
-})
+)
 
 async function handleSubmit(f: any) {
   if (props.id) {
@@ -48,5 +59,7 @@ async function handleSubmit(f: any) {
   }
 }
 
-function closeDrawer() { emit('update:open', false) }
+function closeDrawer() {
+  emit('update:open', false)
+}
 </script>

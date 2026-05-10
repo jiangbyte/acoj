@@ -93,7 +93,9 @@ function handleSearch() {
 
 function resetSearch() {
   if (props.searchForm) {
-    Object.keys(props.searchForm).forEach(k => { props.searchForm[k] = undefined })
+    Object.keys(props.searchForm).forEach(k => {
+      props.searchForm[k] = undefined
+    })
   }
   queryParams.value = {}
   pagination.current = 1

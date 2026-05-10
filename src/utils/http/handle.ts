@@ -21,7 +21,12 @@ export function handleResponseError(response: Response): Service.ResponseResult 
  */
 export function handleBusinessError(
   data: Record<string, any>,
-  bc: Service.BackendConfig = { codeKey: 'code', dataKey: 'data', msgKey: 'message', successCode: 200 },
+  bc: Service.BackendConfig = {
+    codeKey: 'code',
+    dataKey: 'data',
+    msgKey: 'message',
+    successCode: 200,
+  }
 ): Service.ResponseResult {
   const msg = data[bc.msgKey] || '业务异常'
   if (!ERROR_NO_TIP_STATUS.includes(Number(data[bc.codeKey]))) {
@@ -41,5 +46,12 @@ export function handleBusinessError(
  * 统一成功和失败返回类型
  */
 export function handleServiceResult<T = any>(data: T, success = true): Service.ResponseResult<T> {
-  return { success, errorType: null, code: 0, message: '', data, ...data } as unknown as Service.ResponseResult<T>
+  return {
+    success,
+    errorType: null,
+    code: 0,
+    message: '',
+    data,
+    ...data,
+  } as unknown as Service.ResponseResult<T>
 }

@@ -1,6 +1,6 @@
 import { createAlovaInstance } from './alova'
 
-const baseURL = import.meta.env.VITE_API_BASE_URL as string || ''
+const baseURL = (import.meta.env.VITE_API_BASE_URL as string) || ''
 
 export const request = createAlovaInstance(baseURL)
 

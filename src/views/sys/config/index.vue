@@ -1,7 +1,9 @@
 <template>
   <AppTable ref="tableRef" :columns="columns" :fetchData="fetchConfigPage" :searchForm="searchForm">
     <template #search>
-      <a-form-item label="关键词" name="keyword"><a-input v-model:value="searchForm.keyword" /></a-form-item>
+      <a-form-item label="关键词" name="keyword">
+        <a-input v-model:value="searchForm.keyword" />
+      </a-form-item>
     </template>
     <template #toolbar>
       <a-button type="primary" @click="openCreate">新增</a-button>

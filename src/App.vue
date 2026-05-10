@@ -34,13 +34,19 @@ toggleGrayMode(app.grayMode)
 toggleColorWeak(app.colorWeak)
 
 // Watch theme changes
-watch(() => app.colorPrimary, (color) => {
-  changeColor(color, app.theme)
-})
+watch(
+  () => app.colorPrimary,
+  color => {
+    changeColor(color, app.theme)
+  }
+)
 
-watch(() => app.theme, (t) => {
-  changeColor(app.colorPrimary, t)
-})
+watch(
+  () => app.theme,
+  t => {
+    changeColor(app.colorPrimary, t)
+  }
+)
 
 watch(() => app.grayMode, toggleGrayMode)
 watch(() => app.colorWeak, toggleColorWeak)

@@ -1,5 +1,12 @@
 import { defineStore } from 'pinia'
-import { fetchLogin, fetchCurrentUser, fetchUserMenus, fetchUserPermissions, fetchLogout, fetchSm2PublicKey } from '@/api/auth'
+import {
+  fetchLogin,
+  fetchCurrentUser,
+  fetchUserMenus,
+  fetchUserPermissions,
+  fetchLogout,
+  fetchSm2PublicKey,
+} from '@/api/auth'
 import { sm2 } from 'sm-crypto'
 import { useRouteStore } from './route'
 
@@ -18,8 +25,8 @@ export const useAuthStore = defineStore('auth', {
     sm2PublicKey: '',
   }),
   getters: {
-    isLogin: (state) => !!state.token,
-    hasPermission: (state) => (code: string) => state.permissions.includes(code),
+    isLogin: state => !!state.token,
+    hasPermission: state => (code: string) => state.permissions.includes(code),
   },
   actions: {
     encryptPassword(password: string) {
@@ -45,10 +52,7 @@ export const useAuthStore = defineStore('auth', {
       return true
     },
     async loadUserInfo() {
-      await Promise.all([
-        this.fetchUserInfo(),
-        this.loadMenusAndPermissions(),
-      ])
+      await Promise.all([this.fetchUserInfo(), this.loadMenusAndPermissions()])
     },
     async fetchUserInfo() {
       const { data } = await fetchCurrentUser()

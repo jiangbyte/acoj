@@ -28,27 +28,30 @@ const treeData = ref<any[]>([])
 const checkedKeys = ref<string[]>([])
 const saving = ref(false)
 
-watch(() => props.open, async (v) => {
-  if (v && props.id) {
-    const [modulesRes, ownRes] = await Promise.all([
-      fetchPermissionByModule({}),
-      fetchRoleOwnPermission({ role_id: props.id }),
-    ])
-    if (modulesRes.data) {
-      treeData.value = modulesRes.data.map((m: any) => ({
-        title: m.name,
-        key: m.id,
-        children: (m.permissions || []).map((p: any) => ({
-          title: `${p.name} (${p.code})`,
-          key: p.id,
-        })),
-      }))
-    }
-    if (ownRes.data) {
-      checkedKeys.value = ownRes.data.map((p: any) => p.permission_id || p.id)
+watch(
+  () => props.open,
+  async v => {
+    if (v && props.id) {
+      const [modulesRes, ownRes] = await Promise.all([
+        fetchPermissionByModule({}),
+        fetchRoleOwnPermission({ role_id: props.id }),
+      ])
+      if (modulesRes.data) {
+        treeData.value = modulesRes.data.map((m: any) => ({
+          title: m.name,
+          key: m.id,
+          children: (m.permissions || []).map((p: any) => ({
+            title: `${p.name} (${p.code})`,
+            key: p.id,
+          })),
+        }))
+      }
+      if (ownRes.data) {
+        checkedKeys.value = ownRes.data.map((p: any) => p.permission_id || p.id)
+      }
     }
   }
-})
+)
 
 function handleCheck(keys: any[]) {
   checkedKeys.value = keys
@@ -70,5 +73,7 @@ async function handleSave() {
   }
 }
 
-function closeDrawer() { emit('update:open', false) }
+function closeDrawer() {
+  emit('update:open', false)
+}
 </script>

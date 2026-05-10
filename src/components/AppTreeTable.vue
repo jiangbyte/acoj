@@ -2,11 +2,7 @@
   <a-row :gutter="16">
     <a-col :span="6">
       <a-card title="分类" size="small">
-        <a-tree
-          :treeData="treeData"
-          :defaultExpandAll="true"
-          @select="handleTreeSelect"
-        />
+        <a-tree :treeData="treeData" :defaultExpandAll="true" @select="handleTreeSelect" />
       </a-card>
     </a-col>
     <a-col :span="18">

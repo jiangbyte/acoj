@@ -5,27 +5,47 @@
         <a-input v-model:value="searchForm.keyword" placeholder="账号/昵称" />
       </a-form-item>
       <a-form-item label="状态" name="status">
-        <a-select v-model:value="searchForm.status" placeholder="全部" allowClear style="width:120px">
+        <a-select
+          v-model:value="searchForm.status"
+          placeholder="全部"
+          allowClear
+          style="width: 120px"
+        >
           <a-select-option value="ACTIVE">启用</a-select-option>
           <a-select-option value="INACTIVE">禁用</a-select-option>
         </a-select>
       </a-form-item>
     </template>
     <template #toolbar>
-      <a-button type="primary" @click="openCreate" v-if="hasPermission('sys:user:create')">新增</a-button>
+      <a-button type="primary" @click="openCreate" v-if="hasPermission('sys:user:create')">
+        新增
+      </a-button>
     </template>
     <template #bodyCell="{ column, record }">
       <template v-if="column.key === 'action'">
         <a-space>
           <a-button type="link" size="small" @click="openDetail(record.id)">详情</a-button>
-          <a-button type="link" size="small" @click="openEdit(record.id)" v-if="hasPermission('sys:user:modify')">编辑</a-button>
-          <a-popconfirm title="确定删除？" @confirm="handleDelete(record.id)" v-if="hasPermission('sys:user:remove')">
+          <a-button
+            type="link"
+            size="small"
+            @click="openEdit(record.id)"
+            v-if="hasPermission('sys:user:modify')"
+          >
+            编辑
+          </a-button>
+          <a-popconfirm
+            title="确定删除？"
+            @confirm="handleDelete(record.id)"
+            v-if="hasPermission('sys:user:remove')"
+          >
             <a-button type="link" danger size="small">删除</a-button>
           </a-popconfirm>
         </a-space>
       </template>
       <template v-else-if="column.key === 'status'">
-        <a-tag :color="record.status === 'ACTIVE' ? 'green' : 'red'">{{ record.status === 'ACTIVE' ? '启用' : '禁用' }}</a-tag>
+        <a-tag :color="record.status === 'ACTIVE' ? 'green' : 'red'">
+          {{ record.status === 'ACTIVE' ? '启用' : '禁用' }}
+        </a-tag>
       </template>
     </template>
   </AppTable>
@@ -59,9 +79,18 @@ const detailOpen = ref(false)
 const formOpen = ref(false)
 const currentId = ref('')
 
-function openDetail(id: string) { currentId.value = id; detailOpen.value = true }
-function openEdit(id: string) { currentId.value = id; formOpen.value = true }
-function openCreate() { currentId.value = ''; formOpen.value = true }
+function openDetail(id: string) {
+  currentId.value = id
+  detailOpen.value = true
+}
+function openEdit(id: string) {
+  currentId.value = id
+  formOpen.value = true
+}
+function openCreate() {
+  currentId.value = ''
+  formOpen.value = true
+}
 
 async function handleDelete(id: string) {
   const { success } = await fetchUserRemove({ ids: [id] })

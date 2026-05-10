@@ -36,17 +36,24 @@ const props = defineProps<{ open: boolean; id: string }>()
 const emit = defineEmits(['update:open', 'success'])
 
 const form = reactive({
-  account: '', nickname: '', email: '', phone: '', status: 'ACTIVE',
+  account: '',
+  nickname: '',
+  email: '',
+  phone: '',
+  status: 'ACTIVE',
 })
 
-watch(() => props.open, async (v) => {
-  if (v && props.id) {
-    const { data } = await fetchUserDetail({ id: props.id })
-    if (data) Object.assign(form, data)
-  } else {
-    Object.assign(form, { account: '', nickname: '', email: '', phone: '', status: 'ACTIVE' })
+watch(
+  () => props.open,
+  async v => {
+    if (v && props.id) {
+      const { data } = await fetchUserDetail({ id: props.id })
+      if (data) Object.assign(form, data)
+    } else {
+      Object.assign(form, { account: '', nickname: '', email: '', phone: '', status: 'ACTIVE' })
+    }
   }
-})
+)
 
 async function handleSubmit(f: any) {
   if (props.id) {
@@ -56,5 +63,7 @@ async function handleSubmit(f: any) {
   }
 }
 
-function closeDrawer() { emit('update:open', false) }
+function closeDrawer() {
+  emit('update:open', false)
+}
 </script>

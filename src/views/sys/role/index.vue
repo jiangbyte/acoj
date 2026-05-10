@@ -1,18 +1,40 @@
 <template>
   <AppTable ref="tableRef" :columns="columns" :fetchData="fetchRolePage" :searchForm="searchForm">
     <template #search>
-      <a-form-item label="关键词" name="keyword"><a-input v-model:value="searchForm.keyword" /></a-form-item>
+      <a-form-item label="关键词" name="keyword">
+        <a-input v-model:value="searchForm.keyword" />
+      </a-form-item>
     </template>
     <template #toolbar>
-      <a-button type="primary" @click="openCreate" v-if="hasPermission('sys:role:create')">新增</a-button>
+      <a-button type="primary" @click="openCreate" v-if="hasPermission('sys:role:create')">
+        新增
+      </a-button>
     </template>
     <template #bodyCell="{ column, record }">
       <template v-if="column.key === 'action'">
         <a-space>
           <a-button type="link" size="small" @click="openDetail(record.id)">详情</a-button>
-          <a-button type="link" size="small" @click="openEdit(record.id)" v-if="hasPermission('sys:role:modify')">编辑</a-button>
-          <a-button type="link" size="small" @click="openPermission(record.id)" v-if="hasPermission('sys:role:grant-permission')">权限</a-button>
-          <a-popconfirm title="确定删除？" @confirm="handleDelete(record.id)" v-if="hasPermission('sys:role:remove')">
+          <a-button
+            type="link"
+            size="small"
+            @click="openEdit(record.id)"
+            v-if="hasPermission('sys:role:modify')"
+          >
+            编辑
+          </a-button>
+          <a-button
+            type="link"
+            size="small"
+            @click="openPermission(record.id)"
+            v-if="hasPermission('sys:role:grant-permission')"
+          >
+            权限
+          </a-button>
+          <a-popconfirm
+            title="确定删除？"
+            @confirm="handleDelete(record.id)"
+            v-if="hasPermission('sys:role:remove')"
+          >
             <a-button type="link" danger size="small">删除</a-button>
           </a-popconfirm>
         </a-space>
@@ -46,9 +68,18 @@ const formOpen = ref(false)
 const permOpen = ref(false)
 const currentId = ref('')
 
-function openCreate() { currentId.value = ''; formOpen.value = true }
-function openEdit(id: string) { currentId.value = id; formOpen.value = true }
-function openPermission(id: string) { currentId.value = id; permOpen.value = true }
+function openCreate() {
+  currentId.value = ''
+  formOpen.value = true
+}
+function openEdit(id: string) {
+  currentId.value = id
+  formOpen.value = true
+}
+function openPermission(id: string) {
+  currentId.value = id
+  permOpen.value = true
+}
 
 async function handleDelete(id: string) {
   const { success } = await fetchRoleRemove({ ids: [id] })

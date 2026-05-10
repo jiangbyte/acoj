@@ -1,7 +1,9 @@
 <template>
   <AppTable ref="tableRef" :columns="columns" :fetchData="fetchFilePage" :searchForm="searchForm">
     <template #search>
-      <a-form-item label="关键词" name="keyword"><a-input v-model:value="searchForm.keyword" /></a-form-item>
+      <a-form-item label="关键词" name="keyword">
+        <a-input v-model:value="searchForm.keyword" />
+      </a-form-item>
     </template>
     <template #toolbar>
       <a-upload :beforeUpload="handleUpload" :showUploadList="false">

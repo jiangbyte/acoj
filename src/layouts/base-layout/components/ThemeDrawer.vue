@@ -11,7 +11,8 @@
       <h3 class="setting-section-title">整体风格</h3>
       <div class="flex gap-3 mb-6">
         <div
-          v-for="item in themeList" :key="item.value"
+          v-for="item in themeList"
+          :key="item.value"
           class="setting-card"
           :class="{ 'setting-card-active': app.theme === item.value }"
           @click="app.setTheme(item.value)"
@@ -36,7 +37,10 @@
             :class="app.colorPrimary === c.color ? 'border-primary-dynamic' : 'border-transparent'"
             @click="app.setColorPrimary(c.color)"
           >
-            <CheckOutlined v-if="app.colorPrimary === c.color" style="color: #fff; font-size: 12px" />
+            <CheckOutlined
+              v-if="app.colorPrimary === c.color"
+              style="color: #fff; font-size: 12px"
+            />
           </ATag>
         </ATooltip>
       </div>
@@ -51,7 +55,10 @@
         </div>
         <div class="flex items-center justify-between">
           <span>面包屑图标</span>
-          <ASwitch :checked="app.showBreadcrumbIcon" @change="(v: boolean) => app.showBreadcrumbIcon = v" />
+          <ASwitch
+            :checked="app.showBreadcrumbIcon"
+            @change="(v: boolean) => (app.showBreadcrumbIcon = v)"
+          />
         </div>
         <div class="flex items-center justify-between">
           <span>多标签页</span>
@@ -192,5 +199,4 @@ const colorList = [
 .theme-realdark .preview-header {
   background-color: #1a1a2e;
 }
-
 </style>
