@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { message } from 'ant-design-vue'
-import { fetchFilePage, fetchFileRemove, uploadFile } from '@/service/api/file'
+import { fetchFilePage, fetchFileRemove, uploadFile } from '@/api/file'
 import AppTable from '@/components/AppTable.vue'
 
 const tableRef = ref()

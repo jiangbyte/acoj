@@ -1,4 +1,4 @@
-import { request } from '../http'
+import { request } from '@/utils'
 
 export function fetchPermissionPage(params: any) { return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/permission/page', { params }) }
 export function fetchPermissionCreate(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/permission/create', data) }

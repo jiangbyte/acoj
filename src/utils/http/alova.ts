@@ -6,7 +6,7 @@ import VueHook from 'alova/vue'
 import type { VueHookType } from 'alova/vue'
 import { DEFAULT_ALOVA_OPTIONS, DEFAULT_BACKEND_OPTIONS } from './config'
 import { handleBusinessError, handleResponseError } from './handle'
-import { useAuthStore } from '@/store/auth'
+import { useAuthStore } from '@/store'
 
 const { onAuthRequired } = createServerTokenAuthentication<VueHookType>({
   assignToken: (method) => {

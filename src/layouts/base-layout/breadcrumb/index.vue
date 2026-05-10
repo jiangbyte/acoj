@@ -10,19 +10,13 @@
 </template>
 
 <script setup lang="ts">
-import { h, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAppStore } from '@/store/app'
-import * as Icons from '@ant-design/icons-vue'
+import { useAppStore } from '@/store'
+import { resolveIcon } from '@/utils'
 
 const route = useRoute()
 const app = useAppStore()
-
-function resolveIcon(name: string) {
-  const pascal = name.replace(/[-_]/g, '').replace(/^(\w)/, (_, c) => c.toUpperCase())
-  const key = pascal.endsWith('Outlined') ? pascal : pascal + 'Outlined'
-  return (Icons as any)[key] || null
-}
 
 const breadcrumbs = computed(() => {
   const matched = route.matched.filter((r) => r.path !== '/')

@@ -1,4 +1,4 @@
-import { request } from '../http'
+import { request } from '@/utils'
 export function fetchOrgPage(params: any) { return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/org/page', { params }) }
 export function fetchOrgCreate(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/org/create', data) }
 export function fetchOrgModify(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/org/modify', data) }

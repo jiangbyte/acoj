@@ -1,4 +1,4 @@
-import { request } from '../http'
+import { request } from '@/utils'
 
 export function fetchCaptcha() {
   return request.Get<Service.ResponseResult>('/api/v1/public/b/captcha')
@@ -15,6 +15,10 @@ export function fetchLogin(data: {
 
 export function fetchRegister(data: any) {
   return request.Post<Service.ResponseResult>('/api/v1/public/b/register', data)
+}
+
+export function fetchSm2PublicKey() {
+  return request.Get<Service.ResponseResult<string>>('/api/v1/public/c/sm2/public-key')
 }
 
 export function fetchLogout() {

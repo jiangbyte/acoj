@@ -1,4 +1,4 @@
-import { request } from '../http'
+import { request } from '@/utils'
 export function fetchNoticePage(params: any) { return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/notice/page', { params }) }
 export function fetchNoticeCreate(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/notice/create', data) }
 export function fetchNoticeModify(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/notice/modify', data) }

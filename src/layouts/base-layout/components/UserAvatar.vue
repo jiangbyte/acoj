@@ -1,5 +1,5 @@
 <template>
-  <ADropdown :trigger="['click']">
+  <ADropdown :trigger="['click']" v-if="!app.isMobile">
     <div class="flex items-center gap-2 cursor-pointer">
       <AAvatar :size="32" :src="auth.userInfo?.avatar || undefined">
         {{ auth.userInfo?.nickname?.[0] || 'U' }}
@@ -8,26 +8,29 @@
     </div>
     <template #overlay>
       <AMenu>
-        <AMenuItem key="logout" @click="handleLogout">
-          <LogoutOutlined /> 退出登录
+        <AMenuItem v-for="item in userMenuItems" :key="item.key" @click="item.onClick">
+          <component :is="item.icon" v-if="item.icon" />
+          {{ item.label }}
         </AMenuItem>
       </AMenu>
     </template>
   </ADropdown>
+  <!-- 移动端：点击触发用户抽屉 -->
+  <div v-else class="flex items-center gap-2 cursor-pointer" @click="$emit('toggleUserDrawer')">
+    <AAvatar :size="32" :src="auth.userInfo?.avatar || undefined">
+      {{ auth.userInfo?.nickname?.[0] || 'U' }}
+    </AAvatar>
+    <span>{{ auth.userInfo?.nickname || '' }}</span>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/store/auth'
-import { LogoutOutlined } from '@ant-design/icons-vue'
-import { message } from 'ant-design-vue'
+import { useAuthStore, useAppStore } from '@/store'
+import { useUserMenu } from './useUserMenu'
 
-const router = useRouter()
+defineEmits<{ toggleUserDrawer: [] }>()
+
 const auth = useAuthStore()
-
-async function handleLogout() {
-  await auth.logout()
-  message.success('已退出登录')
-  router.push({ name: 'login' })
-}
+const app = useAppStore()
+const { userMenuItems } = useUserMenu()
 </script>

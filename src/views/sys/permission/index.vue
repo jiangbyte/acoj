@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { fetchPermissionPage, fetchPermissionRemove } from '@/service/api/permission'
+import { fetchPermissionPage, fetchPermissionRemove } from '@/api/permission'
 import AppTable from '@/components/AppTable.vue'
 
 const tableRef = ref()

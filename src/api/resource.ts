@@ -1,4 +1,4 @@
-import { request } from '../http'
+import { request } from '@/utils'
 
 export function fetchModulePage(params: any) { return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/module/page', { params }) }
 export function fetchModuleCreate(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/module/create', data) }

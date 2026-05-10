@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { fetchLogin, fetchCurrentUser, fetchUserMenus, fetchUserPermissions, fetchLogout } from '@/service/api/auth'
+import { fetchLogin, fetchCurrentUser, fetchUserMenus, fetchUserPermissions, fetchLogout, fetchSm2PublicKey } from '@/api/auth'
 import { sm2 } from 'sm-crypto'
 import { useRouteStore } from './route'
 
@@ -7,6 +7,7 @@ interface AuthState {
   token: string
   userInfo: any
   permissions: string[]
+  sm2PublicKey: string
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -14,6 +15,7 @@ export const useAuthStore = defineStore('auth', {
     token: '',
     userInfo: null,
     permissions: [],
+    sm2PublicKey: '',
   }),
   getters: {
     isLogin: (state) => !!state.token,
@@ -21,9 +23,13 @@ export const useAuthStore = defineStore('auth', {
   },
   actions: {
     encryptPassword(password: string) {
-      const publicKey = import.meta.env.VITE_SM2_PUBLIC_KEY as string
-      if (!publicKey) return password
+      if (!this.sm2PublicKey) return password
+      const publicKey = this.sm2PublicKey
       return sm2.doEncrypt(password, publicKey, 1)
+    },
+    async fetchSm2PublicKey() {
+      const { data } = await fetchSm2PublicKey()
+      if (data) this.sm2PublicKey = data
     },
     async login(username: string, password: string, captchaCode?: string, captchaId?: string) {
       const encryptedPwd = this.encryptPassword(password)

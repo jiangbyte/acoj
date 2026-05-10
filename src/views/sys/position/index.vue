@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { fetchPositionPage, fetchPositionRemove } from '@/service/api/position'
+import { fetchPositionPage, fetchPositionRemove } from '@/api/position'
 import AppTable from '@/components/AppTable.vue'
 
 const tableRef = ref()

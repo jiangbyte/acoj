@@ -29,8 +29,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/store/auth'
-import { fetchCaptcha, fetchRegister } from '@/service/api/auth'
+import { useAuthStore } from '@/store'
+import { fetchCaptcha, fetchRegister } from '@/api/auth'
 import { message } from 'ant-design-vue'
 
 const router = useRouter()

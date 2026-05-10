@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { fetchModulePage, fetchModuleRemove } from '@/service/api/resource'
+import { fetchModulePage, fetchModuleRemove } from '@/api/resource'
 import AppTable from '@/components/AppTable.vue'
 
 const tableRef = ref()

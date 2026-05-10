@@ -1,4 +1,4 @@
-import { request } from '../http'
+import { request } from '@/utils'
 export function fetchBannerPage(params: any) { return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/banner/page', { params }) }
 export function fetchBannerCreate(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/banner/create', data) }
 export function fetchBannerModify(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/banner/modify', data) }

@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { fetchDictTree, fetchDictPage, fetchDictRemove } from '@/service/api/dict'
+import { fetchDictTree, fetchDictPage, fetchDictRemove } from '@/api/dict'
 import AppTable from '@/components/AppTable.vue'
 
 const dictTree = ref<any[]>([])

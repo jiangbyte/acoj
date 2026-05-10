@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { fetchBannerPage, fetchBannerRemove } from '@/service/api/banner'
+import { fetchBannerPage, fetchBannerRemove } from '@/api/banner'
 import AppTable from '@/components/AppTable.vue'
 
 const tableRef = ref()

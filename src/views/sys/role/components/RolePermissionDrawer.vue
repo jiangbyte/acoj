@@ -18,8 +18,8 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { fetchRoleOwnPermission, fetchRoleGrantPermission } from '@/service/api/role'
-import { fetchPermissionByModule } from '@/service/api/permission'
+import { fetchRoleOwnPermission, fetchRoleGrantPermission } from '@/api/role'
+import { fetchPermissionByModule } from '@/api/permission'
 
 const props = defineProps<{ open: boolean; id: string }>()
 const emit = defineEmits(['update:open', 'success'])

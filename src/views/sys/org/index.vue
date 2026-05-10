@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { fetchOrgPage, fetchOrgRemove } from '@/service/api/org'
+import { fetchOrgPage, fetchOrgRemove } from '@/api/org'
 
 const dataSource = ref<any[]>([])
 const loading = ref(false)

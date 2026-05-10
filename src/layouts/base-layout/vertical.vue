@@ -1,9 +1,12 @@
 <template>
   <div class="h-screen">
     <ALayout class="h-full">
-      <Sider />
+      <Sider v-if="!app.isMobile" />
       <ALayout>
-        <Header />
+        <Header
+          @toggleMobileMenu="showMobileDrawer = true"
+          @toggleUserDrawer="showUserDrawer = true"
+        />
         <Breadcrumb />
         <Tab />
         <ALayoutContent class="layout-content layout-content-bg p-4">
@@ -16,20 +19,27 @@
         </ALayoutContent>
       </ALayout>
     </ALayout>
+    <MobileDrawer v-if="app.isMobile" v-model:open="showMobileDrawer" />
+    <UserDrawer v-if="app.isMobile" v-model:open="showUserDrawer" />
     <ThemeDrawer />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useAppStore } from '@/store/app'
-import { useRouteStore } from '@/store/route'
+import { ref } from 'vue'
+import { useAppStore, useRouteStore } from '@/store'
 import Sider from './sider/index.vue'
 import Header from './header/index.vue'
 import Breadcrumb from './breadcrumb/index.vue'
 import Tab from './tab/index.vue'
 import FooterBar from './components/FooterBar.vue'
 import ThemeDrawer from './components/ThemeDrawer.vue'
+import MobileDrawer from './components/MobileDrawer.vue'
+import UserDrawer from './components/UserDrawer.vue'
 
 const app = useAppStore()
 const routeStore = useRouteStore()
+
+const showMobileDrawer = ref(false)
+const showUserDrawer = ref(false)
 </script>

@@ -1,4 +1,4 @@
-import { request } from '../http'
+import { request } from '@/utils'
 
 export function fetchDictPage(params: any) { return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/dict/page', { params }) }
 export function fetchDictList(params: any) { return request.Get<Service.ResponseResult>('/api/v1/sys/dict/list', { params }) }

@@ -1,4 +1,4 @@
-import { request } from '../http'
+import { request } from '@/utils'
 
 export function fetchUserPage(params: any) { return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/user/page', { params }) }
 export function fetchUserCreate(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/user/create', data) }

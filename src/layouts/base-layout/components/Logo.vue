@@ -1,6 +1,6 @@
 <template>
-  <div class="logo flex items-center gap-2 px-4 h-16" :style="{ width: collapsed ? '64px' : '200px' }">
-    <div class="w-8 h-8 bg-primary-dynamic rounded flex items-center justify-center text-white font-bold text-sm">H</div>
+  <div class="logo flex items-center justify-center gap-2 h-16 w-full">
+    <div class="w-8 h-8 bg-primary-dynamic rounded flex items-center justify-center text-white font-bold text-sm shrink-0">H</div>
     <span v-if="!collapsed" class="logo-text text-lg font-semibold whitespace-nowrap">Hei Admin</span>
   </div>
 </template>

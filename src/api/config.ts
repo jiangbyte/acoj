@@ -1,4 +1,4 @@
-import { request } from '../http'
+import { request } from '@/utils'
 export function fetchConfigPage(params: any) { return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/config/page', { params }) }
 export function fetchConfigListByCategory(params: any) { return request.Get<Service.ResponseResult>('/api/v1/sys/config/list-by-category', { params }) }
 export function fetchConfigCreate(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/config/create', data) }

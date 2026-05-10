@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { fetchGroupPage, fetchGroupRemove } from '@/service/api/group'
+import { fetchGroupPage, fetchGroupRemove } from '@/api/group'
 import AppTable from '@/components/AppTable.vue'
 
 const tableRef = ref()

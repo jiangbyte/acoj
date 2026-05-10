@@ -1,7 +1,5 @@
 import type { Router } from 'vue-router'
-import { useAppStore } from '@/store/app'
-import { useAuthStore } from '@/store/auth'
-import { useRouteStore } from '@/store/route'
+import { useAppStore, useAuthStore, useRouteStore } from '@/store'
 
 const HOME_PATH = import.meta.env.VITE_HOME_PATH as string || '/dashboard'
 

@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
-import { fetchRoleDetail, fetchRoleCreate, fetchRoleModify } from '@/service/api/role'
+import { fetchRoleDetail, fetchRoleCreate, fetchRoleModify } from '@/api/role'
 import AppDrawerForm from '@/components/AppDrawerForm.vue'
 
 const props = defineProps<{ open: boolean; id: string }>()

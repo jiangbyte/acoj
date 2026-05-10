@@ -25,8 +25,8 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { fetchRolePage, fetchRoleRemove } from '@/service/api/role'
-import { useAuthStore } from '@/store/auth'
+import { fetchRolePage, fetchRoleRemove } from '@/api/role'
+import { useAuthStore } from '@/store'
 import AppTable from '@/components/AppTable.vue'
 import RoleFormDrawer from './components/RoleFormDrawer.vue'
 import RolePermissionDrawer from './components/RolePermissionDrawer.vue'

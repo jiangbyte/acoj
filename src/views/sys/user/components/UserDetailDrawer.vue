@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { fetchUserDetail } from '@/service/api/user'
+import { fetchUserDetail } from '@/api/user'
 
 const props = defineProps<{ open: boolean; id: string }>()
 const emit = defineEmits(['update:open'])

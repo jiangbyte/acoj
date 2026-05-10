@@ -1,4 +1,4 @@
-import { request } from '../http'
+import { request } from '@/utils'
 
 export function fetchRolePage(params: any) { return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/role/page', { params }) }
 export function fetchRoleCreate(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/role/create', data) }

@@ -84,7 +84,7 @@
 
 <script setup lang="ts">
 import { CheckOutlined } from '@ant-design/icons-vue'
-import { useAppStore } from '@/store/app'
+import { useAppStore } from '@/store'
 
 const app = useAppStore()
 

@@ -13,8 +13,8 @@ import { computed, watch } from 'vue'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
 import { theme } from 'ant-design-vue'
 import AppLoading from '@/components/AppLoading.vue'
-import { useAppStore } from '@/store/app'
-import { changeColor, toggleGrayMode, toggleColorWeak } from '@/utils/themeUtil'
+import { useAppStore } from '@/store'
+import { changeColor, toggleGrayMode, toggleColorWeak } from '@/utils'
 
 const app = useAppStore()
 

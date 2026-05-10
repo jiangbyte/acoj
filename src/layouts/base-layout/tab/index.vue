@@ -49,9 +49,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAppStore } from '@/store/app'
-import { useTabStore } from '@/store/tab'
+import { useAppStore, useTabStore } from '@/store'
 import * as Icons from '@ant-design/icons-vue'
+import { resolveIcon } from '@/utils'
 
 const { DownOutlined, ReloadOutlined, CloseOutlined, MinusOutlined, DeleteOutlined } = Icons
 
@@ -63,12 +63,6 @@ const app = useAppStore()
 const tabStore = useTabStore()
 
 const menuOpen = ref(false)
-
-function resolveIcon(name: string) {
-  const pascal = name.replace(/[-_]/g, '').replace(/^(\w)/, (_, c) => c.toUpperCase())
-  const key = pascal.endsWith('Outlined') ? pascal : pascal + 'Outlined'
-  return (Icons as any)[key] || null
-}
 
 // Track route changes to add/switch tabs
 watch(() => route.path, (path) => {
@@ -130,7 +124,8 @@ function handleMenuClick({ key }: { key: string }) {
 .layout-tabs {
   display: flex;
   align-items: center;
-  border-bottom: 1px solid var(--border-color-split, #f0f0f0);
-  background: var(--layout-body-bg, #fff);
+}
+.layout-tabs :deep(.ant-tabs-nav) {
+  margin-bottom: 0;
 }
 </style>

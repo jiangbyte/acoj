@@ -29,8 +29,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/store/auth'
-import { fetchCaptcha } from '@/service/api/auth'
+import { useAuthStore } from '@/store'
+import { fetchCaptcha } from '@/api/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -66,7 +66,7 @@ async function handleLogin() {
   }
 }
 
-onMounted(() => {
-  loadCaptcha()
+onMounted(async () => {
+  await Promise.all([loadCaptcha(), auth.fetchSm2PublicKey()])
 })
 </script>

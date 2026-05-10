@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { fetchResourcePage, fetchResourceRemove } from '@/service/api/resource'
+import { fetchResourcePage, fetchResourceRemove } from '@/api/resource'
 
 const dataSource = ref<any[]>([])
 const loading = ref(false)

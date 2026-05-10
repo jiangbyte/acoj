@@ -36,8 +36,8 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { useAuthStore } from '@/store/auth'
-import { fetchUserPage, fetchUserRemove } from '@/service/api/user'
+import { useAuthStore } from '@/store'
+import { fetchUserPage, fetchUserRemove } from '@/api/user'
 import AppTable from '@/components/AppTable.vue'
 import UserDetailDrawer from './components/UserDetailDrawer.vue'
 import UserFormDrawer from './components/UserFormDrawer.vue'

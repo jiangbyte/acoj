@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { fetchNoticePage, fetchNoticeRemove } from '@/service/api/notice'
+import { fetchNoticePage, fetchNoticeRemove } from '@/api/notice'
 import AppTable from '@/components/AppTable.vue'
 
 const tableRef = ref()

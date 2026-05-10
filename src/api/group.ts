@@ -1,4 +1,4 @@
-import { request } from '../http'
+import { request } from '@/utils'
 export function fetchGroupPage(params: any) { return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/group/page', { params }) }
 export function fetchGroupCreate(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/group/create', data) }
 export function fetchGroupModify(data: any) { return request.Post<Service.ResponseResult>('/api/v1/sys/group/modify', data) }

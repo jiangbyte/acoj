@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { fetchConfigPage, fetchConfigRemove } from '@/service/api/config'
+import { fetchConfigPage, fetchConfigRemove } from '@/api/config'
 import AppTable from '@/components/AppTable.vue'
 
 const tableRef = ref()
