@@ -1,4 +1,3 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from core.result import success
@@ -15,14 +14,10 @@ router = APIRouter()
 @HeiCheckPermission("sys:config:page")
 async def page(
     request: Request,
-    current: int = Query(default=1),
-    size: int = Query(default=10),
-    category: Optional[str] = Query(default=None),
-    keyword: Optional[str] = Query(default=None),
+    param: ConfigPageParam = Depends(),
     db: Session = Depends(get_db),
 ):
     service = ConfigService(db)
-    param = ConfigPageParam(current=current, size=size, category=category, keyword=keyword)
     return success(service.page(param))
 
 
@@ -30,11 +25,10 @@ async def page(
 @HeiCheckPermission("sys:config:list")
 async def list_by_category(
     request: Request,
-    category: str = Query(...),
+    param: ConfigListParam = Depends(),
     db: Session = Depends(get_db),
 ):
     service = ConfigService(db)
-    param = ConfigListParam(category=category)
     return success(service.list_by_category(param))
 
 

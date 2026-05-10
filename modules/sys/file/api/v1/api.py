@@ -39,21 +39,10 @@ async def download(
 @HeiCheckPermission("sys:file:page")
 async def page(
     request: Request,
-    current: int = Query(default=1),
-    size: int = Query(default=10),
-    engine: Optional[str] = Query(default=None),
-    keyword: Optional[str] = Query(default=None),
-    date_range_start: Optional[str] = Query(default=None),
-    date_range_end: Optional[str] = Query(default=None),
+    param: FilePageParam = Depends(),
     db: Session = Depends(get_db),
 ):
     service = FileService(db)
-    param = FilePageParam(
-        current=current, size=size,
-        engine=engine, keyword=keyword,
-        date_range_start=date_range_start,
-        date_range_end=date_range_end,
-    )
     return success(service.page(param))
 
 

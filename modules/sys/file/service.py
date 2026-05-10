@@ -211,14 +211,7 @@ class FileService:
         )
 
     def page(self, param: FilePageParam) -> dict:
-        result = self.dao.find_page(
-            engine=param.engine,
-            keyword=param.keyword,
-            date_range_start=param.date_range_start,
-            date_range_end=param.date_range_end,
-            current=param.current,
-            size=param.size,
-        )
+        result = self.dao.find_page(param)
         records = result["records"]
         total = result["total"]
         vo_list = []

@@ -1,7 +1,8 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from .models import SysUser, RalUserRole, RalUserGroup, RalUserPermission
+from .params import UserPageParam
 from core.db.base_dao import BaseDAO
 from core.utils import generate_id
 from datetime import datetime
@@ -10,6 +11,18 @@ from datetime import datetime
 class UserDao(BaseDAO):
     def __init__(self, db: Session):
         super().__init__(db, SysUser)
+
+    def find_page(self, param: UserPageParam) -> Dict[str, Any]:
+        def builder(query):
+            if param.keyword:
+                keyword = f"%{param.keyword}%"
+                query = query.where(
+                    or_(SysUser.account.ilike(keyword), SysUser.nickname.ilike(keyword))
+                )
+            if param.status:
+                query = query.where(SysUser.status == param.status)
+            return query.order_by(SysUser.created_at.desc())
+        return super().find_page(param, builder)
 
     def insert(self, entity: SysUser) -> SysUser:
         entity.id = generate_id()
