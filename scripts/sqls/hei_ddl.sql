@@ -906,6 +906,7 @@ VALUES
 
 -- 资源管理
 ('p_sys_resource_page', 'sys:resource:page', '资源分页查询', 'sys/resource', 'BACKEND', 'ENABLED', 30, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('p_sys_resource_tree', 'sys:resource:tree', '资源分页查询', 'sys/resource', 'BACKEND', 'ENABLED', 30, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('p_sys_resource_create', 'sys:resource:create', '资源新增', 'sys/resource', 'BACKEND', 'ENABLED', 31, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('p_sys_resource_modify', 'sys:resource:modify', '资源修改', 'sys/resource', 'BACKEND', 'ENABLED', 32, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('p_sys_resource_remove', 'sys:resource:remove', '资源删除', 'sys/resource', 'BACKEND', 'ENABLED', 33, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
@@ -1126,6 +1127,7 @@ WHERE p.`code` IN (
     'sys:org:page', 'sys:org:tree', 'sys:org:detail', 'sys:org:create', 'sys:org:modify', 'sys:org:remove',
     'sys:position:page', 'sys:position:detail',
      'sys:group:page', 'sys:group:tree', 'sys:group:detail', 'sys:group:create', 'sys:group:modify', 'sys:group:remove',
+     'sys:resource:page', 'sys:resource:tree', 'sys:resource:detail', 'sys:resource:create', 'sys:resource:modify', 'sys:resource:remove',
     'sys:dict:page', 'sys:dict:list', 'sys:dict:tree', 'sys:dict:create', 'sys:dict:modify', 'sys:dict:remove',
     'sys:config:page', 'sys:config:list', 'sys:config:create', 'sys:config:modify', 'sys:config:remove',
     'sys:notice:page', 'sys:notice:detail',
