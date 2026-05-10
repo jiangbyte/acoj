@@ -18,6 +18,9 @@ export function fetchModuleDetail(params: any) {
   return request.Get<Service.ResponseResult>('/api/v1/sys/module/detail', { params })
 }
 
+export function fetchResourceTree() {
+  return request.Get<Service.ResponseResult>('/api/v1/sys/resource/tree')
+}
 export function fetchResourcePage(params: any) {
   return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/resource/page', {
     params,

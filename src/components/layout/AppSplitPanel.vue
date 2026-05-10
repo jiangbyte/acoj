@@ -23,17 +23,6 @@
       <div class="w-0.5 h-8 rounded-sm bg-[var(--border-color,#f0f0f0)] transition-colors duration-200 group-hover:bg-primary" />
     </div>
 
-    <!-- Collapse toggle -->
-    <div
-      v-if="!shouldHideLeft"
-      class="max-md:hidden absolute left-[var(--toggle-left,0)] top-1/2 -translate-y-1/2 z-2 w-4 h-12 flex-center cursor-pointer text-[var(--text-secondary,#00000073)] bg-[var(--container-bg,#fff)] border border-[var(--border-color,#f0f0f0)] border-l-0 rounded-r text-[10px] hover:text-primary transition-colors"
-      :title="collapsed ? '展开' : '收起'"
-      @click="toggleCollapse"
-    >
-      <double-left-outlined v-if="!collapsed" />
-      <double-right-outlined v-else />
-    </div>
-
     <!-- Right panel -->
     <div class="flex-1 overflow-hidden min-w-0 flex flex-col">
       <slot name="right" />
@@ -43,9 +32,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons-vue'
 
 interface Props {
+  collapsed?: boolean
   initialSize?: number
   minSize?: number
   maxSize?: number
@@ -54,13 +43,20 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  collapsed: false,
   initialSize: 260,
   minSize: 200,
   maxSize: 400,
   md: undefined,
 })
 
-const collapsed = ref(false)
+const emit = defineEmits<{
+  'update:collapsed': [value: boolean]
+  collapse: [collapsed: boolean]
+  resize: [width: number]
+}>()
+
+const collapsed = ref(props.collapsed)
 const leftWidth = ref(props.initialSize)
 
 const isMobile = ref(false)
@@ -77,11 +73,6 @@ const shouldHideLeft = computed(() => {
   if (props.md === 0) return isMobile.value
   return false
 })
-
-const emit = defineEmits<{
-  collapse: [collapsed: boolean]
-  resize: [width: number]
-}>()
 
 const leftStyle = computed(() => {
   if (shouldHideLeft.value) return {}
@@ -117,6 +108,7 @@ function startResize(e: MouseEvent) {
 
 function toggleCollapse() {
   collapsed.value = !collapsed.value
+  emit('update:collapsed', collapsed.value)
   emit('collapse', collapsed.value)
 }
 

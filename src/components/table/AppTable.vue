@@ -41,7 +41,7 @@
         size="middle"
         @change="handleTableChange"
       >
-        <template v-for="slot in Object.keys($slots)" :key="slot" #[slot]="args">
+        <template v-for="slot in passthroughSlots" :key="slot" #[slot]="args">
           <slot :name="slot" v-bind="args" />
         </template>
       </a-table>
@@ -50,8 +50,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted, useSlots } from 'vue'
 import { ReloadOutlined } from '@ant-design/icons-vue'
+
+const passthroughSlots = Object.keys(useSlots()).filter(s => s !== 'default' && s !== 'dragHandle')
 
 const props = defineProps<{
   columns: any[]

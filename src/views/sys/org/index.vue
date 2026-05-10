@@ -2,7 +2,7 @@
   <AppSplitPanel ref="splitRef" v-model:collapsed="splitCollapsed" :initial-size="280" :min-size="200" :max-size="400" :md="0">
     <template #left>
       <a-card size="small" class="h-full flex flex-col max-md:hidden" :body-style="{ flex: '1', overflow: 'auto', padding: '12px' }">
-        <a-input-search v-model:value="treeSearchKey" placeholder="搜索字典" allow-clear class="mb-2" />
+        <a-input-search v-model:value="treeSearchKey" placeholder="搜索组织" allow-clear class="mb-2" />
         <a-spin :spinning="treeLoading">
           <a-tree
             v-if="treeData.length"
@@ -30,7 +30,7 @@
             </a-button>
           <a-col :xs="24" :sm="12" :md="8" :lg="6">
             <a-form-item label="关键词" name="keyword">
-              <a-input v-model:value="searchForm.keyword" placeholder="字典标签" allow-clear />
+              <a-input v-model:value="searchForm.keyword" placeholder="组织名称" allow-clear />
             </a-form-item>
           </a-col>
             <a-button type="text" size="small" class="md:hidden" @click="mobileTreeOpen = true">
@@ -42,17 +42,17 @@
         <AppTable
           ref="tableRef"
           :columns="columns"
-          :fetch-data="fetchDictPage"
+          :fetch-data="fetchOrgPage"
           :search-form="searchForm"
           :row-selection="rowSelection"
         >
           <template #toolbar>
-            <a-button v-if="hasPermission('sys:dict:create')" type="primary" @click="openCreate">
+            <a-button v-if="hasPermission('sys:org:create')" type="primary" @click="openCreate">
               <template #icon><PlusOutlined /></template>
-              新增字典
+              新增组织
             </a-button>
             <a-button
-              v-if="hasPermission('sys:dict:remove')"
+              v-if="hasPermission('sys:org:remove')"
               danger
               :disabled="selectedKeys.length === 0"
               @click="handleBatchDelete"
@@ -60,20 +60,19 @@
               <template #icon><DeleteOutlined /></template>
               批量删除
             </a-button>
-            <a-button v-if="hasPermission('sys:dict:import')" @click="importOpen = true">
+            <a-button v-if="hasPermission('sys:org:import')" @click="importOpen = true">
               <template #icon><UploadOutlined /></template>
               导入
             </a-button>
-            <a-button v-if="hasPermission('sys:dict:export')" @click="exportOpen = true">
+            <a-button v-if="hasPermission('sys:org:export')" @click="exportOpen = true">
               <template #icon><DownloadOutlined /></template>
               导出
             </a-button>
           </template>
 
           <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'color'">
-              <a-tag v-if="record.color" :color="record.color">{{ record.color }}</a-tag>
-              <span v-else class="text-gray-400">-</span>
+            <template v-if="column.key === 'category'">
+              <a-tag>{{ categoryMap[record.category] || record.category || '-' }}</a-tag>
             </template>
             <template v-else-if="column.key === 'status'">
               <a-tag :color="record.status === 'ENABLED' ? 'green' : 'red'">
@@ -84,7 +83,7 @@
               <a-space>
                 <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
                 <a-button
-                  v-if="hasPermission('sys:dict:create')"
+                  v-if="hasPermission('sys:org:create')"
                   type="link"
                   size="small"
                   @click="openCreate(record)"
@@ -92,7 +91,7 @@
                   新增子级
                 </a-button>
                 <a-button
-                  v-if="hasPermission('sys:dict:modify')"
+                  v-if="hasPermission('sys:org:modify')"
                   type="link"
                   size="small"
                   @click="openEdit(record)"
@@ -100,8 +99,8 @@
                   编辑
                 </a-button>
                 <a-popconfirm
-                  v-if="hasPermission('sys:dict:remove')"
-                  title="确定删除该字典？如有子级将一并删除"
+                  v-if="hasPermission('sys:org:remove')"
+                  title="确定删除该组织？如有子级将一并删除"
                   @confirm="handleDelete(record.id)"
                 >
                   <a-button type="link" danger size="small">删除</a-button>
@@ -115,7 +114,7 @@
         <AppImportModal
           ref="importModalRef"
           :open="importOpen"
-          template-text="下载字典导入模板"
+          template-text="下载组织导入模板"
           :template-loading="templateLoading"
           @close="importOpen = false"
           @download-template="handleDownloadTemplate"
@@ -140,13 +139,13 @@
   <!-- Mobile tree drawer -->
   <a-drawer
     :open="mobileTreeOpen"
-    title="字典分类"
+    title="组织分类"
     placement="left"
     :width="280"
     destroy-on-close
     @close="mobileTreeOpen = false"
   >
-    <a-input-search v-model:value="treeSearchKey" placeholder="搜索字典" allow-clear class="mb-2" />
+    <a-input-search v-model:value="treeSearchKey" placeholder="搜索组织" allow-clear class="mb-2" />
     <a-spin :spinning="treeLoading">
       <a-tree
         v-if="treeData.length"
@@ -162,7 +161,7 @@
           <CaretDownOutlined :class="expanded ? '' : '-rotate-90'" class="text-[12px]" />
         </template>
         <template #icon>
-          <BookOutlined class="text-[var(--primary-color)]" />
+          <BankOutlined class="text-[var(--primary-color)]" />
         </template>
       </a-tree>
       <div v-else class="text-center text-gray-400 py-8">暂无数据</div>
@@ -171,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-defineOptions({ name: 'SysDict' })
+defineOptions({ name: 'SysOrg' })
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import {
@@ -182,18 +181,18 @@ import {
   DoubleLeftOutlined,
   DoubleRightOutlined,
   FolderOutlined,
-  BookOutlined,
+  BankOutlined,
   CaretDownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import {
-  fetchDictPage,
-  fetchDictTree,
-  fetchDictRemove,
-  fetchDictExport,
-  fetchDictTemplate,
-  fetchDictImport,
-} from '@/api/dict'
+  fetchOrgPage,
+  fetchOrgTree,
+  fetchOrgRemove,
+  fetchOrgExport,
+  fetchOrgTemplate,
+  fetchOrgImport,
+} from '@/api/org'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppSplitPanel from '@/components/layout/AppSplitPanel.vue'
 import AppTable from '@/components/table/AppTable.vue'
@@ -210,19 +209,26 @@ const splitRef = ref()
 const splitCollapsed = ref(false)
 const mobileTreeOpen = ref(false)
 
+const categoryMap: Record<string, string> = {
+  COMPANY: '公司',
+  DEPT: '部门',
+  UNIT: '单位',
+  GROUP: '集团',
+}
+
 // Tree
 const treeLoading = ref(false)
 const treeData = ref<any[]>([])
 const expandedKeys = ref<string[]>([])
 const selectedTreeKeys = ref<string[]>([])
-const treeFieldNames = { children: 'children', title: 'label', key: 'id' }
+const treeFieldNames = { children: 'children', title: 'name', key: 'id' }
 const treeSearchKey = ref('')
 const treeDataOrigin = ref<any[]>([])
 
 function filterTree(nodes: any[], keyword: string): any[] {
   if (!keyword) return nodes
   return nodes.reduce((acc: any[], node) => {
-    const match = node.label?.includes(keyword)
+    const match = node.name?.includes(keyword)
     const filteredChildren = node.children ? filterTree(node.children, keyword) : []
     if (match || filteredChildren.length > 0) {
       acc.push({ ...node, children: filteredChildren })
@@ -234,7 +240,6 @@ function filterTree(nodes: any[], keyword: string): any[] {
 watch(treeSearchKey, (val) => {
   treeData.value = filterTree(treeDataOrigin.value, val)
   if (val) {
-    // Expand all when searching
     const getAllKeys = (nodes: any[]): string[] => {
       return nodes.reduce((keys: string[], n) => {
         keys.push(n.id)
@@ -249,7 +254,7 @@ watch(treeSearchKey, (val) => {
 async function loadTree() {
   treeLoading.value = true
   try {
-    const { data } = await fetchDictTree({})
+    const { data } = await fetchOrgTree({})
     treeDataOrigin.value = data || []
     treeData.value = data || []
   } finally {
@@ -264,9 +269,6 @@ function handleTreeSelect(keys: any[]) {
   searchForm.parent_id = keys.length > 0 ? keys[0] : undefined
   mobileTreeOpen.value = false
   tableRef.value?.refresh(true)
-  selectedTreeKeys.value = keys
-  searchForm.parent_id = keys.length > 0 ? keys[0] : undefined
-  tableRef.value?.refresh(true)
 }
 
 // Search form
@@ -278,10 +280,9 @@ const rowSelection = computed(() => ({
 }))
 
 const columns = [
-  { title: '字典标签', dataIndex: 'label', key: 'label', width: 180 },
-  { title: '字典值', dataIndex: 'value', key: 'value', width: 150, ellipsis: true },
-  { title: '编码', dataIndex: 'code', key: 'code', width: 150, ellipsis: true },
-  { title: '颜色', dataIndex: 'color', key: 'color', width: 100 },
+  { title: '组织名称', dataIndex: 'name', key: 'name', width: 180 },
+  { title: '组织编码', dataIndex: 'code', key: 'code', width: 150, ellipsis: true },
+  { title: '组织类别', dataIndex: 'category', key: 'category', width: 100 },
   { title: '状态', dataIndex: 'status', key: 'status', width: 90 },
   { title: '排序', dataIndex: 'sort_code', key: 'sort_code', width: 70 },
   { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 180 },
@@ -307,7 +308,7 @@ function openCreate(parent?: any) {
 }
 
 async function handleDelete(id: string) {
-  const { success } = await fetchDictRemove({ ids: [id] })
+  const { success } = await fetchOrgRemove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     tableRef.value?.refresh()
@@ -317,9 +318,9 @@ async function handleDelete(id: string) {
 
 function handleBatchDelete() {
   confirmDelete({
-    name: '字典',
+    name: '组织',
     selectedKeys: selectedKeys.value,
-    deleteApi: fetchDictRemove,
+    deleteApi: fetchOrgRemove,
     onSuccess: () => {
       selectedKeys.value = []
       tableRef.value?.refresh()
@@ -354,8 +355,8 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await fetchDictTemplate()
-    downloadBlob(blob, '字典导入模板.xlsx')
+    const blob = await fetchOrgTemplate()
+    downloadBlob(blob, '组织导入模板.xlsx')
   } catch {
     message.error('下载模板失败')
   } finally {
@@ -365,8 +366,8 @@ async function handleDownloadTemplate() {
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await fetchDictExport(params)
-    downloadBlob(blob, `字典数据_${new Date().toLocaleDateString()}.xlsx`)
+    const blob = await fetchOrgExport(params)
+    downloadBlob(blob, `组织数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
   } catch {
@@ -376,7 +377,7 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await fetchDictImport(file)
+    const { success, data } = await fetchOrgImport(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')

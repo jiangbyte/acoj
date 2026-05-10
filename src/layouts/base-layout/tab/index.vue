@@ -1,17 +1,17 @@
 <template>
-  <div v-if="app.showTabs" class="bg-[var(--container-bg)] border-b border-[var(--border-color)] flex items-center [&_.ant-tabs-nav]:mb-0">
+  <div v-if="app.showTabs" class="tab-bar bg-[var(--container-bg)] border-b border-[var(--border-color)]">
     <ATabs
       type="editable-card"
       :active-key="tabStore.activeKey"
       hide-add
       size="small"
-      style="flex: 1"
+      class="tab-container"
       @change="handleTabChange"
       @edit="handleTabRemove"
     >
-      <ATabPane v-for="t in tabStore.tabs" :key="t.key" :closable="t.closable">
+      <ATabPane v-for="t in tabStore.tabs" :key="t.key" :closable="t.closable" class="tab-pane-item">
         <template #tab>
-          <span>
+          <span class="tab-label">
             <component :is="t.icon ? resolveIcon(t.icon) : null" v-if="t.icon" />
             {{ t.title }}
           </span>
@@ -20,7 +20,7 @@
 
       <template #rightExtra>
         <ADropdown v-model:open="menuOpen" placement="bottomRight" trigger="click">
-          <AButton size="small" type="text">
+          <AButton size="small" type="text" class="tab-more-btn">
             <DownOutlined />
           </AButton>
           <template #overlay>
@@ -127,3 +127,72 @@ function handleMenuClick({ key }: { key: string }) {
   }
 }
 </script>
+
+<style scoped>
+.tab-bar {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  min-height: 36px;
+  overflow: hidden;
+}
+.tab-bar :deep(.ant-tabs) {
+  height: 36px;
+  overflow: hidden;
+}
+.tab-bar :deep(.ant-tabs-nav) {
+  height: 36px !important;
+  min-height: 36px !important;
+  margin-bottom: 0 !important;
+  overflow: hidden;
+}
+.tab-bar :deep(.ant-tabs-nav::before) {
+  display: none !important;
+}
+.tab-bar :deep(.ant-tabs-nav-wrap) {
+  height: 36px;
+  overflow: hidden;
+}
+.tab-bar :deep(.ant-tabs-nav-list) {
+  height: 36px;
+}
+.tab-bar :deep(.ant-tabs-nav .ant-tabs-nav-operations) {
+  display: none !important;
+}
+.tab-container {
+  flex: 1;
+  min-width: 0;
+}
+.tab-bar :deep(.ant-tabs-tab) {
+  height: 36px !important;
+  line-height: 36px !important;
+  padding: 0 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  transition: none !important;
+}
+.tab-bar :deep(.ant-tabs-tab .ant-tabs-tab-remove) {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.tab-bar :deep(.ant-tabs-extra-content) {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+.tab-more-btn {
+  height: 36px !important;
+  width: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 0 !important;
+}
+.tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+}
+</style>

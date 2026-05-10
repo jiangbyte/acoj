@@ -19,12 +19,7 @@ export function fetchUserDetail(params: any) {
 }
 
 /** 导出用户（返回 blob） */
-export function fetchUserExport(params: {
-  export_type: 'current' | 'selected' | 'all'
-  current?: number
-  size?: number
-  selected_id?: string
-}) {
+export function fetchUserExport(params: any) {
   return request.Get('/api/v1/sys/user/export', {
     params,
     meta: { isBlob: true },
