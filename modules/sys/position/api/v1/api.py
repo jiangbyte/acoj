@@ -1,4 +1,3 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
@@ -22,12 +21,11 @@ router = APIRouter()
 @HeiCheckPermission("sys:position:page")
 async def page(
     request: Request,
-    current: int = Query(default=1),
-    size: int = Query(default=10),
+    param: PositionPageParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = PositionService(db)
-    return success(service.page(PositionPageParam(current=current, size=size)))
+    return success(service.page(param))
 
 
 @router.post(
@@ -100,19 +98,10 @@ async def detail(
 @HeiCheckPermission("sys:position:export")
 async def export(
     request: Request,
-    export_type: str = Query(default="current"),
-    current: Optional[int] = Query(default=None),
-    size: Optional[int] = Query(default=None),
-    selected_id: Optional[str] = Query(default=None),
+    param: PositionExportParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = PositionService(db)
-    param = PositionExportParam(
-        export_type=export_type,
-        current=current,
-        size=size,
-        selected_id=selected_id.split(",") if selected_id else None
-    )
     return service.export(param)
 
 

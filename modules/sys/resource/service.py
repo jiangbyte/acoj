@@ -29,7 +29,7 @@ class ModuleService:
             return None
 
     def page(self, param: ModulePageParam) -> dict:
-        result = self.dao.find_page(param.current, param.size)
+        result = self.dao.find_page(param)
         return page_data(
             records=[ModuleVO.model_validate(r).model_dump() for r in result["records"]],
             total=result["total"],
@@ -70,7 +70,7 @@ class ModuleService:
             result = self.dao.find_page(param.current or 1, param.size or 10)
             records = result["records"]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
-            records = self.dao.find_by_ids(param.selected_id or [])
+            records = self.dao.find_by_ids(param.selected_ids or [])
         elif param.export_type == ExportTypeEnum.ALL.value:
             records = self.dao.find_all()
         else:
@@ -110,7 +110,7 @@ class ResourceService:
             return None
 
     def page(self, param: ResourcePageParam) -> dict:
-        result = self.dao.find_page(param.current, param.size)
+        result = self.dao.find_page(param)
         return page_data(
             records=[ResourceVO.model_validate(r).model_dump() for r in result["records"]],
             total=result["total"],
@@ -151,7 +151,7 @@ class ResourceService:
             result = self.dao.find_page(param.current or 1, param.size or 10)
             records = result["records"]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
-            records = self.dao.find_by_ids(param.selected_id or [])
+            records = self.dao.find_by_ids(param.selected_ids or [])
         elif param.export_type == ExportTypeEnum.ALL.value:
             records = self.dao.find_all()
         else:

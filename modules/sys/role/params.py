@@ -58,7 +58,11 @@ class RoleExportParam(BaseModel):
     export_type: str = "current"
     current: Optional[int] = None
     size: Optional[int] = None
-    selected_id: Optional[List[str]] = None
+    selected_id: Optional[str] = None
+
+    @property
+    def selected_ids(self) -> Optional[List[str]]:
+        return self.selected_id.split(",") if self.selected_id else None
 
 
 class RoleImportParam(BaseModel):

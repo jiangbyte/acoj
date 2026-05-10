@@ -51,7 +51,7 @@ class GenBasicService:
             return None
 
     def page(self, param: GenBasicPageParam) -> dict:
-        result = self.dao.find_page(param.current, param.size)
+        result = self.dao.find_page(param)
         records = []
         for r in result["records"]:
             records.append({
