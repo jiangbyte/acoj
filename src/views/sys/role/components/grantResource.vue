@@ -88,23 +88,23 @@ const columns = [
 
 function flattenTree(nodes: any[], ownIds: string[]): any[] {
   const result: any[] = []
-  const traverse = (items: any[], parent?: any) => {
+  const traverse = (items: any[]): any[] => {
+    const children: any[] = []
     items?.forEach((node: any) => {
       const buttons = node.children?.filter((c: any) => c.type === 'BUTTON') || []
+      const menuChildren = node.children?.filter((c: any) => c.type !== 'BUTTON') || []
       const row: any = {
         id: node.id,
         name: node.name,
         type: node.type,
         checked: ownIds.includes(node.id),
         buttonList: buttons.map((b: any) => ({ id: b.id, name: b.name, checked: ownIds.includes(b.id) })),
-        children: [],
+        children: menuChildren.length > 0 ? traverse(menuChildren) : [],
       }
       result.push(row)
-      const menuChildren = node.children?.filter((c: any) => c.type !== 'BUTTON') || []
-      if (menuChildren.length > 0) {
-        row.children = traverse(menuChildren, parent)
-      }
+      children.push(row)
     })
+    return children
   }
   traverse(nodes)
   return result
