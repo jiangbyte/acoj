@@ -99,6 +99,17 @@
                 >
                   编辑
                 </a-button>
+                <a-dropdown v-if="hasPermission('sys:group:grant-role')">
+                  <a-button type="link" size="small">
+                    授权
+                    <DownOutlined />
+                  </a-button>
+                  <template #overlay>
+                    <a-menu>
+                      <a-menu-item @click="openGrantRole(record)">分配角色</a-menu-item>
+                    </a-menu>
+                  </template>
+                </a-dropdown>
                 <a-popconfirm
                   v-if="hasPermission('sys:group:remove')"
                   title="确定删除该用户组？如有子级将一并删除"
@@ -130,6 +141,7 @@
 
         <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
         <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
+        <GrantRole ref="grantRoleRef" v-model:open="grantRoleOpen" @success="handleFormSuccess" />
       </div>
     </template>
   </AppSplitPanel>
@@ -178,6 +190,7 @@ import {
   DownloadOutlined,
   DoubleLeftOutlined,
   DoubleRightOutlined,
+  DownOutlined,
   FolderOutlined,
   BankOutlined,
   CaretDownOutlined,
@@ -199,6 +212,7 @@ import AppImportModal from '@/components/modal/AppImportModal.vue'
 import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
+import GrantRole from './components/grantRole.vue'
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
@@ -408,6 +422,11 @@ async function handleImport(file: File) {
     importModalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
   }
 }
+
+const grantRoleRef = ref()
+const grantRoleOpen = ref(false)
+
+function openGrantRole(record: any) { grantRoleRef.value?.doOpen(record) }
 
 onMounted(() => {
   loadOrgTree()
