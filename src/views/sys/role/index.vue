@@ -68,6 +68,22 @@
             >
               编辑
             </a-button>
+            <a-dropdown v-if="hasPermission('sys:role:grantPermission') || hasPermission('sys:role:grantResource')">
+              <a-button type="link" size="small">
+                授权
+                <DownOutlined />
+              </a-button>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item v-if="hasPermission('sys:role:grantPermission')" @click="openGrantPermission(record)">
+                    授权权限
+                  </a-menu-item>
+                  <a-menu-item v-if="hasPermission('sys:role:grantResource')" @click="openGrantResource(record)">
+                    授权资源
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
             <a-popconfirm
               v-if="hasPermission('sys:role:remove')"
               title="确定删除该角色？"
@@ -99,6 +115,8 @@
 
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
+    <GrantPermission ref="grantPermissionRef" v-model:open="grantPermissionOpen" @success="tableRef?.refresh()" />
+    <GrantResource ref="grantResourceRef" v-model:open="grantResourceOpen" @success="tableRef?.refresh()" />
   </div>
 </template>
 
@@ -111,6 +129,7 @@ import {
   DeleteOutlined,
   UploadOutlined,
   DownloadOutlined,
+  DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import {
@@ -127,6 +146,8 @@ import AppImportModal from '@/components/modal/AppImportModal.vue'
 import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
+import GrantPermission from './components/grantPermission.vue'
+import GrantResource from './components/grantResource.vue'
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
@@ -236,5 +257,17 @@ async function handleImport(file: File) {
   } catch {
     importModalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
   }
+}
+
+const grantPermissionRef = ref()
+const grantResourceRef = ref()
+const grantPermissionOpen = ref(false)
+const grantResourceOpen = ref(false)
+
+function openGrantPermission(record: any) {
+  grantPermissionRef.value?.doOpen(record)
+}
+function openGrantResource(record: any) {
+  grantResourceRef.value?.doOpen(record)
 }
 </script>
