@@ -46,3 +46,9 @@ export function fetchUserGrantRole(data: any) {
 export function fetchUserOwnRoles(params: any) {
   return request.Get<Service.ResponseResult>('/api/v1/sys/user/own-roles', { params })
 }
+export function fetchUserGrantGroup(data: any) {
+  return request.Post<Service.ResponseResult>('/api/v1/sys/user/grant-group', data)
+}
+export function fetchUserOwnGroups(params: any) {
+  return request.Get<Service.ResponseResult>('/api/v1/sys/user/own-groups', { params })
+}
