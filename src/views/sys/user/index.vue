@@ -70,6 +70,22 @@
             >
               编辑
             </a-button>
+            <a-dropdown v-if="hasPermission('sys:user:grant-role') || hasPermission('sys:user:grant-group')">
+              <a-button type="link" size="small">
+                授权
+                <DownOutlined />
+              </a-button>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item v-if="hasPermission('sys:user:grant-role')" @click="openGrantRole(record)">
+                    分配角色
+                  </a-menu-item>
+                  <a-menu-item v-if="hasPermission('sys:user:grant-group')" @click="openGrantGroup(record)">
+                    分配用户组
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
             <a-popconfirm
               v-if="hasPermission('sys:user:remove')"
               title="确定删除？"
@@ -109,6 +125,8 @@
     <!-- Drawers -->
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="tableRef?.refresh()" />
+    <GrantRole ref="grantRoleRef" v-model:open="grantRoleOpen" @success="tableRef?.refresh()" />
+    <GrantGroup ref="grantGroupRef" v-model:open="grantGroupOpen" @success="tableRef?.refresh()" />
   </div>
 </template>
 
@@ -121,6 +139,7 @@ import {
   DeleteOutlined,
   UploadOutlined,
   DownloadOutlined,
+  DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import {
@@ -137,6 +156,8 @@ import AppImportModal from '@/components/modal/AppImportModal.vue'
 import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
+import GrantRole from './components/grantRole.vue'
+import GrantGroup from './components/grantGroup.vue'
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
@@ -176,6 +197,14 @@ function openEdit(record: any) {
 function openCreate() {
   formRef.value?.doOpen()
 }
+
+const grantRoleRef = ref()
+const grantGroupRef = ref()
+const grantRoleOpen = ref(false)
+const grantGroupOpen = ref(false)
+
+function openGrantRole(record: any) { grantRoleRef.value?.doOpen(record) }
+function openGrantGroup(record: any) { grantGroupRef.value?.doOpen(record) }
 
 async function handleDelete(id: string) {
   const { success } = await fetchUserRemove({ ids: [id] })
