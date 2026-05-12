@@ -170,3 +170,15 @@ async def by_module(
 ):
     service = PermissionService(db)
     return success(await service.list_permissions_by_module(module))
+
+
+@router.get(
+    "/api/v1/sys/permission/list",
+    summary="获取全部权限列表（用于选择器）"
+)
+@HeiCheckPermission("sys:permission:page")
+async def list_all(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    return success(PermissionService(db).list_all())
