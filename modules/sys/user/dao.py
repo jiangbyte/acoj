@@ -6,7 +6,7 @@ from sqlalchemy import select, or_
 from .models import SysUser, RalUserRole, RalUserGroup, RalUserPermission
 from .params import UserPageParam
 from core.db.base_dao import BaseDAO
-from core.enums import ResourceCategoryEnum, ResourceTypeEnum, StatusEnum
+from core.enums import ResourceCategoryEnum, ResourceTypeEnum, StatusEnum, DataScopeEnum
 from core.utils import generate_id
 from modules.sys.role.params import PermissionItem
 
@@ -166,7 +166,7 @@ class UserDao(BaseDAO):
         return [
             {
                 "permission_code": r[0],
-                "scope": r[1] or "ALL",
+                "scope": r[1] or DataScopeEnum.ALL.value,
                 "custom_scope_group_ids": r[2],
                 "custom_scope_org_ids": r[3],
             }

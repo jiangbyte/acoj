@@ -1,11 +1,13 @@
-from typing import Optional, List, Any, Dict
+from typing import Optional, List
 from modules.sys.role.params import PermissionItem
 from datetime import datetime, date
-from pydantic import BaseModel, ConfigDict, field_validator, model_serializer
+from pydantic import BaseModel, ConfigDict
+from core.enums import SoftDeleteEnum, ExportTypeEnum
 from core.pojo import PageBounds
+from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
-class UserVO(BaseModel):
+class UserVO(DateTimeValidatorMixin, BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: Optional[str] = None
@@ -24,43 +26,13 @@ class UserVO(BaseModel):
     last_login_at: Optional[datetime] = None
     last_login_ip: Optional[str] = None
     login_count: Optional[int] = 0
-    is_deleted: Optional[str] = "NO"
+    is_deleted: Optional[str] = SoftDeleteEnum.NO.value
     created_at: Optional[datetime] = None
     created_by: Optional[str] = None
     updated_at: Optional[datetime] = None
     updated_by: Optional[str] = None
     role_ids: Optional[List[str]] = None
     group_ids: Optional[List[str]] = None
-
-    @field_validator('created_at', 'updated_at', 'last_login_at', mode='before')
-    @classmethod
-    def parse_datetime(cls, v):
-        if v is None:
-            return None
-        if isinstance(v, datetime):
-            return v
-        if isinstance(v, str):
-            formats = ['%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d']
-            for fmt in formats:
-                try:
-                    return datetime.strptime(v, fmt)
-                except ValueError:
-                    continue
-            raise ValueError(f"Invalid datetime format: {v}. Expected 'YYYY-MM-DD HH:MM:SS'")
-        return v
-
-    @model_serializer
-    def serialize(self) -> Dict[str, Any]:
-        result = {}
-        for field_name, field_info in self.model_fields.items():
-            value = getattr(self, field_name)
-            if isinstance(value, datetime):
-                result[field_name] = value.strftime('%Y-%m-%d %H:%M:%S')
-            elif isinstance(value, date):
-                result[field_name] = value.isoformat()
-            else:
-                result[field_name] = value
-        return result
 
 
 class UserPageParam(PageBounds):
@@ -69,7 +41,7 @@ class UserPageParam(PageBounds):
 
 
 class UserExportParam(BaseModel):
-    export_type: str = "current"
+    export_type: str = ExportTypeEnum.CURRENT.value
     current: Optional[int] = None
     size: Optional[int] = None
     selected_id: Optional[str] = None

@@ -1,7 +1,7 @@
 from typing import Optional, List
 from fastapi import Request
 from sqlalchemy.orm import Session
-from core.result import page_data
+from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils.model_utils import strip_system_fields, apply_update
 from core.auth import HeiAuthTool
@@ -55,8 +55,8 @@ class ConfigService:
 
     def page(self, param: ConfigPageParam) -> dict:
         result = self.dao.find_page(param)
-        records = result["records"]
-        total = result["total"]
+        records = result[PageDataField.RECORDS]
+        total = result[PageDataField.TOTAL]
         vo_list = [ConfigVO.model_validate(r).model_dump() for r in records]
         return page_data(records=vo_list, total=total, page=param.current, size=param.size)
 
