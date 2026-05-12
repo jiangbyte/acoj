@@ -56,12 +56,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import { message } from 'ant-design-vue'
+import { ref, reactive } from 'vue'
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import { fetchConfigPage, fetchConfigRemove } from '@/api/config'
-import { confirmDelete } from '@/utils'
+import { useCrud } from '@/hooks/useCrud'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import DetailDrawer from './detail.vue'
@@ -69,14 +68,11 @@ import FormDrawer from './form.vue'
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
-const tableRef = ref()
+
+const crud = useCrud({ name: '配置', deleteApi: fetchConfigRemove })
+const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete, handleFormSuccess } = crud
 
 const searchForm = reactive({ keyword: '', category: 'BIZ_DEFINE' })
-const selectedKeys = ref<string[]>([])
-const rowSelection = computed(() => ({
-  selectedRowKeys: selectedKeys.value,
-  onChange: (keys: string[]) => { selectedKeys.value = keys },
-}))
 
 const columns = [
   { title: '配置键', dataIndex: 'config_key', key: 'config_key', width: 250, ellipsis: true },
@@ -96,28 +92,6 @@ function openDetail(record: any) { detailRef.value?.doOpen(record) }
 function openEdit(record: any) { formRef.value?.doOpen(record) }
 function openCreate() { formRef.value?.doOpen() }
 
-async function handleDelete(id: string) {
-  const { success } = await fetchConfigRemove({ ids: [id] })
-  if (success) {
-    message.success('删除成功')
-    tableRef.value?.refresh()
-  }
-}
-
-function handleBatchDelete() {
-  confirmDelete({
-    name: '配置',
-    selectedKeys: selectedKeys.value,
-    deleteApi: fetchConfigRemove,
-    onSuccess: () => {
-      selectedKeys.value = []
-      tableRef.value?.refresh()
-    },
-  })
-}
-
-function handleFormSuccess() { tableRef.value?.refresh() }
-function handleSearch() { tableRef.value?.refresh(true) }
 function resetSearch() {
   searchForm.keyword = ''
   searchForm.category = 'BIZ_DEFINE'

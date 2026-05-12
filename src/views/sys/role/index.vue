@@ -38,11 +38,11 @@
           <template #icon><DeleteOutlined /></template>
           批量删除
         </a-button>
-        <a-button v-if="hasPermission('sys:role:import')" @click="importOpen = true">
+        <a-button v-if="hasPermission('sys:role:import')" @click="ieImportOpen = true">
           <template #icon><UploadOutlined /></template>
           导入
         </a-button>
-        <a-button v-if="hasPermission('sys:role:export')" @click="exportOpen = true">
+        <a-button v-if="hasPermission('sys:role:export')" @click="ieExportOpen = true">
           <template #icon><DownloadOutlined /></template>
           导出
         </a-button>
@@ -97,20 +97,20 @@
     </AppTable>
 
     <AppImportModal
-      ref="importModalRef"
-      :open="importOpen"
+      :ref="(el) => { ieImportModalRef.value = el }"
+      :open="ieImportOpen"
       template-text="下载角色导入模板"
-      :template-loading="templateLoading"
-      @close="importOpen = false"
-      @download-template="handleDownloadTemplate"
-      @upload="handleImport"
+      :template-loading="ieTemplateLoading"
+      @close="ieImportOpen = false"
+      @download-template="ieHandleDownloadTemplate"
+      @upload="ieHandleImport"
     />
 
     <AppExportModal
-      :open="exportOpen"
+      :open="ieExportOpen"
       :selected-keys="selectedKeys"
-      @close="exportOpen = false"
-      @export="handleExportWithParams"
+      @close="ieExportOpen = false"
+      @export="ieHandleExportWithParams"
     />
 
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
@@ -122,8 +122,7 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'SysRole' })
-import { ref, reactive, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
+import { ref, reactive } from 'vue'
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -139,7 +138,8 @@ import {
   fetchRoleTemplate,
   fetchRoleImport,
 } from '@/api/role'
-import { downloadBlob, confirmDelete } from '@/utils'
+import { useCrud } from '@/hooks/useCrud'
+import { useImportExport } from '@/hooks/useImportExport'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import AppImportModal from '@/components/modal/AppImportModal.vue'
@@ -151,7 +151,9 @@ import GrantResource from './components/grantResource.vue'
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
-const tableRef = ref()
+
+const crud = useCrud({ name: '角色', deleteApi: fetchRoleRemove })
+const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete, handleFormSuccess } = crud
 
 const categoryMap: Record<string, string> = {
   ADMIN: '管理',
@@ -164,11 +166,6 @@ const searchForm = reactive({
   keyword: '',
   category: undefined as string | undefined,
 })
-const selectedKeys = ref<string[]>([])
-const rowSelection = computed(() => ({
-  selectedRowKeys: selectedKeys.value,
-  onChange: (keys: string[]) => { selectedKeys.value = keys },
-}))
 
 const columns = [
   { title: '角色名称', dataIndex: 'name', key: 'name', width: 180 },
@@ -180,6 +177,12 @@ const columns = [
   { title: '操作', key: 'action', width: 160, fixed: 'right' },
 ]
 
+function resetSearch() {
+  searchForm.keyword = ''
+  searchForm.category = undefined
+  tableRef.value?.refresh(true)
+}
+
 // ── Drawers ──
 const detailRef = ref()
 const formRef = ref()
@@ -190,74 +193,22 @@ function openDetail(record: any) { detailRef.value?.doOpen(record) }
 function openEdit(record: any) { formRef.value?.doOpen(record) }
 function openCreate() { formRef.value?.doOpen() }
 
-async function handleDelete(id: string) {
-  const { success } = await fetchRoleRemove({ ids: [id] })
-  if (success) {
-    message.success('删除成功')
-    tableRef.value?.refresh()
-  }
-}
-
-function handleBatchDelete() {
-  confirmDelete({
-    name: '角色',
-    selectedKeys: selectedKeys.value,
-    deleteApi: fetchRoleRemove,
-    onSuccess: () => {
-      selectedKeys.value = []
-      tableRef.value?.refresh()
-    },
-  })
-}
-
-function handleFormSuccess() {
-  tableRef.value?.refresh()
-}
-
-function handleSearch() { tableRef.value?.refresh(true) }
-
-function resetSearch() {
-  searchForm.keyword = ''
-  searchForm.category = undefined
-  tableRef.value?.refresh(true)
-}
-
-// ── Import / Export / Template ──
-const importOpen = ref(false)
-const exportOpen = ref(false)
-const templateLoading = ref(false)
-const importModalRef = ref()
-
-async function handleDownloadTemplate() {
-  templateLoading.value = true
-  try {
-    const blob = await fetchRoleTemplate()
-    downloadBlob(blob, '角色导入模板.xlsx')
-  } catch { message.error('下载模板失败') }
-  finally { templateLoading.value = false }
-}
-
-async function handleExportWithParams(params: any) {
-  try {
-    const blob = await fetchRoleExport(params)
-    downloadBlob(blob, `角色数据_${new Date().toLocaleDateString()}.xlsx`)
-    message.success('导出成功')
-    exportOpen.value = false
-  } catch { message.error('导出失败') }
-}
-
-async function handleImport(file: File) {
-  try {
-    const { success, data } = await fetchRoleImport(file)
-    if (success && data) {
-      importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
-      message.success('导入成功')
-      tableRef.value?.refresh(true)
-    }
-  } catch {
-    importModalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
-  }
-}
+const {
+  importOpen: ieImportOpen,
+  exportOpen: ieExportOpen,
+  templateLoading: ieTemplateLoading,
+  importModalRef: ieImportModalRef,
+  handleDownloadTemplate: ieHandleDownloadTemplate,
+  handleExportWithParams: ieHandleExportWithParams,
+  handleImport: ieHandleImport,
+} = useImportExport({
+  exportApi: fetchRoleExport,
+  templateApi: fetchRoleTemplate,
+  importApi: fetchRoleImport,
+  fileName: '角色数据',
+  templateName: '角色导入模板',
+  onSuccess: () => tableRef.value?.refresh(true),
+})
 
 const grantPermissionRef = ref()
 const grantResourceRef = ref()

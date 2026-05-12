@@ -48,11 +48,11 @@
           <template #icon><DeleteOutlined /></template>
           批量删除
         </a-button>
-        <a-button v-if="hasPermission('sys:user:import')" @click="importOpen = true">
+        <a-button v-if="hasPermission('sys:user:import')" @click="ieImportOpen = true">
           <template #icon><UploadOutlined /></template>
           导入
         </a-button>
-        <a-button v-if="hasPermission('sys:user:export')" @click="exportOpen = true">
+        <a-button v-if="hasPermission('sys:user:export')" @click="ieExportOpen = true">
           <template #icon><DownloadOutlined /></template>
           导出
         </a-button>
@@ -105,21 +105,21 @@
 
     <!-- Import modal -->
     <AppImportModal
-      ref="importModalRef"
-      :open="importOpen"
+      :ref="(el) => { ieImportModalRef.value = el }"
+      :open="ieImportOpen"
       template-text="下载用户导入模板"
-      :template-loading="templateLoading"
-      @close="importOpen = false"
-      @download-template="handleDownloadTemplate"
-      @upload="handleImport"
+      :template-loading="ieTemplateLoading"
+      @close="ieImportOpen = false"
+      @download-template="ieHandleDownloadTemplate"
+      @upload="ieHandleImport"
     />
 
     <!-- Export modal -->
     <AppExportModal
-      :open="exportOpen"
+      :open="ieExportOpen"
       :selected-keys="selectedKeys"
-      @close="exportOpen = false"
-      @export="handleExportWithParams"
+      @close="ieExportOpen = false"
+      @export="ieHandleExportWithParams"
     />
 
     <!-- Drawers -->
@@ -132,8 +132,7 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'SysUser' })
-import { ref, reactive, computed } from 'vue'
-import { message } from 'ant-design-vue'
+import { ref, reactive } from 'vue'
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -149,7 +148,8 @@ import {
   fetchUserTemplate,
   fetchUserImport,
 } from '@/api/user'
-import { downloadBlob, confirmDelete } from '@/utils'
+import { useCrud } from '@/hooks/useCrud'
+import { useImportExport } from '@/hooks/useImportExport'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import AppImportModal from '@/components/modal/AppImportModal.vue'
@@ -161,7 +161,9 @@ import GrantPermission from './components/grantPermission.vue'
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
-const tableRef = ref()
+
+const crud = useCrud({ name: '用户', deleteApi: fetchUserRemove })
+const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete } = crud
 
 const searchForm = reactive({ keyword: '', status: undefined })
 const columns = [
@@ -173,14 +175,11 @@ const columns = [
   { title: '操作', key: 'action', width: 150, fixed: 'right' },
 ]
 
-// Row selection
-const selectedKeys = ref<string[]>([])
-const rowSelection = computed(() => ({
-  selectedRowKeys: selectedKeys.value,
-  onChange: (keys: string[]) => {
-    selectedKeys.value = keys
-  },
-}))
+function resetSearch() {
+  searchForm.keyword = ''
+  searchForm.status = undefined
+  tableRef.value?.refresh(true)
+}
 
 // Drawer refs
 const detailRef = ref()
@@ -206,76 +205,20 @@ const grantPermissionOpen = ref(false)
 function openGrantRole(record: any) { grantRoleRef.value?.doOpen(record) }
 function openGrantPermission(record: any) { grantPermissionRef.value?.doOpen(record) }
 
-async function handleDelete(id: string) {
-  const { success } = await fetchUserRemove({ ids: [id] })
-  if (success) {
-    message.success('删除成功')
-    tableRef.value?.refresh()
-  }
-}
-
-function handleBatchDelete() {
-  confirmDelete({
-    name: '用户',
-    selectedKeys: selectedKeys.value,
-    deleteApi: fetchUserRemove,
-    onSuccess: () => {
-      selectedKeys.value = []
-      tableRef.value?.refresh()
-    },
-  })
-}
-
-// Search
-function handleSearch() {
-  tableRef.value?.refresh(true)
-}
-
-function resetSearch() {
-  searchForm.keyword = ''
-  searchForm.status = undefined
-  tableRef.value?.refresh(true)
-}
-
-// ========== Import / Export / Template ==========
-const importOpen = ref(false)
-const exportOpen = ref(false)
-const templateLoading = ref(false)
-const importModalRef = ref()
-
-async function handleDownloadTemplate() {
-  templateLoading.value = true
-  try {
-    const blob = await fetchUserTemplate()
-    downloadBlob(blob, '用户导入模板.xlsx')
-  } catch {
-    message.error('下载模板失败')
-  } finally {
-    templateLoading.value = false
-  }
-}
-
-async function handleExportWithParams(params: any) {
-  try {
-    const blob = await fetchUserExport(params)
-    downloadBlob(blob, `用户数据_${new Date().toLocaleDateString()}.xlsx`)
-    message.success('导出成功')
-    exportOpen.value = false
-  } catch {
-    message.error('导出失败')
-  }
-}
-
-async function handleImport(file: File) {
-  try {
-    const { success, data } = await fetchUserImport(file)
-    if (success && data) {
-      importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
-      message.success('导入成功')
-      tableRef.value?.refresh(true)
-    }
-  } catch {
-    importModalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
-  }
-}
+const {
+  importOpen: ieImportOpen,
+  exportOpen: ieExportOpen,
+  templateLoading: ieTemplateLoading,
+  importModalRef: ieImportModalRef,
+  handleDownloadTemplate: ieHandleDownloadTemplate,
+  handleExportWithParams: ieHandleExportWithParams,
+  handleImport: ieHandleImport,
+} = useImportExport({
+  exportApi: fetchUserExport,
+  templateApi: fetchUserTemplate,
+  importApi: fetchUserImport,
+  fileName: '用户数据',
+  templateName: '用户导入模板',
+  onSuccess: () => tableRef.value?.refresh(true),
+})
 </script>

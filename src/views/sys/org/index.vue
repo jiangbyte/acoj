@@ -1,31 +1,17 @@
 <template>
-  <AppSplitPanel ref="splitRef" v-model:collapsed="splitCollapsed" :initial-size="280" :min-size="200" :max-size="400" :md="0">
-    <template #left>
-      <a-card size="small" class="h-full flex flex-col max-md:hidden" :body-style="{ flex: '1', overflow: 'auto', padding: '12px' }">
-        <a-input-search v-model:value="treeSearchKey" placeholder="搜索组织" allow-clear class="mb-2" />
-        <a-spin :spinning="treeLoading">
-          <a-tree
-            v-if="treeData.length"
-            v-model:expanded-keys="expandedKeys"
-            :tree-data="treeData"
-            :field-names="treeFieldNames"
-            :selected-keys="selectedTreeKeys"
-            block-node
-            show-line
-            @select="handleTreeSelect"
-          >
-          </a-tree>
-          <div v-else class="text-center text-gray-400 py-8">暂无数据</div>
-        </a-spin>
-      </a-card>
-    </template>
-    <template #right>
+  <AppTreePanel
+    ref="treePanel"
+    :fetch-tree="fetchOrgTree"
+    title="组织"
+    @select="handleTreeSelect"
+  >
+    <template #right="{ parentId, refreshTree }">
       <div class="flex flex-col h-full overflow-auto gap-2">
         <!-- Search -->
         <AppSearchPanel :model="searchForm" @search="handleSearch" @reset="resetSearch">
-            <a-button type="text" size="small" class="max-md:hidden" @click="splitRef?.toggleCollapse()">
+            <a-button type="text" size="small" class="max-md:hidden" @click="treePanel?.splitRef?.toggleCollapse()">
               <template #icon>
-                <component :is="splitCollapsed ? DoubleRightOutlined : DoubleLeftOutlined" />
+                <component :is="treePanel?.collapsed ? DoubleRightOutlined : DoubleLeftOutlined" />
               </template>
             </a-button>
           <a-col :xs="24" :sm="12" :md="8" :lg="6">
@@ -33,9 +19,6 @@
               <a-input v-model:value="searchForm.keyword" placeholder="组织名称" allow-clear />
             </a-form-item>
           </a-col>
-            <a-button type="text" size="small" class="md:hidden" @click="mobileTreeOpen = true">
-              <template #icon><FolderOutlined /></template>
-            </a-button>
         </AppSearchPanel>
 
         <!-- Table -->
@@ -60,11 +43,11 @@
               <template #icon><DeleteOutlined /></template>
               批量删除
             </a-button>
-            <a-button v-if="hasPermission('sys:org:import')" @click="importOpen = true">
+            <a-button v-if="hasPermission('sys:org:import')" @click="ieImportOpen = true">
               <template #icon><UploadOutlined /></template>
               导入
             </a-button>
-            <a-button v-if="hasPermission('sys:org:export')" @click="exportOpen = true">
+            <a-button v-if="hasPermission('sys:org:export')" @click="ieExportOpen = true">
               <template #icon><DownloadOutlined /></template>
               导出
             </a-button>
@@ -120,21 +103,21 @@
 
         <!-- Import modal -->
         <AppImportModal
-          ref="importModalRef"
-          :open="importOpen"
+          :ref="(el) => { ieImportModalRef.value = el }"
+          :open="ieImportOpen"
           template-text="下载组织导入模板"
-          :template-loading="templateLoading"
-          @close="importOpen = false"
-          @download-template="handleDownloadTemplate"
-          @upload="handleImport"
+          :template-loading="ieTemplateLoading"
+          @close="ieImportOpen = false"
+          @download-template="ieHandleDownloadTemplate"
+          @upload="ieHandleImport"
         />
 
         <!-- Export modal -->
         <AppExportModal
-          :open="exportOpen"
+          :open="ieExportOpen"
           :selected-keys="selectedKeys"
-          @close="exportOpen = false"
-          @export="handleExportWithParams"
+          @close="ieExportOpen = false"
+          @export="ieHandleExportWithParams"
         />
 
         <!-- Drawers -->
@@ -142,45 +125,12 @@
         <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
       </div>
     </template>
-  </AppSplitPanel>
-
-  <!-- Mobile tree drawer -->
-  <a-drawer
-    :open="mobileTreeOpen"
-    title="组织分类"
-    placement="left"
-    :width="280"
-    destroy-on-close
-    @close="mobileTreeOpen = false"
-  >
-    <a-input-search v-model:value="treeSearchKey" placeholder="搜索组织" allow-clear class="mb-2" />
-    <a-spin :spinning="treeLoading">
-      <a-tree
-        v-if="treeData.length"
-        v-model:expanded-keys="expandedKeys"
-        :tree-data="treeData"
-        :field-names="treeFieldNames"
-        :selected-keys="selectedTreeKeys"
-        block-node
-        show-line
-        @select="handleTreeSelect"
-      >
-        <template #switcherIcon="{ expanded }">
-          <CaretDownOutlined :class="expanded ? '' : '-rotate-90'" class="text-[12px]" />
-        </template>
-        <template #icon>
-          <BankOutlined class="text-[var(--primary-color)]" />
-        </template>
-      </a-tree>
-      <div v-else class="text-center text-gray-400 py-8">暂无数据</div>
-    </a-spin>
-  </a-drawer>
+  </AppTreePanel>
 </template>
 
 <script setup lang="ts">
 defineOptions({ name: 'SysOrg' })
-import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
+import { ref, reactive } from 'vue'
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -188,9 +138,6 @@ import {
   DownloadOutlined,
   DoubleLeftOutlined,
   DoubleRightOutlined,
-  FolderOutlined,
-  BankOutlined,
-  CaretDownOutlined,
   DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
@@ -203,8 +150,9 @@ import {
   fetchOrgTemplate,
   fetchOrgImport,
 } from '@/api/org'
-import { downloadBlob, confirmDelete } from '@/utils'
-import AppSplitPanel from '@/components/layout/AppSplitPanel.vue'
+import { useCrud } from '@/hooks/useCrud'
+import { useImportExport } from '@/hooks/useImportExport'
+import AppTreePanel from '@/components/layout/AppTreePanel.vue'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import AppImportModal from '@/components/modal/AppImportModal.vue'
@@ -215,10 +163,14 @@ import FormDrawer from './components/form.vue'
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
 const router = useRouter()
-const tableRef = ref()
-const splitRef = ref()
-const splitCollapsed = ref(false)
-const mobileTreeOpen = ref(false)
+const treePanel = ref()
+
+const crud = useCrud({
+  name: '组织',
+  deleteApi: fetchOrgRemove,
+  onSuccess: () => treePanel.value?.refresh(),
+})
+const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete, handleFormSuccess } = crud
 
 const categoryMap: Record<string, string> = {
   COMPANY: '公司',
@@ -227,68 +179,8 @@ const categoryMap: Record<string, string> = {
   GROUP: '集团',
 }
 
-// Tree
-const treeLoading = ref(false)
-const treeData = ref<any[]>([])
-const expandedKeys = ref<string[]>([])
-const selectedTreeKeys = ref<string[]>([])
-const treeFieldNames = { children: 'children', title: 'name', key: 'id' }
-const treeSearchKey = ref('')
-const treeDataOrigin = ref<any[]>([])
-
-function filterTree(nodes: any[], keyword: string): any[] {
-  if (!keyword) return nodes
-  return nodes.reduce((acc: any[], node) => {
-    const match = node.name?.includes(keyword)
-    const filteredChildren = node.children ? filterTree(node.children, keyword) : []
-    if (match || filteredChildren.length > 0) {
-      acc.push({ ...node, children: filteredChildren })
-    }
-    return acc
-  }, [])
-}
-
-watch(treeSearchKey, (val) => {
-  treeData.value = filterTree(treeDataOrigin.value, val)
-  if (val) {
-    const getAllKeys = (nodes: any[]): string[] => {
-      return nodes.reduce((keys: string[], n) => {
-        keys.push(n.id)
-        if (n.children) keys.push(...getAllKeys(n.children))
-        return keys
-      }, [])
-    }
-    expandedKeys.value = getAllKeys(treeData.value)
-  }
-})
-
-async function loadTree() {
-  treeLoading.value = true
-  try {
-    const { data } = await fetchOrgTree({})
-    treeDataOrigin.value = data || []
-    treeData.value = data || []
-  } finally {
-    treeLoading.value = false
-  }
-}
-
-onMounted(loadTree)
-
-function handleTreeSelect(keys: any[]) {
-  selectedTreeKeys.value = keys
-  searchForm.parent_id = keys.length > 0 ? keys[0] : undefined
-  mobileTreeOpen.value = false
-  tableRef.value?.refresh(true)
-}
-
 // Search form
 const searchForm = reactive({ keyword: '', parent_id: undefined as string | undefined })
-const selectedKeys = ref<string[]>([])
-const rowSelection = computed(() => ({
-  selectedRowKeys: selectedKeys.value,
-  onChange: (keys: string[]) => { selectedKeys.value = keys },
-}))
 
 const columns = [
   { title: '组织名称', dataIndex: 'name', key: 'name', width: 180 },
@@ -299,6 +191,12 @@ const columns = [
   { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 180 },
   { title: '操作', key: 'action', width: 260, fixed: 'right' },
 ]
+
+function resetSearch() {
+  searchForm.keyword = ''
+  searchForm.parent_id = undefined
+  tableRef.value?.refresh(true)
+}
 
 // Drawer refs
 const detailRef = ref()
@@ -318,85 +216,28 @@ function openCreate(parent?: any) {
   formRef.value?.doOpen(undefined, parent?.id || searchForm.parent_id)
 }
 
-async function handleDelete(id: string) {
-  const { success } = await fetchOrgRemove({ ids: [id] })
-  if (success) {
-    message.success('删除成功')
-    tableRef.value?.refresh()
-    loadTree()
-  }
-}
-
-function handleBatchDelete() {
-  confirmDelete({
-    name: '组织',
-    selectedKeys: selectedKeys.value,
-    deleteApi: fetchOrgRemove,
-    onSuccess: () => {
-      selectedKeys.value = []
-      tableRef.value?.refresh()
-      loadTree()
-    },
-  })
-}
-
-function handleFormSuccess() {
-  tableRef.value?.refresh()
-  loadTree()
-}
-
-// Search
-function handleSearch() {
+function handleTreeSelect(parentId: string | undefined) {
+  searchForm.parent_id = parentId
   tableRef.value?.refresh(true)
 }
 
-function resetSearch() {
-  searchForm.keyword = ''
-  searchForm.parent_id = undefined
-  selectedTreeKeys.value = []
-  tableRef.value?.refresh(true)
-}
-
-// Import / Export / Template
-const importOpen = ref(false)
-const exportOpen = ref(false)
-const templateLoading = ref(false)
-const importModalRef = ref()
-
-async function handleDownloadTemplate() {
-  templateLoading.value = true
-  try {
-    const blob = await fetchOrgTemplate()
-    downloadBlob(blob, '组织导入模板.xlsx')
-  } catch {
-    message.error('下载模板失败')
-  } finally {
-    templateLoading.value = false
-  }
-}
-
-async function handleExportWithParams(params: any) {
-  try {
-    const blob = await fetchOrgExport(params)
-    downloadBlob(blob, `组织数据_${new Date().toLocaleDateString()}.xlsx`)
-    message.success('导出成功')
-    exportOpen.value = false
-  } catch {
-    message.error('导出失败')
-  }
-}
-
-async function handleImport(file: File) {
-  try {
-    const { success, data } = await fetchOrgImport(file)
-    if (success && data) {
-      importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
-      message.success('导入成功')
-      tableRef.value?.refresh(true)
-      loadTree()
-    }
-  } catch {
-    importModalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
-  }
-}
+const {
+  importOpen: ieImportOpen,
+  exportOpen: ieExportOpen,
+  templateLoading: ieTemplateLoading,
+  importModalRef: ieImportModalRef,
+  handleDownloadTemplate: ieHandleDownloadTemplate,
+  handleExportWithParams: ieHandleExportWithParams,
+  handleImport: ieHandleImport,
+} = useImportExport({
+  exportApi: fetchOrgExport,
+  templateApi: fetchOrgTemplate,
+  importApi: fetchOrgImport,
+  fileName: '组织数据',
+  templateName: '组织导入模板',
+  onSuccess: () => {
+    tableRef.value?.refresh(true)
+    treePanel.value?.refresh()
+  },
+})
 </script>

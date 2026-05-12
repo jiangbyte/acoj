@@ -62,11 +62,11 @@
           <template #icon><DeleteOutlined /></template>
           批量删除
         </a-button>
-        <a-button v-if="hasPermission('sys:banner:import')" @click="importOpen = true">
+        <a-button v-if="hasPermission('sys:banner:import')" @click="ieImportOpen = true">
           <template #icon><UploadOutlined /></template>
           导入
         </a-button>
-        <a-button v-if="hasPermission('sys:banner:export')" @click="exportOpen = true">
+        <a-button v-if="hasPermission('sys:banner:export')" @click="ieExportOpen = true">
           <template #icon><DownloadOutlined /></template>
           导出
         </a-button>
@@ -102,21 +102,21 @@
 
     <!-- Import modal -->
     <AppImportModal
-      ref="importModalRef"
-      :open="importOpen"
+      :ref="(el) => { ieImportModalRef.value = el }"
+      :open="ieImportOpen"
       template-text="下载轮播图导入模板"
-      :template-loading="templateLoading"
-      @close="importOpen = false"
-      @download-template="handleDownloadTemplate"
-      @upload="handleImport"
+      :template-loading="ieTemplateLoading"
+      @close="ieImportOpen = false"
+      @download-template="ieHandleDownloadTemplate"
+      @upload="ieHandleImport"
     />
 
     <!-- Export modal -->
     <AppExportModal
-      :open="exportOpen"
+      :open="ieExportOpen"
       :selected-keys="selectedKeys"
-      @close="exportOpen = false"
-      @export="handleExportWithParams"
+      @close="ieExportOpen = false"
+      @export="ieHandleExportWithParams"
     />
 
     <!-- Drawers -->
@@ -127,8 +127,7 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'SysBanner' })
-import { ref, reactive, computed } from 'vue'
-import { message } from 'ant-design-vue'
+import { ref, reactive } from 'vue'
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -142,7 +141,8 @@ import {
   fetchBannerTemplate,
   fetchBannerImport,
 } from '@/api/banner'
-import { downloadBlob, confirmDelete } from '@/utils'
+import { useCrud } from '@/hooks/useCrud'
+import { useImportExport } from '@/hooks/useImportExport'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import AppImportModal from '@/components/modal/AppImportModal.vue'
@@ -153,7 +153,9 @@ import { useAuthStore } from '@/store'
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
-const tableRef = ref()
+
+const crud = useCrud({ name: '轮播图', deleteApi: fetchBannerRemove })
+const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete } = crud
 
 const searchForm = reactive({ keyword: '', category: undefined, type: undefined, position: undefined })
 const columns = [
@@ -167,14 +169,13 @@ const columns = [
   { title: '操作', key: 'action', width: 150, fixed: 'right' },
 ]
 
-// Row selection
-const selectedKeys = ref<string[]>([])
-const rowSelection = computed(() => ({
-  selectedRowKeys: selectedKeys.value,
-  onChange: (keys: string[]) => {
-    selectedKeys.value = keys
-  },
-}))
+function resetSearch() {
+  searchForm.keyword = ''
+  searchForm.category = undefined
+  searchForm.type = undefined
+  searchForm.position = undefined
+  tableRef.value?.refresh(true)
+}
 
 // Drawer refs
 const detailRef = ref()
@@ -192,78 +193,20 @@ function openCreate() {
   formRef.value?.doOpen()
 }
 
-// Search
-function handleSearch() {
-  tableRef.value?.refresh(true)
-}
-
-function resetSearch() {
-  searchForm.keyword = ''
-  searchForm.category = undefined
-  searchForm.type = undefined
-  searchForm.position = undefined
-  tableRef.value?.refresh(true)
-}
-
-async function handleDelete(id: string) {
-  const { success } = await fetchBannerRemove({ ids: [id] })
-  if (success) {
-    message.success('删除成功')
-    tableRef.value?.refresh()
-  }
-}
-
-function handleBatchDelete() {
-  confirmDelete({
-    name: '轮播图',
-    selectedKeys: selectedKeys.value,
-    deleteApi: fetchBannerRemove,
-    onSuccess: () => {
-      selectedKeys.value = []
-      tableRef.value?.refresh()
-    },
-  })
-}
-
-// ========== Import / Export / Template ==========
-const importOpen = ref(false)
-const exportOpen = ref(false)
-const templateLoading = ref(false)
-const importModalRef = ref()
-
-async function handleDownloadTemplate() {
-  templateLoading.value = true
-  try {
-    const blob = await fetchBannerTemplate()
-    downloadBlob(blob, '轮播图导入模板.xlsx')
-  } catch {
-    message.error('下载模板失败')
-  } finally {
-    templateLoading.value = false
-  }
-}
-
-async function handleExportWithParams(params: any) {
-  try {
-    const blob = await fetchBannerExport(params)
-    downloadBlob(blob, `轮播图数据_${new Date().toLocaleDateString()}.xlsx`)
-    message.success('导出成功')
-    exportOpen.value = false
-  } catch {
-    message.error('导出失败')
-  }
-}
-
-async function handleImport(file: File) {
-  try {
-    const { success, data } = await fetchBannerImport(file)
-    if (success && data) {
-      importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
-      message.success('导入成功')
-      tableRef.value?.refresh(true)
-    }
-  } catch {
-    importModalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
-  }
-}
+const {
+  importOpen: ieImportOpen,
+  exportOpen: ieExportOpen,
+  templateLoading: ieTemplateLoading,
+  importModalRef: ieImportModalRef,
+  handleDownloadTemplate: ieHandleDownloadTemplate,
+  handleExportWithParams: ieHandleExportWithParams,
+  handleImport: ieHandleImport,
+} = useImportExport({
+  exportApi: fetchBannerExport,
+  templateApi: fetchBannerTemplate,
+  importApi: fetchBannerImport,
+  fileName: '轮播图数据',
+  templateName: '轮播图导入模板',
+  onSuccess: () => tableRef.value?.refresh(true),
+})
 </script>
