@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 from fastapi import Request
 from .models import SysGroup
-from .params import GroupVO, GroupTreeVO, GroupPageParam, GroupTreeParam, GroupExportParam, GroupImportParam, GrantGroupRoleParam
+from .params import GroupVO, GroupTreeVO, GroupPageParam, GroupTreeParam, GroupExportParam, GroupImportParam
 from .dao import GroupDao
 from ..org.models import SysOrg
 from ..org.params import OrgVO
@@ -211,9 +211,4 @@ class GroupService:
         self.dao.insert_batch(entities)
         return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}
 
-    async def grant_roles(self, param: GrantGroupRoleParam, request: Optional[Request] = None) -> None:
-        created_by = await self._get_current_user_id(request)
-        self.dao.grant_roles(param.group_id, param.role_ids, created_by, param.scope, param.custom_scope_group_ids)
-
-    def get_group_role_ids(self, group_id: str) -> List[str]:
-        return self.dao.get_role_ids_by_group_id(group_id)
+    # 用户组-角色关联已废弃（使用 ral_role_permission.scope 的 GROUP / CUSTOM_GROUP）

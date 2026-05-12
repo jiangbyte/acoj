@@ -161,9 +161,7 @@ async def list_modules(
 
 @router.get(
     "/api/v1/sys/permission/by-module",
-    summary="根据模块获取权限列表",
-    response_model=Result[list[PermissionVO]]
-)
+    summary="根据模块获取权限列表")
 @HeiCheckPermission("sys:permission:by-module")
 async def by_module(
     request: Request,

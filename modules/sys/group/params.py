@@ -91,8 +91,4 @@ class GroupImportParam(BaseModel):
     data: List[GroupVO]
 
 
-class GrantGroupRoleParam(BaseModel):
-    group_id: str
-    role_ids: List[str]
-    scope: Optional[str] = None
-    custom_scope_group_ids: Optional[str] = None
+# GrantGroupRoleParam — 已废弃，使用 ral_role_permission.scope 的 GROUP / CUSTOM_GROUP

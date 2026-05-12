@@ -489,8 +489,9 @@ CREATE TABLE `ral_user_permission`
     `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
     `user_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
     `permission_id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限ID',
-    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ALL' COMMENT '数据范围：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人',
-    `custom_scope_group_ids` text                                                        NULL COMMENT '自定义数据范围组ID列表(JSON数组)，scope=CUSTOM时生效',
+    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ALL' COMMENT '数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组',
+    `custom_scope_group_ids` text                                                        NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
+    `custom_scope_org_ids`   text                                                        NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
     `is_deleted`             varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'NO' COMMENT '逻辑删除',
     `created_at`             datetime                                                     NULL DEFAULT NULL COMMENT '创建时间',
     `created_by`             varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
@@ -511,8 +512,9 @@ CREATE TABLE `ral_role_permission`
     `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
     `role_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
     `permission_id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限ID',
-    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ALL' COMMENT '数据范围：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人',
-    `custom_scope_group_ids` text                                                        NULL COMMENT '自定义数据范围组ID列表(JSON数组)，scope=CUSTOM时生效',
+    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ALL' COMMENT '数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组',
+    `custom_scope_group_ids` text                                                        NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
+    `custom_scope_org_ids`   text                                                        NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
     `is_deleted`             varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'NO' COMMENT '逻辑删除',
     `created_at`             datetime                                                     NULL DEFAULT NULL COMMENT '创建时间',
     `created_by`             varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
@@ -545,26 +547,9 @@ CREATE TABLE `ral_role_resource`
   ROW_FORMAT = Dynamic;
 
 -- =============================================================================
--- 用户组-角色关联
+-- 用户组-角色关联（已废弃——使用 ral_role_permission 的 GROUP / CUSTOM_GROUP scope）
 -- =============================================================================
-DROP TABLE IF EXISTS `ral_group_role`;
-CREATE TABLE `ral_group_role`
-(
-    `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
-    `group_id`               varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户组ID',
-    `role_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
-    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人。为空则继承 ral_role_permission 的配置',
-    `custom_scope_group_ids` text                                                        NULL COMMENT '自定义数据范围组ID列表(JSON数组)，scope=CUSTOM时生效',
-    `is_deleted`             varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`             datetime                                                     NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`             varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_group_role` (`group_id`, `role_id`) USING BTREE,
-    INDEX `idx_role_id` (`role_id`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '用户组-角色关联'
-  ROW_FORMAT = Dynamic;
+-- DROP TABLE IF EXISTS `ral_group_role`;
 
 -- =============================================================================
 -- 组织-角色关联
@@ -575,8 +560,9 @@ CREATE TABLE `ral_org_role`
     `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
     `org_id`                 varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '组织ID',
     `role_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '角色ID',
-    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人。为空则继承 ral_role_permission 的配置',
-    `custom_scope_group_ids` text                                                          NULL COMMENT '自定义数据范围组ID列表(JSON数组)，scope=CUSTOM时生效',
+    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组。为空则继承 ral_role_permission 的配置',
+    `custom_scope_group_ids` text                                                          NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
+    `custom_scope_org_ids`   text                                                          NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
     `is_deleted`             varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
     `created_at`             datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
     `created_by`             varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
@@ -940,8 +926,8 @@ VALUES
 ('p_sys_group_remove', 'sys:group:remove', '用户组删除', 'sys/group', 'BACKEND', 'ENABLED', 53, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('p_sys_group_detail', 'sys:group:detail', '用户组详情', 'sys/group', 'BACKEND', 'ENABLED', 54, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('p_sys_group_export', 'sys:group:export', '用户组导出', 'sys/group', 'BACKEND', 'ENABLED', 55, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_group_grant_role', 'sys:group:grant-role', '用户组分配角色', 'sys/group', 'BACKEND', 'ENABLED', 56, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_group_own_roles', 'sys:group:own-roles', '用户组拥有角色', 'sys/group', 'BACKEND', 'ENABLED', 57, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+-- ('p_sys_group_grant_role', 'sys:group:grant-role', '用户组分配角色', 'sys/group', 'BACKEND', 'ENABLED', 56, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+-- ('p_sys_group_own_roles', 'sys:group:own-roles', '用户组拥有角色', 'sys/group', 'BACKEND', 'ENABLED', 57, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 
 -- 字典管理
 ('p_sys_dict_page', 'sys:dict:page', '字典分页查询', 'sys/dict', 'BACKEND', 'ENABLED', 58, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
@@ -1170,11 +1156,7 @@ WHERE (r.`type` IN ('DIRECTORY', 'MENU') OR r.`code` IN (
     'sys_file_page', 'sys_file_detail', 'sys_file_upload', 'sys_file_download'
 )) AND r.`is_deleted` = 'NO' AND r.`status` = 'ENABLED';
 
--- 用户组-角色关联
-INSERT INTO `ral_group_role` (`id`, `group_id`, `role_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-VALUES ('gr_admin_admin', 'grp_admin', 'role_admin', NULL, NULL, 'NO', NOW(), 'ADMIN'),
-       ('gr_dev_dev', 'grp_dev', 'role_dev', NULL, NULL, 'NO', NOW(), 'ADMIN'),
-       ('gr_test_test', 'grp_test', 'role_test', NULL, NULL, 'NO', NOW(), 'ADMIN');
+-- 用户组-角色关联（已废弃）
 
 -- 组织-角色关联
 INSERT INTO `ral_org_role` (`id`, `org_id`, `role_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)

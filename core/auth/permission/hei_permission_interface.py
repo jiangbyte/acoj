@@ -18,9 +18,8 @@ class HeiPermissionInterface:
     """
 
     def _get_role_ids(self, db, login_id: str) -> List[str]:
-        """Collect all role IDs: direct + via group delegation."""
-        from modules.sys.user.models import RalUserRole, RalUserGroup
-        from modules.sys.group.models import RalGroupRole
+        """Collect all role IDs: direct + via org delegation."""
+        from modules.sys.user.models import RalUserRole
 
         role_ids = set()
 
@@ -33,24 +32,7 @@ class HeiPermissionInterface:
         ).all()
         role_ids.update(rows)
 
-        # User→group→role
-        group_ids = db.scalars(
-            select(RalUserGroup.group_id).where(
-                RalUserGroup.user_id == login_id,
-                RalUserGroup.is_deleted == SoftDeleteEnum.NO
-            )
-        ).all()
-
-        if group_ids:
-            rows = db.scalars(
-                select(RalGroupRole.role_id).where(
-                    RalGroupRole.group_id.in_(group_ids),
-                    RalGroupRole.is_deleted == SoftDeleteEnum.NO
-                )
-            ).all()
-            role_ids.update(rows)
-
-        # User→org→role (P3 path) — only applicable for B-end users (sys_user)
+        # User→org→role — only applicable for B-end users (sys_user)
         from modules.sys.org.models import RalOrgRole
         from modules.sys.user.models import SysUser
         user = db.get(SysUser, login_id)
@@ -70,26 +52,27 @@ class HeiPermissionInterface:
         Merge permission scopes with path priority.
         Higher priority (lower P value) overrides lower priority.
         Same priority: most restrictive scope wins.
-        rows: list of (code, scope, custom_scope_group_ids) tuples
+        rows: list of (code, scope, custom_scope_group_ids, custom_scope_org_ids) tuples
         """
         import json
-        for code, scope, cgids_raw in rows:
+        for code, scope, cgids_raw, cogids_raw in rows:
             scope = scope or DataScopeEnum.ALL
             cgids = json.loads(cgids_raw) if cgids_raw else []
+            cogids = json.loads(cogids_raw) if cogids_raw else []
             if code not in result:
-                result[code] = {"scope": scope, "custom_group_ids": cgids, "priority": priority}
+                result[code] = {"scope": scope, "custom_group_ids": cgids, "custom_org_ids": cogids, "priority": priority}
             else:
                 cur = result[code]
                 if priority < cur["priority"]:
-                    # New path has higher priority → override
-                    result[code] = {"scope": scope, "custom_group_ids": cgids, "priority": priority}
+                    result[code] = {"scope": scope, "custom_group_ids": cgids, "custom_org_ids": cogids, "priority": priority}
                 elif priority == cur["priority"]:
-                    # Same priority → most restrictive
                     restricted = DataScopeEnum.most_restrictive(cur["scope"], scope)
                     result[code]["scope"] = restricted
-                    if restricted == DataScopeEnum.CUSTOM:
-                        merged = set(cur["custom_group_ids"]) | set(cgids)
-                        result[code]["custom_group_ids"] = list(merged)
+                    if restricted in (DataScopeEnum.CUSTOM_GROUP, DataScopeEnum.CUSTOM_ORG):
+                        merged_group = set(cur.get("custom_group_ids", [])) | set(cgids)
+                        result[code]["custom_group_ids"] = list(merged_group)
+                        merged_org = set(cur.get("custom_org_ids", [])) | set(cogids)
+                        result[code]["custom_org_ids"] = list(merged_org)
 
     async def getPermissionList(self, login_id: Union[str, int], login_type: str) -> List[str]:
         from modules.sys.role.models import RalRolePermission
@@ -177,9 +160,8 @@ class HeiPermissionInterface:
         """
         import json
         from core.enums import PermissionPathEnum
-        from modules.sys.user.models import RalUserRole, RalUserGroup, RalUserPermission
+        from modules.sys.user.models import RalUserRole, RalUserPermission
         from modules.sys.role.models import RalRolePermission
-        from modules.sys.group.models import RalGroupRole
         from modules.sys.org.models import RalOrgRole
         from modules.sys.user.models import SysUser
         from modules.sys.permission.models import SysPermission
@@ -192,7 +174,7 @@ class HeiPermissionInterface:
 
             perm_scope = {}
 
-            # Path 1 (P1): User → Role → Permission
+            # Path 1 (P1): User → Role → Permission (includes scope from ral_role_permission)
             role_ids = db.scalars(
                 select(RalUserRole.role_id).where(
                     RalUserRole.user_id == login_id,
@@ -201,7 +183,7 @@ class HeiPermissionInterface:
             ).all()
             if role_ids:
                 rows = db.execute(
-                    select(SysPermission.code, RalRolePermission.scope, RalRolePermission.custom_scope_group_ids)
+                    select(SysPermission.code, RalRolePermission.scope, RalRolePermission.custom_scope_group_ids, RalRolePermission.custom_scope_org_ids)
                     .join(RalRolePermission, SysPermission.id == RalRolePermission.permission_id)
                     .where(
                         RalRolePermission.role_id.in_(role_ids),
@@ -212,31 +194,9 @@ class HeiPermissionInterface:
                 ).all()
                 self._merge_scope(perm_scope, PermissionPathEnum.USER_ROLE, rows)
 
-            # Path 2 (P2): User → Group → Role → Permission
-            group_ids = db.scalars(
-                select(RalUserGroup.group_id).where(
-                    RalUserGroup.user_id == login_id,
-                    RalUserGroup.is_deleted == SoftDeleteEnum.NO
-                )
-            ).all()
-            if group_ids:
-                rows = db.execute(
-                    select(SysPermission.code, RalGroupRole.scope, RalGroupRole.custom_scope_group_ids)
-                    .join(RalRolePermission, SysPermission.id == RalRolePermission.permission_id)
-                    .join(RalGroupRole, RalGroupRole.role_id == RalRolePermission.role_id)
-                    .where(
-                        RalGroupRole.group_id.in_(group_ids),
-                        RalGroupRole.is_deleted == SoftDeleteEnum.NO,
-                        RalRolePermission.is_deleted == SoftDeleteEnum.NO,
-                        SysPermission.is_deleted == SoftDeleteEnum.NO
-                    )
-                    .distinct()
-                ).all()
-                self._merge_scope(perm_scope, PermissionPathEnum.GROUP_ROLE, rows)
-
-            # Path 3 (P0): User → Direct Permission
+            # Path 2 (P0): User → Direct Permission
             rows = db.execute(
-                select(SysPermission.code, RalUserPermission.scope, RalUserPermission.custom_scope_group_ids)
+                select(SysPermission.code, RalUserPermission.scope, RalUserPermission.custom_scope_group_ids, RalUserPermission.custom_scope_org_ids)
                 .join(RalUserPermission, SysPermission.id == RalUserPermission.permission_id)
                 .where(
                     RalUserPermission.user_id == login_id,
@@ -254,7 +214,8 @@ class HeiPermissionInterface:
                     rows = db.execute(
                         select(SysPermission.code,
                                func.coalesce(RalOrgRole.scope, RalRolePermission.scope),
-                               func.coalesce(RalOrgRole.custom_scope_group_ids, RalRolePermission.custom_scope_group_ids))
+                               func.coalesce(RalOrgRole.custom_scope_group_ids, RalRolePermission.custom_scope_group_ids),
+                               func.coalesce(RalOrgRole.custom_scope_org_ids, RalRolePermission.custom_scope_org_ids))
                         .join(RalRolePermission, SysPermission.id == RalRolePermission.permission_id)
                         .join(RalOrgRole, RalOrgRole.role_id == RalRolePermission.role_id)
                         .where(
@@ -268,7 +229,7 @@ class HeiPermissionInterface:
                     self._merge_scope(perm_scope, PermissionPathEnum.ORG_ROLE, rows)
 
             # Strip priority before returning
-            return {k: {"scope": v["scope"], "custom_group_ids": v["custom_group_ids"]}
+            return {k: {"scope": v["scope"], "custom_group_ids": v.get("custom_group_ids", []), "custom_org_ids": v.get("custom_org_ids", [])}
                     for k, v in perm_scope.items()}
         finally:
             db.close()

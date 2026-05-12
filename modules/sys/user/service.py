@@ -16,7 +16,6 @@ from modules.sys.resource.models import SysResource
 from modules.sys.permission.models import SysPermission
 from modules.sys.role.models import RalRolePermission, RalRoleResource
 from modules.sys.user.models import RalUserRole, RalUserGroup
-from modules.sys.group.models import RalGroupRole
 from modules.sys.org.models import RalOrgRole
 import json
 import logging
@@ -254,20 +253,6 @@ class UserService:
             .all()
         )
         role_ids.update(r[0] for r in direct)
-
-        # Via user groups
-        group_ids = (
-            self.db.query(RalUserGroup.group_id)
-            .filter(RalUserGroup.user_id == user_id, RalUserGroup.is_deleted == "NO")
-            .all()
-        )
-        if group_ids:
-            group_role_ids = (
-                self.db.query(RalGroupRole.role_id)
-                .filter(RalGroupRole.group_id.in_(g[0] for g in group_ids), RalGroupRole.is_deleted == "NO")
-                .all()
-            )
-            role_ids.update(r[0] for r in group_role_ids)
 
         # Via org (user's org_id → RalOrgRole)
         entity = self.find_by_id(user_id)
