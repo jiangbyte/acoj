@@ -186,12 +186,31 @@ class UserService:
         entity = self.find_by_id(user_id)
         if not entity:
             return None
+
+        org_name = None
+        position_name = None
+        if entity.org_id:
+            from modules.sys.org.models import SysOrg
+            org = self.dao.db.get(SysOrg, entity.org_id)
+            if org:
+                org_name = org.name
+        if entity.position_id:
+            from modules.sys.position.models import SysPosition
+            pos = self.dao.db.get(SysPosition, entity.position_id)
+            if pos:
+                position_name = pos.name
+
         return {
             "id": entity.id,
             "account": entity.account,
             "nickname": entity.nickname,
             "avatar": entity.avatar,
             "status": entity.status,
+            "org_name": org_name,
+            "position_name": position_name,
+            "last_login_at": entity.last_login_at.isoformat() if entity.last_login_at else None,
+            "last_login_ip": entity.last_login_ip,
+            "login_count": entity.login_count or 0,
         }
 
     async def get_current_user_menus(self, request: Request) -> List[Dict]:
