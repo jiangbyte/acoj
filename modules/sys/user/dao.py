@@ -6,6 +6,7 @@ from .params import UserPageParam
 from core.db.base_dao import BaseDAO
 from core.utils import generate_id
 from datetime import datetime
+from modules.sys.role.params import PermissionItem
 
 
 class UserDao(BaseDAO):
@@ -130,32 +131,58 @@ class UserDao(BaseDAO):
         self.db.commit()
 
     # ---- RAL: User Permissions (direct) ----
-    def grant_permissions(self, user_id: str, permission_ids: List[str], created_by: Optional[str] = None,
-                          scope: Optional[str] = None, custom_scope_group_ids: Optional[str] = None):
+    def get_permission_details_by_user_id(self, user_id: str) -> list[dict]:
+        """Return permission_code + scope + custom IDs for a user."""
+        rows = self.db.execute(
+            select(
+                RalUserPermission.permission_code,
+                RalUserPermission.scope,
+                RalUserPermission.custom_scope_group_ids,
+                RalUserPermission.custom_scope_org_ids,
+            ).where(
+                RalUserPermission.user_id == user_id,
+                RalUserPermission.is_deleted == self._soft_delete_not_deleted
+            )
+        ).all()
+        return [
+            {
+                "permission_code": r[0],
+                "scope": r[1] or "ALL",
+                "custom_scope_group_ids": r[2],
+                "custom_scope_org_ids": r[3],
+            }
+            for r in rows
+        ]
+
+    def grant_permissions(self, user_id: str, permissions: List[PermissionItem], created_by: Optional[str] = None):
         now = datetime.now()
         not_del = self._soft_delete_not_deleted
         del_val = self._soft_delete_deleted
 
+        incoming_codes = [p.permission_code for p in permissions]
+
         existing = self.db.execute(
             select(RalUserPermission).where(RalUserPermission.user_id == user_id)
         ).scalars().all()
-        existing_by_pid = {r.permission_id: r for r in existing}
+        existing_by_code = {r.permission_code: r for r in existing}
 
         for r in existing:
-            if r.permission_id not in permission_ids and r.is_deleted == not_del:
+            if r.permission_code not in incoming_codes and r.is_deleted == not_del:
                 r.is_deleted = del_val
 
-        for pid in permission_ids:
-            if pid in existing_by_pid:
-                rel = existing_by_pid[pid]
+        for p in permissions:
+            if p.permission_code in existing_by_code:
+                rel = existing_by_code[p.permission_code]
                 rel.is_deleted = not_del
-                rel.scope = scope
-                rel.custom_scope_group_ids = custom_scope_group_ids
+                rel.scope = p.scope
+                rel.custom_scope_group_ids = p.custom_scope_group_ids
+                rel.custom_scope_org_ids = p.custom_scope_org_ids
                 rel.created_by = created_by
             else:
                 rel = RalUserPermission(
-                    id=generate_id(), user_id=user_id, permission_id=pid,
-                    scope=scope, custom_scope_group_ids=custom_scope_group_ids,
+                    id=generate_id(), user_id=user_id, permission_code=p.permission_code,
+                    scope=p.scope, custom_scope_group_ids=p.custom_scope_group_ids,
+                    custom_scope_org_ids=p.custom_scope_org_ids,
                     is_deleted=not_del, created_at=now, created_by=created_by
                 )
                 self.db.add(rel)

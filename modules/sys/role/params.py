@@ -70,7 +70,7 @@ class RoleImportParam(BaseModel):
 
 
 class PermissionItem(BaseModel):
-    id: str
+    permission_code: str
     scope: str = "ALL"
     custom_scope_group_ids: Optional[str] = None
     custom_scope_org_ids: Optional[str] = None
@@ -81,6 +81,14 @@ class GrantPermissionParam(BaseModel):
     permissions: List[PermissionItem]
 
 
+class ButtonPermissionScope(BaseModel):
+    permission_code: str
+    scope: str = "ALL"
+    custom_scope_group_ids: Optional[str] = None
+    custom_scope_org_ids: Optional[str] = None
+
+
 class GrantResourceParam(BaseModel):
     role_id: str
     resource_ids: List[str]
+    permissions: List[ButtonPermissionScope] = []

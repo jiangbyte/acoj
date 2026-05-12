@@ -2,7 +2,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from fastapi import Request
 from .models import SysRole
-from .params import RoleVO, RolePageParam, RoleExportParam, RoleImportParam, GrantPermissionParam, GrantResourceParam
+from .params import RoleVO, RolePageParam, RoleExportParam, RoleImportParam, GrantPermissionParam, GrantResourceParam, ButtonPermissionScope
 from .dao import RoleDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data
@@ -66,24 +66,45 @@ class RoleService:
         created_by = await self._get_current_user_id(request)
         self.dao.grant_resources(param.role_id, param.resource_ids, created_by)
 
-        # Auto-grant permissions linked via ral_resource_permission
-        from modules.sys.resource.models import RalResourcePermission as _RRP
+        # Auto-grant permissions linked via resource.extra -> permission_code
+        import json
+        from modules.sys.resource.models import SysResource as _SR
         from core.enums import SoftDeleteEnum as _SDE
-        linked = self.dao.db.query(_RRP.permission_id).filter(
-            _RRP.resource_id.in_(param.resource_ids),
-            _RRP.is_deleted == _SDE.NO,
-        ).distinct().all()
-        if linked:
-            from .params import PermissionItem
-            pids = list(dict.fromkeys(r[0] for r in linked))
-            self.dao.grant_permissions(
-                param.role_id,
-                [PermissionItem(id=pid, scope="ALL") for pid in pids],
-                created_by,
-            )
 
-    def get_role_permission_ids(self, role_id: str) -> List[str]:
-        return self.dao.get_permission_ids_by_role_id(role_id)
+        resources = self.dao.db.query(_SR).filter(
+            _SR.id.in_(param.resource_ids),
+            _SR.is_deleted == _SDE.NO,
+            _SR.extra != None,
+            _SR.extra != '',
+        ).all()
+
+        # Build code -> scope mapping from provided permissions
+        scope_map: dict[str, ButtonPermissionScope] = {
+            p.permission_code: p for p in param.permissions
+        }
+
+        permission_items = []
+        for r in resources:
+            try:
+                extra = json.loads(r.extra)
+                pcode = extra.get('permission_code')
+                if not pcode:
+                    continue
+                scope = scope_map.get(pcode)
+                permission_items.append(PermissionItem(
+                    permission_code=pcode,
+                    scope=scope.scope if scope else "ALL",
+                    custom_scope_group_ids=scope.custom_scope_group_ids if scope else None,
+                    custom_scope_org_ids=scope.custom_scope_org_ids if scope else None,
+                ))
+            except (json.JSONDecodeError, TypeError):
+                continue
+
+        if permission_items:
+            self.dao.grant_permissions(param.role_id, permission_items, created_by)
+
+    def get_role_permission_codes(self, role_id: str) -> List[str]:
+        return self.dao.get_permission_codes_by_role_id(role_id)
 
     def get_role_permission_details(self, role_id: str) -> list[dict]:
         return self.dao.get_permission_details_by_role_id(role_id)

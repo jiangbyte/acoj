@@ -41,19 +41,19 @@ class RoleDao(BaseDAO):
         return entity
 
     # ---- RAL: Role Permissions ----
-    def get_permission_ids_by_role_id(self, role_id: str) -> List[str]:
+    def get_permission_codes_by_role_id(self, role_id: str) -> List[str]:
         rows = self.db.execute(
-            select(RalRolePermission.permission_id).where(
+            select(RalRolePermission.permission_code).where(
                 RalRolePermission.role_id == role_id, RalRolePermission.is_deleted == self._soft_delete_not_deleted
             )
         ).scalars().all()
         return list(rows)
 
     def get_permission_details_by_role_id(self, role_id: str) -> list[dict]:
-        """Return permission_id + scope + custom IDs for a role."""
+        """Return permission_code + scope + custom IDs for a role."""
         rows = self.db.execute(
             select(
-                RalRolePermission.permission_id,
+                RalRolePermission.permission_code,
                 RalRolePermission.scope,
                 RalRolePermission.custom_scope_group_ids,
                 RalRolePermission.custom_scope_org_ids,
@@ -64,7 +64,7 @@ class RoleDao(BaseDAO):
         ).all()
         return [
             {
-                "permission_id": r[0],
+                "permission_code": r[0],
                 "scope": r[1] or "ALL",
                 "custom_scope_group_ids": r[2],
                 "custom_scope_org_ids": r[3],
@@ -78,20 +78,20 @@ class RoleDao(BaseDAO):
         not_del = self._soft_delete_not_deleted
         del_val = self._soft_delete_deleted
 
-        incoming_pids = [p.id for p in permissions]
+        incoming_codes = [p.permission_code for p in permissions]
 
         existing = self.db.execute(
             select(RalRolePermission).where(RalRolePermission.role_id == role_id)
         ).scalars().all()
-        existing_by_pid = {r.permission_id: r for r in existing}
+        existing_by_code = {r.permission_code: r for r in existing}
 
         for r in existing:
-            if r.permission_id not in incoming_pids and r.is_deleted == not_del:
+            if r.permission_code not in incoming_codes and r.is_deleted == not_del:
                 r.is_deleted = del_val
 
         for p in permissions:
-            if p.id in existing_by_pid:
-                rel = existing_by_pid[p.id]
+            if p.permission_code in existing_by_code:
+                rel = existing_by_code[p.permission_code]
                 rel.is_deleted = not_del
                 rel.scope = p.scope
                 rel.custom_scope_group_ids = p.custom_scope_group_ids
@@ -99,7 +99,7 @@ class RoleDao(BaseDAO):
                 rel.created_by = created_by
             else:
                 rel = RalRolePermission(
-                    id=generate_id(), role_id=role_id, permission_id=p.id,
+                    id=generate_id(), role_id=role_id, permission_code=p.permission_code,
                     scope=p.scope, custom_scope_group_ids=p.custom_scope_group_ids,
                     custom_scope_org_ids=p.custom_scope_org_ids,
                     is_deleted=not_del, created_at=now, created_by=created_by

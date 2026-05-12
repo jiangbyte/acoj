@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from fastapi import Request
 from .models import SysUser
-from .params import UserVO, UserPageParam, UserExportParam, UserImportParam, GrantRoleParam, GrantGroupParam
+from .params import UserVO, UserPageParam, UserExportParam, UserImportParam, GrantRoleParam, GrantGroupParam, GrantUserPermissionParam
 from .dao import UserDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data
@@ -13,7 +13,6 @@ from core.utils import export_excel, strip_system_fields, apply_update, make_tem
 from core.auth import HeiAuthTool, LoginUserInfo
 from core.db.redis import get_client
 from modules.sys.resource.models import SysResource
-from modules.sys.permission.models import SysPermission
 from modules.sys.role.models import RalRolePermission, RalRoleResource
 from modules.sys.user.models import RalUserRole, RalUserGroup
 from modules.sys.org.models import RalOrgRole
@@ -183,6 +182,13 @@ class UserService:
         created_by = await self._get_current_user_id(request)
         self.dao.grant_groups(param.user_id, param.group_ids, created_by)
 
+    async def grant_permissions(self, param: GrantUserPermissionParam, request: Optional[Request] = None) -> None:
+        created_by = await self._get_current_user_id(request)
+        self.dao.grant_permissions(param.user_id, param.permissions, created_by)
+
+    def get_user_permission_details(self, user_id: str) -> list[dict]:
+        return self.dao.get_permission_details_by_user_id(user_id)
+
     # ---- User role/group query ----
     def get_user_role_ids(self, user_id: str) -> List[str]:
         return self.dao.get_role_ids_by_user_id(user_id)
@@ -310,25 +316,16 @@ class UserService:
         if not role_ids:
             return []
 
-        permission_ids = set()
+        codes = set()
         for role_id in role_ids:
-            pids = (
-                self.db.query(RalRolePermission.permission_id)
+            rows = (
+                self.db.query(RalRolePermission.permission_code)
                 .filter(RalRolePermission.role_id == role_id, RalRolePermission.is_deleted == "NO")
                 .all()
             )
-            permission_ids.update(p[0] for p in pids)
+            codes.update(r[0] for r in rows)
 
-        if not permission_ids:
-            return []
-
-        permissions = (
-            self.db.query(SysPermission.code)
-            .filter(SysPermission.id.in_(permission_ids), SysPermission.is_deleted == "NO")
-            .all()
-        )
-
-        return sorted(set(p[0] for p in permissions))
+        return sorted(codes)
 
 
 class LoginUserApiProvider:

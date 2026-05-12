@@ -31,6 +31,8 @@ class PositionService:
             return None
 
     def page(self, param: PositionPageParam) -> dict:
+        if not param.group_id:
+            return page_data(records=[], total=0, page=param.current, size=param.size)
         filters = [SysPosition.is_deleted == SoftDeleteEnum.NO]
         if param.keyword:
             keyword = f"%{param.keyword}%"

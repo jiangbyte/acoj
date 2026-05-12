@@ -5,7 +5,7 @@ from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission, HeiCheckLogin
 from core.utils.excel_utils import validate_import_file
-from ...params import UserVO, UserPageParam, UserExportParam, UserImportParam, GrantRoleParam, GrantGroupParam
+from ...params import UserVO, UserPageParam, UserExportParam, UserImportParam, GrantRoleParam, GrantGroupParam, GrantUserPermissionParam
 from ...service import UserService
 from openpyxl import load_workbook
 import io
@@ -182,6 +182,34 @@ async def grant_group(
     return success()
 
 
+@router.post(
+    "/api/v1/sys/user/grant-permission",
+    summary="分配用户权限",
+    response_model=Result
+)
+@HeiCheckPermission("sys:user:grant-permission")
+async def grant_permission(
+    request: Request,
+    param: GrantUserPermissionParam,
+    db: Session = Depends(get_db)
+):
+    service = UserService(db)
+    await service.grant_permissions(param, request)
+    return success()
+
+
+@router.get(
+    "/api/v1/sys/user/own-permission-detail",
+    summary="获取用户已分配的权限详情"
+)
+@HeiCheckPermission("sys:user:own-permission-detail")
+async def own_permission_detail(
+    request: Request,
+    user_id: str = Query(...),
+    db: Session = Depends(get_db)
+):
+    service = UserService(db)
+    return success(service.get_user_permission_details(user_id))
 
 
 @router.get(

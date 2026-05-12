@@ -57,6 +57,8 @@ class GroupService:
         )
 
     def tree(self, param: GroupTreeParam) -> List[dict]:
+        if not param.org_id:
+            return []
         base_filters = [SysGroup.is_deleted == SoftDeleteEnum.NO]
         if param.org_id:
             base_filters.append(SysGroup.org_id == param.org_id)

@@ -77,14 +77,14 @@ class RalUserGroup(Base):
 class RalUserPermission(Base):
     __tablename__ = 'ral_user_permission'
     __table_args__ = (
-        Index('uk_user_permission', 'user_id', 'permission_id', unique=True),
-        Index('idx_permission_id', 'permission_id'),
+        Index('uk_user_permission', 'user_id', 'permission_code', unique=True),
+        Index('idx_permission_code', 'permission_code'),
         {'comment': '用户-权限直关联'}
     )
 
     id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), primary_key=True, comment='主键')
     user_id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='用户ID')
-    permission_id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='权限ID')
+    permission_code: Mapped[str] = mapped_column(VARCHAR(255, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='权限编码')
     scope: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'ALL'"), comment='数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组')
     custom_scope_group_ids: Mapped[Optional[str]] = mapped_column(Text(collation='utf8mb4_general_ci'), comment='自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效')
     custom_scope_org_ids: Mapped[Optional[str]] = mapped_column(Text(collation='utf8mb4_general_ci'), comment='自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效')
