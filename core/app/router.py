@@ -15,7 +15,6 @@ from modules.sys.role import router as role_router
 from modules.sys.permission import router as permission_router
 from modules.sys.user import router as user_router
 from modules.client.user import router as client_user_router
-from modules.dev import router as dev_router
 from modules.sys.config import router as config_router
 from modules.sys.file import router as file_router
 
@@ -38,6 +37,5 @@ def setup_routers(app: FastAPI):
     app.include_router(permission_router)
     app.include_router(user_router)
     app.include_router(client_user_router)
-    app.include_router(dev_router)
     app.include_router(config_router)
     app.include_router(file_router)

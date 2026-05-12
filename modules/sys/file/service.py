@@ -1,10 +1,9 @@
 import io
 import os
-import sys
 import platform
 import base64
 from datetime import datetime
-from typing import Optional, BinaryIO
+from typing import Optional
 from fastapi import Request, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -61,9 +60,9 @@ class FileService:
         self.dao = FileDao(db)
         self._config_service = ConfigService(db)
 
-    def _get_current_user_id(self, request: Request) -> Optional[str]:
+    async def _get_current_user_id(self, request: Request) -> Optional[str]:
         try:
-            return HeiAuthTool.getLoginIdDefaultNull(request)
+            return await HeiAuthTool.getLoginIdDefaultNull(request)
         except Exception:
             return None
 
@@ -162,7 +161,7 @@ class FileService:
 
         thumbnail = _generate_thumbnail(data, suffix) if suffix in IMAGE_EXTENSIONS else None
 
-        user_id = self._get_current_user_id(request)
+        user_id = await self._get_current_user_id(request)
         entity = SysFile(
             id=file_id,
             engine=engine,

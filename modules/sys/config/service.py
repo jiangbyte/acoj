@@ -5,6 +5,7 @@ from core.result import page_data
 from core.exception import BusinessException
 from core.utils.model_utils import strip_system_fields, apply_update
 from core.auth import HeiAuthTool
+from core.db.redis import get_client
 from .models import SysConfig
 from .dao import ConfigDao
 from .params import ConfigVO, ConfigPageParam, ConfigListParam, ConfigCategoryEditParam
@@ -17,14 +18,13 @@ class ConfigService:
     def __init__(self, db: Session):
         self.dao = ConfigDao(db)
 
-    def _get_current_user_id(self, request: Request) -> Optional[str]:
+    async def _get_current_user_id(self, request: Request) -> Optional[str]:
         try:
-            return HeiAuthTool.getLoginIdDefaultNull(request)
+            return await HeiAuthTool.getLoginIdDefaultNull(request)
         except Exception:
             return None
 
     def _get_cached_value(self, key: str) -> Optional[str]:
-        from core.db.redis import get_client
         client = get_client()
         if client:
             val = client.get(f"{CONFIG_CACHE_PREFIX}{key}")
@@ -33,13 +33,11 @@ class ConfigService:
         return None
 
     def _set_cached_value(self, key: str, value: str):
-        from core.db.redis import get_client
         client = get_client()
         if client:
             client.set(f"{CONFIG_CACHE_PREFIX}{key}", value)
 
     def _del_cached_value(self, key: str):
-        from core.db.redis import get_client
         client = get_client()
         if client:
             client.delete(f"{CONFIG_CACHE_PREFIX}{key}")
@@ -68,7 +66,7 @@ class ConfigService:
 
     async def create(self, vo: ConfigVO, request: Request):
         entity = SysConfig(**strip_system_fields(vo.model_dump()))
-        self.dao.insert(entity, user_id=self._get_current_user_id(request))
+        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
 
     async def modify(self, vo: ConfigVO, request: Request):
         entity = self.dao.find_by_id(vo.id)
@@ -76,7 +74,7 @@ class ConfigService:
             raise BusinessException("数据不存在")
         update_data = strip_system_fields(vo.model_dump(exclude_unset=True))
         apply_update(entity, update_data)
-        self.dao.update(entity, user_id=self._get_current_user_id(request))
+        self.dao.update(entity, user_id=await self._get_current_user_id(request))
         self._del_cached_value(entity.config_key)
 
     def remove(self, param):
@@ -90,7 +88,7 @@ class ConfigService:
         return ConfigVO.model_validate(entity) if entity else None
 
     async def edit_batch(self, param, request: Request):
-        user_id = self._get_current_user_id(request)
+        user_id = await self._get_current_user_id(request)
         for vo in param.configs:
             entity = self.dao.find_by_id(vo.id)
             if not entity:
@@ -101,7 +99,7 @@ class ConfigService:
             self._del_cached_value(entity.config_key)
 
     async def edit_by_category(self, param: ConfigCategoryEditParam, request: Request):
-        user_id = self._get_current_user_id(request)
+        user_id = await self._get_current_user_id(request)
         for vo in param.configs:
             entity = self.dao.find_by_category_and_key(param.category, vo.config_key)
             if not entity:
