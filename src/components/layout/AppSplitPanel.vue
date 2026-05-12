@@ -31,7 +31,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed } from 'vue'
+import { useAppStore } from '@/store'
 
 interface Props {
   collapsed?: boolean
@@ -59,18 +60,10 @@ const emit = defineEmits<{
 const collapsed = ref(props.collapsed)
 const leftWidth = ref(props.initialSize)
 
-const isMobile = ref(false)
-onMounted(() => {
-  const mql = window.matchMedia('(max-width: 767px)')
-  isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => { isMobile.value = e.matches }
-  mql.addEventListener('change', handler)
-  onBeforeUnmount(() => mql.removeEventListener('change', handler))
-})
-
+const appStore = useAppStore()
 const shouldHideLeft = computed(() => {
   if (props.md === undefined) return false
-  if (props.md === 0) return isMobile.value
+  if (props.md === 0) return appStore.isMobile
   return false
 })
 

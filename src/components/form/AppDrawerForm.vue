@@ -22,7 +22,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed } from 'vue'
+import { useAppStore } from '@/store'
 import { message } from 'ant-design-vue'
 
 const props = defineProps<{
@@ -36,16 +37,8 @@ const props = defineProps<{
   onSubmit: (form: any) => Promise<any>
 }>()
 
-const isMobile = ref(false)
-onMounted(() => {
-  const mql = window.matchMedia('(max-width: 767px)')
-  isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => { isMobile.value = e.matches }
-  mql.addEventListener('change', handler)
-  onBeforeUnmount(() => mql.removeEventListener('change', handler))
-})
-
-const drawerWidth = computed(() => (isMobile.value ? '100%' : (props.width ?? 560)))
+const appStore = useAppStore()
+const drawerWidth = computed(() => (appStore.isMobile ? '100%' : (props.width ?? 560)))
 
 const emit = defineEmits<{
   close: []

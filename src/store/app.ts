@@ -6,12 +6,9 @@ export type LayoutMode = 'vertical'
 
 // 响应式移动端检测
 const isMobileRef = ref(window.matchMedia('(max-width: 700px)').matches)
-if (typeof window !== 'undefined') {
-  const mql = window.matchMedia('(max-width: 700px)')
-  mql.addEventListener('change', e => {
-    isMobileRef.value = e.matches
-  })
-}
+window.matchMedia('(max-width: 700px)').addEventListener('change', (e: MediaQueryListEvent) => {
+  isMobileRef.value = e.matches
+})
 
 interface AppState {
   layoutMode: LayoutMode
