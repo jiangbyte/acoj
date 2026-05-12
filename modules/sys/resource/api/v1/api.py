@@ -6,7 +6,7 @@ from core.db import get_db
 from core.auth.decorator import HeiCheckPermission
 from core.utils.excel_utils import validate_import_file
 from ...params import ModuleVO, ResourceVO, ModulePageParam, ResourcePageParam
-from ...params import ModuleExportParam, ResourceExportParam, ModuleImportParam, ResourceImportParam
+from ...params import ModuleExportParam, ResourceExportParam, ModuleImportParam, ResourceImportParam, BindPermissionParam
 from ...service import ModuleService, ResourceService
 from openpyxl import load_workbook
 import io
@@ -304,3 +304,33 @@ async def resource_import_data(
     service = ResourceService(db)
     result = await service.import_data(ResourceImportParam(data=data_list), request)
     return success(result)
+
+
+@router.get(
+    "/api/v1/sys/resource/own-permissions",
+    summary="获取资源已绑定的权限ID列表"
+)
+@HeiCheckPermission("sys:resource:detail")
+async def resource_own_permissions(
+    request: Request,
+    resource_id: str = Query(...),
+    db: Session = Depends(get_db)
+):
+    return success(ResourceService(db).get_permission_ids(resource_id))
+
+
+@router.post(
+    "/api/v1/sys/resource/bind-permissions",
+    summary="绑定权限到资源（覆盖式替换）",
+    response_model=Result
+)
+@HeiCheckPermission("sys:resource:modify")
+async def resource_bind_permissions(
+    request: Request,
+    param: BindPermissionParam,
+    db: Session = Depends(get_db)
+):
+    await ResourceService(db).bind_permissions(
+        param.resource_id, param.permission_ids, request
+    )
+    return success()

@@ -228,6 +228,25 @@ CREATE TABLE `sys_resource`
   ROW_FORMAT = Dynamic;
 
 -- =============================================================================
+-- 资源-权限关联
+-- =============================================================================
+DROP TABLE IF EXISTS `ral_resource_permission`;
+CREATE TABLE `ral_resource_permission`
+(
+    `id`            varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
+    `resource_id`   varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '资源ID',
+    `permission_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '权限ID',
+    `is_deleted`    varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
+    `created_at`    datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
+    `created_by`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
+    PRIMARY KEY (`id`) USING BTREE,
+    UNIQUE INDEX `uk_resource_permission` (`resource_id`, `permission_id`) USING BTREE,
+    INDEX `idx_permission_id` (`permission_id`) USING BTREE
+) ENGINE = InnoDB
+  CHARACTER SET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '资源-权限关联';
+
+-- =============================================================================
 -- 模块
 -- =============================================================================
 DROP TABLE IF EXISTS `sys_module`;

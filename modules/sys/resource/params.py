@@ -132,6 +132,11 @@ class ResourceImportParam(BaseModel):
     data: List[ResourceVO]
 
 
+class BindPermissionParam(BaseModel):
+    resource_id: str
+    permission_ids: List[str]
+
+
 class ModulePageParam(PageBounds):
     pass
 

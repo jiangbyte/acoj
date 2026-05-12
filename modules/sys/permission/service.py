@@ -117,3 +117,13 @@ class PermissionService:
         """Get all permissions under a module from Redis cache."""
         from core.auth.permission_scan import get_permissions_by_module_from_redis
         return await get_permissions_by_module_from_redis(module)
+
+    def list_all(self) -> List[dict]:
+        """Get all non-deleted permissions from DB (id, code, name, module)."""
+        from sqlalchemy import select
+        rows = self.db.execute(
+            select(SysPermission.id, SysPermission.code, SysPermission.name, SysPermission.module)
+            .where(SysPermission.is_deleted == SoftDeleteEnum.NO, SysPermission.status == 'ENABLED')
+            .order_by(SysPermission.sort_code)
+        ).all()
+        return [{"id": r[0], "code": r[1], "name": r[2], "module": r[3]} for r in rows]

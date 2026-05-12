@@ -66,6 +66,22 @@ class RoleService:
         created_by = await self._get_current_user_id(request)
         self.dao.grant_resources(param.role_id, param.resource_ids, created_by)
 
+        # Auto-grant permissions linked via ral_resource_permission
+        from modules.sys.resource.models import RalResourcePermission as _RRP
+        from core.enums import SoftDeleteEnum as _SDE
+        linked = self.dao.db.query(_RRP.permission_id).filter(
+            _RRP.resource_id.in_(param.resource_ids),
+            _RRP.is_deleted == _SDE.NO,
+        ).distinct().all()
+        if linked:
+            from .params import PermissionItem
+            pids = list(dict.fromkeys(r[0] for r in linked))
+            self.dao.grant_permissions(
+                param.role_id,
+                [PermissionItem(id=pid, scope="ALL") for pid in pids],
+                created_by,
+            )
+
     def get_role_permission_ids(self, role_id: str) -> List[str]:
         return self.dao.get_permission_ids_by_role_id(role_id)
 
