@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { fetchPositionDetail, fetchPositionCreate, fetchPositionModify } from '@/api/position'
+import { positionApi } from '@/api/position'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -66,7 +66,7 @@ async function doOpen(row?: any, defaultGroupId?: string) {
   if (row) {
     isEdit.value = true
     currentId.value = row.id
-    const { data } = await fetchPositionDetail({ id: row.id })
+    const { data } = await positionApi.detail({ id: row.id })
     if (data) {
       Object.assign(form, data)
     }
@@ -81,9 +81,9 @@ async function doOpen(row?: any, defaultGroupId?: string) {
 
 async function handleSubmit(f: any) {
   if (currentId.value) {
-    return await fetchPositionModify({ ...f, id: currentId.value })
+    return await positionApi.modify({ ...f, id: currentId.value })
   } else {
-    return await fetchPositionCreate(f)
+    return await positionApi.create(f)
   }
 }
 

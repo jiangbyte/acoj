@@ -30,7 +30,7 @@
     <AppTable
       ref="tableRef"
       :columns="columns"
-      :fetch-data="fetchUserPage"
+      :fetch-data="userApi.page"
       :search-form="searchForm"
       :row-selection="rowSelection"
     >
@@ -142,13 +142,7 @@ import {
   DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
-import {
-  fetchUserPage,
-  fetchUserRemove,
-  fetchUserExport,
-  fetchUserTemplate,
-  fetchUserImport,
-} from '@/api/user'
+import { userApi } from '@/api/user'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
@@ -207,7 +201,7 @@ function openGrantRole(record: any) { grantRoleRef.value?.doOpen(record) }
 function openGrantPermission(record: any) { grantPermissionRef.value?.doOpen(record) }
 
 async function handleDelete(id: string) {
-  const { success } = await fetchUserRemove({ ids: [id] })
+  const { success } = await userApi.remove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     tableRef.value?.refresh()
@@ -218,7 +212,7 @@ function handleBatchDelete() {
   confirmDelete({
     name: '用户',
     selectedKeys: selectedKeys.value,
-    deleteApi: fetchUserRemove,
+    deleteApi: userApi.remove,
     onSuccess: () => {
       selectedKeys.value = []
       tableRef.value?.refresh()
@@ -246,7 +240,7 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await fetchUserTemplate()
+    const blob = await userApi.template()
     downloadBlob(blob, '用户导入模板.xlsx')
   } catch {
     message.error('下载模板失败')
@@ -257,7 +251,7 @@ async function handleDownloadTemplate() {
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await fetchUserExport(params)
+    const blob = await userApi.export(params)
     downloadBlob(blob, `用户数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
@@ -268,7 +262,7 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await fetchUserImport(file)
+    const { success, data } = await userApi.importFile(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')

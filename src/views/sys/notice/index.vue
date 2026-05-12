@@ -29,7 +29,7 @@
     <AppTable
       ref="tableRef"
       :columns="columns"
-      :fetch-data="fetchNoticePage"
+      :fetch-data="noticeApi.page"
       :search-form="searchForm"
       :row-selection="rowSelection"
     >
@@ -132,13 +132,7 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
-import {
-  fetchNoticePage,
-  fetchNoticeRemove,
-  fetchNoticeExport,
-  fetchNoticeTemplate,
-  fetchNoticeImport,
-} from '@/api/notice'
+import { noticeApi } from '@/api/notice'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
@@ -204,7 +198,7 @@ function openEdit(record: any) { formRef.value?.doOpen(record) }
 function openCreate() { formRef.value?.doOpen() }
 
 async function handleDelete(id: string) {
-  const { success } = await fetchNoticeRemove({ ids: [id] })
+  const { success } = await noticeApi.remove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     tableRef.value?.refresh()
@@ -215,7 +209,7 @@ function handleBatchDelete() {
   confirmDelete({
     name: '通知',
     selectedKeys: selectedKeys.value,
-    deleteApi: fetchNoticeRemove,
+    deleteApi: noticeApi.remove,
     onSuccess: () => {
       selectedKeys.value = []
       tableRef.value?.refresh()
@@ -245,7 +239,7 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await fetchNoticeTemplate()
+    const blob = await noticeApi.template()
     downloadBlob(blob, '通知导入模板.xlsx')
   } catch { message.error('下载模板失败') }
   finally { templateLoading.value = false }
@@ -253,7 +247,7 @@ async function handleDownloadTemplate() {
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await fetchNoticeExport(params)
+    const blob = await noticeApi.export(params)
     downloadBlob(blob, `通知数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
@@ -262,7 +256,7 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await fetchNoticeImport(file)
+    const { success, data } = await noticeApi.importFile(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')

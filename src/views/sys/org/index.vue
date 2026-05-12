@@ -42,7 +42,7 @@
         <AppTable
           ref="tableRef"
           :columns="columns"
-          :fetch-data="fetchOrgPage"
+          :fetch-data="orgApi.page"
           :search-form="searchForm"
           :row-selection="rowSelection"
         >
@@ -195,14 +195,7 @@ import {
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import { useRouter } from 'vue-router'
-import {
-  fetchOrgPage,
-  fetchOrgTree,
-  fetchOrgRemove,
-  fetchOrgExport,
-  fetchOrgTemplate,
-  fetchOrgImport,
-} from '@/api/org'
+import { orgApi } from '@/api/org'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppSplitPanel from '@/components/layout/AppSplitPanel.vue'
 import AppTable from '@/components/table/AppTable.vue'
@@ -265,7 +258,7 @@ watch(treeSearchKey, (val) => {
 async function loadTree() {
   treeLoading.value = true
   try {
-    const { data } = await fetchOrgTree({})
+    const { data } = await orgApi.tree({})
     treeDataOrigin.value = data || []
     treeData.value = data || []
   } finally {
@@ -319,7 +312,7 @@ function openCreate(parent?: any) {
 }
 
 async function handleDelete(id: string) {
-  const { success } = await fetchOrgRemove({ ids: [id] })
+  const { success } = await orgApi.remove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     tableRef.value?.refresh()
@@ -331,7 +324,7 @@ function handleBatchDelete() {
   confirmDelete({
     name: '组织',
     selectedKeys: selectedKeys.value,
-    deleteApi: fetchOrgRemove,
+    deleteApi: orgApi.remove,
     onSuccess: () => {
       selectedKeys.value = []
       tableRef.value?.refresh()
@@ -366,7 +359,7 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await fetchOrgTemplate()
+    const blob = await orgApi.template()
     downloadBlob(blob, '组织导入模板.xlsx')
   } catch {
     message.error('下载模板失败')
@@ -377,7 +370,7 @@ async function handleDownloadTemplate() {
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await fetchOrgExport(params)
+    const blob = await orgApi.export(params)
     downloadBlob(blob, `组织数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
@@ -388,7 +381,7 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await fetchOrgImport(file)
+    const { success, data } = await orgApi.importFile(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')

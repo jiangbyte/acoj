@@ -55,7 +55,7 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { fetchDictDetail, fetchDictCreate, fetchDictModify, fetchDictTree } from '@/api/dict'
+import { dictApi } from '@/api/dict'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -87,7 +87,7 @@ const initialForm = () => ({
 const form = reactive(initialForm())
 
 async function loadTree() {
-  const { data } = await fetchDictTree({})
+  const { data } = await dictApi.tree({})
   treeData.value = [
     { id: '0', label: '顶级', children: data || [] },
   ]
@@ -98,7 +98,7 @@ async function doOpen(row?: any, parentId?: string) {
   if (row) {
     isEdit.value = true
     currentId.value = row.id
-    const { data } = await fetchDictDetail({ id: row.id })
+    const { data } = await dictApi.detail({ id: row.id })
     if (data) Object.assign(form, data)
   } else {
     isEdit.value = false
@@ -111,9 +111,9 @@ async function doOpen(row?: any, parentId?: string) {
 
 async function handleSubmit(f: any) {
   if (currentId.value) {
-    return await fetchDictModify({ ...f, id: currentId.value })
+    return await dictApi.modify({ ...f, id: currentId.value })
   } else {
-    return await fetchDictCreate(f)
+    return await dictApi.create(f)
   }
 }
 

@@ -77,7 +77,7 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { fetchResourceDetail, fetchResourceCreate, fetchResourceModify, fetchResourceTree } from '@/api/resource'
+import { resourceApi, fetchResourceTree } from '@/api/resource'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -120,7 +120,7 @@ async function doOpen(row?: any, pId?: string) {
     isEdit.value = true
     currentId.value = row.id
     parentId.value = undefined
-    const { data } = await fetchResourceDetail({ id: row.id })
+    const { data } = await resourceApi.detail({ id: row.id })
     if (data) {
       Object.assign(form, data)
     }
@@ -136,9 +136,9 @@ async function doOpen(row?: any, pId?: string) {
 
 async function handleSubmit(f: any) {
   if (currentId.value) {
-    return await fetchResourceModify({ ...f, id: currentId.value })
+    return await resourceApi.modify({ ...f, id: currentId.value })
   } else {
-    return await fetchResourceCreate(f)
+    return await resourceApi.create(f)
   }
 }
 

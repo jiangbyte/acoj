@@ -1,34 +1,3 @@
-import { request } from '@/utils'
+import { createCrudApi } from '@/utils/http/crud'
 
-export function fetchGroupPage(params: any) {
-  return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/group/page', {
-    params,
-  })
-}
-export function fetchGroupTree(params: any) {
-  return request.Get<Service.ResponseResult>('/api/v1/sys/group/tree', { params })
-}
-
-export function fetchGroupCreate(data: any) {
-  return request.Post<Service.ResponseResult>('/api/v1/sys/group/create', data)
-}
-export function fetchGroupModify(data: any) {
-  return request.Post<Service.ResponseResult>('/api/v1/sys/group/modify', data)
-}
-export function fetchGroupRemove(data: any) {
-  return request.Post<Service.ResponseResult>('/api/v1/sys/group/remove', data)
-}
-export function fetchGroupDetail(params: any) {
-  return request.Get<Service.ResponseResult>('/api/v1/sys/group/detail', { params })
-}
-export function fetchGroupExport(params: any) {
-  return request.Get('/api/v1/sys/group/export', { params, meta: { isBlob: true } }) as Promise<Blob>
-}
-export function fetchGroupTemplate() {
-  return request.Get('/api/v1/sys/group/template', { meta: { isBlob: true } }) as Promise<Blob>
-}
-export function fetchGroupImport(file: File) {
-  const formData = new FormData()
-  formData.append('file', file)
-  return request.Post<Service.ResponseResult>('/api/v1/sys/group/import', formData)
-}
+export const groupApi = createCrudApi({ basePath: '/api/v1/sys/group', hasTree: true })

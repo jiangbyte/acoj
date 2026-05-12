@@ -122,8 +122,8 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { message } from 'ant-design-vue'
 import { fetchRoleGrantPermission, fetchRoleOwnPermissionDetail } from '@/api/role'
 import { fetchPermissionModules, fetchPermissionByModule } from '@/api/permission'
-import { fetchOrgTree } from '@/api/org'
-import { fetchGroupTree } from '@/api/group'
+import { orgApi } from '@/api/org'
+import { groupApi } from '@/api/group'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
@@ -165,8 +165,8 @@ const groupMap = ref<Record<string, string>>({})
 
 async function loadTrees() {
   const [orgRes, groupRes] = await Promise.all([
-    fetchOrgTree({}),
-    fetchGroupTree({}),
+    orgApi.tree({}),
+    groupApi.tree({}),
   ])
   orgTreeData.value = orgRes?.data || []
   groupTreeData.value = groupRes?.data || []

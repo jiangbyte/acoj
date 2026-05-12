@@ -17,7 +17,7 @@
     <AppTable
       ref="tableRef"
       :columns="columns"
-      :fetch-data="fetchPositionPage"
+      :fetch-data="positionApi.page"
       :search-form="searchForm"
       :row-selection="rowSelection"
     >
@@ -112,7 +112,7 @@ import {
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import { useRouter, useRoute } from 'vue-router'
-import { fetchPositionPage, fetchPositionRemove, fetchPositionExport, fetchPositionTemplate, fetchPositionImport } from '@/api/position'
+import { positionApi } from '@/api/position'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
@@ -174,7 +174,7 @@ function goBack() {
 }
 
 async function handleDelete(id: string) {
-  const { success } = await fetchPositionRemove({ ids: [id] })
+  const { success } = await positionApi.remove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     tableRef.value?.refresh()
@@ -185,7 +185,7 @@ function handleBatchDelete() {
   confirmDelete({
     name: '职位',
     selectedKeys: selectedKeys.value,
-    deleteApi: fetchPositionRemove,
+    deleteApi: positionApi.remove,
     onSuccess: () => {
       selectedKeys.value = []
       tableRef.value?.refresh()
@@ -214,7 +214,7 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await fetchPositionTemplate()
+    const blob = await positionApi.template()
     downloadBlob(blob, '职位导入模板.xlsx')
   } catch { message.error('下载模板失败') }
   finally { templateLoading.value = false }
@@ -222,7 +222,7 @@ async function handleDownloadTemplate() {
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await fetchPositionExport(params)
+    const blob = await positionApi.export(params)
     downloadBlob(blob, `职位数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
@@ -231,7 +231,7 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await fetchPositionImport(file)
+    const { success, data } = await positionApi.importFile(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')

@@ -11,7 +11,7 @@
     <AppTable
       ref="tableRef"
       :columns="columns"
-      :fetch-data="fetchConfigPage"
+      :fetch-data="configApi.page"
       :search-form="searchForm"
       :row-selection="rowSelection"
     >
@@ -60,7 +60,7 @@ import { ref, reactive, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
-import { fetchConfigPage, fetchConfigRemove } from '@/api/config'
+import { configApi } from '@/api/config'
 import { confirmDelete } from '@/utils'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
@@ -97,7 +97,7 @@ function openEdit(record: any) { formRef.value?.doOpen(record) }
 function openCreate() { formRef.value?.doOpen() }
 
 async function handleDelete(id: string) {
-  const { success } = await fetchConfigRemove({ ids: [id] })
+  const { success } = await configApi.remove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     tableRef.value?.refresh()
@@ -108,7 +108,7 @@ function handleBatchDelete() {
   confirmDelete({
     name: '配置',
     selectedKeys: selectedKeys.value,
-    deleteApi: fetchConfigRemove,
+    deleteApi: configApi.remove,
     onSuccess: () => {
       selectedKeys.value = []
       tableRef.value?.refresh()

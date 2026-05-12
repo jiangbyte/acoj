@@ -34,7 +34,7 @@ defineOptions({ name: 'UserGrantRole' })
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { message } from 'ant-design-vue'
 import { fetchUserGrantRole, fetchUserOwnRoles } from '@/api/user'
-import { fetchRolePage } from '@/api/role'
+import { roleApi } from '@/api/role'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
@@ -59,7 +59,7 @@ async function loadData() {
   loading.value = true
   try {
     const [rolesRes, ownRes] = await Promise.all([
-      fetchRolePage({ size: 9999 }),
+      roleApi.page({ size: 9999 }),
       fetchUserOwnRoles({ user_id: currentUserId.value }),
     ])
     dataSource.value = (rolesRes?.data?.records || []).map((r: any) => ({
