@@ -22,3 +22,9 @@ export function fetchConfigDetail(params: { id: string }) {
 export function fetchConfigEditBatch(data: { configs: { config_key: string; config_value: string }[] }) {
   return request.Post<Service.ResponseResult>('/api/v1/sys/config/edit-batch', data)
 }
+export function fetchConfigEditByCategory(data: {
+  category: string
+  configs: { config_key: string; config_value: string }[]
+}) {
+  return request.Post<Service.ResponseResult>('/api/v1/sys/config/edit-by-category', data)
+}
