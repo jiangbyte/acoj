@@ -58,12 +58,11 @@ export function createAlovaInstance(
 
         return handleResponseError(response)
       },
-      onError: ((error: any, method: any) => {
+      onError: (error: any, method: any) => {
         const msg = error.message || '网络错误'
         console.error(`[${method.type}] ${method.url}:`, msg)
         message.error(msg)
-        return { success: false, errorType: null, code: 0, message: msg, data: null }
-      }) as (error: any, method: any) => void,
+      },
     },
   })
 }
