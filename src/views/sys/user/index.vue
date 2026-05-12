@@ -279,5 +279,3 @@ async function handleImport(file: File) {
   }
 }
 </script>
-
-<style scoped></style>

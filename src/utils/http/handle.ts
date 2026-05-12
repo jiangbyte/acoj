@@ -41,17 +41,3 @@ export function handleBusinessError(
     data: data[bc.dataKey],
   }
 }
-
-/**
- * 统一成功和失败返回类型
- */
-export function handleServiceResult<T = any>(data: T, success = true): Service.ResponseResult<T> {
-  return {
-    success,
-    errorType: null,
-    code: 0,
-    message: '',
-    data,
-    ...data,
-  } as unknown as Service.ResponseResult<T>
-}
