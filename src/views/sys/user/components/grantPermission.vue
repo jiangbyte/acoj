@@ -117,10 +117,10 @@
 </template>
 
 <script setup lang="ts">
-defineOptions({ name: 'RoleGrantPermission' })
+defineOptions({ name: 'UserGrantPermission' })
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { message } from 'ant-design-vue'
-import { fetchRoleGrantPermission, fetchRoleOwnPermissionDetail } from '@/api/role'
+import { fetchUserGrantPermission, fetchUserOwnPermissionDetail } from '@/api/user'
 import { fetchPermissionModules, fetchPermissionByModule } from '@/api/permission'
 import { fetchOrgTree } from '@/api/org'
 import { fetchGroupTree } from '@/api/group'
@@ -138,7 +138,7 @@ onMounted(() => {
 })
 const drawerWidth = computed(() => (isMobile.value ? '100%' : 800))
 
-const currentRoleId = ref('')
+const currentUserId = ref('')
 const modules = ref<string[]>([])
 const currentModule = ref<string | undefined>(undefined)
 const tableData = ref<any[]>([])
@@ -170,7 +170,6 @@ async function loadTrees() {
   ])
   orgTreeData.value = orgRes?.data || []
   groupTreeData.value = groupRes?.data || []
-  // Build id→name maps
   const buildMap = (nodes: any[], map: Record<string, string>) => {
     nodes?.forEach((n: any) => {
       map[n.id] = n.name
@@ -238,7 +237,7 @@ async function loadPermissions() {
   try {
     const [permsRes, ownRes] = await Promise.all([
       fetchPermissionByModule({ module: currentModule.value }),
-      fetchRoleOwnPermissionDetail({ role_id: currentRoleId.value }),
+      fetchUserOwnPermissionDetail({ user_id: currentUserId.value }),
     ])
     const ownMap: Record<string, any> = {}
     ;(ownRes?.data || []).forEach((item: any) => {
@@ -280,8 +279,8 @@ async function handleSubmit() {
       custom_scope_group_ids: p.customGroupIds?.length ? JSON.stringify(p.customGroupIds) : null,
       custom_scope_org_ids: p.customOrgIds?.length ? JSON.stringify(p.customOrgIds) : null,
     }))
-    const { success } = await fetchRoleGrantPermission({
-      role_id: currentRoleId.value,
+    const { success } = await fetchUserGrantPermission({
+      user_id: currentUserId.value,
       permissions,
     })
     if (success) {
@@ -294,8 +293,8 @@ async function handleSubmit() {
   }
 }
 
-function doOpen(role: any) {
-  currentRoleId.value = role.id
+function doOpen(user: any) {
+  currentUserId.value = user.id
   loadModules()
   loadTrees()
   emit('update:open', true)

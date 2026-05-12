@@ -84,14 +84,6 @@
               <a-space>
                 <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
                 <a-button
-                  v-if="hasPermission('sys:dict:create')"
-                  type="link"
-                  size="small"
-                  @click="openCreate(record)"
-                >
-                  新增子级
-                </a-button>
-                <a-button
                   v-if="hasPermission('sys:dict:modify')"
                   type="link"
                   size="small"
@@ -99,6 +91,19 @@
                 >
                   编辑
                 </a-button>
+                <a-dropdown v-if="hasPermission('sys:dict:create')">
+                  <a-button type="link" size="small">
+                    更多
+                    <DownOutlined />
+                  </a-button>
+                  <template #overlay>
+                    <a-menu>
+                      <a-menu-item @click="openCreate(record)">
+                        新增子级
+                      </a-menu-item>
+                    </a-menu>
+                  </template>
+                </a-dropdown>
                 <a-popconfirm
                   v-if="hasPermission('sys:dict:remove')"
                   title="确定删除该字典？如有子级将一并删除"
@@ -184,6 +189,7 @@ import {
   FolderOutlined,
   BookOutlined,
   CaretDownOutlined,
+  DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import {
@@ -285,7 +291,7 @@ const columns = [
   { title: '状态', dataIndex: 'status', key: 'status', width: 90 },
   { title: '排序', dataIndex: 'sort_code', key: 'sort_code', width: 70 },
   { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 180 },
-  { title: '操作', key: 'action', width: 220, fixed: 'right' },
+  { title: '操作', key: 'action', width: 260, fixed: 'right' },
 ]
 
 // Drawer refs

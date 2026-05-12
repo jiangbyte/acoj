@@ -8,16 +8,6 @@
     @success="emit('success')"
   >
     <template #default>
-      <a-form-item label="所属组织" name="org_id" :rules="[{ required: true, message: '请选择所属组织' }]">
-        <a-tree-select
-          v-model:value="form.org_id"
-          :tree-data="orgTreeData"
-          :field-names="orgTreeFieldNames"
-          placeholder="请先选择所属组织"
-          allow-clear
-          tree-default-expand-all
-        />
-      </a-form-item>
       <a-form-item label="上级用户组" name="parent_id">
         <a-tree-select
           v-model:value="form.parent_id"
@@ -62,7 +52,6 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
 import { fetchGroupDetail, fetchGroupCreate, fetchGroupModify, fetchGroupTree } from '@/api/group'
-import { fetchOrgTree } from '@/api/org'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -70,9 +59,6 @@ const emit = defineEmits(['update:open', 'success'])
 
 const isEdit = ref(false)
 const currentId = ref<string | null>(null)
-
-const orgTreeData = ref<any[]>([])
-const orgTreeFieldNames = { children: 'children', label: 'name', value: 'id' }
 
 const allGroupTreeData = ref<any[]>([])
 const groupTreeFieldNames = { children: 'children', label: 'name', value: 'id' }
@@ -84,13 +70,6 @@ async function loadGroupTreeByOrg(orgId?: string) {
   if (orgId) params.org_id = orgId
   const { data } = await fetchGroupTree(params)
   allGroupTreeData.value = [
-    { id: '0', label: '顶级', children: data || [] },
-  ]
-}
-
-async function loadOrgTree() {
-  const { data } = await fetchOrgTree({})
-  orgTreeData.value = [
     { id: '0', label: '顶级', children: data || [] },
   ]
 }
@@ -123,7 +102,6 @@ watch(() => form.org_id, (newOrg) => {
 })
 
 async function doOpen(row?: any, parentId?: string, orgId?: string) {
-  await loadOrgTree()
   if (row) {
     isEdit.value = true
     currentId.value = row.id

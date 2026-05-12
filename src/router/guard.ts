@@ -56,7 +56,7 @@ export function setupRouterGuard(router: Router) {
         appStore.setLoading(false)
       }
       if (routeStore.isInitAuthRoute) {
-        next({ path: to.fullPath, replace: true })
+        next({ path: to.path, query: to.query, hash: to.hash, replace: true })
         return
       }
     }

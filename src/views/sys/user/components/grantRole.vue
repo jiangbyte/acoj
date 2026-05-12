@@ -14,7 +14,7 @@
         :titles="['可选角色', '已选角色']"
         :render="(item: any) => item.title"
         :row-key="(item: any) => item.key"
-        :list-style="{ width: '100%', height: 420 }"
+        :list-style="{ width: '100%', height: isMobile ? '300px' : '520px' }"
         show-search
         :filter-option="(inputValue: string, item: any) => item.title.includes(inputValue)"
       />

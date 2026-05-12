@@ -68,10 +68,24 @@ const tabStore = useTabStore()
 
 const menuOpen = ref(false)
 
+// Clean up persisted tabs whose routes are no longer visible (e.g. after route changes)
+function cleanupInvisibleTabs() {
+  for (const t of [...tabStore.tabs]) {
+    if (t.affix) continue
+    const resolved = router.resolve(t.path)
+    if (resolved.meta?.visible === false) {
+      tabStore.removeTab(t.key)
+    }
+  }
+}
+
 // Track route changes to add/switch tabs
 watch(
   () => route.path,
   path => {
+    // Remove any persisted tabs for invisible routes
+    cleanupInvisibleTabs()
+
     const title = (route.meta?.title as string) || ''
     const icon = (route.meta?.icon as string) || undefined
     const affix = (route.meta?.affix as boolean) || false

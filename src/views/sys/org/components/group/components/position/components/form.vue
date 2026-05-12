@@ -23,17 +23,7 @@
           <a-select-option value="OTHER">其他</a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item label="所属用户组" name="group_id">
-        <a-tree-select
-          v-model:value="form.group_id"
-          :tree-data="groupTreeData"
-          :field-names="{ children: 'children', label: 'name', value: 'id' }"
-          placeholder="请选择所属用户组"
-          allow-clear
-          tree-default-expand-all
-        />
-      </a-form-item>
-      <a-form-item label="状态" name="status">
+<a-form-item label="状态" name="status">
         <a-select v-model:value="form.status" placeholder="请选择状态">
           <a-select-option value="ENABLED">启用</a-select-option>
           <a-select-option value="DISABLED">禁用</a-select-option>
@@ -52,7 +42,6 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { fetchPositionDetail, fetchPositionCreate, fetchPositionModify } from '@/api/position'
-import { fetchGroupTree } from '@/api/group'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -60,13 +49,6 @@ const emit = defineEmits(['update:open', 'success'])
 
 const isEdit = ref(false)
 const currentId = ref<string | null>(null)
-
-const groupTreeData = ref<any[]>([])
-
-async function loadGroupTree() {
-  const { data } = await fetchGroupTree({})
-  groupTreeData.value = data || []
-}
 
 const initialForm = () => ({
   code: '',
@@ -80,8 +62,7 @@ const initialForm = () => ({
 
 const form = reactive(initialForm())
 
-async function doOpen(row?: any) {
-  await loadGroupTree()
+async function doOpen(row?: any, defaultGroupId?: string) {
   if (row) {
     isEdit.value = true
     currentId.value = row.id
@@ -93,6 +74,7 @@ async function doOpen(row?: any) {
     isEdit.value = false
     currentId.value = null
     Object.assign(form, initialForm())
+    form.group_id = defaultGroupId
   }
   emit('update:open', true)
 }

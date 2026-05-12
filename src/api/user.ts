@@ -52,3 +52,11 @@ export function fetchUserGrantGroup(data: any) {
 export function fetchUserOwnGroups(params: any) {
   return request.Get<Service.ResponseResult>('/api/v1/sys/user/own-groups', { params })
 }
+
+export function fetchUserGrantPermission(data: any) {
+  return request.Post<Service.ResponseResult>('/api/v1/sys/user/grant-permission', data)
+}
+
+export function fetchUserOwnPermissionDetail(params: any) {
+  return request.Get<Service.ResponseResult>('/api/v1/sys/user/own-permission-detail', { params })
+}

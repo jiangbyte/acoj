@@ -56,22 +56,6 @@
           <a-space>
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
-              v-if="hasPermission('sys:resource:create')"
-              type="link"
-              size="small"
-              @click="openCreate(record)"
-            >
-              新增子级
-            </a-button>
-            <a-button
-              v-if="hasPermission('sys:resource:modify') && record.type !== 'BUTTON'"
-              type="link"
-              size="small"
-              @click="openButtonManager(record)"
-            >
-              权限按钮
-            </a-button>
-            <a-button
               v-if="hasPermission('sys:resource:modify')"
               type="link"
               size="small"
@@ -79,6 +63,25 @@
             >
               编辑
             </a-button>
+            <a-dropdown v-if="hasPermission('sys:resource:create') && record.type === 'DIRECTORY' || (hasPermission('sys:resource:modify') && record.type === 'MENU')">
+              <a-button type="link" size="small">
+                更多
+                <DownOutlined />
+              </a-button>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item v-if="hasPermission('sys:resource:create') && record.type === 'DIRECTORY'" @click="openCreate(record)">
+                    新增子级
+                  </a-menu-item>
+                  <a-menu-item
+                    v-if="hasPermission('sys:resource:modify') && record.type === 'MENU'"
+                    @click="openButtonManager(record)"
+                  >
+                    权限按钮
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
             <a-popconfirm
               v-if="hasPermission('sys:resource:remove')"
               title="确定删除该资源？子级将一并删除"
@@ -123,6 +126,7 @@ import {
   DeleteOutlined,
   UploadOutlined,
   DownloadOutlined,
+  DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import {
@@ -213,7 +217,7 @@ const columns = [
   { title: '路由路径', dataIndex: 'route_path', key: 'route_path', width: 200, ellipsis: true },
   { title: '排序', dataIndex: 'sort_code', key: 'sort_code', width: 70 },
   { title: '状态', dataIndex: 'status', key: 'status', width: 90 },
-  { title: '操作', key: 'action', width: 240, fixed: 'right' },
+  { title: '操作', key: 'action', width: 260, fixed: 'right' },
 ]
 
 // ── Drawers ──

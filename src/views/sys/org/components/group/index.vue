@@ -2,25 +2,32 @@
   <AppSplitPanel ref="splitRef" v-model:collapsed="splitCollapsed" :initial-size="280" :min-size="200" :max-size="400" :md="0">
     <template #left>
       <a-card size="small" class="h-full flex flex-col max-md:hidden" :body-style="{ flex: '1', overflow: 'auto', padding: '12px' }">
-        <a-input-search v-model:value="orgSearchKey" placeholder="搜索组织" allow-clear class="mb-2" />
-        <a-spin :spinning="orgTreeLoading">
+        <a-input-search v-model:value="groupSearchKey" placeholder="搜索用户组" allow-clear class="mb-2" />
+        <a-spin :spinning="groupTreeLoading">
           <a-tree
-            v-if="orgTreeData.length"
-            v-model:expanded-keys="orgExpandedKeys"
-            :tree-data="orgTreeData"
+            v-if="groupTreeData.length"
+            v-model:expanded-keys="groupExpandedKeys"
+            :tree-data="groupTreeData"
             :field-names="{ children: 'children', title: 'name', key: 'id' }"
-            :selected-keys="selectedOrgKeys"
+            :selected-keys="selectedGroupKeys"
             block-node
             show-line
             class="mb-3"
-            @select="handleOrgSelect"
-          />
+            @select="handleGroupSelect"
+          >
+          </a-tree>
           <div v-else class="text-center text-gray-400 py-8">暂无数据</div>
         </a-spin>
       </a-card>
     </template>
     <template #right>
       <div class="flex flex-col h-full overflow-auto gap-2">
+        <div class="flex items-center gap-2 mb-1">
+          <a-button type="text" size="small" @click="router.push('/sys/org')">
+            <template #icon><ArrowLeftOutlined /></template>
+            返回组织管理
+          </a-button>
+        </div>
         <AppSearchPanel :model="searchForm" @search="handleSearch" @reset="resetSearch">
             <a-button type="text" size="small" class="max-md:hidden" @click="splitRef?.toggleCollapse()">
               <template #icon>
@@ -29,19 +36,7 @@
             </a-button>
           <a-col :xs="24" :sm="12" :md="8" :lg="6">
             <a-form-item label="关键词" name="keyword">
-              <a-input v-model:value="searchForm.keyword" placeholder="职位名称" allow-clear />
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12" :md="8" :lg="6">
-            <a-form-item label="所属用户组" name="group_id">
-              <a-tree-select
-                v-model:value="searchForm.group_id"
-                :tree-data="groupTreeSelectData"
-                :field-names="{ children: 'children', label: 'name', value: 'id' }"
-                placeholder="全部"
-                allow-clear
-                tree-default-expand-all
-              />
+              <a-input v-model:value="searchForm.keyword" placeholder="用户组名称" allow-clear />
             </a-form-item>
           </a-col>
             <a-button type="text" size="small" class="md:hidden" @click="mobileTreeOpen = true">
@@ -49,20 +44,22 @@
             </a-button>
         </AppSearchPanel>
 
-        <AppTable
-          ref="tableRef"
+        <AppTreeTable
+          ref="treeTableRef"
           :columns="columns"
-          :fetch-data="fetchPositionPage"
-          :search-form="searchForm"
+          :data-source="treeTableData"
+          :loading="treeTableLoading"
           :row-selection="rowSelection"
+          default-expand-all
+          @refresh="loadGroupTree"
         >
           <template #toolbar>
-            <a-button v-if="hasPermission('sys:position:create')" type="primary" @click="openCreate">
+            <a-button v-if="hasPermission('sys:group:create')" type="primary" @click="openCreate">
               <template #icon><PlusOutlined /></template>
-              新增职位
+              新增用户组
             </a-button>
             <a-button
-              v-if="hasPermission('sys:position:remove')"
+              v-if="hasPermission('sys:group:remove')"
               danger
               :disabled="selectedKeys.length === 0"
               @click="handleBatchDelete"
@@ -70,11 +67,11 @@
               <template #icon><DeleteOutlined /></template>
               批量删除
             </a-button>
-            <a-button v-if="hasPermission('sys:position:import')" @click="importOpen = true">
+            <a-button v-if="hasPermission('sys:group:import')" @click="importOpen = true">
               <template #icon><UploadOutlined /></template>
               导入
             </a-button>
-            <a-button v-if="hasPermission('sys:position:export')" @click="exportOpen = true">
+            <a-button v-if="hasPermission('sys:group:export')" @click="exportOpen = true">
               <template #icon><DownloadOutlined /></template>
               导出
             </a-button>
@@ -93,16 +90,32 @@
               <a-space>
                 <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
                 <a-button
-                  v-if="hasPermission('sys:position:modify')"
+                  v-if="hasPermission('sys:group:modify')"
                   type="link"
                   size="small"
                   @click="openEdit(record)"
                 >
                   编辑
                 </a-button>
+                <a-dropdown v-if="hasPermission('sys:group:create')">
+                  <a-button type="link" size="small">
+                    更多
+                    <DownOutlined />
+                  </a-button>
+                  <template #overlay>
+                    <a-menu>
+                      <a-menu-item v-if="hasPermission('sys:group:create')" @click="openCreate(record)">
+                        新增子级
+                      </a-menu-item>
+                      <a-menu-item @click="goToPosition(record)">
+                        职位管理
+                      </a-menu-item>
+                    </a-menu>
+                  </template>
+                </a-dropdown>
                 <a-popconfirm
-                  v-if="hasPermission('sys:position:remove')"
-                  title="确定删除该职位？"
+                  v-if="hasPermission('sys:group:remove')"
+                  title="确定删除该用户组？如有子级将一并删除"
                   @confirm="handleDelete(record.id)"
                 >
                   <a-button type="link" danger size="small">删除</a-button>
@@ -110,12 +123,12 @@
               </a-space>
             </template>
           </template>
-        </AppTable>
+        </AppTreeTable>
 
         <AppImportModal
           ref="importModalRef"
           :open="importOpen"
-          template-text="下载职位导入模板"
+          template-text="下载用户组导入模板"
           :template-loading="templateLoading"
           @close="importOpen = false"
           @download-template="handleDownloadTemplate"
@@ -137,29 +150,27 @@
 
   <a-drawer
     :open="mobileTreeOpen"
-    title="组织"
+    title="用户组"
     placement="left"
-    :width="280"
+    :width="300"
     destroy-on-close
     @close="mobileTreeOpen = false"
   >
-    <a-input-search v-model:value="orgSearchKey" placeholder="搜索组织" allow-clear class="mb-2" />
-    <a-spin :spinning="orgTreeLoading">
+    <a-input-search v-model:value="groupSearchKey" placeholder="搜索用户组" allow-clear class="mb-2" />
+    <a-spin :spinning="groupTreeLoading">
       <a-tree
-        v-if="orgTreeData.length"
-        v-model:expanded-keys="orgExpandedKeys"
-        :tree-data="orgTreeData"
+        v-if="groupTreeData.length"
+        v-model:expanded-keys="groupExpandedKeys"
+        :tree-data="groupTreeData"
         :field-names="{ children: 'children', title: 'name', key: 'id' }"
-        :selected-keys="selectedOrgKeys"
+        :selected-keys="selectedGroupKeys"
         block-node
         show-line
-        @select="handleOrgSelect"
+        class="mb-3"
+        @select="handleGroupSelect"
       >
         <template #switcherIcon="{ expanded }">
           <CaretDownOutlined :class="expanded ? '' : '-rotate-90'" class="text-[12px]" />
-        </template>
-        <template #icon>
-          <BankOutlined class="text-[var(--primary-color)]" />
         </template>
       </a-tree>
       <div v-else class="text-center text-gray-400 py-8">暂无数据</div>
@@ -168,7 +179,7 @@
 </template>
 
 <script setup lang="ts">
-defineOptions({ name: 'SysPosition' })
+defineOptions({ name: 'OrgGroupManagement' })
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import {
@@ -179,16 +190,22 @@ import {
   DoubleLeftOutlined,
   DoubleRightOutlined,
   FolderOutlined,
-  BankOutlined,
   CaretDownOutlined,
+  ArrowLeftOutlined,
+  DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
-import { fetchPositionPage, fetchPositionRemove, fetchPositionExport, fetchPositionTemplate, fetchPositionImport } from '@/api/position'
-import { fetchOrgTree } from '@/api/org'
-import { fetchGroupTree } from '@/api/group'
+import { useRouter, useRoute } from 'vue-router'
+import {
+  fetchGroupTree,
+  fetchGroupRemove,
+  fetchGroupExport,
+  fetchGroupTemplate,
+  fetchGroupImport,
+} from '@/api/group'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppSplitPanel from '@/components/layout/AppSplitPanel.vue'
-import AppTable from '@/components/table/AppTable.vue'
+import AppTreeTable from '@/components/table/AppTreeTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import AppImportModal from '@/components/modal/AppImportModal.vue'
 import AppExportModal from '@/components/modal/AppExportModal.vue'
@@ -197,32 +214,35 @@ import FormDrawer from './components/form.vue'
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
-const tableRef = ref()
+const router = useRouter()
+const route = useRoute()
+const treeTableRef = ref()
 const splitRef = ref()
 const splitCollapsed = ref(false)
 const mobileTreeOpen = ref(false)
 
+const orgId = ref('')
+
 const categoryMap: Record<string, string> = {
-  MANAGEMENT: '管理',
-  TECH: '技术',
-  OPERATIONS: '运营',
-  SALES: '销售',
+  ROLE: '角色组',
+  DEPT: '部门组',
+  PROJECT: '项目组',
   OTHER: '其他',
 }
 
-// ── Org tree ──
-const orgTreeLoading = ref(false)
-const orgTreeData = ref<any[]>([])
-const orgTreeDataOrigin = ref<any[]>([])
-const orgExpandedKeys = ref<string[]>([])
-const selectedOrgKeys = ref<string[]>([])
-const orgSearchKey = ref('')
+// ── Left group tree ──
+const groupTreeLoading = ref(false)
+const allGroupTreeData = ref<any[]>([]) // full tree for left panel
+const groupTreeData = ref<any[]>([]) // filtered for display
+const groupExpandedKeys = ref<string[]>([])
+const selectedGroupKeys = ref<string[]>([])
+const groupSearchKey = ref('')
 
-function filterOrgTree(nodes: any[], keyword: string): any[] {
+function filterGroupTreeByKeyword(nodes: any[], keyword: string): any[] {
   if (!keyword) return nodes
   return nodes.reduce((acc: any[], node) => {
     const match = node.name?.includes(keyword)
-    const filteredChildren = node.children ? filterOrgTree(node.children, keyword) : []
+    const filteredChildren = node.children ? filterGroupTreeByKeyword(node.children, keyword) : []
     if (match || filteredChildren.length > 0) {
       acc.push({ ...node, children: filteredChildren })
     }
@@ -230,35 +250,108 @@ function filterOrgTree(nodes: any[], keyword: string): any[] {
   }, [])
 }
 
-watch(orgSearchKey, (val) => {
-  orgTreeData.value = filterOrgTree(orgTreeDataOrigin.value, val)
+watch(groupSearchKey, (val) => {
+  groupTreeData.value = filterGroupTreeByKeyword(allGroupTreeData.value, val)
   if (val) {
     const getAllKeys = (nodes: any[]): string[] => nodes.reduce((keys: string[], n) => {
       keys.push(n.id)
       if (n.children) keys.push(...getAllKeys(n.children))
       return keys
     }, [])
-    orgExpandedKeys.value = getAllKeys(orgTreeData.value)
+    groupExpandedKeys.value = getAllKeys(groupTreeData.value)
   }
 })
 
-async function loadOrgTree() {
-  orgTreeLoading.value = true
+function extractSubtree(nodes: any[], id: string): any[] {
+  if (!id) return nodes
+  for (const node of nodes) {
+    if (node.id === id) return [{ ...node }]
+    if (node.children) {
+      const result = extractSubtree(node.children, id)
+      if (result.length > 0) return result
+    }
+  }
+  return []
+}
+
+async function loadLeftGroupTree() {
+  groupTreeLoading.value = true
   try {
-    const { data } = await fetchOrgTree({})
-    orgTreeDataOrigin.value = data || []
-    orgTreeData.value = data || []
+    const { data } = await fetchGroupTree({ org_id: orgId.value || undefined })
+    allGroupTreeData.value = data || []
+    groupTreeData.value = data || []
   } finally {
-    orgTreeLoading.value = false
+    groupTreeLoading.value = false
   }
 }
 
-// ── Search ──
+// ── Tree table ──
+const treeTableLoading = ref(false)
+const treeTableData = ref<any[]>([])
+const selectedGroupNode = ref<any>(null)
+
+function filterTreeTableByKeyword(nodes: any[], keyword: string): any[] {
+  if (!keyword) return nodes
+  return nodes.reduce((acc: any[], node) => {
+    const match = node.name?.includes(keyword)
+    const filteredChildren = node.children ? filterTreeTableByKeyword(node.children, keyword) : []
+    if (match || filteredChildren.length > 0) {
+      acc.push({ ...node, children: filteredChildren })
+    }
+    return acc
+  }, [])
+}
+
+async function loadGroupTree() {
+  treeTableLoading.value = true
+  try {
+    const { data } = await fetchGroupTree({ org_id: orgId.value || undefined })
+    const fullTree = data || []
+    if (selectedGroupKeys.value.length > 0) {
+      treeTableData.value = filterTreeTableByKeyword(
+        extractSubtree(fullTree, selectedGroupKeys.value[0]),
+        searchForm.keyword
+      )
+    } else {
+      treeTableData.value = filterTreeTableByKeyword(fullTree, searchForm.keyword)
+    }
+  } finally {
+    treeTableLoading.value = false
+  }
+}
+
+// ── Search form ──
 const searchForm = reactive({
   keyword: '',
-  group_id: undefined as string | undefined,
-  org_id: undefined as string | undefined,
 })
+
+// Keyword search — filter tree on client side
+watch(() => searchForm.keyword, (val) => {
+  loadGroupTree()
+})
+
+// ── Group selection ──
+function handleGroupSelect(keys: any[]) {
+  selectedGroupKeys.value = keys
+  selectedGroupNode.value = keys.length > 0 ? null : null
+  mobileTreeOpen.value = false
+  loadGroupTree()
+  // Preserve state in URL for refresh
+  const query: Record<string, string> = {}
+  if (orgId.value) query.org_id = orgId.value
+  if (keys.length > 0) query.group_id = keys[0]
+  router.replace({ query })
+}
+
+function goToPosition(record: any) {
+  const query: Record<string, string> = { group_id: record.id }
+  if (record.org_id) {
+    query.org_id = record.org_id
+  } else if (orgId.value) {
+    query.org_id = orgId.value
+  }
+  router.push({ path: '/sys/org/group/position', query })
+}
 const selectedKeys = ref<string[]>([])
 const rowSelection = computed(() => ({
   selectedRowKeys: selectedKeys.value,
@@ -266,37 +359,14 @@ const rowSelection = computed(() => ({
 }))
 
 const columns = [
-  { title: '职位名称', dataIndex: 'name', key: 'name', width: 180 },
-  { title: '职位编码', dataIndex: 'code', key: 'code', width: 150, ellipsis: true },
-  { title: '职位类别', dataIndex: 'category', key: 'category', width: 100 },
+  { title: '用户组名称', dataIndex: 'name', key: 'name', width: 180 },
+  { title: '用户组编码', dataIndex: 'code', key: 'code', width: 150, ellipsis: true },
+  { title: '用户组类别', dataIndex: 'category', key: 'category', width: 100 },
   { title: '状态', dataIndex: 'status', key: 'status', width: 90 },
   { title: '排序', dataIndex: 'sort_code', key: 'sort_code', width: 70 },
   { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 180 },
-  { title: '操作', key: 'action', width: 160, fixed: 'right' },
+  { title: '操作', key: 'action', width: 260, fixed: 'right' },
 ]
-
-// ── Org tree selection ──
-function handleOrgSelect(keys: any[]) {
-  selectedOrgKeys.value = keys
-  const orgId = keys.length > 0 ? keys[0] : undefined
-  searchForm.org_id = orgId
-  searchForm.group_id = undefined
-  loadGroupTreeSelect(orgId)
-  mobileTreeOpen.value = false
-  tableRef.value?.refresh(true)
-}
-
-// Group tree data for search panel tree-select
-const groupTreeSelectData = ref<any[]>([])
-
-async function loadGroupTreeSelect(orgId?: string) {
-  try {
-    const params: any = {}
-    if (orgId) params.org_id = orgId
-    const { data } = await fetchGroupTree(params)
-    groupTreeSelectData.value = data || []
-  } catch { /* ignore */ }
-}
 
 // ── Drawers ──
 const detailRef = ref()
@@ -306,41 +376,45 @@ const formOpen = ref(false)
 
 function openDetail(record: any) { detailRef.value?.doOpen(record) }
 function openEdit(record: any) { formRef.value?.doOpen(record) }
-function openCreate() { formRef.value?.doOpen() }
+function openCreate(parent?: any) {
+  formRef.value?.doOpen(undefined, parent?.id, parent?.org_id || orgId.value || undefined)
+}
 
 async function handleDelete(id: string) {
-  const { success } = await fetchPositionRemove({ ids: [id] })
+  const { success } = await fetchGroupRemove({ ids: [id] })
   if (success) {
     message.success('删除成功')
-    tableRef.value?.refresh()
+    loadGroupTree()
   }
 }
 
 function handleBatchDelete() {
   confirmDelete({
-    name: '职位',
+    name: '用户组',
     selectedKeys: selectedKeys.value,
-    deleteApi: fetchPositionRemove,
+    deleteApi: fetchGroupRemove,
     onSuccess: () => {
       selectedKeys.value = []
-      tableRef.value?.refresh()
+      loadGroupTree()
     },
   })
 }
 
 function handleFormSuccess() {
-  tableRef.value?.refresh()
+  loadGroupTree()
 }
 
-function handleSearch() { tableRef.value?.refresh(true) }
+function handleSearch() { loadGroupTree() }
 
 function resetSearch() {
   searchForm.keyword = ''
-  searchForm.group_id = undefined
-  searchForm.org_id = undefined
-  selectedOrgKeys.value = []
-  loadGroupTreeSelect()
-  tableRef.value?.refresh(true)
+  selectedGroupKeys.value = []
+  treeTableRef.value?.clearSelected()
+  loadLeftGroupTree()
+  loadGroupTree()
+  const query: Record<string, string> = {}
+  if (orgId.value) query.org_id = orgId.value
+  router.replace({ query })
 }
 
 // ── Import / Export / Template ──
@@ -352,16 +426,16 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await fetchPositionTemplate()
-    downloadBlob(blob, '职位导入模板.xlsx')
+    const blob = await fetchGroupTemplate()
+    downloadBlob(blob, '用户组导入模板.xlsx')
   } catch { message.error('下载模板失败') }
   finally { templateLoading.value = false }
 }
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await fetchPositionExport(params)
-    downloadBlob(blob, `职位数据_${new Date().toLocaleDateString()}.xlsx`)
+    const blob = await fetchGroupExport(params)
+    downloadBlob(blob, `用户组数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
   } catch { message.error('导出失败') }
@@ -369,11 +443,11 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await fetchPositionImport(file)
+    const { success, data } = await fetchGroupImport(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')
-      tableRef.value?.refresh(true)
+      loadGroupTree()
     }
   } catch {
     importModalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
@@ -381,7 +455,10 @@ async function handleImport(file: File) {
 }
 
 onMounted(() => {
-  loadOrgTree()
-  loadGroupTreeSelect()
+  const { org_id, group_id } = route.query as Record<string, string>
+  if (org_id) orgId.value = org_id
+  if (group_id) selectedGroupKeys.value = [group_id]
+  loadLeftGroupTree()
+  loadGroupTree()
 })
 </script>

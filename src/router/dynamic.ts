@@ -14,7 +14,7 @@ export function menusToRoutes(menus: any[]): any[] {
         cache: m.is_cache === 'YES',
         affix: m.is_affix === 'YES',
         breadcrumb: m.is_breadcrumb !== 'NO',
-        visible: m.is_visible !== 'NO',
+        visible: m.is_visible !== 'NO' && m.is_hidden !== 'YES',
       }
 
       if (m.type === 'EXTERNAL_LINK' && m.external_url) {

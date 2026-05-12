@@ -1,14 +1,15 @@
 <template>
   <div class="flex flex-col gap-2">
+    <div class="flex items-center gap-2">
+      <a-button type="text" size="small" @click="goBack">
+        <template #icon><ArrowLeftOutlined /></template>
+        返回用户组管理
+      </a-button>
+    </div>
     <AppSearchPanel :model="searchForm" @search="handleSearch" @reset="resetSearch">
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="关键词" name="keyword">
-          <a-input v-model:value="searchForm.keyword" placeholder="权限名称/编码" allow-clear />
-        </a-form-item>
-      </a-col>
-      <a-col :xs="24" :sm="12" :md="8" :lg="6">
-        <a-form-item label="模块" name="module">
-          <a-input v-model:value="searchForm.module" placeholder="所属模块" allow-clear />
+          <a-input v-model:value="searchForm.keyword" placeholder="职位名称" allow-clear />
         </a-form-item>
       </a-col>
     </AppSearchPanel>
@@ -16,17 +17,17 @@
     <AppTable
       ref="tableRef"
       :columns="columns"
-      :fetch-data="fetchPermissionPage"
+      :fetch-data="fetchPositionPage"
       :search-form="searchForm"
       :row-selection="rowSelection"
     >
       <template #toolbar>
-        <a-button v-if="hasPermission('sys:permission:create')" type="primary" @click="openCreate">
+        <a-button v-if="hasPermission('sys:position:create')" type="primary" @click="openCreate">
           <template #icon><PlusOutlined /></template>
-          新增权限
+          新增职位
         </a-button>
         <a-button
-          v-if="hasPermission('sys:permission:remove')"
+          v-if="hasPermission('sys:position:remove')"
           danger
           :disabled="selectedKeys.length === 0"
           @click="handleBatchDelete"
@@ -34,11 +35,11 @@
           <template #icon><DeleteOutlined /></template>
           批量删除
         </a-button>
-        <a-button v-if="hasPermission('sys:permission:import')" @click="importOpen = true">
+        <a-button v-if="hasPermission('sys:position:import')" @click="importOpen = true">
           <template #icon><UploadOutlined /></template>
           导入
         </a-button>
-        <a-button v-if="hasPermission('sys:permission:export')" @click="exportOpen = true">
+        <a-button v-if="hasPermission('sys:position:export')" @click="exportOpen = true">
           <template #icon><DownloadOutlined /></template>
           导出
         </a-button>
@@ -46,7 +47,7 @@
 
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'category'">
-          <a-tag>{{ record.category === 'BACKEND' ? '后端权限' : '前端权限' }}</a-tag>
+          <a-tag>{{ categoryMap[record.category] || record.category || '-' }}</a-tag>
         </template>
         <template v-else-if="column.key === 'status'">
           <a-tag :color="record.status === 'ENABLED' ? 'green' : 'red'">
@@ -57,7 +58,7 @@
           <a-space>
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
-              v-if="hasPermission('sys:permission:modify')"
+              v-if="hasPermission('sys:position:modify')"
               type="link"
               size="small"
               @click="openEdit(record)"
@@ -65,8 +66,8 @@
               编辑
             </a-button>
             <a-popconfirm
-              v-if="hasPermission('sys:permission:remove')"
-              title="确定删除该权限？"
+              v-if="hasPermission('sys:position:remove')"
+              title="确定删除该职位？"
               @confirm="handleDelete(record.id)"
             >
               <a-button type="link" danger size="small">删除</a-button>
@@ -79,7 +80,7 @@
     <AppImportModal
       ref="importModalRef"
       :open="importOpen"
-      template-text="下载权限导入模板"
+      template-text="下载职位导入模板"
       :template-loading="templateLoading"
       @close="importOpen = false"
       @download-template="handleDownloadTemplate"
@@ -99,23 +100,19 @@
 </template>
 
 <script setup lang="ts">
-defineOptions({ name: 'SysPermission' })
-import { ref, reactive, computed } from 'vue'
+defineOptions({ name: 'OrgPositionManagement' })
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import {
   PlusOutlined,
   DeleteOutlined,
   UploadOutlined,
   DownloadOutlined,
+  ArrowLeftOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
-import {
-  fetchPermissionPage,
-  fetchPermissionRemove,
-  fetchPermissionExport,
-  fetchPermissionTemplate,
-  fetchPermissionImport,
-} from '@/api/permission'
+import { useRouter, useRoute } from 'vue-router'
+import { fetchPositionPage, fetchPositionRemove, fetchPositionExport, fetchPositionTemplate, fetchPositionImport } from '@/api/position'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
@@ -126,12 +123,23 @@ import FormDrawer from './components/form.vue'
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
+const router = useRouter()
+const route = useRoute()
 const tableRef = ref()
+const orgId = ref('')
+
+const categoryMap: Record<string, string> = {
+  MANAGEMENT: '管理',
+  TECH: '技术',
+  OPERATIONS: '运营',
+  SALES: '销售',
+  OTHER: '其他',
+}
 
 // ── Search ──
 const searchForm = reactive({
   keyword: '',
-  module: undefined as string | undefined,
+  group_id: undefined as string | undefined,
 })
 const selectedKeys = ref<string[]>([])
 const rowSelection = computed(() => ({
@@ -140,12 +148,11 @@ const rowSelection = computed(() => ({
 }))
 
 const columns = [
-  { title: '权限名称', dataIndex: 'name', key: 'name', width: 180 },
-  { title: '权限编码', dataIndex: 'code', key: 'code', width: 200, ellipsis: true },
-  { title: '所属模块', dataIndex: 'module', key: 'module', width: 150 },
-  { title: '分类', dataIndex: 'category', key: 'category', width: 100 },
-  { title: '排序', dataIndex: 'sort_code', key: 'sort_code', width: 70 },
+  { title: '职位名称', dataIndex: 'name', key: 'name', width: 180 },
+  { title: '职位编码', dataIndex: 'code', key: 'code', width: 150, ellipsis: true },
+  { title: '职位类别', dataIndex: 'category', key: 'category', width: 100 },
   { title: '状态', dataIndex: 'status', key: 'status', width: 90 },
+  { title: '排序', dataIndex: 'sort_code', key: 'sort_code', width: 70 },
   { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 180 },
   { title: '操作', key: 'action', width: 160, fixed: 'right' },
 ]
@@ -158,10 +165,16 @@ const formOpen = ref(false)
 
 function openDetail(record: any) { detailRef.value?.doOpen(record) }
 function openEdit(record: any) { formRef.value?.doOpen(record) }
-function openCreate() { formRef.value?.doOpen() }
+function openCreate() { formRef.value?.doOpen(undefined, searchForm.group_id) }
+
+function goBack() {
+  const query: Record<string, string> = {}
+  if (orgId.value) query.org_id = orgId.value
+  router.push({ path: '/sys/org/group', query })
+}
 
 async function handleDelete(id: string) {
-  const { success } = await fetchPermissionRemove({ ids: [id] })
+  const { success } = await fetchPositionRemove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     tableRef.value?.refresh()
@@ -170,9 +183,9 @@ async function handleDelete(id: string) {
 
 function handleBatchDelete() {
   confirmDelete({
-    name: '权限',
+    name: '职位',
     selectedKeys: selectedKeys.value,
-    deleteApi: fetchPermissionRemove,
+    deleteApi: fetchPositionRemove,
     onSuccess: () => {
       selectedKeys.value = []
       tableRef.value?.refresh()
@@ -188,7 +201,7 @@ function handleSearch() { tableRef.value?.refresh(true) }
 
 function resetSearch() {
   searchForm.keyword = ''
-  searchForm.module = undefined
+  searchForm.group_id = undefined
   tableRef.value?.refresh(true)
 }
 
@@ -201,16 +214,16 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await fetchPermissionTemplate()
-    downloadBlob(blob, '权限导入模板.xlsx')
+    const blob = await fetchPositionTemplate()
+    downloadBlob(blob, '职位导入模板.xlsx')
   } catch { message.error('下载模板失败') }
   finally { templateLoading.value = false }
 }
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await fetchPermissionExport(params)
-    downloadBlob(blob, `权限数据_${new Date().toLocaleDateString()}.xlsx`)
+    const blob = await fetchPositionExport(params)
+    downloadBlob(blob, `职位数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
   } catch { message.error('导出失败') }
@@ -218,7 +231,7 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await fetchPermissionImport(file)
+    const { success, data } = await fetchPositionImport(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')
@@ -228,4 +241,14 @@ async function handleImport(file: File) {
     importModalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
   }
 }
+
+onMounted(() => {
+  // Read params from query (navigated from group management)
+  const { org_id, group_id } = route.query as Record<string, string>
+  if (org_id) orgId.value = org_id
+  if (group_id) {
+    searchForm.group_id = group_id
+    tableRef.value?.refresh(true)
+  }
+})
 </script>
