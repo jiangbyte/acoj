@@ -5,24 +5,24 @@ interface CrudConfig {
   hasTree?: boolean
 }
 
-export function createCrudApi(config: CrudConfig) {
+export function createCrudApi<T = any>(config: CrudConfig) {
   const { basePath, hasTree } = config
 
   return {
     page(params: any) {
-      return request.Get<Service.ResponseResult<Service.PageResult>>(`${basePath}/page`, { params })
+      return request.Get<Service.ResponseResult<Service.PageResult<T>>>(`${basePath}/page`, { params })
     },
     create(data: any) {
-      return request.Post<Service.ResponseResult>(`${basePath}/create`, data)
+      return request.Post<Service.ResponseResult<T>>(`${basePath}/create`, data)
     },
     modify(data: any) {
-      return request.Post<Service.ResponseResult>(`${basePath}/modify`, data)
+      return request.Post<Service.ResponseResult<T>>(`${basePath}/modify`, data)
     },
     remove(data: { ids: string[] }) {
       return request.Post<Service.ResponseResult>(`${basePath}/remove`, data)
     },
-    detail(params: { id: string }) {
-      return request.Get<Service.ResponseResult>(`${basePath}/detail`, { params })
+    detail(params: { id: string; [key: string]: any }) {
+      return request.Get<Service.ResponseResult<T>>(`${basePath}/detail`, { params })
     },
     export(params: any) {
       return request.Get(`${basePath}/export`, { params, meta: { isBlob: true } }) as Promise<Blob>
