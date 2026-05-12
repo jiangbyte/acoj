@@ -162,7 +162,6 @@ class FileService:
 
         thumbnail = _generate_thumbnail(data, suffix) if suffix in IMAGE_EXTENSIONS else None
 
-        now_dt = datetime.now()
         user_id = self._get_current_user_id(request)
         entity = SysFile(
             id=file_id,
@@ -178,10 +177,7 @@ class FileService:
             download_path=storage.get_url(bucket, file_key),
             is_download_auth=0,
             thumbnail=thumbnail,
-            is_deleted="NO",
-            created_at=now_dt,
             created_by=user_id,
-            updated_at=now_dt,
         )
         self.dao.insert(entity)
         return {

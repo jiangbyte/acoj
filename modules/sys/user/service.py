@@ -1,6 +1,5 @@
 from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 from fastapi import Request
 from .models import SysUser
 from .params import UserVO, UserPageParam, UserExportParam, UserImportParam, GrantRoleParam, GrantGroupParam, GrantUserPermissionParam
@@ -8,16 +7,12 @@ from .dao import UserDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum, SoftDeleteEnum
+from core.enums import ExportTypeEnum
 from core.utils import export_excel, strip_system_fields, apply_update, make_template
 from core.auth import HeiAuthTool, LoginUserInfo
-from core.db.redis import get_client
-from modules.sys.resource.models import SysResource
-from modules.sys.role.models import RalRolePermission, RalRoleResource
-from modules.sys.user.models import RalUserRole, RalUserGroup
-from modules.sys.org.models import RalOrgRole
-import json
 import logging
+
+from ..resource import SysResource
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +20,6 @@ logger = logging.getLogger(__name__)
 class UserService:
     def __init__(self, db: Session):
         self.dao = UserDao(db)
-        self.db = db
 
     async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:
@@ -36,19 +30,13 @@ class UserService:
             return None
 
     def find_by_id(self, user_id: str) -> Optional[SysUser]:
-        return self.db.execute(
-            select(SysUser).where(SysUser.id == user_id, SysUser.is_deleted == SoftDeleteEnum.NO)
-        ).scalar_one_or_none()
+        return self.dao.find_by_id(user_id)
 
     def find_by_account(self, account: str) -> Optional[SysUser]:
-        return self.db.execute(
-            select(SysUser).where(SysUser.account == account, SysUser.is_deleted == SoftDeleteEnum.NO)
-        ).scalar_one_or_none()
+        return self.dao.find_by_account(account)
 
     def find_by_email(self, email: str) -> Optional[SysUser]:
-        return self.db.execute(
-            select(SysUser).where(SysUser.email == email, SysUser.is_deleted == SoftDeleteEnum.NO)
-        ).scalar_one_or_none()
+        return self.dao.find_by_email(email)
 
     def to_login_user_info(self, entity: Optional[SysUser]) -> Optional[LoginUserInfo]:
         if not entity:
@@ -72,60 +60,60 @@ class UserService:
 
     def page(self, param: UserPageParam) -> dict:
         result = self.dao.find_page(param)
-        records = []
-        for r in result["records"]:
+        records = result["records"]
+        user_ids = [r.id for r in records]
+        role_map = self.dao.get_role_ids_map_by_user_ids(user_ids)
+        group_map = self.dao.get_group_ids_map_by_user_ids(user_ids)
+        vo_list = []
+        for r in records:
             vo = UserVO.model_validate(r).model_dump()
-            self._enrich_vo(r.id, vo)
-            records.append(vo)
+            vo["role_ids"] = role_map.get(r.id, [])
+            vo["group_ids"] = group_map.get(r.id, [])
+            vo_list.append(vo)
         return page_data(
-            records=records,
+            records=vo_list,
             total=result["total"],
             page=param.current,
             size=param.size
         )
 
     def _enrich_vo(self, user_id: str, vo: dict):
-        """Add relation IDs to VO"""
+        """Add relation IDs to VO (single-user, for detail())."""
         vo["role_ids"] = self.dao.get_role_ids_by_user_id(user_id)
         vo["group_ids"] = self.dao.get_group_ids_by_user_id(user_id)
 
     async def create(self, vo: UserVO, request: Optional[Request] = None) -> None:
-        created_by = await self._get_current_user_id(request)
-
         if vo.account and self.find_by_account(vo.account):
             raise BusinessException("账号已存在")
         if vo.email and self.find_by_email(vo.email):
             raise BusinessException("邮箱已存在")
 
         entity = SysUser(**strip_system_fields(vo.model_dump(), extra_fields={'role_ids', 'group_ids'}))
-        entity.created_by = created_by
-        self.dao.insert(entity)
+        user_id = await self._get_current_user_id(request)
+        self.dao.insert(entity, user_id=user_id)
 
         # Grant roles/groups if provided
         if vo.role_ids:
-            self.dao.grant_roles(entity.id, vo.role_ids, created_by)
+            self.dao.grant_roles(entity.id, vo.role_ids, user_id)
         if vo.group_ids:
-            self.dao.grant_groups(entity.id, vo.group_ids, created_by)
+            self.dao.grant_groups(entity.id, vo.group_ids, user_id)
 
     async def modify(self, vo: UserVO, request: Optional[Request] = None) -> None:
-        updated_by = await self._get_current_user_id(request)
         entity = self.dao.find_by_id(vo.id)
-
         if not entity:
             raise BusinessException("数据不存在")
 
         update_data = vo.model_dump(exclude_unset=True)
         apply_update(entity, update_data, extra_protected={'password', 'role_ids', 'group_ids'})
 
-        entity.updated_by = updated_by
-        self.dao.update(entity)
+        user_id = await self._get_current_user_id(request)
+        self.dao.update(entity, user_id=user_id)
 
         # Sync role/group assignments if provided
-        # Use truthiness check (not None check) so empty list [] won't wipe existing assignments
         if vo.role_ids:
-            self.dao.grant_roles(vo.id, vo.role_ids, updated_by)
+            self.dao.grant_roles(vo.id, vo.role_ids, user_id)
         if vo.group_ids:
-            self.dao.grant_groups(vo.id, vo.group_ids, updated_by)
+            self.dao.grant_groups(vo.id, vo.group_ids, user_id)
 
     def remove(self, param: IdsParam) -> None:
         self.dao.delete_by_ids(param.ids)
@@ -161,15 +149,8 @@ class UserService:
     async def import_data(self, param: UserImportParam, request: Optional[Request] = None) -> dict:
         if not param.data:
             raise BusinessException("导入数据不能为空")
-
-        created_by = await self._get_current_user_id(request)
-        entities = []
-        for vo in param.data:
-            entity = SysUser(**strip_system_fields(vo.model_dump(), extra_fields={'role_ids', 'group_ids'}))
-            entity.created_by = created_by
-            entities.append(entity)
-
-        self.dao.insert_batch(entities)
+        entities = [SysUser(**strip_system_fields(vo.model_dump(), extra_fields={'role_ids', 'group_ids'})) for vo in param.data]
+        self.dao.insert_batch(entities, user_id=await self._get_current_user_id(request))
         return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}
 
     # ---- Grant APIs ----
@@ -222,58 +203,15 @@ class UserService:
         if not role_ids:
             return []
 
-        resource_ids = set()
-        for role_id in role_ids:
-            rids = (
-                self.db.query(RalRoleResource.resource_id)
-                .filter(RalRoleResource.role_id == role_id, RalRoleResource.is_deleted == "NO")
-                .all()
-            )
-            resource_ids.update(r[0] for r in rids)
-
+        resource_ids = self.dao.get_role_resource_ids(role_ids)
         if not resource_ids:
             return []
 
-        resources = (
-            self.db.query(SysResource)
-            .filter(
-                SysResource.id.in_(resource_ids),
-                SysResource.category == "BACKEND_MENU",
-                SysResource.type.in_(["DIRECTORY", "MENU"]),
-                SysResource.status == "ENABLED",
-                SysResource.is_deleted == "NO",
-            )
-            .order_by(SysResource.sort_code.asc())
-            .all()
-        )
-
+        resources = self.dao.get_resources_by_ids(resource_ids)
         return self._build_menu_tree(resources)
 
     def _get_user_role_ids(self, user_id: str) -> List[str]:
-        role_ids = set()
-
-        # Direct role assignments
-        direct = (
-            self.db.query(RalUserRole.role_id)
-            .filter(RalUserRole.user_id == user_id, RalUserRole.is_deleted == "NO")
-            .all()
-        )
-        role_ids.update(r[0] for r in direct)
-
-        # Via org (user's org_id → RalOrgRole)
-        entity = self.find_by_id(user_id)
-        if entity and entity.org_id:
-            org_role_ids = (
-                self.db.query(RalOrgRole.role_id)
-                .filter(
-                    RalOrgRole.org_id == entity.org_id,
-                    RalOrgRole.is_deleted == "NO",
-                )
-                .all()
-            )
-            role_ids.update(r[0] for r in org_role_ids)
-
-        return list(role_ids)
+        return self.dao.get_user_role_ids_all_sources(user_id)
 
     def _build_menu_tree(self, resources: List[SysResource]) -> List[Dict]:
         resource_map = {}
@@ -316,15 +254,7 @@ class UserService:
         if not role_ids:
             return []
 
-        codes = set()
-        for role_id in role_ids:
-            rows = (
-                self.db.query(RalRolePermission.permission_code)
-                .filter(RalRolePermission.role_id == role_id, RalRolePermission.is_deleted == "NO")
-                .all()
-            )
-            codes.update(r[0] for r in rows)
-
+        codes = self.dao.get_role_permission_codes(role_ids)
         return sorted(codes)
 
 

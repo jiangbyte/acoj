@@ -1,6 +1,21 @@
 from enum import Enum
 
 
+class ResourceTypeEnum(str, Enum):
+    DIRECTORY = "DIRECTORY"
+    MENU = "MENU"
+    BUTTON = "BUTTON"
+
+    @property
+    def desc(self) -> str:
+        descriptions = {
+            ResourceTypeEnum.DIRECTORY: "目录",
+            ResourceTypeEnum.MENU: "菜单",
+            ResourceTypeEnum.BUTTON: "按钮",
+        }
+        return descriptions.get(self, "")
+
+
 class ResourceCategoryEnum(str, Enum):
     BACKEND_MENU = "BACKEND_MENU"
     FRONTEND_MENU = "FRONTEND_MENU"

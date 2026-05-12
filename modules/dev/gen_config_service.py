@@ -64,3 +64,6 @@ class GenConfigService:
 
     def delete_by_basic_id(self, basic_id: str) -> None:
         self.dao.delete_by_basic_id(basic_id)
+
+    def delete_by_basic_ids(self, basic_ids: List[str]) -> None:
+        self.dao.delete_by_basic_ids(basic_ids)

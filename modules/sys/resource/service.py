@@ -38,23 +38,16 @@ class ModuleService:
         )
 
     async def create(self, vo: ModuleVO, request: Optional[Request] = None) -> None:
-        created_by = await self._get_current_user_id(request)
         entity = SysModule(**strip_system_fields(vo.model_dump()))
-        entity.created_by = created_by
-        self.dao.insert(entity)
+        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
 
     async def modify(self, vo: ModuleVO, request: Optional[Request] = None) -> None:
-        updated_by = await self._get_current_user_id(request)
         entity = self.dao.find_by_id(vo.id)
-
         if not entity:
             raise BusinessException("数据不存在")
-
         update_data = vo.model_dump(exclude_unset=True)
         apply_update(entity, update_data)
-
-        entity.updated_by = updated_by
-        self.dao.update(entity)
+        self.dao.update(entity, user_id=await self._get_current_user_id(request))
 
     def remove(self, param: IdsParam) -> None:
         self.dao.delete_by_ids(param.ids)
@@ -86,15 +79,8 @@ class ModuleService:
     async def import_data(self, param: ModuleImportParam, request: Optional[Request] = None) -> dict:
         if not param.data:
             raise BusinessException("导入数据不能为空")
-
-        created_by = await self._get_current_user_id(request)
-        entities = []
-        for vo in param.data:
-            entity = SysModule(**strip_system_fields(vo.model_dump()))
-            entity.created_by = created_by
-            entities.append(entity)
-
-        self.dao.insert_batch(entities)
+        entities = [SysModule(**strip_system_fields(vo.model_dump())) for vo in param.data]
+        self.dao.insert_batch(entities, user_id=await self._get_current_user_id(request))
         return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}
 
 
@@ -136,24 +122,16 @@ class ResourceService:
         return build("")
 
     async def create(self, vo: ResourceVO, request: Optional[Request] = None) -> None:
-        created_by = await self._get_current_user_id(request)
         entity = SysResource(**strip_system_fields(vo.model_dump()))
-        entity.created_by = created_by
-        self.dao.insert(entity)
+        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
 
     async def modify(self, vo: ResourceVO, request: Optional[Request] = None) -> None:
-        updated_by = await self._get_current_user_id(request)
         entity = self.dao.find_by_id(vo.id)
-
         if not entity:
             raise BusinessException("数据不存在")
-
-        # Use model_fields_set to get only the fields the client actually sent
         update_data = {k: getattr(vo, k) for k in vo.model_fields_set if k != 'id'}
         apply_update(entity, update_data)
-
-        entity.updated_by = updated_by
-        self.dao.update(entity)
+        self.dao.update(entity, user_id=await self._get_current_user_id(request))
 
     def remove(self, param: IdsParam) -> None:
         self.dao.delete_by_ids(param.ids)
@@ -185,13 +163,6 @@ class ResourceService:
     async def import_data(self, param: ResourceImportParam, request: Optional[Request] = None) -> dict:
         if not param.data:
             raise BusinessException("导入数据不能为空")
-
-        created_by = await self._get_current_user_id(request)
-        entities = []
-        for vo in param.data:
-            entity = SysResource(**strip_system_fields(vo.model_dump()))
-            entity.created_by = created_by
-            entities.append(entity)
-
-        self.dao.insert_batch(entities)
+        entities = [SysResource(**strip_system_fields(vo.model_dump())) for vo in param.data]
+        self.dao.insert_batch(entities, user_id=await self._get_current_user_id(request))
         return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}

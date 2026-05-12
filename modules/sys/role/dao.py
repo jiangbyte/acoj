@@ -1,46 +1,19 @@
+from __future__ import annotations
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from datetime import datetime
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 from .models import SysRole, RalRolePermission, RalRoleResource
 from core.db.base_dao import BaseDAO
 from core.utils import generate_id
-from datetime import datetime
 
 
 class RoleDao(BaseDAO):
     def __init__(self, db: Session):
         super().__init__(db, SysRole)
 
-    def insert(self, entity: SysRole) -> SysRole:
-        entity.id = generate_id()
-        if self._can_apply_soft_delete():
-            setattr(entity, self._soft_delete_field, self._soft_delete_not_deleted)
-        now = datetime.now()
-        entity.created_at = now
-        entity.updated_at = now
-        self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
-        return entity
-
-    def insert_batch(self, entities: List[SysRole]) -> None:
-        now = datetime.now()
-        for entity in entities:
-            entity.id = generate_id()
-            if self._can_apply_soft_delete():
-                setattr(entity, self._soft_delete_field, self._soft_delete_not_deleted)
-            entity.created_at = now
-            entity.updated_at = now
-        self.db.add_all(entities)
-        self.db.commit()
-
-    def update(self, entity: SysRole) -> SysRole:
-        entity.updated_at = datetime.now()
-        self.db.commit()
-        self.db.refresh(entity)
-        return entity
-
     # ---- RAL: Role Permissions ----
+
     def get_permission_codes_by_role_id(self, role_id: str) -> List[str]:
         rows = self.db.execute(
             select(RalRolePermission.permission_code).where(
@@ -50,7 +23,6 @@ class RoleDao(BaseDAO):
         return list(rows)
 
     def get_permission_details_by_role_id(self, role_id: str) -> list[dict]:
-        """Return permission_code + scope + custom IDs for a role."""
         rows = self.db.execute(
             select(
                 RalRolePermission.permission_code,
@@ -72,7 +44,7 @@ class RoleDao(BaseDAO):
             for r in rows
         ]
 
-    def grant_permissions(self, role_id: str, permissions: List['PermissionItem'], created_by: Optional[str] = None):
+    def grant_permissions(self, role_id: str, permissions: List[PermissionItem], created_by: Optional[str] = None):
         from ..params import PermissionItem
         now = datetime.now()
         not_del = self._soft_delete_not_deleted
@@ -108,6 +80,7 @@ class RoleDao(BaseDAO):
         self.db.commit()
 
     # ---- RAL: Role Resources ----
+
     def get_resource_ids_by_role_id(self, role_id: str) -> List[str]:
         rows = self.db.execute(
             select(RalRoleResource.resource_id).where(
@@ -143,3 +116,19 @@ class RoleDao(BaseDAO):
                 )
                 self.db.add(rel)
         self.db.commit()
+
+    # ---- Cross-table queries ----
+
+    def find_resources_with_extra_by_ids(self, resource_ids: List[str]):
+        """Find resources with non-empty extra field by IDs (for auto-granting permissions)."""
+        from ..resource.models import SysResource as _SR
+        return (
+            self.db.query(_SR)
+            .filter(
+                _SR.id.in_(resource_ids),
+                _SR.is_deleted == self._soft_delete_not_deleted,
+                _SR.extra != None,
+                _SR.extra != "",
+            )
+            .all()
+        )

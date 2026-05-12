@@ -1,41 +1,22 @@
-from typing import List, Optional
+from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import select, update, text
 from .models import SysPosition
+from .params import PositionPageParam
 from core.db.base_dao import BaseDAO
-from core.utils import generate_id
-from datetime import datetime
+from core.db.query_wrapper import QueryWrapper
 
 
 class PositionDao(BaseDAO):
     def __init__(self, db: Session):
         super().__init__(db, SysPosition)
 
-    def insert(self, entity: SysPosition) -> SysPosition:
-        entity.id = generate_id()
-        if self._can_apply_soft_delete():
-            setattr(entity, self._soft_delete_field, self._soft_delete_not_deleted)
-        now = datetime.now()
-        entity.created_at = now
-        entity.updated_at = now
-        self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
-        return entity
-
-    def insert_batch(self, entities: List[SysPosition]) -> None:
-        now = datetime.now()
-        for entity in entities:
-            entity.id = generate_id()
-            if self._can_apply_soft_delete():
-                setattr(entity, self._soft_delete_field, self._soft_delete_not_deleted)
-            entity.created_at = now
-            entity.updated_at = now
-        self.db.add_all(entities)
-        self.db.commit()
-
-    def update(self, entity: SysPosition) -> SysPosition:
-        entity.updated_at = datetime.now()
-        self.db.commit()
-        self.db.refresh(entity)
-        return entity
+    def find_page_by_filters(self, param: PositionPageParam) -> Dict[str, Any]:
+        wrapper = QueryWrapper(SysPosition)
+        if param.group_id:
+            wrapper.eq(SysPosition.group_id, param.group_id)
+        if param.org_id:
+            wrapper.eq(SysPosition.org_id, param.org_id)
+        if param.keyword:
+            wrapper.like(SysPosition.name, param.keyword)
+        wrapper.order_by_asc(SysPosition.sort_code)
+        return self.select_page(wrapper, param)

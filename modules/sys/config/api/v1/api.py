@@ -4,7 +4,7 @@ from core.result import success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission
-from ...params import ConfigVO, ConfigPageParam, ConfigListParam, ConfigBatchEditParam
+from ...params import ConfigVO, ConfigPageParam, ConfigListParam, ConfigBatchEditParam, ConfigCategoryEditParam
 from ...service import ConfigService
 
 router = APIRouter()
@@ -89,4 +89,16 @@ async def edit_batch(
 ):
     service = ConfigService(db)
     await service.edit_batch(param, request)
+    return success()
+
+
+@router.post("/api/v1/sys/config/edit-by-category", summary="按分类批量编辑配置")
+@HeiCheckPermission("sys:config:edit")
+async def edit_by_category(
+    request: Request,
+    param: ConfigCategoryEditParam,
+    db: Session = Depends(get_db),
+):
+    service = ConfigService(db)
+    await service.edit_by_category(param, request)
     return success()

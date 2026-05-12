@@ -1,15 +1,13 @@
 from typing import Optional, List
-from datetime import datetime
 from fastapi import Request
 from sqlalchemy.orm import Session
 from core.result import page_data
 from core.exception import BusinessException
 from core.utils.model_utils import strip_system_fields, apply_update
-from core.utils.snowflake_utils import generate_id
 from core.auth import HeiAuthTool
 from .models import SysConfig
 from .dao import ConfigDao
-from .params import ConfigVO, ConfigPageParam, ConfigListParam
+from .params import ConfigVO, ConfigPageParam, ConfigListParam, ConfigCategoryEditParam
 
 
 CONFIG_CACHE_PREFIX = "sys-config:"
@@ -69,25 +67,16 @@ class ConfigService:
         return [ConfigVO.model_validate(e).model_dump() for e in entities]
 
     async def create(self, vo: ConfigVO, request: Request):
-        now = datetime.now()
         entity = SysConfig(**strip_system_fields(vo.model_dump()))
-        entity.id = generate_id()
-        entity.is_deleted = "NO"
-        entity.created_at = now
-        entity.updated_at = now
-        entity.created_by = self._get_current_user_id(request)
-        self.dao.insert(entity)
+        self.dao.insert(entity, user_id=self._get_current_user_id(request))
 
     async def modify(self, vo: ConfigVO, request: Request):
-        now = datetime.now()
         entity = self.dao.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
         update_data = strip_system_fields(vo.model_dump(exclude_unset=True))
         apply_update(entity, update_data)
-        entity.updated_at = now
-        entity.updated_by = self._get_current_user_id(request)
-        self.dao.update(entity)
+        self.dao.update(entity, user_id=self._get_current_user_id(request))
         self._del_cached_value(entity.config_key)
 
     def remove(self, param):
@@ -101,7 +90,6 @@ class ConfigService:
         return ConfigVO.model_validate(entity) if entity else None
 
     async def edit_batch(self, param, request: Request):
-        now = datetime.now()
         user_id = self._get_current_user_id(request)
         for vo in param.configs:
             entity = self.dao.find_by_id(vo.id)
@@ -109,7 +97,15 @@ class ConfigService:
                 raise BusinessException(f"配置不存在: {vo.id}")
             update_data = strip_system_fields(vo.model_dump(exclude_unset=True))
             apply_update(entity, update_data)
-            entity.updated_at = now
-            entity.updated_by = user_id
-            self.dao.update(entity)
+            self.dao.update(entity, user_id=user_id)
+            self._del_cached_value(entity.config_key)
+
+    async def edit_by_category(self, param: ConfigCategoryEditParam, request: Request):
+        user_id = self._get_current_user_id(request)
+        for vo in param.configs:
+            entity = self.dao.find_by_category_and_key(param.category, vo.config_key)
+            if not entity:
+                raise BusinessException(f"分类 [{param.category}] 下不存在配置: {vo.config_key}")
+            entity.config_value = vo.config_value
+            self.dao.update(entity, user_id=user_id)
             self._del_cached_value(entity.config_key)

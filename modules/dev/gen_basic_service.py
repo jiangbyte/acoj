@@ -22,7 +22,7 @@ from .gen_category import GenCategoryEnum
 from core.result import page_data
 from core.exception import BusinessException
 from core.auth import HeiAuthTool
-from core.utils import generate_id, strip_system_fields, apply_update
+from core.utils import strip_system_fields, apply_update
 
 logger = logging.getLogger(__name__)
 
@@ -120,8 +120,7 @@ class GenBasicService:
         ids = [p.id for p in param_list]
         if not ids:
             return
-        for id_ in ids:
-            self.gen_config_service.delete_by_basic_id(id_)
+        self.gen_config_service.delete_by_basic_ids(ids)
         self.dao.delete_by_ids(ids)
 
     def detail(self, param: GenBasicIdParam) -> Optional[dict]:
@@ -226,7 +225,6 @@ class GenBasicService:
             is_system = col_name.lower() in ("is_deleted", "created_at", "created_by", "updated_at", "updated_by")
 
             cfg = GenConfig()
-            cfg.id = generate_id()
             cfg.basic_id = gen_basic.id
             cfg.is_table_key = "YES" if is_pk else "NO"
             cfg.field_name = col_name
@@ -246,7 +244,6 @@ class GenBasicService:
             cfg.whether_required = "NO"
             cfg.whether_unique = "NO"
             cfg.query_whether = "NO"
-            cfg.is_deleted = "NO"
             self.gen_config_service.dao.insert(cfg)
 
         if gen_basic.gen_type and GenCategoryEnum.is_dual_table(gen_basic.gen_type):
@@ -278,7 +275,6 @@ class GenBasicService:
             is_system = col_name.lower() in ("is_deleted", "created_at", "created_by", "updated_at", "updated_by")
 
             cfg = GenConfig()
-            cfg.id = generate_id()
             cfg.basic_id = gen_basic.id
             cfg.is_table_key = "YES" if is_pk else "NO"
             cfg.field_name = col_name
@@ -298,7 +294,6 @@ class GenBasicService:
             cfg.whether_required = "NO"
             cfg.whether_unique = "NO"
             cfg.query_whether = "NO"
-            cfg.is_deleted = "NO"
             self.gen_config_service.dao.insert(cfg)
 
     # ---- Code Generation ----

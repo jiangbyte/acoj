@@ -1,11 +1,13 @@
+from __future__ import annotations
 from typing import List, Optional, Dict, Any
+from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import select, or_
 from .models import SysUser, RalUserRole, RalUserGroup, RalUserPermission
 from .params import UserPageParam
 from core.db.base_dao import BaseDAO
+from core.enums import ResourceCategoryEnum, ResourceTypeEnum, StatusEnum
 from core.utils import generate_id
-from datetime import datetime
 from modules.sys.role.params import PermissionItem
 
 
@@ -25,36 +27,24 @@ class UserDao(BaseDAO):
             return query.order_by(SysUser.created_at.desc())
         return super().find_page(param, builder)
 
-    def insert(self, entity: SysUser) -> SysUser:
-        entity.id = generate_id()
-        if self._can_apply_soft_delete():
-            setattr(entity, self._soft_delete_field, self._soft_delete_not_deleted)
-        now = datetime.now()
-        entity.created_at = now
-        entity.updated_at = now
-        self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
-        return entity
+    def find_by_account(self, account: str) -> Optional[SysUser]:
+        return (
+            self.db.execute(
+                select(SysUser).where(SysUser.account == account, SysUser.is_deleted == self._soft_delete_not_deleted)
+            )
+            .scalar_one_or_none()
+        )
 
-    def insert_batch(self, entities: List[SysUser]) -> None:
-        now = datetime.now()
-        for entity in entities:
-            entity.id = generate_id()
-            if self._can_apply_soft_delete():
-                setattr(entity, self._soft_delete_field, self._soft_delete_not_deleted)
-            entity.created_at = now
-            entity.updated_at = now
-        self.db.add_all(entities)
-        self.db.commit()
-
-    def update(self, entity: SysUser) -> SysUser:
-        entity.updated_at = datetime.now()
-        self.db.commit()
-        self.db.refresh(entity)
-        return entity
+    def find_by_email(self, email: str) -> Optional[SysUser]:
+        return (
+            self.db.execute(
+                select(SysUser).where(SysUser.email == email, SysUser.is_deleted == self._soft_delete_not_deleted)
+            )
+            .scalar_one_or_none()
+        )
 
     # ---- RAL: User Roles ----
+
     def get_role_ids_by_user_id(self, user_id: str) -> List[str]:
         rows = self.db.execute(
             select(RalUserRole.role_id).where(
@@ -62,6 +52,20 @@ class UserDao(BaseDAO):
             )
         ).scalars().all()
         return list(rows)
+
+    def get_role_ids_map_by_user_ids(self, user_ids: List[str]) -> Dict[str, List[str]]:
+        if not user_ids:
+            return {}
+        rows = self.db.execute(
+            select(RalUserRole.user_id, RalUserRole.role_id).where(
+                RalUserRole.user_id.in_(user_ids),
+                RalUserRole.is_deleted == self._soft_delete_not_deleted
+            )
+        ).all()
+        result: Dict[str, List[str]] = {uid: [] for uid in user_ids}
+        for uid, rid in rows:
+            result.setdefault(uid, []).append(rid)
+        return result
 
     def grant_roles(self, user_id: str, role_ids: List[str], created_by: Optional[str] = None,
                     scope: Optional[str] = None, custom_scope_group_ids: Optional[str] = None):
@@ -95,6 +99,7 @@ class UserDao(BaseDAO):
         self.db.commit()
 
     # ---- RAL: User Groups ----
+
     def get_group_ids_by_user_id(self, user_id: str) -> List[str]:
         rows = self.db.execute(
             select(RalUserGroup.group_id).where(
@@ -102,6 +107,20 @@ class UserDao(BaseDAO):
             )
         ).scalars().all()
         return list(rows)
+
+    def get_group_ids_map_by_user_ids(self, user_ids: List[str]) -> Dict[str, List[str]]:
+        if not user_ids:
+            return {}
+        rows = self.db.execute(
+            select(RalUserGroup.user_id, RalUserGroup.group_id).where(
+                RalUserGroup.user_id.in_(user_ids),
+                RalUserGroup.is_deleted == self._soft_delete_not_deleted
+            )
+        ).all()
+        result: Dict[str, List[str]] = {uid: [] for uid in user_ids}
+        for uid, gid in rows:
+            result.setdefault(uid, []).append(gid)
+        return result
 
     def grant_groups(self, user_id: str, group_ids: List[str], created_by: Optional[str] = None):
         now = datetime.now()
@@ -131,8 +150,8 @@ class UserDao(BaseDAO):
         self.db.commit()
 
     # ---- RAL: User Permissions (direct) ----
+
     def get_permission_details_by_user_id(self, user_id: str) -> list[dict]:
-        """Return permission_code + scope + custom IDs for a user."""
         rows = self.db.execute(
             select(
                 RalUserPermission.permission_code,
@@ -187,3 +206,68 @@ class UserDao(BaseDAO):
                 )
                 self.db.add(rel)
         self.db.commit()
+
+    # ---- Cross-table auth queries ----
+
+    def get_user_role_ids_all_sources(self, user_id: str) -> List[str]:
+        """Get role IDs from direct assignment + org membership."""
+        role_ids: set[str] = set()
+
+        # Direct role assignments (RalUserRole)
+        direct_rows = self.db.execute(
+            select(RalUserRole.role_id).where(
+                RalUserRole.user_id == user_id, RalUserRole.is_deleted == self._soft_delete_not_deleted
+            )
+        ).scalars().all()
+        role_ids.update(direct_rows)
+
+        # Via org (RalOrgRole)
+        from ..org.models import RalOrgRole as _RalOrgRole
+        entity = self.find_by_id(user_id)
+        if entity and entity.org_id:
+            org_rows = self.db.execute(
+                select(_RalOrgRole.role_id).where(
+                    _RalOrgRole.org_id == entity.org_id,
+                    _RalOrgRole.is_deleted == self._soft_delete_not_deleted,
+                )
+            ).scalars().all()
+            role_ids.update(org_rows)
+
+        return list(role_ids)
+
+    def get_role_resource_ids(self, role_ids: List[str]) -> List[str]:
+        from ..role.models import RalRoleResource as _RalRoleResource
+        rows = self.db.execute(
+            select(_RalRoleResource.resource_id).where(
+                _RalRoleResource.role_id.in_(role_ids),
+                _RalRoleResource.is_deleted == self._soft_delete_not_deleted,
+            )
+        ).scalars().all()
+        return list(set(rows))
+
+    def get_resources_by_ids(self, resource_ids: List[str]):
+        """Get backend menu resources by IDs, ordered by sort_code."""
+        from ..resource.models import SysResource as _SysResource
+        rows = (
+            self.db.query(_SysResource)
+            .filter(
+                _SysResource.id.in_(resource_ids),
+                _SysResource.category == ResourceCategoryEnum.BACKEND_MENU,
+                _SysResource.type.in_([ResourceTypeEnum.DIRECTORY, ResourceTypeEnum.MENU]),
+                _SysResource.status == StatusEnum.ENABLE,
+                _SysResource.is_deleted == self._soft_delete_not_deleted,
+            )
+            .order_by(_SysResource.sort_code.asc())
+            .all()
+        )
+        return rows
+
+    def get_role_permission_codes(self, role_ids: List[str]) -> List[str]:
+        from ..role.models import RalRolePermission as _RalRolePermission
+        rows = self.db.execute(
+            select(_RalRolePermission.permission_code).where(
+                _RalRolePermission.role_id.in_(role_ids),
+                _RalRolePermission.is_deleted == self._soft_delete_not_deleted,
+            )
+        ).scalars().all()
+        return list(set(rows))
