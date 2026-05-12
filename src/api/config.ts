@@ -1,5 +1,4 @@
 import { request } from '@/utils'
-import type { Service } from '@/utils/http/types'
 
 export function fetchConfigPage(params: any) {
   return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/config/page', { params })
