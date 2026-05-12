@@ -1,7 +1,5 @@
-from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Query, Request
 from core.result import Result, success
-from core.db import get_db
 from core.auth.decorator import HeiCheckPermission
 from ...service import PermissionService
 
@@ -14,9 +12,8 @@ router = APIRouter()
 @HeiCheckPermission("sys:permission:modules")
 async def list_modules(
     request: Request,
-    db: Session = Depends(get_db)
 ):
-    service = PermissionService(db)
+    service = PermissionService()
     return success(await service.list_modules())
 
 
@@ -27,7 +24,6 @@ async def list_modules(
 async def by_module(
     request: Request,
     module: str = Query(...),
-    db: Session = Depends(get_db)
 ):
-    service = PermissionService(db)
+    service = PermissionService()
     return success(await service.list_permissions_by_module(module))

@@ -1,15 +1,14 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
 from fastapi import Request
-from .models import SysOrg
-from .params import OrgVO, OrgTreeVO, OrgPageParam, OrgExportParam, OrgImportParam, GrantOrgRoleParam, OrgTreeParam
+from .params import OrgVO, OrgPageParam, OrgExportParam, OrgImportParam, GrantOrgRoleParam, OrgTreeParam
 from .dao import OrgDao
+from .models import SysOrg
 from core.pojo import IdParam, IdsParam
 from core.result import page_data
-from core.enums import ExportTypeEnum, SoftDeleteEnum
+from core.enums import ExportTypeEnum
 from core.exception import BusinessException
-from core.utils import export_excel, strip_system_fields, apply_update, make_template, generate_id
+from core.utils import export_excel, strip_system_fields, apply_update, make_template
 from core.auth import HeiAuthTool
 import logging
 
@@ -19,7 +18,6 @@ logger = logging.getLogger(__name__)
 class OrgService:
     def __init__(self, db: Session):
         self.dao = OrgDao(db)
-        self.db = db
 
     async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:
@@ -30,37 +28,18 @@ class OrgService:
             return None
 
     def page(self, param: OrgPageParam) -> dict:
-        from sqlalchemy import select as q, func
-
-        base_filters = [SysOrg.is_deleted == SoftDeleteEnum.NO]
-        if param.parent_id:
-            base_filters.append(
-                (SysOrg.parent_id == param.parent_id) | (SysOrg.id == param.parent_id)
-            )
-        if param.keyword:
-            keyword = f"%{param.keyword}%"
-            base_filters.append(SysOrg.name.ilike(keyword))
-
-        count_query = select(func.count()).select_from(SysOrg).where(*base_filters)
-        total = self.db.execute(count_query).scalar() or 0
-
-        offset = (param.current - 1) * param.size
-        query = select(SysOrg).where(*base_filters).order_by(SysOrg.sort_code).offset(offset).limit(param.size)
-        records = [OrgVO.model_validate(r).model_dump() for r in self.db.execute(query).scalars().all()]
+        result = self.dao.find_page_by_filters(param)
         return page_data(
-            records=records,
-            total=total,
+            records=[OrgVO.model_validate(r).model_dump() for r in result["records"]],
+            total=result["total"],
             page=param.current,
             size=param.size
         )
 
     def tree(self, param: OrgTreeParam) -> List[dict]:
-        base_filters = [SysOrg.is_deleted == SoftDeleteEnum.NO]
+        records = self.dao.find_all_ordered()
         if param.category:
-            base_filters.append(SysOrg.category == param.category)
-
-        query = select(SysOrg).where(*base_filters).order_by(SysOrg.sort_code)
-        records = list(self.db.execute(query).scalars().all())
+            records = [r for r in records if r.category == param.category]
 
         node_map = {}
         roots = []
@@ -88,23 +67,16 @@ class OrgService:
                 OrgService._sort_tree(children)
 
     async def create(self, vo: OrgVO, request: Optional[Request] = None) -> None:
-        created_by = await self._get_current_user_id(request)
         entity = SysOrg(**strip_system_fields(vo.model_dump()))
-        entity.created_by = created_by
-        self.dao.insert(entity)
+        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
 
     async def modify(self, vo: OrgVO, request: Optional[Request] = None) -> None:
-        updated_by = await self._get_current_user_id(request)
         entity = self.dao.find_by_id(vo.id)
-
         if not entity:
             raise BusinessException("数据不存在")
-
         update_data = vo.model_dump(exclude_unset=True)
         apply_update(entity, update_data)
-
-        entity.updated_by = updated_by
-        self.dao.update(entity)
+        self.dao.update(entity, user_id=await self._get_current_user_id(request))
 
     def remove(self, param: IdsParam) -> None:
         self.dao.delete_by_ids(param.ids)
@@ -136,15 +108,8 @@ class OrgService:
     async def import_data(self, param: OrgImportParam, request: Optional[Request] = None) -> dict:
         if not param.data:
             raise BusinessException("导入数据不能为空")
-
-        created_by = await self._get_current_user_id(request)
-        entities = []
-        for vo in param.data:
-            entity = SysOrg(**strip_system_fields(vo.model_dump()))
-            entity.created_by = created_by
-            entities.append(entity)
-
-        self.dao.insert_batch(entities)
+        entities = [SysOrg(**strip_system_fields(vo.model_dump())) for vo in param.data]
+        self.dao.insert_batch(entities, user_id=await self._get_current_user_id(request))
         return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}
 
     async def grant_roles(self, param: GrantOrgRoleParam, request: Optional[Request] = None) -> None:

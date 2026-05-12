@@ -26,3 +26,11 @@ class ConfigDao(BaseDAO):
         query = select(self.model).where(self.model.category == category)
         query = self._apply_soft_delete_filter(query)
         return list(self.db.execute(query).scalars().all())
+
+    def find_by_category_and_key(self, category: str, key: str) -> Optional[SysConfig]:
+        query = select(self.model).where(
+            self.model.category == category,
+            self.model.config_key == key,
+        )
+        query = self._apply_soft_delete_filter(query)
+        return self.db.execute(query).scalar_one_or_none()

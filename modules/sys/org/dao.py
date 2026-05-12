@@ -1,44 +1,28 @@
-from typing import List, Optional
-from sqlalchemy import select
+from typing import List, Optional, Dict, Any
+from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 from .models import SysOrg, RalOrgRole
+from .params import OrgPageParam
 from core.db.base_dao import BaseDAO
-from core.utils import generate_id
-from datetime import datetime
+from core.db.query_wrapper import QueryWrapper
 
 
 class OrgDao(BaseDAO):
     def __init__(self, db: Session):
         super().__init__(db, SysOrg)
 
-    def insert(self, entity: SysOrg) -> SysOrg:
-        entity.id = generate_id()
-        if self._can_apply_soft_delete():
-            setattr(entity, self._soft_delete_field, self._soft_delete_not_deleted)
-        now = datetime.now()
-        entity.created_at = now
-        entity.updated_at = now
-        self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
-        return entity
+    def find_page_by_filters(self, param: OrgPageParam) -> Dict[str, Any]:
+        wrapper = QueryWrapper(SysOrg)
+        if param.parent_id:
+            wrapper.where(or_(SysOrg.parent_id == param.parent_id, SysOrg.id == param.parent_id))
+        if param.keyword:
+            wrapper.like(SysOrg.name, param.keyword)
+        wrapper.order_by_asc(SysOrg.sort_code)
+        return self.select_page(wrapper, param)
 
-    def insert_batch(self, entities: List[SysOrg]) -> None:
-        now = datetime.now()
-        for entity in entities:
-            entity.id = generate_id()
-            if self._can_apply_soft_delete():
-                setattr(entity, self._soft_delete_field, self._soft_delete_not_deleted)
-            entity.created_at = now
-            entity.updated_at = now
-        self.db.add_all(entities)
-        self.db.commit()
-
-    def update(self, entity: SysOrg) -> SysOrg:
-        entity.updated_at = datetime.now()
-        self.db.commit()
-        self.db.refresh(entity)
-        return entity
+    def find_all_ordered(self) -> List[SysOrg]:
+        wrapper = QueryWrapper(SysOrg).order_by_asc(SysOrg.sort_code)
+        return self.select_list(wrapper)
 
     def get_role_ids_by_org_id(self, org_id: str) -> List[str]:
         rows = self.db.execute(
@@ -50,6 +34,9 @@ class OrgDao(BaseDAO):
 
     def grant_roles(self, org_id: str, role_ids: List[str], created_by: Optional[str] = None,
                     scope: Optional[str] = None, custom_scope_group_ids: Optional[str] = None):
+        from datetime import datetime
+        from core.utils import generate_id
+
         now = datetime.now()
         not_del = self._soft_delete_not_deleted
         del_val = self._soft_delete_deleted

@@ -1,13 +1,12 @@
 from typing import Optional, List
-from sqlalchemy.orm import Session
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class PermissionService:
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self):
+        pass
 
     async def list_modules(self) -> List[str]:
         """Get distinct permission module prefixes from Redis cache."""

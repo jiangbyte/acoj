@@ -1,11 +1,10 @@
 import bcrypt
-from datetime import datetime
 from typing import Optional
 from fastapi import Request
 from core.auth import HeiAuthTool
 from core.db import SessionLocal
 from core.exception import BusinessException
-from core.enums import SoftDeleteEnum
+from core.enums import SoftDeleteEnum, StatusEnum
 from core.utils import decrypt, generate_id
 from core.captcha import b_captcha
 from .params import UsernameLoginParam, UsernameLoginResult, UsernameRegisterParam, UsernameRegisterResult, UsernameLogoutResult
@@ -79,7 +78,6 @@ async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
         raw_password = decrypt(param.password)
         hashed_password = bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-        now = datetime.now()
         user_id = str(generate_id())
 
         user = SysUser(
@@ -87,10 +85,8 @@ async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
             account=param.username,
             password=hashed_password,
             nickname=param.username,
-            status="ACTIVE",
-            is_deleted="NO",
-            created_at=now,
-            updated_at=now
+            status=StatusEnum.ACTIVE,
+            created_by=user_id,
         )
         db.add(user)
         db.commit()

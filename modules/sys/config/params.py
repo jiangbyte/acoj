@@ -28,6 +28,11 @@ class ConfigBatchEditParam(BaseModel):
     configs: List[ConfigVO]
 
 
+class ConfigCategoryEditParam(BaseModel):
+    category: str
+    configs: List[ConfigVO]
+
+
 class ConfigExportParam(BaseModel):
     export_type: str = "current"
     current: Optional[int] = None

@@ -1,15 +1,14 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 from fastapi import Request
-from .models import ClientUser
 from .params import ClientUserVO, ClientUserPageParam, ClientUserExportParam, ClientUserImportParam
 from .dao import ClientUserDao
+from .models import ClientUser
 from core.pojo import IdParam, IdsParam
 from core.result import page_data
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum, SoftDeleteEnum
-from core.utils import export_excel, strip_system_fields, apply_update, make_template, generate_id
+from core.enums import ExportTypeEnum
+from core.utils import export_excel, strip_system_fields, apply_update, make_template
 from core.auth import HeiClientAuthTool, LoginUserInfo
 import logging
 
@@ -19,7 +18,6 @@ logger = logging.getLogger(__name__)
 class ClientUserService:
     def __init__(self, db: Session):
         self.dao = ClientUserDao(db)
-        self.db = db
 
     async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:
@@ -39,23 +37,16 @@ class ClientUserService:
         )
 
     async def create(self, vo: ClientUserVO, request: Optional[Request] = None) -> None:
-        created_by = await self._get_current_user_id(request)
         entity = ClientUser(**strip_system_fields(vo.model_dump()))
-        entity.created_by = created_by
-        self.dao.insert(entity)
+        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
 
     async def modify(self, vo: ClientUserVO, request: Optional[Request] = None) -> None:
-        updated_by = await self._get_current_user_id(request)
         entity = self.dao.find_by_id(vo.id)
-
         if not entity:
             raise BusinessException("数据不存在")
-
         update_data = vo.model_dump(exclude_unset=True)
         apply_update(entity, update_data, extra_protected={'password'})
-
-        entity.updated_by = updated_by
-        self.dao.update(entity)
+        self.dao.update(entity, user_id=await self._get_current_user_id(request))
 
     def remove(self, param: IdsParam) -> None:
         self.dao.delete_by_ids(param.ids)
@@ -87,21 +78,12 @@ class ClientUserService:
     async def import_data(self, param: ClientUserImportParam, request: Optional[Request] = None) -> dict:
         if not param.data:
             raise BusinessException("导入数据不能为空")
-
-        created_by = await self._get_current_user_id(request)
-        entities = []
-        for vo in param.data:
-            entity = ClientUser(**strip_system_fields(vo.model_dump()))
-            entity.created_by = created_by
-            entities.append(entity)
-
-        self.dao.insert_batch(entities)
+        entities = [ClientUser(**strip_system_fields(vo.model_dump())) for vo in param.data]
+        self.dao.insert_batch(entities, user_id=await self._get_current_user_id(request))
         return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}
 
     def find_by_account(self, account: str) -> Optional[ClientUser]:
-        return self.db.execute(
-            select(ClientUser).where(ClientUser.account == account, ClientUser.is_deleted == SoftDeleteEnum.NO)
-        ).scalar_one_or_none()
+        return self.dao.find_by_account(account)
 
     def to_login_user_info(self, entity: Optional[ClientUser]) -> Optional[LoginUserInfo]:
         if not entity:
