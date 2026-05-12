@@ -48,6 +48,9 @@ export function fetchRoleImport(file: File) {
 export function fetchRoleGrantPermission(data: any) {
   return request.Post<Service.ResponseResult>('/api/v1/sys/role/grant-permission', data)
 }
+export function fetchRoleOwnPermissionDetail(params: any) {
+  return request.Get<Service.ResponseResult>('/api/v1/sys/role/own-permission-detail', { params })
+}
 export function fetchRoleGrantResource(data: any) {
   return request.Post<Service.ResponseResult>('/api/v1/sys/role/grant-resource', data)
 }

@@ -32,9 +32,3 @@ export function fetchGroupImport(file: File) {
   formData.append('file', file)
   return request.Post<Service.ResponseResult>('/api/v1/sys/group/import', formData)
 }
-export function fetchGroupGrantRole(data: any) {
-  return request.Post<Service.ResponseResult>('/api/v1/sys/group/grant-role', data)
-}
-export function fetchGroupOwnRoles(params: any) {
-  return request.Get<Service.ResponseResult>('/api/v1/sys/group/own-roles', { params })
-}

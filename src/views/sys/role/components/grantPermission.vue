@@ -47,22 +47,65 @@
             {{ record.name }}
           </template>
           <template v-else-if="column.key === 'scope'">
-            <a-radio-group
-              v-if="record.checked"
-              :value="record.scope"
-              size="small"
-              @change="(e: any) => record.scope = e.target.value"
-            >
-              <a-radio-button value="ALL">全部</a-radio-button>
-              <a-radio-button value="SELF">仅自己</a-radio-button>
-              <a-radio-button value="ORG">所属组织</a-radio-button>
-              <a-radio-button value="ORG_AND_BELOW">组织及以下</a-radio-button>
-            </a-radio-group>
+            <div v-if="record.checked" class="flex flex-col gap-1">
+              <a-radio-group
+                :value="record.scope"
+                size="small"
+                @change="(e: any) => { record.scope = e.target.value; record.customOrgIds = []; record.customGroupIds = [] }"
+              >
+                <a-radio-button value="ALL">全部</a-radio-button>
+                <a-radio-button value="SELF">仅自己</a-radio-button>
+                <a-radio-button value="ORG">本组织</a-radio-button>
+                <a-radio-button value="ORG_AND_BELOW">组织及以下</a-radio-button>
+                <a-radio-button value="GROUP">本用户组</a-radio-button>
+                <a-radio-button value="GROUP_AND_BELOW">用户组及以下</a-radio-button>
+                <a-radio-button value="CUSTOM_ORG">自定义组织</a-radio-button>
+                <a-radio-button value="CUSTOM_GROUP">自定义用户组</a-radio-button>
+              </a-radio-group>
+              <!-- Custom Org selector -->
+              <div v-if="record.scope === 'CUSTOM_ORG'" class="mt-1">
+                <a-tag v-for="id in record.customOrgIds" :key="id" closable @close="removeOrgId(record, id)">
+                  {{ orgMap[id] || id }}
+                </a-tag>
+                <a-button size="small" @click="openOrgPicker(record)">选择组织</a-button>
+              </div>
+              <!-- Custom Group selector -->
+              <div v-if="record.scope === 'CUSTOM_GROUP'" class="mt-1">
+                <a-tag v-for="id in record.customGroupIds" :key="id" closable @close="removeGroupId(record, id)">
+                  {{ groupMap[id] || id }}
+                </a-tag>
+                <a-button size="small" @click="openGroupPicker(record)">选择用户组</a-button>
+              </div>
+            </div>
             <span v-else class="text-gray-400 text-xs">未选中</span>
           </template>
         </template>
       </a-table>
     </a-spin>
+
+    <!-- Org tree picker modal -->
+    <a-modal v-model:open="orgPickerVisible" title="选择组织" @ok="confirmOrgPicker" width="480">
+      <a-tree
+        ref="orgTreeRef"
+        v-model:checked-keys="orgPickerChecked"
+        :tree-data="orgTreeData"
+        checkable
+        :field-names="{ children: 'children', title: 'name', key: 'id' }"
+        default-expand-all
+      />
+    </a-modal>
+
+    <!-- Group tree picker modal -->
+    <a-modal v-model:open="groupPickerVisible" title="选择用户组" @ok="confirmGroupPicker" width="480">
+      <a-tree
+        ref="groupTreeRef"
+        v-model:checked-keys="groupPickerChecked"
+        :tree-data="groupTreeData"
+        checkable
+        :field-names="{ children: 'children', title: 'name', key: 'id' }"
+        default-expand-all
+      />
+    </a-modal>
 
     <template #footer>
       <a-space>
@@ -75,10 +118,12 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'RoleGrantPermission' })
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { message } from 'ant-design-vue'
-import { fetchRoleGrantPermission, fetchRoleOwnPermission } from '@/api/role'
+import { fetchRoleGrantPermission, fetchRoleOwnPermissionDetail } from '@/api/role'
 import { fetchPermissionModules, fetchPermissionByModule } from '@/api/permission'
+import { fetchOrgTree } from '@/api/org'
+import { fetchGroupTree } from '@/api/group'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
@@ -96,7 +141,6 @@ const drawerWidth = computed(() => (isMobile.value ? '100%' : 800))
 const currentRoleId = ref('')
 const modules = ref<string[]>([])
 const currentModule = ref<string | undefined>(undefined)
-const allPermissions = ref<any[]>([])
 const tableData = ref<any[]>([])
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -108,11 +152,78 @@ const indeterminate = computed(() => {
 })
 
 const columns = [
-  { key: 'code', title: '权限编码', dataIndex: 'code', width: 280 },
-  { key: 'name', title: '权限名称', dataIndex: 'name', width: 180 },
-  { key: 'scope', title: '数据范围', dataIndex: 'scope', width: 400 },
+  { key: 'code', title: '权限编码', dataIndex: 'code', width: 260 },
+  { key: 'name', title: '权限名称', dataIndex: 'name', width: 160 },
+  { key: 'scope', title: '数据范围', dataIndex: 'scope', width: 500 },
 ]
 
+// ── Org / Group trees for pickers ──
+const orgTreeData = ref<any[]>([])
+const groupTreeData = ref<any[]>([])
+const orgMap = ref<Record<string, string>>({})
+const groupMap = ref<Record<string, string>>({})
+
+async function loadTrees() {
+  const [orgRes, groupRes] = await Promise.all([
+    fetchOrgTree({}),
+    fetchGroupTree({}),
+  ])
+  orgTreeData.value = orgRes?.data || []
+  groupTreeData.value = groupRes?.data || []
+  // Build id→name maps
+  const buildMap = (nodes: any[], map: Record<string, string>) => {
+    nodes?.forEach((n: any) => {
+      map[n.id] = n.name
+      if (n.children) buildMap(n.children, map)
+    })
+  }
+  buildMap(orgTreeData.value, orgMap.value)
+  buildMap(groupTreeData.value, groupMap.value)
+}
+
+// ── Org picker ──
+const orgPickerVisible = ref(false)
+const orgPickerRecord = ref<any>(null)
+const orgPickerChecked = ref<string[]>([])
+const orgTreeRef = ref()
+
+function openOrgPicker(record: any) {
+  orgPickerRecord.value = record
+  orgPickerChecked.value = [...(record.customOrgIds || [])]
+  orgPickerVisible.value = true
+}
+function confirmOrgPicker() {
+  if (orgPickerRecord.value) {
+    orgPickerRecord.value.customOrgIds = [...orgPickerChecked.value]
+  }
+  orgPickerVisible.value = false
+}
+function removeOrgId(record: any, id: string) {
+  record.customOrgIds = record.customOrgIds.filter((i: string) => i !== id)
+}
+
+// ── Group picker ──
+const groupPickerVisible = ref(false)
+const groupPickerRecord = ref<any>(null)
+const groupPickerChecked = ref<string[]>([])
+const groupTreeRef = ref()
+
+function openGroupPicker(record: any) {
+  groupPickerRecord.value = record
+  groupPickerChecked.value = [...(record.customGroupIds || [])]
+  groupPickerVisible.value = true
+}
+function confirmGroupPicker() {
+  if (groupPickerRecord.value) {
+    groupPickerRecord.value.customGroupIds = [...groupPickerChecked.value]
+  }
+  groupPickerVisible.value = false
+}
+function removeGroupId(record: any, id: string) {
+  record.customGroupIds = record.customGroupIds.filter((i: string) => i !== id)
+}
+
+// ── Data loading ──
 async function loadModules() {
   const { data } = await fetchPermissionModules()
   modules.value = data || []
@@ -127,17 +238,25 @@ async function loadPermissions() {
   try {
     const [permsRes, ownRes] = await Promise.all([
       fetchPermissionByModule({ module: currentModule.value }),
-      fetchRoleOwnPermission({ role_id: currentRoleId.value }),
+      fetchRoleOwnPermissionDetail({ role_id: currentRoleId.value }),
     ])
-    const ownIds: string[] = ownRes?.data || []
+    const ownMap: Record<string, any> = {}
+    ;(ownRes?.data || []).forEach((item: any) => {
+      ownMap[item.permission_id] = item
+    })
 
-    tableData.value = (permsRes?.data || []).map((p: any) => ({
-      id: p.id,
-      code: p.code,
-      name: p.name,
-      checked: ownIds.includes(p.id),
-      scope: 'ALL',
-    }))
+    tableData.value = (permsRes?.data || []).map((p: any) => {
+      const own = ownMap[p.id]
+      return {
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        checked: !!own,
+        scope: own?.scope || 'ALL',
+        customGroupIds: own?.custom_scope_group_ids ? JSON.parse(own.custom_scope_group_ids) : [],
+        customOrgIds: own?.custom_scope_org_ids ? JSON.parse(own.custom_scope_org_ids) : [],
+      }
+    })
   } finally {
     loading.value = false
   }
@@ -156,9 +275,15 @@ async function handleSubmit() {
   const checkedItems = tableData.value.filter(p => p.checked)
   submitLoading.value = true
   try {
+    const permissions = checkedItems.map(p => ({
+      id: p.id,
+      scope: p.scope,
+      custom_scope_group_ids: p.customGroupIds?.length ? JSON.stringify(p.customGroupIds) : null,
+      custom_scope_org_ids: p.customOrgIds?.length ? JSON.stringify(p.customOrgIds) : null,
+    }))
     const { success } = await fetchRoleGrantPermission({
       role_id: currentRoleId.value,
-      permission_ids: checkedItems.map(p => p.id),
+      permissions,
     })
     if (success) {
       message.success('授权成功')
@@ -173,6 +298,7 @@ async function handleSubmit() {
 function doOpen(role: any) {
   currentRoleId.value = role.id
   loadModules()
+  loadTrees()
   emit('update:open', true)
 }
 
