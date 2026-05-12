@@ -25,6 +25,3 @@ class GroupDao(BaseDAO):
     def find_all_ordered(self) -> List[SysGroup]:
         wrapper = QueryWrapper(SysGroup).order_by_asc(SysGroup.sort_code)
         return self.select_list(wrapper)
-
-    def find_all_groups_ordered(self) -> List[SysGroup]:
-        return self.find_all_ordered()

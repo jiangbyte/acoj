@@ -2,13 +2,14 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from fastapi import Request
 from .models import SysRole
-from .params import RoleVO, RolePageParam, RoleExportParam, RoleImportParam, GrantPermissionParam, GrantResourceParam, ButtonPermissionScope
+from .params import RoleVO, RolePageParam, RoleExportParam, RoleImportParam, GrantPermissionParam, GrantResourceParam, \
+    ButtonPermissionScope, PermissionItem
 from .dao import RoleDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data
 from core.exception import BusinessException
 from core.enums import ExportTypeEnum
-from core.utils import export_excel, strip_system_fields, apply_update, make_template, generate_id
+from core.utils import export_excel, strip_system_fields, apply_update, make_template
 from core.auth import HeiAuthTool
 import logging
 
