@@ -49,11 +49,36 @@ class RoleDao(BaseDAO):
         ).scalars().all()
         return list(rows)
 
-    def grant_permissions(self, role_id: str, permission_ids: List[str], created_by: Optional[str] = None,
-                          scope: Optional[str] = None, custom_scope_group_ids: Optional[str] = None):
+    def get_permission_details_by_role_id(self, role_id: str) -> list[dict]:
+        """Return permission_id + scope + custom IDs for a role."""
+        rows = self.db.execute(
+            select(
+                RalRolePermission.permission_id,
+                RalRolePermission.scope,
+                RalRolePermission.custom_scope_group_ids,
+                RalRolePermission.custom_scope_org_ids,
+            ).where(
+                RalRolePermission.role_id == role_id,
+                RalRolePermission.is_deleted == self._soft_delete_not_deleted
+            )
+        ).all()
+        return [
+            {
+                "permission_id": r[0],
+                "scope": r[1] or "ALL",
+                "custom_scope_group_ids": r[2],
+                "custom_scope_org_ids": r[3],
+            }
+            for r in rows
+        ]
+
+    def grant_permissions(self, role_id: str, permissions: List['PermissionItem'], created_by: Optional[str] = None):
+        from ..params import PermissionItem
         now = datetime.now()
         not_del = self._soft_delete_not_deleted
         del_val = self._soft_delete_deleted
+
+        incoming_pids = [p.id for p in permissions]
 
         existing = self.db.execute(
             select(RalRolePermission).where(RalRolePermission.role_id == role_id)
@@ -61,20 +86,22 @@ class RoleDao(BaseDAO):
         existing_by_pid = {r.permission_id: r for r in existing}
 
         for r in existing:
-            if r.permission_id not in permission_ids and r.is_deleted == not_del:
+            if r.permission_id not in incoming_pids and r.is_deleted == not_del:
                 r.is_deleted = del_val
 
-        for pid in permission_ids:
-            if pid in existing_by_pid:
-                rel = existing_by_pid[pid]
+        for p in permissions:
+            if p.id in existing_by_pid:
+                rel = existing_by_pid[p.id]
                 rel.is_deleted = not_del
-                rel.scope = scope
-                rel.custom_scope_group_ids = custom_scope_group_ids
+                rel.scope = p.scope
+                rel.custom_scope_group_ids = p.custom_scope_group_ids
+                rel.custom_scope_org_ids = p.custom_scope_org_ids
                 rel.created_by = created_by
             else:
                 rel = RalRolePermission(
-                    id=generate_id(), role_id=role_id, permission_id=pid,
-                    scope=scope, custom_scope_group_ids=custom_scope_group_ids,
+                    id=generate_id(), role_id=role_id, permission_id=p.id,
+                    scope=p.scope, custom_scope_group_ids=p.custom_scope_group_ids,
+                    custom_scope_org_ids=p.custom_scope_org_ids,
                     is_deleted=not_del, created_at=now, created_by=created_by
                 )
                 self.db.add(rel)
@@ -93,6 +120,7 @@ class RoleDao(BaseDAO):
         now = datetime.now()
         not_del = self._soft_delete_not_deleted
         del_val = self._soft_delete_deleted
+        resource_ids = list(dict.fromkeys(resource_ids))  # deduplicate
 
         existing = self.db.execute(
             select(RalRoleResource).where(RalRoleResource.role_id == role_id)

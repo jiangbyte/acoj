@@ -5,7 +5,7 @@ from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission
 from core.utils.excel_utils import validate_import_file
-from ...params import GroupVO, GroupPageParam, GroupTreeParam, GroupExportParam, GroupImportParam, GrantGroupRoleParam
+from ...params import GroupVO, GroupPageParam, GroupTreeParam, GroupExportParam, GroupImportParam
 from ...service import GroupService
 from openpyxl import load_workbook
 import io
@@ -179,31 +179,4 @@ async def import_data(
     return success(result)
 
 
-@router.post(
-    "/api/v1/sys/group/grant-role",
-    summary="分配用户组角色",
-    response_model=Result
-)
-@HeiCheckPermission("sys:group:grant-role")
-async def grant_role(
-    request: Request,
-    param: GrantGroupRoleParam,
-    db: Session = Depends(get_db)
-):
-    service = GroupService(db)
-    await service.grant_roles(param, request)
-    return success()
-
-
-@router.get(
-    "/api/v1/sys/group/own-roles",
-    summary="获取用户组已分配的角色ID列表"
-)
-@HeiCheckPermission("sys:group:own-roles")
-async def own_roles(
-    request: Request,
-    group_id: str = Query(...),
-    db: Session = Depends(get_db)
-):
-    service = GroupService(db)
-    return success(service.get_group_role_ids(group_id))
+# 用户组-角色关联已废弃（使用 ral_role_permission.scope 的 GROUP / CUSTOM_GROUP）

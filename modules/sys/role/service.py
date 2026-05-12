@@ -60,7 +60,7 @@ class RoleService:
 
     async def grant_permissions(self, param: GrantPermissionParam, request: Optional[Request] = None) -> None:
         created_by = await self._get_current_user_id(request)
-        self.dao.grant_permissions(param.role_id, param.permission_ids, created_by, param.scope, param.custom_scope_group_ids)
+        self.dao.grant_permissions(param.role_id, param.permissions, created_by)
 
     async def grant_resources(self, param: GrantResourceParam, request: Optional[Request] = None) -> None:
         created_by = await self._get_current_user_id(request)
@@ -68,6 +68,9 @@ class RoleService:
 
     def get_role_permission_ids(self, role_id: str) -> List[str]:
         return self.dao.get_permission_ids_by_role_id(role_id)
+
+    def get_role_permission_details(self, role_id: str) -> list[dict]:
+        return self.dao.get_permission_details_by_role_id(role_id)
 
     def get_role_resource_ids(self, role_id: str) -> List[str]:
         return self.dao.get_resource_ids_by_role_id(role_id)

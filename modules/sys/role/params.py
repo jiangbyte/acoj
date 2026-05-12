@@ -69,11 +69,16 @@ class RoleImportParam(BaseModel):
     data: List[RoleVO]
 
 
+class PermissionItem(BaseModel):
+    id: str
+    scope: str = "ALL"
+    custom_scope_group_ids: Optional[str] = None
+    custom_scope_org_ids: Optional[str] = None
+
+
 class GrantPermissionParam(BaseModel):
     role_id: str
-    permission_ids: List[str]
-    scope: Optional[str] = None
-    custom_scope_group_ids: Optional[str] = None
+    permissions: List[PermissionItem]
 
 
 class GrantResourceParam(BaseModel):

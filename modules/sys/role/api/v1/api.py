@@ -197,6 +197,20 @@ async def own_permission(
 
 
 @router.get(
+    "/api/v1/sys/role/own-permission-detail",
+    summary="获取角色已分配的权限详情（含scope和自定义范围）"
+)
+@HeiCheckPermission("sys:role:ownPermission")
+async def own_permission_detail(
+    request: Request,
+    role_id: str = Query(...),
+    db: Session = Depends(get_db)
+):
+    service = RoleService(db)
+    return success(service.get_role_permission_details(role_id))
+
+
+@router.get(
     "/api/v1/sys/role/own-resource",
     summary="获取角色已分配的资源ID列表"
 )
