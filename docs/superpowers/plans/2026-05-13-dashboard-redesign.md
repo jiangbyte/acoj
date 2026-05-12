@@ -1,3 +1,265 @@
+# Dashboard Redesign Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Restructure the dashboard page with personal info as top priority, followed by data stats and charts, referencing Snowy admin's card-based design patterns.
+
+**Architecture:** Backend additions are minimal — add `sys_info` and `recent_logins` to the existing dashboard endpoint, extend current user API with org/position/last-login. Frontend restructures into 4 vertical card rows: user info → stats + trend chart → distribution charts → system info + recent logins.
+
+**Tech Stack:** Python 3.12+ / FastAPI / SQLAlchemy, Vue 3 + Composition API, Ant Design Vue, ECharts, Pinia
+
+---
+
+### Task 1: Backend — Extend current user API with org/position/login info
+
+**Files:**
+- Modify: `E:\DevProjects\hei\hei-fastapi\modules\sys\user\service.py` (get_current_user method, ~line 182)
+
+- [ ] **Step 1: Add org/position/last-login fields to get_current_user()**
+
+In `modules/sys/user/service.py`, replace the `get_current_user` method:
+
+```python
+async def get_current_user(self, request: Request) -> Optional[Dict]:
+    user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
+    if not user_id:
+        return None
+    entity = self.find_by_id(user_id)
+    if not entity:
+        return None
+    
+    org_name = None
+    position_name = None
+    if entity.org_id:
+        from modules.sys.org.models import SysOrg
+        org = self.dao.db.get(SysOrg, entity.org_id)
+        if org:
+            org_name = org.name
+    if entity.position_id:
+        from modules.sys.position.models import SysPosition
+        pos = self.dao.db.get(SysPosition, entity.position_id)
+        if pos:
+            position_name = pos.name
+    
+    return {
+        "id": entity.id,
+        "account": entity.account,
+        "nickname": entity.nickname,
+        "avatar": entity.avatar,
+        "status": entity.status,
+        "org_name": org_name,
+        "position_name": position_name,
+        "last_login_at": entity.last_login_at.isoformat() if entity.last_login_at else None,
+        "last_login_ip": entity.last_login_ip,
+        "login_count": entity.login_count or 0,
+    }
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add "E:\DevProjects\hei\hei-fastapi\modules\sys\user\service.py"
+git commit -m "feat: add org/position/last-login fields to current user API"
+```
+
+---
+
+### Task 2: Backend — Add SysInfo and RecentLogin to dashboard API
+
+**Files:**
+- Modify: `E:\DevProjects\hei\hei-fastapi\modules\sys\analyze\params.py`
+- Modify: `E:\DevProjects\hei\hei-fastapi\modules\sys\analyze\dao.py`
+- Modify: `E:\DevProjects\hei\hei-fastapi\modules\sys\analyze\service.py`
+
+- [ ] **Step 1: Add SysInfo and RecentLogin models to params.py**
+
+Add after `class CategoryDistribution`:
+
+```python
+import platform
+import socket
+import datetime
+from datetime import datetime as dt
+
+
+class SysInfo(BaseModel):
+    python_version: str = ""
+    os_name: str = ""
+    server_ip: str = ""
+    run_time: str = ""
+
+
+class RecentLogin(BaseModel):
+    nickname: str
+    account: str
+    last_login_at: Optional[datetime] = None
+    last_login_ip: Optional[str] = None
+```
+
+- [ ] **Step 2: Add recent_logins and sys_info fields to DashboardVO**
+
+Replace the `DashboardVO` class:
+
+```python
+class DashboardVO(BaseModel):
+    stats: DashboardStats
+    user_trend: List[TrendItem] = []
+    org_user_distribution: List[OrgUserDistribution] = []
+    role_category_distribution: List[CategoryDistribution] = []
+    sys_info: SysInfo = SysInfo()
+    recent_logins: List[RecentLogin] = []
+```
+
+- [ ] **Step 3: Add get_recent_logins to dao.py**
+
+Add to `AnalyzeDao` class:
+
+```python
+def get_recent_logins(self, limit: int = 10) -> List[dict]:
+    stmt = text("""
+        SELECT nickname, account, last_login_at, last_login_ip
+        FROM sys_user
+        WHERE is_deleted = 'NO' AND last_login_at IS NOT NULL
+        ORDER BY last_login_at DESC
+        LIMIT :limit
+    """)
+    result = self.db.execute(stmt, {"limit": limit})
+    return [
+        {"nickname": row[0], "account": row[1], "last_login_at": row[2], "last_login_ip": row[3]}
+        for row in result
+    ]
+```
+
+- [ ] **Step 4: Add sys_info and recent_logins to service.py**
+
+Add server start time tracker at the top of `service.py`:
+
+```python
+import platform
+import socket
+import datetime
+
+SERVER_START_TIME = datetime.datetime.now()
+```
+
+Add methods to `AnalyzeService`:
+
+```python
+def _get_sys_info(self) -> SysInfo:
+    try:
+        hostname = socket.gethostname()
+        ip = socket.gethostbyname(hostname)
+    except Exception:
+        ip = "unknown"
+    
+    uptime = datetime.datetime.now() - SERVER_START_TIME
+    days = uptime.days
+    hours, remainder = divmod(uptime.seconds, 3600)
+    minutes = remainder // 60
+    if days > 0:
+        run_time = f"{days}天 {hours}小时 {minutes}分钟"
+    else:
+        run_time = f"{hours}小时 {minutes}分钟"
+    
+    return SysInfo(
+        python_version=platform.python_version(),
+        os_name=platform.system() + " " + platform.release(),
+        server_ip=ip,
+        run_time=run_time,
+    )
+
+def _get_recent_logins(self) -> List[RecentLogin]:
+    return [RecentLogin(**item) for item in self.dao.get_recent_logins()]
+```
+
+Update the `dashboard()` method:
+
+```python
+def dashboard(self) -> DashboardVO:
+    stats = DashboardStats(
+        total_users=self.dao.count_users(),
+        active_users=self.dao.count_active_users(),
+        total_roles=self.dao.count_roles(),
+        total_orgs=self.dao.count_orgs(),
+        total_configs=self.dao.count_configs(),
+        total_notices=self.dao.count_notices(),
+    )
+    user_trend = [TrendItem(**item) for item in self.dao.user_trend()]
+    org_dist = [OrgUserDistribution(**item) for item in self.dao.org_user_distribution()]
+    role_dist = [CategoryDistribution(**item) for item in self.dao.role_category_distribution()]
+
+    return DashboardVO(
+        stats=stats,
+        user_trend=user_trend,
+        org_user_distribution=org_dist,
+        role_category_distribution=role_dist,
+        sys_info=self._get_sys_info(),
+        recent_logins=self._get_recent_logins(),
+    )
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add "E:\DevProjects\hei\hei-fastapi\modules\sys\analyze\params.py" "E:\DevProjects\hei\hei-fastapi\modules\sys\analyze\dao.py" "E:\DevProjects\hei\hei-fastapi\modules\sys\analyze\service.py"
+git commit -m "feat: add sys_info and recent_logins to dashboard API"
+```
+
+---
+
+### Task 3: Frontend — Update dashboard API types
+
+**Files:**
+- Modify: `E:\DevProjects\hei\hei-admin-vue\src\api\dashboard.ts`
+
+- [ ] **Step 1: Add SysInfo, RecentLogin interfaces and update DashboardData**
+
+Replace `DashboardData` section in `src/api/dashboard.ts`:
+
+```typescript
+export interface SysInfo {
+  python_version: string
+  os_name: string
+  server_ip: string
+  run_time: string
+}
+
+export interface RecentLogin {
+  nickname: string
+  account: string
+  last_login_at: string | null
+  last_login_ip: string | null
+}
+
+export interface DashboardData {
+  stats: DashboardStats
+  user_trend: TrendItem[]
+  org_user_distribution: OrgUserDistribution[]
+  role_category_distribution: CategoryDistribution[]
+  sys_info: SysInfo
+  recent_logins: RecentLogin[]
+}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add "E:\DevProjects\hei\hei-admin-vue\src\api\dashboard.ts"
+git commit -m "feat: add SysInfo and RecentLogin types for dashboard"
+```
+
+---
+
+### Task 4: Frontend — Rewrite dashboard page
+
+**Files:**
+- Modify: `E:\DevProjects\hei\hei-admin-vue\src\views\dashboard\index.vue`
+
+- [ ] **Step 1: Write the full new template and script**
+
+Replace `src/views/dashboard/index.vue`:
+
+```vue
 <template>
   <div class="dashboard">
     <!-- Row 1: User Info Card -->
@@ -31,7 +293,11 @@
       <a-col :xs="24" :lg="8" class="equal-height-col">
         <a-card title="数据概览" :body-style="{ padding: '12px' }" :loading="loading" class="equal-height-card">
           <div class="stats-grid">
-            <div v-for="card in statCards" :key="card.key" class="stat-item">
+            <div
+              v-for="card in statCards"
+              :key="card.key"
+              class="stat-item"
+            >
               <div
                 class="stat-icon"
                 :style="{ background: card.bg, color: card.color }"
@@ -74,7 +340,7 @@
         <a-card title="系统信息" :body-style="{ padding: '12px' }" :loading="loading">
           <a-descriptions :column="1" size="small">
             <a-descriptions-item label="Python版本">
-              <a-tag color="blue">{{ data?.sys_info?.python_version || '-' }}</a-tag>
+              <a-tag color="blue">{{ (data?.sys_info?.python_version || '-') }}</a-tag>
             </a-descriptions-item>
             <a-descriptions-item label="操作系统">
               <span class="info-value">{{ data?.sys_info?.os_name || '-' }}</span>
@@ -466,3 +732,15 @@ onUnmounted(() => {
   color: var(--text-color);
 }
 </style>
+```
+
+- [ ] **Step 2: Restart dev server and verify**
+
+The user should restart the dev server to pick up API changes and verify the dashboard renders correctly.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add "E:\DevProjects\hei\hei-admin-vue\src\views\dashboard\index.vue"
+git commit -m "feat: redesign dashboard with user info card, stats grid, system info, and recent logins"
+```
