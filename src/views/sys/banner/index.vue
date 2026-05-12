@@ -44,7 +44,7 @@
     <AppTable
       ref="tableRef"
       :columns="columns"
-      :fetch-data="bannerApi.page"
+      :fetch-data="fetchBannerPage"
       :search-form="searchForm"
       :row-selection="rowSelection"
     >
@@ -135,7 +135,13 @@ import {
   UploadOutlined,
   DownloadOutlined,
 } from '@ant-design/icons-vue'
-import { bannerApi } from '@/api/banner'
+import {
+  fetchBannerPage,
+  fetchBannerRemove,
+  fetchBannerExport,
+  fetchBannerTemplate,
+  fetchBannerImport,
+} from '@/api/banner'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
@@ -200,7 +206,7 @@ function resetSearch() {
 }
 
 async function handleDelete(id: string) {
-  const { success } = await bannerApi.remove({ ids: [id] })
+  const { success } = await fetchBannerRemove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     tableRef.value?.refresh()
@@ -211,7 +217,7 @@ function handleBatchDelete() {
   confirmDelete({
     name: '轮播图',
     selectedKeys: selectedKeys.value,
-    deleteApi: bannerApi.remove,
+    deleteApi: fetchBannerRemove,
     onSuccess: () => {
       selectedKeys.value = []
       tableRef.value?.refresh()
@@ -228,7 +234,7 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await bannerApi.template()
+    const blob = await fetchBannerTemplate()
     downloadBlob(blob, '轮播图导入模板.xlsx')
   } catch {
     message.error('下载模板失败')
@@ -239,7 +245,7 @@ async function handleDownloadTemplate() {
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await bannerApi.export(params)
+    const blob = await fetchBannerExport(params)
     downloadBlob(blob, `轮播图数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
@@ -250,7 +256,7 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await bannerApi.importFile(file)
+    const { success, data } = await fetchBannerImport(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')

@@ -71,7 +71,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { groupApi } from '@/api/group'
+import { fetchGroupTree } from '@/api/group'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open'])
@@ -90,7 +90,7 @@ const categoryMap: Record<string, string> = {
 const groupNameMap = ref<Record<string, string>>({})
 
 async function loadGroupNames() {
-  const { data: tree } = await groupApi.tree({})
+  const { data: tree } = await fetchGroupTree({})
   const map: Record<string, string> = {}
   function walk(nodes: any[]) {
     for (const n of nodes) {

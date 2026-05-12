@@ -137,8 +137,8 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { message } from 'ant-design-vue'
 import { fetchRoleGrantResource, fetchRoleOwnResource, fetchRoleOwnPermissionDetail } from '@/api/role'
 import { fetchResourceTree } from '@/api/resource'
-import { orgApi } from '@/api/org'
-import { groupApi } from '@/api/group'
+import { fetchOrgTree } from '@/api/org'
+import { fetchGroupTree } from '@/api/group'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
@@ -349,8 +349,8 @@ function removeGroupId(record: any, id: string) {
 
 async function loadTrees() {
   const [orgRes, groupRes] = await Promise.all([
-    orgApi.tree({}),
-    groupApi.tree({}),
+    fetchOrgTree({}),
+    fetchGroupTree({}),
   ])
   orgTreeData.value = orgRes?.data || []
   groupTreeData.value = groupRes?.data || []

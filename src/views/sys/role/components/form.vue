@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { roleApi } from '@/api/role'
+import { fetchRoleDetail, fetchRoleCreate, fetchRoleModify } from '@/api/role'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -63,7 +63,7 @@ async function doOpen(row?: any) {
   if (row) {
     isEdit.value = true
     currentId.value = row.id
-    const { data } = await roleApi.detail({ id: row.id })
+    const { data } = await fetchRoleDetail({ id: row.id })
     if (data) Object.assign(form, data)
   } else {
     isEdit.value = false
@@ -75,9 +75,9 @@ async function doOpen(row?: any) {
 
 async function handleSubmit(f: any) {
   if (currentId.value) {
-    return await roleApi.modify({ ...f, id: currentId.value })
+    return await fetchRoleModify({ ...f, id: currentId.value })
   } else {
-    return await roleApi.create(f)
+    return await fetchRoleCreate(f)
   }
 }
 

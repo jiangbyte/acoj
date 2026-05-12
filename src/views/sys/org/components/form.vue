@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { orgApi } from '@/api/org'
+import { fetchOrgDetail, fetchOrgCreate, fetchOrgModify, fetchOrgTree } from '@/api/org'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -75,7 +75,7 @@ const initialForm = () => ({
 const form = reactive(initialForm())
 
 async function loadTree() {
-  const { data } = await orgApi.tree({})
+  const { data } = await fetchOrgTree({})
   treeData.value = [
     { id: '0', label: '顶级', children: data || [] },
   ]
@@ -86,7 +86,7 @@ async function doOpen(row?: any, parentId?: string) {
   if (row) {
     isEdit.value = true
     currentId.value = row.id
-    const { data } = await orgApi.detail({ id: row.id })
+    const { data } = await fetchOrgDetail({ id: row.id })
     if (data) Object.assign(form, data)
   } else {
     isEdit.value = false
@@ -99,9 +99,9 @@ async function doOpen(row?: any, parentId?: string) {
 
 async function handleSubmit(f: any) {
   if (currentId.value) {
-    return await orgApi.modify({ ...f, id: currentId.value })
+    return await fetchOrgModify({ ...f, id: currentId.value })
   } else {
-    return await orgApi.create(f)
+    return await fetchOrgCreate(f)
   }
 }
 

@@ -177,7 +177,12 @@ defineOptions({ name: 'ResourceButtonManager' })
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
-import { resourceApi, fetchResourceTree } from '@/api/resource'
+import {
+  fetchResourceTree,
+  fetchResourceCreate,
+  fetchResourceModify,
+  fetchResourceRemove,
+} from '@/api/resource'
 import { fetchPermissionModules, fetchPermissionByModule } from '@/api/permission'
 
 const props = defineProps<{ open: boolean }>()
@@ -252,7 +257,7 @@ async function handleSubmit() {
   try {
     await Promise.all(
       buttonList.value.map((b) =>
-        resourceApi.modify({
+        fetchResourceModify({
           id: b.id,
           extra: JSON.stringify({ permission_code: b.permission_code || null }),
         })
@@ -284,7 +289,7 @@ async function confirmCreate() {
   createLoading.value = true
   try {
     const parent = parentResource.value
-    await resourceApi.create({
+    await fetchResourceCreate({
       name: createForm.value.name,
       code: createForm.value.code,
       sort_code: createForm.value.sort_code,
@@ -370,7 +375,7 @@ function openDeleteConfirm(record: any) {
 async function confirmDelete() {
   if (!deleteTarget.value) return
   try {
-    await resourceApi.remove({ ids: [deleteTarget.value.id] })
+    await fetchResourceRemove({ ids: [deleteTarget.value.id] })
     message.success('删除成功')
     buttonList.value = buttonList.value.filter((b) => b.id !== deleteTarget.value.id)
     manageModalVisible.value = false

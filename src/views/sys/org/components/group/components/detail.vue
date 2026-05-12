@@ -71,7 +71,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { orgApi } from '@/api/org'
+import { fetchOrgTree } from '@/api/org'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open'])
@@ -89,7 +89,7 @@ const categoryMap: Record<string, string> = {
 const orgNameMap = ref<Record<string, string>>({})
 
 async function loadOrgNames() {
-  const { data: tree } = await orgApi.tree({})
+  const { data: tree } = await fetchOrgTree({})
   const map: Record<string, string> = {}
   function walk(nodes: any[]) {
     for (const n of nodes) {

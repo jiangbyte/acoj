@@ -67,7 +67,7 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { noticeApi } from '@/api/notice'
+import { fetchNoticeDetail, fetchNoticeCreate, fetchNoticeModify } from '@/api/notice'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -96,7 +96,7 @@ async function doOpen(row?: any) {
   if (row) {
     isEdit.value = true
     currentId.value = row.id
-    const { data } = await noticeApi.detail({ id: row.id })
+    const { data } = await fetchNoticeDetail({ id: row.id })
     if (data) Object.assign(form, data)
   } else {
     isEdit.value = false
@@ -108,9 +108,9 @@ async function doOpen(row?: any) {
 
 async function handleSubmit(f: any) {
   if (currentId.value) {
-    return await noticeApi.modify({ ...f, id: currentId.value })
+    return await fetchNoticeModify({ ...f, id: currentId.value })
   } else {
-    return await noticeApi.create(f)
+    return await fetchNoticeCreate(f)
   }
 }
 

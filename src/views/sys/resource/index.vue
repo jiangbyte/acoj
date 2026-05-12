@@ -129,7 +129,13 @@ import {
   DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
-import { resourceApi, fetchResourceTree } from '@/api/resource'
+import {
+  fetchResourceTree,
+  fetchResourceRemove,
+  fetchResourceExport,
+  fetchResourceTemplate,
+  fetchResourceImport,
+} from '@/api/resource'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppTreeTable from '@/components/table/AppTreeTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
@@ -228,7 +234,7 @@ function openCreate(parent?: any) { formRef.value?.doOpen(undefined, parent?.id)
 function openButtonManager(record: any) { buttonManagerRef.value?.doOpen(record) }
 
 async function handleDelete(id: string) {
-  const { success } = await resourceApi.remove({ ids: [id] })
+  const { success } = await fetchResourceRemove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     loadTree()
@@ -239,7 +245,7 @@ function handleBatchDelete() {
   confirmDelete({
     name: '资源',
     selectedKeys: selectedKeys.value,
-    deleteApi: resourceApi.remove,
+    deleteApi: fetchResourceRemove,
     onSuccess: () => {
       selectedKeys.value = []
       loadTree()
@@ -267,7 +273,7 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await resourceApi.template()
+    const blob = await fetchResourceTemplate()
     downloadBlob(blob, '资源导入模板.xlsx')
   } catch { message.error('下载模板失败') }
   finally { templateLoading.value = false }
@@ -275,7 +281,7 @@ async function handleDownloadTemplate() {
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await resourceApi.export(params)
+    const blob = await fetchResourceExport(params)
     downloadBlob(blob, `资源数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
@@ -284,7 +290,7 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await resourceApi.importFile(file)
+    const { success, data } = await fetchResourceImport(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')

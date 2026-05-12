@@ -30,7 +30,7 @@
 <script setup lang="ts">
 defineOptions({ name: 'UserForm' })
 import { reactive, ref } from 'vue'
-import { userApi } from '@/api/user'
+import { fetchUserDetail, fetchUserCreate, fetchUserModify } from '@/api/user'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -53,7 +53,7 @@ async function doOpen(row?: any) {
   if (row) {
     isEdit.value = true
     currentId.value = row.id
-    const { data } = await userApi.detail({ id: row.id })
+    const { data } = await fetchUserDetail({ id: row.id })
     if (data) Object.assign(form, data)
   } else {
     isEdit.value = false
@@ -65,9 +65,9 @@ async function doOpen(row?: any) {
 
 async function handleSubmit(f: any) {
   if (currentId.value) {
-    return await userApi.modify({ ...f, id: currentId.value })
+    return await fetchUserModify({ ...f, id: currentId.value })
   } else {
-    return await userApi.create(f)
+    return await fetchUserCreate(f)
   }
 }
 

@@ -20,7 +20,7 @@
     <AppTable
       ref="tableRef"
       :columns="columns"
-      :fetch-data="roleApi.page"
+      :fetch-data="fetchRolePage"
       :search-form="searchForm"
       :row-selection="rowSelection"
     >
@@ -132,7 +132,13 @@ import {
   DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
-import { roleApi } from '@/api/role'
+import {
+  fetchRolePage,
+  fetchRoleRemove,
+  fetchRoleExport,
+  fetchRoleTemplate,
+  fetchRoleImport,
+} from '@/api/role'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
@@ -185,7 +191,7 @@ function openEdit(record: any) { formRef.value?.doOpen(record) }
 function openCreate() { formRef.value?.doOpen() }
 
 async function handleDelete(id: string) {
-  const { success } = await roleApi.remove({ ids: [id] })
+  const { success } = await fetchRoleRemove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     tableRef.value?.refresh()
@@ -196,7 +202,7 @@ function handleBatchDelete() {
   confirmDelete({
     name: '角色',
     selectedKeys: selectedKeys.value,
-    deleteApi: roleApi.remove,
+    deleteApi: fetchRoleRemove,
     onSuccess: () => {
       selectedKeys.value = []
       tableRef.value?.refresh()
@@ -225,7 +231,7 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await roleApi.template()
+    const blob = await fetchRoleTemplate()
     downloadBlob(blob, '角色导入模板.xlsx')
   } catch { message.error('下载模板失败') }
   finally { templateLoading.value = false }
@@ -233,7 +239,7 @@ async function handleDownloadTemplate() {
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await roleApi.export(params)
+    const blob = await fetchRoleExport(params)
     downloadBlob(blob, `角色数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
@@ -242,7 +248,7 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await roleApi.importFile(file)
+    const { success, data } = await fetchRoleImport(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')

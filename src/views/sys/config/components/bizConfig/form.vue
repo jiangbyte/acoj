@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { configApi } from '@/api/config'
+import { fetchConfigDetail, fetchConfigCreate, fetchConfigModify } from '@/api/config'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -48,7 +48,7 @@ async function doOpen(row?: any) {
   if (row) {
     isEdit.value = true
     currentId.value = row.id
-    const { data } = await configApi.detail({ id: row.id })
+    const { data } = await fetchConfigDetail({ id: row.id })
     if (data) Object.assign(form, data)
   } else {
     isEdit.value = false
@@ -60,9 +60,9 @@ async function doOpen(row?: any) {
 
 async function handleSubmit(f: any) {
   if (currentId.value) {
-    return await configApi.modify({ ...f, id: currentId.value })
+    return await fetchConfigModify({ ...f, id: currentId.value })
   } else {
-    return await configApi.create({ ...f, category: 'BIZ_DEFINE' })
+    return await fetchConfigCreate({ ...f, category: 'BIZ_DEFINE' })
   }
 }
 

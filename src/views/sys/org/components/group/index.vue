@@ -196,7 +196,13 @@ import {
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import { useRouter, useRoute } from 'vue-router'
-import { groupApi } from '@/api/group'
+import {
+  fetchGroupTree,
+  fetchGroupRemove,
+  fetchGroupExport,
+  fetchGroupTemplate,
+  fetchGroupImport,
+} from '@/api/group'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppSplitPanel from '@/components/layout/AppSplitPanel.vue'
 import AppTreeTable from '@/components/table/AppTreeTable.vue'
@@ -271,7 +277,7 @@ function extractSubtree(nodes: any[], id: string): any[] {
 async function loadLeftGroupTree() {
   groupTreeLoading.value = true
   try {
-    const { data } = await groupApi.tree({ org_id: orgId.value || undefined })
+    const { data } = await fetchGroupTree({ org_id: orgId.value || undefined })
     allGroupTreeData.value = data || []
     groupTreeData.value = data || []
   } finally {
@@ -299,7 +305,7 @@ function filterTreeTableByKeyword(nodes: any[], keyword: string): any[] {
 async function loadGroupTree() {
   treeTableLoading.value = true
   try {
-    const { data } = await groupApi.tree({ org_id: orgId.value || undefined })
+    const { data } = await fetchGroupTree({ org_id: orgId.value || undefined })
     const fullTree = data || []
     if (selectedGroupKeys.value.length > 0) {
       treeTableData.value = filterTreeTableByKeyword(
@@ -375,7 +381,7 @@ function openCreate(parent?: any) {
 }
 
 async function handleDelete(id: string) {
-  const { success } = await groupApi.remove({ ids: [id] })
+  const { success } = await fetchGroupRemove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     loadGroupTree()
@@ -386,7 +392,7 @@ function handleBatchDelete() {
   confirmDelete({
     name: '用户组',
     selectedKeys: selectedKeys.value,
-    deleteApi: groupApi.remove,
+    deleteApi: fetchGroupRemove,
     onSuccess: () => {
       selectedKeys.value = []
       loadGroupTree()
@@ -420,7 +426,7 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await groupApi.template()
+    const blob = await fetchGroupTemplate()
     downloadBlob(blob, '用户组导入模板.xlsx')
   } catch { message.error('下载模板失败') }
   finally { templateLoading.value = false }
@@ -428,7 +434,7 @@ async function handleDownloadTemplate() {
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await groupApi.export(params)
+    const blob = await fetchGroupExport(params)
     downloadBlob(blob, `用户组数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
@@ -437,7 +443,7 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await groupApi.importFile(file)
+    const { success, data } = await fetchGroupImport(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')

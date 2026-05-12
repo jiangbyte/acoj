@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { configApi } from '@/api/config'
+import { fetchConfigDetail } from '@/api/config'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open'])
@@ -38,7 +38,7 @@ async function doOpen(row: any) {
   if (!row?.id) return
   loading.value = true
   try {
-    const res = await configApi.detail({ id: row.id })
+    const res = await fetchConfigDetail({ id: row.id })
     data.value = res?.data || null
   } finally {
     loading.value = false

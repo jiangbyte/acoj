@@ -42,7 +42,7 @@
         <AppTable
           ref="tableRef"
           :columns="columns"
-          :fetch-data="dictApi.page"
+          :fetch-data="fetchDictPage"
           :search-form="searchForm"
           :row-selection="rowSelection"
         >
@@ -192,7 +192,14 @@ import {
   DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
-import { dictApi } from '@/api/dict'
+import {
+  fetchDictPage,
+  fetchDictTree,
+  fetchDictRemove,
+  fetchDictExport,
+  fetchDictTemplate,
+  fetchDictImport,
+} from '@/api/dict'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppSplitPanel from '@/components/layout/AppSplitPanel.vue'
 import AppTable from '@/components/table/AppTable.vue'
@@ -248,7 +255,7 @@ watch(treeSearchKey, (val) => {
 async function loadTree() {
   treeLoading.value = true
   try {
-    const { data } = await dictApi.tree({})
+    const { data } = await fetchDictTree({})
     treeDataOrigin.value = data || []
     treeData.value = data || []
   } finally {
@@ -306,7 +313,7 @@ function openCreate(parent?: any) {
 }
 
 async function handleDelete(id: string) {
-  const { success } = await dictApi.remove({ ids: [id] })
+  const { success } = await fetchDictRemove({ ids: [id] })
   if (success) {
     message.success('删除成功')
     tableRef.value?.refresh()
@@ -318,7 +325,7 @@ function handleBatchDelete() {
   confirmDelete({
     name: '字典',
     selectedKeys: selectedKeys.value,
-    deleteApi: dictApi.remove,
+    deleteApi: fetchDictRemove,
     onSuccess: () => {
       selectedKeys.value = []
       tableRef.value?.refresh()
@@ -353,7 +360,7 @@ const importModalRef = ref()
 async function handleDownloadTemplate() {
   templateLoading.value = true
   try {
-    const blob = await dictApi.template()
+    const blob = await fetchDictTemplate()
     downloadBlob(blob, '字典导入模板.xlsx')
   } catch {
     message.error('下载模板失败')
@@ -364,7 +371,7 @@ async function handleDownloadTemplate() {
 
 async function handleExportWithParams(params: any) {
   try {
-    const blob = await dictApi.export(params)
+    const blob = await fetchDictExport(params)
     downloadBlob(blob, `字典数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
@@ -375,7 +382,7 @@ async function handleExportWithParams(params: any) {
 
 async function handleImport(file: File) {
   try {
-    const { success, data } = await dictApi.importFile(file)
+    const { success, data } = await fetchDictImport(file)
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')

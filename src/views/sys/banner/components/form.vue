@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { bannerApi } from '@/api/banner'
+import { fetchBannerDetail, fetchBannerCreate, fetchBannerModify } from '@/api/banner'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -88,7 +88,7 @@ async function doOpen(row?: any) {
   if (row) {
     isEdit.value = true
     currentId.value = row.id
-    const { data } = await bannerApi.detail({ id: row.id })
+    const { data } = await fetchBannerDetail({ id: row.id })
     if (data) Object.assign(form, data)
   } else {
     isEdit.value = false
@@ -100,9 +100,9 @@ async function doOpen(row?: any) {
 
 async function handleSubmit(f: any) {
   if (currentId.value) {
-    return await bannerApi.modify({ ...f, id: currentId.value })
+    return await fetchBannerModify({ ...f, id: currentId.value })
   } else {
-    return await bannerApi.create(f)
+    return await fetchBannerCreate(f)
   }
 }
 

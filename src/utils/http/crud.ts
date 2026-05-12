@@ -5,24 +5,7 @@ interface CrudConfig {
   hasTree?: boolean
 }
 
-interface CrudApiBase<T> {
-  page(params: any): Promise<Service.ResponseResult<Service.PageResult<T>>>
-  create(data: any): Promise<Service.ResponseResult<T>>
-  modify(data: any): Promise<Service.ResponseResult<T>>
-  remove(data: { ids: string[] }): Promise<Service.ResponseResult>
-  detail(params: { id: string; [key: string]: any }): Promise<Service.ResponseResult<T>>
-  export(params: any): Promise<Blob>
-  template(): Promise<Blob>
-  importFile(file: File): Promise<Service.ResponseResult>
-}
-
-interface CrudApiWithTree<T> extends CrudApiBase<T> {
-  tree(params?: any): Promise<Service.ResponseResult>
-}
-
-export function createCrudApi<T = any>(config: CrudConfig & { hasTree: true }): CrudApiWithTree<T>
-export function createCrudApi<T = any>(config: CrudConfig & { hasTree?: false }): CrudApiBase<T>
-export function createCrudApi<T = any>(config: CrudConfig): CrudApiBase<T> | CrudApiWithTree<T> {
+export function createCrudApi<T = any>(config: CrudConfig) {
   const { basePath, hasTree } = config
 
   return {

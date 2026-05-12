@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
-import { groupApi } from '@/api/group'
+import { fetchGroupDetail, fetchGroupCreate, fetchGroupModify, fetchGroupTree } from '@/api/group'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
 
 defineProps<{ open: boolean }>()
@@ -68,7 +68,7 @@ const groupTreeFieldNames = { children: 'children', label: 'name', value: 'id' }
 async function loadGroupTreeByOrg(orgId?: string) {
   const params: any = {}
   if (orgId) params.org_id = orgId
-  const { data } = await groupApi.tree(params)
+  const { data } = await fetchGroupTree(params)
   allGroupTreeData.value = [
     { id: '0', label: '顶级', children: data || [] },
   ]
@@ -106,7 +106,7 @@ async function doOpen(row?: any, parentId?: string, orgId?: string) {
     isEdit.value = true
     currentId.value = row.id
     editLoading.value = true
-    const { data } = await groupApi.detail({ id: row.id })
+    const { data } = await fetchGroupDetail({ id: row.id })
     if (data) {
       Object.assign(form, data)
       // Load groups under the edit record's org
@@ -130,9 +130,9 @@ async function doOpen(row?: any, parentId?: string, orgId?: string) {
 
 async function handleSubmit(f: any) {
   if (currentId.value) {
-    return await groupApi.modify({ ...f, id: currentId.value })
+    return await fetchGroupModify({ ...f, id: currentId.value })
   } else {
-    return await groupApi.create(f)
+    return await fetchGroupCreate(f)
   }
 }
 

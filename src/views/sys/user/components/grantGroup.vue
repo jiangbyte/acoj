@@ -34,7 +34,7 @@ defineOptions({ name: 'UserGrantGroup' })
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { message } from 'ant-design-vue'
 import { fetchUserGrantGroup, fetchUserOwnGroups } from '@/api/user'
-import { groupApi } from '@/api/group'
+import { fetchGroupTree } from '@/api/group'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
@@ -71,7 +71,7 @@ async function loadData() {
   loading.value = true
   try {
     const [groupRes, ownRes] = await Promise.all([
-      groupApi.tree({}),
+      fetchGroupTree({}),
       fetchUserOwnGroups({ user_id: currentUserId.value }),
     ])
     dataSource.value = flattenTree(groupRes?.data || [])
