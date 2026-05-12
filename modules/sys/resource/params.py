@@ -56,10 +56,10 @@ class ResourceVO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: Optional[str] = None
-    code: str
-    name: str
-    category: str
-    type: str
+    code: Optional[str] = None
+    name: Optional[str] = None
+    category: Optional[str] = None
+    type: Optional[str] = None
     description: Optional[str] = None
     parent_id: Optional[str] = None
     route_path: Optional[str] = None
@@ -130,12 +130,6 @@ class ResourceExportParam(BaseModel):
 
 class ResourceImportParam(BaseModel):
     data: List[ResourceVO]
-
-
-class BindPermissionParam(BaseModel):
-    resource_id: str
-    permission_ids: List[str]
-
 
 class ModulePageParam(PageBounds):
     pass

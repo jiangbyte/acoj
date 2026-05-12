@@ -66,19 +66,3 @@ class SysResource(Base):
     created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='更新时间')
     updated_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='更新用户')
-
-
-class RalResourcePermission(Base):
-    __tablename__ = 'ral_resource_permission'
-    __table_args__ = (
-        Index('uk_resource_permission', 'resource_id', 'permission_id', unique=True),
-        Index('idx_permission_id', 'permission_id'),
-        {'comment': '资源-权限关联'}
-    )
-
-    id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), primary_key=True, comment='主键')
-    resource_id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='资源ID')
-    permission_id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='权限ID')
-    is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'NO'"), comment='逻辑删除')
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='创建时间')
-    created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')

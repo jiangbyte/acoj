@@ -1,4 +1,5 @@
 from typing import Optional, List, Any, Dict
+from modules.sys.role.params import PermissionItem
 from datetime import datetime, date
 from pydantic import BaseModel, ConfigDict, field_validator, model_serializer
 from core.pojo import PageBounds
@@ -92,3 +93,8 @@ class GrantRoleParam(BaseModel):
 class GrantGroupParam(BaseModel):
     user_id: str
     group_ids: List[str]
+
+
+class GrantUserPermissionParam(BaseModel):
+    user_id: str
+    permissions: List[PermissionItem]

@@ -228,25 +228,6 @@ CREATE TABLE `sys_resource`
   ROW_FORMAT = Dynamic;
 
 -- =============================================================================
--- 资源-权限关联
--- =============================================================================
-DROP TABLE IF EXISTS `ral_resource_permission`;
-CREATE TABLE `ral_resource_permission`
-(
-    `id`            varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `resource_id`   varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '资源ID',
-    `permission_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '权限ID',
-    `is_deleted`    varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`    datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_resource_permission` (`resource_id`, `permission_id`) USING BTREE,
-    INDEX `idx_permission_id` (`permission_id`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '资源-权限关联';
-
--- =============================================================================
 -- 模块
 -- =============================================================================
 DROP TABLE IF EXISTS `sys_module`;
@@ -361,32 +342,6 @@ CREATE TABLE `sys_banner`
 ) ENGINE = InnoDB
   CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '轮播图'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 权限
--- =============================================================================
-DROP TABLE IF EXISTS `sys_permission`;
-CREATE TABLE `sys_permission`
-(
-    `id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `code`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限编码（如 sys/user/page）',
-    `name`        varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限名称',
-    `module`      varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '所属模块（如 sys/user）',
-    `category`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT 'BACKEND' COMMENT '权限分类：BACKEND-后端权限，FRONTEND-前端权限',
-    `status`      varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'ENABLED' COMMENT '状态',
-    `sort_code`   int                                                           NULL DEFAULT 0 COMMENT '排序',
-    `is_deleted`  varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`  datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`  datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_code` (`code`) USING BTREE,
-    INDEX `idx_module` (`module`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '权限'
   ROW_FORMAT = Dynamic;
 
 -- =============================================================================
@@ -507,7 +462,7 @@ CREATE TABLE `ral_user_permission`
 (
     `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
     `user_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
-    `permission_id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限ID',
+    `permission_code`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限编码',
     `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ALL' COMMENT '数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组',
     `custom_scope_group_ids` text                                                        NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
     `custom_scope_org_ids`   text                                                        NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
@@ -515,8 +470,8 @@ CREATE TABLE `ral_user_permission`
     `created_at`             datetime                                                     NULL DEFAULT NULL COMMENT '创建时间',
     `created_by`             varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
     PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_user_permission` (`user_id`, `permission_id`) USING BTREE,
-    INDEX `idx_permission_id` (`permission_id`) USING BTREE
+    UNIQUE INDEX `uk_user_permission` (`user_id`, `permission_code`) USING BTREE,
+    INDEX `idx_permission_code` (`permission_code`) USING BTREE
 ) ENGINE = InnoDB
   CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '用户-权限直关联'
@@ -530,7 +485,7 @@ CREATE TABLE `ral_role_permission`
 (
     `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
     `role_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
-    `permission_id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限ID',
+    `permission_code`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限编码',
     `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ALL' COMMENT '数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组',
     `custom_scope_group_ids` text                                                        NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
     `custom_scope_org_ids`   text                                                        NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
@@ -538,8 +493,8 @@ CREATE TABLE `ral_role_permission`
     `created_at`             datetime                                                     NULL DEFAULT NULL COMMENT '创建时间',
     `created_by`             varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
     PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_role_permission` (`role_id`, `permission_id`) USING BTREE,
-    INDEX `idx_permission_id` (`permission_id`) USING BTREE
+    UNIQUE INDEX `uk_role_permission` (`role_id`, `permission_code`) USING BTREE,
+    INDEX `idx_permission_code` (`permission_code`) USING BTREE
 ) ENGINE = InnoDB
   CHARACTER SET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '角色-权限关联'
@@ -760,11 +715,10 @@ VALUES
 -- 系统管理 -> 菜单
 ('res_sys_user_menu', 'sys_user', '用户管理', 'BACKEND_MENU', 'MENU', '用户管理菜单', 'res_sys_admin', '/sys/user', 'sys/user/index', 'user', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('res_sys_role_menu', 'sys_role', '角色管理', 'BACKEND_MENU', 'MENU', '角色管理菜单', 'res_sys_admin', '/sys/role', 'sys/role/index', 'team', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_permission_menu', 'sys_permission', '权限管理', 'BACKEND_MENU', 'MENU', '权限管理菜单', 'res_sys_admin', '/sys/permission', 'sys/permission/index', 'safety', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('res_sys_resource_menu', 'sys_resource_mgr', '资源管理', 'BACKEND_MENU', 'MENU', '资源管理菜单', 'res_sys_admin', '/sys/resource', 'sys/resource/index', 'menu', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('res_sys_org_menu', 'sys_org', '组织管理', 'BACKEND_MENU', 'MENU', '组织管理菜单', 'res_sys_admin', '/sys/org', 'sys/org/index', 'apartment', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_position_menu', 'sys_position', '职位管理', 'BACKEND_MENU', 'MENU', '职位管理菜单', 'res_sys_admin', '/sys/position', 'sys/position/index', 'idcard', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_group_menu', 'sys_group', '用户组管理', 'BACKEND_MENU', 'MENU', '用户组管理菜单', 'res_sys_admin', '/sys/group', 'sys/group/index', 'group', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('res_sys_position_menu', 'sys_position', '职位管理', 'BACKEND_MENU', 'MENU', '职位管理菜单', 'res_sys_admin', '/sys/org/group/position', 'sys/org/components/group/components/position/index', 'idcard', 'NO', 'NO', 'NO', 'YES', 'YES', 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('res_sys_group_menu', 'sys_group', '用户组管理', 'BACKEND_MENU', 'MENU', '用户组管理菜单', 'res_sys_admin', '/sys/org/group', 'sys/org/components/group/index', 'group', 'NO', 'NO', 'NO', 'YES', 'YES', 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('res_sys_dict_menu', 'sys_dict', '字典管理', 'BACKEND_MENU', 'MENU', '字典管理菜单', 'res_sys_admin', '/sys/dict', 'sys/dict/index', 'book', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('res_sys_config_menu', 'sys_config', '系统配置', 'BACKEND_MENU', 'MENU', '系统配置菜单', 'res_sys_admin', '/sys/config', 'sys/config/index', 'setting', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 9, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('res_sys_notice_menu', 'sys_notice', '通知管理', 'BACKEND_MENU', 'MENU', '通知管理菜单', 'res_sys_admin', '/sys/notice', 'sys/notice/index', 'notification', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 10, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
@@ -787,7 +741,6 @@ VALUES
 ('btn_sys_user_import', 'sys_user_import', '用户导入', 'BACKEND_BUTTON', 'BUTTON', '导入用户数据', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('btn_sys_user_grant_role', 'sys_user_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户分配角色', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('btn_sys_user_grant_group', 'sys_user_grant_group', '分配组', 'BACKEND_BUTTON', 'BUTTON', '给用户分配组', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 9, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
 -- 角色管理按钮
 ('btn_sys_role_page', 'sys_role_page', '角色查询', 'BACKEND_BUTTON', 'BUTTON', '查询角色列表', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('btn_sys_role_create', 'sys_role_create', '角色新增', 'BACKEND_BUTTON', 'BUTTON', '新增角色', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
@@ -798,12 +751,6 @@ VALUES
 ('btn_sys_role_grant_perm', 'sys_role_grant_perm', '分配权限', 'BACKEND_BUTTON', 'BUTTON', '给角色分配权限', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('btn_sys_role_grant_resource', 'sys_role_grant_resource', '分配资源', 'BACKEND_BUTTON', 'BUTTON', '给角色分配资源', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 
--- 权限管理按钮
-('btn_sys_permission_page', 'sys_permission_page', '权限查询', 'BACKEND_BUTTON', 'BUTTON', '查询权限列表', 'res_sys_permission_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_permission_create', 'sys_permission_create', '权限新增', 'BACKEND_BUTTON', 'BUTTON', '新增权限', 'res_sys_permission_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_permission_modify', 'sys_permission_modify', '权限修改', 'BACKEND_BUTTON', 'BUTTON', '修改权限', 'res_sys_permission_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_permission_remove', 'sys_permission_remove', '权限删除', 'BACKEND_BUTTON', 'BUTTON', '删除权限', 'res_sys_permission_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_permission_detail', 'sys_permission_detail', '权限详情', 'BACKEND_BUTTON', 'BUTTON', '查看权限详情', 'res_sys_permission_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 
 -- 资源管理按钮
 ('btn_sys_resource_page', 'sys_resource_page', '资源查询', 'BACKEND_BUTTON', 'BUTTON', '查询资源列表', 'res_sys_resource_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
@@ -869,148 +816,9 @@ VALUES
 ('btn_sys_file_page', 'sys_file_page', '文件查询', 'BACKEND_BUTTON', 'BUTTON', '查询文件列表', 'res_sys_file_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
 ('btn_sys_file_remove', 'sys_file_remove', '文件删除', 'BACKEND_BUTTON', 'BUTTON', '删除文件', 'res_sys_file_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
 
--- =============================================================================
--- 权限 sys_permission（与 @HeiCheckPermission 注解一一对应）
--- =============================================================================
-INSERT INTO `sys_permission` (`id`, `code`, `name`, `module`, `category`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES
--- 用户管理
-('p_sys_user_page', 'sys:user:page', '用户分页查询', 'sys/user', 'BACKEND', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_user_create', 'sys:user:create', '用户新增', 'sys/user', 'BACKEND', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_user_modify', 'sys:user:modify', '用户修改', 'sys/user', 'BACKEND', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_user_remove', 'sys:user:remove', '用户删除', 'sys/user', 'BACKEND', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_user_detail', 'sys:user:detail', '用户详情', 'sys/user', 'BACKEND', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_user_export', 'sys:user:export', '用户导出', 'sys/user', 'BACKEND', 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_user_import', 'sys:user:import', '用户导入', 'sys/user', 'BACKEND', 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_user_grant_role', 'sys:user:grant-role', '用户分配角色', 'sys/user', 'BACKEND', 'ENABLED', 8, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_user_grant_group', 'sys:user:grant-group', '用户分配组', 'sys/user', 'BACKEND', 'ENABLED', 9, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_user_own_roles', 'sys:user:own-roles', '用户拥有角色', 'sys/user', 'BACKEND', 'ENABLED', 10, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_user_own_groups', 'sys:user:own-groups', '用户拥有组', 'sys/user', 'BACKEND', 'ENABLED', 11, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 角色管理
-('p_sys_role_page', 'sys:role:page', '角色分页查询', 'sys/role', 'BACKEND', 'ENABLED', 12, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_role_create', 'sys:role:create', '角色新增', 'sys/role', 'BACKEND', 'ENABLED', 13, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_role_modify', 'sys:role:modify', '角色修改', 'sys/role', 'BACKEND', 'ENABLED', 14, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_role_remove', 'sys:role:remove', '角色删除', 'sys/role', 'BACKEND', 'ENABLED', 15, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_role_detail', 'sys:role:detail', '角色详情', 'sys/role', 'BACKEND', 'ENABLED', 16, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_role_export', 'sys:role:export', '角色导出', 'sys/role', 'BACKEND', 'ENABLED', 17, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_role_grant_perm', 'sys:role:grantPermission', '角色分配权限', 'sys/role', 'BACKEND', 'ENABLED', 18, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_role_grant_resource', 'sys:role:grantResource', '角色分配资源', 'sys/role', 'BACKEND', 'ENABLED', 19, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_role_own_perm', 'sys:role:ownPermission', '角色拥有的权限', 'sys/role', 'BACKEND', 'ENABLED', 20, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_role_own_resource', 'sys:role:ownResource', '角色拥有的资源', 'sys/role', 'BACKEND', 'ENABLED', 21, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 权限管理
-('p_sys_permission_page', 'sys:permission:page', '权限分页查询', 'sys/permission', 'BACKEND', 'ENABLED', 22, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_permission_create', 'sys:permission:create', '权限新增', 'sys/permission', 'BACKEND', 'ENABLED', 23, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_permission_modify', 'sys:permission:modify', '权限修改', 'sys/permission', 'BACKEND', 'ENABLED', 24, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_permission_remove', 'sys:permission:remove', '权限删除', 'sys/permission', 'BACKEND', 'ENABLED', 25, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_permission_detail', 'sys:permission:detail', '权限详情', 'sys/permission', 'BACKEND', 'ENABLED', 26, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_permission_export', 'sys:permission:export', '权限导出', 'sys/permission', 'BACKEND', 'ENABLED', 27, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_permission_modules', 'sys:permission:modules', '权限模块列表', 'sys/permission', 'BACKEND', 'ENABLED', 28, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_permission_by_module', 'sys:permission:by-module', '按模块查权限', 'sys/permission', 'BACKEND', 'ENABLED', 29, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 资源管理
-('p_sys_resource_page', 'sys:resource:page', '资源分页查询', 'sys/resource', 'BACKEND', 'ENABLED', 30, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_resource_tree', 'sys:resource:tree', '资源分页查询', 'sys/resource', 'BACKEND', 'ENABLED', 30, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_resource_create', 'sys:resource:create', '资源新增', 'sys/resource', 'BACKEND', 'ENABLED', 31, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_resource_modify', 'sys:resource:modify', '资源修改', 'sys/resource', 'BACKEND', 'ENABLED', 32, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_resource_remove', 'sys:resource:remove', '资源删除', 'sys/resource', 'BACKEND', 'ENABLED', 33, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_resource_detail', 'sys:resource:detail', '资源详情', 'sys/resource', 'BACKEND', 'ENABLED', 34, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_resource_export', 'sys:resource:export', '资源导出', 'sys/resource', 'BACKEND', 'ENABLED', 35, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 组织管理
-('p_sys_org_page', 'sys:org:page', '组织分页查询', 'sys/org', 'BACKEND', 'ENABLED', 36, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_org_tree', 'sys:org:tree', '组织树查询', 'sys/org', 'BACKEND', 'ENABLED', 36, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_org_create', 'sys:org:create', '组织新增', 'sys/org', 'BACKEND', 'ENABLED', 37, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_org_modify', 'sys:org:modify', '组织修改', 'sys/org', 'BACKEND', 'ENABLED', 38, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_org_remove', 'sys:org:remove', '组织删除', 'sys/org', 'BACKEND', 'ENABLED', 39, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_org_detail', 'sys:org:detail', '组织详情', 'sys/org', 'BACKEND', 'ENABLED', 40, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_org_export', 'sys:org:export', '组织导出', 'sys/org', 'BACKEND', 'ENABLED', 41, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_org_grant_role', 'sys:org:grant-role', '组织分配角色', 'sys/org', 'BACKEND', 'ENABLED', 42, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_org_own_roles', 'sys:org:own-roles', '组织拥有角色', 'sys/org', 'BACKEND', 'ENABLED', 43, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 职位管理
-('p_sys_position_page', 'sys:position:page', '职位分页查询', 'sys/position', 'BACKEND', 'ENABLED', 44, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_position_create', 'sys:position:create', '职位新增', 'sys/position', 'BACKEND', 'ENABLED', 45, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_position_modify', 'sys:position:modify', '职位修改', 'sys/position', 'BACKEND', 'ENABLED', 46, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_position_remove', 'sys:position:remove', '职位删除', 'sys/position', 'BACKEND', 'ENABLED', 47, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_position_detail', 'sys:position:detail', '职位详情', 'sys/position', 'BACKEND', 'ENABLED', 48, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_position_export', 'sys:position:export', '职位导出', 'sys/position', 'BACKEND', 'ENABLED', 49, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 用户组管理
-('p_sys_group_page', 'sys:group:page', '用户组分页查询', 'sys/group', 'BACKEND', 'ENABLED', 50, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_group_tree', 'sys:group:tree', '用户组树查询', 'sys/group', 'BACKEND', 'ENABLED', 50, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_group_create', 'sys:group:create', '用户组新增', 'sys/group', 'BACKEND', 'ENABLED', 51, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_group_modify', 'sys:group:modify', '用户组修改', 'sys/group', 'BACKEND', 'ENABLED', 52, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_group_remove', 'sys:group:remove', '用户组删除', 'sys/group', 'BACKEND', 'ENABLED', 53, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_group_detail', 'sys:group:detail', '用户组详情', 'sys/group', 'BACKEND', 'ENABLED', 54, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_group_export', 'sys:group:export', '用户组导出', 'sys/group', 'BACKEND', 'ENABLED', 55, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
--- ('p_sys_group_grant_role', 'sys:group:grant-role', '用户组分配角色', 'sys/group', 'BACKEND', 'ENABLED', 56, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
--- ('p_sys_group_own_roles', 'sys:group:own-roles', '用户组拥有角色', 'sys/group', 'BACKEND', 'ENABLED', 57, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 字典管理
-('p_sys_dict_page', 'sys:dict:page', '字典分页查询', 'sys/dict', 'BACKEND', 'ENABLED', 58, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dict_list', 'sys:dict:list', '字典列表', 'sys/dict', 'BACKEND', 'ENABLED', 59, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dict_tree', 'sys:dict:tree', '字典树查询', 'sys/dict', 'BACKEND', 'ENABLED', 60, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dict_create', 'sys:dict:create', '字典新增', 'sys/dict', 'BACKEND', 'ENABLED', 61, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dict_modify', 'sys:dict:modify', '字典修改', 'sys/dict', 'BACKEND', 'ENABLED', 62, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dict_remove', 'sys:dict:remove', '字典删除', 'sys/dict', 'BACKEND', 'ENABLED', 63, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dict_detail', 'sys:dict:detail', '字典详情', 'sys/dict', 'BACKEND', 'ENABLED', 64, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dict_get_label', 'sys:dict:get-label', '字典标签查询', 'sys/dict', 'BACKEND', 'ENABLED', 65, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dict_get_children', 'sys:dict:get-children', '字典子项查询', 'sys/dict', 'BACKEND', 'ENABLED', 66, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dict_export', 'sys:dict:export', '字典导出', 'sys/dict', 'BACKEND', 'ENABLED', 67, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 系统配置
-('p_sys_config_page', 'sys:config:page', '配置分页查询', 'sys/config', 'BACKEND', 'ENABLED', 68, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_config_list', 'sys:config:list', '配置列表', 'sys/config', 'BACKEND', 'ENABLED', 69, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_config_create', 'sys:config:create', '配置新增', 'sys/config', 'BACKEND', 'ENABLED', 70, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_config_modify', 'sys:config:modify', '配置修改', 'sys/config', 'BACKEND', 'ENABLED', 71, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_config_remove', 'sys:config:remove', '配置删除', 'sys/config', 'BACKEND', 'ENABLED', 72, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_config_detail', 'sys:config:detail', '配置详情', 'sys/config', 'BACKEND', 'ENABLED', 73, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_config_edit', 'sys:config:edit', '配置编辑', 'sys/config', 'BACKEND', 'ENABLED', 74, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 通知管理
-('p_sys_notice_page', 'sys:notice:page', '通知分页查询', 'sys/notice', 'BACKEND', 'ENABLED', 75, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_notice_create', 'sys:notice:create', '通知新增', 'sys/notice', 'BACKEND', 'ENABLED', 76, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_notice_modify', 'sys:notice:modify', '通知修改', 'sys/notice', 'BACKEND', 'ENABLED', 77, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_notice_remove', 'sys:notice:remove', '通知删除', 'sys/notice', 'BACKEND', 'ENABLED', 78, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_notice_detail', 'sys:notice:detail', '通知详情', 'sys/notice', 'BACKEND', 'ENABLED', 79, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_notice_export', 'sys:notice:export', '通知导出', 'sys/notice', 'BACKEND', 'ENABLED', 80, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 轮播图管理
-('p_sys_banner_page', 'sys:banner:page', '轮播分页查询', 'sys/banner', 'BACKEND', 'ENABLED', 81, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_banner_create', 'sys:banner:create', '轮播新增', 'sys/banner', 'BACKEND', 'ENABLED', 82, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_banner_modify', 'sys:banner:modify', '轮播修改', 'sys/banner', 'BACKEND', 'ENABLED', 83, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_banner_remove', 'sys:banner:remove', '轮播删除', 'sys/banner', 'BACKEND', 'ENABLED', 84, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_banner_detail', 'sys:banner:detail', '轮播详情', 'sys/banner', 'BACKEND', 'ENABLED', 85, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_banner_export', 'sys:banner:export', '轮播导出', 'sys/banner', 'BACKEND', 'ENABLED', 86, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 文件管理
-('p_sys_file_upload', 'sys:file:upload', '文件上传', 'sys/file', 'BACKEND', 'ENABLED', 87, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_file_download', 'sys:file:download', '文件下载', 'sys/file', 'BACKEND', 'ENABLED', 88, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_file_page', 'sys:file:page', '文件分页查询', 'sys/file', 'BACKEND', 'ENABLED', 89, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_file_detail', 'sys:file:detail', '文件详情', 'sys/file', 'BACKEND', 'ENABLED', 90, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_file_remove', 'sys:file:remove', '文件删除', 'sys/file', 'BACKEND', 'ENABLED', 91, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 代码生成
-('p_sys_dev_gen_basic_page', 'sys:dev:gen-basic-page', '生成基础分页', 'sys/dev', 'BACKEND', 'ENABLED', 92, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dev_gen_basic_create', 'sys:dev:gen-basic-create', '生成基础新增', 'sys/dev', 'BACKEND', 'ENABLED', 93, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dev_gen_basic_modify', 'sys:dev:gen-basic-modify', '生成基础修改', 'sys/dev', 'BACKEND', 'ENABLED', 94, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dev_gen_basic_delete', 'sys:dev:gen-basic-delete', '生成基础删除', 'sys/dev', 'BACKEND', 'ENABLED', 95, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dev_gen_basic_detail', 'sys:dev:gen-basic-detail', '生成基础详情', 'sys/dev', 'BACKEND', 'ENABLED', 96, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dev_gen_config_list', 'sys:dev:gen-config-list', '生成配置列表', 'sys/dev', 'BACKEND', 'ENABLED', 97, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dev_gen_config_modify', 'sys:dev:gen-config-modify', '生成配置修改', 'sys/dev', 'BACKEND', 'ENABLED', 98, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dev_gen_config_detail', 'sys:dev:gen-config-detail', '生成配置详情', 'sys/dev', 'BACKEND', 'ENABLED', 99, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_dev_cfg_mod_batch', 'sys:dev:gen-config-modify-batch', '生成配置批量修改', 'sys/dev', 'BACKEND', 'ENABLED', 100, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dev_generate', 'sys:dev:gen-basic-exec-gen-pro', '代码生成执行', 'sys/dev', 'BACKEND', 'ENABLED', 101, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_dev_preview', 'sys:dev:gen-basic-preview-gen', '代码生成预览', 'sys/dev', 'BACKEND', 'ENABLED', 102, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-
--- 模块管理
-('p_sys_module_page', 'sys:module:page', '模块分页查询', 'sys/module', 'BACKEND', 'ENABLED', 103, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_module_create', 'sys:module:create', '模块新增', 'sys/module', 'BACKEND', 'ENABLED', 104, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_module_modify', 'sys:module:modify', '模块修改', 'sys/module', 'BACKEND', 'ENABLED', 105, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_module_remove', 'sys:module:remove', '模块删除', 'sys/module', 'BACKEND', 'ENABLED', 106, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('p_sys_module_detail', 'sys:module:detail', '模块详情', 'sys/module', 'BACKEND', 'ENABLED', 107, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+-- 授权权限按钮（extra 关联 permission_code）
+INSERT INTO `sys_resource` (`id`, `code`, `name`, `category`, `type`, `description`, `parent_id`, `route_path`, `component_path`, `icon`, `is_visible`, `is_cache`, `is_affix`, `is_hidden`, `is_breadcrumb`, `status`, `sort_code`, `extra`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
+VALUES ('btn_sys_user_grant_perm', 'sys_user_grant_perm', '授权权限', 'BACKEND_BUTTON', 'BUTTON', '给用户授权颗粒度权限', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 10, '{"permission_code": "sys:user:grant-permission"}', 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
 
 -- =============================================================================
 -- 字典 sys_dict
@@ -1115,44 +923,73 @@ VALUES ('ug_admin', 'user_admin', 'grp_admin', 'NO', NOW(), 'ADMIN'),
        ('ug_pm1', 'user_pm1', 'grp_product', 'NO', NOW(), 'ADMIN'),
        ('ug_mkt1', 'user_mkt1', 'grp_market', 'NO', NOW(), 'ADMIN');
 
--- 角色-权限关联（为超级管理员分配全部权限）
-INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT CONCAT('rp_s_', `id`), 'role_super_admin', `id`, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
-FROM `sys_permission`
-WHERE `is_deleted` = 'NO' AND `status` = 'ENABLED';
+-- 角色-权限关联（为超级管理员分配全部已知权限）
+-- 权限编码列表参照 @HeiCheckPermission 注解自动扫描结果
+SET @rid = 1000000000;
+INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
+SELECT @rid := @rid + 1, 'role_super_admin', v.code, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
+FROM (VALUES
+    ROW('sys:user:page'), ROW('sys:user:create'), ROW('sys:user:modify'), ROW('sys:user:remove'), ROW('sys:user:detail'), ROW('sys:user:export'), ROW('sys:user:import'), ROW('sys:user:grant-role'), ROW('sys:user:grant-group'), ROW('sys:user:grant-permission'), ROW('sys:user:own-permission-detail'), ROW('sys:user:own-roles'), ROW('sys:user:own-groups'),
+    ROW('sys:role:page'), ROW('sys:role:create'), ROW('sys:role:modify'), ROW('sys:role:remove'), ROW('sys:role:detail'), ROW('sys:role:export'), ROW('sys:role:grantPermission'), ROW('sys:role:grantResource'), ROW('sys:role:ownPermission'), ROW('sys:role:ownResource'),
+    ROW('sys:permission:modules'), ROW('sys:permission:by-module'),
+    ROW('sys:resource:page'), ROW('sys:resource:tree'), ROW('sys:resource:create'), ROW('sys:resource:modify'), ROW('sys:resource:remove'), ROW('sys:resource:detail'), ROW('sys:resource:export'),
+    ROW('sys:org:page'), ROW('sys:org:tree'), ROW('sys:org:create'), ROW('sys:org:modify'), ROW('sys:org:remove'), ROW('sys:org:detail'), ROW('sys:org:export'), ROW('sys:org:grant-role'), ROW('sys:org:own-roles'),
+    ROW('sys:position:page'), ROW('sys:position:create'), ROW('sys:position:modify'), ROW('sys:position:remove'), ROW('sys:position:detail'), ROW('sys:position:export'),
+    ROW('sys:group:page'), ROW('sys:group:tree'), ROW('sys:group:create'), ROW('sys:group:modify'), ROW('sys:group:remove'), ROW('sys:group:detail'), ROW('sys:group:export'), ROW('sys:group:grant-role'), ROW('sys:group:own-roles'),
+    ROW('sys:dict:page'), ROW('sys:dict:list'), ROW('sys:dict:tree'), ROW('sys:dict:create'), ROW('sys:dict:modify'), ROW('sys:dict:remove'), ROW('sys:dict:detail'), ROW('sys:dict:export'),
+    ROW('sys:config:page'), ROW('sys:config:list'), ROW('sys:config:create'), ROW('sys:config:modify'), ROW('sys:config:remove'),
+    ROW('sys:notice:page'), ROW('sys:notice:create'), ROW('sys:notice:modify'), ROW('sys:notice:remove'), ROW('sys:notice:detail'),
+    ROW('sys:banner:page'), ROW('sys:banner:detail'),
+    ROW('sys:file:page'), ROW('sys:file:detail'), ROW('sys:file:upload'), ROW('sys:file:download'),
+    ROW('sys:module:page'), ROW('sys:module:detail'),
+    ROW('sys:dev:page'), ROW('sys:dev:create'), ROW('sys:dev:modify'), ROW('sys:dev:remove'), ROW('sys:dev:detail'),
+    ROW('sys:dev:gen:list'), ROW('sys:dev:gen:create'), ROW('sys:dev:gen:edit'), ROW('sys:dev:gen:detail'), ROW('sys:dev:gen:remove'), ROW('sys:dev:gen:import'), ROW('sys:dev:gen:preview')
+) AS v(code);
 
 -- 角色-权限关联（为管理员分配核心管理权限）
-INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT CONCAT('rp_a_', p.`id`), 'role_admin', p.`id`, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
-FROM `sys_permission` p
-WHERE p.`code` IN (
-    'sys:user:page', 'sys:user:detail', 'sys:user:create', 'sys:user:modify', 'sys:user:remove',
-    'sys:role:page', 'sys:role:detail', 'sys:role:create', 'sys:role:modify', 'sys:role:remove',
-    'sys:permission:page', 'sys:permission:detail',
-    'sys:org:page', 'sys:org:tree', 'sys:org:detail', 'sys:org:create', 'sys:org:modify', 'sys:org:remove',
-    'sys:position:page', 'sys:position:detail',
-     'sys:group:page', 'sys:group:tree', 'sys:group:detail', 'sys:group:create', 'sys:group:modify', 'sys:group:remove',
-     'sys:resource:page', 'sys:resource:tree', 'sys:resource:detail', 'sys:resource:create', 'sys:resource:modify', 'sys:resource:remove',
-    'sys:dict:page', 'sys:dict:list', 'sys:dict:tree', 'sys:dict:create', 'sys:dict:modify', 'sys:dict:remove',
-    'sys:config:page', 'sys:config:list', 'sys:config:create', 'sys:config:modify', 'sys:config:remove',
-    'sys:notice:page', 'sys:notice:detail',
-    'sys:banner:page', 'sys:banner:detail',
-    'sys:file:page', 'sys:file:detail', 'sys:file:upload', 'sys:file:download',
-    'sys:module:page', 'sys:module:detail'
-);
+INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
+SELECT @rid := @rid + 1, 'role_admin', v.code, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
+FROM (VALUES
+    ROW('sys:user:page'), ROW('sys:user:detail'), ROW('sys:user:create'), ROW('sys:user:modify'), ROW('sys:user:remove'), ROW('sys:user:grant-permission'), ROW('sys:user:own-permission-detail'),
+    ROW('sys:role:page'), ROW('sys:role:detail'), ROW('sys:role:create'), ROW('sys:role:modify'), ROW('sys:role:remove'),
+    ROW('sys:permission:modules'), ROW('sys:permission:by-module'),
+    ROW('sys:org:page'), ROW('sys:org:tree'), ROW('sys:org:detail'), ROW('sys:org:create'), ROW('sys:org:modify'), ROW('sys:org:remove'),
+    ROW('sys:position:page'), ROW('sys:position:detail'),
+    ROW('sys:group:page'), ROW('sys:group:tree'), ROW('sys:group:detail'), ROW('sys:group:create'), ROW('sys:group:modify'), ROW('sys:group:remove'),
+    ROW('sys:resource:page'), ROW('sys:resource:tree'), ROW('sys:resource:detail'), ROW('sys:resource:create'), ROW('sys:resource:modify'), ROW('sys:resource:remove'),
+    ROW('sys:dict:page'), ROW('sys:dict:list'), ROW('sys:dict:tree'), ROW('sys:dict:create'), ROW('sys:dict:modify'), ROW('sys:dict:remove'),
+    ROW('sys:config:page'), ROW('sys:config:list'), ROW('sys:config:create'), ROW('sys:config:modify'), ROW('sys:config:remove'),
+    ROW('sys:notice:page'), ROW('sys:notice:detail'),
+    ROW('sys:banner:page'), ROW('sys:banner:detail'),
+    ROW('sys:file:page'), ROW('sys:file:detail'), ROW('sys:file:upload'), ROW('sys:file:download'),
+    ROW('sys:module:page'), ROW('sys:module:detail')
+) AS v(code);
 
 -- 角色-权限关联（为开发人员分配开发相关权限）
-INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT CONCAT('rp_d_', p.`id`), 'role_dev', p.`id`, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
-FROM `sys_permission` p
-WHERE p.`code` LIKE 'sys:dev:%'
-   OR p.`code` IN ('sys:dict:page', 'sys:dict:list', 'sys:dict:tree', 'sys:config:page', 'sys:config:list');
+INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
+SELECT @rid := @rid + 1, 'role_dev', v.code, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
+FROM (VALUES
+    ROW('sys:dev:page'), ROW('sys:dev:create'), ROW('sys:dev:modify'), ROW('sys:dev:remove'), ROW('sys:dev:detail'),
+    ROW('sys:dev:gen:list'), ROW('sys:dev:gen:create'), ROW('sys:dev:gen:edit'), ROW('sys:dev:gen:detail'), ROW('sys:dev:gen:remove'), ROW('sys:dev:gen:import'), ROW('sys:dev:gen:preview'),
+    ROW('sys:dict:page'), ROW('sys:dict:list'), ROW('sys:dict:tree'), ROW('sys:config:page'), ROW('sys:config:list')
+) AS v(code);
 
 -- 角色-权限关联（为测试人员分配只读+字典+通知等）
-INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT CONCAT('rp_t_', p.`id`), 'role_test', p.`id`, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
-FROM `sys_permission` p
-WHERE p.`code` LIKE '%.page' OR p.`code` LIKE '%.detail' OR p.`code` LIKE '%.list';
+INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
+SELECT @rid := @rid + 1, 'role_test', v.code, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
+FROM (VALUES
+    ROW('sys:user:page'), ROW('sys:user:detail'),
+    ROW('sys:role:page'), ROW('sys:role:detail'),
+    ROW('sys:org:page'), ROW('sys:org:tree'), ROW('sys:org:detail'),
+    ROW('sys:resource:page'), ROW('sys:resource:tree'), ROW('sys:resource:detail'),
+    ROW('sys:dict:page'), ROW('sys:dict:list'), ROW('sys:dict:tree'),
+    ROW('sys:config:page'), ROW('sys:config:list'),
+    ROW('sys:notice:page'), ROW('sys:notice:detail'),
+    ROW('sys:banner:page'), ROW('sys:banner:detail'),
+    ROW('sys:file:page'), ROW('sys:file:detail'),
+    ROW('sys:module:page'), ROW('sys:module:detail'),
+    ROW('sys:permission:modules'), ROW('sys:permission:by-module')
+) AS v(code);
 
 -- 角色-资源关联（超级管理员分配所有资源）
 INSERT INTO `ral_role_resource` (`id`, `role_id`, `resource_id`, `is_deleted`, `created_at`, `created_by`)
@@ -1165,7 +1002,7 @@ INSERT INTO `ral_role_resource` (`id`, `role_id`, `resource_id`, `is_deleted`, `
 SELECT CONCAT('rra_', r.`id`), 'role_admin', r.`id`, 'NO', NOW(), 'ADMIN'
 FROM `sys_resource` r
 WHERE (r.`type` IN ('DIRECTORY', 'MENU') OR r.`code` IN (
-    'sys_user_page', 'sys_user_create', 'sys_user_modify', 'sys_user_remove', 'sys_user_detail',
+    'sys_user_page', 'sys_user_create', 'sys_user_modify', 'sys_user_remove', 'sys_user_detail', 'sys_user_grant_perm',
     'sys_role_page', 'sys_role_detail',
     'sys_org_page', 'sys_org_create', 'sys_org_modify', 'sys_org_remove', 'sys_org_detail',
     'sys_dict_page', 'sys_dict_create', 'sys_dict_modify', 'sys_dict_remove', 'sys_dict_detail',

@@ -148,7 +148,8 @@ class ResourceService:
         if not entity:
             raise BusinessException("数据不存在")
 
-        update_data = vo.model_dump(exclude_unset=True)
+        # Use model_fields_set to get only the fields the client actually sent
+        update_data = {k: getattr(vo, k) for k in vo.model_fields_set if k != 'id'}
         apply_update(entity, update_data)
 
         entity.updated_by = updated_by
@@ -194,11 +195,3 @@ class ResourceService:
 
         self.dao.insert_batch(entities)
         return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}
-
-    # ---- Resource-Permission bindings ----
-    def get_permission_ids(self, resource_id: str) -> List[str]:
-        return self.dao.get_permission_ids_by_resource_id(resource_id)
-
-    async def bind_permissions(self, resource_id: str, permission_ids: List[str], request: Optional[Request] = None) -> None:
-        created_by = await self._get_current_user_id(request)
-        self.dao.bind_permissions(resource_id, permission_ids, created_by)

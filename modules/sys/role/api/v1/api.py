@@ -184,7 +184,7 @@ async def grant_resource(
 
 @router.get(
     "/api/v1/sys/role/own-permission",
-    summary="获取角色已分配的权限ID列表"
+    summary="获取角色已分配的权限编码列表"
 )
 @HeiCheckPermission("sys:role:ownPermission")
 async def own_permission(
@@ -193,7 +193,7 @@ async def own_permission(
     db: Session = Depends(get_db)
 ):
     service = RoleService(db)
-    return success(service.get_role_permission_ids(role_id))
+    return success(service.get_role_permission_codes(role_id))
 
 
 @router.get(
