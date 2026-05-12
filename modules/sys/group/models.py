@@ -33,5 +33,5 @@ class SysGroup(Base):
     updated_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='更新用户')
 
 
-# RalGroupRole — 已废弃，不再使用用户组→角色委托。
-# 数据范围使用 ral_role_permission.scope 的 GROUP / CUSTOM_GROUP 等枚举值。
+# RelGroupRole — 已废弃，不再使用用户组→角色委托。
+# 数据范围使用 rel_role_permission.scope 的 GROUP / CUSTOM_GROUP 等枚举值。

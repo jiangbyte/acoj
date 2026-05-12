@@ -245,12 +245,12 @@ async def page(request: Request, db: Session = Depends(get_db)):
 ## 权限数据链路
 
 ```
-User ──→ RalUserRole ──→ Role ──→ RalRolePermission ──→ Permission
-User ──→ RalUserGroup ──→ Group ──→ RalGroupRole ──→ Role ──→ ...
-User ──→ RalUserPermission ──→ Permission (直授)
+User ──→ RelUserRole ──→ Role ──→ RelRolePermission ──→ Permission
+User ──→ RelUserGroup ──→ Group ──→ RelGroupRole ──→ Role ──→ ...
+User ──→ RelUserPermission ──→ Permission (直授)
 ```
 
-数据范围存储在关系表中（`ral_role_permission.scope`、`ral_user_role.scope` 等），多角色多路径下按最严策略合并（本人 < 自定义 < 本级及以下 < 本级 < 全部）。
+数据范围存储在关系表中（`rel_role_permission.scope`、`rel_user_role.scope` 等），多角色多路径下按最严策略合并（本人 < 自定义 < 本级及以下 < 本级 < 全部）。
 
 ## 相关项目
 

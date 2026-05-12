@@ -17,25 +17,25 @@ class HeiPermissionInterface:
     """
 
     def _get_role_ids(self, db, login_id: str) -> List[str]:
-        from modules.sys.user.models import RalUserRole
+        from modules.sys.user.models import RelUserRole
 
         role_ids = set()
         rows = db.scalars(
-            select(RalUserRole.role_id).where(
-                RalUserRole.user_id == login_id,
-                RalUserRole.is_deleted == SoftDeleteEnum.NO
+            select(RelUserRole.role_id).where(
+                RelUserRole.user_id == login_id,
+                RelUserRole.is_deleted == SoftDeleteEnum.NO
             )
         ).all()
         role_ids.update(rows)
 
-        from modules.sys.org.models import RalOrgRole
+        from modules.sys.org.models import RelOrgRole
         from modules.sys.user.models import SysUser
         user = db.get(SysUser, login_id)
         if user and user.org_id:
             rows = db.scalars(
-                select(RalOrgRole.role_id).where(
-                    RalOrgRole.org_id == user.org_id,
-                    RalOrgRole.is_deleted == SoftDeleteEnum.NO
+                select(RelOrgRole.role_id).where(
+                    RelOrgRole.org_id == user.org_id,
+                    RelOrgRole.is_deleted == SoftDeleteEnum.NO
                 )
             ).all()
             role_ids.update(rows)
@@ -101,8 +101,8 @@ class HeiPermissionInterface:
                         self._merge_dimension(cur, "org_scope", "custom_org_ids", scope, cogids)
 
     async def getPermissionList(self, login_id: Union[str, int], login_type: str) -> List[str]:
-        from modules.sys.role.models import RalRolePermission
-        from modules.sys.user.models import RalUserPermission
+        from modules.sys.role.models import RelRolePermission
+        from modules.sys.user.models import RelUserPermission
 
         db = SessionLocal()
         try:
@@ -113,17 +113,17 @@ class HeiPermissionInterface:
             if login_type == LoginTypeEnum.LOGIN or login_type == LoginTypeEnum.CLIENT:
                 if role_ids:
                     rows = db.scalars(
-                        select(RalRolePermission.permission_code).where(
-                            RalRolePermission.role_id.in_(role_ids),
-                            RalRolePermission.is_deleted == SoftDeleteEnum.NO
+                        select(RelRolePermission.permission_code).where(
+                            RelRolePermission.role_id.in_(role_ids),
+                            RelRolePermission.is_deleted == SoftDeleteEnum.NO
                         )
                     ).all()
                     permission_codes.update(rows)
 
                 rows = db.scalars(
-                    select(RalUserPermission.permission_code).where(
-                        RalUserPermission.user_id == login_id,
-                        RalUserPermission.is_deleted == SoftDeleteEnum.NO
+                    select(RelUserPermission.permission_code).where(
+                        RelUserPermission.user_id == login_id,
+                        RelUserPermission.is_deleted == SoftDeleteEnum.NO
                     )
                 ).all()
                 permission_codes.update(rows)
@@ -134,7 +134,7 @@ class HeiPermissionInterface:
 
     async def getRoleList(self, login_id: Union[str, int], login_type: str) -> List[str]:
         from modules.sys.role.models import SysRole
-        from modules.sys.user.models import RalUserRole
+        from modules.sys.user.models import RelUserRole
 
         db = SessionLocal()
         try:
@@ -142,10 +142,10 @@ class HeiPermissionInterface:
             return list(
                 db.scalars(
                     select(SysRole.code)
-                    .join(RalUserRole, SysRole.id == RalUserRole.role_id)
+                    .join(RelUserRole, SysRole.id == RelUserRole.role_id)
                     .where(
-                        RalUserRole.user_id == login_id,
-                        RalUserRole.is_deleted == SoftDeleteEnum.NO,
+                        RelUserRole.user_id == login_id,
+                        RelUserRole.is_deleted == SoftDeleteEnum.NO,
                         SysRole.is_deleted == SoftDeleteEnum.NO
                     )
                 ).all()
@@ -156,9 +156,9 @@ class HeiPermissionInterface:
     async def getPermissionScopeMap(self, login_id: Union[str, int], login_type: str) -> dict:
         import json
         from core.enums import PermissionPathEnum
-        from modules.sys.user.models import RalUserRole, RalUserPermission
-        from modules.sys.role.models import RalRolePermission
-        from modules.sys.org.models import RalOrgRole
+        from modules.sys.user.models import RelUserRole, RelUserPermission
+        from modules.sys.role.models import RelRolePermission
+        from modules.sys.org.models import RelOrgRole
         from modules.sys.user.models import SysUser
 
         db = SessionLocal()
@@ -171,21 +171,21 @@ class HeiPermissionInterface:
 
             # Path 1 (P1): User → Role → Permission (ral_role_permission.permission_code)
             role_ids = db.scalars(
-                select(RalUserRole.role_id).where(
-                    RalUserRole.user_id == login_id,
-                    RalUserRole.is_deleted == SoftDeleteEnum.NO
+                select(RelUserRole.role_id).where(
+                    RelUserRole.user_id == login_id,
+                    RelUserRole.is_deleted == SoftDeleteEnum.NO
                 )
             ).all()
             if role_ids:
                 rows = db.execute(
                     select(
-                        RalRolePermission.permission_code,
-                        RalRolePermission.scope,
-                        RalRolePermission.custom_scope_group_ids,
-                        RalRolePermission.custom_scope_org_ids,
+                        RelRolePermission.permission_code,
+                        RelRolePermission.scope,
+                        RelRolePermission.custom_scope_group_ids,
+                        RelRolePermission.custom_scope_org_ids,
                     ).where(
-                        RalRolePermission.role_id.in_(role_ids),
-                        RalRolePermission.is_deleted == SoftDeleteEnum.NO
+                        RelRolePermission.role_id.in_(role_ids),
+                        RelRolePermission.is_deleted == SoftDeleteEnum.NO
                     )
                 ).all()
                 self._merge_scope(perm_scope, PermissionPathEnum.USER_ROLE, rows)
@@ -193,13 +193,13 @@ class HeiPermissionInterface:
             # Path 2 (P0): User → Direct Permission (ral_user_permission.permission_code)
             rows = db.execute(
                 select(
-                    RalUserPermission.permission_code,
-                    RalUserPermission.scope,
-                    RalUserPermission.custom_scope_group_ids,
-                    RalUserPermission.custom_scope_org_ids,
+                    RelUserPermission.permission_code,
+                    RelUserPermission.scope,
+                    RelUserPermission.custom_scope_group_ids,
+                    RelUserPermission.custom_scope_org_ids,
                 ).where(
-                    RalUserPermission.user_id == login_id,
-                    RalUserPermission.is_deleted == SoftDeleteEnum.NO
+                    RelUserPermission.user_id == login_id,
+                    RelUserPermission.is_deleted == SoftDeleteEnum.NO
                 )
             ).all()
             self._merge_scope(perm_scope, PermissionPathEnum.DIRECT, rows)
@@ -210,16 +210,16 @@ class HeiPermissionInterface:
                 if user and user.org_id:
                     rows = db.execute(
                         select(
-                            RalRolePermission.permission_code,
-                            func.coalesce(RalOrgRole.scope, RalRolePermission.scope),
-                            func.coalesce(RalOrgRole.custom_scope_group_ids, RalRolePermission.custom_scope_group_ids),
-                            func.coalesce(RalOrgRole.custom_scope_org_ids, RalRolePermission.custom_scope_org_ids),
+                            RelRolePermission.permission_code,
+                            func.coalesce(RelOrgRole.scope, RelRolePermission.scope),
+                            func.coalesce(RelOrgRole.custom_scope_group_ids, RelRolePermission.custom_scope_group_ids),
+                            func.coalesce(RelOrgRole.custom_scope_org_ids, RelRolePermission.custom_scope_org_ids),
                         )
-                        .join(RalRolePermission, RalRolePermission.role_id == RalOrgRole.role_id)
+                        .join(RelRolePermission, RelRolePermission.role_id == RelOrgRole.role_id)
                         .where(
-                            RalOrgRole.org_id == user.org_id,
-                            RalOrgRole.is_deleted == SoftDeleteEnum.NO,
-                            RalRolePermission.is_deleted == SoftDeleteEnum.NO
+                            RelOrgRole.org_id == user.org_id,
+                            RelOrgRole.is_deleted == SoftDeleteEnum.NO,
+                            RelRolePermission.is_deleted == SoftDeleteEnum.NO
                         )
                     ).all()
                     self._merge_scope(perm_scope, PermissionPathEnum.ORG_ROLE, rows)

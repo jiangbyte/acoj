@@ -32,8 +32,8 @@ class SysOrg(Base):
     updated_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='更新用户')
 
 
-class RalOrgRole(Base):
-    __tablename__ = 'ral_org_role'
+class RelOrgRole(Base):
+    __tablename__ = 'rel_org_role'
     __table_args__ = (
         Index('uk_org_role', 'org_id', 'role_id', unique=True),
         Index('idx_role_id', 'role_id'),

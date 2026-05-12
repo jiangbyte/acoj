@@ -415,13 +415,13 @@ CREATE TABLE `gen_config` (
 -- =============================================================================
 -- 用户-角色关联
 -- =============================================================================
-DROP TABLE IF EXISTS `ral_user_role`;
-CREATE TABLE `ral_user_role`
+DROP TABLE IF EXISTS `rel_user_role`;
+CREATE TABLE `rel_user_role`
 (
     `id`                    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
     `user_id`               varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
     `role_id`               varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
-    `scope`                 varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人。为空则继承 ral_role_permission 的配置',
+    `scope`                 varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人。为空则继承 rel_role_permission 的配置',
     `custom_scope_group_ids` text                                                        NULL COMMENT '自定义数据范围组ID列表(JSON数组)，scope=CUSTOM时生效',
     `is_deleted`            varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'NO' COMMENT '逻辑删除',
     `created_at`            datetime                                                     NULL DEFAULT NULL COMMENT '创建时间',
@@ -437,8 +437,8 @@ CREATE TABLE `ral_user_role`
 -- =============================================================================
 -- 用户-用户组关联
 -- =============================================================================
-DROP TABLE IF EXISTS `ral_user_group`;
-CREATE TABLE `ral_user_group`
+DROP TABLE IF EXISTS `rel_user_group`;
+CREATE TABLE `rel_user_group`
 (
     `id`         varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
     `user_id`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
@@ -457,8 +457,8 @@ CREATE TABLE `ral_user_group`
 -- =============================================================================
 -- 用户-权限直关联
 -- =============================================================================
-DROP TABLE IF EXISTS `ral_user_permission`;
-CREATE TABLE `ral_user_permission`
+DROP TABLE IF EXISTS `rel_user_permission`;
+CREATE TABLE `rel_user_permission`
 (
     `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
     `user_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
@@ -480,8 +480,8 @@ CREATE TABLE `ral_user_permission`
 -- =============================================================================
 -- 角色-权限关联
 -- =============================================================================
-DROP TABLE IF EXISTS `ral_role_permission`;
-CREATE TABLE `ral_role_permission`
+DROP TABLE IF EXISTS `rel_role_permission`;
+CREATE TABLE `rel_role_permission`
 (
     `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
     `role_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
@@ -503,8 +503,8 @@ CREATE TABLE `ral_role_permission`
 -- =============================================================================
 -- 角色-资源关联
 -- =============================================================================
-DROP TABLE IF EXISTS `ral_role_resource`;
-CREATE TABLE `ral_role_resource`
+DROP TABLE IF EXISTS `rel_role_resource`;
+CREATE TABLE `rel_role_resource`
 (
     `id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
     `role_id`     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
@@ -521,20 +521,20 @@ CREATE TABLE `ral_role_resource`
   ROW_FORMAT = Dynamic;
 
 -- =============================================================================
--- 用户组-角色关联（已废弃——使用 ral_role_permission 的 GROUP / CUSTOM_GROUP scope）
+-- 用户组-角色关联（已废弃——使用 rel_role_permission 的 GROUP / CUSTOM_GROUP scope）
 -- =============================================================================
--- DROP TABLE IF EXISTS `ral_group_role`;
+-- DROP TABLE IF EXISTS `rel_group_role`;
 
 -- =============================================================================
 -- 组织-角色关联
 -- =============================================================================
-DROP TABLE IF EXISTS `ral_org_role`;
-CREATE TABLE `ral_org_role`
+DROP TABLE IF EXISTS `rel_org_role`;
+CREATE TABLE `rel_org_role`
 (
     `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
     `org_id`                 varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '组织ID',
     `role_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '角色ID',
-    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组。为空则继承 ral_role_permission 的配置',
+    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组。为空则继承 rel_role_permission 的配置',
     `custom_scope_group_ids` text                                                          NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
     `custom_scope_org_ids`   text                                                          NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
     `is_deleted`             varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
@@ -574,9 +574,9 @@ CREATE TABLE `sys_config`
 
 -- 系统配置种子数据
 INSERT INTO `sys_config` (`id`, `config_key`, `config_value`, `category`, `remark`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('1', 'SYS_DEFAULT_FILE_ENGINE', 'LOCAL', 'SYS_BASE', '默认文件引擎', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('2', 'SYS_FILE_LOCAL_FOLDER_FOR_WINDOWS', 'D:/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Windows)', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('3', 'SYS_FILE_LOCAL_FOLDER_FOR_UNIX', '/data/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Unix)', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+VALUES ('1', 'SYS_DEFAULT_FILE_ENGINE', 'LOCAL', 'SYS_BASE', '默认文件引擎', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('2', 'SYS_FILE_LOCAL_FOLDER_FOR_WINDOWS', 'D:/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Windows)', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('3', 'SYS_FILE_LOCAL_FOLDER_FOR_UNIX', '/data/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Unix)', 3, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- 文件
@@ -620,51 +620,51 @@ CREATE TABLE `sys_file`
 -- 组织 sys_org
 -- =============================================================================
 INSERT INTO `sys_org` (`id`, `code`, `name`, `category`, `parent_id`, `description`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('org_root', 'HEI', 'Hei集团', 'GROUP', NULL, '集团总部', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('org_tech', 'TECH', '技术部', 'DEPT', 'org_root', '技术研发部门', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('org_mkt', 'MKT', '市场部', 'DEPT', 'org_root', '市场营销部门', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('org_fin', 'FIN', '财务部', 'DEPT', 'org_root', '财务管理部门', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('org_hr', 'HR', '人力资源部', 'DEPT', 'org_root', '人力资源管理部门', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('org_sales', 'SALES', '销售部', 'DEPT', 'org_root', '销售部门', 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('org_ops', 'OPS', '运维部', 'DEPT', 'org_root', '运维管理部门', 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+VALUES ('10001', 'HEI', 'Hei集团', 'GROUP', NULL, '集团总部', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('10002', 'TECH', '技术部', 'DEPT', '10001', '技术研发部门', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('10003', 'MKT', '市场部', 'DEPT', '10001', '市场营销部门', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('10004', 'FIN', '财务部', 'DEPT', '10001', '财务管理部门', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('10005', 'HR', '人力资源部', 'DEPT', '10001', '人力资源管理部门', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('10006', 'SALES', '销售部', 'DEPT', '10001', '销售部门', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('10007', 'OPS', '运维部', 'DEPT', '10001', '运维管理部门', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- 职位 sys_position
 -- =============================================================================
 INSERT INTO `sys_position` (`id`, `code`, `name`, `category`, `org_id`, `group_id`, `description`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('pos_ceo', 'CEO', '总经理', 'MGMT', 'org_root', NULL, '公司总经理', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('pos_cto', 'CTO', '技术总监', 'TECH', 'org_tech', NULL, '技术部门总监', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('pos_dev_leader', 'DEV_LEAD', '开发组长', 'TECH', 'org_tech', NULL, '开发团队组长', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('pos_dev', 'DEV', '开发工程师', 'TECH', 'org_tech', NULL, '软件开发工程师', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('pos_test', 'TEST', '测试工程师', 'TECH', 'org_tech', NULL, '软件测试工程师', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('pos_pm', 'PM', '产品经理', 'MKT', 'org_mkt', NULL, '产品经理', 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('pos_mkt_dir', 'MKT_DIR', '市场总监', 'MKT', 'org_mkt', NULL, '市场部总监', 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('pos_fin_dir', 'FIN_DIR', '财务总监', 'FIN', 'org_fin', NULL, '财务部总监', 'ENABLED', 8, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('pos_hr_dir', 'HR_DIR', '人力资源总监', 'HR', 'org_hr', NULL, '人力资源部总监', 'ENABLED', 9, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('pos_sales', 'SALES', '销售专员', 'SALES', 'org_sales', NULL, '销售专员', 'ENABLED', 10, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('pos_ops', 'OPS', '运维工程师', 'OPS', 'org_ops', NULL, '运维工程师', 'ENABLED', 11, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+VALUES ('20001', 'CEO', '总经理', 'MGMT', '10001', NULL, '公司总经理', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('20002', 'CTO', '技术总监', 'TECH', '10002', NULL, '技术部门总监', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('20003', 'DEV_LEAD', '开发组长', 'TECH', '10002', NULL, '开发团队组长', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('20004', 'DEV', '开发工程师', 'TECH', '10002', NULL, '软件开发工程师', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('20005', 'TEST', '测试工程师', 'TECH', '10002', NULL, '软件测试工程师', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('20006', 'PM', '产品经理', 'MKT', '10003', NULL, '产品经理', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('20007', 'MKT_DIR', '市场总监', 'MKT', '10003', NULL, '市场部总监', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('20008', 'FIN_DIR', '财务总监', 'FIN', '10004', NULL, '财务部总监', 'ENABLED', 8, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('20009', 'HR_DIR', '人力资源总监', 'HR', '10005', NULL, '人力资源部总监', 'ENABLED', 9, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('20010', 'SALES', '销售专员', 'SALES', '10006', NULL, '销售专员', 'ENABLED', 10, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('20011', 'OPS', '运维工程师', 'OPS', '10007', NULL, '运维工程师', 'ENABLED', 11, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- 用户组 sys_group
 -- =============================================================================
 INSERT INTO `sys_group` (`id`, `code`, `name`, `category`, `parent_id`, `org_id`, `description`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('grp_admin', 'ADMIN_GRP', '管理组', 'ADMIN', NULL, 'org_root', '系统管理组', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('grp_dev', 'DEV_GRP', '研发组', 'TECH', NULL, 'org_tech', '技术研发组', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('grp_test', 'TEST_GRP', '测试组', 'TECH', NULL, 'org_tech', '软件测试组', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('grp_product', 'PROD_GRP', '产品组', 'MKT', NULL, 'org_mkt', '产品设计组', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('grp_market', 'MKT_GRP', '市场组', 'MKT', NULL, 'org_mkt', '市场推广组', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+VALUES ('30001', 'ADMIN_GRP', '管理组', 'ADMIN', NULL, '10001', '系统管理组', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('30002', 'DEV_GRP', '研发组', 'TECH', NULL, '10002', '技术研发组', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('30003', 'TEST_GRP', '测试组', 'TECH', NULL, '10002', '软件测试组', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('30004', 'PROD_GRP', '产品组', 'MKT', NULL, '10003', '产品设计组', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('30005', 'MKT_GRP', '市场组', 'MKT', NULL, '10003', '市场推广组', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- 角色 sys_role
 -- =============================================================================
 INSERT INTO `sys_role` (`id`, `code`, `name`, `category`, `description`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('role_super_admin', 'super_admin', '超级管理员', 'BACKEND', '系统超级管理员，拥有全部权限', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('role_admin', 'admin', '系统管理员', 'BACKEND', '系统管理员', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('role_dev', 'dev', '开发人员', 'BACKEND', '开发人员角色', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('role_test', 'test', '测试人员', 'BACKEND', '测试人员角色', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('role_mkt', 'mkt', '市场人员', 'BACKEND', '市场人员角色', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('role_fin', 'fin', '财务人员', 'BACKEND', '财务人员角色', 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('role_hr', 'hr', '人力资源', 'BACKEND', '人力资源角色', 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+VALUES ('40001', 'super_admin', '超级管理员', 'BACKEND', '系统超级管理员，拥有全部权限', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('40002', 'admin', '系统管理员', 'BACKEND', '系统管理员', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('40003', 'dev', '开发人员', 'BACKEND', '开发人员角色', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('40004', 'test', '测试人员', 'BACKEND', '测试人员角色', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('40005', 'mkt', '市场人员', 'BACKEND', '市场人员角色', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('40006', 'fin', '财务人员', 'BACKEND', '财务人员角色', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('40007', 'hr', '人力资源', 'BACKEND', '人力资源角色', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- B 端用户 sys_user
@@ -672,33 +672,33 @@ VALUES ('role_super_admin', 'super_admin', '超级管理员', 'BACKEND', '系统
 -- 密码存储为 bcrypt 哈希（非 SM2 密文）
 -- =============================================================================
 INSERT INTO `sys_user` (`id`, `account`, `password`, `nickname`, `avatar`, `motto`, `gender`, `birthday`, `email`, `github`, `phone`, `org_id`, `position_id`, `status`, `login_count`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('user_admin', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', 'org_root', 'pos_ceo', 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('user_dev1', 'zhangsan', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '张三', NULL, '代码改变世界', 'MALE', '1995-05-15', 'zhangsan@hei.com', 'https://github.com/zhangsan', '13800000002', 'org_tech', 'pos_dev', 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('user_dev2', 'lisi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '李四', NULL, '学无止境', 'MALE', '1993-08-20', 'lisi@hei.com', NULL, '13800000003', 'org_tech', 'pos_dev', 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('user_dev3', 'wangwu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '王五', NULL, '追求卓越', 'MALE', '1994-03-10', 'wangwu@hei.com', NULL, '13800000004', 'org_tech', 'pos_dev_leader', 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('user_test1', 'zhaoliu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '赵六', NULL, '质量第一', 'FEMALE', '1996-11-25', 'zhaoliu@hei.com', NULL, '13800000005', 'org_tech', 'pos_test', 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('user_pm1', 'sunqi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '孙七', NULL, '用户至上', 'MALE', '1991-07-07', 'sunqi@hei.com', NULL, '13800000006', 'org_mkt', 'pos_pm', 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('user_mkt1', 'zhouba', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '周八', NULL, '市场就是战场', 'FEMALE', '1992-02-14', 'zhouba@hei.com', NULL, '13800000007', 'org_mkt', 'pos_mkt_dir', 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('user_fin1', 'wujiu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '吴九', NULL, '精打细算', 'MALE', '1988-09-09', 'wujiu@hei.com', NULL, '13800000008', 'org_fin', 'pos_fin_dir', 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('user_hr1', 'zhengshi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '郑十', NULL, '以人为本', 'FEMALE', '1990-12-01', 'zhengshi@hei.com', NULL, '13800000009', 'org_hr', 'pos_hr_dir', 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('user_ops1', 'chen十一', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '陈十一', NULL, '稳定压倒一切', 'MALE', '1993-06-18', 'chen11@hei.com', NULL, '13800000010', 'org_ops', 'pos_ops', 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('50002', 'zhangsan', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '张三', NULL, '代码改变世界', 'MALE', '1995-05-15', 'zhangsan@hei.com', 'https://github.com/zhangsan', '13800000002', '10002', '20004', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('50003', 'lisi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '李四', NULL, '学无止境', 'MALE', '1993-08-20', 'lisi@hei.com', NULL, '13800000003', '10002', '20004', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('50004', 'wangwu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '王五', NULL, '追求卓越', 'MALE', '1994-03-10', 'wangwu@hei.com', NULL, '13800000004', '10002', '20003', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('50005', 'zhaoliu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '赵六', NULL, '质量第一', 'FEMALE', '1996-11-25', 'zhaoliu@hei.com', NULL, '13800000005', '10002', '20005', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('50006', 'sunqi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '孙七', NULL, '用户至上', 'MALE', '1991-07-07', 'sunqi@hei.com', NULL, '13800000006', '10003', '20006', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('50007', 'zhouba', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '周八', NULL, '市场就是战场', 'FEMALE', '1992-02-14', 'zhouba@hei.com', NULL, '13800000007', '10003', '20007', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('50008', 'wujiu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '吴九', NULL, '精打细算', 'MALE', '1988-09-09', 'wujiu@hei.com', NULL, '13800000008', '10004', '20008', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('50009', 'zhengshi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '郑十', NULL, '以人为本', 'FEMALE', '1990-12-01', 'zhengshi@hei.com', NULL, '13800000009', '10005', '20009', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('50010', 'chen十一', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '陈十一', NULL, '稳定压倒一切', 'MALE', '1993-06-18', 'chen11@hei.com', NULL, '13800000010', '10007', '20011', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- C 端用户 client_user
 -- =============================================================================
 INSERT INTO `client_user` (`id`, `account`, `password`, `nickname`, `avatar`, `motto`, `gender`, `birthday`, `email`, `github`, `status`, `login_count`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('cuser_1', 'test01', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户01', NULL, 'hello world', 'MALE', '1995-01-01', 'test01@example.com', NULL, 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('cuser_2', 'test02', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户02', NULL, '你好世界', 'FEMALE', '1996-02-02', 'test02@example.com', NULL, 'ACTIVE', 0, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+VALUES ('60001', 'test01', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户01', NULL, 'hello world', 'MALE', '1995-01-01', 'test01@example.com', NULL, 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('60002', 'test02', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户02', NULL, '你好世界', 'FEMALE', '1996-02-02', 'test02@example.com', NULL, 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- 模块 sys_module
 -- =============================================================================
 INSERT INTO `sys_module` (`id`, `code`, `name`, `category`, `icon`, `color`, `description`, `is_visible`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('mod_sys', 'sys', '系统管理', 'BACKEND_MENU', 'setting', '#1890FF', '系统管理模块', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('mod_content', 'content', '内容管理', 'BACKEND_MENU', 'file-text', '#52C41A', '内容管理模块', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('mod_dev', 'dev', '系统工具', 'BACKEND_MENU', 'tool', '#722ED1', '系统工具模块', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('mod_monitor', 'monitor', '系统监控', 'BACKEND_MENU', 'dashboard', '#FAAD14', '系统监控模块', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('mod_im', 'im', '即时通讯', 'BACKEND_MENU', 'message', '#FF4D4F', '即时通讯模块', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+VALUES ('70001', 'sys', '系统管理', 'BACKEND_MENU', 'setting', '#1890FF', '系统管理模块', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('70002', 'content', '内容管理', 'BACKEND_MENU', 'file-text', '#52C41A', '内容管理模块', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('70003', 'dev', '系统工具', 'BACKEND_MENU', 'tool', '#722ED1', '系统工具模块', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('70004', 'monitor', '系统监控', 'BACKEND_MENU', 'dashboard', '#FAAD14', '系统监控模块', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('70005', 'im', '即时通讯', 'BACKEND_MENU', 'message', '#FF4D4F', '即时通讯模块', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- 资源 sys_resource（菜单树）
@@ -708,117 +708,117 @@ VALUES ('mod_sys', 'sys', '系统管理', 'BACKEND_MENU', 'setting', '#1890FF', 
 INSERT INTO `sys_resource` (`id`, `code`, `name`, `category`, `type`, `description`, `parent_id`, `route_path`, `component_path`, `icon`, `is_visible`, `is_cache`, `is_affix`, `is_hidden`, `is_breadcrumb`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
 VALUES
 -- 一级目录
-('res_sys_admin', 'sys_admin', '系统管理', 'BACKEND_MENU', 'DIRECTORY', '系统管理目录', NULL, '/sys', NULL, 'setting', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_content', 'content_mgr', '内容管理', 'BACKEND_MENU', 'DIRECTORY', '内容管理目录', NULL, '/content', NULL, 'file-text', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_dev_tools', 'dev_tools', '系统工具', 'BACKEND_MENU', 'DIRECTORY', '系统工具目录', NULL, '/dev', NULL, 'tool', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80001', 'sys_admin', '系统管理', 'BACKEND_MENU', 'DIRECTORY', '系统管理目录', NULL, '/sys', NULL, 'setting', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80002', 'content_mgr', '内容管理', 'BACKEND_MENU', 'DIRECTORY', '内容管理目录', NULL, '/content', NULL, 'file-text', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80003', 'dev_tools', '系统工具', 'BACKEND_MENU', 'DIRECTORY', '系统工具目录', NULL, '/dev', NULL, 'tool', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- 系统管理 -> 菜单
-('res_sys_user_menu', 'sys_user', '用户管理', 'BACKEND_MENU', 'MENU', '用户管理菜单', 'res_sys_admin', '/sys/user', 'sys/user/index', 'user', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_role_menu', 'sys_role', '角色管理', 'BACKEND_MENU', 'MENU', '角色管理菜单', 'res_sys_admin', '/sys/role', 'sys/role/index', 'team', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_resource_menu', 'sys_resource_mgr', '资源管理', 'BACKEND_MENU', 'MENU', '资源管理菜单', 'res_sys_admin', '/sys/resource', 'sys/resource/index', 'menu', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_org_menu', 'sys_org', '组织管理', 'BACKEND_MENU', 'MENU', '组织管理菜单', 'res_sys_admin', '/sys/org', 'sys/org/index', 'apartment', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_position_menu', 'sys_position', '职位管理', 'BACKEND_MENU', 'MENU', '职位管理菜单', 'res_sys_admin', '/sys/org/group/position', 'sys/org/components/group/components/position/index', 'idcard', 'NO', 'NO', 'NO', 'YES', 'YES', 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_group_menu', 'sys_group', '用户组管理', 'BACKEND_MENU', 'MENU', '用户组管理菜单', 'res_sys_admin', '/sys/org/group', 'sys/org/components/group/index', 'group', 'NO', 'NO', 'NO', 'YES', 'YES', 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_dict_menu', 'sys_dict', '字典管理', 'BACKEND_MENU', 'MENU', '字典管理菜单', 'res_sys_admin', '/sys/dict', 'sys/dict/index', 'book', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_config_menu', 'sys_config', '系统配置', 'BACKEND_MENU', 'MENU', '系统配置菜单', 'res_sys_admin', '/sys/config', 'sys/config/index', 'setting', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 9, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_notice_menu', 'sys_notice', '通知管理', 'BACKEND_MENU', 'MENU', '通知管理菜单', 'res_sys_admin', '/sys/notice', 'sys/notice/index', 'notification', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 10, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80004', 'sys_user', '用户管理', 'BACKEND_MENU', 'MENU', '用户管理菜单', '80001', '/sys/user', 'sys/user/index', 'user', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80005', 'sys_role', '角色管理', 'BACKEND_MENU', 'MENU', '角色管理菜单', '80001', '/sys/role', 'sys/role/index', 'team', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80006', 'sys_resource_mgr', '资源管理', 'BACKEND_MENU', 'MENU', '资源管理菜单', '80001', '/sys/resource', 'sys/resource/index', 'menu', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('80007', 'sys_org', '组织管理', 'BACKEND_MENU', 'MENU', '组织管理菜单', '80001', '/sys/org', 'sys/org/index', 'apartment', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
+('80008', 'sys_position', '职位管理', 'BACKEND_MENU', 'MENU', '职位管理菜单', '80001', '/sys/org/group/position', 'sys/org/components/group/components/position/index', 'idcard', 'NO', 'NO', 'NO', 'YES', 'YES', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
+('80009', 'sys_group', '用户组管理', 'BACKEND_MENU', 'MENU', '用户组管理菜单', '80001', '/sys/org/group', 'sys/org/components/group/index', 'group', 'NO', 'NO', 'NO', 'YES', 'YES', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001'),
+('80010', 'sys_dict', '字典管理', 'BACKEND_MENU', 'MENU', '字典管理菜单', '80001', '/sys/dict', 'sys/dict/index', 'book', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), '50001', NOW(), '50001'),
+('80011', 'sys_config', '系统配置', 'BACKEND_MENU', 'MENU', '系统配置菜单', '80001', '/sys/config', 'sys/config/index', 'setting', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 9, 'NO', NOW(), '50001', NOW(), '50001'),
+('80012', 'sys_notice', '通知管理', 'BACKEND_MENU', 'MENU', '通知管理菜单', '80001', '/sys/notice', 'sys/notice/index', 'notification', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 10, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- 内容管理 -> 菜单
-('res_sys_banner_menu', 'sys_banner', '轮播图管理', 'BACKEND_MENU', 'MENU', '轮播图管理菜单', 'res_content', '/sys/banner', 'sys/banner/index', 'picture', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('res_sys_file_menu', 'sys_file', '文件管理', 'BACKEND_MENU', 'MENU', '文件管理菜单', 'res_content', '/sys/file', 'sys/file/index', 'file', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80013', 'sys_banner', '轮播图管理', 'BACKEND_MENU', 'MENU', '轮播图管理菜单', '80002', '/sys/banner', 'sys/banner/index', 'picture', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80014', 'sys_file', '文件管理', 'BACKEND_MENU', 'MENU', '文件管理菜单', '80002', '/sys/file', 'sys/file/index', 'file', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- 系统工具 -> 菜单
-('res_sys_dev_menu', 'sys_dev', '代码生成', 'BACKEND_MENU', 'MENU', '代码生成菜单', 'res_dev_tools', '/sys/dev', 'sys/dev/index', 'code', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80015', 'sys_dev', '代码生成', 'BACKEND_MENU', 'MENU', '代码生成菜单', '80003', '/sys/dev', 'sys/dev/index', 'code', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- ==================== 按钮权限 ====================
 -- 用户管理按钮
-('btn_sys_user_page', 'sys_user_page', '用户查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户列表', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_user_create', 'sys_user_create', '用户新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_user_modify', 'sys_user_modify', '用户修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_user_remove', 'sys_user_remove', '用户删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_user_detail', 'sys_user_detail', '用户详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户详情', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_user_export', 'sys_user_export', '用户导出', 'BACKEND_BUTTON', 'BUTTON', '导出用户数据', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_user_import', 'sys_user_import', '用户导入', 'BACKEND_BUTTON', 'BUTTON', '导入用户数据', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_user_grant_role', 'sys_user_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户分配角色', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_user_grant_group', 'sys_user_grant_group', '分配组', 'BACKEND_BUTTON', 'BUTTON', '给用户分配组', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 9, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80016', 'sys_user_page', '用户查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户列表', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80017', 'sys_user_create', '用户新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80018', 'sys_user_modify', '用户修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('80019', 'sys_user_remove', '用户删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('80020', 'sys_user_detail', '用户详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户详情', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
+('80021', 'sys_user_export', '用户导出', 'BACKEND_BUTTON', 'BUTTON', '导出用户数据', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
+('80022', 'sys_user_import', '用户导入', 'BACKEND_BUTTON', 'BUTTON', '导入用户数据', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001'),
+('80023', 'sys_user_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户分配角色', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), '50001', NOW(), '50001'),
+('80024', 'sys_user_grant_group', '分配组', 'BACKEND_BUTTON', 'BUTTON', '给用户分配组', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 9, 'NO', NOW(), '50001', NOW(), '50001'),
 -- 角色管理按钮
-('btn_sys_role_page', 'sys_role_page', '角色查询', 'BACKEND_BUTTON', 'BUTTON', '查询角色列表', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_role_create', 'sys_role_create', '角色新增', 'BACKEND_BUTTON', 'BUTTON', '新增角色', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_role_modify', 'sys_role_modify', '角色修改', 'BACKEND_BUTTON', 'BUTTON', '修改角色', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_role_remove', 'sys_role_remove', '角色删除', 'BACKEND_BUTTON', 'BUTTON', '删除角色', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_role_detail', 'sys_role_detail', '角色详情', 'BACKEND_BUTTON', 'BUTTON', '查看角色详情', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_role_export', 'sys_role_export', '角色导出', 'BACKEND_BUTTON', 'BUTTON', '导出角色数据', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_role_grant_perm', 'sys_role_grant_perm', '分配权限', 'BACKEND_BUTTON', 'BUTTON', '给角色分配权限', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_role_grant_resource', 'sys_role_grant_resource', '分配资源', 'BACKEND_BUTTON', 'BUTTON', '给角色分配资源', 'res_sys_role_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80025', 'sys_role_page', '角色查询', 'BACKEND_BUTTON', 'BUTTON', '查询角色列表', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80026', 'sys_role_create', '角色新增', 'BACKEND_BUTTON', 'BUTTON', '新增角色', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80027', 'sys_role_modify', '角色修改', 'BACKEND_BUTTON', 'BUTTON', '修改角色', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('80028', 'sys_role_remove', '角色删除', 'BACKEND_BUTTON', 'BUTTON', '删除角色', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('80029', 'sys_role_detail', '角色详情', 'BACKEND_BUTTON', 'BUTTON', '查看角色详情', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
+('80030', 'sys_role_export', '角色导出', 'BACKEND_BUTTON', 'BUTTON', '导出角色数据', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
+('80031', 'sys_role_grant_perm', '分配权限', 'BACKEND_BUTTON', 'BUTTON', '给角色分配权限', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001'),
+('80032', 'sys_role_grant_resource', '分配资源', 'BACKEND_BUTTON', 'BUTTON', '给角色分配资源', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), '50001', NOW(), '50001'),
 
 
 -- 资源管理按钮
-('btn_sys_resource_page', 'sys_resource_page', '资源查询', 'BACKEND_BUTTON', 'BUTTON', '查询资源列表', 'res_sys_resource_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_resource_create', 'sys_resource_create', '资源新增', 'BACKEND_BUTTON', 'BUTTON', '新增资源', 'res_sys_resource_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_resource_modify', 'sys_resource_modify', '资源修改', 'BACKEND_BUTTON', 'BUTTON', '修改资源', 'res_sys_resource_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_resource_remove', 'sys_resource_remove', '资源删除', 'BACKEND_BUTTON', 'BUTTON', '删除资源', 'res_sys_resource_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_resource_detail', 'sys_resource_detail', '资源详情', 'BACKEND_BUTTON', 'BUTTON', '查看资源详情', 'res_sys_resource_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80033', 'sys_resource_page', '资源查询', 'BACKEND_BUTTON', 'BUTTON', '查询资源列表', '80006', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80034', 'sys_resource_create', '资源新增', 'BACKEND_BUTTON', 'BUTTON', '新增资源', '80006', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80035', 'sys_resource_modify', '资源修改', 'BACKEND_BUTTON', 'BUTTON', '修改资源', '80006', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('80036', 'sys_resource_remove', '资源删除', 'BACKEND_BUTTON', 'BUTTON', '删除资源', '80006', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('80037', 'sys_resource_detail', '资源详情', 'BACKEND_BUTTON', 'BUTTON', '查看资源详情', '80006', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- 组织管理按钮
-('btn_sys_org_page', 'sys_org_page', '组织查询', 'BACKEND_BUTTON', 'BUTTON', '查询组织列表', 'res_sys_org_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_org_create', 'sys_org_create', '组织新增', 'BACKEND_BUTTON', 'BUTTON', '新增组织', 'res_sys_org_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_org_modify', 'sys_org_modify', '组织修改', 'BACKEND_BUTTON', 'BUTTON', '修改组织', 'res_sys_org_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_org_remove', 'sys_org_remove', '组织删除', 'BACKEND_BUTTON', 'BUTTON', '删除组织', 'res_sys_org_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_org_detail', 'sys_org_detail', '组织详情', 'BACKEND_BUTTON', 'BUTTON', '查看组织详情', 'res_sys_org_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_org_grant_role', 'sys_org_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给组织分配角色', 'res_sys_org_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80038', 'sys_org_page', '组织查询', 'BACKEND_BUTTON', 'BUTTON', '查询组织列表', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80039', 'sys_org_create', '组织新增', 'BACKEND_BUTTON', 'BUTTON', '新增组织', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80040', 'sys_org_modify', '组织修改', 'BACKEND_BUTTON', 'BUTTON', '修改组织', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('80041', 'sys_org_remove', '组织删除', 'BACKEND_BUTTON', 'BUTTON', '删除组织', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('80042', 'sys_org_detail', '组织详情', 'BACKEND_BUTTON', 'BUTTON', '查看组织详情', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
+('80043', 'sys_org_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给组织分配角色', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- 职位管理按钮
-('btn_sys_position_page', 'sys_position_page', '职位查询', 'BACKEND_BUTTON', 'BUTTON', '查询职位列表', 'res_sys_position_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_position_create', 'sys_position_create', '职位新增', 'BACKEND_BUTTON', 'BUTTON', '新增职位', 'res_sys_position_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_position_modify', 'sys_position_modify', '职位修改', 'BACKEND_BUTTON', 'BUTTON', '修改职位', 'res_sys_position_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_position_remove', 'sys_position_remove', '职位删除', 'BACKEND_BUTTON', 'BUTTON', '删除职位', 'res_sys_position_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_position_detail', 'sys_position_detail', '职位详情', 'BACKEND_BUTTON', 'BUTTON', '查看职位详情', 'res_sys_position_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80044', 'sys_position_page', '职位查询', 'BACKEND_BUTTON', 'BUTTON', '查询职位列表', '80008', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80045', 'sys_position_create', '职位新增', 'BACKEND_BUTTON', 'BUTTON', '新增职位', '80008', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80046', 'sys_position_modify', '职位修改', 'BACKEND_BUTTON', 'BUTTON', '修改职位', '80008', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('80047', 'sys_position_remove', '职位删除', 'BACKEND_BUTTON', 'BUTTON', '删除职位', '80008', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('80048', 'sys_position_detail', '职位详情', 'BACKEND_BUTTON', 'BUTTON', '查看职位详情', '80008', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- 用户组管理按钮
-('btn_sys_group_page', 'sys_group_page', '用户组查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户组列表', 'res_sys_group_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_group_create', 'sys_group_create', '用户组新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户组', 'res_sys_group_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_group_modify', 'sys_group_modify', '用户组修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户组', 'res_sys_group_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_group_remove', 'sys_group_remove', '用户组删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户组', 'res_sys_group_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_group_detail', 'sys_group_detail', '用户组详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户组详情', 'res_sys_group_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_group_grant_role', 'sys_group_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户组分配角色', 'res_sys_group_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80049', 'sys_group_page', '用户组查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户组列表', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80050', 'sys_group_create', '用户组新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户组', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80051', 'sys_group_modify', '用户组修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户组', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('80052', 'sys_group_remove', '用户组删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户组', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('80053', 'sys_group_detail', '用户组详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户组详情', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
+('80054', 'sys_group_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户组分配角色', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- 字典管理按钮
-('btn_sys_dict_page', 'sys_dict_page', '字典查询', 'BACKEND_BUTTON', 'BUTTON', '查询字典列表', 'res_sys_dict_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_dict_create', 'sys_dict_create', '字典新增', 'BACKEND_BUTTON', 'BUTTON', '新增字典', 'res_sys_dict_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_dict_modify', 'sys_dict_modify', '字典修改', 'BACKEND_BUTTON', 'BUTTON', '修改字典', 'res_sys_dict_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_dict_remove', 'sys_dict_remove', '字典删除', 'BACKEND_BUTTON', 'BUTTON', '删除字典', 'res_sys_dict_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_dict_detail', 'sys_dict_detail', '字典详情', 'BACKEND_BUTTON', 'BUTTON', '查看字典详情', 'res_sys_dict_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80055', 'sys_dict_page', '字典查询', 'BACKEND_BUTTON', 'BUTTON', '查询字典列表', '80010', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80056', 'sys_dict_create', '字典新增', 'BACKEND_BUTTON', 'BUTTON', '新增字典', '80010', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80057', 'sys_dict_modify', '字典修改', 'BACKEND_BUTTON', 'BUTTON', '修改字典', '80010', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('80058', 'sys_dict_remove', '字典删除', 'BACKEND_BUTTON', 'BUTTON', '删除字典', '80010', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('80059', 'sys_dict_detail', '字典详情', 'BACKEND_BUTTON', 'BUTTON', '查看字典详情', '80010', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- 系统配置按钮
-('btn_sys_config_page', 'sys_config_page', '配置查询', 'BACKEND_BUTTON', 'BUTTON', '查询配置列表', 'res_sys_config_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_config_create', 'sys_config_create', '配置新增', 'BACKEND_BUTTON', 'BUTTON', '新增配置', 'res_sys_config_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_config_modify', 'sys_config_modify', '配置修改', 'BACKEND_BUTTON', 'BUTTON', '修改配置', 'res_sys_config_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_config_remove', 'sys_config_remove', '配置删除', 'BACKEND_BUTTON', 'BUTTON', '删除配置', 'res_sys_config_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_config_detail', 'sys_config_detail', '配置详情', 'BACKEND_BUTTON', 'BUTTON', '查看配置详情', 'res_sys_config_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80060', 'sys_config_page', '配置查询', 'BACKEND_BUTTON', 'BUTTON', '查询配置列表', '80011', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80061', 'sys_config_create', '配置新增', 'BACKEND_BUTTON', 'BUTTON', '新增配置', '80011', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80062', 'sys_config_modify', '配置修改', 'BACKEND_BUTTON', 'BUTTON', '修改配置', '80011', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('80063', 'sys_config_remove', '配置删除', 'BACKEND_BUTTON', 'BUTTON', '删除配置', '80011', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('80064', 'sys_config_detail', '配置详情', 'BACKEND_BUTTON', 'BUTTON', '查看配置详情', '80011', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- 通知管理按钮
-('btn_sys_notice_page', 'sys_notice_page', '通知查询', 'BACKEND_BUTTON', 'BUTTON', '查询通知列表', 'res_sys_notice_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_notice_create', 'sys_notice_create', '通知新增', 'BACKEND_BUTTON', 'BUTTON', '新增通知', 'res_sys_notice_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_notice_modify', 'sys_notice_modify', '通知修改', 'BACKEND_BUTTON', 'BUTTON', '修改通知', 'res_sys_notice_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_notice_remove', 'sys_notice_remove', '通知删除', 'BACKEND_BUTTON', 'BUTTON', '删除通知', 'res_sys_notice_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_notice_detail', 'sys_notice_detail', '通知详情', 'BACKEND_BUTTON', 'BUTTON', '查看通知详情', 'res_sys_notice_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80065', 'sys_notice_page', '通知查询', 'BACKEND_BUTTON', 'BUTTON', '查询通知列表', '80012', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80066', 'sys_notice_create', '通知新增', 'BACKEND_BUTTON', 'BUTTON', '新增通知', '80012', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80067', 'sys_notice_modify', '通知修改', 'BACKEND_BUTTON', 'BUTTON', '修改通知', '80012', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('80068', 'sys_notice_remove', '通知删除', 'BACKEND_BUTTON', 'BUTTON', '删除通知', '80012', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('80069', 'sys_notice_detail', '通知详情', 'BACKEND_BUTTON', 'BUTTON', '查看通知详情', '80012', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- 轮播图管理按钮
-('btn_sys_banner_page', 'sys_banner_page', '轮播查询', 'BACKEND_BUTTON', 'BUTTON', '查询轮播图列表', 'res_sys_banner_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_banner_create', 'sys_banner_create', '轮播新增', 'BACKEND_BUTTON', 'BUTTON', '新增轮播图', 'res_sys_banner_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_banner_modify', 'sys_banner_modify', '轮播修改', 'BACKEND_BUTTON', 'BUTTON', '修改轮播图', 'res_sys_banner_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_banner_remove', 'sys_banner_remove', '轮播删除', 'BACKEND_BUTTON', 'BUTTON', '删除轮播图', 'res_sys_banner_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_banner_detail', 'sys_banner_detail', '轮播详情', 'BACKEND_BUTTON', 'BUTTON', '查看轮播图详情', 'res_sys_banner_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('80070', 'sys_banner_page', '轮播查询', 'BACKEND_BUTTON', 'BUTTON', '查询轮播图列表', '80013', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80071', 'sys_banner_create', '轮播新增', 'BACKEND_BUTTON', 'BUTTON', '新增轮播图', '80013', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80072', 'sys_banner_modify', '轮播修改', 'BACKEND_BUTTON', 'BUTTON', '修改轮播图', '80013', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('80073', 'sys_banner_remove', '轮播删除', 'BACKEND_BUTTON', 'BUTTON', '删除轮播图', '80013', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('80074', 'sys_banner_detail', '轮播详情', 'BACKEND_BUTTON', 'BUTTON', '查看轮播图详情', '80013', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
 
 -- 文件管理按钮
-('btn_sys_file_upload', 'sys_file_upload', '文件上传', 'BACKEND_BUTTON', 'BUTTON', '上传文件', 'res_sys_file_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_file_download', 'sys_file_download', '文件下载', 'BACKEND_BUTTON', 'BUTTON', '下载文件', 'res_sys_file_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_file_page', 'sys_file_page', '文件查询', 'BACKEND_BUTTON', 'BUTTON', '查询文件列表', 'res_sys_file_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('btn_sys_file_remove', 'sys_file_remove', '文件删除', 'BACKEND_BUTTON', 'BUTTON', '删除文件', 'res_sys_file_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+('80075', 'sys_file_upload', '文件上传', 'BACKEND_BUTTON', 'BUTTON', '上传文件', '80014', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('80076', 'sys_file_download', '文件下载', 'BACKEND_BUTTON', 'BUTTON', '下载文件', '80014', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('80077', 'sys_file_page', '文件查询', 'BACKEND_BUTTON', 'BUTTON', '查询文件列表', '80014', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('80078', 'sys_file_remove', '文件删除', 'BACKEND_BUTTON', 'BUTTON', '删除文件', '80014', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- 授权权限按钮（extra 关联 permission_code）
 INSERT INTO `sys_resource` (`id`, `code`, `name`, `category`, `type`, `description`, `parent_id`, `route_path`, `component_path`, `icon`, `is_visible`, `is_cache`, `is_affix`, `is_hidden`, `is_breadcrumb`, `status`, `sort_code`, `extra`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('btn_sys_user_grant_perm', 'sys_user_grant_perm', '授权权限', 'BACKEND_BUTTON', 'BUTTON', '给用户授权颗粒度权限', 'res_sys_user_menu', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 10, '{"permission_code": "sys:user:grant-permission"}', 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+VALUES ('80079', 'sys_user_grant_perm', '授权权限', 'BACKEND_BUTTON', 'BUTTON', '给用户授权颗粒度权限', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 10, '{"permission_code": "sys:user:grant-permission"}', 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- 字典 sys_dict
@@ -826,108 +826,108 @@ VALUES ('btn_sys_user_grant_perm', 'sys_user_grant_perm', '授权权限', 'BACKE
 INSERT INTO `sys_dict` (`id`, `code`, `label`, `value`, `color`, `category`, `parent_id`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
 VALUES
 -- 性别
-('dict_gender', 'gender', '性别', NULL, NULL, 'sys_base', NULL, 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_gender_male', 'gender_male', '男', 'MALE', 'blue', 'sys_base', 'dict_gender', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_gender_female', 'gender_female', '女', 'FEMALE', 'red', 'sys_base', 'dict_gender', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('90001', 'gender', '性别', NULL, NULL, 'sys_base', NULL, 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('90002', 'gender_male', '男', 'MALE', 'blue', 'sys_base', '90001', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('90003', 'gender_female', '女', 'FEMALE', 'red', 'sys_base', '90001', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
 -- 状态
-('dict_status', 'user_status', '用户状态', NULL, NULL, 'sys_base', NULL, 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_status_active', 'user_status_active', '正常', 'ACTIVE', 'green', 'sys_base', 'dict_status', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_status_locked', 'user_status_locked', '锁定', 'LOCKED', 'red', 'sys_base', 'dict_status', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_status_inactive', 'user_status_inactive', '停用', 'INACTIVE', 'orange', 'sys_base', 'dict_status', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('90004', 'user_status', '用户状态', NULL, NULL, 'sys_base', NULL, 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('90005', 'user_status_active', '正常', 'ACTIVE', 'green', 'sys_base', '90004', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('90006', 'user_status_locked', '锁定', 'LOCKED', 'red', 'sys_base', '90004', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('90007', 'user_status_inactive', '停用', 'INACTIVE', 'orange', 'sys_base', '90004', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
 -- 启用/禁用
-('dict_enabled', 'enabled_status', '启用状态', NULL, NULL, 'sys_base', NULL, 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_enabled_yes', 'enabled_status_yes', '启用', 'ENABLED', 'green', 'sys_base', 'dict_enabled', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_enabled_no', 'enabled_status_no', '禁用', 'DISABLED', 'red', 'sys_base', 'dict_enabled', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('90008', 'enabled_status', '启用状态', NULL, NULL, 'sys_base', NULL, 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+('90009', 'enabled_status_yes', '启用', 'ENABLED', 'green', 'sys_base', '90008', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('90010', 'enabled_status_no', '禁用', 'DISABLED', 'red', 'sys_base', '90008', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
 -- 是否
-('dict_yesno', 'yes_no', '是否', NULL, NULL, 'sys_base', NULL, 'ENABLED', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_yesno_yes', 'yes_no_yes', '是', 'YES', 'green', 'sys_base', 'dict_yesno', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_yesno_no', 'yes_no_no', '否', 'NO', 'red', 'sys_base', 'dict_yesno', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('90011', 'yes_no', '是否', NULL, NULL, 'sys_base', NULL, 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+('90012', 'yes_no_yes', '是', 'YES', 'green', 'sys_base', '90011', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('90013', 'yes_no_no', '否', 'NO', 'red', 'sys_base', '90011', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
 -- 通知级别
-('dict_notice_level', 'notice_level', '通知级别', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_notice_level_normal', 'notice_level_normal', '普通', 'NORMAL', 'blue', 'sys_notice', 'dict_notice_level', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_notice_level_important', 'notice_level_important', '重要', 'IMPORTANT', 'orange', 'sys_notice', 'dict_notice_level', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_notice_level_urgent', 'notice_level_urgent', '紧急', 'URGENT', 'red', 'sys_notice', 'dict_notice_level', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('90014', 'notice_level', '通知级别', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
+('90015', 'notice_level_normal', '普通', 'NORMAL', 'blue', 'sys_notice', '90014', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('90016', 'notice_level_important', '重要', 'IMPORTANT', 'orange', 'sys_notice', '90014', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('90017', 'notice_level_urgent', '紧急', 'URGENT', 'red', 'sys_notice', '90014', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
 -- 通知类型
-('dict_notice_type', 'notice_type', '通知类型', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_notice_type_system', 'notice_type_system', '系统通知', 'SYSTEM_NOTICE', 'purple', 'sys_notice', 'dict_notice_type', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_notice_type_business', 'notice_type_business', '业务通知', 'BUSINESS_NOTICE', 'blue', 'sys_notice', 'dict_notice_type', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_notice_type_maintenance', 'notice_type_maintenance', '维护公告', 'MAINTENANCE', 'orange', 'sys_notice', 'dict_notice_type', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('90018', 'notice_type', '通知类型', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
+('90019', 'notice_type_system', '系统通知', 'SYSTEM_NOTICE', 'purple', 'sys_notice', '90018', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('90020', 'notice_type_business', '业务通知', 'BUSINESS_NOTICE', 'blue', 'sys_notice', '90018', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('90021', 'notice_type_maintenance', '维护公告', 'MAINTENANCE', 'orange', 'sys_notice', '90018', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
 -- 资源分类
-('dict_resource_category', 'resource_category', '资源分类', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_res_cat_menu', 'res_cat_backend_menu', '后台菜单', 'BACKEND_MENU', 'blue', 'sys_resource', 'dict_resource_category', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_res_cat_button', 'res_cat_backend_button', '后台按钮', 'BACKEND_BUTTON', 'green', 'sys_resource', 'dict_resource_category', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('90022', 'resource_category', '资源分类', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001'),
+('90023', 'res_cat_backend_menu', '后台菜单', 'BACKEND_MENU', 'blue', 'sys_resource', '90022', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('90024', 'res_cat_backend_button', '后台按钮', 'BACKEND_BUTTON', 'green', 'sys_resource', '90022', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
 -- 资源类型
-('dict_resource_type', 'resource_type', '资源类型', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 8, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_resource_type_directory', 'resource_type_directory', '目录', 'DIRECTORY', 'blue', 'sys_resource', 'dict_resource_type', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_resource_type_menu', 'resource_type_menu', '菜单', 'MENU', 'green', 'sys_resource', 'dict_resource_type', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_resource_type_button', 'resource_type_button', '按钮', 'BUTTON', 'orange', 'sys_resource', 'dict_resource_type', 'ENABLED', 3, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
+('90025', 'resource_type', '资源类型', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 8, 'NO', NOW(), '50001', NOW(), '50001'),
+('90026', 'resource_type_directory', '目录', 'DIRECTORY', 'blue', 'sys_resource', '90025', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('90027', 'resource_type_menu', '菜单', 'MENU', 'green', 'sys_resource', '90025', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+('90028', 'resource_type_button', '按钮', 'BUTTON', 'orange', 'sys_resource', '90025', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
 -- 组织类别
-('dict_org_category', 'org_category', '组织类别', NULL, NULL, 'sys_org', NULL, 'ENABLED', 9, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_org_category_group', 'org_category_group', '集团', 'GROUP', 'red', 'sys_org', 'dict_org_category', 'ENABLED', 1, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-('dict_org_category_dept', 'org_category_dept', '部门', 'DEPT', 'blue', 'sys_org', 'dict_org_category', 'ENABLED', 2, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+('90029', 'org_category', '组织类别', NULL, NULL, 'sys_org', NULL, 'ENABLED', 9, 'NO', NOW(), '50001', NOW(), '50001'),
+('90030', 'org_category_group', '集团', 'GROUP', 'red', 'sys_org', '90029', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+('90031', 'org_category_dept', '部门', 'DEPT', 'blue', 'sys_org', '90029', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- 通知 sys_notice
 -- =============================================================================
 INSERT INTO `sys_notice` (`id`, `title`, `summary`, `content`, `cover`, `category`, `type`, `level`, `view_count`, `is_top`, `position`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('notice_1', '系统升级维护通知', '系统将于本周六凌晨2:00-6:00进行升级维护', '<h1>系统升级维护</h1><p>为了提供更好的服务，系统将于本周六凌晨2:00-6:00进行升级维护，期间部分功能可能无法正常使用。</p>', NULL, 'PLATFORM', 'MAINTENANCE', 'IMPORTANT', 0, 'YES', 'TOP', 'ENABLED', 1, 'NO', NOW(), 'user_admin', NOW(), 'user_admin'),
-       ('notice_2', '欢迎使用 Hei FastAPI 系统', '欢迎各位同事使用全新开发的后台管理系统', '<p>Hei FastAPI 是一套基于 FastAPI + SQLAlchemy 2.0 的后台管理系统，欢迎大家体验并提供宝贵意见。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', 'TOP', 'ENABLED', 2, 'NO', NOW(), 'user_admin', NOW(), 'user_admin'),
-       ('notice_3', '第三季度工作总结会议通知', '请各部门负责人准备第三季度工作总结报告', '<p>公司将于下周五召开第三季度工作总结会议，请各部门负责人准备相关材料。</p>', NULL, 'COMPANY', 'BUSINESS_NOTICE', 'IMPORTANT', 0, 'NO', NULL, 'ENABLED', 3, 'NO', NOW(), 'user_admin', NOW(), 'user_admin'),
-       ('notice_4', '关于启用新系统的通知', '即日起正式启用全新后台管理系统', '<p>经过开发团队的不懈努力，全新后台管理系统已于今日正式上线，旧系统将并行运行一个月后下线。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', NULL, 'ENABLED', 4, 'NO', NOW(), 'user_admin', NOW(), 'user_admin');
+VALUES ('100001', '系统升级维护通知', '系统将于本周六凌晨2:00-6:00进行升级维护', '<h1>系统升级维护</h1><p>为了提供更好的服务，系统将于本周六凌晨2:00-6:00进行升级维护，期间部分功能可能无法正常使用。</p>', NULL, 'PLATFORM', 'MAINTENANCE', 'IMPORTANT', 0, 'YES', 'TOP', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('100002', '欢迎使用 Hei FastAPI 系统', '欢迎各位同事使用全新开发的后台管理系统', '<p>Hei FastAPI 是一套基于 FastAPI + SQLAlchemy 2.0 的后台管理系统，欢迎大家体验并提供宝贵意见。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', 'TOP', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('100003', '第三季度工作总结会议通知', '请各部门负责人准备第三季度工作总结报告', '<p>公司将于下周五召开第三季度工作总结会议，请各部门负责人准备相关材料。</p>', NULL, 'COMPANY', 'BUSINESS_NOTICE', 'IMPORTANT', 0, 'NO', NULL, 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('100004', '关于启用新系统的通知', '即日起正式启用全新后台管理系统', '<p>经过开发团队的不懈努力，全新后台管理系统已于今日正式上线，旧系统将并行运行一个月后下线。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', NULL, 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- 轮播图 sys_banner
 -- =============================================================================
 INSERT INTO `sys_banner` (`id`, `title`, `image`, `url`, `link_type`, `summary`, `description`, `category`, `type`, `position`, `sort_code`, `view_count`, `click_count`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('banner_1', 'Hei FastAPI 宣传图', 'https://via.placeholder.com/1920x600/1890FF/FFFFFF?text=Hei+FastAPI', 'https://github.com', 'URL', 'Hei FastAPI 框架宣传图', '基于 FastAPI 的企业级后台开发框架', 'INDEX', 'IMAGE', 'INDEX_TOP', 1, 0, 0, 'NO', NOW(), 'user_admin', NOW(), 'user_admin'),
-       ('banner_2', '系统使用指南', 'https://via.placeholder.com/1920x600/52C41A/FFFFFF?text=使用指南', NULL, 'URL', '新系统使用指南', '快速上手新系统', 'INDEX', 'IMAGE', 'INDEX_TOP', 2, 0, 0, 'NO', NOW(), 'user_admin', NOW(), 'user_admin'),
-       ('banner_3', '开发团队招募', 'https://via.placeholder.com/1920x600/722ED1/FFFFFF?text=加入我们', NULL, 'URL', '诚聘前后端开发工程师', '如果您对技术充满热情，欢迎加入我们', 'INDEX', 'IMAGE', 'INDEX_TOP', 3, 0, 0, 'NO', NOW(), 'user_admin', NOW(), 'user_admin');
+VALUES ('110001', 'Hei FastAPI 宣传图', 'https://via.placeholder.com/1920x600/1890FF/FFFFFF?text=Hei+FastAPI', 'https://github.com', 'URL', 'Hei FastAPI 框架宣传图', '基于 FastAPI 的企业级后台开发框架', 'INDEX', 'IMAGE', 'INDEX_TOP', 1, 0, 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('110002', '系统使用指南', 'https://via.placeholder.com/1920x600/52C41A/FFFFFF?text=使用指南', NULL, 'URL', '新系统使用指南', '快速上手新系统', 'INDEX', 'IMAGE', 'INDEX_TOP', 2, 0, 0, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('110003', '开发团队招募', 'https://via.placeholder.com/1920x600/722ED1/FFFFFF?text=加入我们', NULL, 'URL', '诚聘前后端开发工程师', '如果您对技术充满热情，欢迎加入我们', 'INDEX', 'IMAGE', 'INDEX_TOP', 3, 0, 0, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- 系统配置 sys_config（追加）
 -- =============================================================================
 INSERT INTO `sys_config` (`id`, `config_key`, `config_value`, `category`, `remark`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('4', 'SYS_SNOWFLAKE_WORKER_ID', '1', 'SYS_BASE', 'Snowflake 工作节点ID', 4, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('5', 'SYS_SNOWFLAKE_DATACENTER_ID', '1', 'SYS_BASE', 'Snowflake 数据中心ID', 5, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('6', 'SYS_DEFAULT_PASSWORD', '123456', 'SYS_BASE', '默认密码（新增用户时使用）', 6, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('7', 'SYS_USER_INIT_PASSWORD', '123456', 'SYS_BASE', '用户初始密码', 7, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('8', 'SYS_MAX_LOGIN_RETRIES', '5', 'SYS_SECURITY', '最大登录失败次数', 8, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('9', 'SYS_LOGIN_LOCK_MINUTES', '30', 'SYS_SECURITY', '登录锁定时间（分钟）', 9, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('10', 'SYS_JWT_TOKEN_EXPIRE', '86400', 'SYS_SECURITY', 'JWT Token 过期时间（秒）', 10, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('11', 'SYS_UPLOAD_MAX_SIZE', '10485760', 'SYS_FILE', '文件上传最大大小（字节）', 11, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN'),
-       ('12', 'SYS_UPLOAD_ALLOWED_EXTENSIONS', 'jpg,jpeg,png,gif,bmp,doc,docx,xls,xlsx,pdf,txt,zip,rar', 'SYS_FILE', '允许上传的文件后缀', 12, 'NO', NOW(), 'ADMIN', NOW(), 'ADMIN');
+VALUES ('4', 'SYS_SNOWFLAKE_WORKER_ID', '1', 'SYS_BASE', 'Snowflake 工作节点ID', 4, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('5', 'SYS_SNOWFLAKE_DATACENTER_ID', '1', 'SYS_BASE', 'Snowflake 数据中心ID', 5, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('6', 'SYS_DEFAULT_PASSWORD', '123456', 'SYS_BASE', '默认密码（新增用户时使用）', 6, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('7', 'SYS_USER_INIT_PASSWORD', '123456', 'SYS_BASE', '用户初始密码', 7, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('8', 'SYS_MAX_LOGIN_RETRIES', '5', 'SYS_SECURITY', '最大登录失败次数', 8, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('9', 'SYS_LOGIN_LOCK_MINUTES', '30', 'SYS_SECURITY', '登录锁定时间（分钟）', 9, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('10', 'SYS_JWT_TOKEN_EXPIRE', '86400', 'SYS_SECURITY', 'JWT Token 过期时间（秒）', 10, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('11', 'SYS_UPLOAD_MAX_SIZE', '10485760', 'SYS_FILE', '文件上传最大大小（字节）', 11, 'NO', NOW(), '50001', NOW(), '50001'),
+       ('12', 'SYS_UPLOAD_ALLOWED_EXTENSIONS', 'jpg,jpeg,png,gif,bmp,doc,docx,xls,xlsx,pdf,txt,zip,rar', 'SYS_FILE', '允许上传的文件后缀', 12, 'NO', NOW(), '50001', NOW(), '50001');
 
 -- =============================================================================
 -- 关联表
 -- =============================================================================
 
 -- 用户-角色关联
-INSERT INTO `ral_user_role` (`id`, `user_id`, `role_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-VALUES ('ur_admin_sa', 'user_admin', 'role_super_admin', 'ALL', NULL, 'NO', NOW(), 'ADMIN'),
-       ('ur_dev1_dev', 'user_dev1', 'role_dev', 'ALL', NULL, 'NO', NOW(), 'ADMIN'),
-       ('ur_dev2_dev', 'user_dev2', 'role_dev', 'ALL', NULL, 'NO', NOW(), 'ADMIN'),
-       ('ur_dev3_dev', 'user_dev3', 'role_dev', 'ALL', NULL, 'NO', NOW(), 'ADMIN'),
-       ('ur_test1_test', 'user_test1', 'role_test', 'ALL', NULL, 'NO', NOW(), 'ADMIN'),
-       ('ur_pm1_mkt', 'user_pm1', 'role_mkt', 'ALL', NULL, 'NO', NOW(), 'ADMIN'),
-       ('ur_mkt1_mkt', 'user_mkt1', 'role_mkt', 'ALL', NULL, 'NO', NOW(), 'ADMIN'),
-       ('ur_fin1_fin', 'user_fin1', 'role_fin', 'ALL', NULL, 'NO', NOW(), 'ADMIN'),
-       ('ur_hr1_hr', 'user_hr1', 'role_hr', 'ALL', NULL, 'NO', NOW(), 'ADMIN');
+INSERT INTO `rel_user_role` (`id`, `user_id`, `role_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
+VALUES ('120001', '50001', '40001', 'ALL', NULL, 'NO', NOW(), '50001'),
+       ('120002', '50002', '40003', 'ALL', NULL, 'NO', NOW(), '50001'),
+       ('120003', '50003', '40003', 'ALL', NULL, 'NO', NOW(), '50001'),
+       ('120004', '50004', '40003', 'ALL', NULL, 'NO', NOW(), '50001'),
+       ('120005', '50005', '40004', 'ALL', NULL, 'NO', NOW(), '50001'),
+       ('120006', '50006', '40005', 'ALL', NULL, 'NO', NOW(), '50001'),
+       ('120007', '50007', '40005', 'ALL', NULL, 'NO', NOW(), '50001'),
+       ('120008', '50008', '40006', 'ALL', NULL, 'NO', NOW(), '50001'),
+       ('120009', '50009', '40007', 'ALL', NULL, 'NO', NOW(), '50001');
 
 -- 用户-用户组关联
-INSERT INTO `ral_user_group` (`id`, `user_id`, `group_id`, `is_deleted`, `created_at`, `created_by`)
-VALUES ('ug_admin', 'user_admin', 'grp_admin', 'NO', NOW(), 'ADMIN'),
-       ('ug_dev1', 'user_dev1', 'grp_dev', 'NO', NOW(), 'ADMIN'),
-       ('ug_dev2', 'user_dev2', 'grp_dev', 'NO', NOW(), 'ADMIN'),
-       ('ug_dev3', 'user_dev3', 'grp_dev', 'NO', NOW(), 'ADMIN'),
-       ('ug_test1', 'user_test1', 'grp_test', 'NO', NOW(), 'ADMIN'),
-       ('ug_pm1', 'user_pm1', 'grp_product', 'NO', NOW(), 'ADMIN'),
-       ('ug_mkt1', 'user_mkt1', 'grp_market', 'NO', NOW(), 'ADMIN');
+INSERT INTO `rel_user_group` (`id`, `user_id`, `group_id`, `is_deleted`, `created_at`, `created_by`)
+VALUES ('130001', '50001', '30001', 'NO', NOW(), '50001'),
+       ('130002', '50002', '30002', 'NO', NOW(), '50001'),
+       ('130003', '50003', '30002', 'NO', NOW(), '50001'),
+       ('130004', '50004', '30002', 'NO', NOW(), '50001'),
+       ('130005', '50005', '30003', 'NO', NOW(), '50001'),
+       ('130006', '50006', '30004', 'NO', NOW(), '50001'),
+       ('130007', '50007', '30005', 'NO', NOW(), '50001');
 
 -- 角色-权限关联（为超级管理员分配全部已知权限）
 -- 权限编码列表参照 @HeiCheckPermission 注解自动扫描结果
 SET @rid = 1000000000;
-INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT @rid := @rid + 1, 'role_super_admin', v.code, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
+INSERT INTO `rel_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
+SELECT @rid := @rid + 1, '40001', v.code, 'ALL', NULL, 'NO', NOW(), '50001'
 FROM (VALUES
     ROW('sys:user:page'), ROW('sys:user:create'), ROW('sys:user:modify'), ROW('sys:user:remove'), ROW('sys:user:detail'), ROW('sys:user:export'), ROW('sys:user:import'), ROW('sys:user:grant-role'), ROW('sys:user:grant-group'), ROW('sys:user:grant-permission'), ROW('sys:user:own-permission-detail'), ROW('sys:user:own-roles'), ROW('sys:user:own-groups'),
     ROW('sys:role:page'), ROW('sys:role:create'), ROW('sys:role:modify'), ROW('sys:role:remove'), ROW('sys:role:detail'), ROW('sys:role:export'), ROW('sys:role:grantPermission'), ROW('sys:role:grantResource'), ROW('sys:role:ownPermission'), ROW('sys:role:ownResource'),
@@ -947,8 +947,8 @@ FROM (VALUES
 ) AS v(code);
 
 -- 角色-权限关联（为管理员分配核心管理权限）
-INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT @rid := @rid + 1, 'role_admin', v.code, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
+INSERT INTO `rel_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
+SELECT @rid := @rid + 1, '40002', v.code, 'ALL', NULL, 'NO', NOW(), '50001'
 FROM (VALUES
     ROW('sys:user:page'), ROW('sys:user:detail'), ROW('sys:user:create'), ROW('sys:user:modify'), ROW('sys:user:remove'), ROW('sys:user:grant-permission'), ROW('sys:user:own-permission-detail'),
     ROW('sys:role:page'), ROW('sys:role:detail'), ROW('sys:role:create'), ROW('sys:role:modify'), ROW('sys:role:remove'),
@@ -966,8 +966,8 @@ FROM (VALUES
 ) AS v(code);
 
 -- 角色-权限关联（为开发人员分配开发相关权限）
-INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT @rid := @rid + 1, 'role_dev', v.code, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
+INSERT INTO `rel_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
+SELECT @rid := @rid + 1, '40003', v.code, 'ALL', NULL, 'NO', NOW(), '50001'
 FROM (VALUES
     ROW('sys:dev:page'), ROW('sys:dev:create'), ROW('sys:dev:modify'), ROW('sys:dev:remove'), ROW('sys:dev:detail'),
     ROW('sys:dev:gen:list'), ROW('sys:dev:gen:create'), ROW('sys:dev:gen:edit'), ROW('sys:dev:gen:detail'), ROW('sys:dev:gen:remove'), ROW('sys:dev:gen:import'), ROW('sys:dev:gen:preview'),
@@ -975,8 +975,8 @@ FROM (VALUES
 ) AS v(code);
 
 -- 角色-权限关联（为测试人员分配只读+字典+通知等）
-INSERT INTO `ral_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT @rid := @rid + 1, 'role_test', v.code, 'ALL', NULL, 'NO', NOW(), 'ADMIN'
+INSERT INTO `rel_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
+SELECT @rid := @rid + 1, '40004', v.code, 'ALL', NULL, 'NO', NOW(), '50001'
 FROM (VALUES
     ROW('sys:user:page'), ROW('sys:user:detail'),
     ROW('sys:role:page'), ROW('sys:role:detail'),
@@ -992,14 +992,16 @@ FROM (VALUES
 ) AS v(code);
 
 -- 角色-资源关联（超级管理员分配所有资源）
-INSERT INTO `ral_role_resource` (`id`, `role_id`, `resource_id`, `is_deleted`, `created_at`, `created_by`)
-SELECT CONCAT('rrs_', r.`id`), 'role_super_admin', r.`id`, 'NO', NOW(), 'ADMIN'
+SET @rid2 = 1500000000;
+INSERT INTO `rel_role_resource` (`id`, `role_id`, `resource_id`, `is_deleted`, `created_at`, `created_by`)
+SELECT @rid2 := @rid2 + 1, '40001', r.`id`, 'NO', NOW(), '50001'
 FROM `sys_resource` r
 WHERE r.`is_deleted` = 'NO' AND r.`status` = 'ENABLED';
 
 -- 角色-资源关联（管理员分配菜单资源）
-INSERT INTO `ral_role_resource` (`id`, `role_id`, `resource_id`, `is_deleted`, `created_at`, `created_by`)
-SELECT CONCAT('rra_', r.`id`), 'role_admin', r.`id`, 'NO', NOW(), 'ADMIN'
+SET @rid3 = 1600000000;
+INSERT INTO `rel_role_resource` (`id`, `role_id`, `resource_id`, `is_deleted`, `created_at`, `created_by`)
+SELECT @rid3 := @rid3 + 1, '40002', r.`id`, 'NO', NOW(), '50001'
 FROM `sys_resource` r
 WHERE (r.`type` IN ('DIRECTORY', 'MENU') OR r.`code` IN (
     'sys_user_page', 'sys_user_create', 'sys_user_modify', 'sys_user_remove', 'sys_user_detail', 'sys_user_grant_perm',
@@ -1015,10 +1017,10 @@ WHERE (r.`type` IN ('DIRECTORY', 'MENU') OR r.`code` IN (
 -- 用户组-角色关联（已废弃）
 
 -- 组织-角色关联
-INSERT INTO `ral_org_role` (`id`, `org_id`, `role_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-VALUES ('or_tech_dev', 'org_tech', 'role_dev', NULL, NULL, 'NO', NOW(), 'ADMIN'),
-       ('or_mkt_mkt', 'org_mkt', 'role_mkt', NULL, NULL, 'NO', NOW(), 'ADMIN'),
-       ('or_fin_fin', 'org_fin', 'role_fin', NULL, NULL, 'NO', NOW(), 'ADMIN'),
-       ('or_hr_hr', 'org_hr', 'role_hr', NULL, NULL, 'NO', NOW(), 'ADMIN');
+INSERT INTO `rel_org_role` (`id`, `org_id`, `role_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
+VALUES ('140001', '10002', '40003', NULL, NULL, 'NO', NOW(), '50001'),
+       ('140002', '10003', '40005', NULL, NULL, 'NO', NOW(), '50001'),
+       ('140003', '10004', '40006', NULL, NULL, 'NO', NOW(), '50001'),
+       ('140004', '10005', '40007', NULL, NULL, 'NO', NOW(), '50001');
 
 SET FOREIGN_KEY_CHECKS = 1;
