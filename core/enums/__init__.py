@@ -8,9 +8,12 @@ from .resource_enum import ResourceCategoryEnum, ResourceTypeEnum
 from .data_scope_enum import DataScopeEnum
 from .permission_path_enum import PermissionPathEnum
 
+from .page_data_field_enum import PageDataField
+
 __all__ = [
     "DataScopeEnum",
     "PermissionPathEnum",
+    "PageDataField",
     "StatusEnum",
     "ExportTypeEnum",
     "SoftDeleteEnum",

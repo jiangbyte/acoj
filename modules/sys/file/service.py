@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import Request, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from core.result import page_data
+from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils.model_utils import strip_system_fields
 from core.utils.snowflake_utils import generate_id
@@ -207,8 +207,8 @@ class FileService:
 
     def page(self, param: FilePageParam) -> dict:
         result = self.dao.find_page(param)
-        records = result["records"]
-        total = result["total"]
+        records = result[PageDataField.RECORDS]
+        total = result[PageDataField.TOTAL]
         vo_list = []
         for r in records:
             vo = FileVO.model_validate(r).model_dump()

@@ -5,7 +5,7 @@ from .models import SysUser
 from .params import UserVO, UserPageParam, UserExportParam, UserImportParam, GrantRoleParam, GrantGroupParam, GrantUserPermissionParam
 from .dao import UserDao
 from core.pojo import IdParam, IdsParam
-from core.result import page_data
+from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.enums import ExportTypeEnum
 from core.utils import export_excel, strip_system_fields, apply_update, make_template
@@ -60,7 +60,7 @@ class UserService:
 
     def page(self, param: UserPageParam) -> dict:
         result = self.dao.find_page(param)
-        records = result["records"]
+        records = result[PageDataField.RECORDS]
         user_ids = [r.id for r in records]
         role_map = self.dao.get_role_ids_map_by_user_ids(user_ids)
         group_map = self.dao.get_group_ids_map_by_user_ids(user_ids)
@@ -72,7 +72,7 @@ class UserService:
             vo_list.append(vo)
         return page_data(
             records=vo_list,
-            total=result["total"],
+            total=result[PageDataField.TOTAL],
             page=param.current,
             size=param.size
         )
@@ -132,7 +132,7 @@ class UserService:
         if param.export_type == ExportTypeEnum.CURRENT.value:
             page_param = UserPageParam(current=param.current or 1, size=param.size or 10)
             result = self.dao.find_page(page_param)
-            records = result["records"]
+            records = result[PageDataField.RECORDS]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
             records = self.dao.find_by_ids(param.selected_ids or [])
         elif param.export_type == ExportTypeEnum.ALL.value:

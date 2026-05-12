@@ -5,7 +5,7 @@ from .models import SysNotice
 from .params import NoticeVO, NoticePageParam, NoticeExportParam, NoticeImportParam
 from .dao import NoticeDao
 from core.pojo import IdParam, IdsParam
-from core.result import page_data
+from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.enums import ExportTypeEnum
 from core.utils import export_excel, strip_system_fields, apply_update, make_template
@@ -30,8 +30,8 @@ class NoticeService:
     def page(self, param: NoticePageParam) -> dict:
         result = self.dao.find_page(param)
         return page_data(
-            records=[NoticeVO.model_validate(r).model_dump() for r in result["records"]],
-            total=result["total"],
+            records=[NoticeVO.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]],
+            total=result[PageDataField.TOTAL],
             page=param.current,
             size=param.size
         )
@@ -61,7 +61,7 @@ class NoticeService:
         if param.export_type == ExportTypeEnum.CURRENT.value:
             page_param = NoticePageParam(current=param.current or 1, size=param.size or 10)
             result = self.dao.find_page(page_param)
-            records = result["records"]
+            records = result[PageDataField.RECORDS]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
             records = self.dao.find_by_ids(param.selected_ids or [])
         elif param.export_type == ExportTypeEnum.ALL.value:

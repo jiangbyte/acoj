@@ -1,5 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
+from core.enums import ExportTypeEnum
 from core.pojo import PageBounds
 
 
@@ -34,7 +35,7 @@ class ConfigCategoryEditParam(BaseModel):
 
 
 class ConfigExportParam(BaseModel):
-    export_type: str = "current"
+    export_type: str = ExportTypeEnum.CURRENT.value
     current: Optional[int] = None
     size: Optional[int] = None
     selected_id: Optional[list[str]] = None

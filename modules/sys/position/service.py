@@ -1,10 +1,12 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from fastapi import Request
+
+from . import SysPosition
 from .params import PositionVO, PositionPageParam, PositionExportParam, PositionImportParam
 from .dao import PositionDao
 from core.pojo import IdParam, IdsParam
-from core.result import page_data
+from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.enums import ExportTypeEnum
 from core.utils import export_excel, strip_system_fields, apply_update, make_template
@@ -31,8 +33,8 @@ class PositionService:
             return page_data(records=[], total=0, page=param.current, size=param.size)
         result = self.dao.find_page_by_filters(param)
         return page_data(
-            records=[PositionVO.model_validate(r).model_dump() for r in result["records"]],
-            total=result["total"],
+            records=[PositionVO.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]],
+            total=result[PageDataField.TOTAL],
             page=param.current,
             size=param.size
         )
@@ -62,7 +64,7 @@ class PositionService:
         if param.export_type == ExportTypeEnum.CURRENT.value:
             page_param = PositionPageParam(current=param.current or 1, size=param.size or 10)
             result = self.dao.find_page(page_param)
-            records = result["records"]
+            records = result[PageDataField.RECORDS]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
             records = self.dao.find_by_ids(param.selected_ids or [])
         elif param.export_type == ExportTypeEnum.ALL.value:

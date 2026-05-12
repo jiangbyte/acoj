@@ -6,7 +6,7 @@ from .params import ModuleVO, ResourceVO, ModulePageParam, ResourcePageParam
 from .params import ModuleExportParam, ResourceExportParam, ModuleImportParam, ResourceImportParam
 from .dao import ModuleDao, ResourceDao
 from core.pojo import IdParam, IdsParam
-from core.result import page_data
+from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.enums import ExportTypeEnum
 from core.utils import export_excel, strip_system_fields, apply_update, make_template, generate_id
@@ -31,8 +31,8 @@ class ModuleService:
     def page(self, param: ModulePageParam) -> dict:
         result = self.dao.find_page(param)
         return page_data(
-            records=[ModuleVO.model_validate(r).model_dump() for r in result["records"]],
-            total=result["total"],
+            records=[ModuleVO.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]],
+            total=result[PageDataField.TOTAL],
             page=param.current,
             size=param.size
         )
@@ -62,7 +62,7 @@ class ModuleService:
         if param.export_type == ExportTypeEnum.CURRENT.value:
             page_param = ModulePageParam(current=param.current or 1, size=param.size or 10)
             result = self.dao.find_page(page_param)
-            records = result["records"]
+            records = result[PageDataField.RECORDS]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
             records = self.dao.find_by_ids(param.selected_ids or [])
         elif param.export_type == ExportTypeEnum.ALL.value:
@@ -99,8 +99,8 @@ class ResourceService:
     def page(self, param: ResourcePageParam) -> dict:
         result = self.dao.find_page(param)
         return page_data(
-            records=[ResourceVO.model_validate(r).model_dump() for r in result["records"]],
-            total=result["total"],
+            records=[ResourceVO.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]],
+            total=result[PageDataField.TOTAL],
             page=param.current,
             size=param.size
         )
@@ -146,7 +146,7 @@ class ResourceService:
         if param.export_type == ExportTypeEnum.CURRENT.value:
             page_param = ResourcePageParam(current=param.current or 1, size=param.size or 10)
             result = self.dao.find_page(page_param)
-            records = result["records"]
+            records = result[PageDataField.RECORDS]
         elif param.export_type == ExportTypeEnum.SELECTED.value:
             records = self.dao.find_by_ids(param.selected_ids or [])
         elif param.export_type == ExportTypeEnum.ALL.value:
