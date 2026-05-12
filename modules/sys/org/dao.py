@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any
 from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
-from .models import SysOrg, RalOrgRole
+from .models import SysOrg, RelOrgRole
 from .params import OrgPageParam
 from core.db.base_dao import BaseDAO
 from core.db.query_wrapper import QueryWrapper
@@ -26,8 +26,8 @@ class OrgDao(BaseDAO):
 
     def get_role_ids_by_org_id(self, org_id: str) -> List[str]:
         rows = self.db.execute(
-            select(RalOrgRole.role_id).where(
-                RalOrgRole.org_id == org_id, RalOrgRole.is_deleted == self._soft_delete_not_deleted
+            select(RelOrgRole.role_id).where(
+                RelOrgRole.org_id == org_id, RelOrgRole.is_deleted == self._soft_delete_not_deleted
             )
         ).scalars().all()
         return list(rows)
@@ -42,7 +42,7 @@ class OrgDao(BaseDAO):
         del_val = self._soft_delete_deleted
 
         existing = self.db.execute(
-            select(RalOrgRole).where(RalOrgRole.org_id == org_id)
+            select(RelOrgRole).where(RelOrgRole.org_id == org_id)
         ).scalars().all()
         existing_by_rid = {r.role_id: r for r in existing}
 
@@ -58,7 +58,7 @@ class OrgDao(BaseDAO):
                 rel.custom_scope_group_ids = custom_scope_group_ids
                 rel.created_by = created_by
             else:
-                rel = RalOrgRole(
+                rel = RelOrgRole(
                     id=generate_id(), org_id=org_id, role_id=rid,
                     scope=scope, custom_scope_group_ids=custom_scope_group_ids,
                     is_deleted=not_del, created_at=now, created_by=created_by

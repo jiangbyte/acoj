@@ -31,8 +31,8 @@ class SysRole(Base):
     updated_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='更新用户')
 
 
-class RalRolePermission(Base):
-    __tablename__ = 'ral_role_permission'
+class RelRolePermission(Base):
+    __tablename__ = 'rel_role_permission'
     __table_args__ = (
         Index('uk_role_permission', 'role_id', 'permission_code', unique=True),
         Index('idx_permission_code', 'permission_code'),
@@ -50,8 +50,8 @@ class RalRolePermission(Base):
     created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')
 
 
-class RalRoleResource(Base):
-    __tablename__ = 'ral_role_resource'
+class RelRoleResource(Base):
+    __tablename__ = 'rel_role_resource'
     __table_args__ = (
         Index('uk_role_resource', 'role_id', 'resource_id', unique=True),
         Index('idx_resource_id', 'resource_id'),

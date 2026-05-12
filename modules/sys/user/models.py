@@ -40,8 +40,8 @@ class SysUser(Base):
     updated_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='更新用户')
 
 
-class RalUserRole(Base):
-    __tablename__ = 'ral_user_role'
+class RelUserRole(Base):
+    __tablename__ = 'rel_user_role'
     __table_args__ = (
         Index('uk_user_role', 'user_id', 'role_id', unique=True),
         Index('idx_role_id', 'role_id'),
@@ -58,8 +58,8 @@ class RalUserRole(Base):
     created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')
 
 
-class RalUserGroup(Base):
-    __tablename__ = 'ral_user_group'
+class RelUserGroup(Base):
+    __tablename__ = 'rel_user_group'
     __table_args__ = (
         Index('uk_user_group', 'user_id', 'group_id', unique=True),
         Index('idx_group_id', 'group_id'),
@@ -74,8 +74,8 @@ class RalUserGroup(Base):
     created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')
 
 
-class RalUserPermission(Base):
-    __tablename__ = 'ral_user_permission'
+class RelUserPermission(Base):
+    __tablename__ = 'rel_user_permission'
     __table_args__ = (
         Index('uk_user_permission', 'user_id', 'permission_code', unique=True),
         Index('idx_permission_code', 'permission_code'),

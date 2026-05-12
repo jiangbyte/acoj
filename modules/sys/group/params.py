@@ -65,4 +65,4 @@ class GroupImportParam(BaseModel):
     data: List[GroupVO]
 
 
-# GrantGroupRoleParam — 已废弃，使用 ral_role_permission.scope 的 GROUP / CUSTOM_GROUP
+# GrantGroupRoleParam — 已废弃，使用 rel_role_permission.scope 的 GROUP / CUSTOM_GROUP

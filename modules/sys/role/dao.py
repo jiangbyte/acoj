@@ -3,7 +3,7 @@ from typing import List, Optional
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from .models import SysRole, RalRolePermission, RalRoleResource
+from .models import SysRole, RelRolePermission, RelRoleResource
 from core.db.base_dao import BaseDAO
 from core.utils import generate_id
 
@@ -16,8 +16,8 @@ class RoleDao(BaseDAO):
 
     def get_permission_codes_by_role_id(self, role_id: str) -> List[str]:
         rows = self.db.execute(
-            select(RalRolePermission.permission_code).where(
-                RalRolePermission.role_id == role_id, RalRolePermission.is_deleted == self._soft_delete_not_deleted
+            select(RelRolePermission.permission_code).where(
+                RelRolePermission.role_id == role_id, RelRolePermission.is_deleted == self._soft_delete_not_deleted
             )
         ).scalars().all()
         return list(rows)
@@ -25,13 +25,13 @@ class RoleDao(BaseDAO):
     def get_permission_details_by_role_id(self, role_id: str) -> list[dict]:
         rows = self.db.execute(
             select(
-                RalRolePermission.permission_code,
-                RalRolePermission.scope,
-                RalRolePermission.custom_scope_group_ids,
-                RalRolePermission.custom_scope_org_ids,
+                RelRolePermission.permission_code,
+                RelRolePermission.scope,
+                RelRolePermission.custom_scope_group_ids,
+                RelRolePermission.custom_scope_org_ids,
             ).where(
-                RalRolePermission.role_id == role_id,
-                RalRolePermission.is_deleted == self._soft_delete_not_deleted
+                RelRolePermission.role_id == role_id,
+                RelRolePermission.is_deleted == self._soft_delete_not_deleted
             )
         ).all()
         return [
@@ -53,7 +53,7 @@ class RoleDao(BaseDAO):
         incoming_codes = [p.permission_code for p in permissions]
 
         existing = self.db.execute(
-            select(RalRolePermission).where(RalRolePermission.role_id == role_id)
+            select(RelRolePermission).where(RelRolePermission.role_id == role_id)
         ).scalars().all()
         existing_by_code = {r.permission_code: r for r in existing}
 
@@ -70,7 +70,7 @@ class RoleDao(BaseDAO):
                 rel.custom_scope_org_ids = p.custom_scope_org_ids
                 rel.created_by = created_by
             else:
-                rel = RalRolePermission(
+                rel = RelRolePermission(
                     id=generate_id(), role_id=role_id, permission_code=p.permission_code,
                     scope=p.scope, custom_scope_group_ids=p.custom_scope_group_ids,
                     custom_scope_org_ids=p.custom_scope_org_ids,
@@ -83,8 +83,8 @@ class RoleDao(BaseDAO):
 
     def get_resource_ids_by_role_id(self, role_id: str) -> List[str]:
         rows = self.db.execute(
-            select(RalRoleResource.resource_id).where(
-                RalRoleResource.role_id == role_id, RalRoleResource.is_deleted == self._soft_delete_not_deleted
+            select(RelRoleResource.resource_id).where(
+                RelRoleResource.role_id == role_id, RelRoleResource.is_deleted == self._soft_delete_not_deleted
             )
         ).scalars().all()
         return list(rows)
@@ -96,7 +96,7 @@ class RoleDao(BaseDAO):
         resource_ids = list(dict.fromkeys(resource_ids))  # deduplicate
 
         existing = self.db.execute(
-            select(RalRoleResource).where(RalRoleResource.role_id == role_id)
+            select(RelRoleResource).where(RelRoleResource.role_id == role_id)
         ).scalars().all()
         existing_by_resid = {r.resource_id: r for r in existing}
 
@@ -110,7 +110,7 @@ class RoleDao(BaseDAO):
                 rel.is_deleted = not_del
                 rel.created_by = created_by
             else:
-                rel = RalRoleResource(
+                rel = RelRoleResource(
                     id=generate_id(), role_id=role_id, resource_id=resid,
                     is_deleted=not_del, created_at=now, created_by=created_by
                 )
