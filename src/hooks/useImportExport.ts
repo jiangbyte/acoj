@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { type Ref, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { downloadBlob } from '@/utils'
 
@@ -9,13 +9,14 @@ interface UseImportExportOptions {
   fileName: string
   templateName: string
   onSuccess?: () => void
+  importModalRef?: Ref<any>
 }
 
 export function useImportExport(options: UseImportExportOptions) {
   const importOpen = ref(false)
   const exportOpen = ref(false)
   const templateLoading = ref(false)
-  const importModalRef = ref()
+  const modalRef = options.importModalRef || ref()
 
   async function handleDownloadTemplate() {
     templateLoading.value = true
@@ -44,12 +45,12 @@ export function useImportExport(options: UseImportExportOptions) {
     try {
       const { success, data } = await options.importApi(file)
       if (success && data) {
-        importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
+        modalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
         message.success('导入成功')
         options.onSuccess?.()
       }
     } catch {
-      importModalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
+      modalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
     }
   }
 
@@ -57,7 +58,6 @@ export function useImportExport(options: UseImportExportOptions) {
     importOpen,
     exportOpen,
     templateLoading,
-    importModalRef,
     handleDownloadTemplate,
     handleExportWithParams,
     handleImport,

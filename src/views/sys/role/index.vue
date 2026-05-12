@@ -97,7 +97,7 @@
     </AppTable>
 
     <AppImportModal
-      :ref="(el) => { ieImportModalRef.value = el }"
+      ref="importModalRef"
       :open="ieImportOpen"
       template-text="下载角色导入模板"
       :template-loading="ieTemplateLoading"
@@ -183,7 +183,8 @@ function resetSearch() {
   tableRef.value?.refresh(true)
 }
 
-// ── Drawers ──
+// ── Refs ──
+const importModalRef = ref()
 const detailRef = ref()
 const formRef = ref()
 const detailOpen = ref(false)
@@ -197,7 +198,6 @@ const {
   importOpen: ieImportOpen,
   exportOpen: ieExportOpen,
   templateLoading: ieTemplateLoading,
-  importModalRef: ieImportModalRef,
   handleDownloadTemplate: ieHandleDownloadTemplate,
   handleExportWithParams: ieHandleExportWithParams,
   handleImport: ieHandleImport,
@@ -207,6 +207,7 @@ const {
   importApi: fetchRoleImport,
   fileName: '角色数据',
   templateName: '角色导入模板',
+  importModalRef,
   onSuccess: () => tableRef.value?.refresh(true),
 })
 

@@ -96,10 +96,10 @@ watch(
       tabStore.addTab({ title, icon, path, key: path, closable: !affix, affix })
     } else if (path === HOME_PATH) {
       tabStore.activeKey = HOME_PATH
-      // 首页 tab 同步 icon
       const homeTab = tabStore.tabs[0]
-      if (homeTab && icon) {
-        homeTab.icon = icon
+      if (homeTab) {
+        if (title) homeTab.title = title
+        if (icon) homeTab.icon = icon
       }
     }
   },

@@ -103,7 +103,7 @@
 
         <!-- Import modal -->
         <AppImportModal
-          :ref="(el) => { ieImportModalRef.value = el }"
+          ref="importModalRef"
           :open="ieImportOpen"
           template-text="下载字典导入模板"
           :template-loading="ieTemplateLoading"
@@ -192,6 +192,7 @@ function resetSearch() {
 }
 
 // Drawer refs
+const importModalRef = ref()
 const detailRef = ref()
 const formRef = ref()
 const detailOpen = ref(false)
@@ -218,7 +219,6 @@ const {
   importOpen: ieImportOpen,
   exportOpen: ieExportOpen,
   templateLoading: ieTemplateLoading,
-  importModalRef: ieImportModalRef,
   handleDownloadTemplate: ieHandleDownloadTemplate,
   handleExportWithParams: ieHandleExportWithParams,
   handleImport: ieHandleImport,
@@ -228,6 +228,7 @@ const {
   importApi: fetchDictImport,
   fileName: '字典数据',
   templateName: '字典导入模板',
+  importModalRef,
   onSuccess: () => {
     tableRef.value?.refresh(true)
     treePanel.value?.refresh()

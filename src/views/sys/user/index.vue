@@ -105,7 +105,7 @@
 
     <!-- Import modal -->
     <AppImportModal
-      :ref="(el) => { ieImportModalRef.value = el }"
+      ref="importModalRef"
       :open="ieImportOpen"
       template-text="下载用户导入模板"
       :template-loading="ieTemplateLoading"
@@ -181,7 +181,8 @@ function resetSearch() {
   tableRef.value?.refresh(true)
 }
 
-// Drawer refs
+// Refs
+const importModalRef = ref()
 const detailRef = ref()
 const formRef = ref()
 const detailOpen = ref(false)
@@ -209,7 +210,6 @@ const {
   importOpen: ieImportOpen,
   exportOpen: ieExportOpen,
   templateLoading: ieTemplateLoading,
-  importModalRef: ieImportModalRef,
   handleDownloadTemplate: ieHandleDownloadTemplate,
   handleExportWithParams: ieHandleExportWithParams,
   handleImport: ieHandleImport,
@@ -219,6 +219,7 @@ const {
   importApi: fetchUserImport,
   fileName: '用户数据',
   templateName: '用户导入模板',
+  importModalRef,
   onSuccess: () => tableRef.value?.refresh(true),
 })
 </script>

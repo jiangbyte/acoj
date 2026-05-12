@@ -103,7 +103,7 @@
 
         <!-- Import modal -->
         <AppImportModal
-          :ref="(el) => { ieImportModalRef.value = el }"
+          ref="importModalRef"
           :open="ieImportOpen"
           template-text="下载组织导入模板"
           :template-loading="ieTemplateLoading"
@@ -199,6 +199,7 @@ function resetSearch() {
 }
 
 // Drawer refs
+const importModalRef = ref()
 const detailRef = ref()
 const formRef = ref()
 const detailOpen = ref(false)
@@ -225,7 +226,6 @@ const {
   importOpen: ieImportOpen,
   exportOpen: ieExportOpen,
   templateLoading: ieTemplateLoading,
-  importModalRef: ieImportModalRef,
   handleDownloadTemplate: ieHandleDownloadTemplate,
   handleExportWithParams: ieHandleExportWithParams,
   handleImport: ieHandleImport,
@@ -235,6 +235,7 @@ const {
   importApi: fetchOrgImport,
   fileName: '组织数据',
   templateName: '组织导入模板',
+  importModalRef,
   onSuccess: () => {
     tableRef.value?.refresh(true)
     treePanel.value?.refresh()

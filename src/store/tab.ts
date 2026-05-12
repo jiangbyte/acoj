@@ -15,22 +15,12 @@ export const useTabStore = defineStore('tab', {
   state: () => {
     return {
       tabs: [
-        { title: '首页', path: HOME_PATH, key: HOME_PATH, closable: false, affix: true },
+        { title: '', path: HOME_PATH, key: HOME_PATH, closable: false, affix: true },
       ] as TabItem[],
       activeKey: HOME_PATH,
     }
   },
   actions: {
-    alignHomePath() {
-      const first = this.tabs[0]
-      if (first && first.key !== HOME_PATH) {
-        first.path = HOME_PATH
-        first.key = HOME_PATH
-      }
-      if (this.activeKey !== HOME_PATH && this.tabs.every(t => t.key !== this.activeKey)) {
-        this.activeKey = HOME_PATH
-      }
-    },
     addTab(tab: TabItem) {
       const existing = this.tabs.find(t => t.key === tab.key)
       if (existing) {

@@ -102,7 +102,7 @@
 
     <!-- Import modal -->
     <AppImportModal
-      :ref="(el) => { ieImportModalRef.value = el }"
+      ref="importModalRef"
       :open="ieImportOpen"
       template-text="下载轮播图导入模板"
       :template-loading="ieTemplateLoading"
@@ -178,6 +178,7 @@ function resetSearch() {
 }
 
 // Drawer refs
+const importModalRef = ref()
 const detailRef = ref()
 const formRef = ref()
 const detailOpen = ref(false)
@@ -197,7 +198,6 @@ const {
   importOpen: ieImportOpen,
   exportOpen: ieExportOpen,
   templateLoading: ieTemplateLoading,
-  importModalRef: ieImportModalRef,
   handleDownloadTemplate: ieHandleDownloadTemplate,
   handleExportWithParams: ieHandleExportWithParams,
   handleImport: ieHandleImport,
@@ -207,6 +207,7 @@ const {
   importApi: fetchBannerImport,
   fileName: '轮播图数据',
   templateName: '轮播图导入模板',
+  importModalRef,
   onSuccess: () => tableRef.value?.refresh(true),
 })
 </script>
