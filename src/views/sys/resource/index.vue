@@ -64,6 +64,14 @@
               新增子级
             </a-button>
             <a-button
+              v-if="hasPermission('sys:resource:modify') && record.type !== 'BUTTON'"
+              type="link"
+              size="small"
+              @click="openButtonManager(record)"
+            >
+              权限按钮
+            </a-button>
+            <a-button
               v-if="hasPermission('sys:resource:modify')"
               type="link"
               size="small"
@@ -102,6 +110,7 @@
 
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
+    <ButtonManager ref="buttonManagerRef" v-model:open="buttonManagerOpen" @success="loadTree" />
   </div>
 </template>
 
@@ -130,6 +139,7 @@ import AppImportModal from '@/components/modal/AppImportModal.vue'
 import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
+import ButtonManager from './components/buttonManager.vue'
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
@@ -155,6 +165,15 @@ const loading = ref(false)
 const treeData = ref<any[]>([])
 const treeDataOrigin = ref<any[]>([])
 
+function stripButtons(nodes: any[]): any[] {
+  return nodes.reduce((acc: any[], node: any) => {
+    if (node.type === 'BUTTON') return acc
+    const children = node.children ? stripButtons(node.children) : []
+    acc.push({ ...node, children })
+    return acc
+  }, [])
+}
+
 function filterTree(nodes: any[], keyword: string): any[] {
   if (!keyword) return nodes
   return nodes.reduce((acc: any[], node: any) => {
@@ -172,7 +191,7 @@ async function loadTree() {
   try {
     const { data } = await fetchResourceTree()
     treeDataOrigin.value = data || []
-    treeData.value = filterTree(data || [], searchForm.keyword)
+    treeData.value = filterTree(stripButtons(data || []), searchForm.keyword)
   } finally {
     loading.value = false
   }
@@ -183,7 +202,7 @@ const searchForm = reactive({ keyword: '' })
 const selectedKeys = ref<string[]>([])
 
 watch(() => searchForm.keyword, (val) => {
-  treeData.value = filterTree(treeDataOrigin.value, val)
+  treeData.value = filterTree(stripButtons(treeDataOrigin.value), val)
 })
 
 const columns = [
@@ -200,12 +219,15 @@ const columns = [
 // ── Drawers ──
 const detailRef = ref()
 const formRef = ref()
+const buttonManagerRef = ref()
 const detailOpen = ref(false)
 const formOpen = ref(false)
+const buttonManagerOpen = ref(false)
 
 function openDetail(record: any) { detailRef.value?.doOpen(record) }
 function openEdit(record: any) { formRef.value?.doOpen(record) }
 function openCreate(parent?: any) { formRef.value?.doOpen(undefined, parent?.id) }
+function openButtonManager(record: any) { buttonManagerRef.value?.doOpen(record) }
 
 async function handleDelete(id: string) {
   const { success } = await fetchResourceRemove({ ids: [id] })

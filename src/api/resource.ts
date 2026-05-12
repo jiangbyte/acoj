@@ -66,3 +66,13 @@ export function fetchResourceImport(file: File) {
   formData.append('file', file)
   return request.Post<Service.ResponseResult>('/api/v1/sys/resource/import', formData)
 }
+
+/** 获取资源已绑定的权限ID列表 */
+export function fetchResourceOwnPermissions(params: { resource_id: string }) {
+  return request.Get<Service.ResponseResult<string[]>>('/api/v1/sys/resource/own-permissions', { params })
+}
+
+/** 绑定权限到资源（覆盖式替换） */
+export function fetchResourceBindPermissions(data: { resource_id: string; permission_ids: string[] }) {
+  return request.Post<Service.ResponseResult>('/api/v1/sys/resource/bind-permissions', data)
+}

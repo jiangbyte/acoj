@@ -39,3 +39,8 @@ export function fetchPermissionModules() {
 export function fetchPermissionByModule(params: { module: string }) {
   return request.Get<Service.ResponseResult>('/api/v1/sys/permission/by-module', { params })
 }
+
+/** 获取全部权限列表（用于选择器） */
+export function fetchPermissionList() {
+  return request.Get<Service.ResponseResult<Array<{ id: string; code: string; name: string; module: string }>>>('/api/v1/sys/permission/list')
+}
