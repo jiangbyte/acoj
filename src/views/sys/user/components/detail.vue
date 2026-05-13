@@ -74,6 +74,7 @@
 <script setup lang="ts">
 defineOptions({ name: 'UserDetail' })
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { fetchUserDetail } from '@/api/user'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open'])
@@ -94,15 +95,14 @@ onMounted(() => {
 
 const drawerWidth = computed(() => (isMobile.value ? '100%' : 640))
 
-function doOpen(row: any) {
+async function doOpen(row: any) {
+  if (!row?.id) return
   loading.value = true
   data.value = null
-  try {
-    data.value = row
-    emit('update:open', true)
-  } finally {
-    loading.value = false
-  }
+  const { data: detail } = await fetchUserDetail({ id: row.id })
+  data.value = detail
+  loading.value = false
+  emit('update:open', true)
 }
 
 watch(

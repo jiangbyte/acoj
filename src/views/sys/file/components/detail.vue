@@ -122,18 +122,13 @@ onMounted(() => {
 const drawerWidth = computed(() => (isMobile.value ? '100%' : 640))
 
 async function doOpen(row: any) {
+  if (!row?.id) return
   loading.value = true
   data.value = null
-  emit('update:open', true)
-  try {
-    const res = await fetchFileDetail({ id: row.id })
-    if (res.success) {
-      data.value = res.data
-    }
-  } catch {
-    /* ignore */
-  }
+  const { data: detail } = await fetchFileDetail({ id: row.id })
+  data.value = detail
   loading.value = false
+  emit('update:open', true)
 }
 
 function handleClose() {
