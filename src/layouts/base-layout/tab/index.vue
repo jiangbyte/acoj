@@ -1,5 +1,8 @@
 <template>
-  <div v-if="app.showTabs" class="tab-bar bg-[var(--container-bg)] border-b border-[var(--border-color)]">
+  <div
+    v-if="app.showTabs"
+    class="tab-bar bg-[var(--container-bg)] border-b border-[var(--border-color)]"
+  >
     <ATabs
       type="editable-card"
       :active-key="tabStore.activeKey"
@@ -9,7 +12,12 @@
       @change="handleTabChange"
       @edit="handleTabRemove"
     >
-      <ATabPane v-for="t in tabStore.tabs" :key="t.key" :closable="t.closable" class="tab-pane-item">
+      <ATabPane
+        v-for="t in tabStore.tabs"
+        :key="t.key"
+        :closable="t.closable"
+        class="tab-pane-item"
+      >
         <template #tab>
           <span class="tab-label">
             <component :is="t.icon ? resolveIcon(t.icon) : null" v-if="t.icon" />

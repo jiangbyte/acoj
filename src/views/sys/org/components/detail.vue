@@ -20,23 +20,31 @@
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">组织类别</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ categoryMap[data.category] || data.category || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ $dict.label('ORG_CATEGORY', data.category) }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">状态</div>
             <div class="text-sm">
-              <a-tag :color="data.status === 'ENABLED' ? 'green' : 'red'">
-                {{ data.status === 'ENABLED' ? '启用' : '禁用' }}
-              </a-tag>
+              <a-tooltip title="禁用后仅不可被选择，不影响已绑定的数据">
+                <a-tag :color="$dict.color('SYS_STATUS', data.status)">
+                  {{ $dict.label('SYS_STATUS', data.status) }}
+                </a-tag>
+              </a-tooltip>
             </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">排序</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.sort_code ?? '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.sort_code ?? '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">组织描述</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.description || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.description || '-' }}
+            </div>
           </a-col>
         </a-row>
       </a-card>
@@ -45,19 +53,27 @@
         <a-row :gutter="[16, 16]">
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">创建人</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.created_by || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.created_by || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">创建时间</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.created_at || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.created_at || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">更新人</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.updated_by || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.updated_by || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">更新时间</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.updated_at || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.updated_at || '-' }}
+            </div>
           </a-col>
         </a-row>
       </a-card>
@@ -74,18 +90,13 @@ const emit = defineEmits(['update:open'])
 const loading = ref(false)
 const data = ref<any>(null)
 
-const categoryMap: Record<string, string> = {
-  COMPANY: '公司',
-  DEPT: '部门',
-  UNIT: '单位',
-  GROUP: '集团',
-}
-
 const isMobile = ref(false)
 onMounted(() => {
   const mql = window.matchMedia('(max-width: 767px)')
   isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => { isMobile.value = e.matches }
+  const handler = (e: MediaQueryListEvent) => {
+    isMobile.value = e.matches
+  }
   mql.addEventListener('change', handler)
   onBeforeUnmount(() => mql.removeEventListener('change', handler))
 })

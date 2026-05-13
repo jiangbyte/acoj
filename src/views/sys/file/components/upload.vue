@@ -10,13 +10,12 @@
   >
     <a-form layout="vertical" class="mt-2">
       <a-form-item label="存储引擎">
-        <a-select v-model:value="engine" placeholder="选择存储引擎（默认使用系统配置）" allow-clear>
-          <a-select-option value="LOCAL">本地</a-select-option>
-          <a-select-option value="MINIO">MinIO</a-select-option>
-          <a-select-option value="ALIYUN">阿里云</a-select-option>
-          <a-select-option value="TENCENT">腾讯云</a-select-option>
-          <a-select-option value="S3">S3</a-select-option>
-        </a-select>
+        <DictSelect
+          v-model="engine"
+          type-code="FILE_ENGINE"
+          placeholder="选择存储引擎（默认使用系统配置）"
+          allow-clear
+        />
       </a-form-item>
       <a-form-item label="选择文件">
         <a-upload-dragger
@@ -40,6 +39,7 @@
 import { ref } from 'vue'
 import { InboxOutlined } from '@ant-design/icons-vue'
 import { useUploader } from 'alova/client'
+import DictSelect from '@/components/form/DictSelect.vue'
 import { uploadFile } from '@/api/file'
 
 const emit = defineEmits<{ success: [] }>()
@@ -68,7 +68,9 @@ async function handleUpload() {
     await upload()
     emit('success')
     handleClose()
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   uploading.value = false
 }
 

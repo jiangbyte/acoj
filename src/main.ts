@@ -7,8 +7,16 @@ import App from './App.vue'
 import 'ant-design-vue/dist/reset.css'
 import './styles/global.scss'
 import 'virtual:uno.css'
+import { dictLabel, dictColor, getDictItems } from './utils'
 
 const app = createApp(App)
+
+// Register dict tool globally for template usage: {{ $dict.label('sex', record.sex) }}
+app.config.globalProperties.$dict = {
+  label: dictLabel,
+  color: dictColor,
+  items: getDictItems,
+}
 
 const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)

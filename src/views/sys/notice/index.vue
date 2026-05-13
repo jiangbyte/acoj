@@ -1,6 +1,11 @@
 <template>
   <div class="flex flex-col gap-2">
-    <AppSearchPanel :model="searchForm" perm="sys:notice:page" @search="handleSearch" @reset="resetSearch">
+    <AppSearchPanel
+      :model="searchForm"
+      perm="sys:notice:page"
+      @search="handleSearch"
+      @reset="resetSearch"
+    >
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="关键词" name="keyword">
           <a-input v-model:value="searchForm.keyword" placeholder="通知标题" allow-clear />
@@ -8,20 +13,32 @@
       </a-col>
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="通知类别" name="category">
-          <a-select v-model:value="searchForm.category" placeholder="全部" allow-clear>
-            <a-select-option value="NOTICE">通知</a-select-option>
-            <a-select-option value="NEWS">新闻</a-select-option>
-            <a-select-option value="MESSAGE">消息</a-select-option>
-          </a-select>
+          <DictSelect
+            v-model="searchForm.category"
+            type-code="NOTICE_CATEGORY"
+            placeholder="全部"
+            :allow-clear="true"
+          />
+        </a-form-item>
+      </a-col>
+      <a-col :xs="24" :sm="12" :md="8" :lg="6">
+        <a-form-item label="通知类型" name="type">
+          <DictSelect
+            v-model="searchForm.type"
+            type-code="NOTICE_TYPE"
+            placeholder="全部"
+            :allow-clear="true"
+          />
         </a-form-item>
       </a-col>
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="通知级别" name="level">
-          <a-select v-model:value="searchForm.level" placeholder="全部" allow-clear>
-            <a-select-option value="URGENT">紧急</a-select-option>
-            <a-select-option value="IMPORTANT">重要</a-select-option>
-            <a-select-option value="NORMAL">普通</a-select-option>
-          </a-select>
+          <DictSelect
+            v-model="searchForm.level"
+            type-code="NOTICE_LEVEL"
+            placeholder="全部"
+            :allow-clear="true"
+          />
         </a-form-item>
       </a-col>
     </AppSearchPanel>
@@ -60,21 +77,26 @@
 
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'category'">
-          <a-tag>{{ categoryMap[record.category] || record.category || '-' }}</a-tag>
+          <a-tag>{{ $dict.label('NOTICE_CATEGORY', record.category) }}</a-tag>
+        </template>
+        <template v-else-if="column.key === 'type'">
+          <a-tag>{{ $dict.label('NOTICE_TYPE', record.type) }}</a-tag>
         </template>
         <template v-else-if="column.key === 'level'">
-          <a-tag :color="levelColorMap[record.level] || 'default'">
-            {{ levelMap[record.level] || record.level || '-' }}
+          <a-tag :color="$dict.color('NOTICE_LEVEL', record.level)">
+            {{ $dict.label('NOTICE_LEVEL', record.level) }}
           </a-tag>
         </template>
         <template v-else-if="column.key === 'status'">
-          <a-tag :color="record.status === 'ENABLED' ? 'green' : 'red'">
-            {{ record.status === 'ENABLED' ? '启用' : '禁用' }}
-          </a-tag>
+          <a-tooltip title="禁用后仅不可被选择，不影响已绑定的数据">
+            <a-tag :color="$dict.color('SYS_STATUS', record.status)">
+              {{ $dict.label('SYS_STATUS', record.status) }}
+            </a-tag>
+          </a-tooltip>
         </template>
         <template v-else-if="column.key === 'is_top'">
-          <a-tag :color="record.is_top === 'YES' ? 'orange' : 'default'">
-            {{ record.is_top === 'YES' ? '置顶' : '否' }}
+          <a-tag :color="$dict.color('SYS_YES_NO', record.is_top)">
+            {{ $dict.label('SYS_YES_NO', record.is_top) }}
           </a-tag>
         </template>
         <template v-else-if="column.key === 'action'">
@@ -142,6 +164,7 @@ import {
 } from '@/api/notice'
 import { useCrud } from '@/hooks/useCrud'
 import { useImportExport } from '@/hooks/useImportExport'
+import DictSelect from '@/components/form/DictSelect.vue'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import AppImportModal from '@/components/modal/AppImportModal.vue'
@@ -153,36 +176,28 @@ const auth = useAuthStore()
 const hasPermission = auth.hasPermission
 
 const crud = useCrud({ name: '通知', deleteApi: fetchNoticeRemove })
-const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete, handleFormSuccess } = crud
-
-const categoryMap: Record<string, string> = {
-  NOTICE: '通知',
-  NEWS: '新闻',
-  MESSAGE: '消息',
-}
-
-const levelMap: Record<string, string> = {
-  URGENT: '紧急',
-  IMPORTANT: '重要',
-  NORMAL: '普通',
-}
-
-const levelColorMap: Record<string, string> = {
-  URGENT: 'red',
-  IMPORTANT: 'orange',
-  NORMAL: 'default',
-}
+const {
+  tableRef,
+  selectedKeys,
+  rowSelection,
+  handleSearch,
+  handleDelete,
+  handleBatchDelete,
+  handleFormSuccess,
+} = crud
 
 // ── Search ──
 const searchForm = reactive({
   keyword: '',
   category: undefined as string | undefined,
+  type: undefined as string | undefined,
   level: undefined as string | undefined,
 })
 
 const columns = [
   { title: '通知标题', dataIndex: 'title', key: 'title', width: 300, ellipsis: true },
   { title: '通知类别', dataIndex: 'category', key: 'category', width: 100 },
+  { title: '通知类型', dataIndex: 'type', key: 'type', width: 100 },
   { title: '通知级别', dataIndex: 'level', key: 'level', width: 100 },
   { title: '是否置顶', dataIndex: 'is_top', key: 'is_top', width: 90 },
   { title: '浏览次数', dataIndex: 'view_count', key: 'view_count', width: 90 },
@@ -195,6 +210,7 @@ const columns = [
 function resetSearch() {
   searchForm.keyword = ''
   searchForm.category = undefined
+  searchForm.type = undefined
   searchForm.level = undefined
   tableRef.value?.refresh(true)
 }
@@ -206,9 +222,15 @@ const formRef = ref()
 const detailOpen = ref(false)
 const formOpen = ref(false)
 
-function openDetail(record: any) { detailRef.value?.doOpen(record) }
-function openEdit(record: any) { formRef.value?.doOpen(record) }
-function openCreate() { formRef.value?.doOpen() }
+function openDetail(record: any) {
+  detailRef.value?.doOpen(record)
+}
+function openEdit(record: any) {
+  formRef.value?.doOpen(record)
+}
+function openCreate() {
+  formRef.value?.doOpen()
+}
 
 const {
   importOpen: ieImportOpen,

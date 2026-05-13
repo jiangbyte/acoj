@@ -1,8 +1,24 @@
 <template>
-  <AppSplitPanel ref="splitRef" v-model:collapsed="splitCollapsed" :initial-size="280" :min-size="200" :max-size="400" :md="0">
+  <AppSplitPanel
+    ref="splitRef"
+    v-model:collapsed="splitCollapsed"
+    :initial-size="280"
+    :min-size="200"
+    :max-size="400"
+    :md="0"
+  >
     <template #left>
-      <a-card size="small" class="h-full flex flex-col max-md:hidden" :body-style="{ flex: '1', overflow: 'auto', padding: '12px' }">
-        <a-input-search v-model:value="groupSearchKey" placeholder="搜索用户组" allow-clear class="mb-2" />
+      <a-card
+        size="small"
+        class="h-full flex flex-col max-md:hidden"
+        :body-style="{ flex: '1', overflow: 'auto', padding: '12px' }"
+      >
+        <a-input-search
+          v-model:value="groupSearchKey"
+          placeholder="搜索用户组"
+          allow-clear
+          class="mb-2"
+        />
         <a-spin :spinning="groupTreeLoading">
           <a-tree
             v-if="groupTreeData.length"
@@ -14,8 +30,7 @@
             show-line
             class="mb-3"
             @select="handleGroupSelect"
-          >
-          </a-tree>
+          ></a-tree>
           <div v-else class="text-center text-gray-400 py-8">暂无数据</div>
         </a-spin>
       </a-card>
@@ -28,20 +43,30 @@
             返回组织管理
           </a-button>
         </div>
-        <AppSearchPanel :model="searchForm" :perm="['sys:group:page', 'sys:group:tree']" @search="handleSearch" @reset="resetSearch">
-            <a-button type="text" size="small" class="max-md:hidden" @click="splitRef?.toggleCollapse()">
-              <template #icon>
-                <component :is="splitCollapsed ? DoubleRightOutlined : DoubleLeftOutlined" />
-              </template>
-            </a-button>
+        <AppSearchPanel
+          :model="searchForm"
+          :perm="['sys:group:page', 'sys:group:tree']"
+          @search="handleSearch"
+          @reset="resetSearch"
+        >
+          <a-button
+            type="text"
+            size="small"
+            class="max-md:hidden"
+            @click="splitRef?.toggleCollapse()"
+          >
+            <template #icon>
+              <component :is="splitCollapsed ? DoubleRightOutlined : DoubleLeftOutlined" />
+            </template>
+          </a-button>
           <a-col :xs="24" :sm="12" :md="8" :lg="6">
             <a-form-item label="关键词" name="keyword">
               <a-input v-model:value="searchForm.keyword" placeholder="用户组名称" allow-clear />
             </a-form-item>
           </a-col>
-            <a-button type="text" size="small" class="md:hidden" @click="mobileTreeOpen = true">
-              <template #icon><FolderOutlined /></template>
-            </a-button>
+          <a-button type="text" size="small" class="md:hidden" @click="mobileTreeOpen = true">
+            <template #icon><FolderOutlined /></template>
+          </a-button>
         </AppSearchPanel>
 
         <AppTreeTable
@@ -80,12 +105,14 @@
 
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'category'">
-              <a-tag>{{ categoryMap[record.category] || record.category || '-' }}</a-tag>
+              <a-tag>{{ $dict.label('GROUP_CATEGORY', record.category) }}</a-tag>
             </template>
             <template v-else-if="column.key === 'status'">
-              <a-tag :color="record.status === 'ENABLED' ? 'green' : 'red'">
-                {{ record.status === 'ENABLED' ? '启用' : '禁用' }}
-              </a-tag>
+              <a-tooltip title="禁用后仅不可被选择，不影响已绑定的数据">
+                <a-tag :color="$dict.color('SYS_STATUS', record.status)">
+                  {{ $dict.label('SYS_STATUS', record.status) }}
+                </a-tag>
+              </a-tooltip>
             </template>
             <template v-else-if="column.key === 'action'">
               <a-space>
@@ -105,12 +132,13 @@
                   </a-button>
                   <template #overlay>
                     <a-menu>
-                      <a-menu-item v-if="hasPermission('sys:group:create')" @click="openCreate(record)">
+                      <a-menu-item
+                        v-if="hasPermission('sys:group:create')"
+                        @click="openCreate(record)"
+                      >
                         新增子级
                       </a-menu-item>
-                      <a-menu-item @click="goToPosition(record)">
-                        职位管理
-                      </a-menu-item>
+                      <a-menu-item @click="goToPosition(record)">职位管理</a-menu-item>
                     </a-menu>
                   </template>
                 </a-dropdown>
@@ -157,7 +185,12 @@
     destroy-on-close
     @close="mobileTreeOpen = false"
   >
-    <a-input-search v-model:value="groupSearchKey" placeholder="搜索用户组" allow-clear class="mb-2" />
+    <a-input-search
+      v-model:value="groupSearchKey"
+      placeholder="搜索用户组"
+      allow-clear
+      class="mb-2"
+    />
     <a-spin :spinning="groupTreeLoading">
       <a-tree
         v-if="groupTreeData.length"
@@ -213,7 +246,6 @@ import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
 
-
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
 const router = useRouter()
@@ -224,13 +256,6 @@ const splitCollapsed = ref(false)
 const mobileTreeOpen = ref(false)
 
 const orgId = ref('')
-
-const categoryMap: Record<string, string> = {
-  ROLE: '角色组',
-  DEPT: '部门组',
-  PROJECT: '项目组',
-  OTHER: '其他',
-}
 
 // ── Left group tree ──
 const groupTreeLoading = ref(false)
@@ -252,14 +277,15 @@ function filterGroupTreeByKeyword(nodes: any[], keyword: string): any[] {
   }, [])
 }
 
-watch(groupSearchKey, (val) => {
+watch(groupSearchKey, val => {
   groupTreeData.value = filterGroupTreeByKeyword(allGroupTreeData.value, val)
   if (val) {
-    const getAllKeys = (nodes: any[]): string[] => nodes.reduce((keys: string[], n) => {
-      keys.push(n.id)
-      if (n.children) keys.push(...getAllKeys(n.children))
-      return keys
-    }, [])
+    const getAllKeys = (nodes: any[]): string[] =>
+      nodes.reduce((keys: string[], n) => {
+        keys.push(n.id)
+        if (n.children) keys.push(...getAllKeys(n.children))
+        return keys
+      }, [])
     groupExpandedKeys.value = getAllKeys(groupTreeData.value)
   }
 })
@@ -328,9 +354,12 @@ const searchForm = reactive({
 })
 
 // Keyword search — filter tree on client side
-watch(() => searchForm.keyword, (val) => {
-  loadGroupTree()
-})
+watch(
+  () => searchForm.keyword,
+  val => {
+    loadGroupTree()
+  }
+)
 
 // ── Group selection ──
 function handleGroupSelect(keys: any[]) {
@@ -357,7 +386,9 @@ function goToPosition(record: any) {
 const selectedKeys = ref<string[]>([])
 const rowSelection = computed(() => ({
   selectedRowKeys: selectedKeys.value,
-  onChange: (keys: string[]) => { selectedKeys.value = keys },
+  onChange: (keys: string[]) => {
+    selectedKeys.value = keys
+  },
 }))
 
 const columns = [
@@ -376,8 +407,12 @@ const formRef = ref()
 const detailOpen = ref(false)
 const formOpen = ref(false)
 
-function openDetail(record: any) { detailRef.value?.doOpen(record) }
-function openEdit(record: any) { formRef.value?.doOpen(record) }
+function openDetail(record: any) {
+  detailRef.value?.doOpen(record)
+}
+function openEdit(record: any) {
+  formRef.value?.doOpen(record)
+}
 function openCreate(parent?: any) {
   formRef.value?.doOpen(undefined, parent?.id, parent?.org_id || orgId.value || undefined)
 }
@@ -406,7 +441,9 @@ function handleFormSuccess() {
   loadGroupTree()
 }
 
-function handleSearch() { loadGroupTree() }
+function handleSearch() {
+  loadGroupTree()
+}
 
 function resetSearch() {
   searchForm.keyword = ''
@@ -430,8 +467,11 @@ async function handleDownloadTemplate() {
   try {
     const blob = await fetchGroupTemplate()
     downloadBlob(blob, '用户组导入模板.xlsx')
-  } catch { message.error('下载模板失败') }
-  finally { templateLoading.value = false }
+  } catch {
+    message.error('下载模板失败')
+  } finally {
+    templateLoading.value = false
+  }
 }
 
 async function handleExportWithParams(params: any) {
@@ -440,7 +480,9 @@ async function handleExportWithParams(params: any) {
     downloadBlob(blob, `用户组数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
-  } catch { message.error('导出失败') }
+  } catch {
+    message.error('导出失败')
+  }
 }
 
 async function handleImport(file: File) {

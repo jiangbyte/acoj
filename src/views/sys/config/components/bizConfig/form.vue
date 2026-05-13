@@ -8,17 +8,31 @@
     @success="emit('success')"
   >
     <template #default>
-      <a-form-item label="配置键" name="config_key" :rules="[{ required: true, message: '请输入配置键' }]">
+      <a-form-item
+        label="配置键"
+        name="config_key"
+        :rules="[{ required: true, message: '请输入配置键' }]"
+      >
         <a-input v-model:value="form.config_key" placeholder="请输入配置键" :disabled="isEdit" />
       </a-form-item>
-      <a-form-item label="配置值" name="config_value" :rules="[{ required: true, message: '请输入配置值' }]">
+      <a-form-item
+        label="配置值"
+        name="config_value"
+        :rules="[{ required: true, message: '请输入配置值' }]"
+      >
         <a-input v-model:value="form.config_value" placeholder="请输入配置值" />
       </a-form-item>
       <a-form-item label="备注" name="remark">
         <a-input v-model:value="form.remark" placeholder="备注说明" />
       </a-form-item>
       <a-form-item label="排序" name="sort_code">
-        <a-input-number v-model:value="form.sort_code" :min="0" :max="9999" style="width: 100%" placeholder="排序值" />
+        <a-input-number
+          v-model:value="form.sort_code"
+          :min="0"
+          :max="9999"
+          style="width: 100%"
+          placeholder="排序值"
+        />
       </a-form-item>
     </template>
   </AppDrawerForm>
@@ -66,7 +80,9 @@ async function handleSubmit(f: any) {
   }
 }
 
-function handleClose() { emit('update:open', false) }
+function handleClose() {
+  emit('update:open', false)
+}
 
 defineExpose({ doOpen })
 </script>

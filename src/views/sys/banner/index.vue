@@ -14,30 +14,32 @@
       </a-col>
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="类别" name="category">
-          <a-select v-model:value="searchForm.category" placeholder="全部" allow-clear style="width: 100%">
-            <a-select-option value="HOME">首页</a-select-option>
-            <a-select-option value="PAGE">页面</a-select-option>
-            <a-select-option value="APP">应用</a-select-option>
-          </a-select>
+          <DictSelect
+            v-model="searchForm.category"
+            type-code="BANNER_CATEGORY"
+            placeholder="全部"
+            allow-clear
+          />
         </a-form-item>
       </a-col>
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="类型" name="type">
-          <a-select v-model:value="searchForm.type" placeholder="全部" allow-clear style="width: 100%">
-            <a-select-option value="IMAGE">图片</a-select-option>
-            <a-select-option value="VIDEO">视频</a-select-option>
-            <a-select-option value="TEXT">文字</a-select-option>
-          </a-select>
+          <DictSelect
+            v-model="searchForm.type"
+            type-code="BANNER_TYPE"
+            placeholder="全部"
+            allow-clear
+          />
         </a-form-item>
       </a-col>
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="位置" name="position">
-          <a-select v-model:value="searchForm.position" placeholder="全部" allow-clear style="width: 100%">
-            <a-select-option value="TOP">顶部</a-select-option>
-            <a-select-option value="CENTER">中间</a-select-option>
-            <a-select-option value="BOTTOM">底部</a-select-option>
-            <a-select-option value="SIDEBAR">侧栏</a-select-option>
-          </a-select>
+          <DictSelect
+            v-model="searchForm.position"
+            type-code="BANNER_POSITION"
+            placeholder="全部"
+            allow-clear
+          />
         </a-form-item>
       </a-col>
     </AppSearchPanel>
@@ -75,7 +77,16 @@
       </template>
 
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'image'">
+        <template v-if="column.key === 'category'">
+          {{ $dict.label('BANNER_CATEGORY', record.category) || '-' }}
+        </template>
+        <template v-else-if="column.key === 'type'">
+          {{ $dict.label('BANNER_TYPE', record.type) || '-' }}
+        </template>
+        <template v-else-if="column.key === 'position'">
+          {{ $dict.label('BANNER_POSITION', record.position) || '-' }}
+        </template>
+        <template v-else-if="column.key === 'image'">
           <img v-if="record.image" :src="record.image" class="w-16 h-10 object-cover rounded" />
           <span v-else class="text-gray-400">无</span>
         </template>
@@ -151,8 +162,8 @@ import AppImportModal from '@/components/modal/AppImportModal.vue'
 import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
+import DictSelect from '@/components/form/DictSelect.vue'
 import { useAuthStore } from '@/store'
-
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
@@ -160,7 +171,12 @@ const hasPermission = auth.hasPermission
 const crud = useCrud({ name: '轮播图', deleteApi: fetchBannerRemove })
 const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete } = crud
 
-const searchForm = reactive({ keyword: '', category: undefined, type: undefined, position: undefined })
+const searchForm = reactive({
+  keyword: '',
+  category: undefined,
+  type: undefined,
+  position: undefined,
+})
 const columns = [
   { title: '标题', dataIndex: 'title', key: 'title', width: 200, ellipsis: true },
   { title: '图片', dataIndex: 'image', key: 'image', width: 100 },

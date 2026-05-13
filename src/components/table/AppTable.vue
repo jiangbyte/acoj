@@ -5,49 +5,52 @@
   >
     <AppForbidden v-if="!hasPerm" />
     <template v-else>
-    <!-- Toolbar -->
-    <div class="flex items-center justify-between mb-3 min-h-8 flex-shrink-0">
-      <div class="flex items-center gap-2 flex-wrap">
-        <slot name="toolbar" />
+      <!-- Toolbar -->
+      <div class="flex items-center justify-between mb-3 min-h-8 flex-shrink-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <slot name="toolbar" />
+        </div>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <a-tooltip title="刷新">
+            <a-button type="text" size="small" @click="handleRefresh">
+              <template #icon><ReloadOutlined /></template>
+            </a-button>
+          </a-tooltip>
+        </div>
       </div>
-      <div class="flex items-center gap-1 flex-shrink-0">
-        <a-tooltip title="刷新">
-          <a-button type="text" size="small" @click="handleRefresh">
-            <template #icon><ReloadOutlined /></template>
-          </a-button>
-        </a-tooltip>
+
+      <!-- Selection alert -->
+      <div v-if="selectedKeys.length > 0" class="mb-3 flex-shrink-0">
+        <a-alert type="info" show-icon>
+          <template #message>
+            <span>已选择 {{ selectedKeys.length }} 项</span>
+            <a-divider type="vertical" />
+            <a @click="clearSelected">清空</a>
+          </template>
+        </a-alert>
       </div>
-    </div>
 
-    <!-- Selection alert -->
-    <div v-if="selectedKeys.length > 0" class="mb-3 flex-shrink-0">
-      <a-alert type="info" show-icon>
-        <template #message>
-          <span>已选择 {{ selectedKeys.length }} 项</span>
-          <a-divider type="vertical" />
-          <a @click="clearSelected">清空</a>
-        </template>
-      </a-alert>
-    </div>
-
-    <!-- Table -->
-    <div ref="tableWrapperRef" :class="['min-w-0', fixedHeight && 'flex-1 min-h-0 overflow-hidden']">
-      <a-table
-        :data-source="dataSource"
-        :columns="columns"
-        :loading="loading"
-        :row-key="rowKey || 'id'"
-        :pagination="pagination"
-        :row-selection="selectionConfig"
-        :scroll="tableScroll"
-        size="middle"
-        @change="handleTableChange"
+      <!-- Table -->
+      <div
+        ref="tableWrapperRef"
+        :class="['min-w-0', fixedHeight && 'flex-1 min-h-0 overflow-hidden']"
       >
-        <template v-for="slot in passthroughSlots" :key="slot" #[slot]="args">
-          <slot :name="slot" v-bind="args" />
-        </template>
-      </a-table>
-    </div>
+        <a-table
+          :data-source="dataSource"
+          :columns="columns"
+          :loading="loading"
+          :row-key="rowKey || 'id'"
+          :pagination="pagination"
+          :row-selection="selectionConfig"
+          :scroll="tableScroll"
+          size="middle"
+          @change="handleTableChange"
+        >
+          <template v-for="slot in passthroughSlots" :key="slot" #[slot]="args">
+            <slot :name="slot" v-bind="args" />
+          </template>
+        </a-table>
+      </div>
     </template>
   </a-card>
 </template>

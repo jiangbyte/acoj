@@ -41,9 +41,9 @@ const selectedKeys = computed(() => {
   if (menuItems.value.some((item: any) => item.key === path)) return [path]
 
   // Build lookup maps from the full resource tree
-  const routeMap = new Map<string, any>()   // route_path → resource
-  const idMap = new Map<string, any>()       // id → resource
-  const codeMap = new Map<string, any>()     // code → resource
+  const routeMap = new Map<string, any>() // route_path → resource
+  const idMap = new Map<string, any>() // id → resource
+  const codeMap = new Map<string, any>() // code → resource
   const visibleSet = new Set<string>()
 
   function walk(nodes: any[]) {

@@ -7,7 +7,12 @@
     destroy-on-close
     @close="handleClose"
   >
-    <a-alert message="选择权限并为每个权限设置数据范围。数据范围更改后需重新登录方可生效。" type="warning" closable class="mb-3" />
+    <a-alert
+      message="选择权限并为每个权限设置数据范围。数据范围更改后需重新登录方可生效。"
+      type="warning"
+      closable
+      class="mb-3"
+    />
 
     <a-spin :spinning="loading">
       <!-- Module selector -->
@@ -32,14 +37,21 @@
       >
         <template #headerCell="{ column }">
           <template v-if="column.key === 'code'">
-            <a-checkbox :checked="allChecked" :indeterminate="indeterminate" @change="handleAllCheck">
+            <a-checkbox
+              :checked="allChecked"
+              :indeterminate="indeterminate"
+              @change="handleAllCheck"
+            >
               权限编码
             </a-checkbox>
           </template>
         </template>
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'code'">
-            <a-checkbox :checked="record.checked" @change="(e: any) => handleCheck(record, e.target.checked)">
+            <a-checkbox
+              :checked="record.checked"
+              @change="(e: any) => handleCheck(record, e.target.checked)"
+            >
               {{ record.code }}
             </a-checkbox>
           </template>
@@ -51,7 +63,13 @@
               <a-radio-group
                 :value="record.scope"
                 size="small"
-                @change="(e: any) => { record.scope = e.target.value; record.customOrgIds = []; record.customGroupIds = [] }"
+                @change="
+                  (e: any) => {
+                    record.scope = e.target.value
+                    record.customOrgIds = []
+                    record.customGroupIds = []
+                  }
+                "
               >
                 <a-radio-button value="ALL">全部</a-radio-button>
                 <a-radio-button value="SELF">仅自己</a-radio-button>
@@ -64,14 +82,24 @@
               </a-radio-group>
               <!-- Custom Org selector -->
               <div v-if="record.scope === 'CUSTOM_ORG'" class="mt-1">
-                <a-tag v-for="id in record.customOrgIds" :key="id" closable @close="removeOrgId(record, id)">
+                <a-tag
+                  v-for="id in record.customOrgIds"
+                  :key="id"
+                  closable
+                  @close="removeOrgId(record, id)"
+                >
                   {{ orgMap[id] || id }}
                 </a-tag>
                 <a-button size="small" @click="openOrgPicker(record)">选择组织</a-button>
               </div>
               <!-- Custom Group selector -->
               <div v-if="record.scope === 'CUSTOM_GROUP'" class="mt-1">
-                <a-tag v-for="id in record.customGroupIds" :key="id" closable @close="removeGroupId(record, id)">
+                <a-tag
+                  v-for="id in record.customGroupIds"
+                  :key="id"
+                  closable
+                  @close="removeGroupId(record, id)"
+                >
                   {{ groupMap[id] || id }}
                 </a-tag>
                 <a-button size="small" @click="openGroupPicker(record)">选择用户组</a-button>
@@ -96,7 +124,12 @@
     </a-modal>
 
     <!-- Group tree picker modal -->
-    <a-modal v-model:open="groupPickerVisible" title="选择用户组" @ok="confirmGroupPicker" width="480">
+    <a-modal
+      v-model:open="groupPickerVisible"
+      title="选择用户组"
+      @ok="confirmGroupPicker"
+      width="480"
+    >
       <a-tree
         ref="groupTreeRef"
         v-model:checked-keys="groupPickerChecked"
@@ -133,7 +166,9 @@ const isMobile = ref(false)
 onMounted(() => {
   const mql = window.matchMedia('(max-width: 767px)')
   isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => { isMobile.value = e.matches }
+  const handler = (e: MediaQueryListEvent) => {
+    isMobile.value = e.matches
+  }
   mql.addEventListener('change', handler)
   onBeforeUnmount(() => mql.removeEventListener('change', handler))
 })
@@ -146,7 +181,9 @@ const tableData = ref<any[]>([])
 const loading = ref(false)
 const submitLoading = ref(false)
 
-const allChecked = computed(() => tableData.value.length > 0 && tableData.value.every(p => p.checked))
+const allChecked = computed(
+  () => tableData.value.length > 0 && tableData.value.every(p => p.checked)
+)
 const indeterminate = computed(() => {
   const checked = tableData.value.filter(p => p.checked)
   return checked.length > 0 && checked.length < tableData.value.length
@@ -165,10 +202,7 @@ const orgMap = ref<Record<string, string>>({})
 const groupMap = ref<Record<string, string>>({})
 
 async function loadTrees() {
-  const [orgRes, groupRes] = await Promise.all([
-    fetchOrgTree({}),
-    fetchGroupTree({}),
-  ])
+  const [orgRes, groupRes] = await Promise.all([fetchOrgTree({}), fetchGroupTree({})])
   orgTreeData.value = orgRes?.data || []
   groupTreeData.value = groupRes?.data || []
   // Build id→name maps
@@ -264,7 +298,9 @@ async function loadPermissions() {
 
 function handleAllCheck(e: any) {
   const checked = e.target.checked
-  tableData.value.forEach(p => { p.checked = checked })
+  tableData.value.forEach(p => {
+    p.checked = checked
+  })
 }
 
 function handleCheck(record: any, checked: boolean) {

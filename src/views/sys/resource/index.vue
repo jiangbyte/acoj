@@ -1,6 +1,11 @@
 <template>
   <div class="flex flex-col gap-2">
-    <AppSearchPanel :model="searchForm" perm="sys:resource:page" @search="handleSearch" @reset="resetSearch">
+    <AppSearchPanel
+      :model="searchForm"
+      perm="sys:resource:page"
+      @search="handleSearch"
+      @reset="resetSearch"
+    >
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="关键词" name="keyword">
           <a-input v-model:value="searchForm.keyword" placeholder="资源名称" allow-clear />
@@ -49,20 +54,22 @@
           </span>
         </template>
         <template v-if="column.key === 'category'">
-          <a-tag>{{ categoryMap[record.category] || record.category || '-' }}</a-tag>
+          <a-tag>{{ $dict.label('RESOURCE_CATEGORY', record.category) }}</a-tag>
         </template>
         <template v-else-if="column.key === 'type'">
-          <a-tag>{{ typeMap[record.type] || record.type || '-' }}</a-tag>
+          <a-tag>{{ $dict.label('RESOURCE_TYPE', record.type) }}</a-tag>
         </template>
         <template v-else-if="column.key === 'is_visible'">
-          <a-tag :color="record.is_visible !== 'NO' ? 'blue' : 'default'">
-            {{ record.is_visible !== 'NO' ? '显示' : '隐藏' }}
+          <a-tag :color="$dict.color('SYS_YES_NO', record.is_visible)">
+            {{ $dict.label('SYS_YES_NO', record.is_visible) }}
           </a-tag>
         </template>
         <template v-else-if="column.key === 'status'">
-          <a-tag :color="record.status === 'ENABLED' ? 'green' : 'red'">
-            {{ record.status === 'ENABLED' ? '启用' : '禁用' }}
-          </a-tag>
+          <a-tooltip title="禁用后仅不可被选择，不影响已绑定的数据">
+            <a-tag :color="$dict.color('SYS_STATUS', record.status)">
+              {{ $dict.label('SYS_STATUS', record.status) }}
+            </a-tag>
+          </a-tooltip>
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space>
@@ -75,14 +82,22 @@
             >
               编辑
             </a-button>
-            <a-dropdown v-if="hasPermission('sys:resource:create') && record.type === 'DIRECTORY' || (hasPermission('sys:resource:modify') && record.type === 'MENU')">
+            <a-dropdown
+              v-if="
+                (hasPermission('sys:resource:create') && record.type === 'DIRECTORY') ||
+                (hasPermission('sys:resource:modify') && record.type === 'MENU')
+              "
+            >
               <a-button type="link" size="small">
                 更多
                 <DownOutlined />
               </a-button>
               <template #overlay>
                 <a-menu>
-                  <a-menu-item v-if="hasPermission('sys:resource:create') && record.type === 'DIRECTORY'" @click="openCreate(record)">
+                  <a-menu-item
+                    v-if="hasPermission('sys:resource:create') && record.type === 'DIRECTORY'"
+                    @click="openCreate(record)"
+                  >
                     新增子级
                   </a-menu-item>
                   <a-menu-item
@@ -125,7 +140,11 @@
 
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
-    <ButtonManager ref="buttonManagerRef" v-model:open="buttonManagerOpen" @success="reloadAfterChange" />
+    <ButtonManager
+      ref="buttonManagerRef"
+      v-model:open="buttonManagerOpen"
+      @success="reloadAfterChange"
+    />
   </div>
 </template>
 
@@ -161,21 +180,6 @@ import ButtonManager from './components/buttonManager.vue'
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
 const treeTableRef = ref()
-
-const categoryMap: Record<string, string> = {
-  BACKEND_MENU: '后台菜单',
-  FRONTEND_MENU: '前台菜单',
-  BACKEND_BUTTON: '后台按钮',
-  FRONTEND_BUTTON: '前台按钮',
-}
-
-const typeMap: Record<string, string> = {
-  DIRECTORY: '目录',
-  MENU: '菜单',
-  BUTTON: '按钮',
-  INTERNAL_LINK: '内链',
-  EXTERNAL_LINK: '外链',
-}
 
 // ── Tree data ──
 const loading = ref(false)
@@ -216,19 +220,19 @@ async function loadTree() {
 
 /** After a CRUD change, refresh both the tree table and the user's menu/routes so the sidebar stays in sync */
 async function reloadAfterChange() {
-  await Promise.all([
-    loadTree(),
-    auth.loadMenusAndPermissions(),
-  ])
+  await Promise.all([loadTree(), auth.loadMenusAndPermissions()])
 }
 
 // ── Search ──
 const searchForm = reactive({ keyword: '' })
 const selectedKeys = ref<string[]>([])
 
-watch(() => searchForm.keyword, (val) => {
-  treeData.value = filterTree(stripButtons(treeDataOrigin.value), val)
-})
+watch(
+  () => searchForm.keyword,
+  val => {
+    treeData.value = filterTree(stripButtons(treeDataOrigin.value), val)
+  }
+)
 
 const columns = [
   { title: '资源名称', dataIndex: 'name', key: 'name', width: 220 },
@@ -250,10 +254,18 @@ const detailOpen = ref(false)
 const formOpen = ref(false)
 const buttonManagerOpen = ref(false)
 
-function openDetail(record: any) { detailRef.value?.doOpen(record) }
-function openEdit(record: any) { formRef.value?.doOpen(record) }
-function openCreate(parent?: any) { formRef.value?.doOpen(undefined, parent?.id) }
-function openButtonManager(record: any) { buttonManagerRef.value?.doOpen(record) }
+function openDetail(record: any) {
+  detailRef.value?.doOpen(record)
+}
+function openEdit(record: any) {
+  formRef.value?.doOpen(record)
+}
+function openCreate(parent?: any) {
+  formRef.value?.doOpen(undefined, parent?.id)
+}
+function openButtonManager(record: any) {
+  buttonManagerRef.value?.doOpen(record)
+}
 
 async function handleDelete(id: string) {
   const { success } = await fetchResourceRemove({ ids: [id] })
@@ -279,7 +291,9 @@ function handleFormSuccess() {
   reloadAfterChange()
 }
 
-function handleSearch() { loadTree() }
+function handleSearch() {
+  loadTree()
+}
 
 function resetSearch() {
   searchForm.keyword = ''
@@ -297,8 +311,11 @@ async function handleDownloadTemplate() {
   try {
     const blob = await fetchResourceTemplate()
     downloadBlob(blob, '资源导入模板.xlsx')
-  } catch { message.error('下载模板失败') }
-  finally { templateLoading.value = false }
+  } catch {
+    message.error('下载模板失败')
+  } finally {
+    templateLoading.value = false
+  }
 }
 
 async function handleExportWithParams(params: any) {
@@ -307,7 +324,9 @@ async function handleExportWithParams(params: any) {
     downloadBlob(blob, `资源数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
-  } catch { message.error('导出失败') }
+  } catch {
+    message.error('导出失败')
+  }
 }
 
 async function handleImport(file: File) {

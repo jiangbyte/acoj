@@ -6,7 +6,12 @@
         返回用户组管理
       </a-button>
     </div>
-    <AppSearchPanel :model="searchForm" :perm="['sys:position:page']" @search="handleSearch" @reset="resetSearch">
+    <AppSearchPanel
+      :model="searchForm"
+      :perm="['sys:position:page']"
+      @search="handleSearch"
+      @reset="resetSearch"
+    >
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="关键词" name="keyword">
           <a-input v-model:value="searchForm.keyword" placeholder="职位名称" allow-clear />
@@ -48,12 +53,14 @@
 
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'category'">
-          <a-tag>{{ categoryMap[record.category] || record.category || '-' }}</a-tag>
+          <a-tag>{{ $dict.label('POSITION_CATEGORY', record.category) }}</a-tag>
         </template>
         <template v-else-if="column.key === 'status'">
-          <a-tag :color="record.status === 'ENABLED' ? 'green' : 'red'">
-            {{ record.status === 'ENABLED' ? '启用' : '禁用' }}
-          </a-tag>
+          <a-tooltip title="禁用后仅不可被选择，不影响已绑定的数据">
+            <a-tag :color="$dict.color('SYS_STATUS', record.status)">
+              {{ $dict.label('SYS_STATUS', record.status) }}
+            </a-tag>
+          </a-tooltip>
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space>
@@ -113,7 +120,13 @@ import {
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import { useRouter, useRoute } from 'vue-router'
-import { fetchPositionPage, fetchPositionRemove, fetchPositionExport, fetchPositionTemplate, fetchPositionImport } from '@/api/position'
+import {
+  fetchPositionPage,
+  fetchPositionRemove,
+  fetchPositionExport,
+  fetchPositionTemplate,
+  fetchPositionImport,
+} from '@/api/position'
 import { downloadBlob, confirmDelete } from '@/utils'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
@@ -122,21 +135,12 @@ import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
 
-
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
 const router = useRouter()
 const route = useRoute()
 const tableRef = ref()
 const orgId = ref('')
-
-const categoryMap: Record<string, string> = {
-  MANAGEMENT: '管理',
-  TECH: '技术',
-  OPERATIONS: '运营',
-  SALES: '销售',
-  OTHER: '其他',
-}
 
 // ── Search ──
 const searchForm = reactive({
@@ -146,7 +150,9 @@ const searchForm = reactive({
 const selectedKeys = ref<string[]>([])
 const rowSelection = computed(() => ({
   selectedRowKeys: selectedKeys.value,
-  onChange: (keys: string[]) => { selectedKeys.value = keys },
+  onChange: (keys: string[]) => {
+    selectedKeys.value = keys
+  },
 }))
 
 const columns = [
@@ -165,9 +171,15 @@ const formRef = ref()
 const detailOpen = ref(false)
 const formOpen = ref(false)
 
-function openDetail(record: any) { detailRef.value?.doOpen(record) }
-function openEdit(record: any) { formRef.value?.doOpen(record) }
-function openCreate() { formRef.value?.doOpen(undefined, searchForm.group_id) }
+function openDetail(record: any) {
+  detailRef.value?.doOpen(record)
+}
+function openEdit(record: any) {
+  formRef.value?.doOpen(record)
+}
+function openCreate() {
+  formRef.value?.doOpen(undefined, searchForm.group_id)
+}
 
 function goBack() {
   const query: Record<string, string> = {}
@@ -199,7 +211,9 @@ function handleFormSuccess() {
   tableRef.value?.refresh()
 }
 
-function handleSearch() { tableRef.value?.refresh(true) }
+function handleSearch() {
+  tableRef.value?.refresh(true)
+}
 
 function resetSearch() {
   searchForm.keyword = ''
@@ -218,8 +232,11 @@ async function handleDownloadTemplate() {
   try {
     const blob = await fetchPositionTemplate()
     downloadBlob(blob, '职位导入模板.xlsx')
-  } catch { message.error('下载模板失败') }
-  finally { templateLoading.value = false }
+  } catch {
+    message.error('下载模板失败')
+  } finally {
+    templateLoading.value = false
+  }
 }
 
 async function handleExportWithParams(params: any) {
@@ -228,7 +245,9 @@ async function handleExportWithParams(params: any) {
     downloadBlob(blob, `职位数据_${new Date().toLocaleDateString()}.xlsx`)
     message.success('导出成功')
     exportOpen.value = false
-  } catch { message.error('导出失败') }
+  } catch {
+    message.error('导出失败')
+  }
 }
 
 async function handleImport(file: File) {

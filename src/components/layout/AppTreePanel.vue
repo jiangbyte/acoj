@@ -81,16 +81,19 @@ import { ref, watch, onMounted } from 'vue'
 import { CaretDownOutlined } from '@ant-design/icons-vue'
 import AppSplitPanel from './AppSplitPanel.vue'
 
-const props = withDefaults(defineProps<{
-  title?: string
-  fetchTree: (params?: any) => Promise<any>
-  fieldNames?: { children: string; title: string; key: string }
-  icon?: any
-}>(), {
-  title: '',
-  fieldNames: () => ({ children: 'children', title: 'name', key: 'id' }),
-  icon: undefined,
-})
+const props = withDefaults(
+  defineProps<{
+    title?: string
+    fetchTree: (params?: any) => Promise<any>
+    fieldNames?: { children: string; title: string; key: string }
+    icon?: any
+  }>(),
+  {
+    title: '',
+    fieldNames: () => ({ children: 'children', title: 'name', key: 'id' }),
+    icon: undefined,
+  }
+)
 
 const emit = defineEmits<{
   select: [parentId: string | undefined]
@@ -127,7 +130,7 @@ function getAllKeys(nodes: any[]): string[] {
   }, [])
 }
 
-watch(searchKey, (val) => {
+watch(searchKey, val => {
   data.value = filterTree(originData.value, val)
   if (val) expandedKeys.value = getAllKeys(data.value)
 })

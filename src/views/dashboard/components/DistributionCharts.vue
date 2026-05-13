@@ -40,18 +40,20 @@ function renderOrg() {
 
   orgChart.setOption({
     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-    series: [{
-      type: 'pie',
-      radius: ['30%', '60%'],
-      center: ['50%', '50%'],
-      data: names.map((n, i) => ({ name: n, value: vals[i] })),
-      label: { color: textColor, fontSize: 11 },
-      itemStyle: {
-        borderRadius: 4,
-        borderColor: isDark ? '#1a1a2e' : '#fff',
-        borderWidth: 2,
+    series: [
+      {
+        type: 'pie',
+        radius: ['30%', '60%'],
+        center: ['50%', '50%'],
+        data: names.map((n, i) => ({ name: n, value: vals[i] })),
+        label: { color: textColor, fontSize: 11 },
+        itemStyle: {
+          borderRadius: 4,
+          borderColor: isDark ? '#1a1a2e' : '#fff',
+          borderWidth: 2,
+        },
       },
-    }],
+    ],
   })
 }
 
@@ -73,29 +75,35 @@ function renderRole() {
   roleChart.setOption({
     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
     legend: { bottom: 0, textStyle: { color: textColor, fontSize: 11 } },
-    series: [{
-      type: 'pie',
-      radius: ['40%', '65%'],
-      center: ['50%', '45%'],
-      avoidLabelOverlap: false,
-      data: categories.map((c, i) => ({
-        name: c,
-        value: counts[i],
-        itemStyle: { color: colorMap[c] || '#faad14' },
-      })),
-      label: { show: false },
-      emphasis: {
-        label: { show: true, fontSize: 13, fontWeight: 'bold' },
+    series: [
+      {
+        type: 'pie',
+        radius: ['40%', '65%'],
+        center: ['50%', '45%'],
+        avoidLabelOverlap: false,
+        data: categories.map((c, i) => ({
+          name: c,
+          value: counts[i],
+          itemStyle: { color: colorMap[c] || '#faad14' },
+        })),
+        label: { show: false },
+        emphasis: {
+          label: { show: true, fontSize: 13, fontWeight: 'bold' },
+        },
       },
-    }],
+    ],
   })
 }
 
-watch(() => [props.orgData, props.roleData, props.isDark], async () => {
-  await nextTick()
-  renderOrg()
-  renderRole()
-}, { deep: false })
+watch(
+  () => [props.orgData, props.roleData, props.isDark],
+  async () => {
+    await nextTick()
+    renderOrg()
+    renderRole()
+  },
+  { deep: false }
+)
 
 onMounted(() => {
   nextTick(() => {

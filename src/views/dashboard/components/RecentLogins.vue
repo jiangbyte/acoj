@@ -2,11 +2,7 @@
   <a-card title="最近登录" :bordered="false" :loading="loading" class="log-card">
     <div class="timeline-div" v-if="data?.length">
       <a-timeline>
-        <a-timeline-item
-          v-for="log in data"
-          :key="log.last_login_at + log.account"
-          color="blue"
-        >
+        <a-timeline-item v-for="log in data" :key="log.last_login_at + log.account" color="blue">
           <div class="log-item">
             <div class="log-header">
               <span class="log-name">{{ log.nickname || log.account }}</span>

@@ -1,6 +1,11 @@
 <template>
   <div class="flex flex-col gap-2">
-    <AppSearchPanel :model="searchForm" perm="sys:role:page" @search="handleSearch" @reset="resetSearch">
+    <AppSearchPanel
+      :model="searchForm"
+      perm="sys:role:page"
+      @search="handleSearch"
+      @reset="resetSearch"
+    >
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="关键词" name="keyword">
           <a-input v-model:value="searchForm.keyword" placeholder="角色名称" allow-clear />
@@ -8,11 +13,12 @@
       </a-col>
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="角色类别" name="category">
-          <a-select v-model:value="searchForm.category" placeholder="全部" allow-clear>
-            <a-select-option value="ADMIN">管理</a-select-option>
-            <a-select-option value="NORMAL">普通</a-select-option>
-            <a-select-option value="OTHER">其他</a-select-option>
-          </a-select>
+          <DictSelect
+            v-model="searchForm.category"
+            type-code="ROLE_CATEGORY"
+            placeholder="全部"
+            :allow-clear="true"
+          />
         </a-form-item>
       </a-col>
     </AppSearchPanel>
@@ -51,12 +57,14 @@
 
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'category'">
-          <a-tag>{{ categoryMap[record.category] || record.category || '-' }}</a-tag>
+          <a-tag>{{ $dict.label('ROLE_CATEGORY', record.category) }}</a-tag>
         </template>
         <template v-else-if="column.key === 'status'">
-          <a-tag :color="record.status === 'ENABLED' ? 'green' : 'red'">
-            {{ record.status === 'ENABLED' ? '启用' : '禁用' }}
-          </a-tag>
+          <a-tooltip title="禁用后仅不可被选择，不影响已绑定的数据">
+            <a-tag :color="$dict.color('SYS_STATUS', record.status)">
+              {{ $dict.label('SYS_STATUS', record.status) }}
+            </a-tag>
+          </a-tooltip>
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space>
@@ -69,17 +77,27 @@
             >
               编辑
             </a-button>
-            <a-dropdown v-if="hasPermission('sys:role:grantPermission') || hasPermission('sys:role:grantResource')">
+            <a-dropdown
+              v-if="
+                hasPermission('sys:role:grantPermission') || hasPermission('sys:role:grantResource')
+              "
+            >
               <a-button type="link" size="small">
                 授权
                 <DownOutlined />
               </a-button>
               <template #overlay>
                 <a-menu>
-                  <a-menu-item v-if="hasPermission('sys:role:grantPermission')" @click="openGrantPermission(record)">
+                  <a-menu-item
+                    v-if="hasPermission('sys:role:grantPermission')"
+                    @click="openGrantPermission(record)"
+                  >
                     授权权限
                   </a-menu-item>
-                  <a-menu-item v-if="hasPermission('sys:role:grantResource')" @click="openGrantResource(record)">
+                  <a-menu-item
+                    v-if="hasPermission('sys:role:grantResource')"
+                    @click="openGrantResource(record)"
+                  >
                     授权资源
                   </a-menu-item>
                 </a-menu>
@@ -116,8 +134,16 @@
 
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
-    <GrantPermission ref="grantPermissionRef" v-model:open="grantPermissionOpen" @success="tableRef?.refresh()" />
-    <GrantResource ref="grantResourceRef" v-model:open="grantResourceOpen" @success="tableRef?.refresh()" />
+    <GrantPermission
+      ref="grantPermissionRef"
+      v-model:open="grantPermissionOpen"
+      @success="tableRef?.refresh()"
+    />
+    <GrantResource
+      ref="grantResourceRef"
+      v-model:open="grantResourceOpen"
+      @success="tableRef?.refresh()"
+    />
   </div>
 </template>
 
@@ -131,7 +157,7 @@ import {
   DownloadOutlined,
   DownOutlined,
 } from '@ant-design/icons-vue'
-import { useAuthStore } from '@/store'
+import { useAuthStore, useDictStore } from '@/store'
 
 import {
   fetchRolePage,
@@ -144,6 +170,7 @@ import { useCrud } from '@/hooks/useCrud'
 import { useImportExport } from '@/hooks/useImportExport'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
+import DictSelect from '@/components/form/DictSelect.vue'
 import AppImportModal from '@/components/modal/AppImportModal.vue'
 import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
@@ -155,13 +182,18 @@ const auth = useAuthStore()
 const hasPermission = auth.hasPermission
 
 const crud = useCrud({ name: '角色', deleteApi: fetchRoleRemove })
-const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete, handleFormSuccess } = crud
+const {
+  tableRef,
+  selectedKeys,
+  rowSelection,
+  handleSearch,
+  handleDelete,
+  handleBatchDelete,
+  handleFormSuccess,
+} = crud
 
-const categoryMap: Record<string, string> = {
-  ADMIN: '管理',
-  NORMAL: '普通',
-  OTHER: '其他',
-}
+// Preload dict tree for role category lookups
+useDictStore().loadDict()
 
 // ── Search ──
 const searchForm = reactive({
@@ -192,9 +224,15 @@ const formRef = ref()
 const detailOpen = ref(false)
 const formOpen = ref(false)
 
-function openDetail(record: any) { detailRef.value?.doOpen(record) }
-function openEdit(record: any) { formRef.value?.doOpen(record) }
-function openCreate() { formRef.value?.doOpen() }
+function openDetail(record: any) {
+  detailRef.value?.doOpen(record)
+}
+function openEdit(record: any) {
+  formRef.value?.doOpen(record)
+}
+function openCreate() {
+  formRef.value?.doOpen()
+}
 
 const {
   importOpen: ieImportOpen,

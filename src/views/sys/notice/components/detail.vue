@@ -12,51 +12,65 @@
         <a-row :gutter="[16, 16]">
           <a-col :xs="24" :sm="24">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">通知标题</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)] font-medium">{{ data.title || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)] font-medium">
+              {{ data.title || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">通知类别</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ categoryMap[data.category] || data.category || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ $dict.label('NOTICE_CATEGORY', data.category) }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">通知类型</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.type || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ $dict.label('NOTICE_TYPE', data.type) || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">通知级别</div>
             <div class="text-sm">
-              <a-tag :color="levelColorMap[data.level] || 'default'">
-                {{ levelMap[data.level] || data.level || '-' }}
+              <a-tag :color="$dict.color('NOTICE_LEVEL', data.level)">
+                {{ $dict.label('NOTICE_LEVEL', data.level) }}
               </a-tag>
             </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">状态</div>
             <div class="text-sm">
-              <a-tag :color="data.status === 'ENABLED' ? 'green' : 'red'">
-                {{ data.status === 'ENABLED' ? '启用' : '禁用' }}
-              </a-tag>
+              <a-tooltip title="禁用后仅不可被选择，不影响已绑定的数据">
+                <a-tag :color="$dict.color('SYS_STATUS', data.status)">
+                  {{ $dict.label('SYS_STATUS', data.status) }}
+                </a-tag>
+              </a-tooltip>
             </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">是否置顶</div>
             <div class="text-sm">
-              <a-tag :color="data.is_top === 'YES' ? 'orange' : 'default'">
-                {{ data.is_top === 'YES' ? '置顶' : '否' }}
+              <a-tag :color="$dict.color('SYS_YES_NO', data.is_top)">
+                {{ $dict.label('SYS_YES_NO', data.is_top) }}
               </a-tag>
             </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">浏览次数</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.view_count ?? 0 }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.view_count ?? 0 }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">排序</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.sort_code ?? '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.sort_code ?? '-' }}
+            </div>
           </a-col>
           <a-col v-if="data.position" :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">通知位置</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.position }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ $dict.label('NOTICE_POSITION', data.position) || '-' }}
+            </div>
           </a-col>
           <a-col v-if="data.cover" :xs="24" :sm="24">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">封面图片</div>
@@ -77,19 +91,27 @@
         <a-row :gutter="[16, 16]">
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">创建人</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.created_by || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.created_by || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">创建时间</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.created_at || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.created_at || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">更新人</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.updated_by || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.updated_by || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">更新时间</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.updated_at || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.updated_at || '-' }}
+            </div>
           </a-col>
         </a-row>
       </a-card>
@@ -106,29 +128,13 @@ const emit = defineEmits(['update:open'])
 const loading = ref(false)
 const data = ref<any>(null)
 
-const categoryMap: Record<string, string> = {
-  NOTICE: '通知',
-  NEWS: '新闻',
-  MESSAGE: '消息',
-}
-
-const levelMap: Record<string, string> = {
-  URGENT: '紧急',
-  IMPORTANT: '重要',
-  NORMAL: '普通',
-}
-
-const levelColorMap: Record<string, string> = {
-  URGENT: 'red',
-  IMPORTANT: 'orange',
-  NORMAL: 'default',
-}
-
 const isMobile = ref(false)
 onMounted(() => {
   const mql = window.matchMedia('(max-width: 767px)')
   isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => { isMobile.value = e.matches }
+  const handler = (e: MediaQueryListEvent) => {
+    isMobile.value = e.matches
+  }
   mql.addEventListener('change', handler)
   onBeforeUnmount(() => mql.removeEventListener('change', handler))
 })

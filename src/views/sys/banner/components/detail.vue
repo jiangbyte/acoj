@@ -16,19 +16,27 @@
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">类别</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.category || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ $dict.label('BANNER_CATEGORY', data.category) || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">类型</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.type || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ $dict.label('BANNER_TYPE', data.type) || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">展示位置</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.position || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ $dict.label('BANNER_POSITION', data.position) || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">排序</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.sort_code ?? '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.sort_code ?? '-' }}
+            </div>
           </a-col>
           <a-col v-if="data.image" :xs="24" :sm="24">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">图片</div>
@@ -45,7 +53,9 @@
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">链接类型</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.link_type || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ $dict.label('LINK_TYPE', data.link_type) || '-' }}
+            </div>
           </a-col>
           <a-col v-if="data.summary" :xs="24">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">摘要</div>
@@ -53,7 +63,9 @@
           </a-col>
           <a-col v-if="data.description" :xs="24">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">描述</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)] whitespace-pre-wrap">{{ data.description }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)] whitespace-pre-wrap">
+              {{ data.description }}
+            </div>
           </a-col>
         </a-row>
       </a-card>
@@ -62,36 +74,47 @@
         <a-row :gutter="[16, 16]">
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">浏览次数</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.view_count ?? 0 }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.view_count ?? 0 }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">点击次数</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.click_count ?? 0 }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.click_count ?? 0 }}
+            </div>
           </a-col>
         </a-row>
       </a-card>
 
-      <a-card size="small" title="系统信息" >
+      <a-card size="small" title="系统信息">
         <a-row :gutter="[16, 16]">
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">创建人</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.created_by || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.created_by || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">创建时间</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.created_at || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.created_at || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">更新人</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.updated_by || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.updated_by || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">更新时间</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.updated_at || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.updated_at || '-' }}
+            </div>
           </a-col>
         </a-row>
       </a-card>
-
     </template>
   </a-drawer>
 </template>
@@ -109,7 +132,9 @@ const isMobile = ref(false)
 onMounted(() => {
   const mql = window.matchMedia('(max-width: 767px)')
   isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => { isMobile.value = e.matches }
+  const handler = (e: MediaQueryListEvent) => {
+    isMobile.value = e.matches
+  }
   mql.addEventListener('change', handler)
   onBeforeUnmount(() => mql.removeEventListener('change', handler))
 })

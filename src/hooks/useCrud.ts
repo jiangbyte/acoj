@@ -14,7 +14,9 @@ export function useCrud(options: UseCrudOptions) {
 
   const rowSelection = computed(() => ({
     selectedRowKeys: selectedKeys.value,
-    onChange: (keys: string[]) => { selectedKeys.value = keys },
+    onChange: (keys: string[]) => {
+      selectedKeys.value = keys
+    },
   }))
 
   function handleSearch() {
@@ -22,9 +24,13 @@ export function useCrud(options: UseCrudOptions) {
   }
 
   function resetSearch(form: Record<string, any>, extra?: Record<string, any>) {
-    Object.keys(form).forEach(k => { form[k] = undefined })
+    Object.keys(form).forEach(k => {
+      form[k] = undefined
+    })
     if (extra) {
-      Object.entries(extra).forEach(([k, v]) => { form[k] = v })
+      Object.entries(extra).forEach(([k, v]) => {
+        form[k] = v
+      })
     }
     tableRef.value?.refresh(true)
   }

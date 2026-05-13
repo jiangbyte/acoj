@@ -20,11 +20,11 @@
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="detail-label">资源分类</div>
-            <div class="detail-value">{{ categoryMap[data.category] || data.category || '-' }}</div>
+            <div class="detail-value">{{ $dict.label('RESOURCE_CATEGORY', data.category) }}</div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="detail-label">资源类型</div>
-            <div class="detail-value">{{ typeMap[data.type] || data.type || '-' }}</div>
+            <div class="detail-value">{{ $dict.label('RESOURCE_TYPE', data.type) }}</div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="detail-label">排序</div>
@@ -33,9 +33,11 @@
           <a-col :xs="24" :sm="12">
             <div class="detail-label">状态</div>
             <div class="detail-value">
-              <a-tag :color="data.status === 'ENABLED' ? 'green' : 'red'">
-                {{ data.status === 'ENABLED' ? '启用' : '禁用' }}
-              </a-tag>
+              <a-tooltip title="禁用后仅不可被选择，不影响已绑定的数据">
+                <a-tag :color="$dict.color('SYS_STATUS', data.status)">
+                  {{ $dict.label('SYS_STATUS', data.status) }}
+                </a-tag>
+              </a-tooltip>
             </div>
           </a-col>
           <a-col :xs="24" :sm="24" v-if="data.description">
@@ -75,25 +77,33 @@
           <a-col :xs="8" :sm="6">
             <div class="detail-label">可见</div>
             <div class="detail-value">
-              <a-tag :color="data.is_visible !== 'NO' ? 'green' : 'red'">{{ data.is_visible !== 'NO' ? '是' : '否' }}</a-tag>
+              <a-tag :color="$dict.color('SYS_YES_NO', data.is_visible)">
+                {{ $dict.label('SYS_YES_NO', data.is_visible) }}
+              </a-tag>
             </div>
           </a-col>
           <a-col :xs="8" :sm="6" v-if="isMenuType">
             <div class="detail-label">缓存</div>
             <div class="detail-value">
-              <a-tag :color="data.is_cache === 'YES' ? 'blue' : 'default'">{{ data.is_cache === 'YES' ? '是' : '否' }}</a-tag>
+              <a-tag :color="$dict.color('SYS_YES_NO', data.is_cache)">
+                {{ $dict.label('SYS_YES_NO', data.is_cache) }}
+              </a-tag>
             </div>
           </a-col>
           <a-col :xs="8" :sm="6" v-if="isMenuType">
             <div class="detail-label">固定</div>
             <div class="detail-value">
-              <a-tag :color="data.is_affix === 'YES' ? 'blue' : 'default'">{{ data.is_affix === 'YES' ? '是' : '否' }}</a-tag>
+              <a-tag :color="$dict.color('SYS_YES_NO', data.is_affix)">
+                {{ $dict.label('SYS_YES_NO', data.is_affix) }}
+              </a-tag>
             </div>
           </a-col>
           <a-col :xs="8" :sm="6" v-if="isMenuType">
             <div class="detail-label">面包屑</div>
             <div class="detail-value">
-              <a-tag :color="data.is_breadcrumb !== 'NO' ? 'green' : 'red'">{{ data.is_breadcrumb !== 'NO' ? '是' : '否' }}</a-tag>
+              <a-tag :color="$dict.color('SYS_YES_NO', data.is_breadcrumb)">
+                {{ $dict.label('SYS_YES_NO', data.is_breadcrumb) }}
+              </a-tag>
             </div>
           </a-col>
         </a-row>
@@ -137,33 +147,18 @@ const emit = defineEmits(['update:open'])
 const loading = ref(false)
 const data = ref<any>(null)
 
-const categoryMap: Record<string, string> = {
-  BACKEND_MENU: '后台菜单',
-  FRONTEND_MENU: '前台菜单',
-  BACKEND_BUTTON: '后台按钮',
-  FRONTEND_BUTTON: '前台按钮',
-}
-
-const typeMap: Record<string, string> = {
-  DIRECTORY: '目录',
-  MENU: '菜单',
-  BUTTON: '按钮',
-  INTERNAL_LINK: '内链',
-  EXTERNAL_LINK: '外链',
-}
-
-const isRouteType = computed(() =>
-  data.value && ['DIRECTORY', 'MENU', 'INTERNAL_LINK'].includes(data.value.type)
+const isRouteType = computed(
+  () => data.value && ['DIRECTORY', 'MENU', 'INTERNAL_LINK'].includes(data.value.type)
 )
-const isMenuType = computed(() =>
-  data.value && ['MENU', 'INTERNAL_LINK'].includes(data.value.type)
-)
+const isMenuType = computed(() => data.value && ['MENU', 'INTERNAL_LINK'].includes(data.value.type))
 
 const isMobile = ref(false)
 onMounted(() => {
   const mql = window.matchMedia('(max-width: 767px)')
   isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => { isMobile.value = e.matches }
+  const handler = (e: MediaQueryListEvent) => {
+    isMobile.value = e.matches
+  }
   mql.addEventListener('change', handler)
   onBeforeUnmount(() => mql.removeEventListener('change', handler))
 })

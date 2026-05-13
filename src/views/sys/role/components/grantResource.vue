@@ -42,7 +42,7 @@
             <template v-if="record.btnId">
               <a-checkbox
                 :checked="record.btnCheck"
-                @change="(e: any) => record.btnCheck = e.target.checked"
+                @change="(e: any) => (record.btnCheck = e.target.checked)"
               >
                 {{ record.btnName }}
               </a-checkbox>
@@ -56,7 +56,12 @@
                 v-model:value="record.scope"
                 size="small"
                 :style="{ width: '130px' }"
-                @change="() => { record.customOrgIds = []; record.customGroupIds = [] }"
+                @change="
+                  () => {
+                    record.customOrgIds = []
+                    record.customGroupIds = []
+                  }
+                "
               >
                 <a-select-option value="ALL">全部</a-select-option>
                 <a-select-option value="SELF">仅自己</a-select-option>
@@ -90,7 +95,9 @@
                   >
                     {{ groupMap[id] || id }}
                   </a-tag>
-                  <a-button size="small" type="link" @click="openGroupPicker(record)">选择</a-button>
+                  <a-button size="small" type="link" @click="openGroupPicker(record)">
+                    选择
+                  </a-button>
                 </div>
               </template>
             </template>
@@ -112,7 +119,12 @@
     </a-modal>
 
     <!-- Group tree picker modal -->
-    <a-modal v-model:open="groupPickerVisible" title="选择用户组" @ok="confirmGroupPicker" width="480">
+    <a-modal
+      v-model:open="groupPickerVisible"
+      title="选择用户组"
+      @ok="confirmGroupPicker"
+      width="480"
+    >
       <a-tree
         v-model:checked-keys="groupPickerChecked"
         :tree-data="groupTreeData"
@@ -135,7 +147,11 @@
 defineOptions({ name: 'RoleGrantResource' })
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { message } from 'ant-design-vue'
-import { fetchRoleGrantResource, fetchRoleOwnResource, fetchRoleOwnPermissionDetail } from '@/api/role'
+import {
+  fetchRoleGrantResource,
+  fetchRoleOwnResource,
+  fetchRoleOwnPermissionDetail,
+} from '@/api/role'
 import { fetchResourceTree } from '@/api/resource'
 import { fetchOrgTree } from '@/api/org'
 import { fetchGroupTree } from '@/api/group'
@@ -147,7 +163,9 @@ const isMobile = ref(false)
 onMounted(() => {
   const mql = window.matchMedia('(max-width: 767px)')
   isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => { isMobile.value = e.matches }
+  const handler = (e: MediaQueryListEvent) => {
+    isMobile.value = e.matches
+  }
   mql.addEventListener('change', handler)
   onBeforeUnmount(() => mql.removeEventListener('change', handler))
 })
@@ -213,8 +231,12 @@ const groupPickerChecked = ref<string[]>([])
 function expandToRows(
   nodes: any[],
   ownIds: string[],
-  scopeMap: Record<string, any>,
-): { rows: any[]; parentMap: Record<string, { start: number; count: number }>; menuMap: Record<string, { start: number; count: number }> } {
+  scopeMap: Record<string, any>
+): {
+  rows: any[]
+  parentMap: Record<string, { start: number; count: number }>
+  menuMap: Record<string, { start: number; count: number }>
+} {
   const rows: any[] = []
   const parentMap: Record<string, { start: number; count: number }> = {}
   const menuMap: Record<string, { start: number; count: number }> = {}
@@ -235,7 +257,9 @@ function expandToRows(
               try {
                 const extra = JSON.parse(b.extra || '{}')
                 permission_code = extra.permission_code || undefined
-              } catch { permission_code = undefined }
+              } catch {
+                permission_code = undefined
+              }
               const sd = permission_code ? scopeMap[permission_code] : undefined
 
               rows.push({
@@ -348,10 +372,7 @@ function removeGroupId(record: any, id: string) {
 // ── Data loading ──
 
 async function loadTrees() {
-  const [orgRes, groupRes] = await Promise.all([
-    fetchOrgTree({}),
-    fetchGroupTree({}),
-  ])
+  const [orgRes, groupRes] = await Promise.all([fetchOrgTree({}), fetchGroupTree({})])
   orgTreeData.value = orgRes?.data || []
   groupTreeData.value = groupRes?.data || []
   const buildMap = (nodes: any[], map: Record<string, string>) => {
@@ -381,7 +402,9 @@ async function loadData() {
         scopeMap[item.permission_code] = {
           scope: item.scope || 'ALL',
           customOrgIds: item.custom_scope_org_ids ? JSON.parse(item.custom_scope_org_ids) : [],
-          customGroupIds: item.custom_scope_group_ids ? JSON.parse(item.custom_scope_group_ids) : [],
+          customGroupIds: item.custom_scope_group_ids
+            ? JSON.parse(item.custom_scope_group_ids)
+            : [],
         }
       }
     })
@@ -404,21 +427,28 @@ async function handleSubmit() {
 
   tableData.value.forEach((row: any) => {
     if (row.btnCheck && row.btnId) {
-      if (!seen.has(row.btnId)) { allIds.push(row.btnId); seen.add(row.btnId) }
+      if (!seen.has(row.btnId)) {
+        allIds.push(row.btnId)
+        seen.add(row.btnId)
+      }
       if (row.permission_code) {
         permissionItems.push({
           permission_code: row.permission_code,
           scope: row.scope,
-          custom_scope_group_ids: row.customGroupIds?.length ? JSON.stringify(row.customGroupIds) : null,
+          custom_scope_group_ids: row.customGroupIds?.length
+            ? JSON.stringify(row.customGroupIds)
+            : null,
           custom_scope_org_ids: row.customOrgIds?.length ? JSON.stringify(row.customOrgIds) : null,
         })
       }
     }
     if (row.nameCheck && !seen.has(row.menuId)) {
-      allIds.push(row.menuId); seen.add(row.menuId)
+      allIds.push(row.menuId)
+      seen.add(row.menuId)
     }
     if (row.parentCheck && !seen.has(row.parentId)) {
-      allIds.push(row.parentId); seen.add(row.parentId)
+      allIds.push(row.parentId)
+      seen.add(row.parentId)
     }
   })
 

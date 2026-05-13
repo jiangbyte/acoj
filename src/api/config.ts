@@ -1,10 +1,14 @@
 import { request } from '@/utils'
 
 export function fetchConfigPage(params: any) {
-  return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/config/page', { params })
+  return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/config/page', {
+    params,
+  })
 }
 export function fetchConfigListByCategory(params: { category: string }) {
-  return request.Get<Service.ResponseResult<any[]>>('/api/v1/sys/config/list-by-category', { params })
+  return request.Get<Service.ResponseResult<any[]>>('/api/v1/sys/config/list-by-category', {
+    params,
+  })
 }
 export function fetchConfigCreate(data: any) {
   return request.Post<Service.ResponseResult>('/api/v1/sys/config/create', data)
@@ -18,7 +22,9 @@ export function fetchConfigRemove(data: { ids: string[] }) {
 export function fetchConfigDetail(params: { id: string }) {
   return request.Get<Service.ResponseResult>('/api/v1/sys/config/detail', { params })
 }
-export function fetchConfigEditBatch(data: { configs: { config_key: string; config_value: string }[] }) {
+export function fetchConfigEditBatch(data: {
+  configs: { config_key: string; config_value: string }[]
+}) {
   return request.Post<Service.ResponseResult>('/api/v1/sys/config/edit-batch', data)
 }
 export function fetchConfigEditByCategory(data: {

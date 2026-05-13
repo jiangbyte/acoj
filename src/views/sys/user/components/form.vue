@@ -18,10 +18,7 @@
         <a-input v-model:value="form.email" placeholder="请输入邮箱" />
       </a-form-item>
       <a-form-item label="状态" name="status">
-        <a-radio-group v-model:value="form.status">
-          <a-radio value="ACTIVE">启用</a-radio>
-          <a-radio value="INACTIVE">禁用</a-radio>
-        </a-radio-group>
+        <DictSelect v-model="form.status" type-code="USER_STATUS" option-type="radio" />
       </a-form-item>
     </template>
   </AppDrawerForm>
@@ -32,6 +29,7 @@ defineOptions({ name: 'UserForm' })
 import { reactive, ref } from 'vue'
 import { fetchUserDetail, fetchUserCreate, fetchUserModify } from '@/api/user'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
+import DictSelect from '@/components/form/DictSelect.vue'
 
 defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])

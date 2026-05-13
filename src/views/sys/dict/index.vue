@@ -10,12 +10,22 @@
     <template #right="{ parentId, refreshTree }">
       <div class="flex flex-col h-full overflow-auto gap-2">
         <!-- Search -->
-        <AppSearchPanel :model="searchForm" perm="sys:dict:page" @search="handleSearch" @reset="resetSearch">
-            <a-button type="text" size="small" class="max-md:hidden" @click="treePanel?.splitRef?.toggleCollapse()">
-              <template #icon>
-                <component :is="treePanel?.collapsed ? DoubleRightOutlined : DoubleLeftOutlined" />
-              </template>
-            </a-button>
+        <AppSearchPanel
+          :model="searchForm"
+          perm="sys:dict:page"
+          @search="handleSearch"
+          @reset="resetSearch"
+        >
+          <a-button
+            type="text"
+            size="small"
+            class="max-md:hidden"
+            @click="treePanel?.splitRef?.toggleCollapse()"
+          >
+            <template #icon>
+              <component :is="treePanel?.collapsed ? DoubleRightOutlined : DoubleLeftOutlined" />
+            </template>
+          </a-button>
           <a-col :xs="24" :sm="12" :md="8" :lg="6">
             <a-form-item label="关键词" name="keyword">
               <a-input v-model:value="searchForm.keyword" placeholder="字典标签" allow-clear />
@@ -62,9 +72,11 @@
               <span v-else class="text-gray-400">-</span>
             </template>
             <template v-else-if="column.key === 'status'">
-              <a-tag :color="record.status === 'ENABLED' ? 'green' : 'red'">
-                {{ record.status === 'ENABLED' ? '启用' : '禁用' }}
-              </a-tag>
+              <a-tooltip title="禁用后仅不可被选择，不影响已绑定的数据">
+                <a-tag :color="$dict.color('SYS_STATUS', record.status)">
+                  {{ $dict.label('SYS_STATUS', record.status) }}
+                </a-tag>
+              </a-tooltip>
             </template>
             <template v-else-if="column.key === 'action'">
               <a-space>
@@ -84,9 +96,7 @@
                   </a-button>
                   <template #overlay>
                     <a-menu>
-                      <a-menu-item @click="openCreate(record)">
-                        新增子级
-                      </a-menu-item>
+                      <a-menu-item @click="openCreate(record)">新增子级</a-menu-item>
                     </a-menu>
                   </template>
                 </a-dropdown>
@@ -142,7 +152,7 @@ import {
   BookOutlined,
   DownOutlined,
 } from '@ant-design/icons-vue'
-import { useAuthStore } from '@/store'
+import { useAuthStore, useDictStore } from '@/store'
 
 import {
   fetchDictPage,
@@ -169,9 +179,20 @@ const treePanel = ref()
 const crud = useCrud({
   name: '字典',
   deleteApi: fetchDictRemove,
-  onSuccess: () => treePanel.value?.refresh(),
+  onSuccess: () => {
+    treePanel.value?.refresh()
+    useDictStore().refreshDict()
+  },
 })
-const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete, handleFormSuccess } = crud
+const {
+  tableRef,
+  selectedKeys,
+  rowSelection,
+  handleSearch,
+  handleDelete,
+  handleBatchDelete,
+  handleFormSuccess,
+} = crud
 
 // Search form
 const searchForm = reactive({ keyword: '', parent_id: undefined as string | undefined })
@@ -234,6 +255,7 @@ const {
   onSuccess: () => {
     tableRef.value?.refresh(true)
     treePanel.value?.refresh()
+    useDictStore().refreshDict()
   },
 })
 </script>

@@ -14,15 +14,12 @@
       </a-col>
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="状态" name="status">
-          <a-select
-            v-model:value="searchForm.status"
+          <DictSelect
+            v-model="searchForm.status"
+            type-code="USER_STATUS"
             placeholder="全部"
-            allow-clear
-            style="width: 100%"
-          >
-            <a-select-option value="ACTIVE">启用</a-select-option>
-            <a-select-option value="INACTIVE">禁用</a-select-option>
-          </a-select>
+            :allow-clear="true"
+          />
         </a-form-item>
       </a-col>
     </AppSearchPanel>
@@ -72,17 +69,27 @@
             >
               编辑
             </a-button>
-            <a-dropdown v-if="hasPermission('sys:user:grant-role') || hasPermission('sys:user:grant-permission')">
+            <a-dropdown
+              v-if="
+                hasPermission('sys:user:grant-role') || hasPermission('sys:user:grant-permission')
+              "
+            >
               <a-button type="link" size="small">
                 授权
                 <DownOutlined />
               </a-button>
               <template #overlay>
                 <a-menu>
-                  <a-menu-item v-if="hasPermission('sys:user:grant-role')" @click="openGrantRole(record)">
+                  <a-menu-item
+                    v-if="hasPermission('sys:user:grant-role')"
+                    @click="openGrantRole(record)"
+                  >
                     分配角色
                   </a-menu-item>
-                  <a-menu-item v-if="hasPermission('sys:user:grant-permission')" @click="openGrantPermission(record)">
+                  <a-menu-item
+                    v-if="hasPermission('sys:user:grant-permission')"
+                    @click="openGrantPermission(record)"
+                  >
                     授权权限
                   </a-menu-item>
                 </a-menu>
@@ -98,8 +105,8 @@
           </a-space>
         </template>
         <template v-else-if="column.key === 'status'">
-          <a-tag :color="record.status === 'ACTIVE' ? 'green' : 'red'">
-            {{ record.status === 'ACTIVE' ? '启用' : '禁用' }}
+          <a-tag :color="$dict.color('USER_STATUS', record.status)">
+            {{ $dict.label('USER_STATUS', record.status) }}
           </a-tag>
         </template>
       </template>
@@ -128,7 +135,11 @@
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="tableRef?.refresh()" />
     <GrantRole ref="grantRoleRef" v-model:open="grantRoleOpen" @success="tableRef?.refresh()" />
-    <GrantPermission ref="grantPermissionRef" v-model:open="grantPermissionOpen" @success="tableRef?.refresh()" />
+    <GrantPermission
+      ref="grantPermissionRef"
+      v-model:open="grantPermissionOpen"
+      @success="tableRef?.refresh()"
+    />
   </div>
 </template>
 
@@ -153,6 +164,7 @@ import {
 } from '@/api/user'
 import { useCrud } from '@/hooks/useCrud'
 import { useImportExport } from '@/hooks/useImportExport'
+import DictSelect from '@/components/form/DictSelect.vue'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import AppImportModal from '@/components/modal/AppImportModal.vue'
@@ -206,8 +218,12 @@ const grantPermissionRef = ref()
 const grantRoleOpen = ref(false)
 const grantPermissionOpen = ref(false)
 
-function openGrantRole(record: any) { grantRoleRef.value?.doOpen(record) }
-function openGrantPermission(record: any) { grantPermissionRef.value?.doOpen(record) }
+function openGrantRole(record: any) {
+  grantRoleRef.value?.doOpen(record)
+}
+function openGrantPermission(record: any) {
+  grantPermissionRef.value?.doOpen(record)
+}
 
 const {
   importOpen: ieImportOpen,

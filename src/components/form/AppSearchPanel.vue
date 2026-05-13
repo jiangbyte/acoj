@@ -17,7 +17,11 @@
                 <template #icon><ReloadOutlined /></template>
                 重置
               </a-button>
-              <a v-if="collapseAfter! > 0" class="cursor-pointer whitespace-nowrap" @click="advanced = !advanced">
+              <a
+                v-if="collapseAfter! > 0"
+                class="cursor-pointer whitespace-nowrap"
+                @click="advanced = !advanced"
+              >
                 {{ advanced ? '收起' : '展开' }}
                 <component :is="advanced ? UpOutlined : DownOutlined" />
               </a>
@@ -34,13 +38,16 @@ import { computed, ref, defineComponent } from 'vue'
 import { SearchOutlined, ReloadOutlined, DownOutlined, UpOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 
-const props = withDefaults(defineProps<{
-  model: any
-  collapseAfter?: number
-  perm?: string | string[]
-}>(), {
-  collapseAfter: 4,
-})
+const props = withDefaults(
+  defineProps<{
+    model: any
+    collapseAfter?: number
+    perm?: string | string[]
+  }>(),
+  {
+    collapseAfter: 4,
+  }
+)
 
 const emit = defineEmits<{
   search: []

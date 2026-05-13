@@ -21,25 +21,34 @@
       <a-form-item label="组织编码" name="code">
         <a-input v-model:value="form.code" placeholder="留空自动生成" :disabled="isEdit" />
       </a-form-item>
-      <a-form-item label="组织名称" name="name" :rules="[{ required: true, message: '请输入组织名称' }]">
+      <a-form-item
+        label="组织名称"
+        name="name"
+        :rules="[{ required: true, message: '请输入组织名称' }]"
+      >
         <a-input v-model:value="form.name" placeholder="请输入组织名称" />
       </a-form-item>
-      <a-form-item label="组织类别" name="category" :rules="[{ required: true, message: '请选择组织类别' }]">
-        <a-select v-model:value="form.category" placeholder="请选择组织类别" allow-clear>
-          <a-select-option value="COMPANY">公司</a-select-option>
-          <a-select-option value="DEPT">部门</a-select-option>
-          <a-select-option value="UNIT">单位</a-select-option>
-          <a-select-option value="GROUP">集团</a-select-option>
-        </a-select>
+      <a-form-item
+        label="组织类别"
+        name="category"
+        :rules="[{ required: true, message: '请选择组织类别' }]"
+      >
+        <DictSelect v-model="form.category" type-code="ORG_CATEGORY" placeholder="请选择组织类别" />
       </a-form-item>
       <a-form-item label="状态" name="status">
-        <a-select v-model:value="form.status" placeholder="请选择状态">
-          <a-select-option value="ENABLED">启用</a-select-option>
-          <a-select-option value="DISABLED">禁用</a-select-option>
-        </a-select>
+        <DictSelect v-model="form.status" type-code="SYS_STATUS" placeholder="请选择状态" />
+        <div class="text-[12px] text-gray-400 leading-tight mt-1">
+          禁用后仅不可被选择，不影响已绑定的数据
+        </div>
       </a-form-item>
       <a-form-item label="排序" name="sort_code">
-        <a-input-number v-model:value="form.sort_code" :min="0" :max="9999" style="width: 100%" placeholder="排序值" />
+        <a-input-number
+          v-model:value="form.sort_code"
+          :min="0"
+          :max="9999"
+          style="width: 100%"
+          placeholder="排序值"
+        />
       </a-form-item>
       <a-form-item label="描述" name="description">
         <a-textarea v-model:value="form.description" placeholder="请输入组织描述" :rows="3" />
@@ -52,6 +61,7 @@
 import { reactive, ref } from 'vue'
 import { fetchOrgDetail, fetchOrgCreate, fetchOrgModify, fetchOrgTree } from '@/api/org'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
+import DictSelect from '@/components/form/DictSelect.vue'
 
 defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
@@ -63,7 +73,7 @@ const treeData = ref<any[]>([])
 const treeFieldNames = { children: 'children', label: 'name', value: 'id' }
 
 const initialForm = () => ({
-  parent_id: undefined as string | undefined,
+  parent_id: '0',
   code: '',
   name: '',
   category: undefined,
@@ -77,7 +87,12 @@ const form = reactive(initialForm())
 async function loadTree() {
   const { data } = await fetchOrgTree({})
   treeData.value = [
-    { id: '0', label: '顶级', children: data || [] },
+    {
+      id: '0',
+      name: '顶级',
+      children: null,
+    },
+    ...data,
   ]
 }
 

@@ -46,7 +46,9 @@ async function doOpen(row: any) {
   emit('update:open', true)
 }
 
-function handleClose() { emit('update:open', false) }
+function handleClose() {
+  emit('update:open', false)
+}
 
 defineExpose({ doOpen })
 </script>

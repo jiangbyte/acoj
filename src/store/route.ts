@@ -25,7 +25,11 @@ export const useRouteStore = defineStore('route', {
       try {
         // Remove previously added auth routes so re-init picks up changes
         this.authRouteNames.forEach(name => {
-          try { router.removeRoute(name) } catch { /* already removed */ }
+          try {
+            router.removeRoute(name)
+          } catch {
+            /* already removed */
+          }
         })
         this.authRouteNames = []
 

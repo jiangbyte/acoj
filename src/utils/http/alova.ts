@@ -44,7 +44,8 @@ function createAlovaInstance(
             return typeof response.blob === 'function' ? response.blob() : (response as any).data
           }
 
-          const apiData = typeof response.json === 'function' ? await response.json() : (response as any).data
+          const apiData =
+            typeof response.json === 'function' ? await response.json() : (response as any).data
           if (apiData[bc.codeKey] === bc.successCode) {
             return {
               ...apiData,
@@ -64,7 +65,10 @@ function createAlovaInstance(
             import('@/router').then(({ router }) => {
               const name = router.currentRoute.value.name
               if (name && name !== 'login') {
-                router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+                router.push({
+                  name: 'login',
+                  query: { redirect: router.currentRoute.value.fullPath },
+                })
               }
             })
           }

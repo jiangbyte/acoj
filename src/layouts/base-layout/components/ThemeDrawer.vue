@@ -39,7 +39,11 @@
           <ATag
             :color="c.color"
             class="!w-7 !h-7 !flex !items-center !justify-center !rounded-full !cursor-pointer !border-2 !p-0"
-            :class="app.colorPrimary === c.color ? '!border-[var(--primary-color)]' : '!border-transparent'"
+            :class="
+              app.colorPrimary === c.color
+                ? '!border-[var(--primary-color)]'
+                : '!border-transparent'
+            "
             @click="app.setColorPrimary(c.color)"
           >
             <CheckOutlined

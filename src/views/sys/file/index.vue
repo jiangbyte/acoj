@@ -1,6 +1,11 @@
 <template>
   <div class="flex flex-col gap-2">
-    <AppSearchPanel :model="searchForm" perm="sys:file:page" @search="handleSearch" @reset="resetSearch">
+    <AppSearchPanel
+      :model="searchForm"
+      perm="sys:file:page"
+      @search="handleSearch"
+      @reset="resetSearch"
+    >
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="关键词" name="keyword">
           <a-input v-model:value="searchForm.keyword" placeholder="文件名称" allow-clear />
@@ -8,13 +13,12 @@
       </a-col>
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="存储引擎" name="engine">
-          <a-select v-model:value="searchForm.engine" placeholder="全部" allow-clear>
-            <a-select-option value="LOCAL">本地</a-select-option>
-            <a-select-option value="MINIO">MinIO</a-select-option>
-            <a-select-option value="ALIYUN">阿里云</a-select-option>
-            <a-select-option value="TENCENT">腾讯云</a-select-option>
-            <a-select-option value="S3">S3</a-select-option>
-          </a-select>
+          <DictSelect
+            v-model="searchForm.engine"
+            type-code="FILE_ENGINE"
+            placeholder="全部"
+            allow-clear
+          />
         </a-form-item>
       </a-col>
     </AppSearchPanel>
@@ -50,19 +54,31 @@
             :src="record.thumbnail"
             class="w-10 h-10 object-cover rounded"
           />
-          <span v-else class="text-gray-400 text-xs">{{ record.suffix?.toUpperCase() || 'FILE' }}</span>
+          <span v-else class="text-gray-400 text-xs">
+            {{ record.suffix?.toUpperCase() || 'FILE' }}
+          </span>
         </template>
         <template v-else-if="column.key === 'engine'">
-          <a-tag :color="engineColorMap[record.engine] || 'default'">
-            {{ engineLabelMap[record.engine] || record.engine || '-' }}
+          <a-tag :color="$dict.color('FILE_ENGINE', record.engine) || 'default'">
+            {{ $dict.label('FILE_ENGINE', record.engine) || '-' }}
           </a-tag>
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space>
-            <a-button v-if="hasPermission('sys:file:detail')" type="link" size="small" @click="openDetail(record)">
+            <a-button
+              v-if="hasPermission('sys:file:detail')"
+              type="link"
+              size="small"
+              @click="openDetail(record)"
+            >
               详情
             </a-button>
-            <a-button v-if="hasPermission('sys:file:download')" type="link" size="small" @click="handleDownload(record)">
+            <a-button
+              v-if="hasPermission('sys:file:download')"
+              type="link"
+              size="small"
+              @click="handleDownload(record)"
+            >
               下载
             </a-button>
             <a-popconfirm
@@ -93,6 +109,7 @@ import { fetchFilePage, fetchFileRemove, fetchFileDownload } from '@/api/file'
 import { useCrud } from '@/hooks/useCrud'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
+import DictSelect from '@/components/form/DictSelect.vue'
 import UploadModal from './components/upload.vue'
 import DetailDrawer from './components/detail.vue'
 
@@ -102,25 +119,11 @@ const hasPermission = auth.hasPermission
 const crud = useCrud({ name: '文件', deleteApi: fetchFileRemove })
 const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete } = crud
 
-const engineLabelMap: Record<string, string> = {
-  LOCAL: '本地',
-  MINIO: 'MinIO',
-  ALIYUN: '阿里云',
-  TENCENT: '腾讯云',
-  S3: 'S3',
-}
-
-const engineColorMap: Record<string, string> = {
-  LOCAL: 'green',
-  MINIO: 'blue',
-  ALIYUN: 'orange',
-  TENCENT: 'red',
-  S3: 'purple',
-}
-
 function isImage(suffix: string | null | undefined): boolean {
   if (!suffix) return false
-  return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'].includes(suffix.toLowerCase().replace('.', ''))
+  return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'].includes(
+    suffix.toLowerCase().replace('.', '')
+  )
 }
 
 const searchForm = reactive({
@@ -154,7 +157,13 @@ const uploadRef = ref()
 const detailRef = ref()
 const detailOpen = ref(false)
 
-function openUpload() { uploadRef.value?.doOpen() }
-function openDetail(record: any) { detailRef.value?.doOpen(record) }
-function handleUploadSuccess() { tableRef.value?.refresh(true) }
+function openUpload() {
+  uploadRef.value?.doOpen()
+}
+function openDetail(record: any) {
+  detailRef.value?.doOpen(record)
+}
+function handleUploadSuccess() {
+  tableRef.value?.refresh(true)
+}
 </script>

@@ -1,6 +1,11 @@
 <template>
   <div class="flex flex-col gap-2">
-    <AppSearchPanel :model="searchForm" perm="sys:config:page" @search="handleSearch" @reset="resetSearch">
+    <AppSearchPanel
+      :model="searchForm"
+      perm="sys:config:page"
+      @search="handleSearch"
+      @reset="resetSearch"
+    >
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="关键词" name="keyword">
           <a-input v-model:value="searchForm.keyword" placeholder="配置键/备注" allow-clear />
@@ -36,7 +41,12 @@
         <template v-if="column.key === 'action'">
           <a-space>
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-            <a-button v-if="hasPermission('sys:config:modify')" type="link" size="small" @click="openEdit(record)">
+            <a-button
+              v-if="hasPermission('sys:config:modify')"
+              type="link"
+              size="small"
+              @click="openEdit(record)"
+            >
               编辑
             </a-button>
             <a-popconfirm
@@ -71,7 +81,15 @@ const auth = useAuthStore()
 const hasPermission = auth.hasPermission
 
 const crud = useCrud({ name: '配置', deleteApi: fetchConfigRemove })
-const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete, handleFormSuccess } = crud
+const {
+  tableRef,
+  selectedKeys,
+  rowSelection,
+  handleSearch,
+  handleDelete,
+  handleBatchDelete,
+  handleFormSuccess,
+} = crud
 
 const searchForm = reactive({ keyword: '', category: 'BIZ_DEFINE' })
 
@@ -89,9 +107,15 @@ const formRef = ref()
 const detailOpen = ref(false)
 const formOpen = ref(false)
 
-function openDetail(record: any) { detailRef.value?.doOpen(record) }
-function openEdit(record: any) { formRef.value?.doOpen(record) }
-function openCreate() { formRef.value?.doOpen() }
+function openDetail(record: any) {
+  detailRef.value?.doOpen(record)
+}
+function openEdit(record: any) {
+  formRef.value?.doOpen(record)
+}
+function openCreate() {
+  formRef.value?.doOpen()
+}
 
 function resetSearch() {
   searchForm.keyword = ''

@@ -21,7 +21,11 @@
       <a-form-item label="字典编码" name="code">
         <a-input v-model:value="form.code" placeholder="留空自动生成" :disabled="isEdit" />
       </a-form-item>
-      <a-form-item label="字典标签" name="label" :rules="[{ required: true, message: '请输入字典标签' }]">
+      <a-form-item
+        label="字典标签"
+        name="label"
+        :rules="[{ required: true, message: '请输入字典标签' }]"
+      >
         <a-input v-model:value="form.label" placeholder="请输入字典标签" />
       </a-form-item>
       <a-form-item label="字典值" name="value">
@@ -35,19 +39,22 @@
         </a-select>
       </a-form-item>
       <a-form-item label="分类" name="category">
-        <a-select v-model:value="form.category" placeholder="请选择分类" allow-clear>
-          <a-select-option value="FRM">系统字典</a-select-option>
-          <a-select-option value="BIZ">业务字典</a-select-option>
-        </a-select>
+        <DictSelect v-model="form.category" type-code="DICT_CATEGORY" placeholder="请选择分类" />
       </a-form-item>
       <a-form-item label="状态" name="status">
-        <a-select v-model:value="form.status" placeholder="请选择状态">
-          <a-select-option value="ENABLED">启用</a-select-option>
-          <a-select-option value="DISABLED">禁用</a-select-option>
-        </a-select>
+        <DictSelect v-model="form.status" type-code="SYS_STATUS" placeholder="请选择状态" />
+        <div class="text-[12px] text-gray-400 leading-tight mt-1">
+          禁用后仅不可被选择，不影响已绑定的数据
+        </div>
       </a-form-item>
       <a-form-item label="排序" name="sort_code">
-        <a-input-number v-model:value="form.sort_code" :min="0" :max="9999" style="width: 100%" placeholder="排序值" />
+        <a-input-number
+          v-model:value="form.sort_code"
+          :min="0"
+          :max="9999"
+          style="width: 100%"
+          placeholder="排序值"
+        />
       </a-form-item>
     </template>
   </AppDrawerForm>
@@ -57,6 +64,7 @@
 import { reactive, ref } from 'vue'
 import { fetchDictDetail, fetchDictCreate, fetchDictModify, fetchDictTree } from '@/api/dict'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
+import DictSelect from '@/components/form/DictSelect.vue'
 
 defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
@@ -65,9 +73,22 @@ const isEdit = ref(false)
 const currentId = ref<string | null>(null)
 
 const colorOptions = [
-  'default', 'pink', 'red', 'orange', 'green', 'cyan',
-  'blue', 'purple', 'gold', 'geekblue', 'volcano',
-  'magenta', 'processing', 'success', 'error', 'warning',
+  'default',
+  'pink',
+  'red',
+  'orange',
+  'green',
+  'cyan',
+  'blue',
+  'purple',
+  'gold',
+  'geekblue',
+  'volcano',
+  'magenta',
+  'processing',
+  'success',
+  'error',
+  'warning',
 ]
 
 const treeData = ref<any[]>([])
@@ -88,9 +109,7 @@ const form = reactive(initialForm())
 
 async function loadTree() {
   const { data } = await fetchDictTree({})
-  treeData.value = [
-    { id: '0', label: '顶级', children: data || [] },
-  ]
+  treeData.value = [{ id: '0', label: '顶级' }, ...(data || [])]
 }
 
 async function doOpen(row?: any, parentId?: string) {

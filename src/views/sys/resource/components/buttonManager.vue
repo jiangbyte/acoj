@@ -44,7 +44,9 @@
           <template v-else-if="column.key === 'action'">
             <a-space>
               <a-button type="link" size="small" @click="openManageModal(record)">管理</a-button>
-              <a-button type="link" danger size="small" @click="openDeleteConfirm(record)">删除</a-button>
+              <a-button type="link" danger size="small" @click="openDeleteConfirm(record)">
+                删除
+              </a-button>
             </a-space>
           </template>
         </template>
@@ -57,12 +59,20 @@
     <template #footer>
       <a-space>
         <a-button @click="handleClose">取消</a-button>
-        <a-button type="primary" :loading="submitLoading" @click="handleSubmit">保存权限绑定</a-button>
+        <a-button type="primary" :loading="submitLoading" @click="handleSubmit">
+          保存权限绑定
+        </a-button>
       </a-space>
     </template>
 
     <!-- Create button modal -->
-    <a-modal v-model:open="createModalVisible" title="新增按钮" @ok="confirmCreate" :confirm-loading="createLoading" :width="createModalWidth">
+    <a-modal
+      v-model:open="createModalVisible"
+      title="新增按钮"
+      @ok="confirmCreate"
+      :confirm-loading="createLoading"
+      :width="createModalWidth"
+    >
       <a-form :model="createForm" layout="vertical">
         <a-form-item label="按钮名称" required>
           <a-input v-model:value="createForm.name" placeholder="如 新增用户" />
@@ -71,7 +81,12 @@
           <a-input v-model:value="createForm.code" placeholder="如 sys:user:create" />
         </a-form-item>
         <a-form-item label="排序">
-          <a-input-number v-model:value="createForm.sort_code" :min="0" :max="9999" style="width: 100%" />
+          <a-input-number
+            v-model:value="createForm.sort_code"
+            :min="0"
+            :max="9999"
+            style="width: 100%"
+          />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -147,11 +162,23 @@
               {{ manageTarget?.permission_code || '未绑定' }}
             </a-tag>
             <a-button size="small" @click="openPermissionPicker(manageTarget)">选择</a-button>
-            <a-button v-if="manageTarget?.permission_code" size="small" danger @click="clearPermission">清除</a-button>
+            <a-button
+              v-if="manageTarget?.permission_code"
+              size="small"
+              danger
+              @click="clearPermission"
+            >
+              清除
+            </a-button>
           </div>
         </a-form-item>
         <a-form-item label="排序">
-          <a-input-number v-model:value="manageTarget.sort_code" :min="0" :max="9999" style="width: 100%" />
+          <a-input-number
+            v-model:value="manageTarget.sort_code"
+            :min="0"
+            :max="9999"
+            style="width: 100%"
+          />
         </a-form-item>
         <a-divider />
       </a-form>
@@ -192,7 +219,9 @@ const isMobile = ref(false)
 onMounted(() => {
   const mql = window.matchMedia('(max-width: 767px)')
   isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => { isMobile.value = e.matches }
+  const handler = (e: MediaQueryListEvent) => {
+    isMobile.value = e.matches
+  }
   mql.addEventListener('change', handler)
   onBeforeUnmount(() => mql.removeEventListener('change', handler))
 })
@@ -248,7 +277,9 @@ async function loadData(resource: any) {
 function doOpen(resource: any) {
   parentResource.value = resource
   loading.value = true
-  loadData(resource).finally(() => { loading.value = false })
+  loadData(resource).finally(() => {
+    loading.value = false
+  })
   emit('update:open', true)
 }
 
@@ -256,7 +287,7 @@ async function handleSubmit() {
   submitLoading.value = true
   try {
     await Promise.all(
-      buttonList.value.map((b) =>
+      buttonList.value.map(b =>
         fetchResourceModify({
           id: b.id,
           extra: JSON.stringify({ permission_code: b.permission_code || null }),
@@ -377,7 +408,7 @@ async function confirmDelete() {
   try {
     await fetchResourceRemove({ ids: [deleteTarget.value.id] })
     message.success('删除成功')
-    buttonList.value = buttonList.value.filter((b) => b.id !== deleteTarget.value.id)
+    buttonList.value = buttonList.value.filter(b => b.id !== deleteTarget.value.id)
     manageModalVisible.value = false
   } catch {
     message.error('删除失败')

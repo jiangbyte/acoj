@@ -1,7 +1,9 @@
 import { request } from '@/utils'
 
 export function fetchNoticePage(params: any) {
-  return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/notice/page', { params })
+  return request.Get<Service.ResponseResult<Service.PageResult>>('/api/v1/sys/notice/page', {
+    params,
+  })
 }
 export function fetchNoticeCreate(data: any) {
   return request.Post<Service.ResponseResult>('/api/v1/sys/notice/create', data)
@@ -16,7 +18,10 @@ export function fetchNoticeDetail(params: any) {
   return request.Get<Service.ResponseResult>('/api/v1/sys/notice/detail', { params })
 }
 export function fetchNoticeExport(params: any) {
-  return request.Get('/api/v1/sys/notice/export', { params, meta: { isBlob: true } }) as Promise<Blob>
+  return request.Get('/api/v1/sys/notice/export', {
+    params,
+    meta: { isBlob: true },
+  }) as Promise<Blob>
 }
 export function fetchNoticeTemplate() {
   return request.Get('/api/v1/sys/notice/template', { meta: { isBlob: true } }) as Promise<Blob>

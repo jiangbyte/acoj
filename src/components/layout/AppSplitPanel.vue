@@ -1,6 +1,10 @@
 <template>
   <div
-    :class="['flex h-full relative', collapsed && 'app-split--collapsed', shouldHideLeft && 'app-split--hide-left']"
+    :class="[
+      'flex h-full relative',
+      collapsed && 'app-split--collapsed',
+      shouldHideLeft && 'app-split--hide-left',
+    ]"
   >
     <!-- Left panel -->
     <div
@@ -20,7 +24,9 @@
       @mousedown.prevent="startResize"
       @dblclick="toggleCollapse"
     >
-      <div class="w-0.5 h-8 rounded-sm bg-[var(--border-color,#f0f0f0)] transition-colors duration-200 group-hover:bg-primary" />
+      <div
+        class="w-0.5 h-8 rounded-sm bg-[var(--border-color,#f0f0f0)] transition-colors duration-200 group-hover:bg-primary"
+      />
     </div>
 
     <!-- Right panel -->

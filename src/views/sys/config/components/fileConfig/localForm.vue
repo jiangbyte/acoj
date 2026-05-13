@@ -4,12 +4,18 @@
       <a-row :gutter="16">
         <a-col :xs="24" :sm="12">
           <a-form-item label="本地存储路径（Windows）" name="SYS_FILE_LOCAL_FOLDER_FOR_WINDOWS">
-            <a-input v-model:value="formData.SYS_FILE_LOCAL_FOLDER_FOR_WINDOWS" placeholder="D:/hei-file-upload" />
+            <a-input
+              v-model:value="formData.SYS_FILE_LOCAL_FOLDER_FOR_WINDOWS"
+              placeholder="D:/hei-file-upload"
+            />
           </a-form-item>
         </a-col>
         <a-col :xs="24" :sm="12">
           <a-form-item label="本地存储路径（Unix）" name="SYS_FILE_LOCAL_FOLDER_FOR_UNIX">
-            <a-input v-model:value="formData.SYS_FILE_LOCAL_FOLDER_FOR_UNIX" placeholder="/data/hei-file-upload" />
+            <a-input
+              v-model:value="formData.SYS_FILE_LOCAL_FOLDER_FOR_UNIX"
+              placeholder="/data/hei-file-upload"
+            />
           </a-form-item>
         </a-col>
       </a-row>
@@ -57,7 +63,9 @@ async function handleSave() {
     const { success } = await fetchConfigEditByCategory({ category: 'FILE_LOCAL', configs })
     if (success) {
       message.success('保存成功')
-      Object.keys(formData).forEach(k => { initialData[k] = formData[k] })
+      Object.keys(formData).forEach(k => {
+        initialData[k] = formData[k]
+      })
     }
   } finally {
     saving.value = false
@@ -65,7 +73,9 @@ async function handleSave() {
 }
 
 function handleReset() {
-  Object.keys(initialData).forEach(k => { formData[k] = initialData[k] })
+  Object.keys(initialData).forEach(k => {
+    formData[k] = initialData[k]
+  })
 }
 
 onMounted(loadData)

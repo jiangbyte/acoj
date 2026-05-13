@@ -17,7 +17,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { UserOutlined, TeamOutlined, ApartmentOutlined, SettingOutlined, BellOutlined } from '@ant-design/icons-vue'
+import {
+  UserOutlined,
+  TeamOutlined,
+  ApartmentOutlined,
+  SettingOutlined,
+  BellOutlined,
+} from '@ant-design/icons-vue'
 import type { DashboardStats } from '@/api/dashboard'
 
 const props = defineProps<{
@@ -26,12 +32,54 @@ const props = defineProps<{
 }>()
 
 const statItems = computed(() => [
-  { key: 'total_users', icon: UserOutlined, label: '用户总数', color: '#1677ff', bg: '#e6f4ff', value: props.data?.total_users ?? null },
-  { key: 'active_users', icon: UserOutlined, label: '活跃用户', color: '#52c41a', bg: '#f6ffed', value: props.data?.active_users ?? null },
-  { key: 'total_roles', icon: TeamOutlined, label: '角色总数', color: '#faad14', bg: '#fffbe6', value: props.data?.total_roles ?? null },
-  { key: 'total_orgs', icon: ApartmentOutlined, label: '组织总数', color: '#722ed1', bg: '#f9f0ff', value: props.data?.total_orgs ?? null },
-  { key: 'total_configs', icon: SettingOutlined, label: '配置项数', color: '#eb2f96', bg: '#fff0f6', value: props.data?.total_configs ?? null },
-  { key: 'total_notices', icon: BellOutlined, label: '通知总数', color: '#fa8c16', bg: '#fff7e6', value: props.data?.total_notices ?? null },
+  {
+    key: 'total_users',
+    icon: UserOutlined,
+    label: '用户总数',
+    color: '#1677ff',
+    bg: '#e6f4ff',
+    value: props.data?.total_users ?? null,
+  },
+  {
+    key: 'active_users',
+    icon: UserOutlined,
+    label: '活跃用户',
+    color: '#52c41a',
+    bg: '#f6ffed',
+    value: props.data?.active_users ?? null,
+  },
+  {
+    key: 'total_roles',
+    icon: TeamOutlined,
+    label: '角色总数',
+    color: '#faad14',
+    bg: '#fffbe6',
+    value: props.data?.total_roles ?? null,
+  },
+  {
+    key: 'total_orgs',
+    icon: ApartmentOutlined,
+    label: '组织总数',
+    color: '#722ed1',
+    bg: '#f9f0ff',
+    value: props.data?.total_orgs ?? null,
+  },
+  {
+    key: 'total_configs',
+    icon: SettingOutlined,
+    label: '配置项数',
+    color: '#eb2f96',
+    bg: '#fff0f6',
+    value: props.data?.total_configs ?? null,
+  },
+  {
+    key: 'total_notices',
+    icon: BellOutlined,
+    label: '通知总数',
+    color: '#fa8c16',
+    bg: '#fff7e6',
+    value: props.data?.total_notices ?? null,
+  },
 ])
 </script>
 

@@ -51,7 +51,9 @@ onMounted(async () => {
     if (res.success) {
       data.value = res.data
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   loading.value = false
 })
 </script>

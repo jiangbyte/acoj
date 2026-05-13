@@ -11,42 +11,44 @@
       <a-form-item label="标题" name="title" :rules="[{ required: true, message: '请输入标题' }]">
         <a-input v-model:value="form.title" placeholder="请输入标题" />
       </a-form-item>
-      <a-form-item label="图片" name="image" :rules="[{ required: true, message: '请输入图片地址' }]">
+      <a-form-item
+        label="图片"
+        name="image"
+        :rules="[{ required: true, message: '请输入图片地址' }]"
+      >
         <a-input v-model:value="form.image" placeholder="请输入图片URL" />
       </a-form-item>
-      <a-form-item label="类别" name="category" :rules="[{ required: true, message: '请选择类别' }]">
-        <a-select v-model:value="form.category" placeholder="请选择类别">
-          <a-select-option value="HOME">首页</a-select-option>
-          <a-select-option value="PAGE">页面</a-select-option>
-          <a-select-option value="APP">应用</a-select-option>
-        </a-select>
+      <a-form-item
+        label="类别"
+        name="category"
+        :rules="[{ required: true, message: '请选择类别' }]"
+      >
+        <DictSelect v-model="form.category" type-code="BANNER_CATEGORY" placeholder="请选择类别" />
       </a-form-item>
       <a-form-item label="类型" name="type" :rules="[{ required: true, message: '请选择类型' }]">
-        <a-select v-model:value="form.type" placeholder="请选择类型">
-          <a-select-option value="IMAGE">图片</a-select-option>
-          <a-select-option value="VIDEO">视频</a-select-option>
-          <a-select-option value="TEXT">文字</a-select-option>
-        </a-select>
+        <DictSelect v-model="form.type" type-code="BANNER_TYPE" placeholder="请选择类型" />
       </a-form-item>
-      <a-form-item label="展示位置" name="position" :rules="[{ required: true, message: '请选择位置' }]">
-        <a-select v-model:value="form.position" placeholder="请选择位置">
-          <a-select-option value="TOP">顶部</a-select-option>
-          <a-select-option value="CENTER">中间</a-select-option>
-          <a-select-option value="BOTTOM">底部</a-select-option>
-          <a-select-option value="SIDEBAR">侧栏</a-select-option>
-        </a-select>
+      <a-form-item
+        label="展示位置"
+        name="position"
+        :rules="[{ required: true, message: '请选择位置' }]"
+      >
+        <DictSelect v-model="form.position" type-code="BANNER_POSITION" placeholder="请选择位置" />
       </a-form-item>
       <a-form-item label="排序" name="sort_code">
-        <a-input-number v-model:value="form.sort_code" :min="0" :max="9999" style="width: 100%" placeholder="排序值" />
+        <a-input-number
+          v-model:value="form.sort_code"
+          :min="0"
+          :max="9999"
+          style="width: 100%"
+          placeholder="排序值"
+        />
       </a-form-item>
       <a-form-item label="跳转地址" name="url">
         <a-input v-model:value="form.url" placeholder="可选" />
       </a-form-item>
       <a-form-item label="链接类型" name="link_type">
-        <a-select v-model:value="form.link_type" placeholder="默认 URL">
-          <a-select-option value="URL">URL</a-select-option>
-          <a-select-option value="ROUTE">路由</a-select-option>
-        </a-select>
+        <DictSelect v-model="form.link_type" type-code="LINK_TYPE" placeholder="默认 URL" />
       </a-form-item>
       <a-form-item label="摘要" name="summary">
         <a-textarea v-model:value="form.summary" :rows="2" placeholder="可选" />
@@ -62,6 +64,7 @@
 import { reactive, ref } from 'vue'
 import { fetchBannerDetail, fetchBannerCreate, fetchBannerModify } from '@/api/banner'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
+import DictSelect from '@/components/form/DictSelect.vue'
 
 defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
@@ -72,9 +75,9 @@ const currentId = ref<string | null>(null)
 const initialForm = () => ({
   title: '',
   image: '',
-  category: undefined,
-  type: undefined,
-  position: undefined,
+  category: null,
+  type: null,
+  position: null,
   url: '',
   link_type: 'URL',
   summary: '',

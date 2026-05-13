@@ -16,7 +16,9 @@
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">昵称</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.nickname || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.nickname || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">邮箱</div>
@@ -29,8 +31,8 @@
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">状态</div>
             <div class="text-sm text-[var(--header-text,#000000d9)]">
-              <a-tag :color="data.status === 'ACTIVE' ? 'green' : 'red'">
-                {{ data.status === 'ACTIVE' ? '启用' : '禁用' }}
+              <a-tag :color="$dict.color('USER_STATUS', data.status)">
+                {{ $dict.label('USER_STATUS', data.status) }}
               </a-tag>
             </div>
           </a-col>
@@ -41,19 +43,27 @@
         <a-row :gutter="[16, 16]">
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">创建人</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.created_by || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.created_by || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">创建时间</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.created_at || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.created_at || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">更新人</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.updated_by || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.updated_by || '-' }}
+            </div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">更新时间</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.updated_at || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">
+              {{ data.updated_at || '-' }}
+            </div>
           </a-col>
         </a-row>
       </a-card>
@@ -75,7 +85,9 @@ const isMobile = ref(false)
 onMounted(() => {
   const mql = window.matchMedia('(max-width: 767px)')
   isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => { isMobile.value = e.matches }
+  const handler = (e: MediaQueryListEvent) => {
+    isMobile.value = e.matches
+  }
   mql.addEventListener('change', handler)
   onBeforeUnmount(() => mql.removeEventListener('change', handler))
 })

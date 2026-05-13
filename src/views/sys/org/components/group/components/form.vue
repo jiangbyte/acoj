@@ -22,25 +22,38 @@
       <a-form-item label="用户组编码" name="code">
         <a-input v-model:value="form.code" placeholder="留空自动生成" :disabled="isEdit" />
       </a-form-item>
-      <a-form-item label="用户组名称" name="name" :rules="[{ required: true, message: '请输入用户组名称' }]">
+      <a-form-item
+        label="用户组名称"
+        name="name"
+        :rules="[{ required: true, message: '请输入用户组名称' }]"
+      >
         <a-input v-model:value="form.name" placeholder="请输入用户组名称" />
       </a-form-item>
-      <a-form-item label="用户组类别" name="category" :rules="[{ required: true, message: '请选择用户组类别' }]">
-        <a-select v-model:value="form.category" placeholder="请选择用户组类别" allow-clear>
-          <a-select-option value="ROLE">角色组</a-select-option>
-          <a-select-option value="DEPT">部门组</a-select-option>
-          <a-select-option value="PROJECT">项目组</a-select-option>
-          <a-select-option value="OTHER">其他</a-select-option>
-        </a-select>
+      <a-form-item
+        label="用户组类别"
+        name="category"
+        :rules="[{ required: true, message: '请选择用户组类别' }]"
+      >
+        <DictSelect
+          v-model="form.category"
+          type-code="GROUP_CATEGORY"
+          placeholder="请选择用户组类别"
+        />
       </a-form-item>
       <a-form-item label="状态" name="status">
-        <a-select v-model:value="form.status" placeholder="请选择状态">
-          <a-select-option value="ENABLED">启用</a-select-option>
-          <a-select-option value="DISABLED">禁用</a-select-option>
-        </a-select>
+        <DictSelect v-model="form.status" type-code="SYS_STATUS" placeholder="请选择状态" />
+        <div class="text-[12px] text-gray-400 leading-tight mt-1">
+          禁用后仅不可被选择，不影响已绑定的数据
+        </div>
       </a-form-item>
       <a-form-item label="排序" name="sort_code">
-        <a-input-number v-model:value="form.sort_code" :min="0" :max="9999" style="width: 100%" placeholder="排序值" />
+        <a-input-number
+          v-model:value="form.sort_code"
+          :min="0"
+          :max="9999"
+          style="width: 100%"
+          placeholder="排序值"
+        />
       </a-form-item>
       <a-form-item label="描述" name="description">
         <a-textarea v-model:value="form.description" placeholder="请输入用户组描述" :rows="3" />
@@ -53,6 +66,7 @@
 import { reactive, ref, watch } from 'vue'
 import { fetchGroupDetail, fetchGroupCreate, fetchGroupModify, fetchGroupTree } from '@/api/group'
 import AppDrawerForm from '@/components/form/AppDrawerForm.vue'
+import DictSelect from '@/components/form/DictSelect.vue'
 
 defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
@@ -70,15 +84,20 @@ async function loadGroupTreeByOrg(orgId?: string) {
   if (orgId) params.org_id = orgId
   const { data } = await fetchGroupTree(params)
   allGroupTreeData.value = [
-    { id: '0', label: '顶级', children: data || [] },
+    {
+      id: '0',
+      name: '顶级',
+      children: null,
+    },
+    ...data,
   ]
 }
 
 const editLoading = ref(false)
 
 const initialForm = () => ({
-  parent_id: undefined as string | undefined,
-  org_id: undefined as string | undefined,
+  parent_id: '0',
+  org_id: '0',
   code: '',
   name: '',
   category: undefined,
@@ -90,16 +109,19 @@ const initialForm = () => ({
 const form = reactive(initialForm())
 
 // When org changes, reload group tree and clear parent selection
-watch(() => form.org_id, (newOrg) => {
-  if (!editLoading.value) {
-    form.parent_id = undefined
+watch(
+  () => form.org_id,
+  newOrg => {
+    if (!editLoading.value) {
+      form.parent_id = undefined
+    }
+    if (newOrg) {
+      loadGroupTreeByOrg(newOrg)
+    } else {
+      allGroupTreeData.value = []
+    }
   }
-  if (newOrg) {
-    loadGroupTreeByOrg(newOrg)
-  } else {
-    allGroupTreeData.value = []
-  }
-})
+)
 
 async function doOpen(row?: any, parentId?: string, orgId?: string) {
   if (row) {

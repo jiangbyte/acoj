@@ -45,28 +45,34 @@ function render() {
       axisLabel: { color: textColor },
       splitLine: { lineStyle: { color: axisColor } },
     },
-    series: [{
-      type: 'line',
-      data: props.data.map(t => t.count),
-      smooth: true,
-      showSymbol: true,
-      symbolSize: 6,
-      areaStyle: {
-        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(22,119,255,0.25)' },
-          { offset: 1, color: 'rgba(22,119,255,0.02)' },
-        ]),
+    series: [
+      {
+        type: 'line',
+        data: props.data.map(t => t.count),
+        smooth: true,
+        showSymbol: true,
+        symbolSize: 6,
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(22,119,255,0.25)' },
+            { offset: 1, color: 'rgba(22,119,255,0.02)' },
+          ]),
+        },
+        lineStyle: { color: '#1677ff', width: 2 },
+        itemStyle: { color: '#1677ff' },
       },
-      lineStyle: { color: '#1677ff', width: 2 },
-      itemStyle: { color: '#1677ff' },
-    }],
+    ],
   })
 }
 
-watch(() => [props.data, props.isDark], async () => {
-  await nextTick()
-  render()
-}, { deep: false })
+watch(
+  () => [props.data, props.isDark],
+  async () => {
+    await nextTick()
+    render()
+  },
+  { deep: false }
+)
 
 onMounted(() => {
   if (chartRef.value) {

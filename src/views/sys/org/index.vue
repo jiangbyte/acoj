@@ -1,19 +1,24 @@
 <template>
-  <AppTreePanel
-    ref="treePanel"
-    :fetch-tree="fetchOrgTree"
-    title="组织"
-    @select="handleTreeSelect"
-  >
+  <AppTreePanel ref="treePanel" :fetch-tree="fetchOrgTree" title="组织" @select="handleTreeSelect">
     <template #right="{ parentId, refreshTree }">
       <div class="flex flex-col h-full overflow-auto gap-2">
         <!-- Search -->
-        <AppSearchPanel :model="searchForm" perm="sys:org:page" @search="handleSearch" @reset="resetSearch">
-            <a-button type="text" size="small" class="max-md:hidden" @click="treePanel?.splitRef?.toggleCollapse()">
-              <template #icon>
-                <component :is="treePanel?.collapsed ? DoubleRightOutlined : DoubleLeftOutlined" />
-              </template>
-            </a-button>
+        <AppSearchPanel
+          :model="searchForm"
+          perm="sys:org:page"
+          @search="handleSearch"
+          @reset="resetSearch"
+        >
+          <a-button
+            type="text"
+            size="small"
+            class="max-md:hidden"
+            @click="treePanel?.splitRef?.toggleCollapse()"
+          >
+            <template #icon>
+              <component :is="treePanel?.collapsed ? DoubleRightOutlined : DoubleLeftOutlined" />
+            </template>
+          </a-button>
           <a-col :xs="24" :sm="12" :md="8" :lg="6">
             <a-form-item label="关键词" name="keyword">
               <a-input v-model:value="searchForm.keyword" placeholder="组织名称" allow-clear />
@@ -56,12 +61,14 @@
 
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'category'">
-              <a-tag>{{ categoryMap[record.category] || record.category || '-' }}</a-tag>
+              <a-tag>{{ $dict.label('ORG_CATEGORY', record.category) }}</a-tag>
             </template>
             <template v-else-if="column.key === 'status'">
-              <a-tag :color="record.status === 'ENABLED' ? 'green' : 'red'">
-                {{ record.status === 'ENABLED' ? '启用' : '禁用' }}
-              </a-tag>
+              <a-tooltip title="禁用后仅不可被选择，不影响已绑定的数据">
+                <a-tag :color="$dict.color('SYS_STATUS', record.status)">
+                  {{ $dict.label('SYS_STATUS', record.status) }}
+                </a-tag>
+              </a-tooltip>
             </template>
             <template v-else-if="column.key === 'action'">
               <a-space>
@@ -81,7 +88,10 @@
                   </a-button>
                   <template #overlay>
                     <a-menu>
-                      <a-menu-item v-if="hasPermission('sys:org:create')" @click="openCreate(record)">
+                      <a-menu-item
+                        v-if="hasPermission('sys:org:create')"
+                        @click="openCreate(record)"
+                      >
                         新增子级
                       </a-menu-item>
                       <a-menu-item @click="router.push('/sys/org/group?org_id=' + record.id)">
@@ -172,14 +182,15 @@ const crud = useCrud({
   deleteApi: fetchOrgRemove,
   onSuccess: () => treePanel.value?.refresh(),
 })
-const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete, handleFormSuccess } = crud
-
-const categoryMap: Record<string, string> = {
-  COMPANY: '公司',
-  DEPT: '部门',
-  UNIT: '单位',
-  GROUP: '集团',
-}
+const {
+  tableRef,
+  selectedKeys,
+  rowSelection,
+  handleSearch,
+  handleDelete,
+  handleBatchDelete,
+  handleFormSuccess,
+} = crud
 
 // Search form
 const searchForm = reactive({ keyword: '', parent_id: undefined as string | undefined })

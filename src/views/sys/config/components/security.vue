@@ -5,17 +5,32 @@
       <a-row :gutter="16">
         <a-col :xs="24" :sm="12" :md="8">
           <a-form-item label="最大登录失败次数" name="SYS_MAX_LOGIN_RETRIES">
-            <a-input-number v-model:value="formData.SYS_MAX_LOGIN_RETRIES" :min="0" :max="99" style="width: 100%" />
+            <a-input-number
+              v-model:value="formData.SYS_MAX_LOGIN_RETRIES"
+              :min="0"
+              :max="99"
+              style="width: 100%"
+            />
           </a-form-item>
         </a-col>
         <a-col :xs="24" :sm="12" :md="8">
           <a-form-item label="登录锁定时间（分钟）" name="SYS_LOGIN_LOCK_MINUTES">
-            <a-input-number v-model:value="formData.SYS_LOGIN_LOCK_MINUTES" :min="0" :max="999" style="width: 100%" />
+            <a-input-number
+              v-model:value="formData.SYS_LOGIN_LOCK_MINUTES"
+              :min="0"
+              :max="999"
+              style="width: 100%"
+            />
           </a-form-item>
         </a-col>
         <a-col :xs="24" :sm="12" :md="8">
           <a-form-item label="JWT Token 过期时间（秒）" name="SYS_JWT_TOKEN_EXPIRE">
-            <a-input-number v-model:value="formData.SYS_JWT_TOKEN_EXPIRE" :min="0" :max="864000" style="width: 100%" />
+            <a-input-number
+              v-model:value="formData.SYS_JWT_TOKEN_EXPIRE"
+              :min="0"
+              :max="864000"
+              style="width: 100%"
+            />
           </a-form-item>
         </a-col>
       </a-row>
@@ -63,7 +78,9 @@ async function handleSave() {
     const { success } = await fetchConfigEditByCategory({ category: 'SYS_SECURITY', configs })
     if (success) {
       message.success('保存成功')
-      Object.keys(formData).forEach(k => { initialData[k] = formData[k] })
+      Object.keys(formData).forEach(k => {
+        initialData[k] = formData[k]
+      })
     }
   } finally {
     saving.value = false
@@ -71,7 +88,9 @@ async function handleSave() {
 }
 
 function handleReset() {
-  Object.keys(initialData).forEach(k => { formData[k] = initialData[k] })
+  Object.keys(initialData).forEach(k => {
+    formData[k] = initialData[k]
+  })
 }
 
 onMounted(loadData)

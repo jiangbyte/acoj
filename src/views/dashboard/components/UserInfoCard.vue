@@ -7,21 +7,25 @@
         </a-avatar>
         <div class="user-details">
           <div class="greeting-line">
-            <span class="greeting">{{ greeting }}，{{ userInfo.nickname || userInfo.account }}</span>
+            <span class="greeting">
+              {{ greeting }}，{{ userInfo.nickname || userInfo.account }}
+            </span>
             <a-tag v-if="userInfo.login_count" color="blue" class="login-count-tag">
               第 {{ userInfo.login_count }} 次登录
             </a-tag>
           </div>
           <div class="user-meta">
             <template v-if="userInfo.org_name">{{ userInfo.org_name }}</template>
-            <template v-if="userInfo.org_name && userInfo.position_name"><span class="meta-divider">|</span></template>
+            <template v-if="userInfo.org_name && userInfo.position_name">
+              <span class="meta-divider">|</span>
+            </template>
             <template v-if="userInfo.position_name">{{ userInfo.position_name }}</template>
-            <template v-if="!userInfo.org_name && !userInfo.position_name">{{ userInfo.account }}</template>
+            <template v-if="!userInfo.org_name && !userInfo.position_name">
+              {{ userInfo.account }}
+            </template>
           </div>
           <div class="user-footer" v-if="userInfo.last_login_at">
-            <span class="footer-item">
-              上次登录 {{ formatTime(userInfo.last_login_at) }}
-            </span>
+            <span class="footer-item">上次登录 {{ formatTime(userInfo.last_login_at) }}</span>
             <span class="footer-divider" v-if="userInfo.last_login_ip">|</span>
             <span class="footer-item" v-if="userInfo.last_login_ip">
               {{ userInfo.last_login_ip }}
@@ -156,6 +160,8 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
 }
 @media (max-width: 768px) {
-  .user-info-right { display: none; }
+  .user-info-right {
+    display: none;
+  }
 }
 </style>

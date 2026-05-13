@@ -5,21 +5,23 @@
       <a-row :gutter="16">
         <a-col :xs="24" :sm="12" :md="8">
           <a-form-item label="默认文件引擎" name="SYS_DEFAULT_FILE_ENGINE">
-            <a-select v-model:value="formData.SYS_DEFAULT_FILE_ENGINE">
-              <a-select-option value="LOCAL">本地存储</a-select-option>
-              <a-select-option value="ALIYUN">阿里云OSS</a-select-option>
-              <a-select-option value="MINIO">MinIO</a-select-option>
-            </a-select>
+            <DictSelect v-model:value="formData.SYS_DEFAULT_FILE_ENGINE" type-code="FILE_ENGINE" />
           </a-form-item>
         </a-col>
-<a-col :xs="24" :sm="12" :md="8">
+        <a-col :xs="24" :sm="12" :md="8">
           <a-form-item label="默认密码" name="SYS_DEFAULT_PASSWORD">
-            <a-input v-model:value="formData.SYS_DEFAULT_PASSWORD" placeholder="新增用户时使用的默认密码" />
+            <a-input
+              v-model:value="formData.SYS_DEFAULT_PASSWORD"
+              placeholder="新增用户时使用的默认密码"
+            />
           </a-form-item>
         </a-col>
         <a-col :xs="24" :sm="12" :md="8">
           <a-form-item label="用户初始密码" name="SYS_USER_INIT_PASSWORD">
-            <a-input v-model:value="formData.SYS_USER_INIT_PASSWORD" placeholder="用户首次登录密码" />
+            <a-input
+              v-model:value="formData.SYS_USER_INIT_PASSWORD"
+              placeholder="用户首次登录密码"
+            />
           </a-form-item>
         </a-col>
       </a-row>
@@ -35,6 +37,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { fetchConfigListByCategory, fetchConfigEditByCategory } from '@/api/config'
+import DictSelect from '@/components/form/DictSelect.vue'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -67,7 +70,9 @@ async function handleSave() {
     const { success } = await fetchConfigEditByCategory({ category: 'SYS_BASE', configs })
     if (success) {
       message.success('保存成功')
-      Object.keys(formData).forEach(k => { initialData[k] = formData[k] })
+      Object.keys(formData).forEach(k => {
+        initialData[k] = formData[k]
+      })
     }
   } finally {
     saving.value = false
