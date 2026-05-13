@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi import Request
 from .params import ClientUserVO, ClientUserPageParam
@@ -50,7 +51,21 @@ class ClientUserService(BaseCrudService):
             motto=entity.motto,
             gender=entity.gender,
             birthday=entity.birthday,
+            email=entity.email,
+            status=entity.status,
+            last_login_at=entity.last_login_at,
+            last_login_ip=entity.last_login_ip,
+            login_count=entity.login_count,
         )
+
+    def record_login(self, user_id: str, request: Request) -> None:
+        entity = self.dao.find_by_id(user_id)
+        if not entity:
+            return
+        entity.last_login_at = datetime.now()
+        entity.last_login_ip = request.client.host if request.client else None
+        entity.login_count = (entity.login_count or 0) + 1
+        self.dao.update(entity)
 
 
 class LoginUserApiProvider:

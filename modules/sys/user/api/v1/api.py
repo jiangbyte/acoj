@@ -5,7 +5,7 @@ from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission, HeiCheckLogin
 from core.utils.excel_utils import handle_import
-from ...params import UserVO, UserPageParam, UserExportParam, UserImportParam, GrantRoleParam, GrantGroupParam, GrantUserPermissionParam
+from ...params import UserVO, UserPageParam, UserExportParam, UserImportParam, GrantRoleParam, GrantGroupParam, GrantUserPermissionParam, UpdateProfileParam, UpdateAvatarParam, UpdatePasswordParam
 from ...service import UserService
 
 router = APIRouter()
@@ -252,3 +252,49 @@ async def get_current_user_permissions(request: Request, db: Session = Depends(g
     return success(data)
 
 
+@router.post(
+    "/api/v1/sys/user/update-profile",
+    summary="更新当前用户个人信息",
+    response_model=Result
+)
+@HeiCheckLogin
+async def update_profile(
+    request: Request,
+    param: UpdateProfileParam,
+    db: Session = Depends(get_db)
+):
+    service = UserService(db)
+    await service.update_profile(param, request)
+    return success()
+
+
+@router.post(
+    "/api/v1/sys/user/update-avatar",
+    summary="更新当前用户头像（base64）",
+    response_model=Result
+)
+@HeiCheckLogin
+async def update_avatar(
+    request: Request,
+    param: UpdateAvatarParam,
+    db: Session = Depends(get_db)
+):
+    service = UserService(db)
+    await service.update_avatar(param, request)
+    return success()
+
+
+@router.post(
+    "/api/v1/sys/user/update-password",
+    summary="修改当前用户密码",
+    response_model=Result
+)
+@HeiCheckLogin
+async def update_password(
+    request: Request,
+    param: UpdatePasswordParam,
+    db: Session = Depends(get_db)
+):
+    service = UserService(db)
+    await service.update_password(param, request)
+    return success()

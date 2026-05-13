@@ -2,7 +2,7 @@ from typing import Optional, List
 import datetime
 
 from sqlalchemy import Date, DateTime, Index, Integer, Text
-from sqlalchemy.dialects.mysql import VARCHAR
+from sqlalchemy.dialects.mysql import VARCHAR, LONGTEXT
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
@@ -20,7 +20,7 @@ class SysUser(Base):
     account: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='账号')
     password: Mapped[Optional[str]] = mapped_column(VARCHAR(255, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='密码')
     nickname: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='昵称')
-    avatar: Mapped[Optional[str]] = mapped_column(Text(collation='utf8mb4_general_ci'), comment='头像')
+    avatar: Mapped[Optional[str]] = mapped_column(LONGTEXT(collation='utf8mb4_general_ci'), comment='头像')
     motto: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='座右铭')
     gender: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='性别')
     birthday: Mapped[Optional[datetime.date]] = mapped_column(Date, comment='生日')
