@@ -564,6 +564,9 @@ INSERT INTO `rel_role_permission` VALUES ('2000000387', '40002', 'c:client-user:
 INSERT INTO `rel_role_permission` VALUES ('2000000388', '40002', 'c:client-user:export', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000389', '40002', 'c:client-user:template', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000390', '40002', 'c:client-user:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000391', '40001', 'sys:log:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000392', '40001', 'sys:log:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000393', '40001', 'sys:log:remove', 'ALL', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for rel_role_resource
@@ -1566,6 +1569,12 @@ INSERT INTO `sys_resource` VALUES ('80105', 'SYS_ROLE_IMPORT', '角色导入', '
 INSERT INTO `sys_resource` VALUES ('80106', 'SYS_GROUP_TREE', '用户组树', 'BACKEND_BUTTON', 'BUTTON', '查询用户组树', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
 INSERT INTO `sys_resource` VALUES ('80107', 'SYS_RESOURCE_TREE', '资源树', 'BACKEND_BUTTON', 'BUTTON', '查询资源树', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
 INSERT INTO `sys_resource` VALUES ('80108', 'SYS_HOME', '首页', 'BACKEND_MENU', 'MENU', '首页', NULL, '/home', 'home/index', NULL, 'home', NULL, 'NO', 'YES', 'NO', 'YES', NULL, NULL, 'ENABLED', 0, 'NO', '2026-05-13 14:55:52', '50001', '2026-05-13 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80109', 'SYS_LOG', '系统日志', 'BACKEND_MENU', 'DIRECTORY', '系统日志目录', '80003', '/sys/log', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80110', 'SYS_OPLOG', '操作日志', 'BACKEND_MENU', 'MENU', '操作日志', '80109', '/sys/log/oplog', 'sys/log/oplog/index', NULL, 'audit', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80111', 'SYS_VISLOG', '访问日志', 'BACKEND_MENU', 'MENU', '访问日志', '80109', '/sys/log/vislog', 'sys/log/vislog/index', NULL, 'eye', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80112', 'SYS_LOG_PAGE', '日志查询', 'BACKEND_BUTTON', 'BUTTON', '查询日志列表', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{"permission_code":"sys:log:page"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80113', 'SYS_LOG_DETAIL', '日志详情', 'BACKEND_BUTTON', 'BUTTON', '查看日志详情', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{"permission_code":"sys:log:detail"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80114', 'SYS_LOG_REMOVE', '日志删除', 'BACKEND_BUTTON', 'BUTTON', '删除/清空日志', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{"permission_code":"sys:log:remove"}', 'ENABLED', 3, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
 
 -- ----------------------------
 -- Table structure for sys_role
@@ -1662,5 +1671,37 @@ CREATE TABLE `sys_quick_action`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_resource`(`user_id` ASC, `resource_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户快捷方式' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for sys_log
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_log`;
+CREATE TABLE `sys_log`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `category` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '日志分类',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '日志名称',
+  `exe_status` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '执行状态',
+  `exe_message` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '具体消息',
+  `op_ip` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作ip',
+  `op_address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作地址',
+  `op_browser` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作浏览器',
+  `op_os` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作系统',
+  `class_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类名称',
+  `method_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '方法名称',
+  `req_method` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '请求方式',
+  `req_url` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '请求地址',
+  `param_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '请求参数',
+  `result_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '返回结果',
+  `op_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
+  `trace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '跟踪ID',
+  `op_user` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作人姓名',
+  `sign_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '签名数据',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '操作日志' ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;
