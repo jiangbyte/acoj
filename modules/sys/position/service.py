@@ -8,7 +8,7 @@ from .dao import PositionDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum
+from core.enums import ExportTypeEnum, SoftDeleteEnum
 from core.utils import export_excel, strip_system_fields, apply_update, make_template
 from core.auth import HeiAuthTool
 import logging
@@ -52,7 +52,17 @@ class PositionService:
         self.dao.update(entity, user_id=await self._get_current_user_id(request))
 
     def remove(self, param: IdsParam) -> None:
-        self.dao.delete_by_ids(param.ids)
+        from ..user.models import SysUser
+
+        ids = param.ids
+        db = self.dao.db
+
+        if db.query(SysUser).filter(
+            SysUser.position_id.in_(ids), SysUser.is_deleted == SoftDeleteEnum.NO
+        ).count() > 0:
+            raise BusinessException("职位存在关联用户，无法删除")
+
+        self.dao.delete_by_ids(ids)
 
     def detail(self, param: IdParam) -> Optional[PositionVO]:
         entity = self.dao.find_by_id(param.id)

@@ -1,1027 +1,1517 @@
--- =============================================================================
--- Hei FastAPI 标准 DDL
--- 合并自 hei_data.sql + migration.sql，可直接用于初始建库
--- =============================================================================
+/*
+ Navicat Premium Dump SQL
+
+ Source Server         : dev-mysql
+ Source Server Type    : MySQL
+ Source Server Version : 90600 (9.6.0)
+ Source Host           : localhost:3306
+ Source Schema         : hei_data
+
+ Target Server Type    : MySQL
+ Target Server Version : 90600 (9.6.0)
+ File Encoding         : 65001
+
+ Date: 13/05/2026 16:06:54
+*/
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP DATABASE IF EXISTS `hei_data`;
-
-CREATE DATABASE IF NOT EXISTS `hei_data` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE `hei_data`;
-
--- =============================================================================
--- 用户
--- =============================================================================
-DROP TABLE IF EXISTS `sys_user`;
-CREATE TABLE `sys_user`
-(
-    `id`               varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `account`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '账号',
-    `password`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
-    `nickname`         varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '昵称',
-    `avatar`           varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像',
-    `motto`            varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '座右铭',
-    `gender`           varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT NULL COMMENT '性别',
-    `birthday`         date                                                          NULL DEFAULT NULL COMMENT '生日',
-    `email`            varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '电子邮箱',
-    `github`           varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT 'GitHub',
-    `phone`            varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '手机号',
-    `org_id`           varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '所属组织ID',
-    `position_id`      varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '所属职位ID',
-    `status`           varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'ACTIVE' COMMENT '状态',
-    `last_login_at`    datetime                                                      NULL DEFAULT NULL COMMENT '最后登录时间',
-    `last_login_ip`    varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '最后登录IP',
-    `login_count`      int                                                           NULL DEFAULT 0 COMMENT '登录次数',
-    `is_deleted`       varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`       datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`       varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`       datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by`       varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    INDEX `idx_account` (`account`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '用户'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- C端用户
--- =============================================================================
+-- ----------------------------
+-- Table structure for client_user
+-- ----------------------------
 DROP TABLE IF EXISTS `client_user`;
-CREATE TABLE `client_user`
-(
-    `id`               varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `account`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '账号',
-    `password`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
-    `nickname`         varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '昵称',
-    `avatar`           varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像',
-    `motto`            varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '座右铭',
-    `gender`           varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT NULL COMMENT '性别',
-    `birthday`         date                                                          NULL DEFAULT NULL COMMENT '生日',
-    `email`            varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '电子邮箱',
-    `github`           varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT 'GitHub',
-    `status`           varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'ACTIVE' COMMENT '状态',
-    `last_login_at`    datetime                                                      NULL DEFAULT NULL COMMENT '最后登录时间',
-    `last_login_ip`    varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '最后登录IP',
-    `login_count`      int                                                           NULL DEFAULT 0 COMMENT '登录次数',
-    `is_deleted`       varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`       datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`       varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`       datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by`       varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    INDEX `idx_account` (`account`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = 'C端用户'
-  ROW_FORMAT = Dynamic;
+CREATE TABLE `client_user`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `account` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '账号',
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
+  `nickname` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '昵称',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像',
+  `motto` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '座右铭',
+  `gender` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '性别',
+  `birthday` date NULL DEFAULT NULL COMMENT '生日',
+  `email` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子邮箱',
+  `github` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'GitHub',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ACTIVE' COMMENT '状态',
+  `last_login_at` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
+  `last_login_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '最后登录IP',
+  `login_count` int NULL DEFAULT 0 COMMENT '登录次数',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_account`(`account` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'C端用户' ROW_FORMAT = DYNAMIC;
 
--- =============================================================================
--- 角色
--- =============================================================================
-DROP TABLE IF EXISTS `sys_role`;
-CREATE TABLE `sys_role`
-(
-    `id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `code`        varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '角色编码',
-    `name`        varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '角色名称',
-    `category`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '角色类别',
-    `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '角色描述',
-    `status`      varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'ENABLED' COMMENT '状态',
-    `sort_code`   int                                                           NULL DEFAULT 0 COMMENT '排序',
-    `extra`       text                                                          NULL COMMENT '扩展信息',
-    `is_deleted`  varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`  datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`  datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_code` (`code`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '角色'
-  ROW_FORMAT = Dynamic;
+-- ----------------------------
+-- Records of client_user
+-- ----------------------------
+INSERT INTO `client_user` VALUES ('60001', 'test01', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户01', NULL, 'hello world', 'MALE', '1995-01-01', 'test01@example.com', NULL, 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `client_user` VALUES ('60002', 'test02', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户02', NULL, '你好世界', 'FEMALE', '1996-02-02', 'test02@example.com', NULL, 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
--- =============================================================================
--- 用户组
--- =============================================================================
-DROP TABLE IF EXISTS `sys_group`;
-CREATE TABLE `sys_group`
-(
-    `id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `code`        varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '用户组编码',
-    `name`        varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '用户组名称',
-    `category`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '用户组类别',
-    `parent_id`   varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '父用户组ID',
-    `org_id`      varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '所属组织ID',
-    `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户组描述',
-    `status`      varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'ENABLED' COMMENT '状态',
-    `sort_code`   int                                                           NULL DEFAULT 0 COMMENT '排序',
-    `extra`       text                                                          NULL COMMENT '扩展信息',
-    `is_deleted`  varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`  datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`  datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_code` (`code`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '用户组'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 组织
--- =============================================================================
-DROP TABLE IF EXISTS `sys_org`;
-CREATE TABLE `sys_org`
-(
-    `id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `code`        varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '组织编码',
-    `name`        varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '组织名称',
-    `category`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '组织类别',
-    `parent_id`   varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '父组织ID',
-    `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组织描述',
-    `status`      varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'ENABLED' COMMENT '状态',
-    `sort_code`   int                                                           NULL DEFAULT 0 COMMENT '排序',
-    `extra`       text                                                          NULL COMMENT '扩展信息',
-    `is_deleted`  varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`  datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`  datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_code` (`code`) USING BTREE,
-    INDEX `idx_parent_id` (`parent_id`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '组织'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 职位
--- =============================================================================
-DROP TABLE IF EXISTS `sys_position`;
-CREATE TABLE `sys_position`
-(
-    `id`            varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `code`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '职位编码',
-    `name`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '职位名称',
-    `category`      varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '职位类别',
-    `org_id`        varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '所属组织ID',
-    `group_id`      varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '所属用户组ID',
-    `description`   varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '职位描述',
-    `status`        varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'ENABLED' COMMENT '状态',
-    `sort_code`     int                                                           NULL DEFAULT 0 COMMENT '排序',
-    `extra`         text                                                          NULL COMMENT '扩展信息',
-    `is_deleted`    varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`    datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`    datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_code` (`code`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '职位'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 资源
--- =============================================================================
-DROP TABLE IF EXISTS `sys_resource`;
-CREATE TABLE `sys_resource`
-(
-    `id`             varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `code`           varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '资源编码',
-    `name`           varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '资源名称',
-    `category`       varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '资源分类：BACKEND_MENU-后台菜单，FRONTEND_MENU-前台菜单，BACKEND_BUTTON-后台按钮，FRONTEND_BUTTON-前台按钮',
-    `type`           varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '资源类型：DIRECTORY-目录，MENU-菜单，BUTTON-按钮，INTERNAL_LINK-内链，EXTERNAL_LINK-外链',
-    `description`    varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '资源描述',
-    `parent_id`      varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '父资源ID',
-    `route_path`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '路由路径',
-    `component_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件路径',
-    `redirect_path`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '重定向路径',
-    `icon`           varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '资源图标',
-    `color`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '资源颜色（前台资源使用）',
-    `is_visible`     varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'YES' COMMENT '是否可见',
-    `is_cache`       varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '是否缓存',
-    `is_affix`       varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '是否固定',
-    `is_hidden`      varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '是否隐藏',
-    `is_breadcrumb`  varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'YES' COMMENT '是否显示面包屑',
-    `external_url`   varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '外链地址',
-    `extra`          text                                                          NULL COMMENT '扩展信息',
-    `status`         varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'ENABLED' COMMENT '状态',
-    `sort_code`      int                                                           NULL DEFAULT 0 COMMENT '排序',
-    `is_deleted`     varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`     datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`     datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by`     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_code` (`code`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '资源'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 模块
--- =============================================================================
-DROP TABLE IF EXISTS `sys_module`;
-CREATE TABLE `sys_module`
-(
-    `id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `code`        varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '模块编码',
-    `name`        varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '模块名称',
-    `category`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '模块类别',
-    `icon`        varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '模块图标',
-    `color`       varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '模块颜色',
-    `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模块描述',
-    `is_visible`  varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'YES' COMMENT '是否可见',
-    `status`      varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'ENABLED' COMMENT '状态',
-    `sort_code`   int                                                           NULL DEFAULT 0 COMMENT '排序',
-    `is_deleted`  varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`  datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`  datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_code` (`code`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '模块'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 字典
--- =============================================================================
-DROP TABLE IF EXISTS `sys_dict`;
-CREATE TABLE `sys_dict`
-(
-    `id`         varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `code`       varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '字典编码',
-    `label`      varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '字典标签',
-    `value`      varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '字典值',
-    `color`      varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '字典颜色',
-    `category`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '字典分类',
-    `parent_id`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '父字典ID',
-    `status`     varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'ENABLED' COMMENT '状态',
-    `sort_code`  int                                                           NULL DEFAULT 0 COMMENT '排序',
-    `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at` datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at` datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_code` (`code`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '字典'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 通知
--- =============================================================================
-DROP TABLE IF EXISTS `sys_notice`;
-CREATE TABLE `sys_notice`
-(
-    `id`         varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `title`      varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知标题',
-    `summary`    varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '通知摘要',
-    `content`    text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci         NULL DEFAULT NULL COMMENT '通知内容',
-    `cover`      varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '封面图片',
-    `category`   varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '通知类别',
-    `type`       varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '通知类型',
-    `level`      varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'NORMAL' COMMENT '通知级别',
-    `view_count` int                                                           NULL DEFAULT 0 COMMENT '浏览次数',
-    `is_top`     varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '是否置顶',
-    `position`   varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '通知位置',
-    `status`     varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'ENABLED' COMMENT '状态',
-    `sort_code`  int                                                           NULL DEFAULT 0 COMMENT '排序',
-    `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at` datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at` datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    INDEX `idx_category_type` (`category`, `type`) USING BTREE,
-    INDEX `idx_status` (`status`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '通知'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 轮播图
--- =============================================================================
-DROP TABLE IF EXISTS `sys_banner`;
-CREATE TABLE `sys_banner`
-(
-    `id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `title`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '轮播标题',
-    `image`       varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '轮播图片',
-    `url`         varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '跳转地址',
-    `link_type`   varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'URL' COMMENT '链接类型',
-    `summary`     varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '轮播摘要',
-    `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci         NULL DEFAULT NULL COMMENT '轮播描述',
-    `category`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '轮播类别',
-    `type`        varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '轮播类型',
-    `position`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '展示位置',
-    `sort_code`   int                                                           NULL DEFAULT 0 COMMENT '排序',
-    `view_count`  int                                                           NULL DEFAULT 0 COMMENT '浏览次数',
-    `click_count` int                                                           NULL DEFAULT 0 COMMENT '点击次数',
-    `is_deleted`  varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`  datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`  datetime                                                      NULL DEFAULT NULL COMMENT '更新时间',
-    `updated_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '轮播图'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 代码生成基础表
--- =============================================================================
+-- ----------------------------
+-- Table structure for gen_basic
+-- ----------------------------
 DROP TABLE IF EXISTS `gen_basic`;
-CREATE TABLE `gen_basic` (
-    `id`                varchar(32)  NOT NULL COMMENT '主键',
-    `db_table`          varchar(255) DEFAULT NULL COMMENT '主表名称',
-    `db_table_key`      varchar(255) DEFAULT NULL COMMENT '主表主键',
-    `module_name`       varchar(255) DEFAULT NULL COMMENT '模块名',
-    `table_prefix`      varchar(255) DEFAULT NULL COMMENT '移除表前缀',
-    `generate_type`     varchar(255) DEFAULT NULL COMMENT '生成方式',
-    `module`            varchar(255) DEFAULT NULL COMMENT '所属模块',
-    `menu_pid`          varchar(255) DEFAULT NULL COMMENT '上级目录',
-    `class_name`        varchar(255) DEFAULT NULL COMMENT '类名',
-    `form_layout`       varchar(255) DEFAULT NULL COMMENT '表单布局',
-    `grid_whether`      varchar(255) DEFAULT NULL COMMENT '使用栅格',
-    `package_name`      varchar(255) DEFAULT NULL COMMENT '包名',
-    `author_name`       varchar(255) DEFAULT NULL COMMENT '作者',
-    `gen_type`          varchar(50)  DEFAULT 'TABLE' COMMENT '生成类型（TABLE/TREE/LEFT_TREE_TABLE/MASTER_DETAIL）',
-    `tree_parent_field` varchar(200) DEFAULT NULL COMMENT '树父级字段',
-    `tree_name_field`   varchar(200) DEFAULT NULL COMMENT '树显示名称字段',
-    `sub_db_table`      varchar(200) DEFAULT NULL COMMENT '子表名称',
-    `sub_db_table_key`  varchar(200) DEFAULT NULL COMMENT '子表主键',
-    `sub_foreign_key`   varchar(200) DEFAULT NULL COMMENT '子表外键',
-    `sub_class_name`    varchar(200) DEFAULT NULL COMMENT '子表类名',
-    `sub_function_name` varchar(200) DEFAULT NULL COMMENT '子表功能名',
-    `sub_bus_name`      varchar(200) DEFAULT NULL COMMENT '子表业务名',
-    `sort_code`         int(11)      DEFAULT NULL COMMENT '排序',
-    `is_deleted`        varchar(8)   DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`        datetime     DEFAULT NULL COMMENT '创建时间',
-    `created_by`        varchar(32)  DEFAULT NULL COMMENT '创建用户',
-    `updated_at`        datetime     DEFAULT NULL COMMENT '更新时间',
-    `updated_by`        varchar(32)  DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='代码生成基础';
+CREATE TABLE `gen_basic`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `db_table` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '主表名称',
+  `db_table_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '主表主键',
+  `module_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模块名',
+  `table_prefix` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '移除表前缀',
+  `generate_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '生成方式',
+  `module` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '所属模块',
+  `menu_pid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '上级目录',
+  `class_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类名',
+  `form_layout` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '表单布局',
+  `grid_whether` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '使用栅格',
+  `package_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '包名',
+  `author_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '作者',
+  `gen_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'TABLE' COMMENT '生成类型（TABLE/TREE/LEFT_TREE_TABLE/MASTER_DETAIL）',
+  `tree_parent_field` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '树父级字段',
+  `tree_name_field` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '树显示名称字段',
+  `sub_db_table` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '子表名称',
+  `sub_db_table_key` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '子表主键',
+  `sub_foreign_key` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '子表外键',
+  `sub_class_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '子表类名',
+  `sub_function_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '子表功能名',
+  `sub_bus_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '子表业务名',
+  `sort_code` int NULL DEFAULT NULL COMMENT '排序',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '代码生成基础' ROW_FORMAT = DYNAMIC;
 
--- =============================================================================
--- 代码生成配置表
--- =============================================================================
+-- ----------------------------
+-- Records of gen_basic
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for gen_config
+-- ----------------------------
 DROP TABLE IF EXISTS `gen_config`;
-CREATE TABLE `gen_config` (
-    `id`                  varchar(32)  NOT NULL COMMENT '主键',
-    `basic_id`            varchar(32)  DEFAULT NULL COMMENT '基础ID',
-    `is_table_key`        varchar(255) DEFAULT 'NO' COMMENT '是否主键',
-    `field_name`          varchar(255) DEFAULT NULL COMMENT '字段名',
-    `field_remark`        varchar(255) DEFAULT NULL COMMENT '字段注释',
-    `field_type`          varchar(255) DEFAULT NULL COMMENT '数据库类型',
-    `field_language_type` varchar(255) DEFAULT NULL COMMENT '语言数据类型',
-    `effect_type`         varchar(255) DEFAULT NULL COMMENT '作用类型（input/textarea/select/radio/checkbox/datepicker/etc）',
-    `dict_type_code`      varchar(255) DEFAULT NULL COMMENT '字典编码',
-    `whether_table`       varchar(255) DEFAULT 'YES' COMMENT '列表显示',
-    `whether_retract`     varchar(255) DEFAULT 'NO' COMMENT '列省略',
-    `whether_add_update`  varchar(255) DEFAULT 'YES' COMMENT '是否增改',
-    `whether_required`    varchar(255) DEFAULT 'NO' COMMENT '必填',
-    `whether_unique`      varchar(255) DEFAULT 'NO' COMMENT '唯一',
-    `query_whether`       varchar(255) DEFAULT 'NO' COMMENT '是否查询',
-    `query_type`          varchar(255) DEFAULT NULL COMMENT '查询方式',
-    `table_type`          varchar(20)  DEFAULT 'MAIN' COMMENT '所属表类型（MAIN/SUB）',
-    `sort_code`           int(11)      DEFAULT NULL COMMENT '排序',
-    `is_deleted`          varchar(8)   DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`          datetime     DEFAULT NULL COMMENT '创建时间',
-    `created_by`          varchar(32)  DEFAULT NULL COMMENT '创建用户',
-    `updated_at`          datetime     DEFAULT NULL COMMENT '更新时间',
-    `updated_by`          varchar(32)  DEFAULT NULL COMMENT '更新用户',
-    PRIMARY KEY (`id`),
-    KEY `idx_basic_id` (`basic_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='代码生成配置';
+CREATE TABLE `gen_config`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `basic_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '基础ID',
+  `is_table_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '是否主键',
+  `field_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '字段名',
+  `field_remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '字段注释',
+  `field_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '数据库类型',
+  `field_language_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '语言数据类型',
+  `effect_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '作用类型（input/textarea/select/radio/checkbox/datepicker/etc）',
+  `dict_type_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '字典编码',
+  `whether_table` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'YES' COMMENT '列表显示',
+  `whether_retract` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '列省略',
+  `whether_add_update` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'YES' COMMENT '是否增改',
+  `whether_required` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '必填',
+  `whether_unique` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '唯一',
+  `query_whether` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '是否查询',
+  `query_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '查询方式',
+  `table_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'MAIN' COMMENT '所属表类型（MAIN/SUB）',
+  `sort_code` int NULL DEFAULT NULL COMMENT '排序',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_basic_id`(`basic_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '代码生成配置' ROW_FORMAT = DYNAMIC;
 
--- =============================================================================
--- 用户-角色关联
--- =============================================================================
-DROP TABLE IF EXISTS `rel_user_role`;
-CREATE TABLE `rel_user_role`
-(
-    `id`                    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
-    `user_id`               varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
-    `role_id`               varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
-    `scope`                 varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人。为空则继承 rel_role_permission 的配置',
-    `custom_scope_group_ids` text                                                        NULL COMMENT '自定义数据范围组ID列表(JSON数组)，scope=CUSTOM时生效',
-    `is_deleted`            varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`            datetime                                                     NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`            varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_user_role` (`user_id`, `role_id`) USING BTREE,
-    INDEX `idx_role_id` (`role_id`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '用户-角色关联'
-  ROW_FORMAT = Dynamic;
+-- ----------------------------
+-- Records of gen_config
+-- ----------------------------
 
--- =============================================================================
--- 用户-用户组关联
--- =============================================================================
-DROP TABLE IF EXISTS `rel_user_group`;
-CREATE TABLE `rel_user_group`
-(
-    `id`         varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
-    `user_id`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
-    `group_id`   varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户组ID',
-    `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at` datetime                                                     NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_user_group` (`user_id`, `group_id`) USING BTREE,
-    INDEX `idx_group_id` (`group_id`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '用户-用户组关联'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 用户-权限直关联
--- =============================================================================
-DROP TABLE IF EXISTS `rel_user_permission`;
-CREATE TABLE `rel_user_permission`
-(
-    `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
-    `user_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
-    `permission_code`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限编码',
-    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ALL' COMMENT '数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组',
-    `custom_scope_group_ids` text                                                        NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
-    `custom_scope_org_ids`   text                                                        NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
-    `is_deleted`             varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`             datetime                                                     NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`             varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_user_permission` (`user_id`, `permission_code`) USING BTREE,
-    INDEX `idx_permission_code` (`permission_code`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '用户-权限直关联'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 角色-权限关联
--- =============================================================================
-DROP TABLE IF EXISTS `rel_role_permission`;
-CREATE TABLE `rel_role_permission`
-(
-    `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
-    `role_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
-    `permission_code`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限编码',
-    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ALL' COMMENT '数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组',
-    `custom_scope_group_ids` text                                                        NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
-    `custom_scope_org_ids`   text                                                        NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
-    `is_deleted`             varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`             datetime                                                     NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`             varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_role_permission` (`role_id`, `permission_code`) USING BTREE,
-    INDEX `idx_permission_code` (`permission_code`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '角色-权限关联'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 角色-资源关联
--- =============================================================================
-DROP TABLE IF EXISTS `rel_role_resource`;
-CREATE TABLE `rel_role_resource`
-(
-    `id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
-    `role_id`     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
-    `resource_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '资源ID',
-    `is_deleted`  varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`  datetime                                                     NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_role_resource` (`role_id`, `resource_id`) USING BTREE,
-    INDEX `idx_resource_id` (`resource_id`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '角色-资源关联'
-  ROW_FORMAT = Dynamic;
-
--- =============================================================================
--- 用户组-角色关联（已废弃——使用 rel_role_permission 的 GROUP / CUSTOM_GROUP scope）
--- =============================================================================
--- DROP TABLE IF EXISTS `rel_group_role`;
-
--- =============================================================================
--- 组织-角色关联
--- =============================================================================
+-- ----------------------------
+-- Table structure for rel_org_role
+-- ----------------------------
 DROP TABLE IF EXISTS `rel_org_role`;
-CREATE TABLE `rel_org_role`
-(
-    `id`                     varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `org_id`                 varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '组织ID',
-    `role_id`                varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '角色ID',
-    `scope`                  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组。为空则继承 rel_role_permission 的配置',
-    `custom_scope_group_ids` text                                                          NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
-    `custom_scope_org_ids`   text                                                          NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
-    `is_deleted`             varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`             datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`             varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `uk_org_role` (`org_id`, `role_id`) USING BTREE,
-    INDEX `idx_role_id` (`role_id`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '组织-角色关联'
-  ROW_FORMAT = Dynamic;
+CREATE TABLE `rel_org_role`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `org_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组织ID',
+  `role_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
+  `scope` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组。为空则继承 rel_role_permission 的配置',
+  `custom_scope_group_ids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
+  `custom_scope_org_ids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_org_role`(`org_id` ASC, `role_id` ASC) USING BTREE,
+  INDEX `idx_role_id`(`role_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组织-角色关联' ROW_FORMAT = DYNAMIC;
 
--- =============================================================================
--- 系统配置
--- =============================================================================
+-- ----------------------------
+-- Records of rel_org_role
+-- ----------------------------
+INSERT INTO `rel_org_role` VALUES ('140001', '10002', '40003', NULL, NULL, NULL);
+INSERT INTO `rel_org_role` VALUES ('140002', '10003', '40005', NULL, NULL, NULL);
+INSERT INTO `rel_org_role` VALUES ('140003', '10004', '40006', NULL, NULL, NULL);
+INSERT INTO `rel_org_role` VALUES ('140004', '10005', '40007', NULL, NULL, NULL);
+
+-- ----------------------------
+-- Table structure for rel_role_permission
+-- ----------------------------
+DROP TABLE IF EXISTS `rel_role_permission`;
+CREATE TABLE `rel_role_permission`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `role_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
+  `permission_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限编码',
+  `scope` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ALL' COMMENT '数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组',
+  `custom_scope_group_ids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
+  `custom_scope_org_ids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_role_permission`(`role_id` ASC, `permission_code` ASC) USING BTREE,
+  INDEX `idx_permission_code`(`permission_code` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '角色-权限关联' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of rel_role_permission
+-- ----------------------------
+INSERT INTO `rel_role_permission` VALUES ('2000000001', '40001', 'sys:banner:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000002', '40001', 'sys:banner:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000003', '40001', 'sys:banner:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000004', '40001', 'sys:banner:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000005', '40001', 'sys:banner:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000006', '40001', 'sys:banner:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000007', '40001', 'sys:banner:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000008', '40001', 'sys:banner:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000009', '40001', 'sys:config:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000010', '40001', 'sys:config:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000011', '40001', 'sys:config:edit', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000012', '40001', 'sys:config:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000013', '40001', 'sys:config:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000014', '40001', 'sys:config:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000015', '40001', 'sys:config:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000016', '40001', 'sys:dev:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000017', '40001', 'sys:dev:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000018', '40001', 'sys:dev:gen:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000019', '40001', 'sys:dev:gen:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000020', '40001', 'sys:dev:gen:edit', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000021', '40001', 'sys:dev:gen:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000022', '40001', 'sys:dev:gen:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000023', '40001', 'sys:dev:gen:preview', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000024', '40001', 'sys:dev:gen:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000025', '40001', 'sys:dev:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000026', '40001', 'sys:dev:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000027', '40001', 'sys:dev:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000028', '40001', 'sys:dict:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000029', '40001', 'sys:dict:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000030', '40001', 'sys:dict:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000031', '40001', 'sys:dict:get-children', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000032', '40001', 'sys:dict:get-label', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000033', '40001', 'sys:dict:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000034', '40001', 'sys:dict:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000035', '40001', 'sys:dict:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000036', '40001', 'sys:dict:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000037', '40001', 'sys:dict:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000038', '40001', 'sys:dict:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000039', '40001', 'sys:dict:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000040', '40001', 'sys:file:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000041', '40001', 'sys:file:download', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000042', '40001', 'sys:file:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000043', '40001', 'sys:file:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000044', '40001', 'sys:file:upload', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000045', '40001', 'sys:group:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000046', '40001', 'sys:group:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000047', '40001', 'sys:group:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000048', '40001', 'sys:group:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000049', '40001', 'sys:group:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000050', '40001', 'sys:group:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000051', '40001', 'sys:group:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000052', '40001', 'sys:group:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000053', '40001', 'sys:group:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000054', '40001', 'sys:module:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000055', '40001', 'sys:module:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000056', '40001', 'sys:module:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000057', '40001', 'sys:module:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000058', '40001', 'sys:module:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000059', '40001', 'sys:module:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000060', '40001', 'sys:module:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000061', '40001', 'sys:module:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000062', '40001', 'sys:notice:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000063', '40001', 'sys:notice:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000064', '40001', 'sys:notice:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000065', '40001', 'sys:notice:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000066', '40001', 'sys:notice:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000067', '40001', 'sys:notice:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000068', '40001', 'sys:notice:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000069', '40001', 'sys:notice:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000070', '40001', 'sys:org:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000071', '40001', 'sys:org:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000072', '40001', 'sys:org:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000073', '40001', 'sys:org:grant-role', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000074', '40001', 'sys:org:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000075', '40001', 'sys:org:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000076', '40001', 'sys:org:own-roles', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000077', '40001', 'sys:org:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000078', '40001', 'sys:org:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000079', '40001', 'sys:org:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000080', '40001', 'sys:org:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000081', '40001', 'sys:permission:by-module', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000082', '40001', 'sys:permission:modules', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000083', '40001', 'sys:position:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000084', '40001', 'sys:position:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000085', '40001', 'sys:position:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000086', '40001', 'sys:position:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000087', '40001', 'sys:position:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000088', '40001', 'sys:position:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000089', '40001', 'sys:position:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000090', '40001', 'sys:position:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000091', '40001', 'sys:resource:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000092', '40001', 'sys:resource:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000093', '40001', 'sys:resource:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000094', '40001', 'sys:resource:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000095', '40001', 'sys:resource:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000096', '40001', 'sys:resource:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000097', '40001', 'sys:resource:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000098', '40001', 'sys:resource:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000099', '40001', 'sys:resource:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000100', '40001', 'sys:role:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000101', '40001', 'sys:role:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000102', '40001', 'sys:role:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000103', '40001', 'sys:role:grant-permission', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000104', '40001', 'sys:role:grant-resource', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000105', '40001', 'sys:role:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000106', '40001', 'sys:role:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000107', '40001', 'sys:role:own-permission', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000108', '40001', 'sys:role:own-resource', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000109', '40001', 'sys:role:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000110', '40001', 'sys:role:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000111', '40001', 'sys:role:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000112', '40001', 'sys:user:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000113', '40001', 'sys:user:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000114', '40001', 'sys:user:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000115', '40001', 'sys:user:grant-group', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000116', '40001', 'sys:user:grant-permission', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000117', '40001', 'sys:user:grant-role', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000118', '40001', 'sys:user:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000119', '40001', 'sys:user:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000120', '40001', 'sys:user:own-groups', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000121', '40001', 'sys:user:own-permission-detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000122', '40001', 'sys:user:own-roles', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000123', '40001', 'sys:user:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000124', '40001', 'sys:user:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000125', '40001', 'sys:user:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000126', '40002', 'sys:banner:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000127', '40002', 'sys:banner:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000128', '40002', 'sys:banner:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000129', '40002', 'sys:banner:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000130', '40002', 'sys:banner:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000131', '40002', 'sys:banner:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000132', '40002', 'sys:banner:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000133', '40002', 'sys:banner:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000134', '40002', 'sys:config:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000135', '40002', 'sys:config:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000136', '40002', 'sys:config:edit', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000137', '40002', 'sys:config:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000138', '40002', 'sys:config:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000139', '40002', 'sys:config:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000140', '40002', 'sys:config:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000141', '40002', 'sys:dict:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000142', '40002', 'sys:dict:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000143', '40002', 'sys:dict:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000144', '40002', 'sys:dict:get-children', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000145', '40002', 'sys:dict:get-label', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000146', '40002', 'sys:dict:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000147', '40002', 'sys:dict:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000148', '40002', 'sys:dict:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000149', '40002', 'sys:dict:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000150', '40002', 'sys:dict:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000151', '40002', 'sys:dict:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000152', '40002', 'sys:dict:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000153', '40002', 'sys:file:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000154', '40002', 'sys:file:download', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000155', '40002', 'sys:file:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000156', '40002', 'sys:file:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000157', '40002', 'sys:file:upload', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000158', '40002', 'sys:group:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000159', '40002', 'sys:group:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000160', '40002', 'sys:group:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000161', '40002', 'sys:group:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000162', '40002', 'sys:group:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000163', '40002', 'sys:group:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000164', '40002', 'sys:group:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000165', '40002', 'sys:group:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000166', '40002', 'sys:group:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000167', '40002', 'sys:module:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000168', '40002', 'sys:module:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000169', '40002', 'sys:module:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000170', '40002', 'sys:module:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000171', '40002', 'sys:module:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000172', '40002', 'sys:module:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000173', '40002', 'sys:module:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000174', '40002', 'sys:module:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000175', '40002', 'sys:notice:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000176', '40002', 'sys:notice:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000177', '40002', 'sys:notice:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000178', '40002', 'sys:notice:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000179', '40002', 'sys:notice:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000180', '40002', 'sys:notice:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000181', '40002', 'sys:notice:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000182', '40002', 'sys:notice:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000183', '40002', 'sys:org:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000184', '40002', 'sys:org:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000185', '40002', 'sys:org:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000186', '40002', 'sys:org:grant-role', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000187', '40002', 'sys:org:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000188', '40002', 'sys:org:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000189', '40002', 'sys:org:own-roles', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000190', '40002', 'sys:org:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000191', '40002', 'sys:org:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000192', '40002', 'sys:org:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000193', '40002', 'sys:org:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000194', '40002', 'sys:permission:by-module', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000195', '40002', 'sys:permission:modules', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000196', '40002', 'sys:position:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000197', '40002', 'sys:position:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000198', '40002', 'sys:position:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000199', '40002', 'sys:position:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000200', '40002', 'sys:position:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000201', '40002', 'sys:position:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000202', '40002', 'sys:position:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000203', '40002', 'sys:position:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000204', '40002', 'sys:resource:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000205', '40002', 'sys:resource:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000206', '40002', 'sys:resource:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000207', '40002', 'sys:resource:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000208', '40002', 'sys:resource:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000209', '40002', 'sys:resource:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000210', '40002', 'sys:resource:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000211', '40002', 'sys:resource:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000212', '40002', 'sys:resource:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000213', '40002', 'sys:role:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000214', '40002', 'sys:role:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000215', '40002', 'sys:role:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000216', '40002', 'sys:role:grant-permission', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000217', '40002', 'sys:role:grant-resource', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000218', '40002', 'sys:role:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000219', '40002', 'sys:role:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000220', '40002', 'sys:role:own-permission', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000221', '40002', 'sys:role:own-resource', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000222', '40002', 'sys:role:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000223', '40002', 'sys:role:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000224', '40002', 'sys:role:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000225', '40002', 'sys:user:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000226', '40002', 'sys:user:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000227', '40002', 'sys:user:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000228', '40002', 'sys:user:grant-group', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000229', '40002', 'sys:user:grant-permission', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000230', '40002', 'sys:user:grant-role', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000231', '40002', 'sys:user:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000232', '40002', 'sys:user:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000233', '40002', 'sys:user:own-groups', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000234', '40002', 'sys:user:own-permission-detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000235', '40002', 'sys:user:own-roles', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000236', '40002', 'sys:user:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000237', '40002', 'sys:user:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000238', '40002', 'sys:user:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000239', '40003', 'sys:banner:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000240', '40003', 'sys:banner:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000241', '40003', 'sys:config:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000242', '40003', 'sys:config:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000243', '40003', 'sys:config:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000244', '40003', 'sys:dev:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000245', '40003', 'sys:dev:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000246', '40003', 'sys:dev:gen:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000247', '40003', 'sys:dev:gen:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000248', '40003', 'sys:dev:gen:edit', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000249', '40003', 'sys:dev:gen:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000250', '40003', 'sys:dev:gen:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000251', '40003', 'sys:dev:gen:preview', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000252', '40003', 'sys:dev:gen:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000253', '40003', 'sys:dev:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000254', '40003', 'sys:dev:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000255', '40003', 'sys:dev:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000256', '40003', 'sys:dict:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000257', '40003', 'sys:dict:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000258', '40003', 'sys:dict:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000259', '40003', 'sys:dict:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000260', '40003', 'sys:file:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000261', '40003', 'sys:file:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000262', '40003', 'sys:group:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000263', '40003', 'sys:group:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000264', '40003', 'sys:group:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000265', '40003', 'sys:module:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000266', '40003', 'sys:module:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000267', '40003', 'sys:notice:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000268', '40003', 'sys:notice:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000269', '40003', 'sys:org:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000270', '40003', 'sys:org:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000271', '40003', 'sys:org:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000272', '40003', 'sys:permission:by-module', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000273', '40003', 'sys:permission:modules', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000274', '40003', 'sys:position:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000275', '40003', 'sys:position:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000276', '40003', 'sys:resource:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000277', '40003', 'sys:resource:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000278', '40003', 'sys:resource:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000279', '40003', 'sys:role:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000280', '40003', 'sys:role:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000281', '40003', 'sys:user:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000282', '40003', 'sys:user:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000283', '40004', 'sys:banner:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000284', '40004', 'sys:banner:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000285', '40004', 'sys:config:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000286', '40004', 'sys:config:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000287', '40004', 'sys:config:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000288', '40004', 'sys:dict:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000289', '40004', 'sys:dict:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000290', '40004', 'sys:dict:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000291', '40004', 'sys:dict:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000292', '40004', 'sys:file:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000293', '40004', 'sys:file:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000294', '40004', 'sys:group:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000295', '40004', 'sys:group:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000296', '40004', 'sys:group:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000297', '40004', 'sys:module:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000298', '40004', 'sys:module:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000299', '40004', 'sys:notice:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000300', '40004', 'sys:notice:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000301', '40004', 'sys:org:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000302', '40004', 'sys:org:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000303', '40004', 'sys:org:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000304', '40004', 'sys:permission:by-module', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000305', '40004', 'sys:permission:modules', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000306', '40004', 'sys:position:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000307', '40004', 'sys:position:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000308', '40004', 'sys:resource:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000309', '40004', 'sys:resource:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000310', '40004', 'sys:resource:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000311', '40004', 'sys:role:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000312', '40004', 'sys:role:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000313', '40004', 'sys:user:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000314', '40004', 'sys:user:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000315', '40005', 'sys:banner:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000316', '40005', 'sys:banner:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000317', '40005', 'sys:banner:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000318', '40005', 'sys:banner:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000319', '40005', 'sys:banner:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000320', '40005', 'sys:banner:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000321', '40005', 'sys:config:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000322', '40005', 'sys:config:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000323', '40005', 'sys:dict:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000324', '40005', 'sys:dict:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000325', '40005', 'sys:dict:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000326', '40005', 'sys:dict:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000327', '40005', 'sys:file:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000328', '40005', 'sys:file:download', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000329', '40005', 'sys:file:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000330', '40005', 'sys:file:upload', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000331', '40005', 'sys:notice:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000332', '40005', 'sys:notice:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000333', '40005', 'sys:user:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000334', '40005', 'sys:user:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000335', '40006', 'sys:config:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000336', '40006', 'sys:config:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000337', '40006', 'sys:config:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000338', '40006', 'sys:dict:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000339', '40006', 'sys:dict:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000340', '40006', 'sys:dict:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000341', '40006', 'sys:dict:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000342', '40006', 'sys:file:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000343', '40006', 'sys:file:download', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000344', '40006', 'sys:file:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000345', '40006', 'sys:notice:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000346', '40006', 'sys:notice:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000347', '40006', 'sys:user:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000348', '40006', 'sys:user:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000349', '40007', 'sys:config:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000350', '40007', 'sys:config:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000351', '40007', 'sys:dict:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000352', '40007', 'sys:dict:list', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000353', '40007', 'sys:dict:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000354', '40007', 'sys:dict:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000355', '40007', 'sys:file:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000356', '40007', 'sys:file:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000357', '40007', 'sys:group:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000358', '40007', 'sys:group:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000359', '40007', 'sys:group:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000360', '40007', 'sys:notice:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000361', '40007', 'sys:notice:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000362', '40007', 'sys:org:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000363', '40007', 'sys:org:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000364', '40007', 'sys:org:tree', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000365', '40007', 'sys:position:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000366', '40007', 'sys:position:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000367', '40007', 'sys:user:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000368', '40007', 'sys:user:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000369', '40007', 'sys:user:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000370', '40007', 'sys:user:grant-group', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000371', '40007', 'sys:user:grant-role', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000372', '40007', 'sys:user:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000373', '40007', 'sys:user:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000374', '40007', 'sys:user:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000375', '40001', 'c:client-user:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000376', '40001', 'c:client-user:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000377', '40001', 'c:client-user:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000378', '40001', 'c:client-user:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000379', '40001', 'c:client-user:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000380', '40001', 'c:client-user:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000381', '40001', 'c:client-user:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000382', '40001', 'c:client-user:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000383', '40002', 'c:client-user:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000384', '40002', 'c:client-user:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000385', '40002', 'c:client-user:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000386', '40002', 'c:client-user:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000387', '40002', 'c:client-user:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000388', '40002', 'c:client-user:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000389', '40002', 'c:client-user:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000390', '40002', 'c:client-user:import', 'ALL', NULL, NULL);
+
+-- ----------------------------
+-- Table structure for rel_role_resource
+-- ----------------------------
+DROP TABLE IF EXISTS `rel_role_resource`;
+CREATE TABLE `rel_role_resource`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `role_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
+  `resource_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '资源ID',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_role_resource`(`role_id` ASC, `resource_id` ASC) USING BTREE,
+  INDEX `idx_resource_id`(`resource_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '角色-资源关联' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of rel_role_resource
+-- ----------------------------
+INSERT INTO `rel_role_resource` VALUES ('3000000001', '40001', '80001');
+INSERT INTO `rel_role_resource` VALUES ('3000000002', '40001', '80002');
+INSERT INTO `rel_role_resource` VALUES ('3000000003', '40001', '80003');
+INSERT INTO `rel_role_resource` VALUES ('3000000004', '40001', '80004');
+INSERT INTO `rel_role_resource` VALUES ('3000000005', '40001', '80005');
+INSERT INTO `rel_role_resource` VALUES ('3000000006', '40001', '80006');
+INSERT INTO `rel_role_resource` VALUES ('3000000007', '40001', '80007');
+INSERT INTO `rel_role_resource` VALUES ('3000000008', '40001', '80008');
+INSERT INTO `rel_role_resource` VALUES ('3000000009', '40001', '80009');
+INSERT INTO `rel_role_resource` VALUES ('3000000010', '40001', '80010');
+INSERT INTO `rel_role_resource` VALUES ('3000000011', '40001', '80011');
+INSERT INTO `rel_role_resource` VALUES ('3000000012', '40001', '80012');
+INSERT INTO `rel_role_resource` VALUES ('3000000013', '40001', '80013');
+INSERT INTO `rel_role_resource` VALUES ('3000000014', '40001', '80014');
+INSERT INTO `rel_role_resource` VALUES ('3000000015', '40001', '80015');
+INSERT INTO `rel_role_resource` VALUES ('3000000016', '40001', '80016');
+INSERT INTO `rel_role_resource` VALUES ('3000000017', '40001', '80017');
+INSERT INTO `rel_role_resource` VALUES ('3000000018', '40001', '80018');
+INSERT INTO `rel_role_resource` VALUES ('3000000019', '40001', '80019');
+INSERT INTO `rel_role_resource` VALUES ('3000000020', '40001', '80020');
+INSERT INTO `rel_role_resource` VALUES ('3000000021', '40001', '80021');
+INSERT INTO `rel_role_resource` VALUES ('3000000022', '40001', '80022');
+INSERT INTO `rel_role_resource` VALUES ('3000000023', '40001', '80023');
+INSERT INTO `rel_role_resource` VALUES ('3000000024', '40001', '80024');
+INSERT INTO `rel_role_resource` VALUES ('3000000025', '40001', '80025');
+INSERT INTO `rel_role_resource` VALUES ('3000000026', '40001', '80026');
+INSERT INTO `rel_role_resource` VALUES ('3000000027', '40001', '80027');
+INSERT INTO `rel_role_resource` VALUES ('3000000028', '40001', '80028');
+INSERT INTO `rel_role_resource` VALUES ('3000000029', '40001', '80029');
+INSERT INTO `rel_role_resource` VALUES ('3000000030', '40001', '80030');
+INSERT INTO `rel_role_resource` VALUES ('3000000031', '40001', '80031');
+INSERT INTO `rel_role_resource` VALUES ('3000000032', '40001', '80032');
+INSERT INTO `rel_role_resource` VALUES ('3000000033', '40001', '80033');
+INSERT INTO `rel_role_resource` VALUES ('3000000034', '40001', '80034');
+INSERT INTO `rel_role_resource` VALUES ('3000000035', '40001', '80035');
+INSERT INTO `rel_role_resource` VALUES ('3000000036', '40001', '80036');
+INSERT INTO `rel_role_resource` VALUES ('3000000037', '40001', '80037');
+INSERT INTO `rel_role_resource` VALUES ('3000000038', '40001', '80038');
+INSERT INTO `rel_role_resource` VALUES ('3000000039', '40001', '80039');
+INSERT INTO `rel_role_resource` VALUES ('3000000040', '40001', '80040');
+INSERT INTO `rel_role_resource` VALUES ('3000000041', '40001', '80041');
+INSERT INTO `rel_role_resource` VALUES ('3000000042', '40001', '80042');
+INSERT INTO `rel_role_resource` VALUES ('3000000043', '40001', '80043');
+INSERT INTO `rel_role_resource` VALUES ('3000000044', '40001', '80044');
+INSERT INTO `rel_role_resource` VALUES ('3000000045', '40001', '80045');
+INSERT INTO `rel_role_resource` VALUES ('3000000046', '40001', '80046');
+INSERT INTO `rel_role_resource` VALUES ('3000000047', '40001', '80047');
+INSERT INTO `rel_role_resource` VALUES ('3000000048', '40001', '80048');
+INSERT INTO `rel_role_resource` VALUES ('3000000049', '40001', '80049');
+INSERT INTO `rel_role_resource` VALUES ('3000000050', '40001', '80050');
+INSERT INTO `rel_role_resource` VALUES ('3000000051', '40001', '80051');
+INSERT INTO `rel_role_resource` VALUES ('3000000052', '40001', '80052');
+INSERT INTO `rel_role_resource` VALUES ('3000000053', '40001', '80053');
+INSERT INTO `rel_role_resource` VALUES ('3000000054', '40001', '80054');
+INSERT INTO `rel_role_resource` VALUES ('3000000055', '40001', '80055');
+INSERT INTO `rel_role_resource` VALUES ('3000000056', '40001', '80056');
+INSERT INTO `rel_role_resource` VALUES ('3000000057', '40001', '80057');
+INSERT INTO `rel_role_resource` VALUES ('3000000058', '40001', '80058');
+INSERT INTO `rel_role_resource` VALUES ('3000000059', '40001', '80059');
+INSERT INTO `rel_role_resource` VALUES ('3000000060', '40001', '80060');
+INSERT INTO `rel_role_resource` VALUES ('3000000061', '40001', '80061');
+INSERT INTO `rel_role_resource` VALUES ('3000000062', '40001', '80062');
+INSERT INTO `rel_role_resource` VALUES ('3000000063', '40001', '80063');
+INSERT INTO `rel_role_resource` VALUES ('3000000064', '40001', '80064');
+INSERT INTO `rel_role_resource` VALUES ('3000000065', '40001', '80065');
+INSERT INTO `rel_role_resource` VALUES ('3000000066', '40001', '80066');
+INSERT INTO `rel_role_resource` VALUES ('3000000067', '40001', '80067');
+INSERT INTO `rel_role_resource` VALUES ('3000000068', '40001', '80068');
+INSERT INTO `rel_role_resource` VALUES ('3000000069', '40001', '80069');
+INSERT INTO `rel_role_resource` VALUES ('3000000070', '40001', '80070');
+INSERT INTO `rel_role_resource` VALUES ('3000000071', '40001', '80071');
+INSERT INTO `rel_role_resource` VALUES ('3000000072', '40001', '80072');
+INSERT INTO `rel_role_resource` VALUES ('3000000073', '40001', '80073');
+INSERT INTO `rel_role_resource` VALUES ('3000000074', '40001', '80074');
+INSERT INTO `rel_role_resource` VALUES ('3000000075', '40001', '80075');
+INSERT INTO `rel_role_resource` VALUES ('3000000076', '40001', '80076');
+INSERT INTO `rel_role_resource` VALUES ('3000000077', '40001', '80077');
+INSERT INTO `rel_role_resource` VALUES ('3000000078', '40001', '80078');
+INSERT INTO `rel_role_resource` VALUES ('3000000079', '40001', '80079');
+INSERT INTO `rel_role_resource` VALUES ('3000000080', '40001', '80080');
+INSERT INTO `rel_role_resource` VALUES ('3000000081', '40001', '80081');
+INSERT INTO `rel_role_resource` VALUES ('3000000082', '40001', '80082');
+INSERT INTO `rel_role_resource` VALUES ('3000000083', '40001', '80083');
+INSERT INTO `rel_role_resource` VALUES ('3000000084', '40001', '80084');
+INSERT INTO `rel_role_resource` VALUES ('3000000085', '40001', '80085');
+INSERT INTO `rel_role_resource` VALUES ('3000000086', '40001', '80086');
+INSERT INTO `rel_role_resource` VALUES ('3000000087', '40001', '80087');
+INSERT INTO `rel_role_resource` VALUES ('3000000088', '40001', '80088');
+INSERT INTO `rel_role_resource` VALUES ('3000000089', '40001', '80089');
+INSERT INTO `rel_role_resource` VALUES ('3000000090', '40001', '80090');
+INSERT INTO `rel_role_resource` VALUES ('3000000091', '40001', '80091');
+INSERT INTO `rel_role_resource` VALUES ('3000000092', '40001', '80092');
+INSERT INTO `rel_role_resource` VALUES ('3000000093', '40001', '80093');
+INSERT INTO `rel_role_resource` VALUES ('3000000094', '40001', '80094');
+INSERT INTO `rel_role_resource` VALUES ('3000000095', '40001', '80095');
+INSERT INTO `rel_role_resource` VALUES ('3000000096', '40001', '80096');
+INSERT INTO `rel_role_resource` VALUES ('3000000097', '40001', '80097');
+INSERT INTO `rel_role_resource` VALUES ('3000000098', '40001', '80098');
+INSERT INTO `rel_role_resource` VALUES ('3000000099', '40001', '80099');
+INSERT INTO `rel_role_resource` VALUES ('3000000100', '40001', '80100');
+INSERT INTO `rel_role_resource` VALUES ('3000000101', '40001', '80101');
+INSERT INTO `rel_role_resource` VALUES ('3000000102', '40001', '80102');
+INSERT INTO `rel_role_resource` VALUES ('3000000103', '40001', '80103');
+INSERT INTO `rel_role_resource` VALUES ('3000000321', '40001', '80104');
+INSERT INTO `rel_role_resource` VALUES ('3000000322', '40001', '80105');
+INSERT INTO `rel_role_resource` VALUES ('3000000323', '40001', '80106');
+INSERT INTO `rel_role_resource` VALUES ('3000000324', '40001', '80107');
+INSERT INTO `rel_role_resource` VALUES ('3000000104', '40002', '80001');
+INSERT INTO `rel_role_resource` VALUES ('3000000105', '40002', '80002');
+INSERT INTO `rel_role_resource` VALUES ('3000000106', '40002', '80004');
+INSERT INTO `rel_role_resource` VALUES ('3000000107', '40002', '80005');
+INSERT INTO `rel_role_resource` VALUES ('3000000108', '40002', '80006');
+INSERT INTO `rel_role_resource` VALUES ('3000000109', '40002', '80007');
+INSERT INTO `rel_role_resource` VALUES ('3000000110', '40002', '80008');
+INSERT INTO `rel_role_resource` VALUES ('3000000111', '40002', '80009');
+INSERT INTO `rel_role_resource` VALUES ('3000000112', '40002', '80010');
+INSERT INTO `rel_role_resource` VALUES ('3000000113', '40002', '80011');
+INSERT INTO `rel_role_resource` VALUES ('3000000114', '40002', '80012');
+INSERT INTO `rel_role_resource` VALUES ('3000000115', '40002', '80013');
+INSERT INTO `rel_role_resource` VALUES ('3000000116', '40002', '80014');
+INSERT INTO `rel_role_resource` VALUES ('3000000117', '40002', '80016');
+INSERT INTO `rel_role_resource` VALUES ('3000000118', '40002', '80017');
+INSERT INTO `rel_role_resource` VALUES ('3000000119', '40002', '80018');
+INSERT INTO `rel_role_resource` VALUES ('3000000120', '40002', '80019');
+INSERT INTO `rel_role_resource` VALUES ('3000000121', '40002', '80020');
+INSERT INTO `rel_role_resource` VALUES ('3000000122', '40002', '80021');
+INSERT INTO `rel_role_resource` VALUES ('3000000123', '40002', '80022');
+INSERT INTO `rel_role_resource` VALUES ('3000000124', '40002', '80023');
+INSERT INTO `rel_role_resource` VALUES ('3000000125', '40002', '80024');
+INSERT INTO `rel_role_resource` VALUES ('3000000126', '40002', '80025');
+INSERT INTO `rel_role_resource` VALUES ('3000000127', '40002', '80026');
+INSERT INTO `rel_role_resource` VALUES ('3000000128', '40002', '80027');
+INSERT INTO `rel_role_resource` VALUES ('3000000129', '40002', '80028');
+INSERT INTO `rel_role_resource` VALUES ('3000000130', '40002', '80029');
+INSERT INTO `rel_role_resource` VALUES ('3000000131', '40002', '80030');
+INSERT INTO `rel_role_resource` VALUES ('3000000132', '40002', '80031');
+INSERT INTO `rel_role_resource` VALUES ('3000000133', '40002', '80032');
+INSERT INTO `rel_role_resource` VALUES ('3000000134', '40002', '80033');
+INSERT INTO `rel_role_resource` VALUES ('3000000135', '40002', '80034');
+INSERT INTO `rel_role_resource` VALUES ('3000000136', '40002', '80035');
+INSERT INTO `rel_role_resource` VALUES ('3000000137', '40002', '80036');
+INSERT INTO `rel_role_resource` VALUES ('3000000138', '40002', '80037');
+INSERT INTO `rel_role_resource` VALUES ('3000000139', '40002', '80038');
+INSERT INTO `rel_role_resource` VALUES ('3000000140', '40002', '80039');
+INSERT INTO `rel_role_resource` VALUES ('3000000141', '40002', '80040');
+INSERT INTO `rel_role_resource` VALUES ('3000000142', '40002', '80041');
+INSERT INTO `rel_role_resource` VALUES ('3000000143', '40002', '80042');
+INSERT INTO `rel_role_resource` VALUES ('3000000144', '40002', '80043');
+INSERT INTO `rel_role_resource` VALUES ('3000000145', '40002', '80044');
+INSERT INTO `rel_role_resource` VALUES ('3000000146', '40002', '80045');
+INSERT INTO `rel_role_resource` VALUES ('3000000147', '40002', '80046');
+INSERT INTO `rel_role_resource` VALUES ('3000000148', '40002', '80047');
+INSERT INTO `rel_role_resource` VALUES ('3000000149', '40002', '80048');
+INSERT INTO `rel_role_resource` VALUES ('3000000150', '40002', '80049');
+INSERT INTO `rel_role_resource` VALUES ('3000000151', '40002', '80050');
+INSERT INTO `rel_role_resource` VALUES ('3000000152', '40002', '80051');
+INSERT INTO `rel_role_resource` VALUES ('3000000153', '40002', '80052');
+INSERT INTO `rel_role_resource` VALUES ('3000000154', '40002', '80053');
+INSERT INTO `rel_role_resource` VALUES ('3000000155', '40002', '80054');
+INSERT INTO `rel_role_resource` VALUES ('3000000156', '40002', '80055');
+INSERT INTO `rel_role_resource` VALUES ('3000000157', '40002', '80056');
+INSERT INTO `rel_role_resource` VALUES ('3000000158', '40002', '80057');
+INSERT INTO `rel_role_resource` VALUES ('3000000159', '40002', '80058');
+INSERT INTO `rel_role_resource` VALUES ('3000000160', '40002', '80059');
+INSERT INTO `rel_role_resource` VALUES ('3000000161', '40002', '80060');
+INSERT INTO `rel_role_resource` VALUES ('3000000162', '40002', '80061');
+INSERT INTO `rel_role_resource` VALUES ('3000000163', '40002', '80062');
+INSERT INTO `rel_role_resource` VALUES ('3000000164', '40002', '80063');
+INSERT INTO `rel_role_resource` VALUES ('3000000165', '40002', '80064');
+INSERT INTO `rel_role_resource` VALUES ('3000000166', '40002', '80065');
+INSERT INTO `rel_role_resource` VALUES ('3000000167', '40002', '80066');
+INSERT INTO `rel_role_resource` VALUES ('3000000168', '40002', '80067');
+INSERT INTO `rel_role_resource` VALUES ('3000000169', '40002', '80068');
+INSERT INTO `rel_role_resource` VALUES ('3000000170', '40002', '80069');
+INSERT INTO `rel_role_resource` VALUES ('3000000171', '40002', '80070');
+INSERT INTO `rel_role_resource` VALUES ('3000000172', '40002', '80071');
+INSERT INTO `rel_role_resource` VALUES ('3000000173', '40002', '80072');
+INSERT INTO `rel_role_resource` VALUES ('3000000174', '40002', '80073');
+INSERT INTO `rel_role_resource` VALUES ('3000000175', '40002', '80074');
+INSERT INTO `rel_role_resource` VALUES ('3000000176', '40002', '80075');
+INSERT INTO `rel_role_resource` VALUES ('3000000177', '40002', '80076');
+INSERT INTO `rel_role_resource` VALUES ('3000000178', '40002', '80077');
+INSERT INTO `rel_role_resource` VALUES ('3000000179', '40002', '80078');
+INSERT INTO `rel_role_resource` VALUES ('3000000180', '40002', '80079');
+INSERT INTO `rel_role_resource` VALUES ('3000000181', '40002', '80080');
+INSERT INTO `rel_role_resource` VALUES ('3000000182', '40002', '80081');
+INSERT INTO `rel_role_resource` VALUES ('3000000183', '40002', '80082');
+INSERT INTO `rel_role_resource` VALUES ('3000000184', '40002', '80083');
+INSERT INTO `rel_role_resource` VALUES ('3000000185', '40002', '80084');
+INSERT INTO `rel_role_resource` VALUES ('3000000186', '40002', '80085');
+INSERT INTO `rel_role_resource` VALUES ('3000000187', '40002', '80086');
+INSERT INTO `rel_role_resource` VALUES ('3000000188', '40002', '80087');
+INSERT INTO `rel_role_resource` VALUES ('3000000189', '40002', '80088');
+INSERT INTO `rel_role_resource` VALUES ('3000000190', '40002', '80089');
+INSERT INTO `rel_role_resource` VALUES ('3000000191', '40002', '80090');
+INSERT INTO `rel_role_resource` VALUES ('3000000192', '40002', '80091');
+INSERT INTO `rel_role_resource` VALUES ('3000000193', '40002', '80092');
+INSERT INTO `rel_role_resource` VALUES ('3000000194', '40002', '80093');
+INSERT INTO `rel_role_resource` VALUES ('3000000195', '40002', '80094');
+INSERT INTO `rel_role_resource` VALUES ('3000000196', '40002', '80095');
+INSERT INTO `rel_role_resource` VALUES ('3000000197', '40002', '80096');
+INSERT INTO `rel_role_resource` VALUES ('3000000198', '40002', '80097');
+INSERT INTO `rel_role_resource` VALUES ('3000000199', '40002', '80098');
+INSERT INTO `rel_role_resource` VALUES ('3000000200', '40002', '80099');
+INSERT INTO `rel_role_resource` VALUES ('3000000201', '40002', '80100');
+INSERT INTO `rel_role_resource` VALUES ('3000000202', '40002', '80101');
+INSERT INTO `rel_role_resource` VALUES ('3000000203', '40002', '80102');
+INSERT INTO `rel_role_resource` VALUES ('3000000204', '40002', '80103');
+INSERT INTO `rel_role_resource` VALUES ('3000000325', '40002', '80104');
+INSERT INTO `rel_role_resource` VALUES ('3000000326', '40002', '80105');
+INSERT INTO `rel_role_resource` VALUES ('3000000327', '40002', '80106');
+INSERT INTO `rel_role_resource` VALUES ('3000000328', '40002', '80107');
+INSERT INTO `rel_role_resource` VALUES ('3000000205', '40003', '80003');
+INSERT INTO `rel_role_resource` VALUES ('3000000206', '40003', '80010');
+INSERT INTO `rel_role_resource` VALUES ('3000000207', '40003', '80011');
+INSERT INTO `rel_role_resource` VALUES ('3000000208', '40003', '80015');
+INSERT INTO `rel_role_resource` VALUES ('3000000209', '40003', '80055');
+INSERT INTO `rel_role_resource` VALUES ('3000000210', '40003', '80056');
+INSERT INTO `rel_role_resource` VALUES ('3000000211', '40003', '80057');
+INSERT INTO `rel_role_resource` VALUES ('3000000212', '40003', '80058');
+INSERT INTO `rel_role_resource` VALUES ('3000000213', '40003', '80059');
+INSERT INTO `rel_role_resource` VALUES ('3000000214', '40003', '80060');
+INSERT INTO `rel_role_resource` VALUES ('3000000215', '40003', '80061');
+INSERT INTO `rel_role_resource` VALUES ('3000000216', '40003', '80062');
+INSERT INTO `rel_role_resource` VALUES ('3000000217', '40003', '80063');
+INSERT INTO `rel_role_resource` VALUES ('3000000218', '40003', '80064');
+INSERT INTO `rel_role_resource` VALUES ('3000000219', '40003', '80080');
+INSERT INTO `rel_role_resource` VALUES ('3000000329', '40003', '80104');
+INSERT INTO `rel_role_resource` VALUES ('3000000344', '40003', '80105');
+INSERT INTO `rel_role_resource` VALUES ('3000000330', '40003', '80106');
+INSERT INTO `rel_role_resource` VALUES ('3000000331', '40003', '80107');
+INSERT INTO `rel_role_resource` VALUES ('3000000220', '40004', '80004');
+INSERT INTO `rel_role_resource` VALUES ('3000000221', '40004', '80005');
+INSERT INTO `rel_role_resource` VALUES ('3000000222', '40004', '80006');
+INSERT INTO `rel_role_resource` VALUES ('3000000223', '40004', '80007');
+INSERT INTO `rel_role_resource` VALUES ('3000000224', '40004', '80010');
+INSERT INTO `rel_role_resource` VALUES ('3000000225', '40004', '80011');
+INSERT INTO `rel_role_resource` VALUES ('3000000226', '40004', '80012');
+INSERT INTO `rel_role_resource` VALUES ('3000000227', '40004', '80013');
+INSERT INTO `rel_role_resource` VALUES ('3000000228', '40004', '80014');
+INSERT INTO `rel_role_resource` VALUES ('3000000229', '40004', '80016');
+INSERT INTO `rel_role_resource` VALUES ('3000000230', '40004', '80020');
+INSERT INTO `rel_role_resource` VALUES ('3000000231', '40004', '80025');
+INSERT INTO `rel_role_resource` VALUES ('3000000232', '40004', '80029');
+INSERT INTO `rel_role_resource` VALUES ('3000000233', '40004', '80033');
+INSERT INTO `rel_role_resource` VALUES ('3000000234', '40004', '80037');
+INSERT INTO `rel_role_resource` VALUES ('3000000235', '40004', '80038');
+INSERT INTO `rel_role_resource` VALUES ('3000000236', '40004', '80042');
+INSERT INTO `rel_role_resource` VALUES ('3000000237', '40004', '80044');
+INSERT INTO `rel_role_resource` VALUES ('3000000238', '40004', '80048');
+INSERT INTO `rel_role_resource` VALUES ('3000000239', '40004', '80049');
+INSERT INTO `rel_role_resource` VALUES ('3000000240', '40004', '80053');
+INSERT INTO `rel_role_resource` VALUES ('3000000241', '40004', '80055');
+INSERT INTO `rel_role_resource` VALUES ('3000000242', '40004', '80059');
+INSERT INTO `rel_role_resource` VALUES ('3000000243', '40004', '80060');
+INSERT INTO `rel_role_resource` VALUES ('3000000244', '40004', '80064');
+INSERT INTO `rel_role_resource` VALUES ('3000000245', '40004', '80065');
+INSERT INTO `rel_role_resource` VALUES ('3000000246', '40004', '80069');
+INSERT INTO `rel_role_resource` VALUES ('3000000247', '40004', '80070');
+INSERT INTO `rel_role_resource` VALUES ('3000000248', '40004', '80074');
+INSERT INTO `rel_role_resource` VALUES ('3000000249', '40004', '80077');
+INSERT INTO `rel_role_resource` VALUES ('3000000250', '40004', '80080');
+INSERT INTO `rel_role_resource` VALUES ('3000000251', '40004', '80100');
+INSERT INTO `rel_role_resource` VALUES ('3000000332', '40004', '80106');
+INSERT INTO `rel_role_resource` VALUES ('3000000333', '40004', '80107');
+INSERT INTO `rel_role_resource` VALUES ('3000000252', '40005', '80002');
+INSERT INTO `rel_role_resource` VALUES ('3000000253', '40005', '80012');
+INSERT INTO `rel_role_resource` VALUES ('3000000254', '40005', '80013');
+INSERT INTO `rel_role_resource` VALUES ('3000000255', '40005', '80014');
+INSERT INTO `rel_role_resource` VALUES ('3000000256', '40005', '80055');
+INSERT INTO `rel_role_resource` VALUES ('3000000257', '40005', '80059');
+INSERT INTO `rel_role_resource` VALUES ('3000000258', '40005', '80060');
+INSERT INTO `rel_role_resource` VALUES ('3000000259', '40005', '80065');
+INSERT INTO `rel_role_resource` VALUES ('3000000260', '40005', '80069');
+INSERT INTO `rel_role_resource` VALUES ('3000000261', '40005', '80070');
+INSERT INTO `rel_role_resource` VALUES ('3000000262', '40005', '80071');
+INSERT INTO `rel_role_resource` VALUES ('3000000263', '40005', '80072');
+INSERT INTO `rel_role_resource` VALUES ('3000000264', '40005', '80073');
+INSERT INTO `rel_role_resource` VALUES ('3000000265', '40005', '80074');
+INSERT INTO `rel_role_resource` VALUES ('3000000266', '40005', '80075');
+INSERT INTO `rel_role_resource` VALUES ('3000000267', '40005', '80076');
+INSERT INTO `rel_role_resource` VALUES ('3000000268', '40005', '80077');
+INSERT INTO `rel_role_resource` VALUES ('3000000269', '40005', '80080');
+INSERT INTO `rel_role_resource` VALUES ('3000000270', '40005', '80097');
+INSERT INTO `rel_role_resource` VALUES ('3000000271', '40005', '80098');
+INSERT INTO `rel_role_resource` VALUES ('3000000272', '40005', '80099');
+INSERT INTO `rel_role_resource` VALUES ('3000000273', '40005', '80100');
+INSERT INTO `rel_role_resource` VALUES ('3000000274', '40006', '80001');
+INSERT INTO `rel_role_resource` VALUES ('3000000275', '40006', '80010');
+INSERT INTO `rel_role_resource` VALUES ('3000000276', '40006', '80011');
+INSERT INTO `rel_role_resource` VALUES ('3000000277', '40006', '80012');
+INSERT INTO `rel_role_resource` VALUES ('3000000278', '40006', '80014');
+INSERT INTO `rel_role_resource` VALUES ('3000000279', '40006', '80016');
+INSERT INTO `rel_role_resource` VALUES ('3000000280', '40006', '80020');
+INSERT INTO `rel_role_resource` VALUES ('3000000281', '40006', '80055');
+INSERT INTO `rel_role_resource` VALUES ('3000000282', '40006', '80059');
+INSERT INTO `rel_role_resource` VALUES ('3000000283', '40006', '80060');
+INSERT INTO `rel_role_resource` VALUES ('3000000284', '40006', '80064');
+INSERT INTO `rel_role_resource` VALUES ('3000000285', '40006', '80065');
+INSERT INTO `rel_role_resource` VALUES ('3000000286', '40006', '80069');
+INSERT INTO `rel_role_resource` VALUES ('3000000287', '40006', '80077');
+INSERT INTO `rel_role_resource` VALUES ('3000000288', '40006', '80080');
+INSERT INTO `rel_role_resource` VALUES ('3000000289', '40006', '80100');
+INSERT INTO `rel_role_resource` VALUES ('3000000290', '40007', '80001');
+INSERT INTO `rel_role_resource` VALUES ('3000000291', '40007', '80004');
+INSERT INTO `rel_role_resource` VALUES ('3000000292', '40007', '80007');
+INSERT INTO `rel_role_resource` VALUES ('3000000293', '40007', '80008');
+INSERT INTO `rel_role_resource` VALUES ('3000000294', '40007', '80009');
+INSERT INTO `rel_role_resource` VALUES ('3000000295', '40007', '80010');
+INSERT INTO `rel_role_resource` VALUES ('3000000296', '40007', '80011');
+INSERT INTO `rel_role_resource` VALUES ('3000000297', '40007', '80012');
+INSERT INTO `rel_role_resource` VALUES ('3000000298', '40007', '80014');
+INSERT INTO `rel_role_resource` VALUES ('3000000299', '40007', '80016');
+INSERT INTO `rel_role_resource` VALUES ('3000000300', '40007', '80017');
+INSERT INTO `rel_role_resource` VALUES ('3000000301', '40007', '80018');
+INSERT INTO `rel_role_resource` VALUES ('3000000302', '40007', '80020');
+INSERT INTO `rel_role_resource` VALUES ('3000000303', '40007', '80021');
+INSERT INTO `rel_role_resource` VALUES ('3000000304', '40007', '80022');
+INSERT INTO `rel_role_resource` VALUES ('3000000305', '40007', '80023');
+INSERT INTO `rel_role_resource` VALUES ('3000000306', '40007', '80024');
+INSERT INTO `rel_role_resource` VALUES ('3000000307', '40007', '80038');
+INSERT INTO `rel_role_resource` VALUES ('3000000308', '40007', '80042');
+INSERT INTO `rel_role_resource` VALUES ('3000000309', '40007', '80044');
+INSERT INTO `rel_role_resource` VALUES ('3000000310', '40007', '80048');
+INSERT INTO `rel_role_resource` VALUES ('3000000311', '40007', '80049');
+INSERT INTO `rel_role_resource` VALUES ('3000000312', '40007', '80053');
+INSERT INTO `rel_role_resource` VALUES ('3000000313', '40007', '80055');
+INSERT INTO `rel_role_resource` VALUES ('3000000314', '40007', '80059');
+INSERT INTO `rel_role_resource` VALUES ('3000000315', '40007', '80060');
+INSERT INTO `rel_role_resource` VALUES ('3000000316', '40007', '80065');
+INSERT INTO `rel_role_resource` VALUES ('3000000317', '40007', '80069');
+INSERT INTO `rel_role_resource` VALUES ('3000000318', '40007', '80077');
+INSERT INTO `rel_role_resource` VALUES ('3000000319', '40007', '80080');
+INSERT INTO `rel_role_resource` VALUES ('3000000320', '40007', '80100');
+INSERT INTO `rel_role_resource` VALUES ('3000000334', '40007', '80106');
+
+-- ----------------------------
+-- Table structure for rel_user_group
+-- ----------------------------
+DROP TABLE IF EXISTS `rel_user_group`;
+CREATE TABLE `rel_user_group`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
+  `group_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户组ID',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_group`(`user_id` ASC, `group_id` ASC) USING BTREE,
+  INDEX `idx_group_id`(`group_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户-用户组关联' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of rel_user_group
+-- ----------------------------
+INSERT INTO `rel_user_group` VALUES ('130001', '50001', '30001');
+INSERT INTO `rel_user_group` VALUES ('130002', '50002', '30002');
+INSERT INTO `rel_user_group` VALUES ('130003', '50003', '30002');
+INSERT INTO `rel_user_group` VALUES ('130004', '50004', '30002');
+INSERT INTO `rel_user_group` VALUES ('130005', '50005', '30003');
+INSERT INTO `rel_user_group` VALUES ('130006', '50006', '30004');
+INSERT INTO `rel_user_group` VALUES ('130007', '50007', '30005');
+
+-- ----------------------------
+-- Table structure for rel_user_permission
+-- ----------------------------
+DROP TABLE IF EXISTS `rel_user_permission`;
+CREATE TABLE `rel_user_permission`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
+  `permission_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限编码',
+  `scope` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ALL' COMMENT '数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组',
+  `custom_scope_group_ids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
+  `custom_scope_org_ids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_permission`(`user_id` ASC, `permission_code` ASC) USING BTREE,
+  INDEX `idx_permission_code`(`permission_code` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户-权限直关联' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of rel_user_permission
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for rel_user_role
+-- ----------------------------
+DROP TABLE IF EXISTS `rel_user_role`;
+CREATE TABLE `rel_user_role`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
+  `role_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
+  `scope` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人。为空则继承 rel_role_permission 的配置',
+  `custom_scope_group_ids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '自定义数据范围组ID列表(JSON数组)，scope=CUSTOM时生效',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_role`(`user_id` ASC, `role_id` ASC) USING BTREE,
+  INDEX `idx_role_id`(`role_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户-角色关联' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of rel_user_role
+-- ----------------------------
+INSERT INTO `rel_user_role` VALUES ('120001', '50001', '40001', 'ALL', NULL);
+INSERT INTO `rel_user_role` VALUES ('120002', '50002', '40003', 'ALL', NULL);
+INSERT INTO `rel_user_role` VALUES ('120003', '50003', '40003', 'ALL', NULL);
+INSERT INTO `rel_user_role` VALUES ('120004', '50004', '40003', 'ALL', NULL);
+INSERT INTO `rel_user_role` VALUES ('120005', '50005', '40004', 'ALL', NULL);
+INSERT INTO `rel_user_role` VALUES ('120006', '50006', '40005', 'ALL', NULL);
+INSERT INTO `rel_user_role` VALUES ('120007', '50007', '40005', 'ALL', NULL);
+INSERT INTO `rel_user_role` VALUES ('120008', '50008', '40006', 'ALL', NULL);
+INSERT INTO `rel_user_role` VALUES ('120009', '50009', '40007', 'ALL', NULL);
+
+-- ----------------------------
+-- Table structure for sys_banner
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_banner`;
+CREATE TABLE `sys_banner`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '轮播标题',
+  `image` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '轮播图片',
+  `url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '跳转地址',
+  `link_type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'URL' COMMENT '链接类型',
+  `summary` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '轮播摘要',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '轮播描述',
+  `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '轮播类别',
+  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '轮播类型',
+  `position` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '展示位置',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
+  `view_count` int NULL DEFAULT 0 COMMENT '浏览次数',
+  `click_count` int NULL DEFAULT 0 COMMENT '点击次数',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '轮播图' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_banner
+-- ----------------------------
+INSERT INTO `sys_banner` VALUES ('110001', 'Hei FastAPI 宣传图', 'https://via.placeholder.com/1920x600/1890FF/FFFFFF?text=Hei+FastAPI', 'https://github.com', 'URL', 'Hei FastAPI 框架宣传图', '基于 FastAPI 的企业级后台开发框架', 'INDEX', 'IMAGE', 'INDEX_TOP', 1, 0, 0, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_banner` VALUES ('110002', '系统使用指南', 'https://via.placeholder.com/1920x600/52C41A/FFFFFF?text=使用指南', NULL, 'URL', '新系统使用指南', '快速上手新系统', 'INDEX', 'IMAGE', 'INDEX_TOP', 2, 0, 0, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_banner` VALUES ('110003', '开发团队招募', 'https://via.placeholder.com/1920x600/722ED1/FFFFFF?text=加入我们', NULL, 'URL', '诚聘前后端开发工程师', '如果您对技术充满热情，欢迎加入我们', 'INDEX', 'IMAGE', 'INDEX_TOP', 3, 0, 0, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+
+-- ----------------------------
+-- Table structure for sys_config
+-- ----------------------------
 DROP TABLE IF EXISTS `sys_config`;
-CREATE TABLE `sys_config`
-(
-    `id`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `config_key`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '配置键',
-    `config_value` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci    NULL COMMENT '配置值',
-    `category`    varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分类',
-    `remark`      varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
-    `sort_code`   int                                                           NULL DEFAULT 0 COMMENT '排序码',
-    `ext_json`    longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci     NULL COMMENT '扩展信息',
-    `is_deleted`  varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`  datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`  datetime                                                      NULL DEFAULT NULL COMMENT '修改时间',
-    `updated_by`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '修改用户',
-    PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '系统配置'
-  ROW_FORMAT = Dynamic;
+CREATE TABLE `sys_config`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `config_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '配置键',
+  `config_value` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '配置值',
+  `category` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分类',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序码',
+  `ext_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统配置' ROW_FORMAT = DYNAMIC;
 
--- 系统配置种子数据
-INSERT INTO `sys_config` (`id`, `config_key`, `config_value`, `category`, `remark`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('1', 'SYS_DEFAULT_FILE_ENGINE', 'LOCAL', 'SYS_BASE', '默认文件引擎', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('2', 'SYS_FILE_LOCAL_FOLDER_FOR_WINDOWS', 'D:/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Windows)', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('3', 'SYS_FILE_LOCAL_FOLDER_FOR_UNIX', '/data/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Unix)', 3, 'NO', NOW(), '50001', NOW(), '50001');
+-- ----------------------------
+-- Records of sys_config
+-- ----------------------------
+INSERT INTO `sys_config` VALUES ('1', 'SYS_DEFAULT_FILE_ENGINE', 'LOCAL', 'SYS_BASE', '默认文件引擎', 1, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_config` VALUES ('10', 'SYS_JWT_TOKEN_EXPIRE', '86400', 'SYS_SECURITY', 'JWT Token 过期时间（秒）', 10, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('11', 'SYS_UPLOAD_MAX_SIZE', '10485760', 'SYS_FILE', '文件上传最大大小（字节）', 11, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('12', 'SYS_UPLOAD_ALLOWED_EXTENSIONS', 'jpg,jpeg,png,gif,bmp,doc,docx,xls,xlsx,pdf,txt,zip,rar', 'SYS_FILE', '允许上传的文件后缀', 12, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('2', 'SYS_FILE_LOCAL_FOLDER_FOR_WINDOWS', 'D:/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Windows)', 2, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_config` VALUES ('3', 'SYS_FILE_LOCAL_FOLDER_FOR_UNIX', '/data/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Unix)', 3, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_config` VALUES ('4', 'SYS_SNOWFLAKE_WORKER_ID', '1', 'SYS_BASE', 'Snowflake 工作节点ID', 4, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('5', 'SYS_SNOWFLAKE_DATACENTER_ID', '1', 'SYS_BASE', 'Snowflake 数据中心ID', 5, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('6', 'SYS_DEFAULT_PASSWORD', '123456', 'SYS_BASE', '默认密码（新增用户时使用）', 6, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('7', 'SYS_USER_INIT_PASSWORD', '123456', 'SYS_BASE', '用户初始密码', 7, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('8', 'SYS_MAX_LOGIN_RETRIES', '5', 'SYS_SECURITY', '最大登录失败次数', 8, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('9', 'SYS_LOGIN_LOCK_MINUTES', '30', 'SYS_SECURITY', '登录锁定时间（分钟）', 9, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 
--- =============================================================================
--- 文件
--- =============================================================================
+-- ----------------------------
+-- Table structure for sys_dict
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_dict`;
+CREATE TABLE `sys_dict`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '字典编码',
+  `label` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '字典标签',
+  `value` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '字典值',
+  `color` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '字典颜色',
+  `category` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '字典分类',
+  `parent_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '父字典ID',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_code`(`code` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_dict
+-- ----------------------------
+INSERT INTO `sys_dict` VALUES ('90001', 'gender', '性别', NULL, NULL, 'sys_base', NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90002', 'gender_male', '男', 'MALE', 'blue', 'sys_base', '90001', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90003', 'gender_female', '女', 'FEMALE', 'red', 'sys_base', '90001', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+
+-- ----------------------------
+-- Table structure for sys_file
+-- ----------------------------
 DROP TABLE IF EXISTS `sys_file`;
-CREATE TABLE `sys_file`
-(
-    `id`               varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT '主键',
-    `engine`           varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '存储引擎',
-    `bucket`           varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '存储桶',
-    `file_key`         varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件Key',
-    `name`             text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci         NULL COMMENT '文件名称',
-    `suffix`           varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '文件后缀',
-    `size_kb`          bigint                                                        NULL DEFAULT NULL COMMENT '文件大小kb',
-    `size_info`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '文件大小（格式化后）',
-    `obj_name`         text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci         NULL COMMENT '文件的对象名（唯一名称）',
-    `storage_path`     text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci         NULL COMMENT '文件存储路径',
-    `download_path`    text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci         NULL COMMENT '文件下载路径',
-    `is_download_auth` tinyint(1)                                                    NULL DEFAULT NULL COMMENT '文件下载是否需要授权',
-    `thumbnail`        longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci     NULL COMMENT '图片缩略图',
-    `ext_json`         longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci     NULL COMMENT '扩展信息',
-    `is_deleted`       varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT 'NO' COMMENT '逻辑删除',
-    `created_at`       datetime                                                      NULL DEFAULT NULL COMMENT '创建时间',
-    `created_by`       varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建用户',
-    `updated_at`       datetime                                                      NULL DEFAULT NULL COMMENT '修改时间',
-    `updated_by`       varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '修改用户',
-    PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB
-  CHARACTER SET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '文件'
-  ROW_FORMAT = Dynamic;
+CREATE TABLE `sys_file`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `engine` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '存储引擎',
+  `bucket` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '存储桶',
+  `file_key` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件Key',
+  `name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文件名称',
+  `suffix` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件后缀',
+  `size_kb` bigint NULL DEFAULT NULL COMMENT '文件大小kb',
+  `size_info` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件大小（格式化后）',
+  `obj_name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文件的对象名（唯一名称）',
+  `storage_path` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文件存储路径',
+  `download_path` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文件下载路径',
+  `is_download_auth` tinyint(1) NULL DEFAULT NULL COMMENT '文件下载是否需要授权',
+  `thumbnail` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '图片缩略图',
+  `extra` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '修改时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改用户',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '文件' ROW_FORMAT = DYNAMIC;
 
--- =============================================================================
--- 种子数据（按依赖顺序插入）
--- 说明：密码字段存储的是 bcrypt 哈希值，非 SM2 密文。
---       SM2 仅用于前端到后端的传输加密，入库时已解密并 bcrypt 哈希。
---       手机号、邮箱等敏感字段在库中存储为明文（项目当前设计如此）。
--- =============================================================================
+-- ----------------------------
+-- Records of sys_file
+-- ----------------------------
 
--- =============================================================================
--- 组织 sys_org
--- =============================================================================
-INSERT INTO `sys_org` (`id`, `code`, `name`, `category`, `parent_id`, `description`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('10001', 'HEI', 'Hei集团', 'GROUP', NULL, '集团总部', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('10002', 'TECH', '技术部', 'DEPT', '10001', '技术研发部门', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('10003', 'MKT', '市场部', 'DEPT', '10001', '市场营销部门', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('10004', 'FIN', '财务部', 'DEPT', '10001', '财务管理部门', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('10005', 'HR', '人力资源部', 'DEPT', '10001', '人力资源管理部门', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('10006', 'SALES', '销售部', 'DEPT', '10001', '销售部门', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('10007', 'OPS', '运维部', 'DEPT', '10001', '运维管理部门', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001');
+-- ----------------------------
+-- Table structure for sys_group
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_group`;
+CREATE TABLE `sys_group`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户组编码',
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户组名称',
+  `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户组类别',
+  `parent_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '父用户组ID',
+  `org_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '所属组织ID',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户组描述',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
+  `extra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_code`(`code` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户组' ROW_FORMAT = DYNAMIC;
 
--- =============================================================================
--- 职位 sys_position
--- =============================================================================
-INSERT INTO `sys_position` (`id`, `code`, `name`, `category`, `org_id`, `group_id`, `description`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('20001', 'CEO', '总经理', 'MGMT', '10001', NULL, '公司总经理', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('20002', 'CTO', '技术总监', 'TECH', '10002', NULL, '技术部门总监', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('20003', 'DEV_LEAD', '开发组长', 'TECH', '10002', NULL, '开发团队组长', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('20004', 'DEV', '开发工程师', 'TECH', '10002', NULL, '软件开发工程师', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('20005', 'TEST', '测试工程师', 'TECH', '10002', NULL, '软件测试工程师', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('20006', 'PM', '产品经理', 'MKT', '10003', NULL, '产品经理', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('20007', 'MKT_DIR', '市场总监', 'MKT', '10003', NULL, '市场部总监', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('20008', 'FIN_DIR', '财务总监', 'FIN', '10004', NULL, '财务部总监', 'ENABLED', 8, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('20009', 'HR_DIR', '人力资源总监', 'HR', '10005', NULL, '人力资源部总监', 'ENABLED', 9, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('20010', 'SALES', '销售专员', 'SALES', '10006', NULL, '销售专员', 'ENABLED', 10, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('20011', 'OPS', '运维工程师', 'OPS', '10007', NULL, '运维工程师', 'ENABLED', 11, 'NO', NOW(), '50001', NOW(), '50001');
+-- ----------------------------
+-- Records of sys_group
+-- ----------------------------
+INSERT INTO `sys_group` VALUES ('30001', 'ADMIN_GRP', '管理组', 'ADMIN', NULL, '10001', '系统管理组', 'ENABLED', 1, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_group` VALUES ('30002', 'DEV_GRP', '研发组', 'TECH', NULL, '10002', '技术研发组', 'ENABLED', 2, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_group` VALUES ('30003', 'TEST_GRP', '测试组', 'TECH', NULL, '10002', '软件测试组', 'ENABLED', 3, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_group` VALUES ('30004', 'PROD_GRP', '产品组', 'MKT', NULL, '10003', '产品设计组', 'ENABLED', 4, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_group` VALUES ('30005', 'MKT_GRP', '市场组', 'MKT', NULL, '10003', '市场推广组', 'ENABLED', 5, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
--- =============================================================================
--- 用户组 sys_group
--- =============================================================================
-INSERT INTO `sys_group` (`id`, `code`, `name`, `category`, `parent_id`, `org_id`, `description`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('30001', 'ADMIN_GRP', '管理组', 'ADMIN', NULL, '10001', '系统管理组', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('30002', 'DEV_GRP', '研发组', 'TECH', NULL, '10002', '技术研发组', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('30003', 'TEST_GRP', '测试组', 'TECH', NULL, '10002', '软件测试组', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('30004', 'PROD_GRP', '产品组', 'MKT', NULL, '10003', '产品设计组', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('30005', 'MKT_GRP', '市场组', 'MKT', NULL, '10003', '市场推广组', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001');
+-- ----------------------------
+-- Table structure for sys_module
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_module`;
+CREATE TABLE `sys_module`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '模块编码',
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '模块名称',
+  `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '模块类别',
+  `icon` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模块图标',
+  `color` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模块颜色',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '模块描述',
+  `is_visible` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'YES' COMMENT '是否可见',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_code`(`code` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '模块' ROW_FORMAT = DYNAMIC;
 
--- =============================================================================
--- 角色 sys_role
--- =============================================================================
-INSERT INTO `sys_role` (`id`, `code`, `name`, `category`, `description`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('40001', 'super_admin', '超级管理员', 'BACKEND', '系统超级管理员，拥有全部权限', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('40002', 'admin', '系统管理员', 'BACKEND', '系统管理员', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('40003', 'dev', '开发人员', 'BACKEND', '开发人员角色', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('40004', 'test', '测试人员', 'BACKEND', '测试人员角色', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('40005', 'mkt', '市场人员', 'BACKEND', '市场人员角色', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('40006', 'fin', '财务人员', 'BACKEND', '财务人员角色', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('40007', 'hr', '人力资源', 'BACKEND', '人力资源角色', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001');
+-- ----------------------------
+-- Records of sys_module
+-- ----------------------------
+INSERT INTO `sys_module` VALUES ('70001', 'sys', '系统管理', 'BACKEND_MENU', 'setting', '#1890FF', '系统管理模块', 'YES', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_module` VALUES ('70002', 'content', '内容管理', 'BACKEND_MENU', 'file-text', '#52C41A', '内容管理模块', 'YES', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_module` VALUES ('70003', 'dev', '系统工具', 'BACKEND_MENU', 'tool', '#722ED1', '系统工具模块', 'YES', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_module` VALUES ('70004', 'monitor', '系统监控', 'BACKEND_MENU', 'dashboard', '#FAAD14', '系统监控模块', 'YES', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_module` VALUES ('70005', 'im', '即时通讯', 'BACKEND_MENU', 'message', '#FF4D4F', '即时通讯模块', 'YES', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
--- =============================================================================
--- B 端用户 sys_user
--- 密码说明：admin 密码为 admin123，其余用户密码均为 123456
--- 密码存储为 bcrypt 哈希（非 SM2 密文）
--- =============================================================================
-INSERT INTO `sys_user` (`id`, `account`, `password`, `nickname`, `avatar`, `motto`, `gender`, `birthday`, `email`, `github`, `phone`, `org_id`, `position_id`, `status`, `login_count`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('50002', 'zhangsan', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '张三', NULL, '代码改变世界', 'MALE', '1995-05-15', 'zhangsan@hei.com', 'https://github.com/zhangsan', '13800000002', '10002', '20004', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('50003', 'lisi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '李四', NULL, '学无止境', 'MALE', '1993-08-20', 'lisi@hei.com', NULL, '13800000003', '10002', '20004', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('50004', 'wangwu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '王五', NULL, '追求卓越', 'MALE', '1994-03-10', 'wangwu@hei.com', NULL, '13800000004', '10002', '20003', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('50005', 'zhaoliu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '赵六', NULL, '质量第一', 'FEMALE', '1996-11-25', 'zhaoliu@hei.com', NULL, '13800000005', '10002', '20005', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('50006', 'sunqi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '孙七', NULL, '用户至上', 'MALE', '1991-07-07', 'sunqi@hei.com', NULL, '13800000006', '10003', '20006', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('50007', 'zhouba', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '周八', NULL, '市场就是战场', 'FEMALE', '1992-02-14', 'zhouba@hei.com', NULL, '13800000007', '10003', '20007', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('50008', 'wujiu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '吴九', NULL, '精打细算', 'MALE', '1988-09-09', 'wujiu@hei.com', NULL, '13800000008', '10004', '20008', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('50009', 'zhengshi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '郑十', NULL, '以人为本', 'FEMALE', '1990-12-01', 'zhengshi@hei.com', NULL, '13800000009', '10005', '20009', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('50010', 'chen十一', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '陈十一', NULL, '稳定压倒一切', 'MALE', '1993-06-18', 'chen11@hei.com', NULL, '13800000010', '10007', '20011', 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001');
+-- ----------------------------
+-- Table structure for sys_notice
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_notice`;
+CREATE TABLE `sys_notice`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知标题',
+  `summary` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '通知摘要',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '通知内容',
+  `cover` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '封面图片',
+  `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知类别',
+  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '通知类型',
+  `level` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NORMAL' COMMENT '通知级别',
+  `view_count` int NULL DEFAULT 0 COMMENT '浏览次数',
+  `is_top` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '是否置顶',
+  `position` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '通知位置',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_category_type`(`category` ASC, `type` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知' ROW_FORMAT = DYNAMIC;
 
--- =============================================================================
--- C 端用户 client_user
--- =============================================================================
-INSERT INTO `client_user` (`id`, `account`, `password`, `nickname`, `avatar`, `motto`, `gender`, `birthday`, `email`, `github`, `status`, `login_count`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('60001', 'test01', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户01', NULL, 'hello world', 'MALE', '1995-01-01', 'test01@example.com', NULL, 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('60002', 'test02', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户02', NULL, '你好世界', 'FEMALE', '1996-02-02', 'test02@example.com', NULL, 'ACTIVE', 0, 'NO', NOW(), '50001', NOW(), '50001');
+-- ----------------------------
+-- Records of sys_notice
+-- ----------------------------
+INSERT INTO `sys_notice` VALUES ('100001', '系统升级维护通知', '系统将于本周六凌晨2:00-6:00进行升级维护', '<h1>系统升级维护</h1><p>为了提供更好的服务，系统将于本周六凌晨2:00-6:00进行升级维护，期间部分功能可能无法正常使用。</p>', NULL, 'PLATFORM', 'MAINTENANCE', 'IMPORTANT', 0, 'YES', 'TOP', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_notice` VALUES ('100002', '欢迎使用 Hei FastAPI 系统', '欢迎各位同事使用全新开发的后台管理系统', '<p>Hei FastAPI 是一套基于 FastAPI + SQLAlchemy 2.0 的后台管理系统，欢迎大家体验并提供宝贵意见。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', 'TOP', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_notice` VALUES ('100003', '第三季度工作总结会议通知', '请各部门负责人准备第三季度工作总结报告', '<p>公司将于下周五召开第三季度工作总结会议，请各部门负责人准备相关材料。</p>', NULL, 'COMPANY', 'BUSINESS_NOTICE', 'IMPORTANT', 0, 'NO', NULL, 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_notice` VALUES ('100004', '关于启用新系统的通知', '即日起正式启用全新后台管理系统', '<p>经过开发团队的不懈努力，全新后台管理系统已于今日正式上线，旧系统将并行运行一个月后下线。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', NULL, 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 
--- =============================================================================
--- 模块 sys_module
--- =============================================================================
-INSERT INTO `sys_module` (`id`, `code`, `name`, `category`, `icon`, `color`, `description`, `is_visible`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('70001', 'sys', '系统管理', 'BACKEND_MENU', 'setting', '#1890FF', '系统管理模块', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('70002', 'content', '内容管理', 'BACKEND_MENU', 'file-text', '#52C41A', '内容管理模块', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('70003', 'dev', '系统工具', 'BACKEND_MENU', 'tool', '#722ED1', '系统工具模块', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('70004', 'monitor', '系统监控', 'BACKEND_MENU', 'dashboard', '#FAAD14', '系统监控模块', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('70005', 'im', '即时通讯', 'BACKEND_MENU', 'message', '#FF4D4F', '即时通讯模块', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001');
+-- ----------------------------
+-- Table structure for sys_org
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_org`;
+CREATE TABLE `sys_org`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组织编码',
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组织名称',
+  `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组织类别',
+  `parent_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '父组织ID',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组织描述',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
+  `extra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_code`(`code` ASC) USING BTREE,
+  INDEX `idx_parent_id`(`parent_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组织' ROW_FORMAT = DYNAMIC;
 
--- =============================================================================
--- 资源 sys_resource（菜单树）
--- 分类：category - BACKEND_MENU（后台菜单）、BACKEND_BUTTON（后台按钮）
--- 类型：type - DIRECTORY（目录）、MENU（菜单）、BUTTON（按钮）
--- =============================================================================
-INSERT INTO `sys_resource` (`id`, `code`, `name`, `category`, `type`, `description`, `parent_id`, `route_path`, `component_path`, `icon`, `is_visible`, `is_cache`, `is_affix`, `is_hidden`, `is_breadcrumb`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES
--- 一级目录
-('80080', 'sys_dashboard', '仪表盘', 'BACKEND_MENU', 'MENU', '仪表盘', NULL, '/dashboard', 'dashboard/index', 'dashboard', 'YES', 'NO', 'YES', 'NO', 'YES', 'ENABLED', 0, 'NO', NOW(), '50001', NOW(), '50001'),
-('80001', 'sys_admin', '系统管理', 'BACKEND_MENU', 'DIRECTORY', '系统管理目录', NULL, '/sys', NULL, 'setting', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80002', 'content_mgr', '内容管理', 'BACKEND_MENU', 'DIRECTORY', '内容管理目录', NULL, '/content', NULL, 'file-text', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80003', 'dev_tools', '系统工具', 'BACKEND_MENU', 'DIRECTORY', '系统工具目录', NULL, '/dev', NULL, 'tool', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
+-- ----------------------------
+-- Records of sys_org
+-- ----------------------------
+INSERT INTO `sys_org` VALUES ('10001', 'HEI', 'Hei集团', 'GROUP', NULL, '集团总部', 'ENABLED', 1, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10002', 'TECH', '技术部', 'DEPT', '10001', '技术研发部门', 'ENABLED', 2, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10003', 'MKT', '市场部', 'DEPT', '10001', '市场营销部门', 'ENABLED', 3, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10004', 'FIN', '财务部', 'DEPT', '10001', '财务管理部门', 'ENABLED', 4, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10005', 'HR', '人力资源部', 'DEPT', '10001', '人力资源管理部门', 'ENABLED', 5, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10006', 'SALES', '销售部', 'DEPT', '10001', '销售部门', 'ENABLED', 6, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10007', 'OPS', '运维部', 'DEPT', '10001', '运维管理部门', 'ENABLED', 7, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
--- 系统管理 -> 菜单
-('80004', 'sys_user', '用户管理', 'BACKEND_MENU', 'MENU', '用户管理菜单', '80001', '/sys/user', 'sys/user/index', 'user', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80005', 'sys_role', '角色管理', 'BACKEND_MENU', 'MENU', '角色管理菜单', '80001', '/sys/role', 'sys/role/index', 'team', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80006', 'sys_resource_mgr', '资源管理', 'BACKEND_MENU', 'MENU', '资源管理菜单', '80001', '/sys/resource', 'sys/resource/index', 'menu', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('80007', 'sys_org', '组织管理', 'BACKEND_MENU', 'MENU', '组织管理菜单', '80001', '/sys/org', 'sys/org/index', 'apartment', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-('80008', 'sys_position', '职位管理', 'BACKEND_MENU', 'MENU', '职位管理菜单', '80001', '/sys/org/group/position', 'sys/org/components/group/components/position/index', 'idcard', 'NO', 'NO', 'NO', 'YES', 'YES', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
-('80009', 'sys_group', '用户组管理', 'BACKEND_MENU', 'MENU', '用户组管理菜单', '80001', '/sys/org/group', 'sys/org/components/group/index', 'group', 'NO', 'NO', 'NO', 'YES', 'YES', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001'),
-('80010', 'sys_dict', '字典管理', 'BACKEND_MENU', 'MENU', '字典管理菜单', '80001', '/sys/dict', 'sys/dict/index', 'book', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), '50001', NOW(), '50001'),
-('80011', 'sys_config', '系统配置', 'BACKEND_MENU', 'MENU', '系统配置菜单', '80001', '/sys/config', 'sys/config/index', 'setting', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 9, 'NO', NOW(), '50001', NOW(), '50001'),
-('80012', 'sys_notice', '通知管理', 'BACKEND_MENU', 'MENU', '通知管理菜单', '80001', '/sys/notice', 'sys/notice/index', 'notification', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 10, 'NO', NOW(), '50001', NOW(), '50001'),
+-- ----------------------------
+-- Table structure for sys_position
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_position`;
+CREATE TABLE `sys_position`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '职位编码',
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '职位名称',
+  `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '职位类别',
+  `org_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '所属组织ID',
+  `group_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '所属用户组ID',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '职位描述',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
+  `extra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_code`(`code` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '职位' ROW_FORMAT = DYNAMIC;
 
--- 内容管理 -> 菜单
-('80013', 'sys_banner', '轮播图管理', 'BACKEND_MENU', 'MENU', '轮播图管理菜单', '80002', '/sys/banner', 'sys/banner/index', 'picture', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80014', 'sys_file', '文件管理', 'BACKEND_MENU', 'MENU', '文件管理菜单', '80002', '/sys/file', 'sys/file/index', 'file', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
+-- ----------------------------
+-- Records of sys_position
+-- ----------------------------
+INSERT INTO `sys_position` VALUES ('20001', 'CEO', '总经理', 'MGMT', '10001', NULL, '公司总经理', 'ENABLED', 1, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20002', 'CTO', '技术总监', 'TECH', '10002', NULL, '技术部门总监', 'ENABLED', 2, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20003', 'DEV_LEAD', '开发组长', 'TECH', '10002', NULL, '开发团队组长', 'ENABLED', 3, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20004', 'DEV', '开发工程师', 'TECH', '10002', NULL, '软件开发工程师', 'ENABLED', 4, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20005', 'TEST', '测试工程师', 'TECH', '10002', NULL, '软件测试工程师', 'ENABLED', 5, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20006', 'PM', '产品经理', 'MKT', '10003', NULL, '产品经理', 'ENABLED', 6, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20007', 'MKT_DIR', '市场总监', 'MKT', '10003', NULL, '市场部总监', 'ENABLED', 7, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20008', 'FIN_DIR', '财务总监', 'FIN', '10004', NULL, '财务部总监', 'ENABLED', 8, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20009', 'HR_DIR', '人力资源总监', 'HR', '10005', NULL, '人力资源部总监', 'ENABLED', 9, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20010', 'SALES', '销售专员', 'SALES', '10006', NULL, '销售专员', 'ENABLED', 10, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20011', 'OPS', '运维工程师', 'OPS', '10007', NULL, '运维工程师', 'ENABLED', 11, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
--- 系统工具 -> 菜单
-('80015', 'sys_dev', '代码生成', 'BACKEND_MENU', 'MENU', '代码生成菜单', '80003', '/sys/dev', 'sys/dev/index', 'code', 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
+-- ----------------------------
+-- Table structure for sys_resource
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_resource`;
+CREATE TABLE `sys_resource`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '资源编码',
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '资源名称',
+  `category` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '资源分类：BACKEND_MENU-后台菜单，FRONTEND_MENU-前台菜单，BACKEND_BUTTON-后台按钮，FRONTEND_BUTTON-前台按钮',
+  `type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '资源类型：DIRECTORY-目录，MENU-菜单，BUTTON-按钮，INTERNAL_LINK-内链，EXTERNAL_LINK-外链',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '资源描述',
+  `parent_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '父资源ID',
+  `route_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '路由路径',
+  `component_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '组件路径',
+  `redirect_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '重定向路径',
+  `icon` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '资源图标',
+  `color` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '资源颜色（前台资源使用）',
+  `is_visible` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'YES' COMMENT '是否可见',
+  `is_cache` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '是否缓存',
+  `is_affix` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '是否固定',
+  `is_breadcrumb` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'YES' COMMENT '是否显示面包屑',
+  `external_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '外链地址',
+  `extra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_code`(`code` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '资源' ROW_FORMAT = DYNAMIC;
 
--- ==================== 按钮权限 ====================
--- 用户管理按钮
-('80016', 'sys_user_page', '用户查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户列表', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80017', 'sys_user_create', '用户新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80018', 'sys_user_modify', '用户修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('80019', 'sys_user_remove', '用户删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('80020', 'sys_user_detail', '用户详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户详情', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-('80021', 'sys_user_export', '用户导出', 'BACKEND_BUTTON', 'BUTTON', '导出用户数据', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
-('80022', 'sys_user_import', '用户导入', 'BACKEND_BUTTON', 'BUTTON', '导入用户数据', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001'),
-('80023', 'sys_user_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户分配角色', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), '50001', NOW(), '50001'),
-('80024', 'sys_user_grant_group', '分配组', 'BACKEND_BUTTON', 'BUTTON', '给用户分配组', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 9, 'NO', NOW(), '50001', NOW(), '50001'),
--- 角色管理按钮
-('80025', 'sys_role_page', '角色查询', 'BACKEND_BUTTON', 'BUTTON', '查询角色列表', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80026', 'sys_role_create', '角色新增', 'BACKEND_BUTTON', 'BUTTON', '新增角色', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80027', 'sys_role_modify', '角色修改', 'BACKEND_BUTTON', 'BUTTON', '修改角色', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('80028', 'sys_role_remove', '角色删除', 'BACKEND_BUTTON', 'BUTTON', '删除角色', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('80029', 'sys_role_detail', '角色详情', 'BACKEND_BUTTON', 'BUTTON', '查看角色详情', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-('80030', 'sys_role_export', '角色导出', 'BACKEND_BUTTON', 'BUTTON', '导出角色数据', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
-('80031', 'sys_role_grant_perm', '分配权限', 'BACKEND_BUTTON', 'BUTTON', '给角色分配权限', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001'),
-('80032', 'sys_role_grant_resource', '分配资源', 'BACKEND_BUTTON', 'BUTTON', '给角色分配资源', '80005', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 8, 'NO', NOW(), '50001', NOW(), '50001'),
+-- ----------------------------
+-- Records of sys_resource
+-- ----------------------------
+INSERT INTO `sys_resource` VALUES ('80001', 'sys_admin', '系统管理', 'BACKEND_MENU', 'DIRECTORY', '系统管理目录', NULL, '/sys', NULL, NULL, 'setting', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80002', 'content_mgr', '内容管理', 'BACKEND_MENU', 'DIRECTORY', '内容管理目录', NULL, '/content', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80003', 'dev_tools', '系统工具', 'BACKEND_MENU', 'DIRECTORY', '系统工具目录', NULL, '/dev', NULL, NULL, 'tool', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'DISABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 15:19:09', '50001');
+INSERT INTO `sys_resource` VALUES ('80004', 'sys_user', '用户管理', 'BACKEND_MENU', 'MENU', '用户管理菜单', '80001', '/sys/user', 'sys/user/index', NULL, 'user', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80005', 'sys_role', '角色管理', 'BACKEND_MENU', 'MENU', '角色管理菜单', '80001', '/sys/role', 'sys/role/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80006', 'sys_resource_mgr', '资源管理', 'BACKEND_MENU', 'MENU', '资源管理菜单', '80001', '/sys/resource', 'sys/resource/index', NULL, 'menu', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80007', 'sys_org', '组织管理', 'BACKEND_MENU', 'MENU', '组织管理菜单', '80001', '/sys/org', 'sys/org/index', NULL, 'apartment', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80008', 'sys_position', '职位管理', 'BACKEND_MENU', 'MENU', '职位管理菜单', '80001', '/sys/org/group/position', 'sys/org/components/group/components/position/index', NULL, 'idcard', NULL, 'NO', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80009', 'sys_group', '用户组管理', 'BACKEND_MENU', 'MENU', '用户组管理菜单', '80001', '/sys/org/group', 'sys/org/components/group/index', NULL, 'group', NULL, 'NO', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 7, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80010', 'sys_dict', '字典管理', 'BACKEND_MENU', 'MENU', '字典管理菜单', '80001', '/sys/dict', 'sys/dict/index', NULL, 'book', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 8, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80011', 'sys_config', '系统配置', 'BACKEND_MENU', 'MENU', '系统配置菜单', '80001', '/sys/config', 'sys/config/index', NULL, 'setting', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 9, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80012', 'sys_notice', '通知管理', 'BACKEND_MENU', 'MENU', '通知管理菜单', '80001', '/sys/notice', 'sys/notice/index', NULL, 'notification', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 10, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80013', 'sys_banner', '轮播图管理', 'BACKEND_MENU', 'MENU', '轮播图管理菜单', '80002', '/sys/banner', 'sys/banner/index', NULL, 'picture', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80014', 'sys_file', '文件管理', 'BACKEND_MENU', 'MENU', '文件管理菜单', '80002', '/sys/file', 'sys/file/index', NULL, 'file', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80015', 'sys_dev', '代码生成', 'BACKEND_MENU', 'MENU', '代码生成菜单', '80003', '/sys/dev', 'sys/dev/index', NULL, 'code', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'DISABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 15:19:31', '50001');
+INSERT INTO `sys_resource` VALUES ('80016', 'sys_user_page', '用户查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户列表', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80017', 'sys_user_create', '用户新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80018', 'sys_user_modify', '用户修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80019', 'sys_user_remove', '用户删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80020', 'sys_user_detail', '用户详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户详情', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80021', 'sys_user_export', '用户导出', 'BACKEND_BUTTON', 'BUTTON', '导出用户数据', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:export\"}', 'ENABLED', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80022', 'sys_user_import', '用户导入', 'BACKEND_BUTTON', 'BUTTON', '导入用户数据', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:import\"}', 'ENABLED', 7, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80023', 'sys_user_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户分配角色', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:grant-role\"}', 'ENABLED', 8, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80024', 'sys_user_grant_group', '分配组', 'BACKEND_BUTTON', 'BUTTON', '给用户分配组', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:grant-group\"}', 'ENABLED', 9, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80025', 'sys_role_page', '角色查询', 'BACKEND_BUTTON', 'BUTTON', '查询角色列表', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80026', 'sys_role_create', '角色新增', 'BACKEND_BUTTON', 'BUTTON', '新增角色', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80027', 'sys_role_modify', '角色修改', 'BACKEND_BUTTON', 'BUTTON', '修改角色', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80028', 'sys_role_remove', '角色删除', 'BACKEND_BUTTON', 'BUTTON', '删除角色', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80029', 'sys_role_detail', '角色详情', 'BACKEND_BUTTON', 'BUTTON', '查看角色详情', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:01', '50001');
+INSERT INTO `sys_resource` VALUES ('80030', 'sys_role_export', '角色导出', 'BACKEND_BUTTON', 'BUTTON', '导出角色数据', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:export\"}', 'ENABLED', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80031', 'sys_role_grant_perm', '分配权限', 'BACKEND_BUTTON', 'BUTTON', '给角色分配权限', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:grant-permission\"}', 'ENABLED', 7, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80032', 'sys_role_grant_resource', '分配资源', 'BACKEND_BUTTON', 'BUTTON', '给角色分配资源', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:grant-resource\"}', 'ENABLED', 8, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80033', 'sys_resource_page', '资源查询', 'BACKEND_BUTTON', 'BUTTON', '查询资源列表', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80034', 'sys_resource_create', '资源新增', 'BACKEND_BUTTON', 'BUTTON', '新增资源', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80035', 'sys_resource_modify', '资源修改', 'BACKEND_BUTTON', 'BUTTON', '修改资源', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80036', 'sys_resource_remove', '资源删除', 'BACKEND_BUTTON', 'BUTTON', '删除资源', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80037', 'sys_resource_detail', '资源详情', 'BACKEND_BUTTON', 'BUTTON', '查看资源详情', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80038', 'sys_org_page', '组织查询', 'BACKEND_BUTTON', 'BUTTON', '查询组织列表', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80039', 'sys_org_create', '组织新增', 'BACKEND_BUTTON', 'BUTTON', '新增组织', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80040', 'sys_org_modify', '组织修改', 'BACKEND_BUTTON', 'BUTTON', '修改组织', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80041', 'sys_org_remove', '组织删除', 'BACKEND_BUTTON', 'BUTTON', '删除组织', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80042', 'sys_org_detail', '组织详情', 'BACKEND_BUTTON', 'BUTTON', '查看组织详情', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80043', 'sys_org_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给组织分配角色', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:grant-role\"}', 'ENABLED', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80044', 'sys_position_page', '职位查询', 'BACKEND_BUTTON', 'BUTTON', '查询职位列表', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80045', 'sys_position_create', '职位新增', 'BACKEND_BUTTON', 'BUTTON', '新增职位', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80046', 'sys_position_modify', '职位修改', 'BACKEND_BUTTON', 'BUTTON', '修改职位', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80047', 'sys_position_remove', '职位删除', 'BACKEND_BUTTON', 'BUTTON', '删除职位', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80048', 'sys_position_detail', '职位详情', 'BACKEND_BUTTON', 'BUTTON', '查看职位详情', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80049', 'sys_group_page', '用户组查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户组列表', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80050', 'sys_group_create', '用户组新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户组', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80051', 'sys_group_modify', '用户组修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户组', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80052', 'sys_group_remove', '用户组删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户组', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80053', 'sys_group_detail', '用户组详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户组详情', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80054', 'sys_group_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户组分配角色', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:create\"}', 'ENABLED', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80055', 'sys_dict_page', '字典查询', 'BACKEND_BUTTON', 'BUTTON', '查询字典列表', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80056', 'sys_dict_create', '字典新增', 'BACKEND_BUTTON', 'BUTTON', '新增字典', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80057', 'sys_dict_modify', '字典修改', 'BACKEND_BUTTON', 'BUTTON', '修改字典', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80058', 'sys_dict_remove', '字典删除', 'BACKEND_BUTTON', 'BUTTON', '删除字典', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80059', 'sys_dict_detail', '字典详情', 'BACKEND_BUTTON', 'BUTTON', '查看字典详情', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80060', 'sys_config_page', '配置查询', 'BACKEND_BUTTON', 'BUTTON', '查询配置列表', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80061', 'sys_config_create', '配置新增', 'BACKEND_BUTTON', 'BUTTON', '新增配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80062', 'sys_config_modify', '配置修改', 'BACKEND_BUTTON', 'BUTTON', '修改配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80063', 'sys_config_remove', '配置删除', 'BACKEND_BUTTON', 'BUTTON', '删除配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80064', 'sys_config_detail', '配置详情', 'BACKEND_BUTTON', 'BUTTON', '查看配置详情', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80065', 'sys_notice_page', '通知查询', 'BACKEND_BUTTON', 'BUTTON', '查询通知列表', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80066', 'sys_notice_create', '通知新增', 'BACKEND_BUTTON', 'BUTTON', '新增通知', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80067', 'sys_notice_modify', '通知修改', 'BACKEND_BUTTON', 'BUTTON', '修改通知', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80068', 'sys_notice_remove', '通知删除', 'BACKEND_BUTTON', 'BUTTON', '删除通知', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80069', 'sys_notice_detail', '通知详情', 'BACKEND_BUTTON', 'BUTTON', '查看通知详情', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80070', 'sys_banner_page', '轮播查询', 'BACKEND_BUTTON', 'BUTTON', '查询轮播图列表', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
+INSERT INTO `sys_resource` VALUES ('80071', 'sys_banner_create', '轮播新增', 'BACKEND_BUTTON', 'BUTTON', '新增轮播图', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
+INSERT INTO `sys_resource` VALUES ('80072', 'sys_banner_modify', '轮播修改', 'BACKEND_BUTTON', 'BUTTON', '修改轮播图', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
+INSERT INTO `sys_resource` VALUES ('80073', 'sys_banner_remove', '轮播删除', 'BACKEND_BUTTON', 'BUTTON', '删除轮播图', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:09', '50001');
+INSERT INTO `sys_resource` VALUES ('80074', 'sys_banner_detail', '轮播详情', 'BACKEND_BUTTON', 'BUTTON', '查看轮播图详情', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
+INSERT INTO `sys_resource` VALUES ('80075', 'sys_file_upload', '文件上传', 'BACKEND_BUTTON', 'BUTTON', '上传文件', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:upload\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
+INSERT INTO `sys_resource` VALUES ('80076', 'sys_file_download', '文件下载', 'BACKEND_BUTTON', 'BUTTON', '下载文件', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:download\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
+INSERT INTO `sys_resource` VALUES ('80077', 'sys_file_page', '文件查询', 'BACKEND_BUTTON', 'BUTTON', '查询文件列表', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:page\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
+INSERT INTO `sys_resource` VALUES ('80078', 'sys_file_remove', '文件删除', 'BACKEND_BUTTON', 'BUTTON', '删除文件', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
+INSERT INTO `sys_resource` VALUES ('80079', 'sys_user_grant_perm', '授权权限', 'BACKEND_BUTTON', 'BUTTON', '给用户授权颗粒度权限', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:grant-permission\"}', 'ENABLED', 10, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80080', 'sys_dashboard', '仪表盘', 'BACKEND_MENU', 'MENU', '仪表盘', NULL, '/dashboard', 'dashboard/index', NULL, 'dashboard', NULL, 'YES', 'NO', 'YES', 'YES', NULL, NULL, 'ENABLED', 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80081', 'sys_org_export', '组织导出', 'BACKEND_BUTTON', 'BUTTON', '导出组织数据', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:export\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80082', 'sys_org_import', '组织导入', 'BACKEND_BUTTON', 'BUTTON', '导入组织数据', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:import\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80083', 'sys_org_template', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载组织导入模板', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:template\"}', 'ENABLED', 9, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80084', 'sys_position_export', '职位导出', 'BACKEND_BUTTON', 'BUTTON', '导出职位数据', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:export\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80085', 'sys_position_import', '职位导入', 'BACKEND_BUTTON', 'BUTTON', '导入职位数据', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:import\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80086', 'sys_position_template', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载职位导入模板', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:template\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80087', 'sys_group_export', '用户组导出', 'BACKEND_BUTTON', 'BUTTON', '导出用户组数据', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:export\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80088', 'sys_group_import', '用户组导入', 'BACKEND_BUTTON', 'BUTTON', '导入用户组数据', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:import\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80089', 'sys_group_template', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载用户组导入模板', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:template\"}', 'ENABLED', 9, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80090', 'sys_dict_export', '字典导出', 'BACKEND_BUTTON', 'BUTTON', '导出字典数据', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:export\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80091', 'sys_dict_import', '字典导入', 'BACKEND_BUTTON', 'BUTTON', '导入字典数据', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:import\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80092', 'sys_dict_template', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载字典导入模板', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:template\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80093', 'sys_config_edit_batch', '批量编辑', 'BACKEND_BUTTON', 'BUTTON', '批量编辑系统配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:edit\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80094', 'sys_notice_export', '通知导出', 'BACKEND_BUTTON', 'BUTTON', '导出通知数据', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:export\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80095', 'sys_notice_import', '通知导入', 'BACKEND_BUTTON', 'BUTTON', '导入通知数据', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:import\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80096', 'sys_notice_template', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载通知导入模板', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:template\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80097', 'sys_banner_export', '轮播导出', 'BACKEND_BUTTON', 'BUTTON', '导出轮播图数据', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:export\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80098', 'sys_banner_import', '轮播导入', 'BACKEND_BUTTON', 'BUTTON', '导入轮播图数据', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:import\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80099', 'sys_banner_template', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载轮播导入模板', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:template\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80100', 'sys_file_detail', '文件详情', 'BACKEND_BUTTON', 'BUTTON', '查看文件详情', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:detail\"}', 'ENABLED', 5, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80101', 'sys_resource_export', '资源导出', 'BACKEND_BUTTON', 'BUTTON', '导出资源数据', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:export\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80102', 'sys_resource_import', '资源导入', 'BACKEND_BUTTON', 'BUTTON', '导入资源数据', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:import\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80103', 'sys_resource_template', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载资源导入模板', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:template\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80104', 'sys_role_template', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载角色导入模板', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:template\"}', 'ENABLED', 10, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80105', 'sys_role_import', '角色导入', 'BACKEND_BUTTON', 'BUTTON', '导入角色数据', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:import\"}', 'ENABLED', 9, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80106', 'sys_group_tree', '用户组树', 'BACKEND_BUTTON', 'BUTTON', '查询用户组树', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80107', 'sys_resource_tree', '资源树', 'BACKEND_BUTTON', 'BUTTON', '查询资源树', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
 
+-- ----------------------------
+-- Table structure for sys_role
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_role`;
+CREATE TABLE `sys_role`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色编码',
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色名称',
+  `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色类别',
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '角色描述',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
+  `extra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_code`(`code` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '角色' ROW_FORMAT = DYNAMIC;
 
--- 资源管理按钮
-('80033', 'sys_resource_page', '资源查询', 'BACKEND_BUTTON', 'BUTTON', '查询资源列表', '80006', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80034', 'sys_resource_create', '资源新增', 'BACKEND_BUTTON', 'BUTTON', '新增资源', '80006', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80035', 'sys_resource_modify', '资源修改', 'BACKEND_BUTTON', 'BUTTON', '修改资源', '80006', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('80036', 'sys_resource_remove', '资源删除', 'BACKEND_BUTTON', 'BUTTON', '删除资源', '80006', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('80037', 'sys_resource_detail', '资源详情', 'BACKEND_BUTTON', 'BUTTON', '查看资源详情', '80006', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
+-- ----------------------------
+-- Records of sys_role
+-- ----------------------------
+INSERT INTO `sys_role` VALUES ('40001', 'super_admin', '超级管理员', 'BACKEND', '系统超级管理员，拥有全部权限', 'ENABLED', 1, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40002', 'admin', '系统管理员', 'BACKEND', '系统管理员', 'ENABLED', 2, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40003', 'dev', '开发人员', 'BACKEND', '开发人员角色', 'ENABLED', 3, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40004', 'test', '测试人员', 'BACKEND', '测试人员角色', 'ENABLED', 4, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40005', 'mkt', '市场人员', 'BACKEND', '市场人员角色', 'ENABLED', 5, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40006', 'fin', '财务人员', 'BACKEND', '财务人员角色', 'ENABLED', 6, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40007', 'hr', '人力资源', 'BACKEND', '人力资源角色', 'ENABLED', 7, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
--- 组织管理按钮
-('80038', 'sys_org_page', '组织查询', 'BACKEND_BUTTON', 'BUTTON', '查询组织列表', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80039', 'sys_org_create', '组织新增', 'BACKEND_BUTTON', 'BUTTON', '新增组织', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80040', 'sys_org_modify', '组织修改', 'BACKEND_BUTTON', 'BUTTON', '修改组织', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('80041', 'sys_org_remove', '组织删除', 'BACKEND_BUTTON', 'BUTTON', '删除组织', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('80042', 'sys_org_detail', '组织详情', 'BACKEND_BUTTON', 'BUTTON', '查看组织详情', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-('80043', 'sys_org_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给组织分配角色', '80007', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
+-- ----------------------------
+-- Table structure for sys_user
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_user`;
+CREATE TABLE `sys_user`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `account` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '账号',
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
+  `nickname` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '昵称',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像',
+  `motto` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '座右铭',
+  `gender` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '性别',
+  `birthday` date NULL DEFAULT NULL COMMENT '生日',
+  `email` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '电子邮箱',
+  `github` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'GitHub',
+  `phone` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '手机号',
+  `org_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '所属组织ID',
+  `position_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '所属职位ID',
+  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ACTIVE' COMMENT '状态',
+  `last_login_at` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
+  `last_login_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '最后登录IP',
+  `login_count` int NULL DEFAULT 0 COMMENT '登录次数',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_account`(`account` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户' ROW_FORMAT = DYNAMIC;
 
--- 职位管理按钮
-('80044', 'sys_position_page', '职位查询', 'BACKEND_BUTTON', 'BUTTON', '查询职位列表', '80008', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80045', 'sys_position_create', '职位新增', 'BACKEND_BUTTON', 'BUTTON', '新增职位', '80008', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80046', 'sys_position_modify', '职位修改', 'BACKEND_BUTTON', 'BUTTON', '修改职位', '80008', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('80047', 'sys_position_remove', '职位删除', 'BACKEND_BUTTON', 'BUTTON', '删除职位', '80008', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('80048', 'sys_position_detail', '职位详情', 'BACKEND_BUTTON', 'BUTTON', '查看职位详情', '80008', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-
--- 用户组管理按钮
-('80049', 'sys_group_page', '用户组查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户组列表', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80050', 'sys_group_create', '用户组新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户组', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80051', 'sys_group_modify', '用户组修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户组', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('80052', 'sys_group_remove', '用户组删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户组', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('80053', 'sys_group_detail', '用户组详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户组详情', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-('80054', 'sys_group_grant_role', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户组分配角色', '80009', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
-
--- 字典管理按钮
-('80055', 'sys_dict_page', '字典查询', 'BACKEND_BUTTON', 'BUTTON', '查询字典列表', '80010', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80056', 'sys_dict_create', '字典新增', 'BACKEND_BUTTON', 'BUTTON', '新增字典', '80010', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80057', 'sys_dict_modify', '字典修改', 'BACKEND_BUTTON', 'BUTTON', '修改字典', '80010', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('80058', 'sys_dict_remove', '字典删除', 'BACKEND_BUTTON', 'BUTTON', '删除字典', '80010', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('80059', 'sys_dict_detail', '字典详情', 'BACKEND_BUTTON', 'BUTTON', '查看字典详情', '80010', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-
--- 系统配置按钮
-('80060', 'sys_config_page', '配置查询', 'BACKEND_BUTTON', 'BUTTON', '查询配置列表', '80011', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80061', 'sys_config_create', '配置新增', 'BACKEND_BUTTON', 'BUTTON', '新增配置', '80011', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80062', 'sys_config_modify', '配置修改', 'BACKEND_BUTTON', 'BUTTON', '修改配置', '80011', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('80063', 'sys_config_remove', '配置删除', 'BACKEND_BUTTON', 'BUTTON', '删除配置', '80011', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('80064', 'sys_config_detail', '配置详情', 'BACKEND_BUTTON', 'BUTTON', '查看配置详情', '80011', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-
--- 通知管理按钮
-('80065', 'sys_notice_page', '通知查询', 'BACKEND_BUTTON', 'BUTTON', '查询通知列表', '80012', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80066', 'sys_notice_create', '通知新增', 'BACKEND_BUTTON', 'BUTTON', '新增通知', '80012', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80067', 'sys_notice_modify', '通知修改', 'BACKEND_BUTTON', 'BUTTON', '修改通知', '80012', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('80068', 'sys_notice_remove', '通知删除', 'BACKEND_BUTTON', 'BUTTON', '删除通知', '80012', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('80069', 'sys_notice_detail', '通知详情', 'BACKEND_BUTTON', 'BUTTON', '查看通知详情', '80012', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-
--- 轮播图管理按钮
-('80070', 'sys_banner_page', '轮播查询', 'BACKEND_BUTTON', 'BUTTON', '查询轮播图列表', '80013', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80071', 'sys_banner_create', '轮播新增', 'BACKEND_BUTTON', 'BUTTON', '新增轮播图', '80013', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80072', 'sys_banner_modify', '轮播修改', 'BACKEND_BUTTON', 'BUTTON', '修改轮播图', '80013', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('80073', 'sys_banner_remove', '轮播删除', 'BACKEND_BUTTON', 'BUTTON', '删除轮播图', '80013', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('80074', 'sys_banner_detail', '轮播详情', 'BACKEND_BUTTON', 'BUTTON', '查看轮播图详情', '80013', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-
--- 文件管理按钮
-('80075', 'sys_file_upload', '文件上传', 'BACKEND_BUTTON', 'BUTTON', '上传文件', '80014', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('80076', 'sys_file_download', '文件下载', 'BACKEND_BUTTON', 'BUTTON', '下载文件', '80014', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('80077', 'sys_file_page', '文件查询', 'BACKEND_BUTTON', 'BUTTON', '查询文件列表', '80014', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('80078', 'sys_file_remove', '文件删除', 'BACKEND_BUTTON', 'BUTTON', '删除文件', '80014', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001');
-
--- 授权权限按钮（extra 关联 permission_code）
-INSERT INTO `sys_resource` (`id`, `code`, `name`, `category`, `type`, `description`, `parent_id`, `route_path`, `component_path`, `icon`, `is_visible`, `is_cache`, `is_affix`, `is_hidden`, `is_breadcrumb`, `status`, `sort_code`, `extra`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('80079', 'sys_user_grant_perm', '授权权限', 'BACKEND_BUTTON', 'BUTTON', '给用户授权颗粒度权限', '80004', NULL, NULL, NULL, 'YES', 'NO', 'NO', 'NO', 'YES', 'ENABLED', 10, '{"permission_code": "sys:user:grant-permission"}', 'NO', NOW(), '50001', NOW(), '50001');
-
--- =============================================================================
--- 字典 sys_dict
--- =============================================================================
-INSERT INTO `sys_dict` (`id`, `code`, `label`, `value`, `color`, `category`, `parent_id`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES
--- 性别
-('90001', 'gender', '性别', NULL, NULL, 'sys_base', NULL, 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('90002', 'gender_male', '男', 'MALE', 'blue', 'sys_base', '90001', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('90003', 'gender_female', '女', 'FEMALE', 'red', 'sys_base', '90001', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
--- 状态
-('90004', 'user_status', '用户状态', NULL, NULL, 'sys_base', NULL, 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('90005', 'user_status_active', '正常', 'ACTIVE', 'green', 'sys_base', '90004', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('90006', 'user_status_locked', '锁定', 'LOCKED', 'red', 'sys_base', '90004', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('90007', 'user_status_inactive', '停用', 'INACTIVE', 'orange', 'sys_base', '90004', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
--- 启用/禁用
-('90008', 'enabled_status', '启用状态', NULL, NULL, 'sys_base', NULL, 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-('90009', 'enabled_status_yes', '启用', 'ENABLED', 'green', 'sys_base', '90008', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('90010', 'enabled_status_no', '禁用', 'DISABLED', 'red', 'sys_base', '90008', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
--- 是否
-('90011', 'yes_no', '是否', NULL, NULL, 'sys_base', NULL, 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-('90012', 'yes_no_yes', '是', 'YES', 'green', 'sys_base', '90011', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('90013', 'yes_no_no', '否', 'NO', 'red', 'sys_base', '90011', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
--- 通知级别
-('90014', 'notice_level', '通知级别', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-('90015', 'notice_level_normal', '普通', 'NORMAL', 'blue', 'sys_notice', '90014', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('90016', 'notice_level_important', '重要', 'IMPORTANT', 'orange', 'sys_notice', '90014', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('90017', 'notice_level_urgent', '紧急', 'URGENT', 'red', 'sys_notice', '90014', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
--- 通知类型
-('90018', 'notice_type', '通知类型', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 6, 'NO', NOW(), '50001', NOW(), '50001'),
-('90019', 'notice_type_system', '系统通知', 'SYSTEM_NOTICE', 'purple', 'sys_notice', '90018', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('90020', 'notice_type_business', '业务通知', 'BUSINESS_NOTICE', 'blue', 'sys_notice', '90018', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('90021', 'notice_type_maintenance', '维护公告', 'MAINTENANCE', 'orange', 'sys_notice', '90018', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
--- 资源分类
-('90022', 'resource_category', '资源分类', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 7, 'NO', NOW(), '50001', NOW(), '50001'),
-('90023', 'res_cat_backend_menu', '后台菜单', 'BACKEND_MENU', 'blue', 'sys_resource', '90022', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('90024', 'res_cat_backend_button', '后台按钮', 'BACKEND_BUTTON', 'green', 'sys_resource', '90022', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
--- 资源类型
-('90025', 'resource_type', '资源类型', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 8, 'NO', NOW(), '50001', NOW(), '50001'),
-('90026', 'resource_type_directory', '目录', 'DIRECTORY', 'blue', 'sys_resource', '90025', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('90027', 'resource_type_menu', '菜单', 'MENU', 'green', 'sys_resource', '90025', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-('90028', 'resource_type_button', '按钮', 'BUTTON', 'orange', 'sys_resource', '90025', 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
--- 组织类别
-('90029', 'org_category', '组织类别', NULL, NULL, 'sys_org', NULL, 'ENABLED', 9, 'NO', NOW(), '50001', NOW(), '50001'),
-('90030', 'org_category_group', '集团', 'GROUP', 'red', 'sys_org', '90029', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-('90031', 'org_category_dept', '部门', 'DEPT', 'blue', 'sys_org', '90029', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001');
-
--- =============================================================================
--- 通知 sys_notice
--- =============================================================================
-INSERT INTO `sys_notice` (`id`, `title`, `summary`, `content`, `cover`, `category`, `type`, `level`, `view_count`, `is_top`, `position`, `status`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('100001', '系统升级维护通知', '系统将于本周六凌晨2:00-6:00进行升级维护', '<h1>系统升级维护</h1><p>为了提供更好的服务，系统将于本周六凌晨2:00-6:00进行升级维护，期间部分功能可能无法正常使用。</p>', NULL, 'PLATFORM', 'MAINTENANCE', 'IMPORTANT', 0, 'YES', 'TOP', 'ENABLED', 1, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('100002', '欢迎使用 Hei FastAPI 系统', '欢迎各位同事使用全新开发的后台管理系统', '<p>Hei FastAPI 是一套基于 FastAPI + SQLAlchemy 2.0 的后台管理系统，欢迎大家体验并提供宝贵意见。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', 'TOP', 'ENABLED', 2, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('100003', '第三季度工作总结会议通知', '请各部门负责人准备第三季度工作总结报告', '<p>公司将于下周五召开第三季度工作总结会议，请各部门负责人准备相关材料。</p>', NULL, 'COMPANY', 'BUSINESS_NOTICE', 'IMPORTANT', 0, 'NO', NULL, 'ENABLED', 3, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('100004', '关于启用新系统的通知', '即日起正式启用全新后台管理系统', '<p>经过开发团队的不懈努力，全新后台管理系统已于今日正式上线，旧系统将并行运行一个月后下线。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', NULL, 'ENABLED', 4, 'NO', NOW(), '50001', NOW(), '50001');
-
--- =============================================================================
--- 轮播图 sys_banner
--- =============================================================================
-INSERT INTO `sys_banner` (`id`, `title`, `image`, `url`, `link_type`, `summary`, `description`, `category`, `type`, `position`, `sort_code`, `view_count`, `click_count`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('110001', 'Hei FastAPI 宣传图', 'https://via.placeholder.com/1920x600/1890FF/FFFFFF?text=Hei+FastAPI', 'https://github.com', 'URL', 'Hei FastAPI 框架宣传图', '基于 FastAPI 的企业级后台开发框架', 'INDEX', 'IMAGE', 'INDEX_TOP', 1, 0, 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('110002', '系统使用指南', 'https://via.placeholder.com/1920x600/52C41A/FFFFFF?text=使用指南', NULL, 'URL', '新系统使用指南', '快速上手新系统', 'INDEX', 'IMAGE', 'INDEX_TOP', 2, 0, 0, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('110003', '开发团队招募', 'https://via.placeholder.com/1920x600/722ED1/FFFFFF?text=加入我们', NULL, 'URL', '诚聘前后端开发工程师', '如果您对技术充满热情，欢迎加入我们', 'INDEX', 'IMAGE', 'INDEX_TOP', 3, 0, 0, 'NO', NOW(), '50001', NOW(), '50001');
-
--- =============================================================================
--- 系统配置 sys_config（追加）
--- =============================================================================
-INSERT INTO `sys_config` (`id`, `config_key`, `config_value`, `category`, `remark`, `sort_code`, `is_deleted`, `created_at`, `created_by`, `updated_at`, `updated_by`)
-VALUES ('4', 'SYS_SNOWFLAKE_WORKER_ID', '1', 'SYS_BASE', 'Snowflake 工作节点ID', 4, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('5', 'SYS_SNOWFLAKE_DATACENTER_ID', '1', 'SYS_BASE', 'Snowflake 数据中心ID', 5, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('6', 'SYS_DEFAULT_PASSWORD', '123456', 'SYS_BASE', '默认密码（新增用户时使用）', 6, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('7', 'SYS_USER_INIT_PASSWORD', '123456', 'SYS_BASE', '用户初始密码', 7, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('8', 'SYS_MAX_LOGIN_RETRIES', '5', 'SYS_SECURITY', '最大登录失败次数', 8, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('9', 'SYS_LOGIN_LOCK_MINUTES', '30', 'SYS_SECURITY', '登录锁定时间（分钟）', 9, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('10', 'SYS_JWT_TOKEN_EXPIRE', '86400', 'SYS_SECURITY', 'JWT Token 过期时间（秒）', 10, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('11', 'SYS_UPLOAD_MAX_SIZE', '10485760', 'SYS_FILE', '文件上传最大大小（字节）', 11, 'NO', NOW(), '50001', NOW(), '50001'),
-       ('12', 'SYS_UPLOAD_ALLOWED_EXTENSIONS', 'jpg,jpeg,png,gif,bmp,doc,docx,xls,xlsx,pdf,txt,zip,rar', 'SYS_FILE', '允许上传的文件后缀', 12, 'NO', NOW(), '50001', NOW(), '50001');
-
--- =============================================================================
--- 关联表
--- =============================================================================
-
--- 用户-角色关联
-INSERT INTO `rel_user_role` (`id`, `user_id`, `role_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-VALUES ('120001', '50001', '40001', 'ALL', NULL, 'NO', NOW(), '50001'),
-       ('120002', '50002', '40003', 'ALL', NULL, 'NO', NOW(), '50001'),
-       ('120003', '50003', '40003', 'ALL', NULL, 'NO', NOW(), '50001'),
-       ('120004', '50004', '40003', 'ALL', NULL, 'NO', NOW(), '50001'),
-       ('120005', '50005', '40004', 'ALL', NULL, 'NO', NOW(), '50001'),
-       ('120006', '50006', '40005', 'ALL', NULL, 'NO', NOW(), '50001'),
-       ('120007', '50007', '40005', 'ALL', NULL, 'NO', NOW(), '50001'),
-       ('120008', '50008', '40006', 'ALL', NULL, 'NO', NOW(), '50001'),
-       ('120009', '50009', '40007', 'ALL', NULL, 'NO', NOW(), '50001');
-
--- 用户-用户组关联
-INSERT INTO `rel_user_group` (`id`, `user_id`, `group_id`, `is_deleted`, `created_at`, `created_by`)
-VALUES ('130001', '50001', '30001', 'NO', NOW(), '50001'),
-       ('130002', '50002', '30002', 'NO', NOW(), '50001'),
-       ('130003', '50003', '30002', 'NO', NOW(), '50001'),
-       ('130004', '50004', '30002', 'NO', NOW(), '50001'),
-       ('130005', '50005', '30003', 'NO', NOW(), '50001'),
-       ('130006', '50006', '30004', 'NO', NOW(), '50001'),
-       ('130007', '50007', '30005', 'NO', NOW(), '50001');
-
--- 角色-权限关联（为超级管理员分配全部已知权限）
--- 权限编码列表参照 @HeiCheckPermission 注解自动扫描结果
-SET @rid = 1000000000;
-INSERT INTO `rel_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT @rid := @rid + 1, '40001', v.code, 'ALL', NULL, 'NO', NOW(), '50001'
-FROM (VALUES
-    ROW('sys:user:page'), ROW('sys:user:create'), ROW('sys:user:modify'), ROW('sys:user:remove'), ROW('sys:user:detail'), ROW('sys:user:export'), ROW('sys:user:import'), ROW('sys:user:grant-role'), ROW('sys:user:grant-group'), ROW('sys:user:grant-permission'), ROW('sys:user:own-permission-detail'), ROW('sys:user:own-roles'), ROW('sys:user:own-groups'),
-    ROW('sys:role:page'), ROW('sys:role:create'), ROW('sys:role:modify'), ROW('sys:role:remove'), ROW('sys:role:detail'), ROW('sys:role:export'), ROW('sys:role:grantPermission'), ROW('sys:role:grantResource'), ROW('sys:role:ownPermission'), ROW('sys:role:ownResource'),
-    ROW('sys:permission:modules'), ROW('sys:permission:by-module'),
-    ROW('sys:resource:page'), ROW('sys:resource:tree'), ROW('sys:resource:create'), ROW('sys:resource:modify'), ROW('sys:resource:remove'), ROW('sys:resource:detail'), ROW('sys:resource:export'),
-    ROW('sys:org:page'), ROW('sys:org:tree'), ROW('sys:org:create'), ROW('sys:org:modify'), ROW('sys:org:remove'), ROW('sys:org:detail'), ROW('sys:org:export'), ROW('sys:org:grant-role'), ROW('sys:org:own-roles'),
-    ROW('sys:position:page'), ROW('sys:position:create'), ROW('sys:position:modify'), ROW('sys:position:remove'), ROW('sys:position:detail'), ROW('sys:position:export'),
-    ROW('sys:group:page'), ROW('sys:group:tree'), ROW('sys:group:create'), ROW('sys:group:modify'), ROW('sys:group:remove'), ROW('sys:group:detail'), ROW('sys:group:export'), ROW('sys:group:grant-role'), ROW('sys:group:own-roles'),
-    ROW('sys:dict:page'), ROW('sys:dict:list'), ROW('sys:dict:tree'), ROW('sys:dict:create'), ROW('sys:dict:modify'), ROW('sys:dict:remove'), ROW('sys:dict:detail'), ROW('sys:dict:export'),
-    ROW('sys:config:page'), ROW('sys:config:list'), ROW('sys:config:create'), ROW('sys:config:modify'), ROW('sys:config:remove'),
-    ROW('sys:notice:page'), ROW('sys:notice:create'), ROW('sys:notice:modify'), ROW('sys:notice:remove'), ROW('sys:notice:detail'),
-    ROW('sys:banner:page'), ROW('sys:banner:detail'),
-    ROW('sys:file:page'), ROW('sys:file:detail'), ROW('sys:file:upload'), ROW('sys:file:download'),
-    ROW('sys:module:page'), ROW('sys:module:detail'),
-    ROW('sys:dev:page'), ROW('sys:dev:create'), ROW('sys:dev:modify'), ROW('sys:dev:remove'), ROW('sys:dev:detail'),
-    ROW('sys:dev:gen:list'), ROW('sys:dev:gen:create'), ROW('sys:dev:gen:edit'), ROW('sys:dev:gen:detail'), ROW('sys:dev:gen:remove'), ROW('sys:dev:gen:import'), ROW('sys:dev:gen:preview')
-) AS v(code);
-
--- 角色-权限关联（为管理员分配核心管理权限）
-INSERT INTO `rel_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT @rid := @rid + 1, '40002', v.code, 'ALL', NULL, 'NO', NOW(), '50001'
-FROM (VALUES
-    ROW('sys:user:page'), ROW('sys:user:detail'), ROW('sys:user:create'), ROW('sys:user:modify'), ROW('sys:user:remove'), ROW('sys:user:grant-permission'), ROW('sys:user:own-permission-detail'),
-    ROW('sys:role:page'), ROW('sys:role:detail'), ROW('sys:role:create'), ROW('sys:role:modify'), ROW('sys:role:remove'),
-    ROW('sys:permission:modules'), ROW('sys:permission:by-module'),
-    ROW('sys:org:page'), ROW('sys:org:tree'), ROW('sys:org:detail'), ROW('sys:org:create'), ROW('sys:org:modify'), ROW('sys:org:remove'),
-    ROW('sys:position:page'), ROW('sys:position:detail'),
-    ROW('sys:group:page'), ROW('sys:group:tree'), ROW('sys:group:detail'), ROW('sys:group:create'), ROW('sys:group:modify'), ROW('sys:group:remove'),
-    ROW('sys:resource:page'), ROW('sys:resource:tree'), ROW('sys:resource:detail'), ROW('sys:resource:create'), ROW('sys:resource:modify'), ROW('sys:resource:remove'),
-    ROW('sys:dict:page'), ROW('sys:dict:list'), ROW('sys:dict:tree'), ROW('sys:dict:create'), ROW('sys:dict:modify'), ROW('sys:dict:remove'),
-    ROW('sys:config:page'), ROW('sys:config:list'), ROW('sys:config:create'), ROW('sys:config:modify'), ROW('sys:config:remove'),
-    ROW('sys:notice:page'), ROW('sys:notice:detail'),
-    ROW('sys:banner:page'), ROW('sys:banner:detail'),
-    ROW('sys:file:page'), ROW('sys:file:detail'), ROW('sys:file:upload'), ROW('sys:file:download'),
-    ROW('sys:module:page'), ROW('sys:module:detail')
-) AS v(code);
-
--- 角色-权限关联（为开发人员分配开发相关权限）
-INSERT INTO `rel_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT @rid := @rid + 1, '40003', v.code, 'ALL', NULL, 'NO', NOW(), '50001'
-FROM (VALUES
-    ROW('sys:dev:page'), ROW('sys:dev:create'), ROW('sys:dev:modify'), ROW('sys:dev:remove'), ROW('sys:dev:detail'),
-    ROW('sys:dev:gen:list'), ROW('sys:dev:gen:create'), ROW('sys:dev:gen:edit'), ROW('sys:dev:gen:detail'), ROW('sys:dev:gen:remove'), ROW('sys:dev:gen:import'), ROW('sys:dev:gen:preview'),
-    ROW('sys:dict:page'), ROW('sys:dict:list'), ROW('sys:dict:tree'), ROW('sys:config:page'), ROW('sys:config:list')
-) AS v(code);
-
--- 角色-权限关联（为测试人员分配只读+字典+通知等）
-INSERT INTO `rel_role_permission` (`id`, `role_id`, `permission_code`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-SELECT @rid := @rid + 1, '40004', v.code, 'ALL', NULL, 'NO', NOW(), '50001'
-FROM (VALUES
-    ROW('sys:user:page'), ROW('sys:user:detail'),
-    ROW('sys:role:page'), ROW('sys:role:detail'),
-    ROW('sys:org:page'), ROW('sys:org:tree'), ROW('sys:org:detail'),
-    ROW('sys:resource:page'), ROW('sys:resource:tree'), ROW('sys:resource:detail'),
-    ROW('sys:dict:page'), ROW('sys:dict:list'), ROW('sys:dict:tree'),
-    ROW('sys:config:page'), ROW('sys:config:list'),
-    ROW('sys:notice:page'), ROW('sys:notice:detail'),
-    ROW('sys:banner:page'), ROW('sys:banner:detail'),
-    ROW('sys:file:page'), ROW('sys:file:detail'),
-    ROW('sys:module:page'), ROW('sys:module:detail'),
-    ROW('sys:permission:modules'), ROW('sys:permission:by-module')
-) AS v(code);
-
--- 角色-资源关联（超级管理员分配所有资源）
-SET @rid2 = 1500000000;
-INSERT INTO `rel_role_resource` (`id`, `role_id`, `resource_id`, `is_deleted`, `created_at`, `created_by`)
-SELECT @rid2 := @rid2 + 1, '40001', r.`id`, 'NO', NOW(), '50001'
-FROM `sys_resource` r
-WHERE r.`is_deleted` = 'NO' AND r.`status` = 'ENABLED';
-
--- 角色-资源关联（管理员分配菜单资源）
-SET @rid3 = 1600000000;
-INSERT INTO `rel_role_resource` (`id`, `role_id`, `resource_id`, `is_deleted`, `created_at`, `created_by`)
-SELECT @rid3 := @rid3 + 1, '40002', r.`id`, 'NO', NOW(), '50001'
-FROM `sys_resource` r
-WHERE (r.`type` IN ('DIRECTORY', 'MENU') OR r.`code` IN (
-    'sys_user_page', 'sys_user_create', 'sys_user_modify', 'sys_user_remove', 'sys_user_detail', 'sys_user_grant_perm',
-    'sys_role_page', 'sys_role_detail',
-    'sys_org_page', 'sys_org_create', 'sys_org_modify', 'sys_org_remove', 'sys_org_detail',
-    'sys_dict_page', 'sys_dict_create', 'sys_dict_modify', 'sys_dict_remove', 'sys_dict_detail',
-    'sys_config_page', 'sys_config_detail',
-    'sys_notice_page', 'sys_notice_detail',
-    'sys_banner_page', 'sys_banner_detail',
-    'sys_file_page', 'sys_file_detail', 'sys_file_upload', 'sys_file_download'
-)) AND r.`is_deleted` = 'NO' AND r.`status` = 'ENABLED';
-
--- 用户组-角色关联（已废弃）
-
--- 组织-角色关联
-INSERT INTO `rel_org_role` (`id`, `org_id`, `role_id`, `scope`, `custom_scope_group_ids`, `is_deleted`, `created_at`, `created_by`)
-VALUES ('140001', '10002', '40003', NULL, NULL, 'NO', NOW(), '50001'),
-       ('140002', '10003', '40005', NULL, NULL, 'NO', NOW(), '50001'),
-       ('140003', '10004', '40006', NULL, NULL, 'NO', NOW(), '50001'),
-       ('140004', '10005', '40007', NULL, NULL, 'NO', NOW(), '50001');
+-- ----------------------------
+-- Records of sys_user
+-- ----------------------------
+INSERT INTO `sys_user` VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50002', 'zhangsan', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '张三', NULL, '代码改变世界', 'MALE', '1995-05-15', 'zhangsan@hei.com', 'https://github.com/zhangsan', '13800000002', '10002', '20004', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50003', 'lisi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '李四', NULL, '学无止境', 'MALE', '1993-08-20', 'lisi@hei.com', NULL, '13800000003', '10002', '20004', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50004', 'wangwu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '王五', NULL, '追求卓越', 'MALE', '1994-03-10', 'wangwu@hei.com', NULL, '13800000004', '10002', '20003', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50005', 'zhaoliu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '赵六', NULL, '质量第一', 'FEMALE', '1996-11-25', 'zhaoliu@hei.com', NULL, '13800000005', '10002', '20005', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50006', 'sunqi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '孙七', NULL, '用户至上', 'MALE', '1991-07-07', 'sunqi@hei.com', NULL, '13800000006', '10003', '20006', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50007', 'zhouba', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '周八', NULL, '市场就是战场', 'FEMALE', '1992-02-14', 'zhouba@hei.com', NULL, '13800000007', '10003', '20007', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50008', 'wujiu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '吴九', NULL, '精打细算', 'MALE', '1988-09-09', 'wujiu@hei.com', NULL, '13800000008', '10004', '20008', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50009', 'zhengshi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '郑十', NULL, '以人为本', 'FEMALE', '1990-12-01', 'zhengshi@hei.com', NULL, '13800000009', '10005', '20009', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50010', 'chen十一', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '陈十一', NULL, '稳定压倒一切', 'MALE', '1993-06-18', 'chen11@hei.com', NULL, '13800000010', '10007', '20011', 'ACTIVE', NULL, NULL, 0, 'YES', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
 SET FOREIGN_KEY_CHECKS = 1;

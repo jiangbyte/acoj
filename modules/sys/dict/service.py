@@ -97,6 +97,8 @@ class DictService:
 
         parent_id = vo.parent_id or "0"
         self._check_duplicate(parent_id, vo.label, vo.value, vo.id)
+        if str(parent_id) != str(entity.parent_id):
+            self._check_circular_parent(vo.id, parent_id if parent_id != "0" else None)
 
         update_data = vo.model_dump(exclude_unset=True)
         apply_update(entity, update_data)
@@ -104,11 +106,35 @@ class DictService:
         self.dao.update(entity, user_id=await self._get_current_user_id(request))
         await self._sync_cache()
 
-    def remove(self, param: IdsParam) -> None:
-        ids_with_children = self.dao.has_children_batch(param.ids)
-        if ids_with_children:
-            raise BusinessException(f"字典包含子节点，无法删除: {next(iter(ids_with_children))}")
-        self.dao.delete_by_ids(param.ids)
+    def _check_circular_parent(self, entity_id: str, new_parent_id: Optional[str]) -> None:
+        if not new_parent_id:
+            return
+        current = new_parent_id
+        while current:
+            if current == entity_id:
+                raise BusinessException("父级不能选择自身或子节点")
+            parent = self.dao.find_by_id(current)
+            if not parent or not parent.parent_id:
+                break
+            current = parent.parent_id
+
+    def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
+        """递归收集所有子字典ID。"""
+        all_ids = set(ids)
+        stack = list(ids)
+        while stack:
+            parent_id = stack.pop()
+            children = self.dao.find_by_parent_id(parent_id)
+            for child in children:
+                if child.id not in all_ids:
+                    all_ids.add(child.id)
+                    stack.append(child.id)
+        return list(all_ids)
+
+    async def remove(self, param: IdsParam) -> None:
+        all_ids = self._collect_descendant_ids(param.ids)
+        self.dao.delete_by_ids(all_ids)
+        await self._sync_cache()
 
     def detail(self, param: IdParam) -> Optional[DictVO]:
         entity = self.dao.find_by_id(param.id)

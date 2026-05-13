@@ -45,9 +45,6 @@ class RelRolePermission(Base):
     scope: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'ALL'"), comment='数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组')
     custom_scope_group_ids: Mapped[Optional[str]] = mapped_column(Text(collation='utf8mb4_general_ci'), comment='自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效')
     custom_scope_org_ids: Mapped[Optional[str]] = mapped_column(Text(collation='utf8mb4_general_ci'), comment='自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效')
-    is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'NO'"), comment='逻辑删除')
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='创建时间')
-    created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')
 
 
 class RelRoleResource(Base):
@@ -61,6 +58,3 @@ class RelRoleResource(Base):
     id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), primary_key=True, comment='主键')
     role_id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='角色ID')
     resource_id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='资源ID')
-    is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'NO'"), comment='逻辑删除')
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='创建时间')
-    created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')

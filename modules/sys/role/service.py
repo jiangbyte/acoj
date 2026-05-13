@@ -51,7 +51,23 @@ class RoleService:
         self.dao.update(entity, user_id=await self._get_current_user_id(request))
 
     def remove(self, param: IdsParam) -> None:
-        self.dao.delete_by_ids(param.ids)
+        from .models import RelRolePermission, RelRoleResource
+        from ..user.models import RelUserRole
+        from ..org.models import RelOrgRole
+
+        ids = param.ids
+        db = self.dao.db
+
+        if db.query(RelUserRole).filter(RelUserRole.role_id.in_(ids)).count() > 0:
+            raise BusinessException("角色存在关联用户，无法删除")
+
+        if db.query(RelOrgRole).filter(RelOrgRole.role_id.in_(ids)).count() > 0:
+            raise BusinessException("角色已被组织使用，无法删除")
+
+        for model in [RelRolePermission, RelRoleResource, RelUserRole, RelOrgRole]:
+            db.query(model).filter(model.role_id.in_(ids)).delete(synchronize_session=False)
+
+        self.dao.delete_by_ids(ids)
 
     async def grant_permissions(self, param: GrantPermissionParam, request: Optional[Request] = None) -> None:
         created_by = await self._get_current_user_id(request)

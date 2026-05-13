@@ -47,9 +47,7 @@ class UserDao(BaseDAO):
 
     def get_role_ids_by_user_id(self, user_id: str) -> List[str]:
         rows = self.db.execute(
-            select(RelUserRole.role_id).where(
-                RelUserRole.user_id == user_id, RelUserRole.is_deleted == self._soft_delete_not_deleted
-            )
+            select(RelUserRole.role_id).where(RelUserRole.user_id == user_id)
         ).scalars().all()
         return list(rows)
 
@@ -59,7 +57,6 @@ class UserDao(BaseDAO):
         rows = self.db.execute(
             select(RelUserRole.user_id, RelUserRole.role_id).where(
                 RelUserRole.user_id.in_(user_ids),
-                RelUserRole.is_deleted == self._soft_delete_not_deleted
             )
         ).all()
         result: Dict[str, List[str]] = {uid: [] for uid in user_ids}
@@ -69,42 +66,21 @@ class UserDao(BaseDAO):
 
     def grant_roles(self, user_id: str, role_ids: List[str], created_by: Optional[str] = None,
                     scope: Optional[str] = None, custom_scope_group_ids: Optional[str] = None):
-        now = datetime.now()
-        not_del = self._soft_delete_not_deleted
-        del_val = self._soft_delete_deleted
-
-        existing = self.db.execute(
-            select(RelUserRole).where(RelUserRole.user_id == user_id)
-        ).scalars().all()
-        existing_by_rid = {r.role_id: r for r in existing}
-
-        for r in existing:
-            if r.role_id not in role_ids and r.is_deleted == not_del:
-                r.is_deleted = del_val
+        self.db.query(RelUserRole).filter(RelUserRole.user_id == user_id).delete(synchronize_session=False)
 
         for rid in role_ids:
-            if rid in existing_by_rid:
-                rel = existing_by_rid[rid]
-                rel.is_deleted = not_del
-                rel.scope = scope
-                rel.custom_scope_group_ids = custom_scope_group_ids
-                rel.created_by = created_by
-            else:
-                rel = RelUserRole(
-                    id=generate_id(), user_id=user_id, role_id=rid,
-                    scope=scope, custom_scope_group_ids=custom_scope_group_ids,
-                    is_deleted=not_del, created_at=now, created_by=created_by
-                )
-                self.db.add(rel)
+            rel = RelUserRole(
+                id=generate_id(), user_id=user_id, role_id=rid,
+                scope=scope, custom_scope_group_ids=custom_scope_group_ids,
+            )
+            self.db.add(rel)
         self.db.commit()
 
     # ---- RAL: User Groups ----
 
     def get_group_ids_by_user_id(self, user_id: str) -> List[str]:
         rows = self.db.execute(
-            select(RelUserGroup.group_id).where(
-                RelUserGroup.user_id == user_id, RelUserGroup.is_deleted == self._soft_delete_not_deleted
-            )
+            select(RelUserGroup.group_id).where(RelUserGroup.user_id == user_id)
         ).scalars().all()
         return list(rows)
 
@@ -114,7 +90,6 @@ class UserDao(BaseDAO):
         rows = self.db.execute(
             select(RelUserGroup.user_id, RelUserGroup.group_id).where(
                 RelUserGroup.user_id.in_(user_ids),
-                RelUserGroup.is_deleted == self._soft_delete_not_deleted
             )
         ).all()
         result: Dict[str, List[str]] = {uid: [] for uid in user_ids}
@@ -123,30 +98,13 @@ class UserDao(BaseDAO):
         return result
 
     def grant_groups(self, user_id: str, group_ids: List[str], created_by: Optional[str] = None):
-        now = datetime.now()
-        not_del = self._soft_delete_not_deleted
-        del_val = self._soft_delete_deleted
-
-        existing = self.db.execute(
-            select(RelUserGroup).where(RelUserGroup.user_id == user_id)
-        ).scalars().all()
-        existing_by_gid = {r.group_id: r for r in existing}
-
-        for r in existing:
-            if r.group_id not in group_ids and r.is_deleted == not_del:
-                r.is_deleted = del_val
+        self.db.query(RelUserGroup).filter(RelUserGroup.user_id == user_id).delete(synchronize_session=False)
 
         for gid in group_ids:
-            if gid in existing_by_gid:
-                rel = existing_by_gid[gid]
-                rel.is_deleted = not_del
-                rel.created_by = created_by
-            else:
-                rel = RelUserGroup(
-                    id=generate_id(), user_id=user_id, group_id=gid,
-                    is_deleted=not_del, created_at=now, created_by=created_by
-                )
-                self.db.add(rel)
+            rel = RelUserGroup(
+                id=generate_id(), user_id=user_id, group_id=gid,
+            )
+            self.db.add(rel)
         self.db.commit()
 
     # ---- RAL: User Permissions (direct) ----
@@ -160,7 +118,6 @@ class UserDao(BaseDAO):
                 RelUserPermission.custom_scope_org_ids,
             ).where(
                 RelUserPermission.user_id == user_id,
-                RelUserPermission.is_deleted == self._soft_delete_not_deleted
             )
         ).all()
         return [
@@ -174,37 +131,15 @@ class UserDao(BaseDAO):
         ]
 
     def grant_permissions(self, user_id: str, permissions: List[PermissionItem], created_by: Optional[str] = None):
-        now = datetime.now()
-        not_del = self._soft_delete_not_deleted
-        del_val = self._soft_delete_deleted
-
-        incoming_codes = [p.permission_code for p in permissions]
-
-        existing = self.db.execute(
-            select(RelUserPermission).where(RelUserPermission.user_id == user_id)
-        ).scalars().all()
-        existing_by_code = {r.permission_code: r for r in existing}
-
-        for r in existing:
-            if r.permission_code not in incoming_codes and r.is_deleted == not_del:
-                r.is_deleted = del_val
+        self.db.query(RelUserPermission).filter(RelUserPermission.user_id == user_id).delete(synchronize_session=False)
 
         for p in permissions:
-            if p.permission_code in existing_by_code:
-                rel = existing_by_code[p.permission_code]
-                rel.is_deleted = not_del
-                rel.scope = p.scope
-                rel.custom_scope_group_ids = p.custom_scope_group_ids
-                rel.custom_scope_org_ids = p.custom_scope_org_ids
-                rel.created_by = created_by
-            else:
-                rel = RelUserPermission(
-                    id=generate_id(), user_id=user_id, permission_code=p.permission_code,
-                    scope=p.scope, custom_scope_group_ids=p.custom_scope_group_ids,
-                    custom_scope_org_ids=p.custom_scope_org_ids,
-                    is_deleted=not_del, created_at=now, created_by=created_by
-                )
-                self.db.add(rel)
+            rel = RelUserPermission(
+                id=generate_id(), user_id=user_id, permission_code=p.permission_code,
+                scope=p.scope, custom_scope_group_ids=p.custom_scope_group_ids,
+                custom_scope_org_ids=p.custom_scope_org_ids,
+            )
+            self.db.add(rel)
         self.db.commit()
 
     # ---- Cross-table auth queries ----
@@ -215,9 +150,7 @@ class UserDao(BaseDAO):
 
         # Direct role assignments (RelUserRole)
         direct_rows = self.db.execute(
-            select(RelUserRole.role_id).where(
-                RelUserRole.user_id == user_id, RelUserRole.is_deleted == self._soft_delete_not_deleted
-            )
+            select(RelUserRole.role_id).where(RelUserRole.user_id == user_id)
         ).scalars().all()
         role_ids.update(direct_rows)
 
@@ -228,7 +161,6 @@ class UserDao(BaseDAO):
             org_rows = self.db.execute(
                 select(_RelOrgRole.role_id).where(
                     _RelOrgRole.org_id == entity.org_id,
-                    _RelOrgRole.is_deleted == self._soft_delete_not_deleted,
                 )
             ).scalars().all()
             role_ids.update(org_rows)
@@ -240,7 +172,6 @@ class UserDao(BaseDAO):
         rows = self.db.execute(
             select(_RelRoleResource.resource_id).where(
                 _RelRoleResource.role_id.in_(role_ids),
-                _RelRoleResource.is_deleted == self._soft_delete_not_deleted,
             )
         ).scalars().all()
         return list(set(rows))
@@ -267,7 +198,6 @@ class UserDao(BaseDAO):
         rows = self.db.execute(
             select(_RelRolePermission.permission_code).where(
                 _RelRolePermission.role_id.in_(role_ids),
-                _RelRolePermission.is_deleted == self._soft_delete_not_deleted,
             )
         ).scalars().all()
         return list(set(rows))

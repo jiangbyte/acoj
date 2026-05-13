@@ -26,42 +26,20 @@ class OrgDao(BaseDAO):
 
     def get_role_ids_by_org_id(self, org_id: str) -> List[str]:
         rows = self.db.execute(
-            select(RelOrgRole.role_id).where(
-                RelOrgRole.org_id == org_id, RelOrgRole.is_deleted == self._soft_delete_not_deleted
-            )
+            select(RelOrgRole.role_id).where(RelOrgRole.org_id == org_id)
         ).scalars().all()
         return list(rows)
 
     def grant_roles(self, org_id: str, role_ids: List[str], created_by: Optional[str] = None,
                     scope: Optional[str] = None, custom_scope_group_ids: Optional[str] = None):
-        from datetime import datetime
         from core.utils import generate_id
 
-        now = datetime.now()
-        not_del = self._soft_delete_not_deleted
-        del_val = self._soft_delete_deleted
-
-        existing = self.db.execute(
-            select(RelOrgRole).where(RelOrgRole.org_id == org_id)
-        ).scalars().all()
-        existing_by_rid = {r.role_id: r for r in existing}
-
-        for r in existing:
-            if r.role_id not in role_ids and r.is_deleted == not_del:
-                r.is_deleted = del_val
+        self.db.query(RelOrgRole).filter(RelOrgRole.org_id == org_id).delete(synchronize_session=False)
 
         for rid in role_ids:
-            if rid in existing_by_rid:
-                rel = existing_by_rid[rid]
-                rel.is_deleted = not_del
-                rel.scope = scope
-                rel.custom_scope_group_ids = custom_scope_group_ids
-                rel.created_by = created_by
-            else:
-                rel = RelOrgRole(
-                    id=generate_id(), org_id=org_id, role_id=rid,
-                    scope=scope, custom_scope_group_ids=custom_scope_group_ids,
-                    is_deleted=not_del, created_at=now, created_by=created_by
-                )
-                self.db.add(rel)
+            rel = RelOrgRole(
+                id=generate_id(), org_id=org_id, role_id=rid,
+                scope=scope, custom_scope_group_ids=custom_scope_group_ids,
+            )
+            self.db.add(rel)
         self.db.commit()

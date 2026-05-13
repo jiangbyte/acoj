@@ -28,7 +28,7 @@ class SysFile(Base):
     download_path: Mapped[Optional[str]] = mapped_column(Text, comment="文件下载路径")
     is_download_auth: Mapped[Optional[int]] = mapped_column(Integer, comment="文件下载是否需要授权")
     thumbnail: Mapped[Optional[str]] = mapped_column(LONGTEXT, comment="图片缩略图")
-    ext_json: Mapped[Optional[str]] = mapped_column(Text, comment="扩展信息")
+    extra: Mapped[Optional[str]] = mapped_column(Text, comment="扩展信息")
     is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8), default=SoftDeleteEnum.NO.value, comment="逻辑删除")
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment="创建时间")
     created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32), comment="创建用户")

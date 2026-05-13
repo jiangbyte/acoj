@@ -2,7 +2,23 @@ from typing import List, Optional, Union
 from sqlalchemy import select, func
 
 from core.db.mysql import SessionLocal
-from core.enums import SoftDeleteEnum, LoginTypeEnum, DataScopeEnum
+from core.enums import LoginTypeEnum, DataScopeEnum
+
+
+def _soft_delete_filter(query, model):
+    """Dynamically apply soft-delete filter using configured field/value.
+
+    Reads from DB__SOFT_DELETE_* settings so it adapts to any field name
+    or value convention. Skips models that don't have the configured field
+    (e.g. rel_* junction tables without is_deleted).
+    """
+    from config.settings import settings as _settings
+    if not _settings.db.soft_delete_enabled:
+        return query
+    field_name = _settings.db.soft_delete_field
+    if hasattr(model, field_name):
+        return query.where(getattr(model, field_name) == _settings.db.soft_delete_value_not_deleted)
+    return query
 
 
 class HeiPermissionInterface:
@@ -20,24 +36,18 @@ class HeiPermissionInterface:
         from modules.sys.user.models import RelUserRole
 
         role_ids = set()
-        rows = db.scalars(
-            select(RelUserRole.role_id).where(
-                RelUserRole.user_id == login_id,
-                RelUserRole.is_deleted == SoftDeleteEnum.NO
-            )
-        ).all()
+        query = select(RelUserRole.role_id).where(RelUserRole.user_id == login_id)
+        query = _soft_delete_filter(query, RelUserRole)
+        rows = db.scalars(query).all()
         role_ids.update(rows)
 
         from modules.sys.org.models import RelOrgRole
         from modules.sys.user.models import SysUser
         user = db.get(SysUser, login_id)
         if user and user.org_id:
-            rows = db.scalars(
-                select(RelOrgRole.role_id).where(
-                    RelOrgRole.org_id == user.org_id,
-                    RelOrgRole.is_deleted == SoftDeleteEnum.NO
-                )
-            ).all()
+            query = select(RelOrgRole.role_id).where(RelOrgRole.org_id == user.org_id)
+            query = _soft_delete_filter(query, RelOrgRole)
+            rows = db.scalars(query).all()
             role_ids.update(rows)
 
         return list(role_ids)
@@ -112,20 +122,14 @@ class HeiPermissionInterface:
 
             if login_type == LoginTypeEnum.LOGIN or login_type == LoginTypeEnum.CLIENT:
                 if role_ids:
-                    rows = db.scalars(
-                        select(RelRolePermission.permission_code).where(
-                            RelRolePermission.role_id.in_(role_ids),
-                            RelRolePermission.is_deleted == SoftDeleteEnum.NO
-                        )
-                    ).all()
+                    query = select(RelRolePermission.permission_code).where(RelRolePermission.role_id.in_(role_ids))
+                    query = _soft_delete_filter(query, RelRolePermission)
+                    rows = db.scalars(query).all()
                     permission_codes.update(rows)
 
-                rows = db.scalars(
-                    select(RelUserPermission.permission_code).where(
-                        RelUserPermission.user_id == login_id,
-                        RelUserPermission.is_deleted == SoftDeleteEnum.NO
-                    )
-                ).all()
+                query = select(RelUserPermission.permission_code).where(RelUserPermission.user_id == login_id)
+                query = _soft_delete_filter(query, RelUserPermission)
+                rows = db.scalars(query).all()
                 permission_codes.update(rows)
 
             return list(permission_codes)
@@ -139,17 +143,12 @@ class HeiPermissionInterface:
         db = SessionLocal()
         try:
             login_id = str(login_id)
-            return list(
-                db.scalars(
-                    select(SysRole.code)
-                    .join(RelUserRole, SysRole.id == RelUserRole.role_id)
-                    .where(
-                        RelUserRole.user_id == login_id,
-                        RelUserRole.is_deleted == SoftDeleteEnum.NO,
-                        SysRole.is_deleted == SoftDeleteEnum.NO
-                    )
-                ).all()
+            query = select(SysRole.code).join(RelUserRole, SysRole.id == RelUserRole.role_id).where(
+                RelUserRole.user_id == login_id,
             )
+            query = _soft_delete_filter(query, RelUserRole)
+            query = _soft_delete_filter(query, SysRole)
+            return list(db.scalars(query).all())
         finally:
             db.close()
 
@@ -170,58 +169,46 @@ class HeiPermissionInterface:
             perm_scope = {}
 
             # Path 1 (P1): User → Role → Permission (ral_role_permission.permission_code)
-            role_ids = db.scalars(
-                select(RelUserRole.role_id).where(
-                    RelUserRole.user_id == login_id,
-                    RelUserRole.is_deleted == SoftDeleteEnum.NO
-                )
-            ).all()
+            query = select(RelUserRole.role_id).where(RelUserRole.user_id == login_id)
+            query = _soft_delete_filter(query, RelUserRole)
+            role_ids = db.scalars(query).all()
             if role_ids:
-                rows = db.execute(
-                    select(
-                        RelRolePermission.permission_code,
-                        RelRolePermission.scope,
-                        RelRolePermission.custom_scope_group_ids,
-                        RelRolePermission.custom_scope_org_ids,
-                    ).where(
-                        RelRolePermission.role_id.in_(role_ids),
-                        RelRolePermission.is_deleted == SoftDeleteEnum.NO
-                    )
-                ).all()
+                query = select(
+                    RelRolePermission.permission_code,
+                    RelRolePermission.scope,
+                    RelRolePermission.custom_scope_group_ids,
+                    RelRolePermission.custom_scope_org_ids,
+                ).where(RelRolePermission.role_id.in_(role_ids))
+                query = _soft_delete_filter(query, RelRolePermission)
+                rows = db.execute(query).all()
                 self._merge_scope(perm_scope, PermissionPathEnum.USER_ROLE, rows)
 
             # Path 2 (P0): User → Direct Permission (ral_user_permission.permission_code)
-            rows = db.execute(
-                select(
-                    RelUserPermission.permission_code,
-                    RelUserPermission.scope,
-                    RelUserPermission.custom_scope_group_ids,
-                    RelUserPermission.custom_scope_org_ids,
-                ).where(
-                    RelUserPermission.user_id == login_id,
-                    RelUserPermission.is_deleted == SoftDeleteEnum.NO
-                )
-            ).all()
+            query = select(
+                RelUserPermission.permission_code,
+                RelUserPermission.scope,
+                RelUserPermission.custom_scope_group_ids,
+                RelUserPermission.custom_scope_org_ids,
+            ).where(RelUserPermission.user_id == login_id)
+            query = _soft_delete_filter(query, RelUserPermission)
+            rows = db.execute(query).all()
             self._merge_scope(perm_scope, PermissionPathEnum.DIRECT, rows)
 
             # Path 4 (P3): User → Org → Role → Permission
             if login_type == LoginTypeEnum.LOGIN:
                 user = db.get(SysUser, login_id)
                 if user and user.org_id:
-                    rows = db.execute(
-                        select(
-                            RelRolePermission.permission_code,
-                            func.coalesce(RelOrgRole.scope, RelRolePermission.scope),
-                            func.coalesce(RelOrgRole.custom_scope_group_ids, RelRolePermission.custom_scope_group_ids),
-                            func.coalesce(RelOrgRole.custom_scope_org_ids, RelRolePermission.custom_scope_org_ids),
-                        )
-                        .join(RelRolePermission, RelRolePermission.role_id == RelOrgRole.role_id)
-                        .where(
-                            RelOrgRole.org_id == user.org_id,
-                            RelOrgRole.is_deleted == SoftDeleteEnum.NO,
-                            RelRolePermission.is_deleted == SoftDeleteEnum.NO
-                        )
-                    ).all()
+                    query = select(
+                        RelRolePermission.permission_code,
+                        func.coalesce(RelOrgRole.scope, RelRolePermission.scope),
+                        func.coalesce(RelOrgRole.custom_scope_group_ids, RelRolePermission.custom_scope_group_ids),
+                        func.coalesce(RelOrgRole.custom_scope_org_ids, RelRolePermission.custom_scope_org_ids),
+                    ).join(RelRolePermission, RelRolePermission.role_id == RelOrgRole.role_id).where(
+                        RelOrgRole.org_id == user.org_id,
+                    )
+                    query = _soft_delete_filter(query, RelOrgRole)
+                    query = _soft_delete_filter(query, RelRolePermission)
+                    rows = db.execute(query).all()
                     self._merge_scope(perm_scope, PermissionPathEnum.ORG_ROLE, rows)
 
             return {k: {

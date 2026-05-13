@@ -110,13 +110,21 @@ class UserService:
         self.dao.update(entity, user_id=user_id)
 
         # Sync role/group assignments if provided
-        if vo.role_ids:
+        if vo.role_ids is not None:
             self.dao.grant_roles(vo.id, vo.role_ids, user_id)
-        if vo.group_ids:
+        if vo.group_ids is not None:
             self.dao.grant_groups(vo.id, vo.group_ids, user_id)
 
     def remove(self, param: IdsParam) -> None:
-        self.dao.delete_by_ids(param.ids)
+        from .models import RelUserRole, RelUserGroup, RelUserPermission
+
+        ids = param.ids
+        db = self.dao.db
+
+        for model in [RelUserRole, RelUserGroup, RelUserPermission]:
+            db.query(model).filter(model.user_id.in_(ids)).delete(synchronize_session=False)
+
+        self.dao.delete_by_ids(ids)
 
     def detail(self, param: IdParam) -> Optional[UserVO]:
         entity = self.dao.find_by_id(param.id)
@@ -248,7 +256,6 @@ class UserService:
                 "is_visible": r.is_visible,
                 "is_cache": r.is_cache,
                 "is_affix": r.is_affix,
-                "is_hidden": r.is_hidden,
                 "is_breadcrumb": r.is_breadcrumb,
                 "sort_code": r.sort_code,
                 "children": [],

@@ -44,7 +44,6 @@ class ResourceVO(DateTimeValidatorMixin, BaseModel):
     is_visible: Optional[str] = None
     is_cache: Optional[str] = None
     is_affix: Optional[str] = None
-    is_hidden: Optional[str] = None
     is_breadcrumb: Optional[str] = None
     external_url: Optional[str] = None
     extra: Optional[str] = None
