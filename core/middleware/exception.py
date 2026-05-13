@@ -27,6 +27,7 @@ def setup_exception_handlers(app: FastAPI):
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         errors = exc.errors()
+        logger.error(f"Validation error for {request.method} {request.url.path}: {errors}")
         if errors:
             message = errors[0].get("msg", "请求参数格式错误")
         else:

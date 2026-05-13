@@ -64,7 +64,7 @@ async def remove(
     db: Session = Depends(get_db),
 ):
     service = ConfigService(db)
-    service.remove(param)
+    await service.remove(param)
     return success()
 
 
