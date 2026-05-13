@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-2">
-    <AppSearchPanel :model="searchForm" @search="handleSearch" @reset="resetSearch">
+    <AppSearchPanel :model="searchForm" perm="sys:resource:page" @search="handleSearch" @reset="resetSearch">
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="关键词" name="keyword">
           <a-input v-model:value="searchForm.keyword" placeholder="资源名称" allow-clear />
@@ -10,6 +10,7 @@
 
     <AppTreeTable
       ref="treeTableRef"
+      perm="sys:resource:tree"
       :columns="columns"
       :data-source="treeData"
       :loading="loading"
@@ -129,6 +130,7 @@ import {
   DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
+
 import {
   fetchResourceTree,
   fetchResourceRemove,

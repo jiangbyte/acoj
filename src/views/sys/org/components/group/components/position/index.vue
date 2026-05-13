@@ -6,7 +6,7 @@
         返回用户组管理
       </a-button>
     </div>
-    <AppSearchPanel :model="searchForm" @search="handleSearch" @reset="resetSearch">
+    <AppSearchPanel :model="searchForm" :perm="['sys:position:page']" @search="handleSearch" @reset="resetSearch">
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="关键词" name="keyword">
           <a-input v-model:value="searchForm.keyword" placeholder="职位名称" allow-clear />
@@ -16,6 +16,7 @@
 
     <AppTable
       ref="tableRef"
+      perm="sys:position:page"
       :columns="columns"
       :fetch-data="fetchPositionPage"
       :search-form="searchForm"
@@ -120,6 +121,7 @@ import AppImportModal from '@/components/modal/AppImportModal.vue'
 import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
+
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission

@@ -8,7 +8,7 @@
     <template #right="{ parentId, refreshTree }">
       <div class="flex flex-col h-full overflow-auto gap-2">
         <!-- Search -->
-        <AppSearchPanel :model="searchForm" @search="handleSearch" @reset="resetSearch">
+        <AppSearchPanel :model="searchForm" perm="sys:org:page" @search="handleSearch" @reset="resetSearch">
             <a-button type="text" size="small" class="max-md:hidden" @click="treePanel?.splitRef?.toggleCollapse()">
               <template #icon>
                 <component :is="treePanel?.collapsed ? DoubleRightOutlined : DoubleLeftOutlined" />
@@ -24,6 +24,7 @@
         <!-- Table -->
         <AppTable
           ref="tableRef"
+          perm="sys:org:page"
           :columns="columns"
           :fetch-data="fetchOrgPage"
           :search-form="searchForm"
@@ -142,6 +143,7 @@ import {
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import { useRouter } from 'vue-router'
+
 import {
   fetchOrgPage,
   fetchOrgTree,

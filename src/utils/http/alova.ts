@@ -2,6 +2,7 @@ import { message } from 'ant-design-vue'
 import { createAlova } from 'alova'
 import { createServerTokenAuthentication } from 'alova/client'
 import adapterFetch from 'alova/fetch'
+import { xhrRequestAdapter } from '@alova/adapter-xhr'
 import VueHook from 'alova/vue'
 import type { VueHookType } from 'alova/vue'
 import { DEFAULT_ALOVA_OPTIONS, DEFAULT_BACKEND_OPTIONS } from './config'
@@ -17,15 +18,16 @@ const { onAuthRequired } = createServerTokenAuthentication<VueHookType>({
   },
 })
 
-export function createAlovaInstance(
+function createAlovaInstance(
   baseURL: string,
+  adapter: any,
   backendConfig?: Partial<Service.BackendConfig>
 ) {
   const bc = { ...DEFAULT_BACKEND_OPTIONS, ...backendConfig }
 
   return createAlova({
     statesHook: VueHook,
-    requestAdapter: adapterFetch(),
+    requestAdapter: adapter,
     baseURL,
     timeout: DEFAULT_ALOVA_OPTIONS.timeout,
     cacheFor: null,
@@ -37,9 +39,12 @@ export function createAlovaInstance(
         const { status } = response
 
         if (status === 200) {
-          if (method.meta?.isBlob) return response.blob()
+          // Fetch adapter returns Response object, XHR adapter returns { status, data, headers }
+          if (method.meta?.isBlob) {
+            return typeof response.blob === 'function' ? response.blob() : (response as any).data
+          }
 
-          const apiData = await response.json()
+          const apiData = typeof response.json === 'function' ? await response.json() : (response as any).data
           if (apiData[bc.codeKey] === bc.successCode) {
             return {
               ...apiData,
@@ -53,7 +58,16 @@ export function createAlovaInstance(
 
         if (status === 401) {
           const authStore = useAuthStore()
+          const wasLogin = authStore.isLogin
           authStore.logout()
+          if (wasLogin) {
+            import('@/router').then(({ router }) => {
+              const name = router.currentRoute.value.name
+              if (name && name !== 'login') {
+                router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+              }
+            })
+          }
         }
 
         return handleResponseError(response)
@@ -65,4 +79,18 @@ export function createAlovaInstance(
       },
     },
   })
+}
+
+export function createDefaultAlovaInstance(
+  baseURL: string,
+  backendConfig?: Partial<Service.BackendConfig>
+) {
+  return createAlovaInstance(baseURL, adapterFetch(), backendConfig)
+}
+
+export function createUploadAlovaInstance(
+  baseURL: string,
+  backendConfig?: Partial<Service.BackendConfig>
+) {
+  return createAlovaInstance(baseURL, xhrRequestAdapter(), backendConfig)
 }

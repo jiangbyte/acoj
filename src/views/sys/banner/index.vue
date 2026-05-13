@@ -3,6 +3,7 @@
     <!-- Search panel -->
     <AppSearchPanel
       :model="searchForm"
+      perm="sys:banner:page"
       @search="handleSearch"
       @reset="resetSearch"
     >
@@ -43,6 +44,7 @@
 
     <AppTable
       ref="tableRef"
+      perm="sys:banner:page"
       :columns="columns"
       :fetch-data="fetchBannerPage"
       :search-form="searchForm"
@@ -150,6 +152,7 @@ import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
 import { useAuthStore } from '@/store'
+
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission

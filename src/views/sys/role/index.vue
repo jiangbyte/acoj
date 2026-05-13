@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-2">
-    <AppSearchPanel :model="searchForm" @search="handleSearch" @reset="resetSearch">
+    <AppSearchPanel :model="searchForm" perm="sys:role:page" @search="handleSearch" @reset="resetSearch">
       <a-col :xs="24" :sm="12" :md="8" :lg="6">
         <a-form-item label="关键词" name="keyword">
           <a-input v-model:value="searchForm.keyword" placeholder="角色名称" allow-clear />
@@ -19,6 +19,7 @@
 
     <AppTable
       ref="tableRef"
+      perm="sys:role:page"
       :columns="columns"
       :fetch-data="fetchRolePage"
       :search-form="searchForm"
@@ -131,6 +132,7 @@ import {
   DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
+
 import {
   fetchRolePage,
   fetchRoleRemove,

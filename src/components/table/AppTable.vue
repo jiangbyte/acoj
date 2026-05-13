@@ -3,6 +3,8 @@
     size="small"
     :class="['[&_.ant-spin-container]:min-h-none', fixedHeight && 'flex flex-col flex-1 min-h-0']"
   >
+    <AppForbidden v-if="!hasPerm" />
+    <template v-else>
     <!-- Toolbar -->
     <div class="flex items-center justify-between mb-3 min-h-8 flex-shrink-0">
       <div class="flex items-center gap-2 flex-wrap">
@@ -46,12 +48,15 @@
         </template>
       </a-table>
     </div>
+    </template>
   </a-card>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onUnmounted, useSlots } from 'vue'
 import { ReloadOutlined } from '@ant-design/icons-vue'
+import { useAuthStore } from '@/store'
+import AppForbidden from '@/components/result/AppForbidden.vue'
 
 const passthroughSlots = Object.keys(useSlots()).filter(s => s !== 'default' && s !== 'dragHandle')
 
@@ -67,7 +72,15 @@ const props = defineProps<{
     type?: 'checkbox' | 'radio'
   }
   fixedHeight?: boolean
+  perm?: string | string[]
 }>()
+
+const auth = useAuthStore()
+const hasPerm = computed(() => {
+  if (!props.perm) return true
+  const codes = Array.isArray(props.perm) ? props.perm : [props.perm]
+  return codes.some(code => auth.hasPermission(code as string))
+})
 
 const dataSource = ref<any[]>([])
 const loading = ref(false)

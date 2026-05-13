@@ -1,5 +1,7 @@
 <template>
   <a-card size="small" class="flex flex-col flex-1 min-h-0 [&_.ant-spin-container]:min-h-none">
+    <AppForbidden v-if="!hasPerm" />
+    <template v-else>
     <!-- Toolbar -->
     <div class="flex items-center justify-between mb-3 min-h-8 flex-shrink-0">
       <div class="flex items-center gap-2 flex-wrap">
@@ -44,12 +46,15 @@
         </template>
       </a-table>
     </div>
+    </template>
   </a-card>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, useSlots } from 'vue'
 import { ReloadOutlined } from '@ant-design/icons-vue'
+import { useAuthStore } from '@/store'
+import AppForbidden from '@/components/result/AppForbidden.vue'
 
 const passthroughSlots = Object.keys(useSlots()).filter(s => s !== 'default' && s !== 'dragHandle')
 
@@ -65,7 +70,15 @@ const props = defineProps<{
     onChange?: (keys: string[]) => void
     type?: 'checkbox' | 'radio'
   }
+  perm?: string | string[]
 }>()
+
+const auth = useAuthStore()
+const hasPerm = computed(() => {
+  if (!props.perm) return true
+  const codes = Array.isArray(props.perm) ? props.perm : [props.perm]
+  return codes.some(code => auth.hasPermission(code as string))
+})
 
 // ========== Row selection ==========
 const selectedKeys = ref<string[]>([])

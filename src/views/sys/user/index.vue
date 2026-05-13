@@ -3,6 +3,7 @@
     <!-- Search panel: first item visible, rest auto-collapsed -->
     <AppSearchPanel
       :model="searchForm"
+      perm="sys:user:page"
       @search="handleSearch"
       @reset="resetSearch"
     >
@@ -29,6 +30,7 @@
     <!-- Table panel -->
     <AppTable
       ref="tableRef"
+      perm="sys:user:page"
       :columns="columns"
       :fetch-data="fetchUserPage"
       :search-form="searchForm"
@@ -141,6 +143,7 @@ import {
   DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
+
 import {
   fetchUserPage,
   fetchUserRemove,

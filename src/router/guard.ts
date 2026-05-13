@@ -2,6 +2,7 @@ import type { Router } from 'vue-router'
 import { useAppStore, useAuthStore, useRouteStore } from '@/store'
 
 const HOME_PATH = (import.meta.env.VITE_HOME_PATH as string) || '/dashboard'
+let _retryingNotFound = false
 
 export function setupRouterGuard(router: Router) {
   router.beforeEach(async (to, _from, next) => {
@@ -59,6 +60,21 @@ export function setupRouterGuard(router: Router) {
         next({ path: to.path, query: to.query, hash: to.hash, replace: true })
         return
       }
+      // 动态路由初始化失败（如 token 过期），跳转登录页
+      if (!authStore.isLogin) {
+        next({ name: 'login', query: { redirect: to.fullPath } })
+        return
+      }
+    }
+
+    // 动态路由已初始化但导航命中了 not-found（如 login() 提前初始化路由后），重新触发解析
+    if (routeStore.isInitAuthRoute && to.name === 'not-found' && !_retryingNotFound) {
+      _retryingNotFound = true
+      next({ path: to.fullPath, query: to.query, hash: to.hash, replace: true })
+      return
+    }
+    if (to.name !== 'not-found') {
+      _retryingNotFound = false
     }
 
     next()

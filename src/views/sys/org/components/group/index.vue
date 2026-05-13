@@ -28,7 +28,7 @@
             返回组织管理
           </a-button>
         </div>
-        <AppSearchPanel :model="searchForm" @search="handleSearch" @reset="resetSearch">
+        <AppSearchPanel :model="searchForm" :perm="['sys:group:page', 'sys:group:tree']" @search="handleSearch" @reset="resetSearch">
             <a-button type="text" size="small" class="max-md:hidden" @click="splitRef?.toggleCollapse()">
               <template #icon>
                 <component :is="splitCollapsed ? DoubleRightOutlined : DoubleLeftOutlined" />
@@ -46,6 +46,7 @@
 
         <AppTreeTable
           ref="treeTableRef"
+          :perm="['sys:group:page', 'sys:group:tree']"
           :columns="columns"
           :data-source="treeTableData"
           :loading="treeTableLoading"
@@ -211,6 +212,7 @@ import AppImportModal from '@/components/modal/AppImportModal.vue'
 import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
+
 
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission

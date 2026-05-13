@@ -1,5 +1,5 @@
 <template>
-  <a-card size="small">
+  <a-card v-if="hasPerm" size="small">
     <a-form :model="model" @finish="$emit('search')">
       <a-row :gutter="16" align="middle" class="gap-y-4 [&_.ant-form-item]:mb-0">
         <SlotRenderer :collapse-after="collapseAfter" :advanced="advanced">
@@ -30,12 +30,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineComponent } from 'vue'
+import { computed, ref, defineComponent } from 'vue'
 import { SearchOutlined, ReloadOutlined, DownOutlined, UpOutlined } from '@ant-design/icons-vue'
+import { useAuthStore } from '@/store'
 
 const props = withDefaults(defineProps<{
   model: any
   collapseAfter?: number
+  perm?: string | string[]
 }>(), {
   collapseAfter: 4,
 })
@@ -44,6 +46,13 @@ const emit = defineEmits<{
   search: []
   reset: []
 }>()
+
+const auth = useAuthStore()
+const hasPerm = computed(() => {
+  if (!props.perm) return true
+  const codes = Array.isArray(props.perm) ? props.perm : [props.perm]
+  return codes.some(code => auth.hasPermission(code as string))
+})
 
 const advanced = ref(false)
 

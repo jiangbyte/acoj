@@ -13,13 +13,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, watch, onMounted, onUnmounted } from 'vue'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
 import { theme } from 'ant-design-vue'
-import { useAppStore } from '@/store'
+import { useAppStore, useAuthStore } from '@/store'
 import { changeColor, toggleGrayMode, toggleColorWeak } from '@/utils'
 
 const app = useAppStore()
+const auth = useAuthStore()
 
 const { darkAlgorithm, defaultAlgorithm } = theme
 
@@ -39,4 +40,19 @@ watch(() => app.colorPrimary, color => changeColor(color, app.theme))
 watch(() => app.theme, t => changeColor(app.colorPrimary, t))
 watch(() => app.grayMode, toggleGrayMode)
 watch(() => app.colorWeak, toggleColorWeak)
+
+// Permission auto-refresh: poll while logged in
+watch(() => auth.isLogin, (loggedIn) => {
+  if (loggedIn) auth.startPermissionPolling()
+  else auth.stopPermissionPolling()
+}, { immediate: true })
+
+// Refresh permissions when tab regains focus
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible' && auth.isLogin) {
+    auth.refreshPermissions()
+  }
+}
+onMounted(() => document.addEventListener('visibilitychange', onVisibilityChange))
+onUnmounted(() => document.removeEventListener('visibilitychange', onVisibilityChange))
 </script>

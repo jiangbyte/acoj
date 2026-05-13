@@ -120,6 +120,7 @@
 defineOptions({ name: 'UserGrantPermission' })
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { message } from 'ant-design-vue'
+import { useAuthStore } from '@/store'
 import { fetchUserGrantPermission, fetchUserOwnPermissionDetail } from '@/api/user'
 import { fetchPermissionModules, fetchPermissionByModule } from '@/api/permission'
 import { fetchOrgTree } from '@/api/org'
@@ -285,6 +286,7 @@ async function handleSubmit() {
     })
     if (success) {
       message.success('授权成功')
+      useAuthStore().refreshPermissions()
       emit('success')
       handleClose()
     }

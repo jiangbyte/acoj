@@ -10,6 +10,8 @@ import {
 import { sm2 } from 'sm-crypto'
 import { useRouteStore } from './route'
 
+let _permPollTimer: ReturnType<typeof setInterval> | null = null
+
 interface AuthState {
   token: string
   userInfo: any
@@ -49,6 +51,7 @@ export const useAuthStore = defineStore('auth', {
       if (!success) return false
       this.token = data.token
       await this.loadUserInfo()
+      this.startPermissionPolling()
       return true
     },
     async loadUserInfo() {
@@ -61,14 +64,32 @@ export const useAuthStore = defineStore('auth', {
     async loadMenusAndPermissions() {
       const routeStore = useRouteStore()
       const [menusRes, permsRes] = await Promise.all([fetchUserMenus(), fetchUserPermissions()])
-      if (menusRes.data) routeStore.setMenus(menusRes.data)
+      if (menusRes.data) {
+        routeStore.setMenus(menusRes.data)
+        await routeStore.initAuthRoute()
+      }
       if (permsRes.data) this.permissions = permsRes.data
+    },
+    async refreshPermissions() {
+      const { data } = await fetchUserPermissions()
+      if (data) this.permissions = data
+    },
+    startPermissionPolling(intervalMs = 5 * 60 * 1000) {
+      this.stopPermissionPolling()
+      _permPollTimer = setInterval(() => this.refreshPermissions(), intervalMs)
+    },
+    stopPermissionPolling() {
+      if (_permPollTimer !== null) {
+        clearInterval(_permPollTimer)
+        _permPollTimer = null
+      }
     },
     async logout() {
       await fetchLogout().catch(() => {})
       this.token = ''
       this.userInfo = null
       this.permissions = []
+      this.stopPermissionPolling()
       const routeStore = useRouteStore()
       routeStore.reset()
     },

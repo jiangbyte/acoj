@@ -19,29 +19,35 @@ export const useRouteStore = defineStore('route', {
       this.menus = menus
     },
     async initAuthRoute() {
-      const routes = menusToRoutes(this.menus)
-      const cacheNames: string[] = []
+      this.isInitAuthRoute = false
+      try {
+        const routes = menusToRoutes(this.menus)
+        const cacheNames: string[] = []
 
-      function collectCache(routes: any[]) {
+        function collectCache(routes: any[]) {
+          routes.forEach((route: any) => {
+            if (route.meta?.cache) {
+              cacheNames.push(route.name)
+            }
+            if (route.children) {
+              collectCache(route.children)
+            }
+          })
+        }
+        collectCache(routes)
+
         routes.forEach((route: any) => {
-          if (route.meta?.cache) {
-            cacheNames.push(route.name)
-          }
-          if (route.children) {
-            collectCache(route.children)
+          if (!router.hasRoute(route.name)) {
+            router.addRoute('root', route)
           }
         })
+
+        this.cacheRoutes = cacheNames
+        this.isInitAuthRoute = true
+      } catch (error) {
+        this.isInitAuthRoute = false
+        throw error
       }
-      collectCache(routes)
-
-      routes.forEach((route: any) => {
-        if (!router.hasRoute(route.name)) {
-          router.addRoute('root', route)
-        }
-      })
-
-      this.cacheRoutes = cacheNames
-      this.isInitAuthRoute = true
     },
     reset() {
       this.menus = []
