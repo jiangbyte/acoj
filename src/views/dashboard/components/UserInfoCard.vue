@@ -24,10 +24,10 @@
               {{ userInfo.account }}
             </template>
           </div>
-          <div class="user-footer" v-if="userInfo.last_login_at">
+          <div v-if="userInfo.last_login_at" class="user-footer">
             <span class="footer-item">上次登录 {{ formatTime(userInfo.last_login_at) }}</span>
-            <span class="footer-divider" v-if="userInfo.last_login_ip">|</span>
-            <span class="footer-item" v-if="userInfo.last_login_ip">
+            <span v-if="userInfo.last_login_ip" class="footer-divider">|</span>
+            <span v-if="userInfo.last_login_ip" class="footer-item">
               {{ userInfo.last_login_ip }}
             </span>
           </div>

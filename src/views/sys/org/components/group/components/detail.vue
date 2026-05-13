@@ -88,7 +88,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { useMobile } from '@/hooks/useMobile'
 import { fetchGroupDetail } from '@/api/group'
 import { fetchOrgTree } from '@/api/org'
 
@@ -113,19 +114,10 @@ async function loadOrgNames() {
   orgNameMap.value = map
 }
 
-const isMobile = ref(false)
+const { drawerWidth } = useMobile()
 onMounted(() => {
   loadOrgNames()
-  const mql = window.matchMedia('(max-width: 767px)')
-  isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => {
-    isMobile.value = e.matches
-  }
-  mql.addEventListener('change', handler)
-  onBeforeUnmount(() => mql.removeEventListener('change', handler))
 })
-
-const drawerWidth = computed(() => (isMobile.value ? '100%' : 640))
 
 async function doOpen(row: any) {
   if (!row?.id) return

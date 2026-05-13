@@ -134,7 +134,7 @@
 
     <!-- Drawers -->
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
-    <FormDrawer ref="formRef" v-model:open="formOpen" @success="tableRef?.refresh()" />
+    <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
   </div>
 </template>
 
@@ -169,7 +169,7 @@ const auth = useAuthStore()
 const hasPermission = auth.hasPermission
 
 const crud = useCrud({ name: '轮播图', deleteApi: fetchBannerRemove })
-const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete } = crud
+const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete, handleFormSuccess } = crud
 
 const searchForm = reactive({
   keyword: '',

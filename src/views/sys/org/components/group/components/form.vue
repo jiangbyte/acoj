@@ -96,7 +96,7 @@ async function loadGroupTreeByOrg(orgId?: string) {
 const editLoading = ref(false)
 
 const initialForm = () => ({
-  parent_id: '0',
+  parent_id: '0' as string | undefined,
   org_id: '0',
   code: '',
   name: '',

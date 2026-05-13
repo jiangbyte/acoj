@@ -151,8 +151,9 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'UserGrantPermission' })
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed } from 'vue'
 import { message } from 'ant-design-vue'
+import { useMobile } from '@/hooks/useMobile'
 import { useAuthStore } from '@/store'
 import { fetchUserGrantPermission, fetchUserOwnPermissionDetail } from '@/api/user'
 import { fetchPermissionModules, fetchPermissionByModule } from '@/api/permission'
@@ -162,17 +163,7 @@ import { fetchGroupTree } from '@/api/group'
 defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
 
-const isMobile = ref(false)
-onMounted(() => {
-  const mql = window.matchMedia('(max-width: 767px)')
-  isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => {
-    isMobile.value = e.matches
-  }
-  mql.addEventListener('change', handler)
-  onBeforeUnmount(() => mql.removeEventListener('change', handler))
-})
-const drawerWidth = computed(() => (isMobile.value ? '100%' : 800))
+const { drawerWidth } = useMobile(800)
 
 const currentUserId = ref('')
 const modules = ref<string[]>([])
@@ -269,30 +260,27 @@ async function loadPermissions() {
     return
   }
   loading.value = true
-  try {
-    const [permsRes, ownRes] = await Promise.all([
-      fetchPermissionByModule({ module: currentModule.value }),
-      fetchUserOwnPermissionDetail({ user_id: currentUserId.value }),
-    ])
-    const ownMap: Record<string, any> = {}
-    ;(ownRes?.data || []).forEach((item: any) => {
-      ownMap[item.permission_code] = item
-    })
+  const [permsRes, ownRes] = await Promise.all([
+    fetchPermissionByModule({ module: currentModule.value }),
+    fetchUserOwnPermissionDetail({ user_id: currentUserId.value }),
+  ])
+  const ownMap: Record<string, any> = {}
+  ;(ownRes?.data || []).forEach((item: any) => {
+    ownMap[item.permission_code] = item
+  })
 
-    tableData.value = (permsRes?.data || []).map((p: any) => {
-      const own = ownMap[p.code]
-      return {
-        code: p.code,
-        name: p.name,
-        checked: !!own,
-        scope: own?.scope || 'ALL',
-        customGroupIds: own?.custom_scope_group_ids ? JSON.parse(own.custom_scope_group_ids) : [],
-        customOrgIds: own?.custom_scope_org_ids ? JSON.parse(own.custom_scope_org_ids) : [],
-      }
-    })
-  } finally {
-    loading.value = false
-  }
+  tableData.value = (permsRes?.data || []).map((p: any) => {
+    const own = ownMap[p.code]
+    return {
+      code: p.code,
+      name: p.name,
+      checked: !!own,
+      scope: own?.scope || 'ALL',
+      customGroupIds: own?.custom_scope_group_ids ? JSON.parse(own.custom_scope_group_ids) : [],
+      customOrgIds: own?.custom_scope_org_ids ? JSON.parse(own.custom_scope_org_ids) : [],
+    }
+  })
+  loading.value = false
 }
 
 function handleAllCheck(e: any) {
@@ -309,26 +297,23 @@ function handleCheck(record: any, checked: boolean) {
 async function handleSubmit() {
   const checkedItems = tableData.value.filter(p => p.checked)
   submitLoading.value = true
-  try {
-    const permissions = checkedItems.map(p => ({
-      permission_code: p.code,
-      scope: p.scope,
-      custom_scope_group_ids: p.customGroupIds?.length ? JSON.stringify(p.customGroupIds) : null,
-      custom_scope_org_ids: p.customOrgIds?.length ? JSON.stringify(p.customOrgIds) : null,
-    }))
-    const { success } = await fetchUserGrantPermission({
-      user_id: currentUserId.value,
-      permissions,
-    })
-    if (success) {
-      message.success('授权成功')
-      useAuthStore().refreshPermissions()
-      emit('success')
-      handleClose()
-    }
-  } finally {
-    submitLoading.value = false
+  const permissions = checkedItems.map(p => ({
+    permission_code: p.code,
+    scope: p.scope,
+    custom_scope_group_ids: p.customGroupIds?.length ? JSON.stringify(p.customGroupIds) : null,
+    custom_scope_org_ids: p.customOrgIds?.length ? JSON.stringify(p.customOrgIds) : null,
+  }))
+  const { success } = await fetchUserGrantPermission({
+    user_id: currentUserId.value,
+    permissions,
+  })
+  if (success) {
+    message.success('授权成功')
+    useAuthStore().refreshPermissions()
+    emit('success')
+    handleClose()
   }
+  submitLoading.value = false
 }
 
 function doOpen(user: any) {

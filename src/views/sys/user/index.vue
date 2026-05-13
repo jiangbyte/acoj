@@ -133,12 +133,12 @@
 
     <!-- Drawers -->
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
-    <FormDrawer ref="formRef" v-model:open="formOpen" @success="tableRef?.refresh()" />
-    <GrantRole ref="grantRoleRef" v-model:open="grantRoleOpen" @success="tableRef?.refresh()" />
+    <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
+    <GrantRole ref="grantRoleRef" v-model:open="grantRoleOpen" @success="handleFormSuccess" />
     <GrantPermission
       ref="grantPermissionRef"
       v-model:open="grantPermissionOpen"
-      @success="tableRef?.refresh()"
+      @success="handleFormSuccess"
     />
   </div>
 </template>
@@ -178,7 +178,7 @@ const auth = useAuthStore()
 const hasPermission = auth.hasPermission
 
 const crud = useCrud({ name: '用户', deleteApi: fetchUserRemove })
-const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete } = crud
+const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handleBatchDelete, handleFormSuccess } = crud
 
 const searchForm = reactive({ keyword: '', status: undefined })
 const columns = [

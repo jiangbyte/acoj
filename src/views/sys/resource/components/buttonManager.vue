@@ -201,9 +201,10 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'ResourceButtonManager' })
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
+import { useMobile } from '@/hooks/useMobile'
 import {
   fetchResourceTree,
   fetchResourceCreate,
@@ -215,20 +216,10 @@ import { fetchPermissionModules, fetchPermissionByModule } from '@/api/permissio
 defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
 
-const isMobile = ref(false)
-onMounted(() => {
-  const mql = window.matchMedia('(max-width: 767px)')
-  isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => {
-    isMobile.value = e.matches
-  }
-  mql.addEventListener('change', handler)
-  onBeforeUnmount(() => mql.removeEventListener('change', handler))
-})
-const drawerWidth = computed(() => (isMobile.value ? '100%' : 760))
-const createModalWidth = computed(() => (isMobile.value ? '100%' : 480))
-const permModalWidth = computed(() => (isMobile.value ? '100%' : 480))
-const manageModalWidth = computed(() => (isMobile.value ? '100%' : 520))
+const { drawerWidth } = useMobile(760)
+const createModalWidth = computed(() => (drawerWidth.value === '100%' ? '100%' : 480))
+const permModalWidth = computed(() => (drawerWidth.value === '100%' ? '100%' : 480))
+const manageModalWidth = computed(() => (drawerWidth.value === '100%' ? '100%' : 520))
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -260,12 +251,8 @@ async function loadButtons(resourceId: string) {
   const buttons = (node?.children || []).filter((c: any) => c.type === 'BUTTON')
   buttonList.value = buttons.map((b: any) => {
     let permission_code: string | undefined
-    try {
-      const extra = JSON.parse(b.extra || '{}')
-      permission_code = extra.permission_code || undefined
-    } catch {
-      permission_code = undefined
-    }
+    const extra = JSON.parse(b.extra || '{}')
+    permission_code = extra.permission_code || undefined
     return { ...b, permission_code }
   })
 }
@@ -274,32 +261,28 @@ async function loadData(resource: any) {
   await loadButtons(resource.id)
 }
 
-function doOpen(resource: any) {
+async function doOpen(resource: any) {
   parentResource.value = resource
   loading.value = true
-  loadData(resource).finally(() => {
-    loading.value = false
-  })
+  await loadData(resource)
+  loading.value = false
   emit('update:open', true)
 }
 
 async function handleSubmit() {
   submitLoading.value = true
-  try {
-    await Promise.all(
-      buttonList.value.map(b =>
-        fetchResourceModify({
-          id: b.id,
-          extra: JSON.stringify({ permission_code: b.permission_code || null }),
-        })
-      )
+  await Promise.all(
+    buttonList.value.map(b =>
+      fetchResourceModify({
+        id: b.id,
+        extra: JSON.stringify({ permission_code: b.permission_code || null }),
+      })
     )
-    message.success('保存成功')
-    emit('success')
-    handleClose()
-  } finally {
-    submitLoading.value = false
-  }
+  )
+  message.success('保存成功')
+  emit('success')
+  handleClose()
+  submitLoading.value = false
 }
 
 // ── Create button ──
@@ -318,23 +301,19 @@ async function confirmCreate() {
     return
   }
   createLoading.value = true
-  try {
-    const parent = parentResource.value
-    await fetchResourceCreate({
-      name: createForm.value.name,
-      code: createForm.value.code,
-      sort_code: createForm.value.sort_code,
-      category: parent?.category,
-      type: 'BUTTON',
-      parent_id: parent?.id,
-      status: 'ENABLED',
-    })
-    message.success('新增成功')
-    createModalVisible.value = false
-    await loadButtons(parent?.id)
-  } finally {
-    createLoading.value = false
-  }
+  await fetchResourceCreate({
+    name: createForm.value.name,
+    code: createForm.value.code,
+    sort_code: createForm.value.sort_code,
+    category: parentResource.value?.category,
+    type: 'BUTTON',
+    parent_id: parentResource.value?.id,
+    status: 'ENABLED',
+  })
+  message.success('新增成功')
+  createModalVisible.value = false
+  await loadButtons(parentResource.value?.id)
+  createLoading.value = false
 }
 
 // ── Button management modal ──
@@ -405,17 +384,11 @@ function openDeleteConfirm(record: any) {
 
 async function confirmDelete() {
   if (!deleteTarget.value) return
-  try {
-    await fetchResourceRemove({ ids: [deleteTarget.value.id] })
-    message.success('删除成功')
-    buttonList.value = buttonList.value.filter(b => b.id !== deleteTarget.value.id)
-    manageModalVisible.value = false
-  } catch {
-    message.error('删除失败')
-  } finally {
-    deleteModalVisible.value = false
-    deleteTarget.value = null
-  }
+  await fetchResourceRemove({ ids: [deleteTarget.value.id] })
+  message.success('删除成功')
+  buttonList.value = buttonList.value.filter(b => b.id !== deleteTarget.value.id)
+  deleteModalVisible.value = false
+  deleteTarget.value = null
 }
 
 function handleClose() {

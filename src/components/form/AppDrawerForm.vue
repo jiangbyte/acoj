@@ -54,21 +54,18 @@ function handleClose() {
 }
 
 async function handleSubmit() {
-  try {
-    await formRef.value?.validate()
-  } catch {
-    return
-  }
+  const valid = await formRef.value?.validate().then(() => true).catch(() => false)
+  if (!valid) return
 
   submitLoading.value = true
-  try {
-    const result = await props.onSubmit(props.form)
-    if (result === false || result?.success === false) return
-    message.success('保存成功')
-    emit('success')
-    handleClose()
-  } finally {
+  const result = await props.onSubmit(props.form)
+  if (result === false || result?.success === false) {
     submitLoading.value = false
+    return
   }
+  message.success('保存成功')
+  emit('success')
+  handleClose()
+  submitLoading.value = false
 }
 </script>

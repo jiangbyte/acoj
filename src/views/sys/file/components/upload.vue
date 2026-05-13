@@ -64,13 +64,9 @@ async function beforeUpload(file: File) {
 async function handleUpload() {
   if (fileList.value.length === 0) return
   uploading.value = true
-  try {
-    await upload()
-    emit('success')
-    handleClose()
-  } catch {
-    /* ignore */
-  }
+  await upload()
+  emit('success')
+  handleClose()
   uploading.value = false
 }
 

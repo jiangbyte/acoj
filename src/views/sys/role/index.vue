@@ -137,12 +137,12 @@
     <GrantPermission
       ref="grantPermissionRef"
       v-model:open="grantPermissionOpen"
-      @success="tableRef?.refresh()"
+      @success="handleFormSuccess"
     />
     <GrantResource
       ref="grantResourceRef"
       v-model:open="grantResourceOpen"
-      @success="tableRef?.refresh()"
+      @success="handleFormSuccess"
     />
   </div>
 </template>

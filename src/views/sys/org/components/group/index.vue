@@ -237,12 +237,13 @@ import {
   fetchGroupTemplate,
   fetchGroupImport,
 } from '@/api/group'
-import { downloadBlob, confirmDelete } from '@/utils'
+import { confirmDelete } from '@/utils'
 import AppSplitPanel from '@/components/layout/AppSplitPanel.vue'
 import AppTreeTable from '@/components/table/AppTreeTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import AppImportModal from '@/components/modal/AppImportModal.vue'
 import AppExportModal from '@/components/modal/AppExportModal.vue'
+import { useImportExport } from '@/hooks/useImportExport'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
 
@@ -304,13 +305,10 @@ function extractSubtree(nodes: any[], id: string): any[] {
 
 async function loadLeftGroupTree() {
   groupTreeLoading.value = true
-  try {
-    const { data } = await fetchGroupTree({ org_id: orgId.value || undefined })
-    allGroupTreeData.value = data || []
-    groupTreeData.value = data || []
-  } finally {
-    groupTreeLoading.value = false
-  }
+  const { data } = await fetchGroupTree({ org_id: orgId.value || undefined })
+  allGroupTreeData.value = data || []
+  groupTreeData.value = data || []
+  groupTreeLoading.value = false
 }
 
 // ── Tree table ──
@@ -332,20 +330,17 @@ function filterTreeTableByKeyword(nodes: any[], keyword: string): any[] {
 
 async function loadGroupTree() {
   treeTableLoading.value = true
-  try {
-    const { data } = await fetchGroupTree({ org_id: orgId.value || undefined })
-    const fullTree = data || []
-    if (selectedGroupKeys.value.length > 0) {
-      treeTableData.value = filterTreeTableByKeyword(
-        extractSubtree(fullTree, selectedGroupKeys.value[0]),
-        searchForm.keyword
-      )
-    } else {
-      treeTableData.value = filterTreeTableByKeyword(fullTree, searchForm.keyword)
-    }
-  } finally {
-    treeTableLoading.value = false
+  const { data } = await fetchGroupTree({ org_id: orgId.value || undefined })
+  const fullTree = data || []
+  if (selectedGroupKeys.value.length > 0) {
+    treeTableData.value = filterTreeTableByKeyword(
+      extractSubtree(fullTree, selectedGroupKeys.value[0]),
+      searchForm.keyword
+    )
+  } else {
+    treeTableData.value = filterTreeTableByKeyword(fullTree, searchForm.keyword)
   }
+  treeTableLoading.value = false
 }
 
 // ── Search form ──
@@ -402,6 +397,7 @@ const columns = [
 ]
 
 // ── Drawers ──
+const importModalRef = ref()
 const detailRef = ref()
 const formRef = ref()
 const detailOpen = ref(false)
@@ -457,46 +453,22 @@ function resetSearch() {
 }
 
 // ── Import / Export / Template ──
-const importOpen = ref(false)
-const exportOpen = ref(false)
-const templateLoading = ref(false)
-const importModalRef = ref()
-
-async function handleDownloadTemplate() {
-  templateLoading.value = true
-  try {
-    const blob = await fetchGroupTemplate()
-    downloadBlob(blob, '用户组导入模板.xlsx')
-  } catch {
-    message.error('下载模板失败')
-  } finally {
-    templateLoading.value = false
-  }
-}
-
-async function handleExportWithParams(params: any) {
-  try {
-    const blob = await fetchGroupExport(params)
-    downloadBlob(blob, `用户组数据_${new Date().toLocaleDateString()}.xlsx`)
-    message.success('导出成功')
-    exportOpen.value = false
-  } catch {
-    message.error('导出失败')
-  }
-}
-
-async function handleImport(file: File) {
-  try {
-    const { success, data } = await fetchGroupImport(file)
-    if (success && data) {
-      importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
-      message.success('导入成功')
-      loadGroupTree()
-    }
-  } catch {
-    importModalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
-  }
-}
+const {
+  importOpen,
+  exportOpen,
+  templateLoading,
+  handleDownloadTemplate,
+  handleExportWithParams,
+  handleImport,
+} = useImportExport({
+  exportApi: fetchGroupExport,
+  templateApi: fetchGroupTemplate,
+  importApi: fetchGroupImport,
+  fileName: '用户组数据',
+  templateName: '用户组导入模板',
+  importModalRef,
+  onSuccess: () => { loadGroupTree() },
+})
 
 onMounted(() => {
   const { org_id, group_id } = route.query as Record<string, string>

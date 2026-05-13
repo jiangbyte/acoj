@@ -46,10 +46,11 @@ const props = withDefaults(
   }>(),
   {
     collapseAfter: 4,
+    perm: undefined,
   }
 )
 
-const emit = defineEmits<{
+defineEmits<{
   search: []
   reset: []
 }>()

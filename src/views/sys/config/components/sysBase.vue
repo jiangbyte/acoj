@@ -5,7 +5,7 @@
       <a-row :gutter="16">
         <a-col :xs="24" :sm="12" :md="8">
           <a-form-item label="默认文件引擎" name="SYS_DEFAULT_FILE_ENGINE">
-            <DictSelect v-model:value="formData.SYS_DEFAULT_FILE_ENGINE" type-code="FILE_ENGINE" />
+            <DictSelect v-model="formData.SYS_DEFAULT_FILE_ENGINE" type-code="FILE_ENGINE" />
           </a-form-item>
         </a-col>
         <a-col :xs="24" :sm="12" :md="8">
@@ -46,37 +46,31 @@ const formData = reactive<Record<string, any>>({})
 
 async function loadData() {
   loading.value = true
-  try {
-    const { data } = await fetchConfigListByCategory({ category: 'SYS_BASE' })
-    if (data) {
-      Object.keys(formData).forEach(k => delete formData[k])
-      data.forEach((item: any) => {
-        formData[item.config_key] = item.config_value
-        initialData[item.config_key] = item.config_value
-      })
-    }
-  } finally {
-    loading.value = false
+  const { data } = await fetchConfigListByCategory({ category: 'SYS_BASE' })
+  if (data) {
+    Object.keys(formData).forEach(k => delete formData[k])
+    data.forEach((item: any) => {
+      formData[item.config_key] = item.config_value
+      initialData[item.config_key] = item.config_value
+    })
   }
+  loading.value = false
 }
 
 async function handleSave() {
   saving.value = true
-  try {
-    const configs = Object.entries(formData).map(([key, value]) => ({
-      config_key: key,
-      config_value: String(value ?? ''),
-    }))
-    const { success } = await fetchConfigEditByCategory({ category: 'SYS_BASE', configs })
-    if (success) {
-      message.success('保存成功')
-      Object.keys(formData).forEach(k => {
-        initialData[k] = formData[k]
-      })
-    }
-  } finally {
-    saving.value = false
+  const configs = Object.entries(formData).map(([key, value]) => ({
+    config_key: key,
+    config_value: String(value ?? ''),
+  }))
+  const { success } = await fetchConfigEditByCategory({ category: 'SYS_BASE', configs })
+  if (success) {
+    message.success('保存成功')
+    Object.keys(formData).forEach(k => {
+      initialData[k] = formData[k]
+    })
   }
+  saving.value = false
 }
 
 function handleReset() {

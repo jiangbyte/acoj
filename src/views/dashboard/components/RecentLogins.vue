@@ -1,6 +1,6 @@
 <template>
   <a-card title="最近登录" :bordered="false" :loading="loading" class="log-card">
-    <div class="timeline-div" v-if="hasData">
+    <div v-if="hasData" class="timeline-div">
       <div class="biz-section">
         <div class="biz-section-title">B端</div>
         <a-timeline v-if="props.sysData.length">
@@ -10,7 +10,7 @@
                 <span class="log-name">{{ log.nickname || log.account }}</span>
                 <span class="log-time">{{ formatTime(log.last_login_at) }}</span>
               </div>
-              <p class="log-address" v-if="log.last_login_ip">{{ log.last_login_ip }}</p>
+              <p v-if="log.last_login_ip" class="log-address">{{ log.last_login_ip }}</p>
             </div>
           </a-timeline-item>
         </a-timeline>
@@ -26,7 +26,7 @@
                 <span class="log-name">{{ log.nickname || log.account }}</span>
                 <span class="log-time">{{ formatTime(log.last_login_at) }}</span>
               </div>
-              <p class="log-address" v-if="log.last_login_ip">{{ log.last_login_ip }}</p>
+              <p v-if="log.last_login_ip" class="log-address">{{ log.last_login_ip }}</p>
             </div>
           </a-timeline-item>
         </a-timeline>

@@ -5,36 +5,36 @@
         <div class="flex flex-col gap-3">
           <UserInfoCard />
 
-          <a-card :bordered="false" :loading="loading">
+          <a-card :bordered="false" :loading="loading" :body-style="{ padding: '10px 6px' }">
             <template #title>
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
                   <span class="text-base font-medium">快捷工作台</span>
                   <span class="text-xs text-$text-color-secondary hidden sm:inline">常用功能快捷入口</span>
                 </div>
-                <a-button type="link" size="small" @click="showAddDrawer = true" v-if="available.length">
+                <a-button v-if="available.length" type="link" size="small" @click="showAddDrawer = true">
                   + 添加
                 </a-button>
               </div>
             </template>
-            <div v-if="actions.length" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div v-if="actions.length" class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-1">
               <div
                 v-for="item in actions"
                 :key="item.id"
-                class="flex flex-col items-center gap-2 p-5 pb-4 bg-$background-color-light rounded-lg cursor-pointer transition duration-250 relative hover:-translate-y-1 hover:shadow-sm"
+                class="flex flex-col items-center gap-1 py-2 px-1 bg-$background-color-light rounded-lg cursor-pointer transition duration-250 relative hover:-translate-y-0.5 hover:shadow-sm"
                 @click="navigate(item)"
                 @mouseenter="hoverId = item.id"
                 @mouseleave="hoverId = null"
               >
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" :style="{ background: iconBg(item.name) }">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xl" :style="{ background: iconBg(item.name) }">
                   <component :is="resolveIcon(item.icon)" />
                 </div>
-                <span class="text-sm font-medium text-$text-color">{{ item.name }}</span>
+                <span class="text-xs font-medium text-$text-color leading-tight text-center">{{ item.name }}</span>
                 <a-button
                   v-if="hoverId === item.id"
                   type="text"
                   size="small"
-                  class="absolute top-1 right-1 text-$color-danger"
+                  class="absolute top-0.5 right-0.5 text-$color-danger w-5 h-5 min-w-0"
                   @click.stop="removeAction(item)"
                 >
                   <template #icon><CloseOutlined /></template>
@@ -43,7 +43,7 @@
             </div>
             <div v-else class="flex items-center justify-center gap-1 py-8 text-$text-color-secondary">
               <span>暂无快捷入口</span>
-              <a-button type="link" @click="showAddDrawer = true" v-if="available.length">去添加</a-button>
+              <a-button v-if="available.length" type="link" @click="showAddDrawer = true">去添加</a-button>
             </div>
           </a-card>
         </div>
@@ -67,7 +67,7 @@
       </a-col>
     </a-row>
 
-    <a-drawer title="添加快捷方式" placement="right" :open="showAddDrawer" @close="showAddDrawer = false" width="360">
+    <a-drawer title="添加快捷方式" placement="right" :open="showAddDrawer" width="360" @close="showAddDrawer = false">
       <div class="flex flex-col gap-0.5">
         <div
           v-for="res in available"
@@ -142,8 +142,11 @@ function navigate(item: QuickAction) {
 
 async function addAction(res: QuickAction) {
     await addQuickAction(res.resource_id)
-    actions.value.push({ ...res, id: '', sort_code: actions.value.length * 10 })
-    available.value = available.value.filter(a => a.resource_id !== res.resource_id)
+    const res2 = await fetchHome()
+    if (res2.success && res2.data) {
+      actions.value = res2.data.quick_actions || []
+      available.value = res2.data.available_resources || []
+    }
     if (!available.value.length) showAddDrawer.value = false
 }
 

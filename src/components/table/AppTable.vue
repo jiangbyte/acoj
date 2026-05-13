@@ -167,24 +167,14 @@ function buildParams(): { current: number; size: number; [key: string]: any } {
 
 async function loadData() {
   loading.value = true
-  try {
-    let result: any
-    const params = buildParams()
-
-    if (props.data) {
-      result = await props.data(params)
-    } else if (props.fetchData) {
-      result = await props.fetchData(params)
-    }
-
-    if (result) {
-      const responseData = result.data || result
-      dataSource.value = responseData.records || responseData.rows || []
-      pagination.total = responseData.total || 0
-    }
-  } finally {
-    loading.value = false
+  const params = buildParams()
+  const result = await (props.data?.(params) ?? props.fetchData?.(params))
+  if (result) {
+    const responseData = result.data
+    dataSource.value = responseData.records || responseData.rows || []
+    pagination.total = responseData.total || 0
   }
+  loading.value = false
 }
 
 function handleTableChange(pag: any) {

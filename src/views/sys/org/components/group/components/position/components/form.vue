@@ -67,7 +67,7 @@ const initialForm = () => ({
   code: '',
   name: '',
   category: undefined,
-  group_id: '0',
+  group_id: '0' as string | undefined,
   status: 'ENABLED',
   sort_code: 0,
   description: '',

@@ -151,7 +151,6 @@
 <script setup lang="ts">
 defineOptions({ name: 'SysResource' })
 import { ref, reactive, watch, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -160,6 +159,8 @@ import {
   DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
+import { useCrud } from '@/hooks/useCrud'
+import { useImportExport } from '@/hooks/useImportExport'
 
 import {
   fetchResourceTree,
@@ -168,7 +169,7 @@ import {
   fetchResourceTemplate,
   fetchResourceImport,
 } from '@/api/resource'
-import { downloadBlob, confirmDelete, resolveIcon } from '@/utils'
+import { resolveIcon } from '@/utils'
 import AppTreeTable from '@/components/table/AppTreeTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import AppImportModal from '@/components/modal/AppImportModal.vue'
@@ -180,6 +181,33 @@ import ButtonManager from './components/buttonManager.vue'
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
 const treeTableRef = ref()
+const importModalRef = ref()
+
+// useCrud: delete and form success
+const crud = useCrud({
+  name: '资源',
+  deleteApi: fetchResourceRemove,
+  onSuccess: () => reloadAfterChange(),
+})
+const { selectedKeys, handleSearch: _, handleDelete, handleBatchDelete, handleFormSuccess } = crud
+
+// useImportExport
+const {
+  importOpen,
+  exportOpen,
+  templateLoading,
+  handleDownloadTemplate,
+  handleExportWithParams,
+  handleImport,
+} = useImportExport({
+  exportApi: fetchResourceExport,
+  templateApi: fetchResourceTemplate,
+  importApi: fetchResourceImport,
+  fileName: '资源数据',
+  templateName: '资源导入模板',
+  importModalRef,
+  onSuccess: () => reloadAfterChange(),
+})
 
 // ── Tree data ──
 const loading = ref(false)
@@ -209,13 +237,10 @@ function filterTree(nodes: any[], keyword: string): any[] {
 
 async function loadTree() {
   loading.value = true
-  try {
-    const { data } = await fetchResourceTree()
-    treeDataOrigin.value = data || []
-    treeData.value = filterTree(stripButtons(data || []), searchForm.keyword)
-  } finally {
-    loading.value = false
-  }
+  const { data } = await fetchResourceTree()
+  treeDataOrigin.value = data || []
+  treeData.value = filterTree(stripButtons(data || []), searchForm.keyword)
+  loading.value = false
 }
 
 /** After a CRUD change, refresh both the tree table and the user's menu/routes so the sidebar stays in sync */
@@ -225,7 +250,6 @@ async function reloadAfterChange() {
 
 // ── Search ──
 const searchForm = reactive({ keyword: '' })
-const selectedKeys = ref<string[]>([])
 
 watch(
   () => searchForm.keyword,
@@ -267,30 +291,6 @@ function openButtonManager(record: any) {
   buttonManagerRef.value?.doOpen(record)
 }
 
-async function handleDelete(id: string) {
-  const { success } = await fetchResourceRemove({ ids: [id] })
-  if (success) {
-    message.success('删除成功')
-    reloadAfterChange()
-  }
-}
-
-function handleBatchDelete() {
-  confirmDelete({
-    name: '资源',
-    selectedKeys: selectedKeys.value,
-    deleteApi: fetchResourceRemove,
-    onSuccess: () => {
-      selectedKeys.value = []
-      reloadAfterChange()
-    },
-  })
-}
-
-function handleFormSuccess() {
-  reloadAfterChange()
-}
-
 function handleSearch() {
   loadTree()
 }
@@ -298,48 +298,6 @@ function handleSearch() {
 function resetSearch() {
   searchForm.keyword = ''
   loadTree()
-}
-
-// ── Import / Export / Template ──
-const importOpen = ref(false)
-const exportOpen = ref(false)
-const templateLoading = ref(false)
-const importModalRef = ref()
-
-async function handleDownloadTemplate() {
-  templateLoading.value = true
-  try {
-    const blob = await fetchResourceTemplate()
-    downloadBlob(blob, '资源导入模板.xlsx')
-  } catch {
-    message.error('下载模板失败')
-  } finally {
-    templateLoading.value = false
-  }
-}
-
-async function handleExportWithParams(params: any) {
-  try {
-    const blob = await fetchResourceExport(params)
-    downloadBlob(blob, `资源数据_${new Date().toLocaleDateString()}.xlsx`)
-    message.success('导出成功')
-    exportOpen.value = false
-  } catch {
-    message.error('导出失败')
-  }
-}
-
-async function handleImport(file: File) {
-  try {
-    const { success, data } = await fetchResourceImport(file)
-    if (success && data) {
-      importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
-      message.success('导入成功')
-      reloadAfterChange()
-    }
-  } catch {
-    importModalRef.value?.setResult({ success: false, message: '导入文件格式错误' })
-  }
 }
 
 onMounted(() => {

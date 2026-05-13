@@ -31,25 +31,16 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'UserGrantRole' })
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref } from 'vue'
 import { message } from 'ant-design-vue'
+import { useMobile } from '@/hooks/useMobile'
 import { fetchUserGrantRole, fetchUserOwnRoles } from '@/api/user'
 import { fetchRolePage } from '@/api/role'
 
 defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
 
-const isMobile = ref(false)
-onMounted(() => {
-  const mql = window.matchMedia('(max-width: 767px)')
-  isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => {
-    isMobile.value = e.matches
-  }
-  mql.addEventListener('change', handler)
-  onBeforeUnmount(() => mql.removeEventListener('change', handler))
-})
-const drawerWidth = computed(() => (isMobile.value ? '100%' : 640))
+const { isMobile, drawerWidth } = useMobile()
 
 const currentUserId = ref('')
 const loading = ref(false)
@@ -59,19 +50,16 @@ const targetKeys = ref<string[]>([])
 
 async function loadData() {
   loading.value = true
-  try {
-    const [rolesRes, ownRes] = await Promise.all([
-      fetchRolePage({ size: 9999 }),
-      fetchUserOwnRoles({ user_id: currentUserId.value }),
-    ])
-    dataSource.value = (rolesRes?.data?.records || []).map((r: any) => ({
-      key: r.id,
-      title: `${r.name} (${r.code})`,
-    }))
-    targetKeys.value = ownRes?.data || []
-  } finally {
-    loading.value = false
-  }
+  const [rolesRes, ownRes] = await Promise.all([
+    fetchRolePage({ size: 9999 }),
+    fetchUserOwnRoles({ user_id: currentUserId.value }),
+  ])
+  dataSource.value = (rolesRes?.data?.records || []).map((r: any) => ({
+    key: r.id,
+    title: `${r.name} (${r.code})`,
+  }))
+  targetKeys.value = ownRes?.data || []
+  loading.value = false
 }
 
 function doOpen(user: any) {
@@ -82,19 +70,16 @@ function doOpen(user: any) {
 
 async function handleSubmit() {
   submitLoading.value = true
-  try {
-    const { success } = await fetchUserGrantRole({
-      user_id: currentUserId.value,
-      role_ids: targetKeys.value,
-    })
-    if (success) {
-      message.success('分配成功')
-      emit('success')
-      handleClose()
-    }
-  } finally {
-    submitLoading.value = false
+  const { success } = await fetchUserGrantRole({
+    user_id: currentUserId.value,
+    role_ids: targetKeys.value,
+  })
+  if (success) {
+    message.success('分配成功')
+    emit('success')
+    handleClose()
   }
+  submitLoading.value = false
 }
 
 function handleClose() {

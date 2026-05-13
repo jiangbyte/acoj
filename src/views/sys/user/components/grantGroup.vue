@@ -31,25 +31,16 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'UserGrantGroup' })
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref } from 'vue'
 import { message } from 'ant-design-vue'
+import { useMobile } from '@/hooks/useMobile'
 import { fetchUserGrantGroup, fetchUserOwnGroups } from '@/api/user'
 import { fetchGroupTree } from '@/api/group'
 
 defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
 
-const isMobile = ref(false)
-onMounted(() => {
-  const mql = window.matchMedia('(max-width: 767px)')
-  isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => {
-    isMobile.value = e.matches
-  }
-  mql.addEventListener('change', handler)
-  onBeforeUnmount(() => mql.removeEventListener('change', handler))
-})
-const drawerWidth = computed(() => (isMobile.value ? '100%' : 640))
+const { drawerWidth } = useMobile()
 
 const currentUserId = ref('')
 const loading = ref(false)
@@ -71,16 +62,13 @@ function flattenTree(nodes: any[]): any[] {
 
 async function loadData() {
   loading.value = true
-  try {
-    const [groupRes, ownRes] = await Promise.all([
-      fetchGroupTree({}),
-      fetchUserOwnGroups({ user_id: currentUserId.value }),
-    ])
-    dataSource.value = flattenTree(groupRes?.data || [])
-    targetKeys.value = ownRes?.data || []
-  } finally {
-    loading.value = false
-  }
+  const [groupRes, ownRes] = await Promise.all([
+    fetchGroupTree({}),
+    fetchUserOwnGroups({ user_id: currentUserId.value }),
+  ])
+  dataSource.value = flattenTree(groupRes?.data || [])
+  targetKeys.value = ownRes?.data || []
+  loading.value = false
 }
 
 function doOpen(user: any) {
@@ -91,19 +79,16 @@ function doOpen(user: any) {
 
 async function handleSubmit() {
   submitLoading.value = true
-  try {
-    const { success } = await fetchUserGrantGroup({
-      user_id: currentUserId.value,
-      group_ids: targetKeys.value,
-    })
-    if (success) {
-      message.success('分配成功')
-      emit('success')
-      handleClose()
-    }
-  } finally {
-    submitLoading.value = false
+  const { success } = await fetchUserGrantGroup({
+    user_id: currentUserId.value,
+    group_ids: targetKeys.value,
+  })
+  if (success) {
+    message.success('分配成功')
+    emit('success')
+    handleClose()
   }
+  submitLoading.value = false
 }
 
 function handleClose() {

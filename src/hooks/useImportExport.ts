@@ -20,36 +20,33 @@ export function useImportExport(options: UseImportExportOptions) {
 
   async function handleDownloadTemplate() {
     templateLoading.value = true
-    try {
-      const blob = await options.templateApi()
+    const blob = await options.templateApi().catch(() => null)
+    if (blob) {
       downloadBlob(blob, `${options.templateName}.xlsx`)
-    } catch {
+    } else {
       message.error('下载模板失败')
-    } finally {
-      templateLoading.value = false
     }
+    templateLoading.value = false
   }
 
   async function handleExportWithParams(params: any) {
-    try {
-      const blob = await options.exportApi(params)
+    const blob = await options.exportApi(params).catch(() => null)
+    if (blob) {
       downloadBlob(blob, `${options.fileName}_${new Date().toLocaleDateString()}.xlsx`)
       message.success('导出成功')
       exportOpen.value = false
-    } catch {
+    } else {
       message.error('导出失败')
     }
   }
 
   async function handleImport(file: File) {
-    try {
-      const { success, data } = await options.importApi(file)
-      if (success && data) {
-        modalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
-        message.success('导入成功')
-        options.onSuccess?.()
-      }
-    } catch {
+    const result = await options.importApi(file).then(r => r).catch(() => null)
+    if (result?.success && result?.data) {
+      modalRef.value?.setResult({ success: true, message: result.data.message || '导入成功' })
+      message.success('导入成功')
+      options.onSuccess?.()
+    } else {
       modalRef.value?.setResult({ success: false, message: '导入失败，请检查文件格式' })
     }
   }

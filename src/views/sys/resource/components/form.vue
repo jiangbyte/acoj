@@ -232,19 +232,15 @@ function handleTypeChange() {
 }
 
 async function loadTree() {
-  try {
-    const { data } = await fetchResourceTree()
-    resourceTreeData.value = [
-      {
-        id: '0',
-        name: '顶级',
-        children: null,
-      },
-      ...data,
-    ]
-  } catch {
-    /* ignore */
-  }
+  const { data } = await fetchResourceTree()
+  resourceTreeData.value = [
+    {
+      id: '0',
+      name: '顶级',
+      children: null,
+    },
+    ...data,
+  ]
 }
 
 async function doOpen(row?: any, pId?: string) {

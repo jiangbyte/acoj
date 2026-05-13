@@ -54,37 +54,31 @@ const formData = reactive<Record<string, any>>({})
 
 async function loadData() {
   loading.value = true
-  try {
-    const { data } = await fetchConfigListByCategory({ category: 'SYS_SECURITY' })
-    if (data) {
-      Object.keys(formData).forEach(k => delete formData[k])
-      data.forEach((item: any) => {
-        formData[item.config_key] = item.config_value
-        initialData[item.config_key] = item.config_value
-      })
-    }
-  } finally {
-    loading.value = false
+  const { data } = await fetchConfigListByCategory({ category: 'SYS_SECURITY' })
+  if (data) {
+    Object.keys(formData).forEach(k => delete formData[k])
+    data.forEach((item: any) => {
+      formData[item.config_key] = item.config_value
+      initialData[item.config_key] = item.config_value
+    })
   }
+  loading.value = false
 }
 
 async function handleSave() {
   saving.value = true
-  try {
-    const configs = Object.entries(formData).map(([key, value]) => ({
-      config_key: key,
-      config_value: String(value ?? ''),
-    }))
-    const { success } = await fetchConfigEditByCategory({ category: 'SYS_SECURITY', configs })
-    if (success) {
-      message.success('保存成功')
-      Object.keys(formData).forEach(k => {
-        initialData[k] = formData[k]
-      })
-    }
-  } finally {
-    saving.value = false
+  const configs = Object.entries(formData).map(([key, value]) => ({
+    config_key: key,
+    config_value: String(value ?? ''),
+  }))
+  const { success } = await fetchConfigEditByCategory({ category: 'SYS_SECURITY', configs })
+  if (success) {
+    message.success('保存成功')
+    Object.keys(formData).forEach(k => {
+      initialData[k] = formData[k]
+    })
   }
+  saving.value = false
 }
 
 function handleReset() {

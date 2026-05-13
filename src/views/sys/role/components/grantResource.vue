@@ -145,8 +145,9 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'RoleGrantResource' })
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref } from 'vue'
 import { message } from 'ant-design-vue'
+import { useMobile } from '@/hooks/useMobile'
 import {
   fetchRoleGrantResource,
   fetchRoleOwnResource,
@@ -159,17 +160,7 @@ import { fetchGroupTree } from '@/api/group'
 defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
 
-const isMobile = ref(false)
-onMounted(() => {
-  const mql = window.matchMedia('(max-width: 767px)')
-  isMobile.value = mql.matches
-  const handler = (e: MediaQueryListEvent) => {
-    isMobile.value = e.matches
-  }
-  mql.addEventListener('change', handler)
-  onBeforeUnmount(() => mql.removeEventListener('change', handler))
-})
-const drawerWidth = computed(() => (isMobile.value ? '100%' : 1100))
+const { drawerWidth } = useMobile(1100)
 
 const currentRoleId = ref('')
 const loading = ref(false)
@@ -254,12 +245,8 @@ function expandToRows(
           if (buttons.length > 0) {
             buttons.forEach((b: any) => {
               let permission_code: string | undefined
-              try {
-                const extra = JSON.parse(b.extra || '{}')
-                permission_code = extra.permission_code || undefined
-              } catch {
-                permission_code = undefined
-              }
+              const extra = JSON.parse(b.extra || '{}')
+              permission_code = extra.permission_code || undefined
               const sd = permission_code ? scopeMap[permission_code] : undefined
 
               rows.push({
@@ -387,35 +374,32 @@ async function loadTrees() {
 
 async function loadData() {
   loading.value = true
-  try {
-    const [treeRes, ownRes, detailRes] = await Promise.all([
-      fetchResourceTree(),
-      fetchRoleOwnResource({ role_id: currentRoleId.value }),
-      fetchRoleOwnPermissionDetail({ role_id: currentRoleId.value }),
-    ])
-    const ownIds: string[] = ownRes?.data || []
+  const [treeRes, ownRes, detailRes] = await Promise.all([
+    fetchResourceTree(),
+    fetchRoleOwnResource({ role_id: currentRoleId.value }),
+    fetchRoleOwnPermissionDetail({ role_id: currentRoleId.value }),
+  ])
+  const ownIds: string[] = ownRes?.data || []
 
-    // Build permission_code → scope mapping (互通 with grant-permission)
-    const scopeMap: Record<string, any> = {}
-    ;(detailRes?.data || []).forEach((item: any) => {
-      if (item.permission_code) {
-        scopeMap[item.permission_code] = {
-          scope: item.scope || 'ALL',
-          customOrgIds: item.custom_scope_org_ids ? JSON.parse(item.custom_scope_org_ids) : [],
-          customGroupIds: item.custom_scope_group_ids
-            ? JSON.parse(item.custom_scope_group_ids)
-            : [],
-        }
+  // Build permission_code → scope mapping (互通 with grant-permission)
+  const scopeMap: Record<string, any> = {}
+  ;(detailRes?.data || []).forEach((item: any) => {
+    if (item.permission_code) {
+      scopeMap[item.permission_code] = {
+        scope: item.scope || 'ALL',
+        customOrgIds: item.custom_scope_org_ids ? JSON.parse(item.custom_scope_org_ids) : [],
+        customGroupIds: item.custom_scope_group_ids
+          ? JSON.parse(item.custom_scope_group_ids)
+          : [],
       }
-    })
+    }
+  })
 
-    const { rows, parentMap, menuMap } = expandToRows(treeRes?.data || [], ownIds, scopeMap)
-    tableData.value = rows
-    parentRowSpanMap.value = parentMap
-    menuRowSpanMap.value = menuMap
-  } finally {
-    loading.value = false
-  }
+  const { rows, parentMap, menuMap } = expandToRows(treeRes?.data || [], ownIds, scopeMap)
+  tableData.value = rows
+  parentRowSpanMap.value = parentMap
+  menuRowSpanMap.value = menuMap
+  loading.value = false
 }
 
 // ── Submit ──
@@ -453,20 +437,17 @@ async function handleSubmit() {
   })
 
   submitLoading.value = true
-  try {
-    const { success } = await fetchRoleGrantResource({
-      role_id: currentRoleId.value,
-      resource_ids: allIds,
-      permissions: permissionItems,
-    })
-    if (success) {
-      message.success('授权成功')
-      emit('success')
-      handleClose()
-    }
-  } finally {
-    submitLoading.value = false
+  const { success } = await fetchRoleGrantResource({
+    role_id: currentRoleId.value,
+    resource_ids: allIds,
+    permissions: permissionItems,
+  })
+  if (success) {
+    message.success('授权成功')
+    emit('success')
+    handleClose()
   }
+  submitLoading.value = false
 }
 
 function doOpen(role: any) {

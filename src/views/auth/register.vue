@@ -72,21 +72,18 @@ async function loadCaptcha() {
 
 async function handleRegister() {
   loading.value = true
-  try {
-    const encryptedPwd = auth.encryptPassword(form.password)
-    const { success, data } = await fetchRegister({
-      username: form.username,
-      password: encryptedPwd,
-      captcha_code: form.captcha,
-      captcha_id: captchaId.value,
-    })
-    if (success) {
-      message.success('注册成功，请登录')
-      router.push('/auth/login')
-    }
-  } finally {
-    loading.value = false
+  const encryptedPwd = auth.encryptPassword(form.password)
+  const { success } = await fetchRegister({
+    username: form.username,
+    password: encryptedPwd,
+    captcha_code: form.captcha,
+    captcha_id: captchaId.value,
+  })
+  if (success) {
+    message.success('注册成功，请登录')
+    router.push('/auth/login')
   }
+  loading.value = false
 }
 
 onMounted(async () => {
