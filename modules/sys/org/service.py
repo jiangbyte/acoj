@@ -6,7 +6,7 @@ from .dao import OrgDao
 from .models import SysOrg
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
-from core.enums import ExportTypeEnum
+from core.enums import ExportTypeEnum, SoftDeleteEnum
 from core.exception import BusinessException
 from core.utils import export_excel, strip_system_fields, apply_update, make_template
 from core.auth import HeiAuthTool
@@ -74,12 +74,66 @@ class OrgService:
         entity = self.dao.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
+        if vo.parent_id is not None and vo.parent_id != entity.parent_id:
+            self._check_circular_parent(vo.id, vo.parent_id)
         update_data = vo.model_dump(exclude_unset=True)
         apply_update(entity, update_data)
         self.dao.update(entity, user_id=await self._get_current_user_id(request))
 
+    def _check_circular_parent(self, entity_id: str, new_parent_id: Optional[str]) -> None:
+        if not new_parent_id:
+            return
+        current = new_parent_id
+        while current:
+            if current == entity_id:
+                raise BusinessException("父级不能选择自身或子节点")
+            parent = self.dao.find_by_id(current)
+            if not parent or not parent.parent_id:
+                break
+            current = parent.parent_id
+
+    def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
+        """递归收集所有子组织ID。"""
+        all_ids = set(ids)
+        stack = list(ids)
+        while stack:
+            parent_id = stack.pop()
+            children = self.dao.db.query(SysOrg).filter(
+                SysOrg.parent_id == parent_id,
+                SysOrg.is_deleted == SoftDeleteEnum.NO
+            ).all()
+            for child in children:
+                if child.id not in all_ids:
+                    all_ids.add(child.id)
+                    stack.append(child.id)
+        return list(all_ids)
+
     def remove(self, param: IdsParam) -> None:
-        self.dao.delete_by_ids(param.ids)
+        from ..user.models import SysUser
+        from ..group.models import SysGroup
+        from ..position.models import SysPosition
+        from .models import RelOrgRole
+
+        all_ids = self._collect_descendant_ids(param.ids)
+        db = self.dao.db
+
+        if db.query(SysUser).filter(
+            SysUser.org_id.in_(all_ids), SysUser.is_deleted == SoftDeleteEnum.NO
+        ).count() > 0:
+            raise BusinessException("组织存在关联用户，无法删除")
+
+        if db.query(SysGroup).filter(
+            SysGroup.org_id.in_(all_ids), SysGroup.is_deleted == SoftDeleteEnum.NO
+        ).count() > 0:
+            raise BusinessException("组织下存在用户组，无法删除")
+
+        db.query(RelOrgRole).filter(RelOrgRole.org_id.in_(all_ids)).delete(synchronize_session=False)
+
+        db.query(SysPosition).filter(
+            SysPosition.org_id.in_(all_ids), SysPosition.is_deleted == SoftDeleteEnum.NO
+        ).update({"org_id": None}, synchronize_session=False)
+
+        self.dao.delete_by_ids(all_ids)
 
     def detail(self, param: IdParam) -> Optional[OrgVO]:
         entity = self.dao.find_by_id(param.id)

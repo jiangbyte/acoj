@@ -155,7 +155,7 @@ async def import_data(
     summary="分配角色权限",
     response_model=Result
 )
-@HeiCheckPermission("sys:role:grantPermission")
+@HeiCheckPermission("sys:role:grant-permission")
 async def grant_permission(
     request: Request,
     param: GrantPermissionParam,
@@ -171,7 +171,7 @@ async def grant_permission(
     summary="分配角色资源",
     response_model=Result
 )
-@HeiCheckPermission("sys:role:grantResource")
+@HeiCheckPermission("sys:role:grant-resource")
 async def grant_resource(
     request: Request,
     param: GrantResourceParam,
@@ -186,7 +186,7 @@ async def grant_resource(
     "/api/v1/sys/role/own-permission",
     summary="获取角色已分配的权限编码列表"
 )
-@HeiCheckPermission("sys:role:ownPermission")
+@HeiCheckPermission("sys:role:own-permission")
 async def own_permission(
     request: Request,
     role_id: str = Query(...),
@@ -200,7 +200,7 @@ async def own_permission(
     "/api/v1/sys/role/own-permission-detail",
     summary="获取角色已分配的权限详情（含scope和自定义范围）"
 )
-@HeiCheckPermission("sys:role:ownPermission")
+@HeiCheckPermission("sys:role:own-permission")
 async def own_permission_detail(
     request: Request,
     role_id: str = Query(...),
@@ -214,7 +214,7 @@ async def own_permission_detail(
     "/api/v1/sys/role/own-resource",
     summary="获取角色已分配的资源ID列表"
 )
-@HeiCheckPermission("sys:role:ownResource")
+@HeiCheckPermission("sys:role:own-resource")
 async def own_resource(
     request: Request,
     role_id: str = Query(...),

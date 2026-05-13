@@ -8,7 +8,7 @@ from .dao import ModuleDao, ResourceDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum
+from core.enums import ExportTypeEnum, SoftDeleteEnum
 from core.utils import export_excel, strip_system_fields, apply_update, make_template, generate_id
 from core.auth import HeiAuthTool
 import logging
@@ -129,12 +129,95 @@ class ResourceService:
         entity = self.dao.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
+
+        if vo.parent_id is not None and vo.parent_id != entity.parent_id:
+            self._check_circular_parent(vo.id, vo.parent_id)
+
+        old_extra = entity.extra
         update_data = {k: getattr(vo, k) for k in vo.model_fields_set if k != 'id'}
         apply_update(entity, update_data)
         self.dao.update(entity, user_id=await self._get_current_user_id(request))
 
+        # If extra.permission_code changed, sync role-permission assignments
+        if old_extra != entity.extra:
+            import json
+            from ..role.models import RelRoleResource, RelRolePermission
+
+            old_code = None
+            new_code = None
+            try:
+                if old_extra:
+                    old_code = json.loads(old_extra).get("permission_code")
+                if entity.extra:
+                    new_code = json.loads(entity.extra).get("permission_code")
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+            if old_code != new_code:
+                role_ids = [
+                    r.role_id for r in self.dao.db.query(RelRoleResource)
+                    .filter(RelRoleResource.resource_id == entity.id)
+                    .all()
+                ]
+                for role_id in role_ids:
+                    if old_code:
+                        self.dao.db.query(RelRolePermission).filter(
+                            RelRolePermission.role_id == role_id,
+                            RelRolePermission.permission_code == old_code
+                        ).delete(synchronize_session=False)
+                    if new_code:
+                        exists = self.dao.db.query(RelRolePermission).filter(
+                            RelRolePermission.role_id == role_id,
+                            RelRolePermission.permission_code == new_code
+                        ).count()
+                        if not exists:
+                            rel = RelRolePermission(
+                                id=generate_id(), role_id=role_id,
+                                permission_code=new_code, scope="ALL",
+                            )
+                            self.dao.db.add(rel)
+                self.dao.db.commit()
+
     def remove(self, param: IdsParam) -> None:
-        self.dao.delete_by_ids(param.ids)
+        from ..role.models import RelRoleResource
+
+        all_ids = self._collect_descendant_ids(param.ids)
+        db = self.dao.db
+
+        db.query(RelRoleResource).filter(
+            RelRoleResource.resource_id.in_(all_ids)
+        ).delete(synchronize_session=False)
+
+        self.dao.delete_by_ids(all_ids)
+
+    def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
+        """递归收集所有子资源ID。"""
+        from .models import SysResource
+        all_ids = set(ids)
+        stack = list(ids)
+        while stack:
+            parent_id = stack.pop()
+            children = self.dao.db.query(SysResource).filter(
+                SysResource.parent_id == parent_id,
+                SysResource.is_deleted == SoftDeleteEnum.NO
+            ).all()
+            for child in children:
+                if child.id not in all_ids:
+                    all_ids.add(child.id)
+                    stack.append(child.id)
+        return list(all_ids)
+
+    def _check_circular_parent(self, entity_id: str, new_parent_id: Optional[str]) -> None:
+        if not new_parent_id:
+            return
+        current = new_parent_id
+        while current:
+            if current == entity_id:
+                raise BusinessException("父级不能选择自身或子节点")
+            parent = self.dao.find_by_id(current)
+            if not parent or not parent.parent_id:
+                break
+            current = parent.parent_id
 
     def detail(self, param: IdParam) -> Optional[ResourceVO]:
         entity = self.dao.find_by_id(param.id)
