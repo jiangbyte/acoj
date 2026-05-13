@@ -185,7 +185,7 @@ class UserDao(BaseDAO):
                 _SysResource.id.in_(resource_ids),
                 _SysResource.category == ResourceCategoryEnum.BACKEND_MENU,
                 _SysResource.type.in_([ResourceTypeEnum.DIRECTORY, ResourceTypeEnum.MENU]),
-                _SysResource.status == StatusEnum.ENABLE,
+                _SysResource.status == StatusEnum.ENABLED,
                 _SysResource.is_deleted == self._soft_delete_not_deleted,
             )
             .order_by(_SysResource.sort_code.asc())

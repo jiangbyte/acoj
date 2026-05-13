@@ -2,7 +2,7 @@ from typing import List
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, text
-from core.enums import SoftDeleteEnum
+from core.enums import SoftDeleteEnum, UserStatusEnum
 from modules.sys.user.models import SysUser
 from modules.sys.role.models import SysRole
 from modules.sys.org.models import SysOrg
@@ -22,7 +22,7 @@ class AnalyzeDao:
         stmt = (
             select(func.count())
             .select_from(SysUser)
-            .where(SysUser.is_deleted == SoftDeleteEnum.NO, SysUser.status == 'ACTIVE')
+            .where(SysUser.is_deleted == SoftDeleteEnum.NO, SysUser.status == UserStatusEnum.ACTIVE.value)
         )
         return self.db.execute(stmt).scalar() or 0
 

@@ -4,7 +4,7 @@ from fastapi import Request
 from core.auth import HeiAuthTool
 from core.db import SessionLocal
 from core.exception import BusinessException
-from core.enums import SoftDeleteEnum, StatusEnum
+from core.enums import SoftDeleteEnum, UserStatusEnum
 from core.utils import decrypt, generate_id
 from core.captcha import b_captcha
 from .params import UsernameLoginParam, UsernameLoginResult, UsernameRegisterParam, UsernameRegisterResult, UsernameLogoutResult
@@ -32,6 +32,16 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
     if not user_info:
         logger.warning(f"User not found: {param.username}")
         raise BusinessException("用户名或密码错误")
+
+    if user_info.status == UserStatusEnum.LOCKED.value:
+        logger.warning(f"User account is locked: {param.username}")
+        raise BusinessException("账号已被锁定")
+    if user_info.status == UserStatusEnum.INACTIVE.value:
+        logger.warning(f"User account is inactive: {param.username}")
+        raise BusinessException("账号已停用")
+    if user_info.status != UserStatusEnum.ACTIVE.value:
+        logger.warning(f"User account status abnormal: {param.username}, status={user_info.status}")
+        raise BusinessException("账号状态异常")
 
     try:
         raw_password = decrypt(param.password)
@@ -85,7 +95,7 @@ async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
             account=param.username,
             password=hashed_password,
             nickname=param.username,
-            status=StatusEnum.ACTIVE,
+            status=UserStatusEnum.ACTIVE.value,
             created_by=user_id,
         )
         db.add(user)

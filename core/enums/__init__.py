@@ -1,4 +1,5 @@
 from .status_enum import StatusEnum
+from .user_status_enum import UserStatusEnum
 from .export_type_enum import ExportTypeEnum
 from .soft_delete_enum import SoftDeleteEnum
 from .login_type_enum import LoginTypeEnum
@@ -23,4 +24,5 @@ __all__ = [
     "PermissionScopeEnum",
     "ResourceCategoryEnum",
     "ResourceTypeEnum",
+    "UserStatusEnum",
 ]
