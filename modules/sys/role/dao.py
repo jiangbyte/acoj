@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from .models import SysRole, RelRolePermission, RelRoleResource
+from .params import PermissionItem
 from core.db.base_dao import BaseDAO
 from core.utils import generate_id
 
@@ -45,7 +46,6 @@ class RoleDao(BaseDAO):
         ]
 
     def grant_permissions(self, role_id: str, permissions: List[PermissionItem], created_by: Optional[str] = None):
-        from ..params import PermissionItem
         now = datetime.now()
         not_del = self._soft_delete_not_deleted
         del_val = self._soft_delete_deleted

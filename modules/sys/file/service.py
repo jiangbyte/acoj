@@ -2,8 +2,12 @@ import io
 import os
 import platform
 import base64
+import logging
 from datetime import datetime
 from typing import Optional
+from urllib.parse import quote
+
+logger = logging.getLogger(__name__)
 from fastapi import Request, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -63,15 +67,16 @@ class FileService:
     async def _get_current_user_id(self, request: Request) -> Optional[str]:
         try:
             return await HeiAuthTool.getLoginIdDefaultNull(request)
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to get current user ID: %s", e)
             return None
 
-    def _get_storage_config(self, engine: str) -> dict:
+    async def _get_storage_config(self, engine: str) -> dict:
         """Read storage engine config from sys_config table."""
         if engine == ENGINE_LOCAL:
             is_windows = platform.system() == "Windows"
             key = "SYS_FILE_LOCAL_FOLDER_FOR_WINDOWS" if is_windows else "SYS_FILE_LOCAL_FOLDER_FOR_UNIX"
-            folder = self._config_service.get_value_by_key(key)
+            folder = await self._config_service.get_value_by_key(key)
             if not folder:
                 folder = "D:/hei-file-upload" if is_windows else "/data/hei-file-upload"
             return {"folder": folder}
@@ -86,16 +91,16 @@ class FileService:
 
         cfg = {}
         for k, v in config_keys.items():
-            cfg[k] = self._config_service.get_value_by_key(v)
+            cfg[k] = await self._config_service.get_value_by_key(v)
 
         if engine in (ENGINE_S3,):
-            cfg["region"] = self._config_service.get_value_by_key(f"{prefix}REGION")
+            cfg["region"] = await self._config_service.get_value_by_key(f"{prefix}REGION")
 
         return cfg
 
-    def _create_storage(self, engine: str):
+    async def _create_storage(self, engine: str):
         """Create a storage engine instance from DB config."""
-        cfg = self._get_storage_config(engine)
+        cfg = await self._get_storage_config(engine)
 
         if engine == ENGINE_LOCAL:
             return LocalStorage(cfg["folder"])
@@ -135,10 +140,10 @@ class FileService:
         else:
             raise BusinessException(f"不支持的存储引擎: {engine}")
 
-    def _get_engine(self, engine: Optional[str] = None) -> str:
+    async def _get_engine(self, engine: Optional[str] = None) -> str:
         if engine:
             return engine.upper()
-        default = self._config_service.get_value_by_key("SYS_DEFAULT_FILE_ENGINE")
+        default = await self._config_service.get_value_by_key("SYS_DEFAULT_FILE_ENGINE")
         return default or ENGINE_LOCAL
 
     def _generate_file_key(self, file_id: str, suffix: str) -> str:
@@ -147,7 +152,7 @@ class FileService:
 
     async def upload(self, file: UploadFile, request: Request,
                      engine: Optional[str] = None) -> dict:
-        engine = self._get_engine(engine)
+        engine = await self._get_engine(engine)
         data = await file.read()
         size_bytes = len(data)
         suffix = os.path.splitext(file.filename or "unknown")[1].lower()
@@ -155,13 +160,16 @@ class FileService:
         obj_name = f"{file_id}{suffix}"
         file_key = self._generate_file_key(file_id, suffix)
 
-        storage = self._create_storage(engine)
+        storage = await self._create_storage(engine)
         bucket = storage.get_default_bucket()
         storage.store(bucket, file_key, data)
 
         thumbnail = _generate_thumbnail(data, suffix) if suffix in IMAGE_EXTENSIONS else None
 
         user_id = await self._get_current_user_id(request)
+        if user_id is None:
+            logger.warning("created_by is None for upload, auth header: %s", request.headers.get("Authorization", "MISSING")[:40])
+        download_path = f"{request.base_url}api/v1/sys/file/download?id={file_id}"
         entity = SysFile(
             id=file_id,
             engine=engine,
@@ -173,12 +181,12 @@ class FileService:
             size_info=_format_size(size_bytes),
             obj_name=obj_name,
             storage_path=storage.get_url(bucket, file_key),
-            download_path=storage.get_url(bucket, file_key),
+            download_path=download_path,
             is_download_auth=0,
             thumbnail=thumbnail,
             created_by=user_id,
         )
-        self.dao.insert(entity)
+        self.dao.insert(entity, user_id=user_id)
         return {
             "id": file_id,
             "name": file.filename,
@@ -187,12 +195,12 @@ class FileService:
             "size_info": entity.size_info,
         }
 
-    def download(self, param: FileIdParam):
+    async def download(self, param: FileIdParam):
         entity = self.dao.find_by_id(param.id)
         if not entity:
             raise BusinessException("文件不存在")
 
-        storage = self._create_storage(entity.engine)
+        storage = await self._create_storage(entity.engine)
         data = storage.get_bytes(entity.bucket, entity.file_key)
         filename = entity.name or f"{entity.id}{entity.suffix or ''}"
 
@@ -200,7 +208,7 @@ class FileService:
             io.BytesIO(data),
             media_type="application/octet-stream",
             headers={
-                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename, safe='')}",
                 "Content-Length": str(len(data)),
             },
         )
@@ -229,9 +237,9 @@ class FileService:
     def remove(self, param):
         self.dao.delete_by_ids(param.ids)
 
-    def remove_absolute(self, param):
+    async def remove_absolute(self, param):
         entities = self.dao.find_by_ids(param.ids)
         for entity in entities:
-            storage = self._create_storage(entity.engine)
+            storage = await self._create_storage(entity.engine)
             storage.delete(entity.bucket, entity.file_key)
             self.dao.delete_absolute_by_id(entity.id)

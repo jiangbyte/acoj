@@ -24,32 +24,32 @@ class ConfigService:
         except Exception:
             return None
 
-    def _get_cached_value(self, key: str) -> Optional[str]:
+    async def _get_cached_value(self, key: str) -> Optional[str]:
         client = get_client()
         if client:
-            val = client.get(f"{CONFIG_CACHE_PREFIX}{key}")
+            val = await client.get(f"{CONFIG_CACHE_PREFIX}{key}")
             if val is not None:
                 return val
         return None
 
-    def _set_cached_value(self, key: str, value: str):
+    async def _set_cached_value(self, key: str, value: str):
         client = get_client()
         if client:
-            client.set(f"{CONFIG_CACHE_PREFIX}{key}", value)
+            await client.set(f"{CONFIG_CACHE_PREFIX}{key}", value)
 
-    def _del_cached_value(self, key: str):
+    async def _del_cached_value(self, key: str):
         client = get_client()
         if client:
-            client.delete(f"{CONFIG_CACHE_PREFIX}{key}")
+            await client.delete(f"{CONFIG_CACHE_PREFIX}{key}")
 
-    def get_value_by_key(self, key: str) -> Optional[str]:
-        cached = self._get_cached_value(key)
+    async def get_value_by_key(self, key: str) -> Optional[str]:
+        cached = await self._get_cached_value(key)
         if cached is not None:
             return cached
 
         entity = self.dao.find_by_key(key)
         if entity:
-            self._set_cached_value(key, entity.config_value)
+            await self._set_cached_value(key, entity.config_value)
             return entity.config_value
         return None
 
@@ -75,12 +75,12 @@ class ConfigService:
         update_data = strip_system_fields(vo.model_dump(exclude_unset=True))
         apply_update(entity, update_data)
         self.dao.update(entity, user_id=await self._get_current_user_id(request))
-        self._del_cached_value(entity.config_key)
+        await self._del_cached_value(entity.config_key)
 
-    def remove(self, param):
+    async def remove(self, param):
         entities = self.dao.find_by_ids(param.ids)
         for entity in entities:
-            self._del_cached_value(entity.config_key)
+            await self._del_cached_value(entity.config_key)
         self.dao.delete_by_ids(param.ids)
 
     def detail(self, param) -> Optional[ConfigVO]:
@@ -96,7 +96,7 @@ class ConfigService:
             update_data = strip_system_fields(vo.model_dump(exclude_unset=True))
             apply_update(entity, update_data)
             self.dao.update(entity, user_id=user_id)
-            self._del_cached_value(entity.config_key)
+            await self._del_cached_value(entity.config_key)
 
     async def edit_by_category(self, param: ConfigCategoryEditParam, request: Request):
         user_id = await self._get_current_user_id(request)
@@ -106,4 +106,4 @@ class ConfigService:
                 raise BusinessException(f"分类 [{param.category}] 下不存在配置: {vo.config_key}")
             entity.config_value = vo.config_value
             self.dao.update(entity, user_id=user_id)
-            self._del_cached_value(entity.config_key)
+            await self._del_cached_value(entity.config_key)
