@@ -1,5 +1,5 @@
 import type { Router } from 'vue-router'
-import { useAppStore, useAuthStore, useRouteStore } from '@/store'
+import { useAppStore, useAuthStore, useDictStore, useRouteStore } from '@/store'
 
 const HOME_PATH = (import.meta.env.VITE_HOME_PATH as string) || '/dashboard'
 let _retryingNotFound = false
@@ -52,6 +52,9 @@ export function setupRouterGuard(router: Router) {
         }
         if (routeStore.menus.length) {
           await routeStore.initAuthRoute()
+          // Preload dicts while loading overlay is still visible,
+          // so pages render with dict data already available (no flicker).
+          await useDictStore().loadDict()
         }
       } finally {
         appStore.setLoading(false)

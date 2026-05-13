@@ -356,7 +356,7 @@ const searchForm = reactive({
 // Keyword search — filter tree on client side
 watch(
   () => searchForm.keyword,
-  val => {
+  () => {
     loadGroupTree()
   }
 )

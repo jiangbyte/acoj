@@ -82,6 +82,7 @@
           </a-col>
           <a-col :xs="24" :sm="24">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">通知内容</div>
+            <!-- eslint-disable-next-line vue/no-v-html -->
             <div class="text-sm text-[var(--header-text,#000000d9)]" v-html="data.content || '-'" />
           </a-col>
         </a-row>

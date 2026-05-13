@@ -40,7 +40,7 @@
               <a-tag>{{ data.suffix || '-' }}</a-tag>
             </div>
           </a-col>
-          <a-col :xs="24" :sm="24" v-if="isImage(data.suffix) && data.thumbnail">
+          <a-col v-if="isImage(data.suffix) && data.thumbnail" :xs="24" :sm="24">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">缩略图</div>
             <img
               :src="data.thumbnail"

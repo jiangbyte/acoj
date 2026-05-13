@@ -1,5 +1,5 @@
 <template>
-  <a-card title="系统信息" :bordered="false" :loading="loading" class="sys-info-card">
+  <a-card title="系统信息" :bordered="false" :loading="loading">
     <a-descriptions :column="1" size="small">
       <a-descriptions-item label="Python版本">
         <a-tag color="blue">{{ data?.python_version || '-' }}</a-tag>
@@ -27,12 +27,7 @@ defineProps<{
 </script>
 
 <style scoped>
-:deep(.ant-card-body) {
-  padding-top: 0 !important;
-}
-.sys-info-card {
-  height: 100%;
-}
+
 .info-value {
   font-size: 14px;
   font-weight: 500;

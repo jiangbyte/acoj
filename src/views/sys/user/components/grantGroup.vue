@@ -36,7 +36,7 @@ import { message } from 'ant-design-vue'
 import { fetchUserGrantGroup, fetchUserOwnGroups } from '@/api/user'
 import { fetchGroupTree } from '@/api/group'
 
-const props = defineProps<{ open: boolean }>()
+defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
 
 const isMobile = ref(false)

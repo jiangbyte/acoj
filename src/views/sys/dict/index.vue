@@ -7,7 +7,7 @@
     :icon="BookOutlined"
     @select="handleTreeSelect"
   >
-    <template #right="{ parentId, refreshTree }">
+    <template #right>
       <div class="flex flex-col h-full overflow-auto gap-2">
         <!-- Search -->
         <AppSearchPanel

@@ -79,12 +79,12 @@
               <a-input v-model:value="form.route_path" placeholder="如 /sys/user" />
             </a-form-item>
           </a-col>
-          <a-col :span="12" v-if="isMenuType">
+          <a-col v-if="isMenuType" :span="12">
             <a-form-item label="组件路径" name="component_path">
               <a-input v-model:value="form.component_path" placeholder="如 sys/user/index" />
             </a-form-item>
           </a-col>
-          <a-col :span="12" v-if="isMenuType">
+          <a-col v-if="isMenuType" :span="12">
             <a-form-item label="重定向" name="redirect_path">
               <a-input v-model:value="form.redirect_path" placeholder="重定向路径" />
             </a-form-item>
@@ -111,17 +111,17 @@
               <DictSelect v-model="form.is_visible" type-code="SYS_YES_NO" option-type="radio" />
             </a-form-item>
           </a-col>
-          <a-col :span="8" v-if="isMenuType">
+          <a-col v-if="isMenuType" :span="8">
             <a-form-item label="是否缓存" name="is_cache">
               <DictSelect v-model="form.is_cache" type-code="SYS_YES_NO" option-type="radio" />
             </a-form-item>
           </a-col>
-          <a-col :span="8" v-if="isMenuType">
+          <a-col v-if="isMenuType" :span="8">
             <a-form-item label="是否固定" name="is_affix">
               <DictSelect v-model="form.is_affix" type-code="SYS_YES_NO" option-type="radio" />
             </a-form-item>
           </a-col>
-          <a-col :span="8" v-if="isMenuType">
+          <a-col v-if="isMenuType" :span="8">
             <a-form-item label="显示面包屑" name="is_breadcrumb">
               <DictSelect v-model="form.is_breadcrumb" type-code="SYS_YES_NO" option-type="radio" />
             </a-form-item>
@@ -188,8 +188,8 @@ const currentId = ref<string | null>(null)
 const parentId = ref<string | undefined>(undefined)
 const resourceTreeData = ref<any[]>([])
 
-const isRouteType = computed(() => ['DIRECTORY', 'MENU', 'INTERNAL_LINK'].includes(form.type))
-const isMenuType = computed(() => ['MENU', 'INTERNAL_LINK'].includes(form.type))
+const isRouteType = computed(() => ['DIRECTORY', 'MENU', 'INTERNAL_LINK'].includes(form.type as any))
+const isMenuType = computed(() => ['MENU', 'INTERNAL_LINK'].includes(form.type as any))
 
 const initialForm = () => ({
   code: '',

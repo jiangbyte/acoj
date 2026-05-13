@@ -1,14 +1,13 @@
 <template>
   <div class="dashboard">
-    <UserInfoCard class="mb-4" />
-
     <a-row :gutter="12">
       <!-- Left column -->
       <a-col :xs="24" :lg="16" class="mb-4">
         <div class="flex flex-col gap-3">
-          <StatCards :data="data?.stats ?? null" :loading="loading" />
-          <TrendChart :data="data?.user_trend ?? []" :loading="loading" :is-dark="isDark" />
-          <RecentLogins :data="data?.recent_logins ?? []" :loading="loading" />
+          <UserInfoCard />
+          <StatCards :sys-data="data?.stats ?? null" :client-data="data?.client_stats ?? null" :loading="loading" />
+          <TrendChart :sys-data="data?.user_trend ?? []" :client-data="data?.client_trend ?? []" :loading="loading" :is-dark="isDark" />
+          <RecentLogins :sys-data="data?.recent_logins ?? []" :client-data="data?.recent_client_logins ?? []" :loading="loading" />
         </div>
       </a-col>
 

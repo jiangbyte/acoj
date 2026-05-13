@@ -38,13 +38,21 @@ export interface RecentLogin {
   last_login_ip: string | null
 }
 
+export interface ClientStats {
+  total_users: number
+  active_users: number
+}
+
 export interface DashboardData {
   stats: DashboardStats
+  client_stats: ClientStats
   user_trend: TrendItem[]
+  client_trend: TrendItem[]
   org_user_distribution: OrgUserDistribution[]
   role_category_distribution: CategoryDistribution[]
   sys_info: SysInfo
   recent_logins: RecentLogin[]
+  recent_client_logins: RecentLogin[]
 }
 
 export function fetchDashboard() {

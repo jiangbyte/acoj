@@ -28,7 +28,7 @@
 import { ref } from 'vue'
 import { fetchConfigDetail } from '@/api/config'
 
-const props = defineProps<{ open: boolean }>()
+defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open'])
 
 const loading = ref(false)

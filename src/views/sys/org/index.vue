@@ -1,6 +1,6 @@
 <template>
   <AppTreePanel ref="treePanel" :fetch-tree="fetchOrgTree" title="组织" @select="handleTreeSelect">
-    <template #right="{ parentId, refreshTree }">
+    <template #right>
       <div class="flex flex-col h-full overflow-auto gap-2">
         <!-- Search -->
         <AppSearchPanel

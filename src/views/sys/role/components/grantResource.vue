@@ -108,7 +108,7 @@
     </a-spin>
 
     <!-- Org tree picker modal -->
-    <a-modal v-model:open="orgPickerVisible" title="选择组织" @ok="confirmOrgPicker" width="480">
+    <a-modal v-model:open="orgPickerVisible" title="选择组织" width="480" @ok="confirmOrgPicker">
       <a-tree
         v-model:checked-keys="orgPickerChecked"
         :tree-data="orgTreeData"
@@ -122,8 +122,8 @@
     <a-modal
       v-model:open="groupPickerVisible"
       title="选择用户组"
-      @ok="confirmGroupPicker"
       width="480"
+      @ok="confirmGroupPicker"
     >
       <a-tree
         v-model:checked-keys="groupPickerChecked"
@@ -156,7 +156,7 @@ import { fetchResourceTree } from '@/api/resource'
 import { fetchOrgTree } from '@/api/org'
 import { fetchGroupTree } from '@/api/group'
 
-const props = defineProps<{ open: boolean }>()
+defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
 
 const isMobile = ref(false)

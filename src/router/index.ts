@@ -9,7 +9,14 @@ const router = createRouter({
       path: '/',
       name: 'root',
       component: () => import('@/layouts/base-layout/index.vue'),
-      children: [],
+      children: [
+        {
+          path: 'home',
+          name: 'home',
+          component: () => import('@/views/home/index.vue'),
+          meta: { title: '首页' },
+        },
+      ],
     },
     ...staticRoutes,
     {

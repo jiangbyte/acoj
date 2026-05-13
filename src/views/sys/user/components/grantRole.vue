@@ -36,7 +36,7 @@ import { message } from 'ant-design-vue'
 import { fetchUserGrantRole, fetchUserOwnRoles } from '@/api/user'
 import { fetchRolePage } from '@/api/role'
 
-const props = defineProps<{ open: boolean }>()
+defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
 
 const isMobile = ref(false)

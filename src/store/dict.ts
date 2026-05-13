@@ -9,6 +9,8 @@ export const useDictStore = defineStore('dict', {
     treeData: [] as any[],
     /** Whether full tree has been loaded at least once */
     loaded: false,
+    /** In-flight request promise (dedup) */
+    _loadingPromise: null as Promise<void> | null,
   }),
   actions: {
     setDict(category: string, data: any[]) {
@@ -18,11 +20,23 @@ export const useDictStore = defineStore('dict', {
       return this.dictMap[category] || []
     },
 
-    /** Lazy load: skipped if already loaded */
+    /** Lazy load: skipped if already loaded. Returns promise so callers can await. */
     async loadDict() {
       if (this.loaded) return
-      await this.refreshDict()
-      this.loaded = true
+      if (this._loadingPromise) return this._loadingPromise
+      this._loadingPromise = this._doLoad()
+      return this._loadingPromise
+    },
+
+    async _doLoad() {
+      try {
+        await this.refreshDict()
+        this.loaded = true
+      } catch {
+        this.loaded = false
+      } finally {
+        this._loadingPromise = null
+      }
     },
 
     /** Force full reload from API (call after CRUD in dict management) */

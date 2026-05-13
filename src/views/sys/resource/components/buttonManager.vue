@@ -69,9 +69,9 @@
     <a-modal
       v-model:open="createModalVisible"
       title="新增按钮"
-      @ok="confirmCreate"
       :confirm-loading="createLoading"
       :width="createModalWidth"
+      @ok="confirmCreate"
     >
       <a-form :model="createForm" layout="vertical">
         <a-form-item label="按钮名称" required>
@@ -97,10 +97,10 @@
       title="选择关联权限"
       :width="permModalWidth"
       destroy-on-close
-      @ok="confirmPermissionPicker"
-      @cancel="permPickerVisible = false"
       ok-text="确认"
       cancel-text="取消"
+      @ok="confirmPermissionPicker"
+      @cancel="permPickerVisible = false"
     >
       <a-select
         v-model:value="permCurrentModule"
@@ -144,10 +144,10 @@
       :title="`按钮管理 - ${manageTarget?.name || ''}`"
       :width="manageModalWidth"
       destroy-on-close
-      @ok="confirmManage"
-      @cancel="manageModalVisible = false"
       ok-text="保存"
       cancel-text="取消"
+      @ok="confirmManage"
+      @cancel="manageModalVisible = false"
     >
       <a-form layout="vertical">
         <a-form-item label="按钮名称">
@@ -188,11 +188,11 @@
     <a-modal
       :open="deleteModalVisible"
       title="确认删除"
-      @ok="confirmDelete"
-      @cancel="deleteModalVisible = false"
       ok-text="确定删除"
       ok-danger
       cancel-text="取消"
+      @ok="confirmDelete"
+      @cancel="deleteModalVisible = false"
     >
       <p>确定删除按钮「{{ deleteTarget?.name }}」？删除后不可恢复。</p>
     </a-modal>
@@ -212,7 +212,7 @@ import {
 } from '@/api/resource'
 import { fetchPermissionModules, fetchPermissionByModule } from '@/api/permission'
 
-const props = defineProps<{ open: boolean }>()
+defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open', 'success'])
 
 const isMobile = ref(false)

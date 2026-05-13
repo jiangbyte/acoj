@@ -150,7 +150,7 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'SysResource' })
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import {
   PlusOutlined,

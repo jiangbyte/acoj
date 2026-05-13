@@ -40,7 +40,7 @@
               </a-tooltip>
             </div>
           </a-col>
-          <a-col :xs="24" :sm="24" v-if="data.description">
+          <a-col v-if="data.description" :xs="24" :sm="24">
             <div class="detail-label">描述</div>
             <div class="detail-value">{{ data.description }}</div>
           </a-col>
@@ -49,15 +49,15 @@
 
       <a-card v-if="isRouteType" size="small" title="路由配置" class="mb-3">
         <a-row :gutter="[16, 16]">
-          <a-col :xs="24" :sm="12" v-if="data.route_path">
+          <a-col v-if="data.route_path" :xs="24" :sm="12">
             <div class="detail-label">路由路径</div>
             <div class="detail-value">{{ data.route_path }}</div>
           </a-col>
-          <a-col :xs="24" :sm="12" v-if="data.component_path">
+          <a-col v-if="data.component_path" :xs="24" :sm="12">
             <div class="detail-label">组件路径</div>
             <div class="detail-value">{{ data.component_path }}</div>
           </a-col>
-          <a-col :xs="24" :sm="12" v-if="data.redirect_path">
+          <a-col v-if="data.redirect_path" :xs="24" :sm="12">
             <div class="detail-label">重定向</div>
             <div class="detail-value">{{ data.redirect_path }}</div>
           </a-col>
@@ -66,11 +66,11 @@
 
       <a-card v-if="isRouteType" size="small" title="显示配置" class="mb-3">
         <a-row :gutter="[16, 16]">
-          <a-col :xs="24" :sm="12" v-if="data.icon">
+          <a-col v-if="data.icon" :xs="24" :sm="12">
             <div class="detail-label">图标</div>
             <div class="detail-value">{{ data.icon }}</div>
           </a-col>
-          <a-col :xs="24" :sm="12" v-if="data.color">
+          <a-col v-if="data.color" :xs="24" :sm="12">
             <div class="detail-label">颜色</div>
             <div class="detail-value">{{ data.color }}</div>
           </a-col>
@@ -82,7 +82,7 @@
               </a-tag>
             </div>
           </a-col>
-          <a-col :xs="8" :sm="6" v-if="isMenuType">
+          <a-col v-if="isMenuType" :xs="8" :sm="6">
             <div class="detail-label">缓存</div>
             <div class="detail-value">
               <a-tag :color="$dict.color('SYS_YES_NO', data.is_cache)">
@@ -90,7 +90,7 @@
               </a-tag>
             </div>
           </a-col>
-          <a-col :xs="8" :sm="6" v-if="isMenuType">
+          <a-col v-if="isMenuType" :xs="8" :sm="6">
             <div class="detail-label">固定</div>
             <div class="detail-value">
               <a-tag :color="$dict.color('SYS_YES_NO', data.is_affix)">
@@ -98,7 +98,7 @@
               </a-tag>
             </div>
           </a-col>
-          <a-col :xs="8" :sm="6" v-if="isMenuType">
+          <a-col v-if="isMenuType" :xs="8" :sm="6">
             <div class="detail-label">面包屑</div>
             <div class="detail-value">
               <a-tag :color="$dict.color('SYS_YES_NO', data.is_breadcrumb)">
