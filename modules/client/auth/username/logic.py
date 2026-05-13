@@ -56,7 +56,6 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
     extra = {
         "account": user_info.account,
         "nickname": user_info.nickname,
-        "avatar": user_info.avatar,
         "status": user_info.status
     }
     if param.device_type:
@@ -65,6 +64,19 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         extra["device_id"] = param.device_id
 
     token = await HeiClientAuthTool.login(user_info.id, request, extra)
+
+    # 记录登录信息
+    db = None
+    try:
+        db = SessionLocal()
+        from modules.client.user.service import ClientUserService
+        ClientUserService(db).record_login(user_info.id, request)
+    except Exception as e:
+        logger.warning(f"Failed to record login info: {e}")
+    finally:
+        if db:
+            db.close()
+
     return UsernameLoginResult(token=token)
 
 

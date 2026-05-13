@@ -63,3 +63,23 @@ class GrantGroupParam(BaseModel):
 class GrantUserPermissionParam(BaseModel):
     user_id: str
     permissions: List[PermissionItem]
+
+
+class UpdateProfileParam(BaseModel):
+    account: Optional[str] = None
+    nickname: Optional[str] = None
+    motto: Optional[str] = None
+    gender: Optional[str] = None
+    birthday: Optional[date] = None
+    email: Optional[str] = None
+    github: Optional[str] = None
+    phone: Optional[str] = None
+
+
+class UpdateAvatarParam(BaseModel):
+    avatar: str
+
+
+class UpdatePasswordParam(BaseModel):
+    current_password: str
+    new_password: str

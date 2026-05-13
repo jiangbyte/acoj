@@ -1,8 +1,11 @@
+import bcrypt
 from typing import Optional, List, Dict
+from datetime import datetime
+from core.utils import decrypt
 from sqlalchemy.orm import Session
 from fastapi import Request
 from .models import SysUser
-from .params import UserVO, UserPageParam, GrantRoleParam, GrantGroupParam, GrantUserPermissionParam
+from .params import UserVO, UserPageParam, GrantRoleParam, GrantGroupParam, GrantUserPermissionParam, UpdateProfileParam, UpdateAvatarParam, UpdatePasswordParam
 from .dao import UserDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
@@ -52,6 +55,15 @@ class UserService(BaseCrudService):
             last_login_ip=entity.last_login_ip,
             login_count=entity.login_count,
         )
+
+    def record_login(self, user_id: str, request: Request) -> None:
+        entity = self.dao.find_by_id(user_id)
+        if not entity:
+            return
+        entity.last_login_at = datetime.now()
+        entity.last_login_ip = request.client.host if request.client else None
+        entity.login_count = (entity.login_count or 0) + 1
+        self.dao.update(entity)
 
     def page(self, param: UserPageParam) -> dict:
         result = self.dao.find_page_by_filters(param)
@@ -196,6 +208,12 @@ class UserService(BaseCrudService):
             "account": entity.account,
             "nickname": entity.nickname,
             "avatar": entity.avatar,
+            "motto": entity.motto,
+            "gender": entity.gender,
+            "birthday": entity.birthday.isoformat() if entity.birthday else None,
+            "email": entity.email,
+            "github": entity.github,
+            "phone": entity.phone,
             "status": entity.status,
             "org_name": org_name,
             "position_name": position_name,
@@ -203,6 +221,51 @@ class UserService(BaseCrudService):
             "last_login_ip": entity.last_login_ip,
             "login_count": entity.login_count or 0,
         }
+
+    async def update_profile(self, param: UpdateProfileParam, request: Request) -> None:
+        user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
+        if not user_id:
+            raise BusinessException("用户未登录")
+        entity = self.dao.find_by_id(user_id)
+        if not entity:
+            raise BusinessException("用户不存在")
+
+        update_data = param.model_dump(exclude_unset=True)
+        if 'account' in update_data and update_data['account'] != entity.account:
+            if self.find_by_account(update_data['account']):
+                raise BusinessException("账号已存在")
+        apply_update(entity, update_data)
+        self.dao.update(entity, user_id=user_id)
+
+    async def update_avatar(self, param: UpdateAvatarParam, request: Request) -> None:
+        user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
+        if not user_id:
+            raise BusinessException("用户未登录")
+        entity = self.dao.find_by_id(user_id)
+        if not entity:
+            raise BusinessException("用户不存在")
+
+        entity.avatar = param.avatar
+        self.dao.update(entity, user_id=user_id)
+
+    async def update_password(self, param: UpdatePasswordParam, request: Request) -> None:
+        user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
+        if not user_id:
+            raise BusinessException("用户未登录")
+        entity = self.dao.find_by_id(user_id)
+        if not entity:
+            raise BusinessException("用户不存在")
+        if not entity.password:
+            raise BusinessException("未设置密码，无法修改")
+
+        current_password = decrypt(param.current_password)
+        if not bcrypt.checkpw(current_password.encode('utf-8'), entity.password.encode('utf-8')):
+            raise BusinessException("当前密码不正确")
+
+        new_password = decrypt(param.new_password)
+        hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        entity.password = hashed
+        self.dao.update(entity, user_id=user_id)
 
     async def get_current_user_menus(self, request: Request) -> List[Dict]:
         user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
