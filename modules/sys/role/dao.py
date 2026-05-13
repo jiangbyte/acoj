@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Optional
 from datetime import datetime
-from sqlalchemy import select
+from sqlalchemy import select, delete as sa_delete
 from sqlalchemy.orm import Session
 from .models import SysRole, RelRolePermission, RelRoleResource
 from .params import PermissionItem
@@ -45,9 +45,7 @@ class RoleDao(BaseDAO):
         ]
 
     def grant_permissions(self, role_id: str, permissions: List[PermissionItem], created_by: Optional[str] = None):
-        self.db.query(RelRolePermission).filter(
-            RelRolePermission.role_id == role_id
-        ).delete(synchronize_session=False)
+        self.db.execute(sa_delete(RelRolePermission).where(RelRolePermission.role_id == role_id))
 
         for p in permissions:
             rel = RelRolePermission(
@@ -71,9 +69,7 @@ class RoleDao(BaseDAO):
     def grant_resources(self, role_id: str, resource_ids: List[str], created_by: Optional[str] = None):
         resource_ids = list(dict.fromkeys(resource_ids))  # deduplicate
 
-        self.db.query(RelRoleResource).filter(
-            RelRoleResource.role_id == role_id
-        ).delete(synchronize_session=False)
+        self.db.execute(sa_delete(RelRoleResource).where(RelRoleResource.role_id == role_id))
 
         for resid in resource_ids:
             rel = RelRoleResource(
@@ -87,13 +83,13 @@ class RoleDao(BaseDAO):
     def find_resources_with_extra_by_ids(self, resource_ids: List[str]):
         """Find resources with non-empty extra field by IDs (for auto-granting permissions)."""
         from ..resource.models import SysResource as _SR
-        return (
-            self.db.query(_SR)
-            .filter(
+        stmt = (
+            select(_SR)
+            .where(
                 _SR.id.in_(resource_ids),
                 _SR.is_deleted == self._soft_delete_not_deleted,
                 _SR.extra != None,
                 _SR.extra != "",
             )
-            .all()
         )
+        return list(self.db.execute(stmt).scalars().all())

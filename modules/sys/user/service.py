@@ -111,13 +111,14 @@ class UserService(BaseCrudService):
             self.dao.grant_groups(vo.id, vo.group_ids, user_id)
 
     def remove(self, param: IdsParam) -> None:
+        from sqlalchemy import delete as sa_delete
         from .models import RelUserRole, RelUserGroup, RelUserPermission
 
         ids = param.ids
         db = self.dao.db
 
         for model in [RelUserRole, RelUserGroup, RelUserPermission]:
-            db.query(model).filter(model.user_id.in_(ids)).delete(synchronize_session=False)
+            db.execute(sa_delete(model).where(model.user_id.in_(ids)))
 
         self.dao.delete_by_ids(ids)
 

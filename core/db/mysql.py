@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from config.settings import settings
@@ -34,7 +34,7 @@ async def verify_connection():
     def _sync_check():
         db = SessionLocal()
         try:
-            db.execute(text("SELECT 1"))
+            db.execute(select(1))
         finally:
             db.close()
 

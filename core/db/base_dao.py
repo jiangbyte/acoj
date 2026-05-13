@@ -1,6 +1,6 @@
 from typing import TypeVar, Type, List, Optional, Dict, Any, Callable
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete as sa_delete, update as sa_update
 from sqlalchemy.sql.selectable import Select
 from config.settings import settings
 from core.pojo import PageBounds
@@ -136,18 +136,17 @@ class BaseDAO:
         return True
 
     def delete_by_ids(self, ids: List[str]) -> int:
-        entities = self.find_by_ids(ids)
-        if not entities:
+        if not ids:
             return 0
         if self._can_apply_soft_delete():
-            for entity in entities:
-                setattr(entity, self._soft_delete_field, self._soft_delete_deleted)
-            self.db.commit()
+            stmt = sa_update(self.model).where(self.model.id.in_(ids)).values(
+                **{self._soft_delete_field: self._soft_delete_deleted}
+            )
         else:
-            for entity in entities:
-                self.db.delete(entity)
-            self.db.commit()
-        return len(entities)
+            stmt = sa_delete(self.model).where(self.model.id.in_(ids))
+        affected = self.db.execute(stmt).rowcount
+        self.db.commit()
+        return affected
 
     # ---- QueryWrapper-based methods ----
 

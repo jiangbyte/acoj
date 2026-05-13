@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, delete as sa_delete
 from sqlalchemy.orm import Session
 from .models import SysOrg, RelOrgRole
 from .params import OrgPageParam
@@ -34,7 +34,7 @@ class OrgDao(BaseDAO):
                     scope: Optional[str] = None, custom_scope_group_ids: Optional[str] = None):
         from core.utils import generate_id
 
-        self.db.query(RelOrgRole).filter(RelOrgRole.org_id == org_id).delete(synchronize_session=False)
+        self.db.execute(sa_delete(RelOrgRole).where(RelOrgRole.org_id == org_id))
 
         for rid in role_ids:
             rel = RelOrgRole(

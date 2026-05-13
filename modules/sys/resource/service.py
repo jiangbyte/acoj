@@ -1,5 +1,6 @@
 from typing import Optional, List
 from fastapi import Request
+from sqlalchemy import select, delete as sa_delete, update as sa_update
 from .models import SysModule, SysResource
 from .params import ModuleVO, ResourceVO, ModulePageParam, ResourcePageParam
 from .dao import ModuleDao, ResourceDao
@@ -72,28 +73,35 @@ class ResourceService(BaseCrudService):
                 pass
 
             if old_code != new_code:
-                role_ids = [
-                    r.role_id for r in self.dao.db.query(RelRoleResource)
-                    .filter(RelRoleResource.resource_id == entity.id)
-                    .all()
-                ]
-                for role_id in role_ids:
+                role_ids = list(
+                    self.dao.db.execute(
+                        select(RelRoleResource.role_id).where(RelRoleResource.resource_id == entity.id)
+                    ).scalars().all()
+                )
+                if role_ids:
                     if old_code:
-                        self.dao.db.query(RelRolePermission).filter(
-                            RelRolePermission.role_id == role_id,
-                            RelRolePermission.permission_code == old_code
-                        ).delete(synchronize_session=False)
-                    if new_code:
-                        exists = self.dao.db.query(RelRolePermission).filter(
-                            RelRolePermission.role_id == role_id,
-                            RelRolePermission.permission_code == new_code
-                        ).count()
-                        if not exists:
-                            rel = RelRolePermission(
-                                id=generate_id(), role_id=role_id,
-                                permission_code=new_code, scope="ALL",
+                        self.dao.db.execute(
+                            sa_delete(RelRolePermission).where(
+                                RelRolePermission.role_id.in_(role_ids),
+                                RelRolePermission.permission_code == old_code
                             )
-                            self.dao.db.add(rel)
+                        )
+                    if new_code:
+                        existing_role_ids = set(
+                            self.dao.db.execute(
+                                select(RelRolePermission.role_id).where(
+                                    RelRolePermission.role_id.in_(role_ids),
+                                    RelRolePermission.permission_code == new_code
+                                )
+                            ).scalars().all()
+                        )
+                        for role_id in role_ids:
+                            if role_id not in existing_role_ids:
+                                rel = RelRolePermission(
+                                    id=generate_id(), role_id=role_id,
+                                    permission_code=new_code, scope="ALL",
+                                )
+                                self.dao.db.add(rel)
                 self.dao.db.commit()
 
     def remove(self, param: IdsParam) -> None:
@@ -102,37 +110,36 @@ class ResourceService(BaseCrudService):
         all_ids = self._collect_descendant_ids(param.ids)
         db = self.dao.db
 
-        db.query(RelRoleResource).filter(
-            RelRoleResource.resource_id.in_(all_ids)
-        ).delete(synchronize_session=False)
+        db.execute(sa_delete(RelRoleResource).where(RelRoleResource.resource_id.in_(all_ids)))
 
         self.dao.delete_by_ids(all_ids)
 
     def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
         """递归收集所有子资源ID。"""
-        from .models import SysResource
+        all_records = self.dao.find_all()
+        children_map: dict[str, list[str]] = {}
+        for r in all_records:
+            children_map.setdefault(r.parent_id or "0", []).append(r.id)
+
         all_ids = set(ids)
         stack = list(ids)
         while stack:
             parent_id = stack.pop()
-            children = self.dao.db.query(SysResource).filter(
-                SysResource.parent_id == parent_id,
-                SysResource.is_deleted == SoftDeleteEnum.NO
-            ).all()
-            for child in children:
-                if child.id not in all_ids:
-                    all_ids.add(child.id)
-                    stack.append(child.id)
+            for child_id in children_map.get(parent_id, []):
+                if child_id not in all_ids:
+                    all_ids.add(child_id)
+                    stack.append(child_id)
         return list(all_ids)
 
     def _check_circular_parent(self, entity_id: str, new_parent_id: Optional[str]) -> None:
         if not new_parent_id:
             return
+        all_records = self.dao.find_all()
+        parent_map = {r.id: r.parent_id for r in all_records}
         current = new_parent_id
         while current:
             if current == entity_id:
                 raise BusinessException("父级不能选择自身或子节点")
-            parent = self.dao.find_by_id(current)
-            if not parent or not parent.parent_id:
+            current = parent_map.get(current)
+            if not current or current == "0":
                 break
-            current = parent.parent_id

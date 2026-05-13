@@ -26,6 +26,7 @@ class RoleService(BaseCrudService):
     export_name = "角色数据"
 
     def remove(self, param: IdsParam) -> None:
+        from sqlalchemy import func, select, delete as sa_delete
         from .models import RelRolePermission, RelRoleResource
         from ..user.models import RelUserRole
         from ..org.models import RelOrgRole
@@ -33,14 +34,18 @@ class RoleService(BaseCrudService):
         ids = param.ids
         db = self.dao.db
 
-        if db.query(RelUserRole).filter(RelUserRole.role_id.in_(ids)).count() > 0:
+        if db.execute(
+            select(func.count()).select_from(RelUserRole).where(RelUserRole.role_id.in_(ids))
+        ).scalar() > 0:
             raise BusinessException("角色存在关联用户，无法删除")
 
-        if db.query(RelOrgRole).filter(RelOrgRole.role_id.in_(ids)).count() > 0:
+        if db.execute(
+            select(func.count()).select_from(RelOrgRole).where(RelOrgRole.role_id.in_(ids))
+        ).scalar() > 0:
             raise BusinessException("角色已被组织使用，无法删除")
 
         for model in [RelRolePermission, RelRoleResource, RelUserRole, RelOrgRole]:
-            db.query(model).filter(model.role_id.in_(ids)).delete(synchronize_session=False)
+            db.execute(sa_delete(model).where(model.role_id.in_(ids)))
 
         self.dao.delete_by_ids(ids)
 

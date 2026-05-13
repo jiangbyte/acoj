@@ -34,3 +34,18 @@ class ConfigDao(BaseDAO):
         )
         stmt = self._apply_soft_delete_filter(stmt)
         return self.db.execute(stmt).scalar_one_or_none()
+
+    def find_by_category_and_keys(self, category: str, keys: List[str]) -> Dict[str, SysConfig]:
+        stmt = select(self.model).where(
+            self.model.category == category,
+            self.model.config_key.in_(keys),
+        )
+        stmt = self._apply_soft_delete_filter(stmt)
+        return {r.config_key: r for r in self.db.execute(stmt).scalars().all()}
+
+    def find_by_keys(self, keys: List[str]) -> Dict[str, SysConfig]:
+        stmt = select(self.model).where(
+            self.model.config_key.in_(keys),
+        )
+        stmt = self._apply_soft_delete_filter(stmt)
+        return {r.config_key: r for r in self.db.execute(stmt).scalars().all()}

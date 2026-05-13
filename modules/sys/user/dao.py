@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, delete as sa_delete
 from .models import SysUser, RelUserRole, RelUserGroup, RelUserPermission
 from .params import UserPageParam
 from core.db.base_dao import BaseDAO
@@ -65,7 +65,7 @@ class UserDao(BaseDAO):
 
     def grant_roles(self, user_id: str, role_ids: List[str], created_by: Optional[str] = None,
                     scope: Optional[str] = None, custom_scope_group_ids: Optional[str] = None):
-        self.db.query(RelUserRole).filter(RelUserRole.user_id == user_id).delete(synchronize_session=False)
+        self.db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id == user_id))
 
         for rid in role_ids:
             rel = RelUserRole(
@@ -97,7 +97,7 @@ class UserDao(BaseDAO):
         return result
 
     def grant_groups(self, user_id: str, group_ids: List[str], created_by: Optional[str] = None):
-        self.db.query(RelUserGroup).filter(RelUserGroup.user_id == user_id).delete(synchronize_session=False)
+        self.db.execute(sa_delete(RelUserGroup).where(RelUserGroup.user_id == user_id))
 
         for gid in group_ids:
             rel = RelUserGroup(
@@ -130,7 +130,7 @@ class UserDao(BaseDAO):
         ]
 
     def grant_permissions(self, user_id: str, permissions: List[PermissionItem], created_by: Optional[str] = None):
-        self.db.query(RelUserPermission).filter(RelUserPermission.user_id == user_id).delete(synchronize_session=False)
+        self.db.execute(sa_delete(RelUserPermission).where(RelUserPermission.user_id == user_id))
 
         for p in permissions:
             rel = RelUserPermission(
@@ -155,11 +155,16 @@ class UserDao(BaseDAO):
 
         # Via org (RelOrgRole)
         from ..org.models import RelOrgRole as _RelOrgRole
-        entity = self.find_by_id(user_id)
-        if entity and entity.org_id:
+        org_id = self.db.execute(
+            select(SysUser.org_id).where(
+                SysUser.id == user_id,
+                SysUser.is_deleted == self._soft_delete_not_deleted,
+            )
+        ).scalar()
+        if org_id:
             org_rows = self.db.execute(
                 select(_RelOrgRole.role_id).where(
-                    _RelOrgRole.org_id == entity.org_id,
+                    _RelOrgRole.org_id == org_id,
                 )
             ).scalars().all()
             role_ids.update(org_rows)
@@ -178,9 +183,9 @@ class UserDao(BaseDAO):
     def get_resources_by_ids(self, resource_ids: List[str]):
         """Get backend menu resources by IDs, ordered by sort_code."""
         from ..resource.models import SysResource as _SysResource
-        rows = (
-            self.db.query(_SysResource)
-            .filter(
+        stmt = (
+            select(_SysResource)
+            .where(
                 _SysResource.id.in_(resource_ids),
                 _SysResource.category == ResourceCategoryEnum.BACKEND_MENU,
                 _SysResource.type.in_([ResourceTypeEnum.DIRECTORY, ResourceTypeEnum.MENU]),
@@ -188,9 +193,8 @@ class UserDao(BaseDAO):
                 _SysResource.is_deleted == self._soft_delete_not_deleted,
             )
             .order_by(_SysResource.sort_code.asc())
-            .all()
         )
-        return rows
+        return list(self.db.execute(stmt).scalars().all())
 
     def get_role_permission_codes(self, role_ids: List[str]) -> List[str]:
         from ..role.models import RelRolePermission as _RelRolePermission

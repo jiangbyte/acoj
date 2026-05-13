@@ -69,8 +69,10 @@ class HomeService:
         user_id = await self._get_current_user_id(request)
         if not user_id:
             return
+        entities = self.dao.find_by_ids(param.ids)
+        entity_map = {e.id: e for e in entities if e.user_id == user_id}
         for idx, qa_id in enumerate(param.ids):
-            entity = self.dao.find_by_id(qa_id)
-            if entity and entity.user_id == user_id:
+            entity = entity_map.get(qa_id)
+            if entity:
                 entity.sort_code = (idx + 1) * 10
-                self.dao.update(entity, user_id=user_id)
+        self.dao.db.commit()
