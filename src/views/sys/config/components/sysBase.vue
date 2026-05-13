@@ -12,17 +12,7 @@
             </a-select>
           </a-form-item>
         </a-col>
-        <a-col :xs="24" :sm="12" :md="8">
-          <a-form-item label="Snowflake 工作节点ID" name="SYS_SNOWFLAKE_WORKER_ID">
-            <a-input-number v-model:value="formData.SYS_SNOWFLAKE_WORKER_ID" :min="0" :max="31" style="width: 100%" />
-          </a-form-item>
-        </a-col>
-        <a-col :xs="24" :sm="12" :md="8">
-          <a-form-item label="Snowflake 数据中心ID" name="SYS_SNOWFLAKE_DATACENTER_ID">
-            <a-input-number v-model:value="formData.SYS_SNOWFLAKE_DATACENTER_ID" :min="0" :max="31" style="width: 100%" />
-          </a-form-item>
-        </a-col>
-        <a-col :xs="24" :sm="12" :md="8">
+<a-col :xs="24" :sm="12" :md="8">
           <a-form-item label="默认密码" name="SYS_DEFAULT_PASSWORD">
             <a-input v-model:value="formData.SYS_DEFAULT_PASSWORD" placeholder="新增用户时使用的默认密码" />
           </a-form-item>

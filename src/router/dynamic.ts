@@ -10,11 +10,10 @@ export function menusToRoutes(menus: any[]): any[] {
         title: m.name,
         icon: m.icon,
         type: m.type,
-        hidden: m.is_hidden === 'YES',
         cache: m.is_cache === 'YES',
         affix: m.is_affix === 'YES',
         breadcrumb: m.is_breadcrumb !== 'NO',
-        visible: m.is_visible !== 'NO' && m.is_hidden !== 'YES',
+        visible: m.is_visible !== 'NO',
       }
 
       if (m.type === 'EXTERNAL_LINK' && m.external_url) {
@@ -38,7 +37,7 @@ export function menusToRoutes(menus: any[]): any[] {
         route.component = modules[fullPath] || (() => import('@/views/error/404.vue'))
       }
 
-      if (m.children?.length) {
+      if (m.children?.length && m.is_visible !== 'NO') {
         route.children = menusToRoutes(m.children)
       }
 

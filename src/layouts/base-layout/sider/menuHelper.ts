@@ -6,7 +6,7 @@ export function menuToItems(menus: any[]): any[] {
   return sorted
     .filter((m: any) => {
       if (m.type === 'BUTTON') return false
-      return !m.is_hidden || m.is_hidden === 'NO'
+      return m.is_visible !== 'NO'
     })
     .map((m: any) => ({
       key: m.route_path,

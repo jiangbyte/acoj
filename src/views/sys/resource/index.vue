@@ -42,11 +42,22 @@
       </template>
 
       <template #bodyCell="{ column, record }">
+        <template v-if="column.key === 'name'">
+          <span>
+            <component :is="resolveIcon(record.icon)" v-if="record.icon" class="mr-1" />
+            {{ record.name }}
+          </span>
+        </template>
         <template v-if="column.key === 'category'">
           <a-tag>{{ categoryMap[record.category] || record.category || '-' }}</a-tag>
         </template>
         <template v-else-if="column.key === 'type'">
           <a-tag>{{ typeMap[record.type] || record.type || '-' }}</a-tag>
+        </template>
+        <template v-else-if="column.key === 'is_visible'">
+          <a-tag :color="record.is_visible !== 'NO' ? 'blue' : 'default'">
+            {{ record.is_visible !== 'NO' ? '显示' : '隐藏' }}
+          </a-tag>
         </template>
         <template v-else-if="column.key === 'status'">
           <a-tag :color="record.status === 'ENABLED' ? 'green' : 'red'">
@@ -114,7 +125,7 @@
 
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
-    <ButtonManager ref="buttonManagerRef" v-model:open="buttonManagerOpen" @success="loadTree" />
+    <ButtonManager ref="buttonManagerRef" v-model:open="buttonManagerOpen" @success="reloadAfterChange" />
   </div>
 </template>
 
@@ -138,7 +149,7 @@ import {
   fetchResourceTemplate,
   fetchResourceImport,
 } from '@/api/resource'
-import { downloadBlob, confirmDelete } from '@/utils'
+import { downloadBlob, confirmDelete, resolveIcon } from '@/utils'
 import AppTreeTable from '@/components/table/AppTreeTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import AppImportModal from '@/components/modal/AppImportModal.vue'
@@ -203,6 +214,14 @@ async function loadTree() {
   }
 }
 
+/** After a CRUD change, refresh both the tree table and the user's menu/routes so the sidebar stays in sync */
+async function reloadAfterChange() {
+  await Promise.all([
+    loadTree(),
+    auth.loadMenusAndPermissions(),
+  ])
+}
+
 // ── Search ──
 const searchForm = reactive({ keyword: '' })
 const selectedKeys = ref<string[]>([])
@@ -216,6 +235,7 @@ const columns = [
   { title: '资源编码', dataIndex: 'code', key: 'code', width: 160, ellipsis: true },
   { title: '资源分类', dataIndex: 'category', key: 'category', width: 110 },
   { title: '资源类型', dataIndex: 'type', key: 'type', width: 90 },
+  { title: '是否可见', dataIndex: 'is_visible', key: 'is_visible', width: 90 },
   { title: '路由路径', dataIndex: 'route_path', key: 'route_path', width: 200, ellipsis: true },
   { title: '排序', dataIndex: 'sort_code', key: 'sort_code', width: 70 },
   { title: '状态', dataIndex: 'status', key: 'status', width: 90 },
@@ -239,7 +259,7 @@ async function handleDelete(id: string) {
   const { success } = await fetchResourceRemove({ ids: [id] })
   if (success) {
     message.success('删除成功')
-    loadTree()
+    reloadAfterChange()
   }
 }
 
@@ -250,13 +270,13 @@ function handleBatchDelete() {
     deleteApi: fetchResourceRemove,
     onSuccess: () => {
       selectedKeys.value = []
-      loadTree()
+      reloadAfterChange()
     },
   })
 }
 
 function handleFormSuccess() {
-  loadTree()
+  reloadAfterChange()
 }
 
 function handleSearch() { loadTree() }
@@ -296,7 +316,7 @@ async function handleImport(file: File) {
     if (success && data) {
       importModalRef.value?.setResult({ success: true, message: data.message || '导入成功' })
       message.success('导入成功')
-      loadTree()
+      reloadAfterChange()
     }
   } catch {
     importModalRef.value?.setResult({ success: false, message: '导入文件格式错误' })
