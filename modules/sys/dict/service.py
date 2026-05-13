@@ -124,25 +124,30 @@ class DictService(BaseCrudService):
     def _check_circular_parent(self, entity_id: str, new_parent_id: Optional[str]) -> None:
         if not new_parent_id:
             return
+        all_records = self.dao.find_all()
+        parent_map = {r.id: r.parent_id for r in all_records}
         current = new_parent_id
         while current:
             if current == entity_id:
                 raise BusinessException("父级不能选择自身或子节点")
-            parent = self.dao.find_by_id(current)
-            if not parent or not parent.parent_id:
+            current = parent_map.get(current)
+            if not current or current == "0":
                 break
-            current = parent.parent_id
 
     def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
+        all_records = self.dao.find_all()
+        children_map: dict[str, list[str]] = {}
+        for r in all_records:
+            children_map.setdefault(r.parent_id or "0", []).append(r.id)
+
         all_ids = set(ids)
         stack = list(ids)
         while stack:
             parent_id = stack.pop()
-            children = self.dao.find_by_parent_id(parent_id)
-            for child in children:
-                if child.id not in all_ids:
-                    all_ids.add(child.id)
-                    stack.append(child.id)
+            for child_id in children_map.get(parent_id, []):
+                if child_id not in all_ids:
+                    all_ids.add(child_id)
+                    stack.append(child_id)
         return list(all_ids)
 
     async def remove(self, param: IdsParam) -> None:
@@ -190,15 +195,19 @@ class DictService(BaseCrudService):
             flat_cache = {}
             full_tree = self._build_full_tree(records)
 
+            children_by_parent: dict[str, list] = {}
+            for r in records:
+                children_by_parent.setdefault(r.parent_id or "0", []).append(r)
+
             for r in records:
                 code = r.code
                 if code and r.parent_id in ("0", None):
-                    children_data = []
-                    for c in records:
-                        if c.parent_id == r.id:
-                            children_data.append({"label": c.label, "value": c.value, "color": c.color})
-                    if children_data:
-                        flat_cache[code] = children_data
+                    children = children_by_parent.get(r.id, [])
+                    if children:
+                        flat_cache[code] = [
+                            {"label": c.label, "value": c.value, "color": c.color}
+                            for c in children
+                        ]
 
             await redis_client.set(DICT_CACHE_KEY, json.dumps(flat_cache, ensure_ascii=False))
             await redis_client.set(DICT_TREE_CACHE_KEY, json.dumps(full_tree, ensure_ascii=False))

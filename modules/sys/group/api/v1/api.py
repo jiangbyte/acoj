@@ -4,11 +4,9 @@ from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission
-from core.utils.excel_utils import validate_import_file
+from core.utils.excel_utils import handle_import
 from ...params import GroupVO, GroupPageParam, GroupTreeParam, GroupExportParam, GroupImportParam
 from ...service import GroupService
-from openpyxl import load_workbook
-import io
 
 router = APIRouter()
 
@@ -157,26 +155,7 @@ async def import_data(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    validate_import_file(file)
-    content = await file.read()
-    wb = load_workbook(io.BytesIO(content))
-    ws = wb.active
-
-    headers = [cell.value for cell in ws[1] if cell.value]
-    data_list = []
-
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        if not any(row):
-            continue
-        row_dict = {}
-        for i, header in enumerate(headers):
-            if i < len(row):
-                row_dict[header] = row[i]
-        data_list.append(GroupVO(**row_dict))
-
-    service = GroupService(db)
-    result = await service.import_data(GroupImportParam(data=data_list), request)
-    return success(result)
+    return await handle_import(file, GroupService, GroupVO, GroupImportParam, db, request)
 
 
 # 用户组-角色关联已废弃（使用 ral_role_permission.scope 的 GROUP / CUSTOM_GROUP）

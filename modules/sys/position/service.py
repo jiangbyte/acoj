@@ -29,14 +29,17 @@ class PositionService(BaseCrudService):
         return super().page(param)
 
     def remove(self, param: IdsParam) -> None:
+        from sqlalchemy import func, select
         from ..user.models import SysUser
 
         ids = param.ids
         db = self.dao.db
 
-        if db.query(SysUser).filter(
-            SysUser.position_id.in_(ids), SysUser.is_deleted == SoftDeleteEnum.NO
-        ).count() > 0:
+        if db.execute(
+            select(func.count()).select_from(SysUser).where(
+                SysUser.position_id.in_(ids), SysUser.is_deleted == SoftDeleteEnum.NO
+            )
+        ).scalar() > 0:
             raise BusinessException("职位存在关联用户，无法删除")
 
         self.dao.delete_by_ids(ids)

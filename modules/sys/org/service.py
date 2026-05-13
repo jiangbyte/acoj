@@ -70,32 +70,35 @@ class OrgService(BaseCrudService):
     def _check_circular_parent(self, entity_id: str, new_parent_id: Optional[str]) -> None:
         if not new_parent_id:
             return
+        all_records = self.dao.find_all()
+        parent_map = {r.id: r.parent_id for r in all_records}
         current = new_parent_id
         while current:
             if current == entity_id:
                 raise BusinessException("父级不能选择自身或子节点")
-            parent = self.dao.find_by_id(current)
-            if not parent or not parent.parent_id:
+            current = parent_map.get(current)
+            if not current or current == "0":
                 break
-            current = parent.parent_id
 
     def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
         """递归收集所有子组织ID。"""
+        all_records = self.dao.find_all()
+        children_map: dict[str, list[str]] = {}
+        for r in all_records:
+            children_map.setdefault(r.parent_id or "0", []).append(r.id)
+
         all_ids = set(ids)
         stack = list(ids)
         while stack:
             parent_id = stack.pop()
-            children = self.dao.db.query(SysOrg).filter(
-                SysOrg.parent_id == parent_id,
-                SysOrg.is_deleted == SoftDeleteEnum.NO
-            ).all()
-            for child in children:
-                if child.id not in all_ids:
-                    all_ids.add(child.id)
-                    stack.append(child.id)
+            for child_id in children_map.get(parent_id, []):
+                if child_id not in all_ids:
+                    all_ids.add(child_id)
+                    stack.append(child_id)
         return list(all_ids)
 
     def remove(self, param: IdsParam) -> None:
+        from sqlalchemy import func, select, delete as sa_delete, update as sa_update
         from ..user.models import SysUser
         from ..group.models import SysGroup
         from ..position.models import SysPosition
@@ -104,21 +107,27 @@ class OrgService(BaseCrudService):
         all_ids = self._collect_descendant_ids(param.ids)
         db = self.dao.db
 
-        if db.query(SysUser).filter(
-            SysUser.org_id.in_(all_ids), SysUser.is_deleted == SoftDeleteEnum.NO
-        ).count() > 0:
+        if db.execute(
+            select(func.count()).select_from(SysUser).where(
+                SysUser.org_id.in_(all_ids), SysUser.is_deleted == SoftDeleteEnum.NO
+            )
+        ).scalar() > 0:
             raise BusinessException("组织存在关联用户，无法删除")
 
-        if db.query(SysGroup).filter(
-            SysGroup.org_id.in_(all_ids), SysGroup.is_deleted == SoftDeleteEnum.NO
-        ).count() > 0:
+        if db.execute(
+            select(func.count()).select_from(SysGroup).where(
+                SysGroup.org_id.in_(all_ids), SysGroup.is_deleted == SoftDeleteEnum.NO
+            )
+        ).scalar() > 0:
             raise BusinessException("组织下存在用户组，无法删除")
 
-        db.query(RelOrgRole).filter(RelOrgRole.org_id.in_(all_ids)).delete(synchronize_session=False)
+        db.execute(sa_delete(RelOrgRole).where(RelOrgRole.org_id.in_(all_ids)))
 
-        db.query(SysPosition).filter(
-            SysPosition.org_id.in_(all_ids), SysPosition.is_deleted == SoftDeleteEnum.NO
-        ).update({"org_id": None}, synchronize_session=False)
+        db.execute(
+            sa_update(SysPosition).where(
+                SysPosition.org_id.in_(all_ids), SysPosition.is_deleted == SoftDeleteEnum.NO
+            ).values(org_id=None)
+        )
 
         self.dao.delete_by_ids(all_ids)
 

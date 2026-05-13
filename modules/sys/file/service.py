@@ -89,12 +89,13 @@ class FileService:
             "default_bucket": f"{prefix}DEFAULT_BUCKET_NAME",
         }
 
-        cfg = {}
-        for k, v in config_keys.items():
-            cfg[k] = await self._config_service.get_value_by_key(v)
+        values = await self._config_service.get_values_by_keys(list(config_keys.values()))
+        cfg = {k: values.get(v) for k, v in config_keys.items()}
 
         if engine in (ENGINE_S3,):
-            cfg["region"] = await self._config_service.get_value_by_key(f"{prefix}REGION")
+            region_key = f"{prefix}REGION"
+            region_val = await self._config_service.get_value_by_key(region_key)
+            cfg["region"] = region_val
 
         return cfg
 
@@ -239,7 +240,10 @@ class FileService:
 
     async def remove_absolute(self, param):
         entities = self.dao.find_by_ids(param.ids)
+        storage_cache = {}
         for entity in entities:
-            storage = await self._create_storage(entity.engine)
-            storage.delete(entity.bucket, entity.file_key)
-            self.dao.delete_absolute_by_id(entity.id)
+            engine = entity.engine
+            if engine not in storage_cache:
+                storage_cache[engine] = await self._create_storage(entity.engine)
+            storage_cache[engine].delete(entity.bucket, entity.file_key)
+        self.dao.delete_absolute_by_ids(param.ids)

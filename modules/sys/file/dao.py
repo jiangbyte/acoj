@@ -31,3 +31,9 @@ class FileDao(BaseDAO):
         self.db.delete(entity)
         self.db.commit()
         return True
+
+    def delete_absolute_by_ids(self, entity_ids: List[str]) -> int:
+        stmt = delete(self.model).where(self.model.id.in_(entity_ids))
+        result = self.db.execute(stmt)
+        self.db.commit()
+        return result.rowcount or 0

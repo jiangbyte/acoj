@@ -4,11 +4,9 @@ from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission
-from core.utils.excel_utils import validate_import_file
+from core.utils.excel_utils import handle_import
 from ...params import OrgVO, OrgPageParam, OrgTreeParam, OrgExportParam, OrgImportParam, GrantOrgRoleParam
 from ...service import OrgService
-from openpyxl import load_workbook
-import io
 
 router = APIRouter()
 
@@ -143,26 +141,7 @@ async def import_data(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    validate_import_file(file)
-    content = await file.read()
-    wb = load_workbook(io.BytesIO(content))
-    ws = wb.active
-
-    headers = [cell.value for cell in ws[1] if cell.value]
-    data_list = []
-
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        if not any(row):
-            continue
-        row_dict = {}
-        for i, header in enumerate(headers):
-            if i < len(row):
-                row_dict[header] = row[i]
-        data_list.append(OrgVO(**row_dict))
-
-    service = OrgService(db)
-    result = await service.import_data(OrgImportParam(data=data_list), request)
-    return success(result)
+    return await handle_import(file, OrgService, OrgVO, OrgImportParam, db, request)
 
 
 @router.post(
