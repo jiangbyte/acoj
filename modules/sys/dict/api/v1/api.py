@@ -55,7 +55,7 @@ async def tree(
     db: Session = Depends(get_db)
 ):
     service = DictService(db)
-    return success(service.tree(param))
+    return success(await service.tree(param))
 
 
 @router.post(

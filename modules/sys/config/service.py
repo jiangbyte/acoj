@@ -5,6 +5,7 @@ from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils.model_utils import strip_system_fields, apply_update
 from core.auth import HeiAuthTool
+from core.db.base_service import BaseCrudService
 from core.db.redis import get_client
 from .models import SysConfig
 from .dao import ConfigDao
@@ -14,9 +15,12 @@ from .params import ConfigVO, ConfigPageParam, ConfigListParam, ConfigCategoryEd
 CONFIG_CACHE_PREFIX = "sys-config:"
 
 
-class ConfigService:
-    def __init__(self, db: Session):
-        self.dao = ConfigDao(db)
+class ConfigService(BaseCrudService):
+    model_class = SysConfig
+    vo_class = ConfigVO
+    dao_class = ConfigDao
+    page_param_class = ConfigPageParam
+    export_name = "配置数据"
 
     async def _get_current_user_id(self, request: Request) -> Optional[str]:
         try:
@@ -54,7 +58,7 @@ class ConfigService:
         return None
 
     def page(self, param: ConfigPageParam) -> dict:
-        result = self.dao.find_page(param)
+        result = self.dao.find_page_by_filters(param)
         records = result[PageDataField.RECORDS]
         total = result[PageDataField.TOTAL]
         vo_list = [ConfigVO.model_validate(r).model_dump() for r in records]
@@ -63,10 +67,6 @@ class ConfigService:
     def list_by_category(self, param: ConfigListParam) -> List[dict]:
         entities = self.dao.find_by_category(param.category)
         return [ConfigVO.model_validate(e).model_dump() for e in entities]
-
-    async def create(self, vo: ConfigVO, request: Request):
-        entity = SysConfig(**strip_system_fields(vo.model_dump()))
-        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
 
     async def modify(self, vo: ConfigVO, request: Request):
         entity = self.dao.find_by_id(vo.id)
@@ -82,10 +82,6 @@ class ConfigService:
         for entity in entities:
             await self._del_cached_value(entity.config_key)
         self.dao.delete_by_ids(param.ids)
-
-    def detail(self, param) -> Optional[ConfigVO]:
-        entity = self.dao.find_by_id(param.id)
-        return ConfigVO.model_validate(entity) if entity else None
 
     async def edit_batch(self, param, request: Request):
         user_id = await self._get_current_user_id(request)

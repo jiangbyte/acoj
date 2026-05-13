@@ -214,7 +214,7 @@ class FileService:
         )
 
     def page(self, param: FilePageParam) -> dict:
-        result = self.dao.find_page(param)
+        result = self.dao.find_page_by_filters(param)
         records = result[PageDataField.RECORDS]
         total = result[PageDataField.TOTAL]
         vo_list = []

@@ -3,7 +3,7 @@ import socket
 import datetime
 from sqlalchemy.orm import Session
 from .dao import AnalyzeDao
-from .params import DashboardVO, DashboardStats, TrendItem, OrgUserDistribution, CategoryDistribution, SysInfo, RecentLogin
+from .params import DashboardVO, DashboardStats, ClientStats, TrendItem, OrgUserDistribution, CategoryDistribution, SysInfo, RecentLogin
 
 SERVER_START_TIME = datetime.datetime.now()
 
@@ -47,15 +47,26 @@ class AnalyzeService:
             total_configs=self.dao.count_configs(),
             total_notices=self.dao.count_notices(),
         )
+        client_stats = ClientStats(
+            total_users=self.dao.count_client_users(),
+            active_users=self.dao.count_active_client_users(),
+        )
         user_trend = [TrendItem(**item) for item in self.dao.user_trend()]
+        client_trend = [TrendItem(**item) for item in self.dao.client_user_trend()]
         org_dist = [OrgUserDistribution(**item) for item in self.dao.org_user_distribution()]
         role_dist = [CategoryDistribution(**item) for item in self.dao.role_category_distribution()]
 
         return DashboardVO(
             stats=stats,
+            client_stats=client_stats,
             user_trend=user_trend,
+            client_trend=client_trend,
             org_user_distribution=org_dist,
             role_category_distribution=role_dist,
             sys_info=self._get_sys_info(),
             recent_logins=self._get_recent_logins(),
+            recent_client_logins=self._get_recent_client_logins(),
         )
+
+    def _get_recent_client_logins(self) -> list[RecentLogin]:
+        return [RecentLogin(**item) for item in self.dao.get_recent_client_logins()]

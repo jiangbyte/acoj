@@ -1,8 +1,8 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.enums import SoftDeleteEnum, ExportTypeEnum
-from core.pojo import PageBounds
+from core.enums import SoftDeleteEnum
+from core.pojo import PageBounds, BaseExportParam
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -54,17 +54,8 @@ class DictTreeParam(BaseModel):
     category: Optional[str] = None
 
 
-class DictExportParam(BaseModel):
-    export_type: str = ExportTypeEnum.CURRENT.value
-    current: Optional[int] = None
-    size: Optional[int] = None
-    selected_id: Optional[str] = None
-
-    @property
-    def selected_ids(self) -> Optional[List[str]]:
-        if self.selected_id:
-            return self.selected_id.split(",")
-        return None
+class DictExportParam(BaseExportParam):
+    pass
 
 
 class DictImportParam(BaseModel):

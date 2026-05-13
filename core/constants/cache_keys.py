@@ -14,3 +14,4 @@ DISABLE_KEY_CLIENT = "hei:auth:client:disable:"
 
 # Dict
 DICT_CACHE_KEY = "hei:dict:tree"
+DICT_TREE_CACHE_KEY = "hei:dict:fulltree"

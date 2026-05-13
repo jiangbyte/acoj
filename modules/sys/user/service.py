@@ -2,14 +2,14 @@ from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
 from fastapi import Request
 from .models import SysUser
-from .params import UserVO, UserPageParam, UserExportParam, UserImportParam, GrantRoleParam, GrantGroupParam, GrantUserPermissionParam
+from .params import UserVO, UserPageParam, GrantRoleParam, GrantGroupParam, GrantUserPermissionParam
 from .dao import UserDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum
-from core.utils import export_excel, strip_system_fields, apply_update, make_template
+from core.utils import strip_system_fields, apply_update, export_excel, make_template
 from core.auth import HeiAuthTool, LoginUserInfo
+from core.db.base_service import BaseCrudService
 import logging
 
 from ..resource import SysResource
@@ -17,17 +17,12 @@ from ..resource import SysResource
 logger = logging.getLogger(__name__)
 
 
-class UserService:
-    def __init__(self, db: Session):
-        self.dao = UserDao(db)
-
-    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
-        try:
-            user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
-            return user_id
-        except Exception as e:
-            logger.warning(f"Failed to get current user: {e}")
-            return None
+class UserService(BaseCrudService):
+    model_class = SysUser
+    vo_class = UserVO
+    dao_class = UserDao
+    page_param_class = UserPageParam
+    export_name = "用户数据"
 
     def find_by_id(self, user_id: str) -> Optional[SysUser]:
         return self.dao.find_by_id(user_id)
@@ -59,7 +54,7 @@ class UserService:
         )
 
     def page(self, param: UserPageParam) -> dict:
-        result = self.dao.find_page(param)
+        result = self.dao.find_page_by_filters(param)
         records = result[PageDataField.RECORDS]
         user_ids = [r.id for r in records]
         role_map = self.dao.get_role_ids_map_by_user_ids(user_ids)
@@ -135,26 +130,13 @@ class UserService:
         self._enrich_vo(param.id, vo_dict)
         return UserVO(**vo_dict)
 
-    def export(self, param: UserExportParam):
-        records: List[SysUser] = []
-        if param.export_type == ExportTypeEnum.CURRENT.value:
-            page_param = UserPageParam(current=param.current or 1, size=param.size or 10)
-            result = self.dao.find_page(page_param)
-            records = result[PageDataField.RECORDS]
-        elif param.export_type == ExportTypeEnum.SELECTED.value:
-            records = self.dao.find_by_ids(param.selected_ids or [])
-        elif param.export_type == ExportTypeEnum.ALL.value:
-            records = self.dao.find_all()
-        else:
-            raise BusinessException("导出类型错误")
-
-        data = [UserVO.model_validate(r).model_dump() for r in records]
-        return export_excel(data, "用户数据", "用户数据")
-
     def download_template(self):
-        return export_excel(make_template(SysUser, extra_exclude={'password', 'org_id', 'position_id', 'last_login_at', 'last_login_ip', 'login_count'}), "用户导入模板", "用户数据")
+        return export_excel(
+            make_template(SysUser, extra_exclude={'password', 'org_id', 'position_id', 'last_login_at', 'last_login_ip', 'login_count'}),
+            "用户导入模板", "用户数据"
+        )
 
-    async def import_data(self, param: UserImportParam, request: Optional[Request] = None) -> dict:
+    async def import_data(self, param, request: Optional[Request] = None) -> dict:
         if not param.data:
             raise BusinessException("导入数据不能为空")
         entities = [SysUser(**strip_system_fields(vo.model_dump(), extra_fields={'role_ids', 'group_ids'})) for vo in param.data]

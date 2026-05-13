@@ -6,6 +6,7 @@ from sqlalchemy import select, or_
 from .models import SysUser, RelUserRole, RelUserGroup, RelUserPermission
 from .params import UserPageParam
 from core.db.base_dao import BaseDAO
+from core.db.query_wrapper import QueryWrapper
 from core.enums import ResourceCategoryEnum, ResourceTypeEnum, StatusEnum, DataScopeEnum
 from core.utils import generate_id
 from modules.sys.role.params import PermissionItem
@@ -15,17 +16,15 @@ class UserDao(BaseDAO):
     def __init__(self, db: Session):
         super().__init__(db, SysUser)
 
-    def find_page(self, param: UserPageParam) -> Dict[str, Any]:
-        def builder(query):
-            if param.keyword:
-                keyword = f"%{param.keyword}%"
-                query = query.where(
-                    or_(SysUser.account.ilike(keyword), SysUser.nickname.ilike(keyword))
-                )
-            if param.status:
-                query = query.where(SysUser.status == param.status)
-            return query.order_by(SysUser.created_at.desc())
-        return super().find_page(param, builder)
+    def find_page_by_filters(self, param: UserPageParam) -> Dict[str, Any]:
+        wrapper = QueryWrapper(SysUser)
+        if param.keyword:
+            keyword = f"%{param.keyword}%"
+            wrapper.where(or_(SysUser.account.ilike(keyword), SysUser.nickname.ilike(keyword)))
+        if param.status:
+            wrapper.eq(SysUser.status, param.status)
+        wrapper.order_by_desc(SysUser.created_at)
+        return self.select_page(wrapper, param)
 
     def find_by_account(self, account: str) -> Optional[SysUser]:
         return (

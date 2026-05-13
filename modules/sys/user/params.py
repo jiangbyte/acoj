@@ -2,8 +2,8 @@ from typing import Optional, List
 from modules.sys.role.params import PermissionItem
 from datetime import datetime, date
 from pydantic import BaseModel, ConfigDict
-from core.enums import SoftDeleteEnum, ExportTypeEnum
-from core.pojo import PageBounds
+from core.enums import SoftDeleteEnum
+from core.pojo import PageBounds, BaseExportParam
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -40,15 +40,8 @@ class UserPageParam(PageBounds):
     status: Optional[str] = None
 
 
-class UserExportParam(BaseModel):
-    export_type: str = ExportTypeEnum.CURRENT.value
-    current: Optional[int] = None
-    size: Optional[int] = None
-    selected_id: Optional[str] = None
-
-    @property
-    def selected_ids(self) -> Optional[List[str]]:
-        return self.selected_id.split(",") if self.selected_id else None
+class UserExportParam(BaseExportParam):
+    pass
 
 
 class UserImportParam(BaseModel):

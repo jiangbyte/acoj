@@ -916,6 +916,13 @@ INSERT INTO `rel_role_resource` VALUES ('3000000318', '40007', '80077');
 INSERT INTO `rel_role_resource` VALUES ('3000000319', '40007', '80080');
 INSERT INTO `rel_role_resource` VALUES ('3000000320', '40007', '80100');
 INSERT INTO `rel_role_resource` VALUES ('3000000334', '40007', '80106');
+INSERT INTO `rel_role_resource` VALUES ('3000000345', '40001', '80108');
+INSERT INTO `rel_role_resource` VALUES ('3000000346', '40002', '80108');
+INSERT INTO `rel_role_resource` VALUES ('3000000347', '40003', '80108');
+INSERT INTO `rel_role_resource` VALUES ('3000000348', '40004', '80108');
+INSERT INTO `rel_role_resource` VALUES ('3000000349', '40005', '80108');
+INSERT INTO `rel_role_resource` VALUES ('3000000350', '40006', '80108');
+INSERT INTO `rel_role_resource` VALUES ('3000000351', '40007', '80108');
 
 -- ----------------------------
 -- Table structure for rel_user_group
@@ -1558,6 +1565,7 @@ INSERT INTO `sys_resource` VALUES ('80104', 'SYS_ROLE_TEMPLATE', '导入模板',
 INSERT INTO `sys_resource` VALUES ('80105', 'SYS_ROLE_IMPORT', '角色导入', 'BACKEND_BUTTON', 'BUTTON', '导入角色数据', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:import\"}', 'ENABLED', 9, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
 INSERT INTO `sys_resource` VALUES ('80106', 'SYS_GROUP_TREE', '用户组树', 'BACKEND_BUTTON', 'BUTTON', '查询用户组树', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
 INSERT INTO `sys_resource` VALUES ('80107', 'SYS_RESOURCE_TREE', '资源树', 'BACKEND_BUTTON', 'BUTTON', '查询资源树', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80108', 'SYS_HOME', '首页', 'BACKEND_MENU', 'MENU', '首页', NULL, '/home', 'home/index', NULL, 'home', NULL, 'NO', 'YES', 'NO', 'YES', NULL, NULL, 'ENABLED', 0, 'NO', '2026-05-13 14:55:52', '50001', '2026-05-13 14:55:52', '50001');
 
 -- ----------------------------
 -- Table structure for sys_role
@@ -1636,5 +1644,23 @@ INSERT INTO `sys_user` VALUES ('50007', 'zhouba', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.
 INSERT INTO `sys_user` VALUES ('50008', 'wujiu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '吴九', NULL, '精打细算', 'MALE', '1988-09-09', 'wujiu@hei.com', NULL, '13800000008', '10004', '20008', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50009', 'zhengshi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '郑十', NULL, '以人为本', 'FEMALE', '1990-12-01', 'zhengshi@hei.com', NULL, '13800000009', '10005', '20009', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50010', 'chen十一', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '陈十一', NULL, '稳定压倒一切', 'MALE', '1993-06-18', 'chen11@hei.com', NULL, '13800000010', '10007', '20011', 'ACTIVE', NULL, NULL, 0, 'YES', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+
+-- ----------------------------
+-- Table structure for sys_quick_action
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_quick_action`;
+CREATE TABLE `sys_quick_action`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
+  `resource_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '资源ID',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_resource`(`user_id` ASC, `resource_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户快捷方式' ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;

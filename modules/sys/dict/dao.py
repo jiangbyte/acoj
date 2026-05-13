@@ -5,7 +5,6 @@ from .models import SysDict
 from .params import DictPageParam, DictListParam
 from core.db.base_dao import BaseDAO
 from core.db.query_wrapper import QueryWrapper
-from core.enums import SoftDeleteEnum
 
 
 class DictDao(BaseDAO):
@@ -36,34 +35,28 @@ class DictDao(BaseDAO):
         return self.select_list(wrapper)
 
     def find_by_code(self, code: str) -> Optional[SysDict]:
-        stmt = select(SysDict).where(
-            SysDict.code == code,
-            SysDict.is_deleted == SoftDeleteEnum.NO
-        )
+        stmt = select(SysDict).where(SysDict.code == code)
+        stmt = self._apply_soft_delete_filter(stmt)
         return self.db.execute(stmt).scalar_one_or_none()
 
     def find_by_parent_id(self, parent_id: str) -> List[SysDict]:
-        stmt = select(SysDict).where(
-            SysDict.parent_id == parent_id,
-            SysDict.is_deleted == SoftDeleteEnum.NO
-        ).order_by(SysDict.sort_code)
+        stmt = select(SysDict).where(SysDict.parent_id == parent_id).order_by(SysDict.sort_code)
+        stmt = self._apply_soft_delete_filter(stmt)
         return list(self.db.execute(stmt).scalars().all())
 
     def has_children_batch(self, parent_ids: List[str]) -> set:
         if not parent_ids:
             return set()
-        stmt = select(SysDict.parent_id).where(
-            SysDict.parent_id.in_(parent_ids),
-            SysDict.is_deleted == SoftDeleteEnum.NO
-        ).distinct()
+        stmt = select(SysDict.parent_id).where(SysDict.parent_id.in_(parent_ids)).distinct()
+        stmt = self._apply_soft_delete_filter(stmt)
         return set(self.db.execute(stmt).scalars().all())
 
     def count_by_parent_and_label(self, parent_id: str, label: str, exclude_id: Optional[str] = None) -> int:
         stmt = select(func.count()).select_from(SysDict).where(
             SysDict.parent_id == parent_id,
             SysDict.label == label,
-            SysDict.is_deleted == SoftDeleteEnum.NO
         )
+        stmt = self._apply_soft_delete_filter(stmt)
         if exclude_id:
             stmt = stmt.where(SysDict.id != exclude_id)
         return self.db.execute(stmt).scalar() or 0
@@ -72,8 +65,8 @@ class DictDao(BaseDAO):
         stmt = select(func.count()).select_from(SysDict).where(
             SysDict.parent_id == parent_id,
             SysDict.value == value,
-            SysDict.is_deleted == SoftDeleteEnum.NO
         )
+        stmt = self._apply_soft_delete_filter(stmt)
         if exclude_id:
             stmt = stmt.where(SysDict.id != exclude_id)
         return self.db.execute(stmt).scalar() or 0
