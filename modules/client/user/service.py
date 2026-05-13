@@ -1,44 +1,25 @@
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy.orm import Session
 from fastapi import Request
-from .params import ClientUserVO, ClientUserPageParam, ClientUserExportParam, ClientUserImportParam
+from .params import ClientUserVO, ClientUserPageParam
 from .dao import ClientUserDao
 from .models import ClientUser
-from core.pojo import IdParam, IdsParam
-from core.result import page_data, PageDataField
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum
-from core.utils import export_excel, strip_system_fields, apply_update, make_template
+from core.utils import apply_update, export_excel, make_template
 from core.auth import HeiClientAuthTool, LoginUserInfo
-import logging
-
-logger = logging.getLogger(__name__)
+from core.db.base_service import BaseCrudService
 
 
-class ClientUserService:
-    def __init__(self, db: Session):
-        self.dao = ClientUserDao(db)
+class ClientUserService(BaseCrudService):
+    model_class = ClientUser
+    vo_class = ClientUserVO
+    dao_class = ClientUserDao
+    page_param_class = ClientUserPageParam
+    export_name = "C端用户数据"
 
-    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
-        try:
-            user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
-            return user_id
-        except Exception as e:
-            logger.warning(f"Failed to get current user: {e}")
-            return None
-
-    def page(self, param: ClientUserPageParam) -> dict:
-        result = self.dao.find_page(param)
-        return page_data(
-            records=[ClientUserVO.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]],
-            total=result[PageDataField.TOTAL],
-            page=param.current,
-            size=param.size
-        )
-
-    async def create(self, vo: ClientUserVO, request: Optional[Request] = None) -> None:
-        entity = ClientUser(**strip_system_fields(vo.model_dump()))
-        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
+    @property
+    def _auth_tool(self):
+        return HeiClientAuthTool
 
     async def modify(self, vo: ClientUserVO, request: Optional[Request] = None) -> None:
         entity = self.dao.find_by_id(vo.id)
@@ -48,39 +29,11 @@ class ClientUserService:
         apply_update(entity, update_data, extra_protected={'password'})
         self.dao.update(entity, user_id=await self._get_current_user_id(request))
 
-    def remove(self, param: IdsParam) -> None:
-        self.dao.delete_by_ids(param.ids)
-
-    def detail(self, param: IdParam) -> Optional[ClientUserVO]:
-        entity = self.dao.find_by_id(param.id)
-        return ClientUserVO.model_validate(entity) if entity else None
-
-    def export(self, param: ClientUserExportParam):
-        records: List[ClientUser] = []
-
-        if param.export_type == ExportTypeEnum.CURRENT.value:
-            page_param = ClientUserPageParam(current=param.current or 1, size=param.size or 10)
-            result = self.dao.find_page(page_param)
-            records = result[PageDataField.RECORDS]
-        elif param.export_type == ExportTypeEnum.SELECTED.value:
-            records = self.dao.find_by_ids(param.selected_ids or [])
-        elif param.export_type == ExportTypeEnum.ALL.value:
-            records = self.dao.find_all()
-        else:
-            raise BusinessException("导出类型错误")
-
-        data = [ClientUserVO.model_validate(r).model_dump() for r in records]
-        return export_excel(data, "C端用户数据", "C端用户数据")
-
     def download_template(self):
-        return export_excel(make_template(ClientUser, extra_exclude={'password', 'last_login_at', 'last_login_ip', 'login_count'}), "C端用户导入模板", "C端用户数据")
-
-    async def import_data(self, param: ClientUserImportParam, request: Optional[Request] = None) -> dict:
-        if not param.data:
-            raise BusinessException("导入数据不能为空")
-        entities = [ClientUser(**strip_system_fields(vo.model_dump())) for vo in param.data]
-        self.dao.insert_batch(entities, user_id=await self._get_current_user_id(request))
-        return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}
+        return export_excel(
+            make_template(ClientUser, extra_exclude={'password', 'last_login_at', 'last_login_ip', 'login_count'}),
+            "C端用户导入模板", "C端用户数据"
+        )
 
     def find_by_account(self, account: str) -> Optional[ClientUser]:
         return self.dao.find_by_account(account)

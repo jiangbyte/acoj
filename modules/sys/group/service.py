@@ -3,33 +3,28 @@ from sqlalchemy.orm import Session
 from fastapi import Request
 
 from . import SysGroup
-from .params import GroupVO, GroupTreeVO, GroupPageParam, GroupTreeParam, GroupExportParam, GroupImportParam
+from .params import GroupVO, GroupTreeVO, GroupPageParam, GroupTreeParam
 from .dao import GroupDao
 from ..org.params import OrgVO
 from ..org.dao import OrgDao
-from core.pojo import IdParam, IdsParam
+from core.pojo import IdsParam
 from core.result import page_data, PageDataField
-from core.enums import ExportTypeEnum, SoftDeleteEnum
+from core.enums import SoftDeleteEnum
 from core.exception import BusinessException
-from core.utils import export_excel, strip_system_fields, apply_update, make_template
-from core.auth import HeiAuthTool
-import logging
-
-logger = logging.getLogger(__name__)
+from core.utils import apply_update
+from core.db.base_service import BaseCrudService
 
 
-class GroupService:
+class GroupService(BaseCrudService):
+    model_class = SysGroup
+    vo_class = GroupVO
+    dao_class = GroupDao
+    page_param_class = GroupPageParam
+    export_name = "用户组数据"
+
     def __init__(self, db: Session):
-        self.dao = GroupDao(db)
+        super().__init__(db)
         self._org_dao = OrgDao(db)
-
-    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
-        try:
-            user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
-            return user_id
-        except Exception as e:
-            logger.warning(f"Failed to get current user: {e}")
-            return None
 
     def page(self, param: GroupPageParam) -> dict:
         if not param.parent_id and not param.org_id:
@@ -127,10 +122,6 @@ class GroupService:
         self._sort_tree(roots)
         return roots
 
-    async def create(self, vo: GroupVO, request: Optional[Request] = None) -> None:
-        entity = SysGroup(**strip_system_fields(vo.model_dump()))
-        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
-
     async def modify(self, vo: GroupVO, request: Optional[Request] = None) -> None:
         entity = self.dao.find_by_id(vo.id)
         if not entity:
@@ -188,34 +179,3 @@ class GroupService:
         ).update({"group_id": None}, synchronize_session=False)
 
         self.dao.delete_by_ids(all_ids)
-
-    def detail(self, param: IdParam) -> Optional[GroupVO]:
-        entity = self.dao.find_by_id(param.id)
-        return GroupVO.model_validate(entity) if entity else None
-
-    def export(self, param: GroupExportParam):
-        records: List[SysGroup] = []
-
-        if param.export_type == ExportTypeEnum.CURRENT.value:
-            page_param = GroupPageParam(current=param.current or 1, size=param.size or 10)
-            result = self.dao.find_page(page_param)
-            records = result[PageDataField.RECORDS]
-        elif param.export_type == ExportTypeEnum.SELECTED.value:
-            records = self.dao.find_by_ids(param.selected_ids or [])
-        elif param.export_type == ExportTypeEnum.ALL.value:
-            records = self.dao.find_all()
-        else:
-            raise BusinessException("导出类型错误")
-
-        data = [GroupVO.model_validate(r).model_dump() for r in records]
-        return export_excel(data, "用户组数据", "用户组数据")
-
-    def download_template(self):
-        return export_excel(make_template(SysGroup), "用户组导入模板", "用户组数据")
-
-    async def import_data(self, param: GroupImportParam, request: Optional[Request] = None) -> dict:
-        if not param.data:
-            raise BusinessException("导入数据不能为空")
-        entities = [SysGroup(**strip_system_fields(vo.model_dump())) for vo in param.data]
-        self.dao.insert_batch(entities, user_id=await self._get_current_user_id(request))
-        return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}

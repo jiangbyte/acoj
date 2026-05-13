@@ -41,10 +41,18 @@ class RecentLogin(BaseModel):
     last_login_ip: Optional[str] = None
 
 
+class ClientStats(BaseModel):
+    total_users: int = 0
+    active_users: int = 0
+
+
 class DashboardVO(BaseModel):
     stats: DashboardStats
+    client_stats: ClientStats = ClientStats()
     user_trend: List[TrendItem] = []
+    client_trend: List[TrendItem] = []
     org_user_distribution: List[OrgUserDistribution] = []
     role_category_distribution: List[CategoryDistribution] = []
     sys_info: SysInfo = SysInfo()
     recent_logins: List[RecentLogin] = []
+    recent_client_logins: List[RecentLogin] = []

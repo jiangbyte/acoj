@@ -1,13 +1,14 @@
 from typing import List
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, text
+from sqlalchemy import select, func, and_
 from core.enums import SoftDeleteEnum, UserStatusEnum
 from modules.sys.user.models import SysUser
 from modules.sys.role.models import SysRole
 from modules.sys.org.models import SysOrg
 from modules.sys.config.models import SysConfig
 from modules.sys.notice.models import SysNotice
+from modules.client.user.models import ClientUser
 
 
 class AnalyzeDao:
@@ -44,52 +45,107 @@ class AnalyzeDao:
 
     def user_trend(self, months: int = 12) -> List[dict]:
         nd = SoftDeleteEnum.NO
-        stmt = text(f"""
-            SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count
-            FROM sys_user
-            WHERE is_deleted = '{nd}' AND created_at IS NOT NULL
-            GROUP BY month
-            ORDER BY month ASC
-            LIMIT :limit
-        """)
-        result = self.db.execute(stmt, {"limit": months})
+        month_col = func.date_format(SysUser.created_at, '%Y-%m').label("month")
+        stmt = (
+            select(month_col, func.count().label("count"))
+            .where(SysUser.is_deleted == nd, SysUser.created_at.isnot(None))
+            .group_by(month_col)
+            .order_by(month_col.asc())
+            .limit(months)
+        )
+        result = self.db.execute(stmt).all()
         return [{"month": row[0], "count": row[1]} for row in result]
 
     def org_user_distribution(self) -> List[dict]:
         nd = SoftDeleteEnum.NO
-        stmt = text(f"""
-            SELECT o.name, COUNT(u.id) AS count
-            FROM sys_org o
-            LEFT JOIN sys_user u ON u.org_id = o.id AND u.is_deleted = '{nd}'
-            WHERE o.is_deleted = '{nd}'
-            GROUP BY o.id, o.name
-            ORDER BY count DESC
-        """)
-        result = self.db.execute(stmt)
+        stmt = (
+            select(SysOrg.name, func.count(SysUser.id).label("count"))
+            .outerjoin(SysUser, and_(
+                SysUser.org_id == SysOrg.id,
+                SysUser.is_deleted == nd,
+            ))
+            .where(SysOrg.is_deleted == nd)
+            .group_by(SysOrg.id, SysOrg.name)
+            .order_by(func.count(SysUser.id).desc())
+        )
+        result = self.db.execute(stmt).all()
         return [{"name": row[0], "count": row[1]} for row in result]
 
     def role_category_distribution(self) -> List[dict]:
-        nd = SoftDeleteEnum.NO
-        stmt = text(f"""
-            SELECT category, COUNT(*) AS count
-            FROM sys_role
-            WHERE is_deleted = '{nd}'
-            GROUP BY category
-            ORDER BY count DESC
-        """)
-        result = self.db.execute(stmt)
+        stmt = (
+            select(SysRole.category, func.count().label("count"))
+            .where(SysRole.is_deleted == SoftDeleteEnum.NO)
+            .group_by(SysRole.category)
+            .order_by(func.count().desc())
+        )
+        result = self.db.execute(stmt).all()
         return [{"category": row[0], "count": row[1]} for row in result]
 
     def get_recent_logins(self, limit: int = 10) -> List[dict]:
+        stmt = (
+            select(
+                SysUser.nickname,
+                SysUser.account,
+                SysUser.last_login_at,
+                SysUser.last_login_ip,
+            )
+            .where(
+                SysUser.is_deleted == SoftDeleteEnum.NO,
+                SysUser.last_login_at.isnot(None),
+            )
+            .order_by(SysUser.last_login_at.desc())
+            .limit(limit)
+        )
+        result = self.db.execute(stmt).all()
+        return [
+            {"nickname": row[0], "account": row[1], "last_login_at": row[2], "last_login_ip": row[3]}
+            for row in result
+        ]
+
+    def count_client_users(self) -> int:
+        stmt = select(func.count()).select_from(ClientUser).where(ClientUser.is_deleted == SoftDeleteEnum.NO)
+        return self.db.execute(stmt).scalar() or 0
+
+    def count_active_client_users(self) -> int:
+        stmt = (
+            select(func.count())
+            .select_from(ClientUser)
+            .where(
+                ClientUser.is_deleted == SoftDeleteEnum.NO,
+                ClientUser.status == UserStatusEnum.ACTIVE.value,
+            )
+        )
+        return self.db.execute(stmt).scalar() or 0
+
+    def client_user_trend(self, months: int = 12) -> List[dict]:
         nd = SoftDeleteEnum.NO
-        stmt = text(f"""
-            SELECT nickname, account, last_login_at, last_login_ip
-            FROM sys_user
-            WHERE is_deleted = '{nd}' AND last_login_at IS NOT NULL
-            ORDER BY last_login_at DESC
-            LIMIT :limit
-        """)
-        result = self.db.execute(stmt, {"limit": limit})
+        month_col = func.date_format(ClientUser.created_at, '%Y-%m').label("month")
+        stmt = (
+            select(month_col, func.count().label("count"))
+            .where(ClientUser.is_deleted == nd, ClientUser.created_at.isnot(None))
+            .group_by(month_col)
+            .order_by(month_col.asc())
+            .limit(months)
+        )
+        result = self.db.execute(stmt).all()
+        return [{"month": row[0], "count": row[1]} for row in result]
+
+    def get_recent_client_logins(self, limit: int = 10) -> List[dict]:
+        stmt = (
+            select(
+                ClientUser.nickname,
+                ClientUser.account,
+                ClientUser.last_login_at,
+                ClientUser.last_login_ip,
+            )
+            .where(
+                ClientUser.is_deleted == SoftDeleteEnum.NO,
+                ClientUser.last_login_at.isnot(None),
+            )
+            .order_by(ClientUser.last_login_at.desc())
+            .limit(limit)
+        )
+        result = self.db.execute(stmt).all()
         return [
             {"nickname": row[0], "account": row[1], "last_login_at": row[2], "last_login_ip": row[3]}
             for row in result
