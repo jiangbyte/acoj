@@ -19,6 +19,7 @@ from modules.sys.config import router as config_router
 from modules.sys.file import router as file_router
 from modules.sys.analyze import router as analyze_router
 from modules.sys.home import router as home_router
+from modules.sys.log import router as log_router
 
 
 def setup_routers(app: FastAPI):
@@ -43,3 +44,4 @@ def setup_routers(app: FastAPI):
     app.include_router(file_router)
     app.include_router(analyze_router)
     app.include_router(home_router)
+    app.include_router(log_router)

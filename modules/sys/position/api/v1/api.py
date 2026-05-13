@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
 from core.utils.excel_utils import handle_import
 from ...params import PositionVO, PositionPageParam, PositionExportParam, PositionImportParam
 from ...service import PositionService
@@ -16,6 +17,7 @@ router = APIRouter()
     summary="获取职位分页",
     response_model=Result[PageData[PositionVO]]
 )
+@SysLog("查看职位列表")
 @HeiCheckPermission("sys:position:page")
 async def page(
     request: Request,
@@ -31,7 +33,9 @@ async def page(
     summary="添加职位",
     response_model=Result
 )
+@SysLog("添加职位")
 @HeiCheckPermission("sys:position:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: PositionVO,
@@ -47,6 +51,7 @@ async def create(
     summary="编辑职位",
     response_model=Result
 )
+@SysLog("编辑职位")
 @HeiCheckPermission("sys:position:modify")
 async def modify(
     request: Request,
@@ -63,6 +68,7 @@ async def modify(
     summary="删除职位",
     response_model=Result
 )
+@SysLog("删除职位")
 @HeiCheckPermission("sys:position:remove")
 async def remove(
     request: Request,
