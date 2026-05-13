@@ -5,6 +5,8 @@ class ResourceTypeEnum(str, Enum):
     DIRECTORY = "DIRECTORY"
     MENU = "MENU"
     BUTTON = "BUTTON"
+    INTERNAL_LINK = "INTERNAL_LINK"
+    EXTERNAL_LINK = "EXTERNAL_LINK"
 
     @property
     def desc(self) -> str:
@@ -12,6 +14,8 @@ class ResourceTypeEnum(str, Enum):
             ResourceTypeEnum.DIRECTORY: "目录",
             ResourceTypeEnum.MENU: "菜单",
             ResourceTypeEnum.BUTTON: "按钮",
+            ResourceTypeEnum.INTERNAL_LINK: "内链",
+            ResourceTypeEnum.EXTERNAL_LINK: "外链",
         }
         return descriptions.get(self, "")
 

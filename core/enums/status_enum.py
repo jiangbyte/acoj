@@ -5,8 +5,8 @@ class StatusEnum(str, Enum):
     YES = "YES"
     NO = "NO"
     ACTIVE = "ACTIVE"
-    ENABLE = "ENABLED"
-    DISABLE = "DISABLE"
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
 
     @property
     def desc(self) -> str:
@@ -14,7 +14,7 @@ class StatusEnum(str, Enum):
             StatusEnum.YES: "是",
             StatusEnum.NO: "否",
             StatusEnum.ACTIVE: "正常",
-            StatusEnum.ENABLE: "启用",
-            StatusEnum.DISABLE: "禁用",
+            StatusEnum.ENABLED: "启用",
+            StatusEnum.DISABLED: "禁用",
         }
         return descriptions.get(self, "")
