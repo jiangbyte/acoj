@@ -11,7 +11,7 @@
  Target Server Version : 90600 (9.6.0)
  File Encoding         : 65001
 
- Date: 14/05/2026 08:03:48
+ Date: 14/05/2026 14:20:39
 */
 
 SET NAMES utf8mb4;
@@ -1286,6 +1286,10 @@ CREATE TABLE `sys_log`  (
 -- ----------------------------
 -- Records of sys_log
 -- ----------------------------
+INSERT INTO `sys_log` VALUES ('7460574111438213120', 'OPERATE', '编辑资源', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.resource.api.v1.api', 'resource_modify', 'POST', 'http://localhost:18885/api/v1/sys/resource/modify', '{\"vo\": \"id=\'80109\' code=\'SYS_LOG\' name=\'系统日志\' category=\'BACKEND_MENU\' type=\'DIRECTORY\' description=\'系统日志目录\' parent_id=\'0\' route_path=\'/sys/log\' component_path=None redirect_path=None icon=\'file-text\' color=None is_visible=\'YES\' is_cache=\'NO\' is_affix=\'NO\' is_breadcrumb=\'YES\' external_url=\'\' extra=None status=\'ENABLED\' sort_code=2 is_deleted=\'NO\' created_at=datetime.datetime(2026, 5, 14, 14, 55, 52) created_by=\'50001\' updated_at=datetime.datetime(2026, 5, 14, 8, 3, 25) updated_by=\'50001\'\"}', '{\"code\": 200, \"message\": \"请求成功\", \"data\": null, \"success\": true, \"trace_id\": \"df11249c5cd945788020ab26537e4ec8\"}', '2026-05-14 14:17:59', 'df11249c5cd945788020ab26537e4ec8', 'admin', '445077c3a6b814d61b2d98d0b1c4ac56949bdb7b68e61dd6c11f97249eb0b433', 'NO', '2026-05-14 14:17:59', NULL, '2026-05-14 14:17:59', NULL);
+INSERT INTO `sys_log` VALUES ('7460574398982918144', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 14:19:07', '2293dac2ab29494e938211701f27e0a8', 'admin', '65fb178023eb59fe90264872cf8489662df3db3784c8f1e0a250e054f59e46f3', 'NO', '2026-05-14 14:19:07', NULL, '2026-05-14 14:19:07', NULL);
+INSERT INTO `sys_log` VALUES ('7460574547729715200', 'LOGOUT', '登出', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/b/logout', '', NULL, '2026-05-14 14:19:43', '35ceae09d7fc47fa9a5c46d56d77591f', 'admin', 'd218c751edac72ac037f719b44aad00e8d43f5d154d56177aa0a5e2bc5e3dd45', 'NO', '2026-05-14 14:19:43', NULL, '2026-05-14 14:19:43', NULL);
+INSERT INTO `sys_log` VALUES ('7460574569590427648', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 14:19:48', '15250291691d40b78d03cf861d03c764', 'admin', '641c6d86fd08f5b1366a0e7c467e2b04e17ea827ef74be536362e068cfa458d6', 'NO', '2026-05-14 14:19:48', NULL, '2026-05-14 14:19:48', NULL);
 
 -- ----------------------------
 -- Table structure for sys_module
@@ -1597,7 +1601,7 @@ INSERT INTO `sys_resource` VALUES ('80105', 'SYS_ROLE_IMPORT', '角色导入', '
 INSERT INTO `sys_resource` VALUES ('80106', 'SYS_GROUP_TREE', '用户组树', 'BACKEND_BUTTON', 'BUTTON', '查询用户组树', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
 INSERT INTO `sys_resource` VALUES ('80107', 'SYS_RESOURCE_TREE', '资源树', 'BACKEND_BUTTON', 'BUTTON', '查询资源树', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
 INSERT INTO `sys_resource` VALUES ('80108', 'SYS_HOME', '首页', 'BACKEND_MENU', 'MENU', '首页', NULL, '/home', 'home/index', NULL, 'home', NULL, 'YES', 'YES', 'NO', 'YES', NULL, NULL, 'ENABLED', 0, 'NO', '2026-05-13 14:55:52', '50001', '2026-05-14 07:43:59', '50001');
-INSERT INTO `sys_resource` VALUES ('80109', 'SYS_LOG', '系统日志', 'BACKEND_MENU', 'DIRECTORY', '系统日志目录', '80001', '/sys/log', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', '', NULL, 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 08:03:25', '50001');
+INSERT INTO `sys_resource` VALUES ('80109', 'SYS_LOG', '系统日志', 'BACKEND_MENU', 'DIRECTORY', '系统日志目录', '0', '/sys/log', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', '', NULL, 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:17:59', '50001');
 INSERT INTO `sys_resource` VALUES ('80110', 'SYS_OPLOG', '操作日志', 'BACKEND_MENU', 'MENU', '操作日志', '80109', '/sys/log/oplog', 'sys/log/oplog/index', NULL, 'audit', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80111', 'SYS_VISLOG', '访问日志', 'BACKEND_MENU', 'MENU', '访问日志', '80109', '/sys/log/vislog', 'sys/log/vislog/index', NULL, 'eye', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80112', 'SYS_LOG_PAGE', '日志查询', 'BACKEND_BUTTON', 'BUTTON', '查询日志列表', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:page\"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
@@ -1609,6 +1613,7 @@ INSERT INTO `sys_resource` VALUES ('80117', 'SYS_VISLOG_REMOVE', '日志删除',
 INSERT INTO `sys_resource` VALUES ('80118', 'SYS_SESSION', '会话管理', 'BACKEND_MENU', 'MENU', '会话管理', '80001', '/sys/auth/monitor', 'auth/monitor/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 11, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80119', 'SYS_SESSION_PAGE', '会话查询', 'BACKEND_BUTTON', 'BUTTON', '查询会话列表', '80118', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:session:page\"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80120', 'SYS_SESSION_EXIT', '强制下线', 'BACKEND_BUTTON', 'BUTTON', '强制用户下线', '80118', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:session:exit\"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+
 -- ----------------------------
 -- Table structure for sys_role
 -- ----------------------------
@@ -1676,7 +1681,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', 'ACTIVE', '2026-05-14 07:56:26', '127.0.0.1', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 07:56:26', '50001');
+INSERT INTO `sys_user` VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', 'ACTIVE', '2026-05-14 14:19:48', '127.0.0.1', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 14:19:48', '50001');
 INSERT INTO `sys_user` VALUES ('50002', 'zhangsan', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '张三', NULL, '代码改变世界', 'MALE', '1995-05-15', 'zhangsan@hei.com', 'https://github.com/zhangsan', '13800000002', '10002', '20004', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50003', 'lisi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '李四', NULL, '学无止境', 'MALE', '1993-08-20', 'lisi@hei.com', NULL, '13800000003', '10002', '20004', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50004', 'wangwu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '王五', NULL, '追求卓越', 'MALE', '1994-03-10', 'wangwu@hei.com', NULL, '13800000004', '10002', '20003', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
