@@ -196,6 +196,31 @@ class UserDao(BaseDAO):
         )
         return list(self.db.execute(stmt).scalars().all())
 
+    def get_user_role_codes(self, user_id: str) -> List[str]:
+        """Get role codes for a user."""
+        from ..role.models import SysRole as _SysRole
+        rows = self.db.execute(
+            select(_SysRole.code).join(
+                RelUserRole, _SysRole.id == RelUserRole.role_id
+            ).where(RelUserRole.user_id == user_id)
+        ).scalars().all()
+        return list(rows)
+
+    def get_all_resources(self):
+        """Get ALL backend menu resources, ordered by sort_code."""
+        from ..resource.models import SysResource as _SysResource
+        stmt = (
+            select(_SysResource)
+            .where(
+                _SysResource.category == ResourceCategoryEnum.BACKEND_MENU,
+                _SysResource.type.in_([ResourceTypeEnum.DIRECTORY, ResourceTypeEnum.MENU]),
+                _SysResource.status == StatusEnum.ENABLED,
+                _SysResource.is_deleted == self._soft_delete_not_deleted,
+            )
+            .order_by(_SysResource.sort_code.asc())
+        )
+        return list(self.db.execute(stmt).scalars().all())
+
     def get_role_permission_codes(self, role_ids: List[str]) -> List[str]:
         from ..role.models import RelRolePermission as _RelRolePermission
         rows = self.db.execute(

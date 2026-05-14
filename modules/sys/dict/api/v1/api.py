@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
 from core.utils.excel_utils import handle_import
 from ...params import DictVO, DictPageParam, DictListParam, DictTreeParam, DictExportParam, DictImportParam
 from ...service import DictService
@@ -61,7 +62,9 @@ async def tree(
     summary="添加字典",
     response_model=Result
 )
+@SysLog("添加字典")
 @HeiCheckPermission("sys:dict:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: DictVO,
@@ -77,6 +80,7 @@ async def create(
     summary="编辑字典",
     response_model=Result
 )
+@SysLog("编辑字典")
 @HeiCheckPermission("sys:dict:modify")
 async def modify(
     request: Request,
@@ -93,6 +97,7 @@ async def modify(
     summary="删除字典",
     response_model=Result
 )
+@SysLog("删除字典")
 @HeiCheckPermission("sys:dict:remove")
 async def remove(
     request: Request,
@@ -153,6 +158,7 @@ async def get_dict_children(
 @router.get(
     "/api/v1/sys/dict/export",
     summary="导出字典数据")
+@SysLog("导出字典数据")
 @HeiCheckPermission("sys:dict:export")
 async def export(
     request: Request,
@@ -180,7 +186,9 @@ async def download_template(
     summary="导入字典数据",
     response_model=Result
 )
+@SysLog("导入字典数据")
 @HeiCheckPermission("sys:dict:import")
+@NoRepeat(interval=5000)
 async def import_data(
     request: Request,
     file: UploadFile = File(...),

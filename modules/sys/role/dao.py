@@ -56,6 +56,25 @@ class RoleDao(BaseDAO):
             self.db.add(rel)
         self.db.commit()
 
+    def add_missing_permissions(self, role_id: str, permissions: List[PermissionItem]):
+        """Add permissions for a role, skipping any that already exist.
+
+        Unlike ``grant_permissions`` this does NOT delete existing grants —
+        it only inserts codes not already present. Used by ``grant_resources``
+        to avoid wiping permissions that were explicitly granted.
+        """
+        existing = set(self.get_permission_codes_by_role_id(role_id))
+        for p in permissions:
+            if p.permission_code in existing:
+                continue
+            rel = RelRolePermission(
+                id=generate_id(), role_id=role_id, permission_code=p.permission_code,
+                scope=p.scope, custom_scope_group_ids=p.custom_scope_group_ids,
+                custom_scope_org_ids=p.custom_scope_org_ids,
+            )
+            self.db.add(rel)
+        self.db.commit()
+
     # ---- RAL: Role Resources ----
 
     def get_resource_ids_by_role_id(self, role_id: str) -> List[str]:

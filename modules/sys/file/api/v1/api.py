@@ -7,6 +7,7 @@ from core.pojo import IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission
 from core.auth.permission import HeiPermissionTool
+from core.log import SysLog
 from ...params import FileVO, FilePageParam, FileIdParam
 from ...service import FileService
 
@@ -16,6 +17,7 @@ router = APIRouter()
 
 
 @router.post("/api/v1/sys/file/upload", summary="上传文件")
+@SysLog("上传文件")
 async def upload(
     request: Request,
     file: UploadFile = File(...),
@@ -66,6 +68,7 @@ async def detail(
 
 
 @router.post("/api/v1/sys/file/remove", summary="删除文件（软删除）")
+@SysLog("删除文件")
 @HeiCheckPermission("sys:file:remove")
 async def remove(
     request: Request,
@@ -78,6 +81,7 @@ async def remove(
 
 
 @router.post("/api/v1/sys/file/remove-absolute", summary="删除文件（物理删除）")
+@SysLog("物理删除文件")
 @HeiCheckPermission("sys:file:remove")
 async def remove_absolute(
     request: Request,

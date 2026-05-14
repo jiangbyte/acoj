@@ -7,6 +7,7 @@ from core.exception import BusinessException
 from core.enums import SoftDeleteEnum, UserStatusEnum
 from core.utils import decrypt, generate_id
 from core.captcha import b_captcha
+from core.log import record_auth_log
 from .params import UsernameLoginParam, UsernameLoginResult, UsernameRegisterParam, UsernameRegisterResult, UsernameLogoutResult
 from modules.sys.user.models import SysUser
 import logging
@@ -78,6 +79,9 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         if db:
             db.close()
 
+    # 记录登录日志
+    record_auth_log(request, "登录", "LOGIN", op_user=user_info.account)
+
     return UsernameLoginResult(token=token)
 
 
@@ -122,5 +126,20 @@ async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
 
 
 async def do_logout(request: Request) -> UsernameLogoutResult:
+    # 获取当前用户用于日志记录
+    try:
+        user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
+        if user_id:
+            db = SessionLocal()
+            try:
+                from modules.sys.user.service import UserService
+                entity = UserService(db).find_by_id(user_id)
+                op_user = entity.account if entity else None
+                record_auth_log(request, "登出", "LOGOUT", op_user=op_user)
+            finally:
+                db.close()
+    except Exception as e:
+        logger.warning(f"Failed to record logout log: {e}")
+
     await HeiAuthTool.logout(request=request)
     return UsernameLogoutResult(message="登出成功")

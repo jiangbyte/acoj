@@ -11,12 +11,8 @@
  Target Server Version : 90600 (9.6.0)
  File Encoding         : 65001
 
- Date: 13/05/2026 16:06:54
+ Date: 14/05/2026 08:03:48
 */
-
-DROP DATABASE IF EXISTS `hei_data`;
-CREATE DATABASE IF NOT EXISTS `hei_data` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE `hei_data`;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -30,7 +26,7 @@ CREATE TABLE `client_user`  (
   `account` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '账号',
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
   `nickname` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '昵称',
-  `avatar` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像',
+  `avatar` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '头像',
   `motto` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '座右铭',
   `gender` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '性别',
   `birthday` date NULL DEFAULT NULL COMMENT '生日',
@@ -567,6 +563,8 @@ INSERT INTO `rel_role_permission` VALUES ('2000000390', '40002', 'c:client-user:
 INSERT INTO `rel_role_permission` VALUES ('2000000391', '40001', 'sys:log:page', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000392', '40001', 'sys:log:detail', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000393', '40001', 'sys:log:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000394', '40001', 'sys:session:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000395', '40001', 'sys:session:exit', 'ALL', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for rel_role_resource
@@ -584,113 +582,124 @@ CREATE TABLE `rel_role_resource`  (
 -- ----------------------------
 -- Records of rel_role_resource
 -- ----------------------------
-INSERT INTO `rel_role_resource` VALUES ('3000000001', '40001', '80001');
-INSERT INTO `rel_role_resource` VALUES ('3000000002', '40001', '80002');
-INSERT INTO `rel_role_resource` VALUES ('3000000003', '40001', '80003');
-INSERT INTO `rel_role_resource` VALUES ('3000000004', '40001', '80004');
-INSERT INTO `rel_role_resource` VALUES ('3000000005', '40001', '80005');
-INSERT INTO `rel_role_resource` VALUES ('3000000006', '40001', '80006');
-INSERT INTO `rel_role_resource` VALUES ('3000000007', '40001', '80007');
-INSERT INTO `rel_role_resource` VALUES ('3000000008', '40001', '80008');
-INSERT INTO `rel_role_resource` VALUES ('3000000009', '40001', '80009');
-INSERT INTO `rel_role_resource` VALUES ('3000000010', '40001', '80010');
-INSERT INTO `rel_role_resource` VALUES ('3000000011', '40001', '80011');
-INSERT INTO `rel_role_resource` VALUES ('3000000012', '40001', '80012');
-INSERT INTO `rel_role_resource` VALUES ('3000000013', '40001', '80013');
-INSERT INTO `rel_role_resource` VALUES ('3000000014', '40001', '80014');
-INSERT INTO `rel_role_resource` VALUES ('3000000015', '40001', '80015');
-INSERT INTO `rel_role_resource` VALUES ('3000000016', '40001', '80016');
-INSERT INTO `rel_role_resource` VALUES ('3000000017', '40001', '80017');
-INSERT INTO `rel_role_resource` VALUES ('3000000018', '40001', '80018');
-INSERT INTO `rel_role_resource` VALUES ('3000000019', '40001', '80019');
-INSERT INTO `rel_role_resource` VALUES ('3000000020', '40001', '80020');
-INSERT INTO `rel_role_resource` VALUES ('3000000021', '40001', '80021');
-INSERT INTO `rel_role_resource` VALUES ('3000000022', '40001', '80022');
-INSERT INTO `rel_role_resource` VALUES ('3000000023', '40001', '80023');
-INSERT INTO `rel_role_resource` VALUES ('3000000024', '40001', '80024');
-INSERT INTO `rel_role_resource` VALUES ('3000000025', '40001', '80025');
-INSERT INTO `rel_role_resource` VALUES ('3000000026', '40001', '80026');
-INSERT INTO `rel_role_resource` VALUES ('3000000027', '40001', '80027');
-INSERT INTO `rel_role_resource` VALUES ('3000000028', '40001', '80028');
-INSERT INTO `rel_role_resource` VALUES ('3000000029', '40001', '80029');
-INSERT INTO `rel_role_resource` VALUES ('3000000030', '40001', '80030');
-INSERT INTO `rel_role_resource` VALUES ('3000000031', '40001', '80031');
-INSERT INTO `rel_role_resource` VALUES ('3000000032', '40001', '80032');
-INSERT INTO `rel_role_resource` VALUES ('3000000033', '40001', '80033');
-INSERT INTO `rel_role_resource` VALUES ('3000000034', '40001', '80034');
-INSERT INTO `rel_role_resource` VALUES ('3000000035', '40001', '80035');
-INSERT INTO `rel_role_resource` VALUES ('3000000036', '40001', '80036');
-INSERT INTO `rel_role_resource` VALUES ('3000000037', '40001', '80037');
-INSERT INTO `rel_role_resource` VALUES ('3000000038', '40001', '80038');
-INSERT INTO `rel_role_resource` VALUES ('3000000039', '40001', '80039');
-INSERT INTO `rel_role_resource` VALUES ('3000000040', '40001', '80040');
-INSERT INTO `rel_role_resource` VALUES ('3000000041', '40001', '80041');
-INSERT INTO `rel_role_resource` VALUES ('3000000042', '40001', '80042');
-INSERT INTO `rel_role_resource` VALUES ('3000000043', '40001', '80043');
-INSERT INTO `rel_role_resource` VALUES ('3000000044', '40001', '80044');
-INSERT INTO `rel_role_resource` VALUES ('3000000045', '40001', '80045');
-INSERT INTO `rel_role_resource` VALUES ('3000000046', '40001', '80046');
-INSERT INTO `rel_role_resource` VALUES ('3000000047', '40001', '80047');
-INSERT INTO `rel_role_resource` VALUES ('3000000048', '40001', '80048');
-INSERT INTO `rel_role_resource` VALUES ('3000000049', '40001', '80049');
-INSERT INTO `rel_role_resource` VALUES ('3000000050', '40001', '80050');
-INSERT INTO `rel_role_resource` VALUES ('3000000051', '40001', '80051');
-INSERT INTO `rel_role_resource` VALUES ('3000000052', '40001', '80052');
-INSERT INTO `rel_role_resource` VALUES ('3000000053', '40001', '80053');
-INSERT INTO `rel_role_resource` VALUES ('3000000054', '40001', '80054');
-INSERT INTO `rel_role_resource` VALUES ('3000000055', '40001', '80055');
-INSERT INTO `rel_role_resource` VALUES ('3000000056', '40001', '80056');
-INSERT INTO `rel_role_resource` VALUES ('3000000057', '40001', '80057');
-INSERT INTO `rel_role_resource` VALUES ('3000000058', '40001', '80058');
-INSERT INTO `rel_role_resource` VALUES ('3000000059', '40001', '80059');
-INSERT INTO `rel_role_resource` VALUES ('3000000060', '40001', '80060');
-INSERT INTO `rel_role_resource` VALUES ('3000000061', '40001', '80061');
-INSERT INTO `rel_role_resource` VALUES ('3000000062', '40001', '80062');
-INSERT INTO `rel_role_resource` VALUES ('3000000063', '40001', '80063');
-INSERT INTO `rel_role_resource` VALUES ('3000000064', '40001', '80064');
-INSERT INTO `rel_role_resource` VALUES ('3000000065', '40001', '80065');
-INSERT INTO `rel_role_resource` VALUES ('3000000066', '40001', '80066');
-INSERT INTO `rel_role_resource` VALUES ('3000000067', '40001', '80067');
-INSERT INTO `rel_role_resource` VALUES ('3000000068', '40001', '80068');
-INSERT INTO `rel_role_resource` VALUES ('3000000069', '40001', '80069');
-INSERT INTO `rel_role_resource` VALUES ('3000000070', '40001', '80070');
-INSERT INTO `rel_role_resource` VALUES ('3000000071', '40001', '80071');
-INSERT INTO `rel_role_resource` VALUES ('3000000072', '40001', '80072');
-INSERT INTO `rel_role_resource` VALUES ('3000000073', '40001', '80073');
-INSERT INTO `rel_role_resource` VALUES ('3000000074', '40001', '80074');
-INSERT INTO `rel_role_resource` VALUES ('3000000075', '40001', '80075');
-INSERT INTO `rel_role_resource` VALUES ('3000000076', '40001', '80076');
-INSERT INTO `rel_role_resource` VALUES ('3000000077', '40001', '80077');
-INSERT INTO `rel_role_resource` VALUES ('3000000078', '40001', '80078');
-INSERT INTO `rel_role_resource` VALUES ('3000000079', '40001', '80079');
-INSERT INTO `rel_role_resource` VALUES ('3000000080', '40001', '80080');
-INSERT INTO `rel_role_resource` VALUES ('3000000081', '40001', '80081');
-INSERT INTO `rel_role_resource` VALUES ('3000000082', '40001', '80082');
-INSERT INTO `rel_role_resource` VALUES ('3000000083', '40001', '80083');
-INSERT INTO `rel_role_resource` VALUES ('3000000084', '40001', '80084');
-INSERT INTO `rel_role_resource` VALUES ('3000000085', '40001', '80085');
-INSERT INTO `rel_role_resource` VALUES ('3000000086', '40001', '80086');
-INSERT INTO `rel_role_resource` VALUES ('3000000087', '40001', '80087');
-INSERT INTO `rel_role_resource` VALUES ('3000000088', '40001', '80088');
-INSERT INTO `rel_role_resource` VALUES ('3000000089', '40001', '80089');
-INSERT INTO `rel_role_resource` VALUES ('3000000090', '40001', '80090');
-INSERT INTO `rel_role_resource` VALUES ('3000000091', '40001', '80091');
-INSERT INTO `rel_role_resource` VALUES ('3000000092', '40001', '80092');
-INSERT INTO `rel_role_resource` VALUES ('3000000093', '40001', '80093');
-INSERT INTO `rel_role_resource` VALUES ('3000000094', '40001', '80094');
-INSERT INTO `rel_role_resource` VALUES ('3000000095', '40001', '80095');
-INSERT INTO `rel_role_resource` VALUES ('3000000096', '40001', '80096');
-INSERT INTO `rel_role_resource` VALUES ('3000000097', '40001', '80097');
-INSERT INTO `rel_role_resource` VALUES ('3000000098', '40001', '80098');
-INSERT INTO `rel_role_resource` VALUES ('3000000099', '40001', '80099');
-INSERT INTO `rel_role_resource` VALUES ('3000000100', '40001', '80100');
-INSERT INTO `rel_role_resource` VALUES ('3000000101', '40001', '80101');
-INSERT INTO `rel_role_resource` VALUES ('3000000102', '40001', '80102');
-INSERT INTO `rel_role_resource` VALUES ('3000000103', '40001', '80103');
-INSERT INTO `rel_role_resource` VALUES ('3000000321', '40001', '80104');
-INSERT INTO `rel_role_resource` VALUES ('3000000322', '40001', '80105');
-INSERT INTO `rel_role_resource` VALUES ('3000000323', '40001', '80106');
-INSERT INTO `rel_role_resource` VALUES ('3000000324', '40001', '80107');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422274', '40001', '80001');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616637', '40001', '80002');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810889', '40001', '80003');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422273', '40001', '80004');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422285', '40001', '80005');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422296', '40001', '80006');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616581', '40001', '80007');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616591', '40001', '80008');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616600', '40001', '80009');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616611', '40001', '80010');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616620', '40001', '80011');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616627', '40001', '80012');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616636', '40001', '80013');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810883', '40001', '80014');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810888', '40001', '80015');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422272', '40001', '80016');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422275', '40001', '80017');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422276', '40001', '80018');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422277', '40001', '80019');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422278', '40001', '80020');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422279', '40001', '80021');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422280', '40001', '80022');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422281', '40001', '80023');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422282', '40001', '80024');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422284', '40001', '80025');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422286', '40001', '80026');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422287', '40001', '80027');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422288', '40001', '80028');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422289', '40001', '80029');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422290', '40001', '80030');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422291', '40001', '80031');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422292', '40001', '80032');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422295', '40001', '80033');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422297', '40001', '80034');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422298', '40001', '80035');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422299', '40001', '80036');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422300', '40001', '80037');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616580', '40001', '80038');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616582', '40001', '80039');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616583', '40001', '80040');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616584', '40001', '80041');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616585', '40001', '80042');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616586', '40001', '80043');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616590', '40001', '80044');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616592', '40001', '80045');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616593', '40001', '80046');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616594', '40001', '80047');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616595', '40001', '80048');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616599', '40001', '80049');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616601', '40001', '80050');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616602', '40001', '80051');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616603', '40001', '80052');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616604', '40001', '80053');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616605', '40001', '80054');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616610', '40001', '80055');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616612', '40001', '80056');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616613', '40001', '80057');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616614', '40001', '80058');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616615', '40001', '80059');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616619', '40001', '80060');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616621', '40001', '80061');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616622', '40001', '80062');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616623', '40001', '80063');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616624', '40001', '80064');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616626', '40001', '80065');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616628', '40001', '80066');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616629', '40001', '80067');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616630', '40001', '80068');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616631', '40001', '80069');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616635', '40001', '80070');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616638', '40001', '80071');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616639', '40001', '80072');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616640', '40001', '80073');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616641', '40001', '80074');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810882', '40001', '80075');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810884', '40001', '80076');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810885', '40001', '80077');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810886', '40001', '80078');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422283', '40001', '80079');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616587', '40001', '80081');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616588', '40001', '80082');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616589', '40001', '80083');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616596', '40001', '80084');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616597', '40001', '80085');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616598', '40001', '80086');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616606', '40001', '80087');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616608', '40001', '80088');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616609', '40001', '80089');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616616', '40001', '80090');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616617', '40001', '80091');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616618', '40001', '80092');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616625', '40001', '80093');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616632', '40001', '80094');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616633', '40001', '80095');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616634', '40001', '80096');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616642', '40001', '80097');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810880', '40001', '80098');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810881', '40001', '80099');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810887', '40001', '80100');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616576', '40001', '80101');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616577', '40001', '80102');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616579', '40001', '80103');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422294', '40001', '80104');
+INSERT INTO `rel_role_resource` VALUES ('7460479666986422293', '40001', '80105');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616607', '40001', '80106');
+INSERT INTO `rel_role_resource` VALUES ('7460479666990616578', '40001', '80107');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810890', '40001', '80109');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810891', '40001', '80110');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810892', '40001', '80111');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810893', '40001', '80112');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810894', '40001', '80113');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810895', '40001', '80114');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810896', '40001', '80115');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810897', '40001', '80116');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810898', '40001', '80117');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810899', '40001', '80118');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810900', '40001', '80119');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810901', '40001', '80120');
 INSERT INTO `rel_role_resource` VALUES ('3000000104', '40002', '80001');
 INSERT INTO `rel_role_resource` VALUES ('3000000105', '40002', '80002');
 INSERT INTO `rel_role_resource` VALUES ('3000000106', '40002', '80004');
@@ -796,6 +805,7 @@ INSERT INTO `rel_role_resource` VALUES ('3000000325', '40002', '80104');
 INSERT INTO `rel_role_resource` VALUES ('3000000326', '40002', '80105');
 INSERT INTO `rel_role_resource` VALUES ('3000000327', '40002', '80106');
 INSERT INTO `rel_role_resource` VALUES ('3000000328', '40002', '80107');
+INSERT INTO `rel_role_resource` VALUES ('3000000346', '40002', '80108');
 INSERT INTO `rel_role_resource` VALUES ('3000000205', '40003', '80003');
 INSERT INTO `rel_role_resource` VALUES ('3000000206', '40003', '80010');
 INSERT INTO `rel_role_resource` VALUES ('3000000207', '40003', '80011');
@@ -815,6 +825,7 @@ INSERT INTO `rel_role_resource` VALUES ('3000000329', '40003', '80104');
 INSERT INTO `rel_role_resource` VALUES ('3000000344', '40003', '80105');
 INSERT INTO `rel_role_resource` VALUES ('3000000330', '40003', '80106');
 INSERT INTO `rel_role_resource` VALUES ('3000000331', '40003', '80107');
+INSERT INTO `rel_role_resource` VALUES ('3000000347', '40003', '80108');
 INSERT INTO `rel_role_resource` VALUES ('3000000220', '40004', '80004');
 INSERT INTO `rel_role_resource` VALUES ('3000000221', '40004', '80005');
 INSERT INTO `rel_role_resource` VALUES ('3000000222', '40004', '80006');
@@ -849,6 +860,7 @@ INSERT INTO `rel_role_resource` VALUES ('3000000250', '40004', '80080');
 INSERT INTO `rel_role_resource` VALUES ('3000000251', '40004', '80100');
 INSERT INTO `rel_role_resource` VALUES ('3000000332', '40004', '80106');
 INSERT INTO `rel_role_resource` VALUES ('3000000333', '40004', '80107');
+INSERT INTO `rel_role_resource` VALUES ('3000000348', '40004', '80108');
 INSERT INTO `rel_role_resource` VALUES ('3000000252', '40005', '80002');
 INSERT INTO `rel_role_resource` VALUES ('3000000253', '40005', '80012');
 INSERT INTO `rel_role_resource` VALUES ('3000000254', '40005', '80013');
@@ -871,6 +883,7 @@ INSERT INTO `rel_role_resource` VALUES ('3000000270', '40005', '80097');
 INSERT INTO `rel_role_resource` VALUES ('3000000271', '40005', '80098');
 INSERT INTO `rel_role_resource` VALUES ('3000000272', '40005', '80099');
 INSERT INTO `rel_role_resource` VALUES ('3000000273', '40005', '80100');
+INSERT INTO `rel_role_resource` VALUES ('3000000349', '40005', '80108');
 INSERT INTO `rel_role_resource` VALUES ('3000000274', '40006', '80001');
 INSERT INTO `rel_role_resource` VALUES ('3000000275', '40006', '80010');
 INSERT INTO `rel_role_resource` VALUES ('3000000276', '40006', '80011');
@@ -887,6 +900,7 @@ INSERT INTO `rel_role_resource` VALUES ('3000000286', '40006', '80069');
 INSERT INTO `rel_role_resource` VALUES ('3000000287', '40006', '80077');
 INSERT INTO `rel_role_resource` VALUES ('3000000288', '40006', '80080');
 INSERT INTO `rel_role_resource` VALUES ('3000000289', '40006', '80100');
+INSERT INTO `rel_role_resource` VALUES ('3000000350', '40006', '80108');
 INSERT INTO `rel_role_resource` VALUES ('3000000290', '40007', '80001');
 INSERT INTO `rel_role_resource` VALUES ('3000000291', '40007', '80004');
 INSERT INTO `rel_role_resource` VALUES ('3000000292', '40007', '80007');
@@ -919,12 +933,6 @@ INSERT INTO `rel_role_resource` VALUES ('3000000318', '40007', '80077');
 INSERT INTO `rel_role_resource` VALUES ('3000000319', '40007', '80080');
 INSERT INTO `rel_role_resource` VALUES ('3000000320', '40007', '80100');
 INSERT INTO `rel_role_resource` VALUES ('3000000334', '40007', '80106');
-INSERT INTO `rel_role_resource` VALUES ('3000000345', '40001', '80108');
-INSERT INTO `rel_role_resource` VALUES ('3000000346', '40002', '80108');
-INSERT INTO `rel_role_resource` VALUES ('3000000347', '40003', '80108');
-INSERT INTO `rel_role_resource` VALUES ('3000000348', '40004', '80108');
-INSERT INTO `rel_role_resource` VALUES ('3000000349', '40005', '80108');
-INSERT INTO `rel_role_resource` VALUES ('3000000350', '40006', '80108');
 INSERT INTO `rel_role_resource` VALUES ('3000000351', '40007', '80108');
 
 -- ----------------------------
@@ -1097,122 +1105,84 @@ CREATE TABLE `sys_dict`  (
 INSERT INTO `sys_dict` VALUES ('90001', 'GENDER', '性别', NULL, NULL, 'sys_base', NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90002', 'GENDER_MALE', '男', 'MALE', 'blue', 'sys_base', '90001', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90003', 'GENDER_FEMALE', '女', 'FEMALE', 'red', 'sys_base', '90001', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- notice_category (通知分类)
 INSERT INTO `sys_dict` VALUES ('90004', 'NOTICE_CATEGORY', '通知分类', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90005', 'NOTICE_CATEGORY_PLATFORM', '平台通知', 'PLATFORM', NULL, 'sys_notice', '90004', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90006', 'NOTICE_CATEGORY_COMPANY', '公司通知', 'COMPANY', NULL, 'sys_notice', '90004', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- notice_type (通知类型)
 INSERT INTO `sys_dict` VALUES ('90007', 'NOTICE_TYPE', '通知类型', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90008', 'NOTICE_TYPE_MAINTENANCE', '维护通知', 'MAINTENANCE', NULL, 'sys_notice', '90007', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90009', 'NOTICE_TYPE_SYSTEM_NOTICE', '系统通知', 'SYSTEM_NOTICE', NULL, 'sys_notice', '90007', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90010', 'NOTICE_TYPE_BUSINESS_NOTICE', '业务通知', 'BUSINESS_NOTICE', NULL, 'sys_notice', '90007', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- notice_level (通知级别)
 INSERT INTO `sys_dict` VALUES ('90011', 'NOTICE_LEVEL', '通知级别', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90012', 'NOTICE_LEVEL_URGENT', '紧急', 'URGENT', 'red', 'sys_notice', '90011', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90013', 'NOTICE_LEVEL_IMPORTANT', '重要', 'IMPORTANT', 'orange', 'sys_notice', '90011', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90014', 'NOTICE_LEVEL_NORMAL', '普通', 'NORMAL', 'blue', 'sys_notice', '90011', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- notice_position (通知位置)
 INSERT INTO `sys_dict` VALUES ('90015', 'NOTICE_POSITION', '通知位置', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90016', 'NOTICE_POSITION_TOP', '顶部通知', 'TOP', 'geekblue', 'sys_notice', '90015', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90017', 'NOTICE_POSITION_POPUP', '弹窗通知', 'POPUP', 'purple', 'sys_notice', '90015', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- org_category (组织类别)
 INSERT INTO `sys_dict` VALUES ('90018', 'ORG_CATEGORY', '组织类别', NULL, NULL, 'sys_org', NULL, 'ENABLED', 5, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90019', 'ORG_CATEGORY_GROUP', '集团', 'GROUP', NULL, 'sys_org', '90018', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90020', 'ORG_CATEGORY_DEPT', '部门', 'DEPT', NULL, 'sys_org', '90018', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90057', 'ORG_CATEGORY_COMPANY', '公司', 'COMPANY', NULL, 'sys_org', '90018', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90058', 'ORG_CATEGORY_UNIT', '单位', 'UNIT', NULL, 'sys_org', '90018', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- group_category (用户组类别)
 INSERT INTO `sys_dict` VALUES ('90021', 'GROUP_CATEGORY', '用户组类别', NULL, NULL, 'sys_group', NULL, 'ENABLED', 6, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90022', 'GROUP_CATEGORY_ROLE', '角色组', 'ROLE', NULL, 'sys_group', '90021', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90023', 'GROUP_CATEGORY_DEPT', '部门组', 'DEPT', NULL, 'sys_group', '90021', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90024', 'GROUP_CATEGORY_PROJECT', '项目组', 'PROJECT', NULL, 'sys_group', '90021', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90059', 'GROUP_CATEGORY_OTHER', '其他', 'OTHER', NULL, 'sys_group', '90021', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- position_category (职位类别)
 INSERT INTO `sys_dict` VALUES ('90025', 'POSITION_CATEGORY', '职位类别', NULL, NULL, 'sys_position', NULL, 'ENABLED', 7, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90026', 'POSITION_CATEGORY_MANAGEMENT', '管理', 'MANAGEMENT', NULL, 'sys_position', '90025', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90027', 'POSITION_CATEGORY_TECH', '技术', 'TECH', NULL, 'sys_position', '90025', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90028', 'POSITION_CATEGORY_OPERATIONS', '运营', 'OPERATIONS', NULL, 'sys_position', '90025', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90029', 'POSITION_CATEGORY_SALES', '销售', 'SALES', NULL, 'sys_position', '90025', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90030', 'POSITION_CATEGORY_OTHER', '其他', 'OTHER', NULL, 'sys_position', '90025', 'ENABLED', 5, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- role_category (角色类别)
 INSERT INTO `sys_dict` VALUES ('90033', 'ROLE_CATEGORY', '角色类别', NULL, NULL, 'sys_role', NULL, 'ENABLED', 8, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90034', 'ROLE_CATEGORY_BACKEND', '后台角色', 'BACKEND', NULL, 'sys_role', '90033', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90035', 'ROLE_CATEGORY_FRONTEND', '前台角色', 'FRONTEND', NULL, 'sys_role', '90033', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- resource_category (资源分类)
 INSERT INTO `sys_dict` VALUES ('90036', 'RESOURCE_CATEGORY', '资源分类', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 9, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90037', 'RESOURCE_CATEGORY_BACKEND_MENU', '后台菜单', 'BACKEND_MENU', NULL, 'sys_resource', '90036', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90038', 'RESOURCE_CATEGORY_FRONTEND_MENU', '前台菜单', 'FRONTEND_MENU', NULL, 'sys_resource', '90036', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90039', 'RESOURCE_CATEGORY_BACKEND_BUTTON', '后台按钮', 'BACKEND_BUTTON', NULL, 'sys_resource', '90036', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90040', 'RESOURCE_CATEGORY_FRONTEND_BUTTON', '前台按钮', 'FRONTEND_BUTTON', NULL, 'sys_resource', '90036', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- resource_type (资源类型)
 INSERT INTO `sys_dict` VALUES ('90041', 'RESOURCE_TYPE', '资源类型', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 10, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90042', 'RESOURCE_TYPE_DIRECTORY', '目录', 'DIRECTORY', NULL, 'sys_resource', '90041', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90043', 'RESOURCE_TYPE_MENU', '菜单', 'MENU', NULL, 'sys_resource', '90041', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90044', 'RESOURCE_TYPE_BUTTON', '按钮', 'BUTTON', NULL, 'sys_resource', '90041', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90045', 'RESOURCE_TYPE_INTERNAL_LINK', '内链', 'INTERNAL_LINK', NULL, 'sys_resource', '90041', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90046', 'RESOURCE_TYPE_EXTERNAL_LINK', '外链', 'EXTERNAL_LINK', NULL, 'sys_resource', '90041', 'ENABLED', 5, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- sys_status (系统状态)
 INSERT INTO `sys_dict` VALUES ('90047', 'SYS_STATUS', '系统状态', NULL, NULL, 'sys_common', NULL, 'ENABLED', 11, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90048', 'SYS_STATUS_ENABLED', '启用', 'ENABLED', 'green', 'sys_common', '90047', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90049', 'SYS_STATUS_DISABLED', '禁用', 'DISABLED', 'red', 'sys_common', '90047', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- user_status (用户状态)
 INSERT INTO `sys_dict` VALUES ('90050', 'USER_STATUS', '用户状态', NULL, NULL, 'sys_common', NULL, 'ENABLED', 12, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90051', 'USER_STATUS_ACTIVE', '正常', 'ACTIVE', 'green', 'sys_common', '90050', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90052', 'USER_STATUS_INACTIVE', '停用', 'INACTIVE', 'orange', 'sys_common', '90050', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90053', 'USER_STATUS_LOCKED', '锁定', 'LOCKED', 'red', 'sys_common', '90050', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- sys_yes_no (是否)
 INSERT INTO `sys_dict` VALUES ('90054', 'SYS_YES_NO', '是否', NULL, NULL, 'sys_common', NULL, 'ENABLED', 13, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90055', 'SYS_YES_NO_YES', '是', 'YES', 'green', 'sys_common', '90054', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90056', 'SYS_YES_NO_NO', '否', 'NO', 'red', 'sys_common', '90054', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- banner_category (横幅类别)
+INSERT INTO `sys_dict` VALUES ('90057', 'ORG_CATEGORY_COMPANY', '公司', 'COMPANY', NULL, 'sys_org', '90018', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90058', 'ORG_CATEGORY_UNIT', '单位', 'UNIT', NULL, 'sys_org', '90018', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90059', 'GROUP_CATEGORY_OTHER', '其他', 'OTHER', NULL, 'sys_group', '90021', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90060', 'BANNER_CATEGORY', '横幅类别', NULL, NULL, 'sys_banner', NULL, 'ENABLED', 14, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90061', 'BANNER_CATEGORY_HOME', '首页', 'HOME', NULL, 'sys_banner', '90060', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90062', 'BANNER_CATEGORY_PAGE', '页面', 'PAGE', NULL, 'sys_banner', '90060', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90063', 'BANNER_CATEGORY_APP', '应用', 'APP', NULL, 'sys_banner', '90060', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- banner_type (横幅类型)
 INSERT INTO `sys_dict` VALUES ('90064', 'BANNER_TYPE', '横幅类型', NULL, NULL, 'sys_banner', NULL, 'ENABLED', 15, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90065', 'BANNER_TYPE_IMAGE', '图片', 'IMAGE', NULL, 'sys_banner', '90064', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90066', 'BANNER_TYPE_VIDEO', '视频', 'VIDEO', NULL, 'sys_banner', '90064', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90067', 'BANNER_TYPE_TEXT', '文字', 'TEXT', NULL, 'sys_banner', '90064', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- banner_position (横幅位置)
 INSERT INTO `sys_dict` VALUES ('90068', 'BANNER_POSITION', '横幅位置', NULL, NULL, 'sys_banner', NULL, 'ENABLED', 16, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90069', 'BANNER_POSITION_TOP', '顶部', 'TOP', NULL, 'sys_banner', '90068', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90070', 'BANNER_POSITION_CENTER', '中间', 'CENTER', NULL, 'sys_banner', '90068', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90071', 'BANNER_POSITION_BOTTOM', '底部', 'BOTTOM', NULL, 'sys_banner', '90068', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90072', 'BANNER_POSITION_SIDEBAR', '侧栏', 'SIDEBAR', NULL, 'sys_banner', '90068', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- link_type (链接类型)
 INSERT INTO `sys_dict` VALUES ('90073', 'LINK_TYPE', '链接类型', NULL, NULL, 'sys_common', NULL, 'ENABLED', 17, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90074', 'LINK_TYPE_NONE', '无', 'NONE', NULL, 'sys_common', '90073', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90075', 'LINK_TYPE_URL', '链接', 'URL', NULL, 'sys_common', '90073', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90076', 'LINK_TYPE_PAGE', '页面', 'PAGE', NULL, 'sys_common', '90073', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90077', 'LINK_TYPE_ARTICLE', '文章', 'ARTICLE', NULL, 'sys_common', '90073', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- file_engine (文件引擎)
 INSERT INTO `sys_dict` VALUES ('90078', 'FILE_ENGINE', '文件引擎', NULL, NULL, 'sys_file', NULL, 'ENABLED', 18, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90079', 'FILE_ENGINE_LOCAL', '本地', 'LOCAL', 'green', 'sys_file', '90078', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90080', 'FILE_ENGINE_MINIO', 'MinIO', 'MINIO', 'blue', 'sys_file', '90078', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90081', 'FILE_ENGINE_ALIYUN', '阿里云', 'ALIYUN', 'red', 'sys_file', '90078', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90082', 'FILE_ENGINE_TENCENT', '腾讯云', 'TENCENT', 'blue', 'sys_file', '90078', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90083', 'FILE_ENGINE_S3', 'S3', 'S3', 'purple', 'sys_file', '90078', 'ENABLED', 5, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-
--- dict_category (字典分类)
 INSERT INTO `sys_dict` VALUES ('90084', 'DICT_CATEGORY', '字典分类', NULL, NULL, 'sys_common', NULL, 'ENABLED', 19, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90085', 'DICT_CATEGORY_FRM', '系统字典', 'FRM', 'blue', 'sys_common', '90084', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 INSERT INTO `sys_dict` VALUES ('90086', 'DICT_CATEGORY_BIZ', '业务字典', 'BIZ', 'green', 'sys_common', '90084', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
@@ -1280,6 +1250,42 @@ INSERT INTO `sys_group` VALUES ('30002', 'DEV_GRP', '研发组', 'TECH', NULL, '
 INSERT INTO `sys_group` VALUES ('30003', 'TEST_GRP', '测试组', 'TECH', NULL, '10002', '软件测试组', 'ENABLED', 3, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_group` VALUES ('30004', 'PROD_GRP', '产品组', 'MKT', NULL, '10003', '产品设计组', 'ENABLED', 4, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_group` VALUES ('30005', 'MKT_GRP', '市场组', 'MKT', NULL, '10003', '市场推广组', 'ENABLED', 5, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+
+-- ----------------------------
+-- Table structure for sys_log
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_log`;
+CREATE TABLE `sys_log`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `category` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '日志分类',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '日志名称',
+  `exe_status` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '执行状态',
+  `exe_message` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '具体消息',
+  `op_ip` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作ip',
+  `op_address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作地址',
+  `op_browser` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作浏览器',
+  `op_os` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作系统',
+  `class_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类名称',
+  `method_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '方法名称',
+  `req_method` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '请求方式',
+  `req_url` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '请求地址',
+  `param_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '请求参数',
+  `result_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '返回结果',
+  `op_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
+  `trace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '跟踪ID',
+  `op_user` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作人姓名',
+  `sign_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '签名数据',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '操作日志' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_log
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for sys_module
@@ -1425,6 +1431,28 @@ INSERT INTO `sys_position` VALUES ('20010', 'SALES', '销售专员', 'SALES', '1
 INSERT INTO `sys_position` VALUES ('20011', 'OPS', '运维工程师', 'OPS', '10007', NULL, '运维工程师', 'ENABLED', 11, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
 -- ----------------------------
+-- Table structure for sys_quick_action
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_quick_action`;
+CREATE TABLE `sys_quick_action`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
+  `resource_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '资源ID',
+  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
+  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
+  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
+  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_resource`(`user_id` ASC, `resource_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户快捷方式' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of sys_quick_action
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for sys_resource
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_resource`;
@@ -1463,7 +1491,7 @@ CREATE TABLE `sys_resource`  (
 -- ----------------------------
 INSERT INTO `sys_resource` VALUES ('80001', 'SYS_ADMIN', '系统管理', 'BACKEND_MENU', 'DIRECTORY', '系统管理目录', NULL, '/sys', NULL, NULL, 'setting', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80002', 'CONTENT_MGR', '内容管理', 'BACKEND_MENU', 'DIRECTORY', '内容管理目录', NULL, '/content', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80003', 'DEV_TOOLS', '系统工具', 'BACKEND_MENU', 'DIRECTORY', '系统工具目录', NULL, '/dev', NULL, NULL, 'tool', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'DISABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 15:19:09', '50001');
+INSERT INTO `sys_resource` VALUES ('80003', 'DEV_TOOLS', '系统工具', 'BACKEND_MENU', 'DIRECTORY', '系统工具目录', NULL, '/dev', NULL, NULL, 'tool', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 07:42:53', '50001');
 INSERT INTO `sys_resource` VALUES ('80004', 'SYS_USER', '用户管理', 'BACKEND_MENU', 'MENU', '用户管理菜单', '80001', '/sys/user', 'sys/user/index', NULL, 'user', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80005', 'SYS_ROLE', '角色管理', 'BACKEND_MENU', 'MENU', '角色管理菜单', '80001', '/sys/role', 'sys/role/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80006', 'SYS_RESOURCE_MGR', '资源管理', 'BACKEND_MENU', 'MENU', '资源管理菜单', '80001', '/sys/resource', 'sys/resource/index', NULL, 'menu', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
@@ -1475,7 +1503,7 @@ INSERT INTO `sys_resource` VALUES ('80011', 'SYS_CONFIG', '系统配置', 'BACKE
 INSERT INTO `sys_resource` VALUES ('80012', 'SYS_NOTICE', '通知管理', 'BACKEND_MENU', 'MENU', '通知管理菜单', '80001', '/sys/notice', 'sys/notice/index', NULL, 'notification', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 10, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80013', 'SYS_BANNER', '轮播图管理', 'BACKEND_MENU', 'MENU', '轮播图管理菜单', '80002', '/sys/banner', 'sys/banner/index', NULL, 'picture', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80014', 'SYS_FILE', '文件管理', 'BACKEND_MENU', 'MENU', '文件管理菜单', '80002', '/sys/file', 'sys/file/index', NULL, 'file', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80015', 'SYS_DEV', '代码生成', 'BACKEND_MENU', 'MENU', '代码生成菜单', '80003', '/sys/dev', 'sys/dev/index', NULL, 'code', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'DISABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 15:19:31', '50001');
+INSERT INTO `sys_resource` VALUES ('80015', 'SYS_DEV', '代码生成', 'BACKEND_MENU', 'MENU', '代码生成菜单', '80003', '/sys/dev', 'sys/dev/index', NULL, 'code', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 07:43:12', '50001');
 INSERT INTO `sys_resource` VALUES ('80016', 'SYS_USER_PAGE', '用户查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户列表', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
 INSERT INTO `sys_resource` VALUES ('80017', 'SYS_USER_CREATE', '用户新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
 INSERT INTO `sys_resource` VALUES ('80018', 'SYS_USER_MODIFY', '用户修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
@@ -1568,14 +1596,19 @@ INSERT INTO `sys_resource` VALUES ('80104', 'SYS_ROLE_TEMPLATE', '导入模板',
 INSERT INTO `sys_resource` VALUES ('80105', 'SYS_ROLE_IMPORT', '角色导入', 'BACKEND_BUTTON', 'BUTTON', '导入角色数据', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:import\"}', 'ENABLED', 9, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
 INSERT INTO `sys_resource` VALUES ('80106', 'SYS_GROUP_TREE', '用户组树', 'BACKEND_BUTTON', 'BUTTON', '查询用户组树', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
 INSERT INTO `sys_resource` VALUES ('80107', 'SYS_RESOURCE_TREE', '资源树', 'BACKEND_BUTTON', 'BUTTON', '查询资源树', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80108', 'SYS_HOME', '首页', 'BACKEND_MENU', 'MENU', '首页', NULL, '/home', 'home/index', NULL, 'home', NULL, 'NO', 'YES', 'NO', 'YES', NULL, NULL, 'ENABLED', 0, 'NO', '2026-05-13 14:55:52', '50001', '2026-05-13 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80109', 'SYS_LOG', '系统日志', 'BACKEND_MENU', 'DIRECTORY', '系统日志目录', '80003', '/sys/log', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80108', 'SYS_HOME', '首页', 'BACKEND_MENU', 'MENU', '首页', NULL, '/home', 'home/index', NULL, 'home', NULL, 'YES', 'YES', 'NO', 'YES', NULL, NULL, 'ENABLED', 0, 'NO', '2026-05-13 14:55:52', '50001', '2026-05-14 07:43:59', '50001');
+INSERT INTO `sys_resource` VALUES ('80109', 'SYS_LOG', '系统日志', 'BACKEND_MENU', 'DIRECTORY', '系统日志目录', '80001', '/sys/log', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', '', NULL, 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 08:03:25', '50001');
 INSERT INTO `sys_resource` VALUES ('80110', 'SYS_OPLOG', '操作日志', 'BACKEND_MENU', 'MENU', '操作日志', '80109', '/sys/log/oplog', 'sys/log/oplog/index', NULL, 'audit', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80111', 'SYS_VISLOG', '访问日志', 'BACKEND_MENU', 'MENU', '访问日志', '80109', '/sys/log/vislog', 'sys/log/vislog/index', NULL, 'eye', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80112', 'SYS_LOG_PAGE', '日志查询', 'BACKEND_BUTTON', 'BUTTON', '查询日志列表', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{"permission_code":"sys:log:page"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80113', 'SYS_LOG_DETAIL', '日志详情', 'BACKEND_BUTTON', 'BUTTON', '查看日志详情', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{"permission_code":"sys:log:detail"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80114', 'SYS_LOG_REMOVE', '日志删除', 'BACKEND_BUTTON', 'BUTTON', '删除/清空日志', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{"permission_code":"sys:log:remove"}', 'ENABLED', 3, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-
+INSERT INTO `sys_resource` VALUES ('80112', 'SYS_LOG_PAGE', '日志查询', 'BACKEND_BUTTON', 'BUTTON', '查询日志列表', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:page\"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80113', 'SYS_LOG_DETAIL', '日志详情', 'BACKEND_BUTTON', 'BUTTON', '查看日志详情', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:detail\"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80114', 'SYS_LOG_REMOVE', '日志删除', 'BACKEND_BUTTON', 'BUTTON', '删除/清空日志', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:remove\"}', 'ENABLED', 3, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80115', 'SYS_VISLOG_PAGE', '日志查询', 'BACKEND_BUTTON', 'BUTTON', '查询访问日志列表', '80111', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:page\"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80116', 'SYS_VISLOG_DETAIL', '日志详情', 'BACKEND_BUTTON', 'BUTTON', '查看访问日志详情', '80111', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:detail\"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80117', 'SYS_VISLOG_REMOVE', '日志删除', 'BACKEND_BUTTON', 'BUTTON', '删除/清空访问日志', '80111', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:remove\"}', 'ENABLED', 3, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80118', 'SYS_SESSION', '会话管理', 'BACKEND_MENU', 'MENU', '会话管理', '80001', '/sys/auth/monitor', 'auth/monitor/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 11, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80119', 'SYS_SESSION_PAGE', '会话查询', 'BACKEND_BUTTON', 'BUTTON', '查询会话列表', '80118', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:session:page\"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80120', 'SYS_SESSION_EXIT', '强制下线', 'BACKEND_BUTTON', 'BUTTON', '强制用户下线', '80118', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:session:exit\"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
 -- ----------------------------
 -- Table structure for sys_role
 -- ----------------------------
@@ -1618,7 +1651,7 @@ CREATE TABLE `sys_user`  (
   `account` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '账号',
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
   `nickname` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '昵称',
-  `avatar` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像',
+  `avatar` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '头像',
   `motto` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '座右铭',
   `gender` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '性别',
   `birthday` date NULL DEFAULT NULL COMMENT '生日',
@@ -1643,7 +1676,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', 'ACTIVE', '2026-05-14 07:56:26', '127.0.0.1', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 07:56:26', '50001');
 INSERT INTO `sys_user` VALUES ('50002', 'zhangsan', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '张三', NULL, '代码改变世界', 'MALE', '1995-05-15', 'zhangsan@hei.com', 'https://github.com/zhangsan', '13800000002', '10002', '20004', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50003', 'lisi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '李四', NULL, '学无止境', 'MALE', '1993-08-20', 'lisi@hei.com', NULL, '13800000003', '10002', '20004', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50004', 'wangwu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '王五', NULL, '追求卓越', 'MALE', '1994-03-10', 'wangwu@hei.com', NULL, '13800000004', '10002', '20003', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
@@ -1653,55 +1686,5 @@ INSERT INTO `sys_user` VALUES ('50007', 'zhouba', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.
 INSERT INTO `sys_user` VALUES ('50008', 'wujiu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '吴九', NULL, '精打细算', 'MALE', '1988-09-09', 'wujiu@hei.com', NULL, '13800000008', '10004', '20008', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50009', 'zhengshi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '郑十', NULL, '以人为本', 'FEMALE', '1990-12-01', 'zhengshi@hei.com', NULL, '13800000009', '10005', '20009', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50010', 'chen十一', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '陈十一', NULL, '稳定压倒一切', 'MALE', '1993-06-18', 'chen11@hei.com', NULL, '13800000010', '10007', '20011', 'ACTIVE', NULL, NULL, 0, 'YES', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-
--- ----------------------------
--- Table structure for sys_quick_action
--- ----------------------------
-DROP TABLE IF EXISTS `sys_quick_action`;
-CREATE TABLE `sys_quick_action`  (
-  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
-  `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
-  `resource_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '资源ID',
-  `sort_code` int NULL DEFAULT 0 COMMENT '排序',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
-  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_user_resource`(`user_id` ASC, `resource_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户快捷方式' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Table structure for sys_log
--- ----------------------------
-DROP TABLE IF EXISTS `sys_log`;
-CREATE TABLE `sys_log`  (
-  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
-  `category` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '日志分类',
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '日志名称',
-  `exe_status` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '执行状态',
-  `exe_message` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '具体消息',
-  `op_ip` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作ip',
-  `op_address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作地址',
-  `op_browser` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作浏览器',
-  `op_os` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作系统',
-  `class_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '类名称',
-  `method_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '方法名称',
-  `req_method` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '请求方式',
-  `req_url` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '请求地址',
-  `param_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '请求参数',
-  `result_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '返回结果',
-  `op_time` datetime NULL DEFAULT NULL COMMENT '操作时间',
-  `trace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '跟踪ID',
-  `op_user` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作人姓名',
-  `sign_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '签名数据',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
-  `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
-  `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
-  `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
-  `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '操作日志' ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;

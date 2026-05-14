@@ -1,7 +1,7 @@
 import uuid
 from contextvars import ContextVar
 
-TRACE_ID_HEADER = "traceId"
+TRACE_ID_HEADER = "trace_id"
 _trace_id_var: ContextVar[str] = ContextVar("trace_id", default="")
 
 

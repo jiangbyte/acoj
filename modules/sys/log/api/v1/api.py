@@ -1,11 +1,16 @@
+from typing import List
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
 from core.utils.excel_utils import handle_import
-from ...params import LogVO, LogPageParam, LogExportParam, LogImportParam, LogDeleteByCategoryParam
+from ...params import (
+    LogVO, LogPageParam, LogExportParam, LogImportParam,
+    LogDeleteByCategoryParam, LogBarChartData, LogPieChartData,
+)
 from ...service import LogService
 
 router = APIRouter()
@@ -63,6 +68,7 @@ async def modify(
     summary="删除操作日志",
     response_model=Result
 )
+@SysLog("删除操作日志")
 @HeiCheckPermission("sys:log:remove")
 async def remove(
     request: Request,
@@ -93,6 +99,7 @@ async def detail(
 @router.get(
     "/api/v1/sys/log/export",
     summary="导出操作日志数据")
+@SysLog("导出操作日志数据")
 @HeiCheckPermission("sys:log:export")
 async def export_data(
     request: Request,
@@ -120,7 +127,9 @@ async def download_template(
     summary="导入操作日志数据",
     response_model=Result
 )
+@SysLog("导入操作日志数据")
 @HeiCheckPermission("sys:log:import")
+@NoRepeat(interval=5000)
 async def import_data(
     request: Request,
     file: UploadFile = File(...),
@@ -134,7 +143,9 @@ async def import_data(
     summary="按分类清空日志",
     response_model=Result
 )
+@SysLog("按分类清空日志")
 @HeiCheckPermission("sys:log:remove")
+@NoRepeat(interval=5000)
 async def delete_by_category(
     request: Request,
     param: LogDeleteByCategoryParam,
@@ -143,3 +154,61 @@ async def delete_by_category(
     service = LogService(db)
     service.delete_by_category(param)
     return success()
+
+
+# ---- Chart / Statistics endpoints ----
+
+@router.get(
+    "/api/v1/sys/log/vis/line-chart-data",
+    summary="登录登出趋势（近7天）",
+    response_model=Result[LogBarChartData],
+)
+@HeiCheckPermission("sys:log:page")
+async def vis_line_chart_data(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    service = LogService(db)
+    return success(service.vis_log_line_chart_data())
+
+
+@router.get(
+    "/api/v1/sys/log/vis/pie-chart-data",
+    summary="登录登出总比例",
+    response_model=Result[LogPieChartData],
+)
+@HeiCheckPermission("sys:log:page")
+async def vis_pie_chart_data(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    service = LogService(db)
+    return success(service.vis_log_pie_chart_data())
+
+
+@router.get(
+    "/api/v1/sys/log/op/bar-chart-data",
+    summary="操作异常趋势（近7天）",
+    response_model=Result[LogBarChartData],
+)
+@HeiCheckPermission("sys:log:page")
+async def op_bar_chart_data(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    service = LogService(db)
+    return success(service.op_log_bar_chart_data())
+
+
+@router.get(
+    "/api/v1/sys/log/op/pie-chart-data",
+    summary="操作异常总比例",
+    response_model=Result[LogPieChartData],
+)
+@HeiCheckPermission("sys:log:page")
+async def op_pie_chart_data(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    service = LogService(db)
+    return success(service.op_log_pie_chart_data())

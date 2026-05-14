@@ -1,8 +1,13 @@
+import json
+import logging
 from typing import List, Optional, Union
 from sqlalchemy import select, func
 
 from core.db.mysql import SessionLocal
 from core.enums import LoginTypeEnum, DataScopeEnum
+from core.constants import PERMISSION_CACHE_KEY
+
+logger = logging.getLogger(__name__)
 
 
 def _soft_delete_filter(query, model):
@@ -19,6 +24,9 @@ def _soft_delete_filter(query, model):
     if hasattr(model, field_name):
         return query.where(getattr(model, field_name) == _settings.db.soft_delete_value_not_deleted)
     return query
+
+
+SUPER_ADMIN_CODE = "SUPER_ADMIN"
 
 
 class HeiPermissionInterface:
@@ -110,13 +118,39 @@ class HeiPermissionInterface:
                     if is_org or is_all or is_self:
                         self._merge_dimension(cur, "org_scope", "custom_org_ids", scope, cogids)
 
+    async def _get_all_permissions_from_redis(self) -> List[str]:
+        """Read all permission codes from the Redis cache (populated at startup from route annotations)."""
+        from core.db.redis import get_client
+        redis_client = get_client()
+        if not redis_client:
+            return []
+        try:
+            data = await redis_client.get(PERMISSION_CACHE_KEY)
+            if not data:
+                return []
+            tree = json.loads(data)
+            codes = []
+            for module_perms in tree.values():
+                codes.extend(module_perms.keys())
+            return codes
+        except Exception as e:
+            logger.warning("Failed to read permission cache from Redis: %s", e)
+            return []
+
     async def getPermissionList(self, login_id: Union[str, int], login_type: str) -> List[str]:
+        """Return the user's permission codes, or ALL codes for SUPER_ADMIN."""
         from modules.sys.role.models import RelRolePermission
         from modules.sys.user.models import RelUserPermission
 
         db = SessionLocal()
         try:
             login_id = str(login_id)
+
+            # SUPER_ADMIN returns all permissions in the system (from route annotations)
+            role_list = await self.getRoleList(login_id, login_type)
+            if SUPER_ADMIN_CODE in role_list:
+                return await self._get_all_permissions_from_redis()
+
             role_ids = self._get_role_ids(db, login_id)
             permission_codes = set()
 
@@ -165,6 +199,13 @@ class HeiPermissionInterface:
             login_id = str(login_id)
             if login_type != LoginTypeEnum.LOGIN and login_type != LoginTypeEnum.CLIENT:
                 return {}
+
+            # SUPER_ADMIN gets ALL scope on every permission
+            role_list = await self.getRoleList(login_id, login_type)
+            if SUPER_ADMIN_CODE in role_list:
+                all_codes = await self._get_all_permissions_from_redis()
+                return {code: {"group_scope": DataScopeEnum.ALL, "org_scope": DataScopeEnum.ALL,
+                               "custom_group_ids": [], "custom_org_ids": []} for code in all_codes}
 
             perm_scope = {}
 

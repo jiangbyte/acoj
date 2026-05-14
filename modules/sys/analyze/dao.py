@@ -81,27 +81,6 @@ class AnalyzeDao:
         result = self.db.execute(stmt).all()
         return [{"category": row[0], "count": row[1]} for row in result]
 
-    def get_recent_logins(self, limit: int = 10) -> List[dict]:
-        stmt = (
-            select(
-                SysUser.nickname,
-                SysUser.account,
-                SysUser.last_login_at,
-                SysUser.last_login_ip,
-            )
-            .where(
-                SysUser.is_deleted == SoftDeleteEnum.NO,
-                SysUser.last_login_at.isnot(None),
-            )
-            .order_by(SysUser.last_login_at.desc())
-            .limit(limit)
-        )
-        result = self.db.execute(stmt).all()
-        return [
-            {"nickname": row[0], "account": row[1], "last_login_at": row[2], "last_login_ip": row[3]}
-            for row in result
-        ]
-
     def count_client_users(self) -> int:
         stmt = select(func.count()).select_from(ClientUser).where(ClientUser.is_deleted == SoftDeleteEnum.NO)
         return self.db.execute(stmt).scalar() or 0
@@ -130,23 +109,3 @@ class AnalyzeDao:
         result = self.db.execute(stmt).all()
         return [{"month": row[0], "count": row[1]} for row in result]
 
-    def get_recent_client_logins(self, limit: int = 10) -> List[dict]:
-        stmt = (
-            select(
-                ClientUser.nickname,
-                ClientUser.account,
-                ClientUser.last_login_at,
-                ClientUser.last_login_ip,
-            )
-            .where(
-                ClientUser.is_deleted == SoftDeleteEnum.NO,
-                ClientUser.last_login_at.isnot(None),
-            )
-            .order_by(ClientUser.last_login_at.desc())
-            .limit(limit)
-        )
-        result = self.db.execute(stmt).all()
-        return [
-            {"nickname": row[0], "account": row[1], "last_login_at": row[2], "last_login_ip": row[3]}
-            for row in result
-        ]

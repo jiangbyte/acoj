@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
 from core.utils.excel_utils import handle_import
 from ...params import GroupVO, GroupPageParam, GroupTreeParam, GroupExportParam, GroupImportParam
 from ...service import GroupService
@@ -60,7 +61,9 @@ async def tree(
     summary="添加用户组",
     response_model=Result
 )
+@SysLog("添加用户组")
 @HeiCheckPermission("sys:group:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: GroupVO,
@@ -76,6 +79,7 @@ async def create(
     summary="编辑用户组",
     response_model=Result
 )
+@SysLog("编辑用户组")
 @HeiCheckPermission("sys:group:modify")
 async def modify(
     request: Request,
@@ -92,6 +96,7 @@ async def modify(
     summary="删除用户组",
     response_model=Result
 )
+@SysLog("删除用户组")
 @HeiCheckPermission("sys:group:remove")
 async def remove(
     request: Request,
@@ -122,6 +127,7 @@ async def detail(
 @router.get(
     "/api/v1/sys/group/export",
     summary="导出用户组数据")
+@SysLog("导出用户组数据")
 @HeiCheckPermission("sys:group:export")
 async def export(
     request: Request,
@@ -149,7 +155,9 @@ async def download_template(
     summary="导入用户组数据",
     response_model=Result
 )
+@SysLog("导入用户组数据")
 @HeiCheckPermission("sys:group:import")
+@NoRepeat(interval=5000)
 async def import_data(
     request: Request,
     file: UploadFile = File(...),

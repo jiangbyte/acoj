@@ -9,6 +9,8 @@ class QuickActionVO(BaseModel):
 
     id: Optional[str] = None
     resource_id: str
+    parent_id: Optional[str] = None
+    type: str = ""
     name: str = ""
     icon: str = ""
     route_path: str = ""

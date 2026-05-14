@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from core.result import success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
 from ...params import ConfigVO, ConfigPageParam, ConfigListParam, ConfigBatchEditParam, ConfigCategoryEditParam
 from ...service import ConfigService
 
@@ -33,7 +34,9 @@ async def list_by_category(
 
 
 @router.post("/api/v1/sys/config/create", summary="添加配置")
+@SysLog("添加配置")
 @HeiCheckPermission("sys:config:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: ConfigVO,
@@ -45,6 +48,7 @@ async def create(
 
 
 @router.post("/api/v1/sys/config/modify", summary="编辑配置")
+@SysLog("编辑配置")
 @HeiCheckPermission("sys:config:modify")
 async def modify(
     request: Request,
@@ -57,6 +61,7 @@ async def modify(
 
 
 @router.post("/api/v1/sys/config/remove", summary="删除配置")
+@SysLog("删除配置")
 @HeiCheckPermission("sys:config:remove")
 async def remove(
     request: Request,
@@ -81,7 +86,9 @@ async def detail(
 
 
 @router.post("/api/v1/sys/config/edit-batch", summary="批量编辑配置")
+@SysLog("批量编辑配置")
 @HeiCheckPermission("sys:config:edit")
+@NoRepeat(interval=3000)
 async def edit_batch(
     request: Request,
     param: ConfigBatchEditParam,
@@ -93,7 +100,9 @@ async def edit_batch(
 
 
 @router.post("/api/v1/sys/config/edit-by-category", summary="按分类批量编辑配置")
+@SysLog("按分类批量编辑配置")
 @HeiCheckPermission("sys:config:edit")
+@NoRepeat(interval=3000)
 async def edit_by_category(
     request: Request,
     param: ConfigCategoryEditParam,

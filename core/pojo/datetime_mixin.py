@@ -18,7 +18,7 @@ class DateTimeValidatorMixin:
     @model_serializer
     def serialize(self) -> Dict[str, Any]:
         result = {}
-        for field_name, field_info in self.model_fields.items():
+        for field_name in self.model_fields:
             value = getattr(self, field_name)
             if isinstance(value, datetime):
                 result[field_name] = value.strftime('%Y-%m-%d %H:%M:%S')

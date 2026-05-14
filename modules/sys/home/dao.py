@@ -102,6 +102,8 @@ class QuickActionDao(BaseDAO):
         stmt = (
             select(
                 SysResource.id,
+                SysResource.parent_id,
+                SysResource.type,
                 SysResource.name,
                 SysResource.icon,
                 SysResource.route_path,
@@ -117,6 +119,6 @@ class QuickActionDao(BaseDAO):
         )
         result = self.db.execute(stmt).all()
         return [
-            {"id": row[0], "name": row[1] or "", "icon": row[2] or "", "route_path": row[3] or ""}
+            {"id": row[0], "parent_id": row[1] or "", "type": row[2] or "", "name": row[3] or "", "icon": row[4] or "", "route_path": row[5] or ""}
             for row in result
         ]
