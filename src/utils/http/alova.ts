@@ -7,7 +7,31 @@ import VueHook from 'alova/vue'
 import type { VueHookType } from 'alova/vue'
 import { DEFAULT_ALOVA_OPTIONS, DEFAULT_BACKEND_OPTIONS } from './config'
 import { handleBusinessError, handleResponseError } from './handle'
-import { useAuthStore } from '@/store'
+import { useAuthStore, useRouteStore } from '@/store'
+import { fetchLogout } from '@/api/auth'
+
+/** 强制清除登录态并跳转到登录页 */
+function forceLogout() {
+  const authStore = useAuthStore()
+  if (!authStore.isLogin) return
+
+  authStore.token = ''
+  authStore.userInfo = null
+  authStore.permissions = []
+  authStore.stopPermissionPolling()
+  useRouteStore().reset()
+  fetchLogout().catch(() => {})
+
+  import('@/router').then(({ router }) => {
+    const name = router.currentRoute.value.name
+    if (name && name !== 'login') {
+      router.push({
+        name: 'login',
+        query: { redirect: router.currentRoute.value.fullPath },
+      })
+    }
+  })
+}
 
 const { onAuthRequired } = createServerTokenAuthentication<VueHookType>({
   assignToken: method => {
@@ -46,6 +70,13 @@ function createAlovaInstance(
 
           const apiData =
             typeof response.json === 'function' ? await response.json() : (response as any).data
+
+          // 后端将所有异常统一包装为 HTTP 200 + 业务 code，需要同时处理
+          if (apiData[bc.codeKey] === 401) {
+            forceLogout()
+            return { ...apiData, success: false }
+          }
+
           if (apiData[bc.codeKey] === bc.successCode) {
             return {
               ...apiData,
@@ -58,20 +89,7 @@ function createAlovaInstance(
         }
 
         if (status === 401) {
-          const authStore = useAuthStore()
-          const wasLogin = authStore.isLogin
-          authStore.logout()
-          if (wasLogin) {
-            import('@/router').then(({ router }) => {
-              const name = router.currentRoute.value.name
-              if (name && name !== 'login') {
-                router.push({
-                  name: 'login',
-                  query: { redirect: router.currentRoute.value.fullPath },
-                })
-              }
-            })
-          }
+          forceLogout()
         }
 
         return handleResponseError(response)

@@ -60,3 +60,15 @@ export function fetchUserGrantPermission(data: any) {
 export function fetchUserOwnPermissionDetail(params: any) {
   return request.Get<Service.ResponseResult>('/api/v1/sys/user/own-permission-detail', { params })
 }
+
+export function fetchUserUpdateProfile(data: any) {
+  return request.Post<Service.ResponseResult>('/api/v1/sys/user/update-profile', data)
+}
+
+export function fetchUserUpdateAvatar(data: { avatar: string }) {
+  return request.Post<Service.ResponseResult>('/api/v1/sys/user/update-avatar', data)
+}
+
+export function fetchUserUpdatePassword(data: { current_password: string; new_password: string }) {
+  return request.Post<Service.ResponseResult>('/api/v1/sys/user/update-password', data)
+}

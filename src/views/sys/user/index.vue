@@ -58,7 +58,10 @@
       </template>
 
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'action'">
+        <template v-if="column.key === 'avatar'">
+          <a-avatar :size="32" :src="record.avatar" />
+        </template>
+        <template v-else-if="column.key === 'action'">
           <a-space>
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
@@ -182,6 +185,7 @@ const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handle
 
 const searchForm = reactive({ keyword: '', status: undefined })
 const columns = [
+  { title: '头像', dataIndex: 'avatar', key: 'avatar', width: 70 },
   { title: '账号', dataIndex: 'account', key: 'account', width: 150 },
   { title: '昵称', dataIndex: 'nickname', key: 'nickname', width: 150 },
   { title: '邮箱', dataIndex: 'email', key: 'email', width: 200, ellipsis: true },

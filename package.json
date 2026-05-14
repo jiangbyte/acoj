@@ -19,12 +19,14 @@
     "@vueuse/core": "^14.3.0",
     "alova": "^3.5.1",
     "ant-design-vue": "^4.2.6",
+    "cropperjs": "^1.6.2",
     "dayjs": "^1.11.20",
     "echarts": "^6.0.0",
     "pinia": "^2.3.1",
     "pinia-plugin-persistedstate": "^3.2.3",
     "sm-crypto": "^0.3.14",
     "vue": "^3.5.32",
+    "vue-advanced-cropper": "^2.8.9",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {

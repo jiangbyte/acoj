@@ -39,10 +39,10 @@
       </a-form-item>
     </a-form>
 
-    <div class="form-footer">
+    <a-typography-text type="secondary" class="form-footer">
       还没有账号？
-      <router-link to="/auth/register">立即注册</router-link>
-    </div>
+      <a-button type="link" @click="router.push('/auth/register')">立即注册</a-button>
+    </a-typography-text>
   </AuthLayout>
 </template>
 
@@ -125,8 +125,7 @@ onMounted(async () => {
 }
 
 .form-footer {
+  display: block;
   text-align: center;
-  font-size: 14px;
-  color: var(--text-secondary, #00000073);
 }
 </style>

@@ -10,6 +10,9 @@
     <template v-if="data">
       <a-card size="small" title="基本信息" class="mb-3">
         <a-row :gutter="[16, 16]">
+          <a-col :xs="24" :sm="24" class="mb-2">
+            <a-avatar :size="72" :src="data.avatar" />
+          </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">账号</div>
             <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.account || '-' }}</div>

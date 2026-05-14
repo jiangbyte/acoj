@@ -31,13 +31,6 @@ export interface SysInfo {
   run_time: string
 }
 
-export interface RecentLogin {
-  nickname: string
-  account: string
-  last_login_at: string | null
-  last_login_ip: string | null
-}
-
 export interface ClientStats {
   total_users: number
   active_users: number
@@ -51,8 +44,6 @@ export interface DashboardData {
   org_user_distribution: OrgUserDistribution[]
   role_category_distribution: CategoryDistribution[]
   sys_info: SysInfo
-  recent_logins: RecentLogin[]
-  recent_client_logins: RecentLogin[]
 }
 
 export function fetchDashboard() {

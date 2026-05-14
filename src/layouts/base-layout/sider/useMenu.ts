@@ -13,6 +13,32 @@ export function useMenu() {
 
   const menuItems = computed(() => menuToItems(routeStore.menus))
 
+  // Find ancestor keys in the menu tree for a given path.
+  // Returns an array of keys from root to the matching item (inclusive),
+  // so all intermediate submenus stay open.
+  function findAncestorPath(items: any[], path: string): string[] | null {
+    for (const item of items) {
+      if (item.key === path) {
+        return item.children?.length ? [item.key] : []
+      }
+      if (item.children) {
+        const found = findAncestorPath(item.children, path)
+        if (found !== null) {
+          return [item.key, ...found]
+        }
+      }
+    }
+    return null
+  }
+
+  function isSubmenuKey(items: any[], key: string): boolean {
+    for (const item of items) {
+      if (item.key === key) return !!item.children?.length
+      if (item.children && isSubmenuKey(item.children, key)) return true
+    }
+    return false
+  }
+
   // Expand parent submenu when navigating to a child page
   watch(
     () => route.path,
@@ -22,52 +48,10 @@ export function useMenu() {
         return
       }
 
-      const name = route.name as string | undefined
-      const sidebarItems = menuItems.value
-
-      // Strategy 1: Direct visible child match
-      for (const item of sidebarItems) {
-        if (item.children?.length && item.children.some((c: any) => c.key === path)) {
-          openKeys.value = [item.key]
-          return
-        }
-      }
-
-      // Strategy 2: Path prefix matching
-      for (const item of sidebarItems) {
-        if (path.startsWith(item.key + '/') && path !== item.key) {
-          openKeys.value = [item.key]
-          return
-        }
-      }
-
-      // Strategy 3: Resource tree ancestry via route.name (resource code)
-      if (name && routeStore.menus?.length) {
-        const idMap = new Map<string, any>()
-        const codeMap = new Map<string, any>()
-        function walk(nodes: any[]) {
-          for (const n of nodes) {
-            if (n.id) idMap.set(n.id, n)
-            if (n.code) codeMap.set(n.code, n)
-            if (n.children) walk(n.children)
-          }
-        }
-        walk(routeStore.menus)
-
-        const sidebarKeySet = new Set(sidebarItems.map((i: any) => i.key))
-        const resource = codeMap.get(name)
-        if (resource) {
-          let currentId = resource.parent_id
-          while (currentId) {
-            const parent = idMap.get(currentId)
-            if (!parent) break
-            if (sidebarKeySet.has(parent.route_path)) {
-              openKeys.value = [parent.route_path]
-              return
-            }
-            currentId = parent.parent_id
-          }
-        }
+      const ancestorPath = findAncestorPath(menuItems.value, path)
+      if (ancestorPath) {
+        openKeys.value = ancestorPath
+        return
       }
 
       openKeys.value = []
@@ -83,16 +67,13 @@ export function useMenu() {
   )
 
   function handleMenuClick({ key }: { key: string }) {
+    // Don't navigate for submenu items (directories with children)
+    if (isSubmenuKey(menuItems.value, key)) return
     router.push(key)
   }
 
   function handleOpenChange(keys: string[]) {
-    if (keys.length > 1) {
-      const added = keys.filter(k => !openKeys.value.includes(k))
-      openKeys.value = added.length ? [added[0]] : keys.slice(-1)
-    } else {
-      openKeys.value = keys
-    }
+    openKeys.value = keys
   }
 
   return {

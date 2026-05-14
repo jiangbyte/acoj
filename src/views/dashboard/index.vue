@@ -7,7 +7,6 @@
           <UserInfoCard />
           <StatCards :sys-data="data?.stats ?? null" :client-data="data?.client_stats ?? null" :loading="loading" />
           <TrendChart :sys-data="data?.user_trend ?? []" :client-data="data?.client_trend ?? []" :loading="loading" :is-dark="isDark" />
-          <RecentLogins :sys-data="data?.recent_logins ?? []" :client-data="data?.recent_client_logins ?? []" :loading="loading" />
         </div>
       </a-col>
 
@@ -36,7 +35,6 @@ import StatCards from './components/StatCards.vue'
 import TrendChart from './components/TrendChart.vue'
 import DistributionCharts from './components/DistributionCharts.vue'
 import SysInfoCard from './components/SysInfoCard.vue'
-import RecentLogins from './components/RecentLogins.vue'
 
 const data = shallowRef<DashboardData | null>(null)
 const loading = ref(true)

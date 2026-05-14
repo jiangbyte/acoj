@@ -55,7 +55,8 @@
             <div
               v-for="notice in data.notices"
               :key="notice.id"
-              class="flex items-center gap-2.5 py-2.5 border-b border-$border-color-split last:border-b-0"
+              class="flex items-center gap-2.5 py-2.5 border-b border-$border-color-split last:border-b-0 cursor-pointer transition duration-200 hover:bg-$background-color-light"
+              @click="openNotice(notice)"
             >
               <a-tag :color="$dict.color('NOTICE_LEVEL', notice.level)" class="text-11px leading-18px px-1.5 flex-shrink-0">{{ $dict.label('NOTICE_LEVEL', notice.level) }}</a-tag>
               <span class="flex-1 text-sm text-$text-color truncate">{{ notice.title }}</span>
@@ -64,38 +65,48 @@
           </div>
           <div v-else class="py-8 text-center text-$text-color-secondary">暂无系统通知</div>
         </a-card>
+
+        <NoticeDetail ref="noticeDetailRef" v-model:open="noticeDetailOpen" />
       </a-col>
     </a-row>
 
     <a-drawer title="添加快捷方式" placement="right" :open="showAddDrawer" width="360" @close="showAddDrawer = false">
-      <div class="flex flex-col gap-0.5">
-        <div
-          v-for="res in available"
-          :key="res.resource_id"
-          class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition duration-200 hover:bg-$background-color-light"
-          @click="addAction(res)"
-        >
-          <component :is="resolveIcon(res.icon)" class="text-lg text-$primary-color flex-shrink-0" />
-          <span class="flex-1 text-sm text-$text-color">{{ res.name }}</span>
-          <PlusOutlined class="text-base text-$primary-color" />
-        </div>
-        <div v-if="!available.length" class="py-8 text-center text-$text-color-secondary">已全部添加</div>
-      </div>
+      <a-tree
+        v-if="available.length"
+        :tree-data="treeData"
+        :field-names="{ title: 'name', key: 'resource_id', children: 'children' }"
+      >
+        <template #title="data">
+          <div
+            class="flex items-center gap-2 py-0.5"
+            :class="data.type === 'MENU' ? 'cursor-pointer' : 'opacity-60'"
+            @click="handleTreeNodeClick(data)"
+          >
+            <component :is="resolveIcon(data.icon)" class="text-base flex-shrink-0" :class="data.type === 'MENU' ? 'text-$primary-color' : 'text-$text-color-secondary'" />
+            <span class="text-sm">{{ data.name }}</span>
+            <PlusOutlined v-if="data.type === 'MENU'" class="text-xs ml-auto text-$primary-color" />
+          </div>
+        </template>
+      </a-tree>
+      <div v-else class="py-8 text-center text-$text-color-secondary">已全部添加</div>
     </a-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, onMounted } from 'vue'
+import { ref, shallowRef, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { resolveIcon } from '@/utils/iconUtil'
 import { fetchHome, addQuickAction, removeQuickAction } from '@/api/home'
 import UserInfoCard from '@/views/dashboard/components/UserInfoCard.vue'
+import NoticeDetail from '@/views/dashboard/components/NoticeDetail.vue'
 
 interface QuickAction {
   id: string
   resource_id: string
+  parent_id?: string
+  type: string
   name: string
   icon: string
   route_path: string
@@ -122,9 +133,35 @@ const data = shallowRef<HomeData | null>(null)
 const loading = ref(true)
 const showAddDrawer = ref(false)
 const hoverId = ref<string | null>(null)
+const noticeDetailRef = ref()
+const noticeDetailOpen = ref(false)
+
+function openNotice(notice: HomeNotice) {
+  noticeDetailRef.value?.doOpen(notice)
+}
 
 const actions = ref<QuickAction[]>([])
 const available = ref<QuickAction[]>([])
+
+const treeData = computed(() => {
+  const map = new Map<string, QuickAction[]>()
+  for (const res of available.value) {
+    const pid = res.parent_id || ''
+    if (!map.has(pid)) map.set(pid, [])
+    map.get(pid)!.push(res)
+  }
+  function build(pid: string): any[] {
+    return (map.get(pid) || []).map(node => ({
+      ...node,
+      children: build(node.resource_id),
+    }))
+  }
+  return build('')
+})
+
+function handleTreeNodeClick(data: any) {
+  if (data.type === 'MENU') addAction(data)
+}
 
 const iconColors = ['#1677ff', '#52c41a', '#faad14', '#722ed1', '#eb2f96', '#fa8c16', '#13c2c2', '#f5222d']
 

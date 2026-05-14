@@ -1,6 +1,6 @@
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store'
-import { LogoutOutlined } from '@ant-design/icons-vue'
+import { UserOutlined, LogoutOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 
 export interface UserMenuItem {
@@ -16,6 +16,14 @@ export function useUserMenu() {
   const auth = useAuthStore()
 
   const userMenuItems: UserMenuItem[] = [
+    {
+      key: 'profile',
+      icon: UserOutlined,
+      label: '个人中心',
+      onClick: () => {
+        router.push({ name: 'profile' })
+      },
+    },
     {
       key: 'logout',
       icon: LogoutOutlined,

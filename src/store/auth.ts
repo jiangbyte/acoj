@@ -9,6 +9,7 @@ import {
 } from '@/api/auth'
 import { sm2 } from 'sm-crypto'
 import { useRouteStore } from './route'
+import { useDictStore } from './dict'
 
 let _permPollTimer: ReturnType<typeof setInterval> | null = null
 
@@ -51,6 +52,7 @@ export const useAuthStore = defineStore('auth', {
       if (!success) return false
       this.token = data.token
       await this.loadUserInfo()
+      await useDictStore().loadDict()
       this.startPermissionPolling()
       return true
     },

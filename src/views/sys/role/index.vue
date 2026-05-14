@@ -79,7 +79,7 @@
             </a-button>
             <a-dropdown
               v-if="
-                hasPermission('sys:role:grantPermission') || hasPermission('sys:role:grantResource')
+                hasPermission('sys:role:grant-permission') || hasPermission('sys:role:grant-resource')
               "
             >
               <a-button type="link" size="small">
@@ -89,13 +89,13 @@
               <template #overlay>
                 <a-menu>
                   <a-menu-item
-                    v-if="hasPermission('sys:role:grantPermission')"
+                    v-if="hasPermission('sys:role:grant-permission')"
                     @click="openGrantPermission(record)"
                   >
                     授权权限
                   </a-menu-item>
                   <a-menu-item
-                    v-if="hasPermission('sys:role:grantResource')"
+                    v-if="hasPermission('sys:role:grant-resource')"
                     @click="openGrantResource(record)"
                   >
                     授权资源
