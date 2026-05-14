@@ -50,7 +50,7 @@
               <a-divider class="my-1.5" />
               <div class="flex items-center gap-2">
                 <span class="w-16 shrink-0">组织</span>
-                <span class="text-$text-color">{{ userInfo?.org_name || '-' }}</span>
+                <span class="text-$text-color">{{ userInfo?.org_names?.join(' / ') || '-' }}</span>
               </div>
               <div class="flex items-center gap-2">
                 <span class="w-16 shrink-0">职位</span>

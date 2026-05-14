@@ -15,12 +15,12 @@
             </a-tag>
           </div>
           <div class="user-meta">
-            <template v-if="userInfo.org_name">{{ userInfo.org_name }}</template>
-            <template v-if="userInfo.org_name && userInfo.position_name">
+            <template v-if="userInfo.org_names?.length">{{ userInfo.org_names.join(' / ') }}</template>
+            <template v-if="userInfo.org_names?.length && userInfo.position_name">
               <span class="meta-divider">|</span>
             </template>
             <template v-if="userInfo.position_name">{{ userInfo.position_name }}</template>
-            <template v-if="!userInfo.org_name && !userInfo.position_name">
+            <template v-if="!userInfo.org_names?.length && !userInfo.position_name">
               {{ userInfo.account }}
             </template>
           </div>

@@ -18,11 +18,7 @@
         <a-input v-model:value="form.email" placeholder="请输入邮箱" />
       </a-form-item>
       <a-form-item label="性别" name="gender">
-        <a-select v-model:value="form.gender" placeholder="请选择性别" allow-clear>
-          <a-select-option value="MALE">男</a-select-option>
-          <a-select-option value="FEMALE">女</a-select-option>
-          <a-select-option value="UNKNOWN">未知</a-select-option>
-        </a-select>
+        <DictSelect v-model="form.gender" type-code="GENDER" placeholder="请选择性别" allow-clear />
       </a-form-item>
       <a-form-item label="座右铭" name="motto">
         <a-input v-model:value="form.motto" placeholder="请输入座右铭" />

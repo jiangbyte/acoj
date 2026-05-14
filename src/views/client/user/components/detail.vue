@@ -27,7 +27,7 @@
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">性别</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.gender || '-' }}</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ $dict.label('GENDER', data.gender) }}</div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">座右铭</div>
@@ -64,7 +64,7 @@
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">创建人</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.created_by || '-' }}</div>
+            <div class="text-sm"><UserInfo :name="data.created_name" /></div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">创建时间</div>
@@ -72,7 +72,7 @@
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">更新人</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.updated_by || '-' }}</div>
+            <div class="text-sm"><UserInfo :name="data.updated_name" /></div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">更新时间</div>
@@ -89,6 +89,7 @@ defineOptions({ name: 'ClientUserDetail' })
 import { ref, watch } from 'vue'
 import { useMobile } from '@/hooks/useMobile'
 import { fetchClientUserDetail } from '@/api/client-user'
+import UserInfo from '@/components/user/UserInfo.vue'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open'])

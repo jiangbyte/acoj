@@ -27,7 +27,7 @@
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">所属组织</div>
             <div class="text-sm text-[var(--header-text,#000000d9)]">
-              {{ orgNameMap[data.org_id] || data.org_id || '-' }}
+              {{ data.org_names?.join(' / ') || '-' }}
             </div>
           </a-col>
           <a-col :xs="24" :sm="12">
@@ -60,7 +60,7 @@
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">创建人</div>
             <div class="text-sm text-[var(--header-text,#000000d9)]">
-              {{ data.created_by || '-' }}
+              <UserInfo :name="data.created_name" />
             </div>
           </a-col>
           <a-col :xs="24" :sm="12">
@@ -72,7 +72,7 @@
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">更新人</div>
             <div class="text-sm text-[var(--header-text,#000000d9)]">
-              {{ data.updated_by || '-' }}
+              <UserInfo :name="data.updated_name" />
             </div>
           </a-col>
           <a-col :xs="24" :sm="12">
@@ -88,10 +88,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useMobile } from '@/hooks/useMobile'
 import { fetchGroupDetail } from '@/api/group'
-import { fetchOrgTree } from '@/api/org'
+import UserInfo from '@/components/user/UserInfo.vue'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open'])
@@ -99,25 +99,7 @@ const emit = defineEmits(['update:open'])
 const loading = ref(false)
 const data = ref<any>(null)
 
-const orgNameMap = ref<Record<string, string>>({})
-
-async function loadOrgNames() {
-  const { data: tree } = await fetchOrgTree({})
-  const map: Record<string, string> = {}
-  function walk(nodes: any[]) {
-    for (const n of nodes) {
-      map[n.id] = n.name
-      if (n.children) walk(n.children)
-    }
-  }
-  if (tree) walk(tree)
-  orgNameMap.value = map
-}
-
 const { drawerWidth } = useMobile()
-onMounted(() => {
-  loadOrgNames()
-})
 
 async function doOpen(row: any) {
   if (!row?.id) return
