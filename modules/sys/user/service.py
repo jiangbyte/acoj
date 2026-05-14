@@ -218,7 +218,7 @@ class UserService(BaseCrudService):
             "status": entity.status,
             "org_name": org_name,
             "position_name": position_name,
-            "last_login_at": entity.last_login_at.isoformat() if entity.last_login_at else None,
+            "last_login_at": entity.last_login_at.strftime('%Y-%m-%d %H:%M:%S') if entity.last_login_at else None,
             "last_login_ip": entity.last_login_ip,
             "login_count": entity.login_count or 0,
         }
