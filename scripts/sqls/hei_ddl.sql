@@ -11,7 +11,7 @@
  Target Server Version : 90600 (9.6.0)
  File Encoding         : 65001
 
- Date: 14/05/2026 14:20:39
+ Date: 14/05/2026 16:05:01
 */
 
 SET NAMES utf8mb4;
@@ -544,22 +544,22 @@ INSERT INTO `rel_role_permission` VALUES ('2000000371', '40007', 'sys:user:grant
 INSERT INTO `rel_role_permission` VALUES ('2000000372', '40007', 'sys:user:import', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000373', '40007', 'sys:user:modify', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000374', '40007', 'sys:user:page', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000375', '40001', 'c:client-user:page', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000376', '40001', 'c:client-user:create', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000377', '40001', 'c:client-user:modify', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000378', '40001', 'c:client-user:remove', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000379', '40001', 'c:client-user:detail', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000380', '40001', 'c:client-user:export', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000381', '40001', 'c:client-user:template', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000382', '40001', 'c:client-user:import', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000383', '40002', 'c:client-user:page', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000384', '40002', 'c:client-user:create', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000385', '40002', 'c:client-user:modify', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000386', '40002', 'c:client-user:remove', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000387', '40002', 'c:client-user:detail', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000388', '40002', 'c:client-user:export', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000389', '40002', 'c:client-user:template', 'ALL', NULL, NULL);
-INSERT INTO `rel_role_permission` VALUES ('2000000390', '40002', 'c:client-user:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000375', '40001', 'client:user:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000376', '40001', 'client:user:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000377', '40001', 'client:user:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000378', '40001', 'client:user:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000379', '40001', 'client:user:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000380', '40001', 'client:user:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000381', '40001', 'client:user:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000382', '40001', 'client:user:import', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000383', '40002', 'client:user:page', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000384', '40002', 'client:user:create', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000385', '40002', 'client:user:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000386', '40002', 'client:user:remove', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000387', '40002', 'client:user:detail', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000388', '40002', 'client:user:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000389', '40002', 'client:user:template', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000390', '40002', 'client:user:import', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000391', '40001', 'sys:log:page', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000392', '40001', 'sys:log:detail', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000393', '40001', 'sys:log:remove', 'ALL', NULL, NULL);
@@ -700,6 +700,16 @@ INSERT INTO `rel_role_resource` VALUES ('7460479666994810898', '40001', '80117')
 INSERT INTO `rel_role_resource` VALUES ('7460479666994810899', '40001', '80118');
 INSERT INTO `rel_role_resource` VALUES ('7460479666994810900', '40001', '80119');
 INSERT INTO `rel_role_resource` VALUES ('7460479666994810901', '40001', '80120');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810914', '40001', '80121');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810915', '40001', '80122');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810916', '40001', '80123');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810917', '40001', '80124');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810918', '40001', '80125');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810919', '40001', '80126');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810920', '40001', '80127');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810921', '40001', '80128');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810922', '40001', '80129');
+INSERT INTO `rel_role_resource` VALUES ('7460479666994810923', '40001', '80130');
 INSERT INTO `rel_role_resource` VALUES ('3000000104', '40002', '80001');
 INSERT INTO `rel_role_resource` VALUES ('3000000105', '40002', '80002');
 INSERT INTO `rel_role_resource` VALUES ('3000000106', '40002', '80004');
@@ -806,6 +816,16 @@ INSERT INTO `rel_role_resource` VALUES ('3000000326', '40002', '80105');
 INSERT INTO `rel_role_resource` VALUES ('3000000327', '40002', '80106');
 INSERT INTO `rel_role_resource` VALUES ('3000000328', '40002', '80107');
 INSERT INTO `rel_role_resource` VALUES ('3000000346', '40002', '80108');
+INSERT INTO `rel_role_resource` VALUES ('3000000372', '40002', '80121');
+INSERT INTO `rel_role_resource` VALUES ('3000000373', '40002', '80122');
+INSERT INTO `rel_role_resource` VALUES ('3000000374', '40002', '80123');
+INSERT INTO `rel_role_resource` VALUES ('3000000375', '40002', '80124');
+INSERT INTO `rel_role_resource` VALUES ('3000000376', '40002', '80125');
+INSERT INTO `rel_role_resource` VALUES ('3000000377', '40002', '80126');
+INSERT INTO `rel_role_resource` VALUES ('3000000378', '40002', '80127');
+INSERT INTO `rel_role_resource` VALUES ('3000000379', '40002', '80128');
+INSERT INTO `rel_role_resource` VALUES ('3000000380', '40002', '80129');
+INSERT INTO `rel_role_resource` VALUES ('3000000381', '40002', '80130');
 INSERT INTO `rel_role_resource` VALUES ('3000000205', '40003', '80003');
 INSERT INTO `rel_role_resource` VALUES ('3000000206', '40003', '80010');
 INSERT INTO `rel_role_resource` VALUES ('3000000207', '40003', '80011');
@@ -1290,6 +1310,8 @@ INSERT INTO `sys_log` VALUES ('7460574111438213120', 'OPERATE', '编辑资源', 
 INSERT INTO `sys_log` VALUES ('7460574398982918144', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 14:19:07', '2293dac2ab29494e938211701f27e0a8', 'admin', '65fb178023eb59fe90264872cf8489662df3db3784c8f1e0a250e054f59e46f3', 'NO', '2026-05-14 14:19:07', NULL, '2026-05-14 14:19:07', NULL);
 INSERT INTO `sys_log` VALUES ('7460574547729715200', 'LOGOUT', '登出', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/b/logout', '', NULL, '2026-05-14 14:19:43', '35ceae09d7fc47fa9a5c46d56d77591f', 'admin', 'd218c751edac72ac037f719b44aad00e8d43f5d154d56177aa0a5e2bc5e3dd45', 'NO', '2026-05-14 14:19:43', NULL, '2026-05-14 14:19:43', NULL);
 INSERT INTO `sys_log` VALUES ('7460574569590427648', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 14:19:48', '15250291691d40b78d03cf861d03c764', 'admin', '641c6d86fd08f5b1366a0e7c467e2b04e17ea827ef74be536362e068cfa458d6', 'NO', '2026-05-14 14:19:48', NULL, '2026-05-14 14:19:48', NULL);
+INSERT INTO `sys_log` VALUES ('7460597976516268032', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 15:52:49', 'c48b577c89584664a28bf3e254d3b6df', 'admin', '8df85e7d99a8d00b9b5cb772872acf86a379a54abc4cc585f70b759c0d23f0b3', 'NO', '2026-05-14 15:52:49', NULL, '2026-05-14 15:52:49', NULL);
+INSERT INTO `sys_log` VALUES ('7460600988466941952', 'OPERATE', '编辑资源', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.resource.api.v1.api', 'resource_modify', 'POST', 'http://localhost:18885/api/v1/sys/resource/modify', '{\"vo\": \"id=\'80003\' code=\'DEV_TOOLS\' name=\'系统工具\' category=\'BACKEND_MENU\' type=\'DIRECTORY\' description=\'系统工具目录\' parent_id=None route_path=\'/dev\' component_path=None redirect_path=None icon=\'tool\' color=None is_visible=\'NO\' is_cache=\'NO\' is_affix=\'NO\' is_breadcrumb=\'YES\' external_url=None extra=None status=\'ENABLED\' sort_code=3 is_deleted=\'NO\' created_at=datetime.datetime(2026, 5, 12, 14, 55, 52) created_by=\'50001\' updated_at=datetime.datetime(2026, 5, 14, 7, 42, 53) updated_by=\'50001\'\"}', '{\"code\": 200, \"message\": \"请求成功\", \"data\": null, \"success\": true, \"trace_id\": \"492c2289c61f4fc78e09026bdd3e5f33\"}', '2026-05-14 16:04:47', '492c2289c61f4fc78e09026bdd3e5f33', 'admin', 'a8497db53535c7ed74c3a9a389de56bb4f37895427e4cc7f8afe60ea88116b8a', 'NO', '2026-05-14 16:04:47', NULL, '2026-05-14 16:04:47', NULL);
 
 -- ----------------------------
 -- Table structure for sys_module
@@ -1495,7 +1517,7 @@ CREATE TABLE `sys_resource`  (
 -- ----------------------------
 INSERT INTO `sys_resource` VALUES ('80001', 'SYS_ADMIN', '系统管理', 'BACKEND_MENU', 'DIRECTORY', '系统管理目录', NULL, '/sys', NULL, NULL, 'setting', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80002', 'CONTENT_MGR', '内容管理', 'BACKEND_MENU', 'DIRECTORY', '内容管理目录', NULL, '/content', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80003', 'DEV_TOOLS', '系统工具', 'BACKEND_MENU', 'DIRECTORY', '系统工具目录', NULL, '/dev', NULL, NULL, 'tool', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 07:42:53', '50001');
+INSERT INTO `sys_resource` VALUES ('80003', 'DEV_TOOLS', '系统工具', 'BACKEND_MENU', 'DIRECTORY', '系统工具目录', NULL, '/dev', NULL, NULL, 'tool', NULL, 'NO', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 16:04:47', '50001');
 INSERT INTO `sys_resource` VALUES ('80004', 'SYS_USER', '用户管理', 'BACKEND_MENU', 'MENU', '用户管理菜单', '80001', '/sys/user', 'sys/user/index', NULL, 'user', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80005', 'SYS_ROLE', '角色管理', 'BACKEND_MENU', 'MENU', '角色管理菜单', '80001', '/sys/role', 'sys/role/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80006', 'SYS_RESOURCE_MGR', '资源管理', 'BACKEND_MENU', 'MENU', '资源管理菜单', '80001', '/sys/resource', 'sys/resource/index', NULL, 'menu', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
@@ -1613,6 +1635,16 @@ INSERT INTO `sys_resource` VALUES ('80117', 'SYS_VISLOG_REMOVE', '日志删除',
 INSERT INTO `sys_resource` VALUES ('80118', 'SYS_SESSION', '会话管理', 'BACKEND_MENU', 'MENU', '会话管理', '80001', '/sys/auth/monitor', 'auth/monitor/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 11, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80119', 'SYS_SESSION_PAGE', '会话查询', 'BACKEND_BUTTON', 'BUTTON', '查询会话列表', '80118', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:session:page\"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80120', 'SYS_SESSION_EXIT', '强制下线', 'BACKEND_BUTTON', 'BUTTON', '强制用户下线', '80118', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:session:exit\"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80121', 'CLIENT_ADMIN', 'C端管理', 'BACKEND_MENU', 'DIRECTORY', 'C端管理目录', NULL, '/client', NULL, NULL, 'user', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 4, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80122', 'CLIENT_USER', '用户管理', 'BACKEND_MENU', 'MENU', 'C端用户管理菜单', '80121', '/client/user', 'client/user/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80123', 'CLIENT_USER_PAGE', '用户查询', 'BACKEND_BUTTON', 'BUTTON', '查询C端用户列表', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:page\"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80124', 'CLIENT_USER_CREATE', '用户新增', 'BACKEND_BUTTON', 'BUTTON', '新增C端用户', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:create\"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80125', 'CLIENT_USER_MODIFY', '用户修改', 'BACKEND_BUTTON', 'BUTTON', '修改C端用户', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:modify\"}', 'ENABLED', 3, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80126', 'CLIENT_USER_REMOVE', '用户删除', 'BACKEND_BUTTON', 'BUTTON', '删除C端用户', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:remove\"}', 'ENABLED', 4, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80127', 'CLIENT_USER_DETAIL', '用户详情', 'BACKEND_BUTTON', 'BUTTON', '查看C端用户详情', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:detail\"}', 'ENABLED', 5, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80128', 'CLIENT_USER_EXPORT', '用户导出', 'BACKEND_BUTTON', 'BUTTON', '导出C端用户数据', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:export\"}', 'ENABLED', 6, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80129', 'CLIENT_USER_IMPORT', '用户导入', 'BACKEND_BUTTON', 'BUTTON', '导入C端用户数据', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:import\"}', 'ENABLED', 8, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80130', 'CLIENT_USER_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载C端用户导入模板', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:template\"}', 'ENABLED', 7, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
 
 -- ----------------------------
 -- Table structure for sys_role
@@ -1681,7 +1713,7 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', 'ACTIVE', '2026-05-14 14:19:48', '127.0.0.1', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 14:19:48', '50001');
+INSERT INTO `sys_user` VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', 'ACTIVE', '2026-05-14 15:52:49', '127.0.0.1', 7, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 15:52:49', '50001');
 INSERT INTO `sys_user` VALUES ('50002', 'zhangsan', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '张三', NULL, '代码改变世界', 'MALE', '1995-05-15', 'zhangsan@hei.com', 'https://github.com/zhangsan', '13800000002', '10002', '20004', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50003', 'lisi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '李四', NULL, '学无止境', 'MALE', '1993-08-20', 'lisi@hei.com', NULL, '13800000003', '10002', '20004', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50004', 'wangwu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '王五', NULL, '追求卓越', 'MALE', '1994-03-10', 'wangwu@hei.com', NULL, '13800000004', '10002', '20003', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
