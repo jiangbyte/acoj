@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission, HeiCheckLogin
+from core.auth.decorator import HeiCheckPermission, HeiCheckLogin, NoRepeat
+from core.log import SysLog
 from core.utils.excel_utils import handle_import
 from ...params import UserVO, UserPageParam, UserExportParam, UserImportParam, GrantRoleParam, GrantGroupParam, GrantUserPermissionParam, UpdateProfileParam, UpdateAvatarParam, UpdatePasswordParam
 from ...service import UserService
@@ -31,7 +32,9 @@ async def page(
     summary="添加用户",
     response_model=Result
 )
+@SysLog("添加用户")
 @HeiCheckPermission("sys:user:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: UserVO,
@@ -47,6 +50,7 @@ async def create(
     summary="编辑用户",
     response_model=Result
 )
+@SysLog("编辑用户")
 @HeiCheckPermission("sys:user:modify")
 async def modify(
     request: Request,
@@ -63,6 +67,7 @@ async def modify(
     summary="删除用户",
     response_model=Result
 )
+@SysLog("删除用户")
 @HeiCheckPermission("sys:user:remove")
 async def remove(
     request: Request,
@@ -93,6 +98,7 @@ async def detail(
 @router.get(
     "/api/v1/sys/user/export",
     summary="导出用户数据")
+@SysLog("导出用户数据")
 @HeiCheckPermission("sys:user:export")
 async def export(
     request: Request,
@@ -120,7 +126,9 @@ async def download_template(
     summary="导入用户数据",
     response_model=Result
 )
+@SysLog("导入用户数据")
 @HeiCheckPermission("sys:user:import")
+@NoRepeat(interval=5000)
 async def import_data(
     request: Request,
     file: UploadFile = File(...),
@@ -134,7 +142,9 @@ async def import_data(
     summary="分配用户角色",
     response_model=Result
 )
+@SysLog("分配用户角色")
 @HeiCheckPermission("sys:user:grant-role")
+@NoRepeat(interval=3000)
 async def grant_role(
     request: Request,
     param: GrantRoleParam,
@@ -150,7 +160,9 @@ async def grant_role(
     summary="分配用户用户组",
     response_model=Result
 )
+@SysLog("分配用户用户组")
 @HeiCheckPermission("sys:user:grant-group")
+@NoRepeat(interval=3000)
 async def grant_group(
     request: Request,
     param: GrantGroupParam,
@@ -166,7 +178,9 @@ async def grant_group(
     summary="分配用户权限",
     response_model=Result
 )
+@SysLog("分配用户权限")
 @HeiCheckPermission("sys:user:grant-permission")
+@NoRepeat(interval=3000)
 async def grant_permission(
     request: Request,
     param: GrantUserPermissionParam,
@@ -257,7 +271,9 @@ async def get_current_user_permissions(request: Request, db: Session = Depends(g
     summary="更新当前用户个人信息",
     response_model=Result
 )
+@SysLog("更新个人信息")
 @HeiCheckLogin
+@NoRepeat(interval=3000)
 async def update_profile(
     request: Request,
     param: UpdateProfileParam,
@@ -273,6 +289,7 @@ async def update_profile(
     summary="更新当前用户头像（base64）",
     response_model=Result
 )
+@SysLog("更新头像")
 @HeiCheckLogin
 async def update_avatar(
     request: Request,
@@ -289,7 +306,9 @@ async def update_avatar(
     summary="修改当前用户密码",
     response_model=Result
 )
+@SysLog("修改密码")
 @HeiCheckLogin
+@NoRepeat(interval=3000)
 async def update_password(
     request: Request,
     param: UpdatePasswordParam,

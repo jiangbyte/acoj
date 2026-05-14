@@ -16,6 +16,7 @@ from core.db.base_service import BaseCrudService
 import logging
 
 from ..resource import SysResource
+from core.auth.permission.hei_permission_interface import SUPER_ADMIN_CODE
 
 logger = logging.getLogger(__name__)
 
@@ -271,6 +272,12 @@ class UserService(BaseCrudService):
         user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
         if not user_id:
             return []
+
+        # SUPER_ADMIN gets all resources
+        role_codes = self.dao.get_user_role_codes(user_id)
+        if SUPER_ADMIN_CODE in role_codes:
+            resources = self.dao.get_all_resources()
+            return self._build_menu_tree(resources)
 
         role_ids = self._get_user_role_ids(user_id)
         if not role_ids:

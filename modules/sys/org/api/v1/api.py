@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
 from core.utils.excel_utils import handle_import
 from ...params import OrgVO, OrgPageParam, OrgTreeParam, OrgExportParam, OrgImportParam, GrantOrgRoleParam
 from ...service import OrgService
@@ -46,7 +47,9 @@ async def tree(
     summary="添加组织",
     response_model=Result
 )
+@SysLog("添加组织")
 @HeiCheckPermission("sys:org:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: OrgVO,
@@ -62,6 +65,7 @@ async def create(
     summary="编辑组织",
     response_model=Result
 )
+@SysLog("编辑组织")
 @HeiCheckPermission("sys:org:modify")
 async def modify(
     request: Request,
@@ -78,6 +82,7 @@ async def modify(
     summary="删除组织",
     response_model=Result
 )
+@SysLog("删除组织")
 @HeiCheckPermission("sys:org:remove")
 async def remove(
     request: Request,
@@ -108,6 +113,7 @@ async def detail(
 @router.get(
     "/api/v1/sys/org/export",
     summary="导出组织数据")
+@SysLog("导出组织数据")
 @HeiCheckPermission("sys:org:export")
 async def export(
     request: Request,
@@ -135,7 +141,9 @@ async def download_template(
     summary="导入组织数据",
     response_model=Result
 )
+@SysLog("导入组织数据")
 @HeiCheckPermission("sys:org:import")
+@NoRepeat(interval=5000)
 async def import_data(
     request: Request,
     file: UploadFile = File(...),
@@ -149,7 +157,9 @@ async def import_data(
     summary="分配组织角色",
     response_model=Result
 )
+@SysLog("分配组织角色")
 @HeiCheckPermission("sys:org:grant-role")
+@NoRepeat(interval=3000)
 async def grant_role(
     request: Request,
     param: GrantOrgRoleParam,

@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
 from core.utils.excel_utils import handle_import
 from ...params import RoleVO, RolePageParam, RoleExportParam, RoleImportParam, GrantPermissionParam, GrantResourceParam
 from ...service import RoleService
@@ -31,7 +32,9 @@ async def page(
     summary="添加角色",
     response_model=Result
 )
+@SysLog("添加角色")
 @HeiCheckPermission("sys:role:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: RoleVO,
@@ -47,6 +50,7 @@ async def create(
     summary="编辑角色",
     response_model=Result
 )
+@SysLog("编辑角色")
 @HeiCheckPermission("sys:role:modify")
 async def modify(
     request: Request,
@@ -63,6 +67,7 @@ async def modify(
     summary="删除角色",
     response_model=Result
 )
+@SysLog("删除角色")
 @HeiCheckPermission("sys:role:remove")
 async def remove(
     request: Request,
@@ -93,6 +98,7 @@ async def detail(
 @router.get(
     "/api/v1/sys/role/export",
     summary="导出角色数据")
+@SysLog("导出角色数据")
 @HeiCheckPermission("sys:role:export")
 async def export(
     request: Request,
@@ -120,7 +126,9 @@ async def download_template(
     summary="导入角色数据",
     response_model=Result
 )
+@SysLog("导入角色数据")
 @HeiCheckPermission("sys:role:import")
+@NoRepeat(interval=5000)
 async def import_data(
     request: Request,
     file: UploadFile = File(...),
@@ -134,7 +142,9 @@ async def import_data(
     summary="分配角色权限",
     response_model=Result
 )
+@SysLog("分配角色权限")
 @HeiCheckPermission("sys:role:grant-permission")
+@NoRepeat(interval=3000)
 async def grant_permission(
     request: Request,
     param: GrantPermissionParam,
@@ -150,7 +160,9 @@ async def grant_permission(
     summary="分配角色资源",
     response_model=Result
 )
+@SysLog("分配角色资源")
 @HeiCheckPermission("sys:role:grant-resource")
+@NoRepeat(interval=3000)
 async def grant_resource(
     request: Request,
     param: GrantResourceParam,

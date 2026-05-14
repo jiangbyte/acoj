@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import Optional, List
+from typing import List
 from pydantic import BaseModel
 
 
@@ -34,13 +33,6 @@ class SysInfo(BaseModel):
     run_time: str = ""
 
 
-class RecentLogin(BaseModel):
-    nickname: str
-    account: str
-    last_login_at: Optional[datetime] = None
-    last_login_ip: Optional[str] = None
-
-
 class ClientStats(BaseModel):
     total_users: int = 0
     active_users: int = 0
@@ -54,5 +46,3 @@ class DashboardVO(BaseModel):
     org_user_distribution: List[OrgUserDistribution] = []
     role_category_distribution: List[CategoryDistribution] = []
     sys_info: SysInfo = SysInfo()
-    recent_logins: List[RecentLogin] = []
-    recent_client_logins: List[RecentLogin] = []

@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
 from core.utils.excel_utils import handle_import
 from ...params import NoticeVO, NoticePageParam, NoticeExportParam, NoticeImportParam
 from ...service import NoticeService
@@ -31,7 +32,9 @@ async def page(
     summary="添加通知",
     response_model=Result
 )
+@SysLog("添加通知")
 @HeiCheckPermission("sys:notice:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: NoticeVO,
@@ -47,6 +50,7 @@ async def create(
     summary="编辑通知",
     response_model=Result
 )
+@SysLog("编辑通知")
 @HeiCheckPermission("sys:notice:modify")
 async def modify(
     request: Request,
@@ -63,6 +67,7 @@ async def modify(
     summary="删除通知",
     response_model=Result
 )
+@SysLog("删除通知")
 @HeiCheckPermission("sys:notice:remove")
 async def remove(
     request: Request,
@@ -93,6 +98,7 @@ async def detail(
 @router.get(
     "/api/v1/sys/notice/export",
     summary="导出通知数据")
+@SysLog("导出通知数据")
 @HeiCheckPermission("sys:notice:export")
 async def export(
     request: Request,
@@ -120,7 +126,9 @@ async def download_template(
     summary="导入通知数据",
     response_model=Result
 )
+@SysLog("导入通知数据")
 @HeiCheckPermission("sys:notice:import")
+@NoRepeat(interval=5000)
 async def import_data(
     request: Request,
     file: UploadFile = File(...),

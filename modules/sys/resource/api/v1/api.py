@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
 from core.utils.excel_utils import handle_import
 from ...params import ModuleVO, ResourceVO, ModulePageParam, ResourcePageParam
 from ...params import ModuleExportParam, ResourceExportParam, ModuleImportParam, ResourceImportParam
@@ -34,7 +35,9 @@ async def module_page(
     summary="添加模块",
     response_model=Result
 )
+@SysLog("添加模块")
 @HeiCheckPermission("sys:module:create")
+@NoRepeat(interval=3000)
 async def module_create(
     request: Request,
     vo: ModuleVO,
@@ -50,6 +53,7 @@ async def module_create(
     summary="编辑模块",
     response_model=Result
 )
+@SysLog("编辑模块")
 @HeiCheckPermission("sys:module:modify")
 async def module_modify(
     request: Request,
@@ -66,6 +70,7 @@ async def module_modify(
     summary="删除模块",
     response_model=Result
 )
+@SysLog("删除模块")
 @HeiCheckPermission("sys:module:remove")
 async def module_remove(
     request: Request,
@@ -96,6 +101,7 @@ async def module_detail(
 @router.get(
     "/api/v1/sys/module/export",
     summary="导出模块数据")
+@SysLog("导出模块数据")
 @HeiCheckPermission("sys:module:export")
 async def module_export(
     request: Request,
@@ -123,7 +129,9 @@ async def module_download_template(
     summary="导入模块数据",
     response_model=Result
 )
+@SysLog("导入模块数据")
 @HeiCheckPermission("sys:module:import")
+@NoRepeat(interval=5000)
 async def module_import_data(
     request: Request,
     file: UploadFile = File(...),
@@ -168,7 +176,9 @@ async def resource_page(
     summary="添加资源",
     response_model=Result
 )
+@SysLog("添加资源")
 @HeiCheckPermission("sys:resource:create")
+@NoRepeat(interval=3000)
 async def resource_create(
     request: Request,
     vo: ResourceVO,
@@ -184,6 +194,7 @@ async def resource_create(
     summary="编辑资源",
     response_model=Result
 )
+@SysLog("编辑资源")
 @HeiCheckPermission("sys:resource:modify")
 async def resource_modify(
     request: Request,
@@ -200,6 +211,7 @@ async def resource_modify(
     summary="删除资源",
     response_model=Result
 )
+@SysLog("删除资源")
 @HeiCheckPermission("sys:resource:remove")
 async def resource_remove(
     request: Request,
@@ -230,6 +242,7 @@ async def resource_detail(
 @router.get(
     "/api/v1/sys/resource/export",
     summary="导出资源数据")
+@SysLog("导出资源数据")
 @HeiCheckPermission("sys:resource:export")
 async def resource_export(
     request: Request,
@@ -257,7 +270,9 @@ async def resource_download_template(
     summary="导入资源数据",
     response_model=Result
 )
+@SysLog("导入资源数据")
 @HeiCheckPermission("sys:resource:import")
+@NoRepeat(interval=5000)
 async def resource_import_data(
     request: Request,
     file: UploadFile = File(...),

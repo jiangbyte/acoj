@@ -85,7 +85,14 @@ class RoleService(BaseCrudService):
                 continue
 
         if permission_items:
-            self.dao.grant_permissions(param.role_id, permission_items, created_by)
+            # Deduplicate by permission_code to avoid unique-key violations
+            seen = set()
+            unique_items = []
+            for item in permission_items:
+                if item.permission_code not in seen:
+                    seen.add(item.permission_code)
+                    unique_items.append(item)
+            self.dao.add_missing_permissions(param.role_id, unique_items)
 
     def get_role_permission_codes(self, role_id: str) -> List[str]:
         return self.dao.get_permission_codes_by_role_id(role_id)
