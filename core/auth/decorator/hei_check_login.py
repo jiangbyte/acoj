@@ -15,12 +15,12 @@ def _get_request(*args, **kwargs):
     return None
 
 
-def HeiCheckLogin(func=None, *, login_type: str = LoginTypeEnum.LOGIN):
+def HeiCheckLogin(func=None, *, login_type: str = LoginTypeEnum.BUSINESS):
     def decorator(f):
         @wraps(f)
         async def wrapper(*args, **kwargs):
             request = _get_request(*args, **kwargs)
-            auth_tool = HeiClientAuthTool if login_type == LoginTypeEnum.CLIENT else HeiAuthTool
+            auth_tool = HeiClientAuthTool if login_type == LoginTypeEnum.CONSUMER else HeiAuthTool
             if not await auth_tool.isLogin(request):
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未授权/未登录")
             return await f(*args, **kwargs)
@@ -31,5 +31,5 @@ def HeiCheckLogin(func=None, *, login_type: str = LoginTypeEnum.LOGIN):
     return decorator
 
 
-def hei_check_login(func=None, *, login_type: str = LoginTypeEnum.LOGIN):
+def hei_check_login(func=None, *, login_type: str = LoginTypeEnum.BUSINESS):
     return HeiCheckLogin(func, login_type=login_type)

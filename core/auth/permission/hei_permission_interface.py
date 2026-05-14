@@ -9,23 +9,6 @@ from core.constants import PERMISSION_CACHE_KEY
 
 logger = logging.getLogger(__name__)
 
-
-def _soft_delete_filter(query, model):
-    """Dynamically apply soft-delete filter using configured field/value.
-
-    Reads from DB__SOFT_DELETE_* settings so it adapts to any field name
-    or value convention. Skips models that don't have the configured field
-    (e.g. rel_* junction tables without is_deleted).
-    """
-    from config.settings import settings as _settings
-    if not _settings.db.soft_delete_enabled:
-        return query
-    field_name = _settings.db.soft_delete_field
-    if hasattr(model, field_name):
-        return query.where(getattr(model, field_name) == _settings.db.soft_delete_value_not_deleted)
-    return query
-
-
 SUPER_ADMIN_CODE = "SUPER_ADMIN"
 
 
@@ -45,7 +28,6 @@ class HeiPermissionInterface:
 
         role_ids = set()
         query = select(RelUserRole.role_id).where(RelUserRole.user_id == login_id)
-        query = _soft_delete_filter(query, RelUserRole)
         rows = db.scalars(query).all()
         role_ids.update(rows)
 
@@ -54,7 +36,6 @@ class HeiPermissionInterface:
         user = db.get(SysUser, login_id)
         if user and user.org_id:
             query = select(RelOrgRole.role_id).where(RelOrgRole.org_id == user.org_id)
-            query = _soft_delete_filter(query, RelOrgRole)
             rows = db.scalars(query).all()
             role_ids.update(rows)
 
@@ -86,7 +67,6 @@ class HeiPermissionInterface:
             cur[ids_key] = new_ids
 
     def _merge_scope(self, result: dict, priority: str, rows: list):
-        import json
         for code, scope, cgids_raw, cogids_raw in rows:
             scope = scope or DataScopeEnum.ALL
             cgids = json.loads(cgids_raw) if cgids_raw else []
@@ -154,15 +134,13 @@ class HeiPermissionInterface:
             role_ids = self._get_role_ids(db, login_id)
             permission_codes = set()
 
-            if login_type == LoginTypeEnum.LOGIN or login_type == LoginTypeEnum.CLIENT:
+            if login_type == LoginTypeEnum.BUSINESS or login_type == LoginTypeEnum.CONSUMER:
                 if role_ids:
                     query = select(RelRolePermission.permission_code).where(RelRolePermission.role_id.in_(role_ids))
-                    query = _soft_delete_filter(query, RelRolePermission)
                     rows = db.scalars(query).all()
                     permission_codes.update(rows)
 
                 query = select(RelUserPermission.permission_code).where(RelUserPermission.user_id == login_id)
-                query = _soft_delete_filter(query, RelUserPermission)
                 rows = db.scalars(query).all()
                 permission_codes.update(rows)
 
@@ -180,14 +158,11 @@ class HeiPermissionInterface:
             query = select(SysRole.code).join(RelUserRole, SysRole.id == RelUserRole.role_id).where(
                 RelUserRole.user_id == login_id,
             )
-            query = _soft_delete_filter(query, RelUserRole)
-            query = _soft_delete_filter(query, SysRole)
             return list(db.scalars(query).all())
         finally:
             db.close()
 
     async def getPermissionScopeMap(self, login_id: Union[str, int], login_type: str) -> dict:
-        import json
         from core.enums import PermissionPathEnum
         from modules.sys.user.models import RelUserRole, RelUserPermission
         from modules.sys.role.models import RelRolePermission
@@ -197,7 +172,7 @@ class HeiPermissionInterface:
         db = SessionLocal()
         try:
             login_id = str(login_id)
-            if login_type != LoginTypeEnum.LOGIN and login_type != LoginTypeEnum.CLIENT:
+            if login_type != LoginTypeEnum.BUSINESS and login_type != LoginTypeEnum.CONSUMER:
                 return {}
 
             # SUPER_ADMIN gets ALL scope on every permission
@@ -211,7 +186,6 @@ class HeiPermissionInterface:
 
             # Path 1 (P1): User → Role → Permission (ral_role_permission.permission_code)
             query = select(RelUserRole.role_id).where(RelUserRole.user_id == login_id)
-            query = _soft_delete_filter(query, RelUserRole)
             role_ids = db.scalars(query).all()
             if role_ids:
                 query = select(
@@ -220,7 +194,6 @@ class HeiPermissionInterface:
                     RelRolePermission.custom_scope_group_ids,
                     RelRolePermission.custom_scope_org_ids,
                 ).where(RelRolePermission.role_id.in_(role_ids))
-                query = _soft_delete_filter(query, RelRolePermission)
                 rows = db.execute(query).all()
                 self._merge_scope(perm_scope, PermissionPathEnum.USER_ROLE, rows)
 
@@ -231,12 +204,11 @@ class HeiPermissionInterface:
                 RelUserPermission.custom_scope_group_ids,
                 RelUserPermission.custom_scope_org_ids,
             ).where(RelUserPermission.user_id == login_id)
-            query = _soft_delete_filter(query, RelUserPermission)
             rows = db.execute(query).all()
             self._merge_scope(perm_scope, PermissionPathEnum.DIRECT, rows)
 
             # Path 4 (P3): User → Org → Role → Permission
-            if login_type == LoginTypeEnum.LOGIN:
+            if login_type == LoginTypeEnum.BUSINESS:
                 user = db.get(SysUser, login_id)
                 if user and user.org_id:
                     query = select(
@@ -247,8 +219,6 @@ class HeiPermissionInterface:
                     ).join(RelRolePermission, RelRolePermission.role_id == RelOrgRole.role_id).where(
                         RelOrgRole.org_id == user.org_id,
                     )
-                    query = _soft_delete_filter(query, RelOrgRole)
-                    query = _soft_delete_filter(query, RelRolePermission)
                     rows = db.execute(query).all()
                     self._merge_scope(perm_scope, PermissionPathEnum.ORG_ROLE, rows)
 

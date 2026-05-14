@@ -29,7 +29,7 @@ class UserDao(BaseDAO):
     def find_by_account(self, account: str) -> Optional[SysUser]:
         return (
             self.db.execute(
-                select(SysUser).where(SysUser.account == account, SysUser.is_deleted == self._soft_delete_not_deleted)
+                select(SysUser).where(SysUser.account == account)
             )
             .scalar_one_or_none()
         )
@@ -37,7 +37,7 @@ class UserDao(BaseDAO):
     def find_by_email(self, email: str) -> Optional[SysUser]:
         return (
             self.db.execute(
-                select(SysUser).where(SysUser.email == email, SysUser.is_deleted == self._soft_delete_not_deleted)
+                select(SysUser).where(SysUser.email == email)
             )
             .scalar_one_or_none()
         )
@@ -158,7 +158,6 @@ class UserDao(BaseDAO):
         org_id = self.db.execute(
             select(SysUser.org_id).where(
                 SysUser.id == user_id,
-                SysUser.is_deleted == self._soft_delete_not_deleted,
             )
         ).scalar()
         if org_id:
@@ -190,7 +189,6 @@ class UserDao(BaseDAO):
                 _SysResource.category == ResourceCategoryEnum.BACKEND_MENU,
                 _SysResource.type.in_([ResourceTypeEnum.DIRECTORY, ResourceTypeEnum.MENU]),
                 _SysResource.status == StatusEnum.ENABLED,
-                _SysResource.is_deleted == self._soft_delete_not_deleted,
             )
             .order_by(_SysResource.sort_code.asc())
         )
@@ -215,7 +213,6 @@ class UserDao(BaseDAO):
                 _SysResource.category == ResourceCategoryEnum.BACKEND_MENU,
                 _SysResource.type.in_([ResourceTypeEnum.DIRECTORY, ResourceTypeEnum.MENU]),
                 _SysResource.status == StatusEnum.ENABLED,
-                _SysResource.is_deleted == self._soft_delete_not_deleted,
             )
             .order_by(_SysResource.sort_code.asc())
         )

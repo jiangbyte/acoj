@@ -2,8 +2,6 @@ from typing import Optional, List
 from urllib.parse import quote
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from core.enums import SoftDeleteEnum
-
 
 class DatabaseConfig(BaseModel):
     host: str = "localhost"
@@ -18,10 +16,6 @@ class DatabaseConfig(BaseModel):
     pool_timeout: int = 30
     connect_timeout: int = 10
     echo: bool = False
-    soft_delete_enabled: bool = True
-    soft_delete_field: str = "is_deleted"
-    soft_delete_value_not_deleted: str = SoftDeleteEnum.NO.value
-    soft_delete_value_deleted: str = SoftDeleteEnum.YES.value
 
     @property
     def url(self) -> str:

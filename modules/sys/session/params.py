@@ -34,6 +34,21 @@ class SessionExitParam(BaseModel):
     user_id: str = Field(..., description="用户ID")
 
 
+class SessionExitTokenParam(BaseModel):
+    user_id: str = Field(..., description="用户ID")
+    token: str = Field(..., description="令牌")
+
+
+class SessionTokenResult(DateTimeValidatorMixin, BaseModel):
+    """会话令牌详情"""
+    token: str = ""
+    created_at: Optional[datetime] = None
+    timeout: str = ""
+    timeout_seconds: int = 0
+    device_type: Optional[str] = None
+    device_id: Optional[str] = None
+
+
 class SessionPageParam(PageBounds):
     keyword: Optional[str] = None
 

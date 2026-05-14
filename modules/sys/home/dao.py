@@ -3,7 +3,7 @@ from typing import List, Optional
 from sqlalchemy import select, and_, func
 from sqlalchemy.orm import Session
 from core.db.base_dao import BaseDAO
-from core.enums import SoftDeleteEnum, StatusEnum
+from core.enums import StatusEnum
 from modules.sys.user.models import SysUser
 from modules.sys.notice.models import SysNotice
 from modules.sys.resource.models import SysResource
@@ -15,7 +15,6 @@ class QuickActionDao(BaseDAO):
         super().__init__(db, SysQuickAction)
 
     def find_by_user_id(self, user_id: str) -> List[dict]:
-        nd = SoftDeleteEnum.NO
         stmt = (
             select(
                 SysQuickAction.id,
@@ -27,11 +26,9 @@ class QuickActionDao(BaseDAO):
             )
             .join(SysResource, and_(
                 SysResource.id == SysQuickAction.resource_id,
-                SysResource.is_deleted == nd,
             ))
             .where(
                 SysQuickAction.user_id == user_id,
-                SysQuickAction.is_deleted == nd,
             )
             .order_by(SysQuickAction.sort_code.asc(), SysQuickAction.created_at.asc())
         )
@@ -52,14 +49,12 @@ class QuickActionDao(BaseDAO):
         stmt = select(SysQuickAction).where(
             SysQuickAction.user_id == user_id,
             SysQuickAction.resource_id == resource_id,
-            SysQuickAction.is_deleted == SoftDeleteEnum.NO,
         )
         return self.db.execute(stmt).scalar_one_or_none()
 
     def count_quick_actions(self, user_id: str) -> int:
         stmt = select(func.count()).select_from(SysQuickAction).where(
             SysQuickAction.user_id == user_id,
-            SysQuickAction.is_deleted == SoftDeleteEnum.NO,
         )
         return self.db.execute(stmt).scalar() or 0
 
@@ -72,7 +67,6 @@ class QuickActionDao(BaseDAO):
                 SysNotice.created_at,
             )
             .where(
-                SysNotice.is_deleted == SoftDeleteEnum.NO,
                 SysNotice.status == StatusEnum.ENABLED,
             )
             .order_by(SysNotice.is_top.desc(), SysNotice.created_at.desc())
@@ -85,17 +79,15 @@ class QuickActionDao(BaseDAO):
         ]
 
     def get_stats(self) -> dict:
-        stmt = select(func.count()).select_from(SysUser).where(SysUser.is_deleted == SoftDeleteEnum.NO)
+        stmt = select(func.count()).select_from(SysUser)
         return {"total_users": self.db.execute(stmt).scalar() or 0}
 
     def get_available_resources(self, user_id: str) -> List[dict]:
         """Get menu-type resources the user can add as quick actions (excluding already added)."""
-        nd = SoftDeleteEnum.NO
         subq = (
             select(SysQuickAction.resource_id)
             .where(
                 SysQuickAction.user_id == user_id,
-                SysQuickAction.is_deleted == nd,
             )
             .scalar_subquery()
         )
@@ -109,7 +101,6 @@ class QuickActionDao(BaseDAO):
                 SysResource.route_path,
             )
             .where(
-                SysResource.is_deleted == nd,
                 SysResource.status == StatusEnum.ENABLED,
                 SysResource.type.in_(["MENU", "DIRECTORY"]),
                 SysResource.id.notin_(subq),

@@ -25,17 +25,6 @@ class MetaObjectHandler:
 
     Plug into BaseDAO to auto-populate entity fields before insert/update.
     Override insert_fill() and update_fill() to customize behavior per DAO.
-
-    Usage:
-        class MyHandler(MetaObjectHandler):
-            def insert_fill(self, dao, entity):
-                entity.id = self.id_generator.generate_id()
-                entity.created_at = datetime.now()
-                entity.updated_at = datetime.now()
-
-        class MyDao(BaseDAO):
-            def __init__(self, db):
-                super().__init__(db, MyModel, meta_object_handler=MyHandler())
     """
 
     def __init__(self, id_generator: Optional[IdGenerator] = None):
@@ -51,11 +40,10 @@ class MetaObjectHandler:
 
 
 class DefaultMetaObjectHandler(MetaObjectHandler):
-    """Default handler: auto-fills id, is_deleted, created_at, updated_at, created_by, updated_by.
+    """Default handler: auto-fills id, created_at, updated_at, created_by, updated_by.
 
     Matches the standard table design across this project:
       - id: Snowflake ID (via DefaultIdGenerator)
-      - is_deleted: Soft delete flag set to 'NO'
       - created_at / updated_at: Current timestamp
       - created_by / updated_by: User ID (passed from service via dao.insert/update)
     """
@@ -63,8 +51,6 @@ class DefaultMetaObjectHandler(MetaObjectHandler):
     def insert_fill(self, dao, entity, created_by: Optional[str] = None):
         if not getattr(entity, 'id', None):
             entity.id = self.id_generator.generate_id()
-        if dao._can_apply_soft_delete() and getattr(entity, dao._soft_delete_field, None) is None:
-            setattr(entity, dao._soft_delete_field, dao._soft_delete_not_deleted)
         now = datetime.now()
         if hasattr(entity, 'created_at') and entity.created_at is None:
             entity.created_at = now

@@ -7,8 +7,7 @@ class UsernameLoginParam(BaseModel):
     password: str
     captcha_code: Optional[str] = None
     captcha_id: Optional[str] = None
-    device_type: Optional[str] = None
-    device_id: Optional[str] = None
+    device_id: Optional[str]
 
 
 class UsernameLoginResult(BaseModel):

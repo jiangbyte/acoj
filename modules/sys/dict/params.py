@@ -1,7 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.enums import SoftDeleteEnum
 from core.pojo import PageBounds, BaseExportParam
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
@@ -18,7 +17,6 @@ class DictVO(DateTimeValidatorMixin, BaseModel):
     parent_id: Optional[str] = None
     status: Optional[str] = None
     sort_code: Optional[int] = 0
-    is_deleted: Optional[str] = SoftDeleteEnum.NO.value
     created_at: Optional[datetime] = None
     created_by: Optional[str] = None
     updated_at: Optional[datetime] = None

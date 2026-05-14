@@ -35,7 +35,6 @@ class SysLog(Base):
     trace_id: Mapped[Optional[str]] = mapped_column(VARCHAR(64, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='跟踪ID')
     op_user: Mapped[Optional[str]] = mapped_column(VARCHAR(255, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='操作人姓名')
     sign_data: Mapped[Optional[str]] = mapped_column(LONGTEXT(collation='utf8mb4_general_ci'), comment='签名数据')
-    is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), default="NO", comment='逻辑删除')
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='创建时间')
     created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='更新时间')

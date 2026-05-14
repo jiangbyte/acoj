@@ -8,11 +8,11 @@ from fastapi import Request, HTTPException, status
 from config.settings import settings
 from core.db.redis import get_client
 from core.enums import LoginTypeEnum
-from core.constants import TOKEN_PREFIX_LOGIN, SESSION_PREFIX_LOGIN, DISABLE_KEY_LOGIN
+from core.constants import TOKEN_PREFIX_BUSINESS, SESSION_PREFIX_BUSINESS, DISABLE_KEY_BUSINESS
 
-TYPE = LoginTypeEnum.LOGIN
-TOKEN_PREFIX = TOKEN_PREFIX_LOGIN
-SESSION_PREFIX = SESSION_PREFIX_LOGIN
+TYPE = LoginTypeEnum.BUSINESS
+TOKEN_PREFIX = TOKEN_PREFIX_BUSINESS
+SESSION_PREFIX = SESSION_PREFIX_BUSINESS
 
 
 class HeiAuthTool:
@@ -112,12 +112,9 @@ class HeiAuthTool:
         )
         
         session_key = cls._get_session_key(user_id)
-        await redis_client.setex(
-            session_key,
-            cls._expire,
-            token
-        )
-        
+        await redis_client.sadd(session_key, token)
+        await redis_client.expire(session_key, cls._expire)
+
         return token
 
     @classmethod
@@ -140,10 +137,10 @@ class HeiAuthTool:
                 user_id = data.get("user_id")
                 if user_id:
                     session_key = cls._get_session_key(user_id)
-                    await redis_client.delete(session_key)
+                    await redis_client.srem(session_key, token)
             except:
                 pass
-        
+
         await redis_client.delete(token_key)
 
     @classmethod
@@ -151,13 +148,25 @@ class HeiAuthTool:
         redis_client = cls._get_redis()
         user_id = str(login_id)
         session_key = cls._get_session_key(user_id)
-        token = await redis_client.get(session_key)
-        
-        if token:
-            token_key = cls._get_token_key(token)
+        tokens = await redis_client.smembers(session_key)
+
+        for token in tokens:
+            t = token.decode() if isinstance(token, bytes) else token
+            token_key = cls._get_token_key(t)
             await redis_client.delete(token_key)
-        
+
         await redis_client.delete(session_key)
+
+    @classmethod
+    async def kickout_token(cls, login_id: Union[str, int], token: str):
+        """Kickout a specific token for a user."""
+        redis_client = cls._get_redis()
+        user_id = str(login_id)
+        session_key = cls._get_session_key(user_id)
+        token_key = cls._get_token_key(token)
+
+        await redis_client.srem(session_key, token)
+        await redis_client.delete(token_key)
 
     @classmethod
     async def isLogin(cls, request: Request = None) -> bool:
@@ -316,18 +325,30 @@ class HeiAuthTool:
     async def getTokenValueByLoginId(cls, login_id: Union[str, int]) -> Optional[str]:
         redis_client = cls._get_redis()
         session_key = cls._get_session_key(str(login_id))
-        return await redis_client.get(session_key)
+        tokens = await redis_client.smembers(session_key)
+        if tokens:
+            t = next(iter(tokens))
+            return t.decode() if isinstance(t, bytes) else t
+        return None
+
+    @classmethod
+    async def getTokenValuesByLoginId(cls, login_id: Union[str, int]) -> List[str]:
+        """Get all active token values for a user."""
+        redis_client = cls._get_redis()
+        session_key = cls._get_session_key(str(login_id))
+        tokens = await redis_client.smembers(session_key)
+        return [t.decode() if isinstance(t, bytes) else t for t in tokens]
 
     @classmethod
     async def disable(cls, login_id: Union[str, int], time: int):
         redis_client = cls._get_redis()
-        disable_key = f"{DISABLE_KEY_LOGIN}{login_id}"
+        disable_key = f"{DISABLE_KEY_BUSINESS}{login_id}"
         await redis_client.setex(disable_key, time, "1")
 
     @classmethod
     async def isDisable(cls, login_id: Union[str, int]) -> bool:
         redis_client = cls._get_redis()
-        disable_key = f"{DISABLE_KEY_LOGIN}{login_id}"
+        disable_key = f"{DISABLE_KEY_BUSINESS}{login_id}"
         return await redis_client.exists(disable_key) > 0
 
     @classmethod
@@ -338,12 +359,12 @@ class HeiAuthTool:
     @classmethod
     async def getDisableTime(cls, login_id: Union[str, int]) -> int:
         redis_client = cls._get_redis()
-        disable_key = f"{DISABLE_KEY_LOGIN}{login_id}"
+        disable_key = f"{DISABLE_KEY_BUSINESS}{login_id}"
         ttl = await redis_client.ttl(disable_key)
         return ttl if ttl > 0 else -1
 
     @classmethod
     async def untieDisable(cls, login_id: Union[str, int]):
         redis_client = cls._get_redis()
-        disable_key = f"{DISABLE_KEY_LOGIN}{login_id}"
+        disable_key = f"{DISABLE_KEY_BUSINESS}{login_id}"
         await redis_client.delete(disable_key)

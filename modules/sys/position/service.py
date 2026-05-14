@@ -7,7 +7,7 @@ from .dao import PositionDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum, SoftDeleteEnum
+from core.enums import ExportTypeEnum
 from core.utils import export_excel, strip_system_fields, apply_update, make_template
 from core.auth import HeiAuthTool
 from core.db.base_service import BaseCrudService
@@ -37,7 +37,7 @@ class PositionService(BaseCrudService):
 
         if db.execute(
             select(func.count()).select_from(SysUser).where(
-                SysUser.position_id.in_(ids), SysUser.is_deleted == SoftDeleteEnum.NO
+                SysUser.position_id.in_(ids)
             )
         ).scalar() > 0:
             raise BusinessException("职位存在关联用户，无法删除")

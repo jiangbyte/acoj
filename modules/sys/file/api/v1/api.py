@@ -67,7 +67,7 @@ async def detail(
     return success(data)
 
 
-@router.post("/api/v1/sys/file/remove", summary="删除文件（软删除）")
+@router.post("/api/v1/sys/file/remove", summary="删除文件")
 @SysLog("删除文件")
 @HeiCheckPermission("sys:file:remove")
 async def remove(

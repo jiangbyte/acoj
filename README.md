@@ -35,7 +35,6 @@
 - **RBAC 权限控制** — 用户→角色→权限 + 用户→组→角色→权限 + 用户直授权限，三层模型
 - **数据权限** — 支持全部/本级及以下/本级/仅本人/自定义 五种数据权限粒度，按最严策略合并
 - **权限自动发现** — 启动时自动扫描 `@HeiCheckPermission` 装饰器，缓存权限到 Redis
-- **软删除** — 全局可配置的软删除机制，透明过滤已删除数据
 - **统一响应格式** — `{code, message, data, success}` 标准结构
 - **全局异常处理** — 统一捕获 BusinessException 返回业务错误码
 - **验证码** — 内置图形验证码生成与校验
@@ -72,7 +71,7 @@ hei-fastapi
 │   │   └── permission_scan.py            # 权限自动扫描
 │   ├── db/
 │   │   ├── mysql.py             # MySQL 同步引擎 + sessionmaker
-│   │   ├── base_dao.py          # BaseDAO 通用 CRUD（软删除透明过滤）
+│   │   ├── base_dao.py          # BaseDAO 通用 CRUD
 │   │   └── redis.py             # Redis 异步客户端
 │   ├── middleware/
 │   │   ├── auth.py              # JWT 认证中间件（按路径分流 B/C/Public）

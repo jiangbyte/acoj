@@ -17,7 +17,7 @@ def _get_request(*args, **kwargs):
     return None
 
 
-def HeiCheckPermission(permission: Union[str, List[str]], mode: str = CheckModeEnum.AND, login_type: str = LoginTypeEnum.LOGIN):
+def HeiCheckPermission(permission: Union[str, List[str]], mode: str = CheckModeEnum.AND, login_type: str = LoginTypeEnum.BUSINESS):
     def decorator(func):
         # Attach permission metadata for auto-discovery scanner
         func._hei_permission = permission
@@ -27,7 +27,7 @@ def HeiCheckPermission(permission: Union[str, List[str]], mode: str = CheckModeE
         @wraps(func)
         async def wrapper(*args, **kwargs):
             request = _get_request(*args, **kwargs)
-            auth_tool = HeiClientAuthTool if login_type == LoginTypeEnum.CLIENT else HeiAuthTool
+            auth_tool = HeiClientAuthTool if login_type == LoginTypeEnum.CONSUMER else HeiAuthTool
             if not await auth_tool.isLogin(request):
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未授权/未登录")
 
@@ -50,5 +50,5 @@ def HeiCheckPermission(permission: Union[str, List[str]], mode: str = CheckModeE
     return decorator
 
 
-def hei_check_permission(permission: Union[str, List[str]], mode: str = CheckModeEnum.AND, login_type: str = LoginTypeEnum.LOGIN):
+def hei_check_permission(permission: Union[str, List[str]], mode: str = CheckModeEnum.AND, login_type: str = LoginTypeEnum.BUSINESS):
     return HeiCheckPermission(permission, mode, login_type)

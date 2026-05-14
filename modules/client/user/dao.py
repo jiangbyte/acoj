@@ -14,7 +14,6 @@ class ClientUserDao(BaseDAO):
             self.db.execute(
                 select(ClientUser).where(
                     ClientUser.account == account,
-                    ClientUser.is_deleted == self._soft_delete_not_deleted,
                 )
             )
             .scalar_one_or_none()

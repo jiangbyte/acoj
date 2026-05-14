@@ -1,7 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
-from core.enums import SoftDeleteEnum
 from core.pojo import PageBounds, BaseExportParam
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
@@ -27,7 +26,6 @@ class LogVO(DateTimeValidatorMixin, BaseModel):
     op_time: Optional[datetime] = None
     op_user: Optional[str] = None
     sign_data: Optional[str] = None
-    is_deleted: Optional[str] = SoftDeleteEnum.NO.value
     created_at: Optional[datetime] = None
     created_by: Optional[str] = None
     updated_at: Optional[datetime] = None

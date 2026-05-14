@@ -24,7 +24,6 @@ class ConfigDao(BaseDAO):
 
     def find_by_category(self, category: str) -> List[SysConfig]:
         stmt = select(self.model).where(self.model.category == category)
-        stmt = self._apply_soft_delete_filter(stmt)
         return list(self.db.execute(stmt).scalars().all())
 
     def find_by_category_and_key(self, category: str, key: str) -> Optional[SysConfig]:
@@ -32,7 +31,6 @@ class ConfigDao(BaseDAO):
             self.model.category == category,
             self.model.config_key == key,
         )
-        stmt = self._apply_soft_delete_filter(stmt)
         return self.db.execute(stmt).scalar_one_or_none()
 
     def find_by_category_and_keys(self, category: str, keys: List[str]) -> Dict[str, SysConfig]:
@@ -40,12 +38,10 @@ class ConfigDao(BaseDAO):
             self.model.category == category,
             self.model.config_key.in_(keys),
         )
-        stmt = self._apply_soft_delete_filter(stmt)
         return {r.config_key: r for r in self.db.execute(stmt).scalars().all()}
 
     def find_by_keys(self, keys: List[str]) -> Dict[str, SysConfig]:
         stmt = select(self.model).where(
             self.model.config_key.in_(keys),
         )
-        stmt = self._apply_soft_delete_filter(stmt)
         return {r.config_key: r for r in self.db.execute(stmt).scalars().all()}
