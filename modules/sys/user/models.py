@@ -1,8 +1,8 @@
 from typing import Optional, List
 import datetime
 
-from sqlalchemy import Date, DateTime, Index, Integer, Text, text
-from sqlalchemy.dialects.mysql import VARCHAR
+from sqlalchemy import Date, DateTime, Index, Integer, Text
+from sqlalchemy.dialects.mysql import VARCHAR, LONGTEXT
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
@@ -20,7 +20,7 @@ class SysUser(Base):
     account: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='账号')
     password: Mapped[Optional[str]] = mapped_column(VARCHAR(255, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='密码')
     nickname: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='昵称')
-    avatar: Mapped[Optional[str]] = mapped_column(VARCHAR(255, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='头像')
+    avatar: Mapped[Optional[str]] = mapped_column(LONGTEXT(collation='utf8mb4_general_ci'), comment='头像')
     motto: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='座右铭')
     gender: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='性别')
     birthday: Mapped[Optional[datetime.date]] = mapped_column(Date, comment='生日')
@@ -29,19 +29,19 @@ class SysUser(Base):
     phone: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='手机号')
     org_id: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='所属组织ID')
     position_id: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='所属职位ID')
-    status: Mapped[Optional[str]] = mapped_column(VARCHAR(16, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'ACTIVE'"), comment='状态')
+    status: Mapped[Optional[str]] = mapped_column(VARCHAR(16, charset='utf8mb4', collation='utf8mb4_general_ci'), default="ACTIVE", comment='状态')
     last_login_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='最后登录时间')
     last_login_ip: Mapped[Optional[str]] = mapped_column(VARCHAR(64, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='最后登录IP')
-    login_count: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("'0'"), comment='登录次数')
-    is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'NO'"), comment='逻辑删除')
+    login_count: Mapped[Optional[int]] = mapped_column(Integer, default=0, comment='登录次数')
+    is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), default="NO", comment='逻辑删除')
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='创建时间')
     created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='更新时间')
     updated_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='更新用户')
 
 
-class RalUserRole(Base):
-    __tablename__ = 'ral_user_role'
+class RelUserRole(Base):
+    __tablename__ = 'rel_user_role'
     __table_args__ = (
         Index('uk_user_role', 'user_id', 'role_id', unique=True),
         Index('idx_role_id', 'role_id'),
@@ -53,13 +53,9 @@ class RalUserRole(Base):
     role_id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='角色ID')
     scope: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=None, comment='数据范围覆盖：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人。为空则继承 ral_role_permission 的配置')
     custom_scope_group_ids: Mapped[Optional[str]] = mapped_column(Text(collation='utf8mb4_general_ci'), comment='自定义数据范围组ID列表(JSON数组)，scope=CUSTOM时生效')
-    is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'NO'"), comment='逻辑删除')
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='创建时间')
-    created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')
 
-
-class RalUserGroup(Base):
-    __tablename__ = 'ral_user_group'
+class RelUserGroup(Base):
+    __tablename__ = 'rel_user_group'
     __table_args__ = (
         Index('uk_user_group', 'user_id', 'group_id', unique=True),
         Index('idx_group_id', 'group_id'),
@@ -69,24 +65,18 @@ class RalUserGroup(Base):
     id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), primary_key=True, comment='主键')
     user_id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='用户ID')
     group_id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='用户组ID')
-    is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'NO'"), comment='逻辑删除')
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='创建时间')
-    created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')
-
-
-class RalUserPermission(Base):
-    __tablename__ = 'ral_user_permission'
+class RelUserPermission(Base):
+    __tablename__ = 'rel_user_permission'
     __table_args__ = (
-        Index('uk_user_permission', 'user_id', 'permission_id', unique=True),
-        Index('idx_permission_id', 'permission_id'),
+        Index('uk_user_permission', 'user_id', 'permission_code', unique=True),
+        Index('idx_permission_code', 'permission_code'),
         {'comment': '用户-权限直关联'}
     )
 
     id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), primary_key=True, comment='主键')
     user_id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='用户ID')
-    permission_id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='权限ID')
-    scope: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'ALL'"), comment='数据范围：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人')
-    custom_scope_group_ids: Mapped[Optional[str]] = mapped_column(Text(collation='utf8mb4_general_ci'), comment='自定义数据范围组ID列表(JSON数组)，scope=CUSTOM时生效')
-    is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'NO'"), comment='逻辑删除')
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='创建时间')
-    created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')
+    permission_code: Mapped[str] = mapped_column(VARCHAR(255, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='权限编码')
+    scope: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), default="ALL", comment='数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组')
+    custom_scope_group_ids: Mapped[Optional[str]] = mapped_column(Text(collation='utf8mb4_general_ci'), comment='自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效')
+    custom_scope_org_ids: Mapped[Optional[str]] = mapped_column(Text(collation='utf8mb4_general_ci'), comment='自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效')
+

@@ -1,15 +1,14 @@
-from typing import Optional
+
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
-from core.utils.excel_utils import validate_import_file
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
+from core.utils.excel_utils import handle_import
 from ...params import BannerVO, BannerPageParam, BannerExportParam, BannerImportParam
 from ...service import BannerService
-from openpyxl import load_workbook
-import io
 
 router = APIRouter()
 
@@ -22,12 +21,11 @@ router = APIRouter()
 @HeiCheckPermission("sys:banner:page")
 async def page(
     request: Request,
-    current: int = Query(default=1),
-    size: int = Query(default=10),
+    param: BannerPageParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = BannerService(db)
-    return success(service.page(BannerPageParam(current=current, size=size)))
+    return success(service.page(param))
 
 
 @router.post(
@@ -35,7 +33,9 @@ async def page(
     summary="添加Banner",
     response_model=Result
 )
+@SysLog("添加Banner")
 @HeiCheckPermission("sys:banner:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: BannerVO,
@@ -51,6 +51,7 @@ async def create(
     summary="编辑Banner",
     response_model=Result
 )
+@SysLog("编辑Banner")
 @HeiCheckPermission("sys:banner:modify")
 async def modify(
     request: Request,
@@ -67,6 +68,7 @@ async def modify(
     summary="删除Banner",
     response_model=Result
 )
+@SysLog("删除Banner")
 @HeiCheckPermission("sys:banner:remove")
 async def remove(
     request: Request,
@@ -97,22 +99,14 @@ async def detail(
 @router.get(
     "/api/v1/sys/banner/export",
     summary="导出Banner数据")
+@SysLog("导出Banner数据")
 @HeiCheckPermission("sys:banner:export")
 async def export(
     request: Request,
-    export_type: str = Query(default="current"),
-    current: Optional[int] = Query(default=None),
-    size: Optional[int] = Query(default=None),
-    selected_id: Optional[str] = Query(default=None),
+    param: BannerExportParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = BannerService(db)
-    param = BannerExportParam(
-        export_type=export_type,
-        current=current,
-        size=size,
-        selected_id=selected_id.split(",") if selected_id else None
-    )
     return service.export(param)
 
 
@@ -133,29 +127,12 @@ async def download_template(
     summary="导入Banner数据",
     response_model=Result
 )
+@SysLog("导入Banner数据")
 @HeiCheckPermission("sys:banner:import")
+@NoRepeat(interval=5000)
 async def import_data(
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    validate_import_file(file)
-    content = await file.read()
-    wb = load_workbook(io.BytesIO(content))
-    ws = wb.active
-    
-    headers = [cell.value for cell in ws[1] if cell.value]
-    data_list = []
-    
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        if not any(row):
-            continue
-        row_dict = {}
-        for i, header in enumerate(headers):
-            if i < len(row):
-                row_dict[header] = row[i]
-        data_list.append(BannerVO(**row_dict))
-    
-    service = BannerService(db)
-    result = await service.import_data(BannerImportParam(data=data_list), request)
-    return success(result)
+    return await handle_import(file, BannerService, BannerVO, BannerImportParam, db, request)

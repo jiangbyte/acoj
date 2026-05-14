@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from .service import ConfigService
 
 
-def get_config_value(db: Session, key: str) -> Optional[str]:
+async def get_config_value(db: Session, key: str) -> Optional[str]:
     """Read a config value by key, with Redis caching."""
     service = ConfigService(db)
-    return service.get_value_by_key(key)
+    return await service.get_value_by_key(key)

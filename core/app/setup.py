@@ -1,12 +1,17 @@
+import logging
+
 from fastapi import FastAPI
 
 from config.settings import settings
 from .lifespan import lifespan
 from .router import setup_routers
-from core.middleware import setup_cors, setup_exception_handlers, AuthMiddleware
+from core.middleware import setup_cors, setup_exception_handlers, AuthMiddleware, TraceMiddleware
+from core.log.utils import TraceIdFilter
 
 
 def create_app() -> FastAPI:
+    logging.getLogger().addFilter(TraceIdFilter())
+
     app = FastAPI(
         title=settings.app.name,
         description="Hei FastAPI Application",
@@ -14,6 +19,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.add_middleware(TraceMiddleware)
     app.add_middleware(AuthMiddleware)
 
     setup_cors(app)

@@ -1,11 +1,11 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from core.result import success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
-from ...params import ConfigVO, ConfigPageParam, ConfigListParam, ConfigBatchEditParam
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
+from ...params import ConfigVO, ConfigPageParam, ConfigListParam, ConfigBatchEditParam, ConfigCategoryEditParam
 from ...service import ConfigService
 
 router = APIRouter()
@@ -15,14 +15,10 @@ router = APIRouter()
 @HeiCheckPermission("sys:config:page")
 async def page(
     request: Request,
-    current: int = Query(default=1),
-    size: int = Query(default=10),
-    category: Optional[str] = Query(default=None),
-    keyword: Optional[str] = Query(default=None),
+    param: ConfigPageParam = Depends(),
     db: Session = Depends(get_db),
 ):
     service = ConfigService(db)
-    param = ConfigPageParam(current=current, size=size, category=category, keyword=keyword)
     return success(service.page(param))
 
 
@@ -30,16 +26,17 @@ async def page(
 @HeiCheckPermission("sys:config:list")
 async def list_by_category(
     request: Request,
-    category: str = Query(...),
+    param: ConfigListParam = Depends(),
     db: Session = Depends(get_db),
 ):
     service = ConfigService(db)
-    param = ConfigListParam(category=category)
     return success(service.list_by_category(param))
 
 
 @router.post("/api/v1/sys/config/create", summary="添加配置")
+@SysLog("添加配置")
 @HeiCheckPermission("sys:config:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: ConfigVO,
@@ -51,6 +48,7 @@ async def create(
 
 
 @router.post("/api/v1/sys/config/modify", summary="编辑配置")
+@SysLog("编辑配置")
 @HeiCheckPermission("sys:config:modify")
 async def modify(
     request: Request,
@@ -63,6 +61,7 @@ async def modify(
 
 
 @router.post("/api/v1/sys/config/remove", summary="删除配置")
+@SysLog("删除配置")
 @HeiCheckPermission("sys:config:remove")
 async def remove(
     request: Request,
@@ -70,7 +69,7 @@ async def remove(
     db: Session = Depends(get_db),
 ):
     service = ConfigService(db)
-    service.remove(param)
+    await service.remove(param)
     return success()
 
 
@@ -87,7 +86,9 @@ async def detail(
 
 
 @router.post("/api/v1/sys/config/edit-batch", summary="批量编辑配置")
+@SysLog("批量编辑配置")
 @HeiCheckPermission("sys:config:edit")
+@NoRepeat(interval=3000)
 async def edit_batch(
     request: Request,
     param: ConfigBatchEditParam,
@@ -95,4 +96,18 @@ async def edit_batch(
 ):
     service = ConfigService(db)
     await service.edit_batch(param, request)
+    return success()
+
+
+@router.post("/api/v1/sys/config/edit-by-category", summary="按分类批量编辑配置")
+@SysLog("按分类批量编辑配置")
+@HeiCheckPermission("sys:config:edit")
+@NoRepeat(interval=3000)
+async def edit_by_category(
+    request: Request,
+    param: ConfigCategoryEditParam,
+    db: Session = Depends(get_db),
+):
+    service = ConfigService(db)
+    await service.edit_by_category(param, request)
     return success()

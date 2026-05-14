@@ -1,15 +1,13 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
-from core.utils.excel_utils import validate_import_file
-from ...params import OrgVO, OrgPageParam, OrgExportParam, OrgImportParam, GrantOrgRoleParam
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
+from core.utils.excel_utils import handle_import
+from ...params import OrgVO, OrgPageParam, OrgTreeParam, OrgExportParam, OrgImportParam, GrantOrgRoleParam
 from ...service import OrgService
-from openpyxl import load_workbook
-import io
 
 router = APIRouter()
 
@@ -22,12 +20,26 @@ router = APIRouter()
 @HeiCheckPermission("sys:org:page")
 async def page(
     request: Request,
-    current: int = Query(default=1),
-    size: int = Query(default=10),
+    param: OrgPageParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = OrgService(db)
-    return success(service.page(OrgPageParam(current=current, size=size)))
+    return success(service.page(param))
+
+
+@router.get(
+    "/api/v1/sys/org/tree",
+    summary="获取组织树",
+    response_model=Result[list[dict]]
+)
+@HeiCheckPermission("sys:org:tree")
+async def tree(
+    request: Request,
+    param: OrgTreeParam = Depends(),
+    db: Session = Depends(get_db)
+):
+    service = OrgService(db)
+    return success(service.tree(param))
 
 
 @router.post(
@@ -35,7 +47,9 @@ async def page(
     summary="添加组织",
     response_model=Result
 )
+@SysLog("添加组织")
 @HeiCheckPermission("sys:org:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: OrgVO,
@@ -51,6 +65,7 @@ async def create(
     summary="编辑组织",
     response_model=Result
 )
+@SysLog("编辑组织")
 @HeiCheckPermission("sys:org:modify")
 async def modify(
     request: Request,
@@ -67,6 +82,7 @@ async def modify(
     summary="删除组织",
     response_model=Result
 )
+@SysLog("删除组织")
 @HeiCheckPermission("sys:org:remove")
 async def remove(
     request: Request,
@@ -97,22 +113,14 @@ async def detail(
 @router.get(
     "/api/v1/sys/org/export",
     summary="导出组织数据")
+@SysLog("导出组织数据")
 @HeiCheckPermission("sys:org:export")
 async def export(
     request: Request,
-    export_type: str = Query(default="current"),
-    current: Optional[int] = Query(default=None),
-    size: Optional[int] = Query(default=None),
-    selected_id: Optional[str] = Query(default=None),
+    param: OrgExportParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = OrgService(db)
-    param = OrgExportParam(
-        export_type=export_type,
-        current=current,
-        size=size,
-        selected_id=selected_id.split(",") if selected_id else None
-    )
     return service.export(param)
 
 
@@ -133,32 +141,15 @@ async def download_template(
     summary="导入组织数据",
     response_model=Result
 )
+@SysLog("导入组织数据")
 @HeiCheckPermission("sys:org:import")
+@NoRepeat(interval=5000)
 async def import_data(
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    validate_import_file(file)
-    content = await file.read()
-    wb = load_workbook(io.BytesIO(content))
-    ws = wb.active
-
-    headers = [cell.value for cell in ws[1] if cell.value]
-    data_list = []
-
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        if not any(row):
-            continue
-        row_dict = {}
-        for i, header in enumerate(headers):
-            if i < len(row):
-                row_dict[header] = row[i]
-        data_list.append(OrgVO(**row_dict))
-
-    service = OrgService(db)
-    result = await service.import_data(OrgImportParam(data=data_list), request)
-    return success(result)
+    return await handle_import(file, OrgService, OrgVO, OrgImportParam, db, request)
 
 
 @router.post(
@@ -166,7 +157,9 @@ async def import_data(
     summary="分配组织角色",
     response_model=Result
 )
+@SysLog("分配组织角色")
 @HeiCheckPermission("sys:org:grant-role")
+@NoRepeat(interval=3000)
 async def grant_role(
     request: Request,
     param: GrantOrgRoleParam,

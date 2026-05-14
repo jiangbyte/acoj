@@ -1,41 +1,28 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, delete
+from sqlalchemy import select, delete
 from core.db.base_dao import BaseDAO
+from core.db.query_wrapper import QueryWrapper
 from .models import SysFile
+from .params import FilePageParam
 
 
 class FileDao(BaseDAO):
     def __init__(self, db: Session):
         super().__init__(db, SysFile)
 
-    def find_page(self, engine: Optional[str] = None,
-                  keyword: Optional[str] = None,
-                  date_range_start: Optional[str] = None,
-                  date_range_end: Optional[str] = None,
-                  current: int = 1, size: int = 10) -> dict:
-        query = select(self.model)
-        query = self._apply_soft_delete_filter(query)
-
-        if engine:
-            query = query.where(self.model.engine == engine)
-        if keyword:
-            query = query.where(self.model.name.like(f"%{keyword}%"))
-        if date_range_start:
-            query = query.where(self.model.created_at >= date_range_start)
-        if date_range_end:
-            query = query.where(self.model.created_at <= date_range_end)
-
-        query = query.order_by(self.model.created_at.desc())
-
-        count_query = select(func.count()).select_from(query.subquery())
-        total = self.db.execute(count_query).scalar() or 0
-
-        current = max(1, current)
-        offset = (current - 1) * size
-        records = list(self.db.execute(query.offset(offset).limit(size)).scalars().all())
-
-        return {"records": records, "total": total}
+    def find_page_by_filters(self, param: FilePageParam) -> Dict[str, Any]:
+        wrapper = QueryWrapper(SysFile)
+        if param.engine:
+            wrapper.eq(SysFile.engine, param.engine)
+        if param.keyword:
+            wrapper.like(SysFile.name, param.keyword)
+        if param.date_range_start:
+            wrapper.ge(SysFile.created_at, param.date_range_start)
+        if param.date_range_end:
+            wrapper.le(SysFile.created_at, param.date_range_end)
+        wrapper.order_by_desc(SysFile.created_at)
+        return self.select_page(wrapper, param)
 
     def delete_absolute_by_id(self, entity_id: str) -> bool:
         entity = self.db.get(self.model, entity_id)
@@ -44,3 +31,9 @@ class FileDao(BaseDAO):
         self.db.delete(entity)
         self.db.commit()
         return True
+
+    def delete_absolute_by_ids(self, entity_ids: List[str]) -> int:
+        stmt = delete(self.model).where(self.model.id.in_(entity_ids))
+        result = self.db.execute(stmt)
+        self.db.commit()
+        return result.rowcount or 0

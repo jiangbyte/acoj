@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Request
 from core.result import Result, success
 from core.auth.decorator import HeiCheckLogin
+from core.log import SysLog
+from core.auth.decorator import NoRepeat
 from ...logic import do_login, do_register, do_logout
 from ...params import UsernameLoginParam, UsernameLoginResult, UsernameRegisterParam, UsernameRegisterResult, UsernameLogoutResult
 
@@ -22,6 +24,8 @@ async def login(request: Request, param: UsernameLoginParam):
     summary="B端用户名注册",
     response_model=Result[UsernameRegisterResult]
 )
+@SysLog("注册")
+@NoRepeat(interval=5000)
 async def register(param: UsernameRegisterParam):
     result = await do_register(param)
     return success(result.model_dump())

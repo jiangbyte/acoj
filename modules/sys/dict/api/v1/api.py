@@ -1,15 +1,13 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
-from core.auth.decorator import HeiCheckPermission
-from core.utils.excel_utils import validate_import_file
+from core.auth.decorator import HeiCheckPermission, NoRepeat
+from core.log import SysLog
+from core.utils.excel_utils import handle_import
 from ...params import DictVO, DictPageParam, DictListParam, DictTreeParam, DictExportParam, DictImportParam
 from ...service import DictService
-from openpyxl import load_workbook
-import io
 
 router = APIRouter()
 
@@ -22,18 +20,10 @@ router = APIRouter()
 @HeiCheckPermission("sys:dict:page")
 async def page(
     request: Request,
-    current: int = Query(default=1),
-    size: int = Query(default=10),
-    parent_id: Optional[str] = Query(default=None),
-    category: Optional[str] = Query(default=None),
-    keyword: Optional[str] = Query(default=None),
+    param: DictPageParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = DictService(db)
-    param = DictPageParam(
-        current=current, size=size,
-        parent_id=parent_id, category=category, keyword=keyword
-    )
     return success(service.page(param))
 
 
@@ -45,12 +35,10 @@ async def page(
 @HeiCheckPermission("sys:dict:list")
 async def dict_list(
     request: Request,
-    parent_id: Optional[str] = Query(default=None),
-    category: Optional[str] = Query(default=None),
+    param: DictListParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = DictService(db)
-    param = DictListParam(parent_id=parent_id, category=category)
     return success(service.list(param))
 
 
@@ -62,12 +50,11 @@ async def dict_list(
 @HeiCheckPermission("sys:dict:tree")
 async def tree(
     request: Request,
-    category: Optional[str] = Query(default=None),
+    param: DictTreeParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = DictService(db)
-    param = DictTreeParam(category=category)
-    return success(service.tree(param))
+    return success(await service.tree(param))
 
 
 @router.post(
@@ -75,7 +62,9 @@ async def tree(
     summary="添加字典",
     response_model=Result
 )
+@SysLog("添加字典")
 @HeiCheckPermission("sys:dict:create")
+@NoRepeat(interval=3000)
 async def create(
     request: Request,
     vo: DictVO,
@@ -91,6 +80,7 @@ async def create(
     summary="编辑字典",
     response_model=Result
 )
+@SysLog("编辑字典")
 @HeiCheckPermission("sys:dict:modify")
 async def modify(
     request: Request,
@@ -107,6 +97,7 @@ async def modify(
     summary="删除字典",
     response_model=Result
 )
+@SysLog("删除字典")
 @HeiCheckPermission("sys:dict:remove")
 async def remove(
     request: Request,
@@ -114,7 +105,7 @@ async def remove(
     db: Session = Depends(get_db)
 ):
     service = DictService(db)
-    service.remove(param)
+    await service.remove(param)
     return success()
 
 
@@ -167,22 +158,14 @@ async def get_dict_children(
 @router.get(
     "/api/v1/sys/dict/export",
     summary="导出字典数据")
+@SysLog("导出字典数据")
 @HeiCheckPermission("sys:dict:export")
 async def export(
     request: Request,
-    export_type: str = Query(default="current"),
-    current: Optional[int] = Query(default=None),
-    size: Optional[int] = Query(default=None),
-    selected_id: Optional[str] = Query(default=None),
+    param: DictExportParam = Depends(),
     db: Session = Depends(get_db)
 ):
     service = DictService(db)
-    param = DictExportParam(
-        export_type=export_type,
-        current=current,
-        size=size,
-        selected_id=selected_id.split(",") if selected_id else None
-    )
     return service.export(param)
 
 
@@ -203,29 +186,12 @@ async def download_template(
     summary="导入字典数据",
     response_model=Result
 )
+@SysLog("导入字典数据")
 @HeiCheckPermission("sys:dict:import")
+@NoRepeat(interval=5000)
 async def import_data(
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    validate_import_file(file)
-    content = await file.read()
-    wb = load_workbook(io.BytesIO(content))
-    ws = wb.active
-
-    headers = [cell.value for cell in ws[1] if cell.value]
-    data_list = []
-
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        if not any(row):
-            continue
-        row_dict = {}
-        for i, header in enumerate(headers):
-            if i < len(row):
-                row_dict[header] = row[i]
-        data_list.append(DictVO(**row_dict))
-
-    service = DictService(db)
-    result = await service.import_data(DictImportParam(data=data_list), request)
-    return success(result)
+    return await handle_import(file, DictService, DictVO, DictImportParam, db, request)

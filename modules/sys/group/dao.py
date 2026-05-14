@@ -1,80 +1,27 @@
-from typing import List, Optional
+from typing import Dict, Any, List
 from sqlalchemy.orm import Session
-from sqlalchemy import select
-from .models import SysGroup, RalGroupRole
+from sqlalchemy import or_
+from .models import SysGroup
+from .params import GroupPageParam
 from core.db.base_dao import BaseDAO
-from core.utils import generate_id
-from datetime import datetime
+from core.db.query_wrapper import QueryWrapper
 
 
 class GroupDao(BaseDAO):
     def __init__(self, db: Session):
         super().__init__(db, SysGroup)
 
-    def insert(self, entity: SysGroup) -> SysGroup:
-        entity.id = generate_id()
-        if self._can_apply_soft_delete():
-            setattr(entity, self._soft_delete_field, self._soft_delete_not_deleted)
-        now = datetime.now()
-        entity.created_at = now
-        entity.updated_at = now
-        self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
-        return entity
+    def find_page_by_filters(self, param: GroupPageParam) -> Dict[str, Any]:
+        wrapper = QueryWrapper(SysGroup)
+        if param.parent_id:
+            wrapper.where(or_(SysGroup.parent_id == param.parent_id, SysGroup.id == param.parent_id))
+        if param.org_id:
+            wrapper.eq(SysGroup.org_id, param.org_id)
+        if param.keyword:
+            wrapper.like(SysGroup.name, param.keyword)
+        wrapper.order_by_asc(SysGroup.sort_code)
+        return self.select_page(wrapper, param)
 
-    def insert_batch(self, entities: List[SysGroup]) -> None:
-        now = datetime.now()
-        for entity in entities:
-            entity.id = generate_id()
-            if self._can_apply_soft_delete():
-                setattr(entity, self._soft_delete_field, self._soft_delete_not_deleted)
-            entity.created_at = now
-            entity.updated_at = now
-        self.db.add_all(entities)
-        self.db.commit()
-
-    def update(self, entity: SysGroup) -> SysGroup:
-        entity.updated_at = datetime.now()
-        self.db.commit()
-        self.db.refresh(entity)
-        return entity
-
-    def get_role_ids_by_group_id(self, group_id: str) -> List[str]:
-        rows = self.db.execute(
-            select(RalGroupRole.role_id).where(
-                RalGroupRole.group_id == group_id, RalGroupRole.is_deleted == self._soft_delete_not_deleted
-            )
-        ).scalars().all()
-        return list(rows)
-
-    def grant_roles(self, group_id: str, role_ids: List[str], created_by: Optional[str] = None,
-                    scope: Optional[str] = None, custom_scope_group_ids: Optional[str] = None):
-        now = datetime.now()
-        not_del = self._soft_delete_not_deleted
-        del_val = self._soft_delete_deleted
-
-        existing = self.db.execute(
-            select(RalGroupRole).where(RalGroupRole.group_id == group_id)
-        ).scalars().all()
-        existing_by_rid = {r.role_id: r for r in existing}
-
-        for r in existing:
-            if r.role_id not in role_ids and r.is_deleted == not_del:
-                r.is_deleted = del_val
-
-        for rid in role_ids:
-            if rid in existing_by_rid:
-                rel = existing_by_rid[rid]
-                rel.is_deleted = not_del
-                rel.scope = scope
-                rel.custom_scope_group_ids = custom_scope_group_ids
-                rel.created_by = created_by
-            else:
-                rel = RalGroupRole(
-                    id=generate_id(), group_id=group_id, role_id=rid,
-                    scope=scope, custom_scope_group_ids=custom_scope_group_ids,
-                    is_deleted=not_del, created_at=now, created_by=created_by
-                )
-                self.db.add(rel)
-        self.db.commit()
+    def find_all_ordered(self) -> List[SysGroup]:
+        wrapper = QueryWrapper(SysGroup).order_by_asc(SysGroup.sort_code)
+        return self.select_list(wrapper)

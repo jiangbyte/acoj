@@ -1,6 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds
+from core.pojo import PageBounds, BaseExportParam
 
 
 class ConfigVO(BaseModel):
@@ -21,15 +21,17 @@ class ConfigPageParam(PageBounds):
 
 
 class ConfigListParam(BaseModel):
-    category: Optional[str] = None
+    category: str
 
 
 class ConfigBatchEditParam(BaseModel):
     configs: List[ConfigVO]
 
 
-class ConfigExportParam(BaseModel):
-    export_type: str = "current"
-    current: Optional[int] = None
-    size: Optional[int] = None
-    selected_id: Optional[list[str]] = None
+class ConfigCategoryEditParam(BaseModel):
+    category: str
+    configs: List[ConfigVO]
+
+
+class ConfigExportParam(BaseExportParam):
+    pass

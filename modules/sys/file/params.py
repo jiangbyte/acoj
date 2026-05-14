@@ -1,4 +1,5 @@
 from typing import Optional, List
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from core.pojo import PageBounds
 
@@ -19,8 +20,9 @@ class FileVO(BaseModel):
     download_path: Optional[str] = None
     is_download_auth: Optional[int] = None
     thumbnail: Optional[str] = None
-    ext_json: Optional[str] = None
-    created_at: Optional[str] = None
+    extra: Optional[str] = None
+    created_at: Optional[datetime] = None
+    created_by: Optional[str] = None
 
 
 class FilePageParam(PageBounds):

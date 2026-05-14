@@ -20,13 +20,14 @@ def setup_exception_handlers(app: FastAPI):
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
         return JSONResponse(
-            status_code=200,
+            status_code=exc.status_code,
             content=failure(message=exc.detail, code=exc.status_code)
         )
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         errors = exc.errors()
+        logger.error(f"Validation error for {request.method} {request.url.path}: {errors}")
         if errors:
             message = errors[0].get("msg", "请求参数格式错误")
         else:

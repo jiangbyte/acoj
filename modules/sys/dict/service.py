@@ -1,79 +1,52 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 from fastapi import Request
-from .models import SysDict
-from .params import DictVO, DictTreeVO, DictPageParam, DictListParam, DictTreeParam, DictExportParam, DictImportParam
+from .params import DictVO, DictPageParam, DictListParam, DictTreeParam, DictExportParam, DictImportParam
 from .dao import DictDao
+from .models import SysDict
 from core.pojo import IdParam, IdsParam
-from core.result import page_data, success
+from core.result import page_data, PageDataField
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum, SoftDeleteEnum
+from core.enums import ExportTypeEnum
 from core.utils import export_excel, generate_id, strip_system_fields, apply_update, make_template
 from core.auth import HeiAuthTool
+from core.db.base_service import BaseCrudService
 from core.db.redis import get_client
-from core.constants import DICT_CACHE_KEY
+from core.constants import DICT_CACHE_KEY, DICT_TREE_CACHE_KEY
 import json
 import logging
 
 logger = logging.getLogger(__name__)
 
-class DictService:
-    def __init__(self, db: Session):
-        self.dao = DictDao(db)
-        self.db = db
 
-    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
-        try:
-            return await HeiAuthTool.getLoginIdDefaultNull(request)
-        except Exception as e:
-            logger.warning(f"Failed to get current user: {e}")
-            return None
+class DictService(BaseCrudService):
+    model_class = SysDict
+    vo_class = DictVO
+    dao_class = DictDao
+    page_param_class = DictPageParam
+    export_name = "字典数据"
 
     def page(self, param: DictPageParam) -> dict:
-        from sqlalchemy import select as q, func
-
-        base_filters = [SysDict.is_deleted == SoftDeleteEnum.NO]
-        if param.parent_id:
-            base_filters.append(
-                (SysDict.parent_id == param.parent_id) | (SysDict.id == param.parent_id)
-            )
-        if param.category:
-            base_filters.append(SysDict.category == param.category)
-        if param.keyword:
-            keyword = f"%{param.keyword}%"
-            base_filters.append(SysDict.label.ilike(keyword))
-
-        count_query = select(func.count()).select_from(SysDict).where(*base_filters)
-        total = self.db.execute(count_query).scalar() or 0
-
-        offset = (param.current - 1) * param.size
-        query = select(SysDict).where(*base_filters).order_by(SysDict.sort_code).offset(offset).limit(param.size)
-        records = [DictVO.model_validate(r).model_dump() for r in self.db.execute(query).scalars().all()]
+        result = self.dao.find_page_by_filters(param)
         return page_data(
-            records=records,
-            total=total,
+            records=[DictVO.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]],
+            total=result[PageDataField.TOTAL],
             page=param.current,
             size=param.size
         )
 
     def list(self, param: DictListParam) -> List[dict]:
-        base_filters = [SysDict.is_deleted == SoftDeleteEnum.NO]
-        if param.parent_id is not None:
-            base_filters.append(SysDict.parent_id == param.parent_id)
-        if param.category is not None:
-            base_filters.append(SysDict.category == param.category)
+        records = self.dao.find_list_by_filters(param)
+        return [DictVO.model_validate(r).model_dump() for r in records]
 
-        query = select(SysDict).where(*base_filters).order_by(SysDict.sort_code)
-        return [DictVO.model_validate(r).model_dump() for r in self.db.execute(query).scalars().all()]
+    async def tree(self, param: DictTreeParam) -> List[dict]:
+        cached = await self._get_cached_tree()
+        if cached is not None:
+            return cached
 
-    def tree(self, param: DictTreeParam) -> List[dict]:
-        base_filters = [SysDict.is_deleted == SoftDeleteEnum.NO]
+        records = self.dao.find_all_ordered()
         if param.category:
-            base_filters.append(SysDict.category == param.category)
-
-        query = select(SysDict).where(*base_filters).order_by(SysDict.sort_code)
-        records = list(self.db.execute(query).scalars().all())
+            records = [r for r in records if r.category == param.category]
 
         node_map = {}
         roots = []
@@ -93,6 +66,19 @@ class DictService:
         return roots
 
     @staticmethod
+    async def _get_cached_tree() -> Optional[List[dict]]:
+        try:
+            client = get_client()
+            if not client:
+                return None
+            data = await client.get(DICT_TREE_CACHE_KEY)
+            if data:
+                return json.loads(data)
+        except Exception as e:
+            logger.warning(f"Failed to read dict tree cache: {e}")
+        return None
+
+    @staticmethod
     def _sort_tree(nodes: List[dict]):
         nodes.sort(key=lambda x: x.get("sort_code", 0) or 0)
         for n in nodes:
@@ -101,8 +87,6 @@ class DictService:
                 DictService._sort_tree(children)
 
     async def create(self, vo: DictVO, request: Optional[Request] = None) -> None:
-        created_by = await self._get_current_user_id(request)
-
         parent_id = vo.parent_id or "0"
         self._check_duplicate(parent_id, vo.label, vo.value, None)
 
@@ -110,8 +94,7 @@ class DictService:
         if not entity_data.get("code"):
             entity_data["code"] = str(generate_id())
         entity = SysDict(**entity_data, parent_id=parent_id)
-        entity.created_by = created_by
-        self.dao.insert(entity)
+        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
         await self._sync_cache()
 
     def _check_duplicate(self, parent_id: str, label: Optional[str], value: Optional[str], exclude_id: Optional[str]):
@@ -123,62 +106,60 @@ class DictService:
                 raise BusinessException(f"同一父字典下已存在相同值: {value}")
 
     async def modify(self, vo: DictVO, request: Optional[Request] = None) -> None:
-        updated_by = await self._get_current_user_id(request)
         entity = self.dao.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
 
         parent_id = vo.parent_id or "0"
         self._check_duplicate(parent_id, vo.label, vo.value, vo.id)
+        if str(parent_id) != str(entity.parent_id):
+            self._check_circular_parent(vo.id, parent_id if parent_id != "0" else None)
 
         update_data = vo.model_dump(exclude_unset=True)
         apply_update(entity, update_data)
         entity.parent_id = parent_id
-        entity.updated_by = updated_by
-        self.dao.update(entity)
+        self.dao.update(entity, user_id=await self._get_current_user_id(request))
         await self._sync_cache()
 
-    def remove(self, param: IdsParam) -> None:
-        for rid in param.ids:
-            children = self.dao.find_by_parent_id(rid)
-            if children:
-                raise BusinessException(f"字典包含子节点，无法删除: {rid}")
-        self.dao.delete_by_ids(param.ids)
+    def _check_circular_parent(self, entity_id: str, new_parent_id: Optional[str]) -> None:
+        if not new_parent_id:
+            return
+        all_records = self.dao.find_all()
+        parent_map = {r.id: r.parent_id for r in all_records}
+        current = new_parent_id
+        while current:
+            if current == entity_id:
+                raise BusinessException("父级不能选择自身或子节点")
+            current = parent_map.get(current)
+            if not current or current == "0":
+                break
 
-    def detail(self, param: IdParam) -> Optional[DictVO]:
-        entity = self.dao.find_by_id(param.id)
-        return DictVO.model_validate(entity) if entity else None
+    def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
+        all_records = self.dao.find_all()
+        children_map: dict[str, list[str]] = {}
+        for r in all_records:
+            children_map.setdefault(r.parent_id or "0", []).append(r.id)
 
-    def export(self, param: DictExportParam):
-        records: List[SysDict] = []
-        if param.export_type == ExportTypeEnum.CURRENT.value:
-            result = self.dao.find_page(param.current or 1, param.size or 10)
-            records = result["records"]
-        elif param.export_type == ExportTypeEnum.SELECTED.value:
-            records = self.dao.find_by_ids(param.selected_id or [])
-        elif param.export_type == ExportTypeEnum.ALL.value:
-            records = self.dao.find_all()
-        else:
-            raise BusinessException("导出类型错误")
+        all_ids = set(ids)
+        stack = list(ids)
+        while stack:
+            parent_id = stack.pop()
+            for child_id in children_map.get(parent_id, []):
+                if child_id not in all_ids:
+                    all_ids.add(child_id)
+                    stack.append(child_id)
+        return list(all_ids)
 
-        data = [DictVO.model_validate(r).model_dump() for r in records]
-        return export_excel(data, "字典数据", "字典数据")
-
-    def download_template(self):
-        return export_excel(make_template(SysDict), "字典导入模板", "字典数据")
+    async def remove(self, param: IdsParam) -> None:
+        all_ids = self._collect_descendant_ids(param.ids)
+        self.dao.delete_by_ids(all_ids)
+        await self._sync_cache()
 
     async def import_data(self, param: DictImportParam, request: Optional[Request] = None) -> dict:
         if not param.data:
             raise BusinessException("导入数据不能为空")
-
-        created_by = await self._get_current_user_id(request)
-        entities = []
-        for vo in param.data:
-            entity = SysDict(**strip_system_fields(vo.model_dump()))
-            entity.created_by = created_by
-            entities.append(entity)
-
-        self.dao.insert_batch(entities)
+        entities = [SysDict(**strip_system_fields(vo.model_dump())) for vo in param.data]
+        self.dao.insert_batch(entities, user_id=await self._get_current_user_id(request))
         await self._sync_cache()
         return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}
 
@@ -208,24 +189,49 @@ class DictService:
         if not redis_client:
             return
         try:
-            base_filters = [SysDict.is_deleted == SoftDeleteEnum.NO]
-            query = select(SysDict).where(*base_filters).order_by(SysDict.sort_code)
-            records = list(self.db.execute(query).scalars().all())
+            records = self.dao.find_all_ordered()
 
-            cache = {}
+            # Flat cache: typeCode -> children (for get_cached_dicts)
+            flat_cache = {}
+            full_tree = self._build_full_tree(records)
+
+            children_by_parent: dict[str, list] = {}
+            for r in records:
+                children_by_parent.setdefault(r.parent_id or "0", []).append(r)
+
             for r in records:
                 code = r.code
                 if code and r.parent_id in ("0", None):
-                    children_data = []
-                    for c in records:
-                        if c.parent_id == r.id:
-                            children_data.append({"label": c.label, "value": c.value, "color": c.color})
-                    if children_data:
-                        cache[code] = children_data
+                    children = children_by_parent.get(r.id, [])
+                    if children:
+                        flat_cache[code] = [
+                            {"label": c.label, "value": c.value, "color": c.color}
+                            for c in children
+                        ]
 
-            await redis_client.set(DICT_CACHE_KEY, json.dumps(cache, ensure_ascii=False))
+            await redis_client.set(DICT_CACHE_KEY, json.dumps(flat_cache, ensure_ascii=False))
+            await redis_client.set(DICT_TREE_CACHE_KEY, json.dumps(full_tree, ensure_ascii=False))
         except Exception as e:
             logger.error(f"Failed to sync dict cache: {e}")
+
+    @staticmethod
+    def _build_full_tree(records: list) -> list:
+        node_map = {}
+        roots = []
+        for r in records:
+            r_dict = DictVO.model_validate(r).model_dump()
+            r_dict["children"] = []
+            node_map[r.id] = r_dict
+
+        for r_dict in node_map.values():
+            pid = r_dict.get("parent_id")
+            if pid and pid in node_map:
+                node_map[pid]["children"].append(r_dict)
+            else:
+                roots.append(r_dict)
+
+        DictService._sort_tree(roots)
+        return roots
 
     @staticmethod
     async def get_cached_dicts() -> dict:

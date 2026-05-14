@@ -1,99 +1,135 @@
 from typing import Optional, List
-from sqlalchemy.orm import Session
 from fastapi import Request
-from .models import SysOrg
-from .params import OrgVO, OrgPageParam, OrgExportParam, OrgImportParam, GrantOrgRoleParam
+from .params import OrgVO, OrgPageParam, GrantOrgRoleParam, OrgTreeParam
 from .dao import OrgDao
-from core.pojo import IdParam, IdsParam
-from core.result import page_data
+from .models import SysOrg
+from core.pojo import IdsParam
+from core.result import page_data, PageDataField
+from core.enums import SoftDeleteEnum
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum
-from core.utils import export_excel, strip_system_fields, apply_update, make_template, generate_id
-from core.auth import HeiAuthTool
-import logging
-
-logger = logging.getLogger(__name__)
+from core.utils import apply_update
+from core.db.base_service import BaseCrudService
 
 
-class OrgService:
-    def __init__(self, db: Session):
-        self.dao = OrgDao(db)
-
-    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
-        try:
-            user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
-            return user_id
-        except Exception as e:
-            logger.warning(f"Failed to get current user: {e}")
-            return None
+class OrgService(BaseCrudService):
+    model_class = SysOrg
+    vo_class = OrgVO
+    dao_class = OrgDao
+    page_param_class = OrgPageParam
+    export_name = "组织数据"
 
     def page(self, param: OrgPageParam) -> dict:
-        result = self.dao.find_page(param.current, param.size)
+        result = self.dao.find_page_by_filters(param)
         return page_data(
-            records=[OrgVO.model_validate(r).model_dump() for r in result["records"]],
-            total=result["total"],
+            records=[OrgVO.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]],
+            total=result[PageDataField.TOTAL],
             page=param.current,
             size=param.size
         )
 
-    async def create(self, vo: OrgVO, request: Optional[Request] = None) -> None:
-        created_by = await self._get_current_user_id(request)
-        entity = SysOrg(**strip_system_fields(vo.model_dump()))
-        entity.created_by = created_by
-        self.dao.insert(entity)
+    def tree(self, param: OrgTreeParam) -> List[dict]:
+        records = self.dao.find_all_ordered()
+        if param.category:
+            records = [r for r in records if r.category == param.category]
+
+        node_map = {}
+        roots = []
+        for r in records:
+            r_dict = OrgVO.model_validate(r).model_dump()
+            r_dict["children"] = []
+            node_map[r.id] = r_dict
+
+        for r_dict in node_map.values():
+            pid = r_dict.get("parent_id")
+            if pid and pid in node_map:
+                node_map[pid]["children"].append(r_dict)
+            else:
+                roots.append(r_dict)
+
+        self._sort_tree(roots)
+        return roots
+
+    @staticmethod
+    def _sort_tree(nodes: List[dict]):
+        nodes.sort(key=lambda x: x.get("sort_code", 0) or 0)
+        for n in nodes:
+            children = n.get("children")
+            if children:
+                OrgService._sort_tree(children)
 
     async def modify(self, vo: OrgVO, request: Optional[Request] = None) -> None:
-        updated_by = await self._get_current_user_id(request)
         entity = self.dao.find_by_id(vo.id)
-
         if not entity:
             raise BusinessException("数据不存在")
-
+        if vo.parent_id is not None and vo.parent_id != entity.parent_id:
+            self._check_circular_parent(vo.id, vo.parent_id)
         update_data = vo.model_dump(exclude_unset=True)
         apply_update(entity, update_data)
+        self.dao.update(entity, user_id=await self._get_current_user_id(request))
 
-        entity.updated_by = updated_by
-        self.dao.update(entity)
+    def _check_circular_parent(self, entity_id: str, new_parent_id: Optional[str]) -> None:
+        if not new_parent_id:
+            return
+        all_records = self.dao.find_all()
+        parent_map = {r.id: r.parent_id for r in all_records}
+        current = new_parent_id
+        while current:
+            if current == entity_id:
+                raise BusinessException("父级不能选择自身或子节点")
+            current = parent_map.get(current)
+            if not current or current == "0":
+                break
+
+    def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
+        """递归收集所有子组织ID。"""
+        all_records = self.dao.find_all()
+        children_map: dict[str, list[str]] = {}
+        for r in all_records:
+            children_map.setdefault(r.parent_id or "0", []).append(r.id)
+
+        all_ids = set(ids)
+        stack = list(ids)
+        while stack:
+            parent_id = stack.pop()
+            for child_id in children_map.get(parent_id, []):
+                if child_id not in all_ids:
+                    all_ids.add(child_id)
+                    stack.append(child_id)
+        return list(all_ids)
 
     def remove(self, param: IdsParam) -> None:
-        self.dao.delete_by_ids(param.ids)
+        from sqlalchemy import func, select, delete as sa_delete, update as sa_update
+        from ..user.models import SysUser
+        from ..group.models import SysGroup
+        from ..position.models import SysPosition
+        from .models import RelOrgRole
 
-    def detail(self, param: IdParam) -> Optional[OrgVO]:
-        entity = self.dao.find_by_id(param.id)
-        return OrgVO.model_validate(entity) if entity else None
+        all_ids = self._collect_descendant_ids(param.ids)
+        db = self.dao.db
 
-    def export(self, param: OrgExportParam):
-        records: List[SysOrg] = []
+        if db.execute(
+            select(func.count()).select_from(SysUser).where(
+                SysUser.org_id.in_(all_ids), SysUser.is_deleted == SoftDeleteEnum.NO
+            )
+        ).scalar() > 0:
+            raise BusinessException("组织存在关联用户，无法删除")
 
-        if param.export_type == ExportTypeEnum.CURRENT.value:
-            result = self.dao.find_page(param.current or 1, param.size or 10)
-            records = result["records"]
-        elif param.export_type == ExportTypeEnum.SELECTED.value:
-            records = self.dao.find_by_ids(param.selected_id or [])
-        elif param.export_type == ExportTypeEnum.ALL.value:
-            records = self.dao.find_all()
-        else:
-            raise BusinessException("导出类型错误")
+        if db.execute(
+            select(func.count()).select_from(SysGroup).where(
+                SysGroup.org_id.in_(all_ids), SysGroup.is_deleted == SoftDeleteEnum.NO
+            )
+        ).scalar() > 0:
+            raise BusinessException("组织下存在用户组，无法删除")
 
-        data = [OrgVO.model_validate(r).model_dump() for r in records]
-        return export_excel(data, "组织数据", "组织数据")
+        db.execute(sa_delete(RelOrgRole).where(RelOrgRole.org_id.in_(all_ids)))
 
-    def download_template(self):
-        return export_excel(make_template(SysOrg), "组织导入模板", "组织数据")
+        db.execute(
+            sa_update(SysPosition).where(
+                SysPosition.org_id.in_(all_ids), SysPosition.is_deleted == SoftDeleteEnum.NO
+            ).values(org_id=None)
+        )
 
-    async def import_data(self, param: OrgImportParam, request: Optional[Request] = None) -> dict:
-        if not param.data:
-            raise BusinessException("导入数据不能为空")
-
-        created_by = await self._get_current_user_id(request)
-        entities = []
-        for vo in param.data:
-            entity = SysOrg(**strip_system_fields(vo.model_dump()))
-            entity.created_by = created_by
-            entities.append(entity)
-
-        self.dao.insert_batch(entities)
-        return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}
+        self.dao.delete_by_ids(all_ids)
 
     async def grant_roles(self, param: GrantOrgRoleParam, request: Optional[Request] = None) -> None:
         created_by = await self._get_current_user_id(request)

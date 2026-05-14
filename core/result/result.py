@@ -1,5 +1,7 @@
 from typing import Generic, TypeVar, Optional, List, Any, Dict
 from pydantic import BaseModel, Field
+from core.enums import PageDataField
+from core.utils.trace_utils import get_trace_id
 
 
 T = TypeVar('T')
@@ -10,7 +12,8 @@ def success(data: Optional[T] = None) -> Dict[str, Any]:
         "code": 200,
         "message": "请求成功",
         "data": data,
-        "success": True
+        "success": True,
+        "trace_id": get_trace_id()
     }
 
 
@@ -19,7 +22,8 @@ def failure(message: str = "请求参数格式错误", code: int = 400, data: Op
         "code": code,
         "message": message,
         "data": data,
-        "success": False
+        "success": False,
+        "trace_id": get_trace_id()
     }
 
 
@@ -28,6 +32,7 @@ class Result(BaseModel, Generic[T]):
     message: str = Field(default="请求成功", description="消息")
     data: Optional[T] = Field(default=None, description="数据")
     success: bool = Field(default=True, description="是否成功")
+    trace_id: str = Field(default="", description="跟踪ID", serialization_alias="trace_id")
 
 
 class PageData(BaseModel, Generic[T]):
@@ -41,9 +46,9 @@ class PageData(BaseModel, Generic[T]):
 def page_data(records: List[T], total: int, page: int, size: int) -> Dict[str, Any]:
     pages = (total + size - 1) // size if size > 0 else 0
     return {
-        "records": records,
-        "total": total,
-        "page": page,
-        "size": size,
-        "pages": pages
+        PageDataField.RECORDS: records,
+        PageDataField.TOTAL: total,
+        PageDataField.PAGE: page,
+        PageDataField.SIZE: size,
+        PageDataField.PAGES: pages
     }

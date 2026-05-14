@@ -1,7 +1,7 @@
 from typing import Optional
 import datetime
 
-from sqlalchemy import DateTime, Integer, text
+from sqlalchemy import DateTime, Integer
 from sqlalchemy.dialects.mysql import TEXT, VARCHAR
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -20,13 +20,13 @@ class SysNotice(Base):
     summary: Mapped[Optional[str]] = mapped_column(VARCHAR(500, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='通知摘要')
     content: Mapped[Optional[str]] = mapped_column(TEXT(charset='utf8mb4', collation='utf8mb4_general_ci'), comment='通知内容')
     cover: Mapped[Optional[str]] = mapped_column(VARCHAR(500, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='封面图片')
-    level: Mapped[Optional[str]] = mapped_column(VARCHAR(16, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'NORMAL'"), comment='通知级别')
-    view_count: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("'0'"), comment='浏览次数')
-    is_top: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'NO'"), comment='是否置顶')
+    level: Mapped[Optional[str]] = mapped_column(VARCHAR(16, charset='utf8mb4', collation='utf8mb4_general_ci'), default="NORMAL", comment='通知级别')
+    view_count: Mapped[Optional[int]] = mapped_column(Integer, default=0, comment='浏览次数')
+    is_top: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), default="NO", comment='是否置顶')
     position: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='通知位置')
-    status: Mapped[Optional[str]] = mapped_column(VARCHAR(16, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'ENABLED'"), comment='状态')
-    sort_code: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("'0'"), comment='排序')
-    is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), server_default=text("'NO'"), comment='逻辑删除')
+    status: Mapped[Optional[str]] = mapped_column(VARCHAR(16, charset='utf8mb4', collation='utf8mb4_general_ci'), default="ENABLED", comment='状态')
+    sort_code: Mapped[Optional[int]] = mapped_column(Integer, default=0, comment='排序')
+    is_deleted: Mapped[Optional[str]] = mapped_column(VARCHAR(8, charset='utf8mb4', collation='utf8mb4_general_ci'), default="NO", comment='逻辑删除')
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='创建时间')
     created_by: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='创建用户')
     updated_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, comment='更新时间')
