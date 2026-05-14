@@ -48,6 +48,7 @@ export const useAuthStore = defineStore('auth', {
         password: encryptedPwd,
         captcha_code: captchaCode,
         captcha_id: captchaId,
+        device_id: import.meta.env.VITE_DEVICE_ID,
       })
       if (!success) return false
       this.token = data.token

@@ -9,6 +9,7 @@ export function fetchLogin(data: {
   password: string
   captcha_code?: string
   captcha_id?: string
+  device_id?: string
 }) {
   return request.Post<Service.ResponseResult<{ token: string }>>('/api/v1/public/b/login', data)
 }

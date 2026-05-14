@@ -18,23 +18,30 @@
         </a-tag>
       </template>
       <template v-if="column.key === 'action'">
-        <a-popconfirm title="确定强制下线该用户？" @confirm="handleExit(record)">
-          <a-button type="link" size="small" danger>强退</a-button>
-        </a-popconfirm>
+        <a-space>
+          <a-button type="link" size="small" @click="handleTokenManage(record)">令牌</a-button>
+          <a-popconfirm title="确定强制下线该用户？" @confirm="handleExit(record)">
+            <a-button type="link" size="small" danger>强退</a-button>
+          </a-popconfirm>
+        </a-space>
       </template>
     </template>
   </AppTable>
+  <TokenDrawer ref="tokenDrawerRef" :open="drawerOpen" :fetch-api="fetchClientSessionTokens" :exit-token-api="fetchClientSessionTokenExit" :exit-all-api="fetchClientSessionExit" @update:open="drawerOpen = $event" @success="tableRef.value?.refresh(true)" />
 </template>
 
 <script setup lang="ts">
 defineOptions({ name: 'CSessionTab' })
 import { reactive, ref } from 'vue'
 import { message } from 'ant-design-vue'
-import { fetchClientSessionPage, fetchClientSessionExit } from '@/api/monitor'
+import { fetchClientSessionPage, fetchClientSessionExit, fetchClientSessionTokens, fetchClientSessionTokenExit } from '@/api/monitor'
 import AppTable from '@/components/table/AppTable.vue'
+import TokenDrawer from './components/TokenDrawer.vue'
 
 const searchForm = reactive({ keyword: '' })
 const tableRef = ref()
+const tokenDrawerRef = ref()
+const drawerOpen = ref(false)
 
 async function handleExit(record: any) {
   const { success } = await fetchClientSessionExit(record.user_id)
@@ -44,15 +51,21 @@ async function handleExit(record: any) {
   }
 }
 
+function handleTokenManage(record: any) {
+  tokenDrawerRef.value?.doOpen(record)
+  drawerOpen.value = true
+}
+
 const columns = [
   { title: '头像', key: 'avatar', width: 60 },
-  { title: '账号', dataIndex: 'account', key: 'account', width: 140 },
-  { title: '昵称', dataIndex: 'nickname', key: 'nickname', width: 140 },
-  { title: '状态', key: 'status', dataIndex: 'status', width: 80 },
-  { title: '登录IP', dataIndex: 'last_login_ip', key: 'last_login_ip', width: 140 },
-  { title: '登录地址', dataIndex: 'last_login_address', key: 'last_login_address', width: 140 },
-  { title: '登录时间', dataIndex: 'last_login_time', key: 'last_login_time', width: 170 },
-  { title: '会话时长', dataIndex: 'session_timeout', key: 'session_timeout', width: 130 },
-  { title: '操作', key: 'action', width: 80, fixed: 'right' },
+  { title: '账号', dataIndex: 'account', key: 'account', width: 120 },
+  { title: '昵称', dataIndex: 'nickname', key: 'nickname', width: 120 },
+  { title: '状态', key: 'status', dataIndex: 'status', width: 72 },
+  { title: '登录IP', dataIndex: 'last_login_ip', key: 'last_login_ip', width: 130 },
+  { title: '登录地址', dataIndex: 'last_login_address', key: 'last_login_address', width: 130 },
+  { title: '登录时间', dataIndex: 'last_login_time', key: 'last_login_time', width: 160 },
+  { title: '会话时长', dataIndex: 'session_timeout', key: 'session_timeout', width: 120 },
+  { title: '令牌数', dataIndex: 'token_count', key: 'token_count', width: 70 },
+  { title: '操作', key: 'action', width: 120, fixed: 'right' },
 ]
 </script>
