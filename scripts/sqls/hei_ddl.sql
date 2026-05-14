@@ -11,7 +11,7 @@
  Target Server Version : 90600 (9.6.0)
  File Encoding         : 65001
 
- Date: 14/05/2026 16:05:01
+ Date: 14/05/2026 18:58:47
 */
 
 SET NAMES utf8mb4;
@@ -36,7 +36,6 @@ CREATE TABLE `client_user`  (
   `last_login_at` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
   `last_login_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '最后登录IP',
   `login_count` int NULL DEFAULT 0 COMMENT '登录次数',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -48,8 +47,8 @@ CREATE TABLE `client_user`  (
 -- ----------------------------
 -- Records of client_user
 -- ----------------------------
-INSERT INTO `client_user` VALUES ('60001', 'test01', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户01', NULL, 'hello world', 'MALE', '1995-01-01', 'test01@example.com', NULL, 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `client_user` VALUES ('60002', 'test02', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户02', NULL, '你好世界', 'FEMALE', '1996-02-02', 'test02@example.com', NULL, 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `client_user` VALUES ('60001', 'test01', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户01', NULL, 'hello world', 'MALE', '1995-01-01', 'test01@example.com', NULL, 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `client_user` VALUES ('60002', 'test02', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '测试用户02', NULL, '你好世界', 'FEMALE', '1996-02-02', 'test02@example.com', NULL, 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
 -- ----------------------------
 -- Table structure for gen_basic
@@ -79,7 +78,6 @@ CREATE TABLE `gen_basic`  (
   `sub_function_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '子表功能名',
   `sub_bus_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '子表业务名',
   `sort_code` int NULL DEFAULT NULL COMMENT '排序',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -114,7 +112,6 @@ CREATE TABLE `gen_config`  (
   `query_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '查询方式',
   `table_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'MAIN' COMMENT '所属表类型（MAIN/SUB）',
   `sort_code` int NULL DEFAULT NULL COMMENT '排序',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1045,7 +1042,6 @@ CREATE TABLE `sys_banner`  (
   `sort_code` int NULL DEFAULT 0 COMMENT '排序',
   `view_count` int NULL DEFAULT 0 COMMENT '浏览次数',
   `click_count` int NULL DEFAULT 0 COMMENT '点击次数',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1056,9 +1052,9 @@ CREATE TABLE `sys_banner`  (
 -- ----------------------------
 -- Records of sys_banner
 -- ----------------------------
-INSERT INTO `sys_banner` VALUES ('110001', 'Hei FastAPI 宣传图', 'https://via.placeholder.com/1920x600/1890FF/FFFFFF?text=Hei+FastAPI', 'https://github.com', 'URL', 'Hei FastAPI 框架宣传图', '基于 FastAPI 的企业级后台开发框架', 'INDEX', 'IMAGE', 'INDEX_TOP', 1, 0, 0, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_banner` VALUES ('110002', '系统使用指南', 'https://via.placeholder.com/1920x600/52C41A/FFFFFF?text=使用指南', NULL, 'URL', '新系统使用指南', '快速上手新系统', 'INDEX', 'IMAGE', 'INDEX_TOP', 2, 0, 0, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_banner` VALUES ('110003', '开发团队招募', 'https://via.placeholder.com/1920x600/722ED1/FFFFFF?text=加入我们', NULL, 'URL', '诚聘前后端开发工程师', '如果您对技术充满热情，欢迎加入我们', 'INDEX', 'IMAGE', 'INDEX_TOP', 3, 0, 0, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_banner` VALUES ('110001', 'Hei FastAPI 宣传图', 'https://via.placeholder.com/1920x600/1890FF/FFFFFF?text=Hei+FastAPI', 'https://github.com', 'URL', 'Hei FastAPI 框架宣传图', '基于 FastAPI 的企业级后台开发框架', 'INDEX', 'IMAGE', 'INDEX_TOP', 1, 0, 0, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_banner` VALUES ('110002', '系统使用指南', 'https://via.placeholder.com/1920x600/52C41A/FFFFFF?text=使用指南', NULL, 'URL', '新系统使用指南', '快速上手新系统', 'INDEX', 'IMAGE', 'INDEX_TOP', 2, 0, 0, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_banner` VALUES ('110003', '开发团队招募', 'https://via.placeholder.com/1920x600/722ED1/FFFFFF?text=加入我们', NULL, 'URL', '诚聘前后端开发工程师', '如果您对技术充满热情，欢迎加入我们', 'INDEX', 'IMAGE', 'INDEX_TOP', 3, 0, 0, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 
 -- ----------------------------
 -- Table structure for sys_config
@@ -1071,8 +1067,7 @@ CREATE TABLE `sys_config`  (
   `category` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '分类',
   `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
   `sort_code` int NULL DEFAULT 0 COMMENT '排序码',
-  `ext_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
+  `extra` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '修改时间',
@@ -1083,18 +1078,18 @@ CREATE TABLE `sys_config`  (
 -- ----------------------------
 -- Records of sys_config
 -- ----------------------------
-INSERT INTO `sys_config` VALUES ('1', 'SYS_DEFAULT_FILE_ENGINE', 'LOCAL', 'SYS_BASE', '默认文件引擎', 1, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_config` VALUES ('10', 'SYS_JWT_TOKEN_EXPIRE', '86400', 'SYS_SECURITY', 'JWT Token 过期时间（秒）', 10, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_config` VALUES ('11', 'SYS_UPLOAD_MAX_SIZE', '10485760', 'SYS_FILE', '文件上传最大大小（字节）', 11, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_config` VALUES ('12', 'SYS_UPLOAD_ALLOWED_EXTENSIONS', 'jpg,jpeg,png,gif,bmp,doc,docx,xls,xlsx,pdf,txt,zip,rar', 'SYS_FILE', '允许上传的文件后缀', 12, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_config` VALUES ('2', 'SYS_FILE_LOCAL_FOLDER_FOR_WINDOWS', 'D:/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Windows)', 2, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_config` VALUES ('3', 'SYS_FILE_LOCAL_FOLDER_FOR_UNIX', '/data/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Unix)', 3, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_config` VALUES ('4', 'SYS_SNOWFLAKE_WORKER_ID', '1', 'SYS_BASE', 'Snowflake 工作节点ID', 4, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_config` VALUES ('5', 'SYS_SNOWFLAKE_DATACENTER_ID', '1', 'SYS_BASE', 'Snowflake 数据中心ID', 5, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_config` VALUES ('6', 'SYS_DEFAULT_PASSWORD', '123456', 'SYS_BASE', '默认密码（新增用户时使用）', 6, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_config` VALUES ('7', 'SYS_USER_INIT_PASSWORD', '123456', 'SYS_BASE', '用户初始密码', 7, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_config` VALUES ('8', 'SYS_MAX_LOGIN_RETRIES', '5', 'SYS_SECURITY', '最大登录失败次数', 8, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_config` VALUES ('9', 'SYS_LOGIN_LOCK_MINUTES', '30', 'SYS_SECURITY', '登录锁定时间（分钟）', 9, NULL, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('1', 'SYS_DEFAULT_FILE_ENGINE', 'LOCAL', 'SYS_BASE', '默认文件引擎', 1, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_config` VALUES ('10', 'SYS_JWT_TOKEN_EXPIRE', '86400', 'SYS_SECURITY', 'JWT Token 过期时间（秒）', 10, NULL, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('11', 'SYS_UPLOAD_MAX_SIZE', '10485760', 'SYS_FILE', '文件上传最大大小（字节）', 11, NULL, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('12', 'SYS_UPLOAD_ALLOWED_EXTENSIONS', 'jpg,jpeg,png,gif,bmp,doc,docx,xls,xlsx,pdf,txt,zip,rar', 'SYS_FILE', '允许上传的文件后缀', 12, NULL, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('2', 'SYS_FILE_LOCAL_FOLDER_FOR_WINDOWS', 'D:/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Windows)', 2, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_config` VALUES ('3', 'SYS_FILE_LOCAL_FOLDER_FOR_UNIX', '/data/hei-file-upload', 'FILE_LOCAL', '本地文件存储路径(Unix)', 3, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_config` VALUES ('4', 'SYS_SNOWFLAKE_WORKER_ID', '1', 'SYS_BASE', 'Snowflake 工作节点ID', 4, NULL, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('5', 'SYS_SNOWFLAKE_DATACENTER_ID', '1', 'SYS_BASE', 'Snowflake 数据中心ID', 5, NULL, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('6', 'SYS_DEFAULT_PASSWORD', '123456', 'SYS_BASE', '默认密码（新增用户时使用）', 6, NULL, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('7', 'SYS_USER_INIT_PASSWORD', '123456', 'SYS_BASE', '用户初始密码', 7, NULL, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('8', 'SYS_MAX_LOGIN_RETRIES', '5', 'SYS_SECURITY', '最大登录失败次数', 8, NULL, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_config` VALUES ('9', 'SYS_LOGIN_LOCK_MINUTES', '30', 'SYS_SECURITY', '登录锁定时间（分钟）', 9, NULL, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 
 -- ----------------------------
 -- Table structure for sys_dict
@@ -1110,7 +1105,6 @@ CREATE TABLE `sys_dict`  (
   `parent_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '父字典ID',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
   `sort_code` int NULL DEFAULT 0 COMMENT '排序',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1122,90 +1116,90 @@ CREATE TABLE `sys_dict`  (
 -- ----------------------------
 -- Records of sys_dict
 -- ----------------------------
-INSERT INTO `sys_dict` VALUES ('90001', 'GENDER', '性别', NULL, NULL, 'sys_base', NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90002', 'GENDER_MALE', '男', 'MALE', 'blue', 'sys_base', '90001', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90003', 'GENDER_FEMALE', '女', 'FEMALE', 'red', 'sys_base', '90001', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90004', 'NOTICE_CATEGORY', '通知分类', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90005', 'NOTICE_CATEGORY_PLATFORM', '平台通知', 'PLATFORM', NULL, 'sys_notice', '90004', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90006', 'NOTICE_CATEGORY_COMPANY', '公司通知', 'COMPANY', NULL, 'sys_notice', '90004', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90007', 'NOTICE_TYPE', '通知类型', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90008', 'NOTICE_TYPE_MAINTENANCE', '维护通知', 'MAINTENANCE', NULL, 'sys_notice', '90007', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90009', 'NOTICE_TYPE_SYSTEM_NOTICE', '系统通知', 'SYSTEM_NOTICE', NULL, 'sys_notice', '90007', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90010', 'NOTICE_TYPE_BUSINESS_NOTICE', '业务通知', 'BUSINESS_NOTICE', NULL, 'sys_notice', '90007', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90011', 'NOTICE_LEVEL', '通知级别', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90012', 'NOTICE_LEVEL_URGENT', '紧急', 'URGENT', 'red', 'sys_notice', '90011', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90013', 'NOTICE_LEVEL_IMPORTANT', '重要', 'IMPORTANT', 'orange', 'sys_notice', '90011', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90014', 'NOTICE_LEVEL_NORMAL', '普通', 'NORMAL', 'blue', 'sys_notice', '90011', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90015', 'NOTICE_POSITION', '通知位置', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90016', 'NOTICE_POSITION_TOP', '顶部通知', 'TOP', 'geekblue', 'sys_notice', '90015', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90017', 'NOTICE_POSITION_POPUP', '弹窗通知', 'POPUP', 'purple', 'sys_notice', '90015', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90018', 'ORG_CATEGORY', '组织类别', NULL, NULL, 'sys_org', NULL, 'ENABLED', 5, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90019', 'ORG_CATEGORY_GROUP', '集团', 'GROUP', NULL, 'sys_org', '90018', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90020', 'ORG_CATEGORY_DEPT', '部门', 'DEPT', NULL, 'sys_org', '90018', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90021', 'GROUP_CATEGORY', '用户组类别', NULL, NULL, 'sys_group', NULL, 'ENABLED', 6, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90022', 'GROUP_CATEGORY_ROLE', '角色组', 'ROLE', NULL, 'sys_group', '90021', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90023', 'GROUP_CATEGORY_DEPT', '部门组', 'DEPT', NULL, 'sys_group', '90021', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90024', 'GROUP_CATEGORY_PROJECT', '项目组', 'PROJECT', NULL, 'sys_group', '90021', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90025', 'POSITION_CATEGORY', '职位类别', NULL, NULL, 'sys_position', NULL, 'ENABLED', 7, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90026', 'POSITION_CATEGORY_MANAGEMENT', '管理', 'MANAGEMENT', NULL, 'sys_position', '90025', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90027', 'POSITION_CATEGORY_TECH', '技术', 'TECH', NULL, 'sys_position', '90025', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90028', 'POSITION_CATEGORY_OPERATIONS', '运营', 'OPERATIONS', NULL, 'sys_position', '90025', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90029', 'POSITION_CATEGORY_SALES', '销售', 'SALES', NULL, 'sys_position', '90025', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90030', 'POSITION_CATEGORY_OTHER', '其他', 'OTHER', NULL, 'sys_position', '90025', 'ENABLED', 5, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90033', 'ROLE_CATEGORY', '角色类别', NULL, NULL, 'sys_role', NULL, 'ENABLED', 8, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90034', 'ROLE_CATEGORY_BACKEND', '后台角色', 'BACKEND', NULL, 'sys_role', '90033', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90035', 'ROLE_CATEGORY_FRONTEND', '前台角色', 'FRONTEND', NULL, 'sys_role', '90033', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90036', 'RESOURCE_CATEGORY', '资源分类', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 9, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90037', 'RESOURCE_CATEGORY_BACKEND_MENU', '后台菜单', 'BACKEND_MENU', NULL, 'sys_resource', '90036', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90038', 'RESOURCE_CATEGORY_FRONTEND_MENU', '前台菜单', 'FRONTEND_MENU', NULL, 'sys_resource', '90036', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90039', 'RESOURCE_CATEGORY_BACKEND_BUTTON', '后台按钮', 'BACKEND_BUTTON', NULL, 'sys_resource', '90036', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90040', 'RESOURCE_CATEGORY_FRONTEND_BUTTON', '前台按钮', 'FRONTEND_BUTTON', NULL, 'sys_resource', '90036', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90041', 'RESOURCE_TYPE', '资源类型', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 10, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90042', 'RESOURCE_TYPE_DIRECTORY', '目录', 'DIRECTORY', NULL, 'sys_resource', '90041', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90043', 'RESOURCE_TYPE_MENU', '菜单', 'MENU', NULL, 'sys_resource', '90041', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90044', 'RESOURCE_TYPE_BUTTON', '按钮', 'BUTTON', NULL, 'sys_resource', '90041', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90045', 'RESOURCE_TYPE_INTERNAL_LINK', '内链', 'INTERNAL_LINK', NULL, 'sys_resource', '90041', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90046', 'RESOURCE_TYPE_EXTERNAL_LINK', '外链', 'EXTERNAL_LINK', NULL, 'sys_resource', '90041', 'ENABLED', 5, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90047', 'SYS_STATUS', '系统状态', NULL, NULL, 'sys_common', NULL, 'ENABLED', 11, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90048', 'SYS_STATUS_ENABLED', '启用', 'ENABLED', 'green', 'sys_common', '90047', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90049', 'SYS_STATUS_DISABLED', '禁用', 'DISABLED', 'red', 'sys_common', '90047', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90050', 'USER_STATUS', '用户状态', NULL, NULL, 'sys_common', NULL, 'ENABLED', 12, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90051', 'USER_STATUS_ACTIVE', '正常', 'ACTIVE', 'green', 'sys_common', '90050', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90052', 'USER_STATUS_INACTIVE', '停用', 'INACTIVE', 'orange', 'sys_common', '90050', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90053', 'USER_STATUS_LOCKED', '锁定', 'LOCKED', 'red', 'sys_common', '90050', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90054', 'SYS_YES_NO', '是否', NULL, NULL, 'sys_common', NULL, 'ENABLED', 13, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90055', 'SYS_YES_NO_YES', '是', 'YES', 'green', 'sys_common', '90054', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90056', 'SYS_YES_NO_NO', '否', 'NO', 'red', 'sys_common', '90054', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90057', 'ORG_CATEGORY_COMPANY', '公司', 'COMPANY', NULL, 'sys_org', '90018', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90058', 'ORG_CATEGORY_UNIT', '单位', 'UNIT', NULL, 'sys_org', '90018', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90059', 'GROUP_CATEGORY_OTHER', '其他', 'OTHER', NULL, 'sys_group', '90021', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90060', 'BANNER_CATEGORY', '横幅类别', NULL, NULL, 'sys_banner', NULL, 'ENABLED', 14, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90061', 'BANNER_CATEGORY_HOME', '首页', 'HOME', NULL, 'sys_banner', '90060', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90062', 'BANNER_CATEGORY_PAGE', '页面', 'PAGE', NULL, 'sys_banner', '90060', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90063', 'BANNER_CATEGORY_APP', '应用', 'APP', NULL, 'sys_banner', '90060', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90064', 'BANNER_TYPE', '横幅类型', NULL, NULL, 'sys_banner', NULL, 'ENABLED', 15, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90065', 'BANNER_TYPE_IMAGE', '图片', 'IMAGE', NULL, 'sys_banner', '90064', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90066', 'BANNER_TYPE_VIDEO', '视频', 'VIDEO', NULL, 'sys_banner', '90064', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90067', 'BANNER_TYPE_TEXT', '文字', 'TEXT', NULL, 'sys_banner', '90064', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90068', 'BANNER_POSITION', '横幅位置', NULL, NULL, 'sys_banner', NULL, 'ENABLED', 16, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90069', 'BANNER_POSITION_TOP', '顶部', 'TOP', NULL, 'sys_banner', '90068', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90070', 'BANNER_POSITION_CENTER', '中间', 'CENTER', NULL, 'sys_banner', '90068', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90071', 'BANNER_POSITION_BOTTOM', '底部', 'BOTTOM', NULL, 'sys_banner', '90068', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90072', 'BANNER_POSITION_SIDEBAR', '侧栏', 'SIDEBAR', NULL, 'sys_banner', '90068', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90073', 'LINK_TYPE', '链接类型', NULL, NULL, 'sys_common', NULL, 'ENABLED', 17, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90074', 'LINK_TYPE_NONE', '无', 'NONE', NULL, 'sys_common', '90073', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90075', 'LINK_TYPE_URL', '链接', 'URL', NULL, 'sys_common', '90073', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90076', 'LINK_TYPE_PAGE', '页面', 'PAGE', NULL, 'sys_common', '90073', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90077', 'LINK_TYPE_ARTICLE', '文章', 'ARTICLE', NULL, 'sys_common', '90073', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90078', 'FILE_ENGINE', '文件引擎', NULL, NULL, 'sys_file', NULL, 'ENABLED', 18, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90079', 'FILE_ENGINE_LOCAL', '本地', 'LOCAL', 'green', 'sys_file', '90078', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90080', 'FILE_ENGINE_MINIO', 'MinIO', 'MINIO', 'blue', 'sys_file', '90078', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90081', 'FILE_ENGINE_ALIYUN', '阿里云', 'ALIYUN', 'red', 'sys_file', '90078', 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90082', 'FILE_ENGINE_TENCENT', '腾讯云', 'TENCENT', 'blue', 'sys_file', '90078', 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90083', 'FILE_ENGINE_S3', 'S3', 'S3', 'purple', 'sys_file', '90078', 'ENABLED', 5, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90084', 'DICT_CATEGORY', '字典分类', NULL, NULL, 'sys_common', NULL, 'ENABLED', 19, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90085', 'DICT_CATEGORY_FRM', '系统字典', 'FRM', 'blue', 'sys_common', '90084', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_dict` VALUES ('90086', 'DICT_CATEGORY_BIZ', '业务字典', 'BIZ', 'green', 'sys_common', '90084', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90001', 'GENDER', '性别', NULL, NULL, 'sys_base', NULL, 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90002', 'GENDER_MALE', '男', 'MALE', 'blue', 'sys_base', '90001', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90003', 'GENDER_FEMALE', '女', 'FEMALE', 'red', 'sys_base', '90001', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90004', 'NOTICE_CATEGORY', '通知分类', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90005', 'NOTICE_CATEGORY_PLATFORM', '平台通知', 'PLATFORM', NULL, 'sys_notice', '90004', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90006', 'NOTICE_CATEGORY_COMPANY', '公司通知', 'COMPANY', NULL, 'sys_notice', '90004', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90007', 'NOTICE_TYPE', '通知类型', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90008', 'NOTICE_TYPE_MAINTENANCE', '维护通知', 'MAINTENANCE', NULL, 'sys_notice', '90007', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90009', 'NOTICE_TYPE_SYSTEM_NOTICE', '系统通知', 'SYSTEM_NOTICE', NULL, 'sys_notice', '90007', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90010', 'NOTICE_TYPE_BUSINESS_NOTICE', '业务通知', 'BUSINESS_NOTICE', NULL, 'sys_notice', '90007', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90011', 'NOTICE_LEVEL', '通知级别', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90012', 'NOTICE_LEVEL_URGENT', '紧急', 'URGENT', 'red', 'sys_notice', '90011', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90013', 'NOTICE_LEVEL_IMPORTANT', '重要', 'IMPORTANT', 'orange', 'sys_notice', '90011', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90014', 'NOTICE_LEVEL_NORMAL', '普通', 'NORMAL', 'blue', 'sys_notice', '90011', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90015', 'NOTICE_POSITION', '通知位置', NULL, NULL, 'sys_notice', NULL, 'ENABLED', 4, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90016', 'NOTICE_POSITION_TOP', '顶部通知', 'TOP', 'geekblue', 'sys_notice', '90015', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90017', 'NOTICE_POSITION_POPUP', '弹窗通知', 'POPUP', 'purple', 'sys_notice', '90015', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90018', 'ORG_CATEGORY', '组织类别', NULL, NULL, 'sys_org', NULL, 'ENABLED', 5, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90019', 'ORG_CATEGORY_GROUP', '集团', 'GROUP', NULL, 'sys_org', '90018', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90020', 'ORG_CATEGORY_DEPT', '部门', 'DEPT', NULL, 'sys_org', '90018', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90021', 'GROUP_CATEGORY', '用户组类别', NULL, NULL, 'sys_group', NULL, 'ENABLED', 6, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90022', 'GROUP_CATEGORY_ROLE', '角色组', 'ROLE', NULL, 'sys_group', '90021', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90023', 'GROUP_CATEGORY_DEPT', '部门组', 'DEPT', NULL, 'sys_group', '90021', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90024', 'GROUP_CATEGORY_PROJECT', '项目组', 'PROJECT', NULL, 'sys_group', '90021', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90025', 'POSITION_CATEGORY', '职位类别', NULL, NULL, 'sys_position', NULL, 'ENABLED', 7, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90026', 'POSITION_CATEGORY_MANAGEMENT', '管理', 'MANAGEMENT', NULL, 'sys_position', '90025', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90027', 'POSITION_CATEGORY_TECH', '技术', 'TECH', NULL, 'sys_position', '90025', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90028', 'POSITION_CATEGORY_OPERATIONS', '运营', 'OPERATIONS', NULL, 'sys_position', '90025', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90029', 'POSITION_CATEGORY_SALES', '销售', 'SALES', NULL, 'sys_position', '90025', 'ENABLED', 4, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90030', 'POSITION_CATEGORY_OTHER', '其他', 'OTHER', NULL, 'sys_position', '90025', 'ENABLED', 5, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90033', 'ROLE_CATEGORY', '角色类别', NULL, NULL, 'sys_role', NULL, 'ENABLED', 8, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90034', 'ROLE_CATEGORY_BACKEND', '后台角色', 'BACKEND', NULL, 'sys_role', '90033', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90035', 'ROLE_CATEGORY_FRONTEND', '前台角色', 'FRONTEND', NULL, 'sys_role', '90033', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90036', 'RESOURCE_CATEGORY', '资源分类', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 9, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90037', 'RESOURCE_CATEGORY_BACKEND_MENU', '后台菜单', 'BACKEND_MENU', NULL, 'sys_resource', '90036', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90038', 'RESOURCE_CATEGORY_FRONTEND_MENU', '前台菜单', 'FRONTEND_MENU', NULL, 'sys_resource', '90036', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90039', 'RESOURCE_CATEGORY_BACKEND_BUTTON', '后台按钮', 'BACKEND_BUTTON', NULL, 'sys_resource', '90036', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90040', 'RESOURCE_CATEGORY_FRONTEND_BUTTON', '前台按钮', 'FRONTEND_BUTTON', NULL, 'sys_resource', '90036', 'ENABLED', 4, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90041', 'RESOURCE_TYPE', '资源类型', NULL, NULL, 'sys_resource', NULL, 'ENABLED', 10, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90042', 'RESOURCE_TYPE_DIRECTORY', '目录', 'DIRECTORY', NULL, 'sys_resource', '90041', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90043', 'RESOURCE_TYPE_MENU', '菜单', 'MENU', NULL, 'sys_resource', '90041', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90044', 'RESOURCE_TYPE_BUTTON', '按钮', 'BUTTON', NULL, 'sys_resource', '90041', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90045', 'RESOURCE_TYPE_INTERNAL_LINK', '内链', 'INTERNAL_LINK', NULL, 'sys_resource', '90041', 'ENABLED', 4, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90046', 'RESOURCE_TYPE_EXTERNAL_LINK', '外链', 'EXTERNAL_LINK', NULL, 'sys_resource', '90041', 'ENABLED', 5, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90047', 'SYS_STATUS', '系统状态', NULL, NULL, 'sys_common', NULL, 'ENABLED', 11, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90048', 'SYS_STATUS_ENABLED', '启用', 'ENABLED', 'green', 'sys_common', '90047', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90049', 'SYS_STATUS_DISABLED', '禁用', 'DISABLED', 'red', 'sys_common', '90047', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90050', 'USER_STATUS', '用户状态', NULL, NULL, 'sys_common', NULL, 'ENABLED', 12, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90051', 'USER_STATUS_ACTIVE', '正常', 'ACTIVE', 'green', 'sys_common', '90050', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90052', 'USER_STATUS_INACTIVE', '停用', 'INACTIVE', 'orange', 'sys_common', '90050', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90053', 'USER_STATUS_LOCKED', '锁定', 'LOCKED', 'red', 'sys_common', '90050', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90054', 'SYS_YES_NO', '是否', NULL, NULL, 'sys_common', NULL, 'ENABLED', 13, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90055', 'SYS_YES_NO_YES', '是', 'YES', 'green', 'sys_common', '90054', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90056', 'SYS_YES_NO_NO', '否', 'NO', 'red', 'sys_common', '90054', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90057', 'ORG_CATEGORY_COMPANY', '公司', 'COMPANY', NULL, 'sys_org', '90018', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90058', 'ORG_CATEGORY_UNIT', '单位', 'UNIT', NULL, 'sys_org', '90018', 'ENABLED', 4, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90059', 'GROUP_CATEGORY_OTHER', '其他', 'OTHER', NULL, 'sys_group', '90021', 'ENABLED', 4, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90060', 'BANNER_CATEGORY', '横幅类别', NULL, NULL, 'sys_banner', NULL, 'ENABLED', 14, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90061', 'BANNER_CATEGORY_HOME', '首页', 'HOME', NULL, 'sys_banner', '90060', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90062', 'BANNER_CATEGORY_PAGE', '页面', 'PAGE', NULL, 'sys_banner', '90060', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90063', 'BANNER_CATEGORY_APP', '应用', 'APP', NULL, 'sys_banner', '90060', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90064', 'BANNER_TYPE', '横幅类型', NULL, NULL, 'sys_banner', NULL, 'ENABLED', 15, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90065', 'BANNER_TYPE_IMAGE', '图片', 'IMAGE', NULL, 'sys_banner', '90064', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90066', 'BANNER_TYPE_VIDEO', '视频', 'VIDEO', NULL, 'sys_banner', '90064', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90067', 'BANNER_TYPE_TEXT', '文字', 'TEXT', NULL, 'sys_banner', '90064', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90068', 'BANNER_POSITION', '横幅位置', NULL, NULL, 'sys_banner', NULL, 'ENABLED', 16, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90069', 'BANNER_POSITION_TOP', '顶部', 'TOP', NULL, 'sys_banner', '90068', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90070', 'BANNER_POSITION_CENTER', '中间', 'CENTER', NULL, 'sys_banner', '90068', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90071', 'BANNER_POSITION_BOTTOM', '底部', 'BOTTOM', NULL, 'sys_banner', '90068', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90072', 'BANNER_POSITION_SIDEBAR', '侧栏', 'SIDEBAR', NULL, 'sys_banner', '90068', 'ENABLED', 4, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90073', 'LINK_TYPE', '链接类型', NULL, NULL, 'sys_common', NULL, 'ENABLED', 17, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90074', 'LINK_TYPE_NONE', '无', 'NONE', NULL, 'sys_common', '90073', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90075', 'LINK_TYPE_URL', '链接', 'URL', NULL, 'sys_common', '90073', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90076', 'LINK_TYPE_PAGE', '页面', 'PAGE', NULL, 'sys_common', '90073', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90077', 'LINK_TYPE_ARTICLE', '文章', 'ARTICLE', NULL, 'sys_common', '90073', 'ENABLED', 4, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90078', 'FILE_ENGINE', '文件引擎', NULL, NULL, 'sys_file', NULL, 'ENABLED', 18, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90079', 'FILE_ENGINE_LOCAL', '本地', 'LOCAL', 'green', 'sys_file', '90078', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90080', 'FILE_ENGINE_MINIO', 'MinIO', 'MINIO', 'blue', 'sys_file', '90078', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90081', 'FILE_ENGINE_ALIYUN', '阿里云', 'ALIYUN', 'red', 'sys_file', '90078', 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90082', 'FILE_ENGINE_TENCENT', '腾讯云', 'TENCENT', 'blue', 'sys_file', '90078', 'ENABLED', 4, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90083', 'FILE_ENGINE_S3', 'S3', 'S3', 'purple', 'sys_file', '90078', 'ENABLED', 5, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90084', 'DICT_CATEGORY', '字典分类', NULL, NULL, 'sys_common', NULL, 'ENABLED', 19, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90085', 'DICT_CATEGORY_FRM', '系统字典', 'FRM', 'blue', 'sys_common', '90084', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_dict` VALUES ('90086', 'DICT_CATEGORY_BIZ', '业务字典', 'BIZ', 'green', 'sys_common', '90084', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 
 -- ----------------------------
 -- Table structure for sys_file
@@ -1226,7 +1220,6 @@ CREATE TABLE `sys_file`  (
   `is_download_auth` tinyint(1) NULL DEFAULT NULL COMMENT '文件下载是否需要授权',
   `thumbnail` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '图片缩略图',
   `extra` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '修改时间',
@@ -1253,7 +1246,6 @@ CREATE TABLE `sys_group`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
   `sort_code` int NULL DEFAULT 0 COMMENT '排序',
   `extra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1265,11 +1257,11 @@ CREATE TABLE `sys_group`  (
 -- ----------------------------
 -- Records of sys_group
 -- ----------------------------
-INSERT INTO `sys_group` VALUES ('30001', 'ADMIN_GRP', '管理组', 'ADMIN', NULL, '10001', '系统管理组', 'ENABLED', 1, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_group` VALUES ('30002', 'DEV_GRP', '研发组', 'TECH', NULL, '10002', '技术研发组', 'ENABLED', 2, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_group` VALUES ('30003', 'TEST_GRP', '测试组', 'TECH', NULL, '10002', '软件测试组', 'ENABLED', 3, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_group` VALUES ('30004', 'PROD_GRP', '产品组', 'MKT', NULL, '10003', '产品设计组', 'ENABLED', 4, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_group` VALUES ('30005', 'MKT_GRP', '市场组', 'MKT', NULL, '10003', '市场推广组', 'ENABLED', 5, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_group` VALUES ('30001', 'ADMIN_GRP', '管理组', 'ADMIN', NULL, '10001', '系统管理组', 'ENABLED', 1, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_group` VALUES ('30002', 'DEV_GRP', '研发组', 'TECH', NULL, '10002', '技术研发组', 'ENABLED', 2, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_group` VALUES ('30003', 'TEST_GRP', '测试组', 'TECH', NULL, '10002', '软件测试组', 'ENABLED', 3, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_group` VALUES ('30004', 'PROD_GRP', '产品组', 'MKT', NULL, '10003', '产品设计组', 'ENABLED', 4, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_group` VALUES ('30005', 'MKT_GRP', '市场组', 'MKT', NULL, '10003', '市场推广组', 'ENABLED', 5, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
 -- ----------------------------
 -- Table structure for sys_log
@@ -1295,7 +1287,6 @@ CREATE TABLE `sys_log`  (
   `trace_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '跟踪ID',
   `op_user` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作人姓名',
   `sign_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '签名数据',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1306,12 +1297,12 @@ CREATE TABLE `sys_log`  (
 -- ----------------------------
 -- Records of sys_log
 -- ----------------------------
-INSERT INTO `sys_log` VALUES ('7460574111438213120', 'OPERATE', '编辑资源', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.resource.api.v1.api', 'resource_modify', 'POST', 'http://localhost:18885/api/v1/sys/resource/modify', '{\"vo\": \"id=\'80109\' code=\'SYS_LOG\' name=\'系统日志\' category=\'BACKEND_MENU\' type=\'DIRECTORY\' description=\'系统日志目录\' parent_id=\'0\' route_path=\'/sys/log\' component_path=None redirect_path=None icon=\'file-text\' color=None is_visible=\'YES\' is_cache=\'NO\' is_affix=\'NO\' is_breadcrumb=\'YES\' external_url=\'\' extra=None status=\'ENABLED\' sort_code=2 is_deleted=\'NO\' created_at=datetime.datetime(2026, 5, 14, 14, 55, 52) created_by=\'50001\' updated_at=datetime.datetime(2026, 5, 14, 8, 3, 25) updated_by=\'50001\'\"}', '{\"code\": 200, \"message\": \"请求成功\", \"data\": null, \"success\": true, \"trace_id\": \"df11249c5cd945788020ab26537e4ec8\"}', '2026-05-14 14:17:59', 'df11249c5cd945788020ab26537e4ec8', 'admin', '445077c3a6b814d61b2d98d0b1c4ac56949bdb7b68e61dd6c11f97249eb0b433', 'NO', '2026-05-14 14:17:59', NULL, '2026-05-14 14:17:59', NULL);
-INSERT INTO `sys_log` VALUES ('7460574398982918144', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 14:19:07', '2293dac2ab29494e938211701f27e0a8', 'admin', '65fb178023eb59fe90264872cf8489662df3db3784c8f1e0a250e054f59e46f3', 'NO', '2026-05-14 14:19:07', NULL, '2026-05-14 14:19:07', NULL);
-INSERT INTO `sys_log` VALUES ('7460574547729715200', 'LOGOUT', '登出', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/b/logout', '', NULL, '2026-05-14 14:19:43', '35ceae09d7fc47fa9a5c46d56d77591f', 'admin', 'd218c751edac72ac037f719b44aad00e8d43f5d154d56177aa0a5e2bc5e3dd45', 'NO', '2026-05-14 14:19:43', NULL, '2026-05-14 14:19:43', NULL);
-INSERT INTO `sys_log` VALUES ('7460574569590427648', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 14:19:48', '15250291691d40b78d03cf861d03c764', 'admin', '641c6d86fd08f5b1366a0e7c467e2b04e17ea827ef74be536362e068cfa458d6', 'NO', '2026-05-14 14:19:48', NULL, '2026-05-14 14:19:48', NULL);
-INSERT INTO `sys_log` VALUES ('7460597976516268032', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 15:52:49', 'c48b577c89584664a28bf3e254d3b6df', 'admin', '8df85e7d99a8d00b9b5cb772872acf86a379a54abc4cc585f70b759c0d23f0b3', 'NO', '2026-05-14 15:52:49', NULL, '2026-05-14 15:52:49', NULL);
-INSERT INTO `sys_log` VALUES ('7460600988466941952', 'OPERATE', '编辑资源', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.resource.api.v1.api', 'resource_modify', 'POST', 'http://localhost:18885/api/v1/sys/resource/modify', '{\"vo\": \"id=\'80003\' code=\'DEV_TOOLS\' name=\'系统工具\' category=\'BACKEND_MENU\' type=\'DIRECTORY\' description=\'系统工具目录\' parent_id=None route_path=\'/dev\' component_path=None redirect_path=None icon=\'tool\' color=None is_visible=\'NO\' is_cache=\'NO\' is_affix=\'NO\' is_breadcrumb=\'YES\' external_url=None extra=None status=\'ENABLED\' sort_code=3 is_deleted=\'NO\' created_at=datetime.datetime(2026, 5, 12, 14, 55, 52) created_by=\'50001\' updated_at=datetime.datetime(2026, 5, 14, 7, 42, 53) updated_by=\'50001\'\"}', '{\"code\": 200, \"message\": \"请求成功\", \"data\": null, \"success\": true, \"trace_id\": \"492c2289c61f4fc78e09026bdd3e5f33\"}', '2026-05-14 16:04:47', '492c2289c61f4fc78e09026bdd3e5f33', 'admin', 'a8497db53535c7ed74c3a9a389de56bb4f37895427e4cc7f8afe60ea88116b8a', 'NO', '2026-05-14 16:04:47', NULL, '2026-05-14 16:04:47', NULL);
+INSERT INTO `sys_log` VALUES ('7460574111438213120', 'OPERATE', '编辑资源', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.resource.api.v1.api', 'resource_modify', 'POST', 'http://localhost:18885/api/v1/sys/resource/modify', '{\"vo\": \"id=\'80109\' code=\'SYS_LOG\' name=\'系统日志\' category=\'BACKEND_MENU\' type=\'DIRECTORY\' description=\'系统日志目录\' parent_id=\'0\' route_path=\'/sys/log\' component_path=None redirect_path=None icon=\'file-text\' color=None is_visible=\'YES\' is_cache=\'NO\' is_affix=\'NO\' is_breadcrumb=\'YES\' external_url=\'\' extra=None status=\'ENABLED\' sort_code=2 is_deleted=\'NO\' created_at=datetime.datetime(2026, 5, 14, 14, 55, 52) created_by=\'50001\' updated_at=datetime.datetime(2026, 5, 14, 8, 3, 25) updated_by=\'50001\'\"}', '{\"code\": 200, \"message\": \"请求成功\", \"data\": null, \"success\": true, \"trace_id\": \"df11249c5cd945788020ab26537e4ec8\"}', '2026-05-14 14:17:59', 'df11249c5cd945788020ab26537e4ec8', 'admin', '445077c3a6b814d61b2d98d0b1c4ac56949bdb7b68e61dd6c11f97249eb0b433', '2026-05-14 14:17:59', NULL, '2026-05-14 14:17:59', NULL);
+INSERT INTO `sys_log` VALUES ('7460574398982918144', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 14:19:07', '2293dac2ab29494e938211701f27e0a8', 'admin', '65fb178023eb59fe90264872cf8489662df3db3784c8f1e0a250e054f59e46f3', '2026-05-14 14:19:07', NULL, '2026-05-14 14:19:07', NULL);
+INSERT INTO `sys_log` VALUES ('7460574547729715200', 'LOGOUT', '登出', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/b/logout', '', NULL, '2026-05-14 14:19:43', '35ceae09d7fc47fa9a5c46d56d77591f', 'admin', 'd218c751edac72ac037f719b44aad00e8d43f5d154d56177aa0a5e2bc5e3dd45', '2026-05-14 14:19:43', NULL, '2026-05-14 14:19:43', NULL);
+INSERT INTO `sys_log` VALUES ('7460574569590427648', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 14:19:48', '15250291691d40b78d03cf861d03c764', 'admin', '641c6d86fd08f5b1366a0e7c467e2b04e17ea827ef74be536362e068cfa458d6', '2026-05-14 14:19:48', NULL, '2026-05-14 14:19:48', NULL);
+INSERT INTO `sys_log` VALUES ('7460597976516268032', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 15:52:49', 'c48b577c89584664a28bf3e254d3b6df', 'admin', '8df85e7d99a8d00b9b5cb772872acf86a379a54abc4cc585f70b759c0d23f0b3', '2026-05-14 15:52:49', NULL, '2026-05-14 15:52:49', NULL);
+INSERT INTO `sys_log` VALUES ('7460600988466941952', 'OPERATE', '编辑资源', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.resource.api.v1.api', 'resource_modify', 'POST', 'http://localhost:18885/api/v1/sys/resource/modify', '{\"vo\": \"id=\'80003\' code=\'DEV_TOOLS\' name=\'系统工具\' category=\'BACKEND_MENU\' type=\'DIRECTORY\' description=\'系统工具目录\' parent_id=None route_path=\'/dev\' component_path=None redirect_path=None icon=\'tool\' color=None is_visible=\'NO\' is_cache=\'NO\' is_affix=\'NO\' is_breadcrumb=\'YES\' external_url=None extra=None status=\'ENABLED\' sort_code=3 is_deleted=\'NO\' created_at=datetime.datetime(2026, 5, 12, 14, 55, 52) created_by=\'50001\' updated_at=datetime.datetime(2026, 5, 14, 7, 42, 53) updated_by=\'50001\'\"}', '{\"code\": 200, \"message\": \"请求成功\", \"data\": null, \"success\": true, \"trace_id\": \"492c2289c61f4fc78e09026bdd3e5f33\"}', '2026-05-14 16:04:47', '492c2289c61f4fc78e09026bdd3e5f33', 'admin', 'a8497db53535c7ed74c3a9a389de56bb4f37895427e4cc7f8afe60ea88116b8a', '2026-05-14 16:04:47', NULL, '2026-05-14 16:04:47', NULL);
 
 -- ----------------------------
 -- Table structure for sys_module
@@ -1328,7 +1319,6 @@ CREATE TABLE `sys_module`  (
   `is_visible` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'YES' COMMENT '是否可见',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
   `sort_code` int NULL DEFAULT 0 COMMENT '排序',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1340,11 +1330,11 @@ CREATE TABLE `sys_module`  (
 -- ----------------------------
 -- Records of sys_module
 -- ----------------------------
-INSERT INTO `sys_module` VALUES ('70001', 'SYS', '系统管理', 'BACKEND_MENU', 'setting', '#1890FF', '系统管理模块', 'YES', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_module` VALUES ('70002', 'CONTENT', '内容管理', 'BACKEND_MENU', 'file-text', '#52C41A', '内容管理模块', 'YES', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_module` VALUES ('70003', 'DEV', '系统工具', 'BACKEND_MENU', 'tool', '#722ED1', '系统工具模块', 'YES', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_module` VALUES ('70004', 'MONITOR', '系统监控', 'BACKEND_MENU', 'dashboard', '#FAAD14', '系统监控模块', 'YES', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_module` VALUES ('70005', 'IM', '即时通讯', 'BACKEND_MENU', 'message', '#FF4D4F', '即时通讯模块', 'YES', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_module` VALUES ('70001', 'SYS', '系统管理', 'BACKEND_MENU', 'setting', '#1890FF', '系统管理模块', 'YES', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_module` VALUES ('70002', 'CONTENT', '内容管理', 'BACKEND_MENU', 'file-text', '#52C41A', '内容管理模块', 'YES', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_module` VALUES ('70003', 'DEV', '系统工具', 'BACKEND_MENU', 'tool', '#722ED1', '系统工具模块', 'YES', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_module` VALUES ('70004', 'MONITOR', '系统监控', 'BACKEND_MENU', 'dashboard', '#FAAD14', '系统监控模块', 'YES', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_module` VALUES ('70005', 'IM', '即时通讯', 'BACKEND_MENU', 'message', '#FF4D4F', '即时通讯模块', 'YES', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -1364,7 +1354,6 @@ CREATE TABLE `sys_notice`  (
   `position` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '通知位置',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
   `sort_code` int NULL DEFAULT 0 COMMENT '排序',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1377,10 +1366,10 @@ CREATE TABLE `sys_notice`  (
 -- ----------------------------
 -- Records of sys_notice
 -- ----------------------------
-INSERT INTO `sys_notice` VALUES ('100001', '系统升级维护通知', '系统将于本周六凌晨2:00-6:00进行升级维护', '<h1>系统升级维护</h1><p>为了提供更好的服务，系统将于本周六凌晨2:00-6:00进行升级维护，期间部分功能可能无法正常使用。</p>', NULL, 'PLATFORM', 'MAINTENANCE', 'IMPORTANT', 0, 'YES', 'TOP', 'ENABLED', 1, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_notice` VALUES ('100002', '欢迎使用 Hei FastAPI 系统', '欢迎各位同事使用全新开发的后台管理系统', '<p>Hei FastAPI 是一套基于 FastAPI + SQLAlchemy 2.0 的后台管理系统，欢迎大家体验并提供宝贵意见。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', 'TOP', 'ENABLED', 2, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_notice` VALUES ('100003', '第三季度工作总结会议通知', '请各部门负责人准备第三季度工作总结报告', '<p>公司将于下周五召开第三季度工作总结会议，请各部门负责人准备相关材料。</p>', NULL, 'COMPANY', 'BUSINESS_NOTICE', 'IMPORTANT', 0, 'NO', NULL, 'ENABLED', 3, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
-INSERT INTO `sys_notice` VALUES ('100004', '关于启用新系统的通知', '即日起正式启用全新后台管理系统', '<p>经过开发团队的不懈努力，全新后台管理系统已于今日正式上线，旧系统将并行运行一个月后下线。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', NULL, 'ENABLED', 4, 'NO', '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_notice` VALUES ('100001', '系统升级维护通知', '系统将于本周六凌晨2:00-6:00进行升级维护', '<h1>系统升级维护</h1><p>为了提供更好的服务，系统将于本周六凌晨2:00-6:00进行升级维护，期间部分功能可能无法正常使用。</p>', NULL, 'PLATFORM', 'MAINTENANCE', 'IMPORTANT', 0, 'YES', 'TOP', 'ENABLED', 1, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_notice` VALUES ('100002', '欢迎使用 Hei FastAPI 系统', '欢迎各位同事使用全新开发的后台管理系统', '<p>Hei FastAPI 是一套基于 FastAPI + SQLAlchemy 2.0 的后台管理系统，欢迎大家体验并提供宝贵意见。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', 'TOP', 'ENABLED', 2, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_notice` VALUES ('100003', '第三季度工作总结会议通知', '请各部门负责人准备第三季度工作总结报告', '<p>公司将于下周五召开第三季度工作总结会议，请各部门负责人准备相关材料。</p>', NULL, 'COMPANY', 'BUSINESS_NOTICE', 'IMPORTANT', 0, 'NO', NULL, 'ENABLED', 3, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
+INSERT INTO `sys_notice` VALUES ('100004', '关于启用新系统的通知', '即日起正式启用全新后台管理系统', '<p>经过开发团队的不懈努力，全新后台管理系统已于今日正式上线，旧系统将并行运行一个月后下线。</p>', NULL, 'PLATFORM', 'SYSTEM_NOTICE', 'NORMAL', 0, 'NO', NULL, 'ENABLED', 4, '2026-05-12 14:55:53', '50001', '2026-05-12 14:55:53', '50001');
 
 -- ----------------------------
 -- Table structure for sys_org
@@ -1396,7 +1385,6 @@ CREATE TABLE `sys_org`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
   `sort_code` int NULL DEFAULT 0 COMMENT '排序',
   `extra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1409,13 +1397,13 @@ CREATE TABLE `sys_org`  (
 -- ----------------------------
 -- Records of sys_org
 -- ----------------------------
-INSERT INTO `sys_org` VALUES ('10001', 'HEI', 'Hei集团', 'GROUP', NULL, '集团总部', 'ENABLED', 1, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_org` VALUES ('10002', 'TECH', '技术部', 'DEPT', '10001', '技术研发部门', 'ENABLED', 2, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_org` VALUES ('10003', 'MKT', '市场部', 'DEPT', '10001', '市场营销部门', 'ENABLED', 3, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_org` VALUES ('10004', 'FIN', '财务部', 'DEPT', '10001', '财务管理部门', 'ENABLED', 4, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_org` VALUES ('10005', 'HR', '人力资源部', 'DEPT', '10001', '人力资源管理部门', 'ENABLED', 5, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_org` VALUES ('10006', 'SALES', '销售部', 'DEPT', '10001', '销售部门', 'ENABLED', 6, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_org` VALUES ('10007', 'OPS', '运维部', 'DEPT', '10001', '运维管理部门', 'ENABLED', 7, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10001', 'HEI', 'Hei集团', 'GROUP', NULL, '集团总部', 'ENABLED', 1, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10002', 'TECH', '技术部', 'DEPT', '10001', '技术研发部门', 'ENABLED', 2, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10003', 'MKT', '市场部', 'DEPT', '10001', '市场营销部门', 'ENABLED', 3, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10004', 'FIN', '财务部', 'DEPT', '10001', '财务管理部门', 'ENABLED', 4, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10005', 'HR', '人力资源部', 'DEPT', '10001', '人力资源管理部门', 'ENABLED', 5, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10006', 'SALES', '销售部', 'DEPT', '10001', '销售部门', 'ENABLED', 6, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_org` VALUES ('10007', 'OPS', '运维部', 'DEPT', '10001', '运维管理部门', 'ENABLED', 7, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
 -- ----------------------------
 -- Table structure for sys_position
@@ -1432,7 +1420,6 @@ CREATE TABLE `sys_position`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
   `sort_code` int NULL DEFAULT 0 COMMENT '排序',
   `extra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1444,17 +1431,17 @@ CREATE TABLE `sys_position`  (
 -- ----------------------------
 -- Records of sys_position
 -- ----------------------------
-INSERT INTO `sys_position` VALUES ('20001', 'CEO', '总经理', 'MGMT', '10001', NULL, '公司总经理', 'ENABLED', 1, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_position` VALUES ('20002', 'CTO', '技术总监', 'TECH', '10002', NULL, '技术部门总监', 'ENABLED', 2, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_position` VALUES ('20003', 'DEV_LEAD', '开发组长', 'TECH', '10002', NULL, '开发团队组长', 'ENABLED', 3, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_position` VALUES ('20004', 'DEV', '开发工程师', 'TECH', '10002', NULL, '软件开发工程师', 'ENABLED', 4, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_position` VALUES ('20005', 'TEST', '测试工程师', 'TECH', '10002', NULL, '软件测试工程师', 'ENABLED', 5, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_position` VALUES ('20006', 'PM', '产品经理', 'MKT', '10003', NULL, '产品经理', 'ENABLED', 6, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_position` VALUES ('20007', 'MKT_DIR', '市场总监', 'MKT', '10003', NULL, '市场部总监', 'ENABLED', 7, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_position` VALUES ('20008', 'FIN_DIR', '财务总监', 'FIN', '10004', NULL, '财务部总监', 'ENABLED', 8, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_position` VALUES ('20009', 'HR_DIR', '人力资源总监', 'HR', '10005', NULL, '人力资源部总监', 'ENABLED', 9, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_position` VALUES ('20010', 'SALES', '销售专员', 'SALES', '10006', NULL, '销售专员', 'ENABLED', 10, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_position` VALUES ('20011', 'OPS', '运维工程师', 'OPS', '10007', NULL, '运维工程师', 'ENABLED', 11, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20001', 'CEO', '总经理', 'MGMT', '10001', NULL, '公司总经理', 'ENABLED', 1, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20002', 'CTO', '技术总监', 'TECH', '10002', NULL, '技术部门总监', 'ENABLED', 2, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20003', 'DEV_LEAD', '开发组长', 'TECH', '10002', NULL, '开发团队组长', 'ENABLED', 3, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20004', 'DEV', '开发工程师', 'TECH', '10002', NULL, '软件开发工程师', 'ENABLED', 4, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20005', 'TEST', '测试工程师', 'TECH', '10002', NULL, '软件测试工程师', 'ENABLED', 5, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20006', 'PM', '产品经理', 'MKT', '10003', NULL, '产品经理', 'ENABLED', 6, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20007', 'MKT_DIR', '市场总监', 'MKT', '10003', NULL, '市场部总监', 'ENABLED', 7, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20008', 'FIN_DIR', '财务总监', 'FIN', '10004', NULL, '财务部总监', 'ENABLED', 8, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20009', 'HR_DIR', '人力资源总监', 'HR', '10005', NULL, '人力资源部总监', 'ENABLED', 9, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20010', 'SALES', '销售专员', 'SALES', '10006', NULL, '销售专员', 'ENABLED', 10, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_position` VALUES ('20011', 'OPS', '运维工程师', 'OPS', '10007', NULL, '运维工程师', 'ENABLED', 11, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
 -- ----------------------------
 -- Table structure for sys_quick_action
@@ -1465,7 +1452,6 @@ CREATE TABLE `sys_quick_action`  (
   `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
   `resource_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '资源ID',
   `sort_code` int NULL DEFAULT 0 COMMENT '排序',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1503,7 +1489,6 @@ CREATE TABLE `sys_resource`  (
   `extra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
   `sort_code` int NULL DEFAULT 0 COMMENT '排序',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1515,136 +1500,136 @@ CREATE TABLE `sys_resource`  (
 -- ----------------------------
 -- Records of sys_resource
 -- ----------------------------
-INSERT INTO `sys_resource` VALUES ('80001', 'SYS_ADMIN', '系统管理', 'BACKEND_MENU', 'DIRECTORY', '系统管理目录', NULL, '/sys', NULL, NULL, 'setting', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80002', 'CONTENT_MGR', '内容管理', 'BACKEND_MENU', 'DIRECTORY', '内容管理目录', NULL, '/content', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80003', 'DEV_TOOLS', '系统工具', 'BACKEND_MENU', 'DIRECTORY', '系统工具目录', NULL, '/dev', NULL, NULL, 'tool', NULL, 'NO', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 16:04:47', '50001');
-INSERT INTO `sys_resource` VALUES ('80004', 'SYS_USER', '用户管理', 'BACKEND_MENU', 'MENU', '用户管理菜单', '80001', '/sys/user', 'sys/user/index', NULL, 'user', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80005', 'SYS_ROLE', '角色管理', 'BACKEND_MENU', 'MENU', '角色管理菜单', '80001', '/sys/role', 'sys/role/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80006', 'SYS_RESOURCE_MGR', '资源管理', 'BACKEND_MENU', 'MENU', '资源管理菜单', '80001', '/sys/resource', 'sys/resource/index', NULL, 'menu', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80007', 'SYS_ORG', '组织管理', 'BACKEND_MENU', 'MENU', '组织管理菜单', '80001', '/sys/org', 'sys/org/index', NULL, 'apartment', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80008', 'SYS_POSITION', '职位管理', 'BACKEND_MENU', 'MENU', '职位管理菜单', '80001', '/sys/org/group/position', 'sys/org/components/group/components/position/index', NULL, 'idcard', NULL, 'NO', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80009', 'SYS_GROUP', '用户组管理', 'BACKEND_MENU', 'MENU', '用户组管理菜单', '80001', '/sys/org/group', 'sys/org/components/group/index', NULL, 'group', NULL, 'NO', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 7, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80010', 'SYS_DICT', '字典管理', 'BACKEND_MENU', 'MENU', '字典管理菜单', '80001', '/sys/dict', 'sys/dict/index', NULL, 'book', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 8, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80011', 'SYS_CONFIG', '系统配置', 'BACKEND_MENU', 'MENU', '系统配置菜单', '80001', '/sys/config', 'sys/config/index', NULL, 'setting', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 9, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80012', 'SYS_NOTICE', '通知管理', 'BACKEND_MENU', 'MENU', '通知管理菜单', '80001', '/sys/notice', 'sys/notice/index', NULL, 'notification', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 10, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80013', 'SYS_BANNER', '轮播图管理', 'BACKEND_MENU', 'MENU', '轮播图管理菜单', '80002', '/sys/banner', 'sys/banner/index', NULL, 'picture', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80014', 'SYS_FILE', '文件管理', 'BACKEND_MENU', 'MENU', '文件管理菜单', '80002', '/sys/file', 'sys/file/index', NULL, 'file', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80015', 'SYS_DEV', '代码生成', 'BACKEND_MENU', 'MENU', '代码生成菜单', '80003', '/sys/dev', 'sys/dev/index', NULL, 'code', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 07:43:12', '50001');
-INSERT INTO `sys_resource` VALUES ('80016', 'SYS_USER_PAGE', '用户查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户列表', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80017', 'SYS_USER_CREATE', '用户新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80018', 'SYS_USER_MODIFY', '用户修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80019', 'SYS_USER_REMOVE', '用户删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80020', 'SYS_USER_DETAIL', '用户详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户详情', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80021', 'SYS_USER_EXPORT', '用户导出', 'BACKEND_BUTTON', 'BUTTON', '导出用户数据', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:export\"}', 'ENABLED', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80022', 'SYS_USER_IMPORT', '用户导入', 'BACKEND_BUTTON', 'BUTTON', '导入用户数据', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:import\"}', 'ENABLED', 7, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80023', 'SYS_USER_GRANT_ROLE', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户分配角色', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:grant-role\"}', 'ENABLED', 8, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80024', 'SYS_USER_GRANT_GROUP', '分配组', 'BACKEND_BUTTON', 'BUTTON', '给用户分配组', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:grant-group\"}', 'ENABLED', 9, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80025', 'SYS_ROLE_PAGE', '角色查询', 'BACKEND_BUTTON', 'BUTTON', '查询角色列表', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
-INSERT INTO `sys_resource` VALUES ('80026', 'SYS_ROLE_CREATE', '角色新增', 'BACKEND_BUTTON', 'BUTTON', '新增角色', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
-INSERT INTO `sys_resource` VALUES ('80027', 'SYS_ROLE_MODIFY', '角色修改', 'BACKEND_BUTTON', 'BUTTON', '修改角色', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
-INSERT INTO `sys_resource` VALUES ('80028', 'SYS_ROLE_REMOVE', '角色删除', 'BACKEND_BUTTON', 'BUTTON', '删除角色', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
-INSERT INTO `sys_resource` VALUES ('80029', 'SYS_ROLE_DETAIL', '角色详情', 'BACKEND_BUTTON', 'BUTTON', '查看角色详情', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:01', '50001');
-INSERT INTO `sys_resource` VALUES ('80030', 'SYS_ROLE_EXPORT', '角色导出', 'BACKEND_BUTTON', 'BUTTON', '导出角色数据', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:export\"}', 'ENABLED', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
-INSERT INTO `sys_resource` VALUES ('80031', 'SYS_ROLE_GRANT_PERM', '分配权限', 'BACKEND_BUTTON', 'BUTTON', '给角色分配权限', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:grant-permission\"}', 'ENABLED', 7, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
-INSERT INTO `sys_resource` VALUES ('80032', 'SYS_ROLE_GRANT_RESOURCE', '分配资源', 'BACKEND_BUTTON', 'BUTTON', '给角色分配资源', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:grant-resource\"}', 'ENABLED', 8, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
-INSERT INTO `sys_resource` VALUES ('80033', 'SYS_RESOURCE_PAGE', '资源查询', 'BACKEND_BUTTON', 'BUTTON', '查询资源列表', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80034', 'SYS_RESOURCE_CREATE', '资源新增', 'BACKEND_BUTTON', 'BUTTON', '新增资源', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80035', 'SYS_RESOURCE_MODIFY', '资源修改', 'BACKEND_BUTTON', 'BUTTON', '修改资源', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80036', 'SYS_RESOURCE_REMOVE', '资源删除', 'BACKEND_BUTTON', 'BUTTON', '删除资源', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80037', 'SYS_RESOURCE_DETAIL', '资源详情', 'BACKEND_BUTTON', 'BUTTON', '查看资源详情', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80038', 'SYS_ORG_PAGE', '组织查询', 'BACKEND_BUTTON', 'BUTTON', '查询组织列表', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80039', 'SYS_ORG_CREATE', '组织新增', 'BACKEND_BUTTON', 'BUTTON', '新增组织', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80040', 'SYS_ORG_MODIFY', '组织修改', 'BACKEND_BUTTON', 'BUTTON', '修改组织', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80041', 'SYS_ORG_REMOVE', '组织删除', 'BACKEND_BUTTON', 'BUTTON', '删除组织', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80042', 'SYS_ORG_DETAIL', '组织详情', 'BACKEND_BUTTON', 'BUTTON', '查看组织详情', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80043', 'SYS_ORG_GRANT_ROLE', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给组织分配角色', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:grant-role\"}', 'ENABLED', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80044', 'SYS_POSITION_PAGE', '职位查询', 'BACKEND_BUTTON', 'BUTTON', '查询职位列表', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80045', 'SYS_POSITION_CREATE', '职位新增', 'BACKEND_BUTTON', 'BUTTON', '新增职位', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80046', 'SYS_POSITION_MODIFY', '职位修改', 'BACKEND_BUTTON', 'BUTTON', '修改职位', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80047', 'SYS_POSITION_REMOVE', '职位删除', 'BACKEND_BUTTON', 'BUTTON', '删除职位', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80048', 'SYS_POSITION_DETAIL', '职位详情', 'BACKEND_BUTTON', 'BUTTON', '查看职位详情', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80049', 'SYS_GROUP_PAGE', '用户组查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户组列表', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80050', 'SYS_GROUP_CREATE', '用户组新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户组', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80051', 'SYS_GROUP_MODIFY', '用户组修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户组', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80052', 'SYS_GROUP_REMOVE', '用户组删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户组', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80053', 'SYS_GROUP_DETAIL', '用户组详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户组详情', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80054', 'SYS_GROUP_GRANT_ROLE', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户组分配角色', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:create\"}', 'ENABLED', 6, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80055', 'SYS_DICT_PAGE', '字典查询', 'BACKEND_BUTTON', 'BUTTON', '查询字典列表', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80056', 'SYS_DICT_CREATE', '字典新增', 'BACKEND_BUTTON', 'BUTTON', '新增字典', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80057', 'SYS_DICT_MODIFY', '字典修改', 'BACKEND_BUTTON', 'BUTTON', '修改字典', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80058', 'SYS_DICT_REMOVE', '字典删除', 'BACKEND_BUTTON', 'BUTTON', '删除字典', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80059', 'SYS_DICT_DETAIL', '字典详情', 'BACKEND_BUTTON', 'BUTTON', '查看字典详情', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80060', 'SYS_CONFIG_PAGE', '配置查询', 'BACKEND_BUTTON', 'BUTTON', '查询配置列表', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80061', 'SYS_CONFIG_CREATE', '配置新增', 'BACKEND_BUTTON', 'BUTTON', '新增配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80062', 'SYS_CONFIG_MODIFY', '配置修改', 'BACKEND_BUTTON', 'BUTTON', '修改配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80063', 'SYS_CONFIG_REMOVE', '配置删除', 'BACKEND_BUTTON', 'BUTTON', '删除配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80064', 'SYS_CONFIG_DETAIL', '配置详情', 'BACKEND_BUTTON', 'BUTTON', '查看配置详情', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80065', 'SYS_NOTICE_PAGE', '通知查询', 'BACKEND_BUTTON', 'BUTTON', '查询通知列表', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80066', 'SYS_NOTICE_CREATE', '通知新增', 'BACKEND_BUTTON', 'BUTTON', '新增通知', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80067', 'SYS_NOTICE_MODIFY', '通知修改', 'BACKEND_BUTTON', 'BUTTON', '修改通知', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80068', 'SYS_NOTICE_REMOVE', '通知删除', 'BACKEND_BUTTON', 'BUTTON', '删除通知', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80069', 'SYS_NOTICE_DETAIL', '通知详情', 'BACKEND_BUTTON', 'BUTTON', '查看通知详情', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80070', 'SYS_BANNER_PAGE', '轮播查询', 'BACKEND_BUTTON', 'BUTTON', '查询轮播图列表', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:page\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
-INSERT INTO `sys_resource` VALUES ('80071', 'SYS_BANNER_CREATE', '轮播新增', 'BACKEND_BUTTON', 'BUTTON', '新增轮播图', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:create\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
-INSERT INTO `sys_resource` VALUES ('80072', 'SYS_BANNER_MODIFY', '轮播修改', 'BACKEND_BUTTON', 'BUTTON', '修改轮播图', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:modify\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
-INSERT INTO `sys_resource` VALUES ('80073', 'SYS_BANNER_REMOVE', '轮播删除', 'BACKEND_BUTTON', 'BUTTON', '删除轮播图', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:09', '50001');
-INSERT INTO `sys_resource` VALUES ('80074', 'SYS_BANNER_DETAIL', '轮播详情', 'BACKEND_BUTTON', 'BUTTON', '查看轮播图详情', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:detail\"}', 'ENABLED', 5, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
-INSERT INTO `sys_resource` VALUES ('80075', 'SYS_FILE_UPLOAD', '文件上传', 'BACKEND_BUTTON', 'BUTTON', '上传文件', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:upload\"}', 'ENABLED', 1, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
-INSERT INTO `sys_resource` VALUES ('80076', 'SYS_FILE_DOWNLOAD', '文件下载', 'BACKEND_BUTTON', 'BUTTON', '下载文件', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:download\"}', 'ENABLED', 2, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
-INSERT INTO `sys_resource` VALUES ('80077', 'SYS_FILE_PAGE', '文件查询', 'BACKEND_BUTTON', 'BUTTON', '查询文件列表', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:page\"}', 'ENABLED', 3, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
-INSERT INTO `sys_resource` VALUES ('80078', 'SYS_FILE_REMOVE', '文件删除', 'BACKEND_BUTTON', 'BUTTON', '删除文件', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:remove\"}', 'ENABLED', 4, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
-INSERT INTO `sys_resource` VALUES ('80079', 'SYS_USER_GRANT_PERM', '授权权限', 'BACKEND_BUTTON', 'BUTTON', '给用户授权颗粒度权限', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:grant-permission\"}', 'ENABLED', 10, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80080', 'SYS_DASHBOARD', '仪表盘', 'BACKEND_MENU', 'MENU', '仪表盘', NULL, '/dashboard', 'dashboard/index', NULL, 'dashboard', NULL, 'YES', 'NO', 'YES', 'YES', NULL, NULL, 'ENABLED', 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80081', 'SYS_ORG_EXPORT', '组织导出', 'BACKEND_BUTTON', 'BUTTON', '导出组织数据', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:export\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80082', 'SYS_ORG_IMPORT', '组织导入', 'BACKEND_BUTTON', 'BUTTON', '导入组织数据', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:import\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80083', 'SYS_ORG_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载组织导入模板', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:template\"}', 'ENABLED', 9, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80084', 'SYS_POSITION_EXPORT', '职位导出', 'BACKEND_BUTTON', 'BUTTON', '导出职位数据', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:export\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80085', 'SYS_POSITION_IMPORT', '职位导入', 'BACKEND_BUTTON', 'BUTTON', '导入职位数据', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:import\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80086', 'SYS_POSITION_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载职位导入模板', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:template\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80087', 'SYS_GROUP_EXPORT', '用户组导出', 'BACKEND_BUTTON', 'BUTTON', '导出用户组数据', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:export\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80088', 'SYS_GROUP_IMPORT', '用户组导入', 'BACKEND_BUTTON', 'BUTTON', '导入用户组数据', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:import\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80089', 'SYS_GROUP_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载用户组导入模板', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:template\"}', 'ENABLED', 9, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80090', 'SYS_DICT_EXPORT', '字典导出', 'BACKEND_BUTTON', 'BUTTON', '导出字典数据', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:export\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80091', 'SYS_DICT_IMPORT', '字典导入', 'BACKEND_BUTTON', 'BUTTON', '导入字典数据', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:import\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80092', 'SYS_DICT_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载字典导入模板', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:template\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80093', 'SYS_CONFIG_EDIT_BATCH', '批量编辑', 'BACKEND_BUTTON', 'BUTTON', '批量编辑系统配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:edit\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80094', 'SYS_NOTICE_EXPORT', '通知导出', 'BACKEND_BUTTON', 'BUTTON', '导出通知数据', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:export\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80095', 'SYS_NOTICE_IMPORT', '通知导入', 'BACKEND_BUTTON', 'BUTTON', '导入通知数据', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:import\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80096', 'SYS_NOTICE_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载通知导入模板', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:template\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80097', 'SYS_BANNER_EXPORT', '轮播导出', 'BACKEND_BUTTON', 'BUTTON', '导出轮播图数据', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:export\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80098', 'SYS_BANNER_IMPORT', '轮播导入', 'BACKEND_BUTTON', 'BUTTON', '导入轮播图数据', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:import\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80099', 'SYS_BANNER_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载轮播导入模板', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:template\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80100', 'SYS_FILE_DETAIL', '文件详情', 'BACKEND_BUTTON', 'BUTTON', '查看文件详情', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:detail\"}', 'ENABLED', 5, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80101', 'SYS_RESOURCE_EXPORT', '资源导出', 'BACKEND_BUTTON', 'BUTTON', '导出资源数据', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:export\"}', 'ENABLED', 6, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80102', 'SYS_RESOURCE_IMPORT', '资源导入', 'BACKEND_BUTTON', 'BUTTON', '导入资源数据', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:import\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80103', 'SYS_RESOURCE_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载资源导入模板', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:template\"}', 'ENABLED', 8, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80104', 'SYS_ROLE_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载角色导入模板', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:template\"}', 'ENABLED', 10, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80105', 'SYS_ROLE_IMPORT', '角色导入', 'BACKEND_BUTTON', 'BUTTON', '导入角色数据', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:import\"}', 'ENABLED', 9, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80106', 'SYS_GROUP_TREE', '用户组树', 'BACKEND_BUTTON', 'BUTTON', '查询用户组树', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80107', 'SYS_RESOURCE_TREE', '资源树', 'BACKEND_BUTTON', 'BUTTON', '查询资源树', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:tree\"}', 'ENABLED', 7, 'NO', '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
-INSERT INTO `sys_resource` VALUES ('80108', 'SYS_HOME', '首页', 'BACKEND_MENU', 'MENU', '首页', NULL, '/home', 'home/index', NULL, 'home', NULL, 'YES', 'YES', 'NO', 'YES', NULL, NULL, 'ENABLED', 0, 'NO', '2026-05-13 14:55:52', '50001', '2026-05-14 07:43:59', '50001');
-INSERT INTO `sys_resource` VALUES ('80109', 'SYS_LOG', '系统日志', 'BACKEND_MENU', 'DIRECTORY', '系统日志目录', '0', '/sys/log', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', '', NULL, 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:17:59', '50001');
-INSERT INTO `sys_resource` VALUES ('80110', 'SYS_OPLOG', '操作日志', 'BACKEND_MENU', 'MENU', '操作日志', '80109', '/sys/log/oplog', 'sys/log/oplog/index', NULL, 'audit', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80111', 'SYS_VISLOG', '访问日志', 'BACKEND_MENU', 'MENU', '访问日志', '80109', '/sys/log/vislog', 'sys/log/vislog/index', NULL, 'eye', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80112', 'SYS_LOG_PAGE', '日志查询', 'BACKEND_BUTTON', 'BUTTON', '查询日志列表', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:page\"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80113', 'SYS_LOG_DETAIL', '日志详情', 'BACKEND_BUTTON', 'BUTTON', '查看日志详情', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:detail\"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80114', 'SYS_LOG_REMOVE', '日志删除', 'BACKEND_BUTTON', 'BUTTON', '删除/清空日志', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:remove\"}', 'ENABLED', 3, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80115', 'SYS_VISLOG_PAGE', '日志查询', 'BACKEND_BUTTON', 'BUTTON', '查询访问日志列表', '80111', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:page\"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80116', 'SYS_VISLOG_DETAIL', '日志详情', 'BACKEND_BUTTON', 'BUTTON', '查看访问日志详情', '80111', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:detail\"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80117', 'SYS_VISLOG_REMOVE', '日志删除', 'BACKEND_BUTTON', 'BUTTON', '删除/清空访问日志', '80111', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:remove\"}', 'ENABLED', 3, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80118', 'SYS_SESSION', '会话管理', 'BACKEND_MENU', 'MENU', '会话管理', '80001', '/sys/auth/monitor', 'auth/monitor/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 11, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80119', 'SYS_SESSION_PAGE', '会话查询', 'BACKEND_BUTTON', 'BUTTON', '查询会话列表', '80118', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:session:page\"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80120', 'SYS_SESSION_EXIT', '强制下线', 'BACKEND_BUTTON', 'BUTTON', '强制用户下线', '80118', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:session:exit\"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80121', 'CLIENT_ADMIN', 'C端管理', 'BACKEND_MENU', 'DIRECTORY', 'C端管理目录', NULL, '/client', NULL, NULL, 'user', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 4, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80122', 'CLIENT_USER', '用户管理', 'BACKEND_MENU', 'MENU', 'C端用户管理菜单', '80121', '/client/user', 'client/user/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80123', 'CLIENT_USER_PAGE', '用户查询', 'BACKEND_BUTTON', 'BUTTON', '查询C端用户列表', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:page\"}', 'ENABLED', 1, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80124', 'CLIENT_USER_CREATE', '用户新增', 'BACKEND_BUTTON', 'BUTTON', '新增C端用户', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:create\"}', 'ENABLED', 2, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80125', 'CLIENT_USER_MODIFY', '用户修改', 'BACKEND_BUTTON', 'BUTTON', '修改C端用户', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:modify\"}', 'ENABLED', 3, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80126', 'CLIENT_USER_REMOVE', '用户删除', 'BACKEND_BUTTON', 'BUTTON', '删除C端用户', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:remove\"}', 'ENABLED', 4, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80127', 'CLIENT_USER_DETAIL', '用户详情', 'BACKEND_BUTTON', 'BUTTON', '查看C端用户详情', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:detail\"}', 'ENABLED', 5, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80128', 'CLIENT_USER_EXPORT', '用户导出', 'BACKEND_BUTTON', 'BUTTON', '导出C端用户数据', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:export\"}', 'ENABLED', 6, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80129', 'CLIENT_USER_IMPORT', '用户导入', 'BACKEND_BUTTON', 'BUTTON', '导入C端用户数据', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:import\"}', 'ENABLED', 8, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
-INSERT INTO `sys_resource` VALUES ('80130', 'CLIENT_USER_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载C端用户导入模板', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:template\"}', 'ENABLED', 7, 'NO', '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80001', 'SYS_ADMIN', '系统管理', 'BACKEND_MENU', 'DIRECTORY', '系统管理目录', NULL, '/sys', NULL, NULL, 'setting', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80002', 'CONTENT_MGR', '内容管理', 'BACKEND_MENU', 'DIRECTORY', '内容管理目录', NULL, '/content', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80003', 'DEV_TOOLS', '系统工具', 'BACKEND_MENU', 'DIRECTORY', '系统工具目录', NULL, '/dev', NULL, NULL, 'tool', NULL, 'NO', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-14 16:04:47', '50001');
+INSERT INTO `sys_resource` VALUES ('80004', 'SYS_USER', '用户管理', 'BACKEND_MENU', 'MENU', '用户管理菜单', '80001', '/sys/user', 'sys/user/index', NULL, 'user', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80005', 'SYS_ROLE', '角色管理', 'BACKEND_MENU', 'MENU', '角色管理菜单', '80001', '/sys/role', 'sys/role/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80006', 'SYS_RESOURCE_MGR', '资源管理', 'BACKEND_MENU', 'MENU', '资源管理菜单', '80001', '/sys/resource', 'sys/resource/index', NULL, 'menu', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80007', 'SYS_ORG', '组织管理', 'BACKEND_MENU', 'MENU', '组织管理菜单', '80001', '/sys/org', 'sys/org/index', NULL, 'apartment', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80008', 'SYS_POSITION', '职位管理', 'BACKEND_MENU', 'MENU', '职位管理菜单', '80001', '/sys/org/group/position', 'sys/org/components/group/components/position/index', NULL, 'idcard', NULL, 'NO', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 6, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80009', 'SYS_GROUP', '用户组管理', 'BACKEND_MENU', 'MENU', '用户组管理菜单', '80001', '/sys/org/group', 'sys/org/components/group/index', NULL, 'group', NULL, 'NO', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 7, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80010', 'SYS_DICT', '字典管理', 'BACKEND_MENU', 'MENU', '字典管理菜单', '80001', '/sys/dict', 'sys/dict/index', NULL, 'book', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 8, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80011', 'SYS_CONFIG', '系统配置', 'BACKEND_MENU', 'MENU', '系统配置菜单', '80001', '/sys/config', 'sys/config/index', NULL, 'setting', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 9, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80012', 'SYS_NOTICE', '通知管理', 'BACKEND_MENU', 'MENU', '通知管理菜单', '80001', '/sys/notice', 'sys/notice/index', NULL, 'notification', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 10, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80013', 'SYS_BANNER', '轮播图管理', 'BACKEND_MENU', 'MENU', '轮播图管理菜单', '80002', '/sys/banner', 'sys/banner/index', NULL, 'picture', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80014', 'SYS_FILE', '文件管理', 'BACKEND_MENU', 'MENU', '文件管理菜单', '80002', '/sys/file', 'sys/file/index', NULL, 'file', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80015', 'SYS_DEV', '代码生成', 'BACKEND_MENU', 'MENU', '代码生成菜单', '80003', '/sys/dev', 'sys/dev/index', NULL, 'code', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-14 07:43:12', '50001');
+INSERT INTO `sys_resource` VALUES ('80016', 'SYS_USER_PAGE', '用户查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户列表', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:page\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80017', 'SYS_USER_CREATE', '用户新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:create\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80018', 'SYS_USER_MODIFY', '用户修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80019', 'SYS_USER_REMOVE', '用户删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80020', 'SYS_USER_DETAIL', '用户详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户详情', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:detail\"}', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80021', 'SYS_USER_EXPORT', '用户导出', 'BACKEND_BUTTON', 'BUTTON', '导出用户数据', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:export\"}', 'ENABLED', 6, '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80022', 'SYS_USER_IMPORT', '用户导入', 'BACKEND_BUTTON', 'BUTTON', '导入用户数据', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:import\"}', 'ENABLED', 7, '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80023', 'SYS_USER_GRANT_ROLE', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户分配角色', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:grant-role\"}', 'ENABLED', 8, '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80024', 'SYS_USER_GRANT_GROUP', '分配组', 'BACKEND_BUTTON', 'BUTTON', '给用户分配组', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:grant-group\"}', 'ENABLED', 9, '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80025', 'SYS_ROLE_PAGE', '角色查询', 'BACKEND_BUTTON', 'BUTTON', '查询角色列表', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:page\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80026', 'SYS_ROLE_CREATE', '角色新增', 'BACKEND_BUTTON', 'BUTTON', '新增角色', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:create\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80027', 'SYS_ROLE_MODIFY', '角色修改', 'BACKEND_BUTTON', 'BUTTON', '修改角色', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80028', 'SYS_ROLE_REMOVE', '角色删除', 'BACKEND_BUTTON', 'BUTTON', '删除角色', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80029', 'SYS_ROLE_DETAIL', '角色详情', 'BACKEND_BUTTON', 'BUTTON', '查看角色详情', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:detail\"}', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:01', '50001');
+INSERT INTO `sys_resource` VALUES ('80030', 'SYS_ROLE_EXPORT', '角色导出', 'BACKEND_BUTTON', 'BUTTON', '导出角色数据', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:export\"}', 'ENABLED', 6, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80031', 'SYS_ROLE_GRANT_PERM', '分配权限', 'BACKEND_BUTTON', 'BUTTON', '给角色分配权限', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:grant-permission\"}', 'ENABLED', 7, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80032', 'SYS_ROLE_GRANT_RESOURCE', '分配资源', 'BACKEND_BUTTON', 'BUTTON', '给角色分配资源', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:grant-resource\"}', 'ENABLED', 8, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:02', '50001');
+INSERT INTO `sys_resource` VALUES ('80033', 'SYS_RESOURCE_PAGE', '资源查询', 'BACKEND_BUTTON', 'BUTTON', '查询资源列表', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:page\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80034', 'SYS_RESOURCE_CREATE', '资源新增', 'BACKEND_BUTTON', 'BUTTON', '新增资源', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:create\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80035', 'SYS_RESOURCE_MODIFY', '资源修改', 'BACKEND_BUTTON', 'BUTTON', '修改资源', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80036', 'SYS_RESOURCE_REMOVE', '资源删除', 'BACKEND_BUTTON', 'BUTTON', '删除资源', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80037', 'SYS_RESOURCE_DETAIL', '资源详情', 'BACKEND_BUTTON', 'BUTTON', '查看资源详情', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:detail\"}', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80038', 'SYS_ORG_PAGE', '组织查询', 'BACKEND_BUTTON', 'BUTTON', '查询组织列表', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:page\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80039', 'SYS_ORG_CREATE', '组织新增', 'BACKEND_BUTTON', 'BUTTON', '新增组织', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:create\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80040', 'SYS_ORG_MODIFY', '组织修改', 'BACKEND_BUTTON', 'BUTTON', '修改组织', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80041', 'SYS_ORG_REMOVE', '组织删除', 'BACKEND_BUTTON', 'BUTTON', '删除组织', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80042', 'SYS_ORG_DETAIL', '组织详情', 'BACKEND_BUTTON', 'BUTTON', '查看组织详情', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:detail\"}', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80043', 'SYS_ORG_GRANT_ROLE', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给组织分配角色', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:grant-role\"}', 'ENABLED', 6, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80044', 'SYS_POSITION_PAGE', '职位查询', 'BACKEND_BUTTON', 'BUTTON', '查询职位列表', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:page\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80045', 'SYS_POSITION_CREATE', '职位新增', 'BACKEND_BUTTON', 'BUTTON', '新增职位', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:create\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80046', 'SYS_POSITION_MODIFY', '职位修改', 'BACKEND_BUTTON', 'BUTTON', '修改职位', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80047', 'SYS_POSITION_REMOVE', '职位删除', 'BACKEND_BUTTON', 'BUTTON', '删除职位', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80048', 'SYS_POSITION_DETAIL', '职位详情', 'BACKEND_BUTTON', 'BUTTON', '查看职位详情', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:detail\"}', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80049', 'SYS_GROUP_PAGE', '用户组查询', 'BACKEND_BUTTON', 'BUTTON', '查询用户组列表', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:page\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80050', 'SYS_GROUP_CREATE', '用户组新增', 'BACKEND_BUTTON', 'BUTTON', '新增用户组', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:create\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80051', 'SYS_GROUP_MODIFY', '用户组修改', 'BACKEND_BUTTON', 'BUTTON', '修改用户组', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80052', 'SYS_GROUP_REMOVE', '用户组删除', 'BACKEND_BUTTON', 'BUTTON', '删除用户组', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80053', 'SYS_GROUP_DETAIL', '用户组详情', 'BACKEND_BUTTON', 'BUTTON', '查看用户组详情', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:detail\"}', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80054', 'SYS_GROUP_GRANT_ROLE', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给用户组分配角色', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:create\"}', 'ENABLED', 6, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80055', 'SYS_DICT_PAGE', '字典查询', 'BACKEND_BUTTON', 'BUTTON', '查询字典列表', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:page\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80056', 'SYS_DICT_CREATE', '字典新增', 'BACKEND_BUTTON', 'BUTTON', '新增字典', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:create\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80057', 'SYS_DICT_MODIFY', '字典修改', 'BACKEND_BUTTON', 'BUTTON', '修改字典', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80058', 'SYS_DICT_REMOVE', '字典删除', 'BACKEND_BUTTON', 'BUTTON', '删除字典', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80059', 'SYS_DICT_DETAIL', '字典详情', 'BACKEND_BUTTON', 'BUTTON', '查看字典详情', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:detail\"}', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80060', 'SYS_CONFIG_PAGE', '配置查询', 'BACKEND_BUTTON', 'BUTTON', '查询配置列表', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:page\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80061', 'SYS_CONFIG_CREATE', '配置新增', 'BACKEND_BUTTON', 'BUTTON', '新增配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:create\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80062', 'SYS_CONFIG_MODIFY', '配置修改', 'BACKEND_BUTTON', 'BUTTON', '修改配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80063', 'SYS_CONFIG_REMOVE', '配置删除', 'BACKEND_BUTTON', 'BUTTON', '删除配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80064', 'SYS_CONFIG_DETAIL', '配置详情', 'BACKEND_BUTTON', 'BUTTON', '查看配置详情', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:detail\"}', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80065', 'SYS_NOTICE_PAGE', '通知查询', 'BACKEND_BUTTON', 'BUTTON', '查询通知列表', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:page\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80066', 'SYS_NOTICE_CREATE', '通知新增', 'BACKEND_BUTTON', 'BUTTON', '新增通知', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:create\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80067', 'SYS_NOTICE_MODIFY', '通知修改', 'BACKEND_BUTTON', 'BUTTON', '修改通知', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80068', 'SYS_NOTICE_REMOVE', '通知删除', 'BACKEND_BUTTON', 'BUTTON', '删除通知', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80069', 'SYS_NOTICE_DETAIL', '通知详情', 'BACKEND_BUTTON', 'BUTTON', '查看通知详情', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:detail\"}', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80070', 'SYS_BANNER_PAGE', '轮播查询', 'BACKEND_BUTTON', 'BUTTON', '查询轮播图列表', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:page\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
+INSERT INTO `sys_resource` VALUES ('80071', 'SYS_BANNER_CREATE', '轮播新增', 'BACKEND_BUTTON', 'BUTTON', '新增轮播图', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:create\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
+INSERT INTO `sys_resource` VALUES ('80072', 'SYS_BANNER_MODIFY', '轮播修改', 'BACKEND_BUTTON', 'BUTTON', '修改轮播图', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
+INSERT INTO `sys_resource` VALUES ('80073', 'SYS_BANNER_REMOVE', '轮播删除', 'BACKEND_BUTTON', 'BUTTON', '删除轮播图', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:09', '50001');
+INSERT INTO `sys_resource` VALUES ('80074', 'SYS_BANNER_DETAIL', '轮播详情', 'BACKEND_BUTTON', 'BUTTON', '查看轮播图详情', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:detail\"}', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-13 08:19:08', '50001');
+INSERT INTO `sys_resource` VALUES ('80075', 'SYS_FILE_UPLOAD', '文件上传', 'BACKEND_BUTTON', 'BUTTON', '上传文件', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:upload\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
+INSERT INTO `sys_resource` VALUES ('80076', 'SYS_FILE_DOWNLOAD', '文件下载', 'BACKEND_BUTTON', 'BUTTON', '下载文件', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:download\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
+INSERT INTO `sys_resource` VALUES ('80077', 'SYS_FILE_PAGE', '文件查询', 'BACKEND_BUTTON', 'BUTTON', '查询文件列表', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:page\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
+INSERT INTO `sys_resource` VALUES ('80078', 'SYS_FILE_REMOVE', '文件删除', 'BACKEND_BUTTON', 'BUTTON', '删除文件', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-13 10:31:33', '50001');
+INSERT INTO `sys_resource` VALUES ('80079', 'SYS_USER_GRANT_PERM', '授权权限', 'BACKEND_BUTTON', 'BUTTON', '给用户授权颗粒度权限', '80004', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:user:grant-permission\"}', 'ENABLED', 10, '2026-05-12 14:55:52', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80080', 'SYS_DASHBOARD', '仪表盘', 'BACKEND_MENU', 'MENU', '仪表盘', NULL, '/dashboard', 'dashboard/index', NULL, 'dashboard', NULL, 'YES', 'NO', 'YES', 'YES', NULL, NULL, 'ENABLED', 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80081', 'SYS_ORG_EXPORT', '组织导出', 'BACKEND_BUTTON', 'BUTTON', '导出组织数据', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:export\"}', 'ENABLED', 7, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80082', 'SYS_ORG_IMPORT', '组织导入', 'BACKEND_BUTTON', 'BUTTON', '导入组织数据', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:import\"}', 'ENABLED', 8, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80083', 'SYS_ORG_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载组织导入模板', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:template\"}', 'ENABLED', 9, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80084', 'SYS_POSITION_EXPORT', '职位导出', 'BACKEND_BUTTON', 'BUTTON', '导出职位数据', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:export\"}', 'ENABLED', 6, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80085', 'SYS_POSITION_IMPORT', '职位导入', 'BACKEND_BUTTON', 'BUTTON', '导入职位数据', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:import\"}', 'ENABLED', 7, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80086', 'SYS_POSITION_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载职位导入模板', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:template\"}', 'ENABLED', 8, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80087', 'SYS_GROUP_EXPORT', '用户组导出', 'BACKEND_BUTTON', 'BUTTON', '导出用户组数据', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:export\"}', 'ENABLED', 7, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80088', 'SYS_GROUP_IMPORT', '用户组导入', 'BACKEND_BUTTON', 'BUTTON', '导入用户组数据', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:import\"}', 'ENABLED', 8, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80089', 'SYS_GROUP_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载用户组导入模板', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:template\"}', 'ENABLED', 9, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80090', 'SYS_DICT_EXPORT', '字典导出', 'BACKEND_BUTTON', 'BUTTON', '导出字典数据', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:export\"}', 'ENABLED', 6, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80091', 'SYS_DICT_IMPORT', '字典导入', 'BACKEND_BUTTON', 'BUTTON', '导入字典数据', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:import\"}', 'ENABLED', 7, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80092', 'SYS_DICT_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载字典导入模板', '80010', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:dict:template\"}', 'ENABLED', 8, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80093', 'SYS_CONFIG_EDIT_BATCH', '批量编辑', 'BACKEND_BUTTON', 'BUTTON', '批量编辑系统配置', '80011', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:config:edit\"}', 'ENABLED', 6, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80094', 'SYS_NOTICE_EXPORT', '通知导出', 'BACKEND_BUTTON', 'BUTTON', '导出通知数据', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:export\"}', 'ENABLED', 6, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80095', 'SYS_NOTICE_IMPORT', '通知导入', 'BACKEND_BUTTON', 'BUTTON', '导入通知数据', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:import\"}', 'ENABLED', 7, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80096', 'SYS_NOTICE_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载通知导入模板', '80012', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:notice:template\"}', 'ENABLED', 8, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80097', 'SYS_BANNER_EXPORT', '轮播导出', 'BACKEND_BUTTON', 'BUTTON', '导出轮播图数据', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:export\"}', 'ENABLED', 6, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80098', 'SYS_BANNER_IMPORT', '轮播导入', 'BACKEND_BUTTON', 'BUTTON', '导入轮播图数据', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:import\"}', 'ENABLED', 7, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80099', 'SYS_BANNER_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载轮播导入模板', '80013', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:banner:template\"}', 'ENABLED', 8, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80100', 'SYS_FILE_DETAIL', '文件详情', 'BACKEND_BUTTON', 'BUTTON', '查看文件详情', '80014', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:file:detail\"}', 'ENABLED', 5, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80101', 'SYS_RESOURCE_EXPORT', '资源导出', 'BACKEND_BUTTON', 'BUTTON', '导出资源数据', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:export\"}', 'ENABLED', 6, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80102', 'SYS_RESOURCE_IMPORT', '资源导入', 'BACKEND_BUTTON', 'BUTTON', '导入资源数据', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:import\"}', 'ENABLED', 7, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80103', 'SYS_RESOURCE_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载资源导入模板', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:template\"}', 'ENABLED', 8, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80104', 'SYS_ROLE_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载角色导入模板', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:template\"}', 'ENABLED', 10, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80105', 'SYS_ROLE_IMPORT', '角色导入', 'BACKEND_BUTTON', 'BUTTON', '导入角色数据', '80005', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:role:import\"}', 'ENABLED', 9, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80106', 'SYS_GROUP_TREE', '用户组树', 'BACKEND_BUTTON', 'BUTTON', '查询用户组树', '80009', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:group:tree\"}', 'ENABLED', 7, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80107', 'SYS_RESOURCE_TREE', '资源树', 'BACKEND_BUTTON', 'BUTTON', '查询资源树', '80006', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:resource:tree\"}', 'ENABLED', 7, '2026-05-13 10:30:22', '50001', '2026-05-13 10:30:22', '50001');
+INSERT INTO `sys_resource` VALUES ('80108', 'SYS_HOME', '首页', 'BACKEND_MENU', 'MENU', '首页', NULL, '/home', 'home/index', NULL, 'home', NULL, 'YES', 'YES', 'NO', 'YES', NULL, NULL, 'ENABLED', 0, '2026-05-13 14:55:52', '50001', '2026-05-14 07:43:59', '50001');
+INSERT INTO `sys_resource` VALUES ('80109', 'SYS_LOG', '系统日志', 'BACKEND_MENU', 'DIRECTORY', '系统日志目录', '0', '/sys/log', NULL, NULL, 'file-text', NULL, 'YES', 'NO', 'NO', 'YES', '', NULL, 'ENABLED', 2, '2026-05-14 14:55:52', '50001', '2026-05-14 14:17:59', '50001');
+INSERT INTO `sys_resource` VALUES ('80110', 'SYS_OPLOG', '操作日志', 'BACKEND_MENU', 'MENU', '操作日志', '80109', '/sys/log/oplog', 'sys/log/oplog/index', NULL, 'audit', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80111', 'SYS_VISLOG', '访问日志', 'BACKEND_MENU', 'MENU', '访问日志', '80109', '/sys/log/vislog', 'sys/log/vislog/index', NULL, 'eye', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 2, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80112', 'SYS_LOG_PAGE', '日志查询', 'BACKEND_BUTTON', 'BUTTON', '查询日志列表', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:page\"}', 'ENABLED', 1, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80113', 'SYS_LOG_DETAIL', '日志详情', 'BACKEND_BUTTON', 'BUTTON', '查看日志详情', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:detail\"}', 'ENABLED', 2, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80114', 'SYS_LOG_REMOVE', '日志删除', 'BACKEND_BUTTON', 'BUTTON', '删除/清空日志', '80110', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:remove\"}', 'ENABLED', 3, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80115', 'SYS_VISLOG_PAGE', '日志查询', 'BACKEND_BUTTON', 'BUTTON', '查询访问日志列表', '80111', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:page\"}', 'ENABLED', 1, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80116', 'SYS_VISLOG_DETAIL', '日志详情', 'BACKEND_BUTTON', 'BUTTON', '查看访问日志详情', '80111', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:detail\"}', 'ENABLED', 2, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80117', 'SYS_VISLOG_REMOVE', '日志删除', 'BACKEND_BUTTON', 'BUTTON', '删除/清空访问日志', '80111', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:log:remove\"}', 'ENABLED', 3, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80118', 'SYS_SESSION', '会话管理', 'BACKEND_MENU', 'MENU', '会话管理', '80001', '/sys/auth/monitor', 'auth/monitor/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 11, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80119', 'SYS_SESSION_PAGE', '会话查询', 'BACKEND_BUTTON', 'BUTTON', '查询会话列表', '80118', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:session:page\"}', 'ENABLED', 1, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80120', 'SYS_SESSION_EXIT', '强制下线', 'BACKEND_BUTTON', 'BUTTON', '强制用户下线', '80118', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:session:exit\"}', 'ENABLED', 2, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80121', 'CLIENT_ADMIN', 'C端管理', 'BACKEND_MENU', 'DIRECTORY', 'C端管理目录', NULL, '/client', NULL, NULL, 'user', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 4, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80122', 'CLIENT_USER', '用户管理', 'BACKEND_MENU', 'MENU', 'C端用户管理菜单', '80121', '/client/user', 'client/user/index', NULL, 'team', NULL, 'YES', 'NO', 'NO', 'YES', NULL, NULL, 'ENABLED', 1, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80123', 'CLIENT_USER_PAGE', '用户查询', 'BACKEND_BUTTON', 'BUTTON', '查询C端用户列表', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:page\"}', 'ENABLED', 1, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80124', 'CLIENT_USER_CREATE', '用户新增', 'BACKEND_BUTTON', 'BUTTON', '新增C端用户', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:create\"}', 'ENABLED', 2, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80125', 'CLIENT_USER_MODIFY', '用户修改', 'BACKEND_BUTTON', 'BUTTON', '修改C端用户', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:modify\"}', 'ENABLED', 3, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80126', 'CLIENT_USER_REMOVE', '用户删除', 'BACKEND_BUTTON', 'BUTTON', '删除C端用户', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:remove\"}', 'ENABLED', 4, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80127', 'CLIENT_USER_DETAIL', '用户详情', 'BACKEND_BUTTON', 'BUTTON', '查看C端用户详情', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:detail\"}', 'ENABLED', 5, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80128', 'CLIENT_USER_EXPORT', '用户导出', 'BACKEND_BUTTON', 'BUTTON', '导出C端用户数据', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:export\"}', 'ENABLED', 6, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80129', 'CLIENT_USER_IMPORT', '用户导入', 'BACKEND_BUTTON', 'BUTTON', '导入C端用户数据', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:import\"}', 'ENABLED', 8, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80130', 'CLIENT_USER_TEMPLATE', '导入模板', 'BACKEND_BUTTON', 'BUTTON', '下载C端用户导入模板', '80122', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"client:user:template\"}', 'ENABLED', 7, '2026-05-14 14:55:52', '50001', '2026-05-14 14:55:52', '50001');
 
 -- ----------------------------
 -- Table structure for sys_role
@@ -1659,7 +1644,6 @@ CREATE TABLE `sys_role`  (
   `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'ENABLED' COMMENT '状态',
   `sort_code` int NULL DEFAULT 0 COMMENT '排序',
   `extra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '扩展信息',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1671,13 +1655,13 @@ CREATE TABLE `sys_role`  (
 -- ----------------------------
 -- Records of sys_role
 -- ----------------------------
-INSERT INTO `sys_role` VALUES ('40001', 'SUPER_ADMIN', '超级管理员', 'BACKEND', '系统超级管理员，拥有全部权限', 'ENABLED', 1, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_role` VALUES ('40002', 'ADMIN', '系统管理员', 'BACKEND', '系统管理员', 'ENABLED', 2, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_role` VALUES ('40003', 'DEV', '开发人员', 'BACKEND', '开发人员角色', 'ENABLED', 3, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_role` VALUES ('40004', 'TEST', '测试人员', 'BACKEND', '测试人员角色', 'ENABLED', 4, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_role` VALUES ('40005', 'MKT', '市场人员', 'BACKEND', '市场人员角色', 'ENABLED', 5, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_role` VALUES ('40006', 'FIN', '财务人员', 'BACKEND', '财务人员角色', 'ENABLED', 6, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_role` VALUES ('40007', 'HR', '人力资源', 'BACKEND', '人力资源角色', 'ENABLED', 7, NULL, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40001', 'SUPER_ADMIN', '超级管理员', 'BACKEND', '系统超级管理员，拥有全部权限', 'ENABLED', 1, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40002', 'ADMIN', '系统管理员', 'BACKEND', '系统管理员', 'ENABLED', 2, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40003', 'DEV', '开发人员', 'BACKEND', '开发人员角色', 'ENABLED', 3, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40004', 'TEST', '测试人员', 'BACKEND', '测试人员角色', 'ENABLED', 4, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40005', 'MKT', '市场人员', 'BACKEND', '市场人员角色', 'ENABLED', 5, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40006', 'FIN', '财务人员', 'BACKEND', '财务人员角色', 'ENABLED', 6, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_role` VALUES ('40007', 'HR', '人力资源', 'BACKEND', '人力资源角色', 'ENABLED', 7, NULL, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
 -- ----------------------------
 -- Table structure for sys_user
@@ -1701,7 +1685,6 @@ CREATE TABLE `sys_user`  (
   `last_login_at` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
   `last_login_ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '最后登录IP',
   `login_count` int NULL DEFAULT 0 COMMENT '登录次数',
-  `is_deleted` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT 'NO' COMMENT '逻辑删除',
   `created_at` datetime NULL DEFAULT NULL COMMENT '创建时间',
   `created_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建用户',
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -1713,15 +1696,15 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', 'ACTIVE', '2026-05-14 15:52:49', '127.0.0.1', 7, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-14 15:52:49', '50001');
-INSERT INTO `sys_user` VALUES ('50002', 'zhangsan', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '张三', NULL, '代码改变世界', 'MALE', '1995-05-15', 'zhangsan@hei.com', 'https://github.com/zhangsan', '13800000002', '10002', '20004', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_user` VALUES ('50003', 'lisi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '李四', NULL, '学无止境', 'MALE', '1993-08-20', 'lisi@hei.com', NULL, '13800000003', '10002', '20004', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_user` VALUES ('50004', 'wangwu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '王五', NULL, '追求卓越', 'MALE', '1994-03-10', 'wangwu@hei.com', NULL, '13800000004', '10002', '20003', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_user` VALUES ('50005', 'zhaoliu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '赵六', NULL, '质量第一', 'FEMALE', '1996-11-25', 'zhaoliu@hei.com', NULL, '13800000005', '10002', '20005', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_user` VALUES ('50006', 'sunqi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '孙七', NULL, '用户至上', 'MALE', '1991-07-07', 'sunqi@hei.com', NULL, '13800000006', '10003', '20006', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_user` VALUES ('50007', 'zhouba', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '周八', NULL, '市场就是战场', 'FEMALE', '1992-02-14', 'zhouba@hei.com', NULL, '13800000007', '10003', '20007', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_user` VALUES ('50008', 'wujiu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '吴九', NULL, '精打细算', 'MALE', '1988-09-09', 'wujiu@hei.com', NULL, '13800000008', '10004', '20008', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_user` VALUES ('50009', 'zhengshi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '郑十', NULL, '以人为本', 'FEMALE', '1990-12-01', 'zhengshi@hei.com', NULL, '13800000009', '10005', '20009', 'ACTIVE', NULL, NULL, 0, 'NO', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
-INSERT INTO `sys_user` VALUES ('50010', 'chen十一', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '陈十一', NULL, '稳定压倒一切', 'MALE', '1993-06-18', 'chen11@hei.com', NULL, '13800000010', '10007', '20011', 'ACTIVE', NULL, NULL, 0, 'YES', '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', 'ACTIVE', '2026-05-14 15:52:49', '127.0.0.1', 7, '2026-05-12 14:55:52', '50001', '2026-05-14 15:52:49', '50001');
+INSERT INTO `sys_user` VALUES ('50002', 'zhangsan', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '张三', NULL, '代码改变世界', 'MALE', '1995-05-15', 'zhangsan@hei.com', 'https://github.com/zhangsan', '13800000002', '10002', '20004', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50003', 'lisi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '李四', NULL, '学无止境', 'MALE', '1993-08-20', 'lisi@hei.com', NULL, '13800000003', '10002', '20004', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50004', 'wangwu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '王五', NULL, '追求卓越', 'MALE', '1994-03-10', 'wangwu@hei.com', NULL, '13800000004', '10002', '20003', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50005', 'zhaoliu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '赵六', NULL, '质量第一', 'FEMALE', '1996-11-25', 'zhaoliu@hei.com', NULL, '13800000005', '10002', '20005', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50006', 'sunqi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '孙七', NULL, '用户至上', 'MALE', '1991-07-07', 'sunqi@hei.com', NULL, '13800000006', '10003', '20006', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50007', 'zhouba', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '周八', NULL, '市场就是战场', 'FEMALE', '1992-02-14', 'zhouba@hei.com', NULL, '13800000007', '10003', '20007', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50008', 'wujiu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '吴九', NULL, '精打细算', 'MALE', '1988-09-09', 'wujiu@hei.com', NULL, '13800000008', '10004', '20008', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50009', 'zhengshi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '郑十', NULL, '以人为本', 'FEMALE', '1990-12-01', 'zhengshi@hei.com', NULL, '13800000009', '10005', '20009', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50010', 'chen十一', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '陈十一', NULL, '稳定压倒一切', 'MALE', '1993-06-18', 'chen11@hei.com', NULL, '13800000010', '10007', '20011', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 
 SET FOREIGN_KEY_CHECKS = 1;

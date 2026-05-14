@@ -17,12 +17,11 @@ class QueryWrapper:
         dao.select_page(wrapper, page_bounds)
     """
 
-    def __init__(self, model, include_deleted: bool = False):
+    def __init__(self, model):
         self.model = model
         self._conditions: List[Any] = []
         self._order_by: List[UnaryExpression] = []
         self._group_by: List[Any] = []
-        self._include_deleted = include_deleted
 
     # ---- conditions ----
 

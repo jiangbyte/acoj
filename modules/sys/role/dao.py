@@ -106,7 +106,6 @@ class RoleDao(BaseDAO):
             select(_SR)
             .where(
                 _SR.id.in_(resource_ids),
-                _SR.is_deleted == self._soft_delete_not_deleted,
                 _SR.extra != None,
                 _SR.extra != "",
             )

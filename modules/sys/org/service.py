@@ -5,7 +5,6 @@ from .dao import OrgDao
 from .models import SysOrg
 from core.pojo import IdsParam
 from core.result import page_data, PageDataField
-from core.enums import SoftDeleteEnum
 from core.exception import BusinessException
 from core.utils import apply_update
 from core.db.base_service import BaseCrudService
@@ -109,14 +108,14 @@ class OrgService(BaseCrudService):
 
         if db.execute(
             select(func.count()).select_from(SysUser).where(
-                SysUser.org_id.in_(all_ids), SysUser.is_deleted == SoftDeleteEnum.NO
+                SysUser.org_id.in_(all_ids)
             )
         ).scalar() > 0:
             raise BusinessException("组织存在关联用户，无法删除")
 
         if db.execute(
             select(func.count()).select_from(SysGroup).where(
-                SysGroup.org_id.in_(all_ids), SysGroup.is_deleted == SoftDeleteEnum.NO
+                SysGroup.org_id.in_(all_ids)
             )
         ).scalar() > 0:
             raise BusinessException("组织下存在用户组，无法删除")
@@ -125,7 +124,7 @@ class OrgService(BaseCrudService):
 
         db.execute(
             sa_update(SysPosition).where(
-                SysPosition.org_id.in_(all_ids), SysPosition.is_deleted == SoftDeleteEnum.NO
+                SysPosition.org_id.in_(all_ids)
             ).values(org_id=None)
         )
 

@@ -9,7 +9,6 @@ from ..org.params import OrgVO
 from ..org.dao import OrgDao
 from core.pojo import IdsParam
 from core.result import page_data, PageDataField
-from core.enums import SoftDeleteEnum
 from core.exception import BusinessException
 from core.utils import apply_update
 from core.db.base_service import BaseCrudService
@@ -179,7 +178,7 @@ class GroupService(BaseCrudService):
 
         db.execute(
             sa_update(SysPosition).where(
-                SysPosition.group_id.in_(all_ids), SysPosition.is_deleted == SoftDeleteEnum.NO
+                SysPosition.group_id.in_(all_ids)
             ).values(group_id=None)
         )
 

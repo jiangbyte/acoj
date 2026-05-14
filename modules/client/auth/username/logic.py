@@ -3,8 +3,9 @@ from fastapi import Request
 from core.auth import HeiClientAuthTool
 from core.db import SessionLocal
 from core.exception import BusinessException
-from core.enums import SoftDeleteEnum, UserStatusEnum
+from core.enums import UserStatusEnum
 from core.utils import decrypt, generate_id
+from core.utils.user_agent_utils import get_browser
 from core.captcha import c_captcha
 from core.log import record_auth_log
 from .params import UsernameLoginParam, UsernameLoginResult, UsernameRegisterParam, UsernameRegisterResult, UsernameLogoutResult
@@ -59,10 +60,10 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         "nickname": user_info.nickname,
         "status": user_info.status
     }
-    if param.device_type:
-        extra["device_type"] = param.device_type
-    if param.device_id:
-        extra["device_id"] = param.device_id
+    # Auto-detect device type from User-Agent, device_id from frontend
+    user_agent = request.headers.get("User-Agent", "")
+    extra["device_type"] = get_browser(user_agent)
+    extra["device_id"] = param.device_id
 
     token = await HeiClientAuthTool.login(user_info.id, request, extra)
 
@@ -95,7 +96,7 @@ async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
     try:
         from sqlalchemy import select
         existing_user = db.scalar(
-            select(ClientUser).where(ClientUser.account == param.username, ClientUser.is_deleted == SoftDeleteEnum.NO)
+            select(ClientUser).where(ClientUser.account == param.username)
         )
         if existing_user:
             raise BusinessException("用户名已存在")

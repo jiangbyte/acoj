@@ -29,7 +29,7 @@ def collect_permissions_from_routes(app) -> Set[Tuple[str, str, str, str]]:
         if not permission:
             continue
 
-        login_type = getattr(endpoint, "_hei_login_type", LoginTypeEnum.LOGIN)
+        login_type = getattr(endpoint, "_hei_login_type", LoginTypeEnum.BUSINESS)
         name = getattr(route, "summary", None) or ""
 
         if isinstance(permission, str):
@@ -39,7 +39,7 @@ def collect_permissions_from_routes(app) -> Set[Tuple[str, str, str, str]]:
 
         for perm in perm_list:
             module = _get_module_from_code(perm)
-            category = PermissionCategoryEnum.BACKEND if login_type == LoginTypeEnum.LOGIN else PermissionCategoryEnum.FRONTEND
+            category = PermissionCategoryEnum.BACKEND if login_type == LoginTypeEnum.BUSINESS else PermissionCategoryEnum.FRONTEND
             permissions.add((perm, module, category, name))
 
     logger.info(f"Discovered {len(permissions)} permission codes from route decorators")

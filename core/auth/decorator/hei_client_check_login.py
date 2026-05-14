@@ -3,7 +3,7 @@ from .hei_check_login import HeiCheckLogin
 
 
 def HeiClientCheckLogin(func=None):
-    return HeiCheckLogin(func, login_type=LoginTypeEnum.CLIENT)
+    return HeiCheckLogin(func, login_type=LoginTypeEnum.CONSUMER)
 
 
 def hei_client_check_login(func=None):

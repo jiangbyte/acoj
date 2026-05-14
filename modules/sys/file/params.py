@@ -2,9 +2,10 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from core.pojo import PageBounds
+from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
-class FileVO(BaseModel):
+class FileVO(DateTimeValidatorMixin,BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: Optional[str] = None

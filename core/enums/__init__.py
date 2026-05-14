@@ -1,7 +1,6 @@
 from .status_enum import StatusEnum
 from .user_status_enum import UserStatusEnum
 from .export_type_enum import ExportTypeEnum
-from .soft_delete_enum import SoftDeleteEnum
 from .login_type_enum import LoginTypeEnum
 from .check_mode_enum import CheckModeEnum
 from .permission_enum import PermissionCategoryEnum, PermissionScopeEnum
@@ -17,7 +16,6 @@ __all__ = [
     "PageDataField",
     "StatusEnum",
     "ExportTypeEnum",
-    "SoftDeleteEnum",
     "LoginTypeEnum",
     "CheckModeEnum",
     "PermissionCategoryEnum",

@@ -5,7 +5,6 @@ from .models import SysModule, SysResource
 from .params import ModuleVO, ResourceVO, ModulePageParam, ResourcePageParam
 from .dao import ModuleDao, ResourceDao
 from core.pojo import IdsParam
-from core.enums import SoftDeleteEnum
 from core.exception import BusinessException
 from core.utils import apply_update, generate_id
 from core.db.base_service import BaseCrudService

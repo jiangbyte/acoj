@@ -17,12 +17,12 @@ def _get_request(*args, **kwargs):
     return None
 
 
-def HeiCheckRole(role: Union[str, List[str]], mode: str = CheckModeEnum.AND, login_type: str = LoginTypeEnum.LOGIN):
+def HeiCheckRole(role: Union[str, List[str]], mode: str = CheckModeEnum.AND, login_type: str = LoginTypeEnum.BUSINESS):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             request = _get_request(*args, **kwargs)
-            auth_tool = HeiClientAuthTool if login_type == LoginTypeEnum.CLIENT else HeiAuthTool
+            auth_tool = HeiClientAuthTool if login_type == LoginTypeEnum.CONSUMER else HeiAuthTool
             if not await auth_tool.isLogin(request):
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未授权/未登录")
             
@@ -40,5 +40,5 @@ def HeiCheckRole(role: Union[str, List[str]], mode: str = CheckModeEnum.AND, log
     return decorator
 
 
-def hei_check_role(role: Union[str, List[str]], mode: str = CheckModeEnum.AND, login_type: str = LoginTypeEnum.LOGIN):
+def hei_check_role(role: Union[str, List[str]], mode: str = CheckModeEnum.AND, login_type: str = LoginTypeEnum.BUSINESS):
     return HeiCheckRole(role, mode, login_type)
