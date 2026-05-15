@@ -1,0 +1,53 @@
+app:
+  name: hei-gin
+  version: 1.0.0
+  debug: true
+  host: 127.0.0.1
+  port: 18885
+  upload_max_size: 52428800
+  import_max_file_size_mb: 10
+  timeout_keep_alive: 15
+
+db:
+  host: localhost
+  port: 3306
+  user: root
+  password: "123456"
+  database: hei_data
+  pool_size: 20
+  max_overflow: 10
+  pool_recycle: 3600
+  pool_pre_ping: true
+  pool_timeout: 30
+  connect_timeout: 10
+  echo: false
+
+redis:
+  host: localhost
+  port: 6379
+  password: "123456"
+  database: 1
+  max_connections: 200
+  socket_connect_timeout: 10
+  socket_timeout: 30
+  retry_on_timeout: true
+  health_check_interval: 30
+
+jwt:
+  secret_key: hei-fastapi-jwt-secret-key-2026-please-change-in-production
+  algorithm: HS256
+  expire_seconds: 2592000
+  token_name: Authorization
+
+sm2:
+  private_key: dbc1da701ba293538f8d1df7d7286410503e25723a99e82c47b0c276dcbf86c0
+  public_key: "043fcdbc656c5489a327060548c66c7af746baf31a6bfa04eb0215951e17dd272c8d87ce1da014b26952163143df32e07c0c5ed7000f409dc3e28729f7073469d2"
+
+cors:
+  allow_origins: ["*"]
+  allow_methods: ["*"]
+  allow_headers: ["*"]
+  allow_credentials: false
+
+snowflake:
+  instance: 1
