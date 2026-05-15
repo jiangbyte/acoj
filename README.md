@@ -1,5 +1,7 @@
 # Hei GoFrame
 
+> 由于比较懒，所以放弃了hei-goframe的维护，请到main分支查看gin版本。
+
 <img width="120" src="https://jiangbyte.github.io/hei-docs/logo.svg">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
