@@ -15,6 +15,22 @@ type PageRes struct {
 	Pages   int         `json:"pages"`
 }
 
+// BaseExportParam is the common export request parameter matching the Python BaseExportParam.
+type BaseExportParam struct {
+	ExportType string `json:"export_type"` // "current", "selected", "all"
+	Current    int    `json:"current"`
+	Size       int    `json:"size"`
+	SelectedId string `json:"selected_id"` // comma-separated IDs
+}
+
+// SelectedIds parses the comma-separated selected_id into a slice.
+func (p *BaseExportParam) SelectedIds() []string {
+	if p.SelectedId == "" {
+		return nil
+	}
+	return SplitIds(p.SelectedId)
+}
+
 // NewPageRes creates a PageRes with calculated pages.
 func NewPageRes(records interface{}, total, page, size int) *PageRes {
 	pages := total / size

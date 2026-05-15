@@ -1,11 +1,16 @@
 package user
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"io"
+	"strings"
 
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/ghttp"
 	"golang.org/x/crypto/bcrypt"
 
 	"hei-goframe/internal/consts"
@@ -14,6 +19,21 @@ import (
 	"hei-goframe/internal/service/auth"
 	"hei-goframe/utility"
 )
+
+func init() {
+	auth.RegisterPermission("sys:user:page", "sys/user", "BACKEND", "用户查询")
+	auth.RegisterPermission("sys:user:create", "sys/user", "BACKEND", "用户新增")
+	auth.RegisterPermission("sys:user:modify", "sys/user", "BACKEND", "用户修改")
+	auth.RegisterPermission("sys:user:remove", "sys/user", "BACKEND", "用户删除")
+	auth.RegisterPermission("sys:user:detail", "sys/user", "BACKEND", "用户详情")
+	auth.RegisterPermission("sys:user:export", "sys/user", "BACKEND", "用户导出")
+	auth.RegisterPermission("sys:user:template", "sys/user", "BACKEND", "用户导入模板")
+	auth.RegisterPermission("sys:user:import", "sys/user", "BACKEND", "用户导入")
+	auth.RegisterPermission("sys:user:grant-role", "sys/user", "BACKEND", "用户分配角色")
+	auth.RegisterPermission("sys:user:grant-permission", "sys/user", "BACKEND", "用户分配权限")
+	auth.RegisterPermission("sys:user:own-permission-detail", "sys/user", "BACKEND", "用户权限详情")
+	auth.RegisterPermission("sys:user:own-roles", "sys/user", "BACKEND", "用户角色ID列表")
+}
 
 // Page queries users with pagination.
 func Page(ctx context.Context, keyword, status string, current, size int) (*utility.PageRes, error) {
@@ -70,6 +90,7 @@ func Page(ctx context.Context, keyword, status string, current, size int) (*util
 		voList = append(voList, vo)
 	}
 
+	batchEnrichNames(ctx, voList)
 	return utility.NewPageRes(voList, count, current, size), nil
 }
 
@@ -230,6 +251,7 @@ func Detail(ctx context.Context, id string) (g.Map, error) {
 		"role_ids":      roleIds,
 	}
 	enrichNames(ctx, vo)
+	enrichCreatorUpdater(ctx, vo)
 	return vo, nil
 }
 
@@ -356,6 +378,14 @@ func GetMenus(ctx context.Context, loginId string) ([]g.Map, error) {
 
 // GetPermissions returns sorted permission codes for the current user.
 func GetPermissions(ctx context.Context, loginId string) ([]string, error) {
+	// Check if user has SUPER_ADMIN role
+	roleCodes := getRoleCodes(ctx, loginId)
+	for _, code := range roleCodes {
+		if code == consts.SuperAdminCode {
+			return auth.PermTool.GetPermissionListByLoginId(ctx, loginId, consts.LoginTypeBusiness)
+		}
+	}
+
 	roleIds := getRoleIdsAllSources(ctx, loginId)
 	if len(roleIds) == 0 {
 		return nil, nil
@@ -442,6 +472,115 @@ func UpdatePassword(ctx context.Context, loginId, currentPassword, newPassword s
 
 	_, err = dao.SysUser.Ctx().Ctx(ctx).WherePri(loginId).Update(g.Map{"password": string(hashed)})
 	return err
+}
+
+// Export exports user data as an Excel file.
+func Export(ctx context.Context, exportType string, selectedIds []string, current, size int) (*bytes.Buffer, error) {
+	var records []g.Map
+
+	switch exportType {
+	case "current":
+		pageSize := size
+		if pageSize <= 0 {
+			pageSize = 10
+		}
+		pageCurrent := current
+		if pageCurrent <= 0 {
+			pageCurrent = 1
+		}
+		m := dao.SysUser.Ctx().Ctx(ctx)
+		offset := (pageCurrent - 1) * pageSize
+		if err := m.Limit(pageSize).Offset(offset).Scan(&records); err != nil {
+			return nil, err
+		}
+	case "selected":
+		if len(selectedIds) == 0 {
+			return nil, fmt.Errorf("请选择要导出的数据")
+		}
+		m := dao.SysUser.Ctx().Ctx(ctx).WherePri(selectedIds)
+		if err := m.Scan(&records); err != nil {
+			return nil, err
+		}
+	default:
+		m := dao.SysUser.Ctx().Ctx(ctx)
+		if err := m.Scan(&records); err != nil {
+			return nil, err
+		}
+	}
+
+	data := make([]map[string]interface{}, 0, len(records))
+	for _, r := range records {
+		item := cleanMapForExport(r)
+		data = append(data, item)
+	}
+
+	return utility.CreateExcelFromData(data, "用户数据")
+}
+
+// DownloadTemplate downloads an import template Excel file.
+func DownloadTemplate(ctx context.Context) (*bytes.Buffer, error) {
+	headers := []string{"account", "nickname", "avatar", "motto", "gender", "birthday", "email", "github", "phone", "org_id", "position_id", "group_id", "status"}
+	return utility.CreateExcelTemplate(headers, "用户数据")
+}
+
+// Import imports user data from an uploaded Excel file.
+func Import(ctx context.Context, file ghttp.UploadFile) (g.Map, error) {
+	f, err := file.Open()
+	if err != nil {
+		return nil, fmt.Errorf("无法读取上传文件: %w", err)
+	}
+	defer f.Close()
+
+	if file.Size > 5*1024*1024 {
+		return nil, fmt.Errorf("文件大小不能超过5MB")
+	}
+	if !strings.HasSuffix(strings.ToLower(file.Filename), ".xlsx") {
+		return nil, fmt.Errorf("仅支持.xlsx格式文件")
+	}
+
+	content, err := io.ReadAll(f)
+	if err != nil {
+		return nil, fmt.Errorf("无法读取上传文件: %w", err)
+	}
+
+	rows, err := utility.ParseExcelFromBytes(content, true)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rows) == 0 {
+		return nil, fmt.Errorf("导入数据不能为空")
+	}
+
+	imported := 0
+	for _, row := range rows {
+		id := utility.GenerateID()
+		_, err := dao.SysUser.Ctx().Ctx(ctx).Insert(g.Map{
+			"id":          id,
+			"account":     row["account"],
+			"nickname":    row["nickname"],
+			"avatar":      row["avatar"],
+			"motto":       row["motto"],
+			"gender":      row["gender"],
+			"birthday":    row["birthday"],
+			"email":       row["email"],
+			"github":      row["github"],
+			"phone":       row["phone"],
+			"org_id":      row["org_id"],
+			"position_id": row["position_id"],
+			"group_id":    row["group_id"],
+			"status":      row["status"],
+			"created_by":  getLoginId(ctx),
+		})
+		if err == nil {
+			imported++
+		}
+	}
+
+	return g.Map{
+		"total":   imported,
+		"message": fmt.Sprintf("成功导入%d条数据", imported),
+	}, nil
 }
 
 // --- Internal helpers ---
@@ -725,5 +864,50 @@ func ToLoginUserInfo(u *entity.SysUser) g.Map {
 		"last_login_at": u.LastLoginAt,
 		"last_login_ip": u.LastLoginIp,
 		"login_count":   u.LoginCount,
+	}
+}
+
+func cleanMapForExport(m g.Map) map[string]interface{} {
+	result := make(map[string]interface{}, len(m))
+	for k, v := range m {
+		if v == nil {
+			result[k] = ""
+		} else {
+			result[k] = v
+		}
+	}
+	delete(result, "id")
+	return result
+}
+
+func batchEnrichNames(ctx context.Context, list []g.Map) {
+	for _, item := range list {
+		enrichCreatorUpdater(ctx, item)
+		orgId, _ := item["org_id"].(string)
+		item["org_names"] = resolveNamePath(ctx, "sys_org", orgId)
+		groupId, _ := item["group_id"].(string)
+		item["group_names"] = resolveNamePath(ctx, "sys_group", groupId)
+		positionId, _ := item["position_id"].(string)
+		if positionId != "" {
+			row, _ := dao.SysPosition.Ctx().Ctx(ctx).WherePri(positionId).Fields("name").One()
+			if row != nil {
+				item["position_name"] = row["name"].String()
+			}
+		}
+	}
+}
+
+func enrichCreatorUpdater(ctx context.Context, item g.Map) {
+	if id, ok := item["created_by"].(string); ok && id != "" {
+		row, _ := dao.SysUser.Ctx().Ctx(ctx).WherePri(id).Fields("nickname").One()
+		if row != nil {
+			item["created_name"] = row["nickname"].String()
+		}
+	}
+	if id, ok := item["updated_by"].(string); ok && id != "" {
+		row, _ := dao.SysUser.Ctx().Ctx(ctx).WherePri(id).Fields("nickname").One()
+		if row != nil {
+			item["updated_name"] = row["nickname"].String()
+		}
 	}
 }

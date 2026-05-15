@@ -8,9 +8,10 @@ import (
 // --- Page ---
 
 type OrgPageReq struct {
-	g.Meta  `path:"/api/v1/sys/org/page" method:"get" summary:"分页查询组织" tags:"组织管理"`
-	Keyword string `json:"keyword"`
-	Status  string `json:"status"`
+	g.Meta   `path:"/api/v1/sys/org/page" method:"get" summary:"分页查询组织" tags:"组织管理"`
+	Keyword  string `json:"keyword"`
+	Status   string `json:"status"`
+	ParentId string `json:"parent_id"`
 	utility.PageReq
 }
 
@@ -76,8 +77,10 @@ type OrgDetailRes struct {
 	SortCode    int    `json:"sort_code"`
 	CreatedAt   string `json:"created_at"`
 	CreatedBy   string `json:"created_by"`
+	CreatedName string `json:"created_name"`
 	UpdatedAt   string `json:"updated_at"`
 	UpdatedBy   string `json:"updated_by"`
+	UpdatedName string `json:"updated_name"`
 }
 
 // --- Tree ---
@@ -95,9 +98,60 @@ type OrgTreeNode struct {
 }
 
 type OrgTreeReq struct {
-	g.Meta `path:"/api/v1/sys/org/tree" method:"get" summary:"获取组织树" tags:"组织管理"`
+	g.Meta   `path:"/api/v1/sys/org/tree" method:"get" summary:"获取组织树" tags:"组织管理"`
+	Category string `json:"category"`
 }
 
-type OrgTreeRes struct {
-	List []*OrgTreeNode `json:"list"`
+type OrgTreeRes []*OrgTreeNode
+
+// --- Export ---
+
+type OrgExportReq struct {
+	g.Meta     `path:"/api/v1/sys/org/export" method:"get" summary:"导出组织数据" tags:"组织管理"`
+	ExportType string `json:"export_type" v:"required#导出类型不能为空"`
+	SelectedId string `json:"selected_id"`
+	utility.PageReq
 }
+
+type OrgExportRes struct{}
+
+// --- Template ---
+
+type OrgTemplateReq struct {
+	g.Meta `path:"/api/v1/sys/org/template" method:"get" summary:"下载组织导入模板" tags:"组织管理"`
+}
+
+type OrgTemplateRes struct{}
+
+// --- Import ---
+
+type OrgImportReq struct {
+	g.Meta `path:"/api/v1/sys/org/import" method:"post" summary:"导入组织数据" tags:"组织管理"`
+}
+
+type OrgImportRes struct {
+	Total   int    `json:"total"`
+	Message string `json:"message"`
+}
+
+// --- Grant Org Role ---
+
+type GrantOrgRoleReq struct {
+	g.Meta              `path:"/api/v1/sys/org/grant-role" method:"post" summary:"分配组织角色" tags:"组织管理"`
+	OrgId               string   `json:"org_id" v:"required#组织ID不能为空"`
+	RoleIds             []string `json:"role_ids" v:"required#角色ID不能为空"`
+	Scope               string   `json:"scope"`
+	CustomScopeGroupIds string   `json:"custom_scope_group_ids"`
+	CustomScopeOrgIds   string   `json:"custom_scope_org_ids"`
+}
+
+type GrantOrgRoleRes struct{}
+
+// --- Own Roles ---
+
+type OrgOwnRolesReq struct {
+	g.Meta `path:"/api/v1/sys/org/own-roles" method:"get" summary:"获取组织角色ID列表" tags:"组织管理"`
+	OrgId  string `json:"org_id" v:"required#组织ID不能为空"`
+}
+
+type OrgOwnRolesRes []string

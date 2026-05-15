@@ -1,6 +1,20 @@
 package consts
 
 const (
+	// Page data field keys matching Python PageDataField
+	PageDataRecords = "records"
+	PageDataTotal   = "total"
+	PageDataPage    = "page"
+	PageDataSize    = "size"
+	PageDataPages   = "pages"
+
+	// Base system field names matching Python BASE_SYSTEM_FIELDS
+	BaseFieldId        = "id"
+	BaseFieldCreatedAt = "created_at"
+	BaseFieldCreatedBy = "created_by"
+	BaseFieldUpdatedAt = "updated_at"
+	BaseFieldUpdatedBy = "updated_by"
+
 	// Login types
 	LoginTypeBusiness = "BUSINESS"
 	LoginTypeConsumer = "CONSUMER"

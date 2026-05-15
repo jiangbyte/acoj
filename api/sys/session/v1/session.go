@@ -46,9 +46,16 @@ type SessionTokensReq struct {
 	UserId string `json:"user_id" v:"required#用户ID不能为空"`
 }
 
-type SessionTokensRes struct {
-	Tokens []string `json:"tokens"`
+type SessionTokenItem struct {
+	Token          string `json:"token"`
+	CreatedAt      string `json:"created_at"`
+	Timeout        string `json:"timeout"`
+	TimeoutSeconds int    `json:"timeout_seconds"`
+	DeviceType     string `json:"device_type"`
+	DeviceId       string `json:"device_id"`
 }
+
+type SessionTokensRes []SessionTokenItem
 
 // --- Exit Token ---
 
@@ -76,8 +83,16 @@ type SessionChartPieItem struct {
 	Total    int    `json:"total"`
 }
 
-type SessionChartDataRes struct {
+type BarChartData struct {
 	Days   []string                 `json:"days"`
 	Series []SessionChartSeriesItem `json:"series"`
-	List   []SessionChartPieItem    `json:"list"`
+}
+
+type PieChartData struct {
+	Data []SessionChartPieItem `json:"data"`
+}
+
+type SessionChartDataRes struct {
+	BarChart *BarChartData `json:"bar_chart"`
+	PieChart *PieChartData `json:"pie_chart"`
 }

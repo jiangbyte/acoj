@@ -18,13 +18,13 @@ func NewV1() *ControllerV1 {
 func (c *ControllerV1) PublicKey(ctx context.Context, req *api.PublicKeyReq) (res *api.PublicKeyRes, err error) {
 	key := g.Cfg().MustGet(ctx, "hei.sm2.publicKey").String()
 	r := g.RequestFromCtx(ctx)
-	r.Response.WriteJson(utility.Success(key))
+	r.Response.WriteJson(utility.SuccessWithCtx(ctx, key))
 	return
 }
 
 func (c *ControllerV1) ConsumerPublicKey(ctx context.Context, req *api.ConsumerPublicKeyReq) (res *api.ConsumerPublicKeyRes, err error) {
 	key := g.Cfg().MustGet(ctx, "hei.sm2.publicKey").String()
 	r := g.RequestFromCtx(ctx)
-	r.Response.WriteJson(utility.Success(key))
+	r.Response.WriteJson(utility.SuccessWithCtx(ctx, key))
 	return
 }

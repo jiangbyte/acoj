@@ -1,6 +1,8 @@
 package utility
 
 import (
+	"context"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 )
@@ -29,6 +31,24 @@ func Success(data ...interface{}) g.Map {
 	return result
 }
 
+// SuccessWithCtx returns a success response with trace_id populated from context.
+func SuccessWithCtx(ctx context.Context, data ...interface{}) g.Map {
+	result := Success(data...)
+	if traceId := GetTraceID(ctx); traceId != "" {
+		result["trace_id"] = traceId
+	}
+	return result
+}
+
+// FailureWithCtx returns a failure response with trace_id populated from context.
+func FailureWithCtx(ctx context.Context, message string, code ...int) g.Map {
+	result := Failure(message, code...)
+	if traceId := GetTraceID(ctx); traceId != "" {
+		result["trace_id"] = traceId
+	}
+	return result
+}
+
 // Failure returns a failure response.
 func Failure(message string, code ...int) g.Map {
 	c := 400
@@ -51,9 +71,14 @@ func MiddlewareHandlerResponse(r *ghttp.Request) {
 		return
 	}
 	var data = r.GetHandlerResponse()
+	traceId := GetTraceID(r.Context())
 	if err := r.GetError(); err != nil {
-		r.Response.WriteJson(Failure(err.Error()))
+		resp := Failure(err.Error())
+		resp["trace_id"] = traceId
+		r.Response.WriteJson(resp)
 		return
 	}
-	r.Response.WriteJson(Success(data))
+	resp := Success(data)
+	resp["trace_id"] = traceId
+	r.Response.WriteJson(resp)
 }

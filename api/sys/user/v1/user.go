@@ -133,7 +133,7 @@ type PermissionItem struct {
 type GrantPermissionReq struct {
 	g.Meta      `path:"/api/v1/sys/user/grant-permission" method:"post" summary:"分配用户权限" tags:"用户管理"`
 	UserId      string           `json:"user_id" v:"required#用户ID不能为空"`
-	Permissions []PermissionItem `json:"permissions" v:"required#权限列表不能为空"`
+	Permissions []PermissionItem `json:"permissions"`
 }
 
 type GrantPermissionRes struct{}
@@ -152,9 +152,7 @@ type PermissionDetailItem struct {
 	CustomScopeOrgIds   string `json:"custom_scope_org_ids"`
 }
 
-type OwnPermissionDetailRes struct {
-	List []PermissionDetailItem `json:"list"`
-}
+type OwnPermissionDetailRes struct{}
 
 // --- Own Roles ---
 
@@ -163,9 +161,7 @@ type OwnRolesReq struct {
 	UserId string `json:"user_id" v:"required#用户ID不能为空"`
 }
 
-type OwnRolesRes struct {
-	RoleIds []string `json:"role_ids"`
-}
+type OwnRolesRes struct{}
 
 // --- Current User Info ---
 
@@ -217,9 +213,7 @@ type MenusReq struct {
 	g.Meta `path:"/api/v1/sys/user/menus" method:"get" summary:"获取当前用户菜单" tags:"用户管理"`
 }
 
-type MenusRes struct {
-	Menus []*MenuNode `json:"menus"`
-}
+type MenusRes []*MenuNode
 
 // --- User Permissions ---
 
@@ -227,9 +221,7 @@ type UserPermissionsReq struct {
 	g.Meta `path:"/api/v1/sys/user/permissions" method:"get" summary:"获取当前用户权限码" tags:"用户管理"`
 }
 
-type UserPermissionsRes struct {
-	Codes []string `json:"codes"`
-}
+type UserPermissionsRes struct{}
 
 // --- Update Profile ---
 
@@ -265,3 +257,33 @@ type UpdatePasswordReq struct {
 }
 
 type UpdatePasswordRes struct{}
+
+// --- Export ---
+
+type UserExportReq struct {
+	g.Meta     `path:"/api/v1/sys/user/export" method:"get" summary:"导出用户数据" tags:"用户管理"`
+	ExportType string `json:"export_type" v:"required#导出类型不能为空"`
+	SelectedId string `json:"selected_id"`
+	utility.PageReq
+}
+
+type UserExportRes struct{}
+
+// --- Template ---
+
+type UserTemplateReq struct {
+	g.Meta `path:"/api/v1/sys/user/template" method:"get" summary:"下载用户导入模板" tags:"用户管理"`
+}
+
+type UserTemplateRes struct{}
+
+// --- Import ---
+
+type UserImportReq struct {
+	g.Meta `path:"/api/v1/sys/user/import" method:"post" summary:"导入用户数据" tags:"用户管理"`
+}
+
+type UserImportRes struct {
+	Total   int    `json:"total"`
+	Message string `json:"message"`
+}

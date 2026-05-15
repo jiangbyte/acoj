@@ -1,17 +1,33 @@
 package log
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io"
+	"strings"
 	"time"
 
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/ghttp"
 
 	"hei-goframe/internal/dao"
 	"hei-goframe/internal/model/entity"
 	"hei-goframe/internal/service/auth"
 	"hei-goframe/utility"
 )
+
+func init() {
+	auth.RegisterPermission("sys:log:page", "sys/log", "BACKEND", "日志查询")
+	auth.RegisterPermission("sys:log:create", "sys/log", "BACKEND", "日志新增")
+	auth.RegisterPermission("sys:log:modify", "sys/log", "BACKEND", "日志修改")
+	auth.RegisterPermission("sys:log:remove", "sys/log", "BACKEND", "日志删除")
+	auth.RegisterPermission("sys:log:detail", "sys/log", "BACKEND", "日志详情")
+	auth.RegisterPermission("sys:log:export", "sys/log", "BACKEND", "日志导出")
+	auth.RegisterPermission("sys:log:template", "sys/log", "BACKEND", "日志导入模板下载")
+	auth.RegisterPermission("sys:log:import", "sys/log", "BACKEND", "日志导入")
+}
 
 // Page queries logs with pagination.
 func Page(ctx context.Context, keyword, category, exeStatus string, current, size int) (*utility.PageRes, error) {
@@ -212,7 +228,7 @@ func DeleteByCategory(ctx context.Context, category string) error {
 
 // VisLineChartData returns visit line chart data for the last 7 days.
 func VisLineChartData(ctx context.Context) (g.Map, error) {
-	sevenDaysAgo := time.Now().AddDate(0, 0, -7).Format("2006-01-02 15:04:05")
+	sevenDaysAgo := time.Now().AddDate(0, 0, -6).Format("2006-01-02 15:04:05")
 	rows, err := g.DB().Model(dao.SysLog.Table).Ctx(ctx).
 		Fields("DATE(op_time) as day, category, count(*) as count").
 		Where("category LIKE ?", "VIS_%").
@@ -253,7 +269,7 @@ func VisPieChartData(ctx context.Context) (g.Map, error) {
 
 // OpBarChartData returns operation bar chart data for the last 7 days.
 func OpBarChartData(ctx context.Context) (g.Map, error) {
-	sevenDaysAgo := time.Now().AddDate(0, 0, -7).Format("2006-01-02 15:04:05")
+	sevenDaysAgo := time.Now().AddDate(0, 0, -6).Format("2006-01-02 15:04:05")
 	rows, err := g.DB().Model(dao.SysLog.Table).Ctx(ctx).
 		Fields("DATE(op_time) as day, category, count(*) as count").
 		Where("category LIKE ?", "OP_%").
@@ -368,4 +384,136 @@ func ifEmpty(s, def string) string {
 		return def
 	}
 	return s
+}
+
+// Export exports log data as an Excel file.
+func Export(ctx context.Context, exportType string, selectedIds []string, current, size int) (*bytes.Buffer, error) {
+	var records []g.Map
+
+	switch exportType {
+	case "current":
+		if size <= 0 {
+			size = 10
+		}
+		if current <= 0 {
+			current = 1
+		}
+		m := dao.SysLog.Ctx().Ctx(ctx)
+		offset := (current - 1) * size
+		if err := m.Limit(size).Offset(offset).Scan(&records); err != nil {
+			return nil, err
+		}
+	case "selected":
+		if len(selectedIds) == 0 {
+			return nil, fmt.Errorf("请选择要导出的数据")
+		}
+		m := dao.SysLog.Ctx().Ctx(ctx).WherePri(selectedIds)
+		if err := m.Scan(&records); err != nil {
+			return nil, err
+		}
+	default:
+		m := dao.SysLog.Ctx().Ctx(ctx)
+		if err := m.Scan(&records); err != nil {
+			return nil, err
+		}
+	}
+
+	data := make([]map[string]any, 0, len(records))
+	for _, r := range records {
+		item := cleanMapForExport(r)
+		data = append(data, item)
+	}
+
+	return utility.CreateExcelFromData(data, "操作日志数据")
+}
+
+// DownloadTemplate downloads an import template Excel file for logs.
+func DownloadTemplate(ctx context.Context) (*bytes.Buffer, error) {
+	headers := []string{
+		"category", "name", "exe_status", "exe_message",
+		"op_ip", "op_address", "op_browser", "op_os",
+		"class_name", "method_name", "req_method", "req_url",
+		"param_json", "result_json", "op_time", "trace_id",
+		"op_user", "sign_data",
+	}
+	return utility.CreateExcelTemplate(headers, "操作日志数据")
+}
+
+// Import imports log data from an uploaded Excel file.
+func Import(ctx context.Context, file ghttp.UploadFile) (g.Map, error) {
+	f, err := file.Open()
+	if err != nil {
+		return nil, fmt.Errorf("无法读取上传文件: %w", err)
+	}
+	defer f.Close()
+
+	if file.Size > 5*1024*1024 {
+		return nil, fmt.Errorf("文件大小不能超过5MB")
+	}
+	if !strings.HasSuffix(strings.ToLower(file.Filename), ".xlsx") {
+		return nil, fmt.Errorf("仅支持.xlsx格式文件")
+	}
+
+	content, err := io.ReadAll(f)
+	if err != nil {
+		return nil, fmt.Errorf("无法读取上传文件: %w", err)
+	}
+
+	rows, err := utility.ParseExcelFromBytes(content, true)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rows) == 0 {
+		return nil, fmt.Errorf("导入数据不能为空")
+	}
+
+	imported := 0
+	for _, row := range rows {
+		id := utility.GenerateID()
+		_, err := dao.SysLog.Ctx().Ctx(ctx).Insert(g.Map{
+			"id":          id,
+			"category":    row["category"],
+			"name":        row["name"],
+			"exe_status":  row["exe_status"],
+			"exe_message": row["exe_message"],
+			"op_ip":       row["op_ip"],
+			"op_address":  row["op_address"],
+			"op_browser":  row["op_browser"],
+			"op_os":       row["op_os"],
+			"class_name":  row["class_name"],
+			"method_name": row["method_name"],
+			"req_method":  row["req_method"],
+			"req_url":     row["req_url"],
+			"param_json":  row["param_json"],
+			"result_json": row["result_json"],
+			"op_time":     row["op_time"],
+			"trace_id":    row["trace_id"],
+			"op_user":     row["op_user"],
+			"sign_data":   row["sign_data"],
+			"created_by":  getLoginId(ctx),
+		})
+		if err == nil {
+			imported++
+		}
+	}
+
+	return g.Map{
+		"total":   imported,
+		"message": fmt.Sprintf("成功导入%d条数据", imported),
+	}, nil
+}
+
+// cleanMapForExport replaces nil values with empty strings and removes the id key.
+func cleanMapForExport(m g.Map) map[string]any {
+	result := make(map[string]any, len(m))
+	for k, v := range m {
+		if v == nil {
+			result[k] = ""
+		} else {
+			result[k] = v
+		}
+	}
+	delete(result, "id")
+	return result
 }

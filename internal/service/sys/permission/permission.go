@@ -9,6 +9,13 @@ import (
 	"hei-goframe/utility"
 )
 
+func init() {
+	auth.RegisterPermission("sys:permission:page", "sys/permission", "BACKEND", "权限查询")
+	auth.RegisterPermission("sys:permission:scan", "sys/permission", "BACKEND", "权限扫描")
+	auth.RegisterPermission("sys:permission:modules", "sys/permission", "BACKEND", "权限模块列表")
+	auth.RegisterPermission("sys:permission:by-module", "sys/permission", "BACKEND", "按模块获取权限")
+}
+
 func Page(ctx context.Context, current, size int) (*utility.PageRes, error) {
 	modules := auth.GetModulesFromRedis(ctx)
 	if modules == nil {

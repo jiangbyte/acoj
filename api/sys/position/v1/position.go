@@ -11,6 +11,8 @@ type PositionPageReq struct {
 	g.Meta  `path:"/api/v1/sys/position/page" method:"get" summary:"分页查询职位" tags:"职位管理"`
 	Keyword string `json:"keyword"`
 	Status  string `json:"status"`
+	GroupId string `json:"group_id"`
+	OrgId   string `json:"org_id"`
 	utility.PageReq
 }
 
@@ -77,8 +79,41 @@ type PositionDetailRes struct {
 	Description string `json:"description"`
 	Status      string `json:"status"`
 	SortCode    int    `json:"sort_code"`
+	Extra       string `json:"extra"`
 	CreatedAt   string `json:"created_at"`
 	CreatedBy   string `json:"created_by"`
+	CreatedName string `json:"created_name"`
 	UpdatedAt   string `json:"updated_at"`
 	UpdatedBy   string `json:"updated_by"`
+	UpdatedName string `json:"updated_name"`
+}
+
+// --- Export ---
+
+type PositionExportReq struct {
+	g.Meta     `path:"/api/v1/sys/position/export" method:"get" summary:"导出职位数据" tags:"职位管理"`
+	ExportType string `json:"export_type" v:"required#导出类型不能为空"`
+	SelectedId string `json:"selected_id"`
+	utility.PageReq
+}
+
+type PositionExportRes struct{}
+
+// --- Template ---
+
+type PositionTemplateReq struct {
+	g.Meta `path:"/api/v1/sys/position/template" method:"get" summary:"下载职位导入模板" tags:"职位管理"`
+}
+
+type PositionTemplateRes struct{}
+
+// --- Import ---
+
+type PositionImportReq struct {
+	g.Meta `path:"/api/v1/sys/position/import" method:"post" summary:"导入职位数据" tags:"职位管理"`
+}
+
+type PositionImportRes struct {
+	Total   int    `json:"total"`
+	Message string `json:"message"`
 }

@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/util/gconv"
 
 	api "hei-goframe/api/client/session/v1"
 	"hei-goframe/internal/service/auth"
 	sessionService "hei-goframe/internal/service/client/session"
+	"hei-goframe/internal/service/sys/log"
 )
 
 type ControllerV1 struct{}
@@ -17,6 +19,9 @@ func NewV1() *ControllerV1 {
 }
 
 func (c *ControllerV1) Analysis(ctx context.Context, req *api.SessionAnalysisReq) (res *api.SessionAnalysisRes, err error) {
+	if err := auth.MustPerm(ctx, "sys:session:page"); err != nil {
+		return nil, err
+	}
 	data, err := sessionService.Analysis(ctx)
 	if err != nil {
 		return nil, err
@@ -31,6 +36,9 @@ func (c *ControllerV1) Analysis(ctx context.Context, req *api.SessionAnalysisReq
 }
 
 func (c *ControllerV1) Page(ctx context.Context, req *api.SessionPageReq) (res *api.SessionPageRes, err error) {
+	if err := auth.MustPerm(ctx, "sys:session:page"); err != nil {
+		return nil, err
+	}
 	result, err := sessionService.Page(ctx, req.Keyword, req.Current, req.Size)
 	if err != nil {
 		return nil, err
@@ -39,6 +47,10 @@ func (c *ControllerV1) Page(ctx context.Context, req *api.SessionPageReq) (res *
 }
 
 func (c *ControllerV1) Exit(ctx context.Context, req *api.SessionExitReq) (res *api.SessionExitRes, err error) {
+	if err := auth.MustPerm(ctx, "sys:session:exit"); err != nil {
+		return nil, err
+	}
+	defer log.SysLog(ctx, "强退C端用户会话")()
 	err = sessionService.Exit(ctx, req.UserId)
 	if err != nil {
 		return nil, err
@@ -47,17 +59,33 @@ func (c *ControllerV1) Exit(ctx context.Context, req *api.SessionExitReq) (res *
 }
 
 func (c *ControllerV1) Tokens(ctx context.Context, req *api.SessionTokensReq) (res *api.SessionTokensRes, err error) {
-	tokens, err := sessionService.Tokens(ctx, req.UserId)
+	if err := auth.MustPerm(ctx, "sys:session:page"); err != nil {
+		return nil, err
+	}
+	data, err := sessionService.Tokens(ctx, req.UserId)
 	if err != nil {
 		return nil, err
 	}
-	if tokens == nil {
-		tokens = make([]string, 0)
+	items := make([]api.SessionTokenItem, 0)
+	for _, item := range data {
+		items = append(items, api.SessionTokenItem{
+			Token:          gconv.String(item["token"]),
+			CreatedAt:      gconv.String(item["created_at"]),
+			Timeout:        gconv.String(item["timeout"]),
+			TimeoutSeconds: gconv.Int(item["timeout_seconds"]),
+			DeviceType:     gconv.String(item["device_type"]),
+			DeviceId:       gconv.String(item["device_id"]),
+		})
 	}
-	return &api.SessionTokensRes{Tokens: tokens}, nil
+	result := api.SessionTokensRes(items)
+	return &result, nil
 }
 
 func (c *ControllerV1) ExitToken(ctx context.Context, req *api.SessionExitTokenReq) (res *api.SessionExitTokenRes, err error) {
+	if err := auth.MustPerm(ctx, "sys:session:exit"); err != nil {
+		return nil, err
+	}
+	defer log.SysLog(ctx, "强退C端指定令牌")()
 	err = sessionService.ExitToken(ctx, req.UserId, req.Token)
 	if err != nil {
 		return nil, err
@@ -66,6 +94,9 @@ func (c *ControllerV1) ExitToken(ctx context.Context, req *api.SessionExitTokenR
 }
 
 func (c *ControllerV1) ChartData(ctx context.Context, req *api.SessionChartDataReq) (res *api.SessionChartDataRes, err error) {
+	if err := auth.MustPerm(ctx, "sys:session:page"); err != nil {
+		return nil, err
+	}
 	data, err := sessionService.ChartData(ctx)
 	if err != nil {
 		return nil, err
@@ -89,39 +120,44 @@ func getLoginId(ctx context.Context) string {
 }
 
 func convertSessionChartData(data g.Map, res *api.SessionChartDataRes) {
-	if v, ok := data["days"]; ok {
-		if d, ok := v.([]string); ok {
-			res.Days = d
+	// Bar chart
+	if barChart, ok := data["bar_chart"].(g.Map); ok {
+		barData := &api.BarChartData{}
+		if days, ok := barChart["days"].([]string); ok {
+			barData.Days = days
 		}
-	}
-	if res.Days == nil {
-		res.Days = make([]string, 0)
-	}
-	if v, ok := data["series"]; ok {
-		if s, ok := v.([]g.Map); ok {
-			for _, item := range s {
+		if barData.Days == nil {
+			barData.Days = make([]string, 0)
+		}
+		if series, ok := barChart["series"].([]g.Map); ok {
+			for _, item := range series {
 				name, _ := item["name"].(string)
 				var dataArr []int
 				if d, ok := item["data"].([]int); ok {
 					dataArr = d
 				}
-				res.Series = append(res.Series, api.SessionChartSeriesItem{Name: name, Data: dataArr})
+				barData.Series = append(barData.Series, api.SessionChartSeriesItem{Name: name, Data: dataArr})
 			}
 		}
+		if barData.Series == nil {
+			barData.Series = make([]api.SessionChartSeriesItem, 0)
+		}
+		res.BarChart = barData
 	}
-	if res.Series == nil {
-		res.Series = make([]api.SessionChartSeriesItem, 0)
-	}
-	if v, ok := data["list"]; ok {
-		if items, ok := v.([]g.Map); ok {
+
+	// Pie chart
+	if pieChart, ok := data["pie_chart"].(g.Map); ok {
+		pieData := &api.PieChartData{}
+		if items, ok := pieChart["data"].([]g.Map); ok {
 			for _, item := range items {
 				category, _ := item["category"].(string)
 				total, _ := item["total"].(int)
-				res.List = append(res.List, api.SessionChartPieItem{Category: category, Total: total})
+				pieData.Data = append(pieData.Data, api.SessionChartPieItem{Category: category, Total: total})
 			}
 		}
-	}
-	if res.List == nil {
-		res.List = make([]api.SessionChartPieItem, 0)
+		if pieData.Data == nil {
+			pieData.Data = make([]api.SessionChartPieItem, 0)
+		}
+		res.PieChart = pieData
 	}
 }

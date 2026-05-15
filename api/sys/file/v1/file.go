@@ -11,11 +11,11 @@ type FileUploadReq struct {
 }
 
 type FileUploadRes struct {
-	Id       string `json:"id"`
-	FileName string `json:"file_name"`
-	FilePath string `json:"file_path"`
-	FileSize int64  `json:"file_size"`
-	Engine   string `json:"engine"`
+	Id           string `json:"id"`
+	Name         string `json:"name"`
+	Engine       string `json:"engine"`
+	DownloadPath string `json:"download_path"`
+	SizeInfo     string `json:"size_info"`
 }
 
 type FileDownloadReq struct {
@@ -44,17 +44,26 @@ type FileDetailReq struct {
 }
 
 type FileDetailRes struct {
-	Id        string `json:"id"`
-	FileName  string `json:"file_name"`
-	FilePath  string `json:"file_path"`
-	FileSize  int64  `json:"file_size"`
-	FileExt   string `json:"file_ext"`
-	MimeType  string `json:"mime_type"`
-	Engine    string `json:"engine"`
-	CreatedAt string `json:"created_at"`
-	CreatedBy string `json:"created_by"`
-	UpdatedAt string `json:"updated_at"`
-	UpdatedBy string `json:"updated_by"`
+	Id             string `json:"id"`
+	Engine         string `json:"engine"`
+	Bucket         string `json:"bucket"`
+	FileKey        string `json:"file_key"`
+	Name           string `json:"name"`
+	Suffix         string `json:"suffix"`
+	SizeKb         int64  `json:"size_kb"`
+	SizeInfo       string `json:"size_info"`
+	ObjName        string `json:"obj_name"`
+	StoragePath    string `json:"storage_path"`
+	DownloadPath   string `json:"download_path"`
+	IsDownloadAuth int    `json:"is_download_auth"`
+	Thumbnail      string `json:"thumbnail"`
+	Extra          string `json:"extra"`
+	CreatedAt      string `json:"created_at"`
+	CreatedBy      string `json:"created_by"`
+	CreatedName    string `json:"created_name"`
+	UpdatedAt      string `json:"updated_at"`
+	UpdatedBy      string `json:"updated_by"`
+	UpdatedName    string `json:"updated_name"`
 }
 
 type FileRemoveReq struct {
@@ -70,3 +79,34 @@ type FileRemoveAbsoluteReq struct {
 }
 
 type FileRemoveAbsoluteRes struct{}
+
+// --- Export ---
+
+type FileExportReq struct {
+	g.Meta     `path:"/api/v1/sys/file/export" method:"get" summary:"导出文件数据" tags:"文件管理"`
+	ExportType string `json:"export_type"`
+	SelectedId string `json:"selected_id"`
+	Current    int    `json:"current"`
+	Size       int    `json:"size"`
+}
+
+type FileExportRes struct{}
+
+// --- Template ---
+
+type FileTemplateReq struct {
+	g.Meta `path:"/api/v1/sys/file/template" method:"get" summary:"下载文件导入模板" tags:"文件管理"`
+}
+
+type FileTemplateRes struct{}
+
+// --- Import ---
+
+type FileImportReq struct {
+	g.Meta `path:"/api/v1/sys/file/import" method:"post" summary:"导入文件数据" tags:"文件管理"`
+}
+
+type FileImportRes struct {
+	Total   int    `json:"total"`
+	Message string `json:"message"`
+}

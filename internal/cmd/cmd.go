@@ -42,12 +42,14 @@ var (
 		Func: func(ctx context.Context, parser *gcmd.Parser) (err error) {
 			initSM2(ctx)
 
+			auth.RegisterPermissionInterface(auth.NewPermissionInterface())
 			auth.RunPermissionScan(ctx)
 
 			s := g.Server()
 
 			s.Group("/", func(group *ghttp.RouterGroup) {
 				group.Middleware(
+					utility.MiddlewareTrace,
 					utility.MiddlewareHandlerResponse,
 					auth.MiddlewareCORS,
 					auth.MiddlewareAuth,

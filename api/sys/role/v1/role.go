@@ -77,15 +77,16 @@ type PermissionItem struct {
 type GrantPermissionReq struct {
 	g.Meta      `path:"/api/v1/sys/role/grant-permission" method:"post" summary:"分配角色权限" tags:"角色管理"`
 	RoleId      string           `json:"role_id" v:"required#角色ID不能为空"`
-	Permissions []PermissionItem `json:"permissions" v:"required#权限列表不能为空"`
+	Permissions []PermissionItem `json:"permissions"`
 }
 
 type GrantPermissionRes struct{}
 
 type GrantResourceReq struct {
 	g.Meta      `path:"/api/v1/sys/role/grant-resource" method:"post" summary:"分配角色资源" tags:"角色管理"`
-	RoleId      string   `json:"role_id" v:"required#角色ID不能为空"`
-	ResourceIds []string `json:"resource_ids"`
+	RoleId      string           `json:"role_id" v:"required#角色ID不能为空"`
+	ResourceIds []string         `json:"resource_ids"`
+	Permissions []PermissionItem `json:"permissions"`
 }
 
 type GrantResourceRes struct{}
@@ -95,9 +96,7 @@ type OwnPermissionReq struct {
 	RoleId string `json:"role_id" v:"required#角色ID不能为空"`
 }
 
-type OwnPermissionRes struct {
-	Codes []string `json:"codes"`
-}
+type OwnPermissionRes []string
 
 type OwnPermissionDetailReq struct {
 	g.Meta `path:"/api/v1/sys/role/own-permission-detail" method:"get" summary:"获取角色权限详情" tags:"角色管理"`
@@ -111,15 +110,41 @@ type PermissionDetailItem struct {
 	CustomScopeOrgIds   string `json:"custom_scope_org_ids"`
 }
 
-type OwnPermissionDetailRes struct {
-	List []PermissionDetailItem `json:"list"`
-}
+type OwnPermissionDetailRes []PermissionDetailItem
 
 type OwnResourceReq struct {
 	g.Meta `path:"/api/v1/sys/role/own-resource" method:"get" summary:"获取角色资源ID列表" tags:"角色管理"`
 	RoleId string `json:"role_id" v:"required#角色ID不能为空"`
 }
 
-type OwnResourceRes struct {
-	ResourceIds []string `json:"resource_ids"`
+type OwnResourceRes []string
+
+// --- Export ---
+
+type RoleExportReq struct {
+	g.Meta     `path:"/api/v1/sys/role/export" method:"get" summary:"导出角色数据" tags:"角色管理"`
+	ExportType string `json:"export_type" v:"required#导出类型不能为空"`
+	SelectedId string `json:"selected_id"`
+	utility.PageReq
+}
+
+type RoleExportRes struct{}
+
+// --- Template ---
+
+type RoleTemplateReq struct {
+	g.Meta `path:"/api/v1/sys/role/template" method:"get" summary:"下载角色导入模板" tags:"角色管理"`
+}
+
+type RoleTemplateRes struct{}
+
+// --- Import ---
+
+type RoleImportReq struct {
+	g.Meta `path:"/api/v1/sys/role/import" method:"post" summary:"导入角色数据" tags:"角色管理"`
+}
+
+type RoleImportRes struct {
+	Total   int    `json:"total"`
+	Message string `json:"message"`
 }

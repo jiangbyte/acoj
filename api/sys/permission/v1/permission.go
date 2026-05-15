@@ -24,12 +24,10 @@ type PermissionModulesReq struct {
 	g.Meta `path:"/api/v1/sys/permission/modules" method:"get" summary:"获取模块列表" tags:"权限管理"`
 }
 
-type PermissionModulesRes struct {
-	Modules []string `json:"modules"`
-}
+type PermissionModulesRes []string
 
 type PermissionListByModuleReq struct {
-	g.Meta `path:"/api/v1/sys/permission/list-by-module" method:"get" summary:"按模块获取权限列表" tags:"权限管理"`
+	g.Meta `path:"/api/v1/sys/permission/by-module" method:"get" summary:"按模块获取权限列表" tags:"权限管理"`
 	Module string `json:"module" v:"required#模块不能为空"`
 }
 
@@ -40,6 +38,4 @@ type PermissionItem struct {
 	Name     string `json:"name"`
 }
 
-type PermissionListByModuleRes struct {
-	List []*PermissionItem `json:"list"`
-}
+type PermissionListByModuleRes []*PermissionItem

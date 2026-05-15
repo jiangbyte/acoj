@@ -60,21 +60,47 @@ type NoticeDetailReq struct {
 }
 
 type NoticeDetailRes struct {
-	Id        string `json:"id"`
-	Title     string `json:"title"`
-	Category  string `json:"category"`
-	Type      string `json:"type"`
-	Summary   string `json:"summary"`
-	Content   string `json:"content"`
-	Cover     string `json:"cover"`
-	Level     string `json:"level"`
-	ViewCount int    `json:"view_count"`
-	IsTop     string `json:"is_top"`
-	Position  string `json:"position"`
-	Status    string `json:"status"`
-	SortCode  int    `json:"sort_code"`
-	CreatedAt string `json:"created_at"`
-	CreatedBy string `json:"created_by"`
-	UpdatedAt string `json:"updated_at"`
-	UpdatedBy string `json:"updated_by"`
+	Id          string `json:"id"`
+	Title       string `json:"title"`
+	Category    string `json:"category"`
+	Type        string `json:"type"`
+	Summary     string `json:"summary"`
+	Content     string `json:"content"`
+	Cover       string `json:"cover"`
+	Level       string `json:"level"`
+	ViewCount   int    `json:"view_count"`
+	IsTop       string `json:"is_top"`
+	Position    string `json:"position"`
+	Status      string `json:"status"`
+	SortCode    int    `json:"sort_code"`
+	CreatedAt   string `json:"created_at"`
+	CreatedBy   string `json:"created_by"`
+	CreatedName string `json:"created_name"`
+	UpdatedAt   string `json:"updated_at"`
+	UpdatedBy   string `json:"updated_by"`
+	UpdatedName string `json:"updated_name"`
+}
+
+type NoticeExportReq struct {
+	g.Meta     `path:"/api/v1/sys/notice/export" method:"get" summary:"导出通知数据" tags:"通知管理"`
+	ExportType string `json:"export_type" v:"required#导出类型不能为空"`
+	SelectedId string `json:"selected_id"`
+	utility.PageReq
+}
+
+type NoticeExportRes struct{}
+
+type NoticeTemplateReq struct {
+	g.Meta `path:"/api/v1/sys/notice/template" method:"get" summary:"下载通知导入模板" tags:"通知管理"`
+}
+
+type NoticeTemplateRes struct{}
+
+type NoticeImportReq struct {
+	g.Meta `path:"/api/v1/sys/notice/import" method:"post" summary:"导入通知数据" tags:"通知管理"`
+}
+
+type NoticeImportRes struct {
+	Total   int    `json:"total"`
+	Message string `json:"message"`
 }

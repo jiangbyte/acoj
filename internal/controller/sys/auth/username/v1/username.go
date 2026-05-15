@@ -8,6 +8,7 @@ import (
 	api "hei-goframe/api/sys/auth/username/v1"
 	"hei-goframe/internal/service/auth"
 	service "hei-goframe/internal/service/sys/auth"
+	"hei-goframe/internal/service/sys/log"
 )
 
 type ControllerV1 struct{}
@@ -29,6 +30,10 @@ func (c *ControllerV1) Login(ctx context.Context, req *api.LoginReq) (res *api.L
 }
 
 func (c *ControllerV1) Register(ctx context.Context, req *api.RegisterReq) (res *api.RegisterRes, err error) {
+	if err := auth.CheckNoRepeatInline(ctx, 5000); err != nil {
+		return nil, err
+	}
+	defer log.SysLog(ctx, "注册")()
 	err = service.Register(ctx, req.Username, req.Password, req.CaptchaCode, req.CaptchaId)
 	if err != nil {
 		return nil, err

@@ -5,115 +5,161 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 
+	api "hei-goframe/api/sys/home/v1"
+	"hei-goframe/internal/consts"
 	"hei-goframe/internal/dao"
 	"hei-goframe/internal/service/auth"
 	"hei-goframe/utility"
 )
 
-func GetHome(ctx context.Context) (g.Map, error) {
+func GetHome(ctx context.Context) (*api.GetHomeRes, error) {
 	loginId := getLoginId(ctx)
 
-	// Get quick actions for current user, joined with sys_resource
-	quickActions, err := dao.SysQuickAction.Ctx().Ctx(ctx).
-		Where("created_by", loginId).
-		OrderAsc("sort_code").
-		All()
-	if err != nil {
-		return nil, err
-	}
+	// Initialize empty slices (not nil) so they serialize as [] in JSON
+	quickActions := make([]*api.QuickActionItem, 0)
+	availableResources := make([]*api.ResourceItem, 0)
 
-	quickActionList := make([]g.Map, 0)
-	resourceIds := make([]string, 0)
-	for _, qa := range quickActions {
-		resourceIds = append(resourceIds, qa["resource_id"].String())
-		quickActionList = append(quickActionList, g.Map{
-			"id":        qa["id"].String(),
-			"sort_code": qa["sort_code"].Int(),
-		})
-	}
-
-	// Enrich quick actions with resource info
-	if len(resourceIds) > 0 {
-		resources, err := dao.SysResource.Ctx().Ctx(ctx).
-			WherePri(resourceIds).
-			Fields("id", "name", "icon", "route_path").
+	if loginId != "" {
+		// 1. Get quick actions joined with resources
+		qaRecords, err := dao.SysQuickAction.Ctx().Ctx(ctx).
+			LeftJoin("sys_resource", "sys_quick_action.resource_id = sys_resource.id").
+			Fields(
+				"sys_quick_action.id",
+				"sys_quick_action.resource_id",
+				"sys_quick_action.sort_code",
+				"sys_resource.name",
+				"sys_resource.icon",
+				"sys_resource.route_path",
+				"sys_resource.parent_id",
+				"sys_resource.type",
+			).
+			Where("sys_quick_action.user_id", loginId).
+			OrderAsc("sys_quick_action.sort_code").
 			All()
-		if err == nil {
-			resourceMap := make(map[string]g.Map)
-			for _, r := range resources {
-				resourceMap[r["id"].String()] = g.Map{
-					"name":       r["name"].String(),
-					"icon":       r["icon"].String(),
-					"route_path": r["route_path"].String(),
-				}
-			}
-			for _, qa := range quickActionList {
-				rid := ""
-				for _, raw := range quickActions {
-					if raw["id"].String() == qa["id"].(string) {
-						rid = raw["resource_id"].String()
-						break
-					}
-				}
-				if res, ok := resourceMap[rid]; ok {
-					qa["name"] = res["name"]
-					qa["icon"] = res["icon"]
-					qa["route_path"] = res["route_path"]
-				}
-			}
+		if err != nil {
+			return nil, err
 		}
-	}
 
-	// Get all resources
-	allResources, err := dao.SysResource.Ctx().Ctx(ctx).
-		Fields("id", "code", "name", "icon", "route_path", "category", "type").
-		OrderAsc("sort_code").
-		All()
-	if err != nil {
-		return nil, err
-	}
+		for _, r := range qaRecords {
+			quickActions = append(quickActions, &api.QuickActionItem{
+				Id:         r["id"].String(),
+				ResourceId: r["resource_id"].String(),
+				SortCode:   r["sort_code"].Int(),
+				Name:       r["name"].String(),
+				Icon:       r["icon"].String(),
+				RoutePath:  r["route_path"].String(),
+				ParentId:   r["parent_id"].String(),
+				Type:       r["type"].String(),
+			})
+		}
 
-	availableResources := make([]g.Map, 0)
-	usedIds := make(map[string]bool)
-	for _, rid := range resourceIds {
-		usedIds[rid] = true
-	}
-	for _, r := range allResources {
-		if !usedIds[r["id"].String()] {
-			availableResources = append(availableResources, g.Map{
-				"id":         r["id"].String(),
-				"code":       r["code"].String(),
-				"name":       r["name"].String(),
-				"icon":       r["icon"].String(),
-				"route_path": r["route_path"].String(),
-				"category":   r["category"].String(),
-				"type":       r["type"].String(),
+		// 2. Get available resources (ENABLED + MENU/DIRECTORY, exclude already added, limit 50)
+		usedRecords, _ := dao.SysQuickAction.Ctx().Ctx(ctx).
+			Where("user_id", loginId).
+			Fields("resource_id").
+			All()
+
+		usedIds := make([]string, 0)
+		for _, r := range usedRecords {
+			usedIds = append(usedIds, r["resource_id"].String())
+		}
+
+		resModel := dao.SysResource.Ctx().Ctx(ctx).
+			Where(dao.SysResource.Columns.Status, consts.StatusEnabled).
+			WhereIn(dao.SysResource.Columns.Type, g.Slice{"MENU", "DIRECTORY"}).
+			OrderAsc(dao.SysResource.Columns.SortCode).
+			Limit(50)
+
+		if len(usedIds) > 0 {
+			resModel = resModel.WhereNotIn(dao.SysResource.Columns.Id, usedIds)
+		}
+
+		resRecords, err := resModel.All()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, r := range resRecords {
+			availableResources = append(availableResources, &api.ResourceItem{
+				Id:         r[dao.SysResource.Columns.Id].String(),
+				ResourceId: r[dao.SysResource.Columns.Id].String(),
+				ParentId:   r[dao.SysResource.Columns.ParentId].String(),
+				Type:       r[dao.SysResource.Columns.Type].String(),
+				Name:       r[dao.SysResource.Columns.Name].String(),
+				Icon:       r[dao.SysResource.Columns.Icon].String(),
+				RoutePath:  r[dao.SysResource.Columns.RoutePath].String(),
+				SortCode:   r[dao.SysResource.Columns.SortCode].Int(),
 			})
 		}
 	}
 
-	// Get notice count
-	noticeCount, _ := dao.SysNotice.Ctx().Ctx(ctx).Count()
+	// 3. Get notices (top 5 enabled, ordered by is_top DESC, created_at DESC)
+	notices := make([]*api.HomeNoticeItem, 0)
+	noticeRecords, err := dao.SysNotice.Ctx().Ctx(ctx).
+		Where(dao.SysNotice.Columns.Status, consts.StatusEnabled).
+		OrderDesc(dao.SysNotice.Columns.IsTop).
+		OrderDesc(dao.SysNotice.Columns.CreatedAt).
+		Limit(5).
+		All()
+	if err != nil {
+		return nil, err
+	}
 
-	// Get total users
+	for _, r := range noticeRecords {
+		notices = append(notices, &api.HomeNoticeItem{
+			Id:        r[dao.SysNotice.Columns.Id].String(),
+			Title:     r[dao.SysNotice.Columns.Title].String(),
+			Level:     r[dao.SysNotice.Columns.Level].String(),
+			CreatedAt: r[dao.SysNotice.Columns.CreatedAt].GTime(),
+		})
+	}
+
+	// 4. Get stats
 	totalUsers, _ := dao.SysUser.Ctx().Ctx(ctx).Count()
+	stats := &api.HomeStats{
+		TotalUsers: int64(totalUsers),
+	}
 
-	return g.Map{
-		"quick_actions":       quickActionList,
-		"available_resources": availableResources,
-		"notice_count":        noticeCount,
-		"stats": g.Map{
-			"total_users": totalUsers,
-		},
+	return &api.GetHomeRes{
+		QuickActions:       quickActions,
+		AvailableResources: availableResources,
+		Notices:            notices,
+		Stats:              stats,
 	}, nil
 }
 
 func AddQuickAction(ctx context.Context, resourceId string) error {
 	loginId := getLoginId(ctx)
-	_, err := dao.SysQuickAction.Ctx().Ctx(ctx).Insert(g.Map{
-		"id":          utility.GenerateID(),
-		"resource_id": resourceId,
-		"created_by":  loginId,
+	if loginId == "" {
+		return nil
+	}
+
+	// Check for existing duplicate by user_id + resource_id
+	count, err := dao.SysQuickAction.Ctx().Ctx(ctx).
+		Where(dao.SysQuickAction.Columns.UserId, loginId).
+		Where(dao.SysQuickAction.Columns.ResourceId, resourceId).
+		Count()
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	// Get count for sort_code = (count + 1) * 10
+	totalCount, err := dao.SysQuickAction.Ctx().Ctx(ctx).
+		Where(dao.SysQuickAction.Columns.UserId, loginId).
+		Count()
+	if err != nil {
+		return err
+	}
+
+	_, err = dao.SysQuickAction.Ctx().Ctx(ctx).Insert(g.Map{
+		dao.SysQuickAction.Columns.Id:         utility.GenerateID(),
+		dao.SysQuickAction.Columns.UserId:     loginId,
+		dao.SysQuickAction.Columns.ResourceId: resourceId,
+		dao.SysQuickAction.Columns.SortCode:   (totalCount + 1) * 10,
+		dao.SysQuickAction.Columns.CreatedBy:  loginId,
 	})
 	return err
 }
@@ -124,12 +170,37 @@ func RemoveQuickAction(ctx context.Context, id string) error {
 }
 
 func SortQuickAction(ctx context.Context, ids []string) error {
-	for i, id := range ids {
-		_, err := dao.SysQuickAction.Ctx().Ctx(ctx).WherePri(id).Update(g.Map{
-			"sort_code": i + 1,
-		})
-		if err != nil {
-			return err
+	loginId := getLoginId(ctx)
+	if loginId == "" {
+		return nil
+	}
+
+	// Fetch only entities owned by the current user
+	entities, err := dao.SysQuickAction.Ctx().Ctx(ctx).
+		WherePri(ids).
+		Where(dao.SysQuickAction.Columns.UserId, loginId).
+		All()
+	if err != nil {
+		return err
+	}
+
+	// Build entity ID map for ownership check
+	entityMap := make(map[string]bool)
+	for _, e := range entities {
+		entityMap[e[dao.SysQuickAction.Columns.Id].String()] = true
+	}
+
+	// Update sort codes, only for entities owned by the current user
+	for i, qaId := range ids {
+		if entityMap[qaId] {
+			_, err := dao.SysQuickAction.Ctx().Ctx(ctx).
+				WherePri(qaId).
+				Update(g.Map{
+					dao.SysQuickAction.Columns.SortCode: (i + 1) * 10,
+				})
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

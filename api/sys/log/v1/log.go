@@ -123,6 +123,36 @@ type LogDeleteByCategoryReq struct {
 
 type LogDeleteByCategoryRes struct{}
 
+// --- Export ---
+
+type LogExportReq struct {
+	g.Meta     `path:"/api/v1/sys/log/export" method:"get" summary:"导出日志数据" tags:"操作日志"`
+	ExportType string `json:"export_type" v:"required#导出类型不能为空"`
+	SelectedId string `json:"selected_id"`
+	utility.PageReq
+}
+
+type LogExportRes struct{}
+
+// --- Template ---
+
+type LogTemplateReq struct {
+	g.Meta `path:"/api/v1/sys/log/template" method:"get" summary:"下载日志导入模板" tags:"操作日志"`
+}
+
+type LogTemplateRes struct{}
+
+// --- Import ---
+
+type LogImportReq struct {
+	g.Meta `path:"/api/v1/sys/log/import" method:"post" summary:"导入日志数据" tags:"操作日志"`
+}
+
+type LogImportRes struct {
+	Total   int    `json:"total"`
+	Message string `json:"message"`
+}
+
 // --- Chart shared types ---
 
 type SeriesItem struct {
@@ -153,7 +183,7 @@ type LogVisPieChartReq struct {
 }
 
 type LogVisPieChartRes struct {
-	List []PieChartItem `json:"list"`
+	Data []PieChartItem `json:"data"`
 }
 
 // --- Op Bar Chart ---
@@ -174,5 +204,5 @@ type LogOpPieChartReq struct {
 }
 
 type LogOpPieChartRes struct {
-	List []PieChartItem `json:"list"`
+	Data []PieChartItem `json:"data"`
 }

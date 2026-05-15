@@ -31,6 +31,7 @@ type ClientUserCreateReq struct {
 	Email    string `json:"email"`
 	Github   string `json:"github"`
 	Phone    string `json:"phone"`
+	Password string `json:"password"`
 	Status   string `json:"status"`
 }
 
@@ -91,8 +92,10 @@ type ClientUserDetailRes struct {
 	PositionName string   `json:"position_name"`
 	CreatedAt    string   `json:"created_at"`
 	CreatedBy    string   `json:"created_by"`
+	CreatedName  string   `json:"created_name"`
 	UpdatedAt    string   `json:"updated_at"`
 	UpdatedBy    string   `json:"updated_by"`
+	UpdatedName  string   `json:"updated_name"`
 }
 
 // --- Current User ---
@@ -119,6 +122,10 @@ type ClientUserCurrentRes struct {
 	OrgNames     []string `json:"org_names"`
 	GroupNames   []string `json:"group_names"`
 	PositionName string   `json:"position_name"`
+	CreatedBy    string   `json:"created_by"`
+	CreatedName  string   `json:"created_name"`
+	UpdatedBy    string   `json:"updated_by"`
+	UpdatedName  string   `json:"updated_name"`
 }
 
 // --- Update Profile ---
@@ -154,3 +161,33 @@ type ClientUserUpdatePasswordReq struct {
 }
 
 type ClientUserUpdatePasswordRes struct{}
+
+// --- Export ---
+
+type ClientUserExportReq struct {
+	g.Meta     `path:"/api/v1/client-user/export" method:"get" summary:"导出C端用户数据" tags:"C端用户管理"`
+	ExportType string `json:"export_type" v:"required#导出类型不能为空"`
+	SelectedId string `json:"selected_id"`
+	utility.PageReq
+}
+
+type ClientUserExportRes struct{}
+
+// --- Template ---
+
+type ClientUserTemplateReq struct {
+	g.Meta `path:"/api/v1/client-user/template" method:"get" summary:"下载C端用户导入模板" tags:"C端用户管理"`
+}
+
+type ClientUserTemplateRes struct{}
+
+// --- Import ---
+
+type ClientUserImportReq struct {
+	g.Meta `path:"/api/v1/client-user/import" method:"post" summary:"导入C端用户数据" tags:"C端用户管理"`
+}
+
+type ClientUserImportRes struct {
+	Total   int    `json:"total"`
+	Message string `json:"message"`
+}

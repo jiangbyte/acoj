@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
+	"hei-goframe/utility"
 )
 
 type ResourceTreeReq struct {
@@ -32,9 +33,7 @@ type ResourceTreeNode struct {
 	Children      []*ResourceTreeNode `json:"children"`
 }
 
-type ResourceTreeRes struct {
-	List []*ResourceTreeNode `json:"list"`
-}
+type ResourceTreeRes []*ResourceTreeNode
 
 type ResourceDetailReq struct {
 	g.Meta `path:"/api/v1/sys/resource/detail" method:"get" summary:"获取资源详情" tags:"资源管理"`
@@ -64,8 +63,10 @@ type ResourceDetailRes struct {
 	SortCode      int    `json:"sort_code"`
 	CreatedAt     string `json:"created_at"`
 	CreatedBy     string `json:"created_by"`
+	CreatedName   string `json:"created_name"`
 	UpdatedAt     string `json:"updated_at"`
 	UpdatedBy     string `json:"updated_by"`
+	UpdatedName   string `json:"updated_name"`
 }
 
 type ResourceCreateReq struct {
@@ -125,3 +126,33 @@ type ResourceRemoveReq struct {
 }
 
 type ResourceRemoveRes struct{}
+
+// --- Export ---
+
+type ResourceExportReq struct {
+	g.Meta     `path:"/api/v1/sys/resource/export" method:"get" summary:"导出资源数据" tags:"资源管理"`
+	ExportType string `json:"export_type" v:"required#导出类型不能为空"`
+	SelectedId string `json:"selected_id"`
+	utility.PageReq
+}
+
+type ResourceExportRes struct{}
+
+// --- Template ---
+
+type ResourceTemplateReq struct {
+	g.Meta `path:"/api/v1/sys/resource/template" method:"get" summary:"下载资源导入模板" tags:"资源管理"`
+}
+
+type ResourceTemplateRes struct{}
+
+// --- Import ---
+
+type ResourceImportReq struct {
+	g.Meta `path:"/api/v1/sys/resource/import" method:"post" summary:"导入资源数据" tags:"资源管理"`
+}
+
+type ResourceImportRes struct {
+	Total   int    `json:"total"`
+	Message string `json:"message"`
+}

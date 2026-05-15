@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gtime"
 )
 
 type GetHomeReq struct {
@@ -9,32 +10,43 @@ type GetHomeReq struct {
 }
 
 type GetHomeRes struct {
-	QuickActions      []QuickActionItem `json:"quick_actions"`
-	AvailableResource []ResourceItem    `json:"available_resources"`
-	NoticeCount       int               `json:"notice_count"`
-	Stats             HomeStats         `json:"stats"`
+	QuickActions       []*QuickActionItem `json:"quick_actions"`
+	AvailableResources []*ResourceItem    `json:"available_resources"`
+	Notices            []*HomeNoticeItem  `json:"notices"`
+	Stats              *HomeStats         `json:"stats"`
 }
 
 type QuickActionItem struct {
-	Id        string `json:"id"`
-	SortCode  int    `json:"sort_code"`
-	Name      string `json:"name"`
-	Icon      string `json:"icon"`
-	RoutePath string `json:"route_path"`
+	Id         string `json:"id"`
+	ResourceId string `json:"resource_id"`
+	SortCode   int    `json:"sort_code"`
+	Name       string `json:"name"`
+	Icon       string `json:"icon"`
+	RoutePath  string `json:"route_path"`
+	ParentId   string `json:"parent_id"`
+	Type       string `json:"type"`
 }
 
 type ResourceItem struct {
-	Id        string `json:"id"`
-	Code      string `json:"code"`
-	Name      string `json:"name"`
-	Icon      string `json:"icon"`
-	RoutePath string `json:"route_path"`
-	Category  string `json:"category"`
-	Type      string `json:"type"`
+	Id         string `json:"id"`
+	ResourceId string `json:"resource_id"`
+	ParentId   string `json:"parent_id"`
+	Type       string `json:"type"`
+	Name       string `json:"name"`
+	Icon       string `json:"icon"`
+	RoutePath  string `json:"route_path"`
+	SortCode   int    `json:"sort_code"`
+}
+
+type HomeNoticeItem struct {
+	Id        string      `json:"id"`
+	Title     string      `json:"title"`
+	Level     string      `json:"level"`
+	CreatedAt *gtime.Time `json:"created_at"`
 }
 
 type HomeStats struct {
-	TotalUsers int `json:"total_users"`
+	TotalUsers int64 `json:"total_users"`
 }
 
 type AddQuickActionReq struct {

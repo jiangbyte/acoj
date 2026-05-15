@@ -9,6 +9,10 @@ import (
 	"hei-goframe/internal/consts"
 )
 
+// CaptchaCharSet is the character set used for captcha codes, matching Python:
+// uppercase letters (excluding I,O to avoid confusion) and digits 2-9 (excluding 0,1).
+const CaptchaCharSet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
 // redisStore implements base64Captcha.Store backed by Redis.
 type redisStore struct {
 	ctx       context.Context
@@ -47,7 +51,18 @@ func init() {
 }
 
 func newCaptcha(prefix string) *base64Captcha.Captcha {
-	driver := base64Captcha.NewDriverDigit(80, 240, 4, 0.7, 80)
+	// Use DriverString instead of DriverDigit for alphanumeric captcha,
+	// matching the Python implementation which generates 4 random chars
+	// from an alphanumeric set with noise lines.
+	driver := &base64Captcha.DriverString{
+		Height:          38,
+		Width:           100,
+		NoiseCount:      10,
+		ShowLineOptions: 2,
+		Length:          4,
+		Source:          CaptchaCharSet,
+		Fonts:           nil,
+	}
 	store := &redisStore{
 		ctx:       context.Background(),
 		keyPrefix: prefix,

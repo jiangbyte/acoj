@@ -22,7 +22,7 @@ type BannerCreateReq struct {
 	Type        string `json:"type"`
 	Position    string `json:"position"`
 	Url         string `json:"url"`
-	LinkType    string `json:"link_type"`
+	LinkType    string `json:"link_type" d:"URL"`
 	Summary     string `json:"summary"`
 	Description string `json:"description"`
 	SortCode    int    `json:"sort_code"`
@@ -75,6 +75,39 @@ type BannerDetailRes struct {
 	ClickCount  int    `json:"click_count"`
 	CreatedAt   string `json:"created_at"`
 	CreatedBy   string `json:"created_by"`
+	CreatedName string `json:"created_name"`
 	UpdatedAt   string `json:"updated_at"`
 	UpdatedBy   string `json:"updated_by"`
+	UpdatedName string `json:"updated_name"`
+}
+
+// --- Export ---
+
+type BannerExportReq struct {
+	g.Meta     `path:"/api/v1/sys/banner/export" method:"get" summary:"导出轮播图数据" tags:"轮播图管理"`
+	ExportType string `json:"export_type"`
+	SelectedId string `json:"selected_id"`
+	Current    int    `json:"current"`
+	Size       int    `json:"size"`
+}
+
+type BannerExportRes struct{}
+
+// --- Template ---
+
+type BannerTemplateReq struct {
+	g.Meta `path:"/api/v1/sys/banner/template" method:"get" summary:"下载轮播图导入模板" tags:"轮播图管理"`
+}
+
+type BannerTemplateRes struct{}
+
+// --- Import ---
+
+type BannerImportReq struct {
+	g.Meta `path:"/api/v1/sys/banner/import" method:"post" summary:"导入轮播图数据" tags:"轮播图管理"`
+}
+
+type BannerImportRes struct {
+	Total   int    `json:"total"`
+	Message string `json:"message"`
 }
