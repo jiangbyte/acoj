@@ -19,7 +19,7 @@ export function fetchRegister(data: any) {
 }
 
 export function fetchSm2PublicKey() {
-  return request.Get<Service.ResponseResult<string>>('/api/v1/public/c/sm2/public-key')
+  return request.Get<Service.ResponseResult<string>>('/api/v1/public/b/sm2/public-key')
 }
 
 export function fetchLogout() {
