@@ -51,4 +51,8 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
->>>>>>> 7e7cb6d047f65467d4b0e765b2feb9cd39882697
+
+.idea
+.claude
+.agents
+.vscode
