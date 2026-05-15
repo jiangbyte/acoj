@@ -1,9 +1,6 @@
 <template>
   <a-card title="系统信息" :bordered="false" :loading="loading">
     <a-descriptions :column="1" size="small">
-      <a-descriptions-item label="Python版本">
-        <a-tag color="blue">{{ data?.python_version || '-' }}</a-tag>
-      </a-descriptions-item>
       <a-descriptions-item label="操作系统">
         <span class="info-value">{{ data?.os_name || '-' }}</span>
       </a-descriptions-item>

@@ -25,7 +25,6 @@ export interface CategoryDistribution {
 }
 
 export interface SysInfo {
-  python_version: string
   os_name: string
   server_ip: string
   run_time: string
