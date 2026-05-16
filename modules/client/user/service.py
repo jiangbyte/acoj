@@ -30,7 +30,6 @@ class ClientUserService(BaseCrudService):
     def page(self, param: ClientUserPageParam) -> dict:
         result = self.dao.find_page_by_filters(param)
         records = [self.vo_class.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]]
-        self._batch_enrich(records)
         return page_data(
             records=records,
             total=result[PageDataField.TOTAL],
@@ -98,21 +97,7 @@ class ClientUserService(BaseCrudService):
         entity = self.find_by_id(user_id)
         if not entity:
             return None
-        return {
-            "id": entity.id,
-            "username": entity.username,
-            "nickname": entity.nickname,
-            "avatar": entity.avatar,
-            "motto": entity.motto,
-            "gender": entity.gender,
-            "birthday": entity.birthday.isoformat() if entity.birthday else None,
-            "email": entity.email,
-            "github": entity.github,
-            "status": entity.status,
-            "last_login_at": entity.last_login_at.strftime('%Y-%m-%d %H:%M:%S') if entity.last_login_at else None,
-            "last_login_ip": entity.last_login_ip,
-            "login_count": entity.login_count or 0,
-        }
+        return ClientUserVO.model_validate(entity).model_dump()
 
     async def update_profile(self, param: UpdateProfileParam, request: Request) -> None:
         user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)

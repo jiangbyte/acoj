@@ -34,8 +34,15 @@ class PositionService(BaseCrudService):
             size=param.size,
         )
 
+    def detail(self, param: IdParam) -> Optional[dict]:
+        entity = self.dao.find_by_id(param.id)
+        if not entity:
+            return None
+        vo = self.vo_class.model_validate(entity).model_dump()
+        self._enrich_vo(vo)
+        return vo
+
     def _enrich_vo(self, vo: dict) -> None:
-        super()._enrich_vo(vo)
         from core.db.base_service import _resolve_name_path
         from modules.sys.org.models import SysOrg
         from modules.sys.group.models import SysGroup
@@ -43,7 +50,6 @@ class PositionService(BaseCrudService):
         vo["group_names"] = _resolve_name_path(vo.get("group_id"), self.dao.db, SysGroup)
 
     def _batch_enrich(self, vo_list: List[dict]) -> None:
-        super()._batch_enrich(vo_list)
         from core.db.base_service import _resolve_name_path
         from modules.sys.org.models import SysOrg
         from modules.sys.group.models import SysGroup
