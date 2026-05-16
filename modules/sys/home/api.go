@@ -38,7 +38,7 @@ func HomeHandler(c *gin.Context) {
 func AddQuickActionHandler(c *gin.Context) {
 	var req AddQuickActionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -53,7 +53,7 @@ func AddQuickActionHandler(c *gin.Context) {
 func RemoveQuickActionHandler(c *gin.Context) {
 	var req RemoveQuickActionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -68,7 +68,7 @@ func RemoveQuickActionHandler(c *gin.Context) {
 func SortQuickActionHandler(c *gin.Context) {
 	var req SortQuickActionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 

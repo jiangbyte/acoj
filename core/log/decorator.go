@@ -3,9 +3,12 @@ package log
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +18,43 @@ import (
 	"hei-gin/core/result"
 	"hei-gin/core/utils"
 )
+
+// parseUserAgent extracts browser and OS from a User-Agent string.
+func parseUserAgent(ua string) (browser, os string) {
+	ua = strings.ToLower(ua)
+	switch {
+	case strings.Contains(ua, "edg"):
+		browser = "Edge"
+	case strings.Contains(ua, "chrome"):
+		browser = "Chrome"
+	case strings.Contains(ua, "safari"):
+		browser = "Safari"
+	case strings.Contains(ua, "firefox"):
+		browser = "Firefox"
+	case strings.Contains(ua, "opera") || strings.Contains(ua, "opr"):
+		browser = "Opera"
+	case strings.Contains(ua, "msie") || strings.Contains(ua, "trident"):
+		browser = "IE"
+	default:
+		browser = "Unknown"
+	}
+
+	switch {
+	case strings.Contains(ua, "windows"):
+		os = "Windows"
+	case strings.Contains(ua, "mac os") || strings.Contains(ua, "macintosh"):
+		os = "macOS"
+	case strings.Contains(ua, "linux"):
+		os = "Linux"
+	case strings.Contains(ua, "android"):
+		os = "Android"
+	case strings.Contains(ua, "iphone") || strings.Contains(ua, "ipad"):
+		os = "iOS"
+	default:
+		os = "Unknown"
+	}
+	return
+}
 
 type bodyLogWriter struct {
 	gin.ResponseWriter
@@ -29,7 +69,7 @@ func (w *bodyLogWriter) Write(b []byte) (int, error) {
 // SysLog returns a Gin middleware that records an operation log entry.
 func SysLog(name string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if db.RawDB == nil {
+		if db.Client == nil {
 			c.Next()
 			return
 		}
@@ -54,7 +94,6 @@ func SysLog(name string) gin.HandlerFunc {
 		exeStatus := "SUCCESS"
 		exeMessage := ""
 
-		// Check if there was a panic/abort with business error
 		if c.Writer.Status() >= 400 || len(c.Errors) > 0 {
 			exeStatus = "FAIL"
 			if len(c.Errors) > 0 {
@@ -89,35 +128,52 @@ func SysLog(name string) gin.HandlerFunc {
 		traceID := result.GetTraceID(c)
 		ip := utils.GetClientIP(c)
 
-		// Save log entry
-		saveLog(c, name, category, exeStatus, exeMessage, loginID, traceID, ip, string(reqBody), string(respBody), opTime)
+		// Parse User-Agent
+		userAgent := c.GetHeader("User-Agent")
+		browser, osName := parseUserAgent(userAgent)
+
+		// Get handler info
+		handlerName := c.HandlerName()
+
+		saveLog(c, name, category, exeStatus, exeMessage, loginID, traceID, ip, userAgent,
+			browser, osName, handlerName, c.Request.Method, c.Request.URL.String(),
+			string(reqBody), string(respBody), opTime)
 	}
 }
 
-func saveLog(c *gin.Context, name, category, exeStatus, exeMessage, loginID, traceID, ip, paramJSON, resultJSON string, opTime int) {
+func saveLog(c *gin.Context, name, category, exeStatus, exeMessage, loginID, traceID, ip, userAgent,
+	browser, osName, handlerName, reqMethod, reqURL, paramJSON, resultJSON string, opTime int) {
+
+	// Build signature
+	signInput := fmt.Sprintf("%s|%s|%s|%s|%s|%s", category, name, exeStatus, ip, time.Now().Format(time.RFC3339), traceID)
+	signData := fmt.Sprintf("%x", sha256.Sum256([]byte(signInput)))
+
 	ctx := context.Background()
 	now := time.Now()
 
-	_, err := db.RawDB.ExecContext(ctx,
-		`INSERT INTO sys_log (id, category, name, exe_status, exe_message, trace_id, op_ip,
-		 req_method, req_url, param_json, result_json, op_time, op_user, created_at, created_by)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		utils.NextID(),
-		category,
-		name,
-		exeStatus,
-		exeMessage,
-		traceID,
-		ip,
-		c.Request.Method,
-		c.Request.URL.String(),
-		paramJSON,
-		resultJSON,
-		opTime,
-		loginID,
-		now,
-		loginID,
-	)
+	_, err := db.Client.SysLog.Create().
+		SetID(utils.NextID()).
+		SetCategory(category).
+		SetName(name).
+		SetExeStatus(exeStatus).
+		SetExeMessage(exeMessage).
+		SetTraceID(traceID).
+		SetOpIP(ip).
+		SetOpAddress("").
+		SetOpBrowser(browser).
+		SetOpOs(osName).
+		SetClassName(handlerName).
+		SetMethodName(c.HandlerName()).
+		SetReqMethod(reqMethod).
+		SetReqURL(reqURL).
+		SetParamJSON(paramJSON).
+		SetResultJSON(resultJSON).
+		SetOpTime(opTime).
+		SetOpUser(loginID).
+		SetSignData(signData).
+		SetCreatedAt(now).
+		SetCreatedBy(loginID).
+		Save(ctx)
 	if err != nil {
 		log.Printf("[SysLog] insert error: %v", err)
 	}

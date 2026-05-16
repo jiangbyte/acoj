@@ -1,16 +1,12 @@
 package org
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/core/auth"
 	"hei-gin/core/log"
 	"hei-gin/core/norepeat"
 	"hei-gin/core/result"
-	"hei-gin/core/utils"
 )
 
 func RegisterRoutes(r *gin.RouterGroup) {
@@ -38,21 +34,6 @@ func RegisterRoutes(r *gin.RouterGroup) {
 		auth.CheckPermission("sys:org:detail"),
 		DetailHandler,
 	)
-	r.GET("/api/v1/sys/org/export",
-		log.SysLog("导出组织数据"),
-		auth.CheckPermission("sys:org:export"),
-		ExportHandler,
-	)
-	r.GET("/api/v1/sys/org/template",
-		auth.CheckPermission("sys:org:template"),
-		TemplateHandler,
-	)
-	r.POST("/api/v1/sys/org/import",
-		log.SysLog("导入组织数据"),
-		auth.CheckPermission("sys:org:import"),
-		norepeat.NoRepeat(5000),
-		ImportHandler,
-	)
 	r.GET("/api/v1/sys/org/treeselect",
 		auth.CheckPermission("sys:org:page"),
 		TreeSelectHandler,
@@ -71,7 +52,7 @@ func RegisterRoutes(r *gin.RouterGroup) {
 func PageHandler(c *gin.Context) {
 	var p PageParam
 	if err := c.ShouldBindQuery(&p); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	if p.Page <= 0 {
@@ -97,7 +78,7 @@ func PageHandler(c *gin.Context) {
 func CreateHandler(c *gin.Context) {
 	var req OrgCreateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -113,7 +94,7 @@ func CreateHandler(c *gin.Context) {
 func ModifyHandler(c *gin.Context) {
 	var req OrgModifyReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -129,7 +110,7 @@ func ModifyHandler(c *gin.Context) {
 func RemoveHandler(c *gin.Context) {
 	var req RemoveReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -143,7 +124,7 @@ func RemoveHandler(c *gin.Context) {
 func DetailHandler(c *gin.Context) {
 	var req DetailReq
 	if err := c.ShouldBindQuery(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -153,99 +134,6 @@ func DetailHandler(c *gin.Context) {
 		return
 	}
 	result.Success(c, toVO(item))
-}
-
-func ExportHandler(c *gin.Context) {
-	items, err := QueryAll()
-	if err != nil {
-		result.Failure(c, "导出失败", 500)
-		return
-	}
-
-	var data []map[string]interface{}
-	for _, item := range items {
-		row := map[string]interface{}{
-			"name":       item.Name,
-			"code":       item.Code,
-			"status":     item.Status,
-			"leader":     item.Leader,
-			"phone":      item.Phone,
-			"email":      item.Email,
-			"address":    item.Address,
-			"sort_code":  item.SortCode,
-			"created_at": item.CreatedAt.Format("2006-01-02 15:04:05"),
-		}
-		data = append(data, row)
-	}
-
-	headers := utils.BuildHeaders(OrgExportFields, OrgExportFieldNames)
-	excelBytes, err := utils.ExportExcel(data, headers, "组织数据")
-	if err != nil {
-		result.Failure(c, "导出失败", 500)
-		return
-	}
-
-	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="org_export.xlsx"`))
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	c.Header("Content-Length", strconv.Itoa(len(excelBytes)))
-	c.Data(200, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBytes)
-}
-
-func TemplateHandler(c *gin.Context) {
-	headers := utils.BuildHeaders(OrgExportFields, OrgExportFieldNames)
-	excelBytes, err := utils.ExportExcel(nil, headers, "组织导入模板")
-	if err != nil {
-		result.Failure(c, "生成模板失败", 500)
-		return
-	}
-
-	c.Header("Content-Disposition", `attachment; filename="org_template.xlsx"`)
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	c.Header("Content-Length", strconv.Itoa(len(excelBytes)))
-	c.Data(200, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBytes)
-}
-
-func ImportHandler(c *gin.Context) {
-	file, err := c.FormFile("file")
-	if err != nil {
-		result.Failure(c, "请上传文件", 400)
-		return
-	}
-
-	src, err := file.Open()
-	if err != nil {
-		result.Failure(c, "文件读取失败", 500)
-		return
-	}
-	defer src.Close()
-
-	fileBytes := make([]byte, file.Size)
-	if _, err := src.Read(fileBytes); err != nil {
-		result.Failure(c, "文件读取失败", 500)
-		return
-	}
-
-	rows, err := utils.ParseExcel(fileBytes, "组织导入模板")
-	if err != nil {
-		result.Failure(c, "解析Excel失败", 400)
-		return
-	}
-
-	loginID := auth.AuthTool.GetLoginID(c)
-	success := 0
-	for _, row := range rows {
-		_, err := Create(&OrgCreateReq{
-			Name:  row["组织名称"],
-			Code:  row["组织编码"],
-			Phone: row["联系电话"],
-			Email: row["电子邮箱"],
-		}, loginID)
-		if err == nil {
-			success++
-		}
-	}
-
-	result.Success(c, map[string]int{"success": success, "total": len(rows)})
 }
 
 func TreeSelectHandler(c *gin.Context) {
@@ -275,7 +163,7 @@ func OwnRolesHandler(c *gin.Context) {
 func GrantRoleHandler(c *gin.Context) {
 	var req OrgGrantRoleReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 

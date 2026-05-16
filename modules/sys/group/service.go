@@ -3,13 +3,15 @@ package group
 import (
 	"context"
 	"sort"
-	"strings"
 	"time"
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/sysgroup"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/sysgroup"
+	"hei-gin/ent/gen/sysorg"
+	"hei-gin/ent/gen/sysposition"
+	"hei-gin/ent/gen/sysuser"
 )
 
 type PageParam struct {
@@ -185,18 +187,14 @@ func Remove(ids []string) error {
 	ctx := context.Background()
 
 	// Nullify group_id in related tables
-	placeholders := make([]string, len(ids))
-	args := make([]interface{}, len(ids))
-	for i, id := range ids {
-		placeholders[i] = "?"
-		args[i] = id
-	}
-	inClause := strings.Join(placeholders, ",")
-
-	_, _ = db.RawDB.ExecContext(ctx,
-		"UPDATE sys_user SET group_id = NULL WHERE group_id IN ("+inClause+")", args...)
-	_, _ = db.RawDB.ExecContext(ctx,
-		"UPDATE sys_position SET group_id = NULL WHERE group_id IN ("+inClause+")", args...)
+	_, _ = db.Client.SysUser.Update().
+		Where(sysuser.GroupIDIn(ids...)).
+		ClearGroupID().
+		Save(ctx)
+	_, _ = db.Client.SysPosition.Update().
+		Where(sysposition.GroupIDIn(ids...)).
+		ClearGroupID().
+		Save(ctx)
 
 	// Delete groups
 	_, err := db.Client.SysGroup.Delete().Where(sysgroup.IDIn(ids...)).Exec(ctx)
@@ -206,11 +204,6 @@ func Remove(ids []string) error {
 func Detail(id string) (*ent.SysGroup, error) {
 	ctx := context.Background()
 	return db.Client.SysGroup.Get(ctx, id)
-}
-
-func QueryAll() ([]*ent.SysGroup, error) {
-	ctx := context.Background()
-	return db.Client.SysGroup.Query().Order(ent.Desc(sysgroup.FieldCreatedAt)).All(ctx)
 }
 
 func TreeSelect() ([]GroupVO, error) {
@@ -253,41 +246,26 @@ type TreeGroup struct {
 func Tree(orgID, keyword string) ([]*TreeGroup, error) {
 	ctx := context.Background()
 
-	query := "SELECT id, name, COALESCE(parent_id,'') as parent_id, sort_code FROM sys_group"
-	var conditions []string
-	var args []interface{}
-
+	q := db.Client.SysGroup.Query()
 	if orgID != "" {
-		conditions = append(conditions, "org_id = ?")
-		args = append(args, orgID)
+		q = q.Where(sysgroup.OrgIDEQ(orgID))
 	}
 	if keyword != "" {
-		conditions = append(conditions, "name LIKE ?")
-		args = append(args, "%"+keyword+"%")
+		q = q.Where(sysgroup.NameContains(keyword))
 	}
 
-	if len(conditions) > 0 {
-		query += " WHERE " + strings.Join(conditions, " AND ")
-	}
-	query += " ORDER BY sort_code ASC"
-
-	rows, err := db.RawDB.QueryContext(ctx, query, args...)
+	all, err := q.Order(ent.Asc(sysgroup.FieldSortCode)).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	type rawGroup struct {
 		ID, Name, ParentID string
 		SortCode           int
 	}
-	var allGroups []rawGroup
-	for rows.Next() {
-		var g rawGroup
-		if err := rows.Scan(&g.ID, &g.Name, &g.ParentID, &g.SortCode); err != nil {
-			return nil, err
-		}
-		allGroups = append(allGroups, g)
+	allGroups := make([]rawGroup, len(all))
+	for i, g := range all {
+		allGroups[i] = rawGroup{ID: g.ID, Name: g.Name, ParentID: g.ParentID, SortCode: g.SortCode}
 	}
 
 	nodeMap := make(map[string]*TreeGroup)
@@ -319,48 +297,16 @@ func UnionTree() ([]*TreeGroup, error) {
 	ctx := context.Background()
 
 	// Query all orgs
-	orgRows, err := db.RawDB.QueryContext(ctx,
-		"SELECT id, name, COALESCE(parent_id,'') as parent_id, sort_code FROM sys_org ORDER BY sort_code ASC")
+	orgs, err := db.Client.SysOrg.Query().Order(ent.Asc(sysorg.FieldSortCode)).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	type rawOrg struct {
-		ID, Name, ParentID string
-		SortCode           int
-	}
-	var orgs []rawOrg
-	for orgRows.Next() {
-		var o rawOrg
-		if err := orgRows.Scan(&o.ID, &o.Name, &o.ParentID, &o.SortCode); err != nil {
-			orgRows.Close()
-			return nil, err
-		}
-		orgs = append(orgs, o)
-	}
-	orgRows.Close()
 
 	// Query all groups
-	groupRows, err := db.RawDB.QueryContext(ctx,
-		"SELECT id, name, COALESCE(parent_id,'') as parent_id, sort_code, COALESCE(org_id,'') as org_id FROM sys_group ORDER BY sort_code ASC")
+	groups, err := db.Client.SysGroup.Query().Order(ent.Asc(sysgroup.FieldSortCode)).All(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	type rawGroupExt struct {
-		ID, Name, ParentID, OrgID string
-		SortCode                  int
-	}
-	var groups []rawGroupExt
-	for groupRows.Next() {
-		var g rawGroupExt
-		if err := groupRows.Scan(&g.ID, &g.Name, &g.ParentID, &g.SortCode, &g.OrgID); err != nil {
-			groupRows.Close()
-			return nil, err
-		}
-		groups = append(groups, g)
-	}
-	groupRows.Close()
 
 	// Build org nodes
 	orgMap := make(map[string]*TreeGroup)

@@ -11,13 +11,13 @@ import (
 	"hei-gin/core/db"
 	"hei-gin/core/result"
 	"hei-gin/core/utils"
-	"hei-gin/ent/clientuser"
+	"hei-gin/ent/gen/clientuser"
 )
 
 func Login(c *gin.Context) {
 	var req LoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -39,39 +39,36 @@ func Login(c *gin.Context) {
 	}
 
 	// Query client user
-	var userID, username, nickname, avatar, email, phone, hashedPwd, status string
-	err = db.RawDB.QueryRowContext(ctx,
-		"SELECT id, account, nickname, avatar, email, phone, password, status FROM client_user WHERE account = ?",
-		req.Username,
-	).Scan(&userID, &username, &nickname, &avatar, &email, &phone, &hashedPwd, &status)
+	cu, err := db.Client.ClientUser.Query().
+		Where(clientuser.UsernameEQ(req.Username)).
+		First(ctx)
 	if err != nil {
 		result.Failure(c, "用户名或密码错误", 400)
 		return
 	}
 
-	if status == "INACTIVE" || status == "LOCKED" {
+	if cu.Status == "INACTIVE" || cu.Status == "LOCKED" {
 		result.Failure(c, "该用户已被禁用", 400)
 		return
 	}
 
-	if !utils.BcryptVerify(password, hashedPwd) {
+	if !utils.BcryptVerify(password, cu.Password) {
 		result.Failure(c, "用户名或密码错误", 400)
 		return
 	}
 
-	token, err := auth.ClientAuthTool.Login(c, userID, map[string]interface{}{
-		"username": username,
-		"nickname": nickname,
+	token, err := auth.ClientAuthTool.Login(c, cu.ID, map[string]interface{}{
+		"username": cu.Username,
+		"nickname": cu.Nickname,
 	})
 	if err != nil {
 		result.Failure(c, "登录失败", 500)
 		return
 	}
 
-	db.RawDB.ExecContext(ctx,
-		"UPDATE client_user SET updated_at = ? WHERE id = ?",
-		time.Now(), userID,
-	)
+	db.Client.ClientUser.UpdateOneID(cu.ID).
+		SetUpdatedAt(time.Now()).
+		Exec(ctx)
 
 	result.Success(c, gin.H{"token": token})
 }
@@ -84,7 +81,7 @@ func Logout(c *gin.Context) {
 func RegisterHandler(c *gin.Context) {
 	var req RegisterReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 

@@ -6,8 +6,8 @@ import (
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/sysnotice"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/sysnotice"
 )
 
 type PageParam struct {
@@ -57,16 +57,6 @@ type RemoveReq struct {
 type DetailReq struct {
 	ID string `form:"id" json:"id" binding:"required"`
 }
-
-var NoticeExportFieldNames = map[string]string{
-	"title":        "公告标题",
-	"category":     "公告类别",
-	"status":       "状态",
-	"publish_time": "发布时间",
-	"created_at":   "创建时间",
-}
-
-var NoticeExportFields = []string{"title", "category", "status", "publish_time", "created_at"}
 
 func toVO(n *ent.SysNotice) NoticeVO {
 	vo := NoticeVO{

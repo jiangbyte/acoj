@@ -45,6 +45,10 @@ func (a *ClientAuthToolImpl) GetTokenName() string {
 	return a.tokenName
 }
 
+func (a *ClientAuthToolImpl) GetLoginType() string {
+	return string(a.loginType)
+}
+
 func (a *ClientAuthToolImpl) GetTokenValue(c *gin.Context) string {
 	return c.GetHeader(a.tokenName)
 }
@@ -159,4 +163,118 @@ func (a *ClientAuthToolImpl) decodeToken(token string) (jwt.MapClaims, error) {
 		return claims, nil
 	}
 	return nil, fmt.Errorf("invalid token")
+}
+
+func (a *ClientAuthToolImpl) GetTokenValuesByLoginID(loginID string) []string {
+	ctx := context.Background()
+	sessionKey := a.sessionPrefix + loginID
+	tokens, _ := db.Redis.SMembers(ctx, sessionKey).Result()
+	return tokens
+}
+
+func (a *ClientAuthToolImpl) GetExtra(c *gin.Context, key string) interface{} {
+	info := a.GetTokenInfo(c)
+	if info != nil {
+		if extra, ok := info["extra"].(map[string]interface{}); ok {
+			return extra[key]
+		}
+	}
+	return nil
+}
+
+func (a *ClientAuthToolImpl) GetTokenInfo(c *gin.Context) map[string]interface{} {
+	token := a.GetTokenValue(c)
+	if token == "" {
+		return nil
+	}
+	ctx := context.Background()
+	redisKey := a.tokenPrefix + token
+	data, err := db.Redis.Get(ctx, redisKey).Result()
+	if err != nil {
+		return nil
+	}
+	var result map[string]interface{}
+	if json.Unmarshal([]byte(data), &result) != nil {
+		return nil
+	}
+	return result
+}
+
+func (a *ClientAuthToolImpl) RenewTimeout(c *gin.Context, timeout int) {
+	token := a.GetTokenValue(c)
+	if token == "" {
+		return
+	}
+	if timeout <= 0 {
+		timeout = a.expire
+	}
+	ctx := context.Background()
+	redisKey := a.tokenPrefix + token
+	db.Redis.Expire(ctx, redisKey, time.Duration(timeout)*time.Second)
+
+	loginID := a.GetLoginID(c)
+	if loginID != "" {
+		sessionKey := a.sessionPrefix + loginID
+		db.Redis.Expire(ctx, sessionKey, time.Duration(timeout)*time.Second)
+	}
+}
+
+func (a *ClientAuthToolImpl) Disable(loginID string, seconds int) {
+	ctx := context.Background()
+	key := a.disablePrefix + loginID
+	db.Redis.SetEx(ctx, key, "1", time.Duration(seconds)*time.Second)
+}
+
+func (a *ClientAuthToolImpl) IsDisable(loginID string) bool {
+	ctx := context.Background()
+	key := a.disablePrefix + loginID
+	n, _ := db.Redis.Exists(ctx, key).Result()
+	return n > 0
+}
+
+func (a *ClientAuthToolImpl) CheckDisable(loginID string) error {
+	if a.IsDisable(loginID) {
+		return fmt.Errorf("account is disabled")
+	}
+	return nil
+}
+
+func (a *ClientAuthToolImpl) GetDisableTime(loginID string) int {
+	ctx := context.Background()
+	key := a.disablePrefix + loginID
+	ttl, _ := db.Redis.TTL(ctx, key).Result()
+	return int(ttl.Seconds())
+}
+
+func (a *ClientAuthToolImpl) UntieDisable(loginID string) {
+	ctx := context.Background()
+	key := a.disablePrefix + loginID
+	db.Redis.Del(ctx, key)
+}
+
+func (a *ClientAuthToolImpl) KickoutToken(loginID, token string) {
+	ctx := context.Background()
+	db.Redis.Del(ctx, a.tokenPrefix+token)
+	sessionKey := a.sessionPrefix + loginID
+	db.Redis.SRem(ctx, sessionKey, token)
+}
+
+func (a *ClientAuthToolImpl) GetTokenTimeout(c *gin.Context) int {
+	token := a.GetTokenValue(c)
+	if token == "" {
+		return 0
+	}
+	ctx := context.Background()
+	ttl, _ := db.Redis.TTL(ctx, a.tokenPrefix+token).Result()
+	return int(ttl.Seconds())
+}
+
+func (a *ClientAuthToolImpl) GetSessionTimeout(c *gin.Context) int {
+	loginID := a.GetLoginID(c)
+	if loginID == "" {
+		return 0
+	}
+	ctx := context.Background()
+	ttl, _ := db.Redis.TTL(ctx, a.sessionPrefix+loginID).Result()
+	return int(ttl.Seconds())
 }

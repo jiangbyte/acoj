@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -11,14 +10,13 @@ import (
 	"hei-gin/core/log"
 	"hei-gin/core/norepeat"
 	"hei-gin/core/result"
-	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/sysresource"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/sysresource"
 )
 
 func RegisterRoutes(r *gin.RouterGroup) {
 	r.GET("/api/v1/sys/user/page",
-		auth.CheckPermission("sys:user:page"),
+		auth.CheckLogin(),
 		PageHandler,
 	)
 	r.POST("/api/v1/sys/user/create",
@@ -41,21 +39,6 @@ func RegisterRoutes(r *gin.RouterGroup) {
 		auth.CheckPermission("sys:user:detail"),
 		DetailHandler,
 	)
-	r.GET("/api/v1/sys/user/export",
-		log.SysLog("导出用户数据"),
-		auth.CheckPermission("sys:user:export"),
-		ExportHandler,
-	)
-	r.GET("/api/v1/sys/user/template",
-		auth.CheckPermission("sys:user:template"),
-		TemplateHandler,
-	)
-	r.POST("/api/v1/sys/user/import",
-		log.SysLog("导入用户数据"),
-		auth.CheckPermission("sys:user:import"),
-		norepeat.NoRepeat(5000),
-		ImportHandler,
-	)
 	r.POST("/api/v1/sys/user/grant-role",
 		log.SysLog("分配用户角色"),
 		auth.CheckPermission("sys:user:grant-role"),
@@ -75,31 +58,31 @@ func RegisterRoutes(r *gin.RouterGroup) {
 		OwnRolesHandler,
 	)
 	r.GET("/api/v1/sys/user/current",
-		auth.CheckPermission("sys:user:page"),
+		auth.CheckLogin(),
 		CurrentHandler,
 	)
 	r.GET("/api/v1/sys/user/menus",
-		auth.CheckPermission("sys:user:page"),
+		auth.CheckLogin(),
 		MenusHandler,
 	)
 	r.GET("/api/v1/sys/user/permissions",
-		auth.CheckPermission("sys:user:page"),
+		auth.CheckLogin(),
 		PermissionsHandler,
 	)
 	r.POST("/api/v1/sys/user/update-profile",
 		log.SysLog("更新个人信息"),
-		auth.CheckPermission("sys:user:page"),
+		auth.CheckLogin(),
 		norepeat.NoRepeat(3000),
 		UpdateProfileHandler,
 	)
 	r.POST("/api/v1/sys/user/update-avatar",
 		log.SysLog("更新头像"),
-		auth.CheckPermission("sys:user:page"),
+		auth.CheckLogin(),
 		UpdateAvatarHandler,
 	)
 	r.POST("/api/v1/sys/user/update-password",
 		log.SysLog("修改密码"),
-		auth.CheckPermission("sys:user:page"),
+		auth.CheckLogin(),
 		norepeat.NoRepeat(3000),
 		UpdatePasswordHandler,
 	)
@@ -108,7 +91,7 @@ func RegisterRoutes(r *gin.RouterGroup) {
 func PageHandler(c *gin.Context) {
 	var p PageParam
 	if err := c.ShouldBindQuery(&p); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	if p.Page <= 0 {
@@ -130,7 +113,7 @@ func PageHandler(c *gin.Context) {
 func CreateHandler(c *gin.Context) {
 	var req UserCreateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	loginID := auth.AuthTool.GetLoginID(c)
@@ -145,7 +128,7 @@ func CreateHandler(c *gin.Context) {
 func ModifyHandler(c *gin.Context) {
 	var req UserModifyReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	loginID := auth.AuthTool.GetLoginID(c)
@@ -160,7 +143,7 @@ func ModifyHandler(c *gin.Context) {
 func RemoveHandler(c *gin.Context) {
 	var req RemoveReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	if err := Remove(req.IDs); err != nil {
@@ -173,7 +156,7 @@ func RemoveHandler(c *gin.Context) {
 func DetailHandler(c *gin.Context) {
 	var req DetailReq
 	if err := c.ShouldBindQuery(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	item, err := Detail(req.ID)
@@ -184,97 +167,10 @@ func DetailHandler(c *gin.Context) {
 	result.Success(c, toVO(item))
 }
 
-func ExportHandler(c *gin.Context) {
-	items, err := QueryAll()
-	if err != nil {
-		result.Failure(c, "导出失败", 500)
-		return
-	}
-	var data []map[string]interface{}
-	for _, item := range items {
-		row := map[string]interface{}{
-			"username":   item.Username,
-			"nickname":   item.Nickname,
-			"email":      item.Email,
-			"phone":      item.Phone,
-			"status":     item.Status,
-			"gender":     item.Gender,
-			"sort_code":  item.SortCode,
-			"created_at": item.CreatedAt.Format("2006-01-02 15:04:05"),
-		}
-		data = append(data, row)
-	}
-	headers := utils.BuildHeaders(UserExportFields, UserExportFieldNames)
-	excelBytes, err := utils.ExportExcel(data, headers, "用户数据")
-	if err != nil {
-		result.Failure(c, "导出失败", 500)
-		return
-	}
-	c.Header("Content-Disposition", `attachment; filename="user_export.xlsx"`)
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	c.Header("Content-Length", strconv.Itoa(len(excelBytes)))
-	c.Data(200, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBytes)
-}
-
-func TemplateHandler(c *gin.Context) {
-	headers := utils.BuildHeaders(UserExportFields, UserExportFieldNames)
-	excelBytes, err := utils.ExportExcel(nil, headers, "用户导入模板")
-	if err != nil {
-		result.Failure(c, "生成模板失败", 500)
-		return
-	}
-	c.Header("Content-Disposition", `attachment; filename="user_template.xlsx"`)
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	c.Header("Content-Length", strconv.Itoa(len(excelBytes)))
-	c.Data(200, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBytes)
-}
-
-func ImportHandler(c *gin.Context) {
-	file, err := c.FormFile("file")
-	if err != nil {
-		result.Failure(c, "请上传文件", 400)
-		return
-	}
-	src, err := file.Open()
-	if err != nil {
-		result.Failure(c, "文件读取失败", 500)
-		return
-	}
-	defer src.Close()
-
-	fileBytes := make([]byte, file.Size)
-	if _, err := src.Read(fileBytes); err != nil {
-		result.Failure(c, "文件读取失败", 500)
-		return
-	}
-
-	rows, err := utils.ParseExcel(fileBytes, "用户导入模板")
-	if err != nil {
-		result.Failure(c, "解析Excel失败", 400)
-		return
-	}
-
-	loginID := auth.AuthTool.GetLoginID(c)
-	success := 0
-	for _, row := range rows {
-		_, err := Create(&UserCreateReq{
-			Username: row["用户名"],
-			Password: "123456",
-			Nickname: row["昵称"],
-			Email:    row["电子邮箱"],
-			Phone:    row["手机号码"],
-		}, loginID)
-		if err == nil {
-			success++
-		}
-	}
-	result.Success(c, map[string]int{"success": success, "total": len(rows)})
-}
-
 func GrantRoleHandler(c *gin.Context) {
 	var req GrantRoleReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	if err := GrantRole(req.UserID, req.RoleIDs); err != nil {
@@ -287,10 +183,10 @@ func GrantRoleHandler(c *gin.Context) {
 func GrantPermissionHandler(c *gin.Context) {
 	var req GrantPermissionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
-	if err := GrantPermission(req.UserID, req.PermissionCodes); err != nil {
+	if err := GrantPermission(req.UserID, req.Permissions); err != nil {
 		result.Failure(c, "分配权限失败", 500)
 		return
 	}
@@ -430,7 +326,7 @@ func PermissionsHandler(c *gin.Context) {
 func UpdateProfileHandler(c *gin.Context) {
 	var req UpdateProfileReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	userID := auth.AuthTool.GetLoginID(c)
@@ -445,7 +341,7 @@ func UpdateProfileHandler(c *gin.Context) {
 func UpdateAvatarHandler(c *gin.Context) {
 	var req UpdateAvatarReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	userID := auth.AuthTool.GetLoginID(c)
@@ -460,7 +356,7 @@ func UpdateAvatarHandler(c *gin.Context) {
 func UpdatePasswordHandler(c *gin.Context) {
 	var req UpdatePasswordReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	userID := auth.AuthTool.GetLoginID(c)

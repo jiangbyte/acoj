@@ -13,8 +13,8 @@ import (
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/sysfile"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/sysfile"
 )
 
 type PageParam struct {

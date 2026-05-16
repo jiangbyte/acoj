@@ -6,6 +6,10 @@ import (
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/sysnotice"
+	"hei-gin/ent/gen/sysquickaction"
+	"hei-gin/ent/gen/sysresource"
 )
 
 type QuickActionVO struct {
@@ -85,23 +89,41 @@ func getQuickActions(ctx context.Context, userID string) ([]QuickActionVO, error
 		return []QuickActionVO{}, nil
 	}
 
-	rows, err := db.RawDB.QueryContext(ctx,
-		`SELECT q.id, q.resource_id, q.sort_code,
-		        COALESCE(r.name,''), COALESCE(r.icon,''), COALESCE(r.path,'')
-		 FROM sys_quick_action q
-		 LEFT JOIN sys_resource r ON r.id = q.resource_id
-		 WHERE q.user_id = ?
-		 ORDER BY q.sort_code ASC, q.created_at ASC`, userID)
+	actions, err := db.Client.SysQuickAction.Query().
+		Where(sysquickaction.UserIDEQ(userID)).
+		Order(ent.Asc(sysquickaction.FieldSortCode), ent.Asc(sysquickaction.FieldCreatedAt)).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var result []QuickActionVO
-	for rows.Next() {
-		var vo QuickActionVO
-		if err := rows.Scan(&vo.ID, &vo.ResourceID, &vo.SortCode, &vo.Name, &vo.Icon, &vo.RoutePath); err != nil {
-			return nil, err
+	// Resolve resource names
+	resourceIDs := make([]string, len(actions))
+	for i, a := range actions {
+		resourceIDs[i] = a.ResourceID
+	}
+
+	resources, _ := db.Client.SysResource.Query().
+		Where(sysresource.IDIn(resourceIDs...)).
+		Select(sysresource.FieldID, sysresource.FieldName, sysresource.FieldIcon, sysresource.FieldPath).
+		All(ctx)
+
+	resMap := make(map[string]*ent.SysResource)
+	for _, r := range resources {
+		resMap[r.ID] = r
+	}
+
+	result := make([]QuickActionVO, 0, len(actions))
+	for _, a := range actions {
+		vo := QuickActionVO{
+			ID:         a.ID,
+			ResourceID: a.ResourceID,
+			SortCode:   a.SortCode,
+		}
+		if r, ok := resMap[a.ResourceID]; ok {
+			vo.Name = r.Name
+			vo.Icon = r.Icon
+			vo.RoutePath = r.Path
 		}
 		result = append(result, vo)
 	}
@@ -113,63 +135,79 @@ func getAvailableResources(ctx context.Context, userID string) ([]QuickActionVO,
 		return []QuickActionVO{}, nil
 	}
 
-	rows, err := db.RawDB.QueryContext(ctx,
-		`SELECT r.id, COALESCE(r.parent_id,''), COALESCE(r.type,''),
-		        COALESCE(r.name,''), COALESCE(r.icon,''), COALESCE(r.path,'')
-		 FROM sys_resource r
-		 WHERE r.status = 'ENABLED'
-		   AND r.type IN ('MENU', 'DIRECTORY')
-		   AND r.id NOT IN (SELECT resource_id FROM sys_quick_action WHERE user_id = ?)
-		 ORDER BY r.sort_code ASC
-		 LIMIT 50`, userID)
+	// Get resource IDs already in quick actions
+	existingIDs, _ := db.Client.SysQuickAction.Query().
+		Where(sysquickaction.UserIDEQ(userID)).
+		Select(sysquickaction.FieldResourceID).
+		All(ctx)
+
+	excludeMap := make(map[string]bool)
+	for _, e := range existingIDs {
+		excludeMap[e.ResourceID] = true
+	}
+
+	// Query available resources not in quick actions
+	resources, err := db.Client.SysResource.Query().
+		Where(
+			sysresource.StatusEQ("ENABLED"),
+			sysresource.TypeIn("MENU", "DIRECTORY"),
+		).
+		Order(ent.Asc(sysresource.FieldSortCode)).
+		Limit(50).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var result []QuickActionVO
-	for rows.Next() {
-		var vo QuickActionVO
-		if err := rows.Scan(&vo.ResourceID, &vo.ParentID, &vo.Type, &vo.Name, &vo.Icon, &vo.RoutePath); err != nil {
-			return nil, err
+	result := make([]QuickActionVO, 0, len(resources))
+	for _, r := range resources {
+		if excludeMap[r.ID] {
+			continue
 		}
-		result = append(result, vo)
+		result = append(result, QuickActionVO{
+			ResourceID: r.ID,
+			ParentID:   r.ParentID,
+			Type:       r.Type,
+			Name:       r.Name,
+			Icon:       r.Icon,
+			RoutePath:  r.Path,
+		})
 	}
 	return result, nil
 }
 
 func getNotices(ctx context.Context) ([]HomeNotice, error) {
-	rows, err := db.RawDB.QueryContext(ctx,
-		`SELECT id, title, COALESCE(category,'NORMAL'), created_at
-		 FROM sys_notice
-		 WHERE status = 'ENABLED'
-		 ORDER BY created_at DESC
-		 LIMIT 5`)
+	notices, err := db.Client.SysNotice.Query().
+		Where(sysnotice.StatusEQ("ENABLED")).
+		Order(ent.Desc(sysnotice.FieldCreatedAt)).
+		Limit(5).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var result []HomeNotice
-	for rows.Next() {
-		var notice HomeNotice
-		var createdAt time.Time
-		if err := rows.Scan(&notice.ID, &notice.Title, &notice.Level, &createdAt); err != nil {
-			return nil, err
+	result := make([]HomeNotice, len(notices))
+	for i, n := range notices {
+		level := n.Category
+		if level == "" {
+			level = "NORMAL"
 		}
-		notice.CreatedAt = createdAt.Format("2006-01-02 15:04:05")
-		result = append(result, notice)
+		result[i] = HomeNotice{
+			ID:        n.ID,
+			Title:     n.Title,
+			Level:     level,
+			CreatedAt: n.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
 	}
 	return result, nil
 }
 
 func getStats(ctx context.Context) (*HomeStats, error) {
-	var total int64
-	err := db.RawDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM sys_user").Scan(&total)
+	total, err := db.Client.SysUser.Query().Count(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &HomeStats{TotalUsers: total}, nil
+	return &HomeStats{TotalUsers: int64(total)}, nil
 }
 
 func AddQuickAction(userID, resourceID string) error {
@@ -180,27 +218,36 @@ func AddQuickAction(userID, resourceID string) error {
 	ctx := context.Background()
 
 	// Check if already exists
-	var count int
-	err := db.RawDB.QueryRowContext(ctx,
-		"SELECT COUNT(*) FROM sys_quick_action WHERE user_id = ? AND resource_id = ?",
-		userID, resourceID).Scan(&count)
+	exists, err := db.Client.SysQuickAction.Query().
+		Where(
+			sysquickaction.UserIDEQ(userID),
+			sysquickaction.ResourceIDEQ(resourceID),
+		).
+		Exist(ctx)
 	if err != nil {
 		return err
 	}
-	if count > 0 {
+	if exists {
 		return nil
 	}
 
 	// Get current count for sort_code
-	var actionCount int
-	db.RawDB.QueryRowContext(ctx,
-		"SELECT COUNT(*) FROM sys_quick_action WHERE user_id = ?", userID).Scan(&actionCount)
+	actionCount, err := db.Client.SysQuickAction.Query().
+		Where(sysquickaction.UserIDEQ(userID)).
+		Count(ctx)
+	if err != nil {
+		return err
+	}
 
 	now := time.Now()
-	_, err = db.RawDB.ExecContext(ctx,
-		`INSERT INTO sys_quick_action (id, user_id, resource_id, sort_code, created_at, created_by)
-		 VALUES (?, ?, ?, ?, ?, ?)`,
-		utils.NextID(), userID, resourceID, (actionCount+1)*10, now, userID)
+	_, err = db.Client.SysQuickAction.Create().
+		SetID(utils.NextID()).
+		SetUserID(userID).
+		SetResourceID(resourceID).
+		SetSortCode((actionCount + 1) * 10).
+		SetCreatedAt(now).
+		SetCreatedBy(userID).
+		Save(ctx)
 	return err
 }
 
@@ -210,9 +257,12 @@ func RemoveQuickAction(userID, actionID string) error {
 	}
 
 	ctx := context.Background()
-	_, err := db.RawDB.ExecContext(ctx,
-		"DELETE FROM sys_quick_action WHERE id = ? AND user_id = ?",
-		actionID, userID)
+	_, err := db.Client.SysQuickAction.Delete().
+		Where(
+			sysquickaction.IDEQ(actionID),
+			sysquickaction.UserIDEQ(userID),
+		).
+		Exec(ctx)
 	return err
 }
 
@@ -223,9 +273,13 @@ func SortQuickActions(userID string, ids []string) error {
 
 	ctx := context.Background()
 	for idx, id := range ids {
-		_, err := db.RawDB.ExecContext(ctx,
-			"UPDATE sys_quick_action SET sort_code = ? WHERE id = ? AND user_id = ?",
-			(idx+1)*10, id, userID)
+		_, err := db.Client.SysQuickAction.Update().
+			Where(
+				sysquickaction.IDEQ(id),
+				sysquickaction.UserIDEQ(userID),
+			).
+			SetSortCode((idx + 1) * 10).
+			Save(ctx)
 		if err != nil {
 			return err
 		}

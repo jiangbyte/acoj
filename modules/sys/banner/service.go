@@ -6,8 +6,8 @@ import (
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/sysbanner"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/sysbanner"
 )
 
 type PageParam struct {
@@ -75,16 +75,6 @@ type DetailReq struct {
 }
 
 // BannerExportFieldNames maps db field names to display names
-var BannerExportFieldNames = map[string]string{
-	"title":      "轮播标题",
-	"image":      "轮播图片",
-	"category":   "轮播类别",
-	"position":   "展示位置",
-	"sort_code":  "排序",
-	"created_at": "创建时间",
-}
-
-var BannerExportFields = []string{"title", "image", "category", "position", "sort_code", "created_at"}
 
 func toVO(b *ent.SysBanner) BannerVO {
 	vo := BannerVO{

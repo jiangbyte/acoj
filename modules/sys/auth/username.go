@@ -11,19 +11,28 @@ import (
 	"hei-gin/core/db"
 	"hei-gin/core/result"
 	"hei-gin/core/utils"
+	"hei-gin/ent/gen/clientuser"
+	"hei-gin/ent/gen/sysuser"
 )
 
 func Login(c *gin.Context) {
 	var req LoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
-	// Verify captcha
-	if !verifyCaptcha(req.CaptchaID, req.CaptchaCode) {
-		result.Failure(c, "验证码错误", 400)
-		return
+	// Verify captcha (optional: only when captcha_id and captcha_code are provided)
+	if req.CaptchaID != "" && req.CaptchaCode != "" {
+		if !verifyCaptcha(req.CaptchaID, req.CaptchaCode) {
+			result.Failure(c, "验证码错误", 400)
+			return
+		}
+	} else {
+		if !verifyCaptcha(req.CaptchaID, req.CaptchaCode) {
+			result.Failure(c, "验证码错误", 400)
+			return
+		}
 	}
 
 	// SM2 decrypt password
@@ -33,45 +42,68 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Query user
+	// Query user via ent
 	ctx := context.Background()
-	var userID, username, nickname, avatar, email, phone, hashedPwd, status string
-	err = db.RawDB.QueryRowContext(ctx,
-		"SELECT id, account, nickname, avatar, email, phone, password, status FROM sys_user WHERE account = ?",
-		req.Username,
-	).Scan(&userID, &username, &nickname, &avatar, &email, &phone, &hashedPwd, &status)
+	user, err := db.Client.SysUser.Query().
+		Where(sysuser.UsernameEQ(req.Username)).
+		Select(
+			sysuser.FieldID,
+			sysuser.FieldUsername,
+			sysuser.FieldNickname,
+			sysuser.FieldAvatar,
+			sysuser.FieldEmail,
+			sysuser.FieldPhone,
+			sysuser.FieldPassword,
+			sysuser.FieldStatus,
+		).
+		First(ctx)
 	if err != nil {
 		result.Failure(c, "用户名或密码错误", 400)
 		return
 	}
 
 	// Check user status
-	if status == "INACTIVE" || status == "LOCKED" {
+	if user.Status == "INACTIVE" || user.Status == "LOCKED" {
 		result.Failure(c, "该用户已被禁用", 400)
 		return
 	}
 
 	// Verify bcrypt password
-	if !utils.BcryptVerify(password, hashedPwd) {
+	if !utils.BcryptVerify(password, user.Password) {
 		result.Failure(c, "用户名或密码错误", 400)
 		return
 	}
 
+	// Build extra claims with device tracking
+	extra := map[string]interface{}{
+		"username":    user.Username,
+		"nickname":    user.Nickname,
+		"status":      user.Status,
+		"device_type": c.GetHeader("User-Agent"),
+		"device_id":   req.DeviceID,
+	}
+
 	// Create JWT token
-	token, err := auth.AuthTool.Login(c, userID, map[string]interface{}{
-		"username": username,
-		"nickname": nickname,
-	})
+	token, err := auth.AuthTool.Login(c, user.ID, extra)
 	if err != nil {
 		result.Failure(c, "登录失败", 500)
 		return
 	}
 
-	// Update last login
-	db.RawDB.ExecContext(ctx,
-		"UPDATE sys_user SET updated_at = ? WHERE id = ?",
-		time.Now(), userID,
-	)
+	// Update login info via ent
+	now := time.Now()
+	clientIP := utils.GetClientIP(c)
+	db.Client.SysUser.UpdateOneID(user.ID).
+		SetLastLoginAt(now).
+		SetLastLoginIP(clientIP).
+		SetLoginCount(user.LoginCount + 1).
+		SetUpdatedAt(now).
+		Exec(ctx)
+
+	// Record auth log
+	traceID := c.GetString("trace_id")
+	userAgent := c.GetHeader("User-Agent")
+	recordAuthLog(ctx, user.ID, "登录", "LOGIN", "SUCCESS", user.Username, traceID, clientIP, userAgent, c.Request.Method, c.Request.URL.String())
 
 	result.Success(c, gin.H{"token": token})
 }
@@ -79,20 +111,25 @@ func Login(c *gin.Context) {
 func Register(c *gin.Context) {
 	var req RegisterReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
-	// Verify captcha
-	if !verifyCaptcha(req.CaptchaID, req.CaptchaCode) {
-		result.Failure(c, "验证码错误", 400)
-		return
+	// Verify captcha (optional: only when captcha_id and captcha_code are provided) (optional)
+	if req.CaptchaID != "" && req.CaptchaCode != "" {
+		if !verifyCaptcha(req.CaptchaID, req.CaptchaCode) {
+			result.Failure(c, "验证码错误", 400)
+			return
+		}
 	}
 
-	// Check duplicate username
+	// Check duplicate username via ent
 	ctx := context.Background()
-	var count int
-	db.RawDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM sys_user WHERE account = ?", req.Username).Scan(&count)
+	count, err := db.Client.SysUser.Query().Where(sysuser.UsernameEQ(req.Username)).Count(ctx)
+	if err != nil {
+		result.Failure(c, "查询失败", 500)
+		return
+	}
 	if count > 0 {
 		result.Failure(c, "用户名已存在", 400)
 		return
@@ -114,21 +151,47 @@ func Register(c *gin.Context) {
 
 	id := utils.NextID()
 	now := time.Now()
-	_, err = db.RawDB.ExecContext(ctx,
-		`INSERT INTO sys_user (id, account, password, nickname, email, phone, status, created_at, created_by, updated_at, updated_by)
-		 VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?)`,
-		id, req.Username, hashed, req.Nickname, req.Email, req.Phone, now, id, now, id,
-	)
+	_, err = db.Client.SysUser.Create().
+		SetID(id).
+		SetUsername(req.Username).
+		SetPassword(hashed).
+		SetNickname(req.Nickname).
+		SetEmail(req.Email).
+		SetPhone(req.Phone).
+		SetStatus("ACTIVE").
+		SetCreatedAt(now).
+		SetCreatedBy(id).
+		SetUpdatedAt(now).
+		SetUpdatedBy(id).
+		Save(ctx)
 	if err != nil {
 		result.Failure(c, "注册失败", 500)
 		return
 	}
 
+	// Record auth log
+	traceID := c.GetString("trace_id")
+	clientIP := utils.GetClientIP(c)
+	userAgent := c.GetHeader("User-Agent")
+	recordAuthLog(ctx, id, "注册", "OPERATE", "SUCCESS", req.Username, traceID, clientIP, userAgent, c.Request.Method, c.Request.URL.String())
+
 	result.Success(c, map[string]string{"id": id})
 }
 
 func Logout(c *gin.Context) {
+	traceID := c.GetString("trace_id")
+	loginID := auth.AuthTool.GetLoginID(c)
+	clientIP := utils.GetClientIP(c)
+	userAgent := c.GetHeader("User-Agent")
+
 	auth.AuthTool.Logout(c)
+
+	// Record auth log
+	if loginID != "" {
+		ctx := context.Background()
+		recordAuthLog(ctx, loginID, "登出", "LOGOUT", "SUCCESS", loginID, traceID, clientIP, userAgent, c.Request.Method, c.Request.URL.String())
+	}
+
 	result.Success(c, gin.H{"message": "登出成功"})
 }
 
@@ -140,19 +203,22 @@ type LoginFunc func(c *gin.Context)
 func ClientLogin(c *gin.Context) {
 	var req LoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
-	// Verify captcha
 	ctx := context.Background()
-	key := constants.CaptchaConsumerPrefix + req.CaptchaID
-	expected, err := db.Redis.Get(ctx, key).Result()
-	if err != nil || expected != req.CaptchaCode {
-		result.Failure(c, "验证码错误", 400)
-		return
+
+	// Verify captcha (optional: only when captcha_id and captcha_code are provided)
+	if req.CaptchaID != "" && req.CaptchaCode != "" {
+		key := constants.CaptchaConsumerPrefix + req.CaptchaID
+		expected, err := db.Redis.Get(ctx, key).Result()
+		if err != nil || expected != req.CaptchaCode {
+			result.Failure(c, "验证码错误", 400)
+			return
+		}
+		db.Redis.Del(ctx, key)
 	}
-	db.Redis.Del(ctx, key)
 
 	// SM2 decrypt password
 	password, err := utils.SM2Decrypt(req.Password)
@@ -161,45 +227,96 @@ func ClientLogin(c *gin.Context) {
 		return
 	}
 
-	// Query client user
-	var userID, username, nickname, avatar, email, phone, hashedPwd, status string
-	err = db.RawDB.QueryRowContext(ctx,
-		"SELECT id, account, nickname, avatar, email, phone, password, status FROM client_user WHERE account = ?",
-		req.Username,
-	).Scan(&userID, &username, &nickname, &avatar, &email, &phone, &hashedPwd, &status)
+	// Query client user via ent
+	cu, err := db.Client.ClientUser.Query().
+		Where(clientuser.UsernameEQ(req.Username)).
+		Select(
+			clientuser.FieldID,
+			clientuser.FieldUsername,
+			clientuser.FieldNickname,
+			clientuser.FieldAvatar,
+			clientuser.FieldEmail,
+			clientuser.FieldPhone,
+			clientuser.FieldPassword,
+			clientuser.FieldStatus,
+			clientuser.FieldLoginCount,
+		).
+		First(ctx)
 	if err != nil {
 		result.Failure(c, "用户名或密码错误", 400)
 		return
 	}
 
-	if status == "INACTIVE" || status == "LOCKED" {
+	if cu.Status == "INACTIVE" || cu.Status == "LOCKED" {
 		result.Failure(c, "该用户已被禁用", 400)
 		return
 	}
 
-	if !utils.BcryptVerify(password, hashedPwd) {
+	if !utils.BcryptVerify(password, cu.Password) {
 		result.Failure(c, "用户名或密码错误", 400)
 		return
 	}
 
-	token, err := auth.ClientAuthTool.Login(c, userID, map[string]interface{}{
-		"username": username,
-		"nickname": nickname,
-	})
+	// Build extra claims with device tracking
+	extra := map[string]interface{}{
+		"username":    cu.Username,
+		"nickname":    cu.Nickname,
+		"status":      cu.Status,
+		"device_type": c.GetHeader("User-Agent"),
+		"device_id":   req.DeviceID,
+	}
+
+	token, err := auth.ClientAuthTool.Login(c, cu.ID, extra)
 	if err != nil {
 		result.Failure(c, "登录失败", 500)
 		return
 	}
 
-	db.RawDB.ExecContext(ctx,
-		"UPDATE client_user SET updated_at = ? WHERE id = ?",
-		time.Now(), userID,
-	)
+	// Update login info via ent
+	now := time.Now()
+	db.Client.ClientUser.UpdateOneID(cu.ID).
+		SetLastLoginAt(now).
+		SetLastLoginIP(utils.GetClientIP(c)).
+		SetLoginCount(cu.LoginCount + 1).
+		SetUpdatedAt(now).
+		Exec(ctx)
 
 	result.Success(c, gin.H{"token": token})
 }
 
 func ClientLogout(c *gin.Context) {
+	traceID := c.GetString("trace_id")
+	loginID := auth.ClientAuthTool.GetLoginID(c)
+	clientIP := utils.GetClientIP(c)
+	userAgent := c.GetHeader("User-Agent")
+
 	auth.ClientAuthTool.Logout(c)
+
+	// Record auth log
+	if loginID != "" {
+		ctx := context.Background()
+		recordAuthLog(ctx, loginID, "登出", "LOGOUT", "SUCCESS", loginID, traceID, clientIP, userAgent, c.Request.Method, c.Request.URL.String())
+	}
+
 	result.Success(c, gin.H{"message": "登出成功"})
+}
+
+// recordAuthLog persists an auth event (login/logout) to the sys_log table via ent.
+func recordAuthLog(ctx context.Context, loginID, name, category, exeStatus, opUser, traceID, ip, userAgent, reqMethod, reqURL string) {
+	now := time.Now()
+	db.Client.SysLog.Create().
+		SetID(utils.NextID()).
+		SetCategory(category).
+		SetName(name).
+		SetExeStatus(exeStatus).
+		SetTraceID(traceID).
+		SetOpIP(ip).
+		SetOpBrowser(userAgent).
+		SetReqMethod(reqMethod).
+		SetReqURL(reqURL).
+		SetOpTime(int(now.UnixMilli())).
+		SetOpUser(opUser).
+		SetCreatedAt(now).
+		SetCreatedBy(loginID).
+		Save(ctx)
 }

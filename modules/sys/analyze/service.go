@@ -24,24 +24,22 @@ func Dashboard() (*DashboardData, error) {
 	data := &DashboardData{}
 	var err error
 
-	data.Users, _ = countTable(ctx, "sys_user")
-	data.Roles, _ = countTable(ctx, "sys_role")
-	data.Orgs, _ = countTable(ctx, "sys_org")
-	data.Groups, _ = countTable(ctx, "sys_group")
-	data.Positions, _ = countTable(ctx, "sys_position")
-	data.Banners, _ = countTable(ctx, "sys_banner")
-	data.Files, _ = countTable(ctx, "sys_file")
-	data.Notices, _ = countTable(ctx, "sys_notice")
-	data.Dicts, _ = countTable(ctx, "sys_dict")
+	data.Users = toInt64(db.Client.SysUser.Query().Count(ctx))
+	data.Roles = toInt64(db.Client.SysRole.Query().Count(ctx))
+	data.Orgs = toInt64(db.Client.SysOrg.Query().Count(ctx))
+	data.Groups = toInt64(db.Client.SysGroup.Query().Count(ctx))
+	data.Positions = toInt64(db.Client.SysPosition.Query().Count(ctx))
+	data.Banners = toInt64(db.Client.SysBanner.Query().Count(ctx))
+	data.Files = toInt64(db.Client.SysFile.Query().Count(ctx))
+	data.Notices = toInt64(db.Client.SysNotice.Query().Count(ctx))
+	data.Dicts = toInt64(db.Client.SysDict.Query().Count(ctx))
 
 	return data, err
 }
 
-func countTable(ctx context.Context, tableName string) (int64, error) {
-	var count int64
-	row := db.RawDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM "+tableName)
-	if err := row.Scan(&count); err != nil {
-		return 0, err
+func toInt64(v int, err error) int64 {
+	if err != nil {
+		return 0
 	}
-	return count, nil
+	return int64(v)
 }

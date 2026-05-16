@@ -1,7 +1,5 @@
 package clientauth
 
-import "mime/multipart"
-
 type LoginReq struct {
 	Username    string `form:"username" json:"username" binding:"required"`
 	Password    string `form:"password" json:"password" binding:"required"`
@@ -26,10 +24,6 @@ type UserInfo struct {
 	Avatar   string `json:"avatar"`
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
-}
-
-type ImportReq struct {
-	File *multipart.FileHeader `form:"file" binding:"required"`
 }
 
 type RegisterReq struct {

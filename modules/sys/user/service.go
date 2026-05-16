@@ -2,13 +2,20 @@ package user
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/sysuser"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/relrolepermission"
+	"hei-gin/ent/gen/relroleresource"
+	"hei-gin/ent/gen/reluserpermission"
+	"hei-gin/ent/gen/reluserrole"
+	"hei-gin/ent/gen/sysgroup"
+	"hei-gin/ent/gen/sysorg"
+	"hei-gin/ent/gen/sysposition"
+	"hei-gin/ent/gen/sysrole"
+	"hei-gin/ent/gen/sysuser"
 )
 
 type PageParam struct {
@@ -26,6 +33,8 @@ type UserVO struct {
 	Avatar       string `json:"avatar"`
 	Email        string `json:"email"`
 	Phone        string `json:"phone"`
+	Motto        string `json:"motto"`
+	Github       string `json:"github"`
 	Status       string `json:"status"`
 	OrgID        string `json:"org_id"`
 	OrgName      string `json:"org_name"`
@@ -36,6 +45,9 @@ type UserVO struct {
 	Gender       string `json:"gender"`
 	Birthday     string `json:"birthday"`
 	Description  string `json:"description"`
+	LoginCount   int    `json:"login_count"`
+	LastLoginAt  string `json:"last_login_at"`
+	LastLoginIP  string `json:"last_login_ip"`
 	SortCode     int    `json:"sort_code"`
 	CreatedAt    string `json:"created_at"`
 	CreatedBy    string `json:"created_by"`
@@ -50,6 +62,8 @@ type UserCreateReq struct {
 	Avatar      string `json:"avatar"`
 	Email       string `json:"email"`
 	Phone       string `json:"phone"`
+	Motto       string `json:"motto"`
+	Github      string `json:"github"`
 	Status      string `json:"status"`
 	OrgID       string `json:"org_id"`
 	GroupID     string `json:"group_id"`
@@ -66,6 +80,8 @@ type UserModifyReq struct {
 	Avatar      string `json:"avatar"`
 	Email       string `json:"email"`
 	Phone       string `json:"phone"`
+	Motto       string `json:"motto"`
+	Github      string `json:"github"`
 	Status      string `json:"status"`
 	OrgID       string `json:"org_id"`
 	GroupID     string `json:"group_id"`
@@ -85,19 +101,31 @@ type DetailReq struct {
 }
 
 type GrantRoleReq struct {
-	UserID  string   `json:"user_id" binding:"required"`
-	RoleIDs []string `json:"role_ids" binding:"required"`
+	UserID              string   `json:"user_id" binding:"required"`
+	RoleIDs             []string `json:"role_ids" binding:"required"`
+	Scope               string   `json:"scope"`
+	CustomScopeGroupIds string   `json:"custom_scope_group_ids"`
+}
+
+// PermissionItem represents a permission with optional scope info.
+type PermissionItem struct {
+	PermissionCode      string `json:"permission_code" binding:"required"`
+	Scope               string `json:"scope"`
+	CustomScopeGroupIds string `json:"custom_scope_group_ids"`
+	CustomScopeOrgIds   string `json:"custom_scope_org_ids"`
 }
 
 type GrantPermissionReq struct {
-	UserID          string   `json:"user_id" binding:"required"`
-	PermissionCodes []string `json:"permission_codes" binding:"required"`
+	UserID      string           `json:"user_id" binding:"required"`
+	Permissions []PermissionItem `json:"permissions" binding:"required"`
 }
 
 type UpdateProfileReq struct {
 	Nickname    string `json:"nickname"`
 	Email       string `json:"email"`
 	Phone       string `json:"phone"`
+	Motto       string `json:"motto"`
+	Github      string `json:"github"`
 	Description string `json:"description"`
 }
 
@@ -117,6 +145,8 @@ type CurrentUserVO struct {
 	Avatar       string `json:"avatar"`
 	Email        string `json:"email"`
 	Phone        string `json:"phone"`
+	Motto        string `json:"motto"`
+	Github       string `json:"github"`
 	Gender       string `json:"gender"`
 	OrgID        string `json:"org_id"`
 	OrgName      string `json:"org_name"`
@@ -125,25 +155,15 @@ type CurrentUserVO struct {
 	PositionID   string `json:"position_id"`
 	PositionName string `json:"position_name"`
 	Description  string `json:"description"`
+	LoginCount   int    `json:"login_count"`
+	LastLoginAt  string `json:"last_login_at"`
+	LastLoginIP  string `json:"last_login_ip"`
 }
 
 type OwnUserVO struct {
 	UserID   string `json:"user_id"`
 	Username string `json:"username"`
 }
-
-var UserExportFieldNames = map[string]string{
-	"username":   "用户名",
-	"nickname":   "昵称",
-	"email":      "电子邮箱",
-	"phone":      "手机号码",
-	"status":     "状态",
-	"gender":     "性别",
-	"sort_code":  "排序",
-	"created_at": "创建时间",
-}
-
-var UserExportFields = []string{"username", "nickname", "email", "phone", "status", "gender", "sort_code", "created_at"}
 
 func toVO(u *ent.SysUser) UserVO {
 	vo := UserVO{
@@ -153,12 +173,17 @@ func toVO(u *ent.SysUser) UserVO {
 		Avatar:      u.Avatar,
 		Email:       u.Email,
 		Phone:       u.Phone,
+		Motto:       u.Motto,
+		Github:      u.Github,
 		Status:      u.Status,
 		OrgID:       u.OrgID,
 		GroupID:     u.GroupID,
 		PositionID:  u.PositionID,
 		Gender:      u.Gender,
 		Description: u.Description,
+		LoginCount:  u.LoginCount,
+		LastLoginAt: u.LastLoginAt.Format("2006-01-02 15:04:05"),
+		LastLoginIP: u.LastLoginIP,
 		SortCode:    u.SortCode,
 		CreatedAt:   u.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:   u.UpdatedAt.Format("2006-01-02 15:04:05"),
@@ -167,6 +192,9 @@ func toVO(u *ent.SysUser) UserVO {
 	}
 	if !u.Birthday.IsZero() {
 		vo.Birthday = u.Birthday.Format("2006-01-02")
+	}
+	if u.LastLoginAt.IsZero() {
+		vo.LastLoginAt = ""
 	}
 	// Resolve names
 	vo.OrgName = resolveOrgName(u.OrgID)
@@ -184,6 +212,8 @@ func toVOBatch(u *ent.SysUser, orgNameMap, groupNameMap, positionNameMap map[str
 		Avatar:       u.Avatar,
 		Email:        u.Email,
 		Phone:        u.Phone,
+		Motto:        u.Motto,
+		Github:       u.Github,
 		Status:       u.Status,
 		OrgID:        u.OrgID,
 		OrgName:      orgNameMap[u.OrgID],
@@ -193,6 +223,9 @@ func toVOBatch(u *ent.SysUser, orgNameMap, groupNameMap, positionNameMap map[str
 		PositionName: positionNameMap[u.PositionID],
 		Gender:       u.Gender,
 		Description:  u.Description,
+		LoginCount:   u.LoginCount,
+		LastLoginAt:  u.LastLoginAt.Format("2006-01-02 15:04:05"),
+		LastLoginIP:  u.LastLoginIP,
 		SortCode:     u.SortCode,
 		CreatedAt:    u.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:    u.UpdatedAt.Format("2006-01-02 15:04:05"),
@@ -202,6 +235,9 @@ func toVOBatch(u *ent.SysUser, orgNameMap, groupNameMap, positionNameMap map[str
 	if !u.Birthday.IsZero() {
 		vo.Birthday = u.Birthday.Format("2006-01-02")
 	}
+	if u.LastLoginAt.IsZero() {
+		vo.LastLoginAt = ""
+	}
 	return vo
 }
 
@@ -210,12 +246,11 @@ func resolveOrgName(orgID string) string {
 		return ""
 	}
 	ctx := context.Background()
-	var name string
-	err := db.RawDB.QueryRowContext(ctx, "SELECT name FROM sys_org WHERE id = ?", orgID).Scan(&name)
+	org, err := db.Client.SysOrg.Query().Where(sysorg.IDEQ(orgID)).Select(sysorg.FieldName).First(ctx)
 	if err != nil {
 		return ""
 	}
-	return name
+	return org.Name
 }
 
 func resolveGroupName(groupID string) string {
@@ -223,12 +258,11 @@ func resolveGroupName(groupID string) string {
 		return ""
 	}
 	ctx := context.Background()
-	var name string
-	err := db.RawDB.QueryRowContext(ctx, "SELECT name FROM sys_group WHERE id = ?", groupID).Scan(&name)
+	g, err := db.Client.SysGroup.Query().Where(sysgroup.IDEQ(groupID)).Select(sysgroup.FieldName).First(ctx)
 	if err != nil {
 		return ""
 	}
-	return name
+	return g.Name
 }
 
 func resolvePositionName(positionID string) string {
@@ -236,12 +270,11 @@ func resolvePositionName(positionID string) string {
 		return ""
 	}
 	ctx := context.Background()
-	var name string
-	err := db.RawDB.QueryRowContext(ctx, "SELECT name FROM sys_position WHERE id = ?", positionID).Scan(&name)
+	p, err := db.Client.SysPosition.Query().Where(sysposition.IDEQ(positionID)).Select(sysposition.FieldName).First(ctx)
 	if err != nil {
 		return ""
 	}
-	return name
+	return p.Name
 }
 
 // batchResolveNames issues 3 queries total (one per table) to resolve all org, group, and position names
@@ -281,21 +314,13 @@ func batchResolveNames(users []*ent.SysUser) (orgNameMap, groupNameMap, position
 	// Resolve org names
 	orgNameMap = make(map[string]string, len(orgIDs))
 	if len(orgIDs) > 0 {
-		placeholders := make([]string, len(orgIDs))
-		args := make([]interface{}, len(orgIDs))
-		for i, id := range orgIDs {
-			placeholders[i] = "?"
-			args[i] = id
-		}
-		query := "SELECT id, name FROM sys_org WHERE id IN (" + strings.Join(placeholders, ",") + ")"
-		rows, err := db.RawDB.QueryContext(ctx, query, args...)
+		orgs, err := db.Client.SysOrg.Query().
+			Where(sysorg.IDIn(orgIDs...)).
+			Select(sysorg.FieldID, sysorg.FieldName).
+			All(ctx)
 		if err == nil {
-			defer rows.Close()
-			for rows.Next() {
-				var id, name string
-				if err := rows.Scan(&id, &name); err == nil {
-					orgNameMap[id] = name
-				}
+			for _, o := range orgs {
+				orgNameMap[o.ID] = o.Name
 			}
 		}
 	}
@@ -303,21 +328,13 @@ func batchResolveNames(users []*ent.SysUser) (orgNameMap, groupNameMap, position
 	// Resolve group names
 	groupNameMap = make(map[string]string, len(groupIDs))
 	if len(groupIDs) > 0 {
-		placeholders := make([]string, len(groupIDs))
-		args := make([]interface{}, len(groupIDs))
-		for i, id := range groupIDs {
-			placeholders[i] = "?"
-			args[i] = id
-		}
-		query := "SELECT id, name FROM sys_group WHERE id IN (" + strings.Join(placeholders, ",") + ")"
-		rows, err := db.RawDB.QueryContext(ctx, query, args...)
+		groups, err := db.Client.SysGroup.Query().
+			Where(sysgroup.IDIn(groupIDs...)).
+			Select(sysgroup.FieldID, sysgroup.FieldName).
+			All(ctx)
 		if err == nil {
-			defer rows.Close()
-			for rows.Next() {
-				var id, name string
-				if err := rows.Scan(&id, &name); err == nil {
-					groupNameMap[id] = name
-				}
+			for _, g := range groups {
+				groupNameMap[g.ID] = g.Name
 			}
 		}
 	}
@@ -325,21 +342,13 @@ func batchResolveNames(users []*ent.SysUser) (orgNameMap, groupNameMap, position
 	// Resolve position names
 	positionNameMap = make(map[string]string, len(positionIDs))
 	if len(positionIDs) > 0 {
-		placeholders := make([]string, len(positionIDs))
-		args := make([]interface{}, len(positionIDs))
-		for i, id := range positionIDs {
-			placeholders[i] = "?"
-			args[i] = id
-		}
-		query := "SELECT id, name FROM sys_position WHERE id IN (" + strings.Join(placeholders, ",") + ")"
-		rows, err := db.RawDB.QueryContext(ctx, query, args...)
+		positions, err := db.Client.SysPosition.Query().
+			Where(sysposition.IDIn(positionIDs...)).
+			Select(sysposition.FieldID, sysposition.FieldName).
+			All(ctx)
 		if err == nil {
-			defer rows.Close()
-			for rows.Next() {
-				var id, name string
-				if err := rows.Scan(&id, &name); err == nil {
-					positionNameMap[id] = name
-				}
+			for _, p := range positions {
+				positionNameMap[p.ID] = p.Name
 			}
 		}
 	}
@@ -430,6 +439,12 @@ func Create(req *UserCreateReq, loginID string) (*ent.SysUser, error) {
 	if req.Phone != "" {
 		q.SetPhone(req.Phone)
 	}
+	if req.Motto != "" {
+		q.SetMotto(req.Motto)
+	}
+	if req.Github != "" {
+		q.SetGithub(req.Github)
+	}
 	if req.Status != "" {
 		q.SetStatus(req.Status)
 	} else {
@@ -482,6 +497,12 @@ func Modify(req *UserModifyReq, loginID string) (*ent.SysUser, error) {
 	if req.Phone != "" {
 		u.SetPhone(req.Phone)
 	}
+	if req.Motto != "" {
+		u.SetMotto(req.Motto)
+	}
+	if req.Github != "" {
+		u.SetGithub(req.Github)
+	}
 	if req.Status != "" {
 		u.SetStatus(req.Status)
 	}
@@ -515,20 +536,24 @@ func Modify(req *UserModifyReq, loginID string) (*ent.SysUser, error) {
 
 func Remove(ids []string) error {
 	ctx := context.Background()
-	tx, err := db.RawDB.BeginTx(ctx, nil)
+	tx, err := db.Client.Tx(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
 	// Cascade delete from rel tables
-	for _, id := range ids {
-		_, _ = tx.ExecContext(ctx, "DELETE FROM rel_user_role WHERE user_id = ?", id)
-		_, _ = tx.ExecContext(ctx, "DELETE FROM rel_user_permission WHERE user_id = ?", id)
+	_, err = tx.RelUserRole.Delete().Where(reluserrole.UserIDIn(ids...)).Exec(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = tx.RelUserPermission.Delete().Where(reluserpermission.UserIDIn(ids...)).Exec(ctx)
+	if err != nil {
+		return err
 	}
 
-	// Delete users via Ent
-	_, err = db.Client.SysUser.Delete().Where(sysuser.IDIn(ids...)).Exec(ctx)
+	// Delete users
+	_, err = tx.SysUser.Delete().Where(sysuser.IDIn(ids...)).Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -549,103 +574,114 @@ func QueryAll() ([]*ent.SysUser, error) {
 // OwnRoles returns role IDs assigned to a user.
 func OwnRoles(userID string) ([]string, error) {
 	ctx := context.Background()
-	rows, err := db.RawDB.QueryContext(ctx, "SELECT role_id FROM rel_user_role WHERE user_id = ?", userID)
+	rels, err := db.Client.RelUserRole.Query().
+		Where(reluserrole.UserIDEQ(userID)).
+		Select(reluserrole.FieldRoleID).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var roleIDs []string
-	for rows.Next() {
-		var roleID string
-		if err := rows.Scan(&roleID); err != nil {
-			return nil, err
-		}
-		roleIDs = append(roleIDs, roleID)
+	roleIDs := make([]string, len(rels))
+	for i, r := range rels {
+		roleIDs[i] = r.RoleID
 	}
-	if roleIDs == nil {
+	if len(roleIDs) == 0 {
 		roleIDs = []string{}
 	}
-	return roleIDs, rows.Err()
+	return roleIDs, nil
 }
 
-// OwnPermissionDetail returns both P0 (direct) and P1 (via roles) permission codes.
-func OwnPermissionDetail(userID string) ([]string, error) {
+// PermissionDetailItem is a permission with scope info returned by OwnPermissionDetail.
+type PermissionDetailItem struct {
+	PermissionCode      string `json:"permission_code"`
+	Scope               string `json:"scope"`
+	CustomScopeGroupIds string `json:"custom_scope_group_ids"`
+	CustomScopeOrgIds   string `json:"custom_scope_org_ids"`
+}
+
+// OwnPermissionDetail returns both P0 (direct) and P1 (via roles) permissions with scope info.
+func OwnPermissionDetail(userID string) (*OwnPermissionDetailVO, error) {
 	ctx := context.Background()
-	permSet := make(map[string]bool)
 
-	// P0: direct user permissions
-	p0Rows, err := db.RawDB.QueryContext(ctx, "SELECT permission_code FROM rel_user_permission WHERE user_id = ?", userID)
+	// P0: direct user permissions with scope
+	p0Items := []PermissionDetailItem{}
+	p0Rels, err := db.Client.RelUserPermission.Query().
+		Where(reluserpermission.UserIDEQ(userID)).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer p0Rows.Close()
-	for p0Rows.Next() {
-		var code string
-		if err := p0Rows.Scan(&code); err != nil {
-			return nil, err
-		}
-		permSet[code] = true
+	for _, r := range p0Rels {
+		p0Items = append(p0Items, PermissionDetailItem{
+			PermissionCode:      r.PermissionCode,
+			Scope:               r.Scope,
+			CustomScopeGroupIds: r.CustomScopeGroupIds,
+			CustomScopeOrgIds:   r.CustomScopeOrgIds,
+		})
 	}
 
-	// P1: permissions via roles
-	roleRows, err := db.RawDB.QueryContext(ctx, "SELECT role_id FROM rel_user_role WHERE user_id = ?", userID)
+	// P1: permissions via roles with scope
+	p1Items := []PermissionDetailItem{}
+	roleRels, err := db.Client.RelUserRole.Query().
+		Where(reluserrole.UserIDEQ(userID)).
+		Select(reluserrole.FieldRoleID).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer roleRows.Close()
 
-	var roleIDs []string
-	for roleRows.Next() {
-		var roleID string
-		if err := roleRows.Scan(&roleID); err != nil {
-			return nil, err
-		}
-		roleIDs = append(roleIDs, roleID)
-	}
-
-	for _, roleID := range roleIDs {
-		rpRows, err := db.RawDB.QueryContext(ctx, "SELECT permission_code FROM rel_role_permission WHERE role_id = ?", roleID)
+	for _, rr := range roleRels {
+		rpRels, err := db.Client.RelRolePermission.Query().
+			Where(relrolepermission.RoleIDEQ(rr.RoleID)).
+			All(ctx)
 		if err != nil {
 			continue
 		}
-		for rpRows.Next() {
-			var code string
-			if err := rpRows.Scan(&code); err != nil {
-				rpRows.Close()
-				continue
-			}
-			permSet[code] = true
+		for _, rp := range rpRels {
+			p1Items = append(p1Items, PermissionDetailItem{
+				PermissionCode:      rp.PermissionCode,
+				Scope:               rp.Scope,
+				CustomScopeGroupIds: rp.CustomScopeGroupIds,
+				CustomScopeOrgIds:   rp.CustomScopeOrgIds,
+			})
 		}
-		rpRows.Close()
 	}
 
-	var result []string
-	for code := range permSet {
-		result = append(result, code)
+	if p0Items == nil {
+		p0Items = []PermissionDetailItem{}
 	}
-	if result == nil {
-		result = []string{}
+	if p1Items == nil {
+		p1Items = []PermissionDetailItem{}
 	}
-	return result, nil
+	return &OwnPermissionDetailVO{P0: p0Items, P1: p1Items}, nil
+}
+
+// OwnPermissionDetailVO groups P0 and P1 permission details.
+type OwnPermissionDetailVO struct {
+	P0 []PermissionDetailItem `json:"p0"`
+	P1 []PermissionDetailItem `json:"p1"`
 }
 
 // GrantRole deletes old role assignments and inserts new ones.
 func GrantRole(userID string, roleIDs []string) error {
 	ctx := context.Background()
-	tx, err := db.RawDB.BeginTx(ctx, nil)
+	tx, err := db.Client.Tx(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, "DELETE FROM rel_user_role WHERE user_id = ?", userID)
+	_, err = tx.RelUserRole.Delete().Where(reluserrole.UserIDEQ(userID)).Exec(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, roleID := range roleIDs {
-		_, err = tx.ExecContext(ctx, "INSERT INTO rel_user_role (id, user_id, role_id) VALUES (?, ?, ?)", utils.NextID(), userID, roleID)
+		_, err = tx.RelUserRole.Create().
+			SetID(utils.NextID()).
+			SetUserID(userID).
+			SetRoleID(roleID).
+			Save(ctx)
 		if err != nil {
 			return err
 		}
@@ -654,22 +690,33 @@ func GrantRole(userID string, roleIDs []string) error {
 	return tx.Commit()
 }
 
-// GrantPermission deletes old permission assignments and inserts new ones.
-func GrantPermission(userID string, permissionCodes []string) error {
+// GrantPermission deletes old permission assignments and inserts new ones with scope.
+func GrantPermission(userID string, permissions []PermissionItem) error {
 	ctx := context.Background()
-	tx, err := db.RawDB.BeginTx(ctx, nil)
+	tx, err := db.Client.Tx(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, "DELETE FROM rel_user_permission WHERE user_id = ?", userID)
+	_, err = tx.RelUserPermission.Delete().Where(reluserpermission.UserIDEQ(userID)).Exec(ctx)
 	if err != nil {
 		return err
 	}
 
-	for _, code := range permissionCodes {
-		_, err = tx.ExecContext(ctx, "INSERT INTO rel_user_permission (id, user_id, permission_code) VALUES (?, ?, ?)", utils.NextID(), userID, code)
+	for _, p := range permissions {
+		scope := p.Scope
+		if scope == "" {
+			scope = "ALL"
+		}
+		_, err = tx.RelUserPermission.Create().
+			SetID(utils.NextID()).
+			SetUserID(userID).
+			SetPermissionCode(p.PermissionCode).
+			SetScope(scope).
+			SetCustomScopeGroupIds(p.CustomScopeGroupIds).
+			SetCustomScopeOrgIds(p.CustomScopeOrgIds).
+			Save(ctx)
 		if err != nil {
 			return err
 		}
@@ -693,11 +740,19 @@ func Current(userID string) (*CurrentUserVO, error) {
 		Avatar:      u.Avatar,
 		Email:       u.Email,
 		Phone:       u.Phone,
+		Motto:       u.Motto,
+		Github:      u.Github,
 		Gender:      u.Gender,
 		OrgID:       u.OrgID,
 		GroupID:     u.GroupID,
 		PositionID:  u.PositionID,
 		Description: u.Description,
+		LoginCount:  u.LoginCount,
+		LastLoginAt: u.LastLoginAt.Format("2006-01-02 15:04:05"),
+		LastLoginIP: u.LastLoginIP,
+	}
+	if u.LastLoginAt.IsZero() {
+		vo.LastLoginAt = ""
 	}
 	vo.OrgName = resolveOrgName(u.OrgID)
 	vo.GroupName = resolveGroupName(u.GroupID)
@@ -719,6 +774,12 @@ func UpdateProfile(userID string, req *UpdateProfileReq) (*ent.SysUser, error) {
 	}
 	if req.Phone != "" {
 		u.SetPhone(req.Phone)
+	}
+	if req.Motto != "" {
+		u.SetMotto(req.Motto)
+	}
+	if req.Github != "" {
+		u.SetGithub(req.Github)
 	}
 	if req.Description != "" {
 		u.SetDescription(req.Description)
@@ -765,66 +826,65 @@ func UpdatePassword(userID, oldPassword, newPassword string) error {
 }
 
 // GetUserRoles returns all role records for a user.
-func GetUserRoles(userID string) ([]ent.RelUserRole, error) {
+func GetUserRoles(userID string) ([]*ent.RelUserRole, error) {
 	ctx := context.Background()
-	rows, err := db.RawDB.QueryContext(ctx, "SELECT id, user_id, role_id FROM rel_user_role WHERE user_id = ?", userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var result []ent.RelUserRole
-	for rows.Next() {
-		var r ent.RelUserRole
-		if err := rows.Scan(&r.ID, &r.UserID, &r.RoleID); err != nil {
-			return nil, err
-		}
-		result = append(result, r)
-	}
-	return result, rows.Err()
+	return db.Client.RelUserRole.Query().Where(reluserrole.UserIDEQ(userID)).All(ctx)
 }
 
 // IsSuperAdmin checks if the user has a role with SUPER_ADMIN code.
 func IsSuperAdmin(userID string) bool {
 	ctx := context.Background()
-	rows, err := db.RawDB.QueryContext(ctx,
-		"SELECT r.code FROM sys_role r INNER JOIN rel_user_role rur ON r.id = rur.role_id WHERE rur.user_id = ?", userID)
-	if err != nil {
+	roleRels, err := db.Client.RelUserRole.Query().
+		Where(reluserrole.UserIDEQ(userID)).
+		Select(reluserrole.FieldRoleID).
+		All(ctx)
+	if err != nil || len(roleRels) == 0 {
 		return false
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var code string
-		if err := rows.Scan(&code); err != nil {
-			continue
-		}
-		if code == "SUPER_ADMIN" {
-			return true
-		}
+	roleIDs := make([]string, len(roleRels))
+	for i, r := range roleRels {
+		roleIDs[i] = r.RoleID
 	}
-	return false
+	count, err := db.Client.SysRole.Query().
+		Where(sysrole.IDIn(roleIDs...), sysrole.CodeEQ("SUPER_ADMIN")).
+		Count(ctx)
+	return err == nil && count > 0
 }
 
 // GetUserResourceIDs returns resource IDs assigned to a user via roles.
 func GetUserResourceIDs(userID string) ([]string, error) {
 	ctx := context.Background()
-	rows, err := db.RawDB.QueryContext(ctx,
-		`SELECT DISTINCT rrr.resource_id FROM rel_role_resource rrr
-		 INNER JOIN rel_user_role rur ON rrr.role_id = rur.role_id
-		 WHERE rur.user_id = ?`, userID)
+	roleRels, err := db.Client.RelUserRole.Query().
+		Where(reluserrole.UserIDEQ(userID)).
+		Select(reluserrole.FieldRoleID).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
+	if len(roleRels) == 0 {
+		return []string{}, nil
+	}
+	roleIDs := make([]string, len(roleRels))
+	for i, r := range roleRels {
+		roleIDs[i] = r.RoleID
+	}
+	ress, err := db.Client.RelRoleResource.Query().
+		Where(relroleresource.RoleIDIn(roleIDs...)).
+		Select(relroleresource.FieldResourceID).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	seen := make(map[string]struct{})
 	var ids []string
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
+	for _, r := range ress {
+		if _, ok := seen[r.ResourceID]; !ok {
+			seen[r.ResourceID] = struct{}{}
+			ids = append(ids, r.ResourceID)
 		}
-		ids = append(ids, id)
+	}
+	if ids == nil {
+		ids = []string{}
 	}
 	return ids, nil
 }

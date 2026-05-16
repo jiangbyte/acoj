@@ -10,8 +10,8 @@ import (
 	"hei-gin/core/auth"
 	"hei-gin/core/constants"
 	"hei-gin/core/db"
-	"hei-gin/ent"
-	"hei-gin/ent/syspermission"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/syspermission"
 )
 
 // GinEngine holds a reference to the gin engine for permission cache refresh.

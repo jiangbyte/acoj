@@ -6,10 +6,10 @@ import (
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/predicate"
-	"hei-gin/ent/sysdict"
-	"hei-gin/ent/sysdictdata"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/predicate"
+	"hei-gin/ent/gen/sysdict"
+	"hei-gin/ent/gen/sysdictdata"
 )
 
 // ========================================================================
@@ -471,26 +471,4 @@ func GetChildren(typeCode string) (*DictTreeNode, error) {
 func QueryAll() ([]*ent.SysDict, error) {
 	ctx := context.Background()
 	return db.Client.SysDict.Query().Order(ent.Desc(sysdict.FieldCreatedAt)).All(ctx)
-}
-
-// CreateFromImport creates a SysDict entry from an imported Excel row.
-func CreateFromImport(row map[string]string, loginID string) (*ent.SysDict, error) {
-	ctx := context.Background()
-	now := time.Now()
-
-	q := db.Client.SysDict.Create().
-		SetID(utils.NextID()).
-		SetName(row["字典名称"]).
-		SetCode(row["字典编码"]).
-		SetCreatedAt(now).
-		SetCreatedBy(loginID).
-		SetUpdatedAt(now).
-		SetUpdatedBy(loginID)
-	if v := row["字典类别"]; v != "" {
-		q.SetCategory(v)
-	}
-	if v := row["字典描述"]; v != "" {
-		q.SetDescription(v)
-	}
-	return q.Save(ctx)
 }

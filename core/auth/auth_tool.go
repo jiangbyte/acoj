@@ -238,3 +238,50 @@ func (a *AuthToolImpl) GetTokenValuesByLoginID(loginID string) []string {
 	tokens, _ := db.Redis.SMembers(ctx, sessionKey).Result()
 	return tokens
 }
+
+func (a *AuthToolImpl) KickoutToken(loginID, token string) {
+	ctx := context.Background()
+	db.Redis.Del(ctx, a.tokenPrefix+token)
+	sessionKey := a.sessionPrefix + loginID
+	db.Redis.SRem(ctx, sessionKey, token)
+}
+
+func (a *AuthToolImpl) GetTokenTimeout(c *gin.Context) int {
+	token := a.GetTokenValue(c)
+	if token == "" {
+		return 0
+	}
+	ctx := context.Background()
+	ttl, _ := db.Redis.TTL(ctx, a.tokenPrefix+token).Result()
+	return int(ttl.Seconds())
+}
+
+func (a *AuthToolImpl) GetSessionTimeout(c *gin.Context) int {
+	loginID := a.GetLoginID(c)
+	if loginID == "" {
+		return 0
+	}
+	ctx := context.Background()
+	ttl, _ := db.Redis.TTL(ctx, a.sessionPrefix+loginID).Result()
+	return int(ttl.Seconds())
+}
+
+func (a *AuthToolImpl) CheckDisable(loginID string) error {
+	if a.IsDisable(loginID) {
+		return fmt.Errorf("account is disabled")
+	}
+	return nil
+}
+
+func (a *AuthToolImpl) GetDisableTime(loginID string) int {
+	ctx := context.Background()
+	key := a.disablePrefix + loginID
+	ttl, _ := db.Redis.TTL(ctx, key).Result()
+	return int(ttl.Seconds())
+}
+
+func (a *AuthToolImpl) UntieDisable(loginID string) {
+	ctx := context.Background()
+	key := a.disablePrefix + loginID
+	db.Redis.Del(ctx, key)
+}

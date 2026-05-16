@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"hei-gin/core/constants"
 	"hei-gin/core/db"
+	"hei-gin/ent/gen/sysuser"
 )
 
 type PageParam struct {
@@ -112,22 +112,14 @@ func Page(page, size int) (int, []SessionVO, error) {
 	}
 	userCache := make(map[string]userCacheEntry, len(loginIDs))
 	if len(loginIDs) > 0 {
-		placeholders := make([]string, len(loginIDs))
-		args := make([]interface{}, len(loginIDs))
-		for i, id := range loginIDs {
-			placeholders[i] = "?"
-			args[i] = id
-		}
-		query := "SELECT id, account, nickname FROM sys_user WHERE id IN (" + strings.Join(placeholders, ",") + ")"
-		rows, err := db.RawDB.QueryContext(ctx, query, args...)
+		users, err := db.Client.SysUser.Query().
+			Where(sysuser.IDIn(loginIDs...)).
+			Select(sysuser.FieldID, sysuser.FieldUsername, sysuser.FieldNickname).
+			All(ctx)
 		if err == nil {
-			for rows.Next() {
-				var id, username, nickname string
-				if err := rows.Scan(&id, &username, &nickname); err == nil {
-					userCache[id] = userCacheEntry{username, nickname}
-				}
+			for _, u := range users {
+				userCache[u.ID] = userCacheEntry{u.Username, u.Nickname}
 			}
-			rows.Close()
 		}
 	}
 

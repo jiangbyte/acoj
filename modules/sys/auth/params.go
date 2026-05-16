@@ -1,12 +1,11 @@
 package sysauth
 
-import "mime/multipart"
-
 type LoginReq struct {
 	Username    string `form:"username" json:"username" binding:"required"`
 	Password    string `form:"password" json:"password" binding:"required"`
-	CaptchaID   string `form:"captcha_id" json:"captcha_id" binding:"required"`
-	CaptchaCode string `form:"captcha_code" json:"captcha_code" binding:"required"`
+	CaptchaID   string `form:"captcha_id" json:"captcha_id"`
+	CaptchaCode string `form:"captcha_code" json:"captcha_code"`
+	DeviceID    string `form:"device_id" json:"device_id"`
 }
 
 type RegisterReq struct {
@@ -15,8 +14,8 @@ type RegisterReq struct {
 	Nickname    string `form:"nickname" json:"nickname"`
 	Email       string `form:"email" json:"email"`
 	Phone       string `form:"phone" json:"phone"`
-	CaptchaID   string `form:"captcha_id" json:"captcha_id" binding:"required"`
-	CaptchaCode string `form:"captcha_code" json:"captcha_code" binding:"required"`
+	CaptchaID   string `form:"captcha_id" json:"captcha_id"`
+	CaptchaCode string `form:"captcha_code" json:"captcha_code"`
 }
 
 type CaptchaResp struct {
@@ -39,13 +38,3 @@ type UserInfo struct {
 }
 
 // Excel import params
-type ImportReq struct {
-	File *multipart.FileHeader `form:"file" binding:"required"`
-}
-
-type ExportParam struct {
-	ExportType  string   `form:"export_type" json:"export_type"`
-	Current     int      `form:"current" json:"current"`
-	Size        int      `form:"size" json:"size"`
-	SelectedIDs []string `form:"selected_ids" json:"selected_ids"`
-}

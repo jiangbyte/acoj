@@ -2,13 +2,13 @@ package log
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/syslog"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/syslog"
+	"hei-gin/ent/gen/sysuser"
 )
 
 type PageParam struct {
@@ -58,20 +58,6 @@ type DetailReq struct {
 type CleanReq struct {
 	Category string `json:"category" binding:"required"`
 }
-
-var LogExportFieldNames = map[string]string{
-	"name":       "操作名称",
-	"category":   "日志类别",
-	"exe_status": "执行状态",
-	"op_ip":      "操作IP",
-	"req_method": "请求方法",
-	"req_url":    "请求URL",
-	"op_time":    "操作耗时",
-	"op_user":    "操作用户",
-	"created_at": "创建时间",
-}
-
-var LogExportFields = []string{"name", "category", "exe_status", "op_ip", "req_method", "req_url", "op_time", "op_user", "created_at"}
 
 func toVO(s *ent.SysLog) SysLogVO {
 	return SysLogVO{
@@ -175,7 +161,7 @@ func Remove(ids []string) error {
 
 func DeleteByCategory(category string) error {
 	ctx := context.Background()
-	_, err := db.RawDB.ExecContext(ctx, "DELETE FROM sys_log WHERE category = ?", category)
+	_, err := db.Client.SysLog.Delete().Where(syslog.CategoryEQ(category)).Exec(ctx)
 	return err
 }
 
@@ -245,23 +231,15 @@ func resolveNicknames(userIDs []string) map[string]string {
 		return result
 	}
 	ctx := context.Background()
-	placeholders := make([]string, len(userIDs))
-	args := make([]interface{}, len(userIDs))
-	for i, id := range userIDs {
-		placeholders[i] = "?"
-		args[i] = id
-	}
-	query := "SELECT id, nickname FROM sys_user WHERE id IN (" + strings.Join(placeholders, ",") + ")"
-	rows, err := db.RawDB.QueryContext(ctx, query, args...)
+	users, err := db.Client.SysUser.Query().
+		Where(sysuser.IDIn(userIDs...)).
+		Select(sysuser.FieldID, sysuser.FieldNickname).
+		All(ctx)
 	if err != nil {
 		return result
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var id, nickname string
-		if err := rows.Scan(&id, &nickname); err == nil {
-			result[id] = nickname
-		}
+	for _, u := range users {
+		result[u.ID] = u.Nickname
 	}
 	return result
 }
@@ -317,46 +295,53 @@ func VisLineChartData() (*LogBarChartData, error) {
 		dayIndex[day] = 6 - i
 	}
 
-	startDate := now.AddDate(0, 0, -6).Format("2006-01-02") + " 00:00:00"
-
-	rows, err := db.RawDB.QueryContext(ctx,
-		`SELECT DATE(created_at) AS day, category, COUNT(*) AS cnt
-		 FROM sys_log
-		 WHERE category IN ('LOGIN','LOGOUT')
-		   AND created_at >= ?
-		 GROUP BY DATE(created_at), category
-		 ORDER BY day`,
-		startDate,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+	startDate := now.AddDate(0, 0, -6)
 
 	catName := map[string]string{
 		"LOGIN":  "登录",
 		"LOGOUT": "登出",
 	}
 
+	// Query all matching log entries and aggregate in Go
+	all, err := db.Client.SysLog.Query().
+		Where(
+			syslog.CategoryIn("LOGIN", "LOGOUT"),
+			syslog.CreatedAtGTE(startDate),
+		).
+		Select(syslog.FieldCreatedAt, syslog.FieldCategory).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	countMap := make(map[string]map[string]int)
+	for _, s := range all {
+		day := s.CreatedAt.Format("2006-01-02")
+		if _, ok := dayIndex[day]; !ok {
+			continue
+		}
+		if countMap[day] == nil {
+			countMap[day] = make(map[string]int)
+		}
+		countMap[day][s.Category]++
+	}
+
 	catData := make(map[string][]int)
 	catOrder := make([]string, 0)
 
-	for rows.Next() {
-		var day, category string
-		var count int
-		if err := rows.Scan(&day, &category, &count); err != nil {
-			continue
-		}
-		name := catName[category]
-		if name == "" {
-			name = category
-		}
-		if _, ok := catData[name]; !ok {
-			catData[name] = make([]int, 7)
-			catOrder = append(catOrder, name)
-		}
-		if idx, ok := dayIndex[day]; ok {
-			catData[name][idx] = count
+	for day, cats := range countMap {
+		for cat, cnt := range cats {
+			name := catName[cat]
+			if name == "" {
+				name = cat
+			}
+			if _, ok := catData[name]; !ok {
+				catData[name] = make([]int, 7)
+				catOrder = append(catOrder, name)
+			}
+			if idx, ok := dayIndex[day]; ok {
+				catData[name][idx] += cnt
+			}
 		}
 	}
 
@@ -386,33 +371,33 @@ func VisPieChartData() (*LogPieChartData, error) {
 		"LOGOUT": "登出",
 	}
 
-	rows, err := db.RawDB.QueryContext(ctx,
-		`SELECT category, COUNT(*) AS cnt
-		 FROM sys_log
-		 WHERE category IN ('LOGIN','LOGOUT')
-		 GROUP BY category`,
-	)
+	type aggResult struct {
+		Category string `json:"category"`
+		Count    int    `json:"count"`
+	}
+	var results []aggResult
+	err := db.Client.SysLog.Query().
+		Where(
+			syslog.CategoryIn("LOGIN", "LOGOUT"),
+		).
+		GroupBy(syslog.FieldCategory).
+		Aggregate(ent.Count()).
+		Scan(ctx, &results)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	data := &LogPieChartData{
 		Data: make([]LogCategoryTotal, 0),
 	}
-	for rows.Next() {
-		var category string
-		var total int
-		if err := rows.Scan(&category, &total); err != nil {
-			continue
-		}
-		name := catName[category]
+	for _, r := range results {
+		name := catName[r.Category]
 		if name == "" {
-			name = category
+			name = r.Category
 		}
 		data.Data = append(data.Data, LogCategoryTotal{
 			Category: name,
-			Total:    total,
+			Total:    r.Count,
 		})
 	}
 	if data.Data == nil {
@@ -435,46 +420,52 @@ func OpBarChartData() (*LogBarChartData, error) {
 		dayIndex[day] = 6 - i
 	}
 
-	startDate := now.AddDate(0, 0, -6).Format("2006-01-02") + " 00:00:00"
+	startDate := now.AddDate(0, 0, -6)
 
 	catName := map[string]string{
 		"OPERATE":   "操作",
 		"EXCEPTION": "异常",
 	}
 
-	rows, err := db.RawDB.QueryContext(ctx,
-		`SELECT DATE(created_at) AS day, category, COUNT(*) AS cnt
-		 FROM sys_log
-		 WHERE category IN ('OPERATE','EXCEPTION')
-		   AND created_at >= ?
-		 GROUP BY DATE(created_at), category
-		 ORDER BY day`,
-		startDate,
-	)
+	all, err := db.Client.SysLog.Query().
+		Where(
+			syslog.CategoryIn("OPERATE", "EXCEPTION"),
+			syslog.CreatedAtGTE(startDate),
+		).
+		Select(syslog.FieldCreatedAt, syslog.FieldCategory).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+
+	countMap := make(map[string]map[string]int)
+	for _, s := range all {
+		day := s.CreatedAt.Format("2006-01-02")
+		if _, ok := dayIndex[day]; !ok {
+			continue
+		}
+		if countMap[day] == nil {
+			countMap[day] = make(map[string]int)
+		}
+		countMap[day][s.Category]++
+	}
 
 	catData := make(map[string][]int)
 	catOrder := make([]string, 0)
 
-	for rows.Next() {
-		var day, category string
-		var count int
-		if err := rows.Scan(&day, &category, &count); err != nil {
-			continue
-		}
-		name := catName[category]
-		if name == "" {
-			name = category
-		}
-		if _, ok := catData[name]; !ok {
-			catData[name] = make([]int, 7)
-			catOrder = append(catOrder, name)
-		}
-		if idx, ok := dayIndex[day]; ok {
-			catData[name][idx] = count
+	for day, cats := range countMap {
+		for cat, cnt := range cats {
+			name := catName[cat]
+			if name == "" {
+				name = cat
+			}
+			if _, ok := catData[name]; !ok {
+				catData[name] = make([]int, 7)
+				catOrder = append(catOrder, name)
+			}
+			if idx, ok := dayIndex[day]; ok {
+				catData[name][idx] += cnt
+			}
 		}
 	}
 
@@ -504,33 +495,33 @@ func OpPieChartData() (*LogPieChartData, error) {
 		"EXCEPTION": "异常",
 	}
 
-	rows, err := db.RawDB.QueryContext(ctx,
-		`SELECT category, COUNT(*) AS cnt
-		 FROM sys_log
-		 WHERE category IN ('OPERATE','EXCEPTION')
-		 GROUP BY category`,
-	)
+	type aggResult struct {
+		Category string `json:"category"`
+		Count    int    `json:"count"`
+	}
+	var results []aggResult
+	err := db.Client.SysLog.Query().
+		Where(
+			syslog.CategoryIn("OPERATE", "EXCEPTION"),
+		).
+		GroupBy(syslog.FieldCategory).
+		Aggregate(ent.Count()).
+		Scan(ctx, &results)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	data := &LogPieChartData{
 		Data: make([]LogCategoryTotal, 0),
 	}
-	for rows.Next() {
-		var category string
-		var total int
-		if err := rows.Scan(&category, &total); err != nil {
-			continue
-		}
-		name := catName[category]
+	for _, r := range results {
+		name := catName[r.Category]
 		if name == "" {
-			name = category
+			name = r.Category
 		}
 		data.Data = append(data.Data, LogCategoryTotal{
 			Category: name,
-			Total:    total,
+			Total:    r.Count,
 		})
 	}
 	if data.Data == nil {

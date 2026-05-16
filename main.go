@@ -23,6 +23,9 @@ func main() {
 	// Create app
 	app := core.CreateApp()
 
+	// Cache permissions in Redis
+	core.ScanPermissions(app)
+
 	log.Printf("[Main] %s v%s starting...", config.C.App.Name, config.C.App.Version)
 
 	addr := fmt.Sprintf("%s:%d", config.C.App.Host, config.C.App.Port)

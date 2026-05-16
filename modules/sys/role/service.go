@@ -2,17 +2,17 @@ package role
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"time"
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/relrolepermission"
-	"hei-gin/ent/relroleresource"
-	"hei-gin/ent/reluserrole"
-	"hei-gin/ent/sysrole"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/relrolepermission"
+	"hei-gin/ent/gen/relroleresource"
+	"hei-gin/ent/gen/reluserrole"
+	"hei-gin/ent/gen/syspermission"
+	"hei-gin/ent/gen/sysrole"
 )
 
 type PageParam struct {
@@ -26,6 +26,8 @@ type RoleVO struct {
 	ID                  string `json:"id"`
 	Name                string `json:"name"`
 	Code                string `json:"code"`
+	Category            string `json:"category"`
+	Extra               string `json:"extra"`
 	DataScope           string `json:"data_scope"`
 	CustomScopeOrgIds   string `json:"custom_scope_org_ids"`
 	CustomScopeGroupIds string `json:"custom_scope_group_ids"`
@@ -41,6 +43,7 @@ type RoleVO struct {
 type RoleCreateReq struct {
 	Name                string `json:"name" binding:"required"`
 	Code                string `json:"code" binding:"required"`
+	Category            string `json:"category"`
 	DataScope           string `json:"data_scope"`
 	CustomScopeOrgIds   string `json:"custom_scope_org_ids"`
 	CustomScopeGroupIds string `json:"custom_scope_group_ids"`
@@ -53,6 +56,7 @@ type RoleModifyReq struct {
 	ID                  string `json:"id" binding:"required"`
 	Name                string `json:"name"`
 	Code                string `json:"code"`
+	Category            string `json:"category"`
 	DataScope           string `json:"data_scope"`
 	CustomScopeOrgIds   string `json:"custom_scope_org_ids"`
 	CustomScopeGroupIds string `json:"custom_scope_group_ids"`
@@ -75,27 +79,25 @@ type GrantResourceReq struct {
 }
 
 type GrantPermissionReq struct {
-	RoleID          string   `json:"role_id" binding:"required"`
-	PermissionCodes []string `json:"permission_codes" binding:"required"`
+	RoleID      string           `json:"role_id" binding:"required"`
+	Permissions []PermissionItem `json:"permissions" binding:"required"`
 }
 
-var RoleExportFieldNames = map[string]string{
-	"name":        "角色名称",
-	"code":        "角色编码",
-	"data_scope":  "数据权限范围",
-	"sort_code":   "排序",
-	"status":      "状态",
-	"description": "角色描述",
-	"created_at":  "创建时间",
+// PermissionItem represents a permission with optional scope info.
+type PermissionItem struct {
+	PermissionCode      string `json:"permission_code" binding:"required"`
+	Scope               string `json:"scope"`
+	CustomScopeGroupIds string `json:"custom_scope_group_ids"`
+	CustomScopeOrgIds   string `json:"custom_scope_org_ids"`
 }
-
-var RoleExportFields = []string{"name", "code", "data_scope", "sort_code", "status", "description", "created_at"}
 
 func toVO(r *ent.SysRole) RoleVO {
 	vo := RoleVO{
 		ID:                  r.ID,
 		Name:                r.Name,
 		Code:                r.Code,
+		Category:            r.Category,
+		Extra:               r.Extra,
 		DataScope:           r.DataScope,
 		CustomScopeOrgIds:   r.CustomScopeOrgIds,
 		CustomScopeGroupIds: r.CustomScopeGroupIds,
@@ -162,6 +164,9 @@ func Create(req *RoleCreateReq, loginID string) (*ent.SysRole, error) {
 		SetUpdatedAt(now).
 		SetUpdatedBy(loginID)
 
+	if req.Category != "" {
+		q.SetCategory(req.Category)
+	}
 	if req.DataScope != "" {
 		q.SetDataScope(req.DataScope)
 	} else {
@@ -198,6 +203,9 @@ func Modify(req *RoleModifyReq, loginID string) (*ent.SysRole, error) {
 	}
 	if req.Code != "" {
 		u.SetCode(req.Code)
+	}
+	if req.Category != "" {
+		u.SetCategory(req.Category)
 	}
 	if req.DataScope != "" {
 		u.SetDataScope(req.DataScope)
@@ -255,50 +263,43 @@ func Detail(id string) (*ent.SysRole, error) {
 	return db.Client.SysRole.Get(ctx, id)
 }
 
-func QueryAll() ([]*ent.SysRole, error) {
-	ctx := context.Background()
-	return db.Client.SysRole.Query().Order(ent.Desc(sysrole.FieldCreatedAt)).All(ctx)
-}
-
 // OwnResources queries rel_role_resource for resource IDs assigned to a role.
 func OwnResources(roleID string) ([]string, error) {
 	ctx := context.Background()
-	rows, err := db.RawDB.QueryContext(ctx, "SELECT resource_id FROM rel_role_resource WHERE role_id = ?", roleID)
+	rels, err := db.Client.RelRoleResource.Query().
+		Where(relroleresource.RoleIDEQ(roleID)).
+		Select(relroleresource.FieldResourceID).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var ids []string
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
+	ids := make([]string, len(rels))
+	for i, r := range rels {
+		ids[i] = r.ResourceID
 	}
-	if ids == nil {
-		ids = []string{}
-	}
-	return ids, rows.Err()
+	return ids, nil
 }
 
 // GrantResource deletes old rel_role_resource records and inserts new ones.
 func GrantResource(roleID string, resourceIDs []string) error {
 	ctx := context.Background()
-	tx, err := db.RawDB.BeginTx(ctx, nil)
+	tx, err := db.Client.Tx(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, "DELETE FROM rel_role_resource WHERE role_id = ?", roleID)
+	_, err = tx.RelRoleResource.Delete().Where(relroleresource.RoleIDEQ(roleID)).Exec(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, resourceID := range resourceIDs {
-		_, err = tx.ExecContext(ctx, "INSERT INTO rel_role_resource (id, role_id, resource_id) VALUES (?, ?, ?)", utils.NextID(), roleID, resourceID)
+		_, err = tx.RelRoleResource.Create().
+			SetID(utils.NextID()).
+			SetRoleID(roleID).
+			SetResourceID(resourceID).
+			Save(ctx)
 		if err != nil {
 			return err
 		}
@@ -310,42 +311,47 @@ func GrantResource(roleID string, resourceIDs []string) error {
 // OwnPermissions queries rel_role_permission for permission codes assigned to a role.
 func OwnPermissions(roleID string) ([]string, error) {
 	ctx := context.Background()
-	rows, err := db.RawDB.QueryContext(ctx, "SELECT permission_code FROM rel_role_permission WHERE role_id = ?", roleID)
+	perms, err := db.Client.RelRolePermission.Query().
+		Where(relrolepermission.RoleIDEQ(roleID)).
+		Select(relrolepermission.FieldPermissionCode).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var codes []string
-	for rows.Next() {
-		var code string
-		if err := rows.Scan(&code); err != nil {
-			return nil, err
-		}
-		codes = append(codes, code)
+	codes := make([]string, len(perms))
+	for i, p := range perms {
+		codes[i] = p.PermissionCode
 	}
-	if codes == nil {
-		codes = []string{}
-	}
-	return codes, rows.Err()
+	return codes, nil
 }
 
-// GrantPermission deletes old rel_role_permission records and inserts new ones.
-func GrantPermission(roleID string, permissionCodes []string) error {
+// GrantPermission deletes old rel_role_permission records and inserts new ones with scope.
+func GrantPermission(roleID string, permissions []PermissionItem) error {
 	ctx := context.Background()
-	tx, err := db.RawDB.BeginTx(ctx, nil)
+	tx, err := db.Client.Tx(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, "DELETE FROM rel_role_permission WHERE role_id = ?", roleID)
+	_, err = tx.RelRolePermission.Delete().Where(relrolepermission.RoleIDEQ(roleID)).Exec(ctx)
 	if err != nil {
 		return err
 	}
 
-	for _, code := range permissionCodes {
-		_, err = tx.ExecContext(ctx, "INSERT INTO rel_role_permission (id, role_id, permission_code) VALUES (?, ?, ?)", utils.NextID(), roleID, code)
+	for _, p := range permissions {
+		scope := p.Scope
+		if scope == "" {
+			scope = "ALL"
+		}
+		_, err = tx.RelRolePermission.Create().
+			SetID(utils.NextID()).
+			SetRoleID(roleID).
+			SetPermissionCode(p.PermissionCode).
+			SetScope(scope).
+			SetCustomScopeGroupIds(p.CustomScopeGroupIds).
+			SetCustomScopeOrgIds(p.CustomScopeOrgIds).
+			Save(ctx)
 		if err != nil {
 			return err
 		}
@@ -357,41 +363,56 @@ func GrantPermission(roleID string, permissionCodes []string) error {
 func OwnPermissionDetail(roleID string) (interface{}, error) {
 	ctx := context.Background()
 
-	rows, err := db.RawDB.QueryContext(ctx,
-		`SELECT p.id, p.code, p.name, p.module, p.scope, p.custom_scope_org_ids, p.custom_scope_group_ids
-		 FROM sys_permission p
-		 INNER JOIN sys_role_permission rp ON p.id = rp.permission_id
-		 WHERE rp.role_id = ?`, roleID)
+	// Query rel_role_permission to get permission codes with scope info
+	rpList, err := db.Client.RelRolePermission.Query().
+		Where(relrolepermission.RoleIDEQ(roleID)).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+
+	if len(rpList) == 0 {
+		return []map[string]interface{}{}, nil
+	}
+
+	// Collect permission codes and query sys_permission for display info
+	codes := make([]string, len(rpList))
+	codeMap := make(map[string]*ent.RelRolePermission)
+	for i, rp := range rpList {
+		codes[i] = rp.PermissionCode
+		codeMap[rp.PermissionCode] = rp
+	}
+
+	perms, _ := db.Client.SysPermission.Query().
+		Where(syspermission.CodeIn(codes...)).
+		Select(syspermission.FieldID, syspermission.FieldCode, syspermission.FieldName).
+		All(ctx)
+
+	permInfo := make(map[string]*ent.SysPermission)
+	for _, p := range perms {
+		permInfo[p.Code] = p
+	}
 
 	var result []map[string]interface{}
-	for rows.Next() {
-		var id, code, name, module string
-		var scope sql.NullString
-		var customScopeOrgIds, customScopeGroupIds sql.NullString
-		if err := rows.Scan(&id, &code, &name, &module, &scope, &customScopeOrgIds, &customScopeGroupIds); err != nil {
-			continue
-		}
+	for _, code := range codes {
+		rp := codeMap[code]
 		row := map[string]interface{}{
-			"id":     id,
-			"code":   code,
-			"name":   name,
-			"module": module,
-			"scope":  scope.String,
+			"permission_code": rp.PermissionCode,
+			"scope":           rp.Scope,
 		}
-		if customScopeOrgIds.String != "" {
-			row["custom_scope_org_ids"] = customScopeOrgIds.String
+		if p, ok := permInfo[code]; ok {
+			row["id"] = p.ID
+			row["code"] = p.Code
+			row["name"] = p.Name
 		}
-		if customScopeGroupIds.String != "" {
-			row["custom_scope_group_ids"] = customScopeGroupIds.String
+		if rp.CustomScopeOrgIds != "" {
+			row["custom_scope_org_ids"] = rp.CustomScopeOrgIds
+		}
+		if rp.CustomScopeGroupIds != "" {
+			row["custom_scope_group_ids"] = rp.CustomScopeGroupIds
 		}
 		result = append(result, row)
 	}
-	if result == nil {
-		result = []map[string]interface{}{}
-	}
+
 	return result, nil
 }

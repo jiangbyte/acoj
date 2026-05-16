@@ -72,6 +72,36 @@ func RegisterPermission(method, path, code string) {
 	PermissionRouteRegistry[key] = code
 }
 
+// CheckLogin returns a Gin middleware that verifies the user is logged in.
+func CheckLogin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		loginType := DetectLoginType(c)
+		var loginID string
+		if loginType == "CONSUMER" {
+			loginID = ClientAuthTool.GetLoginID(c)
+		} else {
+			loginID = AuthTool.GetLoginID(c)
+		}
+		if loginID == "" {
+			c.JSON(200, map[string]interface{}{
+				"code":    401,
+				"message": "未授权/未登录",
+				"data":    nil,
+				"success": false,
+				"trace_id": func() string {
+					if id, ok := c.Get("trace_id"); ok {
+						return id.(string)
+					}
+					return ""
+				}(),
+			})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
 // CheckPermission returns a Gin middleware that verifies the user has the required permission.
 func CheckPermission(code string) gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -1,16 +1,12 @@
 package resource
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/core/auth"
 	"hei-gin/core/log"
 	"hei-gin/core/norepeat"
 	"hei-gin/core/result"
-	"hei-gin/core/utils"
 )
 
 func RegisterRoutes(r *gin.RouterGroup) {
@@ -38,21 +34,6 @@ func RegisterRoutes(r *gin.RouterGroup) {
 		auth.CheckPermission("sys:resource:detail"),
 		DetailHandler,
 	)
-	r.GET("/api/v1/sys/resource/export",
-		log.SysLog("导出资源数据"),
-		auth.CheckPermission("sys:resource:export"),
-		ExportHandler,
-	)
-	r.GET("/api/v1/sys/resource/template",
-		auth.CheckPermission("sys:resource:template"),
-		TemplateHandler,
-	)
-	r.POST("/api/v1/sys/resource/import",
-		log.SysLog("导入资源数据"),
-		auth.CheckPermission("sys:resource:import"),
-		norepeat.NoRepeat(5000),
-		ImportHandler,
-	)
 	r.GET("/api/v1/sys/resource/treeselect",
 		auth.CheckPermission("sys:resource:page"),
 		TreeSelectHandler,
@@ -66,7 +47,7 @@ func RegisterRoutes(r *gin.RouterGroup) {
 func PageHandler(c *gin.Context) {
 	var p PageParam
 	if err := c.ShouldBindQuery(&p); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	if p.Page <= 0 {
@@ -92,7 +73,7 @@ func PageHandler(c *gin.Context) {
 func CreateHandler(c *gin.Context) {
 	var req ResourceCreateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -108,7 +89,7 @@ func CreateHandler(c *gin.Context) {
 func ModifyHandler(c *gin.Context) {
 	var req ResourceModifyReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -124,7 +105,7 @@ func ModifyHandler(c *gin.Context) {
 func RemoveHandler(c *gin.Context) {
 	var req RemoveReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -138,7 +119,7 @@ func RemoveHandler(c *gin.Context) {
 func DetailHandler(c *gin.Context) {
 	var req DetailReq
 	if err := c.ShouldBindQuery(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -148,98 +129,6 @@ func DetailHandler(c *gin.Context) {
 		return
 	}
 	result.Success(c, toVO(item))
-}
-
-func ExportHandler(c *gin.Context) {
-	items, err := QueryAll()
-	if err != nil {
-		result.Failure(c, "导出失败", 500)
-		return
-	}
-
-	var data []map[string]interface{}
-	for _, item := range items {
-		row := map[string]interface{}{
-			"name":       item.Name,
-			"code":       item.Code,
-			"type":       item.Type,
-			"category":   item.Category,
-			"icon":       item.Icon,
-			"path":       item.Path,
-			"component":  item.Component,
-			"sort_code":  item.SortCode,
-			"status":     item.Status,
-			"created_at": item.CreatedAt.Format("2006-01-02 15:04:05"),
-		}
-		data = append(data, row)
-	}
-
-	headers := utils.BuildHeaders(ResourceExportFields, ResourceExportFieldNames)
-	excelBytes, err := utils.ExportExcel(data, headers, "资源数据")
-	if err != nil {
-		result.Failure(c, "导出失败", 500)
-		return
-	}
-
-	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="resource_export.xlsx"`))
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	c.Header("Content-Length", strconv.Itoa(len(excelBytes)))
-	c.Data(200, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBytes)
-}
-
-func TemplateHandler(c *gin.Context) {
-	headers := utils.BuildHeaders(ResourceExportFields, ResourceExportFieldNames)
-	excelBytes, err := utils.ExportExcel(nil, headers, "资源导入模板")
-	if err != nil {
-		result.Failure(c, "生成模板失败", 500)
-		return
-	}
-
-	c.Header("Content-Disposition", `attachment; filename="resource_template.xlsx"`)
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	c.Header("Content-Length", strconv.Itoa(len(excelBytes)))
-	c.Data(200, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBytes)
-}
-
-func ImportHandler(c *gin.Context) {
-	file, err := c.FormFile("file")
-	if err != nil {
-		result.Failure(c, "请上传文件", 400)
-		return
-	}
-
-	src, err := file.Open()
-	if err != nil {
-		result.Failure(c, "文件读取失败", 500)
-		return
-	}
-	defer src.Close()
-
-	fileBytes := make([]byte, file.Size)
-	if _, err := src.Read(fileBytes); err != nil {
-		result.Failure(c, "文件读取失败", 500)
-		return
-	}
-
-	rows, err := utils.ParseExcel(fileBytes, "资源导入模板")
-	if err != nil {
-		result.Failure(c, "解析Excel失败", 400)
-		return
-	}
-
-	loginID := auth.AuthTool.GetLoginID(c)
-	success := 0
-	for _, row := range rows {
-		_, err := Create(&ResourceCreateReq{
-			Name: row["资源名称"],
-			Code: row["资源编码"],
-		}, loginID)
-		if err == nil {
-			success++
-		}
-	}
-
-	result.Success(c, map[string]int{"success": success, "total": len(rows)})
 }
 
 func TreeSelectHandler(c *gin.Context) {

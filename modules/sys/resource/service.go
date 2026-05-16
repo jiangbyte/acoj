@@ -6,9 +6,9 @@ import (
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/relroleresource"
-	"hei-gin/ent/sysresource"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/relroleresource"
+	"hei-gin/ent/gen/sysresource"
 )
 
 type PageParam struct {
@@ -112,21 +112,6 @@ type BootstrapMenuVO struct {
 	Type      string             `json:"type"`
 	Children  []*BootstrapMenuVO `json:"children"`
 }
-
-var ResourceExportFieldNames = map[string]string{
-	"name":       "资源名称",
-	"code":       "资源编码",
-	"type":       "资源类型",
-	"category":   "资源类别",
-	"icon":       "图标",
-	"path":       "路由路径",
-	"component":  "组件路径",
-	"sort_code":  "排序",
-	"status":     "状态",
-	"created_at": "创建时间",
-}
-
-var ResourceExportFields = []string{"name", "code", "type", "category", "icon", "path", "component", "sort_code", "status", "created_at"}
 
 func toVO(r *ent.SysResource) ResourceVO {
 	vo := ResourceVO{

@@ -11,11 +11,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"hei-gin/config"
-	"hei-gin/ent"
+	ent "hei-gin/ent/gen"
 )
 
 var Client *ent.Client
-var RawDB *sql.DB
 
 func InitEnt() error {
 	cfg := config.C.DB
@@ -34,7 +33,6 @@ func InitEnt() error {
 
 	drv := entsql.OpenDB(dialect.MySQL, sqldb)
 	Client = ent.NewClient(ent.Driver(drv))
-	RawDB = sqldb
 
 	if err := sqldb.Ping(); err != nil {
 		return fmt.Errorf("database ping failed: %w", err)

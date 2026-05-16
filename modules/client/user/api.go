@@ -1,16 +1,12 @@
 package user
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/core/auth"
 	"hei-gin/core/log"
 	"hei-gin/core/norepeat"
 	"hei-gin/core/result"
-	"hei-gin/core/utils"
 )
 
 func RegisterRoutes(r *gin.RouterGroup) {
@@ -33,20 +29,6 @@ func RegisterRoutes(r *gin.RouterGroup) {
 	r.GET("/api/v1/client-user/detail",
 		auth.CheckPermission("client:user:detail"),
 		DetailHandler,
-	)
-	r.GET("/api/v1/client-user/export",
-		auth.CheckPermission("client:user:export"),
-		ExportHandler,
-	)
-	r.GET("/api/v1/client-user/template",
-		auth.CheckPermission("client:user:template"),
-		TemplateHandler,
-	)
-	r.POST("/api/v1/client-user/import",
-		log.SysLog("导入用户数据"),
-		auth.CheckPermission("client:user:import"),
-		norepeat.NoRepeat(5000),
-		ImportHandler,
 	)
 	// Current user
 	r.GET("/api/v1/client-user/current",
@@ -76,7 +58,7 @@ func RegisterRoutes(r *gin.RouterGroup) {
 func PageHandler(c *gin.Context) {
 	var p PageParam
 	if err := c.ShouldBindQuery(&p); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	if p.Page <= 0 {
@@ -102,7 +84,7 @@ func PageHandler(c *gin.Context) {
 func CreateHandler(c *gin.Context) {
 	var req CreateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -118,7 +100,7 @@ func CreateHandler(c *gin.Context) {
 func ModifyHandler(c *gin.Context) {
 	var req ModifyReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -134,7 +116,7 @@ func ModifyHandler(c *gin.Context) {
 func RemoveHandler(c *gin.Context) {
 	var req RemoveReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -148,7 +130,7 @@ func RemoveHandler(c *gin.Context) {
 func DetailHandler(c *gin.Context) {
 	var req DetailReq
 	if err := c.ShouldBindQuery(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -160,102 +142,10 @@ func DetailHandler(c *gin.Context) {
 	result.Success(c, toVO(item))
 }
 
-func ExportHandler(c *gin.Context) {
-	items, err := QueryAll()
-	if err != nil {
-		result.Failure(c, "导出失败", 500)
-		return
-	}
-
-	var data []map[string]interface{}
-	for _, item := range items {
-		birthday := ""
-		if !item.Birthday.IsZero() {
-			birthday = item.Birthday.Format("2006-01-02")
-		}
-		row := map[string]interface{}{
-			"username":    item.Username,
-			"nickname":    item.Nickname,
-			"email":       item.Email,
-			"phone":       item.Phone,
-			"gender":      item.Gender,
-			"status":      item.Status,
-			"birthday":    birthday,
-			"description": item.Description,
-			"created_at":  item.CreatedAt.Format("2006-01-02 15:04:05"),
-		}
-		data = append(data, row)
-	}
-
-	headers := utils.BuildHeaders(ClientUserExportFields, ClientUserExportFieldNames)
-	excelBytes, err := utils.ExportExcel(data, headers, "用户数据")
-	if err != nil {
-		result.Failure(c, "导出失败", 500)
-		return
-	}
-
-	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="client_user_export.xlsx"`))
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	c.Header("Content-Length", strconv.Itoa(len(excelBytes)))
-	c.Data(200, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBytes)
-}
-
-func TemplateHandler(c *gin.Context) {
-	headers := utils.BuildHeaders(ClientUserExportFields, ClientUserExportFieldNames)
-	excelBytes, err := utils.ExportExcel(nil, headers, "用户导入模板")
-	if err != nil {
-		result.Failure(c, "生成模板失败", 500)
-		return
-	}
-
-	c.Header("Content-Disposition", `attachment; filename="client_user_template.xlsx"`)
-	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	c.Header("Content-Length", strconv.Itoa(len(excelBytes)))
-	c.Data(200, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBytes)
-}
-
-func ImportHandler(c *gin.Context) {
-	file, err := c.FormFile("file")
-	if err != nil {
-		result.Failure(c, "请上传文件", 400)
-		return
-	}
-
-	src, err := file.Open()
-	if err != nil {
-		result.Failure(c, "文件读取失败", 500)
-		return
-	}
-	defer src.Close()
-
-	fileBytes := make([]byte, file.Size)
-	if _, err := src.Read(fileBytes); err != nil {
-		result.Failure(c, "文件读取失败", 500)
-		return
-	}
-
-	rows, err := utils.ParseExcel(fileBytes, "用户导入模板")
-	if err != nil {
-		result.Failure(c, "解析Excel失败", 400)
-		return
-	}
-
-	loginID := auth.AuthTool.GetLoginID(c)
-	success := 0
-	for _, row := range rows {
-		err := ImportRow(row, loginID)
-		if err == nil {
-			success++
-		}
-	}
-
-	result.Success(c, map[string]int{"success": success, "total": len(rows)})
-}
-
 func UpdateProfileHandler(c *gin.Context) {
 	var req UpdateProfileReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -276,7 +166,7 @@ func UpdateProfileHandler(c *gin.Context) {
 func UpdateAvatarHandler(c *gin.Context) {
 	var req UpdateAvatarReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -297,7 +187,7 @@ func UpdateAvatarHandler(c *gin.Context) {
 func UpdatePasswordHandler(c *gin.Context) {
 	var req UpdatePasswordReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 

@@ -40,7 +40,7 @@ func RegisterRoutes(r *gin.RouterGroup) {
 func PageHandler(c *gin.Context) {
 	var p PageParam
 	if err := c.ShouldBindQuery(&p); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 	if p.Page <= 0 {
@@ -62,7 +62,7 @@ func PageHandler(c *gin.Context) {
 func ExitHandler(c *gin.Context) {
 	var req ExitReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 
@@ -103,7 +103,7 @@ func TokenListHandler(c *gin.Context) {
 func ExitTokenHandler(c *gin.Context) {
 	var req ExitTokenReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 

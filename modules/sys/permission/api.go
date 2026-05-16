@@ -30,7 +30,7 @@ func GetModulesHandler(c *gin.Context) {
 func GetPermissionsByModuleHandler(c *gin.Context) {
 	var req PermissionByModuleReq
 	if err := c.ShouldBindQuery(&req); err != nil {
-		result.Failure(c, "请求参数格式错误", 400)
+		result.ValidationError(c, err)
 		return
 	}
 

@@ -7,9 +7,10 @@ import (
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/sysorg"
-	"hei-gin/ent/sysuser"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/relorgrole"
+	"hei-gin/ent/gen/sysorg"
+	"hei-gin/ent/gen/sysuser"
 )
 
 type PageParam struct {
@@ -87,20 +88,6 @@ type OrgGrantRoleReq struct {
 	OrgID   string   `json:"org_id" binding:"required"`
 	RoleIDs []string `json:"role_ids" binding:"required"`
 }
-
-var OrgExportFieldNames = map[string]string{
-	"name":       "组织名称",
-	"code":       "组织编码",
-	"status":     "状态",
-	"leader":     "负责人",
-	"phone":      "联系电话",
-	"email":      "电子邮箱",
-	"address":    "地址",
-	"sort_code":  "排序",
-	"created_at": "创建时间",
-}
-
-var OrgExportFields = []string{"name", "code", "status", "leader", "phone", "email", "address", "sort_code", "created_at"}
 
 func toVO(o *ent.SysOrg) OrgVO {
 	vo := OrgVO{
@@ -341,41 +328,41 @@ func buildOrgTreeNode(item *ent.SysOrg, childrenMap map[string][]*ent.SysOrg) *T
 
 func OwnRoles(orgID string) ([]string, error) {
 	ctx := context.Background()
-	rows, err := db.RawDB.QueryContext(ctx, "SELECT role_id FROM rel_org_role WHERE org_id = ?", orgID)
+	rels, err := db.Client.RelOrgRole.Query().
+		Where(relorgrole.OrgIDEQ(orgID)).
+		Select(relorgrole.FieldRoleID).
+		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var roleIDs []string
-	for rows.Next() {
-		var roleID string
-		if err := rows.Scan(&roleID); err != nil {
-			return nil, err
-		}
-		roleIDs = append(roleIDs, roleID)
+	roleIDs := make([]string, len(rels))
+	for i, r := range rels {
+		roleIDs[i] = r.RoleID
 	}
-	if roleIDs == nil {
-		roleIDs = []string{}
-	}
-	return roleIDs, rows.Err()
+	return roleIDs, nil
 }
 
 func GrantRole(orgID string, roleIDs []string) error {
 	ctx := context.Background()
-	tx, err := db.RawDB.BeginTx(ctx, nil)
+
+	// Use ent client transaction
+	tx, err := db.Client.Tx(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.ExecContext(ctx, "DELETE FROM rel_org_role WHERE org_id = ?", orgID)
+	_, err = tx.RelOrgRole.Delete().Where(relorgrole.OrgIDEQ(orgID)).Exec(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, roleID := range roleIDs {
-		_, err = tx.ExecContext(ctx, "INSERT INTO rel_org_role (id, org_id, role_id) VALUES (?, ?, ?)", utils.NextID(), orgID, roleID)
+		_, err = tx.RelOrgRole.Create().
+			SetID(utils.NextID()).
+			SetOrgID(orgID).
+			SetRoleID(roleID).
+			Save(ctx)
 		if err != nil {
 			return err
 		}

@@ -7,8 +7,8 @@ import (
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/clientuser"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/clientuser"
 )
 
 type PageParam struct {
@@ -25,10 +25,15 @@ type ClientUserVO struct {
 	Avatar      string `json:"avatar"`
 	Email       string `json:"email"`
 	Phone       string `json:"phone"`
+	Motto       string `json:"motto"`
+	Github      string `json:"github"`
 	Status      string `json:"status"`
 	Gender      string `json:"gender"`
 	Birthday    string `json:"birthday"`
 	Description string `json:"description"`
+	LoginCount  int    `json:"login_count"`
+	LastLoginAt string `json:"last_login_at"`
+	LastLoginIP string `json:"last_login_ip"`
 	CreatedAt   string `json:"created_at"`
 	CreatedBy   string `json:"created_by"`
 	UpdatedAt   string `json:"updated_at"`
@@ -75,6 +80,8 @@ type UpdateProfileReq struct {
 	Avatar      string  `json:"avatar"`
 	Email       string  `json:"email"`
 	Phone       string  `json:"phone"`
+	Motto       string  `json:"motto"`
+	Github      string  `json:"github"`
 	Gender      string  `json:"gender"`
 	Birthday    *string `json:"birthday"`
 	Description string  `json:"description"`
@@ -89,20 +96,6 @@ type UpdatePasswordReq struct {
 	NewPassword string `json:"new_password" binding:"required"`
 }
 
-var ClientUserExportFieldNames = map[string]string{
-	"username":    "用户名",
-	"nickname":    "昵称",
-	"email":       "邮箱",
-	"phone":       "手机号",
-	"gender":      "性别",
-	"status":      "状态",
-	"birthday":    "出生日期",
-	"description": "描述",
-	"created_at":  "创建时间",
-}
-
-var ClientUserExportFields = []string{"username", "nickname", "email", "phone", "gender", "status", "birthday", "description", "created_at"}
-
 func toVO(u *ent.ClientUser) ClientUserVO {
 	vo := ClientUserVO{
 		ID:          u.ID,
@@ -111,9 +104,14 @@ func toVO(u *ent.ClientUser) ClientUserVO {
 		Avatar:      u.Avatar,
 		Email:       u.Email,
 		Phone:       u.Phone,
+		Motto:       u.Motto,
+		Github:      u.Github,
 		Status:      u.Status,
 		Gender:      u.Gender,
 		Description: u.Description,
+		LoginCount:  u.LoginCount,
+		LastLoginAt: u.LastLoginAt.Format("2006-01-02 15:04:05"),
+		LastLoginIP: u.LastLoginIP,
 		CreatedAt:   u.CreatedAt.Format("2006-01-02 15:04:05"),
 		CreatedBy:   u.CreatedBy,
 		UpdatedAt:   u.UpdatedAt.Format("2006-01-02 15:04:05"),
@@ -121,6 +119,9 @@ func toVO(u *ent.ClientUser) ClientUserVO {
 	}
 	if !u.Birthday.IsZero() {
 		vo.Birthday = u.Birthday.Format("2006-01-02")
+	}
+	if u.LastLoginAt.IsZero() {
+		vo.LastLoginAt = ""
 	}
 	return vo
 }
@@ -350,6 +351,12 @@ func UpdateProfile(loginID string, req *UpdateProfileReq) (*ent.ClientUser, erro
 	}
 	if req.Phone != "" {
 		u.SetPhone(req.Phone)
+	}
+	if req.Motto != "" {
+		u.SetMotto(req.Motto)
+	}
+	if req.Github != "" {
+		u.SetGithub(req.Github)
 	}
 	if req.Gender != "" {
 		u.SetGender(req.Gender)

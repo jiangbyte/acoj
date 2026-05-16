@@ -7,9 +7,9 @@ import (
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
-	"hei-gin/ent"
-	"hei-gin/ent/sysposition"
-	"hei-gin/ent/sysuser"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/sysposition"
+	"hei-gin/ent/gen/sysuser"
 )
 
 type PageParam struct {
@@ -180,9 +180,4 @@ func Remove(ids []string) error {
 func Detail(id string) (*ent.SysPosition, error) {
 	ctx := context.Background()
 	return db.Client.SysPosition.Get(ctx, id)
-}
-
-func QueryAll() ([]*ent.SysPosition, error) {
-	ctx := context.Background()
-	return db.Client.SysPosition.Query().Order(ent.Desc(sysposition.FieldCreatedAt)).All(ctx)
 }
