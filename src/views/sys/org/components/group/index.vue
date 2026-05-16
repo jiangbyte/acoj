@@ -93,14 +93,6 @@
               <template #icon><DeleteOutlined /></template>
               批量删除
             </a-button>
-            <a-button v-if="hasPermission('sys:group:import')" @click="importOpen = true">
-              <template #icon><UploadOutlined /></template>
-              导入
-            </a-button>
-            <a-button v-if="hasPermission('sys:group:export')" @click="exportOpen = true">
-              <template #icon><DownloadOutlined /></template>
-              导出
-            </a-button>
           </template>
 
           <template #bodyCell="{ column, record }">
@@ -154,23 +146,6 @@
           </template>
         </AppTreeTable>
 
-        <AppImportModal
-          ref="importModalRef"
-          :open="importOpen"
-          template-text="下载用户组导入模板"
-          :template-loading="templateLoading"
-          @close="importOpen = false"
-          @download-template="handleDownloadTemplate"
-          @upload="handleImport"
-        />
-
-        <AppExportModal
-          :open="exportOpen"
-          :selected-keys="selectedKeys"
-          @close="exportOpen = false"
-          @export="handleExportWithParams"
-        />
-
         <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
         <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
       </div>
@@ -219,8 +194,6 @@ import { message } from 'ant-design-vue'
 import {
   PlusOutlined,
   DeleteOutlined,
-  UploadOutlined,
-  DownloadOutlined,
   DoubleLeftOutlined,
   DoubleRightOutlined,
   FolderOutlined,
@@ -233,17 +206,11 @@ import { useRouter, useRoute } from 'vue-router'
 import {
   fetchGroupTree,
   fetchGroupRemove,
-  fetchGroupExport,
-  fetchGroupTemplate,
-  fetchGroupImport,
 } from '@/api/group'
 import { confirmDelete } from '@/utils'
 import AppSplitPanel from '@/components/layout/AppSplitPanel.vue'
 import AppTreeTable from '@/components/table/AppTreeTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
-import AppImportModal from '@/components/modal/AppImportModal.vue'
-import AppExportModal from '@/components/modal/AppExportModal.vue'
-import { useImportExport } from '@/hooks/useImportExport'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
 
@@ -397,7 +364,6 @@ const columns = [
 ]
 
 // ── Drawers ──
-const importModalRef = ref()
 const detailRef = ref()
 const formRef = ref()
 const detailOpen = ref(false)
@@ -451,24 +417,6 @@ function resetSearch() {
   if (orgId.value) query.org_id = orgId.value
   router.replace({ query })
 }
-
-// ── Import / Export / Template ──
-const {
-  importOpen,
-  exportOpen,
-  templateLoading,
-  handleDownloadTemplate,
-  handleExportWithParams,
-  handleImport,
-} = useImportExport({
-  exportApi: fetchGroupExport,
-  templateApi: fetchGroupTemplate,
-  importApi: fetchGroupImport,
-  fileName: '用户组数据',
-  templateName: '用户组导入模板',
-  importModalRef,
-  onSuccess: () => { loadGroupTree() },
-})
 
 onMounted(() => {
   const { org_id, group_id } = route.query as Record<string, string>

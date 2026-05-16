@@ -21,17 +21,3 @@ export function fetchGroupRemove(data: any) {
 export function fetchGroupDetail(params: any) {
   return request.Get<Service.ResponseResult>('/api/v1/sys/group/detail', { params })
 }
-export function fetchGroupExport(params: any) {
-  return request.Get('/api/v1/sys/group/export', {
-    params,
-    meta: { isBlob: true },
-  }) as Promise<Blob>
-}
-export function fetchGroupTemplate() {
-  return request.Get('/api/v1/sys/group/template', { meta: { isBlob: true } }) as Promise<Blob>
-}
-export function fetchGroupImport(file: File) {
-  const formData = new FormData()
-  formData.append('file', file)
-  return request.Post<Service.ResponseResult>('/api/v1/sys/group/import', formData)
-}

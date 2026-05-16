@@ -38,31 +38,3 @@ export function fetchResourceRemove(data: any) {
 export function fetchResourceDetail(params: any) {
   return request.Get<Service.ResponseResult>('/api/v1/sys/resource/detail', { params })
 }
-export function fetchModuleExport(params: any) {
-  return request.Get('/api/v1/sys/module/export', {
-    params,
-    meta: { isBlob: true },
-  }) as Promise<Blob>
-}
-export function fetchModuleTemplate() {
-  return request.Get('/api/v1/sys/module/template', { meta: { isBlob: true } }) as Promise<Blob>
-}
-export function fetchModuleImport(file: File) {
-  const formData = new FormData()
-  formData.append('file', file)
-  return request.Post<Service.ResponseResult>('/api/v1/sys/module/import', formData)
-}
-export function fetchResourceExport(params: any) {
-  return request.Get('/api/v1/sys/resource/export', {
-    params,
-    meta: { isBlob: true },
-  }) as Promise<Blob>
-}
-export function fetchResourceTemplate() {
-  return request.Get('/api/v1/sys/resource/template', { meta: { isBlob: true } }) as Promise<Blob>
-}
-export function fetchResourceImport(file: File) {
-  const formData = new FormData()
-  formData.append('file', file)
-  return request.Post<Service.ResponseResult>('/api/v1/sys/resource/import', formData)
-}

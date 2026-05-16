@@ -36,15 +36,7 @@
           <template #icon><DeleteOutlined /></template>
           批量删除
         </a-button>
-        <a-button v-if="hasPermission('sys:resource:import')" @click="importOpen = true">
-          <template #icon><UploadOutlined /></template>
-          导入
-        </a-button>
-        <a-button v-if="hasPermission('sys:resource:export')" @click="exportOpen = true">
-          <template #icon><DownloadOutlined /></template>
-          导出
-        </a-button>
-      </template>
+        </template>
 
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'name'">
@@ -121,23 +113,6 @@
       </template>
     </AppTreeTable>
 
-    <AppImportModal
-      ref="importModalRef"
-      :open="importOpen"
-      template-text="下载资源导入模板"
-      :template-loading="templateLoading"
-      @close="importOpen = false"
-      @download-template="handleDownloadTemplate"
-      @upload="handleImport"
-    />
-
-    <AppExportModal
-      :open="exportOpen"
-      :selected-keys="selectedKeys"
-      @close="exportOpen = false"
-      @export="handleExportWithParams"
-    />
-
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
     <ButtonManager
@@ -154,26 +129,18 @@ import { ref, reactive, watch, onMounted } from 'vue'
 import {
   PlusOutlined,
   DeleteOutlined,
-  UploadOutlined,
-  DownloadOutlined,
   DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 import { useCrud } from '@/hooks/useCrud'
-import { useImportExport } from '@/hooks/useImportExport'
 
 import {
   fetchResourceTree,
   fetchResourceRemove,
-  fetchResourceExport,
-  fetchResourceTemplate,
-  fetchResourceImport,
 } from '@/api/resource'
 import { resolveIcon } from '@/utils'
 import AppTreeTable from '@/components/table/AppTreeTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
-import AppImportModal from '@/components/modal/AppImportModal.vue'
-import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
 import ButtonManager from './components/buttonManager.vue'
@@ -181,7 +148,6 @@ import ButtonManager from './components/buttonManager.vue'
 const auth = useAuthStore()
 const hasPermission = auth.hasPermission
 const treeTableRef = ref()
-const importModalRef = ref()
 
 // useCrud: delete and form success
 const crud = useCrud({
@@ -190,24 +156,6 @@ const crud = useCrud({
   onSuccess: () => reloadAfterChange(),
 })
 const { selectedKeys, handleSearch: _, handleDelete, handleBatchDelete, handleFormSuccess } = crud
-
-// useImportExport
-const {
-  importOpen,
-  exportOpen,
-  templateLoading,
-  handleDownloadTemplate,
-  handleExportWithParams,
-  handleImport,
-} = useImportExport({
-  exportApi: fetchResourceExport,
-  templateApi: fetchResourceTemplate,
-  importApi: fetchResourceImport,
-  fileName: '资源数据',
-  templateName: '资源导入模板',
-  importModalRef,
-  onSuccess: () => reloadAfterChange(),
-})
 
 // ── Tree data ──
 const loading = ref(false)

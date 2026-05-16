@@ -45,14 +45,6 @@
           <template #icon><DeleteOutlined /></template>
           批量删除
         </a-button>
-        <a-button v-if="hasPermission('sys:role:import')" @click="ieImportOpen = true">
-          <template #icon><UploadOutlined /></template>
-          导入
-        </a-button>
-        <a-button v-if="hasPermission('sys:role:export')" @click="ieExportOpen = true">
-          <template #icon><DownloadOutlined /></template>
-          导出
-        </a-button>
       </template>
 
       <template #bodyCell="{ column, record }">
@@ -115,23 +107,6 @@
       </template>
     </AppTable>
 
-    <AppImportModal
-      ref="importModalRef"
-      :open="ieImportOpen"
-      template-text="下载角色导入模板"
-      :template-loading="ieTemplateLoading"
-      @close="ieImportOpen = false"
-      @download-template="ieHandleDownloadTemplate"
-      @upload="ieHandleImport"
-    />
-
-    <AppExportModal
-      :open="ieExportOpen"
-      :selected-keys="selectedKeys"
-      @close="ieExportOpen = false"
-      @export="ieHandleExportWithParams"
-    />
-
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
     <GrantPermission
@@ -153,8 +128,6 @@ import { ref, reactive } from 'vue'
 import {
   PlusOutlined,
   DeleteOutlined,
-  UploadOutlined,
-  DownloadOutlined,
   DownOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore, useDictStore } from '@/store'
@@ -162,17 +135,11 @@ import { useAuthStore, useDictStore } from '@/store'
 import {
   fetchRolePage,
   fetchRoleRemove,
-  fetchRoleExport,
-  fetchRoleTemplate,
-  fetchRoleImport,
 } from '@/api/role'
 import { useCrud } from '@/hooks/useCrud'
-import { useImportExport } from '@/hooks/useImportExport'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
 import DictSelect from '@/components/form/DictSelect.vue'
-import AppImportModal from '@/components/modal/AppImportModal.vue'
-import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
 import GrantPermission from './components/grantPermission.vue'
@@ -218,7 +185,6 @@ function resetSearch() {
 }
 
 // ── Refs ──
-const importModalRef = ref()
 const detailRef = ref()
 const formRef = ref()
 const detailOpen = ref(false)
@@ -233,23 +199,6 @@ function openEdit(record: any) {
 function openCreate() {
   formRef.value?.doOpen()
 }
-
-const {
-  importOpen: ieImportOpen,
-  exportOpen: ieExportOpen,
-  templateLoading: ieTemplateLoading,
-  handleDownloadTemplate: ieHandleDownloadTemplate,
-  handleExportWithParams: ieHandleExportWithParams,
-  handleImport: ieHandleImport,
-} = useImportExport({
-  exportApi: fetchRoleExport,
-  templateApi: fetchRoleTemplate,
-  importApi: fetchRoleImport,
-  fileName: '角色数据',
-  templateName: '角色导入模板',
-  importModalRef,
-  onSuccess: () => tableRef.value?.refresh(true),
-})
 
 const grantPermissionRef = ref()
 const grantResourceRef = ref()

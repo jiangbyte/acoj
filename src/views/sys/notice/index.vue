@@ -65,14 +65,6 @@
           <template #icon><DeleteOutlined /></template>
           批量删除
         </a-button>
-        <a-button v-if="hasPermission('sys:notice:import')" @click="ieImportOpen = true">
-          <template #icon><UploadOutlined /></template>
-          导入
-        </a-button>
-        <a-button v-if="hasPermission('sys:notice:export')" @click="ieExportOpen = true">
-          <template #icon><DownloadOutlined /></template>
-          导出
-        </a-button>
       </template>
 
       <template #bodyCell="{ column, record }">
@@ -122,23 +114,6 @@
       </template>
     </AppTable>
 
-    <AppImportModal
-      ref="importModalRef"
-      :open="ieImportOpen"
-      template-text="下载通知导入模板"
-      :template-loading="ieTemplateLoading"
-      @close="ieImportOpen = false"
-      @download-template="ieHandleDownloadTemplate"
-      @upload="ieHandleImport"
-    />
-
-    <AppExportModal
-      :open="ieExportOpen"
-      :selected-keys="selectedKeys"
-      @close="ieExportOpen = false"
-      @export="ieHandleExportWithParams"
-    />
-
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
   </div>
@@ -150,25 +125,17 @@ import { ref, reactive } from 'vue'
 import {
   PlusOutlined,
   DeleteOutlined,
-  UploadOutlined,
-  DownloadOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
 
 import {
   fetchNoticePage,
   fetchNoticeRemove,
-  fetchNoticeExport,
-  fetchNoticeTemplate,
-  fetchNoticeImport,
 } from '@/api/notice'
 import { useCrud } from '@/hooks/useCrud'
-import { useImportExport } from '@/hooks/useImportExport'
 import DictSelect from '@/components/form/DictSelect.vue'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
-import AppImportModal from '@/components/modal/AppImportModal.vue'
-import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
 
@@ -216,7 +183,6 @@ function resetSearch() {
 }
 
 // ── Refs ──
-const importModalRef = ref()
 const detailRef = ref()
 const formRef = ref()
 const detailOpen = ref(false)
@@ -232,20 +198,4 @@ function openCreate() {
   formRef.value?.doOpen()
 }
 
-const {
-  importOpen: ieImportOpen,
-  exportOpen: ieExportOpen,
-  templateLoading: ieTemplateLoading,
-  handleDownloadTemplate: ieHandleDownloadTemplate,
-  handleExportWithParams: ieHandleExportWithParams,
-  handleImport: ieHandleImport,
-} = useImportExport({
-  exportApi: fetchNoticeExport,
-  templateApi: fetchNoticeTemplate,
-  importApi: fetchNoticeImport,
-  fileName: '通知数据',
-  templateName: '通知导入模板',
-  importModalRef,
-  onSuccess: () => tableRef.value?.refresh(true),
-})
 </script>

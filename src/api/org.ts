@@ -20,14 +20,3 @@ export function fetchOrgRemove(data: any) {
 export function fetchOrgDetail(params: any) {
   return request.Get<Service.ResponseResult>('/api/v1/sys/org/detail', { params })
 }
-export function fetchOrgExport(params: any) {
-  return request.Get('/api/v1/sys/org/export', { params, meta: { isBlob: true } }) as Promise<Blob>
-}
-export function fetchOrgTemplate() {
-  return request.Get('/api/v1/sys/org/template', { meta: { isBlob: true } }) as Promise<Blob>
-}
-export function fetchOrgImport(file: File) {
-  const formData = new FormData()
-  formData.append('file', file)
-  return request.Post<Service.ResponseResult>('/api/v1/sys/org/import', formData)
-}

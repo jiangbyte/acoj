@@ -41,14 +41,6 @@
           <template #icon><DeleteOutlined /></template>
           批量删除
         </a-button>
-        <a-button v-if="hasPermission('sys:position:import')" @click="importOpen = true">
-          <template #icon><UploadOutlined /></template>
-          导入
-        </a-button>
-        <a-button v-if="hasPermission('sys:position:export')" @click="exportOpen = true">
-          <template #icon><DownloadOutlined /></template>
-          导出
-        </a-button>
       </template>
 
       <template #bodyCell="{ column, record }">
@@ -85,23 +77,6 @@
       </template>
     </AppTable>
 
-    <AppImportModal
-      ref="importModalRef"
-      :open="importOpen"
-      template-text="下载职位导入模板"
-      :template-loading="templateLoading"
-      @close="importOpen = false"
-      @download-template="handleDownloadTemplate"
-      @upload="handleImport"
-    />
-
-    <AppExportModal
-      :open="exportOpen"
-      :selected-keys="selectedKeys"
-      @close="exportOpen = false"
-      @export="handleExportWithParams"
-    />
-
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
   </div>
@@ -114,8 +89,6 @@ import { message } from 'ant-design-vue'
 import {
   PlusOutlined,
   DeleteOutlined,
-  UploadOutlined,
-  DownloadOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/store'
@@ -123,16 +96,10 @@ import { useRouter, useRoute } from 'vue-router'
 import {
   fetchPositionPage,
   fetchPositionRemove,
-  fetchPositionExport,
-  fetchPositionTemplate,
-  fetchPositionImport,
 } from '@/api/position'
 import { confirmDelete } from '@/utils'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
-import AppImportModal from '@/components/modal/AppImportModal.vue'
-import AppExportModal from '@/components/modal/AppExportModal.vue'
-import { useImportExport } from '@/hooks/useImportExport'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
 
@@ -221,25 +188,6 @@ function resetSearch() {
   searchForm.group_id = undefined
   tableRef.value?.refresh(true)
 }
-
-// ── Import / Export / Template ──
-const importModalRef = ref()
-const {
-  importOpen,
-  exportOpen,
-  templateLoading,
-  handleDownloadTemplate,
-  handleExportWithParams,
-  handleImport,
-} = useImportExport({
-  exportApi: fetchPositionExport,
-  templateApi: fetchPositionTemplate,
-  importApi: fetchPositionImport,
-  fileName: '职位数据',
-  templateName: '职位导入模板',
-  importModalRef,
-  onSuccess: () => { tableRef.value?.refresh(true) },
-})
 
 onMounted(() => {
   // Read params from query (navigated from group management)

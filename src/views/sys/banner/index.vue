@@ -66,14 +66,6 @@
           <template #icon><DeleteOutlined /></template>
           批量删除
         </a-button>
-        <a-button v-if="hasPermission('sys:banner:import')" @click="ieImportOpen = true">
-          <template #icon><UploadOutlined /></template>
-          导入
-        </a-button>
-        <a-button v-if="hasPermission('sys:banner:export')" @click="ieExportOpen = true">
-          <template #icon><DownloadOutlined /></template>
-          导出
-        </a-button>
       </template>
 
       <template #bodyCell="{ column, record }">
@@ -113,25 +105,6 @@
       </template>
     </AppTable>
 
-    <!-- Import modal -->
-    <AppImportModal
-      ref="importModalRef"
-      :open="ieImportOpen"
-      template-text="下载轮播图导入模板"
-      :template-loading="ieTemplateLoading"
-      @close="ieImportOpen = false"
-      @download-template="ieHandleDownloadTemplate"
-      @upload="ieHandleImport"
-    />
-
-    <!-- Export modal -->
-    <AppExportModal
-      :open="ieExportOpen"
-      :selected-keys="selectedKeys"
-      @close="ieExportOpen = false"
-      @export="ieHandleExportWithParams"
-    />
-
     <!-- Drawers -->
     <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
     <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
@@ -144,22 +117,14 @@ import { ref, reactive } from 'vue'
 import {
   PlusOutlined,
   DeleteOutlined,
-  UploadOutlined,
-  DownloadOutlined,
 } from '@ant-design/icons-vue'
 import {
   fetchBannerPage,
   fetchBannerRemove,
-  fetchBannerExport,
-  fetchBannerTemplate,
-  fetchBannerImport,
 } from '@/api/banner'
 import { useCrud } from '@/hooks/useCrud'
-import { useImportExport } from '@/hooks/useImportExport'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
-import AppImportModal from '@/components/modal/AppImportModal.vue'
-import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
 import DictSelect from '@/components/form/DictSelect.vue'
@@ -197,7 +162,6 @@ function resetSearch() {
 }
 
 // Drawer refs
-const importModalRef = ref()
 const detailRef = ref()
 const formRef = ref()
 const detailOpen = ref(false)
@@ -213,20 +177,4 @@ function openCreate() {
   formRef.value?.doOpen()
 }
 
-const {
-  importOpen: ieImportOpen,
-  exportOpen: ieExportOpen,
-  templateLoading: ieTemplateLoading,
-  handleDownloadTemplate: ieHandleDownloadTemplate,
-  handleExportWithParams: ieHandleExportWithParams,
-  handleImport: ieHandleImport,
-} = useImportExport({
-  exportApi: fetchBannerExport,
-  templateApi: fetchBannerTemplate,
-  importApi: fetchBannerImport,
-  fileName: '轮播图数据',
-  templateName: '轮播图导入模板',
-  importModalRef,
-  onSuccess: () => tableRef.value?.refresh(true),
-})
 </script>

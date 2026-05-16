@@ -17,17 +17,3 @@ export function fetchNoticeRemove(data: any) {
 export function fetchNoticeDetail(params: any) {
   return request.Get<Service.ResponseResult>('/api/v1/sys/notice/detail', { params })
 }
-export function fetchNoticeExport(params: any) {
-  return request.Get('/api/v1/sys/notice/export', {
-    params,
-    meta: { isBlob: true },
-  }) as Promise<Blob>
-}
-export function fetchNoticeTemplate() {
-  return request.Get('/api/v1/sys/notice/template', { meta: { isBlob: true } }) as Promise<Blob>
-}
-export function fetchNoticeImport(file: File) {
-  const formData = new FormData()
-  formData.append('file', file)
-  return request.Post<Service.ResponseResult>('/api/v1/sys/notice/import', formData)
-}

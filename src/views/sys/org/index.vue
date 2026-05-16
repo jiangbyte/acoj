@@ -49,14 +49,6 @@
               <template #icon><DeleteOutlined /></template>
               批量删除
             </a-button>
-            <a-button v-if="hasPermission('sys:org:import')" @click="ieImportOpen = true">
-              <template #icon><UploadOutlined /></template>
-              导入
-            </a-button>
-            <a-button v-if="hasPermission('sys:org:export')" @click="ieExportOpen = true">
-              <template #icon><DownloadOutlined /></template>
-              导出
-            </a-button>
           </template>
 
           <template #bodyCell="{ column, record }">
@@ -112,25 +104,6 @@
           </template>
         </AppTable>
 
-        <!-- Import modal -->
-        <AppImportModal
-          ref="importModalRef"
-          :open="ieImportOpen"
-          template-text="下载组织导入模板"
-          :template-loading="ieTemplateLoading"
-          @close="ieImportOpen = false"
-          @download-template="ieHandleDownloadTemplate"
-          @upload="ieHandleImport"
-        />
-
-        <!-- Export modal -->
-        <AppExportModal
-          :open="ieExportOpen"
-          :selected-keys="selectedKeys"
-          @close="ieExportOpen = false"
-          @export="ieHandleExportWithParams"
-        />
-
         <!-- Drawers -->
         <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
         <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
@@ -145,8 +118,6 @@ import { ref, reactive } from 'vue'
 import {
   PlusOutlined,
   DeleteOutlined,
-  UploadOutlined,
-  DownloadOutlined,
   DoubleLeftOutlined,
   DoubleRightOutlined,
   DownOutlined,
@@ -158,17 +129,11 @@ import {
   fetchOrgPage,
   fetchOrgTree,
   fetchOrgRemove,
-  fetchOrgExport,
-  fetchOrgTemplate,
-  fetchOrgImport,
 } from '@/api/org'
 import { useCrud } from '@/hooks/useCrud'
-import { useImportExport } from '@/hooks/useImportExport'
 import AppTreePanel from '@/components/layout/AppTreePanel.vue'
 import AppTable from '@/components/table/AppTable.vue'
 import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
-import AppImportModal from '@/components/modal/AppImportModal.vue'
-import AppExportModal from '@/components/modal/AppExportModal.vue'
 import DetailDrawer from './components/detail.vue'
 import FormDrawer from './components/form.vue'
 
@@ -212,7 +177,6 @@ function resetSearch() {
 }
 
 // Drawer refs
-const importModalRef = ref()
 const detailRef = ref()
 const formRef = ref()
 const detailOpen = ref(false)
@@ -235,23 +199,4 @@ function handleTreeSelect(parentId: string | undefined) {
   tableRef.value?.refresh(true)
 }
 
-const {
-  importOpen: ieImportOpen,
-  exportOpen: ieExportOpen,
-  templateLoading: ieTemplateLoading,
-  handleDownloadTemplate: ieHandleDownloadTemplate,
-  handleExportWithParams: ieHandleExportWithParams,
-  handleImport: ieHandleImport,
-} = useImportExport({
-  exportApi: fetchOrgExport,
-  templateApi: fetchOrgTemplate,
-  importApi: fetchOrgImport,
-  fileName: '组织数据',
-  templateName: '组织导入模板',
-  importModalRef,
-  onSuccess: () => {
-    tableRef.value?.refresh(true)
-    treePanel.value?.refresh()
-  },
-})
 </script>
