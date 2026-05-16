@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission, NoRepeat
 from core.log import SysLog
-from core.utils.excel_utils import handle_import
-from ...params import NoticeVO, NoticePageParam, NoticeExportParam, NoticeImportParam
+from ...params import NoticeVO, NoticePageParam
 from ...service import NoticeService
 
 router = APIRouter()
@@ -93,45 +92,3 @@ async def detail(
     service = NoticeService(db)
     data = service.detail(IdParam(id=id))
     return success(data if data else None)
-
-
-@router.get(
-    "/api/v1/sys/notice/export",
-    summary="导出通知数据")
-@SysLog("导出通知数据")
-@HeiCheckPermission("sys:notice:export")
-async def export(
-    request: Request,
-    param: NoticeExportParam = Depends(),
-    db: Session = Depends(get_db)
-):
-    service = NoticeService(db)
-    return service.export(param)
-
-
-@router.get(
-    "/api/v1/sys/notice/template",
-    summary="下载通知导入模板")
-@HeiCheckPermission("sys:notice:template")
-async def download_template(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    service = NoticeService(db)
-    return service.download_template()
-
-
-@router.post(
-    "/api/v1/sys/notice/import",
-    summary="导入通知数据",
-    response_model=Result
-)
-@SysLog("导入通知数据")
-@HeiCheckPermission("sys:notice:import")
-@NoRepeat(interval=5000)
-async def import_data(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    return await handle_import(file, NoticeService, NoticeVO, NoticeImportParam, db, request)

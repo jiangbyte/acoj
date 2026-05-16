@@ -10,7 +10,7 @@ from .dao import UserDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
-from core.utils import strip_system_fields, apply_update, export_excel, make_template
+from core.utils import strip_system_fields, apply_update
 from core.auth import HeiAuthTool, LoginUserInfo
 from core.db.base_service import BaseCrudService
 import logging
@@ -26,7 +26,6 @@ class UserService(BaseCrudService):
     vo_class = UserVO
     dao_class = UserDao
     page_param_class = UserPageParam
-    export_name = "用户数据"
 
     def find_by_id(self, user_id: str) -> Optional[SysUser]:
         return self.dao.find_by_id(user_id)
@@ -195,19 +194,6 @@ class UserService(BaseCrudService):
         vo = UserVO.model_validate(entity).model_dump()
         self._enrich_vo(param.id, vo)
         return vo
-
-    def download_template(self):
-        return export_excel(
-            make_template(SysUser, extra_exclude={'password', 'org_id', 'position_id', 'last_login_at', 'last_login_ip', 'login_count'}),
-            "用户导入模板", "用户数据"
-        )
-
-    async def import_data(self, param, request: Optional[Request] = None) -> dict:
-        if not param.data:
-            raise BusinessException("导入数据不能为空")
-        entities = [SysUser(**strip_system_fields(vo.model_dump(), extra_fields={'role_ids', 'group_id'})) for vo in param.data]
-        self.dao.insert_batch(entities, user_id=await self._get_current_user_id(request))
-        return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}
 
     # ---- Grant APIs ----
 

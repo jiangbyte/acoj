@@ -11,7 +11,7 @@ from .models import ClientUser
 from core.utils import decrypt
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
-from core.utils import strip_system_fields, apply_update, export_excel, make_template
+from core.utils import strip_system_fields, apply_update
 from core.auth import HeiClientAuthTool, LoginUserInfo
 from core.db.base_service import BaseCrudService
 import bcrypt
@@ -22,7 +22,6 @@ class ClientUserService(BaseCrudService):
     vo_class = ClientUserVO
     dao_class = ClientUserDao
     page_param_class = ClientUserPageParam
-    export_name = "C端用户数据"
 
     @property
     def _auth_tool(self):
@@ -60,12 +59,6 @@ class ClientUserService(BaseCrudService):
                 raise BusinessException("账号已存在")
         apply_update(entity, update_data, extra_protected={'password'})
         self.dao.update(entity, user_id=await self._get_current_user_id(request))
-
-    def download_template(self):
-        return export_excel(
-            make_template(ClientUser, extra_exclude={'password', 'last_login_at', 'last_login_ip', 'login_count'}),
-            "C端用户导入模板", "C端用户数据"
-        )
 
     def find_by_username(self, username: str) -> Optional[ClientUser]:
         return self.dao.find_by_username(username)

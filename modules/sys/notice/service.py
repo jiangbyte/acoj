@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from fastapi import Request
-from .params import NoticeVO, NoticePageParam, NoticeExportParam, NoticeImportParam
+from .params import NoticeVO, NoticePageParam
 from .dao import NoticeDao
 from .models import SysNotice
 from core.pojo import IdParam
@@ -14,4 +14,3 @@ class NoticeService(BaseCrudService):
     vo_class = NoticeVO
     dao_class = NoticeDao
     page_param_class = NoticePageParam
-    export_name = "通知数据"

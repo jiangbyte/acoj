@@ -1,14 +1,13 @@
 from typing import List
-from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission, NoRepeat
 from core.log import SysLog
-from core.utils.excel_utils import handle_import
 from ...params import (
-    LogVO, LogPageParam, LogExportParam, LogImportParam,
+    LogVO, LogPageParam,
     LogDeleteByCategoryParam, LogBarChartData, LogPieChartData,
 )
 from ...service import LogService
@@ -94,48 +93,6 @@ async def detail(
     service = LogService(db)
     data = service.detail(IdParam(id=id))
     return success(data if data else None)
-
-
-@router.get(
-    "/api/v1/sys/log/export",
-    summary="导出操作日志数据")
-@SysLog("导出操作日志数据")
-@HeiCheckPermission("sys:log:export")
-async def export_data(
-    request: Request,
-    param: LogExportParam = Depends(),
-    db: Session = Depends(get_db)
-):
-    service = LogService(db)
-    return service.export(param)
-
-
-@router.get(
-    "/api/v1/sys/log/template",
-    summary="下载操作日志导入模板")
-@HeiCheckPermission("sys:log:template")
-async def download_template(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    service = LogService(db)
-    return service.download_template()
-
-
-@router.post(
-    "/api/v1/sys/log/import",
-    summary="导入操作日志数据",
-    response_model=Result
-)
-@SysLog("导入操作日志数据")
-@HeiCheckPermission("sys:log:import")
-@NoRepeat(interval=5000)
-async def import_data(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    return await handle_import(file, LogService, LogVO, LogImportParam, db, request)
 
 
 @router.post(

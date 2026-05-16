@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds, BaseExportParam
+from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -31,11 +31,3 @@ class NoticeVO(DateTimeValidatorMixin, BaseModel):
 
 class NoticePageParam(PageBounds):
     pass
-
-
-class NoticeExportParam(BaseExportParam):
-    pass
-
-
-class NoticeImportParam(BaseModel):
-    data: List[NoticeVO]

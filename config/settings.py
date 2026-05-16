@@ -70,7 +70,6 @@ class AppConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8081
     upload_max_size: int = 52428800  # 50MB
-    import_max_file_size_mb: int = 10
     timeout_keep_alive: int = 15
 
 

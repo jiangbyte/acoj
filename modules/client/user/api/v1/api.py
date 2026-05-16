@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
@@ -6,9 +6,8 @@ from core.db import get_db
 from core.auth.decorator import HeiClientCheckLogin, HeiCheckPermission
 from core.log import SysLog
 from core.auth.decorator import NoRepeat
-from core.utils.excel_utils import handle_import
 from ...params import (
-    ClientUserVO, ClientUserPageParam, ClientUserExportParam, ClientUserImportParam,
+    ClientUserVO, ClientUserPageParam,
     UpdateProfileParam, UpdateAvatarParam, UpdatePasswordParam,
 )
 from ...service import ClientUserService
@@ -93,45 +92,6 @@ async def detail(
     service = ClientUserService(db)
     data = service.detail(IdParam(id=id))
     return success(data if data else None)
-
-
-@router.get(
-    "/api/v1/client-user/export",
-    summary="导出C端用户数据")
-@HeiCheckPermission("client:user:export")
-async def export(
-    request: Request,
-    param: ClientUserExportParam = Depends(),
-    db: Session = Depends(get_db)
-):
-    service = ClientUserService(db)
-    return service.export(param)
-
-
-@router.get(
-    "/api/v1/client-user/template",
-    summary="下载C端用户导入模板")
-@HeiCheckPermission("client:user:template")
-async def download_template(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    service = ClientUserService(db)
-    return service.download_template()
-
-
-@router.post(
-    "/api/v1/client-user/import",
-    summary="导入C端用户数据",
-    response_model=Result
-)
-@HeiCheckPermission("client:user:import")
-async def import_data(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    return await handle_import(file, ClientUserService, ClientUserVO, ClientUserImportParam, db, request)
 
 
 @router.get(

@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds, BaseExportParam
+from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -60,21 +60,5 @@ class ResourceVO(DateTimeValidatorMixin, BaseModel):
 class ResourcePageParam(PageBounds):
     pass
 
-
-class ResourceExportParam(BaseExportParam):
-    pass
-
-
-class ResourceImportParam(BaseModel):
-    data: List[ResourceVO]
-
 class ModulePageParam(PageBounds):
     pass
-
-
-class ModuleExportParam(BaseExportParam):
-    pass
-
-
-class ModuleImportParam(BaseModel):
-    data: List[ModuleVO]

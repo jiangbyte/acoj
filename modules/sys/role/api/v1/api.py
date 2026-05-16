@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission, NoRepeat
 from core.log import SysLog
-from core.utils.excel_utils import handle_import
-from ...params import RoleVO, RolePageParam, RoleExportParam, RoleImportParam, GrantPermissionParam, GrantResourceParam
+from ...params import RoleVO, RolePageParam, GrantPermissionParam, GrantResourceParam
 from ...service import RoleService
 
 router = APIRouter()
@@ -93,48 +92,6 @@ async def detail(
     service = RoleService(db)
     data = service.detail(IdParam(id=id))
     return success(data if data else None)
-
-
-@router.get(
-    "/api/v1/sys/role/export",
-    summary="导出角色数据")
-@SysLog("导出角色数据")
-@HeiCheckPermission("sys:role:export")
-async def export(
-    request: Request,
-    param: RoleExportParam = Depends(),
-    db: Session = Depends(get_db)
-):
-    service = RoleService(db)
-    return service.export(param)
-
-
-@router.get(
-    "/api/v1/sys/role/template",
-    summary="下载角色导入模板")
-@HeiCheckPermission("sys:role:template")
-async def download_template(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    service = RoleService(db)
-    return service.download_template()
-
-
-@router.post(
-    "/api/v1/sys/role/import",
-    summary="导入角色数据",
-    response_model=Result
-)
-@SysLog("导入角色数据")
-@HeiCheckPermission("sys:role:import")
-@NoRepeat(interval=5000)
-async def import_data(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    return await handle_import(file, RoleService, RoleVO, RoleImportParam, db, request)
 
 
 @router.post(

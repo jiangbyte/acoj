@@ -2,7 +2,7 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from core.enums import DataScopeEnum
-from core.pojo import PageBounds, BaseExportParam
+from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -27,14 +27,6 @@ class RoleVO(DateTimeValidatorMixin, BaseModel):
 
 class RolePageParam(PageBounds):
     pass
-
-
-class RoleExportParam(BaseExportParam):
-    pass
-
-
-class RoleImportParam(BaseModel):
-    data: List[RoleVO]
 
 
 class PermissionItem(BaseModel):

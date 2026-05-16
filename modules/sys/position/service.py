@@ -2,13 +2,12 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from fastapi import Request
 from . import SysPosition
-from .params import PositionVO, PositionPageParam, PositionExportParam, PositionImportParam
+from .params import PositionVO, PositionPageParam
 from .dao import PositionDao
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum
-from core.utils import export_excel, strip_system_fields, apply_update, make_template
+from core.utils import strip_system_fields, apply_update
 from core.auth import HeiAuthTool
 from core.db.base_service import BaseCrudService
 import logging
@@ -21,7 +20,6 @@ class PositionService(BaseCrudService):
     vo_class = PositionVO
     dao_class = PositionDao
     page_param_class = PositionPageParam
-    export_name = "职位数据"
 
     def page(self, param: PositionPageParam) -> dict:
         if not param.group_id:

@@ -20,7 +20,6 @@ class ConfigService(BaseCrudService):
     vo_class = ConfigVO
     dao_class = ConfigDao
     page_param_class = ConfigPageParam
-    export_name = "配置数据"
 
     async def _get_current_user_id(self, request: Request) -> Optional[str]:
         try:

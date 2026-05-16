@@ -1,13 +1,11 @@
-from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission, NoRepeat
 from core.log import SysLog
-from core.utils.excel_utils import handle_import
 from ...params import ModuleVO, ResourceVO, ModulePageParam, ResourcePageParam
-from ...params import ModuleExportParam, ResourceExportParam, ModuleImportParam, ResourceImportParam
 from ...service import ModuleService, ResourceService
 
 router = APIRouter()
@@ -96,48 +94,6 @@ async def module_detail(
     service = ModuleService(db)
     data = service.detail(IdParam(id=id))
     return success(data if data else None)
-
-
-@router.get(
-    "/api/v1/sys/module/export",
-    summary="导出模块数据")
-@SysLog("导出模块数据")
-@HeiCheckPermission("sys:module:export")
-async def module_export(
-    request: Request,
-    param: ModuleExportParam = Depends(),
-    db: Session = Depends(get_db)
-):
-    service = ModuleService(db)
-    return service.export(param)
-
-
-@router.get(
-    "/api/v1/sys/module/template",
-    summary="下载模块导入模板")
-@HeiCheckPermission("sys:module:template")
-async def module_download_template(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    service = ModuleService(db)
-    return service.download_template()
-
-
-@router.post(
-    "/api/v1/sys/module/import",
-    summary="导入模块数据",
-    response_model=Result
-)
-@SysLog("导入模块数据")
-@HeiCheckPermission("sys:module:import")
-@NoRepeat(interval=5000)
-async def module_import_data(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    return await handle_import(file, ModuleService, ModuleVO, ModuleImportParam, db, request)
 
 
 # ---- Resource APIs ----
@@ -237,45 +193,3 @@ async def resource_detail(
     service = ResourceService(db)
     data = service.detail(IdParam(id=id))
     return success(data if data else None)
-
-
-@router.get(
-    "/api/v1/sys/resource/export",
-    summary="导出资源数据")
-@SysLog("导出资源数据")
-@HeiCheckPermission("sys:resource:export")
-async def resource_export(
-    request: Request,
-    param: ResourceExportParam = Depends(),
-    db: Session = Depends(get_db)
-):
-    service = ResourceService(db)
-    return service.export(param)
-
-
-@router.get(
-    "/api/v1/sys/resource/template",
-    summary="下载资源导入模板")
-@HeiCheckPermission("sys:resource:template")
-async def resource_download_template(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    service = ResourceService(db)
-    return service.download_template()
-
-
-@router.post(
-    "/api/v1/sys/resource/import",
-    summary="导入资源数据",
-    response_model=Result
-)
-@SysLog("导入资源数据")
-@HeiCheckPermission("sys:resource:import")
-@NoRepeat(interval=5000)
-async def resource_import_data(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    return await handle_import(file, ResourceService, ResourceVO, ResourceImportParam, db, request)

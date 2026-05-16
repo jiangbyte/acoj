@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission, NoRepeat
 from core.log import SysLog
-from core.utils.excel_utils import handle_import
-from ...params import PositionVO, PositionPageParam, PositionExportParam, PositionImportParam
+from ...params import PositionVO, PositionPageParam
 from ...service import PositionService
 
 router = APIRouter()
@@ -94,44 +93,5 @@ async def detail(
     service = PositionService(db)
     data = service.detail(IdParam(id=id))
     return success(data if data else None)
-
-
-@router.get(
-    "/api/v1/sys/position/export",
-    summary="导出职位数据")
-@HeiCheckPermission("sys:position:export")
-async def export(
-    request: Request,
-    param: PositionExportParam = Depends(),
-    db: Session = Depends(get_db)
-):
-    service = PositionService(db)
-    return service.export(param)
-
-
-@router.get(
-    "/api/v1/sys/position/template",
-    summary="下载职位导入模板")
-@HeiCheckPermission("sys:position:template")
-async def download_template(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    service = PositionService(db)
-    return service.download_template()
-
-
-@router.post(
-    "/api/v1/sys/position/import",
-    summary="导入职位数据",
-    response_model=Result
-)
-@HeiCheckPermission("sys:position:import")
-async def import_data(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    return await handle_import(file, PositionService, PositionVO, PositionImportParam, db, request)
 
 

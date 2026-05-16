@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds, BaseExportParam
+from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -32,11 +32,3 @@ class PositionPageParam(PageBounds):
     keyword: Optional[str] = None
     group_id: Optional[str] = None
     org_id: Optional[str] = None
-
-
-class PositionExportParam(BaseExportParam):
-    pass
-
-
-class PositionImportParam(BaseModel):
-    data: List[PositionVO]

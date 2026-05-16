@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
-from core.pojo import PageBounds, BaseExportParam
+from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -38,14 +38,6 @@ class LogPageParam(PageBounds):
     keyword: Optional[str] = None
     category: Optional[str] = None
     exe_status: Optional[str] = None
-
-
-class LogExportParam(BaseExportParam):
-    pass
-
-
-class LogImportParam(BaseModel):
-    data: List[LogVO]
 
 
 class LogDeleteByCategoryParam(BaseModel):
