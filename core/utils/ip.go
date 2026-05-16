@@ -7,20 +7,23 @@ import (
 )
 
 // GetClientIP extracts the real client IP from request headers or direct remote address.
+// Order: X-Forwarded-For > X-Real-IP > Proxy-Client-IP > direct remote addr.
 func GetClientIP(c *gin.Context) string {
-	// Check X-Forwarded-For first
 	xff := c.GetHeader("X-Forwarded-For")
 	if xff != "" {
 		parts := strings.Split(xff, ",")
 		return strings.TrimSpace(parts[0])
 	}
 
-	// Check X-Real-IP
 	xri := c.GetHeader("X-Real-IP")
 	if xri != "" {
 		return xri
 	}
 
-	// Fall back to direct remote address
+	pip := c.GetHeader("Proxy-Client-IP")
+	if pip != "" {
+		return pip
+	}
+
 	return c.ClientIP()
 }

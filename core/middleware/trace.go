@@ -2,19 +2,18 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-)
 
-const TraceIDHeader = "X-Trace-Id"
+	"hei-gin/core/utils"
+)
 
 func Trace() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		traceID := c.GetHeader(TraceIDHeader)
+		traceID := c.GetHeader(utils.TraceIDHeader)
 		if traceID == "" {
-			traceID = uuid.New().String()
+			traceID = utils.GenerateTraceID()
 		}
 		c.Set("trace_id", traceID)
-		c.Header(TraceIDHeader, traceID)
+		c.Header(utils.TraceIDHeader, traceID)
 		c.Next()
 	}
 }

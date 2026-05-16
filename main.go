@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"hei-gin/config"
-	"hei-gin/core"
+	appapi "hei-gin/core/app"
 )
 
 func main() {
@@ -15,21 +15,21 @@ func main() {
 	}
 
 	// Init core services
-	if err := core.InitCore(); err != nil {
+	if err := appapi.InitCore(); err != nil {
 		log.Fatalf("Failed to init core: %v", err)
 	}
-	defer core.CloseCore()
+	defer appapi.CloseCore()
 
-	// Create app
-	app := core.CreateApp()
+	// Create engine
+	engine := appapi.CreateApp()
 
 	// Cache permissions in Redis
-	core.ScanPermissions(app)
+	appapi.ScanPermissions(engine)
 
 	log.Printf("[Main] %s v%s starting...", config.C.App.Name, config.C.App.Version)
 
 	addr := fmt.Sprintf("%s:%d", config.C.App.Host, config.C.App.Port)
-	if err := app.Run(addr); err != nil {
+	if err := engine.Run(addr); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }

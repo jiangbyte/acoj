@@ -161,8 +161,8 @@ func (p *PermissionInterfaceImpl) GetPermissionScopeMap(loginID, loginType strin
 					Priority:       PermissionPathUserRole,
 					GroupScope:     rp.Scope,
 					OrgScope:       rp.Scope,
-					CustomGroupIDs: parseJSONList(rp.CustomScopeGroupIds),
-					CustomOrgIDs:   parseJSONList(rp.CustomScopeOrgIds),
+					CustomGroupIDs: parseJSONListPtr(rp.CustomScopeGroupIds),
+					CustomOrgIDs:   parseJSONListPtr(rp.CustomScopeOrgIds),
 				}
 
 				if existing, exists := permScope[rp.PermissionCode]; exists {
@@ -186,8 +186,8 @@ func (p *PermissionInterfaceImpl) GetPermissionScopeMap(loginID, loginType strin
 				Priority:       PermissionPathDIRECT,
 				GroupScope:     up.Scope,
 				OrgScope:       up.Scope,
-				CustomGroupIDs: parseJSONList(up.CustomScopeGroupIds),
-				CustomOrgIDs:   parseJSONList(up.CustomScopeOrgIds),
+				CustomGroupIDs: parseJSONListPtr(up.CustomScopeGroupIds),
+				CustomOrgIDs:   parseJSONListPtr(up.CustomScopeOrgIds),
 			}
 
 			if existing, exists := permScope[up.PermissionCode]; exists {
@@ -361,6 +361,13 @@ func parseJSONList(raw string) []string {
 		return nil
 	}
 	return list
+}
+
+func parseJSONListPtr(raw *string) []string {
+	if raw == nil {
+		return nil
+	}
+	return parseJSONList(*raw)
 }
 
 func (p *PermissionInterfaceImpl) getDirectPermissions(loginID string) []string {

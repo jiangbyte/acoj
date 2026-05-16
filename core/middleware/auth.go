@@ -9,12 +9,13 @@ import (
 	"hei-gin/core/result"
 )
 
-// Path pattern constants (mirror Python AuthMiddleware)
+// Path pattern constants matching fastapi's AuthMiddleware.
 var (
 	publicBPattern  = regexp.MustCompile(`^/api/v\d+/public/b/`)
 	publicCPattern  = regexp.MustCompile(`^/api/v\d+/public/c/`)
 	privateCPattern = regexp.MustCompile(`^/api/v\d+/c/`)
-	defaultBPattern = regexp.MustCompile(`^/api/v\d+/`)
+	privateBPattern = regexp.MustCompile(`^/api/v\d+/b/`)
+	defaultBPattern = regexp.MustCompile(`^/api/v\d+/(?!b/|c/|public/)[^/]+/`)
 	staticPaths     = []string{"/favicon.ico", "/docs", "/swagger", "/openapi.json"}
 )
 
@@ -54,8 +55,8 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		// DEFAULT: everything else → business auth (B端)
-		if defaultBPattern.MatchString(path) {
+		// B端 paths → business auth
+		if privateBPattern.MatchString(path) || defaultBPattern.MatchString(path) {
 			if !auth.AuthTool.IsLogin(c) {
 				result.Failure(c, "Unauthorized", 401)
 				c.Abort()

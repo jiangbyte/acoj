@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/tjfoc/gmsm/sm2"
 	"github.com/tjfoc/gmsm/x509"
@@ -64,4 +67,39 @@ func SM2Encrypt(plainText string) (string, error) {
 	}
 
 	return hex.EncodeToString(cipherBytes), nil
+}
+
+// HashWithSalt computes SHA-256(data + salt) and returns hex-encoded result.
+// This mirrors fastapi's sm3.sm3_hash() for log signature generation.
+func HashWithSalt(data, salt string) string {
+	h := sha256.Sum256([]byte(data + salt))
+	return fmt.Sprintf("%x", h)
+}
+
+// GenSalt generates a cryptographically secure random hex string of the given byte length.
+// Mirrors fastapi's secrets.token_hex(length // 2).
+func GenSalt(length int) (string, error) {
+	b := make([]byte, length/2)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// GenKeypair generates a random SM2 key pair.
+// Mirrors fastapi's gen_keypair() in sm2_crypto_util.py.
+func GenKeypair() (privateKey, publicKey string, err error) {
+	privKey, err := sm2.GenerateKey(rand.Reader)
+	if err != nil {
+		return "", "", err
+	}
+	privHex := fmt.Sprintf("%x", privKey.D.Bytes())
+	pubKey := &privKey.PublicKey
+	pubHex := fmt.Sprintf("04%x%x", pubKey.X.Bytes(), pubKey.Y.Bytes())
+	return privHex, pubHex, nil
+}
+
+// GetPublicKey returns the configured SM2 public key.
+func GetPublicKey() string {
+	return config.C.SM2.PublicKey
 }
