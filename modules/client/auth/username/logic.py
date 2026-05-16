@@ -23,11 +23,10 @@ def init_auth(login_user_api):
 
 
 async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLoginResult:
-    if param.captcha_id and param.captcha_code:
-        try:
-            await c_captcha.check_captcha(param.captcha_id, param.captcha_code)
-        except Exception as e:
-            raise BusinessException(str(e))
+    try:
+        await c_captcha.check_captcha(param.captcha_id, param.captcha_code)
+    except Exception as e:
+        raise BusinessException(str(e))
 
     user_info = _login_user_api.get_login_user_info_by_username(param.username)
     if not user_info:
@@ -86,11 +85,10 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
 
 
 async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
-    if param.captcha_id and param.captcha_code:
-        try:
-            await c_captcha.check_captcha(param.captcha_id, param.captcha_code)
-        except Exception as e:
-            raise BusinessException(str(e))
+    try:
+        await c_captcha.check_captcha(param.captcha_id, param.captcha_code)
+    except Exception as e:
+        raise BusinessException(str(e))
 
     db = SessionLocal()
     try:
