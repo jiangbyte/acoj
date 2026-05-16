@@ -16,7 +16,7 @@
         name="image"
         :rules="[{ required: true, message: '请输入图片地址' }]"
       >
-        <a-input v-model:value="form.image" placeholder="请输入图片URL" />
+        <a-input v-model:value="form.image" placeholder="请输入图片 URL" />
       </a-form-item>
       <a-form-item
         label="类别"

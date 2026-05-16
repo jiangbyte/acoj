@@ -40,7 +40,7 @@
         <a-textarea v-model:value="form.summary" placeholder="通知摘要" :rows="2" />
       </a-form-item>
       <a-form-item label="通知内容" name="content">
-        <a-textarea v-model:value="form.content" placeholder="通知内容（支持 HTML）" :rows="5" />
+        <a-textarea v-model:value="form.content" placeholder="通知内容（支持 HTML 代码）" :rows="5" />
       </a-form-item>
       <a-form-item label="封面图片" name="cover">
         <a-input v-model:value="form.cover" placeholder="封面图片 URL" />

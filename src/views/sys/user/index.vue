@@ -151,7 +151,7 @@ const { tableRef, selectedKeys, rowSelection, handleSearch, handleDelete, handle
 const searchForm = reactive({ keyword: '', status: undefined })
 const columns = [
   { title: '头像', dataIndex: 'avatar', key: 'avatar', width: 70 },
-  { title: '账号', dataIndex: 'account', key: 'account', width: 150 },
+  { title: '用户名', dataIndex: 'username', key: 'username', width: 150 },
   { title: '昵称', dataIndex: 'nickname', key: 'nickname', width: 150 },
   { title: '邮箱', dataIndex: 'email', key: 'email', width: 200, ellipsis: true },
   { title: '状态', dataIndex: 'status', key: 'status', width: 90 },

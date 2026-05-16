@@ -96,7 +96,7 @@ function renderBarChart(data: any) {
   barChart.setOption({
     tooltip: { trigger: 'axis' },
     legend: { show: true, bottom: 0 },
-    grid: { left: 40, right: 16, bottom: 32, top: 12 },
+    grid: { left: 40, right: 16, bottom: 48, top: 12 },
     xAxis: {
       type: 'category',
       data: data.days?.map((d: string) => d.slice(5)) || [],
@@ -104,11 +104,11 @@ function renderBarChart(data: any) {
     },
     yAxis: { type: 'value', minInterval: 1 },
     series: (data.series || []).map((s: any) => ({
-      name: s.name,
+      name: s.name === 'BUSINESS' ? 'B端' : s.name === 'CONSUMER' ? 'C端' : s.name,
       type: 'bar',
       data: s.data,
       barWidth: '36%',
-      itemStyle: { color: s.name === 'B端' ? '#1677ff' : '#52c41a' },
+      itemStyle: { color: s.name === 'BUSINESS' ? '#1677ff' : '#52c41a' },
     })),
   })
 }
@@ -127,9 +127,9 @@ function renderPieChart(data: any) {
       avoidLabelOverlap: true,
       label: { show: false },
       data: (data.data || []).map((d: any) => ({
-        name: d.category,
+        name: d.category === 'BUSINESS' ? 'B端' : d.category === 'CONSUMER' ? 'C端' : d.category,
         value: d.total,
-        itemStyle: { color: d.category === 'B端' ? '#1677ff' : '#52c41a' },
+        itemStyle: { color: d.category === 'BUSINESS' ? '#1677ff' : '#52c41a' },
       })),
     }],
   })

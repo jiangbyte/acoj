@@ -15,6 +15,7 @@
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import type { OrgUserDistribution, CategoryDistribution } from '@/api/dashboard'
+import { dictLabel } from '@/utils'
 
 const props = defineProps<{
   orgData: OrgUserDistribution[]
@@ -82,7 +83,7 @@ function renderRole() {
         center: ['50%', '45%'],
         avoidLabelOverlap: false,
         data: categories.map((c, i) => ({
-          name: c,
+          name: dictLabel('ROLE_CATEGORY', c) || c,
           value: counts[i],
           itemStyle: { color: colorMap[c] || '#faad14' },
         })),

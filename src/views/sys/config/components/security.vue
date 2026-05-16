@@ -24,7 +24,7 @@
           </a-form-item>
         </a-col>
         <a-col :xs="24" :sm="12" :md="8">
-          <a-form-item label="JWT Token 过期时间（秒）" name="SYS_JWT_TOKEN_EXPIRE">
+          <a-form-item label="JWT 令牌过期时间（秒）" name="SYS_JWT_TOKEN_EXPIRE">
             <a-input-number
               v-model:value="formData.SYS_JWT_TOKEN_EXPIRE"
               :min="0"

@@ -19,6 +19,7 @@
 <script setup lang="ts">
 import { computed, watch, onMounted, onUnmounted } from 'vue'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
+import 'dayjs/locale/zh-cn'
 import { theme } from 'ant-design-vue'
 import { useAppStore, useAuthStore } from '@/store'
 import { changeColor, toggleGrayMode, toggleColorWeak } from '@/utils'
