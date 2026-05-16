@@ -5,11 +5,9 @@ from sqlalchemy import select
 
 from core.db.mysql import SessionLocal
 from core.enums import LoginTypeEnum, DataScopeEnum
-from core.constants import PERMISSION_CACHE_KEY
+from core.constants import PERMISSION_CACHE_KEY, SUPER_ADMIN_CODE
 
 logger = logging.getLogger(__name__)
-
-SUPER_ADMIN_CODE = "SUPER_ADMIN"
 
 
 class HeiPermissionInterface:

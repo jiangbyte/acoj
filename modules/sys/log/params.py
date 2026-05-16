@@ -1,7 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
-from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -32,7 +31,9 @@ class LogVO(DateTimeValidatorMixin, BaseModel):
     updated_by: Optional[str] = None
 
 
-class LogPageParam(PageBounds):
+class LogPageParam(BaseModel):
+    current: int = 1
+    size: int = 10
     keyword: Optional[str] = None
     category: Optional[str] = None
     exe_status: Optional[str] = None

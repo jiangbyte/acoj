@@ -1,3 +1,3 @@
-from .page_bounds import PageBounds, IdParam, IdsParam
+from .id_params import IdParam, IdsParam
 
-__all__ = ["PageBounds", "IdParam", "IdsParam"]
+__all__ = ["IdParam", "IdsParam"]

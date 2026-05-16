@@ -9,27 +9,40 @@ from .params import (
 from .dao import ClientUserDao
 from .models import ClientUser
 from core.utils import decrypt
+from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils import strip_system_fields, apply_update
 from core.auth import HeiClientAuthTool, LoginUserInfo
-from core.db.base_service import BaseCrudService
 import bcrypt
 
 
-class ClientUserService(BaseCrudService):
-    model_class = ClientUser
-    vo_class = ClientUserVO
-    dao_class = ClientUserDao
-    page_param_class = ClientUserPageParam
+class ClientUserService:
+    def __init__(self, db: Session):
+        self.dao = ClientUserDao(db)
 
     @property
     def _auth_tool(self):
         return HeiClientAuthTool
 
+    def find_by_id(self, user_id: str) -> Optional[ClientUser]:
+        return self.dao.find_by_id(user_id)
+
+    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
+        try:
+            return await self._auth_tool.getLoginIdDefaultNull(request)
+        except Exception:
+            return None
+
+    def detail(self, param: IdParam):
+        entity = self.dao.find_by_id(param.id)
+        if not entity:
+            return None
+        return ClientUserVO.model_validate(entity).model_dump()
+
     def page(self, param: ClientUserPageParam) -> dict:
         result = self.dao.find_page_by_filters(param)
-        records = [self.vo_class.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]]
+        records = [ClientUserVO.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]]
         return page_data(
             records=records,
             total=result[PageDataField.TOTAL],
@@ -58,6 +71,9 @@ class ClientUserService(BaseCrudService):
                 raise BusinessException("账号已存在")
         apply_update(entity, update_data, extra_protected={'password'})
         self.dao.update(entity, user_id=await self._get_current_user_id(request))
+
+    def remove(self, param: IdsParam) -> None:
+        self.dao.delete_by_ids(param.ids)
 
     def find_by_username(self, username: str) -> Optional[ClientUser]:
         return self.dao.find_by_username(username)

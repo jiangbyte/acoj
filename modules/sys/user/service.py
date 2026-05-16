@@ -12,7 +12,7 @@ from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils import strip_system_fields, apply_update
 from core.auth import HeiAuthTool, LoginUserInfo
-from core.db.base_service import BaseCrudService
+from core.utils.resolve_utils import resolve_name_path, resolve_path_from_map
 import logging
 
 from ..resource import SysResource
@@ -21,11 +21,16 @@ from core.auth.permission.hei_permission_interface import SUPER_ADMIN_CODE
 logger = logging.getLogger(__name__)
 
 
-class UserService(BaseCrudService):
-    model_class = SysUser
-    vo_class = UserVO
-    dao_class = UserDao
-    page_param_class = UserPageParam
+class UserService:
+    def __init__(self, db: Session):
+        self.dao = UserDao(db)
+
+    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
+        try:
+            return await HeiAuthTool.getLoginIdDefaultNull(request)
+        except Exception as e:
+            logger.warning(f"Failed to get current user: {e}")
+            return None
 
     def find_by_id(self, user_id: str) -> Optional[SysUser]:
         return self.dao.find_by_id(user_id)
@@ -86,20 +91,17 @@ class UserService(BaseCrudService):
         )
 
     def _enrich_names(self, vo: dict) -> None:
-        """Resolve org/group/position names from IDs (single-VO, for detail())."""
-        from core.db.base_service import _resolve_name_path
         db = self.dao.db
         from modules.sys.org.models import SysOrg
-        vo["org_names"] = _resolve_name_path(vo.get("org_id"), db, SysOrg)
+        vo["org_names"] = resolve_name_path(vo.get("org_id"), db, SysOrg)
         from modules.sys.group.models import SysGroup
-        vo["group_names"] = _resolve_name_path(vo.get("group_id"), db, SysGroup)
+        vo["group_names"] = resolve_name_path(vo.get("group_id"), db, SysGroup)
         if vo.get("position_id"):
             from modules.sys.position.models import SysPosition
             pos = db.get(SysPosition, vo["position_id"])
             vo["position_name"] = pos.name if pos else None
 
     def _batch_enrich(self, vo_list: List[dict]) -> None:
-        """Batch-enrich org/group/position names — one query per model, no N+1."""
         if not vo_list:
             return
 
@@ -108,12 +110,9 @@ class UserService(BaseCrudService):
         from modules.sys.org.models import SysOrg
         from modules.sys.group.models import SysGroup
         from modules.sys.position.models import SysPosition
-        from core.db.base_service import _resolve_path_from_map
 
-        # Collect unique position IDs
         position_ids = {vo["position_id"] for vo in vo_list if vo.get("position_id")}
 
-        # Batch resolve position names — one query
         pos_name_map = {}
         if position_ids:
             rows = db.execute(
@@ -121,19 +120,17 @@ class UserService(BaseCrudService):
             ).all()
             pos_name_map = {r.id: r.name for r in rows}
 
-        # Single loads for org/group hierarchies — each loads the full table once
         org_rows = db.execute(select(SysOrg.id, SysOrg.name, SysOrg.parent_id)).all()
         org_node_map = {r.id: {"name": r.name, "parent_id": r.parent_id} for r in org_rows}
         group_rows = db.execute(select(SysGroup.id, SysGroup.name, SysGroup.parent_id)).all()
         group_node_map = {r.id: {"name": r.name, "parent_id": r.parent_id} for r in group_rows}
 
         for vo in vo_list:
-            vo["org_names"] = _resolve_path_from_map(vo.get("org_id"), org_node_map)
-            vo["group_names"] = _resolve_path_from_map(vo.get("group_id"), group_node_map)
+            vo["org_names"] = resolve_path_from_map(vo.get("org_id"), org_node_map)
+            vo["group_names"] = resolve_path_from_map(vo.get("group_id"), group_node_map)
             vo["position_name"] = pos_name_map.get(vo["position_id"]) if vo.get("position_id") else None
 
     def _enrich_vo(self, user_id: str, vo: dict):
-        """Add relation IDs + names to VO (single-user, for detail())."""
         vo["role_ids"] = self.dao.get_role_ids_by_user_id(user_id)
         vo["group_id"] = self.dao.get_group_id_by_user_id(user_id)
         self._enrich_names(vo)
@@ -148,7 +145,6 @@ class UserService(BaseCrudService):
         user_id = await self._get_current_user_id(request)
         self.dao.insert(entity, user_id=user_id)
 
-        # Grant roles/groups if provided
         if vo.role_ids:
             self.dao.grant_roles(entity.id, vo.role_ids, user_id)
         if vo.group_id:
@@ -165,7 +161,6 @@ class UserService(BaseCrudService):
         user_id = await self._get_current_user_id(request)
         self.dao.update(entity, user_id=user_id)
 
-        # Sync role/group assignments if provided
         if vo.role_ids is not None:
             self.dao.grant_roles(vo.id, vo.role_ids, user_id)
         if vo.group_id is not None:
@@ -228,11 +223,10 @@ class UserService(BaseCrudService):
             if pos:
                 position_name = pos.name
 
-        from core.db.base_service import _resolve_name_path
         from modules.sys.org.models import SysOrg
         from modules.sys.group.models import SysGroup
-        org_names = _resolve_name_path(entity.org_id, self.dao.db, SysOrg)
-        group_names = _resolve_name_path(entity.group_id, self.dao.db, SysGroup)
+        org_names = resolve_name_path(entity.org_id, self.dao.db, SysOrg)
+        group_names = resolve_name_path(entity.group_id, self.dao.db, SysGroup)
 
         vo = UserVO.model_validate(entity).model_dump()
         vo["org_names"] = org_names
@@ -290,7 +284,6 @@ class UserService(BaseCrudService):
         if not user_id:
             return []
 
-        # SUPER_ADMIN gets all resources
         role_codes = self.dao.get_user_role_codes(user_id)
         if SUPER_ADMIN_CODE in role_codes:
             resources = self.dao.get_all_resources()

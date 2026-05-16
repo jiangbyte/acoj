@@ -9,7 +9,6 @@ from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils import generate_id, strip_system_fields, apply_update
 from core.auth import HeiAuthTool
-from core.db.base_service import BaseCrudService
 from core.db.redis import get_client
 from core.constants import DICT_CACHE_KEY, DICT_TREE_CACHE_KEY
 import json
@@ -18,11 +17,22 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class DictService(BaseCrudService):
-    model_class = SysDict
-    vo_class = DictVO
-    dao_class = DictDao
-    page_param_class = DictPageParam
+class DictService:
+    def __init__(self, db: Session):
+        self.dao = DictDao(db)
+
+    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
+        try:
+            return await HeiAuthTool.getLoginIdDefaultNull(request)
+        except Exception as e:
+            logger.warning(f"Failed to get current user: {e}")
+            return None
+
+    def detail(self, param: IdParam):
+        entity = self.dao.find_by_id(param.id)
+        if not entity:
+            return None
+        return DictVO.model_validate(entity).model_dump()
 
     def page(self, param: DictPageParam) -> dict:
         result = self.dao.find_page_by_filters(param)
@@ -182,7 +192,6 @@ class DictService(BaseCrudService):
         try:
             records = self.dao.find_all_ordered()
 
-            # Flat cache: typeCode -> children (for get_cached_dicts)
             flat_cache = {}
             full_tree = self._build_full_tree(records)
 

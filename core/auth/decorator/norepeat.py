@@ -5,13 +5,12 @@ from functools import wraps
 
 from fastapi import Request
 
+from core.constants import NO_REPEAT_PREFIX
 from core.db.redis import get_client
 from core.exception import BusinessException
 from core.utils import get_client_ip
 
 logger = logging.getLogger(__name__)
-
-NO_REPEAT_PREFIX = "norepeat:"
 
 
 def _get_request(*args, **kwargs):

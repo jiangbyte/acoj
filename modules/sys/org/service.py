@@ -1,20 +1,35 @@
 from typing import Optional, List
 from fastapi import Request
+from sqlalchemy.orm import Session
 from .params import OrgVO, OrgPageParam, OrgTreeParam
 from .dao import OrgDao
 from .models import SysOrg
-from core.pojo import IdsParam
+from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils import apply_update
-from core.db.base_service import BaseCrudService
+from core.auth import HeiAuthTool
 
 
-class OrgService(BaseCrudService):
-    model_class = SysOrg
-    vo_class = OrgVO
-    dao_class = OrgDao
-    page_param_class = OrgPageParam
+class OrgService:
+    def __init__(self, db: Session):
+        self.dao = OrgDao(db)
+
+    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
+        try:
+            return await HeiAuthTool.getLoginIdDefaultNull(request)
+        except Exception:
+            return None
+
+    def detail(self, param: IdParam):
+        entity = self.dao.find_by_id(param.id)
+        if not entity:
+            return None
+        return OrgVO.model_validate(entity).model_dump()
+
+    async def create(self, vo: OrgVO, request: Optional[Request] = None) -> None:
+        entity = SysOrg(**vo.model_dump())
+        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
 
     def page(self, param: OrgPageParam) -> dict:
         result = self.dao.find_page_by_filters(param)
@@ -80,7 +95,6 @@ class OrgService(BaseCrudService):
                 break
 
     def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
-        """递归收集所有子组织ID。"""
         all_records = self.dao.find_all()
         children_map: dict[str, list[str]] = {}
         for r in all_records:

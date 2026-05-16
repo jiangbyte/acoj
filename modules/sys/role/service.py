@@ -11,17 +11,48 @@ from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils import strip_system_fields, apply_update
 from core.auth import HeiAuthTool
-from core.db.base_service import BaseCrudService
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class RoleService(BaseCrudService):
-    model_class = SysRole
-    vo_class = RoleVO
-    dao_class = RoleDao
-    page_param_class = RolePageParam
+class RoleService:
+    def __init__(self, db: Session):
+        self.dao = RoleDao(db)
+
+    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
+        try:
+            return await HeiAuthTool.getLoginIdDefaultNull(request)
+        except Exception as e:
+            logger.warning(f"Failed to get current user: {e}")
+            return None
+
+    def page(self, param: RolePageParam) -> dict:
+        result = self.dao.find_page(param)
+        records = [RoleVO.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]]
+        return page_data(
+            records=records,
+            total=result[PageDataField.TOTAL],
+            page=param.current,
+            size=param.size,
+        )
+
+    def detail(self, param: IdParam):
+        entity = self.dao.find_by_id(param.id)
+        if not entity:
+            return None
+        return RoleVO.model_validate(entity).model_dump()
+
+    async def create(self, vo: RoleVO, request: Optional[Request] = None) -> None:
+        entity = SysRole(**strip_system_fields(vo.model_dump()))
+        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
+
+    async def modify(self, vo: RoleVO, request: Optional[Request] = None) -> None:
+        entity = self.dao.find_by_id(vo.id)
+        if not entity:
+            raise BusinessException("数据不存在")
+        apply_update(entity, vo.model_dump(exclude_unset=True))
+        self.dao.update(entity, user_id=await self._get_current_user_id(request))
 
     def remove(self, param: IdsParam) -> None:
         from sqlalchemy import func, select, delete as sa_delete
@@ -49,12 +80,10 @@ class RoleService(BaseCrudService):
         created_by = await self._get_current_user_id(request)
         self.dao.grant_resources(param.role_id, param.resource_ids, created_by)
 
-        # Auto-grant permissions linked via resource.extra -> permission_code
         import json
 
         resources = self.dao.find_resources_with_extra_by_ids(param.resource_ids)
 
-        # Build code -> scope mapping from provided permissions
         scope_map: dict[str, ButtonPermissionScope] = {
             p.permission_code: p for p in param.permissions
         }
@@ -77,7 +106,6 @@ class RoleService(BaseCrudService):
                 continue
 
         if permission_items:
-            # Deduplicate by permission_code to avoid unique-key violations
             seen = set()
             unique_items = []
             for item in permission_items:

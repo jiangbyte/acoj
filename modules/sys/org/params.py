@@ -1,7 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -39,6 +38,8 @@ class OrgTreeParam(BaseModel):
     category: Optional[str] = None
 
 
-class OrgPageParam(PageBounds):
+class OrgPageParam(BaseModel):
+    current: int = 1
+    size: int = 10
     parent_id: Optional[str] = None
     keyword: Optional[str] = None

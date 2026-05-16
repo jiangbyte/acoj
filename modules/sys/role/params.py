@@ -2,7 +2,6 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from core.enums import DataScopeEnum
-from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -23,8 +22,9 @@ class RoleVO(DateTimeValidatorMixin, BaseModel):
     updated_by: Optional[str] = None
 
 
-class RolePageParam(PageBounds):
-    pass
+class RolePageParam(BaseModel):
+    current: int = 1
+    size: int = 10
 
 
 class PermissionItem(BaseModel):

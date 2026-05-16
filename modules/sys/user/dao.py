@@ -2,45 +2,90 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import select, or_, delete as sa_delete, update as sa_update
+from sqlalchemy import select, or_, func, delete as sa_delete, update as sa_update
 from .models import SysUser, RelUserRole, RelUserPermission
 from .params import UserPageParam
-from core.db.base_dao import BaseDAO
-from core.db.query_wrapper import QueryWrapper
 from core.enums import ResourceCategoryEnum, ResourceTypeEnum, StatusEnum, DataScopeEnum
 from core.utils import generate_id
 from modules.sys.role.params import PermissionItem
 
 
-class UserDao(BaseDAO):
+class UserDao:
     def __init__(self, db: Session):
-        super().__init__(db, SysUser)
+        self.db = db
+
+    # ---- base CRUD ----
+
+    def find_by_id(self, id: str) -> Optional[SysUser]:
+        return self.db.execute(select(SysUser).where(SysUser.id == id)).scalar_one_or_none()
+
+    def find_by_ids(self, ids: List[str]) -> List[SysUser]:
+        return list(self.db.execute(
+            select(SysUser).where(SysUser.id.in_(ids))
+        ).scalars().all())
+
+    def insert(self, entity: SysUser, user_id: Optional[str] = None) -> SysUser:
+        from core.utils.snowflake_utils import generate_id
+        now = datetime.now()
+        if not entity.id:
+            entity.id = generate_id()
+        if entity.created_at is None:
+            entity.created_at = now
+        entity.updated_at = now
+        if user_id is not None and entity.created_by is None:
+            entity.created_by = user_id
+        self.db.add(entity)
+        self.db.commit()
+        self.db.refresh(entity)
+        return entity
+
+    def update(self, entity: SysUser, user_id: Optional[str] = None) -> SysUser:
+        entity.updated_at = datetime.now()
+        if user_id is not None:
+            entity.updated_by = user_id
+        self.db.commit()
+        self.db.refresh(entity)
+        return entity
+
+    def delete_by_ids(self, ids: List[str]) -> int:
+        if not ids:
+            return 0
+        stmt = sa_delete(SysUser).where(SysUser.id.in_(ids))
+        affected = self.db.execute(stmt).rowcount
+        self.db.commit()
+        return affected
+
+    # ---- custom ----
 
     def find_page_by_filters(self, param: UserPageParam) -> Dict[str, Any]:
-        wrapper = QueryWrapper(SysUser)
+        filters = []
         if param.keyword:
             keyword = f"%{param.keyword}%"
-            wrapper.where(or_(SysUser.username.ilike(keyword), SysUser.nickname.ilike(keyword)))
+            filters.append(or_(SysUser.username.ilike(keyword), SysUser.nickname.ilike(keyword)))
         if param.status:
-            wrapper.eq(SysUser.status, param.status)
-        wrapper.order_by_desc(SysUser.created_at)
-        return self.select_page(wrapper, param)
+            filters.append(SysUser.status == param.status)
+
+        current = max(1, param.current)
+        size = max(1, param.size)
+        offset = (current - 1) * size
+
+        count_stmt = select(func.count()).select_from(SysUser).where(*filters)
+        total = self.db.execute(count_stmt).scalar() or 0
+
+        stmt = select(SysUser).where(*filters).order_by(SysUser.created_at.desc()).offset(offset).limit(size)
+        records = list(self.db.execute(stmt).scalars().all())
+
+        return {"records": records, "total": total}
 
     def find_by_username(self, username: str) -> Optional[SysUser]:
-        return (
-            self.db.execute(
-                select(SysUser).where(SysUser.username == username)
-            )
-            .scalar_one_or_none()
-        )
+        return self.db.execute(
+            select(SysUser).where(SysUser.username == username)
+        ).scalar_one_or_none()
 
     def find_by_email(self, email: str) -> Optional[SysUser]:
-        return (
-            self.db.execute(
-                select(SysUser).where(SysUser.email == email)
-            )
-            .scalar_one_or_none()
-        )
+        return self.db.execute(
+            select(SysUser).where(SysUser.email == email)
+        ).scalar_one_or_none()
 
     # ---- RAL: User Roles ----
 
@@ -137,10 +182,8 @@ class UserDao(BaseDAO):
     # ---- Cross-table auth queries ----
 
     def get_user_role_ids_all_sources(self, user_id: str) -> List[str]:
-        """Get role IDs from direct role assignments."""
         role_ids: set[str] = set()
 
-        # Direct role assignments (RelUserRole)
         direct_rows = self.db.execute(
             select(RelUserRole.role_id).where(RelUserRole.user_id == user_id)
         ).scalars().all()
@@ -158,7 +201,6 @@ class UserDao(BaseDAO):
         return list(set(rows))
 
     def get_resources_by_ids(self, resource_ids: List[str]):
-        """Get backend menu resources by IDs, ordered by sort_code."""
         from ..resource.models import SysResource as _SysResource
         stmt = (
             select(_SysResource)
@@ -173,7 +215,6 @@ class UserDao(BaseDAO):
         return list(self.db.execute(stmt).scalars().all())
 
     def get_user_role_codes(self, user_id: str) -> List[str]:
-        """Get role codes for a user."""
         from ..role.models import SysRole as _SysRole
         rows = self.db.execute(
             select(_SysRole.code).join(
@@ -183,7 +224,6 @@ class UserDao(BaseDAO):
         return list(rows)
 
     def get_all_resources(self):
-        """Get ALL backend menu resources, ordered by sort_code."""
         from ..resource.models import SysResource as _SysResource
         stmt = (
             select(_SysResource)

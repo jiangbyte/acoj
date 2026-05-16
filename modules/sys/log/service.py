@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import List, Dict
+from typing import List, Dict, Optional
 from sqlalchemy import delete as sa_delete
 from sqlalchemy.orm import Session
 from . import SysLog
@@ -9,14 +9,29 @@ from .params import (
     LogBarChartData, LogCategorySeries, LogPieChartData,
 )
 from .dao import LogDao
-from core.db.base_service import BaseCrudService
+from core.pojo import IdParam
+from core.result import page_data, PageDataField
 
 
-class LogService(BaseCrudService):
-    model_class = SysLog
-    vo_class = LogVO
-    dao_class = LogDao
-    page_param_class = LogPageParam
+class LogService:
+    def __init__(self, db: Session):
+        self.dao = LogDao(db)
+
+    def page(self, param: LogPageParam) -> dict:
+        result = self.dao.find_page(param)
+        records = [LogVO.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]]
+        return page_data(
+            records=records,
+            total=result[PageDataField.TOTAL],
+            page=param.current,
+            size=param.size,
+        )
+
+    def detail(self, param: IdParam):
+        entity = self.dao.find_by_id(param.id)
+        if not entity:
+            return None
+        return LogVO.model_validate(entity).model_dump()
 
     def delete_by_category(self, param: LogDeleteByCategoryParam) -> None:
         db = self.dao.db
@@ -27,12 +42,10 @@ class LogService(BaseCrudService):
     # ---- Chart / Statistics ----
 
     def _last_n_days(self, n: int = 7) -> List[str]:
-        """Return a list of date strings for the last N days (including today)."""
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         return [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(n - 1, -1, -1)]
 
     def vis_log_line_chart_data(self) -> LogBarChartData:
-        """Login/Logout daily counts for the last 7 days (rendered as a line chart)."""
         since = datetime.now() - timedelta(days=6)
         since = since.replace(hour=0, minute=0, second=0, microsecond=0)
         rows = self.dao.daily_counts_since(["LOGIN", "LOGOUT"], since)
@@ -52,7 +65,6 @@ class LogService(BaseCrudService):
         )
 
     def vis_log_pie_chart_data(self) -> LogPieChartData:
-        """Login vs Logout total counts."""
         totals = self.dao.count_total_by_category(["LOGIN", "LOGOUT"])
         return LogPieChartData(data=[
             LogCategoryTotal(category="登录", total=totals.get("LOGIN", 0)),
@@ -60,7 +72,6 @@ class LogService(BaseCrudService):
         ])
 
     def op_log_bar_chart_data(self) -> LogBarChartData:
-        """Operation/Exception daily counts for the last 7 days."""
         since = datetime.now() - timedelta(days=6)
         since = since.replace(hour=0, minute=0, second=0, microsecond=0)
         rows = self.dao.daily_counts_since(["OPERATE", "EXCEPTION"], since)
@@ -80,7 +91,6 @@ class LogService(BaseCrudService):
         )
 
     def op_log_pie_chart_data(self) -> LogPieChartData:
-        """Operation vs Exception total counts."""
         totals = self.dao.count_total_by_category(["OPERATE", "EXCEPTION"])
         return LogPieChartData(data=[
             LogCategoryTotal(category="操作", total=totals.get("OPERATE", 0)),
