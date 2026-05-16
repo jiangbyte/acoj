@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Set
+from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
 from fastapi import Request
 from core.pojo import IdParam, IdsParam
@@ -9,56 +9,6 @@ from core.auth import HeiAuthTool
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-def _batch_resolve_user_nicknames(user_ids: Set[str], db: Session) -> Dict[str, str]:
-    """Batch resolve user IDs to nicknames in one query."""
-    if not user_ids:
-        return {}
-    from modules.sys.user.models import SysUser
-    from sqlalchemy import select
-    rows = db.execute(
-        select(SysUser.id, SysUser.nickname).where(SysUser.id.in_(user_ids))
-    ).all()
-    return {row.id: row.nickname for row in rows}
-
-
-def batch_enrich_creator_updater(vo_list: List[dict], db: Session) -> None:
-    """Batch resolve created_by/updated_by for all VOs in one query — no N+1."""
-    if not vo_list:
-        return
-    all_ids: Set[str] = set()
-    for vo in vo_list:
-        if vo.get("created_by"):
-            all_ids.add(vo["created_by"])
-        if vo.get("updated_by"):
-            all_ids.add(vo["updated_by"])
-    if not all_ids:
-        return
-    user_map = _batch_resolve_user_nicknames(all_ids, db)
-    for vo in vo_list:
-        if vo.get("created_by") and vo["created_by"] in user_map:
-            vo["created_name"] = user_map[vo["created_by"]]
-        if vo.get("updated_by") and vo["updated_by"] in user_map:
-            vo["updated_name"] = user_map[vo["updated_by"]]
-
-
-def enrich_creator_updater(vo: dict, db: Session) -> None:
-    """Single-VO variant (used by detail()). Falls back to dict lookup."""
-    from modules.sys.user.models import SysUser
-    from sqlalchemy import select
-    if "created_by" in vo and vo.get("created_by"):
-        row = db.execute(
-            select(SysUser.nickname).where(SysUser.id == vo["created_by"])
-        ).scalar()
-        if row:
-            vo["created_name"] = row
-    if "updated_by" in vo and vo.get("updated_by"):
-        row = db.execute(
-            select(SysUser.nickname).where(SysUser.id == vo["updated_by"])
-        ).scalar()
-        if row:
-            vo["updated_name"] = row
 
 
 def _resolve_path_from_map(entity_id: Optional[str], node_map: Dict) -> List[str]:
@@ -116,20 +66,9 @@ class BaseCrudService:
             logger.warning(f"Failed to get current user: {e}")
             return None
 
-    def _enrich_vo(self, vo: dict) -> None:
-        """Hook to enrich a single VO dict (used by detail())."""
-        enrich_creator_updater(vo, self.dao.db)
-
-    def _batch_enrich(self, vo_list: List[dict]) -> None:
-        """Batch enrichment hook for page() — resolves all creator/updater in one query.
-        Subclasses override this to add batch-specific enrichment.
-        """
-        batch_enrich_creator_updater(vo_list, self.dao.db)
-
     def page(self, param) -> dict:
         result = self.dao.find_page(param)
         records = [self.vo_class.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]]
-        self._batch_enrich(records)
         return page_data(
             records=records,
             total=result[PageDataField.TOTAL],
@@ -141,9 +80,7 @@ class BaseCrudService:
         entity = self.dao.find_by_id(param.id)
         if not entity:
             return None
-        vo = self.vo_class.model_validate(entity).model_dump()
-        self._enrich_vo(vo)
-        return vo
+        return self.vo_class.model_validate(entity).model_dump()
 
     async def create(self, vo, request: Optional[Request] = None) -> None:
         entity = self.model_class(**strip_system_fields(vo.model_dump()))

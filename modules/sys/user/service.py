@@ -99,11 +99,9 @@ class UserService(BaseCrudService):
             vo["position_name"] = pos.name if pos else None
 
     def _batch_enrich(self, vo_list: List[dict]) -> None:
-        """Batch-enrich org/group/position + creator/updater names — one query per model, no N+1."""
+        """Batch-enrich org/group/position names — one query per model, no N+1."""
         if not vo_list:
             return
-        # Batch resolve creator/updater names first
-        super()._batch_enrich(vo_list)
 
         db = self.dao.db
         from sqlalchemy import select
@@ -135,12 +133,10 @@ class UserService(BaseCrudService):
             vo["position_name"] = pos_name_map.get(vo["position_id"]) if vo.get("position_id") else None
 
     def _enrich_vo(self, user_id: str, vo: dict):
-        """Add relation IDs + creator/updater names to VO (single-user, for detail())."""
+        """Add relation IDs + names to VO (single-user, for detail())."""
         vo["role_ids"] = self.dao.get_role_ids_by_user_id(user_id)
         vo["group_id"] = self.dao.get_group_id_by_user_id(user_id)
         self._enrich_names(vo)
-        from core.db.base_service import enrich_creator_updater
-        enrich_creator_updater(vo, self.dao.db)
 
     async def create(self, vo: UserVO, request: Optional[Request] = None) -> None:
         if vo.username and self.find_by_username(vo.username):
@@ -238,25 +234,11 @@ class UserService(BaseCrudService):
         org_names = _resolve_name_path(entity.org_id, self.dao.db, SysOrg)
         group_names = _resolve_name_path(entity.group_id, self.dao.db, SysGroup)
 
-        return {
-            "id": entity.id,
-            "username": entity.username,
-            "nickname": entity.nickname,
-            "avatar": entity.avatar,
-            "motto": entity.motto,
-            "gender": entity.gender,
-            "birthday": entity.birthday.isoformat() if entity.birthday else None,
-            "email": entity.email,
-            "github": entity.github,
-            "phone": entity.phone,
-            "status": entity.status,
-            "org_names": org_names,
-            "group_names": group_names,
-            "position_name": position_name,
-            "last_login_at": entity.last_login_at.strftime('%Y-%m-%d %H:%M:%S') if entity.last_login_at else None,
-            "last_login_ip": entity.last_login_ip,
-            "login_count": entity.login_count or 0,
-        }
+        vo = UserVO.model_validate(entity).model_dump()
+        vo["org_names"] = org_names
+        vo["group_names"] = group_names
+        vo["position_name"] = position_name
+        return vo
 
     async def update_profile(self, param: UpdateProfileParam, request: Request) -> None:
         user_id = await HeiAuthTool.getLoginIdDefaultNull(request)

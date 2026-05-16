@@ -7,7 +7,7 @@ from .params import GroupVO, GroupTreeVO, GroupPageParam, GroupTreeParam
 from .dao import GroupDao
 from ..org.params import OrgVO
 from ..org.dao import OrgDao
-from core.pojo import IdsParam
+from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils import apply_update
@@ -37,14 +37,20 @@ class GroupService(BaseCrudService):
             size=param.size
         )
 
+    def detail(self, param: IdParam) -> Optional[dict]:
+        entity = self.dao.find_by_id(param.id)
+        if not entity:
+            return None
+        vo = GroupVO.model_validate(entity).model_dump()
+        self._enrich_vo(vo)
+        return vo
+
     def _enrich_vo(self, vo: dict) -> None:
-        super()._enrich_vo(vo)
         from core.db.base_service import _resolve_name_path
         from modules.sys.org.models import SysOrg
         vo["org_names"] = _resolve_name_path(vo.get("org_id"), self.dao.db, SysOrg)
 
     def _batch_enrich(self, vo_list: List[dict]) -> None:
-        super()._batch_enrich(vo_list)
         from core.db.base_service import _resolve_name_path
         from modules.sys.org.models import SysOrg
         for vo in vo_list:

@@ -31,10 +31,8 @@ class UserVO(DateTimeValidatorMixin, BaseModel):
     login_count: Optional[int] = 0
     created_at: Optional[datetime] = None
     created_by: Optional[str] = None
-    created_name: Optional[str] = None
     updated_at: Optional[datetime] = None
     updated_by: Optional[str] = None
-    updated_name: Optional[str] = None
     role_ids: Optional[List[str]] = None
 
 

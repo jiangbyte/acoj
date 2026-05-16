@@ -221,11 +221,7 @@ class FileService:
         vo_list = []
         for r in records:
             vo = FileVO.model_validate(r).model_dump()
-            if vo.get("created_at") and hasattr(vo["created_at"], "strftime"):
-                vo["created_at"] = vo["created_at"].strftime("%Y-%m-%d %H:%M:%S")
             vo_list.append(vo)
-        from core.db.base_service import batch_enrich_creator_updater
-        batch_enrich_creator_updater(vo_list, self.dao.db)
         return page_data(records=vo_list, total=total, page=param.current, size=param.size)
 
     def detail(self, param: FileIdParam) -> Optional[dict]:
@@ -233,10 +229,6 @@ class FileService:
         if not entity:
             return None
         vo = FileVO.model_validate(entity).model_dump()
-        if vo.get("created_at") and hasattr(vo["created_at"], "strftime"):
-            vo["created_at"] = vo["created_at"].strftime("%Y-%m-%d %H:%M:%S")
-        from core.db.base_service import enrich_creator_updater
-        enrich_creator_updater(vo, self.dao.db)
         return vo
 
     def remove(self, param):
