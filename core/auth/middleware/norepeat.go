@@ -1,9 +1,11 @@
 package middleware
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"hash/fnv"
+	"io"
 	"strconv"
 	"time"
 
@@ -72,7 +74,7 @@ func NoRepeat(interval int) gin.HandlerFunc {
 				"time": nowMS,
 			})
 			if marshalErr == nil {
-				redisClient.SetEx(ctx, cacheKey, string(storeData), 3600)
+				redisClient.SetEx(ctx, cacheKey, string(storeData), 3600*time.Second)
 			}
 		}
 
@@ -105,9 +107,12 @@ func paramsHash(c *gin.Context) string {
 		}
 	}
 
-	// Read request body
-	if body, err := c.GetRawData(); err == nil && len(body) > 0 {
-		params["_body"] = string(body)
+	// Read request body and restore it for downstream handlers (Gin v1.12.0 GetRawData does not restore Body)
+	if body, err := c.GetRawData(); err == nil {
+		if len(body) > 0 {
+			params["_body"] = string(body)
+		}
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
 
 	// Marshal to JSON and hash

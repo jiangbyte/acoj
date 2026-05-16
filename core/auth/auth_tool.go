@@ -122,7 +122,7 @@ func Login(c *gin.Context, id string, extra map[string]any) (string, error) {
 	tokenData := map[string]any{
 		"user_id":    id,
 		"type":       loginTypeBusiness,
-		"created_at": now.Format(time.RFC3339),
+		"created_at": now.Format("2006-01-02 15:04:05"),
 		"extra":      extra,
 	}
 	if extra == nil {

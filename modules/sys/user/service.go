@@ -969,7 +969,7 @@ func buildMenuTree(resources []*ent.SysResource) []map[string]interface{} {
 	childrenMap := make(map[string][]*ent.SysResource)
 	for _, r := range resources {
 		pid := ""
-		if r.ParentID != nil {
+		if r.ParentID != nil && *r.ParentID != "0" {
 			pid = *r.ParentID
 		}
 		childrenMap[pid] = append(childrenMap[pid], r)

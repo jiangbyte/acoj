@@ -42,7 +42,11 @@ func GroupPage(c *gin.Context, param *GroupPageParam) gin.H {
 
 	// ParentID filter: match records whose ParentID equals param.ParentID, OR whose ID equals param.ParentID
 	if param.ParentID != "" {
-		query = query.Where(sysgroup.Or(sysgroup.ParentID(param.ParentID), sysgroup.ID(param.ParentID)))
+		if param.ParentID == "0" {
+			query = query.Where(sysgroup.Or(sysgroup.ParentIDIsNil(), sysgroup.ParentID(""), sysgroup.ID(param.ParentID)))
+		} else {
+			query = query.Where(sysgroup.Or(sysgroup.ParentID(param.ParentID), sysgroup.ID(param.ParentID)))
+		}
 	}
 	// OrgID filter
 	if param.OrgID != "" {
@@ -119,7 +123,7 @@ func GroupTree(c *gin.Context, param *GroupTreeParam) []map[string]interface{} {
 	roots := make([]map[string]interface{}, 0)
 	for _, node := range nodeMap {
 		pid := node["parent_id"].(*string)
-		if pid != nil && *pid != "" {
+		if pid != nil && *pid != "" && *pid != "0" {
 			if parent, ok := nodeMap[*pid]; ok {
 				parentChildren := parent["children"].([]map[string]interface{})
 				parent["children"] = append(parentChildren, node)
@@ -188,7 +192,7 @@ func GroupUnionTree(c *gin.Context) []map[string]interface{} {
 	// Wire group internal parent-child relationships
 	for _, node := range groupNodes {
 		pid := node["parent_id"].(*string)
-		if pid != nil && *pid != "" {
+		if pid != nil && *pid != "" && *pid != "0" {
 			if parent, ok := groupNodes[*pid]; ok {
 				parentChildren := parent["children"].([]map[string]interface{})
 				parent["children"] = append(parentChildren, node)
@@ -222,7 +226,7 @@ func GroupUnionTree(c *gin.Context) []map[string]interface{} {
 	roots := make([]map[string]interface{}, 0)
 	for _, node := range orgNodes {
 		pid := node["parent_id"].(*string)
-		if pid != nil && *pid != "" {
+		if pid != nil && *pid != "" && *pid != "0" {
 			if parent, ok := orgNodes[*pid]; ok {
 				parentChildren := parent["children"].([]map[string]interface{})
 				parent["children"] = append(parentChildren, node)
@@ -314,7 +318,7 @@ func GroupModify(c *gin.Context, vo *GroupVO, userID string) {
 		SetUpdatedAt(now)
 
 	if vo.ParentID != nil {
-		if *vo.ParentID == "" {
+		if *vo.ParentID == "" || *vo.ParentID == "0" {
 			builder.ClearParentID()
 		} else {
 			builder.SetParentID(*vo.ParentID)
@@ -468,7 +472,7 @@ func resolveOrgPath(orgID string) []string {
 			break
 		}
 		path = append([]string{org.Name}, path...)
-		if org.ParentID == nil || *org.ParentID == "" {
+		if org.ParentID == nil || *org.ParentID == "" || *org.ParentID == "0" {
 			break
 		}
 		current = *org.ParentID
@@ -492,7 +496,7 @@ func sortTreeNodes(nodes []map[string]interface{}) {
 
 // checkCircularParent checks if setting newParentID as the parent of entityID would create a circular reference.
 func checkCircularParent(entityID, newParentID string) {
-	if entityID == "" || newParentID == "" {
+	if entityID == "" || newParentID == "" || newParentID == "0" {
 		return
 	}
 

@@ -289,7 +289,7 @@ func ResourceModify(c *gin.Context, vo *ResourceVO, userID string) {
 		panic(exception.NewBusinessError("查询资源失败: "+err.Error(), 500))
 	}
 
-	if vo.ParentID != nil && *vo.ParentID != "" {
+	if vo.ParentID != nil && *vo.ParentID != "" && *vo.ParentID != "0" {
 		if checkCircularParent(vo.ID, *vo.ParentID) {
 			panic(exception.NewBusinessError("父资源不能选择自身或下级资源", 400))
 		}
@@ -419,7 +419,7 @@ func ResourceTree(c *gin.Context) []*ResourceVO {
 	childrenMap := make(map[string][]*ResourceVO)
 	for _, n := range nodes {
 		pid := ""
-		if n.ParentID != nil {
+		if n.ParentID != nil && *n.ParentID != "0" {
 			pid = *n.ParentID
 		}
 		childrenMap[pid] = append(childrenMap[pid], n)
@@ -435,7 +435,8 @@ func ResourceTree(c *gin.Context) []*ResourceVO {
 		return result
 	}
 
-	return build("")
+	roots := build("")
+	return roots
 }
 
 // ---------------------------------------------------------------------------
@@ -445,7 +446,7 @@ func ResourceTree(c *gin.Context) []*ResourceVO {
 // checkCircularParent checks if setting newParentID as the parent of entityID
 // would create a circular reference.
 func checkCircularParent(entityID, newParentID string) bool {
-	if newParentID == "" || entityID == "" {
+	if newParentID == "" || newParentID == "0" || entityID == "" {
 		return false
 	}
 

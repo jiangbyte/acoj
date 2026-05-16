@@ -1,9 +1,10 @@
 package log
 
 import (
-	"log"
+	"context"
 	"time"
 
+	"hei-gin/core/db"
 	"hei-gin/core/utils"
 
 	"github.com/gin-gonic/gin"
@@ -44,10 +45,6 @@ func SysLog(name string) gin.HandlerFunc {
 }
 
 // saveLog persists the log entry to the database.
-//
-// Stub: currently logs to console with log.Printf since the DB/ent model
-// for sys_log does not exist yet. Replace with real persistence once
-// the log module is implemented.
 func saveLog(c *gin.Context, name, category, exeStatus, exeMessage, paramsJSON string, startTime time.Time) {
 	userAgent := c.GetHeader("User-Agent")
 	browser, osName := ParseUserAgent(userAgent)
@@ -55,15 +52,39 @@ func saveLog(c *gin.Context, name, category, exeStatus, exeMessage, paramsJSON s
 	cityInfo := utils.GetCityInfo(opIP)
 	traceID := utils.GetTraceID()
 
-	// Try to get operator user from Gin context (set by auth middleware)
-	opUser, exists := c.Get("loginUser")
-	opUserStr, ok := opUser.(string)
+	opUserStr, exists := c.Get("loginUser")
+	opUser, ok := opUserStr.(string)
 	if !exists || !ok || opUserStr == "" {
-		opUserStr = "-"
+		opUser = "-"
 	}
 
-	elapsed := time.Since(startTime)
+	ctx := context.Background()
+	now := time.Now()
 
-	log.Printf("[SYSLOG] name=%s category=%s status=%s message=%s trace=%s ip=%s city=%s browser=%s os=%s user=%s elapsed=%v params=%s",
-		name, category, exeStatus, exeMessage, traceID, opIP, cityInfo, browser, osName, opUserStr, elapsed, paramsJSON)
+	exeMsg := exeMessage
+	params := paramsJSON
+
+	err := db.Client.SysLog.Create().
+		SetID(utils.GenerateID()).
+		SetCategory(category).
+		SetName(name).
+		SetExeStatus(exeStatus).
+		SetNillableExeMessage(&exeMsg).
+		SetOpIP(opIP).
+		SetOpAddress(cityInfo).
+		SetOpBrowser(browser).
+		SetOpOs(osName).
+		SetReqMethod(c.Request.Method).
+		SetReqURL(c.Request.URL.String()).
+		SetNillableParamJSON(&params).
+		SetOpTime(now).
+		SetTraceID(traceID).
+		SetOpUser(opUser).
+		SetCreatedAt(now).
+		SetUpdatedAt(now).
+		Exec(ctx)
+	if err != nil {
+		// Log failure silently — don't break the request for a logging error
+		_ = err
+	}
 }
