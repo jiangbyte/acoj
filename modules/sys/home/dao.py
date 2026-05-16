@@ -1,8 +1,7 @@
 from datetime import datetime
-from typing import List, Optional
-from sqlalchemy import select, and_, func
+from typing import List, Optional, Dict, Any
+from sqlalchemy import select, and_, func, delete as sa_delete
 from sqlalchemy.orm import Session
-from core.db.base_dao import BaseDAO
 from core.enums import StatusEnum
 from modules.sys.user.models import SysUser
 from modules.sys.notice.models import SysNotice
@@ -10,9 +9,44 @@ from modules.sys.resource.models import SysResource
 from .models import SysQuickAction
 
 
-class QuickActionDao(BaseDAO):
+class QuickActionDao:
     def __init__(self, db: Session):
-        super().__init__(db, SysQuickAction)
+        self.db = db
+
+    # ---- base CRUD ----
+
+    def find_by_id(self, id: str) -> Optional[SysQuickAction]:
+        return self.db.execute(select(SysQuickAction).where(SysQuickAction.id == id)).scalar_one_or_none()
+
+    def find_by_ids(self, ids: List[str]) -> List[SysQuickAction]:
+        return list(self.db.execute(
+            select(SysQuickAction).where(SysQuickAction.id.in_(ids))
+        ).scalars().all())
+
+    def insert(self, entity: SysQuickAction, user_id: Optional[str] = None) -> SysQuickAction:
+        from core.utils.snowflake_utils import generate_id
+        now = datetime.now()
+        if not entity.id:
+            entity.id = generate_id()
+        if entity.created_at is None:
+            entity.created_at = now
+        entity.updated_at = now
+        if user_id is not None and entity.created_by is None:
+            entity.created_by = user_id
+        self.db.add(entity)
+        self.db.commit()
+        self.db.refresh(entity)
+        return entity
+
+    def delete_by_id(self, id: str) -> bool:
+        entity = self.find_by_id(id)
+        if not entity:
+            return False
+        self.db.delete(entity)
+        self.db.commit()
+        return True
+
+    # ---- custom ----
 
     def find_by_user_id(self, user_id: str) -> List[dict]:
         stmt = (
@@ -83,7 +117,6 @@ class QuickActionDao(BaseDAO):
         return {"total_users": self.db.execute(stmt).scalar() or 0}
 
     def get_available_resources(self, user_id: str) -> List[dict]:
-        """Get menu-type resources the user can add as quick actions (excluding already added)."""
         subq = (
             select(SysQuickAction.resource_id)
             .where(

@@ -1,11 +1,12 @@
 from typing import Optional, List
+from datetime import datetime
 from fastapi import Request
 from sqlalchemy.orm import Session
+from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils.model_utils import strip_system_fields, apply_update
 from core.auth import HeiAuthTool
-from core.db.base_service import BaseCrudService
 from core.db.redis import get_client
 from .models import SysConfig
 from .dao import ConfigDao
@@ -15,17 +16,25 @@ from .params import ConfigVO, ConfigPageParam, ConfigListParam, ConfigCategoryEd
 CONFIG_CACHE_PREFIX = "sys-config:"
 
 
-class ConfigService(BaseCrudService):
-    model_class = SysConfig
-    vo_class = ConfigVO
-    dao_class = ConfigDao
-    page_param_class = ConfigPageParam
+class ConfigService:
+    def __init__(self, db: Session):
+        self.dao = ConfigDao(db)
 
     async def _get_current_user_id(self, request: Request) -> Optional[str]:
         try:
             return await HeiAuthTool.getLoginIdDefaultNull(request)
         except Exception:
             return None
+
+    def detail(self, param: IdParam):
+        entity = self.dao.find_by_id(param.id)
+        if not entity:
+            return None
+        return ConfigVO.model_validate(entity).model_dump()
+
+    async def create(self, vo: ConfigVO, request: Optional[Request] = None) -> None:
+        entity = SysConfig(**strip_system_fields(vo.model_dump()))
+        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
 
     async def _get_cached_value(self, key: str) -> Optional[str]:
         client = get_client()
@@ -111,13 +120,16 @@ class ConfigService(BaseCrudService):
         ids = [vo.id for vo in param.configs]
         entity_map = {e.id: e for e in self.dao.find_by_ids(ids)}
         keys_to_clear = []
+        now = datetime.now()
         for vo in param.configs:
             entity = entity_map.get(vo.id)
             if not entity:
                 raise BusinessException(f"配置不存在: {vo.id}")
             update_data = strip_system_fields(vo.model_dump(exclude_unset=True))
             apply_update(entity, update_data)
-            self.dao.meta_object_handler.update_fill(self.dao, entity, updated_by=user_id)
+            entity.updated_at = now
+            if user_id is not None:
+                entity.updated_by = user_id
             keys_to_clear.append(entity.config_key)
         self.dao.db.commit()
         if keys_to_clear:
@@ -130,12 +142,15 @@ class ConfigService(BaseCrudService):
         keys = [vo.config_key for vo in param.configs]
         entity_map = self.dao.find_by_category_and_keys(param.category, keys)
         keys_to_clear = []
+        now = datetime.now()
         for vo in param.configs:
             entity = entity_map.get(vo.config_key)
             if not entity:
                 raise BusinessException(f"分类 [{param.category}] 下不存在配置: {vo.config_key}")
             entity.config_value = vo.config_value
-            self.dao.meta_object_handler.update_fill(self.dao, entity, updated_by=user_id)
+            entity.updated_at = now
+            if user_id is not None:
+                entity.updated_by = user_id
             keys_to_clear.append(entity.config_key)
         self.dao.db.commit()
         if keys_to_clear:

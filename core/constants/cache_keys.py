@@ -20,3 +20,7 @@ DICT_TREE_CACHE_KEY = "hei:dict:fulltree"
 # Captcha
 CAPTCHA_BUSINESS_CACHE_KEY = LoginTypeEnum.BUSINESS + ":captcha:"
 CAPTCHA_CONSUMER_CACHE_KEY = LoginTypeEnum.CONSUMER + ":captcha:"
+
+NO_REPEAT_PREFIX = "norepeat:"
+
+SUPER_ADMIN_CODE = "SUPER_ADMIN"

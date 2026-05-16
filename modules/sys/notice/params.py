@@ -1,7 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -27,5 +26,6 @@ class NoticeVO(DateTimeValidatorMixin, BaseModel):
     updated_by: Optional[str] = None
 
 
-class NoticePageParam(PageBounds):
-    pass
+class NoticePageParam(BaseModel):
+    current: int = 1
+    size: int = 10

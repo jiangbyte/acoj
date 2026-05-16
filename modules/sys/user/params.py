@@ -2,7 +2,6 @@ from typing import Optional, List
 from modules.sys.role.params import PermissionItem
 from datetime import datetime, date
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -36,7 +35,9 @@ class UserVO(DateTimeValidatorMixin, BaseModel):
     role_ids: Optional[List[str]] = None
 
 
-class UserPageParam(PageBounds):
+class UserPageParam(BaseModel):
+    current: int = 1
+    size: int = 10
     keyword: Optional[str] = None
     status: Optional[str] = None
 

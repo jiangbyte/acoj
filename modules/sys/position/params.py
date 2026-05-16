@@ -1,7 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -26,7 +25,9 @@ class PositionVO(DateTimeValidatorMixin, BaseModel):
     updated_by: Optional[str] = None
 
 
-class PositionPageParam(PageBounds):
+class PositionPageParam(BaseModel):
+    current: int = 1
+    size: int = 10
     keyword: Optional[str] = None
     group_id: Optional[str] = None
     org_id: Optional[str] = None

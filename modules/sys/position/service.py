@@ -9,23 +9,32 @@ from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils import strip_system_fields, apply_update
 from core.auth import HeiAuthTool
-from core.db.base_service import BaseCrudService
+from core.utils.resolve_utils import resolve_name_path
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class PositionService(BaseCrudService):
-    model_class = SysPosition
-    vo_class = PositionVO
-    dao_class = PositionDao
-    page_param_class = PositionPageParam
+class PositionService:
+    def __init__(self, db: Session):
+        self.dao = PositionDao(db)
+
+    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
+        try:
+            return await HeiAuthTool.getLoginIdDefaultNull(request)
+        except Exception as e:
+            logger.warning(f"Failed to get current user: {e}")
+            return None
+
+    async def create(self, vo: PositionVO, request: Optional[Request] = None) -> None:
+        entity = SysPosition(**strip_system_fields(vo.model_dump()))
+        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
 
     def page(self, param: PositionPageParam) -> dict:
         if not param.group_id:
             return page_data(records=[], total=0, page=param.current, size=param.size)
         result = self.dao.find_page_by_filters(param)
-        records = [self.vo_class.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]]
+        records = [PositionVO.model_validate(r).model_dump() for r in result[PageDataField.RECORDS]]
         self._batch_enrich(records)
         return page_data(
             records=records,
@@ -38,24 +47,22 @@ class PositionService(BaseCrudService):
         entity = self.dao.find_by_id(param.id)
         if not entity:
             return None
-        vo = self.vo_class.model_validate(entity).model_dump()
+        vo = PositionVO.model_validate(entity).model_dump()
         self._enrich_vo(vo)
         return vo
 
     def _enrich_vo(self, vo: dict) -> None:
-        from core.db.base_service import _resolve_name_path
         from modules.sys.org.models import SysOrg
         from modules.sys.group.models import SysGroup
-        vo["org_names"] = _resolve_name_path(vo.get("org_id"), self.dao.db, SysOrg)
-        vo["group_names"] = _resolve_name_path(vo.get("group_id"), self.dao.db, SysGroup)
+        vo["org_names"] = resolve_name_path(vo.get("org_id"), self.dao.db, SysOrg)
+        vo["group_names"] = resolve_name_path(vo.get("group_id"), self.dao.db, SysGroup)
 
     def _batch_enrich(self, vo_list: List[dict]) -> None:
-        from core.db.base_service import _resolve_name_path
         from modules.sys.org.models import SysOrg
         from modules.sys.group.models import SysGroup
         for vo in vo_list:
-            vo["org_names"] = _resolve_name_path(vo.get("org_id"), self.dao.db, SysOrg)
-            vo["group_names"] = _resolve_name_path(vo.get("group_id"), self.dao.db, SysGroup)
+            vo["org_names"] = resolve_name_path(vo.get("org_id"), self.dao.db, SysOrg)
+            vo["group_names"] = resolve_name_path(vo.get("group_id"), self.dao.db, SysGroup)
 
     def remove(self, param: IdsParam) -> None:
         from sqlalchemy import func, select

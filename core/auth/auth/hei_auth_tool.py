@@ -1,8 +1,9 @@
+import secrets
 from contextvars import ContextVar
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Optional, Any, Dict, List, Union
-import jwt
 import json
+import jwt
 from fastapi import Request, HTTPException, status
 
 from config.settings import settings
@@ -16,18 +17,14 @@ SESSION_PREFIX = SESSION_PREFIX_BUSINESS
 
 
 class HeiAuthTool:
-    _secret: str = settings.jwt.secret_key
-    _algorithm: str = settings.jwt.algorithm
     _expire: int = settings.jwt.expire_seconds
     _token_name: str = settings.jwt.token_name
+    _secret: str = settings.jwt.secret_key
+    _algorithm: str = settings.jwt.algorithm
     _request_var: ContextVar[Optional[Request]] = ContextVar('hei_auth_request', default=None)
 
     @classmethod
-    def init(cls, secret: str = None, algorithm: str = None, expire: int = None, token_name: str = None):
-        if secret:
-            cls._secret = secret
-        if algorithm:
-            cls._algorithm = algorithm
+    def init(cls, expire: int = None, token_name: str = None):
         if expire:
             cls._expire = expire
         if token_name:
@@ -72,8 +69,7 @@ class HeiAuthTool:
         req = request or cls._request_var.get()
         if not req:
             return None
-        token = req.headers.get(cls._token_name)
-        return token
+        return req.headers.get(cls._token_name)
 
     @classmethod
     async def getTokenInfo(cls, request: Request = None) -> Optional[Dict]:
@@ -86,17 +82,14 @@ class HeiAuthTool:
     async def login(cls, id: Union[str, int], request: Request = None, extra: Dict = None) -> str:
         now = datetime.now(timezone.utc)
         user_id = str(id)
-        payload = {
-            "sub": user_id,
-            "type": TYPE,
-            "exp": now + timedelta(seconds=cls._expire),
-            "iat": now,
-        }
-        if extra:
-            payload.update(extra)
-        
-        token = jwt.encode(payload, cls._secret, algorithm=cls._algorithm)
-        
+
+        jti = secrets.token_urlsafe(32)
+        token = jwt.encode(
+            {"jti": jti, "iat": now},
+            cls._secret,
+            algorithm=cls._algorithm
+        )
+
         redis_client = cls._get_redis()
         token_data = {
             "user_id": user_id,
@@ -104,13 +97,13 @@ class HeiAuthTool:
             "created_at": now.isoformat(),
             "extra": extra or {}
         }
-        
+
         await redis_client.setex(
             cls._get_token_key(token),
             cls._expire,
             json.dumps(token_data, ensure_ascii=False)
         )
-        
+
         session_key = cls._get_session_key(user_id)
         await redis_client.sadd(session_key, token)
         await redis_client.expire(session_key, cls._expire)
@@ -122,25 +115,21 @@ class HeiAuthTool:
         if login_id is not None:
             await cls.kickout(login_id)
             return
-        
+
         token = await cls.getTokenValue(request)
         if not token:
             return
-        
+
+        data = await cls._get_token_data(token)
+        if data:
+            user_id = data.get("user_id")
+            if user_id:
+                session_key = cls._get_session_key(user_id)
+                redis_client = cls._get_redis()
+                await redis_client.srem(session_key, token)
+
         redis_client = cls._get_redis()
         token_key = cls._get_token_key(token)
-        
-        token_data = await redis_client.get(token_key)
-        if token_data:
-            try:
-                data = json.loads(token_data)
-                user_id = data.get("user_id")
-                if user_id:
-                    session_key = cls._get_session_key(user_id)
-                    await redis_client.srem(session_key, token)
-            except:
-                pass
-
         await redis_client.delete(token_key)
 
     @classmethod
@@ -159,7 +148,6 @@ class HeiAuthTool:
 
     @classmethod
     async def kickout_token(cls, login_id: Union[str, int], token: str):
-        """Kickout a specific token for a user."""
         redis_client = cls._get_redis()
         user_id = str(login_id)
         session_key = cls._get_session_key(user_id)
@@ -190,10 +178,10 @@ class HeiAuthTool:
         token = await cls.getTokenValue(request)
         if not token:
             return None
-        
-        payload = await cls._decode_token(token)
-        if payload:
-            return payload.get("sub")
+
+        data = await cls._decode_token(token)
+        if data:
+            return data.get("user_id")
         return None
 
     @classmethod
@@ -218,41 +206,33 @@ class HeiAuthTool:
     async def getLoginIdByToken(cls, token_value: str) -> Optional[str]:
         if not token_value:
             return None
-        payload = await cls._decode_token(token_value)
-        if payload:
-            return payload.get("sub")
+        data = await cls._decode_token(token_value)
+        if data:
+            return data.get("user_id")
         return None
 
     @classmethod
     async def _decode_token(cls, token: str) -> Optional[Dict]:
         if not token:
             return None
-        
-        redis_client = cls._get_redis()
-        token_key = cls._get_token_key(token)
-        
-        exists = await redis_client.exists(token_key)
-        if not exists:
+        data = await cls._get_token_data(token)
+        if not data:
             return None
-        
         try:
-            payload = jwt.decode(token, cls._secret, algorithms=[cls._algorithm])
-            return payload
-        except jwt.ExpiredSignatureError:
-            await redis_client.delete(token_key)
+            jwt.decode(token, cls._secret, algorithms=[cls._algorithm])
+        except jwt.PyJWTError:
             return None
-        except jwt.InvalidTokenError:
-            return None
+        return data
 
     @classmethod
     async def _get_token_data(cls, token: str) -> Optional[Dict]:
         if not token:
             return None
-        
+
         redis_client = cls._get_redis()
         token_key = cls._get_token_key(token)
         token_data = await redis_client.get(token_key)
-        
+
         if token_data:
             try:
                 return json.loads(token_data)
@@ -262,13 +242,9 @@ class HeiAuthTool:
 
     @classmethod
     async def getExtra(cls, key: str, request: Request = None) -> Optional[Any]:
-        token = await cls.getTokenValue(request)
-        if not token:
-            return None
-        
-        payload = await cls._decode_token(token)
-        if payload:
-            return payload.get(key)
+        data = await cls.getTokenInfo(request)
+        if data:
+            return data.get("extra", {}).get(key)
         return None
 
     @classmethod
@@ -287,7 +263,7 @@ class HeiAuthTool:
         token = await cls.getTokenValue(request)
         if not token:
             return -1
-        
+
         redis_client = cls._get_redis()
         token_key = cls._get_token_key(token)
         ttl = await redis_client.ttl(token_key)
@@ -298,7 +274,7 @@ class HeiAuthTool:
         login_id = await cls.getLoginIdDefaultNull(request)
         if not login_id:
             return -1
-        
+
         redis_client = cls._get_redis()
         session_key = cls._get_session_key(login_id)
         ttl = await redis_client.ttl(session_key)
@@ -309,13 +285,13 @@ class HeiAuthTool:
         token = await cls.getTokenValue(request)
         if not token:
             return
-        
+
         new_timeout = timeout or cls._expire
         redis_client = cls._get_redis()
         token_key = cls._get_token_key(token)
-        
+
         await redis_client.expire(token_key, new_timeout)
-        
+
         login_id = await cls.getLoginIdByToken(token)
         if login_id:
             session_key = cls._get_session_key(login_id)
@@ -333,7 +309,6 @@ class HeiAuthTool:
 
     @classmethod
     async def getTokenValuesByLoginId(cls, login_id: Union[str, int]) -> List[str]:
-        """Get all active token values for a user."""
         redis_client = cls._get_redis()
         session_key = cls._get_session_key(str(login_id))
         tokens = await redis_client.smembers(session_key)

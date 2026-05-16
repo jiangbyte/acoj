@@ -1,7 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
-from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 from modules.sys.log.params import LogBarChartData, LogPieChartData
 
@@ -49,7 +48,9 @@ class SessionTokenResult(DateTimeValidatorMixin, BaseModel):
     device_id: Optional[str] = None
 
 
-class SessionPageParam(PageBounds):
+class SessionPageParam(BaseModel):
+    current: int = 1
+    size: int = 10
     keyword: Optional[str] = None
 
 

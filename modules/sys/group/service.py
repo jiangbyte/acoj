@@ -11,18 +11,24 @@ from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils import apply_update
-from core.db.base_service import BaseCrudService
+from core.auth import HeiAuthTool
+from core.utils.resolve_utils import resolve_name_path
 
 
-class GroupService(BaseCrudService):
-    model_class = SysGroup
-    vo_class = GroupVO
-    dao_class = GroupDao
-    page_param_class = GroupPageParam
-
+class GroupService:
     def __init__(self, db: Session):
-        super().__init__(db)
+        self.dao = GroupDao(db)
         self._org_dao = OrgDao(db)
+
+    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
+        try:
+            return await HeiAuthTool.getLoginIdDefaultNull(request)
+        except Exception:
+            return None
+
+    async def create(self, vo: GroupVO, request: Optional[Request] = None) -> None:
+        entity = SysGroup(**vo.model_dump())
+        self.dao.insert(entity, user_id=await self._get_current_user_id(request))
 
     def page(self, param: GroupPageParam) -> dict:
         if not param.parent_id and not param.org_id:
@@ -46,15 +52,13 @@ class GroupService(BaseCrudService):
         return vo
 
     def _enrich_vo(self, vo: dict) -> None:
-        from core.db.base_service import _resolve_name_path
         from modules.sys.org.models import SysOrg
-        vo["org_names"] = _resolve_name_path(vo.get("org_id"), self.dao.db, SysOrg)
+        vo["org_names"] = resolve_name_path(vo.get("org_id"), self.dao.db, SysOrg)
 
     def _batch_enrich(self, vo_list: List[dict]) -> None:
-        from core.db.base_service import _resolve_name_path
         from modules.sys.org.models import SysOrg
         for vo in vo_list:
-            vo["org_names"] = _resolve_name_path(vo.get("org_id"), self.dao.db, SysOrg)
+            vo["org_names"] = resolve_name_path(vo.get("org_id"), self.dao.db, SysOrg)
 
     def tree(self, param: GroupTreeParam) -> List[dict]:
         if not param.org_id:
@@ -94,9 +98,6 @@ class GroupService(BaseCrudService):
                 GroupService._sort_tree(children)
 
     def union_tree(self) -> List[dict]:
-        """Build a combined tree of orgs and groups.
-        Each node has _type: 'org' or 'group' to distinguish.
-        """
         orgs = self._org_dao.find_all_ordered()
         groups = self.dao.find_all_ordered()
 
@@ -165,7 +166,6 @@ class GroupService(BaseCrudService):
                 break
 
     def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
-        """递归收集所有子用户组ID。"""
         all_records = self.dao.find_all()
         children_map: dict[str, list[str]] = {}
         for r in all_records:

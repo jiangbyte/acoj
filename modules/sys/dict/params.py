@@ -1,7 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -37,7 +36,9 @@ class DictTreeVO(BaseModel):
     children: List["DictTreeVO"] = []
 
 
-class DictPageParam(PageBounds):
+class DictPageParam(BaseModel):
+    current: int = 1
+    size: int = 10
     parent_id: Optional[str] = None
     category: Optional[str] = None
     keyword: Optional[str] = None

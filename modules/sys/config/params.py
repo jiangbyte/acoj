@@ -1,8 +1,5 @@
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds
-
-
 class ConfigVO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -15,7 +12,9 @@ class ConfigVO(BaseModel):
     ext_json: Optional[str] = None
 
 
-class ConfigPageParam(PageBounds):
+class ConfigPageParam(BaseModel):
+    current: int = 1
+    size: int = 10
     category: Optional[str] = None
     keyword: Optional[str] = None
 

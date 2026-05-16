@@ -1,7 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -26,7 +25,9 @@ class FileVO(DateTimeValidatorMixin,BaseModel):
     created_by: Optional[str] = None
 
 
-class FilePageParam(PageBounds):
+class FilePageParam(BaseModel):
+    current: int = 1
+    size: int = 10
     engine: Optional[str] = None
     keyword: Optional[str] = None
     date_range_start: Optional[str] = None
