@@ -62,11 +62,18 @@ func (a *ClientAuthToolImpl) GetLoginID(c *gin.Context) string {
 	if token == "" {
 		return ""
 	}
-	payload, _ := a.decodeToken(token)
-	if payload != nil {
-		if sub, ok := payload["sub"].(string); ok {
-			return sub
-		}
+	ctx := context.Background()
+	redisKey := a.tokenPrefix + token
+	data, err := db.Redis.Get(ctx, redisKey).Result()
+	if err != nil {
+		return ""
+	}
+	var info map[string]interface{}
+	if json.Unmarshal([]byte(data), &info) != nil {
+		return ""
+	}
+	if uid, ok := info["user_id"].(string); ok {
+		return uid
 	}
 	return ""
 }
@@ -142,27 +149,34 @@ func (a *ClientAuthToolImpl) Kickout(loginID string) {
 	db.Redis.Del(ctx, sessionKey)
 }
 
-func (a *ClientAuthToolImpl) decodeToken(token string) (jwt.MapClaims, error) {
+func (a *ClientAuthToolImpl) GetLoginIdByToken(token string) string {
+	if token == "" {
+		return ""
+	}
 	ctx := context.Background()
 	redisKey := a.tokenPrefix + token
-
-	n, err := db.Redis.Exists(ctx, redisKey).Result()
-	if err != nil || n == 0 {
-		return nil, fmt.Errorf("token not found in redis")
-	}
-
-	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		return []byte(a.secret), nil
-	})
+	data, err := db.Redis.Get(ctx, redisKey).Result()
 	if err != nil {
-		db.Redis.Del(ctx, redisKey)
-		return nil, err
+		return ""
 	}
+	var info map[string]interface{}
+	if json.Unmarshal([]byte(data), &info) != nil {
+		return ""
+	}
+	if uid, ok := info["user_id"].(string); ok {
+		return uid
+	}
+	return ""
+}
 
-	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok && parsedToken.Valid {
-		return claims, nil
+func (a *ClientAuthToolImpl) GetTokenValueByLoginId(loginID string) string {
+	ctx := context.Background()
+	sessionKey := a.sessionPrefix + loginID
+	tokens, _ := db.Redis.SMembers(ctx, sessionKey).Result()
+	if len(tokens) > 0 {
+		return tokens[0]
 	}
-	return nil, fmt.Errorf("invalid token")
+	return ""
 }
 
 func (a *ClientAuthToolImpl) GetTokenValuesByLoginID(loginID string) []string {

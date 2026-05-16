@@ -23,7 +23,6 @@ func CheckLogin() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		c.Set("login_id", loginID)
 		c.Next()
 	}
 }
