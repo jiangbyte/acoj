@@ -10,7 +10,7 @@ class UserVO(DateTimeValidatorMixin, BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: Optional[str] = None
-    account: Optional[str] = None
+    username: Optional[str] = None
     nickname: Optional[str] = None
     avatar: Optional[str] = None
     motto: Optional[str] = None
@@ -64,7 +64,7 @@ class GrantUserPermissionParam(BaseModel):
 
 
 class UpdateProfileParam(BaseModel):
-    account: Optional[str] = None
+    username: Optional[str] = None
     nickname: Optional[str] = None
     motto: Optional[str] = None
     gender: Optional[str] = None

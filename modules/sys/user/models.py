@@ -12,12 +12,12 @@ class Base(DeclarativeBase):
 class SysUser(Base):
     __tablename__ = 'sys_user'
     __table_args__ = (
-        Index('idx_account', 'account'),
+        Index('idx_username', 'username'),
         {'comment': '用户'}
     )
 
     id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), primary_key=True, comment='主键')
-    account: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='账号')
+    username: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='用户名')
     password: Mapped[Optional[str]] = mapped_column(VARCHAR(255, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='密码')
     nickname: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='昵称')
     avatar: Mapped[Optional[str]] = mapped_column(LONGTEXT(collation='utf8mb4_general_ci'), comment='头像')

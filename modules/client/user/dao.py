@@ -15,17 +15,17 @@ class ClientUserDao(BaseDAO):
         wrapper = QueryWrapper(ClientUser)
         if param.keyword:
             keyword = f"%{param.keyword}%"
-            wrapper.where(or_(ClientUser.account.ilike(keyword), ClientUser.nickname.ilike(keyword)))
+            wrapper.where(or_(ClientUser.username.ilike(keyword), ClientUser.nickname.ilike(keyword)))
         if param.status:
             wrapper.eq(ClientUser.status, param.status)
         wrapper.order_by_desc(ClientUser.created_at)
         return self.select_page(wrapper, param)
 
-    def find_by_account(self, account: str) -> Optional[ClientUser]:
+    def find_by_username(self, username: str) -> Optional[ClientUser]:
         return (
             self.db.execute(
                 select(ClientUser).where(
-                    ClientUser.account == account,
+                    ClientUser.username == username,
                 )
             )
             .scalar_one_or_none()

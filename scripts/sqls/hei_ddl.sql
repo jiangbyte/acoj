@@ -11,7 +11,7 @@
  Target Server Version : 90600 (9.6.0)
  File Encoding         : 65001
 
- Date: 14/05/2026 18:58:47
+ Date: 16/05/2026 12:53:58
 */
 
 SET NAMES utf8mb4;
@@ -23,7 +23,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `client_user`;
 CREATE TABLE `client_user`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
-  `account` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '账号',
+  `username` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '账号',
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
   `nickname` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '昵称',
   `avatar` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '头像',
@@ -45,9 +45,12 @@ CREATE TABLE `client_user`  (
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_account`(`account` ASC) USING BTREE
+  INDEX `idx_username`(`username` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'C端用户' ROW_FORMAT = DYNAMIC;
 
+-- ----------------------------
+-- Records of client_user
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for gen_basic
@@ -122,6 +125,30 @@ CREATE TABLE `gen_config`  (
 -- ----------------------------
 -- Records of gen_config
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for rel_org_role
+-- ----------------------------
+DROP TABLE IF EXISTS `rel_org_role`;
+CREATE TABLE `rel_org_role`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `org_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '组织ID',
+  `role_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色ID',
+  `scope` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '数据范围覆盖：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组。为空则继承 rel_role_permission 的配置',
+  `custom_scope_group_ids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效',
+  `custom_scope_org_ids` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_org_role`(`org_id` ASC, `role_id` ASC) USING BTREE,
+  INDEX `idx_role_id`(`role_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '组织-角色关联' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of rel_org_role
+-- ----------------------------
+INSERT INTO `rel_org_role` VALUES ('140001', '10002', '40003', NULL, NULL, NULL);
+INSERT INTO `rel_org_role` VALUES ('140002', '10003', '40005', NULL, NULL, NULL);
+INSERT INTO `rel_org_role` VALUES ('140003', '10004', '40006', NULL, NULL, NULL);
+INSERT INTO `rel_org_role` VALUES ('140004', '10005', '40007', NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for rel_role_permission
@@ -214,8 +241,10 @@ INSERT INTO `rel_role_permission` VALUES ('2000000069', '40001', 'sys:notice:tem
 INSERT INTO `rel_role_permission` VALUES ('2000000070', '40001', 'sys:org:create', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000071', '40001', 'sys:org:detail', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000072', '40001', 'sys:org:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000073', '40001', 'sys:org:grant-role', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000074', '40001', 'sys:org:import', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000075', '40001', 'sys:org:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000076', '40001', 'sys:org:own-roles', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000077', '40001', 'sys:org:page', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000078', '40001', 'sys:org:remove', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000079', '40001', 'sys:org:template', 'ALL', NULL, NULL);
@@ -323,8 +352,10 @@ INSERT INTO `rel_role_permission` VALUES ('2000000182', '40002', 'sys:notice:tem
 INSERT INTO `rel_role_permission` VALUES ('2000000183', '40002', 'sys:org:create', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000184', '40002', 'sys:org:detail', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000185', '40002', 'sys:org:export', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000186', '40002', 'sys:org:grant-role', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000187', '40002', 'sys:org:import', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000188', '40002', 'sys:org:modify', 'ALL', NULL, NULL);
+INSERT INTO `rel_role_permission` VALUES ('2000000189', '40002', 'sys:org:own-roles', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000190', '40002', 'sys:org:page', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000191', '40002', 'sys:org:remove', 'ALL', NULL, NULL);
 INSERT INTO `rel_role_permission` VALUES ('2000000192', '40002', 'sys:org:template', 'ALL', NULL, NULL);
@@ -919,6 +950,30 @@ INSERT INTO `rel_role_resource` VALUES ('3000000334', '40007', '80106');
 INSERT INTO `rel_role_resource` VALUES ('3000000351', '40007', '80108');
 
 -- ----------------------------
+-- Table structure for rel_user_group
+-- ----------------------------
+DROP TABLE IF EXISTS `rel_user_group`;
+CREATE TABLE `rel_user_group`  (
+  `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
+  `user_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户ID',
+  `group_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户组ID',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_group`(`user_id` ASC, `group_id` ASC) USING BTREE,
+  INDEX `idx_group_id`(`group_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户-用户组关联' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of rel_user_group
+-- ----------------------------
+INSERT INTO `rel_user_group` VALUES ('130001', '50001', '30001');
+INSERT INTO `rel_user_group` VALUES ('130002', '50002', '30002');
+INSERT INTO `rel_user_group` VALUES ('130003', '50003', '30002');
+INSERT INTO `rel_user_group` VALUES ('130004', '50004', '30002');
+INSERT INTO `rel_user_group` VALUES ('130005', '50005', '30003');
+INSERT INTO `rel_user_group` VALUES ('130006', '50006', '30004');
+INSERT INTO `rel_user_group` VALUES ('130007', '50007', '30005');
+
+-- ----------------------------
 -- Table structure for rel_user_permission
 -- ----------------------------
 DROP TABLE IF EXISTS `rel_user_permission`;
@@ -956,8 +1011,6 @@ CREATE TABLE `rel_user_role`  (
 -- ----------------------------
 -- Records of rel_user_role
 -- ----------------------------
-INSERT INTO `rel_user_role` VALUES ('120001', '50001', '40001', 'ALL', NULL);
-INSERT INTO `rel_user_role` VALUES ('120002', '50002', '40003', 'ALL', NULL);
 INSERT INTO `rel_user_role` VALUES ('120003', '50003', '40003', 'ALL', NULL);
 INSERT INTO `rel_user_role` VALUES ('120004', '50004', '40003', 'ALL', NULL);
 INSERT INTO `rel_user_role` VALUES ('120005', '50005', '40004', 'ALL', NULL);
@@ -965,6 +1018,8 @@ INSERT INTO `rel_user_role` VALUES ('120006', '50006', '40005', 'ALL', NULL);
 INSERT INTO `rel_user_role` VALUES ('120007', '50007', '40005', 'ALL', NULL);
 INSERT INTO `rel_user_role` VALUES ('120008', '50008', '40006', 'ALL', NULL);
 INSERT INTO `rel_user_role` VALUES ('120009', '50009', '40007', 'ALL', NULL);
+INSERT INTO `rel_user_role` VALUES ('2055208115296538624', '50001', '40001', '', '');
+INSERT INTO `rel_user_role` VALUES ('7460685574056185856', '50002', '40003', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for sys_banner
@@ -1239,12 +1294,40 @@ CREATE TABLE `sys_log`  (
 -- ----------------------------
 -- Records of sys_log
 -- ----------------------------
+INSERT INTO `sys_log` VALUES ('', 'OPERATE', '添加快捷方式', 'SUCCESS', '', '127.0.0.1', NULL, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', NULL, NULL, NULL, 'POST', 'http://localhost:18885/api/v1/sys/home/quick-actions/add', '{\"resource_id\":\"80004\"}', NULL, '2026-05-15 15:49:31', NULL, 'admin', NULL, '2026-05-15 15:49:31', '50001', '2026-05-15 15:49:31', NULL);
+INSERT INTO `sys_log` VALUES ('2055189575675940864', 'LOGOUT', '登出', 'SUCCESS', NULL, '127.0.0.1', NULL, 'Chrome', 'Windows', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-15 15:32:33', '7bef3ab8b6c04dcf97fbd31f24699d13', 'admin', NULL, '2026-05-15 15:32:33', '50001', '2026-05-15 15:32:33', NULL);
+INSERT INTO `sys_log` VALUES ('2055189596186087424', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', NULL, 'Chrome', 'Windows', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-15 15:32:37', '532d4bbedb054250947714cf14391291', 'admin', NULL, '2026-05-15 15:32:38', '', '2026-05-15 15:32:38', NULL);
+INSERT INTO `sys_log` VALUES ('2055193783489794048', 'LOGOUT', '登出', 'SUCCESS', NULL, '127.0.0.1', NULL, 'Chrome', 'Windows', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-15 15:49:16', 'e1979bb0a97a4f1c8f1334fd75f4dc2d', 'admin', NULL, '2026-05-15 15:49:16', '50001', '2026-05-15 15:49:16', NULL);
+INSERT INTO `sys_log` VALUES ('2055193818180882432', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', NULL, 'Chrome', 'Windows', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-15 15:49:24', 'c4f5f8b2130945a3b352c78341690c0c', 'admin', NULL, '2026-05-15 15:49:25', '', '2026-05-15 15:49:25', NULL);
+INSERT INTO `sys_log` VALUES ('2055195924505825280', 'LOGOUT', '登出', 'SUCCESS', NULL, '127.0.0.1', NULL, 'Chrome', 'Windows', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-15 15:57:46', '75c61c3d5cf842fb8b48ae590981ebc2', 'admin', NULL, '2026-05-15 15:57:47', '50001', '2026-05-15 15:57:47', NULL);
+INSERT INTO `sys_log` VALUES ('2055195975353372672', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', NULL, 'Chrome', 'Windows', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-15 15:57:58', 'a4263a8d052e4ac98523aae454ec145d', 'admin', NULL, '2026-05-15 15:57:59', '', '2026-05-15 15:57:59', NULL);
+INSERT INTO `sys_log` VALUES ('2055202842544705536', 'LOGOUT', '登出', 'SUCCESS', NULL, '127.0.0.1', NULL, 'Chrome', 'Windows', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-15 16:25:16', '2f6e728e6c0f4bbf90a284c1162a7510', 'admin', NULL, '2026-05-15 16:25:16', '50001', '2026-05-15 16:25:16', NULL);
+INSERT INTO `sys_log` VALUES ('2055202877365817344', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', NULL, 'Chrome', 'Windows', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-15 16:25:24', '80b195150019418fa9e6c06b2846819a', 'admin', NULL, '2026-05-15 16:25:24', '', '2026-05-15 16:25:24', NULL);
+INSERT INTO `sys_log` VALUES ('2055202944478875648', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', NULL, 'Chrome', 'Windows', NULL, NULL, NULL, NULL, NULL, NULL, '2026-05-15 16:25:40', '446a3a2979b2478e9dc2a2b80886e2b6', 'admin', NULL, '2026-05-15 16:25:40', '', '2026-05-15 16:25:40', NULL);
+INSERT INTO `sys_log` VALUES ('2055208081775661056', 'OPERATE', '查看职位列表', 'SUCCESS', '', '127.0.0.1', NULL, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', NULL, NULL, NULL, 'GET', 'http://localhost:18885/api/v1/sys/position/page?group_id=30001&size=9999', '{\"group_id\":\"30001\",\"size\":\"9999\"}', NULL, '2026-05-15 16:46:05', NULL, 'admin', NULL, '2026-05-15 16:46:05', '50001', '2026-05-15 16:46:05', NULL);
+INSERT INTO `sys_log` VALUES ('2055208115720163328', 'OPERATE', '编辑用户', 'SUCCESS', '', '127.0.0.1', NULL, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', NULL, NULL, NULL, 'POST', 'http://localhost:18885/api/v1/sys/user/modify', '{\"username\":\"admin\",\"avatar\":\"\",\"birthday\":\"\",\"created_at\":\"2026-05-12 14:55:52\",\"created_by\":\"50001\",\"created_name\":\"管理员\",\"email\":\"admin@hei.com\",\"gender\":\"MALE\",\"github\":\"\",\"group_id\":\"30001\",\"group_names\":[\"管理组\"],\"id\":\"50001\",\"last_login_at\":\"2026-05-15 08:25:40\",\"last_login_ip\":\"127.0.0.1\",\"login_count\":15,\"motto\":\"管理一切\",\"nickname\":\"管理员\",\"org_id\":\"10001\",\"org_names\":[\"Hei集团\"],\"phone\":\"13800000001\",\"position_id\":\"20001\",\"position_name\":\"总经理\",\"role_ids\":[\"40001\"],\"status\":\"ACTIVE\",\"updated_at\":\"2026-05-15 16:25:40\",\"updated_by\":\"50001\",\"updated_name\":\"管理员\"}', NULL, '2026-05-15 16:46:13', NULL, 'admin', NULL, '2026-05-15 16:46:13', '50001', '2026-05-15 16:46:13', NULL);
+INSERT INTO `sys_log` VALUES ('2055208222150627328', 'OPERATE', '分配用户权限', 'SUCCESS', '', '127.0.0.1', NULL, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', NULL, NULL, NULL, 'POST', 'http://localhost:18885/api/v1/sys/user/grant-permission', '{\"permissions\":[{\"custom_scope_group_ids\":null,\"custom_scope_org_ids\":null,\"permission_code\":\"sys:config:detail\",\"scope\":\"ALL\"}],\"user_id\":\"50001\"}', NULL, '2026-05-15 16:46:38', NULL, 'admin', NULL, '2026-05-15 16:46:39', '50001', '2026-05-15 16:46:39', NULL);
+INSERT INTO `sys_log` VALUES ('2055211201394118656', 'OPERATE', '分配用户权限', 'SUCCESS', '', '127.0.0.1', NULL, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', NULL, NULL, NULL, 'POST', 'http://localhost:18885/api/v1/sys/user/grant-permission', '{\"permissions\":[],\"user_id\":\"50001\"}', NULL, '2026-05-15 16:58:28', NULL, 'admin', NULL, '2026-05-15 16:58:29', '50001', '2026-05-15 16:58:29', NULL);
+INSERT INTO `sys_log` VALUES ('2055212364050993152', 'OPERATE', '分配用户权限', 'SUCCESS', '', '127.0.0.1', NULL, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', NULL, NULL, NULL, 'POST', 'http://localhost:18885/api/v1/sys/user/grant-permission', '{\"permissions\":[],\"user_id\":\"50001\"}', NULL, '2026-05-15 17:03:06', NULL, 'admin', NULL, '2026-05-15 17:03:06', '50001', '2026-05-15 17:03:06', NULL);
 INSERT INTO `sys_log` VALUES ('7460574111438213120', 'OPERATE', '编辑资源', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.resource.api.v1.api', 'resource_modify', 'POST', 'http://localhost:18885/api/v1/sys/resource/modify', '{\"vo\": \"id=\'80109\' code=\'SYS_LOG\' name=\'系统日志\' category=\'BACKEND_MENU\' type=\'DIRECTORY\' description=\'系统日志目录\' parent_id=\'0\' route_path=\'/sys/log\' component_path=None redirect_path=None icon=\'file-text\' color=None is_visible=\'YES\' is_cache=\'NO\' is_affix=\'NO\' is_breadcrumb=\'YES\' external_url=\'\' extra=None status=\'ENABLED\' sort_code=2 is_deleted=\'NO\' created_at=datetime.datetime(2026, 5, 14, 14, 55, 52) created_by=\'50001\' updated_at=datetime.datetime(2026, 5, 14, 8, 3, 25) updated_by=\'50001\'\"}', '{\"code\": 200, \"message\": \"请求成功\", \"data\": null, \"success\": true, \"trace_id\": \"df11249c5cd945788020ab26537e4ec8\"}', '2026-05-14 14:17:59', 'df11249c5cd945788020ab26537e4ec8', 'admin', '445077c3a6b814d61b2d98d0b1c4ac56949bdb7b68e61dd6c11f97249eb0b433', '2026-05-14 14:17:59', NULL, '2026-05-14 14:17:59', NULL);
 INSERT INTO `sys_log` VALUES ('7460574398982918144', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 14:19:07', '2293dac2ab29494e938211701f27e0a8', 'admin', '65fb178023eb59fe90264872cf8489662df3db3784c8f1e0a250e054f59e46f3', '2026-05-14 14:19:07', NULL, '2026-05-14 14:19:07', NULL);
 INSERT INTO `sys_log` VALUES ('7460574547729715200', 'LOGOUT', '登出', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/b/logout', '', NULL, '2026-05-14 14:19:43', '35ceae09d7fc47fa9a5c46d56d77591f', 'admin', 'd218c751edac72ac037f719b44aad00e8d43f5d154d56177aa0a5e2bc5e3dd45', '2026-05-14 14:19:43', NULL, '2026-05-14 14:19:43', NULL);
 INSERT INTO `sys_log` VALUES ('7460574569590427648', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 14:19:48', '15250291691d40b78d03cf861d03c764', 'admin', '641c6d86fd08f5b1366a0e7c467e2b04e17ea827ef74be536362e068cfa458d6', '2026-05-14 14:19:48', NULL, '2026-05-14 14:19:48', NULL);
 INSERT INTO `sys_log` VALUES ('7460597976516268032', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 15:52:49', 'c48b577c89584664a28bf3e254d3b6df', 'admin', '8df85e7d99a8d00b9b5cb772872acf86a379a54abc4cc585f70b759c0d23f0b3', '2026-05-14 15:52:49', NULL, '2026-05-14 15:52:49', NULL);
 INSERT INTO `sys_log` VALUES ('7460600988466941952', 'OPERATE', '编辑资源', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.resource.api.v1.api', 'resource_modify', 'POST', 'http://localhost:18885/api/v1/sys/resource/modify', '{\"vo\": \"id=\'80003\' code=\'DEV_TOOLS\' name=\'系统工具\' category=\'BACKEND_MENU\' type=\'DIRECTORY\' description=\'系统工具目录\' parent_id=None route_path=\'/dev\' component_path=None redirect_path=None icon=\'tool\' color=None is_visible=\'NO\' is_cache=\'NO\' is_affix=\'NO\' is_breadcrumb=\'YES\' external_url=None extra=None status=\'ENABLED\' sort_code=3 is_deleted=\'NO\' created_at=datetime.datetime(2026, 5, 12, 14, 55, 52) created_by=\'50001\' updated_at=datetime.datetime(2026, 5, 14, 7, 42, 53) updated_by=\'50001\'\"}', '{\"code\": 200, \"message\": \"请求成功\", \"data\": null, \"success\": true, \"trace_id\": \"492c2289c61f4fc78e09026bdd3e5f33\"}', '2026-05-14 16:04:47', '492c2289c61f4fc78e09026bdd3e5f33', 'admin', 'a8497db53535c7ed74c3a9a389de56bb4f37895427e4cc7f8afe60ea88116b8a', '2026-05-14 16:04:47', NULL, '2026-05-14 16:04:47', NULL);
+INSERT INTO `sys_log` VALUES ('7460685341456863232', 'OPERATE', '查看职位列表', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.position.api.v1.api', 'page', 'GET', 'http://localhost:18885/api/v1/sys/position/page?group_id=30001&size=9999', '', '{\"code\": 200, \"message\": \"请求成功\", \"data\": {\"records\": [], \"total\": 0, \"page\": 1, \"size\": 9999, \"pages\": 0}, \"success\": true, \"trace_id\": \"17da27b39b594d11ac745656c0c10a4f\"}', '2026-05-14 21:39:58', '17da27b39b594d11ac745656c0c10a4f', 'admin', 'eb447a0e39ad9d9e182b5aac24045effc1f0fb2a9a2c3c111e69af78f0ed86fb', '2026-05-14 21:39:58', NULL, '2026-05-14 21:39:58', NULL);
+INSERT INTO `sys_log` VALUES ('7460685385836793856', 'OPERATE', '查看职位列表', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.position.api.v1.api', 'page', 'GET', 'http://localhost:18885/api/v1/sys/position/page?group_id=30002&size=9999', '', '{\"code\": 200, \"message\": \"请求成功\", \"data\": {\"records\": [], \"total\": 0, \"page\": 1, \"size\": 9999, \"pages\": 0}, \"success\": true, \"trace_id\": \"e1a82e81b3974c108fe2596af3fb23bc\"}', '2026-05-14 21:40:09', 'e1a82e81b3974c108fe2596af3fb23bc', 'admin', '2c2d79996aaa427fd92fd81f3a49609a65523909686bd24ae052734a21768bb8', '2026-05-14 21:40:09', NULL, '2026-05-14 21:40:09', NULL);
+INSERT INTO `sys_log` VALUES ('7460685397996081152', 'OPERATE', '编辑用户', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.user.api.v1.api', 'modify', 'POST', 'http://localhost:18885/api/v1/sys/user/modify', '{\"vo\": \"id=\'50002\' username=\'zhangsan\' nickname=\'张三\' avatar=None motto=\'代码改变世界\' gender=\'MALE\' birthday=datetime.date(1995, 5, 15) email=\'zhangsan@hei.com\' github=\'https://github.com/zhangsan\' phone=\'13800000002\' org_id=\'10002\' position_id=\'20004\' group_id=\'30002\' org_names=[\'Hei集团\', \'技术部\'] group_names=[\'研发组\'] position_name=\'开发工程师\' status=\'INACTIVE\' last_login_at=None last_login_ip=None login_count=0 created_at=datetime.datetime(2026, 5, 12, 14, 55, 52) created_by=\'50001\' created_name=\'管理员\' updated_at=datetime.datetime(2026, 5, 12, 14, 55, 52) updated_by=\'50001\' updated_name=\'管理员\' role_ids=[\'40003\']\"}', '{\"code\": 200, \"message\": \"请求成功\", \"data\": null, \"success\": true, \"trace_id\": \"bb4aa91297da433690526a09fd9589b0\"}', '2026-05-14 21:40:12', 'bb4aa91297da433690526a09fd9589b0', 'admin', '2fe003dac8513195a79b6469e884f03953b92ca294867f9b52e4017b1db008fb', '2026-05-14 21:40:12', NULL, '2026-05-14 21:40:12', NULL);
+INSERT INTO `sys_log` VALUES ('7460685504925667328', 'OPERATE', '查看职位列表', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.position.api.v1.api', 'page', 'GET', 'http://localhost:18885/api/v1/sys/position/page?group_id=30002&size=9999', '', '{\"code\": 200, \"message\": \"请求成功\", \"data\": {\"records\": [], \"total\": 0, \"page\": 1, \"size\": 9999, \"pages\": 0}, \"success\": true, \"trace_id\": \"91ff79b0130e4aa291274bc850525ade\"}', '2026-05-14 21:40:37', '91ff79b0130e4aa291274bc850525ade', 'admin', 'b98cc9618faec252d6bfaab895b19ecd96990ae15e1a478edd7f2d99858c7b69', '2026-05-14 21:40:37', NULL, '2026-05-14 21:40:37', NULL);
+INSERT INTO `sys_log` VALUES ('7460685517579882496', 'OPERATE', '编辑用户', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.user.api.v1.api', 'modify', 'POST', 'http://localhost:18885/api/v1/sys/user/modify', '{\"vo\": \"id=\'50002\' username=\'zhangsan\' nickname=\'张三\' avatar=None motto=\'代码改变世界\' gender=\'MALE\' birthday=datetime.date(1995, 5, 15) email=\'zhangsan@hei.com\' github=\'https://github.com/zhangsan\' phone=\'13800000002\' org_id=\'10002\' position_id=\'20004\' group_id=\'30002\' org_names=[\'Hei集团\', \'技术部\'] group_names=[\'研发组\'] position_name=\'开发工程师\' status=\'LOCKED\' last_login_at=None last_login_ip=None login_count=0 created_at=datetime.datetime(2026, 5, 12, 14, 55, 52) created_by=\'50001\' created_name=\'管理员\' updated_at=datetime.datetime(2026, 5, 14, 21, 40, 12) updated_by=\'50001\' updated_name=\'管理员\' role_ids=[\'40003\']\"}', '{\"code\": 200, \"message\": \"请求成功\", \"data\": null, \"success\": true, \"trace_id\": \"36ac409bd7aa4fa8bb5de2cdffc0c35a\"}', '2026-05-14 21:40:40', '36ac409bd7aa4fa8bb5de2cdffc0c35a', 'admin', '6392c96c09a15e0feadd9373760eec05dc51f9edcefa48930c96862bb2bb4ae4', '2026-05-14 21:40:40', NULL, '2026-05-14 21:40:40', NULL);
+INSERT INTO `sys_log` VALUES ('7460685561968201728', 'OPERATE', '查看职位列表', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.position.api.v1.api', 'page', 'GET', 'http://localhost:18885/api/v1/sys/position/page?group_id=30002&size=9999', '', '{\"code\": 200, \"message\": \"请求成功\", \"data\": {\"records\": [], \"total\": 0, \"page\": 1, \"size\": 9999, \"pages\": 0}, \"success\": true, \"trace_id\": \"8fe1aeb27e2a435dbdb718e72ca1e8be\"}', '2026-05-14 21:40:51', '8fe1aeb27e2a435dbdb718e72ca1e8be', 'admin', 'c5397b940ae0337bb16a14eb6296700a6c5e9c224a963bcd01e2219b90e027dc', '2026-05-14 21:40:51', NULL, '2026-05-14 21:40:51', NULL);
+INSERT INTO `sys_log` VALUES ('7460685574127489024', 'OPERATE', '编辑用户', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.user.api.v1.api', 'modify', 'POST', 'http://localhost:18885/api/v1/sys/user/modify', '{\"vo\": \"id=\'50002\' username=\'zhangsan\' nickname=\'张三\' avatar=None motto=\'代码改变世界\' gender=\'MALE\' birthday=datetime.date(1995, 5, 15) email=\'zhangsan@hei.com\' github=\'https://github.com/zhangsan\' phone=\'13800000002\' org_id=\'10002\' position_id=\'20004\' group_id=\'30002\' org_names=[\'Hei集团\', \'技术部\'] group_names=[\'研发组\'] position_name=\'开发工程师\' status=\'ACTIVE\' last_login_at=None last_login_ip=None login_count=0 created_at=datetime.datetime(2026, 5, 12, 14, 55, 52) created_by=\'50001\' created_name=\'管理员\' updated_at=datetime.datetime(2026, 5, 14, 21, 40, 40) updated_by=\'50001\' updated_name=\'管理员\' role_ids=[\'40003\']\"}', '{\"code\": 200, \"message\": \"请求成功\", \"data\": null, \"success\": true, \"trace_id\": \"68c6e949aedc4647b838b29c5cf44a3f\"}', '2026-05-14 21:40:54', '68c6e949aedc4647b838b29c5cf44a3f', 'admin', 'a8d97c7211a2286ca8c0b4fbef76c9e4fdde48952b0f7e8cd40fea9fe3a9786d', '2026-05-14 21:40:54', NULL, '2026-05-14 21:40:54', NULL);
+INSERT INTO `sys_log` VALUES ('7460685683120672768', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-14 21:41:20', 'fd29ca8be0844aaa90b9a943a78c2f6e', 'zhangsan', '205de063a0580a37518eab6b82ba20064540e763be913655a6d1e039e664427b', '2026-05-14 21:41:20', NULL, '2026-05-14 21:41:20', NULL);
+INSERT INTO `sys_log` VALUES ('7460685825026560000', 'LOGOUT', '登出', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/b/logout', '', NULL, '2026-05-14 21:41:54', '45cb4a2a43d64a199a123ac176fdb674', 'zhangsan', '1248d1d9589c74a83159e26761c66682b1567ffecdd10178df4f683e71f569d2', '2026-05-14 21:41:54', NULL, '2026-05-14 21:41:54', NULL);
+INSERT INTO `sys_log` VALUES ('7460712780069343232', 'OPERATE', '导出角色数据', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', 'modules.sys.role.api.v1.api', 'export', 'GET', 'http://localhost:18885/api/v1/sys/role/export?export_type=current', '', '\"<starlette.responses.StreamingResponse object at 0x000001E7F056C050>\"', '2026-05-14 23:29:00', '26d8cb640f224db3a9312c3a2beafb89', 'admin', '7d77cbf4bef3132e28c6bee25a52c6cc0bef6b4d9c175b0cba934ac40b2dc835', '2026-05-14 23:29:00', NULL, '2026-05-14 23:29:00', NULL);
+INSERT INTO `sys_log` VALUES ('7460962143853088768', 'LOGOUT', '登出', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/b/logout', '', NULL, '2026-05-15 15:59:53', '3dceb8a58f074fdebc3f4747f89b5f9f', 'admin', 'e781fc7be20f03d57b593e7e60f68b6d59e0eed0e9429338c8169025143a63a6', '2026-05-15 15:59:53', NULL, '2026-05-15 15:59:53', NULL);
+INSERT INTO `sys_log` VALUES ('7460962180389670912', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-15 16:00:02', 'f5a912c287634383801f3b9fd7b69f15', 'admin', 'd92ed39ee8bfffc2d7911763f55fca12d8f19d2b8865fd147600e0e9c0598bff', '2026-05-15 16:00:02', NULL, '2026-05-15 16:00:02', NULL);
+INSERT INTO `sys_log` VALUES ('7461062297507598336', 'LOGIN', '登录', 'SUCCESS', NULL, '127.0.0.1', '', 'Chrome', 'Windows', '', '', 'POST', 'http://localhost:18885/api/v1/public/b/login', '', NULL, '2026-05-15 22:37:52', '6bcf47b120764f60ba613db395b53731', 'admin', 'd76d7bd024a0418d909aa7ba44e1ee9d4b73f46ef9c3d660444fb292a103ebbd', '2026-05-15 22:37:52', NULL, '2026-05-15 22:37:52', NULL);
 
 -- ----------------------------
 -- Table structure for sys_module
@@ -1405,6 +1488,8 @@ CREATE TABLE `sys_quick_action`  (
 -- ----------------------------
 -- Records of sys_quick_action
 -- ----------------------------
+INSERT INTO `sys_quick_action` VALUES ('2055193846832173056', '50001', '80004', 10, '2026-05-15 15:49:31', '50001', '2026-05-15 15:49:31', NULL);
+INSERT INTO `sys_quick_action` VALUES ('2055193852041498624', '50001', '80006', 20, '2026-05-15 15:49:33', '50001', '2026-05-15 15:49:33', NULL);
 
 -- ----------------------------
 -- Table structure for sys_resource
@@ -1483,6 +1568,7 @@ INSERT INTO `sys_resource` VALUES ('80039', 'SYS_ORG_CREATE', '组织新增', 'B
 INSERT INTO `sys_resource` VALUES ('80040', 'SYS_ORG_MODIFY', '组织修改', 'BACKEND_BUTTON', 'BUTTON', '修改组织', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80041', 'SYS_ORG_REMOVE', '组织删除', 'BACKEND_BUTTON', 'BUTTON', '删除组织', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:remove\"}', 'ENABLED', 4, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80042', 'SYS_ORG_DETAIL', '组织详情', 'BACKEND_BUTTON', 'BUTTON', '查看组织详情', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:detail\"}', 'ENABLED', 5, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_resource` VALUES ('80043', 'SYS_ORG_GRANT_ROLE', '分配角色', 'BACKEND_BUTTON', 'BUTTON', '给组织分配角色', '80007', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:org:grant-role\"}', 'ENABLED', 6, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80044', 'SYS_POSITION_PAGE', '职位查询', 'BACKEND_BUTTON', 'BUTTON', '查询职位列表', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:page\"}', 'ENABLED', 1, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80045', 'SYS_POSITION_CREATE', '职位新增', 'BACKEND_BUTTON', 'BUTTON', '新增职位', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:create\"}', 'ENABLED', 2, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_resource` VALUES ('80046', 'SYS_POSITION_MODIFY', '职位修改', 'BACKEND_BUTTON', 'BUTTON', '修改职位', '80008', NULL, NULL, NULL, NULL, NULL, 'YES', 'NO', 'NO', 'YES', NULL, '{\"permission_code\":\"sys:position:modify\"}', 'ENABLED', 3, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
@@ -1609,7 +1695,7 @@ INSERT INTO `sys_role` VALUES ('40007', 'HR', '人力资源', 'BACKEND', '人力
 DROP TABLE IF EXISTS `sys_user`;
 CREATE TABLE `sys_user`  (
   `id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键',
-  `account` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '账号',
+  `username` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '账号',
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
   `nickname` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '昵称',
   `avatar` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '头像',
@@ -1631,14 +1717,14 @@ CREATE TABLE `sys_user`  (
   `updated_at` datetime NULL DEFAULT NULL COMMENT '更新时间',
   `updated_by` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '更新用户',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_account`(`account` ASC) USING BTREE
+  INDEX `idx_username`(`username` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', '30001', 'ACTIVE', '2026-05-14 15:52:49', '127.0.0.1', 7, '2026-05-12 14:55:52', '50001', '2026-05-14 15:52:49', '50001');
-INSERT INTO `sys_user` VALUES ('50002', 'zhangsan', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '张三', NULL, '代码改变世界', 'MALE', '1995-05-15', 'zhangsan@hei.com', 'https://github.com/zhangsan', '13800000002', '10002', '20004', '30002', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
+INSERT INTO `sys_user` VALUES ('50001', 'admin', '$2b$12$5t3Ey0kGLXaWgmUMYHh8aeh9hOTwpIcKI4M.txQi26Sd3jz4aeEm2', '管理员', NULL, '管理一切', 'MALE', '1990-01-01', 'admin@hei.com', NULL, '13800000001', '10001', '20001', '30001', 'ACTIVE', '2026-05-15 22:37:52', '127.0.0.1', 16, '2026-05-12 14:55:52', '50001', '2026-05-15 22:37:52', '50001');
+INSERT INTO `sys_user` VALUES ('50002', 'zhangsan', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '张三', NULL, '代码改变世界', 'MALE', '1995-05-15', 'zhangsan@hei.com', 'https://github.com/zhangsan', '13800000002', '10002', '20004', '30002', 'ACTIVE', '2026-05-14 21:41:20', '127.0.0.1', 1, '2026-05-12 14:55:52', '50001', '2026-05-14 21:41:20', '50001');
 INSERT INTO `sys_user` VALUES ('50003', 'lisi', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '李四', NULL, '学无止境', 'MALE', '1993-08-20', 'lisi@hei.com', NULL, '13800000003', '10002', '20004', '30002', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50004', 'wangwu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '王五', NULL, '追求卓越', 'MALE', '1994-03-10', 'wangwu@hei.com', NULL, '13800000004', '10002', '20003', '30002', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');
 INSERT INTO `sys_user` VALUES ('50005', 'zhaoliu', '$2b$12$UQFzAxtCkfwFwgrJy0XYm.rO860SX5NIH6zOEm/4SsUdgMA9SkuVC', '赵六', NULL, '质量第一', 'FEMALE', '1996-11-25', 'zhaoliu@hei.com', NULL, '13800000005', '10002', '20005', '30003', 'ACTIVE', NULL, NULL, 0, '2026-05-12 14:55:52', '50001', '2026-05-12 14:55:52', '50001');

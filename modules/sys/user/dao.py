@@ -20,16 +20,16 @@ class UserDao(BaseDAO):
         wrapper = QueryWrapper(SysUser)
         if param.keyword:
             keyword = f"%{param.keyword}%"
-            wrapper.where(or_(SysUser.account.ilike(keyword), SysUser.nickname.ilike(keyword)))
+            wrapper.where(or_(SysUser.username.ilike(keyword), SysUser.nickname.ilike(keyword)))
         if param.status:
             wrapper.eq(SysUser.status, param.status)
         wrapper.order_by_desc(SysUser.created_at)
         return self.select_page(wrapper, param)
 
-    def find_by_account(self, account: str) -> Optional[SysUser]:
+    def find_by_username(self, username: str) -> Optional[SysUser]:
         return (
             self.db.execute(
-                select(SysUser).where(SysUser.account == account)
+                select(SysUser).where(SysUser.username == username)
             )
             .scalar_one_or_none()
         )
