@@ -2,9 +2,11 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"hei-gin/core/db"
+	"hei-gin/core/exception"
 	"hei-gin/core/utils"
 
 	"github.com/gin-gonic/gin"
@@ -21,11 +23,33 @@ func SysLog(name string) gin.HandlerFunc {
 		startTime := time.Now()
 		paramsJSON := ExtractParamsJson(c)
 
-		c.Next()
-
 		var category string
 		var exeStatus string
 		var exeMessage string
+
+		// Deferred recover: when downstream handler panics, record the log
+		// before re-panicking so the Recovery middleware can return the response.
+		defer func() {
+			if rec := recover(); rec != nil {
+				category = "EXCEPTION"
+				exeStatus = "FAIL"
+				switch e := rec.(type) {
+				case *exception.BusinessError:
+					exeMessage = fmt.Sprintf("BusinessError{code=%d, message=%s}", e.Code, e.Message)
+				case exception.BusinessError:
+					exeMessage = fmt.Sprintf("BusinessError{code=%d, message=%s}", e.Code, e.Message)
+				default:
+					exeMessage = fmt.Sprintf("%v", rec)
+				}
+				if len(exeMessage) > 2000 {
+					exeMessage = exeMessage[:2000]
+				}
+				saveLog(c, name, category, exeStatus, exeMessage, paramsJSON, startTime)
+				panic(rec)
+			}
+		}()
+
+		c.Next()
 
 		if len(c.Errors) > 0 {
 			category = "EXCEPTION"
