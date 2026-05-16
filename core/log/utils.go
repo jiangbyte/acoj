@@ -3,99 +3,84 @@ package log
 import (
 	"bytes"
 	"encoding/json"
-	"sort"
+	"io"
 	"strings"
-	"time"
-
-	"github.com/gin-gonic/gin"
 
 	"hei-gin/core/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // ParseUserAgent extracts browser and OS from a User-Agent string.
+// Delegates to utils.GetBrowser and utils.GetOS.
 func ParseUserAgent(ua string) (browser, os string) {
-	ua = strings.ToLower(ua)
-	switch {
-	case strings.Contains(ua, "edg"):
-		browser = "Edge"
-	case strings.Contains(ua, "chrome"):
-		browser = "Chrome"
-	case strings.Contains(ua, "safari"):
-		browser = "Safari"
-	case strings.Contains(ua, "firefox"):
-		browser = "Firefox"
-	case strings.Contains(ua, "opera") || strings.Contains(ua, "opr"):
-		browser = "Opera"
-	case strings.Contains(ua, "msie") || strings.Contains(ua, "trident"):
-		browser = "IE"
-	default:
-		browser = "-"
+	if ua == "" {
+		return "-", "-"
 	}
-
-	switch {
-	case strings.Contains(ua, "windows"):
-		os = "Windows"
-	case strings.Contains(ua, "mac os") || strings.Contains(ua, "macintosh"):
-		os = "macOS"
-	case strings.Contains(ua, "linux"):
-		os = "Linux"
-	case strings.Contains(ua, "android"):
-		os = "Android"
-	case strings.Contains(ua, "iphone") || strings.Contains(ua, "ipad"):
-		os = "iOS"
-	default:
-		os = "-"
-	}
-	return
+	return utils.GetBrowser(ua), utils.GetOS(ua)
 }
 
-// GenerateLogSignature creates a salted hash signature for log tamper-proofing,
-// matching fastapi's generate_log_signature which uses sm3 hash_with_salt.
-// Builds JSON with sorted keys (matching Python's sort_keys=True) for deterministic output.
-func GenerateLogSignature(opData map[string]interface{}) string {
-	keys := make([]string, 0, len(opData))
-	for k := range opData {
-		keys = append(keys, k)
+// ExtractParamsJson extracts POST/PUT/PATCH body params as JSON,
+// excluding infrastructure params (request, db, file). For GET/DELETE returns "".
+func ExtractParamsJson(c *gin.Context) string {
+	if c.Request.Method != "POST" && c.Request.Method != "PUT" && c.Request.Method != "PATCH" {
+		return ""
 	}
-	sort.Strings(keys)
 
-	var buf bytes.Buffer
-	buf.WriteByte('{')
-	for i, k := range keys {
-		if i > 0 {
-			buf.WriteByte(',')
+	bodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		return ""
+	}
+	// Restore body for downstream handlers (e.g. ShouldBindJSON)
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	var params map[string]any
+	if err := json.Unmarshal(bodyBytes, &params); err != nil {
+		return ""
+	}
+
+	excluded := map[string]bool{"request": true, "db": true, "file": true}
+	filtered := make(map[string]any)
+	for k, v := range params {
+		if excluded[k] || v == nil {
+			continue
 		}
-		keyJSON, _ := json.Marshal(k)
-		buf.Write(keyJSON)
-		buf.WriteByte(':')
-		valJSON, _ := json.Marshal(opData[k])
-		buf.Write(valJSON)
+		filtered[k] = v
 	}
-	buf.WriteByte('}')
 
-	return utils.HashWithSalt(buf.String(), "hei-log-sign")
+	if len(filtered) == 0 {
+		return ""
+	}
+
+	data, err := json.Marshal(filtered)
+	if err != nil {
+		return ""
+	}
+	return string(data)
 }
 
-// ExtractParamsJSON serializes request params to JSON, excluding gin context keys.
-func ExtractParamsJSON(c *gin.Context) string {
-	// Try reading body first
-	bodyBytes, _ := c.Get("_request_body")
-	if bodyStr, ok := bodyBytes.(string); ok && bodyStr != "" {
-		return bodyStr
+// GetResultJson serializes a result value to JSON string.
+// Returns "" if result is nil or serialization fails.
+func GetResultJson(result any) string {
+	if result == nil {
+		return ""
 	}
-	return "{}"
+	data, err := json.Marshal(result)
+	if err != nil {
+		return ""
+	}
+	return string(data)
 }
 
-// GetResultJSON serializes the response body for logging purposes.
-func GetResultJSON(c *gin.Context) string {
-	respBody, _ := c.Get("_response_body")
-	if bodyStr, ok := respBody.(string); ok {
-		return bodyStr
+// GenerateLogSignature generates an SM3-based signature for log tamper-proofing.
+// Uses the salt "hei-log-sign" matching the Python implementation.
+func GenerateLogSignature(opData map[string]any) string {
+	buf := new(bytes.Buffer)
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(opData); err != nil {
+		return ""
 	}
-	return "{}"
-}
-
-// TimeTrack calculates the elapsed time since start.
-func TimeTrack(start time.Time) int {
-	return int(time.Since(start).Milliseconds())
+	content := strings.TrimRight(buf.String(), "\n")
+	return utils.HashWithSalt(content, "hei-log-sign")
 }

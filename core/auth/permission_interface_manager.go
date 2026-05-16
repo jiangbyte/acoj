@@ -1,23 +1,23 @@
 package auth
 
-// PermissionInterfaceManager is a registry for the permission interface implementation,
-// matching fastapi's HeiPermissionInterfaceManager.
-type PermissionInterfaceManager struct{}
+// HeiPermissionInterfaceManager manages the registered HeiPermissionInterface implementation.
+type HeiPermissionInterfaceManager struct{}
 
-// PermissionInterfaceManagerInstance is the global manager instance.
-var PermissionInterfaceManagerInstance = &PermissionInterfaceManager{}
+var (
+	_permissionInterface HeiPermissionInterface
+)
 
 // RegisterInterface registers the permission interface implementation.
-func (m *PermissionInterfaceManager) RegisterInterface(iface *PermissionInterfaceImpl) {
-	PermissionInterface = iface
+func RegisterInterface(iface HeiPermissionInterface) {
+	_permissionInterface = iface
 }
 
-// GetInterface returns the current permission interface implementation.
-func (m *PermissionInterfaceManager) GetInterface() *PermissionInterfaceImpl {
-	return PermissionInterface
+// GetInterface returns the registered permission interface, or nil.
+func GetInterface() HeiPermissionInterface {
+	return _permissionInterface
 }
 
-// HasInterface returns whether an interface has been registered.
-func (m *PermissionInterfaceManager) HasInterface() bool {
-	return PermissionInterface != nil
+// HasInterface returns whether a permission interface has been registered.
+func HasInterface() bool {
+	return _permissionInterface != nil
 }

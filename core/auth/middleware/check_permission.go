@@ -1,83 +1,74 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
+	"strings"
 
 	"hei-gin/core/auth"
-	"hei-gin/core/constants"
-	"hei-gin/core/result"
+
+	"github.com/gin-gonic/gin"
 )
 
-// CheckPermission returns middleware that verifies the user has the required permission.
-// It also registers the route for auto-discovery permission scanning.
-func CheckPermission(code string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		auth.RegisterPermission(c.Request.Method, c.FullPath(), code)
+// HeiCheckPermission returns a middleware that checks the user has the required permissions.
+// mode defaults to "AND" (all permissions required). Pass "OR" for any permission.
+// This middleware is for BUSINESS login type.
+func HeiCheckPermission(permissions []string, mode ...string) gin.HandlerFunc {
+	m := "AND"
+	if len(mode) > 0 {
+		m = mode[0]
+	}
+	return heiCheckPermissionInner("BUSINESS", permissions, m)
+}
 
-		loginType := auth.DetectLoginType(c)
-		permissions := auth.PermissionTool.GetPermissionList(c, loginType)
-		if !auth.Matcher.HasPermission(code, permissions) {
-			roles := auth.PermissionTool.GetRoleList(c, loginType)
-			for _, role := range roles {
-				if role == constants.SuperAdminCode {
-					c.Next()
-					return
-				}
-			}
-			result.Failure(c, "缺少权限: "+code, 403)
+// heiCheckPermissionInner is a shared implementation for both BUSINESS and CONSUMER permission checks.
+func heiCheckPermissionInner(loginType string, permissions []string, mode string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Register permission for auto-discovery scan
+		for _, p := range permissions {
+			auth.RegisterPermission(auth.PermissionEntry{
+				Code:   p,
+				Module: getModuleFromCode(p),
+				Name:   "",
+			})
+		}
+
+		// Check login first
+		var isLogin bool
+		if loginType == "CONSUMER" {
+			tool := &auth.HeiClientAuthTool{}
+			isLogin = tool.IsLogin(c)
+		} else {
+			isLogin = auth.IsLogin(c)
+		}
+		if !isLogin {
 			c.Abort()
+			c.JSON(200, gin.H{"code": 401, "message": "未授权/未登录", "success": false})
 			return
+		}
+
+		// Check permission
+		if mode == "OR" {
+			if !auth.HasPermissionOr(c, loginType, permissions...) {
+				c.Abort()
+				c.JSON(200, gin.H{"code": 403, "message": "缺少权限: " + strings.Join(permissions, ","), "success": false})
+				return
+			}
+		} else {
+			if !auth.HasPermissionAnd(c, loginType, permissions...) {
+				c.Abort()
+				c.JSON(200, gin.H{"code": 403, "message": "缺少权限: " + strings.Join(permissions, ","), "success": false})
+				return
+			}
 		}
 		c.Next()
 	}
 }
 
-// CheckPermissionAnd returns middleware that verifies the user has ALL specified permissions (AND mode).
-func CheckPermissionAnd(codes ...string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		for _, code := range codes {
-			auth.RegisterPermission(c.Request.Method, c.FullPath(), code)
-		}
-
-		loginType := auth.DetectLoginType(c)
-		permissions := auth.PermissionTool.GetPermissionList(c, loginType)
-		roles := auth.PermissionTool.GetRoleList(c, loginType)
-		for _, role := range roles {
-			if role == constants.SuperAdminCode {
-				c.Next()
-				return
-			}
-		}
-		if !auth.Matcher.HasPermissionAnd(codes, permissions) {
-			result.Failure(c, "缺少权限", 403)
-			c.Abort()
-			return
-		}
-		c.Next()
+// getModuleFromCode extracts the module segment from a permission code.
+// Example: "user:add" -> "user", "sys:user:view" -> "sys:user"
+func getModuleFromCode(code string) string {
+	parts := strings.Split(code, ":")
+	if len(parts) > 1 {
+		return strings.Join(parts[:len(parts)-1], ":")
 	}
-}
-
-// CheckPermissionOr returns middleware that verifies the user has ANY of the specified permissions (OR mode).
-func CheckPermissionOr(codes ...string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		for _, code := range codes {
-			auth.RegisterPermission(c.Request.Method, c.FullPath(), code)
-		}
-
-		loginType := auth.DetectLoginType(c)
-		permissions := auth.PermissionTool.GetPermissionList(c, loginType)
-		if auth.Matcher.HasPermissionOr(codes, permissions) {
-			c.Next()
-			return
-		}
-		roles := auth.PermissionTool.GetRoleList(c, loginType)
-		for _, role := range roles {
-			if role == constants.SuperAdminCode {
-				c.Next()
-				return
-			}
-		}
-		result.Failure(c, "缺少权限", 403)
-		c.Abort()
-	}
+	return code
 }

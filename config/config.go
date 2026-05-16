@@ -17,14 +17,13 @@ type Config struct {
 }
 
 type AppConfig struct {
-	Name                string `yaml:"name"`
-	Version             string `yaml:"version"`
-	Debug               bool   `yaml:"debug"`
-	Host                string `yaml:"host"`
-	Port                int    `yaml:"port"`
-	UploadMaxSize       int64  `yaml:"upload_max_size"`
-	ImportMaxFileSizeMB int    `yaml:"import_max_file_size_mb"`
-	TimeoutKeepAlive    int    `yaml:"timeout_keep_alive"`
+	Name             string `yaml:"name"`
+	Version          string `yaml:"version"`
+	Debug            bool   `yaml:"debug"`
+	Host             string `yaml:"host"`
+	Port             int    `yaml:"port"`
+	UploadMaxSize    int64  `yaml:"upload_max_size"`
+	TimeoutKeepAlive int    `yaml:"timeout_keep_alive"`
 }
 
 type DatabaseConfig struct {

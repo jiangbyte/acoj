@@ -1,21 +1,18 @@
 package middleware
 
 import (
-	"time"
+	"hei-gin/config"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-
-	"hei-gin/config"
 )
 
-func SetupCORS() gin.HandlerFunc {
-	cfg := config.C.CORS
+// CORS returns a Gin middleware that configures Cross-Origin Resource Sharing.
+func CORS() gin.HandlerFunc {
 	return cors.New(cors.Config{
-		AllowOrigins:     cfg.AllowOrigins,
-		AllowMethods:     cfg.AllowMethods,
-		AllowHeaders:     cfg.AllowHeaders,
-		AllowCredentials: cfg.AllowCredentials,
-		MaxAge:           12 * time.Hour,
+		AllowOrigins:     config.C.CORS.AllowOrigins,
+		AllowMethods:     config.C.CORS.AllowMethods,
+		AllowHeaders:     config.C.CORS.AllowHeaders,
+		AllowCredentials: config.C.CORS.AllowCredentials,
 	})
 }

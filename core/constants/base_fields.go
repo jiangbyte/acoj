@@ -1,8 +1,7 @@
 package constants
 
-// BaseSystemFields are system-level entity fields that should be excluded
-// from VO-to-entity mapping, matching fastapi's BASE_SYSTEM_FIELDS.
-var BaseSystemFields = map[string]bool{
+// BASE_SYSTEM_FIELDS lists the system-managed base fields common to all entities.
+var BASE_SYSTEM_FIELDS = map[string]bool{
 	"id":         true,
 	"created_at": true,
 	"created_by": true,

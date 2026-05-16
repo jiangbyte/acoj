@@ -1,16 +1,25 @@
 package utils
 
 import (
-	"strings"
+	"encoding/hex"
 
 	"github.com/google/uuid"
 )
 
-// TraceIDHeader is the HTTP header name for trace ID propagation.
-// Must match fastapi's TRACE_ID_HEADER for inter-service compatibility.
-const TraceIDHeader = "trace_id"
-
-// GenerateTraceID creates a new trace ID (UUID without dashes, matching fastapi's uuid4().hex).
+// GenerateTraceID generates a new trace ID (UUID without dashes).
 func GenerateTraceID() string {
-	return strings.ReplaceAll(uuid.New().String(), "-", "")
+	id := uuid.New()
+	return hex.EncodeToString(id[:])
+}
+
+// GetTraceID returns the current trace ID from context.
+// Placeholder: returns empty string for now.
+func GetTraceID() string {
+	return ""
+}
+
+// SetTraceID sets the current trace ID in context.
+// Placeholder: no-op for now.
+func SetTraceID(id string) {
+	_ = id
 }

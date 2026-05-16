@@ -1,61 +1,89 @@
 package auth
 
-import "strings"
+import (
+	"strings"
+)
 
-type PermissionMatcher struct{}
-
-var Matcher = &PermissionMatcher{}
-
-// Match checks if a permission matches a pattern (supports * and ** wildcards)
-func (m *PermissionMatcher) Match(pattern, permission string) bool {
+// Match checks if a permission string matches a pattern.
+// Supports colon (:), dot (.), and slash (/) as separators.
+// Wildcards: * matches a single level, ** matches multiple levels.
+func Match(pattern, permission string) bool {
 	if pattern == "" || permission == "" {
 		return false
 	}
-	if pattern == permission || pattern == "*" || pattern == "**" {
+
+	if pattern == permission {
 		return true
 	}
 
-	sep := m.detectSeparator(pattern)
+	if pattern == "*" || pattern == "**" {
+		return true
+	}
+
+	separator := detectSeparator(pattern)
 
 	if strings.Contains(pattern, "**") {
-		return m.matchDoubleWildcard(pattern, permission, sep)
+		return matchDoubleWildcard(pattern, permission, separator)
 	} else if strings.Contains(pattern, "*") {
-		return m.matchSingleWildcard(pattern, permission, sep)
+		return matchSingleWildcard(pattern, permission, separator)
 	}
+
 	return pattern == permission
 }
 
-// HasPermission checks if any permission in the list matches the required code
-func (m *PermissionMatcher) HasPermission(required string, permissions []string) bool {
-	for _, p := range permissions {
-		if m.Match(p, required) {
+// MatchAny returns true if permission matches any of the patterns.
+func MatchAny(patterns []string, permission string) bool {
+	for _, p := range patterns {
+		if Match(p, permission) {
 			return true
 		}
 	}
 	return false
 }
 
-// HasPermissionAnd checks if all required permissions are present
-func (m *PermissionMatcher) HasPermissionAnd(required []string, permissions []string) bool {
-	for _, r := range required {
-		if !m.HasPermission(r, permissions) {
+// MatchAll returns true if permission matches all of the patterns.
+func MatchAll(patterns []string, permission string) bool {
+	for _, p := range patterns {
+		if !Match(p, permission) {
 			return false
 		}
 	}
 	return true
 }
 
-// HasPermissionOr checks if any required permission is present
-func (m *PermissionMatcher) HasPermissionOr(required []string, permissions []string) bool {
-	for _, r := range required {
-		if m.HasPermission(r, permissions) {
+// MatchPermission checks if a required pattern matches any of the given permissions.
+func MatchPermission(required string, permissions []string) bool {
+	for _, p := range permissions {
+		if Match(p, required) {
 			return true
 		}
 	}
 	return false
 }
 
-func (m *PermissionMatcher) detectSeparator(pattern string) string {
+// MatchPermissionsAnd checks if all required patterns match in the given permissions.
+func MatchPermissionsAnd(required []string, permissions []string) bool {
+	for _, r := range required {
+		if !MatchPermission(r, permissions) {
+			return false
+		}
+	}
+	return true
+}
+
+// MatchPermissionsOr checks if any of the required patterns matches in the given permissions.
+func MatchPermissionsOr(required []string, permissions []string) bool {
+	for _, r := range required {
+		if MatchPermission(r, permissions) {
+			return true
+		}
+	}
+	return false
+}
+
+// detectSeparator detects the separator character used in the pattern.
+// Priority: "/" > ":" > "." > default ":"
+func detectSeparator(pattern string) string {
 	if strings.Contains(pattern, "/") {
 		return "/"
 	}
@@ -68,58 +96,71 @@ func (m *PermissionMatcher) detectSeparator(pattern string) string {
 	return ":"
 }
 
-func (m *PermissionMatcher) matchSingleWildcard(pattern, permission, sep string) bool {
-	patternParts := strings.Split(pattern, sep)
-	permParts := strings.Split(permission, sep)
+// matchSingleWildcard matches a pattern containing single-level wildcard (*).
+// Both pattern and permission must have the same number of parts.
+func matchSingleWildcard(pattern, permission, separator string) bool {
+	patternParts := strings.Split(pattern, separator)
+	permissionParts := strings.Split(permission, separator)
 
-	if len(patternParts) != len(permParts) {
+	if len(patternParts) != len(permissionParts) {
 		return false
 	}
-	for i, pp := range patternParts {
-		if pp == "*" {
+
+	for i, pPart := range patternParts {
+		permPart := permissionParts[i]
+		if pPart == "*" {
 			continue
 		}
-		if pp != permParts[i] {
+		if pPart != permPart {
 			return false
 		}
 	}
+
 	return true
 }
 
-func (m *PermissionMatcher) matchDoubleWildcard(pattern, permission, sep string) bool {
-	patternParts := strings.Split(pattern, sep)
-	permParts := strings.Split(permission, sep)
-	return m.matchPartsWithDoubleWildcard(patternParts, permParts)
+// matchDoubleWildcard delegates to matchPartsWithDoubleWildcard after splitting.
+func matchDoubleWildcard(pattern, permission, separator string) bool {
+	patternParts := strings.Split(pattern, separator)
+	permissionParts := strings.Split(permission, separator)
+	return matchPartsWithDoubleWildcard(patternParts, permissionParts)
 }
 
-func (m *PermissionMatcher) matchPartsWithDoubleWildcard(pattern, permission []string) bool {
-	if len(pattern) == 0 {
-		return len(permission) == 0
+// matchPartsWithDoubleWildcard recursively matches patterns with ** wildcard.
+func matchPartsWithDoubleWildcard(patternParts, permissionParts []string) bool {
+	if len(patternParts) == 0 {
+		return len(permissionParts) == 0
 	}
-	if len(permission) == 0 {
-		for _, p := range pattern {
+
+	if len(permissionParts) == 0 {
+		// All remaining pattern parts must be "**"
+		for _, p := range patternParts {
 			if p != "**" {
 				return false
 			}
 		}
 		return true
 	}
-	if pattern[0] == "**" {
-		if len(pattern) == 1 {
+
+	if patternParts[0] == "**" {
+		if len(patternParts) == 1 {
 			return true
 		}
-		for i := 0; i <= len(permission); i++ {
-			if m.matchPartsWithDoubleWildcard(pattern[1:], permission[i:]) {
+		for i := 0; i <= len(permissionParts); i++ {
+			if matchPartsWithDoubleWildcard(patternParts[1:], permissionParts[i:]) {
 				return true
 			}
 		}
 		return false
 	}
-	if pattern[0] == "*" {
-		return m.matchPartsWithDoubleWildcard(pattern[1:], permission[1:])
+
+	if patternParts[0] == "*" {
+		return matchPartsWithDoubleWildcard(patternParts[1:], permissionParts[1:])
 	}
-	if pattern[0] == permission[0] {
-		return m.matchPartsWithDoubleWildcard(pattern[1:], permission[1:])
+
+	if patternParts[0] == permissionParts[0] {
+		return matchPartsWithDoubleWildcard(patternParts[1:], permissionParts[1:])
 	}
+
 	return false
 }

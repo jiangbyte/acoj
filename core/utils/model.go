@@ -2,54 +2,89 @@ package utils
 
 import (
 	"reflect"
+	"strings"
 
 	"hei-gin/core/constants"
 )
 
-// StripSystemFields returns a new map with base system fields (and extra fields) removed.
-// Mirrors fastapi's strip_system_fields(data, extra_fields=None).
-func StripSystemFields(data map[string]interface{}, extraFields ...map[string]bool) map[string]interface{} {
-	result := make(map[string]interface{}, len(data))
-	exclude := make(map[string]bool)
-	for k := range constants.BaseSystemFields {
-		exclude[k] = true
-	}
-	for _, extra := range extraFields {
-		for k := range extra {
-			exclude[k] = true
-		}
-	}
+// StripSystemFields removes system audit fields from a map and returns a new map.
+// System fields include: id, created_at, created_by, updated_at, updated_by.
+// Additional fields can be specified via extraFields.
+func StripSystemFields(data map[string]any, extraFields ...string) map[string]any {
+	result := make(map[string]any, len(data))
 	for k, v := range data {
-		if !exclude[k] {
-			result[k] = v
+		if constants.BASE_SYSTEM_FIELDS[k] {
+			continue
 		}
+		skip := false
+		for _, ef := range extraFields {
+			if k == ef {
+				skip = true
+				break
+			}
+		}
+		if skip {
+			continue
+		}
+		result[k] = v
 	}
 	return result
 }
 
-// ApplyUpdate copies non-zero fields from src to dst (both must be ptr to struct).
-func ApplyUpdate(dst, src interface{}, extraProtected ...map[string]bool) {
-	dstVal := reflect.ValueOf(dst).Elem()
-	srcVal := reflect.ValueOf(src).Elem()
-
-	protected := make(map[string]bool)
-	for _, extra := range extraProtected {
-		for k := range extra {
-			protected[k] = true
-		}
+// ApplyUpdate applies updateData fields to an entity, skipping system-protected fields.
+// extraProtected specifies additional fields to protect from updates.
+func ApplyUpdate(entity any, updateData map[string]any, extraProtected ...string) {
+	protected := make(map[string]bool, len(constants.BASE_SYSTEM_FIELDS)+len(extraProtected))
+	for k := range constants.BASE_SYSTEM_FIELDS {
+		protected[k] = true
+	}
+	for _, f := range extraProtected {
+		protected[f] = true
 	}
 
-	for i := range dstVal.NumField() {
-		dstField := dstVal.Field(i)
-		srcField := srcVal.Field(i)
+	val := reflect.ValueOf(entity)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	if val.Kind() != reflect.Struct {
+		return
+	}
 
-		if !srcField.IsZero() {
-			if protected[dstVal.Type().Field(i).Name] {
-				continue
-			}
-			if dstField.CanSet() {
-				dstField.Set(srcField)
+	typ := val.Type()
+	for key, value := range updateData {
+		if protected[key] {
+			continue
+		}
+		// Match by JSON tag first, fallback to field name
+		field := findFieldByNameOrTag(typ, key)
+		if field == nil || !field.IsExported() {
+			continue
+		}
+		fv := val.FieldByIndex(field.Index)
+		if !fv.IsValid() || !fv.CanSet() {
+			continue
+		}
+		rv := reflect.ValueOf(value)
+		if rv.Type().AssignableTo(fv.Type()) {
+			fv.Set(rv)
+		}
+	}
+}
+
+// findFieldByNameOrTag finds a struct field by name or json tag.
+func findFieldByNameOrTag(typ reflect.Type, name string) *reflect.StructField {
+	for i := 0; i < typ.NumField(); i++ {
+		f := typ.Field(i)
+		if f.Name == name {
+			return &f
+		}
+		tag := f.Tag.Get("json")
+		if tag != "" {
+			tagName := strings.SplitN(tag, ",", 2)[0]
+			if tagName == name {
+				return &f
 			}
 		}
 	}
+	return nil
 }

@@ -1,81 +1,118 @@
 package middleware
 
 import (
-	"bytes"
 	"context"
-	"crypto/md5"
 	"encoding/json"
-	"fmt"
-	"io"
+	"hash/fnv"
+	"strconv"
 	"time"
-
-	"github.com/gin-gonic/gin"
 
 	"hei-gin/core/auth"
 	"hei-gin/core/constants"
 	"hei-gin/core/db"
-	bizerr "hei-gin/core/exception"
 	"hei-gin/core/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
-type norepeatBody struct {
-	Hash string `json:"hash"`
-	Time int64  `json:"time"`
-}
-
-// NoRepeat returns middleware that prevents duplicate submissions within the interval.
-// interval is in milliseconds.
+// NoRepeat returns a middleware that prevents duplicate submissions within the given interval (in milliseconds).
+// It uses Redis to store a hash of the request params keyed by userID + IP + URL path.
 func NoRepeat(interval int) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if db.Redis == nil {
-			c.Next()
-			return
+		// Get user ID (try CONSUMER first, fallback to BUSINESS)
+		clientAuth := auth.NewHeiClientAuthTool()
+		userID := clientAuth.GetLoginIDDefaultNull(c)
+		if userID == "" {
+			userID = auth.GetLoginIDDefaultNull(c)
 		}
 
-		var bodyBytes []byte
-		if c.Request.Body != nil {
-			bodyBytes, _ = io.ReadAll(c.Request.Body)
-			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-		}
-
+		// Get client IP
 		ip := utils.GetClientIP(c)
-		userID := ""
-		loginID := c.GetString("login_id")
-		if loginID == "" {
-			loginID = auth.AuthTool.GetLoginID(c)
-		}
-		if loginID == "" {
-			loginID = auth.ClientAuthTool.GetLoginID(c)
-		}
-		if loginID != "" {
-			userID = loginID
-		}
-		key := constants.NoRepeatPrefix + ip + ":" + userID + ":" + c.FullPath()
 
-		hash := fmt.Sprintf("%x", md5.Sum(bodyBytes))
+		// Build cache key
+		cacheKey := constants.NO_REPEAT_PREFIX + ip + ":" + userID + ":" + c.Request.URL.Path
 
-		ctx := context.Background()
-		existing, err := db.Redis.Get(ctx, key).Result()
-		if err == nil {
-			var prev norepeatBody
-			if json.Unmarshal([]byte(existing), &prev) == nil {
-				if prev.Hash == hash {
-					elapsed := time.Now().UnixMilli() - prev.Time
-					if elapsed < int64(interval) {
-						remaining := (int64(interval) - elapsed) / 1000
-						msg := fmt.Sprintf("请求过于频繁，请%d秒后再试", remaining)
-						panic(bizerr.NewBusinessError(msg))
+		// Hash request params
+		phash := paramsHash(c)
+
+		// Check Redis
+		redisClient := db.Redis
+		if redisClient != nil {
+			ctx := context.Background()
+			cached, err := redisClient.Get(ctx, cacheKey).Result()
+			if err == nil {
+				var data struct {
+					Hash string `json:"hash"`
+					Time int64  `json:"time"`
+				}
+				if err := json.Unmarshal([]byte(cached), &data); err == nil {
+					if data.Hash == phash {
+						elapsed := time.Now().UnixMilli() - data.Time
+						if elapsed < int64(interval) {
+							remaining := (int64(interval) - elapsed) / 1000
+							if remaining < 1 {
+								remaining = 1
+							}
+							c.Abort()
+							c.JSON(200, gin.H{
+								"code":    429,
+								"message": "请求过于频繁，请" + strconv.FormatInt(remaining, 10) + "秒后再试",
+								"success": false,
+							})
+							return
+						}
 					}
 				}
 			}
-		}
 
-		record, _ := json.Marshal(norepeatBody{
-			Hash: hash,
-			Time: time.Now().UnixMilli(),
-		})
-		db.Redis.Set(ctx, key, string(record), 3600*time.Second)
+			// Store new request info in Redis with 3600s TTL
+			nowMS := time.Now().UnixMilli()
+			storeData, marshalErr := json.Marshal(map[string]interface{}{
+				"hash": phash,
+				"time": nowMS,
+			})
+			if marshalErr == nil {
+				redisClient.SetEx(ctx, cacheKey, string(storeData), 3600)
+			}
+		}
 
 		c.Next()
 	}
+}
+
+// paramsHash generates a deterministic hash from the request's query, form, and body parameters.
+func paramsHash(c *gin.Context) string {
+	params := make(map[string]interface{})
+
+	// Collect query parameters
+	for k, v := range c.Request.URL.Query() {
+		if len(v) == 1 {
+			params[k] = v[0]
+		} else {
+			params[k] = v
+		}
+	}
+
+	// Collect form parameters (for POST/PUT/PATCH)
+	if c.Request.Method != "GET" {
+		_ = c.Request.ParseForm()
+		for k, v := range c.Request.PostForm {
+			if len(v) == 1 {
+				params[k] = v[0]
+			} else {
+				params[k] = v
+			}
+		}
+	}
+
+	// Read request body
+	if body, err := c.GetRawData(); err == nil && len(body) > 0 {
+		params["_body"] = string(body)
+	}
+
+	// Marshal to JSON and hash
+	jsonBytes, _ := json.Marshal(params)
+	h := fnv.New64a()
+	_, _ = h.Write(jsonBytes)
+	return strconv.FormatUint(h.Sum64(), 16)
 }

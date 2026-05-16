@@ -2,298 +2,489 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 
 	"hei-gin/config"
 	"hei-gin/core/constants"
 	"hei-gin/core/db"
-	"hei-gin/core/enums"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 )
 
-type AuthToolImpl struct {
-	secret        string
-	algorithm     string
-	expire        int
-	tokenName     string
-	loginType     enums.LoginType
-	tokenPrefix   string
-	sessionPrefix string
-	disablePrefix string
+var (
+	_expire    int
+	_tokenName string
+	_secret    string
+	_algorithm string
+)
+
+const loginTypeBusiness = "BUSINESS"
+
+// ensureConfig initializes default values from the global config if not already set.
+func ensureConfig() {
+	if _secret != "" {
+		return
+	}
+	if config.C == nil {
+		return
+	}
+	_expire = config.C.JWT.ExpireSeconds
+	_tokenName = config.C.JWT.TokenName
+	_secret = config.C.JWT.SecretKey
+	_algorithm = config.C.JWT.Algorithm
 }
 
-var AuthTool *AuthToolImpl
+// tokenURLSafe generates n random bytes and returns them as a URL-safe base64 string without padding.
+func tokenURLSafe(n int) string {
+	b := make([]byte, n)
+	_, _ = rand.Read(b)
+	return base64.RawURLEncoding.EncodeToString(b)
+}
 
-func InitAuthTool(cfg config.JWTConfig) {
-	AuthTool = &AuthToolImpl{
-		secret:        cfg.SecretKey,
-		algorithm:     cfg.Algorithm,
-		expire:        cfg.ExpireSeconds,
-		tokenName:     cfg.TokenName,
-		loginType:     enums.LoginTypeBusiness,
-		tokenPrefix:   constants.TokenPrefixBusiness,
-		sessionPrefix: constants.SessionPrefixBusiness,
-		disablePrefix: constants.DisableKeyBusiness,
+// getRedis returns the shared Redis client.
+func getRedis() *redis.Client {
+	return db.Redis
+}
+
+// getTokenKey returns the Redis key for storing token data.
+func getTokenKey(token string) string {
+	return constants.TOKEN_PREFIX_BUSINESS + token
+}
+
+// getSessionKey returns the Redis key for storing a user's session tokens.
+func getSessionKey(userID string) string {
+	return constants.SESSION_PREFIX_BUSINESS + userID
+}
+
+// getDisableKey returns the Redis key for storing the disable status of a login ID.
+func getDisableKey(loginID string) string {
+	return constants.DISABLE_KEY_BUSINESS + loginID
+}
+
+// Init initializes the auth tool with custom expire and token name.
+// If expire <= 0 or tokenName is empty, values from the global config are used.
+func Init(expire int, tokenName string) {
+	ensureConfig()
+	if expire > 0 {
+		_expire = expire
+	}
+	if tokenName != "" {
+		_tokenName = tokenName
 	}
 }
 
-func (a *AuthToolImpl) GetTokenName() string {
-	return a.tokenName
+// GetLoginType returns the login type identifier for business back-end users.
+func GetLoginType() string {
+	ensureConfig()
+	return loginTypeBusiness
 }
 
-func (a *AuthToolImpl) GetLoginType() string {
-	return string(a.loginType)
+// GetTokenName returns the HTTP header name used to carry the token.
+func GetTokenName() string {
+	ensureConfig()
+	return _tokenName
 }
 
-func (a *AuthToolImpl) GetTokenValue(c *gin.Context) string {
-	return c.GetHeader(a.tokenName)
-}
-
-func (a *AuthToolImpl) IsLogin(c *gin.Context) bool {
-	loginID := a.GetLoginID(c)
-	return loginID != ""
-}
-
-func (a *AuthToolImpl) GetLoginID(c *gin.Context) string {
-	token := a.GetTokenValue(c)
-	if token == "" {
+// GetTokenValue extracts the token from the request header.
+func GetTokenValue(c *gin.Context) string {
+	ensureConfig()
+	if c == nil {
 		return ""
 	}
-	ctx := context.Background()
-	redisKey := a.tokenPrefix + token
-	data, err := db.Redis.Get(ctx, redisKey).Result()
-	if err != nil {
-		return ""
-	}
-	var info map[string]interface{}
-	if json.Unmarshal([]byte(data), &info) != nil {
-		return ""
-	}
-	if uid, ok := info["user_id"].(string); ok {
-		return uid
-	}
-	return ""
+	return c.GetHeader(_tokenName)
 }
 
-func (a *AuthToolImpl) Login(c *gin.Context, id string, extra map[string]interface{}) (string, error) {
+// Login authenticates a user by user ID, stores token data in Redis, and returns the signed JWT token.
+func Login(c *gin.Context, id string, extra map[string]any) (string, error) {
+	ensureConfig()
+
 	now := time.Now()
-	claims := jwt.MapClaims{
-		"sub":  id,
-		"type": a.loginType,
-		"exp":  now.Add(time.Duration(a.expire) * time.Second).Unix(),
-		"iat":  now.Unix(),
-	}
-	for k, v := range extra {
-		claims[k] = v
-	}
+	jti := tokenURLSafe(32)
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := token.SignedString([]byte(a.secret))
+	// Build and sign JWT with jti and iat claims
+	claims := jwt.MapClaims{
+		"jti": jti,
+		"iat": jwt.NewNumericDate(now),
+	}
+	token := jwt.NewWithClaims(jwt.GetSigningMethod(_algorithm), claims)
+	signedToken, err := token.SignedString([]byte(_secret))
 	if err != nil {
 		return "", err
 	}
 
-	// Store in Redis
-	ctx := context.Background()
-	tokenData := map[string]interface{}{
+	// Build token data to store in Redis
+	tokenData := map[string]any{
 		"user_id":    id,
-		"type":       a.loginType,
+		"type":       loginTypeBusiness,
 		"created_at": now.Format(time.RFC3339),
 		"extra":      extra,
 	}
-	data, _ := json.Marshal(tokenData)
-	redisKey := a.tokenPrefix + tokenStr
-
-	err = db.Redis.Set(ctx, redisKey, string(data), time.Duration(a.expire)*time.Second).Err()
-	if err != nil {
-		return "", fmt.Errorf("redis set failed: %w", err)
+	if extra == nil {
+		tokenData["extra"] = map[string]any{}
 	}
 
-	// Add to user's session set
-	sessionKey := a.sessionPrefix + id
-	db.Redis.SAdd(ctx, sessionKey, tokenStr)
-	db.Redis.Expire(ctx, sessionKey, time.Duration(a.expire)*time.Second)
+	tokenDataJSON, err := json.Marshal(tokenData)
+	if err != nil {
+		return "", err
+	}
 
-	return tokenStr, nil
+	redisClient := getRedis()
+	ctx := context.Background()
+
+	// Store token data in Redis with expiration
+	err = redisClient.SetEx(ctx, getTokenKey(signedToken), tokenDataJSON, time.Duration(_expire)*time.Second).Err()
+	if err != nil {
+		return "", err
+	}
+
+	// Add token to user's session set and refresh its expiration
+	sessionKey := getSessionKey(id)
+	err = redisClient.SAdd(ctx, sessionKey, signedToken).Err()
+	if err != nil {
+		return "", err
+	}
+	err = redisClient.Expire(ctx, sessionKey, time.Duration(_expire)*time.Second).Err()
+	if err != nil {
+		return "", err
+	}
+
+	return signedToken, nil
 }
 
-func (a *AuthToolImpl) Logout(c *gin.Context) {
-	token := a.GetTokenValue(c)
+// Logout invalidates the current session. If loginID is provided, it kicks out all sessions for that user.
+func Logout(c *gin.Context, loginID ...string) {
+	ensureConfig()
+
+	if len(loginID) > 0 {
+		Kickout(loginID[0])
+		return
+	}
+
+	token := GetTokenValue(c)
 	if token == "" {
 		return
 	}
 
-	ctx := context.Background()
-	redisKey := a.tokenPrefix + token
-
-	// Get token data to find user_id
-	data, err := db.Redis.Get(ctx, redisKey).Result()
-	if err == nil {
-		var tokenData map[string]interface{}
-		if json.Unmarshal([]byte(data), &tokenData) == nil {
-			if uid, ok := tokenData["user_id"].(string); ok {
-				sessionKey := a.sessionPrefix + uid
-				db.Redis.SRem(ctx, sessionKey, token)
-			}
+	data := getTokenData(token)
+	if data != nil {
+		userID, _ := data["user_id"].(string)
+		if userID != "" {
+			redisClient := getRedis()
+			ctx := context.Background()
+			sessionKey := getSessionKey(userID)
+			_ = redisClient.SRem(ctx, sessionKey, token).Err()
 		}
 	}
-	db.Redis.Del(ctx, redisKey)
-}
 
-func (a *AuthToolImpl) Kickout(loginID string) {
+	redisClient := getRedis()
 	ctx := context.Background()
-	sessionKey := a.sessionPrefix + loginID
-	tokens, _ := db.Redis.SMembers(ctx, sessionKey).Result()
-	for _, t := range tokens {
-		db.Redis.Del(ctx, a.tokenPrefix+t)
-	}
-	db.Redis.Del(ctx, sessionKey)
+	tokenKey := getTokenKey(token)
+	_ = redisClient.Del(ctx, tokenKey).Err()
 }
 
-func (a *AuthToolImpl) GetTokenInfo(c *gin.Context) map[string]interface{} {
-	token := a.GetTokenValue(c)
+// Kickout deletes all tokens and session data for the given login ID.
+func Kickout(loginID string) {
+	ensureConfig()
+
+	redisClient := getRedis()
+	ctx := context.Background()
+	sessionKey := getSessionKey(loginID)
+
+	tokens, err := redisClient.SMembers(ctx, sessionKey).Result()
+	if err != nil {
+		return
+	}
+
+	for _, token := range tokens {
+		tokenKey := getTokenKey(token)
+		_ = redisClient.Del(ctx, tokenKey).Err()
+	}
+
+	_ = redisClient.Del(ctx, sessionKey).Err()
+}
+
+// KickoutToken removes a specific token from the user's session set and deletes its data.
+func KickoutToken(loginID, token string) {
+	ensureConfig()
+
+	redisClient := getRedis()
+	ctx := context.Background()
+	sessionKey := getSessionKey(loginID)
+	tokenKey := getTokenKey(token)
+
+	_ = redisClient.SRem(ctx, sessionKey, token).Err()
+	_ = redisClient.Del(ctx, tokenKey).Err()
+}
+
+// IsLogin checks whether the current request carries a valid token.
+func IsLogin(c *gin.Context) bool {
+	loginID := GetLoginIDDefaultNull(c)
+	return loginID != ""
+}
+
+// CheckLogin returns an error if the current request is not authenticated.
+func CheckLogin(c *gin.Context) error {
+	if !IsLogin(c) {
+		return errors.New("未授权/未登录")
+	}
+	return nil
+}
+
+// GetLoginID returns the login ID extracted from the current request's token.
+func GetLoginID(c *gin.Context) string {
+	return GetLoginIDDefaultNull(c)
+}
+
+// GetLoginIDDefaultNull returns the login ID from the current request's token, or an empty string if not logged in.
+func GetLoginIDDefaultNull(c *gin.Context) string {
+	token := GetTokenValue(c)
+	if token == "" {
+		return ""
+	}
+	data := decodeToken(token)
+	if data == nil {
+		return ""
+	}
+	userID, _ := data["user_id"].(string)
+	return userID
+}
+
+// GetLoginIDByToken extracts the login ID from the given token value.
+func GetLoginIDByToken(token string) string {
+	if token == "" {
+		return ""
+	}
+	data := decodeToken(token)
+	if data == nil {
+		return ""
+	}
+	userID, _ := data["user_id"].(string)
+	return userID
+}
+
+// decodeToken retrieves token data from Redis and verifies the JWT signature.
+func decodeToken(token string) map[string]any {
 	if token == "" {
 		return nil
 	}
-	ctx := context.Background()
-	redisKey := a.tokenPrefix + token
-	data, err := db.Redis.Get(ctx, redisKey).Result()
+
+	data := getTokenData(token)
+	if data == nil {
+		return nil
+	}
+
+	// Verify JWT signature
+	_, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte(_secret), nil
+	})
 	if err != nil {
 		return nil
 	}
-	var result map[string]interface{}
-	if json.Unmarshal([]byte(data), &result) != nil {
+
+	return data
+}
+
+// getTokenData retrieves the token payload from Redis.
+func getTokenData(token string) map[string]any {
+	if token == "" {
+		return nil
+	}
+
+	redisClient := getRedis()
+	ctx := context.Background()
+	tokenKey := getTokenKey(token)
+
+	data, err := redisClient.Get(ctx, tokenKey).Result()
+	if err == redis.Nil {
+		return nil
+	}
+	if err != nil {
+		return nil
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal([]byte(data), &result); err != nil {
 		return nil
 	}
 	return result
 }
 
-func (a *AuthToolImpl) GetExtra(c *gin.Context, key string) interface{} {
-	info := a.GetTokenInfo(c)
-	if info != nil {
-		if extra, ok := info["extra"].(map[string]interface{}); ok {
+// GetTokenInfo returns the full token data stored in Redis for the current request.
+func GetTokenInfo(c *gin.Context) map[string]any {
+	token := GetTokenValue(c)
+	if token == "" {
+		return nil
+	}
+	return getTokenData(token)
+}
+
+// GetExtra returns a specific extra field from the token data.
+func GetExtra(c *gin.Context, key string) any {
+	data := GetTokenInfo(c)
+	if data != nil {
+		extra, ok := data["extra"].(map[string]any)
+		if ok {
 			return extra[key]
 		}
 	}
 	return nil
 }
 
-func (a *AuthToolImpl) Disable(loginID string, seconds int) {
-	ctx := context.Background()
-	key := a.disablePrefix + loginID
-	db.Redis.SetEx(ctx, key, "1", time.Duration(seconds)*time.Second)
+// GetSession returns the full token payload (stored session) for the current request.
+func GetSession(c *gin.Context) map[string]any {
+	token := GetTokenValue(c)
+	if token == "" {
+		return nil
+	}
+	return getTokenData(token)
 }
 
-func (a *AuthToolImpl) IsDisable(loginID string) bool {
-	ctx := context.Background()
-	key := a.disablePrefix + loginID
-	n, _ := db.Redis.Exists(ctx, key).Result()
-	return n > 0
-}
+// RenewTimeout extends the token and session timeouts.
+func RenewTimeout(c *gin.Context, timeout ...int) {
+	ensureConfig()
 
-func (a *AuthToolImpl) RenewTimeout(c *gin.Context, timeout int) {
-	token := a.GetTokenValue(c)
+	token := GetTokenValue(c)
 	if token == "" {
 		return
 	}
-	if timeout <= 0 {
-		timeout = a.expire
-	}
-	ctx := context.Background()
-	redisKey := a.tokenPrefix + token
-	db.Redis.Expire(ctx, redisKey, time.Duration(timeout)*time.Second)
 
-	loginID := a.GetLoginID(c)
+	newTimeout := _expire
+	if len(timeout) > 0 && timeout[0] > 0 {
+		newTimeout = timeout[0]
+	}
+
+	redisClient := getRedis()
+	ctx := context.Background()
+	tokenKey := getTokenKey(token)
+	_ = redisClient.Expire(ctx, tokenKey, time.Duration(newTimeout)*time.Second).Err()
+
+	loginID := GetLoginIDByToken(token)
 	if loginID != "" {
-		sessionKey := a.sessionPrefix + loginID
-		db.Redis.Expire(ctx, sessionKey, time.Duration(timeout)*time.Second)
+		sessionKey := getSessionKey(loginID)
+		_ = redisClient.Expire(ctx, sessionKey, time.Duration(newTimeout)*time.Second).Err()
 	}
 }
 
-func (a *AuthToolImpl) GetLoginIdByToken(token string) string {
+// GetTokenTimeout returns the remaining TTL (in seconds) of the current token.
+// Returns -1 if there is no token or if Redis returns no TTL.
+func GetTokenTimeout(c *gin.Context) int {
+	token := GetTokenValue(c)
 	if token == "" {
+		return -1
+	}
+
+	redisClient := getRedis()
+	ctx := context.Background()
+	tokenKey := getTokenKey(token)
+
+	ttl, err := redisClient.TTL(ctx, tokenKey).Result()
+	if err != nil || ttl < 0 {
+		return -1
+	}
+	return int(ttl.Seconds())
+}
+
+// GetSessionTimeout returns the remaining TTL (in seconds) of the current session.
+// Returns -1 if there is no active session or if Redis returns no TTL.
+func GetSessionTimeout(c *gin.Context) int {
+	loginID := GetLoginIDDefaultNull(c)
+	if loginID == "" {
+		return -1
+	}
+
+	redisClient := getRedis()
+	ctx := context.Background()
+	sessionKey := getSessionKey(loginID)
+
+	ttl, err := redisClient.TTL(ctx, sessionKey).Result()
+	if err != nil || ttl < 0 {
+		return -1
+	}
+	return int(ttl.Seconds())
+}
+
+// GetTokenValueByLoginID returns one token for the given login ID.
+func GetTokenValueByLoginID(loginID string) string {
+	redisClient := getRedis()
+	ctx := context.Background()
+	sessionKey := getSessionKey(loginID)
+
+	tokens, err := redisClient.SMembers(ctx, sessionKey).Result()
+	if err != nil || len(tokens) == 0 {
 		return ""
 	}
+	return tokens[0]
+}
+
+// GetTokenValuesByLoginID returns all tokens for the given login ID.
+func GetTokenValuesByLoginID(loginID string) []string {
+	redisClient := getRedis()
 	ctx := context.Background()
-	redisKey := a.tokenPrefix + token
-	data, err := db.Redis.Get(ctx, redisKey).Result()
+	sessionKey := getSessionKey(loginID)
+
+	tokens, err := redisClient.SMembers(ctx, sessionKey).Result()
 	if err != nil {
-		return ""
+		return nil
 	}
-	var info map[string]interface{}
-	if json.Unmarshal([]byte(data), &info) != nil {
-		return ""
-	}
-	if uid, ok := info["user_id"].(string); ok {
-		return uid
-	}
-	return ""
-}
-
-func (a *AuthToolImpl) GetTokenValueByLoginId(loginID string) string {
-	ctx := context.Background()
-	sessionKey := a.sessionPrefix + loginID
-	tokens, _ := db.Redis.SMembers(ctx, sessionKey).Result()
-	if len(tokens) > 0 {
-		return tokens[0]
-	}
-	return ""
-}
-
-func (a *AuthToolImpl) GetTokenValuesByLoginID(loginID string) []string {
-	ctx := context.Background()
-	sessionKey := a.sessionPrefix + loginID
-	tokens, _ := db.Redis.SMembers(ctx, sessionKey).Result()
 	return tokens
 }
 
-func (a *AuthToolImpl) KickoutToken(loginID, token string) {
+// Disable marks a login ID as disabled for the specified duration (in seconds).
+func Disable(loginID string, timeSeconds int) {
+	redisClient := getRedis()
 	ctx := context.Background()
-	db.Redis.Del(ctx, a.tokenPrefix+token)
-	sessionKey := a.sessionPrefix + loginID
-	db.Redis.SRem(ctx, sessionKey, token)
+	disableKey := getDisableKey(loginID)
+	_ = redisClient.SetEx(ctx, disableKey, "1", time.Duration(timeSeconds)*time.Second).Err()
 }
 
-func (a *AuthToolImpl) GetTokenTimeout(c *gin.Context) int {
-	token := a.GetTokenValue(c)
-	if token == "" {
-		return 0
+// IsDisable checks whether a login ID is currently disabled.
+func IsDisable(loginID string) bool {
+	redisClient := getRedis()
+	ctx := context.Background()
+	disableKey := getDisableKey(loginID)
+
+	exists, err := redisClient.Exists(ctx, disableKey).Result()
+	if err != nil {
+		return false
 	}
-	ctx := context.Background()
-	ttl, _ := db.Redis.TTL(ctx, a.tokenPrefix+token).Result()
-	return int(ttl.Seconds())
+	return exists > 0
 }
 
-func (a *AuthToolImpl) GetSessionTimeout(c *gin.Context) int {
-	loginID := a.GetLoginID(c)
-	if loginID == "" {
-		return 0
-	}
-	ctx := context.Background()
-	ttl, _ := db.Redis.TTL(ctx, a.sessionPrefix+loginID).Result()
-	return int(ttl.Seconds())
-}
-
-func (a *AuthToolImpl) CheckDisable(loginID string) error {
-	if a.IsDisable(loginID) {
-		return fmt.Errorf("account is disabled")
+// CheckDisable returns an error if the login ID is currently disabled.
+func CheckDisable(loginID string) error {
+	if IsDisable(loginID) {
+		return errors.New("账号已被禁用")
 	}
 	return nil
 }
 
-func (a *AuthToolImpl) GetDisableTime(loginID string) int {
+// GetDisableTime returns the remaining disable time (in seconds) for the given login ID.
+// Returns -1 if the login ID is not disabled.
+func GetDisableTime(loginID string) int {
+	redisClient := getRedis()
 	ctx := context.Background()
-	key := a.disablePrefix + loginID
-	ttl, _ := db.Redis.TTL(ctx, key).Result()
+	disableKey := getDisableKey(loginID)
+
+	ttl, err := redisClient.TTL(ctx, disableKey).Result()
+	if err != nil || ttl < 0 {
+		return -1
+	}
 	return int(ttl.Seconds())
 }
 
-func (a *AuthToolImpl) UntieDisable(loginID string) {
+// UntieDisable removes the disabled status from a login ID.
+func UntieDisable(loginID string) {
+	redisClient := getRedis()
 	ctx := context.Background()
-	key := a.disablePrefix + loginID
-	db.Redis.Del(ctx, key)
+	disableKey := getDisableKey(loginID)
+	_ = redisClient.Del(ctx, disableKey).Err()
 }

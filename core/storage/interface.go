@@ -2,9 +2,8 @@ package storage
 
 import "io"
 
-// FileStorageInterface defines the contract for file storage backends.
-// Follows the same abstraction as hei-fastapi's storage interface.
-type FileStorageInterface interface {
+// FileStorage defines the contract for file storage backends.
+type FileStorage interface {
 	// GetDefaultBucket returns the default bucket/namespace name.
 	GetDefaultBucket() string
 
@@ -18,9 +17,10 @@ type FileStorageInterface interface {
 	GetBytes(bucket, fileKey string) ([]byte, error)
 
 	// GetURL returns the direct access URL for the given key.
-	GetURL(bucket, fileKey string) (string, error)
+	GetURL(bucket, fileKey string) string
 
 	// GetAuthURL returns a time-limited authenticated URL.
+	// timeoutMs is in milliseconds.
 	GetAuthURL(bucket, fileKey string, timeoutMs int) (string, error)
 
 	// Delete removes the object at the given key.

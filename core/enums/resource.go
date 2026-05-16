@@ -1,54 +1,47 @@
 package enums
 
-// ResourceType represents the type of a resource/menu node.
-type ResourceType string
+type ResourceTypeEnum string
 
 const (
-	ResourceTypeDirectory    ResourceType = "DIRECTORY"
-	ResourceTypeMenu         ResourceType = "MENU"
-	ResourceTypeButton       ResourceType = "BUTTON"
-	ResourceTypeInternalLink ResourceType = "INTERNAL_LINK"
-	ResourceTypeExternalLink ResourceType = "EXTERNAL_LINK"
+	ResourceTypeDirectory    ResourceTypeEnum = "DIRECTORY"
+	ResourceTypeMenu         ResourceTypeEnum = "MENU"
+	ResourceTypeButton       ResourceTypeEnum = "BUTTON"
+	ResourceTypeInternalLink ResourceTypeEnum = "INTERNAL_LINK"
+	ResourceTypeExternalLink ResourceTypeEnum = "EXTERNAL_LINK"
 )
 
-func (e ResourceType) Desc() string {
-	switch e {
-	case ResourceTypeDirectory:
-		return "目录"
-	case ResourceTypeMenu:
-		return "菜单"
-	case ResourceTypeButton:
-		return "按钮"
-	case ResourceTypeInternalLink:
-		return "内链"
-	case ResourceTypeExternalLink:
-		return "外链"
-	default:
-		return ""
+func (e ResourceTypeEnum) Desc() string {
+	descriptions := map[ResourceTypeEnum]string{
+		ResourceTypeDirectory:    "目录",
+		ResourceTypeMenu:         "菜单",
+		ResourceTypeButton:       "按钮",
+		ResourceTypeInternalLink: "内链",
+		ResourceTypeExternalLink: "外链",
 	}
+	if d, ok := descriptions[e]; ok {
+		return d
+	}
+	return ""
 }
 
-// ResourceCategory represents the category of a resource.
-type ResourceCategory string
+type ResourceCategoryEnum string
 
 const (
-	ResourceCategoryBackendMenu    ResourceCategory = "BACKEND_MENU"
-	ResourceCategoryFrontendMenu   ResourceCategory = "FRONTEND_MENU"
-	ResourceCategoryBackendButton  ResourceCategory = "BACKEND_BUTTON"
-	ResourceCategoryFrontendButton ResourceCategory = "FRONTEND_BUTTON"
+	ResourceCategoryBackendMenu    ResourceCategoryEnum = "BACKEND_MENU"
+	ResourceCategoryFrontendMenu   ResourceCategoryEnum = "FRONTEND_MENU"
+	ResourceCategoryBackendButton  ResourceCategoryEnum = "BACKEND_BUTTON"
+	ResourceCategoryFrontendButton ResourceCategoryEnum = "FRONTEND_BUTTON"
 )
 
-func (e ResourceCategory) Desc() string {
-	switch e {
-	case ResourceCategoryBackendMenu:
-		return "后台菜单"
-	case ResourceCategoryFrontendMenu:
-		return "前台菜单"
-	case ResourceCategoryBackendButton:
-		return "后台按钮"
-	case ResourceCategoryFrontendButton:
-		return "前台按钮"
-	default:
-		return ""
+func (e ResourceCategoryEnum) Desc() string {
+	descriptions := map[ResourceCategoryEnum]string{
+		ResourceCategoryBackendMenu:    "后台菜单",
+		ResourceCategoryFrontendMenu:   "前台菜单",
+		ResourceCategoryBackendButton:  "后台按钮",
+		ResourceCategoryFrontendButton: "前台按钮",
 	}
+	if d, ok := descriptions[e]; ok {
+		return d
+	}
+	return ""
 }

@@ -4,96 +4,151 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"sort"
 	"strings"
-
-	"github.com/gin-gonic/gin"
 
 	"hei-gin/core/constants"
 	"hei-gin/core/db"
-	"hei-gin/core/enums"
 )
 
-// PermissionCacheItem represents a scanned permission entry stored in Redis.
-type PermissionCacheItem struct {
-	Code     string `json:"code"`
-	Module   string `json:"module"`
-	Category string `json:"category"`
-	Name     string `json:"name"`
+// PermissionEntry represents a scanned permission entry.
+type PermissionEntry struct {
+	Code   string `json:"code"`
+	Module string `json:"module"`
+	Name   string `json:"name"`
 }
 
-// ScanAndCachePermissions scans all registered routes and caches the
-// permission tree in Redis for the Permission module UI.
-func ScanAndCachePermissions(router *gin.Engine) {
-	routes := router.Routes()
+// permissionRegistry holds all registered permissions throughout the application.
+var permissionRegistry []PermissionEntry
 
-	// permissionMap: module -> {code -> PermissionCacheItem}
-	permissionMap := map[string]map[string]PermissionCacheItem{}
+// RegisterPermission registers a permission entry for later scanning.
+func RegisterPermission(entry PermissionEntry) {
+	permissionRegistry = append(permissionRegistry, entry)
+}
 
-	// Group by module prefix (e.g., "sys:user" from "sys:user:page")
-	for key, code := range PermissionRouteRegistry {
-		module := moduleFromCode(code)
-		category := string(enums.PermissionCategoryBackend)
-		if strings.Contains(key, "/api/v1/c/") {
-			category = string(enums.PermissionCategoryFrontend)
-		}
-
-		if permissionMap[module] == nil {
-			permissionMap[module] = map[string]PermissionCacheItem{}
-		}
-		permissionMap[module][code] = PermissionCacheItem{
-			Code:     code,
-			Module:   module,
-			Category: category,
-			Name:     "",
-		}
+// RunPermissionScan groups registered permissions by module and stores them in Redis.
+func RunPermissionScan() error {
+	if db.Redis == nil {
+		log.Println("[PermissionScan] Redis not available, skipping permission caching")
+		return nil
 	}
 
-	// Also scan gin routes that might not be in registry
-	for _, r := range routes {
-		key := r.Method + ":" + r.Path
-		if _, exists := PermissionRouteRegistry[key]; !exists {
-			continue
-		}
+	tree := buildModuleTree(permissionRegistry)
+	if len(tree) == 0 {
+		log.Println("[PermissionScan] No permissions registered, nothing to cache")
+		return nil
+	}
+
+	data, err := json.Marshal(tree)
+	if err != nil {
+		log.Printf("[PermissionScan] Failed to marshal permission tree: %v", err)
+		return err
 	}
 
 	ctx := context.Background()
-	if db.Redis == nil {
-		log.Println("[PermissionScan] Redis not available, skipping cache")
-		return
+	if err := db.Redis.Set(ctx, constants.PERMISSION_CACHE_KEY, string(data), 0).Err(); err != nil {
+		log.Printf("[PermissionScan] Failed to store permission cache in Redis: %v", err)
+		return err
 	}
 
-	// Sort modules for deterministic output
-	var modules []string
-	for m := range permissionMap {
-		modules = append(modules, m)
+	total := 0
+	for _, v := range tree {
+		total += len(v)
 	}
-	sort.Strings(modules)
-
-	tree := map[string]any{}
-	for _, m := range modules {
-		tree[m] = permissionMap[m]
-	}
-
-	data, _ := json.Marshal(tree)
-	err := db.Redis.Set(ctx, constants.PermissionCacheKey, string(data), 0).Err()
-	if err != nil {
-		log.Printf("[PermissionScan] cache error: %v", err)
-		return
-	}
-
-	totalPerms := 0
-	for _, v := range permissionMap {
-		totalPerms += len(v)
-	}
-	log.Printf("[PermissionScan] cached %d modules, %d total permissions",
-		len(modules), totalPerms)
+	log.Printf("[PermissionScan] Cached %d permissions in Redis across %d modules", total, len(tree))
+	return nil
 }
 
-func moduleFromCode(code string) string {
+// GetModulesFromRedis reads distinct permission module prefixes from Redis.
+func GetModulesFromRedis() ([]string, error) {
+	if db.Redis == nil {
+		return []string{}, nil
+	}
+
+	ctx := context.Background()
+	data, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
+	if err != nil {
+		return []string{}, nil
+	}
+	if data == "" {
+		return []string{}, nil
+	}
+
+	var tree map[string]map[string]PermissionEntry
+	if err := json.Unmarshal([]byte(data), &tree); err != nil {
+		return []string{}, nil
+	}
+
+	modules := make([]string, 0, len(tree))
+	for module := range tree {
+		modules = append(modules, module)
+	}
+	sortStrings(modules)
+	return modules, nil
+}
+
+// GetPermissionsByModuleFromRedis gets all permissions under a specific module from Redis.
+func GetPermissionsByModuleFromRedis(module string) ([]PermissionEntry, error) {
+	if db.Redis == nil {
+		return []PermissionEntry{}, nil
+	}
+
+	ctx := context.Background()
+	data, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
+	if err != nil {
+		return []PermissionEntry{}, nil
+	}
+	if data == "" {
+		return []PermissionEntry{}, nil
+	}
+
+	var tree map[string]map[string]PermissionEntry
+	if err := json.Unmarshal([]byte(data), &tree); err != nil {
+		return []PermissionEntry{}, nil
+	}
+
+	modulePerms, ok := tree[module]
+	if !ok {
+		return []PermissionEntry{}, nil
+	}
+
+	result := make([]PermissionEntry, 0, len(modulePerms))
+	for _, entry := range modulePerms {
+		result = append(result, entry)
+	}
+	return result, nil
+}
+
+// getModuleFromCode extracts the module from a permission code.
+// Example: "user:add" → "user", "sys:user:view" → "sys:user"
+func getModuleFromCode(code string) string {
 	parts := strings.Split(code, ":")
-	if len(parts) >= 2 {
+	if len(parts) > 1 {
 		return strings.Join(parts[:len(parts)-1], ":")
 	}
 	return code
+}
+
+// buildModuleTree groups permissions by module.
+func buildModuleTree(permissions []PermissionEntry) map[string]map[string]PermissionEntry {
+	tree := make(map[string]map[string]PermissionEntry)
+	for _, entry := range permissions {
+		module := entry.Module
+		if module == "" {
+			module = getModuleFromCode(entry.Code)
+		}
+		if _, ok := tree[module]; !ok {
+			tree[module] = make(map[string]PermissionEntry)
+		}
+		tree[module][entry.Code] = entry
+	}
+	return tree
+}
+
+// sortStrings sorts a slice of strings in place (simple insertion sort to avoid importing sort).
+func sortStrings(s []string) {
+	for i := 1; i < len(s); i++ {
+		for j := i; j > 0 && s[j-1] > s[j]; j-- {
+			s[j-1], s[j] = s[j], s[j-1]
+		}
+	}
 }

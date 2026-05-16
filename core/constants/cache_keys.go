@@ -3,39 +3,32 @@ package constants
 import "hei-gin/core/enums"
 
 // Redis cache keys
-const (
-	PermissionCacheKey = "hei:permission:keys"
-)
 
-// Auth token / session prefixes
+// Permission
+const PERMISSION_CACHE_KEY = "hei:permission:keys"
+
+// Auth token / session
 var (
-	TokenPrefixBusiness   = "hei:auth:" + string(enums.LoginTypeBusiness) + ":token:"
-	SessionPrefixBusiness = "hei:auth:" + string(enums.LoginTypeBusiness) + ":session:"
-	DisableKeyBusiness    = "hei:auth:" + string(enums.LoginTypeBusiness) + ":disable:"
+	TOKEN_PREFIX_BUSINESS   = "hei:auth:" + string(enums.LoginTypeBusiness) + ":token:"
+	SESSION_PREFIX_BUSINESS = "hei:auth:" + string(enums.LoginTypeBusiness) + ":session:"
+	DISABLE_KEY_BUSINESS    = "hei:auth:" + string(enums.LoginTypeBusiness) + ":disable:"
 
-	TokenPrefixConsumer   = "hei:auth:" + string(enums.LoginTypeConsumer) + ":token:"
-	SessionPrefixConsumer = "hei:auth:" + string(enums.LoginTypeConsumer) + ":session:"
-	DisableKeyConsumer    = "hei:auth:" + string(enums.LoginTypeConsumer) + ":disable:"
+	TOKEN_PREFIX_CONSUMER   = "hei:auth:" + string(enums.LoginTypeConsumer) + ":token:"
+	SESSION_PREFIX_CONSUMER = "hei:auth:" + string(enums.LoginTypeConsumer) + ":session:"
+	DISABLE_KEY_CONSUMER    = "hei:auth:" + string(enums.LoginTypeConsumer) + ":disable:"
 )
 
-// Dict cache keys
+// Dict
 const (
-	DictCacheKey     = "hei:dict:tree"
-	DictTreeCacheKey = "hei:dict:fulltree"
+	DICT_CACHE_KEY      = "hei:dict:tree"
+	DICT_TREE_CACHE_KEY = "hei:dict:fulltree"
 )
 
-// Captcha cache key prefixes
+// Captcha
 var (
-	CaptchaBusinessPrefix = string(enums.LoginTypeBusiness) + ":captcha:"
-	CaptchaConsumerPrefix = string(enums.LoginTypeConsumer) + ":captcha:"
+	CAPTCHA_BUSINESS_CACHE_KEY = string(enums.LoginTypeBusiness) + ":captcha:"
+	CAPTCHA_CONSUMER_CACHE_KEY = string(enums.LoginTypeConsumer) + ":captcha:"
 )
 
-// NoRepeat key prefix
-const (
-	NoRepeatPrefix = "norepeat:"
-)
-
-// SUPER_ADMIN role code
-const (
-	SuperAdminCode = "SUPER_ADMIN"
-)
+// No-repeat
+const NO_REPEAT_PREFIX = "norepeat:"

@@ -1,26 +1,29 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
-
 	"hei-gin/core/auth"
-	"hei-gin/core/result"
+
+	"github.com/gin-gonic/gin"
 )
 
-// CheckLogin returns middleware that verifies the user is logged in.
-// Determines B-end or C-end auth based on URL path.
-func CheckLogin() gin.HandlerFunc {
+// HeiCheckLogin returns a middleware that checks if the user is logged in.
+// loginType defaults to "BUSINESS". Pass "CONSUMER" for client-side users.
+func HeiCheckLogin(loginType ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		loginType := auth.DetectLoginType(c)
-		var loginID string
-		if loginType == "CONSUMER" {
-			loginID = auth.ClientAuthTool.GetLoginID(c)
-		} else {
-			loginID = auth.AuthTool.GetLoginID(c)
+		lt := "BUSINESS"
+		if len(loginType) > 0 {
+			lt = loginType[0]
 		}
-		if loginID == "" {
-			result.Failure(c, "未授权/未登录", 401)
+		var isLogin bool
+		if lt == "CONSUMER" {
+			tool := &auth.HeiClientAuthTool{}
+			isLogin = tool.IsLogin(c)
+		} else {
+			isLogin = auth.IsLogin(c)
+		}
+		if !isLogin {
 			c.Abort()
+			c.JSON(200, gin.H{"code": 401, "message": "未授权/未登录", "success": false})
 			return
 		}
 		c.Next()

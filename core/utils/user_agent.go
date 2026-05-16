@@ -2,40 +2,52 @@ package utils
 
 import "strings"
 
-// ParseUserAgent extracts browser and OS from a User-Agent string.
-func ParseUserAgent(ua string) (browser, os string) {
-	ua = strings.ToLower(ua)
-
-	switch {
-	case strings.Contains(ua, "edg"):
-		browser = "Edge"
-	case strings.Contains(ua, "chrome"):
-		browser = "Chrome"
-	case strings.Contains(ua, "safari"):
-		browser = "Safari"
-	case strings.Contains(ua, "firefox"):
-		browser = "Firefox"
-	case strings.Contains(ua, "opera") || strings.Contains(ua, "opr"):
-		browser = "Opera"
-	case strings.Contains(ua, "msie") || strings.Contains(ua, "trident"):
-		browser = "IE"
-	default:
-		browser = "-"
+// GetBrowser extracts the browser family from a User-Agent string.
+func GetBrowser(ua string) string {
+	if ua == "" {
+		return "-"
 	}
 
+	lower := strings.ToLower(ua)
+
 	switch {
-	case strings.Contains(ua, "windows"):
-		os = "Windows"
-	case strings.Contains(ua, "mac os") || strings.Contains(ua, "macintosh"):
-		os = "macOS"
-	case strings.Contains(ua, "linux"):
-		os = "Linux"
-	case strings.Contains(ua, "android"):
-		os = "Android"
-	case strings.Contains(ua, "iphone") || strings.Contains(ua, "ipad"):
-		os = "iOS"
+	case strings.Contains(lower, "edge"):
+		return "Edge"
+	case strings.Contains(lower, "opr") || strings.Contains(lower, "opera"):
+		return "Opera"
+	case strings.Contains(lower, "chrome"):
+		return "Chrome"
+	case strings.Contains(lower, "safari"):
+		return "Safari"
+	case strings.Contains(lower, "firefox"):
+		return "Firefox"
+	case strings.Contains(lower, "msie") || strings.Contains(lower, "trident"):
+		return "Internet Explorer"
 	default:
-		os = "-"
+		return "-"
 	}
-	return
+}
+
+// GetOS extracts the OS family from a User-Agent string.
+func GetOS(ua string) string {
+	if ua == "" {
+		return "-"
+	}
+
+	lower := strings.ToLower(ua)
+
+	switch {
+	case strings.Contains(lower, "windows"):
+		return "Windows"
+	case strings.Contains(lower, "mac os") || strings.Contains(lower, "macintosh"):
+		return "macOS"
+	case strings.Contains(lower, "android"):
+		return "Android"
+	case strings.Contains(lower, "ios") || strings.Contains(lower, "iphone") || strings.Contains(lower, "ipad"):
+		return "iOS"
+	case strings.Contains(lower, "linux"):
+		return "Linux"
+	default:
+		return "-"
+	}
 }

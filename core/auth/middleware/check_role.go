@@ -1,67 +1,55 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
+	"strings"
 
 	"hei-gin/core/auth"
-	"hei-gin/core/constants"
-	"hei-gin/core/result"
+
+	"github.com/gin-gonic/gin"
 )
 
-// CheckRole returns middleware that verifies the user has the specified role.
-// Supports AND mode (user must have all roles).
-func CheckRole(roleCode string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		loginType := auth.DetectLoginType(c)
-		roles := auth.PermissionTool.GetRoleList(c, loginType)
-		for _, role := range roles {
-			if role == roleCode || role == constants.SuperAdminCode {
-				c.Next()
-				return
-			}
-		}
-		result.Failure(c, "无角色权限: "+roleCode, 403)
-		c.Abort()
+// HeiCheckRole returns a middleware that checks the user has the required roles.
+// mode defaults to "AND" (all roles required). Pass "OR" for any role.
+// This middleware is for BUSINESS login type.
+func HeiCheckRole(roles []string, mode ...string) gin.HandlerFunc {
+	m := "AND"
+	if len(mode) > 0 {
+		m = mode[0]
 	}
+	return heiCheckRoleInner("BUSINESS", roles, m)
 }
 
-// CheckRoleAnd returns middleware that verifies the user has ALL specified roles.
-func CheckRoleAnd(roleCodes ...string) gin.HandlerFunc {
+// heiCheckRoleInner is a shared implementation for both BUSINESS and CONSUMER role checks.
+func heiCheckRoleInner(loginType string, roles []string, mode string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		loginType := auth.DetectLoginType(c)
-		roles := auth.PermissionTool.GetRoleList(c, loginType)
-		for _, rc := range roleCodes {
-			hasRole := false
-			for _, r := range roles {
-				if r == rc || r == constants.SuperAdminCode {
-					hasRole = true
-					break
-				}
-			}
-			if !hasRole {
-				result.Failure(c, "无角色权限: "+rc, 403)
+		// Check login first
+		var isLogin bool
+		if loginType == "CONSUMER" {
+			tool := &auth.HeiClientAuthTool{}
+			isLogin = tool.IsLogin(c)
+		} else {
+			isLogin = auth.IsLogin(c)
+		}
+		if !isLogin {
+			c.Abort()
+			c.JSON(200, gin.H{"code": 401, "message": "未授权/未登录", "success": false})
+			return
+		}
+
+		// Check role
+		if mode == "OR" {
+			if !auth.HasRoleOr(c, loginType, roles...) {
 				c.Abort()
+				c.JSON(200, gin.H{"code": 403, "message": "缺少角色: " + strings.Join(roles, ","), "success": false})
+				return
+			}
+		} else {
+			if !auth.HasRoleAnd(c, loginType, roles...) {
+				c.Abort()
+				c.JSON(200, gin.H{"code": 403, "message": "缺少角色: " + strings.Join(roles, ","), "success": false})
 				return
 			}
 		}
 		c.Next()
-	}
-}
-
-// CheckRoleOr returns middleware that verifies the user has ANY of the specified roles.
-func CheckRoleOr(roleCodes ...string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		loginType := auth.DetectLoginType(c)
-		roles := auth.PermissionTool.GetRoleList(c, loginType)
-		for _, rc := range roleCodes {
-			for _, r := range roles {
-				if r == rc || r == constants.SuperAdminCode {
-					c.Next()
-					return
-				}
-			}
-		}
-		result.Failure(c, "无角色权限", 403)
-		c.Abort()
 	}
 }

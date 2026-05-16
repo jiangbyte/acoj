@@ -4,69 +4,213 @@ import (
 	"context"
 	"time"
 
-	"hei-gin/core/auth"
 	"hei-gin/core/db"
-	"hei-gin/core/pojo"
+	"hei-gin/core/exception"
+	"hei-gin/core/result"
 	"hei-gin/core/utils"
-	"hei-gin/ent/gen"
+	ent "hei-gin/ent/gen"
+	"hei-gin/ent/gen/sysbanner"
+
+	"entgo.io/ent/dialect/sql"
+	"github.com/gin-gonic/gin"
 )
 
-type Service struct{}
+// Page returns a paginated list of banners.
+func Page(c *gin.Context, param *BannerPageParam) gin.H {
+	ctx := context.Background()
 
-func (s *Service) Create(ctx context.Context, vo *BannerVO) (*gen.SysBanner, error) {
-	loginID := auth.GetLoginIDFromCtx(ctx)
+	// Set defaults
+	if param.Current < 1 {
+		param.Current = 1
+	}
+	if param.Size < 1 {
+		param.Size = 10
+	}
+
+	offset := (param.Current - 1) * param.Size
+
+	total, err := db.Client.SysBanner.Query().Count(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("查询Banner列表失败: "+err.Error(), 500))
+	}
+
+	records, err := db.Client.SysBanner.Query().
+		Order(sysbanner.ByCreatedAt(sql.OrderDesc())).
+		Limit(param.Size).
+		Offset(offset).
+		All(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("查询Banner列表失败: "+err.Error(), 500))
+	}
+
+	vos := make([]*BannerVO, 0, len(records))
+	for _, r := range records {
+		vos = append(vos, entToVO(r))
+	}
+
+	return result.PageDataResult(c, vos, total, param.Current, param.Size)
+}
+
+// Detail returns a single banner by ID.
+func Detail(c *gin.Context, id string) *BannerVO {
+	if id == "" {
+		return nil
+	}
+
+	ctx := context.Background()
+	entity, err := db.Client.SysBanner.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil
+		}
+		panic(exception.NewBusinessError("查询Banner详情失败: "+err.Error(), 500))
+	}
+
+	return entToVO(entity)
+}
+
+// Create creates a new banner.
+func Create(c *gin.Context, vo *BannerVO, userID string) {
+	ctx := context.Background()
 	now := time.Now()
-	id := utils.NextID()
-	return db.Client.SysBanner.Create().
-		SetID(id).
+
+	builder := db.Client.SysBanner.Create().
+		SetID(utils.GenerateID()).
 		SetTitle(vo.Title).
 		SetImage(vo.Image).
 		SetCategory(vo.Category).
 		SetType(vo.Type).
 		SetPosition(vo.Position).
-		SetNillableURL(vo.URL).
-		SetNillableSummary(vo.Summary).
-		SetNillableDescription(vo.Description).
-		SetLinkType(vo.LinkType).
 		SetSortCode(vo.SortCode).
 		SetViewCount(vo.ViewCount).
 		SetClickCount(vo.ClickCount).
 		SetCreatedAt(now).
-		SetNillableCreatedBy(&loginID).
-		SetUpdatedAt(now).
-		SetNillableUpdatedBy(&loginID).
-		Save(ctx)
+		SetUpdatedAt(now)
+
+	if vo.LinkType != "" {
+		builder.SetLinkType(vo.LinkType)
+	}
+	if vo.URL != nil {
+		builder.SetNillableURL(vo.URL)
+	}
+	if vo.Summary != nil {
+		builder.SetNillableSummary(vo.Summary)
+	}
+	if vo.Description != nil {
+		builder.SetNillableDescription(vo.Description)
+	}
+	if userID != "" {
+		builder.SetCreatedBy(userID).SetUpdatedBy(userID)
+	}
+
+	_, err := builder.Save(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("添加Banner失败: "+err.Error(), 500))
+	}
 }
 
-func (s *Service) Modify(ctx context.Context, vo *BannerVO) error {
-	loginID := auth.GetLoginIDFromCtx(ctx)
+// Modify updates an existing banner.
+func Modify(c *gin.Context, vo *BannerVO, userID string) {
+	ctx := context.Background()
+
+	if vo.ID == "" {
+		panic(exception.NewBusinessError("ID不能为空", 400))
+	}
+
+	// Verify the banner exists
+	_, err := db.Client.SysBanner.Get(ctx, vo.ID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			panic(exception.NewBusinessError("Banner不存在", 404))
+		}
+		panic(exception.NewBusinessError("查询Banner失败: "+err.Error(), 500))
+	}
+
 	now := time.Now()
-	return db.Client.SysBanner.UpdateOneID(vo.ID).
+	builder := db.Client.SysBanner.UpdateOneID(vo.ID).
 		SetTitle(vo.Title).
 		SetImage(vo.Image).
 		SetCategory(vo.Category).
 		SetType(vo.Type).
 		SetPosition(vo.Position).
-		SetNillableURL(vo.URL).
-		SetNillableSummary(vo.Summary).
-		SetNillableDescription(vo.Description).
-		SetLinkType(vo.LinkType).
 		SetSortCode(vo.SortCode).
 		SetViewCount(vo.ViewCount).
 		SetClickCount(vo.ClickCount).
-		SetUpdatedAt(now).
-		SetNillableUpdatedBy(&loginID).
-		Exec(ctx)
+		SetUpdatedAt(now)
+
+	if vo.LinkType != "" {
+		builder.SetLinkType(vo.LinkType)
+	}
+	if vo.URL != nil {
+		builder.SetNillableURL(vo.URL)
+	}
+	if vo.Summary != nil {
+		builder.SetNillableSummary(vo.Summary)
+	}
+	if vo.Description != nil {
+		builder.SetNillableDescription(vo.Description)
+	}
+	if userID != "" {
+		builder.SetUpdatedBy(userID)
+	}
+
+	_, err = builder.Save(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("编辑Banner失败: "+err.Error(), 500))
+	}
 }
 
-func (s *Service) Remove(ctx context.Context, ids []string) error {
-	return new(Dao).DeleteByIDs(ctx, ids)
+// Remove deletes banners by IDs.
+func Remove(c *gin.Context, ids []string) {
+	if len(ids) == 0 {
+		return
+	}
+
+	ctx := context.Background()
+	_, err := db.Client.SysBanner.Delete().Where(sysbanner.IDIn(ids...)).Exec(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("删除Banner失败: "+err.Error(), 500))
+	}
 }
 
-func (s *Service) FindPage(ctx context.Context, bounds *pojo.PageBounds) ([]*gen.SysBanner, int, error) {
-	return new(Dao).FindPage(ctx, bounds)
-}
+// entToVO converts an ent SysBanner entity to a BannerVO.
+func entToVO(entity *ent.SysBanner) *BannerVO {
+	vo := &BannerVO{
+		ID:         entity.ID,
+		Title:      entity.Title,
+		Image:      entity.Image,
+		LinkType:   entity.LinkType,
+		Category:   entity.Category,
+		Type:       entity.Type,
+		Position:   entity.Position,
+		SortCode:   entity.SortCode,
+		ViewCount:  entity.ViewCount,
+		ClickCount: entity.ClickCount,
+	}
 
-func (s *Service) FindByID(ctx context.Context, id string) (*gen.SysBanner, error) {
-	return new(Dao).FindByID(ctx, id)
+	if entity.URL != nil {
+		vo.URL = entity.URL
+	}
+	if entity.Summary != nil {
+		vo.Summary = entity.Summary
+	}
+	if entity.Description != nil {
+		vo.Description = entity.Description
+	}
+	if entity.CreatedAt != nil {
+		s := entity.CreatedAt.Format("2006-01-02 15:04:05")
+		vo.CreatedAt = &s
+	}
+	if entity.CreatedBy != nil {
+		vo.CreatedBy = entity.CreatedBy
+	}
+	if entity.UpdatedAt != nil {
+		s := entity.UpdatedAt.Format("2006-01-02 15:04:05")
+		vo.UpdatedAt = &s
+	}
+	if entity.UpdatedBy != nil {
+		vo.UpdatedBy = entity.UpdatedBy
+	}
+
+	return vo
 }
