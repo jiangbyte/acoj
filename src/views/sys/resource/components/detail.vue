@@ -117,16 +117,8 @@
       <a-card size="small" title="系统信息">
         <a-row :gutter="[16, 16]">
           <a-col :xs="24" :sm="12">
-            <div class="detail-label">创建人</div>
-            <div class="detail-value"><UserInfo :name="data.created_name" /></div>
-          </a-col>
-          <a-col :xs="24" :sm="12">
             <div class="detail-label">创建时间</div>
             <div class="detail-value">{{ data.created_at || '-' }}</div>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <div class="detail-label">更新人</div>
-            <div class="detail-value"><UserInfo :name="data.updated_name" /></div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="detail-label">更新时间</div>
@@ -142,8 +134,6 @@
 import { ref, computed } from 'vue'
 import { useMobile } from '@/hooks/useMobile'
 import { fetchResourceDetail } from '@/api/resource'
-import UserInfo from '@/components/user/UserInfo.vue'
-
 defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open'])
 
