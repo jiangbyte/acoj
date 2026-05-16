@@ -10,8 +10,8 @@
     <template #default>
       <a-row :gutter="16">
         <a-col :span="12">
-          <a-form-item label="账号" name="account" :rules="[{ required: true, message: '请输入账号' }]">
-            <a-input v-model:value="form.account" placeholder="请输入账号" />
+          <a-form-item label="用户名" name="username" :rules="[{ required: true, message: '请输入用户名' }]">
+            <a-input v-model:value="form.username" placeholder="请输入用户名" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
@@ -100,7 +100,7 @@ const isEdit = ref(false)
 const currentId = ref<string | null>(null)
 
 const initialForm = () => ({
-  account: '',
+  username: '',
   nickname: '',
   email: '',
   phone: '',

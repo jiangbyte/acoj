@@ -9,7 +9,7 @@
     <template #bodyCell="{ column, record }">
       <template v-if="column.key === 'avatar'">
         <a-avatar :src="record.avatar" :size="32">
-          {{ record.nickname?.[0] || record.account?.[0] }}
+          {{ record.nickname?.[0] || record.username?.[0] }}
         </a-avatar>
       </template>
       <template v-if="column.key === 'status'">
@@ -58,7 +58,7 @@ function handleTokenManage(record: any) {
 
 const columns = [
   { title: '头像', key: 'avatar', width: 60 },
-  { title: '账号', dataIndex: 'account', key: 'account', width: 120 },
+  { title: '用户名', dataIndex: 'username', key: 'username', width: 120 },
   { title: '昵称', dataIndex: 'nickname', key: 'nickname', width: 120 },
   { title: '状态', key: 'status', dataIndex: 'status', width: 72 },
   { title: '登录IP', dataIndex: 'last_login_ip', key: 'last_login_ip', width: 130 },

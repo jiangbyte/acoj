@@ -31,8 +31,8 @@
 
             <!-- Nickname & Account -->
             <div class="text-center w-full">
-              <div class="text-base font-medium text-$text-color">{{ userInfo?.nickname || userInfo?.account || '-' }}</div>
-              <div class="text-sm text-$text-color-secondary mt-0.5">{{ userInfo?.account }}</div>
+              <div class="text-base font-medium text-$text-color">{{ userInfo?.nickname || userInfo?.username || '-' }}</div>
+              <div class="text-sm text-$text-color-secondary mt-0.5">{{ userInfo?.username }}</div>
               <div v-if="userInfo?.motto" class="text-sm text-$text-color-secondary italic mt-2">"{{ userInfo.motto }}"</div>
             </div>
 
@@ -118,7 +118,7 @@
                   class="mb-4"
                 />
                 <a-form-item label="用户名" name="account">
-                  <a-input v-model:value="form.account" placeholder="请输入用户名" :disabled="!accountEditing" />
+                  <a-input v-model:value="form.username" placeholder="请输入用户名" :disabled="!accountEditing" />
                 </a-form-item>
                 <a-form-item label="邮箱" name="email">
                   <a-input v-model:value="form.email" placeholder="请输入邮箱" :disabled="!accountEditing" />
@@ -234,7 +234,7 @@ const basicSaving = ref(false)
 const basicEditing = ref(false)
 
 const form = ref({
-  account: '',
+  username: '',
   email: '',
   phone: '',
 })
@@ -270,7 +270,7 @@ function initForm() {
     github: u.github || '',
   }
   form.value = {
-    account: u.account || '',
+    username: u.username || '',
     email: u.email || '',
     phone: u.phone || '',
   }
@@ -340,12 +340,12 @@ async function handleUpdatePassword() {
 const avatarColors = ['#1677ff', '#52c41a', '#faad14', '#722ed1', '#eb2f96', '#fa8c16', '#13c2c2']
 
 const avatarLetter = computed(() => {
-  const name = userInfo.value?.nickname || userInfo.value?.account || ''
+  const name = userInfo.value?.nickname || userInfo.value?.username || ''
   return name.charAt(0).toUpperCase() || '?'
 })
 
 const avatarBg = computed(() => {
-  const name = userInfo.value?.nickname || userInfo.value?.account || ''
+  const name = userInfo.value?.nickname || userInfo.value?.username || ''
   const idx = name.charCodeAt(0) || 0
   return avatarColors[idx % avatarColors.length]
 })

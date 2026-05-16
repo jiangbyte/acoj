@@ -14,8 +14,8 @@
             <a-avatar :size="72" :src="data.avatar" />
           </a-col>
           <a-col :xs="24" :sm="12">
-            <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">账号</div>
-            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.account || '-' }}</div>
+            <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">用户名</div>
+            <div class="text-sm text-[var(--header-text,#000000d9)]">{{ data.username || '-' }}</div>
           </a-col>
           <a-col :xs="24" :sm="12">
             <div class="text-[13px] text-[var(--text-secondary,#00000073)] mb-1">昵称</div>

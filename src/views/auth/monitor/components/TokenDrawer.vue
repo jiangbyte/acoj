@@ -9,11 +9,11 @@
     <template v-if="userRecord">
       <div class="flex items-center gap-3 mb-4">
         <a-avatar :src="userRecord.avatar" :size="40">
-          {{ userRecord.nickname?.[0] || userRecord.account?.[0] }}
+          {{ userRecord.nickname?.[0] || userRecord.username?.[0] }}
         </a-avatar>
         <div>
           <div class="text-sm font-medium">{{ userRecord.nickname || '-' }}</div>
-          <div class="text-[13px] text-[var(--text-secondary)]">{{ userRecord.account }}</div>
+          <div class="text-[13px] text-[var(--text-secondary)]">{{ userRecord.username }}</div>
         </div>
       </div>
 

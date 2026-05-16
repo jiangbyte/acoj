@@ -8,7 +8,7 @@
         <div class="user-details">
           <div class="greeting-line">
             <span class="greeting">
-              {{ greeting }}，{{ userInfo.nickname || userInfo.account }}
+              {{ greeting }}，{{ userInfo.nickname || userInfo.username }}
             </span>
             <a-tag v-if="userInfo.login_count" color="blue" class="login-count-tag">
               第 {{ userInfo.login_count }} 次登录
@@ -21,7 +21,7 @@
             </template>
             <template v-if="userInfo.position_name">{{ userInfo.position_name }}</template>
             <template v-if="!userInfo.org_names?.length && !userInfo.position_name">
-              {{ userInfo.account }}
+              {{ userInfo.username }}
             </template>
           </div>
           <div v-if="userInfo.last_login_at" class="user-footer">
