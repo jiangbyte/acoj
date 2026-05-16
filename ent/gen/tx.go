@@ -14,14 +14,10 @@ type Tx struct {
 	config
 	// ClientUser is the client for interacting with the ClientUser builders.
 	ClientUser *ClientUserClient
-	// RelOrgRole is the client for interacting with the RelOrgRole builders.
-	RelOrgRole *RelOrgRoleClient
 	// RelRolePermission is the client for interacting with the RelRolePermission builders.
 	RelRolePermission *RelRolePermissionClient
 	// RelRoleResource is the client for interacting with the RelRoleResource builders.
 	RelRoleResource *RelRoleResourceClient
-	// RelUserGroup is the client for interacting with the RelUserGroup builders.
-	RelUserGroup *RelUserGroupClient
 	// RelUserPermission is the client for interacting with the RelUserPermission builders.
 	RelUserPermission *RelUserPermissionClient
 	// RelUserRole is the client for interacting with the RelUserRole builders.
@@ -186,10 +182,8 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.ClientUser = NewClientUserClient(tx.config)
-	tx.RelOrgRole = NewRelOrgRoleClient(tx.config)
 	tx.RelRolePermission = NewRelRolePermissionClient(tx.config)
 	tx.RelRoleResource = NewRelRoleResourceClient(tx.config)
-	tx.RelUserGroup = NewRelUserGroupClient(tx.config)
 	tx.RelUserPermission = NewRelUserPermissionClient(tx.config)
 	tx.RelUserRole = NewRelUserRoleClient(tx.config)
 	tx.SysBanner = NewSysBannerClient(tx.config)

@@ -4,10 +4,8 @@ package gen
 
 import (
 	"hei-gin/ent/gen/clientuser"
-	"hei-gin/ent/gen/relorgrole"
 	"hei-gin/ent/gen/relrolepermission"
 	"hei-gin/ent/gen/relroleresource"
-	"hei-gin/ent/gen/relusergroup"
 	"hei-gin/ent/gen/reluserpermission"
 	"hei-gin/ent/gen/reluserrole"
 	"hei-gin/ent/gen/sysbanner"
@@ -104,66 +102,6 @@ func init() {
 	// clientuser.IDValidator is a validator for the "id" field. It is called by the builders before save.
 	clientuser.IDValidator = func() func(string) error {
 		validators := clientuserDescID.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(id string) error {
-			for _, fn := range fns {
-				if err := fn(id); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	relorgroleFields := schema.RelOrgRole{}.Fields()
-	_ = relorgroleFields
-	// relorgroleDescOrgID is the schema descriptor for org_id field.
-	relorgroleDescOrgID := relorgroleFields[1].Descriptor()
-	// relorgrole.OrgIDValidator is a validator for the "org_id" field. It is called by the builders before save.
-	relorgrole.OrgIDValidator = func() func(string) error {
-		validators := relorgroleDescOrgID.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(org_id string) error {
-			for _, fn := range fns {
-				if err := fn(org_id); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// relorgroleDescRoleID is the schema descriptor for role_id field.
-	relorgroleDescRoleID := relorgroleFields[2].Descriptor()
-	// relorgrole.RoleIDValidator is a validator for the "role_id" field. It is called by the builders before save.
-	relorgrole.RoleIDValidator = func() func(string) error {
-		validators := relorgroleDescRoleID.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(role_id string) error {
-			for _, fn := range fns {
-				if err := fn(role_id); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// relorgroleDescScope is the schema descriptor for scope field.
-	relorgroleDescScope := relorgroleFields[3].Descriptor()
-	// relorgrole.ScopeValidator is a validator for the "scope" field. It is called by the builders before save.
-	relorgrole.ScopeValidator = relorgroleDescScope.Validators[0].(func(string) error)
-	// relorgroleDescID is the schema descriptor for id field.
-	relorgroleDescID := relorgroleFields[0].Descriptor()
-	// relorgrole.IDValidator is a validator for the "id" field. It is called by the builders before save.
-	relorgrole.IDValidator = func() func(string) error {
-		validators := relorgroleDescID.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
@@ -295,62 +233,6 @@ func init() {
 			return nil
 		}
 	}()
-	relusergroupFields := schema.RelUserGroup{}.Fields()
-	_ = relusergroupFields
-	// relusergroupDescUserID is the schema descriptor for user_id field.
-	relusergroupDescUserID := relusergroupFields[1].Descriptor()
-	// relusergroup.UserIDValidator is a validator for the "user_id" field. It is called by the builders before save.
-	relusergroup.UserIDValidator = func() func(string) error {
-		validators := relusergroupDescUserID.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(user_id string) error {
-			for _, fn := range fns {
-				if err := fn(user_id); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// relusergroupDescGroupID is the schema descriptor for group_id field.
-	relusergroupDescGroupID := relusergroupFields[2].Descriptor()
-	// relusergroup.GroupIDValidator is a validator for the "group_id" field. It is called by the builders before save.
-	relusergroup.GroupIDValidator = func() func(string) error {
-		validators := relusergroupDescGroupID.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(group_id string) error {
-			for _, fn := range fns {
-				if err := fn(group_id); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// relusergroupDescID is the schema descriptor for id field.
-	relusergroupDescID := relusergroupFields[0].Descriptor()
-	// relusergroup.IDValidator is a validator for the "id" field. It is called by the builders before save.
-	relusergroup.IDValidator = func() func(string) error {
-		validators := relusergroupDescID.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(id string) error {
-			for _, fn := range fns {
-				if err := fn(id); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
 	reluserpermissionFields := schema.RelUserPermission{}.Fields()
 	_ = reluserpermissionFields
 	// reluserpermissionDescUserID is the schema descriptor for user_id field.
@@ -451,10 +333,6 @@ func init() {
 			return nil
 		}
 	}()
-	// reluserroleDescScope is the schema descriptor for scope field.
-	reluserroleDescScope := reluserroleFields[3].Descriptor()
-	// reluserrole.ScopeValidator is a validator for the "scope" field. It is called by the builders before save.
-	reluserrole.ScopeValidator = reluserroleDescScope.Validators[0].(func(string) error)
 	// reluserroleDescID is the schema descriptor for id field.
 	reluserroleDescID := reluserroleFields[0].Descriptor()
 	// reluserrole.IDValidator is a validator for the "id" field. It is called by the builders before save.

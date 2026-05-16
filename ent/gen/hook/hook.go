@@ -20,18 +20,6 @@ func (f ClientUserFunc) Mutate(ctx context.Context, m gen.Mutation) (gen.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *gen.ClientUserMutation", m)
 }
 
-// The RelOrgRoleFunc type is an adapter to allow the use of ordinary
-// function as RelOrgRole mutator.
-type RelOrgRoleFunc func(context.Context, *gen.RelOrgRoleMutation) (gen.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f RelOrgRoleFunc) Mutate(ctx context.Context, m gen.Mutation) (gen.Value, error) {
-	if mv, ok := m.(*gen.RelOrgRoleMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *gen.RelOrgRoleMutation", m)
-}
-
 // The RelRolePermissionFunc type is an adapter to allow the use of ordinary
 // function as RelRolePermission mutator.
 type RelRolePermissionFunc func(context.Context, *gen.RelRolePermissionMutation) (gen.Value, error)
@@ -54,18 +42,6 @@ func (f RelRoleResourceFunc) Mutate(ctx context.Context, m gen.Mutation) (gen.Va
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *gen.RelRoleResourceMutation", m)
-}
-
-// The RelUserGroupFunc type is an adapter to allow the use of ordinary
-// function as RelUserGroup mutator.
-type RelUserGroupFunc func(context.Context, *gen.RelUserGroupMutation) (gen.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f RelUserGroupFunc) Mutate(ctx context.Context, m gen.Mutation) (gen.Value, error) {
-	if mv, ok := m.(*gen.RelUserGroupMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *gen.RelUserGroupMutation", m)
 }
 
 // The RelUserPermissionFunc type is an adapter to allow the use of ordinary

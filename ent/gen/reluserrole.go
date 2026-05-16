@@ -20,12 +20,8 @@ type RelUserRole struct {
 	// 用户ID
 	UserID string `json:"user_id,omitempty"`
 	// 角色ID
-	RoleID string `json:"role_id,omitempty"`
-	// 数据范围覆盖：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人。为空则继承 rel_role_permission 的配置
-	Scope *string `json:"scope,omitempty"`
-	// 自定义数据范围组ID列表(JSON数组)，scope=CUSTOM时生效
-	CustomScopeGroupIds *string `json:"custom_scope_group_ids,omitempty"`
-	selectValues        sql.SelectValues
+	RoleID       string `json:"role_id,omitempty"`
+	selectValues sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -33,7 +29,7 @@ func (*RelUserRole) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case reluserrole.FieldID, reluserrole.FieldUserID, reluserrole.FieldRoleID, reluserrole.FieldScope, reluserrole.FieldCustomScopeGroupIds:
+		case reluserrole.FieldID, reluserrole.FieldUserID, reluserrole.FieldRoleID:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -67,20 +63,6 @@ func (_m *RelUserRole) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field role_id", values[i])
 			} else if value.Valid {
 				_m.RoleID = value.String
-			}
-		case reluserrole.FieldScope:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field scope", values[i])
-			} else if value.Valid {
-				_m.Scope = new(string)
-				*_m.Scope = value.String
-			}
-		case reluserrole.FieldCustomScopeGroupIds:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field custom_scope_group_ids", values[i])
-			} else if value.Valid {
-				_m.CustomScopeGroupIds = new(string)
-				*_m.CustomScopeGroupIds = value.String
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -123,16 +105,6 @@ func (_m *RelUserRole) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("role_id=")
 	builder.WriteString(_m.RoleID)
-	builder.WriteString(", ")
-	if v := _m.Scope; v != nil {
-		builder.WriteString("scope=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	if v := _m.CustomScopeGroupIds; v != nil {
-		builder.WriteString("custom_scope_group_ids=")
-		builder.WriteString(*v)
-	}
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -23,8 +23,6 @@ func (RelUserRole) Fields() []ent.Field {
 		field.String("id").MaxLen(32).NotEmpty().Comment("主键"),
 		field.String("user_id").MaxLen(32).NotEmpty().Comment("用户ID"),
 		field.String("role_id").MaxLen(32).NotEmpty().Comment("角色ID"),
-		field.String("scope").MaxLen(32).Optional().Nillable().Comment("数据范围覆盖：ALL-全部，CUSTOM-自定义，ORG-本组织，ORG_AND_BELOW-本组织及以下，SELF-本人。为空则继承 rel_role_permission 的配置"),
-		field.Text("custom_scope_group_ids").Optional().Nillable().Comment("自定义数据范围组ID列表(JSON数组)，scope=CUSTOM时生效"),
 	}
 }
 

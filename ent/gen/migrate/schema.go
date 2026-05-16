@@ -47,33 +47,6 @@ var (
 			},
 		},
 	}
-	// RelOrgRoleColumns holds the columns for the "rel_org_role" table.
-	RelOrgRoleColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString, Size: 32},
-		{Name: "org_id", Type: field.TypeString, Size: 32},
-		{Name: "role_id", Type: field.TypeString, Size: 32},
-		{Name: "scope", Type: field.TypeString, Nullable: true, Size: 32},
-		{Name: "custom_scope_group_ids", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "custom_scope_org_ids", Type: field.TypeString, Nullable: true, Size: 2147483647},
-	}
-	// RelOrgRoleTable holds the schema information for the "rel_org_role" table.
-	RelOrgRoleTable = &schema.Table{
-		Name:       "rel_org_role",
-		Columns:    RelOrgRoleColumns,
-		PrimaryKey: []*schema.Column{RelOrgRoleColumns[0]},
-		Indexes: []*schema.Index{
-			{
-				Name:    "relorgrole_org_id_role_id",
-				Unique:  true,
-				Columns: []*schema.Column{RelOrgRoleColumns[1], RelOrgRoleColumns[2]},
-			},
-			{
-				Name:    "relorgrole_role_id",
-				Unique:  false,
-				Columns: []*schema.Column{RelOrgRoleColumns[2]},
-			},
-		},
-	}
 	// RelRolePermissionColumns holds the columns for the "rel_role_permission" table.
 	RelRolePermissionColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Size: 32},
@@ -125,30 +98,6 @@ var (
 			},
 		},
 	}
-	// RelUserGroupColumns holds the columns for the "rel_user_group" table.
-	RelUserGroupColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString, Size: 32},
-		{Name: "user_id", Type: field.TypeString, Size: 32},
-		{Name: "group_id", Type: field.TypeString, Size: 32},
-	}
-	// RelUserGroupTable holds the schema information for the "rel_user_group" table.
-	RelUserGroupTable = &schema.Table{
-		Name:       "rel_user_group",
-		Columns:    RelUserGroupColumns,
-		PrimaryKey: []*schema.Column{RelUserGroupColumns[0]},
-		Indexes: []*schema.Index{
-			{
-				Name:    "relusergroup_user_id_group_id",
-				Unique:  true,
-				Columns: []*schema.Column{RelUserGroupColumns[1], RelUserGroupColumns[2]},
-			},
-			{
-				Name:    "relusergroup_group_id",
-				Unique:  false,
-				Columns: []*schema.Column{RelUserGroupColumns[2]},
-			},
-		},
-	}
 	// RelUserPermissionColumns holds the columns for the "rel_user_permission" table.
 	RelUserPermissionColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Size: 32},
@@ -181,8 +130,6 @@ var (
 		{Name: "id", Type: field.TypeString, Size: 32},
 		{Name: "user_id", Type: field.TypeString, Size: 32},
 		{Name: "role_id", Type: field.TypeString, Size: 32},
-		{Name: "scope", Type: field.TypeString, Nullable: true, Size: 32},
-		{Name: "custom_scope_group_ids", Type: field.TypeString, Nullable: true, Size: 2147483647},
 	}
 	// RelUserRoleTable holds the schema information for the "rel_user_role" table.
 	RelUserRoleTable = &schema.Table{
@@ -584,10 +531,8 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		ClientUserTable,
-		RelOrgRoleTable,
 		RelRolePermissionTable,
 		RelRoleResourceTable,
-		RelUserGroupTable,
 		RelUserPermissionTable,
 		RelUserRoleTable,
 		SysBannerTable,
@@ -611,17 +556,11 @@ func init() {
 	ClientUserTable.Annotation = &entsql.Annotation{
 		Table: "client_user",
 	}
-	RelOrgRoleTable.Annotation = &entsql.Annotation{
-		Table: "rel_org_role",
-	}
 	RelRolePermissionTable.Annotation = &entsql.Annotation{
 		Table: "rel_role_permission",
 	}
 	RelRoleResourceTable.Annotation = &entsql.Annotation{
 		Table: "rel_role_resource",
-	}
-	RelUserGroupTable.Annotation = &entsql.Annotation{
-		Table: "rel_user_group",
 	}
 	RelUserPermissionTable.Annotation = &entsql.Annotation{
 		Table: "rel_user_permission",

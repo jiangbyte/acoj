@@ -9,17 +9,11 @@ import (
 // ClientUser is the predicate function for clientuser builders.
 type ClientUser func(*sql.Selector)
 
-// RelOrgRole is the predicate function for relorgrole builders.
-type RelOrgRole func(*sql.Selector)
-
 // RelRolePermission is the predicate function for relrolepermission builders.
 type RelRolePermission func(*sql.Selector)
 
 // RelRoleResource is the predicate function for relroleresource builders.
 type RelRoleResource func(*sql.Selector)
-
-// RelUserGroup is the predicate function for relusergroup builders.
-type RelUserGroup func(*sql.Selector)
 
 // RelUserPermission is the predicate function for reluserpermission builders.
 type RelUserPermission func(*sql.Selector)

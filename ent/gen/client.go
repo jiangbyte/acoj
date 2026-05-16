@@ -12,10 +12,8 @@ import (
 	"hei-gin/ent/gen/migrate"
 
 	"hei-gin/ent/gen/clientuser"
-	"hei-gin/ent/gen/relorgrole"
 	"hei-gin/ent/gen/relrolepermission"
 	"hei-gin/ent/gen/relroleresource"
-	"hei-gin/ent/gen/relusergroup"
 	"hei-gin/ent/gen/reluserpermission"
 	"hei-gin/ent/gen/reluserrole"
 	"hei-gin/ent/gen/sysbanner"
@@ -45,14 +43,10 @@ type Client struct {
 	Schema *migrate.Schema
 	// ClientUser is the client for interacting with the ClientUser builders.
 	ClientUser *ClientUserClient
-	// RelOrgRole is the client for interacting with the RelOrgRole builders.
-	RelOrgRole *RelOrgRoleClient
 	// RelRolePermission is the client for interacting with the RelRolePermission builders.
 	RelRolePermission *RelRolePermissionClient
 	// RelRoleResource is the client for interacting with the RelRoleResource builders.
 	RelRoleResource *RelRoleResourceClient
-	// RelUserGroup is the client for interacting with the RelUserGroup builders.
-	RelUserGroup *RelUserGroupClient
 	// RelUserPermission is the client for interacting with the RelUserPermission builders.
 	RelUserPermission *RelUserPermissionClient
 	// RelUserRole is the client for interacting with the RelUserRole builders.
@@ -97,10 +91,8 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.ClientUser = NewClientUserClient(c.config)
-	c.RelOrgRole = NewRelOrgRoleClient(c.config)
 	c.RelRolePermission = NewRelRolePermissionClient(c.config)
 	c.RelRoleResource = NewRelRoleResourceClient(c.config)
-	c.RelUserGroup = NewRelUserGroupClient(c.config)
 	c.RelUserPermission = NewRelUserPermissionClient(c.config)
 	c.RelUserRole = NewRelUserRoleClient(c.config)
 	c.SysBanner = NewSysBannerClient(c.config)
@@ -210,10 +202,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:               ctx,
 		config:            cfg,
 		ClientUser:        NewClientUserClient(cfg),
-		RelOrgRole:        NewRelOrgRoleClient(cfg),
 		RelRolePermission: NewRelRolePermissionClient(cfg),
 		RelRoleResource:   NewRelRoleResourceClient(cfg),
-		RelUserGroup:      NewRelUserGroupClient(cfg),
 		RelUserPermission: NewRelUserPermissionClient(cfg),
 		RelUserRole:       NewRelUserRoleClient(cfg),
 		SysBanner:         NewSysBannerClient(cfg),
@@ -250,10 +240,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:               ctx,
 		config:            cfg,
 		ClientUser:        NewClientUserClient(cfg),
-		RelOrgRole:        NewRelOrgRoleClient(cfg),
 		RelRolePermission: NewRelRolePermissionClient(cfg),
 		RelRoleResource:   NewRelRoleResourceClient(cfg),
-		RelUserGroup:      NewRelUserGroupClient(cfg),
 		RelUserPermission: NewRelUserPermissionClient(cfg),
 		RelUserRole:       NewRelUserRoleClient(cfg),
 		SysBanner:         NewSysBannerClient(cfg),
@@ -299,10 +287,10 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.ClientUser, c.RelOrgRole, c.RelRolePermission, c.RelRoleResource,
-		c.RelUserGroup, c.RelUserPermission, c.RelUserRole, c.SysBanner, c.SysConfig,
-		c.SysDict, c.SysFile, c.SysGroup, c.SysLog, c.SysModule, c.SysNotice, c.SysOrg,
-		c.SysPosition, c.SysQuickAction, c.SysResource, c.SysRole, c.SysUser,
+		c.ClientUser, c.RelRolePermission, c.RelRoleResource, c.RelUserPermission,
+		c.RelUserRole, c.SysBanner, c.SysConfig, c.SysDict, c.SysFile, c.SysGroup,
+		c.SysLog, c.SysModule, c.SysNotice, c.SysOrg, c.SysPosition, c.SysQuickAction,
+		c.SysResource, c.SysRole, c.SysUser,
 	} {
 		n.Use(hooks...)
 	}
@@ -312,10 +300,10 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.ClientUser, c.RelOrgRole, c.RelRolePermission, c.RelRoleResource,
-		c.RelUserGroup, c.RelUserPermission, c.RelUserRole, c.SysBanner, c.SysConfig,
-		c.SysDict, c.SysFile, c.SysGroup, c.SysLog, c.SysModule, c.SysNotice, c.SysOrg,
-		c.SysPosition, c.SysQuickAction, c.SysResource, c.SysRole, c.SysUser,
+		c.ClientUser, c.RelRolePermission, c.RelRoleResource, c.RelUserPermission,
+		c.RelUserRole, c.SysBanner, c.SysConfig, c.SysDict, c.SysFile, c.SysGroup,
+		c.SysLog, c.SysModule, c.SysNotice, c.SysOrg, c.SysPosition, c.SysQuickAction,
+		c.SysResource, c.SysRole, c.SysUser,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -326,14 +314,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *ClientUserMutation:
 		return c.ClientUser.mutate(ctx, m)
-	case *RelOrgRoleMutation:
-		return c.RelOrgRole.mutate(ctx, m)
 	case *RelRolePermissionMutation:
 		return c.RelRolePermission.mutate(ctx, m)
 	case *RelRoleResourceMutation:
 		return c.RelRoleResource.mutate(ctx, m)
-	case *RelUserGroupMutation:
-		return c.RelUserGroup.mutate(ctx, m)
 	case *RelUserPermissionMutation:
 		return c.RelUserPermission.mutate(ctx, m)
 	case *RelUserRoleMutation:
@@ -501,139 +485,6 @@ func (c *ClientUserClient) mutate(ctx context.Context, m *ClientUserMutation) (V
 		return (&ClientUserDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("gen: unknown ClientUser mutation op: %q", m.Op())
-	}
-}
-
-// RelOrgRoleClient is a client for the RelOrgRole schema.
-type RelOrgRoleClient struct {
-	config
-}
-
-// NewRelOrgRoleClient returns a client for the RelOrgRole from the given config.
-func NewRelOrgRoleClient(c config) *RelOrgRoleClient {
-	return &RelOrgRoleClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `relorgrole.Hooks(f(g(h())))`.
-func (c *RelOrgRoleClient) Use(hooks ...Hook) {
-	c.hooks.RelOrgRole = append(c.hooks.RelOrgRole, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `relorgrole.Intercept(f(g(h())))`.
-func (c *RelOrgRoleClient) Intercept(interceptors ...Interceptor) {
-	c.inters.RelOrgRole = append(c.inters.RelOrgRole, interceptors...)
-}
-
-// Create returns a builder for creating a RelOrgRole entity.
-func (c *RelOrgRoleClient) Create() *RelOrgRoleCreate {
-	mutation := newRelOrgRoleMutation(c.config, OpCreate)
-	return &RelOrgRoleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of RelOrgRole entities.
-func (c *RelOrgRoleClient) CreateBulk(builders ...*RelOrgRoleCreate) *RelOrgRoleCreateBulk {
-	return &RelOrgRoleCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *RelOrgRoleClient) MapCreateBulk(slice any, setFunc func(*RelOrgRoleCreate, int)) *RelOrgRoleCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &RelOrgRoleCreateBulk{err: fmt.Errorf("calling to RelOrgRoleClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*RelOrgRoleCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &RelOrgRoleCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for RelOrgRole.
-func (c *RelOrgRoleClient) Update() *RelOrgRoleUpdate {
-	mutation := newRelOrgRoleMutation(c.config, OpUpdate)
-	return &RelOrgRoleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *RelOrgRoleClient) UpdateOne(_m *RelOrgRole) *RelOrgRoleUpdateOne {
-	mutation := newRelOrgRoleMutation(c.config, OpUpdateOne, withRelOrgRole(_m))
-	return &RelOrgRoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *RelOrgRoleClient) UpdateOneID(id string) *RelOrgRoleUpdateOne {
-	mutation := newRelOrgRoleMutation(c.config, OpUpdateOne, withRelOrgRoleID(id))
-	return &RelOrgRoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for RelOrgRole.
-func (c *RelOrgRoleClient) Delete() *RelOrgRoleDelete {
-	mutation := newRelOrgRoleMutation(c.config, OpDelete)
-	return &RelOrgRoleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *RelOrgRoleClient) DeleteOne(_m *RelOrgRole) *RelOrgRoleDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *RelOrgRoleClient) DeleteOneID(id string) *RelOrgRoleDeleteOne {
-	builder := c.Delete().Where(relorgrole.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &RelOrgRoleDeleteOne{builder}
-}
-
-// Query returns a query builder for RelOrgRole.
-func (c *RelOrgRoleClient) Query() *RelOrgRoleQuery {
-	return &RelOrgRoleQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeRelOrgRole},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a RelOrgRole entity by its id.
-func (c *RelOrgRoleClient) Get(ctx context.Context, id string) (*RelOrgRole, error) {
-	return c.Query().Where(relorgrole.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *RelOrgRoleClient) GetX(ctx context.Context, id string) *RelOrgRole {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// Hooks returns the client hooks.
-func (c *RelOrgRoleClient) Hooks() []Hook {
-	return c.hooks.RelOrgRole
-}
-
-// Interceptors returns the client interceptors.
-func (c *RelOrgRoleClient) Interceptors() []Interceptor {
-	return c.inters.RelOrgRole
-}
-
-func (c *RelOrgRoleClient) mutate(ctx context.Context, m *RelOrgRoleMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&RelOrgRoleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&RelOrgRoleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&RelOrgRoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&RelOrgRoleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("gen: unknown RelOrgRole mutation op: %q", m.Op())
 	}
 }
 
@@ -900,139 +751,6 @@ func (c *RelRoleResourceClient) mutate(ctx context.Context, m *RelRoleResourceMu
 		return (&RelRoleResourceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("gen: unknown RelRoleResource mutation op: %q", m.Op())
-	}
-}
-
-// RelUserGroupClient is a client for the RelUserGroup schema.
-type RelUserGroupClient struct {
-	config
-}
-
-// NewRelUserGroupClient returns a client for the RelUserGroup from the given config.
-func NewRelUserGroupClient(c config) *RelUserGroupClient {
-	return &RelUserGroupClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `relusergroup.Hooks(f(g(h())))`.
-func (c *RelUserGroupClient) Use(hooks ...Hook) {
-	c.hooks.RelUserGroup = append(c.hooks.RelUserGroup, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `relusergroup.Intercept(f(g(h())))`.
-func (c *RelUserGroupClient) Intercept(interceptors ...Interceptor) {
-	c.inters.RelUserGroup = append(c.inters.RelUserGroup, interceptors...)
-}
-
-// Create returns a builder for creating a RelUserGroup entity.
-func (c *RelUserGroupClient) Create() *RelUserGroupCreate {
-	mutation := newRelUserGroupMutation(c.config, OpCreate)
-	return &RelUserGroupCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of RelUserGroup entities.
-func (c *RelUserGroupClient) CreateBulk(builders ...*RelUserGroupCreate) *RelUserGroupCreateBulk {
-	return &RelUserGroupCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *RelUserGroupClient) MapCreateBulk(slice any, setFunc func(*RelUserGroupCreate, int)) *RelUserGroupCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &RelUserGroupCreateBulk{err: fmt.Errorf("calling to RelUserGroupClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*RelUserGroupCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &RelUserGroupCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for RelUserGroup.
-func (c *RelUserGroupClient) Update() *RelUserGroupUpdate {
-	mutation := newRelUserGroupMutation(c.config, OpUpdate)
-	return &RelUserGroupUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *RelUserGroupClient) UpdateOne(_m *RelUserGroup) *RelUserGroupUpdateOne {
-	mutation := newRelUserGroupMutation(c.config, OpUpdateOne, withRelUserGroup(_m))
-	return &RelUserGroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *RelUserGroupClient) UpdateOneID(id string) *RelUserGroupUpdateOne {
-	mutation := newRelUserGroupMutation(c.config, OpUpdateOne, withRelUserGroupID(id))
-	return &RelUserGroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for RelUserGroup.
-func (c *RelUserGroupClient) Delete() *RelUserGroupDelete {
-	mutation := newRelUserGroupMutation(c.config, OpDelete)
-	return &RelUserGroupDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *RelUserGroupClient) DeleteOne(_m *RelUserGroup) *RelUserGroupDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *RelUserGroupClient) DeleteOneID(id string) *RelUserGroupDeleteOne {
-	builder := c.Delete().Where(relusergroup.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &RelUserGroupDeleteOne{builder}
-}
-
-// Query returns a query builder for RelUserGroup.
-func (c *RelUserGroupClient) Query() *RelUserGroupQuery {
-	return &RelUserGroupQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeRelUserGroup},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a RelUserGroup entity by its id.
-func (c *RelUserGroupClient) Get(ctx context.Context, id string) (*RelUserGroup, error) {
-	return c.Query().Where(relusergroup.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *RelUserGroupClient) GetX(ctx context.Context, id string) *RelUserGroup {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// Hooks returns the client hooks.
-func (c *RelUserGroupClient) Hooks() []Hook {
-	return c.hooks.RelUserGroup
-}
-
-// Interceptors returns the client interceptors.
-func (c *RelUserGroupClient) Interceptors() []Interceptor {
-	return c.inters.RelUserGroup
-}
-
-func (c *RelUserGroupClient) mutate(ctx context.Context, m *RelUserGroupMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&RelUserGroupCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&RelUserGroupUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&RelUserGroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&RelUserGroupDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("gen: unknown RelUserGroup mutation op: %q", m.Op())
 	}
 }
 
@@ -3167,15 +2885,14 @@ func (c *SysUserClient) mutate(ctx context.Context, m *SysUserMutation) (Value, 
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		ClientUser, RelOrgRole, RelRolePermission, RelRoleResource, RelUserGroup,
-		RelUserPermission, RelUserRole, SysBanner, SysConfig, SysDict, SysFile,
-		SysGroup, SysLog, SysModule, SysNotice, SysOrg, SysPosition, SysQuickAction,
-		SysResource, SysRole, SysUser []ent.Hook
+		ClientUser, RelRolePermission, RelRoleResource, RelUserPermission, RelUserRole,
+		SysBanner, SysConfig, SysDict, SysFile, SysGroup, SysLog, SysModule, SysNotice,
+		SysOrg, SysPosition, SysQuickAction, SysResource, SysRole, SysUser []ent.Hook
 	}
 	inters struct {
-		ClientUser, RelOrgRole, RelRolePermission, RelRoleResource, RelUserGroup,
-		RelUserPermission, RelUserRole, SysBanner, SysConfig, SysDict, SysFile,
-		SysGroup, SysLog, SysModule, SysNotice, SysOrg, SysPosition, SysQuickAction,
-		SysResource, SysRole, SysUser []ent.Interceptor
+		ClientUser, RelRolePermission, RelRoleResource, RelUserPermission, RelUserRole,
+		SysBanner, SysConfig, SysDict, SysFile, SysGroup, SysLog, SysModule, SysNotice,
+		SysOrg, SysPosition, SysQuickAction, SysResource, SysRole,
+		SysUser []ent.Interceptor
 	}
 )

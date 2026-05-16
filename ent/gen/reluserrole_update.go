@@ -55,46 +55,6 @@ func (_u *RelUserRoleUpdate) SetNillableRoleID(v *string) *RelUserRoleUpdate {
 	return _u
 }
 
-// SetScope sets the "scope" field.
-func (_u *RelUserRoleUpdate) SetScope(v string) *RelUserRoleUpdate {
-	_u.mutation.SetScope(v)
-	return _u
-}
-
-// SetNillableScope sets the "scope" field if the given value is not nil.
-func (_u *RelUserRoleUpdate) SetNillableScope(v *string) *RelUserRoleUpdate {
-	if v != nil {
-		_u.SetScope(*v)
-	}
-	return _u
-}
-
-// ClearScope clears the value of the "scope" field.
-func (_u *RelUserRoleUpdate) ClearScope() *RelUserRoleUpdate {
-	_u.mutation.ClearScope()
-	return _u
-}
-
-// SetCustomScopeGroupIds sets the "custom_scope_group_ids" field.
-func (_u *RelUserRoleUpdate) SetCustomScopeGroupIds(v string) *RelUserRoleUpdate {
-	_u.mutation.SetCustomScopeGroupIds(v)
-	return _u
-}
-
-// SetNillableCustomScopeGroupIds sets the "custom_scope_group_ids" field if the given value is not nil.
-func (_u *RelUserRoleUpdate) SetNillableCustomScopeGroupIds(v *string) *RelUserRoleUpdate {
-	if v != nil {
-		_u.SetCustomScopeGroupIds(*v)
-	}
-	return _u
-}
-
-// ClearCustomScopeGroupIds clears the value of the "custom_scope_group_ids" field.
-func (_u *RelUserRoleUpdate) ClearCustomScopeGroupIds() *RelUserRoleUpdate {
-	_u.mutation.ClearCustomScopeGroupIds()
-	return _u
-}
-
 // Mutation returns the RelUserRoleMutation object of the builder.
 func (_u *RelUserRoleUpdate) Mutation() *RelUserRoleMutation {
 	return _u.mutation
@@ -139,11 +99,6 @@ func (_u *RelUserRoleUpdate) check() error {
 			return &ValidationError{Name: "role_id", err: fmt.Errorf(`gen: validator failed for field "RelUserRole.role_id": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Scope(); ok {
-		if err := reluserrole.ScopeValidator(v); err != nil {
-			return &ValidationError{Name: "scope", err: fmt.Errorf(`gen: validator failed for field "RelUserRole.scope": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -164,18 +119,6 @@ func (_u *RelUserRoleUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if value, ok := _u.mutation.RoleID(); ok {
 		_spec.SetField(reluserrole.FieldRoleID, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.Scope(); ok {
-		_spec.SetField(reluserrole.FieldScope, field.TypeString, value)
-	}
-	if _u.mutation.ScopeCleared() {
-		_spec.ClearField(reluserrole.FieldScope, field.TypeString)
-	}
-	if value, ok := _u.mutation.CustomScopeGroupIds(); ok {
-		_spec.SetField(reluserrole.FieldCustomScopeGroupIds, field.TypeString, value)
-	}
-	if _u.mutation.CustomScopeGroupIdsCleared() {
-		_spec.ClearField(reluserrole.FieldCustomScopeGroupIds, field.TypeString)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -222,46 +165,6 @@ func (_u *RelUserRoleUpdateOne) SetNillableRoleID(v *string) *RelUserRoleUpdateO
 	if v != nil {
 		_u.SetRoleID(*v)
 	}
-	return _u
-}
-
-// SetScope sets the "scope" field.
-func (_u *RelUserRoleUpdateOne) SetScope(v string) *RelUserRoleUpdateOne {
-	_u.mutation.SetScope(v)
-	return _u
-}
-
-// SetNillableScope sets the "scope" field if the given value is not nil.
-func (_u *RelUserRoleUpdateOne) SetNillableScope(v *string) *RelUserRoleUpdateOne {
-	if v != nil {
-		_u.SetScope(*v)
-	}
-	return _u
-}
-
-// ClearScope clears the value of the "scope" field.
-func (_u *RelUserRoleUpdateOne) ClearScope() *RelUserRoleUpdateOne {
-	_u.mutation.ClearScope()
-	return _u
-}
-
-// SetCustomScopeGroupIds sets the "custom_scope_group_ids" field.
-func (_u *RelUserRoleUpdateOne) SetCustomScopeGroupIds(v string) *RelUserRoleUpdateOne {
-	_u.mutation.SetCustomScopeGroupIds(v)
-	return _u
-}
-
-// SetNillableCustomScopeGroupIds sets the "custom_scope_group_ids" field if the given value is not nil.
-func (_u *RelUserRoleUpdateOne) SetNillableCustomScopeGroupIds(v *string) *RelUserRoleUpdateOne {
-	if v != nil {
-		_u.SetCustomScopeGroupIds(*v)
-	}
-	return _u
-}
-
-// ClearCustomScopeGroupIds clears the value of the "custom_scope_group_ids" field.
-func (_u *RelUserRoleUpdateOne) ClearCustomScopeGroupIds() *RelUserRoleUpdateOne {
-	_u.mutation.ClearCustomScopeGroupIds()
 	return _u
 }
 
@@ -322,11 +225,6 @@ func (_u *RelUserRoleUpdateOne) check() error {
 			return &ValidationError{Name: "role_id", err: fmt.Errorf(`gen: validator failed for field "RelUserRole.role_id": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Scope(); ok {
-		if err := reluserrole.ScopeValidator(v); err != nil {
-			return &ValidationError{Name: "scope", err: fmt.Errorf(`gen: validator failed for field "RelUserRole.scope": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -364,18 +262,6 @@ func (_u *RelUserRoleUpdateOne) sqlSave(ctx context.Context) (_node *RelUserRole
 	}
 	if value, ok := _u.mutation.RoleID(); ok {
 		_spec.SetField(reluserrole.FieldRoleID, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.Scope(); ok {
-		_spec.SetField(reluserrole.FieldScope, field.TypeString, value)
-	}
-	if _u.mutation.ScopeCleared() {
-		_spec.ClearField(reluserrole.FieldScope, field.TypeString)
-	}
-	if value, ok := _u.mutation.CustomScopeGroupIds(); ok {
-		_spec.SetField(reluserrole.FieldCustomScopeGroupIds, field.TypeString, value)
-	}
-	if _u.mutation.CustomScopeGroupIdsCleared() {
-		_spec.ClearField(reluserrole.FieldCustomScopeGroupIds, field.TypeString)
 	}
 	_node = &RelUserRole{config: _u.config}
 	_spec.Assign = _node.assignValues

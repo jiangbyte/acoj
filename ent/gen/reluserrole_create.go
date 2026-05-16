@@ -31,34 +31,6 @@ func (_c *RelUserRoleCreate) SetRoleID(v string) *RelUserRoleCreate {
 	return _c
 }
 
-// SetScope sets the "scope" field.
-func (_c *RelUserRoleCreate) SetScope(v string) *RelUserRoleCreate {
-	_c.mutation.SetScope(v)
-	return _c
-}
-
-// SetNillableScope sets the "scope" field if the given value is not nil.
-func (_c *RelUserRoleCreate) SetNillableScope(v *string) *RelUserRoleCreate {
-	if v != nil {
-		_c.SetScope(*v)
-	}
-	return _c
-}
-
-// SetCustomScopeGroupIds sets the "custom_scope_group_ids" field.
-func (_c *RelUserRoleCreate) SetCustomScopeGroupIds(v string) *RelUserRoleCreate {
-	_c.mutation.SetCustomScopeGroupIds(v)
-	return _c
-}
-
-// SetNillableCustomScopeGroupIds sets the "custom_scope_group_ids" field if the given value is not nil.
-func (_c *RelUserRoleCreate) SetNillableCustomScopeGroupIds(v *string) *RelUserRoleCreate {
-	if v != nil {
-		_c.SetCustomScopeGroupIds(*v)
-	}
-	return _c
-}
-
 // SetID sets the "id" field.
 func (_c *RelUserRoleCreate) SetID(v string) *RelUserRoleCreate {
 	_c.mutation.SetID(v)
@@ -115,11 +87,6 @@ func (_c *RelUserRoleCreate) check() error {
 			return &ValidationError{Name: "role_id", err: fmt.Errorf(`gen: validator failed for field "RelUserRole.role_id": %w`, err)}
 		}
 	}
-	if v, ok := _c.mutation.Scope(); ok {
-		if err := reluserrole.ScopeValidator(v); err != nil {
-			return &ValidationError{Name: "scope", err: fmt.Errorf(`gen: validator failed for field "RelUserRole.scope": %w`, err)}
-		}
-	}
 	if v, ok := _c.mutation.ID(); ok {
 		if err := reluserrole.IDValidator(v); err != nil {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`gen: validator failed for field "RelUserRole.id": %w`, err)}
@@ -167,14 +134,6 @@ func (_c *RelUserRoleCreate) createSpec() (*RelUserRole, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.RoleID(); ok {
 		_spec.SetField(reluserrole.FieldRoleID, field.TypeString, value)
 		_node.RoleID = value
-	}
-	if value, ok := _c.mutation.Scope(); ok {
-		_spec.SetField(reluserrole.FieldScope, field.TypeString, value)
-		_node.Scope = &value
-	}
-	if value, ok := _c.mutation.CustomScopeGroupIds(); ok {
-		_spec.SetField(reluserrole.FieldCustomScopeGroupIds, field.TypeString, value)
-		_node.CustomScopeGroupIds = &value
 	}
 	return _node, _spec
 }

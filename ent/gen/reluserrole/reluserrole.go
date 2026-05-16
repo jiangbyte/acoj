@@ -15,10 +15,6 @@ const (
 	FieldUserID = "user_id"
 	// FieldRoleID holds the string denoting the role_id field in the database.
 	FieldRoleID = "role_id"
-	// FieldScope holds the string denoting the scope field in the database.
-	FieldScope = "scope"
-	// FieldCustomScopeGroupIds holds the string denoting the custom_scope_group_ids field in the database.
-	FieldCustomScopeGroupIds = "custom_scope_group_ids"
 	// Table holds the table name of the reluserrole in the database.
 	Table = "rel_user_role"
 )
@@ -28,8 +24,6 @@ var Columns = []string{
 	FieldID,
 	FieldUserID,
 	FieldRoleID,
-	FieldScope,
-	FieldCustomScopeGroupIds,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -47,8 +41,6 @@ var (
 	UserIDValidator func(string) error
 	// RoleIDValidator is a validator for the "role_id" field. It is called by the builders before save.
 	RoleIDValidator func(string) error
-	// ScopeValidator is a validator for the "scope" field. It is called by the builders before save.
-	ScopeValidator func(string) error
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
@@ -69,14 +61,4 @@ func ByUserID(opts ...sql.OrderTermOption) OrderOption {
 // ByRoleID orders the results by the role_id field.
 func ByRoleID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRoleID, opts...).ToFunc()
-}
-
-// ByScope orders the results by the scope field.
-func ByScope(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldScope, opts...).ToFunc()
-}
-
-// ByCustomScopeGroupIds orders the results by the custom_scope_group_ids field.
-func ByCustomScopeGroupIds(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCustomScopeGroupIds, opts...).ToFunc()
 }

@@ -7,10 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"hei-gin/ent/gen/clientuser"
-	"hei-gin/ent/gen/relorgrole"
 	"hei-gin/ent/gen/relrolepermission"
 	"hei-gin/ent/gen/relroleresource"
-	"hei-gin/ent/gen/relusergroup"
 	"hei-gin/ent/gen/reluserpermission"
 	"hei-gin/ent/gen/reluserrole"
 	"hei-gin/ent/gen/sysbanner"
@@ -94,10 +92,8 @@ func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			clientuser.Table:        clientuser.ValidColumn,
-			relorgrole.Table:        relorgrole.ValidColumn,
 			relrolepermission.Table: relrolepermission.ValidColumn,
 			relroleresource.Table:   relroleresource.ValidColumn,
-			relusergroup.Table:      relusergroup.ValidColumn,
 			reluserpermission.Table: reluserpermission.ValidColumn,
 			reluserrole.Table:       reluserrole.ValidColumn,
 			sysbanner.Table:         sysbanner.ValidColumn,
