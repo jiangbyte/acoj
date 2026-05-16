@@ -17,7 +17,7 @@ class SessionAnalysisResult(DateTimeValidatorMixin, BaseModel):
 class SessionPageResult(DateTimeValidatorMixin, BaseModel):
     """在线会话分页结果"""
     user_id: Optional[str] = None
-    account: Optional[str] = None
+    username: Optional[str] = None
     nickname: Optional[str] = None
     avatar: Optional[str] = None
     status: Optional[str] = None

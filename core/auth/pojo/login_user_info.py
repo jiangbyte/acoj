@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 class LoginUserInfo(BaseModel):
     id: Optional[str] = None
-    account: Optional[str] = None
+    username: Optional[str] = None
     password: Optional[str] = Field(default=None, exclude=True)
     nickname: Optional[str] = None
     avatar: Optional[str] = None

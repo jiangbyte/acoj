@@ -90,10 +90,10 @@ async def _collect_sessions(
         except json.JSONDecodeError:
             continue
 
-        # Filter by keyword (account/nickname)
+        # Filter by keyword (username/nickname)
         extra = token_data.get("extra", {})
-        account = extra.get("account", "")
-        if keyword and keyword.lower() not in account.lower():
+        username_val = extra.get("username", "")
+        if keyword and keyword.lower() not in username_val.lower():
             continue
 
         ttl = await redis_client.ttl(token_key)
@@ -123,7 +123,7 @@ async def _collect_sessions(
 
         sessions.append(SessionPageResult(
             user_id=user_id,
-            account=account,
+            username=username_val,
             nickname=nickname,
             avatar=avatar,
             status=status,

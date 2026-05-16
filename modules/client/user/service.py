@@ -43,7 +43,7 @@ class ClientUserService(BaseCrudService):
         return self.dao.find_by_email(email)
 
     async def create(self, vo: ClientUserVO, request: Optional[Request] = None) -> None:
-        if vo.account and self.find_by_account(vo.account):
+        if vo.username and self.find_by_username(vo.username):
             raise BusinessException("账号已存在")
         if vo.email and self.find_by_email(vo.email):
             raise BusinessException("邮箱已存在")
@@ -55,8 +55,8 @@ class ClientUserService(BaseCrudService):
         if not entity:
             raise BusinessException("数据不存在")
         update_data = vo.model_dump(exclude_unset=True)
-        if 'account' in update_data and update_data['account'] != entity.account:
-            if self.find_by_account(update_data['account']):
+        if 'username' in update_data and update_data['username'] != entity.username:
+            if self.find_by_username(update_data['username']):
                 raise BusinessException("账号已存在")
         apply_update(entity, update_data, extra_protected={'password'})
         self.dao.update(entity, user_id=await self._get_current_user_id(request))
@@ -67,15 +67,15 @@ class ClientUserService(BaseCrudService):
             "C端用户导入模板", "C端用户数据"
         )
 
-    def find_by_account(self, account: str) -> Optional[ClientUser]:
-        return self.dao.find_by_account(account)
+    def find_by_username(self, username: str) -> Optional[ClientUser]:
+        return self.dao.find_by_username(username)
 
     def to_login_user_info(self, entity: Optional[ClientUser]) -> Optional[LoginUserInfo]:
         if not entity:
             return None
         return LoginUserInfo(
             id=entity.id,
-            account=entity.account,
+            username=entity.username,
             password=entity.password,
             nickname=entity.nickname,
             avatar=entity.avatar,
@@ -107,7 +107,7 @@ class ClientUserService(BaseCrudService):
             return None
         return {
             "id": entity.id,
-            "account": entity.account,
+            "username": entity.username,
             "nickname": entity.nickname,
             "avatar": entity.avatar,
             "motto": entity.motto,
@@ -173,11 +173,11 @@ class LoginUserApiProvider:
         finally:
             db.close()
 
-    def get_login_user_info_by_account(self, account: str) -> Optional[LoginUserInfo]:
+    def get_login_user_info_by_username(self, username: str) -> Optional[LoginUserInfo]:
         db = self._session_factory()
         try:
             service = ClientUserService(db)
-            entity = service.find_by_account(account)
+            entity = service.find_by_username(username)
             return service.to_login_user_info(entity)
         finally:
             db.close()

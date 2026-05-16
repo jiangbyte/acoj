@@ -25,7 +25,7 @@ def _get_request(*args, **kwargs) -> Optional[Request]:
 
 
 async def _get_op_user(request: Request) -> Optional[str]:
-    """Get the current operator's account name from the active user."""
+    """Get the current operator's username from the active user."""
     try:
         from core.auth import HeiAuthTool
         user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
@@ -37,7 +37,7 @@ async def _get_op_user(request: Request) -> Optional[str]:
         db = SessionLocal()
         try:
             entity = UserService(db).find_by_id(user_id)
-            return entity.account if entity else None
+            return entity.username if entity else None
         finally:
             db.close()
     except Exception:

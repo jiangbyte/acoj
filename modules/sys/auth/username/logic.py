@@ -30,7 +30,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         except Exception as e:
             raise BusinessException(str(e))
 
-    user_info = _login_user_api.get_login_user_info_by_account(param.username)
+    user_info = _login_user_api.get_login_user_info_by_username(param.username)
     if not user_info:
         logger.warning(f"User not found: {param.username}")
         raise BusinessException("用户名或密码错误")
@@ -57,7 +57,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         raise BusinessException("用户名或密码错误")
 
     extra = {
-        "account": user_info.account,
+        "username": user_info.username,
         "nickname": user_info.nickname,
         "status": user_info.status
     }
@@ -81,7 +81,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
             db.close()
 
     # 记录登录日志
-    record_auth_log(request, "登录", "LOGIN", op_user=user_info.account)
+    record_auth_log(request, "登录", "LOGIN", op_user=user_info.username)
 
     return UsernameLoginResult(token=token)
 
@@ -97,7 +97,7 @@ async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
     try:
         from sqlalchemy import select
         existing_user = db.scalar(
-            select(SysUser).where(SysUser.account == param.username)
+            select(SysUser).where(SysUser.username == param.username)
         )
         if existing_user:
             raise BusinessException("用户名已存在")
@@ -109,7 +109,7 @@ async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
 
         user = SysUser(
             id=user_id,
-            account=param.username,
+            username=param.username,
             password=hashed_password,
             nickname=param.username,
             status=UserStatusEnum.ACTIVE.value,
@@ -135,7 +135,7 @@ async def do_logout(request: Request) -> UsernameLogoutResult:
             try:
                 from modules.sys.user.service import UserService
                 entity = UserService(db).find_by_id(user_id)
-                op_user = entity.account if entity else None
+                op_user = entity.username if entity else None
                 record_auth_log(request, "登出", "LOGOUT", op_user=op_user)
             finally:
                 db.close()
