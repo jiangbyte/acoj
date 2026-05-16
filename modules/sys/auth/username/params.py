@@ -5,8 +5,8 @@ from pydantic import BaseModel
 class UsernameLoginParam(BaseModel):
     username: str
     password: str
-    captcha_code: Optional[str] = None
-    captcha_id: Optional[str] = None
+    captcha_code: str
+    captcha_id: str
     device_id: Optional[str]
 
 
@@ -17,8 +17,8 @@ class UsernameLoginResult(BaseModel):
 class UsernameRegisterParam(BaseModel):
     username: str
     password: str
-    captcha_code: Optional[str] = None
-    captcha_id: Optional[str] = None
+    captcha_code: str
+    captcha_id: str
 
 
 class UsernameRegisterResult(BaseModel):
