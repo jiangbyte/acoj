@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds, BaseExportParam
+from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -31,11 +31,3 @@ class BannerVO(DateTimeValidatorMixin, BaseModel):
 
 class BannerPageParam(PageBounds):
     pass
-
-
-class BannerExportParam(BaseExportParam):
-    pass
-
-
-class BannerImportParam(BaseModel):
-    data: List[BannerVO]

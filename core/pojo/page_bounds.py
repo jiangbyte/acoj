@@ -1,6 +1,5 @@
-from typing import Optional, List
+from typing import List
 from pydantic import BaseModel
-from core.enums import ExportTypeEnum
 
 
 class PageBounds(BaseModel):
@@ -18,14 +17,3 @@ class IdParam(BaseModel):
 
 class IdsParam(BaseModel):
     ids: List[str]
-
-
-class BaseExportParam(BaseModel):
-    export_type: str = ExportTypeEnum.CURRENT.value
-    current: Optional[int] = None
-    size: Optional[int] = None
-    selected_id: Optional[str] = None
-
-    @property
-    def selected_ids(self) -> Optional[List[str]]:
-        return self.selected_id.split(",") if self.selected_id else None

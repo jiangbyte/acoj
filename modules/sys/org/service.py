@@ -15,7 +15,6 @@ class OrgService(BaseCrudService):
     vo_class = OrgVO
     dao_class = OrgDao
     page_param_class = OrgPageParam
-    export_name = "组织数据"
 
     def page(self, param: OrgPageParam) -> dict:
         result = self.dao.find_page_by_filters(param)

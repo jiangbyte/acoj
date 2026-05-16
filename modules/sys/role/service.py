@@ -2,15 +2,14 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from fastapi import Request
 from .models import SysRole
-from .params import RoleVO, RolePageParam, RoleExportParam, RoleImportParam, GrantPermissionParam, GrantResourceParam, \
+from .params import RoleVO, RolePageParam, GrantPermissionParam, GrantResourceParam, \
     ButtonPermissionScope, PermissionItem
 from .dao import RoleDao
 from core.enums import DataScopeEnum
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum
-from core.utils import export_excel, strip_system_fields, apply_update, make_template
+from core.utils import strip_system_fields, apply_update
 from core.auth import HeiAuthTool
 from core.db.base_service import BaseCrudService
 import logging
@@ -23,7 +22,6 @@ class RoleService(BaseCrudService):
     vo_class = RoleVO
     dao_class = RoleDao
     page_param_class = RolePageParam
-    export_name = "角色数据"
 
     def remove(self, param: IdsParam) -> None:
         from sqlalchemy import func, select, delete as sa_delete

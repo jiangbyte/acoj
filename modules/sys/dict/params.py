@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds, BaseExportParam
+from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -52,11 +52,3 @@ class DictListParam(BaseModel):
 
 class DictTreeParam(BaseModel):
     category: Optional[str] = None
-
-
-class DictExportParam(BaseExportParam):
-    pass
-
-
-class DictImportParam(BaseModel):
-    data: List[DictVO]

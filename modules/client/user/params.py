@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime, date
 from pydantic import BaseModel, ConfigDict
-from core.pojo import PageBounds, BaseExportParam
+from core.pojo import PageBounds
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -50,11 +50,3 @@ class UpdateAvatarParam(BaseModel):
 class UpdatePasswordParam(BaseModel):
     current_password: str
     new_password: str
-
-
-class ClientUserExportParam(BaseExportParam):
-    pass
-
-
-class ClientUserImportParam(BaseModel):
-    data: List[ClientUserVO]

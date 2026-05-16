@@ -1,4 +1,4 @@
-from typing import Set, Optional, List
+from typing import Set, Optional
 from core.constants.base_fields import BASE_SYSTEM_FIELDS
 
 
@@ -28,18 +28,3 @@ def apply_update(entity, update_data: dict, extra_protected: Optional[Set[str]] 
     for key, value in update_data.items():
         if key not in protected:
             setattr(entity, key, value)
-
-
-def make_template(model_class, extra_exclude: Optional[Set[str]] = None) -> List[dict]:
-    """Generate an import template with all model fields except system ones.
-
-    Args:
-        model_class: The SQLAlchemy model class.
-        extra_exclude: Additional fields to exclude from the template.
-
-    Returns:
-        A list with a single dict mapping field names to empty strings.
-    """
-    exclude = BASE_SYSTEM_FIELDS | (extra_exclude or set())
-    fields = [c.name for c in model_class.__table__.columns if c.name not in exclude]
-    return [{field: "" for field in fields}]

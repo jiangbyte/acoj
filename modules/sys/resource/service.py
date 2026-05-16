@@ -15,7 +15,6 @@ class ModuleService(BaseCrudService):
     vo_class = ModuleVO
     dao_class = ModuleDao
     page_param_class = ModulePageParam
-    export_name = "模块数据"
 
 
 class ResourceService(BaseCrudService):
@@ -23,7 +22,6 @@ class ResourceService(BaseCrudService):
     vo_class = ResourceVO
     dao_class = ResourceDao
     page_param_class = ResourcePageParam
-    export_name = "资源数据"
 
     def tree(self) -> list:
         records = self.dao.find_all()

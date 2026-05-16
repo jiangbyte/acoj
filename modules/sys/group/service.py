@@ -19,7 +19,6 @@ class GroupService(BaseCrudService):
     vo_class = GroupVO
     dao_class = GroupDao
     page_param_class = GroupPageParam
-    export_name = "用户组数据"
 
     def __init__(self, db: Session):
         super().__init__(db)

@@ -1,14 +1,13 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from fastapi import Request
-from .params import DictVO, DictPageParam, DictListParam, DictTreeParam, DictExportParam, DictImportParam
+from .params import DictVO, DictPageParam, DictListParam, DictTreeParam
 from .dao import DictDao
 from .models import SysDict
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
-from core.enums import ExportTypeEnum
-from core.utils import export_excel, generate_id, strip_system_fields, apply_update, make_template
+from core.utils import generate_id, strip_system_fields, apply_update
 from core.auth import HeiAuthTool
 from core.db.base_service import BaseCrudService
 from core.db.redis import get_client
@@ -24,7 +23,6 @@ class DictService(BaseCrudService):
     vo_class = DictVO
     dao_class = DictDao
     page_param_class = DictPageParam
-    export_name = "字典数据"
 
     def page(self, param: DictPageParam) -> dict:
         result = self.dao.find_page_by_filters(param)
@@ -156,14 +154,6 @@ class DictService(BaseCrudService):
         all_ids = self._collect_descendant_ids(param.ids)
         self.dao.delete_by_ids(all_ids)
         await self._sync_cache()
-
-    async def import_data(self, param: DictImportParam, request: Optional[Request] = None) -> dict:
-        if not param.data:
-            raise BusinessException("导入数据不能为空")
-        entities = [SysDict(**strip_system_fields(vo.model_dump())) for vo in param.data]
-        self.dao.insert_batch(entities, user_id=await self._get_current_user_id(request))
-        await self._sync_cache()
-        return {"total": len(entities), "message": f"成功导入{len(entities)}条数据"}
 
     # ---- Dict translation helpers ----
 

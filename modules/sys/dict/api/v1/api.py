@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, Query, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
 from core.pojo import IdParam, IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission, NoRepeat
 from core.log import SysLog
-from core.utils.excel_utils import handle_import
-from ...params import DictVO, DictPageParam, DictListParam, DictTreeParam, DictExportParam, DictImportParam
+from ...params import DictVO, DictPageParam, DictListParam, DictTreeParam
 from ...service import DictService
 
 router = APIRouter()
@@ -153,45 +152,3 @@ async def get_dict_children(
 ):
     service = DictService(db)
     return success(service.get_dict_children(type_code))
-
-
-@router.get(
-    "/api/v1/sys/dict/export",
-    summary="导出字典数据")
-@SysLog("导出字典数据")
-@HeiCheckPermission("sys:dict:export")
-async def export(
-    request: Request,
-    param: DictExportParam = Depends(),
-    db: Session = Depends(get_db)
-):
-    service = DictService(db)
-    return service.export(param)
-
-
-@router.get(
-    "/api/v1/sys/dict/template",
-    summary="下载字典导入模板")
-@HeiCheckPermission("sys:dict:template")
-async def download_template(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    service = DictService(db)
-    return service.download_template()
-
-
-@router.post(
-    "/api/v1/sys/dict/import",
-    summary="导入字典数据",
-    response_model=Result
-)
-@SysLog("导入字典数据")
-@HeiCheckPermission("sys:dict:import")
-@NoRepeat(interval=5000)
-async def import_data(
-    request: Request,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db)
-):
-    return await handle_import(file, DictService, DictVO, DictImportParam, db, request)
