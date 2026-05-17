@@ -2,9 +2,9 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   lang: 'zh-CN',
-  title: 'Hei Gin',
-  description: 'Hei Gin - 基于 Gin + Ent 的 Go 快速开发框架官方文档',
-  base: '/hei-gin/',
+  title: 'ACOJ',
+  description: 'ACOJ - 基于 Gin + Ent 构建的在线评测系统（Online Judge）',
+  base: '/acoj/',
 
   head: [['link', { rel: 'icon', href: '/logo.svg' }]],
 
@@ -20,9 +20,8 @@ export default defineConfig({
       {
         text: '相关项目',
         items: [
-          { text: 'Hei Boot (Java)', link: 'https://github.com/jiangbyte/hei-boot' },
-          { text: 'Hei FastAPI (Python)', link: 'https://github.com/jiangbyte/hei-fastapi' },
-          { text: 'Hei Admin Vue', link: 'https://github.com/jiangbyte/hei-admin-vue' },
+          { text: 'Java 版本', link: 'https://github.com/jiangbyte/acoj/tree/java-version' },
+          { text: 'Admin Vue', link: 'https://github.com/jiangbyte/hei-admin-vue' },
         ],
       },
     ],
@@ -47,7 +46,7 @@ export default defineConfig({
 
     sidebar: {
       '/guide/': [
-        { text: '框架介绍', link: '/overview' },
+        { text: '项目介绍', link: '/overview' },
         { text: '快速开始', link: '/guide/quickstart' },
         { text: '安装配置', link: '/guide/installation' },
         { text: '配置文件说明', link: '/guide/config' },
@@ -65,7 +64,7 @@ export default defineConfig({
         { text: '操作日志', link: '/features/log' },
       ],
       '/modules/': [
-        { text: '模块开发规范', link: '/modules/development' },
+        { text: '模块开发', link: '/modules/development' },
       ],
     },
   },
