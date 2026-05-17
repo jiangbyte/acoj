@@ -6,7 +6,7 @@ hero:
   text: "Go 快速开发框架"
   tagline: 基于 Gin + Ent 构建，开箱即用的后台管理系统解决方案
   image:
-    src: https://jiangbyte.github.io/hei-docs/logo.svg
+    src: /logo.svg
     alt: Hei Gin Logo
   actions:
     - theme: brand
