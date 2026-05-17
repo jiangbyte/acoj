@@ -1,0 +1,205 @@
+<template>
+  <div class="max-w-1400px" mx-auto>
+    <a-row :gutter="12">
+      <a-col :xs="24" :lg="16" class="mb-4">
+        <div class="flex flex-col gap-3">
+          <UserInfoCard />
+
+          <a-card :bordered="false" :loading="loading" :body-style="{ padding: '10px 6px' }">
+            <template #title>
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                  <span class="text-base font-medium">快捷工作台</span>
+                  <span class="text-xs text-$text-color-secondary hidden sm:inline">常用功能快捷入口</span>
+                </div>
+                <a-button v-if="available.length" type="link" size="small" @click="showAddDrawer = true">
+                  + 添加
+                </a-button>
+              </div>
+            </template>
+            <div v-if="actions.length" class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-1">
+              <div
+                v-for="item in actions"
+                :key="item.id"
+                class="flex flex-col items-center gap-1 py-2 px-1 bg-$background-color-light rounded-lg cursor-pointer transition duration-250 relative hover:-translate-y-0.5 hover:shadow-sm"
+                @click="navigate(item)"
+                @mouseenter="hoverId = item.id"
+                @mouseleave="hoverId = null"
+              >
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xl" :style="{ background: iconBg(item.name) }">
+                  <component :is="resolveIcon(item.icon)" />
+                </div>
+                <span class="text-xs font-medium text-$text-color leading-tight text-center">{{ item.name }}</span>
+                <a-button
+                  v-if="hoverId === item.id"
+                  type="text"
+                  size="small"
+                  class="absolute top-0.5 right-0.5 text-$color-danger w-5 h-5 min-w-0"
+                  @click.stop="removeAction(item)"
+                >
+                  <template #icon><CloseOutlined /></template>
+                </a-button>
+              </div>
+            </div>
+            <div v-else class="flex items-center justify-center gap-1 py-8 text-$text-color-secondary">
+              <span>暂无快捷入口</span>
+              <a-button v-if="available.length" type="link" @click="showAddDrawer = true">去添加</a-button>
+            </div>
+          </a-card>
+        </div>
+      </a-col>
+
+      <a-col :xs="24" :lg="8" class="mb-4">
+        <a-card title="系统通知" :bordered="false" :loading="loading">
+          <div v-if="data?.notices.length" class="flex flex-col">
+            <div
+              v-for="notice in data.notices"
+              :key="notice.id"
+              class="flex items-center gap-2.5 py-2.5 border-b border-$border-color-split last:border-b-0 cursor-pointer transition duration-200 hover:bg-$background-color-light"
+              @click="openNotice(notice)"
+            >
+              <a-tag :color="$dict.color('NOTICE_LEVEL', notice.level)" class="text-11px leading-18px px-1.5 flex-shrink-0">{{ $dict.label('NOTICE_LEVEL', notice.level) }}</a-tag>
+              <span class="flex-1 text-sm text-$text-color truncate">{{ notice.title }}</span>
+              <span class="text-xs text-$text-color-secondary flex-shrink-0">{{ notice.created_at }}</span>
+            </div>
+          </div>
+          <div v-else class="py-8 text-center text-$text-color-secondary">暂无系统通知</div>
+        </a-card>
+
+        <NoticeDetail ref="noticeDetailRef" v-model:open="noticeDetailOpen" />
+      </a-col>
+    </a-row>
+
+    <a-drawer title="添加快捷方式" placement="right" :open="showAddDrawer" width="360" @close="showAddDrawer = false">
+      <a-tree
+        v-if="available.length"
+        :tree-data="treeData"
+        :field-names="{ title: 'name', key: 'resource_id', children: 'children' }"
+      >
+        <template #title="data">
+          <div
+            class="flex items-center gap-2 py-0.5"
+            :class="data.type === 'MENU' ? 'cursor-pointer' : 'opacity-60'"
+            @click="handleTreeNodeClick(data)"
+          >
+            <component :is="resolveIcon(data.icon)" class="text-base flex-shrink-0" :class="data.type === 'MENU' ? 'text-$primary-color' : 'text-$text-color-secondary'" />
+            <span class="text-sm">{{ data.name }}</span>
+            <PlusOutlined v-if="data.type === 'MENU'" class="text-xs ml-auto text-$primary-color" />
+          </div>
+        </template>
+      </a-tree>
+      <div v-else class="py-8 text-center text-$text-color-secondary">已全部添加</div>
+    </a-drawer>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, shallowRef, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { CloseOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { resolveIcon } from '@/utils/iconUtil'
+import { fetchHome, addQuickAction, removeQuickAction } from '@/api/home'
+import UserInfoCard from '@/views/dashboard/components/UserInfoCard.vue'
+import NoticeDetail from '@/views/dashboard/components/NoticeDetail.vue'
+
+interface QuickAction {
+  id: string
+  resource_id: string
+  parent_id?: string
+  type: string
+  name: string
+  icon: string
+  route_path: string
+  sort_code: number
+}
+
+interface HomeNotice {
+  id: string
+  title: string
+  level: string
+  created_at: string | null
+}
+
+interface HomeData {
+  quick_actions: QuickAction[]
+  available_resources: QuickAction[]
+  notices: HomeNotice[]
+}
+
+defineOptions({ name: 'SysHome' })
+
+const router = useRouter()
+const data = shallowRef<HomeData | null>(null)
+const loading = ref(true)
+const showAddDrawer = ref(false)
+const hoverId = ref<string | null>(null)
+const noticeDetailRef = ref()
+const noticeDetailOpen = ref(false)
+
+function openNotice(notice: HomeNotice) {
+  noticeDetailRef.value?.doOpen(notice)
+}
+
+const actions = ref<QuickAction[]>([])
+const available = ref<QuickAction[]>([])
+
+const treeData = computed(() => {
+  const map = new Map<string, QuickAction[]>()
+  for (const res of available.value) {
+    const pid = res.parent_id || ''
+    if (!map.has(pid)) map.set(pid, [])
+    map.get(pid)!.push(res)
+  }
+  function build(pid: string): any[] {
+    return (map.get(pid) || []).map(node => ({
+      ...node,
+      children: build(node.resource_id),
+    }))
+  }
+  return build('')
+})
+
+function handleTreeNodeClick(data: any) {
+  if (data.type === 'MENU') addAction(data)
+}
+
+const iconColors = ['#1677ff', '#52c41a', '#faad14', '#722ed1', '#eb2f96', '#fa8c16', '#13c2c2', '#f5222d']
+
+function iconBg(_name: string) {
+  const idx = actions.value.findIndex(a => a.name === _name)
+  const c = iconColors[idx % iconColors.length]
+  return `${c}15`
+}
+
+function navigate(item: QuickAction) {
+  if (item.route_path) {
+    router.push(item.route_path)
+  }
+}
+
+async function addAction(res: QuickAction) {
+    await addQuickAction(res.resource_id)
+    const res2 = await fetchHome()
+    if (res2.success && res2.data) {
+      actions.value = res2.data.quick_actions || []
+      available.value = res2.data.available_resources || []
+    }
+    if (!available.value.length) showAddDrawer.value = false
+}
+
+async function removeAction(item: QuickAction) {
+    await removeQuickAction(item.id)
+    actions.value = actions.value.filter(a => a.id !== item.id)
+    available.value.push(item)
+}
+
+onMounted(async () => {
+    const res = await fetchHome()
+    if (res.success && res.data) {
+      data.value = res.data
+      actions.value = res.data.quick_actions || []
+      available.value = res.data.available_resources || []
+    }
+  loading.value = false
+})
+</script>

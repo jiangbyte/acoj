@@ -1,0 +1,254 @@
+<template>
+  <div class="flex flex-col gap-2">
+    <AppSearchPanel
+      :model="searchForm"
+      perm="sys:resource:page"
+      @search="handleSearch"
+      @reset="resetSearch"
+    >
+      <a-col :xs="24" :sm="12" :md="8" :lg="6">
+        <a-form-item label="关键词" name="keyword">
+          <a-input v-model:value="searchForm.keyword" placeholder="资源名称" allow-clear />
+        </a-form-item>
+      </a-col>
+    </AppSearchPanel>
+
+    <AppTreeTable
+      ref="treeTableRef"
+      perm="sys:resource:tree"
+      :columns="columns"
+      :data-source="treeData"
+      :loading="loading"
+      default-expand-all
+      @refresh="loadTree"
+    >
+      <template #toolbar>
+        <a-button v-if="hasPermission('sys:resource:create')" type="primary" @click="openCreate">
+          <template #icon><PlusOutlined /></template>
+          新增资源
+        </a-button>
+        <a-button
+          v-if="hasPermission('sys:resource:remove')"
+          danger
+          :disabled="selectedKeys.length === 0"
+          @click="handleBatchDelete"
+        >
+          <template #icon><DeleteOutlined /></template>
+          批量删除
+        </a-button>
+        </template>
+
+      <template #bodyCell="{ column, record }">
+        <template v-if="column.key === 'name'">
+          <span>
+            <component :is="resolveIcon(record.icon)" v-if="record.icon" class="mr-1" />
+            {{ record.name }}
+          </span>
+        </template>
+        <template v-if="column.key === 'category'">
+          <a-tag>{{ $dict.label('RESOURCE_CATEGORY', record.category) }}</a-tag>
+        </template>
+        <template v-else-if="column.key === 'type'">
+          <a-tag>{{ $dict.label('RESOURCE_TYPE', record.type) }}</a-tag>
+        </template>
+        <template v-else-if="column.key === 'is_visible'">
+          <a-tag :color="$dict.color('SYS_YES_NO', record.is_visible)">
+            {{ $dict.label('SYS_YES_NO', record.is_visible) }}
+          </a-tag>
+        </template>
+        <template v-else-if="column.key === 'status'">
+          <a-tooltip title="禁用后仅不可被选择，不影响已绑定的数据">
+            <a-tag :color="$dict.color('SYS_STATUS', record.status)">
+              {{ $dict.label('SYS_STATUS', record.status) }}
+            </a-tag>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.key === 'action'">
+          <a-space>
+            <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
+            <a-button
+              v-if="hasPermission('sys:resource:modify')"
+              type="link"
+              size="small"
+              @click="openEdit(record)"
+            >
+              编辑
+            </a-button>
+            <a-dropdown
+              v-if="
+                (hasPermission('sys:resource:create') && record.type === 'DIRECTORY') ||
+                (hasPermission('sys:resource:modify') && record.type === 'MENU')
+              "
+            >
+              <a-button type="link" size="small">
+                更多
+                <DownOutlined />
+              </a-button>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item
+                    v-if="hasPermission('sys:resource:create') && record.type === 'DIRECTORY'"
+                    @click="openCreate(record)"
+                  >
+                    新增子级
+                  </a-menu-item>
+                  <a-menu-item
+                    v-if="hasPermission('sys:resource:modify') && record.type === 'MENU'"
+                    @click="openButtonManager(record)"
+                  >
+                    权限按钮
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
+            <a-popconfirm
+              v-if="hasPermission('sys:resource:remove')"
+              title="确定删除该资源？子级将一并删除"
+              @confirm="handleDelete(record.id)"
+            >
+              <a-button type="link" danger size="small">删除</a-button>
+            </a-popconfirm>
+          </a-space>
+        </template>
+      </template>
+    </AppTreeTable>
+
+    <DetailDrawer ref="detailRef" v-model:open="detailOpen" />
+    <FormDrawer ref="formRef" v-model:open="formOpen" @success="handleFormSuccess" />
+    <ButtonManager
+      ref="buttonManagerRef"
+      v-model:open="buttonManagerOpen"
+      @success="reloadAfterChange"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+defineOptions({ name: 'SysResource' })
+import { ref, reactive, watch, onMounted } from 'vue'
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  DownOutlined,
+} from '@ant-design/icons-vue'
+import { useAuthStore } from '@/store'
+import { useCrud } from '@/hooks/useCrud'
+
+import {
+  fetchResourceTree,
+  fetchResourceRemove,
+} from '@/api/resource'
+import { resolveIcon } from '@/utils'
+import AppTreeTable from '@/components/table/AppTreeTable.vue'
+import AppSearchPanel from '@/components/form/AppSearchPanel.vue'
+import DetailDrawer from './components/detail.vue'
+import FormDrawer from './components/form.vue'
+import ButtonManager from './components/buttonManager.vue'
+
+const auth = useAuthStore()
+const hasPermission = auth.hasPermission
+const treeTableRef = ref()
+
+// useCrud: delete and form success
+const crud = useCrud({
+  name: '资源',
+  deleteApi: fetchResourceRemove,
+  onSuccess: () => reloadAfterChange(),
+})
+const { selectedKeys, handleSearch: _, handleDelete, handleBatchDelete, handleFormSuccess } = crud
+
+// ── Tree data ──
+const loading = ref(false)
+const treeData = ref<any[]>([])
+const treeDataOrigin = ref<any[]>([])
+
+function stripButtons(nodes: any[]): any[] {
+  return nodes.reduce((acc: any[], node: any) => {
+    if (node.type === 'BUTTON') return acc
+    const children = node.children ? stripButtons(node.children) : []
+    acc.push({ ...node, children })
+    return acc
+  }, [])
+}
+
+function filterTree(nodes: any[], keyword: string): any[] {
+  if (!keyword) return nodes
+  return nodes.reduce((acc: any[], node: any) => {
+    const match = node.name?.includes(keyword) || node.code?.includes(keyword)
+    const filteredChildren = node.children ? filterTree(node.children, keyword) : []
+    if (match || filteredChildren.length > 0) {
+      acc.push({ ...node, children: filteredChildren })
+    }
+    return acc
+  }, [])
+}
+
+async function loadTree() {
+  loading.value = true
+  const { data } = await fetchResourceTree()
+  treeDataOrigin.value = data || []
+  treeData.value = filterTree(stripButtons(data || []), searchForm.keyword)
+  loading.value = false
+}
+
+/** After a CRUD change, refresh both the tree table and the user's menu/routes so the sidebar stays in sync */
+async function reloadAfterChange() {
+  await Promise.all([loadTree(), auth.loadMenusAndPermissions()])
+}
+
+// ── Search ──
+const searchForm = reactive({ keyword: '' })
+
+watch(
+  () => searchForm.keyword,
+  val => {
+    treeData.value = filterTree(stripButtons(treeDataOrigin.value), val)
+  }
+)
+
+const columns = [
+  { title: '资源名称', dataIndex: 'name', key: 'name', width: 220 },
+  { title: '资源编码', dataIndex: 'code', key: 'code', width: 160, ellipsis: true },
+  { title: '资源分类', dataIndex: 'category', key: 'category', width: 110 },
+  { title: '资源类型', dataIndex: 'type', key: 'type', width: 90 },
+  { title: '是否可见', dataIndex: 'is_visible', key: 'is_visible', width: 90 },
+  { title: '路由路径', dataIndex: 'route_path', key: 'route_path', width: 200, ellipsis: true },
+  { title: '排序', dataIndex: 'sort_code', key: 'sort_code', width: 70 },
+  { title: '状态', dataIndex: 'status', key: 'status', width: 90 },
+  { title: '操作', key: 'action', width: 260, fixed: 'right' },
+]
+
+// ── Drawers ──
+const detailRef = ref()
+const formRef = ref()
+const buttonManagerRef = ref()
+const detailOpen = ref(false)
+const formOpen = ref(false)
+const buttonManagerOpen = ref(false)
+
+function openDetail(record: any) {
+  detailRef.value?.doOpen(record)
+}
+function openEdit(record: any) {
+  formRef.value?.doOpen(record)
+}
+function openCreate(parent?: any) {
+  formRef.value?.doOpen(undefined, parent?.id)
+}
+function openButtonManager(record: any) {
+  buttonManagerRef.value?.doOpen(record)
+}
+
+function handleSearch() {
+  loadTree()
+}
+
+function resetSearch() {
+  searchForm.keyword = ''
+  loadTree()
+}
+
+onMounted(() => {
+  loadTree()
+})
+</script>
