@@ -1,4 +1,4 @@
-# Hei Gin
+# ACOJ
 
 <img width="120" src="vitepress/docs/public/logo.svg">
 
@@ -9,15 +9,15 @@
 
 ## 简介
 
-**Hei Gin** 是 HEI 快速开发框架的 Go 单体应用版本，基于 Gin + Ent（entgo.io）构建。提供开箱即用的快速开发解决方案，包含完善的权限管理（RBAC）、数据权限、认证授权、文件存储（MinIO/S3/Local）、操作日志等功能模块。框架采用前后端分离架构，支持快速搭建后台管理系统和 API 服务。
+**ACOJ** 是一个在线评测系统（Online Judge），目前正在使用 Go 语言进行重构。后端基于 Gin + Ent（entgo.io）构建。
 
-**在线文档**: [https://jiangbyte.github.io/hei-gin/](https://jiangbyte.github.io/hei-gin/)
+> Java 版本请查看 [java-version](https://github.com/jiangbyte/acoj/tree/java-version) 分支。
 
 ## 技术栈
 
 | 类型 | 技术 |
 | --- | --- |
-| 核心框架 | Go 1.25+ / Gin 1.12+ |
+| 核心 | Go 1.25+ / Gin 1.12+ |
 | ORM | Ent (entgo.io) |
 | 数据库 | MySQL 8.0+ |
 | 缓存 | Redis 6.0+ (go-redis) |
@@ -50,12 +50,12 @@
 ## 项目结构
 
 ```
-hei-gin
+acoj
 ├── config/
 │   └── config.go                   # 配置结构体（YAML 加载）
-├── core/                           # 框架核心
+├── core/                           # 核心模块
 │   ├── app/
-│   │   ├── app.go                  # 应用工厂 + 核心服务初始化
+│   │   ├── app.go                  # 应用初始化
 │   │   ├── health.go               # 健康检查 GET /
 │   │   └── router.go               # 路由注册总入口
 │   ├── auth/
@@ -187,20 +187,6 @@ hei-gin
 └── go.mod                           # Go 模块定义
 ```
 
-### 模块结构约定
-
-每个业务模块遵循垂直切片布局：
-
-```
-modules/<domain>/<module>/
-├── params.go          # 请求/响应参数结构体
-├── service.go         # 业务逻辑层
-└── api/v1/
-    └── api.go         # Gin 路由注册 + Handler 函数
-```
-
-认证模块因包含多个子模块（captcha / sm2 / username），额外包含 `route.go` 聚合子路由和 `logic.go` 逻辑文件。
-
 ## 快速开始
 
 ### 环境要求
@@ -215,7 +201,7 @@ modules/<domain>/<module>/
 
 ```yaml
 app:
-  name: hei-gin
+  name: acoj
   version: 1.0.0
   debug: true
   host: 127.0.0.1
@@ -275,117 +261,6 @@ go run main.go
 
 - 健康检查：<http://localhost:18885/>
 
-## 认证体系
-
-框架通过路径前缀自动分流认证方式：
-
-| 路径模式 | 认证方式 | 说明 |
-|---------|---------|------|
-| `/api/v1/b/*` | AuthTool（B端JWT）认证 + CheckPermission | B端后台管理 |
-| `/api/v1/c/*` | ClientAuthTool（C端JWT）认证 + CheckPermission | C端客户端 |
-| `/api/v1/public/*` | 无认证 | 公开接口 |
-
-认证中间件按路径前缀自动分流，CORS 预检请求（OPTIONS）和静态路径（/favicon.ico 等）跳过认证。
-
-## 中间件参考
-
-### 权限中间件
-
-```go
-import "hei-gin/core/auth/middleware"
-
-r.GET("/api/v1/sys/banner/page",
-    middleware.HeiCheckPermission([]string{"sys:banner:page"}),
-    PageHandler,
-)
-```
-
-支持 `AND`（默认，全部权限）和 `OR`（任一权限）两种模式：
-
-```go
-// OR 模式：满足任一权限即可
-middleware.HeiCheckPermission([]string{"sys:user:view", "sys:user:edit"}, "OR")
-```
-
-### 操作日志
-
-```go
-import "hei-gin/core/log"
-
-r.POST("/api/v1/sys/banner/create",
-    log.SysLog("添加Banner"),
-    middleware.HeiCheckPermission([]string{"sys:banner:create"}),
-    CreateHandler,
-)
-```
-
-### 防重复提交
-
-```go
-import "hei-gin/core/auth/middleware"
-
-r.POST("/api/v1/sys/xxx/create",
-    middleware.NoRepeat(3000), // 3 秒内相同参数禁止重复提交
-    CreateHandler,
-)
-```
-
-## API 规范
-
-### 统一响应格式
-
-```json
-{
-  "code": 200,
-  "message": "请求成功",
-  "data": {},
-  "success": true,
-  "trace_id": "uuid-string"
-}
-```
-
-### 分页响应
-
-```json
-{
-  "code": 200,
-  "message": "请求成功",
-  "data": {
-    "records": [],
-    "total": 100,
-    "page": 1,
-    "size": 20,
-    "pages": 5
-  },
-  "success": true,
-  "trace_id": "uuid-string"
-}
-```
-
-## 权限数据链路
-
-```
-User ──→ RelUserRole ──→ Role ──→ RelRolePermission ──→ Permission
-User ──→ RelUserPermission ──→ Permission (直授)
-```
-
-权限匹配支持 `*`（单级通配符）和 `**`（多级通配符），例如 `sys:*` 匹配所有 sys 模块权限。
-
-## 文件存储
-
-框架通过统一的 `FileStorage` 接口抽象文件存储后端，支持三种实现，切换仅需修改初始化代码：
-
-| 存储后端 | 实现 |
-|---------|------|
-| Local 本地存储 | `core/storage/local.go` |
-| MinIO 对象存储 | `core/storage/minio.go` |
-| AWS S3 对象存储 | `core/storage/s3.go` |
-
-## 相关项目
-
-- **[Hei Boot](https://github.com/jiangbyte/hei-boot)** — Java Spring Boot 单体版本
-- **[Hei FastAPI](https://github.com/jiangbyte/hei-fastapi)** — Python FastAPI 单体版本
-- **[Hei Admin Vue](https://github.com/jiangbyte/hei-admin-vue)** — Vue3 前端管理后台
 
 ## 开源协议
 
