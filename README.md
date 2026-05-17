@@ -22,11 +22,13 @@
 | 数据验证 | Pydantic v2 + Pydantic-Settings |
 | ORM | SQLAlchemy 2.0 (Mapped + mapped_column) |
 | 数据库 | MySQL 8.0+ (PyMySQL) |
-| 缓存 | Redis 6.0+ (redis-py) |
-| 认证授权 | JWT / SM2 国密加密 / bcrypt 密码哈希 |
-| 文件存储 | 本地存储 / MinIO / S3 兼容对象存储 |
+| 缓存 | Redis 6.0+ (redis-py async) |
+| 认证授权 | JWT (HS256) / SM2 国密加密 / bcrypt 密码哈希 |
+| 文件存储 | 本地文件系统 / MinIO / S3 兼容对象存储 |
 | Excel处理 | OpenPyXL |
 | 分布式ID | Snowflake ID 算法 |
+| IP 地理定位 | ip2region |
+| 测试 | pytest + pytest-asyncio + httpx |
 
 ## 核心特性
 
@@ -34,147 +36,147 @@
 - **SM2 国密加密** — 登录密码传输使用国密 SM2 C1C3C2 模式加密
 - **bcrypt 密码哈希** — 存储密码使用 bcrypt 加盐哈希
 - **RBAC 权限控制** — 用户→角色→权限 + 用户直授权限，双层模型
-- **数据权限** — 支持全部/本级及以下/本级/仅本人/自定义五种粒度，按最严策略合并
+- **数据权限** — 支持全部/本级及以下/本级/仅本人/自定义等 8 种粒度，按最严策略合并
 - **权限自动发现** — 启动时自动扫描 `@HeiCheckPermission` 装饰器并缓存到 Redis
+- **权限匹配器** — 支持 `*` 单级和 `**` 多级通配符匹配
 - **文件存储抽象** — 统一接口，支持本地文件、MinIO、S3 兼容对象存储，一键切换
 - **操作日志** — `@SysLog` 装饰器自动记录用户操作，支持请求参数和返回结果
 - **防重复提交** — `@NoRepeat` 装饰器防止接口重复调用
 - **链路追踪** — 基于 ContextVar 的 trace_id 全链路追踪
-- **统一验证码** — B端/C端独立的图形验证码服务
-- **统一响应格式** — `{code, message, data, success}` 标准结构
+- **统一验证码** — B端/C端独立的图形验证码服务（Pillow 生成）
+- **统一响应格式** — `{code, message, data, success, trace_id}` 标准结构
 - **全局异常处理** — 统一捕获 BusinessException 返回业务错误码
-- **Excel 导入导出** — 通用模板下载、数据导出、数据导入
 - **雪花ID** — 分布式 Snowflake ID 生成器
+- **IP 地理定位** — 基于 ip2region 的客户端 IP 地理定位
 
 ## 项目结构
 
 ```
-hei-fastapi
-├── config/
-│   └── settings.py              # Pydantic 配置（支持 .env 覆盖）
-├── core/                        # 框架核心
-│   ├── app/
-│   │   ├── setup.py             # FastAPI 应用工厂
-│   │   ├── router.py            # 路由注册
-│   │   ├── lifespan.py          # 生命周期（DB/Redis/SM2/JWT/权限初始化）
-│   │   └── health.py            # 健康检查 GET /
-│   ├── auth/
+hei-fastapi/
+├── main.py                          # 应用入口（Uvicorn 启动）
+├── .env                             # 环境配置文件
+├── pyproject.toml                   # 项目元数据与依赖
+├── requirements.txt                 # 锁定依赖版本
+├── config/                          # 配置层
+│   └── settings.py                  # Pydantic-Settings 配置（.env 覆盖）
+├── core/                            # 框架核心（通用能力）
+│   ├── app/                         # 应用工厂
+│   │   ├── setup.py                 # create_app() - FastAPI 应用工厂
+│   │   ├── router.py                # 路由注册总入口
+│   │   ├── lifespan.py              # 生命周期（DB/Redis/SM2/JWT/权限扫描初始化）
+│   │   └── health.py                # 健康检查 GET /
+│   ├── auth/                        # 认证与权限系统
 │   │   ├── auth/
-│   │   │   ├── hei_auth_tool.py           # B端 JWT 认证工具
-│   │   │   └── hei_client_auth_tool.py    # C端 JWT 认证工具
+│   │   │   ├── hei_auth_tool.py             # B端 JWT 认证工具
+│   │   │   └── hei_client_auth_tool.py      # C端 JWT 认证工具
 │   │   ├── decorator/
-│   │   │   ├── hei_check_login.py         # @HeiCheckLogin
-│   │   │   ├── hei_check_permission.py    # @HeiCheckPermission("module:action")
-│   │   │   ├── hei_check_role.py          # @HeiCheckRole("admin")
-│   │   │   ├── hei_client_check_login.py  # C端 @HeiClientCheckLogin
+│   │   │   ├── hei_check_login.py           # @HeiCheckLogin
+│   │   │   ├── hei_check_permission.py      # @HeiCheckPermission("module:action")
+│   │   │   ├── hei_check_role.py            # @HeiCheckRole("admin")
+│   │   │   ├── hei_client_check_login.py    # C端 @HeiClientCheckLogin
 │   │   │   ├── hei_client_check_permission.py  # C端 @HeiClientCheckPermission
-│   │   │   ├── hei_client_check_role.py   # C端 @HeiClientCheckRole
-│   │   │   └── norepeat.py               # @NoRepeat 防重复提交
+│   │   │   ├── hei_client_check_role.py     # C端 @HeiClientCheckRole
+│   │   │   └── norepeat.py                  # @NoRepeat 防重复提交
 │   │   ├── permission/
 │   │   │   ├── hei_permission_interface.py           # 权限查询接口
 │   │   │   ├── hei_permission_interface_manager.py   # 接口管理器
-│   │   │   ├── hei_permission_matcher.py             # 权限匹配器
+│   │   │   ├── hei_permission_matcher.py             # 权限匹配器（通配符）
 │   │   │   └── hei_permission_tool.py                # 权限查询门面
-│   │   ├── permission_scan.py            # 权限自动扫描
+│   │   ├── permission_scan.py             # 权限自动扫描
 │   │   └── pojo/
-│   │       ├── login_user_info.py        # B端登录用户信息
-│   │       └── login_client_user_info.py # C端登录用户信息
+│   │       ├── login_user_info.py         # B端登录用户信息 POJO
+│   │       └── login_client_user_info.py  # C端登录用户信息 POJO
 │   ├── captcha/
-│   │   └── captcha.py          # 统一图形验证码服务（B/C 双实例）
+│   │   └── captcha.py             # 统一图形验证码服务（B/C 双实例）
 │   ├── constants/
-│   │   ├── base_fields.py      # 基础模型字段常量
-│   │   └── cache_keys.py       # Redis 缓存键常量
+│   │   ├── base_fields.py         # 基础模型字段常量
+│   │   ├── cache_keys.py          # Redis 缓存键常量
+│   │   └── constants.py           # 其他常量
 │   ├── db/
-│   │   ├── mysql.py            # MySQL 同步引擎 + sessionmaker
-│   │   ├── base_dao.py         # BaseDAO 通用 CRUD
-│   │   ├── base_service.py     # BaseService 通用业务逻辑
-│   │   ├── query_wrapper.py    # QueryWrapper 链式查询构建器
-│   │   ├── meta_object_handler.py  # 系统字段自动填充
-│   │   └── redis.py            # Redis 异步客户端
+│   │   ├── mysql.py               # SQLAlchemy 引擎 + SessionLocal + get_db()
+│   │   ├── redis.py               # Redis 异步客户端
+│   │   ├── base_dao.py            # BaseDAO 通用 CRUD（仅 .pyc）
 │   ├── enums/
-│   │   ├── data_scope_enum.py  # 数据范围枚举 + 最严策略合并
-│   │   ├── permission_enum.py  # 权限类型枚举
-│   │   ├── resource_enum.py    # 资源类型枚举
-│   │   ├── status_enum.py      # 通用状态枚举
-│   │   ├── login_type_enum.py  # 登录类型枚举
-│   │   ├── check_mode_enum.py  # 校验模式枚举
-│   │   └── ...                 # 其他枚举
+│   │   ├── permission_enum.py     # 权限/登录/校验/数据范围枚举
+│   │   ├── resource_enum.py       # 资源类型枚举
+│   │   ├── status_enum.py         # 通用状态枚举
+│   │   └── page_data_field_enum.py # 分页字段枚举
 │   ├── exception/
-│   │   └── business_exception.py # BusinessException
+│   │   └── business_exception.py  # BusinessException
 │   ├── log/
-│   │   ├── decorator.py        # @SysLog 操作日志装饰器
-│   │   └── utils.py            # 日志工具（User-Agent 解析、参数序列化）
+│   │   ├── decorator.py           # @SysLog 操作日志装饰器 + save_exception_log()
+│   │   └── utils.py               # 日志工具（UA 解析、参数序列化、日志签名）
 │   ├── middleware/
-│   │   ├── auth.py             # JWT 认证中间件（按路径分流 B/C/Public）
-│   │   ├── cors.py             # CORS 中间件
-│   │   ├── exception.py        # 全局异常处理
-│   │   └── trace.py            # 链路追踪中间件（TraceMiddleware）
+│   │   ├── auth.py                # ASGI AuthMiddleware（路径分流 B/C/Public）
+│   │   ├── cors.py                # CORS 中间件
+│   │   ├── exception.py           # 全局异常处理器
+│   │   └── trace.py               # 链路追踪（TraceMiddleware）
 │   ├── pojo/
-│   │   ├── page_bounds.py      # 分页参数
-│   │   ├── datetime_mixin.py   # 日期时间序列化混入
-│   │   └── ...                 # 其他公共数据对象
+│   │   ├── datetime_mixin.py      # 日期时间序列化混入
+│   │   └── id_params.py           # IdParam/IdsParam 通用参数
 │   ├── result/
-│   │   └── result.py           # success() / failure() / page_data() 响应工具
+│   │   └── result.py              # success()/failure()/page_data() 统一响应
 │   ├── storage/
-│   │   ├── interface.py        # FileStorageInterface 抽象接口
-│   │   ├── local_storage.py    # 本地文件存储实现
-│   │   ├── minio_storage.py    # MinIO 对象存储实现
-│   │   └── s3_storage.py       # S3 兼容对象存储实现
+│   │   ├── interface.py           # FileStorageInterface 抽象接口
+│   │   ├── local_storage.py       # 本地文件存储实现
+│   │   ├── minio_storage.py       # MinIO 对象存储实现
+│   │   └── s3_storage.py          # S3 兼容对象存储实现
 │   └── utils/
-│       ├── sm2_crypto_util.py  # SM2 国密加解密
-│       ├── excel_utils.py      # Excel 导出导入
-│       ├── ip_utils.py         # 客户端 IP 提取
-│       ├── snowflake_utils.py  # 雪花 ID 生成
-│       ├── model_utils.py      # 模型工具（系统字段剥离、更新、模板）
-│       ├── trace_utils.py      # Trace ID 上下文管理
-│       └── user_agent_utils.py # User-Agent 解析
-├── modules/
-│   ├── sys/                    # B端（后台管理）
-│   │   ├── auth/               # 认证模块
-│   │   │   ├── captcha/        # 图形验证码
-│   │   │   ├── sm2/            # SM2 公钥获取
-│   │   │   └── username/       # 用户名密码登录/注册/登出
-│   │   ├── banner/             # Banner 管理
-│   │   ├── config/             # 系统配置管理
-│   │   ├── dict/               # 字典管理（树形结构）
-│   │   ├── file/               # 文件管理
-│   │   ├── group/              # 用户组管理
-│   │   ├── home/               # 首页仪表盘（快捷方式）
-│   │   ├── log/                # 操作日志查询
-│   │   ├── notice/             # 通知管理
-│   │   ├── org/                # 组织管理
-│   │   ├── permission/         # 权限管理
-│   │   ├── position/           # 职位管理
-│   │   ├── resource/           # 资源管理（菜单/按钮）
-│   │   ├── role/               # 角色管理（含权限/资源分配）
-│   │   ├── session/            # 在线会话管理
-│   │   ├── analyze/            # 系统分析
-│   │   └── user/               # 用户管理（含角色/组分配）
-│   ├── client/                 # C端（客户端）
-│   │   ├── auth/               # 认证模块
-│   │   │   ├── captcha/        # 图形验证码
-│   │   │   └── username/       # 用户名密码登录/注册
-│   │   ├── session/            # 在线会话管理
-│   │   └── user/               # C端用户管理
-│   └── biz/                    # 业务模块（用户自定义）
+│       ├── sm2_crypto_util.py     # SM2 国密加解密
+│       ├── excel_utils.py         # Excel 导出导入
+│       ├── ip_utils.py            # 客户端 IP 提取 + ip2region
+│       ├── snowflake_utils.py     # 雪花 ID 生成器
+│       ├── model_utils.py         # 模型工具（系统字段剥离、更新）
+│       ├── trace_utils.py         # Trace ID 上下文管理
+│       ├── resolve_utils.py       # 依赖解析工具
+│       └── user_agent_utils.py    # User-Agent 解析
+├── modules/                       # 业务模块（垂直切片架构）
+│   ├── sys/                       # B端（后台管理）
+│   │   ├── auth/                  # 认证模块
+│   │   │   ├── captcha/           # 图形验证码
+│   │   │   ├── sm2/               # SM2 公钥获取
+│   │   │   └── username/          # 用户名密码登录/注册/登出
+│   │   ├── banner/                # Banner 管理
+│   │   ├── config/                # 系统配置管理
+│   │   ├── dict/                  # 字典管理（树形）
+│   │   ├── file/                  # 文件管理
+│   │   ├── group/                 # 用户组管理
+│   │   ├── home/                  # 首页仪表盘（快捷方式）
+│   │   ├── log/                   # 操作日志查询
+│   │   ├── notice/                # 通知管理
+│   │   ├── org/                   # 组织管理（树形）
+│   │   ├── permission/            # 权限查询
+│   │   ├── position/              # 职位管理
+│   │   ├── resource/              # 资源管理（菜单/按钮）
+│   │   ├── role/                  # 角色管理（含权限/资源分配）
+│   │   ├── session/               # 在线会话管理
+│   │   ├── analyze/               # 系统分析
+│   │   └── user/                  # 用户管理（含角色分配）
+│   ├── client/                    # C端（客户端）
+│   │   ├── auth/                  # 认证模块
+│   │   │   ├── captcha/           # 图形验证码
+│   │   │   └── username/          # 登录/注册
+│   │   ├── session/               # 在线会话管理
+│   │   └── user/                  # C端用户管理
+│   └── biz/                       # 业务扩展模块（用户自定义）
 ├── scripts/
 │   └── sqls/
-│       └── hei_ddl.sql         # 数据库建表 DDL
-├── .env                        # 环境配置文件
-├── main.py                     # 应用入口
-└── pyproject.toml              # 项目配置
+│       └── hei_ddl.sql            # 数据库建表 DDL + 示例数据
+├── docs/
+│   └── Command.md                 # 命令文档
+└── LICENSE                        # MIT 许可证
 ```
 
 ### 模块结构约定
 
-每个业务模块遵循垂直切片布局：
+每个业务模块遵循垂直切片（Vertical Slice）布局：
 
 ```
-modules/<domain>/
-├── models.py        # SQLAlchemy ORM 模型（Mapped + mapped_column）
-├── params.py        # Pydantic v2 请求/响应模型（VO, PageParam, ExportParam, ImportParam）
-├── dao.py           # 数据访问层（继承 BaseDAO）
-├── service.py       # 业务逻辑层（继承 BaseService）
+modules/<domain>/<module>/
+├── models.py        # SQLAlchemy ORM 模型
+├── params.py        # Pydantic v2 请求/响应模型
+├── dao.py           # 数据访问层
+├── service.py       # 业务逻辑层
 └── api/v1/api.py    # FastAPI 路由定义
 ```
 
@@ -228,20 +230,29 @@ python main.py
 
 服务启动后访问：
 
-- API 文档：<http://localhost:8081/docs>
-- 健康检查：<http://localhost:8081/>
+- API 文档：<http://localhost:18885/docs>
+- 健康检查：<http://localhost:18885/>
+
+### 默认账号
+
+| 端侧 | 账号 | 密码 |
+|------|------|------|
+| B 端管理 | admin | admin123（需 SM2 加密传输）|
+| C 端用户 | 需自行注册 | 需自行注册 |
+
+> 注意：登录密码需要通过 SM2 公钥加密后传输。
 
 ## 认证体系
 
-框架提供三套路径规则：
+框架基于路径前缀分流，由 ASGI AuthMiddleware 自动识别认证上下文：
 
 | 路径模式 | 认证方式 | 说明 |
 |---------|---------|------|
-| `/api/v1/b/*` | HeiAuthTool + 权限装饰器 | B端后台管理 |
-| `/api/v1/c/*` | HeiClientAuthTool + 权限装饰器 | C端客户端 |
-| `/api/v1/public/b/*`, `/api/v1/public/c/*` | 无认证 | 公开接口 |
-
-认证中间件按路径前缀自动分流，CORS 预检请求（OPTIONS）跳过认证。
+| 静态路径（`/docs`, `/redoc`, `/openapi.json`, `/favicon.ico`） | 无认证 | Swagger 文档等 |
+| `OPTIONS` 方法 | 无认证 | CORS 预检请求 |
+| `/api/v{n}/public/b/*`, `/api/v{n}/public/c/*` | 无认证 | 公开接口（验证码、SM2 公钥、登录/注册） |
+| `/api/v{n}/c/*` | HeiClientAuthTool | C端客户端 |
+| `/api/v{n}/b/*` 及默认其他路径 | HeiAuthTool | B端管理（默认规则） |
 
 ## 装饰器参考
 
@@ -257,7 +268,7 @@ async def page(request: Request, db: Session = Depends(get_db)):
     return success(service.page(BannerPageParam()))
 ```
 
-装饰器必须位于 `@router.*` 下方（紧贴函数）。
+装饰器必须位于 `@router.*` 下方（紧贴函数）。参数支持 AND/OR 模式，多个权限默认 AND。
 
 ### 操作日志
 
@@ -291,7 +302,8 @@ async def create(...):
   "code": 200,
   "message": "请求成功",
   "data": {},
-  "success": true
+  "success": true,
+  "trace_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 }
 ```
 
@@ -308,7 +320,8 @@ async def create(...):
     "size": 20,
     "pages": 5
   },
-  "success": true
+  "success": true,
+  "trace_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 }
 ```
 
@@ -346,6 +359,7 @@ STORAGE__S3__REGION=us-east-1
 ## 相关项目
 
 - **[Hei Boot](https://github.com/jiangbyte/hei-boot)** — Java Spring Boot 单体版本
+- **[Hei Gin](https://github.com/jiangbyte/hei-gin)** — Go 单体版本
 - **[Hei Admin Vue](https://github.com/jiangbyte/hei-admin-vue)** — Vue3 前端管理后台
 
 ## 开源协议
