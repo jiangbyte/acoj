@@ -4,7 +4,7 @@ export default defineConfig({
   lang: 'zh-CN',
   title: 'Hei Gin',
   description: 'Hei Gin - 基于 Gin + Ent 的 Go 快速开发框架官方文档',
-  base: '/',
+  base: '/hei-gin/',
 
   head: [['link', { rel: 'icon', href: 'https://jiangbyte.github.io/hei-docs/favicon.ico' }]],
 
