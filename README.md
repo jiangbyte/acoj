@@ -11,7 +11,7 @@
 
 **Hei Gin** 是 HEI 快速开发框架的 Go 单体应用版本，基于 Gin + Ent（entgo.io）构建。提供开箱即用的快速开发解决方案，包含完善的权限管理（RBAC）、数据权限、认证授权、文件存储（MinIO/S3/Local）、操作日志等功能模块。框架采用前后端分离架构，支持快速搭建后台管理系统和 API 服务。
 
-**在线文档**: [https://jiangbyte.github.io/hei-docs/hei-gin/](https://jiangbyte.github.io/hei-docs/hei-gin/)
+**在线文档**: [https://jiangbyte.github.io/hei-gin/](https://jiangbyte.github.io/hei-gin/)
 
 ## 技术栈
 
