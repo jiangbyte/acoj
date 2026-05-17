@@ -2,8 +2,8 @@
 
 .idea
 
-# vitepress
-vitepress/node_modules/
+# node 依赖（任意层级）
+node_modules/
 vitepress/docs/.vitepress/dist
 vitepress/docs/.vitepress/cache
 vitepress/*.local
