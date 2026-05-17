@@ -1,0 +1,16 @@
+{
+  "name": "hei-admin-vue-docs",
+  "version": "1.0.0",
+  "description": "Hei Admin Vue - Vue3 后台管理框架文档",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "keywords": ["hei", "admin", "vue", "docs", "vitepress"],
+  "author": "JiangByte",
+  "license": "MIT",
+  "devDependencies": {
+    "vitepress": "2.0.0-alpha.17"
+  }
+}
