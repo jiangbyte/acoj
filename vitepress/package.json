@@ -1,0 +1,16 @@
+{
+  "name": "hei-gin-docs",
+  "version": "1.0.0",
+  "description": "Hei Gin - Go 快速开发框架文档",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "keywords": ["hei", "gin", "go", "docs", "vitepress"],
+  "author": "JiangByte",
+  "license": "MIT",
+  "devDependencies": {
+    "vitepress": "2.0.0-alpha.17"
+  }
+}
