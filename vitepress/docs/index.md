@@ -34,7 +34,7 @@ features:
     details: 完备的 RBAC 权限模型，支持行级数据范围控制，最严策略合并
   - icon: 📝
     title: 操作日志
-    details: @SysLog 装饰器自动录制，支持参数/结果录制，异常日志自动捕获
+    details: "@SysLog 装饰器自动录制，支持参数/结果录制，异常日志自动捕获"
   - icon: 📁
     title: 文件存储
     details: 本地/MinIO/S3 多种存储后端，统一接口一键切换
