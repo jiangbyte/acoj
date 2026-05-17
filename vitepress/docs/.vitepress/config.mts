@@ -6,10 +6,10 @@ export default defineConfig({
   description: 'Hei Gin - 基于 Gin + Ent 的 Go 快速开发框架官方文档',
   base: '/hei-gin/',
 
-  head: [['link', { rel: 'icon', href: 'https://jiangbyte.github.io/hei-docs/favicon.ico' }]],
+  head: [['link', { rel: 'icon', href: '/logo.svg' }]],
 
   themeConfig: {
-    logo: 'https://jiangbyte.github.io/hei-docs/logo.svg',
+    logo: '/logo.svg',
 
     nav: [
       { text: '首页', link: '/' },
