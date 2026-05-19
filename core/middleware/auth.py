@@ -55,7 +55,7 @@ class AuthMiddleware:
         if self.PRIVATE_C_PATTERN.match(path):
             if not await HeiClientAuthTool.isLogin(request):
                 resp = JSONResponse(
-                    status_code=200,
+                    status_code=401,
                     content=failure(message="Unauthorized", code=401)
                 )
                 await resp(scope, receive, send)
@@ -66,7 +66,7 @@ class AuthMiddleware:
         if self.PRIVATE_B_PATTERN.match(path) or self.DEFAULT_B_PATTERN.match(path):
             if not await HeiAuthTool.isLogin(request):
                 resp = JSONResponse(
-                    status_code=200,
+                    status_code=401,
                     content=failure(message="Unauthorized", code=401)
                 )
                 await resp(scope, receive, send)

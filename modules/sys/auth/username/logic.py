@@ -1,3 +1,4 @@
+import asyncio
 import bcrypt
 from typing import Optional
 from fastapi import Request
@@ -48,7 +49,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
 
         try:
             raw_password = decrypt(param.password)
-            if not bcrypt.checkpw(raw_password.encode('utf-8'), user_info.password.encode('utf-8')):
+            if not await asyncio.to_thread(bcrypt.checkpw, raw_password.encode('utf-8'), user_info.password.encode('utf-8')):
                 logger.warning("Password verification failed")
                 raise BusinessException("用户名或密码错误")
         except BusinessException:
@@ -95,7 +96,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         raise
 
 
-async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
+async def do_register(param: UsernameRegisterParam, request: Request = None) -> UsernameRegisterResult:
     try:
         await b_captcha.check_captcha(param.captcha_id, param.captcha_code)
     except Exception as e:
@@ -111,7 +112,7 @@ async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
             raise BusinessException("用户名已存在")
 
         raw_password = decrypt(param.password)
-        hashed_password = bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        hashed_password = (await asyncio.to_thread(lambda: bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()))).decode('utf-8')
 
         user_id = str(generate_id())
 

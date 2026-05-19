@@ -26,8 +26,8 @@ async def login(request: Request, param: UsernameLoginParam):
 )
 @SysLog("注册")
 @NoRepeat(interval=5000)
-async def register(param: UsernameRegisterParam):
-    result = await do_register(param)
+async def register(request: Request, param: UsernameRegisterParam):
+    result = await do_register(param, request=request)
     return success(result.model_dump())
 
 

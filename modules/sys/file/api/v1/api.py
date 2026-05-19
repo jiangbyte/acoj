@@ -1,12 +1,11 @@
 import logging
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File, Form
+from fastapi import APIRouter, Depends, Query, Request, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from core.result import success
 from core.pojo import IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission
-from core.auth.permission import HeiPermissionTool
 from core.log import SysLog
 from ...params import FileVO, FilePageParam, FileIdParam
 from ...service import FileService
@@ -18,6 +17,7 @@ router = APIRouter()
 
 @router.post("/api/v1/sys/file/upload", summary="上传文件")
 @SysLog("上传文件")
+@HeiCheckPermission("sys:file:upload")
 async def upload(
     request: Request,
     file: UploadFile = File(...),
@@ -25,12 +25,9 @@ async def upload(
     db: Session = Depends(get_db),
 ):
     logger.info(f"Upload request: file={file.filename}, engine={engine}, content_type={request.headers.get('content-type')}")
-    if not await HeiPermissionTool.hasPermissionAnd("sys:file:upload", request=request):
-        raise HTTPException(status_code=403, detail="缺少权限: sys:file:upload")
     service = FileService(db)
     result = await service.upload(file, request, engine=engine)
     return success(result)
-upload._hei_permission = "sys:file:upload"
 
 
 @router.get("/api/v1/sys/file/download", summary="下载文件")

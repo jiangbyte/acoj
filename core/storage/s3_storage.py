@@ -3,9 +3,10 @@ from typing import BinaryIO, Optional
 
 import boto3
 from botocore.exceptions import ClientError
+from .interface import FileStorageInterface
 
 
-class S3Storage:
+class S3Storage(FileStorageInterface):
     """Generic S3-compatible object storage (AWS S3, RustFS, etc.)."""
 
     def __init__(self, endpoint: str, access_key: str, secret_key: str,
