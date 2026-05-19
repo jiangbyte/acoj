@@ -2,9 +2,10 @@ import os
 import shutil
 from pathlib import Path
 from typing import BinaryIO, Optional
+from .interface import FileStorageInterface
 
 
-class LocalStorage:
+class LocalStorage(FileStorageInterface):
     """Local filesystem storage."""
 
     def __init__(self, upload_folder: str):

@@ -3,9 +3,10 @@ from typing import BinaryIO, Optional
 
 from minio import Minio
 from minio.error import S3Error
+from .interface import FileStorageInterface
 
 
-class MinioStorage:
+class MinioStorage(FileStorageInterface):
     """MinIO S3-compatible storage."""
 
     def __init__(self, endpoint: str, access_key: str, secret_key: str,

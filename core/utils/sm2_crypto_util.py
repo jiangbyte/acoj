@@ -80,7 +80,10 @@ def decrypt_raw(ciphertext: str) -> bytes:
         raise ValueError("密文长度不足，格式不正确")
     
     # 先尝试直接解密（C1C2C3 格式）
-    decrypted = _sm2_crypt.decrypt(ciphertext_bytes)
+    try:
+        decrypted = _sm2_crypt.decrypt(ciphertext_bytes)
+    except Exception:
+        decrypted = None
     if decrypted:
         try:
             decrypted.decode('utf-8')

@@ -9,7 +9,7 @@ from urllib.parse import quote
 
 logger = logging.getLogger(__name__)
 from fastapi import Request, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
@@ -17,6 +17,7 @@ from core.utils.model_utils import strip_system_fields
 from core.utils.snowflake_utils import generate_id
 from core.auth import HeiAuthTool
 from core.storage import LocalStorage, MinioStorage, S3Storage
+from config.settings import settings
 from modules.sys.config.service import ConfigService
 from .models import SysFile
 from .dao import FileDao
@@ -155,6 +156,9 @@ class FileService:
                      engine: Optional[str] = None) -> dict:
         engine = await self._get_engine(engine)
         data = await file.read()
+        upload_max_size = settings.app.upload_max_size
+        if len(data) > upload_max_size:
+            raise BusinessException(f"File exceeds maximum size of {upload_max_size // 1048576}MB")
         size_bytes = len(data)
         suffix = os.path.splitext(file.filename or "unknown")[1].lower()
         file_id = generate_id()
@@ -205,8 +209,11 @@ class FileService:
         data = storage.get_bytes(entity.bucket, entity.file_key)
         filename = entity.name or f"{entity.id}{entity.suffix or ''}"
 
-        return StreamingResponse(
-            io.BytesIO(data),
+        # TODO: Use true streaming via FileResponse (local) or SDK-native streaming (Minio/S3)
+        #       instead of loading the entire file into memory. The storage interface needs
+        #       a streaming read method first.
+        return Response(
+            content=data,
             media_type="application/octet-stream",
             headers={
                 "Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename, safe='')}",

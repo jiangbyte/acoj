@@ -1,3 +1,4 @@
+import asyncio
 import bcrypt
 from typing import Optional, List, Dict
 from datetime import datetime
@@ -271,11 +272,11 @@ class UserService:
             raise BusinessException("未设置密码，无法修改")
 
         current_password = decrypt(param.current_password)
-        if not bcrypt.checkpw(current_password.encode('utf-8'), entity.password.encode('utf-8')):
+        if not await asyncio.to_thread(bcrypt.checkpw, current_password.encode('utf-8'), entity.password.encode('utf-8')):
             raise BusinessException("当前密码不正确")
 
         new_password = decrypt(param.new_password)
-        hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        hashed = (await asyncio.to_thread(lambda: bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()))).decode('utf-8')
         entity.password = hashed
         self.dao.update(entity, user_id=user_id)
 
