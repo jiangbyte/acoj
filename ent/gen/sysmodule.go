@@ -17,33 +17,33 @@ type SysModule struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 模块编码
-	Code string `json:"code,omitempty"`
+	Code string `json:"code"`
 	// 模块名称
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// 模块类别
-	Category string `json:"category,omitempty"`
+	Category string `json:"category"`
 	// 模块图标
-	Icon *string `json:"icon,omitempty"`
+	Icon *string `json:"icon"`
 	// 模块颜色
-	Color *string `json:"color,omitempty"`
+	Color *string `json:"color"`
 	// 模块描述
-	Description *string `json:"description,omitempty"`
+	Description *string `json:"description"`
 	// 是否可见
-	IsVisible string `json:"is_visible,omitempty"`
+	IsVisible string `json:"is_visible"`
 	// 状态
-	Status string `json:"status,omitempty"`
+	Status string `json:"status"`
 	// 排序
-	SortCode int `json:"sort_code,omitempty"`
+	SortCode int `json:"sort_code"`
 	// 创建时间
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
 	// 创建用户
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy *string `json:"created_by"`
 	// 更新时间
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at"`
 	// 更新用户
-	UpdatedBy    *string `json:"updated_by,omitempty"`
+	UpdatedBy    *string `json:"updated_by"`
 	selectValues sql.SelectValues
 }
 

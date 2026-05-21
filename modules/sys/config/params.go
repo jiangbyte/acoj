@@ -2,21 +2,21 @@ package config
 
 // ConfigVO is the view object for a system config, used for create/modify requests and API responses.
 type ConfigVO struct {
-	ID          string  `json:"id,omitempty"`
-	ConfigKey   string  `json:"config_key,omitempty"`
-	ConfigValue string  `json:"config_value,omitempty"`
-	Category    string  `json:"category,omitempty"`
-	Remark      *string `json:"remark,omitempty"`
-	SortCode    int     `json:"sort_code,omitempty"`
-	Extra       *string `json:"ext_json,omitempty"`
+	ID          string  `json:"id"`
+	ConfigKey   string  `json:"config_key"`
+	ConfigValue string  `json:"config_value"`
+	Category    string  `json:"category"`
+	Remark      *string `json:"remark"`
+	SortCode    int     `json:"sort_code"`
+	Extra       *string `json:"ext_json"`
 }
 
 // ConfigPageParam holds pagination parameters for the config page query.
 type ConfigPageParam struct {
 	Current  int    `json:"current" form:"current"`
 	Size     int    `json:"size" form:"size"`
-	Category string `json:"category,omitempty" form:"category"`
-	Keyword  string `json:"keyword,omitempty" form:"keyword"`
+	Category string `json:"category" form:"category"`
+	Keyword  string `json:"keyword" form:"keyword"`
 }
 
 // ConfigListParam holds the category filter for listing configs.

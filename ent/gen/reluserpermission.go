@@ -16,17 +16,17 @@ type RelUserPermission struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 用户ID
-	UserID string `json:"user_id,omitempty"`
+	UserID string `json:"user_id"`
 	// 权限编码
-	PermissionCode string `json:"permission_code,omitempty"`
+	PermissionCode string `json:"permission_code"`
 	// 数据范围：ALL-全部，SELF-本人，ORG-本组织，ORG_AND_BELOW-本组织及以下，CUSTOM_ORG-自定义组织，GROUP-本用户组，GROUP_AND_BELOW-本用户组及以下，CUSTOM_GROUP-自定义用户组
-	Scope string `json:"scope,omitempty"`
+	Scope string `json:"scope"`
 	// 自定义用户组ID列表(JSON数组)，scope=CUSTOM_GROUP时生效
-	CustomScopeGroupIds *string `json:"custom_scope_group_ids,omitempty"`
+	CustomScopeGroupIds *string `json:"custom_scope_group_ids"`
 	// 自定义组织ID列表(JSON数组)，scope=CUSTOM_ORG时生效
-	CustomScopeOrgIds *string `json:"custom_scope_org_ids,omitempty"`
+	CustomScopeOrgIds *string `json:"custom_scope_org_ids"`
 	selectValues      sql.SelectValues
 }
 

@@ -138,7 +138,7 @@ func countDaily(ctx context.Context, redis *redis.Client, sessionKeys []string, 
 func Page(c *gin.Context, param *SessionPageParam) gin.H {
 	ctx := context.Background()
 	sessions, err := collectSessions(ctx, db.Redis, constants.SESSION_PREFIX_BUSINESS, constants.TOKEN_PREFIX_BUSINESS, param.Keyword)
-	if err != nil {
+	if err != nil || sessions == nil {
 		sessions = []*SessionPageResult{}
 	}
 

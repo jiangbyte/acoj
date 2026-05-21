@@ -4,15 +4,19 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"hei-gin/config"
 	"hei-gin/core/db"
 	"hei-gin/core/exception"
 	"hei-gin/core/result"
+	"hei-gin/core/storage"
 	"hei-gin/core/utils"
 	ent "hei-gin/ent/gen"
 	"hei-gin/ent/gen/sysfile"
@@ -32,28 +36,68 @@ func Upload(c *gin.Context) gin.H {
 	}
 	defer file.Close()
 
+	// Limit upload size
+	if config.C.App.UploadMaxSize > 0 && header.Size > config.C.App.UploadMaxSize {
+		panic(exception.NewBusinessError("上传文件大小超过限制", 400))
+	}
+
 	engine := c.Request.FormValue("engine")
 	if engine == "" {
 		engine = "LOCAL"
 	}
 
-	data, err := io.ReadAll(file)
+	data, err := io.ReadAll(io.LimitReader(file, 100*1024*1024+1))
 	if err != nil {
 		panic(exception.NewBusinessError("读取文件失败: "+err.Error(), 500))
+	}
+	if len(data) > 100*1024*1024 {
+		panic(exception.NewBusinessError("文件大小超过限制", 400))
 	}
 
 	suffix := strings.ToLower(filepath.Ext(header.Filename))
 
+	// MIME type validation
+	allowedSuffixes := map[string]bool{
+		".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".bmp": true, ".webp": true,
+		".svg": true, ".ico": true,
+		".pdf": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true,
+		".ppt": true, ".pptx": true,
+		".txt": true, ".csv": true, ".json": true, ".xml": true, ".yaml": true, ".yml": true,
+		".zip": true, ".rar": true, ".7z": true, ".tar": true, ".gz": true,
+		".mp4": true, ".avi": true, ".mov": true, ".wmv": true, ".flv": true,
+		".mp3": true, ".wav": true, ".wma": true, ".aac": true,
+	}
+	if !allowedSuffixes[suffix] {
+		panic(exception.NewBusinessError("不支持的文件类型: "+suffix, 400))
+	}
+
+	// Check actual MIME type from content
+	mimeType := http.DetectContentType(data[:min(len(data), 512)])
+	disallowedMimes := map[string]bool{
+		"application/x-msdownload":    true,
+		"application/x-msdos-program": true,
+		"application/x-msi":           true,
+		"application/x-javascript":    true,
+		"text/javascript":             true,
+		"application/javascript":      true,
+		"application/vnd.php":         true,
+		"application/x-httpd-php":     true,
+		"text/html":                   true,
+		"application/x-sh":            true,
+		"application/x-csh":           true,
+	}
+	if disallowedMimes[mimeType] {
+		panic(exception.NewBusinessError("不允许上传可执行文件或脚本", 400))
+	}
+
 	fileID := utils.GenerateID()
-	storagePath := "uploads/" + fileID + suffix
 	sizeKB := int64(len(data) / 1024)
 	sizeInfo := formatSize(len(data))
 	downloadPath := "/api/v1/sys/file/download?id=" + fileID
 
-	if err := os.MkdirAll("uploads", 0755); err != nil {
-		panic(exception.NewBusinessError("创建上传目录失败: "+err.Error(), 500))
-	}
-	if err := os.WriteFile(storagePath, data, 0644); err != nil {
+	storer := getStorage(engine)
+	storagePath, err := storer.Store("default", fileID+suffix, data)
+	if err != nil {
 		panic(exception.NewBusinessError("保存文件失败: "+err.Error(), 500))
 	}
 
@@ -104,7 +148,20 @@ func Download(c *gin.Context, id string) {
 		panic(exception.NewBusinessError("查询文件失败: "+err.Error(), 500))
 	}
 
-	data, err := os.ReadFile(*entity.StoragePath)
+	// Path traversal protection
+	cleanPath, err := filepath.Abs(*entity.StoragePath)
+	if err != nil {
+		panic(exception.NewBusinessError("文件路径错误", 500))
+	}
+	uploadsAbs, err := filepath.Abs("uploads")
+	if err != nil {
+		panic(exception.NewBusinessError("系统错误", 500))
+	}
+	if !strings.HasPrefix(cleanPath, uploadsAbs) {
+		panic(exception.NewBusinessError("文件路径不合法", 403))
+	}
+
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
 		panic(exception.NewBusinessError("读取文件失败: "+err.Error(), 500))
 	}
@@ -124,6 +181,9 @@ func Page(c *gin.Context, param *FilePageParam) gin.H {
 	if param.Size < 1 {
 		param.Size = 10
 	}
+	if param.Size > 100 {
+		param.Size = 100
+	}
 
 	offset := (param.Current - 1) * param.Size
 
@@ -139,12 +199,16 @@ func Page(c *gin.Context, param *FilePageParam) gin.H {
 		t, err := time.Parse("2006-01-02 15:04:05", param.DateRangeStart)
 		if err == nil {
 			query = query.Where(sysfile.CreatedAtGTE(t))
+		} else {
+			log.Printf("[FILE] Invalid date range start: %s, error: %v", param.DateRangeStart, err)
 		}
 	}
 	if param.DateRangeEnd != "" {
 		t, err := time.Parse("2006-01-02 15:04:05", param.DateRangeEnd)
 		if err == nil {
 			query = query.Where(sysfile.CreatedAtLTE(t))
+		} else {
+			log.Printf("[FILE] Invalid date range end: %s, error: %v", param.DateRangeEnd, err)
 		}
 	}
 
@@ -201,7 +265,7 @@ func Remove(c *gin.Context, ids []string) {
 	}
 }
 
-// RemoveAbsolute hard-deletes files: removes files from disk and deletes DB records.
+// RemoveAbsolute hard-deletes files: removes DB records first, then deletes disk files.
 func RemoveAbsolute(c *gin.Context, ids []string) {
 	if len(ids) == 0 {
 		return
@@ -214,15 +278,34 @@ func RemoveAbsolute(c *gin.Context, ids []string) {
 		panic(exception.NewBusinessError("查询文件失败: "+err.Error(), 500))
 	}
 
-	for _, entity := range entities {
-		if entity.StoragePath != nil {
-			_ = os.Remove(*entity.StoragePath)
-		}
-	}
-
+	// Delete DB records first
 	_, err = db.Client.SysFile.Delete().Where(sysfile.IDIn(ids...)).Exec(ctx)
 	if err != nil {
 		panic(exception.NewBusinessError("删除文件失败: "+err.Error(), 500))
+	}
+
+	// Then delete disk files (best-effort)
+	for _, entity := range entities {
+		if entity.StoragePath != nil {
+			if err := os.Remove(*entity.StoragePath); err != nil {
+				log.Printf("[FILE] Failed to remove file %s: %v", *entity.StoragePath, err)
+			}
+		}
+	}
+}
+
+// getStorage returns the appropriate storage backend based on the engine name.
+func getStorage(engine string) storage.FileStorage {
+	switch engine {
+	case "LOCAL":
+		return storage.NewLocalStorage("uploads")
+	case "MINIO":
+		// Requires MinIO config to be added to Config struct
+		log.Printf("[FILE] MINIO engine selected but not fully configured, falling back to LOCAL")
+		return storage.NewLocalStorage("uploads")
+	default:
+		log.Printf("[FILE] Unknown storage engine: %s, falling back to LOCAL", engine)
+		return storage.NewLocalStorage("uploads")
 	}
 }
 

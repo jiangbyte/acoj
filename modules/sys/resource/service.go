@@ -3,6 +3,7 @@ package resource
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"time"
 
 	entsql "entgo.io/ent/dialect/sql"
@@ -31,6 +32,9 @@ func ModulePage(c *gin.Context, param *ModulePageParam) gin.H {
 	}
 	if param.Size < 1 {
 		param.Size = 10
+	}
+	if param.Size > 100 {
+		param.Size = 100
 	}
 
 	total, err := db.Client.SysModule.Query().Count(ctx)
@@ -182,6 +186,9 @@ func ResourcePage(c *gin.Context, param *ResourcePageParam) gin.H {
 	}
 	if param.Size < 1 {
 		param.Size = 10
+	}
+	if param.Size > 100 {
+		param.Size = 100
 	}
 
 	total, err := db.Client.SysResource.Query().Count(ctx)
@@ -395,18 +402,29 @@ func ResourceRemove(c *gin.Context, ids []string) {
 	ctx := context.Background()
 	allIDs := collectDescendantIDs(ids)
 
-	_, err := db.Client.RelRoleResource.Delete().
+	tx, err := db.Client.Tx(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
+	}
+
+	_, err = tx.Client().RelRoleResource.Delete().
 		Where(relroleresource.ResourceIDIn(allIDs...)).
 		Exec(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("删除资源关联失败: "+err.Error(), 500))
 	}
 
-	_, err = db.Client.SysResource.Delete().
+	_, err = tx.Client().SysResource.Delete().
 		Where(sysresource.IDIn(allIDs...)).
 		Exec(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("删除资源失败: "+err.Error(), 500))
+	}
+
+	if err := tx.Commit(); err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 	}
 }
 
@@ -529,10 +547,17 @@ func syncPermission(resourceID string, oldExtra, newExtra *string) {
 		return
 	}
 
-	roleRelations, err := db.Client.RelRoleResource.Query().
+	tx, err := db.Client.Tx(ctx)
+	if err != nil {
+		log.Printf("[RESOURCE] Failed to create transaction: %v", err)
+		return
+	}
+
+	roleRelations, err := tx.Client().RelRoleResource.Query().
 		Where(relroleresource.ResourceID(resourceID)).
 		All(ctx)
 	if err != nil || len(roleRelations) == 0 {
+		tx.Rollback()
 		return
 	}
 
@@ -542,26 +567,45 @@ func syncPermission(resourceID string, oldExtra, newExtra *string) {
 	}
 
 	if oldCode != "" {
-		_, _ = db.Client.RelRolePermission.Delete().
+		_, err = tx.Client().RelRolePermission.Delete().
 			Where(relrolepermission.RoleIDIn(roleIDs...)).
 			Where(relrolepermission.PermissionCode(oldCode)).
 			Exec(ctx)
+		if err != nil {
+			tx.Rollback()
+			log.Printf("[RESOURCE] Failed to delete old permission %s for resource %s: %v", oldCode, resourceID, err)
+			return
+		}
 	}
 
 	if newCode != "" {
 		for _, roleID := range roleIDs {
-			exists, _ := db.Client.RelRolePermission.Query().
+			exists, err := tx.Client().RelRolePermission.Query().
 				Where(relrolepermission.RoleID(roleID)).
 				Where(relrolepermission.PermissionCode(newCode)).
 				Exist(ctx)
+			if err != nil {
+				tx.Rollback()
+				log.Printf("[RESOURCE] Failed to check existing permission %s for role %s: %v", newCode, roleID, err)
+				return
+			}
 			if !exists {
-				_ = db.Client.RelRolePermission.Create().
+				err = tx.Client().RelRolePermission.Create().
 					SetID(utils.GenerateID()).
 					SetRoleID(roleID).
 					SetPermissionCode(newCode).
 					Exec(ctx)
+				if err != nil {
+					tx.Rollback()
+					log.Printf("[RESOURCE] Failed to create permission %s for role %s: %v", newCode, roleID, err)
+					return
+				}
 			}
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Printf("[RESOURCE] Failed to commit transaction for resource %s: %v", resourceID, err)
 	}
 }
 

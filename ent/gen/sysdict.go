@@ -17,31 +17,31 @@ type SysDict struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 字典编码
-	Code string `json:"code,omitempty"`
+	Code string `json:"code"`
 	// 字典标签
-	Label *string `json:"label,omitempty"`
+	Label *string `json:"label"`
 	// 字典值
-	Value *string `json:"value,omitempty"`
+	Value *string `json:"value"`
 	// 字典颜色
-	Color *string `json:"color,omitempty"`
+	Color *string `json:"color"`
 	// 字典分类
-	Category *string `json:"category,omitempty"`
+	Category *string `json:"category"`
 	// 父字典ID
-	ParentID *string `json:"parent_id,omitempty"`
+	ParentID *string `json:"parent_id"`
 	// 状态
-	Status string `json:"status,omitempty"`
+	Status string `json:"status"`
 	// 排序
-	SortCode int `json:"sort_code,omitempty"`
+	SortCode int `json:"sort_code"`
 	// 创建时间
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
 	// 创建用户
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy *string `json:"created_by"`
 	// 更新时间
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at"`
 	// 更新用户
-	UpdatedBy    *string `json:"updated_by,omitempty"`
+	UpdatedBy    *string `json:"updated_by"`
 	selectValues sql.SelectValues
 }
 

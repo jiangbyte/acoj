@@ -79,8 +79,8 @@ func RegisterRoutes(r *gin.Engine) {
 func modulePage(c *gin.Context) {
 	param := &resource.ModulePageParam{}
 	if err := c.ShouldBindQuery(param); err != nil {
-		param.Current = 1
-		param.Size = 10
+		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		return
 	}
 	c.JSON(http.StatusOK, resource.ModulePage(c, param))
 }
@@ -155,8 +155,8 @@ func resourceTree(c *gin.Context) {
 func resourcePage(c *gin.Context) {
 	param := &resource.ResourcePageParam{}
 	if err := c.ShouldBindQuery(param); err != nil {
-		param.Current = 1
-		param.Size = 10
+		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		return
 	}
 	c.JSON(http.StatusOK, resource.ResourcePage(c, param))
 }

@@ -6,13 +6,15 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"sync"
 
 	"hei-gin/core/constants"
 	"hei-gin/core/db"
 )
 
 // permissionCacheTTL is the TTL for the Redis permission cache.
-// 0 means no expiration — cache is rebuilt only at server startup.
+// 0 = no expiration; cache persists until server restart.
+// To force a cache refresh, use Redis DEL on the cache key or restart the server.
 const permissionCacheTTL = 0
 
 // PermissionEntry represents a scanned permission entry.
@@ -23,10 +25,15 @@ type PermissionEntry struct {
 }
 
 // permissionRegistry holds all registered permissions throughout the application.
-var permissionRegistry []PermissionEntry
+var (
+	permissionRegistry []PermissionEntry
+	permRegMu          sync.Mutex
+)
 
 // RegisterPermission registers a permission entry for later scanning.
 func RegisterPermission(entry PermissionEntry) {
+	permRegMu.Lock()
+	defer permRegMu.Unlock()
 	permissionRegistry = append(permissionRegistry, entry)
 }
 
@@ -37,7 +44,9 @@ func RunPermissionScan() error {
 		return nil
 	}
 
+	permRegMu.Lock()
 	tree := buildModuleTree(permissionRegistry)
+	permRegMu.Unlock()
 	if len(tree) == 0 {
 		log.Println("[PermissionScan] No permissions registered, nothing to cache")
 		return nil

@@ -56,9 +56,10 @@ func Run() {
 	r := gin.Default()
 
 	// 10. Global middleware
+	// Recovery must be first so it can catch panics from all downstream middleware
+	r.Use(middleware.Recovery())
 	r.Use(middleware.Trace())
 	r.Use(middleware.AuthCheck())
-	r.Use(middleware.Recovery())
 
 	// 11. CORS
 	r.Use(middleware.CORS())

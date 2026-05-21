@@ -262,8 +262,8 @@ func (_q *RelUserPermissionQuery) Clone() *RelUserPermissionQuery {
 // Example:
 //
 //	var v []struct {
-//		UserID string `json:"user_id,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		UserID string `json:"user_id"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.RelUserPermission.Query().
@@ -285,7 +285,7 @@ func (_q *RelUserPermissionQuery) GroupBy(field string, fields ...string) *RelUs
 // Example:
 //
 //	var v []struct {
-//		UserID string `json:"user_id,omitempty"`
+//		UserID string `json:"user_id"`
 //	}
 //
 //	client.RelUserPermission.Query().

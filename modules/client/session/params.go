@@ -8,17 +8,17 @@ type SessionAnalysisResult struct {
 }
 
 type SessionPageResult struct {
-	UserID                string  `json:"user_id,omitempty"`
-	Username              *string `json:"username,omitempty"`
-	Nickname              *string `json:"nickname,omitempty"`
-	Avatar                *string `json:"avatar,omitempty"`
-	Status                string  `json:"status,omitempty"`
-	LastLoginIP           *string `json:"last_login_ip,omitempty"`
-	LastLoginAddress      *string `json:"last_login_address,omitempty"`
-	LastLoginTime         string  `json:"last_login_time,omitempty"`
-	SessionCreateTime     string  `json:"session_create_time,omitempty"`
-	SessionTimeout        string  `json:"session_timeout,omitempty"`
-	SessionTimeoutSeconds int     `json:"session_timeout_seconds,omitempty"`
+	UserID                string  `json:"user_id"`
+	Username              *string `json:"username"`
+	Nickname              *string `json:"nickname"`
+	Avatar                *string `json:"avatar"`
+	Status                string  `json:"status"`
+	LastLoginIP           *string `json:"last_login_ip"`
+	LastLoginAddress      *string `json:"last_login_address"`
+	LastLoginTime         string  `json:"last_login_time"`
+	SessionCreateTime     string  `json:"session_create_time"`
+	SessionTimeout        string  `json:"session_timeout"`
+	SessionTimeoutSeconds int     `json:"session_timeout_seconds"`
 	TokenCount            int     `json:"token_count"`
 }
 
@@ -32,18 +32,18 @@ type SessionExitTokenParam struct {
 }
 
 type SessionTokenResult struct {
-	Token          string `json:"token,omitempty"`
-	CreatedAt      string `json:"created_at,omitempty"`
-	Timeout        string `json:"timeout,omitempty"`
-	TimeoutSeconds int    `json:"timeout_seconds,omitempty"`
-	DeviceType     string `json:"device_type,omitempty"`
-	DeviceID       string `json:"device_id,omitempty"`
+	Token          string `json:"token"`
+	CreatedAt      string `json:"created_at"`
+	Timeout        string `json:"timeout"`
+	TimeoutSeconds int    `json:"timeout_seconds"`
+	DeviceType     string `json:"device_type"`
+	DeviceID       string `json:"device_id"`
 }
 
 type SessionPageParam struct {
 	Current int    `json:"current" form:"current"`
 	Size    int    `json:"size" form:"size"`
-	Keyword string `json:"keyword,omitempty" form:"keyword"`
+	Keyword string `json:"keyword" form:"keyword"`
 }
 
 type SessionChartData struct {

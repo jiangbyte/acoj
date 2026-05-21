@@ -17,41 +17,41 @@ type SysFile struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 存储引擎
-	Engine *string `json:"engine,omitempty"`
+	Engine *string `json:"engine"`
 	// 存储桶
-	Bucket *string `json:"bucket,omitempty"`
+	Bucket *string `json:"bucket"`
 	// 文件Key
-	FileKey *string `json:"file_key,omitempty"`
+	FileKey *string `json:"file_key"`
 	// 文件名称
-	Name *string `json:"name,omitempty"`
+	Name *string `json:"name"`
 	// 文件后缀
-	Suffix *string `json:"suffix,omitempty"`
+	Suffix *string `json:"suffix"`
 	// 文件大小kb
-	SizeKB *int64 `json:"size_kb,omitempty"`
+	SizeKB *int64 `json:"size_kb"`
 	// 文件大小（格式化后）
-	SizeInfo *string `json:"size_info,omitempty"`
+	SizeInfo *string `json:"size_info"`
 	// 文件的对象名（唯一名称）
-	ObjName *string `json:"obj_name,omitempty"`
+	ObjName *string `json:"obj_name"`
 	// 文件存储路径
-	StoragePath *string `json:"storage_path,omitempty"`
+	StoragePath *string `json:"storage_path"`
 	// 文件下载路径
-	DownloadPath *string `json:"download_path,omitempty"`
+	DownloadPath *string `json:"download_path"`
 	// 文件下载是否需要授权
-	IsDownloadAuth *bool `json:"is_download_auth,omitempty"`
+	IsDownloadAuth *bool `json:"is_download_auth"`
 	// 图片缩略图
-	Thumbnail *string `json:"thumbnail,omitempty"`
+	Thumbnail *string `json:"thumbnail"`
 	// 扩展信息
-	Extra *string `json:"extra,omitempty"`
+	Extra *string `json:"extra"`
 	// 创建时间
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
 	// 创建用户
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy *string `json:"created_by"`
 	// 修改时间
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at"`
 	// 修改用户
-	UpdatedBy    *string `json:"updated_by,omitempty"`
+	UpdatedBy    *string `json:"updated_by"`
 	selectValues sql.SelectValues
 }
 

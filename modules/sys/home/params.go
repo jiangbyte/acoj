@@ -1,9 +1,9 @@
 package home
 
 type QuickActionVO struct {
-	ID         string `json:"id,omitempty"`
+	ID         string `json:"id"`
 	ResourceID string `json:"resource_id"`
-	ParentID   string `json:"parent_id,omitempty"`
+	ParentID   string `json:"parent_id"`
 	Type       string `json:"type"`
 	Name       string `json:"name"`
 	Icon       string `json:"icon"`
@@ -15,7 +15,7 @@ type HomeNotice struct {
 	ID        string `json:"id"`
 	Title     string `json:"title"`
 	Level     string `json:"level"`
-	CreatedAt string `json:"created_at,omitempty"`
+	CreatedAt string `json:"created_at"`
 }
 
 type HomeStats struct {

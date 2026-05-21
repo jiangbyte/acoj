@@ -262,8 +262,8 @@ func (_q *SysBannerQuery) Clone() *SysBannerQuery {
 // Example:
 //
 //	var v []struct {
-//		Title string `json:"title,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Title string `json:"title"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysBanner.Query().
@@ -285,7 +285,7 @@ func (_q *SysBannerQuery) GroupBy(field string, fields ...string) *SysBannerGrou
 // Example:
 //
 //	var v []struct {
-//		Title string `json:"title,omitempty"`
+//		Title string `json:"title"`
 //	}
 //
 //	client.SysBanner.Query().

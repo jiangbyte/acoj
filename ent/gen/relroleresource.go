@@ -16,11 +16,11 @@ type RelRoleResource struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 角色ID
-	RoleID string `json:"role_id,omitempty"`
+	RoleID string `json:"role_id"`
 	// 资源ID
-	ResourceID   string `json:"resource_id,omitempty"`
+	ResourceID   string `json:"resource_id"`
 	selectValues sql.SelectValues
 }
 

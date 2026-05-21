@@ -17,39 +17,39 @@ type SysBanner struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 轮播标题
-	Title string `json:"title,omitempty"`
+	Title string `json:"title"`
 	// 轮播图片
-	Image string `json:"image,omitempty"`
+	Image string `json:"image"`
 	// 跳转地址
-	URL *string `json:"url,omitempty"`
+	URL *string `json:"url"`
 	// 链接类型
-	LinkType string `json:"link_type,omitempty"`
+	LinkType string `json:"link_type"`
 	// 轮播摘要
-	Summary *string `json:"summary,omitempty"`
+	Summary *string `json:"summary"`
 	// 轮播描述
-	Description *string `json:"description,omitempty"`
+	Description *string `json:"description"`
 	// 轮播类别
-	Category string `json:"category,omitempty"`
+	Category string `json:"category"`
 	// 轮播类型
-	Type string `json:"type,omitempty"`
+	Type string `json:"type"`
 	// 展示位置
-	Position string `json:"position,omitempty"`
+	Position string `json:"position"`
 	// 排序
-	SortCode int `json:"sort_code,omitempty"`
+	SortCode int `json:"sort_code"`
 	// 浏览次数
-	ViewCount int `json:"view_count,omitempty"`
+	ViewCount int `json:"view_count"`
 	// 点击次数
-	ClickCount int `json:"click_count,omitempty"`
+	ClickCount int `json:"click_count"`
 	// 创建时间
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
 	// 创建用户
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy *string `json:"created_by"`
 	// 更新时间
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at"`
 	// 更新用户
-	UpdatedBy    *string `json:"updated_by,omitempty"`
+	UpdatedBy    *string `json:"updated_by"`
 	selectValues sql.SelectValues
 }
 

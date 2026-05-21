@@ -262,8 +262,8 @@ func (_q *SysRoleQuery) Clone() *SysRoleQuery {
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Code string `json:"code"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysRole.Query().
@@ -285,7 +285,7 @@ func (_q *SysRoleQuery) GroupBy(field string, fields ...string) *SysRoleGroupBy 
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
+//		Code string `json:"code"`
 //	}
 //
 //	client.SysRole.Query().

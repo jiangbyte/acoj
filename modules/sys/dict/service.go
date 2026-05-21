@@ -3,6 +3,7 @@ package dict
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"sort"
 	"time"
 
@@ -364,7 +365,7 @@ func syncDictCache() {
 	ctx := context.Background()
 	all, err := db.Client.SysDict.Query().Order(sysdict.BySortCode()).All(ctx)
 	if err != nil {
-		return
+		panic(exception.NewBusinessError("校验字典循环引用失败: "+err.Error(), 500))
 	}
 
 	// Build children-by-parent map
@@ -397,7 +398,11 @@ func syncDictCache() {
 		}
 	}
 
-	flatJSON, _ := json.Marshal(flatCache)
+	flatJSON, err := json.Marshal(flatCache)
+	if err != nil {
+		log.Printf("[DICT] failed to marshal flat cache: %v", err)
+		return
+	}
 	db.Redis.Set(ctx, constants.DICT_CACHE_KEY, string(flatJSON), 0)
 
 	// Full tree cache
@@ -419,7 +424,11 @@ func syncDictCache() {
 	}
 	sortTreeNodes(roots)
 
-	treeJSON, _ := json.Marshal(roots)
+	treeJSON, err := json.Marshal(roots)
+	if err != nil {
+		log.Printf("[DICT] failed to marshal tree cache: %v", err)
+		return
+	}
 	db.Redis.Set(ctx, constants.DICT_TREE_CACHE_KEY, string(treeJSON), 0)
 }
 
@@ -435,19 +444,22 @@ func dictCheckDuplicate(parentID string, label, value *string, excludeID string)
 			Where(sysdict.ParentID(parentID)).
 			Where(sysdict.LabelEQ(*label)).
 			Count(ctx)
-		if err == nil {
-			if excludeID != "" {
-				// Exclude the current record (for modify)
-				excludeCnt, _ := db.Client.SysDict.Query().
-					Where(sysdict.ID(excludeID)).
-					Where(sysdict.ParentID(parentID)).
-					Where(sysdict.LabelEQ(*label)).
-					Count(ctx)
-				cnt -= excludeCnt
+		if err != nil {
+			panic(exception.NewBusinessError("校验字典重复失败: "+err.Error(), 500))
+		}
+		if excludeID != "" {
+			excludeCnt, err := db.Client.SysDict.Query().
+				Where(sysdict.ID(excludeID)).
+				Where(sysdict.ParentID(parentID)).
+				Where(sysdict.LabelEQ(*label)).
+				Count(ctx)
+			if err != nil {
+				panic(exception.NewBusinessError("校验字典重复失败: "+err.Error(), 500))
 			}
-			if cnt > 0 {
-				panic(exception.NewBusinessError("同一父字典下已存在相同标签: "+*label, 400))
-			}
+			cnt -= excludeCnt
+		}
+		if cnt > 0 {
+			panic(exception.NewBusinessError("同一父字典下已存在相同标签: "+*label, 400))
 		}
 	}
 
@@ -456,18 +468,22 @@ func dictCheckDuplicate(parentID string, label, value *string, excludeID string)
 			Where(sysdict.ParentID(parentID)).
 			Where(sysdict.ValueEQ(*value)).
 			Count(ctx)
-		if err == nil {
-			if excludeID != "" {
-				excludeCnt, _ := db.Client.SysDict.Query().
-					Where(sysdict.ID(excludeID)).
-					Where(sysdict.ParentID(parentID)).
-					Where(sysdict.ValueEQ(*value)).
-					Count(ctx)
-				cnt -= excludeCnt
+		if err != nil {
+			panic(exception.NewBusinessError("校验字典重复失败: "+err.Error(), 500))
+		}
+		if excludeID != "" {
+			excludeCnt, err := db.Client.SysDict.Query().
+				Where(sysdict.ID(excludeID)).
+				Where(sysdict.ParentID(parentID)).
+				Where(sysdict.ValueEQ(*value)).
+				Count(ctx)
+			if err != nil {
+				panic(exception.NewBusinessError("校验字典重复失败: "+err.Error(), 500))
 			}
-			if cnt > 0 {
-				panic(exception.NewBusinessError("同一父字典下已存在相同值: "+*value, 400))
-			}
+			cnt -= excludeCnt
+		}
+		if cnt > 0 {
+			panic(exception.NewBusinessError("同一父字典下已存在相同值: "+*value, 400))
 		}
 	}
 }
@@ -507,7 +523,7 @@ func dictCollectDescendantIDs(ids []string) []string {
 	ctx := context.Background()
 	all, err := db.Client.SysDict.Query().All(ctx)
 	if err != nil {
-		return ids
+		panic(exception.NewBusinessError("收集字典子节点失败: "+err.Error(), 500))
 	}
 
 	childrenMap := make(map[string][]string)

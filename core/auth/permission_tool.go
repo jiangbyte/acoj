@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/core/enums"
+	"hei-gin/core/result"
 )
 
 // getLoginID extracts the login ID from the request using the appropriate auth tool.
@@ -19,7 +20,16 @@ func getLoginID(c *gin.Context, loginType string) string {
 }
 
 // GetPermissionList gets the current user's permission list from the request context.
+// Results are cached per-request in the gin context to avoid redundant DB queries.
 func GetPermissionList(c *gin.Context, loginType string) ([]string, error) {
+	// Check per-request cache
+	cacheKey := "_perm_cache_" + loginType
+	if cached, exists := c.Get(cacheKey); exists {
+		if perms, ok := cached.([]string); ok {
+			return perms, nil
+		}
+	}
+
 	iface := GetInterface()
 	if iface == nil {
 		return []string{}, nil
@@ -30,11 +40,26 @@ func GetPermissionList(c *gin.Context, loginType string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	return iface.GetPermissionList(loginID, loginType)
+	perms, err := iface.GetPermissionList(loginID, loginType)
+	if err != nil {
+		return perms, err
+	}
+	// Cache per-request
+	c.Set(cacheKey, perms)
+	return perms, nil
 }
 
 // GetRoleList gets the current user's role list from the request context.
+// Results are cached per-request in the gin context to avoid redundant DB queries.
 func GetRoleList(c *gin.Context, loginType string) ([]string, error) {
+	// Check per-request cache
+	cacheKey := "_role_cache_" + loginType
+	if cached, exists := c.Get(cacheKey); exists {
+		if roles, ok := cached.([]string); ok {
+			return roles, nil
+		}
+	}
+
 	iface := GetInterface()
 	if iface == nil {
 		return []string{}, nil
@@ -45,7 +70,13 @@ func GetRoleList(c *gin.Context, loginType string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	return iface.GetRoleList(loginID, loginType)
+	roles, err := iface.GetRoleList(loginID, loginType)
+	if err != nil {
+		return roles, err
+	}
+	// Cache per-request
+	c.Set(cacheKey, roles)
+	return roles, nil
 }
 
 // GetPermissionListByLoginID gets the permission list for a specific login ID.
@@ -78,11 +109,8 @@ func HasPermission(c *gin.Context, permission, loginType string) bool {
 // CheckPermission checks if the current user has the specified permission, aborts with 403 if not.
 func CheckPermission(c *gin.Context, permission, loginType string) {
 	if !HasPermission(c, permission, loginType) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-			"code":    403,
-			"message": fmt.Sprintf("缺少权限: %s", permission),
-			"success": false,
-		})
+		c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少权限: %s", permission), 403, nil))
+		return
 	}
 }
 
@@ -99,11 +127,7 @@ func HasPermissionAnd(c *gin.Context, loginType string, permissions ...string) b
 func CheckPermissionAnd(c *gin.Context, loginType string, permissions ...string) {
 	for _, permission := range permissions {
 		if !HasPermission(c, permission, loginType) {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"code":    403,
-				"message": fmt.Sprintf("缺少权限: %s", permission),
-				"success": false,
-			})
+			c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少权限: %s", permission), 403, nil))
 			return
 		}
 	}
@@ -121,11 +145,8 @@ func HasPermissionOr(c *gin.Context, loginType string, permissions ...string) bo
 // CheckPermissionOr checks if the current user has any of the specified permissions, aborts with 403 if not.
 func CheckPermissionOr(c *gin.Context, loginType string, permissions ...string) {
 	if !HasPermissionOr(c, loginType, permissions...) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-			"code":    403,
-			"message": fmt.Sprintf("缺少权限: %v", permissions),
-			"success": false,
-		})
+		c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少权限: %v", permissions), 403, nil))
+		return
 	}
 }
 
@@ -146,11 +167,8 @@ func HasRole(c *gin.Context, role, loginType string) bool {
 // CheckRole checks if the current user has the specified role, aborts with 403 if not.
 func CheckRole(c *gin.Context, role, loginType string) {
 	if !HasRole(c, role, loginType) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-			"code":    403,
-			"message": fmt.Sprintf("缺少角色: %s", role),
-			"success": false,
-		})
+		c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少角色: %s", role), 403, nil))
+		return
 	}
 }
 
@@ -176,11 +194,7 @@ func HasRoleAnd(c *gin.Context, loginType string, roles ...string) bool {
 func CheckRoleAnd(c *gin.Context, loginType string, roles ...string) {
 	for _, role := range roles {
 		if !HasRole(c, role, loginType) {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"code":    403,
-				"message": fmt.Sprintf("缺少角色: %s", role),
-				"success": false,
-			})
+			c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少角色: %s", role), 403, nil))
 			return
 		}
 	}
@@ -207,10 +221,7 @@ func HasRoleOr(c *gin.Context, loginType string, roles ...string) bool {
 // CheckRoleOr checks if the current user has any of the specified roles, aborts with 403 if not.
 func CheckRoleOr(c *gin.Context, loginType string, roles ...string) {
 	if !HasRoleOr(c, loginType, roles...) {
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-			"code":    403,
-			"message": fmt.Sprintf("缺少角色: %v", roles),
-			"success": false,
-		})
+		c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少角色: %v", roles), 403, nil))
+		return
 	}
 }

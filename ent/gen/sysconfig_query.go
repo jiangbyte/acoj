@@ -262,8 +262,8 @@ func (_q *SysConfigQuery) Clone() *SysConfigQuery {
 // Example:
 //
 //	var v []struct {
-//		ConfigKey string `json:"config_key,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		ConfigKey string `json:"config_key"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysConfig.Query().
@@ -285,7 +285,7 @@ func (_q *SysConfigQuery) GroupBy(field string, fields ...string) *SysConfigGrou
 // Example:
 //
 //	var v []struct {
-//		ConfigKey string `json:"config_key,omitempty"`
+//		ConfigKey string `json:"config_key"`
 //	}
 //
 //	client.SysConfig.Query().

@@ -262,8 +262,8 @@ func (_q *SysResourceQuery) Clone() *SysResourceQuery {
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Code string `json:"code"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysResource.Query().
@@ -285,7 +285,7 @@ func (_q *SysResourceQuery) GroupBy(field string, fields ...string) *SysResource
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
+//		Code string `json:"code"`
 //	}
 //
 //	client.SysResource.Query().

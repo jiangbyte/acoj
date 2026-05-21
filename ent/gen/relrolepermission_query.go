@@ -262,8 +262,8 @@ func (_q *RelRolePermissionQuery) Clone() *RelRolePermissionQuery {
 // Example:
 //
 //	var v []struct {
-//		RoleID string `json:"role_id,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		RoleID string `json:"role_id"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.RelRolePermission.Query().
@@ -285,7 +285,7 @@ func (_q *RelRolePermissionQuery) GroupBy(field string, fields ...string) *RelRo
 // Example:
 //
 //	var v []struct {
-//		RoleID string `json:"role_id,omitempty"`
+//		RoleID string `json:"role_id"`
 //	}
 //
 //	client.RelRolePermission.Query().

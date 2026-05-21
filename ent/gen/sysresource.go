@@ -17,53 +17,53 @@ type SysResource struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 资源编码
-	Code string `json:"code,omitempty"`
+	Code string `json:"code"`
 	// 资源名称
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// 资源分类：BACKEND_MENU-后台菜单，FRONTEND_MENU-前台菜单，BACKEND_BUTTON-后台按钮，FRONTEND_BUTTON-前台按钮
-	Category string `json:"category,omitempty"`
+	Category string `json:"category"`
 	// 资源类型：DIRECTORY-目录，MENU-菜单，BUTTON-按钮，INTERNAL_LINK-内链，EXTERNAL_LINK-外链
-	Type string `json:"type,omitempty"`
+	Type string `json:"type"`
 	// 资源描述
-	Description *string `json:"description,omitempty"`
+	Description *string `json:"description"`
 	// 父资源ID
-	ParentID *string `json:"parent_id,omitempty"`
+	ParentID *string `json:"parent_id"`
 	// 路由路径
-	RoutePath *string `json:"route_path,omitempty"`
+	RoutePath *string `json:"route_path"`
 	// 组件路径
-	ComponentPath *string `json:"component_path,omitempty"`
+	ComponentPath *string `json:"component_path"`
 	// 重定向路径
-	RedirectPath *string `json:"redirect_path,omitempty"`
+	RedirectPath *string `json:"redirect_path"`
 	// 资源图标
-	Icon *string `json:"icon,omitempty"`
+	Icon *string `json:"icon"`
 	// 资源颜色（前台资源使用）
-	Color *string `json:"color,omitempty"`
+	Color *string `json:"color"`
 	// 是否可见
-	IsVisible string `json:"is_visible,omitempty"`
+	IsVisible string `json:"is_visible"`
 	// 是否缓存
-	IsCache string `json:"is_cache,omitempty"`
+	IsCache string `json:"is_cache"`
 	// 是否固定
-	IsAffix string `json:"is_affix,omitempty"`
+	IsAffix string `json:"is_affix"`
 	// 是否显示面包屑
-	IsBreadcrumb string `json:"is_breadcrumb,omitempty"`
+	IsBreadcrumb string `json:"is_breadcrumb"`
 	// 外链地址
-	ExternalURL *string `json:"external_url,omitempty"`
+	ExternalURL *string `json:"external_url"`
 	// 扩展信息
-	Extra *string `json:"extra,omitempty"`
+	Extra *string `json:"extra"`
 	// 状态
-	Status string `json:"status,omitempty"`
+	Status string `json:"status"`
 	// 排序
-	SortCode int `json:"sort_code,omitempty"`
+	SortCode int `json:"sort_code"`
 	// 创建时间
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
 	// 创建用户
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy *string `json:"created_by"`
 	// 更新时间
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at"`
 	// 更新用户
-	UpdatedBy    *string `json:"updated_by,omitempty"`
+	UpdatedBy    *string `json:"updated_by"`
 	selectValues sql.SelectValues
 }
 

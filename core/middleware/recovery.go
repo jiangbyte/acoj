@@ -39,6 +39,7 @@ func Recovery() gin.HandlerFunc {
 		if err := c.Errors.Last(); err != nil {
 			c.JSON(200, result.Failure(c, err.Error(), 400, nil))
 			c.Abort()
+			return
 		}
 	}
 }

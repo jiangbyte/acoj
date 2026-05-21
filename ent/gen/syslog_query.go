@@ -262,8 +262,8 @@ func (_q *SysLogQuery) Clone() *SysLogQuery {
 // Example:
 //
 //	var v []struct {
-//		Category string `json:"category,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Category string `json:"category"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysLog.Query().
@@ -285,7 +285,7 @@ func (_q *SysLogQuery) GroupBy(field string, fields ...string) *SysLogGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Category string `json:"category,omitempty"`
+//		Category string `json:"category"`
 //	}
 //
 //	client.SysLog.Query().

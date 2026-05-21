@@ -3,12 +3,14 @@ package analyze
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"runtime"
 	"sort"
 	"time"
 
 	"hei-gin/core/db"
+	ent "hei-gin/ent/gen"
 	"hei-gin/ent/gen/clientuser"
 	"hei-gin/ent/gen/sysuser"
 
@@ -20,12 +22,30 @@ var ServerStartTime = time.Now()
 func Dashboard(c *gin.Context) *DashboardVO {
 	ctx := context.Background()
 
-	totalUsers, _ := db.Client.SysUser.Query().Count(ctx)
-	activeUsers, _ := db.Client.SysUser.Query().Where(sysuser.StatusEQ("ACTIVE")).Count(ctx)
-	totalRoles, _ := db.Client.SysRole.Query().Count(ctx)
-	totalOrgs, _ := db.Client.SysOrg.Query().Count(ctx)
-	totalConfigs, _ := db.Client.SysConfig.Query().Count(ctx)
-	totalNotices, _ := db.Client.SysNotice.Query().Count(ctx)
+	totalUsers, err := db.Client.SysUser.Query().Count(ctx)
+	if err != nil {
+		log.Printf("[ANALYZE] failed to query total users: %v", err)
+	}
+	activeUsers, err := db.Client.SysUser.Query().Where(sysuser.StatusEQ("ACTIVE")).Count(ctx)
+	if err != nil {
+		log.Printf("[ANALYZE] failed to query active users: %v", err)
+	}
+	totalRoles, err := db.Client.SysRole.Query().Count(ctx)
+	if err != nil {
+		log.Printf("[ANALYZE] failed to query total roles: %v", err)
+	}
+	totalOrgs, err := db.Client.SysOrg.Query().Count(ctx)
+	if err != nil {
+		log.Printf("[ANALYZE] failed to query total orgs: %v", err)
+	}
+	totalConfigs, err := db.Client.SysConfig.Query().Count(ctx)
+	if err != nil {
+		log.Printf("[ANALYZE] failed to query total configs: %v", err)
+	}
+	totalNotices, err := db.Client.SysNotice.Query().Count(ctx)
+	if err != nil {
+		log.Printf("[ANALYZE] failed to query total notices: %v", err)
+	}
 
 	stats := DashboardStats{
 		TotalUsers:   totalUsers,
@@ -36,8 +56,14 @@ func Dashboard(c *gin.Context) *DashboardVO {
 		TotalNotices: totalNotices,
 	}
 
-	clientTotal, _ := db.Client.ClientUser.Query().Count(ctx)
-	clientActive, _ := db.Client.ClientUser.Query().Where(clientuser.StatusEQ("ACTIVE")).Count(ctx)
+	clientTotal, err := db.Client.ClientUser.Query().Count(ctx)
+	if err != nil {
+		log.Printf("[ANALYZE] failed to query client total: %v", err)
+	}
+	clientActive, err := db.Client.ClientUser.Query().Where(clientuser.StatusEQ("ACTIVE")).Count(ctx)
+	if err != nil {
+		log.Printf("[ANALYZE] failed to query client active: %v", err)
+	}
 	clientStats := ClientStats{
 		TotalUsers:  clientTotal,
 		ActiveUsers: clientActive,
@@ -61,47 +87,98 @@ func Dashboard(c *gin.Context) *DashboardVO {
 }
 
 func getUserTrend(ctx context.Context) []TrendItem {
-	users, _ := db.Client.SysUser.Query().All(ctx)
-	monthMap := make(map[string]int)
-	for _, u := range users {
-		if u.CreatedAt != nil {
-			month := u.CreatedAt.Format("2006-01")
-			monthMap[month]++
-		}
-	}
-	result := make([]TrendItem, 0)
 	now := time.Now()
+	result := make([]TrendItem, 12)
 	for i := 11; i >= 0; i-- {
 		month := now.AddDate(0, -i, 0).Format("2006-01")
-		result = append(result, TrendItem{Month: month, Count: monthMap[month]})
+		result[11-i] = TrendItem{Month: month, Count: 0}
+	}
+
+	// Per-month COUNT queries are efficient with index on created_at
+	for i, item := range result {
+		start, err := time.Parse("2006-01", item.Month)
+		if err != nil {
+			continue
+		}
+		end := start.AddDate(0, 1, 0)
+		count, err := db.Client.SysUser.Query().
+			Where(sysuser.CreatedAtGTE(start), sysuser.CreatedAtLT(end)).
+			Count(ctx)
+		if err != nil {
+			log.Printf("[ANALYZE] failed to query user trend for %s: %v", item.Month, err)
+		}
+		result[i].Count = count
 	}
 	return result
 }
 
 func getClientUserTrend(ctx context.Context) []TrendItem {
-	users, _ := db.Client.ClientUser.Query().All(ctx)
-	monthMap := make(map[string]int)
-	for _, u := range users {
-		if u.CreatedAt != nil {
-			month := u.CreatedAt.Format("2006-01")
-			monthMap[month]++
-		}
-	}
-	result := make([]TrendItem, 0)
 	now := time.Now()
+	result := make([]TrendItem, 12)
 	for i := 11; i >= 0; i-- {
 		month := now.AddDate(0, -i, 0).Format("2006-01")
-		result = append(result, TrendItem{Month: month, Count: monthMap[month]})
+		result[11-i] = TrendItem{Month: month, Count: 0}
+	}
+
+	// Per-month COUNT queries are efficient with index on created_at
+	for i, item := range result {
+		start, err := time.Parse("2006-01", item.Month)
+		if err != nil {
+			continue
+		}
+		end := start.AddDate(0, 1, 0)
+		count, err := db.Client.ClientUser.Query().
+			Where(clientuser.CreatedAtGTE(start), clientuser.CreatedAtLT(end)).
+			Count(ctx)
+		if err != nil {
+			log.Printf("[ANALYZE] failed to query client user trend for %s: %v", item.Month, err)
+		}
+		result[i].Count = count
 	}
 	return result
 }
 
 func getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
-	orgs, _ := db.Client.SysOrg.Query().All(ctx)
-	result := make([]OrgUserDistribution, 0)
+	orgs, err := db.Client.SysOrg.Query().All(ctx)
+	if err != nil {
+		log.Printf("[ANALYZE] failed to query org user distribution: %v", err)
+		return nil
+	}
+
+	// Single GROUP BY aggregation query instead of N+1
+	var aggResults []struct {
+		OrgID string `json:"org_id"`
+		Count int    `json:"count"`
+	}
+	err = db.Client.SysUser.Query().
+		GroupBy(sysuser.FieldOrgID).
+		Aggregate(ent.As(ent.Count(), "count")).
+		Scan(ctx, &aggResults)
+	if err != nil {
+		log.Printf("[ANALYZE] failed to aggregate org user counts: %v", err)
+		// Fall back to individual queries
+		result := make([]OrgUserDistribution, 0, len(orgs))
+		for _, o := range orgs {
+			count, err := db.Client.SysUser.Query().Where(sysuser.OrgID(o.ID)).Count(ctx)
+			if err != nil {
+				log.Printf("[ANALYZE] failed to query user count for org %s: %v", o.ID, err)
+			}
+			result = append(result, OrgUserDistribution{Name: o.Name, Count: count})
+		}
+		sort.Slice(result, func(i, j int) bool {
+			return result[i].Count > result[j].Count
+		})
+		return result
+	}
+
+	orgCountMap := make(map[string]int, len(aggResults))
+	for _, r := range aggResults {
+		orgCountMap[r.OrgID] = r.Count
+	}
+
+	result := make([]OrgUserDistribution, 0, len(orgs))
 	for _, o := range orgs {
-		count, _ := db.Client.SysUser.Query().Where(sysuser.OrgID(o.ID)).Count(ctx)
-		result = append(result, OrgUserDistribution{Name: o.Name, Count: count})
+		result = append(result, OrgUserDistribution{Name: o.Name, Count: orgCountMap[o.ID]})
 	}
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Count > result[j].Count
@@ -110,7 +187,11 @@ func getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
 }
 
 func getRoleCategoryDistribution(ctx context.Context) []CategoryDistribution {
-	roles, _ := db.Client.SysRole.Query().All(ctx)
+	roles, err := db.Client.SysRole.Query().All(ctx)
+	if err != nil {
+		log.Printf("[ANALYZE] failed to query role category distribution: %v", err)
+		return nil
+	}
 	catMap := make(map[string]int)
 	for _, r := range roles {
 		catMap[r.Category]++

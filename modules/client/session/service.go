@@ -130,7 +130,7 @@ func countDaily(ctx context.Context, redis *redis.Client, sessionKeys []string, 
 // Page returns a paginated list of CONSUMER sessions as a full gin.H response (manual pagination).
 func Page(c *gin.Context, param *SessionPageParam) gin.H {
 	sessions, err := collectSessions(svcCtx, db.Redis, constants.SESSION_PREFIX_CONSUMER, constants.TOKEN_PREFIX_CONSUMER, param.Keyword)
-	if err != nil {
+	if err != nil || sessions == nil {
 		sessions = []*SessionPageResult{}
 	}
 

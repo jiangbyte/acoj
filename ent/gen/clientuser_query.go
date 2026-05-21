@@ -262,8 +262,8 @@ func (_q *ClientUserQuery) Clone() *ClientUserQuery {
 // Example:
 //
 //	var v []struct {
-//		Username string `json:"username,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Username string `json:"username"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.ClientUser.Query().
@@ -285,7 +285,7 @@ func (_q *ClientUserQuery) GroupBy(field string, fields ...string) *ClientUserGr
 // Example:
 //
 //	var v []struct {
-//		Username string `json:"username,omitempty"`
+//		Username string `json:"username"`
 //	}
 //
 //	client.ClientUser.Query().

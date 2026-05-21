@@ -59,6 +59,9 @@ func RolePage(c *gin.Context, param *RolePageParam) gin.H {
 	if param.Size < 1 {
 		param.Size = 10
 	}
+	if param.Size > 100 {
+		param.Size = 100
+	}
 
 	offset := (param.Current - 1) * param.Size
 
@@ -178,28 +181,40 @@ func RoleRemove(c *gin.Context, ids []string) {
 		panic(exception.NewBusinessError("角色存在关联用户，无法删除", 400))
 	}
 
+	tx, err := db.Client.Tx(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
+	}
+
 	// Delete RelRolePermission
-	_, err = db.Client.RelRolePermission.Delete().
+	_, err = tx.RelRolePermission.Delete().
 		Where(relrolepermission.RoleIDIn(ids...)).
 		Exec(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("删除角色权限失败: "+err.Error(), 500))
 	}
 
 	// Delete RelRoleResource
-	_, err = db.Client.RelRoleResource.Delete().
+	_, err = tx.RelRoleResource.Delete().
 		Where(relroleresource.RoleIDIn(ids...)).
 		Exec(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("删除角色资源失败: "+err.Error(), 500))
 	}
 
 	// Delete SysRole
-	_, err = db.Client.SysRole.Delete().
+	_, err = tx.SysRole.Delete().
 		Where(sysrole.IDIn(ids...)).
 		Exec(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("删除角色失败: "+err.Error(), 500))
+	}
+
+	if err := tx.Commit(); err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 	}
 }
 
@@ -224,17 +239,24 @@ func RoleDetail(c *gin.Context, id string) *RoleVO {
 // RoleGrantPermissions grants permissions to a role by replacing all existing permissions.
 func RoleGrantPermissions(c *gin.Context, roleID string, permissions []PermissionItem, userID string) {
 	ctx := context.Background()
+
+	tx, err := db.Client.Tx(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
+	}
+
 	// Delete existing permissions
-	_, err := db.Client.RelRolePermission.Delete().
+	_, err = tx.RelRolePermission.Delete().
 		Where(relrolepermission.RoleID(roleID)).
 		Exec(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("删除角色权限失败: "+err.Error(), 500))
 	}
 
 	// Recreate permissions
 	for _, item := range permissions {
-		builder := db.Client.RelRolePermission.Create().
+		builder := tx.RelRolePermission.Create().
 			SetID(utils.GenerateID()).
 			SetRoleID(roleID).
 			SetPermissionCode(item.PermissionCode).
@@ -249,8 +271,13 @@ func RoleGrantPermissions(c *gin.Context, roleID string, permissions []Permissio
 
 		_, err = builder.Save(ctx)
 		if err != nil {
+			tx.Rollback()
 			panic(exception.NewBusinessError("分配角色权限失败: "+err.Error(), 500))
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 	}
 }
 
@@ -267,43 +294,52 @@ func RoleGrantResources(c *gin.Context, roleID string, resourceIDs []string, per
 		uniqueIDs = append(uniqueIDs, id)
 	}
 
+	tx, err := db.Client.Tx(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
+	}
+
 	// Delete existing RelRoleResource
-	_, err := db.Client.RelRoleResource.Delete().
+	_, err = tx.RelRoleResource.Delete().
 		Where(relroleresource.RoleID(roleID)).
 		Exec(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("删除角色资源失败: "+err.Error(), 500))
 	}
 
 	// Recreate RelRoleResource
 	for _, id := range uniqueIDs {
-		_, err := db.Client.RelRoleResource.Create().
+		_, err := tx.RelRoleResource.Create().
 			SetID(utils.GenerateID()).
 			SetRoleID(roleID).
 			SetResourceID(id).
 			Save(ctx)
 		if err != nil {
+			tx.Rollback()
 			panic(exception.NewBusinessError("分配角色资源失败: "+err.Error(), 500))
 		}
 	}
 
 	// Query SysResource with extra not null
-	resources, err := db.Client.SysResource.Query().
+	resources, err := tx.SysResource.Query().
 		Where(
 			sysresource.IDIn(uniqueIDs...),
 			sysresource.ExtraNotNil(),
 		).
 		All(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("查询资源扩展信息失败: "+err.Error(), 500))
 	}
 
 	// Get existing permission codes for this role
-	existingPerms, err := db.Client.RelRolePermission.Query().
+	existingPerms, err := tx.RelRolePermission.Query().
 		Where(relrolepermission.RoleID(roleID)).
 		Select(relrolepermission.FieldPermissionCode).
 		All(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("查询角色权限失败: "+err.Error(), 500))
 	}
 	existingPermMap := make(map[string]bool)
@@ -327,15 +363,20 @@ func RoleGrantResources(c *gin.Context, roleID string, resourceIDs []string, per
 		if existingPermMap[permCode] {
 			continue
 		}
-		_, err := db.Client.RelRolePermission.Create().
+		_, err := tx.RelRolePermission.Create().
 			SetID(utils.GenerateID()).
 			SetRoleID(roleID).
 			SetPermissionCode(permCode).
 			SetScope("ALL").
 			Save(ctx)
 		if err != nil {
+			tx.Rollback()
 			panic(exception.NewBusinessError("分配角色权限失败: "+err.Error(), 500))
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 	}
 }
 

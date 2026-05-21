@@ -262,8 +262,8 @@ func (_q *SysOrgQuery) Clone() *SysOrgQuery {
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Code string `json:"code"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysOrg.Query().
@@ -285,7 +285,7 @@ func (_q *SysOrgQuery) GroupBy(field string, fields ...string) *SysOrgGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
+//		Code string `json:"code"`
 //	}
 //
 //	client.SysOrg.Query().

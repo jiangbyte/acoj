@@ -17,27 +17,27 @@ type SysConfig struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 配置键
-	ConfigKey *string `json:"config_key,omitempty"`
+	ConfigKey *string `json:"config_key"`
 	// 配置值
-	ConfigValue *string `json:"config_value,omitempty"`
+	ConfigValue *string `json:"config_value"`
 	// 分类
-	Category *string `json:"category,omitempty"`
+	Category *string `json:"category"`
 	// 备注
-	Remark *string `json:"remark,omitempty"`
+	Remark *string `json:"remark"`
 	// 排序码
-	SortCode int `json:"sort_code,omitempty"`
+	SortCode int `json:"sort_code"`
 	// 扩展信息
-	Extra *string `json:"extra,omitempty"`
+	Extra *string `json:"extra"`
 	// 创建时间
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
 	// 创建用户
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy *string `json:"created_by"`
 	// 修改时间
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at"`
 	// 修改用户
-	UpdatedBy    *string `json:"updated_by,omitempty"`
+	UpdatedBy    *string `json:"updated_by"`
 	selectValues sql.SelectValues
 }
 

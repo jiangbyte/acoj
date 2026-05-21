@@ -17,33 +17,33 @@ type SysPosition struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 职位编码
-	Code string `json:"code,omitempty"`
+	Code string `json:"code"`
 	// 职位名称
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// 职位类别
-	Category string `json:"category,omitempty"`
+	Category string `json:"category"`
 	// 所属组织ID
-	OrgID *string `json:"org_id,omitempty"`
+	OrgID *string `json:"org_id"`
 	// 所属用户组ID
-	GroupID *string `json:"group_id,omitempty"`
+	GroupID *string `json:"group_id"`
 	// 职位描述
-	Description *string `json:"description,omitempty"`
+	Description *string `json:"description"`
 	// 状态
-	Status string `json:"status,omitempty"`
+	Status string `json:"status"`
 	// 排序
-	SortCode int `json:"sort_code,omitempty"`
+	SortCode int `json:"sort_code"`
 	// 扩展信息
-	Extra *string `json:"extra,omitempty"`
+	Extra *string `json:"extra"`
 	// 创建时间
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
 	// 创建用户
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy *string `json:"created_by"`
 	// 更新时间
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at"`
 	// 更新用户
-	UpdatedBy    *string `json:"updated_by,omitempty"`
+	UpdatedBy    *string `json:"updated_by"`
 	selectValues sql.SelectValues
 }
 

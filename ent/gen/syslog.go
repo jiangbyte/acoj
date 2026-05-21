@@ -17,51 +17,51 @@ type SysLog struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 日志分类
-	Category *string `json:"category,omitempty"`
+	Category *string `json:"category"`
 	// 日志名称
-	Name *string `json:"name,omitempty"`
+	Name *string `json:"name"`
 	// 执行状态
-	ExeStatus *string `json:"exe_status,omitempty"`
+	ExeStatus *string `json:"exe_status"`
 	// 具体消息
-	ExeMessage *string `json:"exe_message,omitempty"`
+	ExeMessage *string `json:"exe_message"`
 	// 操作ip
-	OpIP *string `json:"op_ip,omitempty"`
+	OpIP *string `json:"op_ip"`
 	// 操作地址
-	OpAddress *string `json:"op_address,omitempty"`
+	OpAddress *string `json:"op_address"`
 	// 操作浏览器
-	OpBrowser *string `json:"op_browser,omitempty"`
+	OpBrowser *string `json:"op_browser"`
 	// 操作系统
-	OpOs *string `json:"op_os,omitempty"`
+	OpOs *string `json:"op_os"`
 	// 类名称
-	ClassName *string `json:"class_name,omitempty"`
+	ClassName *string `json:"class_name"`
 	// 方法名称
-	MethodName *string `json:"method_name,omitempty"`
+	MethodName *string `json:"method_name"`
 	// 请求方式
-	ReqMethod *string `json:"req_method,omitempty"`
+	ReqMethod *string `json:"req_method"`
 	// 请求地址
-	ReqURL *string `json:"req_url,omitempty"`
+	ReqURL *string `json:"req_url"`
 	// 请求参数
-	ParamJSON *string `json:"param_json,omitempty"`
+	ParamJSON *string `json:"param_json"`
 	// 返回结果
-	ResultJSON *string `json:"result_json,omitempty"`
+	ResultJSON *string `json:"result_json"`
 	// 操作时间
-	OpTime *time.Time `json:"op_time,omitempty"`
+	OpTime *time.Time `json:"op_time"`
 	// 跟踪ID
-	TraceID *string `json:"trace_id,omitempty"`
+	TraceID *string `json:"trace_id"`
 	// 操作人姓名
-	OpUser *string `json:"op_user,omitempty"`
+	OpUser *string `json:"op_user"`
 	// 签名数据
-	SignData *string `json:"sign_data,omitempty"`
+	SignData *string `json:"sign_data"`
 	// 创建时间
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
 	// 创建用户
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy *string `json:"created_by"`
 	// 更新时间
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at"`
 	// 更新用户
-	UpdatedBy    *string `json:"updated_by,omitempty"`
+	UpdatedBy    *string `json:"updated_by"`
 	selectValues sql.SelectValues
 }
 

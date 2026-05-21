@@ -11,7 +11,7 @@ type UsernameLoginParam struct {
 
 // UsernameLoginResult represents the consumer login response body.
 type UsernameLoginResult struct {
-	Token string `json:"token,omitempty"`
+	Token string `json:"token"`
 }
 
 // UsernameRegisterParam represents the consumer register request body.
@@ -24,10 +24,10 @@ type UsernameRegisterParam struct {
 
 // UsernameRegisterResult represents the consumer register response body.
 type UsernameRegisterResult struct {
-	Message string `json:"message,omitempty"`
+	Message string `json:"message"`
 }
 
 // UsernameLogoutResult represents the consumer logout response body.
 type UsernameLogoutResult struct {
-	Message string `json:"message,omitempty"`
+	Message string `json:"message"`
 }

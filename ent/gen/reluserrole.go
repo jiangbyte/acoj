@@ -16,11 +16,11 @@ type RelUserRole struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 用户ID
-	UserID string `json:"user_id,omitempty"`
+	UserID string `json:"user_id"`
 	// 角色ID
-	RoleID       string `json:"role_id,omitempty"`
+	RoleID       string `json:"role_id"`
 	selectValues sql.SelectValues
 }
 

@@ -262,8 +262,8 @@ func (_q *SysNoticeQuery) Clone() *SysNoticeQuery {
 // Example:
 //
 //	var v []struct {
-//		Title string `json:"title,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Title string `json:"title"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysNotice.Query().
@@ -285,7 +285,7 @@ func (_q *SysNoticeQuery) GroupBy(field string, fields ...string) *SysNoticeGrou
 // Example:
 //
 //	var v []struct {
-//		Title string `json:"title,omitempty"`
+//		Title string `json:"title"`
 //	}
 //
 //	client.SysNotice.Query().

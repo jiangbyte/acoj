@@ -262,8 +262,8 @@ func (_q *SysFileQuery) Clone() *SysFileQuery {
 // Example:
 //
 //	var v []struct {
-//		Engine string `json:"engine,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Engine string `json:"engine"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysFile.Query().
@@ -285,7 +285,7 @@ func (_q *SysFileQuery) GroupBy(field string, fields ...string) *SysFileGroupBy 
 // Example:
 //
 //	var v []struct {
-//		Engine string `json:"engine,omitempty"`
+//		Engine string `json:"engine"`
 //	}
 //
 //	client.SysFile.Query().

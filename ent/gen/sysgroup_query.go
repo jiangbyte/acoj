@@ -262,8 +262,8 @@ func (_q *SysGroupQuery) Clone() *SysGroupQuery {
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Code string `json:"code"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysGroup.Query().
@@ -285,7 +285,7 @@ func (_q *SysGroupQuery) GroupBy(field string, fields ...string) *SysGroupGroupB
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
+//		Code string `json:"code"`
 //	}
 //
 //	client.SysGroup.Query().

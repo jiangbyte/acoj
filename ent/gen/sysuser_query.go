@@ -262,8 +262,8 @@ func (_q *SysUserQuery) Clone() *SysUserQuery {
 // Example:
 //
 //	var v []struct {
-//		Username string `json:"username,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Username string `json:"username"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysUser.Query().
@@ -285,7 +285,7 @@ func (_q *SysUserQuery) GroupBy(field string, fields ...string) *SysUserGroupBy 
 // Example:
 //
 //	var v []struct {
-//		Username string `json:"username,omitempty"`
+//		Username string `json:"username"`
 //	}
 //
 //	client.SysUser.Query().

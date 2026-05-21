@@ -8,16 +8,16 @@ type ModuleVO struct {
 	Code        string     `json:"code"`
 	Name        string     `json:"name"`
 	Category    string     `json:"category"`
-	Icon        *string    `json:"icon,omitempty"`
-	Color       *string    `json:"color,omitempty"`
-	Description *string    `json:"description,omitempty"`
+	Icon        *string    `json:"icon"`
+	Color       *string    `json:"color"`
+	Description *string    `json:"description"`
 	IsVisible   string     `json:"is_visible"`
 	Status      string     `json:"status"`
 	SortCode    int        `json:"sort_code"`
-	CreatedAt   *time.Time `json:"created_at,omitempty"`
-	CreatedBy   *string    `json:"created_by,omitempty"`
-	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
-	UpdatedBy   *string    `json:"updated_by,omitempty"`
+	CreatedAt   *time.Time `json:"created_at"`
+	CreatedBy   *string    `json:"created_by"`
+	UpdatedAt   *time.Time `json:"updated_at"`
+	UpdatedBy   *string    `json:"updated_by"`
 }
 
 // ModulePageParam holds pagination parameters for module page queries.
@@ -33,26 +33,26 @@ type ResourceVO struct {
 	Name          string        `json:"name"`
 	Category      string        `json:"category"`
 	Type          string        `json:"type"`
-	Description   *string       `json:"description,omitempty"`
-	ParentID      *string       `json:"parent_id,omitempty"`
-	RoutePath     *string       `json:"route_path,omitempty"`
-	ComponentPath *string       `json:"component_path,omitempty"`
-	RedirectPath  *string       `json:"redirect_path,omitempty"`
-	Icon          *string       `json:"icon,omitempty"`
-	Color         *string       `json:"color,omitempty"`
+	Description   *string       `json:"description"`
+	ParentID      *string       `json:"parent_id"`
+	RoutePath     *string       `json:"route_path"`
+	ComponentPath *string       `json:"component_path"`
+	RedirectPath  *string       `json:"redirect_path"`
+	Icon          *string       `json:"icon"`
+	Color         *string       `json:"color"`
 	IsVisible     string        `json:"is_visible"`
 	IsCache       string        `json:"is_cache"`
 	IsAffix       string        `json:"is_affix"`
 	IsBreadcrumb  string        `json:"is_breadcrumb"`
-	ExternalURL   *string       `json:"external_url,omitempty"`
-	Extra         *string       `json:"extra,omitempty"`
+	ExternalURL   *string       `json:"external_url"`
+	Extra         *string       `json:"extra"`
 	Status        string        `json:"status"`
 	SortCode      int           `json:"sort_code"`
-	CreatedAt     *time.Time    `json:"created_at,omitempty"`
-	CreatedBy     *string       `json:"created_by,omitempty"`
-	UpdatedAt     *time.Time    `json:"updated_at,omitempty"`
-	UpdatedBy     *string       `json:"updated_by,omitempty"`
-	Children      []*ResourceVO `json:"children,omitempty"`
+	CreatedAt     *time.Time    `json:"created_at"`
+	CreatedBy     *string       `json:"created_by"`
+	UpdatedAt     *time.Time    `json:"updated_at"`
+	UpdatedBy     *string       `json:"updated_by"`
+	Children      []*ResourceVO `json:"children"`
 }
 
 // ResourcePageParam holds pagination parameters for resource page queries.

@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"hei-gin/core/db"
@@ -406,4 +405,3 @@ func entToVO(entity *ent.SysConfig) *ConfigVO {
 }
 
 // Ensure predicate import is used (referenced via conds)
-var _ = json.Valid

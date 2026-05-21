@@ -110,6 +110,7 @@ func (t *baseAuthTool) Login(c *gin.Context, id string, extra map[string]any) (s
 	claims := jwt.MapClaims{
 		"jti": jti,
 		"iat": jwt.NewNumericDate(now),
+		"exp": jwt.NewNumericDate(now.Add(time.Duration(t.expire) * time.Second)),
 	}
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(t.algorithm), claims)
 	signedToken, err := token.SignedString([]byte(t.secret))
@@ -141,6 +142,15 @@ func (t *baseAuthTool) Login(c *gin.Context, id string, extra map[string]any) (s
 	}
 
 	sessionKey := t.getSessionKey(id)
+
+	// Clean expired tokens from the session set
+	existingTokens, _ := redisClient.SMembers(ctx, sessionKey).Result()
+	for _, existingToken := range existingTokens {
+		if t.getTokenData(existingToken) == nil {
+			_ = redisClient.SRem(ctx, sessionKey, existingToken).Err()
+		}
+	}
+
 	err = redisClient.SAdd(ctx, sessionKey, signedToken).Err()
 	if err != nil {
 		return "", err

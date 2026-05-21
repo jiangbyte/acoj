@@ -17,39 +17,39 @@ type SysNotice struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 通知标题
-	Title string `json:"title,omitempty"`
+	Title string `json:"title"`
 	// 通知摘要
-	Summary *string `json:"summary,omitempty"`
+	Summary *string `json:"summary"`
 	// 通知内容
-	Content *string `json:"content,omitempty"`
+	Content *string `json:"content"`
 	// 封面图片
-	Cover *string `json:"cover,omitempty"`
+	Cover *string `json:"cover"`
 	// 通知类别
-	Category string `json:"category,omitempty"`
+	Category string `json:"category"`
 	// 通知类型
-	Type string `json:"type,omitempty"`
+	Type string `json:"type"`
 	// 通知级别
-	Level string `json:"level,omitempty"`
+	Level string `json:"level"`
 	// 浏览次数
-	ViewCount int `json:"view_count,omitempty"`
+	ViewCount int `json:"view_count"`
 	// 是否置顶
-	IsTop string `json:"is_top,omitempty"`
+	IsTop string `json:"is_top"`
 	// 通知位置
-	Position *string `json:"position,omitempty"`
+	Position *string `json:"position"`
 	// 状态
-	Status string `json:"status,omitempty"`
+	Status string `json:"status"`
 	// 排序
-	SortCode int `json:"sort_code,omitempty"`
+	SortCode int `json:"sort_code"`
 	// 创建时间
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
 	// 创建用户
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy *string `json:"created_by"`
 	// 更新时间
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at"`
 	// 更新用户
-	UpdatedBy    *string `json:"updated_by,omitempty"`
+	UpdatedBy    *string `json:"updated_by"`
 	selectValues sql.SelectValues
 }
 

@@ -2,18 +2,18 @@ package role
 
 // RoleVO is the view object for a role, used for create/modify requests and API responses.
 type RoleVO struct {
-	ID          string  `json:"id,omitempty"`
+	ID          string  `json:"id"`
 	Code        string  `json:"code"`
 	Name        string  `json:"name"`
 	Category    string  `json:"category"`
-	Description *string `json:"description,omitempty"`
-	Status      string  `json:"status,omitempty"`
+	Description *string `json:"description"`
+	Status      string  `json:"status"`
 	SortCode    int     `json:"sort_code"`
-	Extra       *string `json:"extra,omitempty"`
-	CreatedAt   string  `json:"created_at,omitempty"`
-	CreatedBy   *string `json:"created_by,omitempty"`
-	UpdatedAt   string  `json:"updated_at,omitempty"`
-	UpdatedBy   *string `json:"updated_by,omitempty"`
+	Extra       *string `json:"extra"`
+	CreatedAt   string  `json:"created_at"`
+	CreatedBy   *string `json:"created_by"`
+	UpdatedAt   string  `json:"updated_at"`
+	UpdatedBy   *string `json:"updated_by"`
 }
 
 // RolePageParam holds pagination parameters for the role page query.
@@ -26,8 +26,8 @@ type RolePageParam struct {
 type PermissionItem struct {
 	PermissionCode      string  `json:"permission_code"`
 	Scope               string  `json:"scope"`
-	CustomScopeGroupIds *string `json:"custom_scope_group_ids,omitempty"`
-	CustomScopeOrgIds   *string `json:"custom_scope_org_ids,omitempty"`
+	CustomScopeGroupIds *string `json:"custom_scope_group_ids"`
+	CustomScopeOrgIds   *string `json:"custom_scope_org_ids"`
 }
 
 // GrantPermissionParam holds the parameters for granting permissions to a role.
@@ -40,8 +40,8 @@ type GrantPermissionParam struct {
 type ButtonPermissionScope struct {
 	PermissionCode      string  `json:"permission_code"`
 	Scope               string  `json:"scope"`
-	CustomScopeGroupIds *string `json:"custom_scope_group_ids,omitempty"`
-	CustomScopeOrgIds   *string `json:"custom_scope_org_ids,omitempty"`
+	CustomScopeGroupIds *string `json:"custom_scope_group_ids"`
+	CustomScopeOrgIds   *string `json:"custom_scope_org_ids"`
 }
 
 // GrantResourceParam holds the parameters for granting resources to a role.

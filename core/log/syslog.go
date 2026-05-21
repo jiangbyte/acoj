@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"hei-gin/core/db"
@@ -74,7 +75,7 @@ func saveLog(c *gin.Context, name, category, exeStatus, exeMessage, paramsJSON s
 	browser, osName := ParseUserAgent(userAgent)
 	opIP := utils.GetClientIP(c)
 	cityInfo := utils.GetCityInfo(opIP)
-	traceID := utils.GetTraceID()
+	traceID := utils.GetTraceID(c)
 
 	opUserStr, exists := c.Get("loginUser")
 	opUser, ok := opUserStr.(string)
@@ -87,6 +88,15 @@ func saveLog(c *gin.Context, name, category, exeStatus, exeMessage, paramsJSON s
 
 	exeMsg := exeMessage
 	params := paramsJSON
+
+	signData := GenerateLogSignature(map[string]any{
+		"category":    category,
+		"name":        name,
+		"exe_status":  exeStatus,
+		"exe_message": exeMessage,
+		"params":      params,
+		"op_time":     now.Format("2006-01-02 15:04:05"),
+	})
 
 	err := db.Client.SysLog.Create().
 		SetID(utils.GenerateID()).
@@ -103,12 +113,12 @@ func saveLog(c *gin.Context, name, category, exeStatus, exeMessage, paramsJSON s
 		SetNillableParamJSON(&params).
 		SetOpTime(now).
 		SetTraceID(traceID).
+		SetSignData(signData).
 		SetOpUser(opUser).
 		SetCreatedAt(now).
 		SetUpdatedAt(now).
 		Exec(ctx)
 	if err != nil {
-		// Log failure silently — don't break the request for a logging error
-		_ = err
+		log.Printf("[SYSLOG] Failed to persist operation log: %v", err)
 	}
 }

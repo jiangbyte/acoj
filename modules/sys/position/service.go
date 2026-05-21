@@ -26,6 +26,9 @@ func Page(c *gin.Context, param *PositionPageParam) gin.H {
 	if param.Size < 1 {
 		param.Size = 10
 	}
+	if param.Size > 100 {
+		param.Size = 100
+	}
 
 	// When group_id is empty, return empty data immediately
 	if param.GroupID == "" {
@@ -60,10 +63,22 @@ func Page(c *gin.Context, param *PositionPageParam) gin.H {
 		panic(exception.NewBusinessError("查询职位列表失败: "+err.Error(), 500))
 	}
 
+	// Pre-load all orgs and groups for efficient name path resolution (avoid N+1)
+	allOrgs, _ := db.Client.SysOrg.Query().All(ctx)
+	orgMap := make(map[string]*ent.SysOrg, len(allOrgs))
+	for _, o := range allOrgs {
+		orgMap[o.ID] = o
+	}
+	allGroups, _ := db.Client.SysGroup.Query().All(ctx)
+	groupMap := make(map[string]*ent.SysGroup, len(allGroups))
+	for _, g := range allGroups {
+		groupMap[g.ID] = g
+	}
+
 	vos := make([]*PositionVO, 0, len(records))
 	for _, r := range records {
 		vo := entToVO(r)
-		enrichPositionVO(ctx, vo)
+		enrichPositionVOFromMaps(ctx, vo, orgMap, groupMap)
 		vos = append(vos, vo)
 	}
 
@@ -109,6 +124,59 @@ func resolveGroupNamePath(ctx context.Context, id string) []string {
 	for current != "" {
 		entity, err := db.Client.SysGroup.Get(ctx, current)
 		if err != nil {
+			break
+		}
+		names = append(names, entity.Name)
+		if entity.ParentID == nil || *entity.ParentID == "" {
+			break
+		}
+		current = *entity.ParentID
+	}
+	for i, j := 0, len(names)-1; i < j; i, j = i+1, j-1 {
+		names[i], names[j] = names[j], names[i]
+	}
+	return names
+}
+
+// enrichPositionVOFromMaps enriches a PositionVO using pre-loaded org/group maps (no DB queries).
+func enrichPositionVOFromMaps(ctx context.Context, vo *PositionVO, orgMap map[string]*ent.SysOrg, groupMap map[string]*ent.SysGroup) {
+	if vo.OrgID != nil && *vo.OrgID != "" {
+		vo.OrgNames = resolveOrgNamePathFromMap(*vo.OrgID, orgMap)
+	}
+	if vo.GroupID != nil && *vo.GroupID != "" {
+		vo.GroupNames = resolveGroupNamePathFromMap(*vo.GroupID, groupMap)
+	}
+}
+
+// resolveOrgNamePathFromMap resolves the org name path from a pre-loaded map (no DB queries).
+func resolveOrgNamePathFromMap(id string, orgMap map[string]*ent.SysOrg) []string {
+	var names []string
+	current := id
+	for current != "" {
+		entity, ok := orgMap[current]
+		if !ok {
+			break
+		}
+		names = append(names, entity.Name)
+		if entity.ParentID == nil || *entity.ParentID == "" || *entity.ParentID == "0" {
+			break
+		}
+		current = *entity.ParentID
+	}
+	// Reverse to get root -> leaf order
+	for i, j := 0, len(names)-1; i < j; i, j = i+1, j-1 {
+		names[i], names[j] = names[j], names[i]
+	}
+	return names
+}
+
+// resolveGroupNamePathFromMap resolves the group name path from a pre-loaded map (no DB queries).
+func resolveGroupNamePathFromMap(id string, groupMap map[string]*ent.SysGroup) []string {
+	var names []string
+	current := id
+	for current != "" {
+		entity, ok := groupMap[current]
+		if !ok {
 			break
 		}
 		names = append(names, entity.Name)

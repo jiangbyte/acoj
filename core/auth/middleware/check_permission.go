@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"hei-gin/core/auth"
+	"hei-gin/core/result"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,15 +33,6 @@ func HeiClientCheckPermission(permissions []string, mode ...string) gin.HandlerF
 // heiCheckPermissionInner is a shared implementation for both BUSINESS and CONSUMER permission checks.
 func heiCheckPermissionInner(loginType string, permissions []string, mode string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Register permission for auto-discovery scan
-		for _, p := range permissions {
-			auth.RegisterPermission(auth.PermissionEntry{
-				Code:   p,
-				Module: getModuleFromCode(p),
-				Name:   "",
-			})
-		}
-
 		// Check login first
 		var isLogin bool
 		if loginType == "CONSUMER" {
@@ -51,7 +43,7 @@ func heiCheckPermissionInner(loginType string, permissions []string, mode string
 		}
 		if !isLogin {
 			c.Abort()
-			c.JSON(200, gin.H{"code": 401, "message": "未授权/未登录", "success": false})
+			c.JSON(200, result.Failure(c, "未授权/未登录", 401, nil))
 			return
 		}
 
@@ -59,13 +51,13 @@ func heiCheckPermissionInner(loginType string, permissions []string, mode string
 		if mode == "OR" {
 			if !auth.HasPermissionOr(c, loginType, permissions...) {
 				c.Abort()
-				c.JSON(200, gin.H{"code": 403, "message": "缺少权限: " + strings.Join(permissions, ","), "success": false})
+				c.JSON(200, result.Failure(c, "缺少权限: "+strings.Join(permissions, ","), 403, nil))
 				return
 			}
 		} else {
 			if !auth.HasPermissionAnd(c, loginType, permissions...) {
 				c.Abort()
-				c.JSON(200, gin.H{"code": 403, "message": "缺少权限: " + strings.Join(permissions, ","), "success": false})
+				c.JSON(200, result.Failure(c, "缺少权限: "+strings.Join(permissions, ","), 403, nil))
 				return
 			}
 		}

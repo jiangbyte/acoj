@@ -262,8 +262,8 @@ func (_q *SysPositionQuery) Clone() *SysPositionQuery {
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Code string `json:"code"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysPosition.Query().
@@ -285,7 +285,7 @@ func (_q *SysPositionQuery) GroupBy(field string, fields ...string) *SysPosition
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
+//		Code string `json:"code"`
 //	}
 //
 //	client.SysPosition.Query().

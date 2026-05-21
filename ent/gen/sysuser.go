@@ -17,49 +17,49 @@ type SysUser struct {
 	config `json:"-"`
 	// ID of the ent.
 	// 主键
-	ID string `json:"id,omitempty"`
+	ID string `json:"id"`
 	// 账号
-	Username *string `json:"username,omitempty"`
+	Username *string `json:"username"`
 	// 密码
-	Password *string `json:"password,omitempty"`
+	Password *string `json:"password"`
 	// 昵称
-	Nickname *string `json:"nickname,omitempty"`
+	Nickname *string `json:"nickname"`
 	// 头像
-	Avatar *string `json:"avatar,omitempty"`
+	Avatar *string `json:"avatar"`
 	// 座右铭
-	Motto *string `json:"motto,omitempty"`
+	Motto *string `json:"motto"`
 	// 性别
-	Gender *string `json:"gender,omitempty"`
+	Gender *string `json:"gender"`
 	// 生日
-	Birthday *time.Time `json:"birthday,omitempty"`
+	Birthday *time.Time `json:"birthday"`
 	// 电子邮箱
-	Email *string `json:"email,omitempty"`
+	Email *string `json:"email"`
 	// GitHub
-	Github *string `json:"github,omitempty"`
+	Github *string `json:"github"`
 	// 手机号
-	Phone *string `json:"phone,omitempty"`
+	Phone *string `json:"phone"`
 	// 所属组织ID
-	OrgID *string `json:"org_id,omitempty"`
+	OrgID *string `json:"org_id"`
 	// 所属职位ID
-	PositionID *string `json:"position_id,omitempty"`
+	PositionID *string `json:"position_id"`
 	// 所属用户组ID
-	GroupID *string `json:"group_id,omitempty"`
+	GroupID *string `json:"group_id"`
 	// 状态
-	Status string `json:"status,omitempty"`
+	Status string `json:"status"`
 	// 最后登录时间
-	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
+	LastLoginAt *time.Time `json:"last_login_at"`
 	// 最后登录IP
-	LastLoginIP *string `json:"last_login_ip,omitempty"`
+	LastLoginIP *string `json:"last_login_ip"`
 	// 登录次数
-	LoginCount int `json:"login_count,omitempty"`
+	LoginCount int `json:"login_count"`
 	// 创建时间
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
 	// 创建用户
-	CreatedBy *string `json:"created_by,omitempty"`
+	CreatedBy *string `json:"created_by"`
 	// 更新时间
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at"`
 	// 更新用户
-	UpdatedBy    *string `json:"updated_by,omitempty"`
+	UpdatedBy    *string `json:"updated_by"`
 	selectValues sql.SelectValues
 }
 

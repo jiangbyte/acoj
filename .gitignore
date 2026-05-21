@@ -7,3 +7,11 @@ vitepress/node_modules/
 vitepress/docs/.vitepress/dist
 vitepress/docs/.vitepress/cache
 vitepress/*.local
+
+# Config with secrets
+config.yaml
+
+# Runtime
+uploads/
+*.exe
+.env

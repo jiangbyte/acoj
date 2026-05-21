@@ -262,8 +262,8 @@ func (_q *SysModuleQuery) Clone() *SysModuleQuery {
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Code string `json:"code"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysModule.Query().
@@ -285,7 +285,7 @@ func (_q *SysModuleQuery) GroupBy(field string, fields ...string) *SysModuleGrou
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
+//		Code string `json:"code"`
 //	}
 //
 //	client.SysModule.Query().

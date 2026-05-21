@@ -34,7 +34,7 @@ const captchaChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 type CaptchaResult struct {
 	CaptchaBase64 string `json:"captcha_base64"`
 	CaptchaID     string `json:"captcha_id"`
-	CaptchaCode   string `json:"captcha_code,omitempty"`
+	CaptchaCode   string `json:"captcha_code"`
 }
 
 // CaptchaService provides captcha generation and verification backed by Redis.
@@ -139,6 +139,7 @@ func (s *CaptchaService) CheckCaptcha(id, code string) error {
 	}
 
 	if s.redis == nil {
+		log.Printf("[CAPTCHA] WARNING: Redis is not initialized, captcha check bypassed for id=%s", id)
 		return nil
 	}
 

@@ -110,13 +110,13 @@ func (m *MinioStorage) GetAuthURL(bucket, fileKey string, timeoutMs int) (string
 }
 
 // Delete removes an object from MinIO.
-// Ignores service-level errors (e.g., object not found) for idempotent deletion.
+// Ignores NoSuchKey errors for idempotent deletion; other errors are returned.
 func (m *MinioStorage) Delete(bucket, fileKey string) error {
 	ctx := context.Background()
 	err := m.client.RemoveObject(ctx, bucket, fileKey, minio.RemoveObjectOptions{})
 	if err != nil {
 		var errResp minio.ErrorResponse
-		if errors.As(err, &errResp) {
+		if errors.As(err, &errResp) && errResp.Code == "NoSuchKey" {
 			return nil
 		}
 		return err
@@ -130,7 +130,7 @@ func (m *MinioStorage) Exists(bucket, fileKey string) (bool, error) {
 	_, err := m.client.StatObject(ctx, bucket, fileKey, minio.StatObjectOptions{})
 	if err != nil {
 		var errResp minio.ErrorResponse
-		if errors.As(err, &errResp) {
+		if errors.As(err, &errResp) && errResp.Code == "NoSuchKey" {
 			return false, nil
 		}
 		return false, err

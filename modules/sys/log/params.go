@@ -1,37 +1,37 @@
 package log
 
 type LogVO struct {
-	ID         string `json:"id,omitempty"`
-	Category   string `json:"category,omitempty"`
-	Name       string `json:"name,omitempty"`
-	ExeStatus  string `json:"exe_status,omitempty"`
-	ExeMessage string `json:"exe_message,omitempty"`
-	OpIP       string `json:"op_ip,omitempty"`
-	OpAddress  string `json:"op_address,omitempty"`
-	OpBrowser  string `json:"op_browser,omitempty"`
-	OpOs       string `json:"op_os,omitempty"`
-	ClassName  string `json:"class_name,omitempty"`
-	MethodName string `json:"method_name,omitempty"`
-	ReqMethod  string `json:"req_method,omitempty"`
-	ReqURL     string `json:"req_url,omitempty"`
-	ParamJSON  string `json:"param_json,omitempty"`
-	ResultJSON string `json:"result_json,omitempty"`
-	OpTime     string `json:"op_time,omitempty"`
-	TraceID    string `json:"trace_id,omitempty"`
-	OpUser     string `json:"op_user,omitempty"`
-	SignData   string `json:"sign_data,omitempty"`
-	CreatedAt  string `json:"created_at,omitempty"`
-	CreatedBy  string `json:"created_by,omitempty"`
-	UpdatedAt  string `json:"updated_at,omitempty"`
-	UpdatedBy  string `json:"updated_by,omitempty"`
+	ID         string `json:"id"`
+	Category   string `json:"category"`
+	Name       string `json:"name"`
+	ExeStatus  string `json:"exe_status"`
+	ExeMessage string `json:"exe_message"`
+	OpIP       string `json:"op_ip"`
+	OpAddress  string `json:"op_address"`
+	OpBrowser  string `json:"op_browser"`
+	OpOs       string `json:"op_os"`
+	ClassName  string `json:"class_name"`
+	MethodName string `json:"method_name"`
+	ReqMethod  string `json:"req_method"`
+	ReqURL     string `json:"req_url"`
+	ParamJSON  string `json:"param_json"`
+	ResultJSON string `json:"result_json"`
+	OpTime     string `json:"op_time"`
+	TraceID    string `json:"trace_id"`
+	OpUser     string `json:"op_user"`
+	SignData   string `json:"sign_data"`
+	CreatedAt  string `json:"created_at"`
+	CreatedBy  string `json:"created_by"`
+	UpdatedAt  string `json:"updated_at"`
+	UpdatedBy  string `json:"updated_by"`
 }
 
 type LogPageParam struct {
 	Current   int    `json:"current" form:"current"`
 	Size      int    `json:"size" form:"size"`
-	Keyword   string `json:"keyword,omitempty" form:"keyword"`
-	Category  string `json:"category,omitempty" form:"category"`
-	ExeStatus string `json:"exe_status,omitempty" form:"exe_status"`
+	Keyword   string `json:"keyword" form:"keyword"`
+	Category  string `json:"category" form:"category"`
+	ExeStatus string `json:"exe_status" form:"exe_status"`
 }
 
 type LogDeleteByCategoryParam struct {

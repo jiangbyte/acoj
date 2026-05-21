@@ -262,8 +262,8 @@ func (_q *SysDictQuery) Clone() *SysDictQuery {
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
-//		Count int `json:"count,omitempty"`
+//		Code string `json:"code"`
+//		Count int `json:"count"`
 //	}
 //
 //	client.SysDict.Query().
@@ -285,7 +285,7 @@ func (_q *SysDictQuery) GroupBy(field string, fields ...string) *SysDictGroupBy 
 // Example:
 //
 //	var v []struct {
-//		Code string `json:"code,omitempty"`
+//		Code string `json:"code"`
 //	}
 //
 //	client.SysDict.Query().

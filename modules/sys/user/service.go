@@ -2,7 +2,9 @@ package user
 
 import (
 	"context"
+	"log"
 	"sort"
+	"sync"
 	"time"
 
 	"hei-gin/core/auth"
@@ -26,6 +28,17 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+)
+
+// ---------------------------------------------------------------------------
+// Cache for org/group lookups
+// ---------------------------------------------------------------------------
+
+var (
+	orgCache    []*ent.SysOrg
+	groupCache  []*ent.SysGroup
+	cacheMu     sync.RWMutex
+	cacheExpiry time.Time
 )
 
 // ---------------------------------------------------------------------------
@@ -143,22 +156,22 @@ func entToVO(entity *ent.SysUser) *UserVO {
 // Batch role IDs
 // ---------------------------------------------------------------------------
 
-func batchGetRoleIDs(userIDs []string) map[string][]string {
+func batchGetRoleIDs(userIDs []string) (map[string][]string, error) {
 	if len(userIDs) == 0 {
-		return nil
+		return nil, nil
 	}
 	ctx := context.Background()
 	relations, err := db.Client.RelUserRole.Query().
 		Where(reluserrole.UserIDIn(userIDs...)).
 		All(ctx)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	result := make(map[string][]string)
 	for _, r := range relations {
 		result[r.UserID] = append(result[r.UserID], r.RoleID)
 	}
-	return result
+	return result, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -192,18 +205,32 @@ func batchEnrichNames(vos []*UserVO) {
 		}
 	}
 
-	// Query all orgs and groups for name path resolution
-	orgs, err := db.Client.SysOrg.Query().All(ctx)
-	orgNodeMap := make(map[string]namePathNode)
-	if err == nil {
-		orgNodeMap = buildNamePathMapFromOrgs(orgs)
+	// Try cache first for orgs and groups
+	cacheMu.RLock()
+	orgs := orgCache
+	groups := groupCache
+	expired := time.Now().After(cacheExpiry)
+	cacheMu.RUnlock()
+
+	if expired || orgs == nil || groups == nil {
+		var err error
+		orgs, err = db.Client.SysOrg.Query().All(ctx)
+		if err != nil {
+			return
+		}
+		groups, err = db.Client.SysGroup.Query().All(ctx)
+		if err != nil {
+			return
+		}
+		cacheMu.Lock()
+		orgCache = orgs
+		groupCache = groups
+		cacheExpiry = time.Now().Add(30 * time.Second)
+		cacheMu.Unlock()
 	}
 
-	groups, err := db.Client.SysGroup.Query().All(ctx)
-	groupNodeMap := make(map[string]namePathNode)
-	if err == nil {
-		groupNodeMap = buildNamePathMapFromGroups(groups)
-	}
+	orgNodeMap := buildNamePathMapFromOrgs(orgs)
+	groupNodeMap := buildNamePathMapFromGroups(groups)
 
 	for _, vo := range vos {
 		vo.OrgNames = resolveNamePathFromMap(vo.OrgID, orgNodeMap)
@@ -260,19 +287,25 @@ func getUserAllRoleIDs(userID string) []string {
 	return ids
 }
 
-func grantRoles(userID string, roleIDs []string, createdBy string) {
+func grantRoles(cli *ent.Client, userID string, roleIDs []string, createdBy string) {
 	ctx := context.Background()
 	// Delete existing
-	_, _ = db.Client.RelUserRole.Delete().
+	_, err := cli.RelUserRole.Delete().
 		Where(reluserrole.UserID(userID)).
 		Exec(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("删除旧角色关联失败: "+err.Error(), 500))
+	}
 	// Re-create
 	for _, rid := range roleIDs {
-		_, _ = db.Client.RelUserRole.Create().
+		_, err = cli.RelUserRole.Create().
 			SetID(utils.GenerateID()).
 			SetUserID(userID).
 			SetRoleID(rid).
 			Save(ctx)
+		if err != nil {
+			panic(exception.NewBusinessError("分配角色失败: "+err.Error(), 500))
+		}
 	}
 }
 
@@ -288,6 +321,9 @@ func UserPage(c *gin.Context, param *UserPageParam) gin.H {
 	}
 	if param.Size < 1 {
 		param.Size = 10
+	}
+	if param.Size > 100 {
+		param.Size = 100
 	}
 
 	query := db.Client.SysUser.Query()
@@ -320,7 +356,11 @@ func UserPage(c *gin.Context, param *UserPageParam) gin.H {
 	for i, r := range records {
 		userIDs[i] = r.ID
 	}
-	roleMap := batchGetRoleIDs(userIDs)
+	roleMap, err := batchGetRoleIDs(userIDs)
+	if err != nil {
+		log.Printf("[USER] Failed to batch get role IDs: %v", err)
+		roleMap = make(map[string][]string)
+	}
 
 	vos := make([]*UserVO, len(records))
 	for i, r := range records {
@@ -359,7 +399,13 @@ func UserCreate(c *gin.Context, vo *UserVO, userID string) {
 	}
 
 	now := time.Now()
-	builder := db.Client.SysUser.Create().
+
+	tx, err := db.Client.Tx(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
+	}
+
+	builder := tx.SysUser.Create().
 		SetID(utils.GenerateID()).
 		SetCreatedAt(now).
 		SetUpdatedAt(now)
@@ -400,6 +446,18 @@ func UserCreate(c *gin.Context, vo *UserVO, userID string) {
 	if vo.GroupID != nil {
 		builder.SetNillableGroupID(vo.GroupID)
 	}
+	if vo.Password != nil && *vo.Password != "" {
+		rawPwd := utils.Decrypt(*vo.Password)
+		if rawPwd == "" {
+			panic(exception.NewBusinessError("密码解密失败", 400))
+		}
+		hashedPwd, err := bcrypt.GenerateFromPassword([]byte(rawPwd), bcrypt.DefaultCost)
+		if err != nil {
+			panic(exception.NewBusinessError("密码加密失败", 500))
+		}
+		hashedPwdStr := string(hashedPwd)
+		builder.SetPassword(hashedPwdStr)
+	}
 	if vo.Status != "" {
 		builder.SetStatus(vo.Status)
 	}
@@ -409,11 +467,16 @@ func UserCreate(c *gin.Context, vo *UserVO, userID string) {
 
 	entity, err := builder.Save(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("添加用户失败: "+err.Error(), 500))
 	}
 
 	if len(vo.RoleIDs) > 0 {
-		grantRoles(entity.ID, vo.RoleIDs, userID)
+		grantRoles(tx.Client(), entity.ID, vo.RoleIDs, userID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 	}
 }
 
@@ -437,8 +500,13 @@ func UserModify(c *gin.Context, vo *UserVO, userID string) {
 		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
 	}
 
+	tx, err := db.Client.Tx(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
+	}
+
 	now := time.Now()
-	builder := db.Client.SysUser.UpdateOneID(vo.ID).
+	builder := tx.SysUser.UpdateOneID(vo.ID).
 		SetUpdatedAt(now)
 
 	if vo.Username != nil {
@@ -469,10 +537,18 @@ func UserModify(c *gin.Context, vo *UserVO, userID string) {
 		builder.SetNillablePhone(vo.Phone)
 	}
 	if vo.OrgID != nil {
-		builder.SetNillableOrgID(vo.OrgID)
+		if *vo.OrgID != "" {
+			builder.SetOrgID(*vo.OrgID)
+		} else {
+			builder.ClearOrgID()
+		}
 	}
 	if vo.PositionID != nil {
-		builder.SetNillablePositionID(vo.PositionID)
+		if *vo.PositionID != "" {
+			builder.SetPositionID(*vo.PositionID)
+		} else {
+			builder.ClearPositionID()
+		}
 	}
 	if vo.GroupID != nil {
 		if *vo.GroupID != "" {
@@ -484,18 +560,38 @@ func UserModify(c *gin.Context, vo *UserVO, userID string) {
 	if vo.Status != "" {
 		builder.SetStatus(vo.Status)
 	}
+	if vo.Password != nil && *vo.Password != "" {
+		rawPwd := utils.Decrypt(*vo.Password)
+		if rawPwd == "" {
+			panic(exception.NewBusinessError("密码解密失败", 400))
+		}
+		hashedPwd, err := bcrypt.GenerateFromPassword([]byte(rawPwd), bcrypt.DefaultCost)
+		if err != nil {
+			panic(exception.NewBusinessError("密码加密失败", 500))
+		}
+		builder.SetPassword(string(hashedPwd))
+	}
 	if userID != "" {
 		builder.SetUpdatedBy(userID)
 	}
 
 	_, err = builder.Save(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("编辑用户失败: "+err.Error(), 500))
 	}
 
 	// Re-grant roles if role_ids specified (even if empty array)
 	if vo.RoleIDs != nil {
-		grantRoles(vo.ID, vo.RoleIDs, userID)
+		grantRoles(tx.Client(), vo.ID, vo.RoleIDs, userID)
+	}
+
+	if err := tx.Commit(); err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+	}
+
+	if vo.Password != nil && *vo.Password != "" {
+		auth.Kickout(vo.ID)
 	}
 }
 
@@ -509,22 +605,40 @@ func UserRemove(c *gin.Context, ids []string) {
 	}
 	ctx := context.Background()
 
+	tx, err := db.Client.Tx(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
+	}
+
 	// Delete user-role relations
-	_, _ = db.Client.RelUserRole.Delete().
+	_, err = tx.RelUserRole.Delete().
 		Where(reluserrole.UserIDIn(ids...)).
 		Exec(ctx)
+	if err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除用户角色关联失败: "+err.Error(), 500))
+	}
 
 	// Delete user-permission relations
-	_, _ = db.Client.RelUserPermission.Delete().
+	_, err = tx.RelUserPermission.Delete().
 		Where(reluserpermission.UserIDIn(ids...)).
 		Exec(ctx)
+	if err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除用户权限关联失败: "+err.Error(), 500))
+	}
 
 	// Delete users
-	_, err := db.Client.SysUser.Delete().
+	_, err = tx.SysUser.Delete().
 		Where(sysuser.IDIn(ids...)).
 		Exec(ctx)
 	if err != nil {
+		tx.Rollback()
 		panic(exception.NewBusinessError("删除用户失败: "+err.Error(), 500))
+	}
+
+	if err := tx.Commit(); err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 	}
 }
 
@@ -580,7 +694,7 @@ func UserGrantRoles(c *gin.Context, userID string, roleIDs []string, createdBy s
 		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
 	}
 
-	grantRoles(userID, roleIDs, createdBy)
+	grantRoles(db.Client, userID, roleIDs, createdBy)
 }
 
 // ---------------------------------------------------------------------------
@@ -599,14 +713,23 @@ func UserGrantPermissions(c *gin.Context, userID string, permissions []role.Perm
 		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
 	}
 
+	tx, err := db.Client.Tx(ctx)
+	if err != nil {
+		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
+	}
+
 	// Delete existing
-	_, _ = db.Client.RelUserPermission.Delete().
+	_, err = tx.RelUserPermission.Delete().
 		Where(reluserpermission.UserID(userID)).
 		Exec(ctx)
+	if err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除用户权限失败: "+err.Error(), 500))
+	}
 
 	// Re-create
 	for _, p := range permissions {
-		builder := db.Client.RelUserPermission.Create().
+		builder := tx.RelUserPermission.Create().
 			SetID(utils.GenerateID()).
 			SetUserID(userID).
 			SetPermissionCode(p.PermissionCode)
@@ -623,8 +746,13 @@ func UserGrantPermissions(c *gin.Context, userID string, permissions []role.Perm
 
 		_, err := builder.Save(ctx)
 		if err != nil {
+			tx.Rollback()
 			panic(exception.NewBusinessError("分配用户权限失败: "+err.Error(), 500))
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 	}
 }
 
@@ -959,6 +1087,8 @@ func UserUpdatePassword(c *gin.Context, param *UpdatePasswordParam) {
 	if err != nil {
 		panic(exception.NewBusinessError("修改密码失败: "+err.Error(), 500))
 	}
+
+	auth.Kickout(userID)
 }
 
 // ---------------------------------------------------------------------------
