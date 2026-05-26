@@ -1,4 +1,4 @@
-package log
+﻿package log
 
 import (
 	"context"
@@ -9,16 +9,11 @@ import (
 	"hei-gin/core/db"
 	"hei-gin/core/exception"
 	"hei-gin/core/utils"
+	logModel "hei-gin/modules/sys/log"
 
 	"github.com/gin-gonic/gin"
 )
 
-// SysLog returns a Gin middleware that records operation logs.
-// It is the Go equivalent of the Python @SysLog(name) decorator.
-//
-// Usage:
-//
-//	r.GET("/api/v1/sys/xxx", log.SysLog("日志名称"), handler)
 func SysLog(name string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		startTime := time.Now()
@@ -28,8 +23,6 @@ func SysLog(name string) gin.HandlerFunc {
 		var exeStatus string
 		var exeMessage string
 
-		// Deferred recover: when downstream handler panics, record the log
-		// before re-panicking so the Recovery middleware can return the response.
 		defer func() {
 			if rec := recover(); rec != nil {
 				category = "EXCEPTION"
@@ -69,7 +62,6 @@ func SysLog(name string) gin.HandlerFunc {
 	}
 }
 
-// saveLog persists the log entry to the database.
 func saveLog(c *gin.Context, name, category, exeStatus, exeMessage, paramsJSON string, startTime time.Time) {
 	userAgent := c.GetHeader("User-Agent")
 	browser, osName := ParseUserAgent(userAgent)
@@ -98,27 +90,28 @@ func saveLog(c *gin.Context, name, category, exeStatus, exeMessage, paramsJSON s
 		"op_time":     now.Format("2006-01-02 15:04:05"),
 	})
 
-	err := db.Client.SysLog.Create().
-		SetID(utils.GenerateID()).
-		SetCategory(category).
-		SetName(name).
-		SetExeStatus(exeStatus).
-		SetNillableExeMessage(&exeMsg).
-		SetOpIP(opIP).
-		SetOpAddress(cityInfo).
-		SetOpBrowser(browser).
-		SetOpOs(osName).
-		SetReqMethod(c.Request.Method).
-		SetReqURL(c.Request.URL.String()).
-		SetNillableParamJSON(&params).
-		SetOpTime(now).
-		SetTraceID(traceID).
-		SetSignData(signData).
-		SetOpUser(opUser).
-		SetCreatedAt(now).
-		SetUpdatedAt(now).
-		Exec(ctx)
-	if err != nil {
+	record := logModel.SysLog{
+		ID:         utils.GenerateID(),
+		Category:   &category,
+		Name:       &name,
+		ExeStatus:  &exeStatus,
+		ExeMessage: &exeMsg,
+		OpIP:       &opIP,
+		OpAddress:  &cityInfo,
+		OpBrowser:  &browser,
+		OpOs:       &osName,
+		ReqMethod:  strPtr(c.Request.Method),
+		ReqURL:     strPtr(c.Request.URL.String()),
+		ParamJSON:  &params,
+		OpTime:     &now,
+		TraceID:    &traceID,
+		SignData:   &signData,
+		OpUser:     &opUser,
+		CreatedAt:  &now,
+		UpdatedAt:  &now,
+	}
+
+	if err := db.DB.WithContext(ctx).Create(&record).Error; err != nil {
 		log.Printf("[SYSLOG] Failed to persist operation log: %v", err)
 	}
 }

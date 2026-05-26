@@ -1,23 +1,14 @@
-package clientuser
+package user
 
 type ClientUserVO struct {
-	ID          string `json:"id"`
-	Username    string `json:"username"`
-	Nickname    string `json:"nickname"`
-	Avatar      string `json:"avatar"`
-	Motto       string `json:"motto"`
-	Gender      string `json:"gender"`
-	Birthday    string `json:"birthday"`
-	Email       string `json:"email"`
-	Github      string `json:"github"`
-	Status      string `json:"status"`
-	LastLoginAt string `json:"last_login_at"`
-	LastLoginIP string `json:"last_login_ip"`
-	LoginCount  int    `json:"login_count"`
-	CreatedAt   string `json:"created_at"`
-	CreatedBy   string `json:"created_by"`
-	UpdatedAt   string `json:"updated_at"`
-	UpdatedBy   string `json:"updated_by"`
+	ID       string  `json:"id"`
+	Username *string `json:"username"`
+	Password *string `json:"password"`
+	Nickname *string `json:"nickname"`
+	Avatar   *string `json:"avatar"`
+	Email    *string `json:"email"`
+	Phone    *string `json:"phone"`
+	Status   string  `json:"status"`
 }
 
 type ClientUserPageParam struct {
@@ -28,44 +19,30 @@ type ClientUserPageParam struct {
 }
 
 type ClientUserCreateParam struct {
-	Username string  `json:"username"`
-	Password string  `json:"password"`
+	Username *string `json:"username"`
+	Password *string `json:"password"`
 	Nickname *string `json:"nickname"`
-	Email    *string `json:"email"`
 	Avatar   *string `json:"avatar"`
-	Motto    *string `json:"motto"`
-	Gender   *string `json:"gender"`
-	Birthday string  `json:"birthday"`
-	Github   *string `json:"github"`
-	Status   string  `json:"status"`
+	Email    *string `json:"email"`
+	Phone    *string `json:"phone"`
 }
-
 type ClientUserModifyParam struct {
 	ID       string  `json:"id"`
-	Username string  `json:"username"`
 	Nickname *string `json:"nickname"`
-	Email    *string `json:"email"`
 	Avatar   *string `json:"avatar"`
-	Motto    *string `json:"motto"`
-	Gender   *string `json:"gender"`
-	Birthday string  `json:"birthday"`
-	Github   *string `json:"github"`
+	Email    *string `json:"email"`
+	Phone    *string `json:"phone"`
 	Status   string  `json:"status"`
 }
-
 type UpdateProfileParam struct {
 	Nickname *string `json:"nickname"`
-	Motto    *string `json:"motto"`
-	Gender   *string `json:"gender"`
-	Birthday string  `json:"birthday"`
+	Avatar   *string `json:"avatar"`
 	Email    *string `json:"email"`
-	Github   *string `json:"github"`
+	Phone    *string `json:"phone"`
 }
-
 type UpdateAvatarParam struct {
 	Avatar string `json:"avatar"`
 }
-
 type UpdatePasswordParam struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password"`

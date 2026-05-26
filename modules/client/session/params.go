@@ -1,10 +1,9 @@
-package clientsession
+package session
 
-type SessionAnalysisResult struct {
-	TotalCount        int    `json:"total_count"`
-	MaxTokenCount     int    `json:"max_token_count"`
-	OneHourNewlyAdded int    `json:"one_hour_newly_added"`
-	ProportionOfBAndC string `json:"proportion_of_b_and_c"`
+type SessionPageParam struct {
+	Current int    `json:"current" form:"current"`
+	Size    int    `json:"size" form:"size"`
+	Keyword string `json:"keyword" form:"keyword"`
 }
 
 type SessionPageResult struct {
@@ -12,23 +11,13 @@ type SessionPageResult struct {
 	Username              *string `json:"username"`
 	Nickname              *string `json:"nickname"`
 	Avatar                *string `json:"avatar"`
-	Status                string  `json:"status"`
+	Status                *string `json:"status"`
 	LastLoginIP           *string `json:"last_login_ip"`
-	LastLoginAddress      *string `json:"last_login_address"`
 	LastLoginTime         string  `json:"last_login_time"`
+	TokenCount            int     `json:"token_count"`
 	SessionCreateTime     string  `json:"session_create_time"`
 	SessionTimeout        string  `json:"session_timeout"`
 	SessionTimeoutSeconds int     `json:"session_timeout_seconds"`
-	TokenCount            int     `json:"token_count"`
-}
-
-type SessionExitParam struct {
-	UserID string `json:"user_id"`
-}
-
-type SessionExitTokenParam struct {
-	UserID string `json:"user_id"`
-	Token  string `json:"token"`
 }
 
 type SessionTokenResult struct {
@@ -40,15 +29,11 @@ type SessionTokenResult struct {
 	DeviceID       string `json:"device_id"`
 }
 
-type SessionPageParam struct {
-	Current int    `json:"current" form:"current"`
-	Size    int    `json:"size" form:"size"`
-	Keyword string `json:"keyword" form:"keyword"`
-}
-
-type SessionChartData struct {
-	BarChart BarChartData `json:"bar_chart"`
-	PieChart PieChartData `json:"pie_chart"`
+type SessionAnalysisResult struct {
+	TotalCount        int    `json:"total_count"`
+	MaxTokenCount     int    `json:"max_token_count"`
+	OneHourNewlyAdded int    `json:"one_hour_newly_added"`
+	ProportionOfBAndC string `json:"proportion_of_b_and_c"`
 }
 
 type BarChartData struct {
@@ -56,16 +41,30 @@ type BarChartData struct {
 	Series []CategorySeries `json:"series"`
 }
 
-type PieChartData struct {
-	Data []CategoryTotal `json:"data"`
-}
-
 type CategorySeries struct {
 	Name string `json:"name"`
 	Data []int  `json:"data"`
 }
 
+type PieChartData struct {
+	Data []CategoryTotal `json:"data"`
+}
+
 type CategoryTotal struct {
 	Category string `json:"category"`
 	Total    int    `json:"total"`
+}
+
+type SessionChartData struct {
+	BarChart BarChartData `json:"bar_chart"`
+	PieChart PieChartData `json:"pie_chart"`
+}
+
+type SessionExitParam struct {
+	UserID string `json:"user_id"`
+}
+
+type SessionExitTokenParam struct {
+	UserID string `json:"user_id"`
+	Token  string `json:"token"`
 }

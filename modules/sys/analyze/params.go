@@ -16,12 +16,12 @@ type CategoryDistribution struct {
 }
 
 type DashboardStats struct {
-	TotalUsers   int `json:"total_users"`
-	ActiveUsers  int `json:"active_users"`
-	TotalRoles   int `json:"total_roles"`
-	TotalOrgs    int `json:"total_orgs"`
-	TotalConfigs int `json:"total_configs"`
-	TotalNotices int `json:"total_notices"`
+	TotalUsers   int64 `json:"total_users"`
+	ActiveUsers  int64 `json:"active_users"`
+	TotalRoles   int64 `json:"total_roles"`
+	TotalOrgs    int64 `json:"total_orgs"`
+	TotalConfigs int64 `json:"total_configs"`
+	TotalNotices int64 `json:"total_notices"`
 }
 
 type SysInfo struct {
@@ -31,8 +31,8 @@ type SysInfo struct {
 }
 
 type ClientStats struct {
-	TotalUsers  int `json:"total_users"`
-	ActiveUsers int `json:"active_users"`
+	TotalUsers  int64 `json:"total_users"`
+	ActiveUsers int64 `json:"active_users"`
 }
 
 type DashboardVO struct {

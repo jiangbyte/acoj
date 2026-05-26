@@ -1,4 +1,4 @@
-package log
+﻿package log
 
 import (
 	"context"
@@ -7,15 +7,11 @@ import (
 
 	"hei-gin/core/db"
 	"hei-gin/core/utils"
+	logModel "hei-gin/modules/sys/log"
 
 	"github.com/gin-gonic/gin"
 )
 
-// RecordAuthLog records an auth-related log (login/logout) by persisting to the database.
-//
-// Unlike the SysLog middleware, this does not need a function context and
-// accepts the operator name directly — which is essential for login events
-// where there is no active auth token yet.
 func RecordAuthLog(c *gin.Context, name, category, exeStatus, exeMessage, opUser string) {
 	now := time.Now()
 	userAgent := c.GetHeader("User-Agent")
@@ -40,26 +36,29 @@ func RecordAuthLog(c *gin.Context, name, category, exeStatus, exeMessage, opUser
 		"op_time":     now.Format("2006-01-02 15:04:05"),
 	})
 
-	err := db.Client.SysLog.Create().
-		SetID(utils.GenerateID()).
-		SetCategory(category).
-		SetName(name).
-		SetExeStatus(exeStatus).
-		SetNillableExeMessage(&exeMsg).
-		SetOpIP(opIP).
-		SetOpAddress(cityInfo).
-		SetOpBrowser(browser).
-		SetOpOs(osName).
-		SetReqMethod(c.Request.Method).
-		SetReqURL(c.Request.URL.String()).
-		SetTraceID(traceID).
-		SetSignData(signData).
-		SetOpUser(opUser).
-		SetOpTime(now).
-		SetCreatedAt(now).
-		SetUpdatedAt(now).
-		Exec(ctx)
-	if err != nil {
+	record := logModel.SysLog{
+		ID:         utils.GenerateID(),
+		Category:   &category,
+		Name:       &name,
+		ExeStatus:  &exeStatus,
+		ExeMessage: &exeMsg,
+		OpIP:       &opIP,
+		OpAddress:  &cityInfo,
+		OpBrowser:  &browser,
+		OpOs:       &osName,
+		ReqMethod:  strPtr(c.Request.Method),
+		ReqURL:     strPtr(c.Request.URL.String()),
+		TraceID:    &traceID,
+		SignData:   &signData,
+		OpUser:     &opUser,
+		OpTime:     &now,
+		CreatedAt:  &now,
+		UpdatedAt:  &now,
+	}
+
+	if err := db.DB.WithContext(ctx).Create(&record).Error; err != nil {
 		log.Printf("[AUDIT] Failed to persist auth log: %v", err)
 	}
 }
+
+func strPtr(s string) *string { return &s }

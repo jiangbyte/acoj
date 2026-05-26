@@ -1,227 +1,134 @@
-package notice
+﻿package notice
 
 import (
 	"context"
 	"time"
 
+	"gorm.io/gorm"
+
 	"hei-gin/core/db"
 	"hei-gin/core/exception"
 	"hei-gin/core/result"
 	"hei-gin/core/utils"
-	ent "hei-gin/ent/gen"
-	"hei-gin/ent/gen/sysnotice"
 
-	"entgo.io/ent/dialect/sql"
 	"github.com/gin-gonic/gin"
 )
 
-// Page returns a paginated list of notices.
+func parseTime(s *string) *time.Time {
+	if s == nil || *s == "" { return nil }
+	t, err := time.Parse("2006-01-02 15:04:05", *s)
+	if err != nil { return nil }
+	return &t
+}
+
 func Page(c *gin.Context, param *NoticePageParam) gin.H {
 	ctx := context.Background()
+	if param.Current < 1 { param.Current = 1 }
+	if param.Size < 1 { param.Size = 10 }
 
-	// Set defaults
-	if param.Current < 1 {
-		param.Current = 1
-	}
-	if param.Size < 1 {
-		param.Size = 10
-	}
+	query := db.DB.WithContext(ctx).Model(&SysNotice{})
+	if param.Keyword != "" { query = query.Where("title LIKE ?", "%"+param.Keyword+"%") }
+	if param.Category != "" { query = query.Where("category = ?", param.Category) }
+	if param.Status != "" { query = query.Where("status = ?", param.Status) }
 
-	offset := (param.Current - 1) * param.Size
+	var total int64
+	query.Count(&total)
 
-	total, err := db.Client.SysNotice.Query().Count(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("查询通知列表失败: "+err.Error(), 500))
-	}
+	var records []SysNotice
+	query.Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
 
-	records, err := db.Client.SysNotice.Query().
-		Order(sysnotice.ByCreatedAt(sql.OrderDesc())).
-		Limit(param.Size).
-		Offset(offset).
-		All(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("查询通知列表失败: "+err.Error(), 500))
-	}
-
-	vos := make([]*NoticeVO, 0, len(records))
-	for _, r := range records {
-		vos = append(vos, entToVO(r))
-	}
-
+	vos := make([]*NoticeVO, len(records))
+	for i, r := range records { vos[i] = entToVO(&r) }
 	return result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
-// Detail returns a single notice by ID.
 func Detail(c *gin.Context, id string) *NoticeVO {
-	if id == "" {
-		return nil
-	}
-
+	if id == "" { return nil }
 	ctx := context.Background()
-	entity, err := db.Client.SysNotice.Get(ctx, id)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil
-		}
+	var entity SysNotice
+	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound { return nil }
 		panic(exception.NewBusinessError("查询通知详情失败: "+err.Error(), 500))
 	}
-
-	return entToVO(entity)
+	return entToVO(&entity)
 }
 
-// Create creates a new notice.
 func Create(c *gin.Context, vo *NoticeVO, userID string) {
 	ctx := context.Background()
 	now := time.Now()
 
-	// Set defaults if not provided
-	if vo.Level == "" {
-		vo.Level = "NORMAL"
+	entity := SysNotice{
+		ID: utils.GenerateID(), Title: vo.Title, Category: vo.Category, Type: vo.Type,
+		SortCode: vo.SortCode, CreatedAt: &now, UpdatedAt: &now,
 	}
-	if vo.IsTop == "" {
-		vo.IsTop = "NO"
-	}
-	if vo.Status == "" {
-		vo.Status = "ENABLED"
-	}
+	if vo.Summary != nil { entity.Summary = vo.Summary }
+	if vo.Content != nil { entity.Content = vo.Content }
+	if vo.Cover != nil { entity.Cover = vo.Cover }
+	if vo.Level != "" { entity.Level = vo.Level }
+	if vo.Status != "" { entity.Status = vo.Status }
+	if vo.IsTop != "" { entity.IsTop = vo.IsTop }
+	if vo.Author != nil { entity.Author = vo.Author }
+	if vo.PublishAt != nil { entity.PublishAt = parseTime(vo.PublishAt) }
+	if vo.ExpireAt != nil { entity.ExpireAt = parseTime(vo.ExpireAt) }
+	if userID != "" { entity.CreatedBy = &userID; entity.UpdatedBy = &userID }
 
-	builder := db.Client.SysNotice.Create().
-		SetID(utils.GenerateID()).
-		SetTitle(vo.Title).
-		SetCategory(vo.Category).
-		SetType(vo.Type).
-		SetLevel(vo.Level).
-		SetIsTop(vo.IsTop).
-		SetStatus(vo.Status).
-		SetViewCount(vo.ViewCount).
-		SetSortCode(vo.SortCode).
-		SetCreatedAt(now).
-		SetUpdatedAt(now)
-
-	if vo.Summary != nil {
-		builder.SetNillableSummary(vo.Summary)
-	}
-	if vo.Content != nil {
-		builder.SetNillableContent(vo.Content)
-	}
-	if vo.Cover != nil {
-		builder.SetNillableCover(vo.Cover)
-	}
-	if vo.Position != nil {
-		builder.SetNillablePosition(vo.Position)
-	}
-	if userID != "" {
-		builder.SetCreatedBy(userID).SetUpdatedBy(userID)
-	}
-
-	_, err := builder.Save(ctx)
-	if err != nil {
+	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil {
 		panic(exception.NewBusinessError("添加通知失败: "+err.Error(), 500))
 	}
 }
 
-// Modify updates an existing notice.
 func Modify(c *gin.Context, vo *NoticeVO, userID string) {
 	ctx := context.Background()
+	if vo.ID == "" { panic(exception.NewBusinessError("ID不能为空", 400)) }
 
-	if vo.ID == "" {
-		panic(exception.NewBusinessError("ID不能为空", 400))
-	}
-
-	// Verify the notice exists
-	_, err := db.Client.SysNotice.Get(ctx, vo.ID)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			panic(exception.NewBusinessError("数据不存在", 400))
-		}
+	var entity SysNotice
+	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound { panic(exception.NewBusinessError("通知不存在", 404)) }
 		panic(exception.NewBusinessError("查询通知失败: "+err.Error(), 500))
 	}
 
-	now := time.Now()
-	builder := db.Client.SysNotice.UpdateOneID(vo.ID).
-		SetTitle(vo.Title).
-		SetCategory(vo.Category).
-		SetType(vo.Type).
-		SetLevel(vo.Level).
-		SetIsTop(vo.IsTop).
-		SetStatus(vo.Status).
-		SetViewCount(vo.ViewCount).
-		SetSortCode(vo.SortCode).
-		SetUpdatedAt(now)
+	up := map[string]interface{}{
+		"title": vo.Title, "category": vo.Category, "type": vo.Type,
+		"sort_code": vo.SortCode, "updated_at": time.Now(),
+	}
+	if vo.Summary != nil { up["summary"] = *vo.Summary } else { up["summary"] = nil }
+	if vo.Content != nil { up["content"] = *vo.Content } else { up["content"] = nil }
+	if vo.Cover != nil { up["cover"] = *vo.Cover } else { up["cover"] = nil }
+	if vo.Level != "" { up["level"] = vo.Level }
+	if vo.Status != "" { up["status"] = vo.Status }
+	if vo.IsTop != "" { up["is_top"] = vo.IsTop } else { up["is_top"] = nil }
+	if vo.Author != nil { up["author"] = *vo.Author } else { up["author"] = nil }
+	if vo.PublishAt != nil { up["publish_at"] = parseTime(vo.PublishAt) } else { up["publish_at"] = nil }
+	if vo.ExpireAt != nil { up["expire_at"] = parseTime(vo.ExpireAt) } else { up["expire_at"] = nil }
+	if userID != "" { up["updated_by"] = userID }
 
-	if vo.Summary != nil {
-		builder.SetNillableSummary(vo.Summary)
-	}
-	if vo.Content != nil {
-		builder.SetNillableContent(vo.Content)
-	}
-	if vo.Cover != nil {
-		builder.SetNillableCover(vo.Cover)
-	}
-	if vo.Position != nil {
-		builder.SetNillablePosition(vo.Position)
-	}
-	if userID != "" {
-		builder.SetUpdatedBy(userID)
-	}
-
-	_, err = builder.Save(ctx)
-	if err != nil {
+	if err := db.DB.WithContext(ctx).Model(&SysNotice{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil {
 		panic(exception.NewBusinessError("编辑通知失败: "+err.Error(), 500))
 	}
 }
 
-// Remove deletes notices by IDs.
 func Remove(c *gin.Context, ids []string) {
-	if len(ids) == 0 {
-		return
-	}
-
-	ctx := context.Background()
-	_, err := db.Client.SysNotice.Delete().Where(sysnotice.IDIn(ids...)).Exec(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("删除通知失败: "+err.Error(), 500))
-	}
+	if len(ids) == 0 { return }
+	db.DB.WithContext(context.Background()).Where("id IN ?", ids).Delete(&SysNotice{})
 }
 
-// entToVO converts an ent SysNotice entity to a NoticeVO.
-func entToVO(entity *ent.SysNotice) *NoticeVO {
+func entToVO(entity *SysNotice) *NoticeVO {
 	vo := &NoticeVO{
-		ID:        entity.ID,
-		Title:     entity.Title,
-		Category:  entity.Category,
-		Type:      entity.Type,
-		Level:     entity.Level,
-		ViewCount: entity.ViewCount,
-		IsTop:     entity.IsTop,
-		Status:    entity.Status,
-		SortCode:  entity.SortCode,
+		ID: entity.ID, Title: entity.Title, Category: entity.Category,
+		Type: entity.Type, SortCode: entity.SortCode,
 	}
-
-	if entity.Summary != nil {
-		vo.Summary = entity.Summary
-	}
-	if entity.Content != nil {
-		vo.Content = entity.Content
-	}
-	if entity.Cover != nil {
-		vo.Cover = entity.Cover
-	}
-	if entity.Position != nil {
-		vo.Position = entity.Position
-	}
-	if entity.CreatedAt != nil {
-		vo.CreatedAt = entity.CreatedAt.Format("2006-01-02 15:04:05")
-	}
-	if entity.CreatedBy != nil {
-		vo.CreatedBy = entity.CreatedBy
-	}
-	if entity.UpdatedAt != nil {
-		vo.UpdatedAt = entity.UpdatedAt.Format("2006-01-02 15:04:05")
-	}
-	if entity.UpdatedBy != nil {
-		vo.UpdatedBy = entity.UpdatedBy
-	}
-
+	if entity.Summary != nil { vo.Summary = entity.Summary }
+	if entity.Content != nil { vo.Content = entity.Content }
+	if entity.Cover != nil { vo.Cover = entity.Cover }
+	if entity.Level != "" { vo.Level = entity.Level }
+	if entity.Status != "" { vo.Status = entity.Status }
+	if entity.IsTop != "" { vo.IsTop = entity.IsTop }
+	if entity.Author != nil { vo.Author = entity.Author }
+	if entity.PublishAt != nil { s := entity.PublishAt.Format("2006-01-02 15:04:05"); vo.PublishAt = &s }
+	if entity.ExpireAt != nil { s := entity.ExpireAt.Format("2006-01-02 15:04:05"); vo.ExpireAt = &s }
+	if entity.CreatedAt != nil { vo.CreatedAt = entity.CreatedAt.Format("2006-01-02 15:04:05") }
+	if entity.CreatedBy != nil { vo.CreatedBy = entity.CreatedBy }
+	if entity.UpdatedAt != nil { vo.UpdatedAt = entity.UpdatedAt.Format("2006-01-02 15:04:05") }
+	if entity.UpdatedBy != nil { vo.UpdatedBy = entity.UpdatedBy }
 	return vo
 }

@@ -27,7 +27,7 @@ func Run() {
 	}
 
 	// 2. Init DB
-	if err := db.InitEnt(); err != nil {
+	if err := db.InitDB(); err != nil {
 		log.Fatalf("[APP] Failed to init database: %v", err)
 	}
 

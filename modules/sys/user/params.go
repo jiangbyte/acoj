@@ -1,6 +1,6 @@
 package user
 
-import "hei-gin/modules/sys/role"
+
 
 type UserVO struct {
 	ID           string   `json:"id"`
@@ -45,7 +45,7 @@ type GrantRoleParam struct {
 
 type GrantUserPermissionParam struct {
 	UserID      string                `json:"user_id"`
-	Permissions []role.PermissionItem `json:"permissions"`
+	Permissions []PermissionItem `json:"permissions"`
 }
 
 type UpdateProfileParam struct {

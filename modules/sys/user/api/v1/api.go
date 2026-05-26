@@ -217,19 +217,22 @@ func ownRolesHandler(c *gin.Context) {
 
 // currentHandler handles GET /api/v1/sys/user/current
 func currentHandler(c *gin.Context) {
-	vo := user.UserCurrent(c)
+	userID := auth.GetLoginIDDefaultNull(c)
+	vo := user.UserCurrent(c, userID)
 	c.JSON(200, result.Success(c, vo))
 }
 
 // menusHandler handles GET /api/v1/sys/user/menus
 func menusHandler(c *gin.Context) {
-	data := user.UserMenus(c)
+	userID := auth.GetLoginIDDefaultNull(c)
+	data := user.UserMenus(c, userID)
 	c.JSON(200, result.Success(c, data))
 }
 
 // permissionsHandler handles GET /api/v1/sys/user/permissions
 func permissionsHandler(c *gin.Context) {
-	data := user.UserPermissions(c)
+	userID := auth.GetLoginIDDefaultNull(c)
+	data := user.UserPermissions(c, userID)
 	c.JSON(200, result.Success(c, data))
 }
 
@@ -241,7 +244,7 @@ func updateProfileHandler(c *gin.Context) {
 		return
 	}
 
-	user.UserUpdateProfile(c, &param)
+	user.UserUpdateProfile(c, auth.GetLoginIDDefaultNull(c), &param)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -253,7 +256,7 @@ func updateAvatarHandler(c *gin.Context) {
 		return
 	}
 
-	user.UserUpdateAvatar(c, &param)
+	user.UserUpdateAvatar(c, auth.GetLoginIDDefaultNull(c), param.Avatar)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -265,6 +268,6 @@ func updatePasswordHandler(c *gin.Context) {
 		return
 	}
 
-	user.UserUpdatePassword(c, &param)
+	user.UserUpdatePassword(c, auth.GetLoginIDDefaultNull(c), &param)
 	c.JSON(200, result.Success(c, nil))
 }

@@ -2,237 +2,128 @@ package analyze
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net"
 	"runtime"
-	"sort"
 	"time"
 
-	"hei-gin/core/db"
-	ent "hei-gin/ent/gen"
-	"hei-gin/ent/gen/clientuser"
-	"hei-gin/ent/gen/sysuser"
-
 	"github.com/gin-gonic/gin"
+
+	"hei-gin/core/db"
+	logModel "hei-gin/modules/sys/log"
 )
 
-var ServerStartTime = time.Now()
+type LogAnalysisData struct {
+	LoginTotal     int `json:"login_total"`
+	LoginFailed    int `json:"login_failed"`
+	LoginToday     int `json:"login_today"`
+	LogTotal       int `json:"log_total"`
+	LogException   int `json:"log_exception"`
+	ExceptionToday int `json:"exception_today"`
+}
+
+func Page(c *gin.Context, param *logModel.LogPageParam) gin.H {
+	ctx := context.Background()
+	if param.Current < 1 {
+		param.Current = 1
+	}
+	if param.Size < 1 {
+		param.Size = 10
+	}
+	if param.Size > 100 {
+		param.Size = 100
+	}
+
+	query := db.DB.WithContext(ctx).Model(&logModel.SysLog{})
+	if param.Category != "" {
+		query = query.Where("category = ?", param.Category)
+	}
+	if param.Keyword != "" {
+		kw := "%" + param.Keyword + "%"
+		query = query.Where("name LIKE ? OR op_user LIKE ? OR op_ip LIKE ?", kw, kw, kw)
+	}
+
+	var total int64
+	query.Count(&total)
+
+	var records []logModel.SysLog
+	query.Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
+	return gin.H{
+		"code": 200, "message": "请求成功", "success": true,
+		"data": gin.H{
+			"records": records, "total": total, "current": param.Current,
+			"size": param.Size, "pages": int((total + int64(param.Size) - 1) / int64(param.Size)),
+		},
+	}
+}
+
+func LoginAnalysis(c *gin.Context) *LogAnalysisData {
+	ctx := context.Background()
+
+	var loginTotal int64
+	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", "LOGIN").Count(&loginTotal)
+
+	var failedTotal int64
+	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", "LOGIN").Where("exe_status = ?", "FAIL").Count(&failedTotal)
+
+	var loginToday int64
+	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).
+		Where("category = ?", "LOGIN").
+		Where("DATE(op_time) = CURDATE()").
+		Count(&loginToday)
+
+	log.Printf("[Analyze] Login stats: total=%d, failed=%d, today=%d", loginTotal, failedTotal, loginToday)
+
+	return &LogAnalysisData{
+		LoginTotal:  int(loginTotal),
+		LoginFailed: int(failedTotal),
+		LoginToday:  int(loginToday),
+	}
+}
+
+func LogAnalysis(c *gin.Context) *LogAnalysisData {
+	ctx := context.Background()
+
+	var logTotal int64
+	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Count(&logTotal)
+
+	var exceptionTotal int64
+	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", "EXCEPTION").Count(&exceptionTotal)
+
+	var exceptionToday int64
+	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).
+		Where("category = ?", "EXCEPTION").
+		Where("DATE(op_time) = CURDATE()").
+		Count(&exceptionToday)
+
+	return &LogAnalysisData{
+		LogTotal:       int(logTotal),
+		LogException:   int(exceptionTotal),
+		ExceptionToday: int(exceptionToday),
+	}
+}
 
 func Dashboard(c *gin.Context) *DashboardVO {
 	ctx := context.Background()
+	stats := DashboardStats{}
 
-	totalUsers, err := db.Client.SysUser.Query().Count(ctx)
-	if err != nil {
-		log.Printf("[ANALYZE] failed to query total users: %v", err)
-	}
-	activeUsers, err := db.Client.SysUser.Query().Where(sysuser.StatusEQ("ACTIVE")).Count(ctx)
-	if err != nil {
-		log.Printf("[ANALYZE] failed to query active users: %v", err)
-	}
-	totalRoles, err := db.Client.SysRole.Query().Count(ctx)
-	if err != nil {
-		log.Printf("[ANALYZE] failed to query total roles: %v", err)
-	}
-	totalOrgs, err := db.Client.SysOrg.Query().Count(ctx)
-	if err != nil {
-		log.Printf("[ANALYZE] failed to query total orgs: %v", err)
-	}
-	totalConfigs, err := db.Client.SysConfig.Query().Count(ctx)
-	if err != nil {
-		log.Printf("[ANALYZE] failed to query total configs: %v", err)
-	}
-	totalNotices, err := db.Client.SysNotice.Query().Count(ctx)
-	if err != nil {
-		log.Printf("[ANALYZE] failed to query total notices: %v", err)
-	}
+	db.DB.WithContext(ctx).Table("sys_user").Count(&stats.TotalUsers)
+	db.DB.WithContext(ctx).Table("sys_user").Where("status = ?", "ACTIVE").Count(&stats.ActiveUsers)
+	db.DB.WithContext(ctx).Table("sys_role").Count(&stats.TotalRoles)
+	db.DB.WithContext(ctx).Table("sys_org").Count(&stats.TotalOrgs)
+	db.DB.WithContext(ctx).Table("sys_config").Count(&stats.TotalConfigs)
 
-	stats := DashboardStats{
-		TotalUsers:   totalUsers,
-		ActiveUsers:  activeUsers,
-		TotalRoles:   totalRoles,
-		TotalOrgs:    totalOrgs,
-		TotalConfigs: totalConfigs,
-		TotalNotices: totalNotices,
-	}
+	clientStats := ClientStats{}
+	db.DB.WithContext(ctx).Table("client_user").Count(&clientStats.TotalUsers)
+	db.DB.WithContext(ctx).Table("client_user").Where("status = ?", "ACTIVE").Count(&clientStats.ActiveUsers)
 
-	clientTotal, err := db.Client.ClientUser.Query().Count(ctx)
-	if err != nil {
-		log.Printf("[ANALYZE] failed to query client total: %v", err)
+	sysInfo := SysInfo{
+		OsName:  runtime.GOOS,
+		RunTime: time.Now().Format("2006-01-02 15:04:05"),
 	}
-	clientActive, err := db.Client.ClientUser.Query().Where(clientuser.StatusEQ("ACTIVE")).Count(ctx)
-	if err != nil {
-		log.Printf("[ANALYZE] failed to query client active: %v", err)
-	}
-	clientStats := ClientStats{
-		TotalUsers:  clientTotal,
-		ActiveUsers: clientActive,
-	}
-
-	userTrend := getUserTrend(ctx)
-	clientTrend := getClientUserTrend(ctx)
-	orgDistribution := getOrgUserDistribution(ctx)
-	roleDistribution := getRoleCategoryDistribution(ctx)
-	sysInfo := getSysInfo()
 
 	return &DashboardVO{
-		Stats:                    stats,
-		ClientStats:              clientStats,
-		UserTrend:                userTrend,
-		ClientTrend:              clientTrend,
-		OrgUserDistribution:      orgDistribution,
-		RoleCategoryDistribution: roleDistribution,
-		SysInfo:                  sysInfo,
+		Stats:       stats,
+		ClientStats: clientStats,
+		SysInfo:     sysInfo,
 	}
-}
-
-func getUserTrend(ctx context.Context) []TrendItem {
-	now := time.Now()
-	result := make([]TrendItem, 12)
-	for i := 11; i >= 0; i-- {
-		month := now.AddDate(0, -i, 0).Format("2006-01")
-		result[11-i] = TrendItem{Month: month, Count: 0}
-	}
-
-	// Per-month COUNT queries are efficient with index on created_at
-	for i, item := range result {
-		start, err := time.Parse("2006-01", item.Month)
-		if err != nil {
-			continue
-		}
-		end := start.AddDate(0, 1, 0)
-		count, err := db.Client.SysUser.Query().
-			Where(sysuser.CreatedAtGTE(start), sysuser.CreatedAtLT(end)).
-			Count(ctx)
-		if err != nil {
-			log.Printf("[ANALYZE] failed to query user trend for %s: %v", item.Month, err)
-		}
-		result[i].Count = count
-	}
-	return result
-}
-
-func getClientUserTrend(ctx context.Context) []TrendItem {
-	now := time.Now()
-	result := make([]TrendItem, 12)
-	for i := 11; i >= 0; i-- {
-		month := now.AddDate(0, -i, 0).Format("2006-01")
-		result[11-i] = TrendItem{Month: month, Count: 0}
-	}
-
-	// Per-month COUNT queries are efficient with index on created_at
-	for i, item := range result {
-		start, err := time.Parse("2006-01", item.Month)
-		if err != nil {
-			continue
-		}
-		end := start.AddDate(0, 1, 0)
-		count, err := db.Client.ClientUser.Query().
-			Where(clientuser.CreatedAtGTE(start), clientuser.CreatedAtLT(end)).
-			Count(ctx)
-		if err != nil {
-			log.Printf("[ANALYZE] failed to query client user trend for %s: %v", item.Month, err)
-		}
-		result[i].Count = count
-	}
-	return result
-}
-
-func getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
-	orgs, err := db.Client.SysOrg.Query().All(ctx)
-	if err != nil {
-		log.Printf("[ANALYZE] failed to query org user distribution: %v", err)
-		return nil
-	}
-
-	// Single GROUP BY aggregation query instead of N+1
-	var aggResults []struct {
-		OrgID string `json:"org_id"`
-		Count int    `json:"count"`
-	}
-	err = db.Client.SysUser.Query().
-		GroupBy(sysuser.FieldOrgID).
-		Aggregate(ent.As(ent.Count(), "count")).
-		Scan(ctx, &aggResults)
-	if err != nil {
-		log.Printf("[ANALYZE] failed to aggregate org user counts: %v", err)
-		// Fall back to individual queries
-		result := make([]OrgUserDistribution, 0, len(orgs))
-		for _, o := range orgs {
-			count, err := db.Client.SysUser.Query().Where(sysuser.OrgID(o.ID)).Count(ctx)
-			if err != nil {
-				log.Printf("[ANALYZE] failed to query user count for org %s: %v", o.ID, err)
-			}
-			result = append(result, OrgUserDistribution{Name: o.Name, Count: count})
-		}
-		sort.Slice(result, func(i, j int) bool {
-			return result[i].Count > result[j].Count
-		})
-		return result
-	}
-
-	orgCountMap := make(map[string]int, len(aggResults))
-	for _, r := range aggResults {
-		orgCountMap[r.OrgID] = r.Count
-	}
-
-	result := make([]OrgUserDistribution, 0, len(orgs))
-	for _, o := range orgs {
-		result = append(result, OrgUserDistribution{Name: o.Name, Count: orgCountMap[o.ID]})
-	}
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Count > result[j].Count
-	})
-	return result
-}
-
-func getRoleCategoryDistribution(ctx context.Context) []CategoryDistribution {
-	roles, err := db.Client.SysRole.Query().All(ctx)
-	if err != nil {
-		log.Printf("[ANALYZE] failed to query role category distribution: %v", err)
-		return nil
-	}
-	catMap := make(map[string]int)
-	for _, r := range roles {
-		catMap[r.Category]++
-	}
-	result := make([]CategoryDistribution, 0)
-	for cat, count := range catMap {
-		result = append(result, CategoryDistribution{Category: cat, Count: count})
-	}
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Count > result[j].Count
-	})
-	return result
-}
-
-func getSysInfo() SysInfo {
-	return SysInfo{
-		OsName:   runtime.GOOS,
-		ServerIP: getLocalIP(),
-		RunTime:  formatDuration(time.Since(ServerStartTime)),
-	}
-}
-
-func getLocalIP() string {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		return "unknown"
-	}
-	for _, addr := range addrs {
-		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-			return ipnet.IP.String()
-		}
-	}
-	return "unknown"
-}
-
-func formatDuration(d time.Duration) string {
-	days := int(d.Hours()) / 24
-	hours := int(d.Hours()) % 24
-	minutes := int(d.Minutes()) % 60
-	if days > 0 {
-		return fmt.Sprintf("%d天 %d小时 %d分钟", days, hours, minutes)
-	}
-	return fmt.Sprintf("%d小时 %d分钟", hours, minutes)
 }

@@ -1,4 +1,4 @@
-package position
+﻿package position
 
 type PositionVO struct {
 	ID          string   `json:"id"`
@@ -20,9 +20,9 @@ type PositionVO struct {
 }
 
 type PositionPageParam struct {
-	Current int    `json:"current" form:"current"`
-	Size    int    `json:"size" form:"size"`
-	Keyword string `json:"keyword" form:"keyword"`
-	GroupID string `json:"group_id" form:"group_id"`
-	OrgID   string `json:"org_id" form:"org_id"`
+	Current  int    `json:"current" form:"current"`
+	Size     int    `json:"size" form:"size"`
+	Keyword  string `json:"keyword" form:"keyword"`
+	Category string `json:"category" form:"category"`
+	OrgID    string `json:"org_id" form:"org_id"`
 }

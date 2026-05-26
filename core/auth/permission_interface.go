@@ -1,28 +1,25 @@
-package auth
+﻿package auth
 
 import (
 	"context"
 	"encoding/json"
 	"log"
 
+	"gorm.io/gorm"
+
 	"hei-gin/core/constants"
 	"hei-gin/core/db"
 	"hei-gin/core/enums"
-	"hei-gin/ent/gen/relrolepermission"
-	"hei-gin/ent/gen/reluserpermission"
-	"hei-gin/ent/gen/reluserrole"
-	"hei-gin/ent/gen/sysrole"
+	userModel "hei-gin/modules/sys/user"
+	roleModel "hei-gin/modules/sys/role"
 )
 
-// HeiPermissionInterface is the runtime permission loader interface.
-// Implementations query the database at request time.
 type HeiPermissionInterface interface {
 	GetPermissionList(loginID string, loginType string) ([]string, error)
 	GetRoleList(loginID string, loginType string) ([]string, error)
 	GetPermissionScopeMap(loginID string, loginType string) (map[string]ScopeInfo, error)
 }
 
-// ScopeInfo represents the data scope information for a permission.
 type ScopeInfo struct {
 	GroupScope     string   `json:"group_scope"`
 	OrgScope       string   `json:"org_scope"`
@@ -30,7 +27,6 @@ type ScopeInfo struct {
 	CustomOrgIDs   []string `json:"custom_org_ids"`
 }
 
-// ScopeRow represents a raw scope row from the database.
 type ScopeRow struct {
 	PermissionCode string
 	Scope          string
@@ -38,19 +34,14 @@ type ScopeRow struct {
 	CustomOrgIDs   string
 }
 
-// HeiPermissionInterfaceImpl is the default implementation of HeiPermissionInterface.
 type HeiPermissionInterfaceImpl struct{}
 
-// getRoleIDs loads the role IDs for a given login ID from the database.
 func (p *HeiPermissionInterfaceImpl) getRoleIDs(ctx context.Context, loginID string) ([]string, error) {
-	entities, err := db.Client.RelUserRole.Query().
-		Where(reluserrole.UserID(loginID)).
-		All(ctx)
-	if err != nil {
+	var entities []userModel.RelUserRole
+	if err := db.DB.WithContext(ctx).Where("user_id = ?", loginID).Find(&entities).Error; err != nil {
 		log.Printf("[Permission] Failed to query role IDs: %v", err)
 		return nil, err
 	}
-
 	roleIDs := make([]string, 0, len(entities))
 	for _, e := range entities {
 		roleIDs = append(roleIDs, e.RoleID)
@@ -58,22 +49,18 @@ func (p *HeiPermissionInterfaceImpl) getRoleIDs(ctx context.Context, loginID str
 	return roleIDs, nil
 }
 
-// isGroupScope checks if the given scope is a group-related scope type.
 func (p *HeiPermissionInterfaceImpl) isGroupScope(scope string) bool {
 	return scope == string(enums.DataScopeGroup) ||
 		scope == string(enums.DataScopeGroupAndBelow) ||
 		scope == string(enums.DataScopeCustomGroup)
 }
 
-// isOrgScope checks if the given scope is an org-related scope type.
 func (p *HeiPermissionInterfaceImpl) isOrgScope(scope string) bool {
 	return scope == string(enums.DataScopeOrg) ||
 		scope == string(enums.DataScopeOrgAndBelow) ||
 		scope == string(enums.DataScopeCustomOrg)
 }
 
-// mergeDimension merges a single dimension (group or org) into the current scope map.
-// SELF has the highest priority and cannot be overridden.
 func (p *HeiPermissionInterfaceImpl) mergeDimension(cur map[string]interface{}, scopeKey, idsKey, newScope string, newIDs []string) {
 	if curScope, ok := cur[scopeKey].(string); ok && curScope != "" {
 		if curScope == string(enums.DataScopeSelf) {
@@ -112,38 +99,32 @@ func (p *HeiPermissionInterfaceImpl) mergeDimension(cur map[string]interface{}, 
 	}
 }
 
-// mergeScope merges scope rows into the result map using two-path logic.
 func (p *HeiPermissionInterfaceImpl) mergeScope(result map[string]map[string]interface{}, priority string, rows []ScopeRow) {
 	for _, row := range rows {
 		scope := row.Scope
 		if scope == "" {
 			scope = string(enums.DataScopeAll)
 		}
-
 		var cgids []string
 		if row.CustomGroupIDs != "" {
 			if err := json.Unmarshal([]byte(row.CustomGroupIDs), &cgids); err != nil {
 				cgids = []string{}
 			}
 		}
-
 		var cogids []string
 		if row.CustomOrgIDs != "" {
 			if err := json.Unmarshal([]byte(row.CustomOrgIDs), &cogids); err != nil {
 				cogids = []string{}
 			}
 		}
-
 		isGroup := p.isGroupScope(scope)
 		isOrg := p.isOrgScope(scope)
 		isAll := scope == string(enums.DataScopeAll)
 		isSelf := scope == string(enums.DataScopeSelf)
-
 		code := row.PermissionCode
 		if existing, ok := result[code]; ok {
 			existingPriority := existing["priority"].(string)
 			if priority < existingPriority {
-				// Higher priority (lower P value): overwrite
 				var gScope interface{} = nil
 				if isAll || isSelf || isGroup {
 					gScope = scope
@@ -154,69 +135,57 @@ func (p *HeiPermissionInterfaceImpl) mergeScope(result map[string]map[string]int
 				}
 				existing["group_scope"] = gScope
 				existing["org_scope"] = oScope
-				existing["custom_group_ids"] = cgids
-				existing["custom_org_ids"] = cogids
-				existing["priority"] = priority
-			} else if priority == existingPriority {
-				// Same priority: merge dimensions
-				if isGroup || isAll || isSelf {
+				if isGroup {
 					p.mergeDimension(existing, "group_scope", "custom_group_ids", scope, cgids)
 				}
-				if isOrg || isAll || isSelf {
+				if isOrg {
 					p.mergeDimension(existing, "org_scope", "custom_org_ids", scope, cogids)
 				}
+				existing["priority"] = priority
 			}
 		} else {
-			var gScope interface{} = nil
+			entry := map[string]interface{}{
+				"priority": priority,
+			}
 			if isAll || isSelf || isGroup {
-				gScope = scope
+				entry["group_scope"] = scope
+				if isGroup {
+					p.mergeDimension(entry, "group_scope", "custom_group_ids", scope, cgids)
+				}
 			}
-			var oScope interface{} = nil
 			if isAll || isSelf || isOrg {
-				oScope = scope
+				entry["org_scope"] = scope
+				if isOrg {
+					p.mergeDimension(entry, "org_scope", "custom_org_ids", scope, cogids)
+				}
 			}
-			result[code] = map[string]interface{}{
-				"group_scope":      gScope,
-				"org_scope":        oScope,
-				"custom_group_ids": cgids,
-				"custom_org_ids":   cogids,
-				"priority":         priority,
-			}
+			result[code] = entry
 		}
 	}
 }
 
-// getAllPermissionsFromRedis reads all permission codes from the Redis cache.
+// getAllPermissionsFromRedis retrieves all permission codes from the Redis cache.
 func (p *HeiPermissionInterfaceImpl) getAllPermissionsFromRedis(ctx context.Context) ([]string, error) {
-	if db.Redis == nil {
-		return []string{}, nil
-	}
-
 	data, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
 	if err != nil {
-		log.Printf("[Permission] Failed to read permission cache from Redis: %v", err)
-		return []string{}, nil
+		return nil, err
 	}
-	if data == "" {
-		return []string{}, nil
-	}
-
-	var tree map[string]map[string]interface{}
+	var tree map[string]interface{}
 	if err := json.Unmarshal([]byte(data), &tree); err != nil {
-		log.Printf("[Permission] Failed to unmarshal permission cache: %v", err)
-		return []string{}, nil
+		return nil, err
 	}
-
 	var codes []string
 	for _, modulePerms := range tree {
-		for code := range modulePerms {
-			codes = append(codes, code)
+		if perms, ok := modulePerms.(map[string]interface{}); ok {
+			for code := range perms {
+				codes = append(codes, code)
+			}
 		}
 	}
 	return codes, nil
 }
 
-// GetPermissionList returns the user's permission codes, or ALL codes for SUPER_ADMIN.
+// GetPermissionList returns the user's permission codes by querying both role-based and direct permissions.
 func (p *HeiPermissionInterfaceImpl) GetPermissionList(loginID, loginType string) ([]string, error) {
 	ctx := context.Background()
 
@@ -224,8 +193,6 @@ func (p *HeiPermissionInterfaceImpl) GetPermissionList(loginID, loginType string
 	if err != nil {
 		return nil, err
 	}
-
-	// SUPER_ADMIN returns all permissions in the system (from route annotations)
 	for _, role := range roleList {
 		if role == constants.SUPER_ADMIN_CODE {
 			return p.getAllPermissionsFromRedis(ctx)
@@ -235,16 +202,13 @@ func (p *HeiPermissionInterfaceImpl) GetPermissionList(loginID, loginType string
 	permissionCodes := make(map[string]struct{})
 
 	if loginType == string(enums.LoginTypeBusiness) || loginType == string(enums.LoginTypeConsumer) {
-		// Path 1: User -> Role -> Permission
 		roleIDs, err := p.getRoleIDs(ctx, loginID)
 		if err != nil {
 			return nil, err
 		}
 		if len(roleIDs) > 0 {
-			entities, err := db.Client.RelRolePermission.Query().
-				Where(relrolepermission.RoleIDIn(roleIDs...)).
-				All(ctx)
-			if err != nil {
+			var entities []userModel.RelRolePermission
+			if err := db.DB.WithContext(ctx).Where("role_id IN ?", roleIDs).Find(&entities).Error; err != nil {
 				log.Printf("[Permission] Failed to query role permissions: %v", err)
 			} else {
 				for _, e := range entities {
@@ -253,11 +217,8 @@ func (p *HeiPermissionInterfaceImpl) GetPermissionList(loginID, loginType string
 			}
 		}
 
-		// Path 2: User -> Direct Permission
-		entities, err := db.Client.RelUserPermission.Query().
-			Where(reluserpermission.UserID(loginID)).
-			All(ctx)
-		if err != nil {
+		var entities []userModel.RelUserPermission
+		if err := db.DB.WithContext(ctx).Where("user_id = ?", loginID).Find(&entities).Error; err != nil {
 			log.Printf("[Permission] Failed to query user permissions: %v", err)
 		} else {
 			for _, e := range entities {
@@ -281,15 +242,12 @@ func (p *HeiPermissionInterfaceImpl) GetRoleList(loginID, loginType string) ([]s
 	if err != nil {
 		return nil, err
 	}
-
 	if len(roleIDs) == 0 {
 		return []string{}, nil
 	}
 
-	roles, err := db.Client.SysRole.Query().
-		Where(sysrole.IDIn(roleIDs...)).
-		All(ctx)
-	if err != nil {
+	var roles []roleModel.SysRole
+	if err := db.DB.WithContext(ctx).Where("id IN ?", roleIDs).Find(&roles).Error; err != nil {
 		log.Printf("[Permission] Failed to query role list: %v", err)
 		return nil, err
 	}
@@ -314,7 +272,6 @@ func (p *HeiPermissionInterfaceImpl) GetPermissionScopeMap(loginID, loginType st
 		return nil, err
 	}
 
-	// SUPER_ADMIN gets ALL scope on every permission
 	for _, role := range roleList {
 		if role == constants.SUPER_ADMIN_CODE {
 			allCodes, err := p.getAllPermissionsFromRedis(ctx)
@@ -336,15 +293,12 @@ func (p *HeiPermissionInterfaceImpl) GetPermissionScopeMap(loginID, loginType st
 
 	permScope := make(map[string]map[string]interface{})
 
-	// Path 1 (P1): User -> Role -> Permission
 	roleIDs, err := p.getRoleIDs(ctx, loginID)
 	if err != nil {
 		log.Printf("[Permission] Failed to query user roles: %v", err)
 	} else if len(roleIDs) > 0 {
-		entities, err := db.Client.RelRolePermission.Query().
-			Where(relrolepermission.RoleIDIn(roleIDs...)).
-			All(ctx)
-		if err != nil {
+		var entities []userModel.RelRolePermission
+		if err := db.DB.WithContext(ctx).Where("role_id IN ?", roleIDs).Find(&entities).Error; err != nil {
 			log.Printf("[Permission] Failed to query role permission scopes: %v", err)
 		} else {
 			var scopeRows []ScopeRow
@@ -360,11 +314,8 @@ func (p *HeiPermissionInterfaceImpl) GetPermissionScopeMap(loginID, loginType st
 		}
 	}
 
-	// Path 2 (P0): User -> Direct Permission
-	entities, err := db.Client.RelUserPermission.Query().
-		Where(reluserpermission.UserID(loginID)).
-		All(ctx)
-	if err != nil {
+	var entities []userModel.RelUserPermission
+	if err := db.DB.WithContext(ctx).Where("user_id = ?", loginID).Find(&entities).Error; err != nil {
 		log.Printf("[Permission] Failed to query user permission scopes: %v", err)
 	} else {
 		var scopeRows []ScopeRow
@@ -391,7 +342,6 @@ func (p *HeiPermissionInterfaceImpl) GetPermissionScopeMap(loginID, loginType st
 	return result, nil
 }
 
-// safeString converts an interface{} to a string, returning "" for nil.
 func safeString(v interface{}) string {
 	if v == nil {
 		return ""
@@ -402,7 +352,6 @@ func safeString(v interface{}) string {
 	return ""
 }
 
-// safeStringSlice converts an interface{} to a []string, returning empty slice for nil.
 func safeStringSlice(v interface{}) []string {
 	if v == nil {
 		return []string{}
@@ -413,10 +362,12 @@ func safeStringSlice(v interface{}) []string {
 	return []string{}
 }
 
-// safeStrPtr converts a *string to string, returning "" for nil.
 func safeStrPtr(s *string) string {
 	if s == nil {
 		return ""
 	}
 	return *s
 }
+
+// Ensure gorm is imported
+var _ = &gorm.DB{}

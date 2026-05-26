@@ -1,4 +1,4 @@
-package v1
+﻿package v1
 
 import (
 	"net/http"
@@ -22,18 +22,18 @@ func RegisterRoutes(r *gin.Engine) {
 	)
 	r.POST("/api/v1/sys/module/create",
 		authmw.HeiCheckPermission([]string{"sys:module:create"}),
-		log.SysLog("添加模块"),
+		log.SysLog("娣诲姞妯″潡"),
 		authmw.NoRepeat(3000),
 		moduleCreate,
 	)
 	r.POST("/api/v1/sys/module/modify",
 		authmw.HeiCheckPermission([]string{"sys:module:modify"}),
-		log.SysLog("编辑模块"),
+		log.SysLog("缂栬緫妯″潡"),
 		moduleModify,
 	)
 	r.POST("/api/v1/sys/module/remove",
 		authmw.HeiCheckPermission([]string{"sys:module:remove"}),
-		log.SysLog("删除模块"),
+		log.SysLog("鍒犻櫎妯″潡"),
 		moduleRemove,
 	)
 	r.GET("/api/v1/sys/module/detail",
@@ -52,18 +52,18 @@ func RegisterRoutes(r *gin.Engine) {
 	)
 	r.POST("/api/v1/sys/resource/create",
 		authmw.HeiCheckPermission([]string{"sys:resource:create"}),
-		log.SysLog("添加资源"),
+		log.SysLog("娣诲姞璧勬簮"),
 		authmw.NoRepeat(3000),
 		resourceCreate,
 	)
 	r.POST("/api/v1/sys/resource/modify",
 		authmw.HeiCheckPermission([]string{"sys:resource:modify"}),
-		log.SysLog("编辑资源"),
+		log.SysLog("缂栬緫璧勬簮"),
 		resourceModify,
 	)
 	r.POST("/api/v1/sys/resource/remove",
 		authmw.HeiCheckPermission([]string{"sys:resource:remove"}),
-		log.SysLog("删除资源"),
+		log.SysLog("鍒犻櫎璧勬簮"),
 		resourceRemove,
 	)
 	r.GET("/api/v1/sys/resource/detail",
@@ -79,7 +79,7 @@ func RegisterRoutes(r *gin.Engine) {
 func modulePage(c *gin.Context) {
 	param := &resource.ModulePageParam{}
 	if err := c.ShouldBindQuery(param); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "璇锋眰鍙傛暟閿欒: "+err.Error(), 400, nil))
 		return
 	}
 	c.JSON(http.StatusOK, resource.ModulePage(c, param))
@@ -88,7 +88,7 @@ func modulePage(c *gin.Context) {
 func moduleDetail(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
-		c.JSON(http.StatusOK, result.Failure(c, "id不能为空", 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "id涓嶈兘涓虹┖", 400, nil))
 		return
 	}
 
@@ -103,7 +103,7 @@ func moduleDetail(c *gin.Context) {
 func moduleCreate(c *gin.Context) {
 	vo := &resource.ModuleVO{}
 	if err := c.ShouldBindJSON(vo); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "璇锋眰鍙傛暟閿欒: "+err.Error(), 400, nil))
 		return
 	}
 
@@ -115,11 +115,11 @@ func moduleCreate(c *gin.Context) {
 func moduleModify(c *gin.Context) {
 	vo := &resource.ModuleVO{}
 	if err := c.ShouldBindJSON(vo); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "璇锋眰鍙傛暟閿欒: "+err.Error(), 400, nil))
 		return
 	}
 	if vo.ID == "" {
-		c.JSON(http.StatusOK, result.Failure(c, "id不能为空", 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "id涓嶈兘涓虹┖", 400, nil))
 		return
 	}
 
@@ -131,11 +131,11 @@ func moduleModify(c *gin.Context) {
 func moduleRemove(c *gin.Context) {
 	param := &pojo.IdsParam{}
 	if err := c.ShouldBindJSON(param); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "璇锋眰鍙傛暟閿欒: "+err.Error(), 400, nil))
 		return
 	}
 	if len(param.IDs) == 0 {
-		c.JSON(http.StatusOK, result.Failure(c, "ids不能为空", 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "ids涓嶈兘涓虹┖", 400, nil))
 		return
 	}
 
@@ -148,14 +148,14 @@ func moduleRemove(c *gin.Context) {
 // ---------------------------------------------------------------------------
 
 func resourceTree(c *gin.Context) {
-	data := resource.ResourceTree(c)
+	data := resource.ResourceTree(c, "")
 	c.JSON(http.StatusOK, result.Success(c, data))
 }
 
 func resourcePage(c *gin.Context) {
 	param := &resource.ResourcePageParam{}
 	if err := c.ShouldBindQuery(param); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "璇锋眰鍙傛暟閿欒: "+err.Error(), 400, nil))
 		return
 	}
 	c.JSON(http.StatusOK, resource.ResourcePage(c, param))
@@ -164,7 +164,7 @@ func resourcePage(c *gin.Context) {
 func resourceDetail(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
-		c.JSON(http.StatusOK, result.Failure(c, "id不能为空", 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "id涓嶈兘涓虹┖", 400, nil))
 		return
 	}
 
@@ -179,7 +179,7 @@ func resourceDetail(c *gin.Context) {
 func resourceCreate(c *gin.Context) {
 	vo := &resource.ResourceVO{}
 	if err := c.ShouldBindJSON(vo); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "璇锋眰鍙傛暟閿欒: "+err.Error(), 400, nil))
 		return
 	}
 
@@ -191,11 +191,11 @@ func resourceCreate(c *gin.Context) {
 func resourceModify(c *gin.Context) {
 	vo := &resource.ResourceVO{}
 	if err := c.ShouldBindJSON(vo); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "璇锋眰鍙傛暟閿欒: "+err.Error(), 400, nil))
 		return
 	}
 	if vo.ID == "" {
-		c.JSON(http.StatusOK, result.Failure(c, "id不能为空", 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "id涓嶈兘涓虹┖", 400, nil))
 		return
 	}
 
@@ -207,14 +207,15 @@ func resourceModify(c *gin.Context) {
 func resourceRemove(c *gin.Context) {
 	param := &pojo.IdsParam{}
 	if err := c.ShouldBindJSON(param); err != nil {
-		c.JSON(http.StatusOK, result.Failure(c, "请求参数错误: "+err.Error(), 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "璇锋眰鍙傛暟閿欒: "+err.Error(), 400, nil))
 		return
 	}
 	if len(param.IDs) == 0 {
-		c.JSON(http.StatusOK, result.Failure(c, "ids不能为空", 400, nil))
+		c.JSON(http.StatusOK, result.Failure(c, "ids涓嶈兘涓虹┖", 400, nil))
 		return
 	}
 
 	resource.ResourceRemove(c, param.IDs)
 	c.JSON(http.StatusOK, result.Success(c, nil))
 }
+

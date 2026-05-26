@@ -2,57 +2,45 @@ package user
 
 import (
 	"context"
-	"log"
-	"sort"
 	"sync"
 	"time"
 
-	"hei-gin/core/auth"
-	"hei-gin/core/constants"
+	"gorm.io/gorm"
+
 	"hei-gin/core/db"
-	"hei-gin/core/enums"
 	"hei-gin/core/exception"
 	"hei-gin/core/result"
 	"hei-gin/core/utils"
-	ent "hei-gin/ent/gen"
-	"hei-gin/ent/gen/relrolepermission"
-	"hei-gin/ent/gen/relroleresource"
-	"hei-gin/ent/gen/reluserpermission"
-	"hei-gin/ent/gen/reluserrole"
-	"hei-gin/ent/gen/sysposition"
-	"hei-gin/ent/gen/sysresource"
-	"hei-gin/ent/gen/sysrole"
-	"hei-gin/ent/gen/sysuser"
-	"hei-gin/modules/sys/role"
 
-	"entgo.io/ent/dialect/sql"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// ---------------------------------------------------------------------------
-// Cache for org/group lookups
-// ---------------------------------------------------------------------------
+type cacheOrg struct {
+	ID       string
+	Name     string
+	ParentID *string
+}
+type cacheGroup struct {
+	ID       string
+	Name     string
+	ParentID *string
+}
 
 var (
-	orgCache    []*ent.SysOrg
-	groupCache  []*ent.SysGroup
-	cacheMu     sync.RWMutex
-	cacheExpiry time.Time
+	cachedOrgs   []cacheOrg
+	cachedGroups []cacheGroup
+	cacheMu      sync.RWMutex
+	cacheExpiry  time.Time
 )
 
-// ---------------------------------------------------------------------------
-// Time helpers
-// ---------------------------------------------------------------------------
-
-func formatDate(t *time.Time) string {
+func fmtDate(t *time.Time) string {
 	if t == nil {
 		return ""
 	}
 	return t.Format("2006-01-02")
 }
-
-func formatTime(t *time.Time) string {
+func fmtTime(t *time.Time) string {
 	if t == nil {
 		return ""
 	}
@@ -70,1092 +58,669 @@ func parseDate(s string) *time.Time {
 	return &t
 }
 
-// ---------------------------------------------------------------------------
-// Name path resolution
-// ---------------------------------------------------------------------------
-
-type namePathNode struct {
-	Name     string
-	ParentID *string
-}
-
-func buildNamePathMapFromOrgs(orgs []*ent.SysOrg) map[string]namePathNode {
-	m := make(map[string]namePathNode, len(orgs))
-	for _, o := range orgs {
-		m[o.ID] = namePathNode{Name: o.Name, ParentID: o.ParentID}
-	}
-	return m
-}
-
-func buildNamePathMapFromGroups(groups []*ent.SysGroup) map[string]namePathNode {
-	m := make(map[string]namePathNode, len(groups))
-	for _, g := range groups {
-		m[g.ID] = namePathNode{Name: g.Name, ParentID: g.ParentID}
-	}
-	return m
-}
-
-func resolveNamePathFromMap(id *string, nodeMap map[string]namePathNode) []string {
-	if id == nil || *id == "" {
-		return nil
-	}
-	var path []string
-	current := *id
-	for {
-		node, ok := nodeMap[current]
-		if !ok {
-			break
-		}
-		path = append(path, node.Name)
-		if node.ParentID == nil || *node.ParentID == "" {
-			break
-		}
-		current = *node.ParentID
-	}
-	// Reverse to get root -> leaf order
-	for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
-		path[i], path[j] = path[j], path[i]
-	}
-	return path
-}
-
-// ---------------------------------------------------------------------------
-// entToVO
-// ---------------------------------------------------------------------------
-
-func entToVO(entity *ent.SysUser) *UserVO {
-	if entity == nil {
+func entToVO(e *SysUser) *UserVO {
+	if e == nil {
 		return nil
 	}
 	return &UserVO{
-		ID:          entity.ID,
-		Username:    entity.Username,
-		Nickname:    entity.Nickname,
-		Avatar:      entity.Avatar,
-		Motto:       entity.Motto,
-		Gender:      entity.Gender,
-		Birthday:    formatDate(entity.Birthday),
-		Email:       entity.Email,
-		Github:      entity.Github,
-		Phone:       entity.Phone,
-		OrgID:       entity.OrgID,
-		PositionID:  entity.PositionID,
-		GroupID:     entity.GroupID,
-		Status:      entity.Status,
-		LastLoginAt: formatTime(entity.LastLoginAt),
-		LastLoginIP: entity.LastLoginIP,
-		LoginCount:  entity.LoginCount,
-		CreatedAt:   formatTime(entity.CreatedAt),
-		CreatedBy:   entity.CreatedBy,
-		UpdatedAt:   formatTime(entity.UpdatedAt),
-		UpdatedBy:   entity.UpdatedBy,
+		ID: e.ID, Username: e.Username, Nickname: e.Nickname, Avatar: e.Avatar,
+		Motto: e.Motto, Gender: e.Gender, Birthday: fmtDate(e.Birthday),
+		Email: e.Email, Github: e.Github, Phone: e.Phone,
+		OrgID: e.OrgID, PositionID: e.PositionID, GroupID: e.GroupID,
+		Status: e.Status, LastLoginAt: fmtTime(e.LastLoginAt), LastLoginIP: e.LastLoginIP,
+		LoginCount: e.LoginCount, CreatedAt: fmtTime(e.CreatedAt), CreatedBy: e.CreatedBy,
+		UpdatedAt: fmtTime(e.UpdatedAt), UpdatedBy: e.UpdatedBy,
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Batch role IDs
-// ---------------------------------------------------------------------------
-
-func batchGetRoleIDs(userIDs []string) (map[string][]string, error) {
-	if len(userIDs) == 0 {
-		return nil, nil
+func batchRoleIDs(uids []string) map[string][]string {
+	if len(uids) == 0 {
+		return nil
 	}
 	ctx := context.Background()
-	relations, err := db.Client.RelUserRole.Query().
-		Where(reluserrole.UserIDIn(userIDs...)).
-		All(ctx)
-	if err != nil {
-		return nil, err
+	var rr []RelUserRole
+	db.DB.WithContext(ctx).Where("user_id IN ?", uids).Find(&rr)
+	m := make(map[string][]string)
+	for _, r := range rr {
+		m[r.UserID] = append(m[r.UserID], r.RoleID)
 	}
-	result := make(map[string][]string)
-	for _, r := range relations {
-		result[r.UserID] = append(result[r.UserID], r.RoleID)
-	}
-	return result, nil
+	return m
 }
 
-// ---------------------------------------------------------------------------
-// Batch enrich org/group/position names
-// ---------------------------------------------------------------------------
-
-func batchEnrichNames(vos []*UserVO) {
+func enrichNames(vos []*UserVO) {
 	if len(vos) == 0 {
 		return
 	}
 	ctx := context.Background()
 
-	// Collect position IDs
-	posIDs := make([]string, 0)
-	for _, vo := range vos {
-		if vo.PositionID != nil && *vo.PositionID != "" {
-			posIDs = append(posIDs, *vo.PositionID)
+	var pids []string
+	for _, v := range vos {
+		if v.PositionID != nil && *v.PositionID != "" {
+			pids = append(pids, *v.PositionID)
+		}
+	}
+	pn := make(map[string]string)
+	if len(pids) > 0 {
+		type pr struct{ ID, Name string }
+		var ps []pr
+		db.DB.WithContext(ctx).Table("sys_position").Where("id IN ?", pids).Find(&ps)
+		for _, p := range ps {
+			pn[p.ID] = p.Name
 		}
 	}
 
-	// Batch query position names
-	posMap := make(map[string]string)
-	if len(posIDs) > 0 {
-		positions, err := db.Client.SysPosition.Query().
-			Where(sysposition.IDIn(posIDs...)).
-			All(ctx)
-		if err == nil {
-			for _, p := range positions {
-				posMap[p.ID] = p.Name
-			}
-		}
-	}
-
-	// Try cache first for orgs and groups
 	cacheMu.RLock()
-	orgs := orgCache
-	groups := groupCache
-	expired := time.Now().After(cacheExpiry)
+	if time.Since(cacheExpiry) > 5*time.Minute {
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		if time.Since(cacheExpiry) > 5*time.Minute {
+			db.DB.WithContext(ctx).Table("sys_org").Select("id,name,parent_id").Find(&cachedOrgs)
+			db.DB.WithContext(ctx).Table("sys_group").Select("id,name,parent_id").Find(&cachedGroups)
+			cacheExpiry = time.Now()
+		}
+		cacheMu.Unlock()
+		cacheMu.RLock()
+	}
+	orgMap := make(map[string]struct {
+		N string
+		P *string
+	})
+	for _, o := range cachedOrgs {
+		orgMap[o.ID] = struct {
+			N string
+			P *string
+		}{o.Name, o.ParentID}
+	}
+	grpMap := make(map[string]struct {
+		N string
+		P *string
+	})
+	for _, g := range cachedGroups {
+		grpMap[g.ID] = struct {
+			N string
+			P *string
+		}{g.Name, g.ParentID}
+	}
 	cacheMu.RUnlock()
 
-	if expired || orgs == nil || groups == nil {
-		var err error
-		orgs, err = db.Client.SysOrg.Query().All(ctx)
-		if err != nil {
-			return
+	resolve := func(id *string, m map[string]struct {
+		N string
+		P *string
+	}) []string {
+		if id == nil || *id == "" {
+			return nil
 		}
-		groups, err = db.Client.SysGroup.Query().All(ctx)
-		if err != nil {
-			return
+		var path []string
+		cur := *id
+		for {
+			n, ok := m[cur]
+			if !ok {
+				break
+			}
+			path = append(path, n.N)
+			if n.P == nil || *n.P == "" {
+				break
+			}
+			cur = *n.P
 		}
-		cacheMu.Lock()
-		orgCache = orgs
-		groupCache = groups
-		cacheExpiry = time.Now().Add(30 * time.Second)
-		cacheMu.Unlock()
+		for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
+			path[i], path[j] = path[j], path[i]
+		}
+		return path
 	}
 
-	orgNodeMap := buildNamePathMapFromOrgs(orgs)
-	groupNodeMap := buildNamePathMapFromGroups(groups)
-
-	for _, vo := range vos {
-		vo.OrgNames = resolveNamePathFromMap(vo.OrgID, orgNodeMap)
-		vo.GroupNames = resolveNamePathFromMap(vo.GroupID, groupNodeMap)
-		if vo.PositionID != nil {
-			if name, ok := posMap[*vo.PositionID]; ok {
-				vo.PositionName = &name
+	for _, v := range vos {
+		if v.PositionID != nil {
+			if n, ok := pn[*v.PositionID]; ok {
+				v.PositionName = &n
 			}
 		}
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Role helpers
-// ---------------------------------------------------------------------------
-
-func getUserRoleCodes(userID string) []string {
-	ctx := context.Background()
-	relations, err := db.Client.RelUserRole.Query().
-		Where(reluserrole.UserID(userID)).
-		All(ctx)
-	if err != nil || len(relations) == 0 {
-		return nil
-	}
-	roleIDs := make([]string, len(relations))
-	for i, r := range relations {
-		roleIDs[i] = r.RoleID
-	}
-	roles, err := db.Client.SysRole.Query().
-		Where(sysrole.IDIn(roleIDs...)).
-		All(ctx)
-	if err != nil {
-		return nil
-	}
-	codes := make([]string, len(roles))
-	for i, r := range roles {
-		codes[i] = r.Code
-	}
-	return codes
-}
-
-func getUserAllRoleIDs(userID string) []string {
-	ctx := context.Background()
-	relations, err := db.Client.RelUserRole.Query().
-		Where(reluserrole.UserID(userID)).
-		All(ctx)
-	if err != nil {
-		return nil
-	}
-	ids := make([]string, len(relations))
-	for i, r := range relations {
-		ids[i] = r.RoleID
-	}
-	return ids
-}
-
-func grantRoles(cli *ent.Client, userID string, roleIDs []string, createdBy string) {
-	ctx := context.Background()
-	// Delete existing
-	_, err := cli.RelUserRole.Delete().
-		Where(reluserrole.UserID(userID)).
-		Exec(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("删除旧角色关联失败: "+err.Error(), 500))
-	}
-	// Re-create
-	for _, rid := range roleIDs {
-		_, err = cli.RelUserRole.Create().
-			SetID(utils.GenerateID()).
-			SetUserID(userID).
-			SetRoleID(rid).
-			Save(ctx)
-		if err != nil {
-			panic(exception.NewBusinessError("分配角色失败: "+err.Error(), 500))
+		if v.OrgID != nil {
+			v.OrgNames = resolve(v.OrgID, orgMap)
+		}
+		if v.GroupID != nil {
+			v.GroupNames = resolve(v.GroupID, grpMap)
 		}
 	}
 }
 
-// ---------------------------------------------------------------------------
-// UserPage
-// ---------------------------------------------------------------------------
-
-func UserPage(c *gin.Context, param *UserPageParam) gin.H {
+func UserPage(c *gin.Context, p *UserPageParam) gin.H {
 	ctx := context.Background()
-
-	if param.Current < 1 {
-		param.Current = 1
+	if p.Current < 1 {
+		p.Current = 1
 	}
-	if param.Size < 1 {
-		param.Size = 10
-	}
-	if param.Size > 100 {
-		param.Size = 100
+	if p.Size < 1 || p.Size > 100 {
+		p.Size = 10
 	}
 
-	query := db.Client.SysUser.Query()
-	if param.Keyword != "" {
-		query = query.Where(sysuser.Or(
-			sysuser.UsernameContains(param.Keyword),
-			sysuser.NicknameContains(param.Keyword),
-		))
+	q := db.DB.WithContext(ctx).Model(&SysUser{})
+	if p.Keyword != "" {
+		like := "%" + p.Keyword + "%"
+		q = q.Where("username LIKE ? OR nickname LIKE ? OR phone LIKE ? OR email LIKE ?", like, like, like, like)
 	}
-	if param.Status != "" {
-		query = query.Where(sysuser.StatusEQ(param.Status))
+	if p.Status != "" {
+		q = q.Where("status = ?", p.Status)
 	}
 
-	total, err := query.Count(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("查询用户列表失败: "+err.Error(), 500))
-	}
+	var total int64
+	q.Count(&total)
 
-	offset := (param.Current - 1) * param.Size
-	records, err := query.Clone().
-		Order(sysuser.ByCreatedAt(sql.OrderDesc())).
-		Limit(param.Size).
-		Offset(offset).
-		All(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("查询用户列表失败: "+err.Error(), 500))
-	}
+	var rows []SysUser
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
 
-	userIDs := make([]string, len(records))
-	for i, r := range records {
-		userIDs[i] = r.ID
+	vos := make([]*UserVO, len(rows))
+	for i, r := range rows {
+		vos[i] = entToVO(&r)
 	}
-	roleMap, err := batchGetRoleIDs(userIDs)
-	if err != nil {
-		log.Printf("[USER] Failed to batch get role IDs: %v", err)
-		roleMap = make(map[string][]string)
+	enrichNames(vos)
+	rm := batchRoleIDs(func() []string {
+		ids := make([]string, len(rows))
+		for i, r := range rows {
+			ids[i] = r.ID
+		}
+		return ids
+	}())
+	for _, v := range vos {
+		v.RoleIDs = rm[v.ID]
 	}
-
-	vos := make([]*UserVO, len(records))
-	for i, r := range records {
-		vos[i] = entToVO(r)
-		vos[i].RoleIDs = roleMap[r.ID]
-	}
-
-	batchEnrichNames(vos)
-
-	return result.PageDataResult(c, vos, total, param.Current, param.Size)
+	return result.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
-// ---------------------------------------------------------------------------
-// UserCreate
-// ---------------------------------------------------------------------------
-
-func UserCreate(c *gin.Context, vo *UserVO, userID string) {
+func UserCreate(c *gin.Context, v *UserVO, uid string) {
 	ctx := context.Background()
-
-	if vo.Username != nil && *vo.Username != "" {
-		exists, err := db.Client.SysUser.Query().
-			Where(sysuser.UsernameEQ(*vo.Username)).
-			Exist(ctx)
-		if err == nil && exists {
-			panic(exception.NewBusinessError("账号已存在", 400))
-		}
-	}
-
-	if vo.Email != nil && *vo.Email != "" {
-		exists, err := db.Client.SysUser.Query().
-			Where(sysuser.EmailEQ(*vo.Email)).
-			Exist(ctx)
-		if err == nil && exists {
-			panic(exception.NewBusinessError("邮箱已存在", 400))
-		}
-	}
-
 	now := time.Now()
-
-	tx, err := db.Client.Tx(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
-	}
-
-	builder := tx.SysUser.Create().
-		SetID(utils.GenerateID()).
-		SetCreatedAt(now).
-		SetUpdatedAt(now)
-
-	if vo.Username != nil {
-		builder.SetNillableUsername(vo.Username)
-	}
-	if vo.Nickname != nil {
-		builder.SetNillableNickname(vo.Nickname)
-	}
-	if vo.Avatar != nil {
-		builder.SetNillableAvatar(vo.Avatar)
-	}
-	if vo.Motto != nil {
-		builder.SetNillableMotto(vo.Motto)
-	}
-	if vo.Gender != nil {
-		builder.SetNillableGender(vo.Gender)
-	}
-	if vo.Birthday != "" {
-		builder.SetNillableBirthday(parseDate(vo.Birthday))
-	}
-	if vo.Email != nil {
-		builder.SetNillableEmail(vo.Email)
-	}
-	if vo.Github != nil {
-		builder.SetNillableGithub(vo.Github)
-	}
-	if vo.Phone != nil {
-		builder.SetNillablePhone(vo.Phone)
-	}
-	if vo.OrgID != nil {
-		builder.SetNillableOrgID(vo.OrgID)
-	}
-	if vo.PositionID != nil {
-		builder.SetNillablePositionID(vo.PositionID)
-	}
-	if vo.GroupID != nil {
-		builder.SetNillableGroupID(vo.GroupID)
-	}
-	if vo.Password != nil && *vo.Password != "" {
-		rawPwd := utils.Decrypt(*vo.Password)
-		if rawPwd == "" {
-			panic(exception.NewBusinessError("密码解密失败", 400))
+	e := SysUser{ID: utils.GenerateID(), Status: "ACTIVE", CreatedAt: &now, UpdatedAt: &now}
+	if v.Username != nil {
+		var c int64
+		db.DB.WithContext(ctx).Model(&SysUser{}).Where("username = ?", *v.Username).Count(&c)
+		if c > 0 {
+			panic(exception.NewBusinessError("帐号已存在", 400))
 		}
-		hashedPwd, err := bcrypt.GenerateFromPassword([]byte(rawPwd), bcrypt.DefaultCost)
-		if err != nil {
-			panic(exception.NewBusinessError("密码加密失败", 500))
-		}
-		hashedPwdStr := string(hashedPwd)
-		builder.SetPassword(hashedPwdStr)
+		e.Username = v.Username
 	}
-	if vo.Status != "" {
-		builder.SetStatus(vo.Status)
+	if v.Password != nil {
+		h, _ := bcrypt.GenerateFromPassword([]byte(*v.Password), bcrypt.DefaultCost)
+		s := string(h)
+		e.Password = &s
 	}
-	if userID != "" {
-		builder.SetCreatedBy(userID).SetUpdatedBy(userID)
+	if v.Nickname != nil {
+		e.Nickname = v.Nickname
 	}
-
-	entity, err := builder.Save(ctx)
-	if err != nil {
-		tx.Rollback()
+	if v.Avatar != nil {
+		e.Avatar = v.Avatar
+	}
+	if v.Motto != nil {
+		e.Motto = v.Motto
+	}
+	if v.Gender != nil {
+		e.Gender = v.Gender
+	}
+	if v.Birthday != "" {
+		e.Birthday = parseDate(v.Birthday)
+	}
+	if v.Email != nil {
+		e.Email = v.Email
+	}
+	if v.Github != nil {
+		e.Github = v.Github
+	}
+	if v.Phone != nil {
+		e.Phone = v.Phone
+	}
+	if v.OrgID != nil {
+		e.OrgID = v.OrgID
+	}
+	if v.PositionID != nil {
+		e.PositionID = v.PositionID
+	}
+	if v.GroupID != nil {
+		e.GroupID = v.GroupID
+	}
+	if v.Status != "" {
+		e.Status = v.Status
+	}
+	if uid != "" {
+		e.CreatedBy = &uid
+		e.UpdatedBy = &uid
+	}
+	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil {
 		panic(exception.NewBusinessError("添加用户失败: "+err.Error(), 500))
 	}
-
-	if len(vo.RoleIDs) > 0 {
-		grantRoles(tx.Client(), entity.ID, vo.RoleIDs, userID)
-	}
-
-	if err := tx.Commit(); err != nil {
-		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
-	}
 }
-
-// ---------------------------------------------------------------------------
-// UserModify
-// ---------------------------------------------------------------------------
-
-func UserModify(c *gin.Context, vo *UserVO, userID string) {
-	ctx := context.Background()
-
-	if vo.ID == "" {
-		panic(exception.NewBusinessError("ID不能为空", 400))
-	}
-
-	// Verify exists
-	_, err := db.Client.SysUser.Get(ctx, vo.ID)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			panic(exception.NewBusinessError("数据不存在", 404))
-		}
-		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
-	}
-
-	tx, err := db.Client.Tx(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
-	}
-
-	now := time.Now()
-	builder := tx.SysUser.UpdateOneID(vo.ID).
-		SetUpdatedAt(now)
-
-	if vo.Username != nil {
-		builder.SetNillableUsername(vo.Username)
-	}
-	if vo.Nickname != nil {
-		builder.SetNillableNickname(vo.Nickname)
-	}
-	if vo.Avatar != nil {
-		builder.SetNillableAvatar(vo.Avatar)
-	}
-	if vo.Motto != nil {
-		builder.SetNillableMotto(vo.Motto)
-	}
-	if vo.Gender != nil {
-		builder.SetNillableGender(vo.Gender)
-	}
-	if vo.Birthday != "" {
-		builder.SetNillableBirthday(parseDate(vo.Birthday))
-	}
-	if vo.Email != nil {
-		builder.SetNillableEmail(vo.Email)
-	}
-	if vo.Github != nil {
-		builder.SetNillableGithub(vo.Github)
-	}
-	if vo.Phone != nil {
-		builder.SetNillablePhone(vo.Phone)
-	}
-	if vo.OrgID != nil {
-		if *vo.OrgID != "" {
-			builder.SetOrgID(*vo.OrgID)
-		} else {
-			builder.ClearOrgID()
-		}
-	}
-	if vo.PositionID != nil {
-		if *vo.PositionID != "" {
-			builder.SetPositionID(*vo.PositionID)
-		} else {
-			builder.ClearPositionID()
-		}
-	}
-	if vo.GroupID != nil {
-		if *vo.GroupID != "" {
-			builder.SetGroupID(*vo.GroupID)
-		} else {
-			builder.ClearGroupID()
-		}
-	}
-	if vo.Status != "" {
-		builder.SetStatus(vo.Status)
-	}
-	if vo.Password != nil && *vo.Password != "" {
-		rawPwd := utils.Decrypt(*vo.Password)
-		if rawPwd == "" {
-			panic(exception.NewBusinessError("密码解密失败", 400))
-		}
-		hashedPwd, err := bcrypt.GenerateFromPassword([]byte(rawPwd), bcrypt.DefaultCost)
-		if err != nil {
-			panic(exception.NewBusinessError("密码加密失败", 500))
-		}
-		builder.SetPassword(string(hashedPwd))
-	}
-	if userID != "" {
-		builder.SetUpdatedBy(userID)
-	}
-
-	_, err = builder.Save(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("编辑用户失败: "+err.Error(), 500))
-	}
-
-	// Re-grant roles if role_ids specified (even if empty array)
-	if vo.RoleIDs != nil {
-		grantRoles(tx.Client(), vo.ID, vo.RoleIDs, userID)
-	}
-
-	if err := tx.Commit(); err != nil {
-		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
-	}
-
-	if vo.Password != nil && *vo.Password != "" {
-		auth.Kickout(vo.ID)
-	}
-}
-
-// ---------------------------------------------------------------------------
-// UserRemove
-// ---------------------------------------------------------------------------
-
-func UserRemove(c *gin.Context, ids []string) {
-	if len(ids) == 0 {
-		return
-	}
-	ctx := context.Background()
-
-	tx, err := db.Client.Tx(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
-	}
-
-	// Delete user-role relations
-	_, err = tx.RelUserRole.Delete().
-		Where(reluserrole.UserIDIn(ids...)).
-		Exec(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("删除用户角色关联失败: "+err.Error(), 500))
-	}
-
-	// Delete user-permission relations
-	_, err = tx.RelUserPermission.Delete().
-		Where(reluserpermission.UserIDIn(ids...)).
-		Exec(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("删除用户权限关联失败: "+err.Error(), 500))
-	}
-
-	// Delete users
-	_, err = tx.SysUser.Delete().
-		Where(sysuser.IDIn(ids...)).
-		Exec(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("删除用户失败: "+err.Error(), 500))
-	}
-
-	if err := tx.Commit(); err != nil {
-		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
-	}
-}
-
-// ---------------------------------------------------------------------------
-// UserDetail
-// ---------------------------------------------------------------------------
 
 func UserDetail(c *gin.Context, id string) *UserVO {
 	if id == "" {
 		return nil
 	}
 	ctx := context.Background()
-
-	entity, err := db.Client.SysUser.Get(ctx, id)
-	if err != nil {
-		if ent.IsNotFound(err) {
+	var e SysUser
+	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
 			return nil
 		}
 		panic(exception.NewBusinessError("查询用户详情失败: "+err.Error(), 500))
 	}
-
-	vo := entToVO(entity)
-
-	// Enrich role IDs
-	roleRelations, _ := db.Client.RelUserRole.Query().
-		Where(reluserrole.UserID(id)).
-		All(ctx)
-	if len(roleRelations) > 0 {
-		vo.RoleIDs = make([]string, len(roleRelations))
-		for i, r := range roleRelations {
-			vo.RoleIDs[i] = r.RoleID
-		}
+	vo := entToVO(&e)
+	enrichNames([]*UserVO{vo})
+	if rm := batchRoleIDs([]string{e.ID}); rm != nil {
+		vo.RoleIDs = rm[e.ID]
 	}
-
-	// Enrich names
-	batchEnrichNames([]*UserVO{vo})
-
 	return vo
 }
 
-// ---------------------------------------------------------------------------
-// UserGrantRoles
-// ---------------------------------------------------------------------------
-
-func UserGrantRoles(c *gin.Context, userID string, roleIDs []string, createdBy string) {
-	// Verify user exists
+func UserModify(c *gin.Context, v *UserVO, uid string) {
 	ctx := context.Background()
-	_, err := db.Client.SysUser.Get(ctx, userID)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			panic(exception.NewBusinessError("用户不存在", 404))
+	if v.ID == "" {
+		panic(exception.NewBusinessError("ID不能为空", 400))
+	}
+	var old SysUser
+	if err := db.DB.WithContext(ctx).First(&old, "id = ?", v.ID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			panic(exception.NewBusinessError("数据不存在", 400))
 		}
 		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
 	}
-
-	grantRoles(db.Client, userID, roleIDs, createdBy)
+	up := map[string]interface{}{}
+	if v.Username != nil {
+		var c int64
+		db.DB.WithContext(ctx).Model(&SysUser{}).Where("username = ? AND id != ?", *v.Username, v.ID).Count(&c)
+		if c > 0 {
+			panic(exception.NewBusinessError("帐号已存在", 400))
+		}
+		up["username"] = *v.Username
+	}
+	if v.Nickname != nil {
+		up["nickname"] = *v.Nickname
+	}
+	if v.Avatar != nil {
+		up["avatar"] = *v.Avatar
+	}
+	if v.Motto != nil {
+		up["motto"] = *v.Motto
+	}
+	if v.Gender != nil {
+		up["gender"] = *v.Gender
+	}
+	if v.Birthday != "" {
+		up["birthday"] = parseDate(v.Birthday)
+	}
+	if v.Email != nil {
+		up["email"] = *v.Email
+	}
+	if v.Github != nil {
+		up["github"] = *v.Github
+	}
+	if v.Phone != nil {
+		up["phone"] = *v.Phone
+	}
+	if v.OrgID != nil {
+		up["org_id"] = *v.OrgID
+	} else if old.OrgID != nil {
+		up["org_id"] = nil
+	}
+	if v.PositionID != nil {
+		up["position_id"] = *v.PositionID
+	} else if old.PositionID != nil {
+		up["position_id"] = nil
+	}
+	if v.GroupID != nil {
+		up["group_id"] = *v.GroupID
+	} else if old.GroupID != nil {
+		up["group_id"] = nil
+	}
+	if v.Status != "" {
+		up["status"] = v.Status
+	}
+	up["updated_at"] = time.Now()
+	if uid != "" {
+		up["updated_by"] = uid
+	}
+	db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", v.ID).Updates(up)
 }
 
-// ---------------------------------------------------------------------------
-// UserGrantPermissions
-// ---------------------------------------------------------------------------
-
-func UserGrantPermissions(c *gin.Context, userID string, permissions []role.PermissionItem, createdBy string) {
+func UserRemove(c *gin.Context, ids []string) {
+	if len(ids) == 0 {
+		return
+	}
 	ctx := context.Background()
+	tx := db.DB.WithContext(ctx).Begin()
+	tx.Where("user_id IN ?", ids).Delete(&RelUserRole{})
+	tx.Where("user_id IN ?", ids).Delete(&RelUserPermission{})
+	tx.Where("user_id IN ?", ids).Delete(&SysQuickAction{})
+	tx.Where("id IN ?", ids).Delete(&SysUser{})
+	tx.Commit()
+}
 
-	// Verify user exists
-	_, err := db.Client.SysUser.Get(ctx, userID)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			panic(exception.NewBusinessError("用户不存在", 404))
-		}
-		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
+func UserResetPassword(c *gin.Context, id string) {
+	if id == "" {
+		panic(exception.NewBusinessError("ID不能为空", 400))
 	}
+	ctx := context.Background()
+	db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"password": func() string {
+			h, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+			return string(h)
+		}(),
+		"updated_at": time.Now(),
+	})
+}
 
-	tx, err := db.Client.Tx(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
+func UserGrantRole(c *gin.Context, p *GrantRoleParam) {
+	if p.UserID == "" {
+		panic(exception.NewBusinessError("用户ID不能为空", 400))
 	}
-
-	// Delete existing
-	_, err = tx.RelUserPermission.Delete().
-		Where(reluserpermission.UserID(userID)).
-		Exec(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("删除用户权限失败: "+err.Error(), 500))
-	}
-
-	// Re-create
-	for _, p := range permissions {
-		builder := tx.RelUserPermission.Create().
-			SetID(utils.GenerateID()).
-			SetUserID(userID).
-			SetPermissionCode(p.PermissionCode)
-
-		if p.Scope != "" {
-			builder.SetScope(p.Scope)
-		}
-		if p.CustomScopeGroupIds != nil {
-			builder.SetNillableCustomScopeGroupIds(p.CustomScopeGroupIds)
-		}
-		if p.CustomScopeOrgIds != nil {
-			builder.SetNillableCustomScopeOrgIds(p.CustomScopeOrgIds)
-		}
-
-		_, err := builder.Save(ctx)
-		if err != nil {
-			tx.Rollback()
-			panic(exception.NewBusinessError("分配用户权限失败: "+err.Error(), 500))
+	ctx := context.Background()
+	tx := db.DB.WithContext(ctx).Begin()
+	tx.Where("user_id = ?", p.UserID).Delete(&RelUserRole{})
+	seen := make(map[string]bool)
+	for _, id := range p.RoleIDs {
+		if !seen[id] {
+			seen[id] = true
+			tx.Create(&RelUserRole{ID: utils.GenerateID(), UserID: p.UserID, RoleID: id})
 		}
 	}
+	tx.Commit()
+}
 
-	if err := tx.Commit(); err != nil {
-		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+func UserGrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
+	if p.UserID == "" {
+		panic(exception.NewBusinessError("用户ID不能为空", 400))
+	}
+	ctx := context.Background()
+	tx := db.DB.WithContext(ctx).Begin()
+	tx.Where("user_id = ?", p.UserID).Delete(&RelUserPermission{})
+	for _, pi := range p.Permissions {
+		r := RelUserPermission{ID: utils.GenerateID(), UserID: p.UserID, PermissionCode: pi.PermissionCode, Scope: pi.Scope}
+		if pi.CustomScopeGroupIds != nil {
+			r.CustomScopeGroupIds = pi.CustomScopeGroupIds
+		}
+		if pi.CustomScopeOrgIds != nil {
+			r.CustomScopeOrgIds = pi.CustomScopeOrgIds
+		}
+		tx.Create(&r)
+	}
+	tx.Commit()
+}
+
+func UserBatchImport(c *gin.Context, p *BatchImportParam) {
+	if len(p.Users) == 0 {
+		return
+	}
+	ctx := context.Background()
+	now := time.Now()
+	for _, u := range p.Users {
+		e := SysUser{ID: utils.GenerateID(), Status: "ACTIVE", CreatedAt: &now, UpdatedAt: &now}
+		if u.Username != nil {
+			e.Username = u.Username
+		}
+		if u.Nickname != nil {
+			e.Nickname = u.Nickname
+		}
+		if u.Phone != nil {
+			e.Phone = u.Phone
+		}
+		if u.Email != nil {
+			e.Email = u.Email
+		}
+		if u.Gender != nil {
+			e.Gender = u.Gender
+		}
+		db.DB.WithContext(ctx).Create(&e)
 	}
 }
 
-// ---------------------------------------------------------------------------
-// UserOwnPermissionDetails
-// ---------------------------------------------------------------------------
-
-func UserOwnPermissionDetails(c *gin.Context, userID string) []map[string]interface{} {
-	ctx := context.Background()
-	relations, err := db.Client.RelUserPermission.Query().
-		Where(reluserpermission.UserID(userID)).
-		All(ctx)
-	if err != nil {
-		return nil
+func UserUpdateStatus(c *gin.Context, p *UpdateStatusParam) {
+	if len(p.IDs) == 0 {
+		return
 	}
-	result := make([]map[string]interface{}, 0, len(relations))
-	for _, r := range relations {
-		item := map[string]interface{}{
-			"permission_code": r.PermissionCode,
-			"scope":           r.Scope,
-		}
-		if r.CustomScopeGroupIds != nil {
-			item["custom_scope_group_ids"] = *r.CustomScopeGroupIds
-		} else {
-			item["custom_scope_group_ids"] = nil
-		}
-		if r.CustomScopeOrgIds != nil {
-			item["custom_scope_org_ids"] = *r.CustomScopeOrgIds
-		} else {
-			item["custom_scope_org_ids"] = nil
-		}
-		result = append(result, item)
-	}
-	return result
+	db.DB.WithContext(context.Background()).Model(&SysUser{}).Where("id IN ?", p.IDs).Updates(
+		map[string]interface{}{"status": p.Status, "updated_at": time.Now()})
 }
 
-// ---------------------------------------------------------------------------
-// UserOwnRoles
-// ---------------------------------------------------------------------------
-
-func UserOwnRoles(c *gin.Context, userID string) []string {
-	ctx := context.Background()
-	relations, err := db.Client.RelUserRole.Query().
-		Where(reluserrole.UserID(userID)).
-		All(ctx)
-	if err != nil {
-		return nil
-	}
-	ids := make([]string, len(relations))
-	for i, r := range relations {
+func UserOwnRoleIDs(c *gin.Context, uid string) []string {
+	var rr []RelUserRole
+	db.DB.WithContext(context.Background()).Where("user_id = ?", uid).Find(&rr)
+	ids := make([]string, len(rr))
+	for i, r := range rr {
 		ids[i] = r.RoleID
 	}
 	return ids
 }
 
-// ---------------------------------------------------------------------------
-// UserCurrent
-// ---------------------------------------------------------------------------
-
-func UserCurrent(c *gin.Context) *UserVO {
-	userID := auth.GetLoginIDDefaultNull(c)
-	if userID == "" {
-		return nil
-	}
-	ctx := context.Background()
-	entity, err := db.Client.SysUser.Get(ctx, userID)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil
+func UserOwnPermissionDetails(c *gin.Context, uid string) []map[string]interface{} {
+	var pp []RelUserPermission
+	db.DB.WithContext(context.Background()).Where("user_id = ?", uid).Find(&pp)
+	r := make([]map[string]interface{}, len(pp))
+	for i, p := range pp {
+		r[i] = map[string]interface{}{
+			"permission_code": p.PermissionCode, "scope": p.Scope,
+			"custom_scope_group_ids": p.CustomScopeGroupIds, "custom_scope_org_ids": p.CustomScopeOrgIds,
 		}
-		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
 	}
-	vo := entToVO(entity)
-	batchEnrichNames([]*UserVO{vo})
-	return vo
+	return r
 }
 
-// ---------------------------------------------------------------------------
-// UserMenus
-// ---------------------------------------------------------------------------
-
-func UserMenus(c *gin.Context) []map[string]interface{} {
-	userID := auth.GetLoginIDDefaultNull(c)
-	if userID == "" {
-		return nil
-	}
+func UserExport(c *gin.Context, p *UserPageParam) []*UserVO {
 	ctx := context.Background()
-
-	roleCodes := getUserRoleCodes(userID)
-	isSuperAdmin := false
-	for _, code := range roleCodes {
-		if code == constants.SUPER_ADMIN_CODE {
-			isSuperAdmin = true
-			break
-		}
+	q := db.DB.WithContext(ctx).Model(&SysUser{})
+	if p.Keyword != "" {
+		like := "%" + p.Keyword + "%"
+		q = q.Where("username LIKE ? OR nickname LIKE ? OR phone LIKE ? OR email LIKE ?", like, like, like, like)
 	}
-
-	var resources []*ent.SysResource
-	if isSuperAdmin {
-		var err error
-		resources, err = db.Client.SysResource.Query().
-			Where(
-				sysresource.CategoryEQ(string(enums.ResourceCategoryBackendMenu)),
-				sysresource.TypeIn(string(enums.ResourceTypeDirectory), string(enums.ResourceTypeMenu)),
-				sysresource.StatusEQ(string(enums.StatusEnabled)),
-			).
-			Order(sysresource.BySortCode()).
-			All(ctx)
-		if err != nil {
-			return nil
-		}
-	} else {
-		roleIDs := getUserAllRoleIDs(userID)
-		if len(roleIDs) == 0 {
-			return nil
-		}
-
-		rrRelations, err := db.Client.RelRoleResource.Query().
-			Where(relroleresource.RoleIDIn(roleIDs...)).
-			All(ctx)
-		if err != nil || len(rrRelations) == 0 {
-			return nil
-		}
-
-		resourceIDSet := make(map[string]struct{})
-		for _, rr := range rrRelations {
-			resourceIDSet[rr.ResourceID] = struct{}{}
-		}
-		resourceIDs := make([]string, 0, len(resourceIDSet))
-		for id := range resourceIDSet {
-			resourceIDs = append(resourceIDs, id)
-		}
-
-		resources, err = db.Client.SysResource.Query().
-			Where(
-				sysresource.IDIn(resourceIDs...),
-				sysresource.CategoryEQ(string(enums.ResourceCategoryBackendMenu)),
-				sysresource.TypeIn(string(enums.ResourceTypeDirectory), string(enums.ResourceTypeMenu)),
-				sysresource.StatusEQ(string(enums.StatusEnabled)),
-			).
-			Order(sysresource.BySortCode()).
-			All(ctx)
-		if err != nil {
-			return nil
-		}
+	if p.Status != "" {
+		q = q.Where("status = ?", p.Status)
 	}
-
-	return buildMenuTree(resources)
+	var rows []SysUser
+	q.Order("created_at DESC").Find(&rows)
+	vos := make([]*UserVO, len(rows))
+	for i, r := range rows {
+		vos[i] = entToVO(&r)
+	}
+	enrichNames(vos)
+	rm := batchRoleIDs(func() []string {
+		ids := make([]string, len(rows))
+		for i, r := range rows {
+			ids[i] = r.ID
+		}
+		return ids
+	}())
+	for _, v := range vos {
+		v.RoleIDs = rm[v.ID]
+	}
+	return vos
 }
 
-// ---------------------------------------------------------------------------
-// UserPermissions
-// ---------------------------------------------------------------------------
-
-func UserPermissions(c *gin.Context) []string {
-	userID := auth.GetLoginIDDefaultNull(c)
-	if userID == "" {
-		return nil
+func UserUpdateProfile(c *gin.Context, uid string, p *UpdateProfileParam) {
+	if uid == "" {
+		panic(exception.NewBusinessError("用户未登录", 401))
 	}
-	ctx := context.Background()
-
-	roleCodes := getUserRoleCodes(userID)
-	isSuperAdmin := false
-	for _, code := range roleCodes {
-		if code == constants.SUPER_ADMIN_CODE {
-			isSuperAdmin = true
-			break
-		}
+	up := map[string]interface{}{}
+	if p.Username != nil {
+		up["username"] = *p.Username
 	}
-
-	permSet := make(map[string]struct{})
-
-	if isSuperAdmin {
-		// Return all permissions in the system
-		allRolePerms, err := db.Client.RelRolePermission.Query().All(ctx)
-		if err == nil {
-			for _, p := range allRolePerms {
-				permSet[p.PermissionCode] = struct{}{}
-			}
-		}
-		allDirectPerms, err := db.Client.RelUserPermission.Query().All(ctx)
-		if err == nil {
-			for _, p := range allDirectPerms {
-				permSet[p.PermissionCode] = struct{}{}
-			}
-		}
-	} else {
-		roleIDs := getUserAllRoleIDs(userID)
-		if len(roleIDs) > 0 {
-			perms, err := db.Client.RelRolePermission.Query().
-				Where(relrolepermission.RoleIDIn(roleIDs...)).
-				All(ctx)
-			if err == nil {
-				for _, p := range perms {
-					permSet[p.PermissionCode] = struct{}{}
-				}
-			}
-		}
-		directPerms, err := db.Client.RelUserPermission.Query().
-			Where(reluserpermission.UserID(userID)).
-			All(ctx)
-		if err == nil {
-			for _, p := range directPerms {
-				permSet[p.PermissionCode] = struct{}{}
-			}
-		}
+	if p.Nickname != nil {
+		up["nickname"] = *p.Nickname
 	}
-
-	result := make([]string, 0, len(permSet))
-	for code := range permSet {
-		result = append(result, code)
+	if p.Motto != nil {
+		up["motto"] = *p.Motto
 	}
-	sort.Strings(result)
-	return result
+	if p.Gender != nil {
+		up["gender"] = *p.Gender
+	}
+	if p.Birthday != "" {
+		up["birthday"] = parseDate(p.Birthday)
+	}
+	if p.Email != nil {
+		up["email"] = *p.Email
+	}
+	if p.Github != nil {
+		up["github"] = *p.Github
+	}
+	if p.Phone != nil {
+		up["phone"] = *p.Phone
+	}
+	up["updated_at"] = time.Now()
+	db.DB.WithContext(context.Background()).Model(&SysUser{}).Where("id = ?", uid).Updates(up)
 }
 
-// ---------------------------------------------------------------------------
-// UserUpdateProfile
-// ---------------------------------------------------------------------------
+func UserUpdateAvatar(c *gin.Context, uid, avatar string) {
+	if uid == "" {
+		panic(exception.NewBusinessError("用户未登录", 401))
+	}
+	db.DB.WithContext(context.Background()).Model(&SysUser{}).Where("id = ?", uid).Update("avatar", avatar)
+}
 
-func UserUpdateProfile(c *gin.Context, param *UpdateProfileParam) {
-	userID := auth.GetLoginIDDefaultNull(c)
-	if userID == "" {
+func UserUpdatePassword(c *gin.Context, uid string, p *UpdatePasswordParam) {
+	if uid == "" {
 		panic(exception.NewBusinessError("用户未登录", 401))
 	}
 	ctx := context.Background()
-
-	// Check username uniqueness if changed
-	if param.Username != nil && *param.Username != "" {
-		exists, err := db.Client.SysUser.Query().
-			Where(sysuser.And(
-				sysuser.UsernameEQ(*param.Username),
-				sysuser.IDNEQ(userID),
-			)).
-			Exist(ctx)
-		if err == nil && exists {
-			panic(exception.NewBusinessError("账号已存在", 400))
-		}
-	}
-
-	now := time.Now()
-	builder := db.Client.SysUser.UpdateOneID(userID).SetUpdatedAt(now)
-
-	if param.Username != nil {
-		builder.SetNillableUsername(param.Username)
-	}
-	if param.Nickname != nil {
-		builder.SetNillableNickname(param.Nickname)
-	}
-	if param.Motto != nil {
-		builder.SetNillableMotto(param.Motto)
-	}
-	if param.Gender != nil {
-		builder.SetNillableGender(param.Gender)
-	}
-	if param.Birthday != "" {
-		builder.SetNillableBirthday(parseDate(param.Birthday))
-	}
-	if param.Email != nil {
-		builder.SetNillableEmail(param.Email)
-	}
-	if param.Github != nil {
-		builder.SetNillableGithub(param.Github)
-	}
-	if param.Phone != nil {
-		builder.SetNillablePhone(param.Phone)
-	}
-
-	_, err := builder.Save(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("更新个人信息失败: "+err.Error(), 500))
-	}
-}
-
-// ---------------------------------------------------------------------------
-// UserUpdateAvatar
-// ---------------------------------------------------------------------------
-
-func UserUpdateAvatar(c *gin.Context, param *UpdateAvatarParam) {
-	userID := auth.GetLoginIDDefaultNull(c)
-	if userID == "" {
-		panic(exception.NewBusinessError("用户未登录", 401))
-	}
-	ctx := context.Background()
-
-	err := db.Client.SysUser.UpdateOneID(userID).
-		SetAvatar(param.Avatar).
-		Exec(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("更新头像失败: "+err.Error(), 500))
-	}
-}
-
-// ---------------------------------------------------------------------------
-// UserUpdatePassword
-// ---------------------------------------------------------------------------
-
-func UserUpdatePassword(c *gin.Context, param *UpdatePasswordParam) {
-	userID := auth.GetLoginIDDefaultNull(c)
-	if userID == "" {
-		panic(exception.NewBusinessError("用户未登录", 401))
-	}
-	ctx := context.Background()
-
-	entity, err := db.Client.SysUser.Get(ctx, userID)
-	if err != nil {
-		if ent.IsNotFound(err) {
+	var e SysUser
+	if err := db.DB.WithContext(ctx).First(&e, "id = ?", uid).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
 			panic(exception.NewBusinessError("用户不存在", 404))
 		}
 		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
 	}
-
-	if entity.Password == nil || *entity.Password == "" {
+	if e.Password == nil || *e.Password == "" {
 		panic(exception.NewBusinessError("未设置密码，无法修改", 400))
 	}
-
-	currentPassword := utils.Decrypt(param.CurrentPassword)
-	err = bcrypt.CompareHashAndPassword([]byte(*entity.Password), []byte(currentPassword))
-	if err != nil {
+	if bcrypt.CompareHashAndPassword([]byte(*e.Password), []byte(utils.Decrypt(p.CurrentPassword))) != nil {
 		panic(exception.NewBusinessError("当前密码不正确", 400))
 	}
-
-	newPassword := utils.Decrypt(param.NewPassword)
-	hashed, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-	if err != nil {
-		panic(exception.NewBusinessError("密码加密失败", 500))
-	}
-
-	err = db.Client.SysUser.UpdateOneID(userID).
-		SetPassword(string(hashed)).
-		Exec(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("修改密码失败: "+err.Error(), 500))
-	}
-
-	auth.Kickout(userID)
+	h, _ := bcrypt.GenerateFromPassword([]byte(utils.Decrypt(p.NewPassword)), bcrypt.DefaultCost)
+	db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", uid).Update("password", string(h))
 }
 
-// ---------------------------------------------------------------------------
-// Menu tree helpers
-// ---------------------------------------------------------------------------
+type rawResource struct {
+	ID            string
+	ParentID      *string
+	Code          string
+	Name          string
+	Category      string
+	Type          string
+	RoutePath     *string
+	ComponentPath *string
+	RedirectPath  *string
+	Icon          *string
+	Color         *string
+	IsVisible     string
+	IsCache       string
+	IsAffix       string
+	IsBreadcrumb  string
+	ExternalURL   *string
+	Description   *string
+	SortCode      int
+	Status        string
+}
 
-func buildMenuTree(resources []*ent.SysResource) []map[string]interface{} {
-	childrenMap := make(map[string][]*ent.SysResource)
+func UserGrantRoles(c *gin.Context, userID string, roleIDs []string, loginUserID string) {
+	UserGrantRole(c, &GrantRoleParam{
+		UserID:  userID,
+		RoleIDs: roleIDs,
+	})
+}
+
+func UserGrantPermissions(c *gin.Context, userID string, permissions []PermissionItem, loginUserID string) {
+	UserGrantPermission(c, &GrantUserPermissionParam{
+		UserID:      userID,
+		Permissions: permissions,
+	})
+}
+
+func UserOwnRoles(c *gin.Context, uid string) gin.H {
+	roleIDs := UserOwnRoleIDs(c, uid)
+	return gin.H{"code": 200, "message": "请求成功", "success": true, "data": roleIDs}
+}
+
+func UserCurrent(c *gin.Context, userID string) *UserVO {
+	if userID == "" {
+		return nil
+	}
+	return UserDetail(c, userID)
+}
+
+func UserMenus(c *gin.Context, userID string) []map[string]interface{} {
+	if userID == "" {
+		return make([]map[string]interface{}, 0)
+	}
+
+	roleIDs := UserOwnRoleIDs(c, userID)
+	if len(roleIDs) == 0 {
+		return make([]map[string]interface{}, 0)
+	}
+
+	var rr []RelRoleResource
+	db.DB.Where("role_id IN ?", roleIDs).Find(&rr)
+	if len(rr) == 0 {
+		return make([]map[string]interface{}, 0)
+	}
+
+	resourceIDs := make([]string, len(rr))
+	for i, r := range rr {
+		resourceIDs[i] = r.ResourceID
+	}
+
+	var resources []rawResource
+	db.DB.Table("sys_resource").Where("id IN ? AND status = ?", resourceIDs, "ENABLED").Order("sort_code ASC").Find(&resources)
+
+	cm := make(map[string][]rawResource)
 	for _, r := range resources {
 		pid := ""
-		if r.ParentID != nil && *r.ParentID != "0" {
+		if r.ParentID != nil && *r.ParentID != "" {
 			pid = *r.ParentID
 		}
-		childrenMap[pid] = append(childrenMap[pid], r)
+		cm[pid] = append(cm[pid], r)
 	}
-
-	// Sort each group by sort_code
-	for _, children := range childrenMap {
-		sort.Slice(children, func(i, j int) bool {
-			return children[i].SortCode < children[j].SortCode
-		})
-	}
-
-	return buildMenuChildren(childrenMap, "")
+	return buildUserMenuTree(cm, "")
 }
 
-func buildMenuChildren(childrenMap map[string][]*ent.SysResource, parentID string) []map[string]interface{} {
-	children := childrenMap[parentID]
-	result := make([]map[string]interface{}, 0, len(children))
-	for _, r := range children {
-		node := resourceToNode(r)
-		node["children"] = buildMenuChildren(childrenMap, r.ID)
-		result = append(result, node)
+func buildUserMenuTree(cm map[string][]rawResource, pid string) []map[string]interface{} {
+	cs := cm[pid]
+	r := make([]map[string]interface{}, 0, len(cs))
+	for _, c := range cs {
+		n := map[string]interface{}{
+			"id": c.ID, "code": c.Code, "name": c.Name, "category": c.Category, "type": c.Type,
+			"route_path": c.RoutePath, "component_path": c.ComponentPath, "redirect_path": c.RedirectPath,
+			"icon": c.Icon, "color": c.Color, "is_visible": c.IsVisible, "is_cache": c.IsCache,
+			"is_affix": c.IsAffix, "is_breadcrumb": c.IsBreadcrumb, "external_url": c.ExternalURL,
+			"sort_code": c.SortCode, "status": c.Status,
+		}
+		if c.ParentID != nil {
+			n["parent_id"] = *c.ParentID
+		} else {
+			n["parent_id"] = nil
+		}
+		if c.Description != nil {
+			n["description"] = *c.Description
+		}
+		n["children"] = buildUserMenuTree(cm, c.ID)
+		r = append(r, n)
 	}
-	return result
+	return r
 }
 
-func resourceToNode(r *ent.SysResource) map[string]interface{} {
-	node := map[string]interface{}{
-		"id":             r.ID,
-		"code":           r.Code,
-		"name":           r.Name,
-		"category":       r.Category,
-		"type":           r.Type,
-		"route_path":     r.RoutePath,
-		"component_path": r.ComponentPath,
-		"redirect_path":  r.RedirectPath,
-		"icon":           r.Icon,
-		"color":          r.Color,
-		"is_visible":     r.IsVisible,
-		"is_cache":       r.IsCache,
-		"is_affix":       r.IsAffix,
-		"is_breadcrumb":  r.IsBreadcrumb,
-		"external_url":   r.ExternalURL,
-		"sort_code":      r.SortCode,
-		"status":         r.Status,
+func UserPermissions(c *gin.Context, userID string) []string {
+	if userID == "" {
+		return make([]string, 0)
 	}
-	if r.ParentID != nil {
-		node["parent_id"] = *r.ParentID
-	} else {
-		node["parent_id"] = nil
+
+	roleIDs := UserOwnRoleIDs(c, userID)
+	var permCodes []string
+
+	if len(roleIDs) > 0 {
+		var rp []RelRolePermission
+		db.DB.Where("role_id IN ?", roleIDs).Select("DISTINCT permission_code").Find(&rp)
+		for _, p := range rp {
+			permCodes = append(permCodes, p.PermissionCode)
+		}
 	}
-	if r.Description != nil {
-		node["description"] = *r.Description
+
+	var up []RelUserPermission
+	db.DB.Where("user_id = ?", userID).Select("DISTINCT permission_code").Find(&up)
+	for _, p := range up {
+		permCodes = append(permCodes, p.PermissionCode)
 	}
-	if r.Extra != nil {
-		node["extra"] = *r.Extra
-	}
-	return node
+
+	return permCodes
 }

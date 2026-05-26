@@ -1,440 +1,197 @@
-package role
+﻿package role
 
 import (
 	"context"
 	"encoding/json"
 	"time"
 
+	"gorm.io/gorm"
+
 	"hei-gin/core/db"
 	"hei-gin/core/exception"
 	"hei-gin/core/result"
 	"hei-gin/core/utils"
-	ent "hei-gin/ent/gen"
-	"hei-gin/ent/gen/relrolepermission"
-	"hei-gin/ent/gen/relroleresource"
-	"hei-gin/ent/gen/reluserrole"
-	"hei-gin/ent/gen/sysresource"
-	"hei-gin/ent/gen/sysrole"
+	userModel "hei-gin/modules/sys/user"
 
-	"entgo.io/ent/dialect/sql"
 	"github.com/gin-gonic/gin"
 )
 
-// entToVO converts an ent SysRole entity to a RoleVO.
-func entToVO(entity *ent.SysRole) *RoleVO {
-	if entity == nil {
-		return nil
-	}
+func entToVO(entity *SysRole) *RoleVO {
+	if entity == nil { return nil }
 	return &RoleVO{
-		ID:          entity.ID,
-		Code:        entity.Code,
-		Name:        entity.Name,
-		Category:    entity.Category,
-		Description: entity.Description,
-		Status:      entity.Status,
-		SortCode:    entity.SortCode,
-		Extra:       entity.Extra,
-		CreatedAt:   formatTime(entity.CreatedAt),
-		CreatedBy:   entity.CreatedBy,
-		UpdatedAt:   formatTime(entity.UpdatedAt),
-		UpdatedBy:   entity.UpdatedBy,
+		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
+		Description: entity.Description, Status: entity.Status, SortCode: entity.SortCode,
+		Extra: entity.Extra, CreatedAt: fmtTime(entity.CreatedAt),
+		CreatedBy: entity.CreatedBy, UpdatedAt: fmtTime(entity.UpdatedAt),
+		UpdatedBy: entity.UpdatedBy,
 	}
 }
 
-// formatTime formats a *time.Time to a string in the "2006-01-02 15:04:05" layout.
-// Returns an empty string if t is nil.
-func formatTime(t *time.Time) string {
-	if t == nil {
-		return ""
-	}
-	return t.Format("2006-01-02 15:04:05")
-}
+func fmtTime(t *time.Time) string { if t == nil { return "" }; return t.Format("2006-01-02 15:04:05") }
 
-// RolePage returns a paginated list of roles.
 func RolePage(c *gin.Context, param *RolePageParam) gin.H {
 	ctx := context.Background()
-	if param.Current < 1 {
-		param.Current = 1
-	}
-	if param.Size < 1 {
-		param.Size = 10
-	}
-	if param.Size > 100 {
-		param.Size = 100
-	}
+	if param.Current < 1 { param.Current = 1 }
+	if param.Size < 1 { param.Size = 10 }
+	if param.Size > 100 { param.Size = 100 }
 
-	offset := (param.Current - 1) * param.Size
+	var total int64
+	db.DB.WithContext(ctx).Model(&SysRole{}).Count(&total)
 
-	total, err := db.Client.SysRole.Query().Count(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("查询角色列表失败: "+err.Error(), 500))
-	}
-
-	records, err := db.Client.SysRole.Query().
-		Order(sysrole.ByCreatedAt(sql.OrderDesc())).
-		Limit(param.Size).
-		Offset(offset).
-		All(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("查询角色列表失败: "+err.Error(), 500))
-	}
+	var records []SysRole
+	db.DB.WithContext(ctx).Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
 
 	vos := make([]*RoleVO, 0, len(records))
-	for _, r := range records {
-		vos = append(vos, entToVO(r))
-	}
-
+	for _, r := range records { vos = append(vos, entToVO(&r)) }
 	return result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
-// RoleCreate creates a new role.
 func RoleCreate(c *gin.Context, vo *RoleVO, userID string) {
 	ctx := context.Background()
 	now := time.Now()
-
-	builder := db.Client.SysRole.Create().
-		SetID(utils.GenerateID()).
-		SetCode(vo.Code).
-		SetName(vo.Name).
-		SetCategory(vo.Category).
-		SetSortCode(vo.SortCode).
-		SetCreatedAt(now).
-		SetUpdatedAt(now)
-
-	if vo.Description != nil {
-		builder.SetNillableDescription(vo.Description)
-	}
-	if vo.Status != "" {
-		builder.SetStatus(vo.Status)
-	}
-	if vo.Extra != nil {
-		builder.SetNillableExtra(vo.Extra)
-	}
-	if userID != "" {
-		builder.SetCreatedBy(userID).SetUpdatedBy(userID)
-	}
-
-	_, err := builder.Save(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("添加角色失败: "+err.Error(), 500))
-	}
+	e := SysRole{ID: utils.GenerateID(), Code: vo.Code, Name: vo.Name, Category: vo.Category, SortCode: vo.SortCode, Status: "ENABLED", CreatedAt: &now, UpdatedAt: &now}
+	if vo.Description != nil { e.Description = vo.Description }
+	if vo.Status != "" { e.Status = vo.Status }
+	if vo.Extra != nil { e.Extra = vo.Extra }
+	if userID != "" { e.CreatedBy = &userID; e.UpdatedBy = &userID }
+	if err := db.DB.WithContext(ctx).Create(&e).Error; err != nil { panic(exception.NewBusinessError("添加角色失败: "+err.Error(), 500)) }
 }
 
-// RoleModify updates an existing role.
 func RoleModify(c *gin.Context, vo *RoleVO, userID string) {
 	ctx := context.Background()
-	if vo.ID == "" {
-		panic(exception.NewBusinessError("ID不能为空", 400))
-	}
+	if vo.ID == "" { panic(exception.NewBusinessError("ID不能为空", 400)) }
 
-	// Verify the role exists
-	_, err := db.Client.SysRole.Get(ctx, vo.ID)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			panic(exception.NewBusinessError("数据不存在", 400))
-		}
+	var e SysRole
+	if err := db.DB.WithContext(ctx).First(&e, "id = ?", vo.ID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound { panic(exception.NewBusinessError("数据不存在", 400)) }
 		panic(exception.NewBusinessError("查询角色失败: "+err.Error(), 500))
 	}
 
-	now := time.Now()
-	builder := db.Client.SysRole.UpdateOneID(vo.ID).
-		SetCode(vo.Code).
-		SetName(vo.Name).
-		SetCategory(vo.Category).
-		SetSortCode(vo.SortCode).
-		SetUpdatedAt(now)
-
-	if vo.Description != nil {
-		builder.SetNillableDescription(vo.Description)
-	}
-	if vo.Status != "" {
-		builder.SetStatus(vo.Status)
-	}
-	if vo.Extra != nil {
-		builder.SetNillableExtra(vo.Extra)
-	}
-	if userID != "" {
-		builder.SetUpdatedBy(userID)
-	}
-
-	_, err = builder.Save(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("编辑角色失败: "+err.Error(), 500))
-	}
+	up := map[string]interface{}{"code": vo.Code, "name": vo.Name, "category": vo.Category, "sort_code": vo.SortCode, "updated_at": time.Now()}
+	if vo.Description != nil { up["description"] = *vo.Description }
+	if vo.Status != "" { up["status"] = vo.Status }
+	if vo.Extra != nil { up["extra"] = *vo.Extra }
+	if userID != "" { up["updated_by"] = userID }
+	if err := db.DB.WithContext(ctx).Model(&SysRole{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil { panic(exception.NewBusinessError("编辑角色失败: "+err.Error(), 500)) }
 }
 
-// RoleRemove deletes roles by IDs.
 func RoleRemove(c *gin.Context, ids []string) {
+	if len(ids) == 0 { return }
 	ctx := context.Background()
-	if len(ids) == 0 {
-		return
-	}
 
-	// Check for associated users
-	count, err := db.Client.RelUserRole.Query().
-		Where(reluserrole.RoleIDIn(ids...)).
-		Count(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("查询角色关联用户失败: "+err.Error(), 500))
-	}
-	if count > 0 {
-		panic(exception.NewBusinessError("角色存在关联用户，无法删除", 400))
-	}
+	var cnt int64
+	db.DB.WithContext(ctx).Model(&userModel.RelUserRole{}).Where("role_id IN ?", ids).Count(&cnt)
+	if cnt > 0 { panic(exception.NewBusinessError("角色存在关联用户，无法删除", 400)) }
 
-	tx, err := db.Client.Tx(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
-	}
-
-	// Delete RelRolePermission
-	_, err = tx.RelRolePermission.Delete().
-		Where(relrolepermission.RoleIDIn(ids...)).
-		Exec(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("删除角色权限失败: "+err.Error(), 500))
-	}
-
-	// Delete RelRoleResource
-	_, err = tx.RelRoleResource.Delete().
-		Where(relroleresource.RoleIDIn(ids...)).
-		Exec(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("删除角色资源失败: "+err.Error(), 500))
-	}
-
-	// Delete SysRole
-	_, err = tx.SysRole.Delete().
-		Where(sysrole.IDIn(ids...)).
-		Exec(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("删除角色失败: "+err.Error(), 500))
-	}
-
-	if err := tx.Commit(); err != nil {
-		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
-	}
+	tx := db.DB.WithContext(ctx).Begin()
+	tx.Where("role_id IN ?", ids).Delete(&userModel.RelRolePermission{})
+	tx.Where("role_id IN ?", ids).Delete(&userModel.RelRoleResource{})
+	tx.Where("role_id IN ?", ids).Delete(&userModel.RelUserRole{})
+	tx.Where("id IN ?", ids).Delete(&SysRole{})
+	if err := tx.Commit().Error; err != nil { panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500)) }
 }
 
-// RoleDetail returns a single role by ID.
 func RoleDetail(c *gin.Context, id string) *RoleVO {
+	if id == "" { return nil }
 	ctx := context.Background()
-	if id == "" {
-		return nil
-	}
-
-	entity, err := db.Client.SysRole.Get(ctx, id)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil
-		}
+	var e SysRole
+	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound { return nil }
 		panic(exception.NewBusinessError("查询角色详情失败: "+err.Error(), 500))
 	}
-
-	return entToVO(entity)
+	return entToVO(&e)
 }
 
-// RoleGrantPermissions grants permissions to a role by replacing all existing permissions.
-func RoleGrantPermissions(c *gin.Context, roleID string, permissions []PermissionItem, userID string) {
+func RoleAssignResource(c *gin.Context, roleID string, resourceIDs []string) {
+	if roleID == "" { panic(exception.NewBusinessError("角色ID不能为空", 400)) }
 	ctx := context.Background()
 
-	tx, err := db.Client.Tx(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
+	uIDs := make([]string, 0)
+	seen := make(map[string]bool)
+	for _, id := range resourceIDs { if !seen[id] { seen[id] = true; uIDs = append(uIDs, id) } }
+
+	tx := db.DB.WithContext(ctx).Begin()
+	tx.Where("role_id = ?", roleID).Delete(&userModel.RelRoleResource{})
+	for _, id := range uIDs { tx.Create(&userModel.RelRoleResource{ID: utils.GenerateID(), RoleID: roleID, ResourceID: id}) }
+
+	type rr struct{ ID string; Extra *string }
+	var res []rr
+	tx.Table("sys_resource").Where("id IN ? AND extra IS NOT NULL AND extra != ''", uIDs).Find(&res)
+
+	var existingPerms []userModel.RelRolePermission
+	tx.Where("role_id = ?", roleID).Select("permission_code").Find(&existingPerms)
+	epm := make(map[string]bool)
+	for _, p := range existingPerms { epm[p.PermissionCode] = true }
+
+	for _, r := range res {
+		if r.Extra == nil || *r.Extra == "" { continue }
+		var em map[string]interface{}
+		if err := json.Unmarshal([]byte(*r.Extra), &em); err != nil { continue }
+		pc, ok := em["permission_code"].(string)
+		if !ok || pc == "" || epm[pc] { continue }
+		tx.Create(&userModel.RelRolePermission{ID: utils.GenerateID(), RoleID: roleID, PermissionCode: pc, Scope: "ALL"})
 	}
-
-	// Delete existing permissions
-	_, err = tx.RelRolePermission.Delete().
-		Where(relrolepermission.RoleID(roleID)).
-		Exec(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("删除角色权限失败: "+err.Error(), 500))
-	}
-
-	// Recreate permissions
-	for _, item := range permissions {
-		builder := tx.RelRolePermission.Create().
-			SetID(utils.GenerateID()).
-			SetRoleID(roleID).
-			SetPermissionCode(item.PermissionCode).
-			SetScope(item.Scope)
-
-		if item.CustomScopeGroupIds != nil {
-			builder.SetNillableCustomScopeGroupIds(item.CustomScopeGroupIds)
-		}
-		if item.CustomScopeOrgIds != nil {
-			builder.SetNillableCustomScopeOrgIds(item.CustomScopeOrgIds)
-		}
-
-		_, err = builder.Save(ctx)
-		if err != nil {
-			tx.Rollback()
-			panic(exception.NewBusinessError("分配角色权限失败: "+err.Error(), 500))
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
-	}
+	if err := tx.Commit().Error; err != nil { panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500)) }
 }
 
-// RoleGrantResources grants resources to a role, and auto-adds missing button permissions.
-func RoleGrantResources(c *gin.Context, roleID string, resourceIDs []string, permissions []ButtonPermissionScope) {
+func RoleAssignPermission(c *gin.Context, roleID string, permissions []userModel.PermissionItem) {
+	if roleID == "" { panic(exception.NewBusinessError("角色ID不能为空", 400)) }
 	ctx := context.Background()
-	// Deduplicate resource IDs
-	dedupMap := make(map[string]struct{})
-	for _, id := range resourceIDs {
-		dedupMap[id] = struct{}{}
-	}
-	uniqueIDs := make([]string, 0, len(dedupMap))
-	for id := range dedupMap {
-		uniqueIDs = append(uniqueIDs, id)
-	}
 
-	tx, err := db.Client.Tx(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("创建事务失败: "+err.Error(), 500))
+	tx := db.DB.WithContext(ctx).Begin()
+	tx.Where("role_id = ?", roleID).Delete(&userModel.RelRolePermission{})
+	for _, p := range permissions {
+		r := userModel.RelRolePermission{ID: utils.GenerateID(), RoleID: roleID, PermissionCode: p.PermissionCode, Scope: p.Scope}
+		if p.CustomScopeGroupIds != nil { r.CustomScopeGroupIds = p.CustomScopeGroupIds }
+		if p.CustomScopeOrgIds != nil { r.CustomScopeOrgIds = p.CustomScopeOrgIds }
+		tx.Create(&r)
 	}
-
-	// Delete existing RelRoleResource
-	_, err = tx.RelRoleResource.Delete().
-		Where(relroleresource.RoleID(roleID)).
-		Exec(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("删除角色资源失败: "+err.Error(), 500))
-	}
-
-	// Recreate RelRoleResource
-	for _, id := range uniqueIDs {
-		_, err := tx.RelRoleResource.Create().
-			SetID(utils.GenerateID()).
-			SetRoleID(roleID).
-			SetResourceID(id).
-			Save(ctx)
-		if err != nil {
-			tx.Rollback()
-			panic(exception.NewBusinessError("分配角色资源失败: "+err.Error(), 500))
-		}
-	}
-
-	// Query SysResource with extra not null
-	resources, err := tx.SysResource.Query().
-		Where(
-			sysresource.IDIn(uniqueIDs...),
-			sysresource.ExtraNotNil(),
-		).
-		All(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("查询资源扩展信息失败: "+err.Error(), 500))
-	}
-
-	// Get existing permission codes for this role
-	existingPerms, err := tx.RelRolePermission.Query().
-		Where(relrolepermission.RoleID(roleID)).
-		Select(relrolepermission.FieldPermissionCode).
-		All(ctx)
-	if err != nil {
-		tx.Rollback()
-		panic(exception.NewBusinessError("查询角色权限失败: "+err.Error(), 500))
-	}
-	existingPermMap := make(map[string]bool)
-	for _, p := range existingPerms {
-		existingPermMap[p.PermissionCode] = true
-	}
-
-	// Add missing button permissions extracted from resource extra JSON
-	for _, resource := range resources {
-		if resource.Extra == nil || *resource.Extra == "" {
-			continue
-		}
-		var extraMap map[string]interface{}
-		if err := json.Unmarshal([]byte(*resource.Extra), &extraMap); err != nil {
-			continue
-		}
-		permCode, ok := extraMap["permission_code"].(string)
-		if !ok || permCode == "" {
-			continue
-		}
-		if existingPermMap[permCode] {
-			continue
-		}
-		_, err := tx.RelRolePermission.Create().
-			SetID(utils.GenerateID()).
-			SetRoleID(roleID).
-			SetPermissionCode(permCode).
-			SetScope("ALL").
-			Save(ctx)
-		if err != nil {
-			tx.Rollback()
-			panic(exception.NewBusinessError("分配角色权限失败: "+err.Error(), 500))
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
-	}
+	if err := tx.Commit().Error; err != nil { panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500)) }
 }
 
-// RoleOwnPermissionCodes returns the permission codes owned by a role.
 func RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
 	ctx := context.Background()
-	perms, err := db.Client.RelRolePermission.Query().
-		Where(relrolepermission.RoleID(roleID)).
-		Select(relrolepermission.FieldPermissionCode).
-		All(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("查询角色权限失败: "+err.Error(), 500))
-	}
-
-	codes := make([]string, 0, len(perms))
-	for _, p := range perms {
-		codes = append(codes, p.PermissionCode)
-	}
+	var perms []userModel.RelRolePermission
+	db.DB.WithContext(ctx).Where("role_id = ?", roleID).Select("permission_code").Find(&perms)
+	codes := make([]string, len(perms))
+	for i, p := range perms { codes[i] = p.PermissionCode }
 	return codes
 }
 
-// RoleOwnPermissionDetails returns detailed permission info (code, scope, custom fields) for a role.
 func RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interface{} {
 	ctx := context.Background()
-	perms, err := db.Client.RelRolePermission.Query().
-		Where(relrolepermission.RoleID(roleID)).
-		All(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("查询角色权限详情失败: "+err.Error(), 500))
+	var perms []userModel.RelRolePermission
+	db.DB.WithContext(ctx).Where("role_id = ?", roleID).Find(&perms)
+	r := make([]map[string]interface{}, len(perms))
+	for i, p := range perms {
+		r[i] = map[string]interface{}{"permission_code": p.PermissionCode, "scope": p.Scope, "custom_scope_group_ids": p.CustomScopeGroupIds, "custom_scope_org_ids": p.CustomScopeOrgIds}
 	}
-
-	result := make([]map[string]interface{}, 0, len(perms))
-	for _, p := range perms {
-		item := map[string]interface{}{
-			"permission_code":        p.PermissionCode,
-			"scope":                  p.Scope,
-			"custom_scope_group_ids": p.CustomScopeGroupIds,
-			"custom_scope_org_ids":   p.CustomScopeOrgIds,
-		}
-		result = append(result, item)
-	}
-	return result
+	return r
 }
 
-// RoleOwnResourceIDs returns the resource IDs owned by a role.
 func RoleOwnResourceIDs(c *gin.Context, roleID string) []string {
 	ctx := context.Background()
-	resources, err := db.Client.RelRoleResource.Query().
-		Where(relroleresource.RoleID(roleID)).
-		Select(relroleresource.FieldResourceID).
-		All(ctx)
-	if err != nil {
-		panic(exception.NewBusinessError("查询角色资源失败: "+err.Error(), 500))
-	}
-
-	ids := make([]string, 0, len(resources))
-	for _, r := range resources {
-		ids = append(ids, r.ResourceID)
-	}
+	var resources []userModel.RelRoleResource
+	db.DB.WithContext(ctx).Where("role_id = ?", roleID).Select("resource_id").Find(&resources)
+	ids := make([]string, len(resources))
+	for i, r := range resources { ids[i] = r.ResourceID }
 	return ids
+}
+
+func RoleGrantPermissions(c *gin.Context, roleID string, permissions []PermissionItem, userID string) {
+	// Convert PermissionItem to userModel.PermissionItem
+	items := make([]userModel.PermissionItem, len(permissions))
+	for i, p := range permissions {
+		items[i] = userModel.PermissionItem{
+			PermissionCode:      p.PermissionCode,
+			Scope:               p.Scope,
+			CustomScopeGroupIds: p.CustomScopeGroupIds,
+			CustomScopeOrgIds:   p.CustomScopeOrgIds,
+		}
+	}
+	RoleAssignPermission(c, roleID, items)
+}
+
+func RoleGrantResources(c *gin.Context, roleID string, resourceIDs []string, permissions []ButtonPermissionScope) {
+	RoleAssignResource(c, roleID, resourceIDs)
 }
