@@ -1,4 +1,4 @@
-﻿package position
+package position
 
 import (
 	"context"
@@ -11,25 +11,24 @@ import (
 	"hei-gin/core/result"
 	"hei-gin/core/utils"
 
+	"hei-gin/core/pojo"
+
 	"github.com/gin-gonic/gin"
 )
 
-func formatTime(t *time.Time) string { if t == nil { return "" }; return t.Format("2006-01-02 15:04:05") }
 
+
+func formatTime(t *time.Time) string { if t == nil { return "" }; return pojo.FormatDateTime(*t) }
 func entToVO(entity *SysPosition) *PositionVO {
 	if entity == nil { return nil }
-	vo := &PositionVO{ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category, Status: entity.Status, SortCode: entity.SortCode}
-	if entity.OrgID != nil { vo.OrgID = entity.OrgID }
-	if entity.GroupID != nil { vo.GroupID = entity.GroupID }
-	if entity.Description != nil { vo.Description = entity.Description }
-	if entity.Extra != nil { vo.Extra = entity.Extra }
-	if entity.CreatedAt != nil { vo.CreatedAt = entity.CreatedAt.Format("2006-01-02 15:04:05") }
-	if entity.CreatedBy != nil { vo.CreatedBy = entity.CreatedBy }
-	if entity.UpdatedAt != nil { vo.UpdatedAt = entity.UpdatedAt.Format("2006-01-02 15:04:05") }
-	if entity.UpdatedBy != nil { vo.UpdatedBy = entity.UpdatedBy }
-	return vo
+	return &PositionVO{
+		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
+		Description: entity.Description, Status: entity.Status, SortCode: entity.SortCode,
+		Extra: entity.Extra, CreatedAt: formatTime(entity.CreatedAt),
+		CreatedBy: entity.CreatedBy, UpdatedAt: formatTime(entity.UpdatedAt),
+		UpdatedBy: entity.UpdatedBy,
+	}
 }
-
 func Page(c *gin.Context, param *PositionPageParam) gin.H {
 	ctx := context.Background()
 	if param.Current < 1 { param.Current = 1 }
@@ -111,3 +110,4 @@ func Options(c *gin.Context) []*PositionVO {
 	for i, r := range records { vos[i] = entToVO(&r) }
 	return vos
 }
+

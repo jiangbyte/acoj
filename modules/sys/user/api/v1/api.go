@@ -4,6 +4,7 @@ import (
 	"hei-gin/core/auth"
 	middleware "hei-gin/core/auth/middleware"
 	"hei-gin/core/log"
+	"hei-gin/core/pojo"
 	"hei-gin/core/result"
 	user "hei-gin/modules/sys/user"
 
@@ -156,9 +157,7 @@ func modifyHandler(c *gin.Context) {
 
 // removeHandler handles POST /api/v1/sys/user/remove
 func removeHandler(c *gin.Context) {
-	var param struct {
-		IDs []string `json:"ids"`
-	}
+	var param pojo.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return

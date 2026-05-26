@@ -10,7 +10,10 @@ import (
 	"hei-gin/core/db"
 	"hei-gin/core/exception"
 	"hei-gin/core/result"
+	"hei-gin/core/enums"
 	"hei-gin/core/utils"
+
+	"hei-gin/core/pojo"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -34,18 +37,14 @@ var (
 	cacheExpiry  time.Time
 )
 
+func formatTime(t *time.Time) string { if t == nil { return "" }; return pojo.FormatDateTime(*t) }
 func fmtDate(t *time.Time) string {
 	if t == nil {
 		return ""
 	}
 	return t.Format("2006-01-02")
 }
-func fmtTime(t *time.Time) string {
-	if t == nil {
-		return ""
-	}
-	return t.Format("2006-01-02 15:04:05")
-}
+
 
 func parseDate(s string) *time.Time {
 	if s == "" {
@@ -67,9 +66,9 @@ func entToVO(e *SysUser) *UserVO {
 		Motto: e.Motto, Gender: e.Gender, Birthday: fmtDate(e.Birthday),
 		Email: e.Email, Github: e.Github, Phone: e.Phone,
 		OrgID: e.OrgID, PositionID: e.PositionID, GroupID: e.GroupID,
-		Status: e.Status, LastLoginAt: fmtTime(e.LastLoginAt), LastLoginIP: e.LastLoginIP,
-		LoginCount: e.LoginCount, CreatedAt: fmtTime(e.CreatedAt), CreatedBy: e.CreatedBy,
-		UpdatedAt: fmtTime(e.UpdatedAt), UpdatedBy: e.UpdatedBy,
+		Status: e.Status, LastLoginAt: formatTime(e.LastLoginAt), LastLoginIP: e.LastLoginIP,
+		LoginCount: e.LoginCount, CreatedAt: formatTime(e.CreatedAt), CreatedBy: e.CreatedBy,
+		UpdatedAt: formatTime(e.UpdatedAt), UpdatedBy: e.UpdatedBy,
 	}
 }
 
@@ -229,12 +228,12 @@ func UserPage(c *gin.Context, p *UserPageParam) gin.H {
 func UserCreate(c *gin.Context, v *UserVO, uid string) {
 	ctx := context.Background()
 	now := time.Now()
-	e := SysUser{ID: utils.GenerateID(), Status: "ACTIVE", CreatedAt: &now, UpdatedAt: &now}
+	e := SysUser{ID: utils.GenerateID(), Status: string(enums.UserStatusActive), CreatedAt: &now, UpdatedAt: &now}
 	if v.Username != nil {
 		var c int64
 		db.DB.WithContext(ctx).Model(&SysUser{}).Where("username = ?", *v.Username).Count(&c)
 		if c > 0 {
-			panic(exception.NewBusinessError("帐号已存在", 400))
+			panic(exception.NewBusinessError("账号已存在", 400))
 		}
 		e.Username = v.Username
 	}
@@ -325,7 +324,7 @@ func UserModify(c *gin.Context, v *UserVO, uid string) {
 		var c int64
 		db.DB.WithContext(ctx).Model(&SysUser{}).Where("username = ? AND id != ?", *v.Username, v.ID).Count(&c)
 		if c > 0 {
-			panic(exception.NewBusinessError("帐号已存在", 400))
+			panic(exception.NewBusinessError("账号已存在", 400))
 		}
 		up["username"] = *v.Username
 	}
@@ -630,7 +629,7 @@ func UserGrantPermissions(c *gin.Context, userID string, permissions []Permissio
 
 func UserOwnRoles(c *gin.Context, uid string) gin.H {
 	roleIDs := UserOwnRoleIDs(c, uid)
-	return gin.H{"code": 200, "message": "请求成功", "success": true, "data": roleIDs}
+	return gin.H{"code": 200, "message": "璇锋眰鎴愬姛", "success": true, "data": roleIDs}
 }
 
 func UserCurrent(c *gin.Context, userID string) *UserVO {
@@ -662,7 +661,7 @@ func UserMenus(c *gin.Context, userID string) []map[string]interface{} {
 	}
 
 	var resources []rawResource
-	db.DB.Table("sys_resource").Where("id IN ? AND status = ?", resourceIDs, "ENABLED").Order("sort_code ASC").Find(&resources)
+	db.DB.Table("sys_resource").Where("id IN ? AND status = ?", resourceIDs, string(enums.StatusEnabled)).Order("sort_code ASC").Find(&resources)
 
 	cm := make(map[string][]rawResource)
 	for _, r := range resources {
@@ -724,3 +723,4 @@ func UserPermissions(c *gin.Context, userID string) []string {
 
 	return permCodes
 }
+

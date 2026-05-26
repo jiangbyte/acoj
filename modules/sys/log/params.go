@@ -38,6 +38,9 @@ type LogDeleteByCategoryParam struct {
 	Category string `json:"category"`
 }
 
+
+type (
+)
 type BarChartData struct {
 	Days   []string         `json:"days"`
 	Series []CategorySeries `json:"series"`

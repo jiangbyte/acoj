@@ -1,4 +1,4 @@
-﻿package dict
+package dict
 
 import (
 	"context"
@@ -9,32 +9,46 @@ import (
 
 	"hei-gin/core/db"
 	"hei-gin/core/exception"
-	"hei-gin/core/result"
+
+	resultPkg "hei-gin/core/result"
+	"hei-gin/core/enums"
 	"hei-gin/core/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
-func formatTime(t *time.Time) string { if t == nil { return "" }; return t.Format("2006-01-02 15:04:05") }
 
-func safeStrPtr(s *string) string { if s == nil { return "" }; return *s }
 
-func Page(c *gin.Context, param *DictPageParam) gin.H {
+// Page handles GET /api/v1/sys/dict/page
+func Page(c *gin.Context, p *DictPageParam) gin.H {
 	ctx := context.Background()
-	if param.Current < 1 { param.Current = 1 }
-	if param.Size < 1 { param.Size = 10 }
+	if p.Current < 1 {
+		p.Current = 1
+	}
+	if p.Size < 1 || p.Size > 100 {
+		p.Size = 10
+	}
 
-	query := db.DB.WithContext(ctx).Model(&SysDict{})
-	if param.Keyword != "" { query = query.Where("label LIKE ? OR code LIKE ?", "%"+param.Keyword+"%", "%"+param.Keyword+"%") }
-	if param.Category != "" { query = query.Where("category = ?", param.Category) }
+	q := db.DB.WithContext(ctx).Model(&SysDict{})
+	if p.Keyword != "" {
+		like := "%" + p.Keyword + "%"
+		q = q.Where("code LIKE ? OR label LIKE ? OR value LIKE ?", like, like, like)
+	}
+	if p.Category != "" {
+		q = q.Where("category = ?", p.Category)
+	}
 
 	var total int64
-	query.Count(&total)
-	var records []SysDict
-	query.Order("sort_code ASC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
-	vos := make([]*DictVO, len(records))
-	for i, r := range records { vos[i] = entToVO(&r) }
-	return result.PageDataResult(c, vos, total, param.Current, param.Size)
+	q.Count(&total)
+
+	var rows []SysDict
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+
+	vos := make([]*DictVO, len(rows))
+	for i, r := range rows {
+		vos[i] = entToVO(&r)
+	}
+	return resultPkg.PageDataResult(c, vos, total, p.Current, p.Size)
 }
 
 func Tree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
@@ -69,7 +83,7 @@ func Create(c *gin.Context, vo *DictVO, userID string) {
 	dictCheckDuplicate(ctx, vo, "")
 	dictCheckCircularParent("", safeStrPtr(vo.ParentID))
 
-	entity := SysDict{ID: utils.GenerateID(), Code: vo.Code, Status: "ENABLED", SortCode: vo.SortCode, CreatedAt: &now, UpdatedAt: &now}
+	entity := SysDict{ID: utils.GenerateID(), Code: vo.Code, Status: string(enums.StatusEnabled), SortCode: vo.SortCode, CreatedAt: &now, UpdatedAt: &now}
 	if vo.Label != nil { entity.Label = vo.Label }
 	if vo.Value != nil { entity.Value = vo.Value }
 	if vo.Color != nil { entity.Color = vo.Color }
@@ -130,13 +144,14 @@ func Options(c *gin.Context, param *DictOptionsParam) []*DictVO {
 	return vos
 }
 
+func safeStrPtr(s *string) string { if s == nil { return "" }; return *s }
 func dictCheckDuplicate(ctx context.Context, vo *DictVO, excludeID string) {
 	if vo.Value != nil && *vo.Value != "" {
 		var cnt int64
 		q := db.DB.WithContext(ctx).Model(&SysDict{}).Where("parent_id = ?", vo.ParentID).Where("value = ?", *vo.Value)
 		if excludeID != "" { q = q.Where("id != ?", excludeID) }
 		q.Count(&cnt)
-		if cnt > 0 { panic(exception.NewBusinessError("同一父字典下已存在相同值 "+*vo.Value, 400)) }
+		if cnt > 0 { panic(exception.NewBusinessError("同一父字典下已存在相同值"+*vo.Value, 400)) }
 	}
 }
 
@@ -229,11 +244,11 @@ func DictGetLabel(c *gin.Context, typeCode, value string) gin.H {
 	ctx := context.Background()
 	var entity SysDict
 	if err := db.DB.WithContext(ctx).Where("parent_id IN (SELECT id FROM sys_dict WHERE code = ?)", typeCode).Where("value = ?", value).First(&entity).Error; err != nil {
-		return gin.H{"code": 200, "message": "请求成功", "success": true, "data": nil}
+		return gin.H{"code": 200, "message": "璇锋眰鎴愬姛", "success": true, "data": nil}
 	}
 	label := ""
 	if entity.Label != nil { label = *entity.Label }
-	return gin.H{"code": 200, "message": "请求成功", "success": true, "data": label}
+	return gin.H{"code": 200, "message": "璇锋眰鎴愬姛", "success": true, "data": label}
 }
 
 func DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
@@ -248,3 +263,4 @@ func DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
 	for i, r := range records { vos[i] = entToVO(&r) }
 	return vos
 }
+

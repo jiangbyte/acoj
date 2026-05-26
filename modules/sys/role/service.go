@@ -1,4 +1,4 @@
-﻿package role
+package role
 
 import (
 	"context"
@@ -6,50 +6,62 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-
-	"hei-gin/core/db"
+"hei-gin/core/db"
 	"hei-gin/core/exception"
-	"hei-gin/core/result"
+	resultPkg "hei-gin/core/result"
+	"hei-gin/core/enums"
 	"hei-gin/core/utils"
 	userModel "hei-gin/modules/sys/user"
 
+	"hei-gin/core/pojo"
+
 	"github.com/gin-gonic/gin"
 )
+
+func formatTime(t *time.Time) string { if t == nil { return "" }; return pojo.FormatDateTime(*t) }
+
+// RolePage handles GET /api/v1/sys/role/page
+func RolePage(c *gin.Context, p *RolePageParam) gin.H {
+	ctx := context.Background()
+	if p.Current < 1 {
+		p.Current = 1
+	}
+	if p.Size < 1 || p.Size > 100 {
+		p.Size = 10
+	}
+
+	q := db.DB.WithContext(ctx).Model(&SysRole{})
+
+	var total int64
+	q.Count(&total)
+
+	var rows []SysRole
+	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
+
+	vos := make([]*RoleVO, len(rows))
+	for i, r := range rows {
+		vos[i] = entToVO(&r)
+	}
+	return resultPkg.PageDataResult(c, vos, total, p.Current, p.Size)
+}
 
 func entToVO(entity *SysRole) *RoleVO {
 	if entity == nil { return nil }
 	return &RoleVO{
 		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
 		Description: entity.Description, Status: entity.Status, SortCode: entity.SortCode,
-		Extra: entity.Extra, CreatedAt: fmtTime(entity.CreatedAt),
-		CreatedBy: entity.CreatedBy, UpdatedAt: fmtTime(entity.UpdatedAt),
+		Extra: entity.Extra, CreatedAt: formatTime(entity.CreatedAt),
+		CreatedBy: entity.CreatedBy, UpdatedAt: formatTime(entity.UpdatedAt),
 		UpdatedBy: entity.UpdatedBy,
 	}
 }
 
-func fmtTime(t *time.Time) string { if t == nil { return "" }; return t.Format("2006-01-02 15:04:05") }
 
-func RolePage(c *gin.Context, param *RolePageParam) gin.H {
-	ctx := context.Background()
-	if param.Current < 1 { param.Current = 1 }
-	if param.Size < 1 { param.Size = 10 }
-	if param.Size > 100 { param.Size = 100 }
-
-	var total int64
-	db.DB.WithContext(ctx).Model(&SysRole{}).Count(&total)
-
-	var records []SysRole
-	db.DB.WithContext(ctx).Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
-
-	vos := make([]*RoleVO, 0, len(records))
-	for _, r := range records { vos = append(vos, entToVO(&r)) }
-	return result.PageDataResult(c, vos, total, param.Current, param.Size)
-}
 
 func RoleCreate(c *gin.Context, vo *RoleVO, userID string) {
 	ctx := context.Background()
 	now := time.Now()
-	e := SysRole{ID: utils.GenerateID(), Code: vo.Code, Name: vo.Name, Category: vo.Category, SortCode: vo.SortCode, Status: "ENABLED", CreatedAt: &now, UpdatedAt: &now}
+	e := SysRole{ID: utils.GenerateID(), Code: vo.Code, Name: vo.Name, Category: vo.Category, SortCode: vo.SortCode, Status: string(enums.StatusEnabled), CreatedAt: &now, UpdatedAt: &now}
 	if vo.Description != nil { e.Description = vo.Description }
 	if vo.Status != "" { e.Status = vo.Status }
 	if vo.Extra != nil { e.Extra = vo.Extra }

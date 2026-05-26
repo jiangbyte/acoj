@@ -3,6 +3,7 @@ package v1
 import (
 	"hei-gin/core/auth/middleware"
 	"hei-gin/core/log"
+	"hei-gin/core/pojo"
 	"hei-gin/core/result"
 	file "hei-gin/modules/sys/file"
 
@@ -84,9 +85,7 @@ func fileDetail(c *gin.Context) {
 
 // fileRemove handles POST /api/v1/sys/file/remove
 func fileRemove(c *gin.Context) {
-	var param struct {
-		IDs []string `json:"ids"`
-	}
+	var param pojo.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
@@ -98,9 +97,7 @@ func fileRemove(c *gin.Context) {
 
 // fileRemoveAbsolute handles POST /api/v1/sys/file/remove-absolute
 func fileRemoveAbsolute(c *gin.Context) {
-	var param struct {
-		IDs []string `json:"ids"`
-	}
+	var param pojo.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return

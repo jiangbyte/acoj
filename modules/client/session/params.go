@@ -36,6 +36,17 @@ type SessionAnalysisResult struct {
 	ProportionOfBAndC string `json:"proportion_of_b_and_c"`
 }
 
+type SessionExitParam struct {
+	UserID string `json:"user_id"`
+}
+
+type SessionExitTokenParam struct {
+	UserID string `json:"user_id"`
+	Token  string `json:"token"`
+}
+
+type (
+)
 type BarChartData struct {
 	Days   []string         `json:"days"`
 	Series []CategorySeries `json:"series"`
@@ -58,13 +69,4 @@ type CategoryTotal struct {
 type SessionChartData struct {
 	BarChart BarChartData `json:"bar_chart"`
 	PieChart PieChartData `json:"pie_chart"`
-}
-
-type SessionExitParam struct {
-	UserID string `json:"user_id"`
-}
-
-type SessionExitTokenParam struct {
-	UserID string `json:"user_id"`
-	Token  string `json:"token"`
 }

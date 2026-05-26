@@ -1,4 +1,4 @@
-﻿package org
+package org
 
 import (
 	"context"
@@ -10,19 +10,20 @@ import (
 	"hei-gin/core/db"
 	"hei-gin/core/exception"
 	"hei-gin/core/result"
+	"hei-gin/core/enums"
 	"hei-gin/core/utils"
 	groupModel "hei-gin/modules/sys/group"
 	posModel "hei-gin/modules/sys/position"
 	userModel "hei-gin/modules/sys/user"
 
+	"hei-gin/core/pojo"
+
 	"github.com/gin-gonic/gin"
 )
 
-func formatTime(t *time.Time) string {
-	if t == nil { return "" }
-	return t.Format("2006-01-02 15:04:05")
-}
 
+
+func formatTime(t *time.Time) string { if t == nil { return "" }; return pojo.FormatDateTime(*t) }
 func entToVO(entity *SysOrg) *OrgVO {
 	if entity == nil { return nil }
 	return &OrgVO{
@@ -153,7 +154,7 @@ func Create(c *gin.Context, vo *OrgVO, userID string) {
 		Code:      vo.Code,
 		Name:      vo.Name,
 		Category:  vo.Category,
-		Status:    "ENABLED",
+		Status: string(enums.StatusEnabled),
 		SortCode:  vo.SortCode,
 		CreatedAt: &now,
 		UpdatedAt: &now,

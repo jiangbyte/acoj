@@ -1,4 +1,4 @@
-﻿package v1
+package v1
 
 import (
 	"hei-gin/core/auth"
@@ -22,7 +22,7 @@ func RegisterRoutes(r *gin.Engine) {
 	// POST /api/v1/sys/dict/create
 	r.POST("/api/v1/sys/dict/create",
 		middleware.HeiCheckPermission([]string{"sys:dict:create"}),
-		log.SysLog("娣诲姞瀛楀吀"),
+		log.SysLog("添加字典"),
 		middleware.NoRepeat(3000),
 		dictCreate,
 	)
@@ -30,14 +30,14 @@ func RegisterRoutes(r *gin.Engine) {
 	// POST /api/v1/sys/dict/modify
 	r.POST("/api/v1/sys/dict/modify",
 		middleware.HeiCheckPermission([]string{"sys:dict:modify"}),
-		log.SysLog("缂栬緫瀛楀吀"),
+		log.SysLog("编辑字典"),
 		dictModify,
 	)
 
 	// POST /api/v1/sys/dict/remove
 	r.POST("/api/v1/sys/dict/remove",
 		middleware.HeiCheckPermission([]string{"sys:dict:remove"}),
-		log.SysLog("鍒犻櫎瀛楀吀"),
+		log.SysLog("删除字典"),
 		dictRemove,
 	)
 
@@ -76,7 +76,7 @@ func RegisterRoutes(r *gin.Engine) {
 func dictPage(c *gin.Context) {
 	var param dict.DictPageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "鍙傛暟閿欒: "+err.Error(), 400, nil))
+		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 
@@ -88,7 +88,7 @@ func dictPage(c *gin.Context) {
 func dictList(c *gin.Context) {
 	var param dict.DictListParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "鍙傛暟閿欒: "+err.Error(), 400, nil))
+		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 
@@ -100,7 +100,7 @@ func dictList(c *gin.Context) {
 func dictTree(c *gin.Context) {
 	var param dict.DictTreeParam
 	if err := c.ShouldBindQuery(&param); err != nil {
-		c.JSON(200, result.Failure(c, "鍙傛暟閿欒: "+err.Error(), 400, nil))
+		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 
@@ -112,7 +112,7 @@ func dictTree(c *gin.Context) {
 func dictCreate(c *gin.Context) {
 	var vo dict.DictVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "鍙傛暟閿欒: "+err.Error(), 400, nil))
+		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 
@@ -125,11 +125,11 @@ func dictCreate(c *gin.Context) {
 func dictModify(c *gin.Context) {
 	var vo dict.DictVO
 	if err := c.ShouldBindJSON(&vo); err != nil {
-		c.JSON(200, result.Failure(c, "鍙傛暟閿欒: "+err.Error(), 400, nil))
+		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	if vo.ID == "" {
-		c.JSON(200, result.Failure(c, "ID涓嶈兘涓虹┖", 400, nil))
+		c.JSON(200, result.Failure(c, "ID不能为空", 400, nil))
 		return
 	}
 
@@ -142,11 +142,11 @@ func dictModify(c *gin.Context) {
 func dictRemove(c *gin.Context) {
 	var param pojo.IdsParam
 	if err := c.ShouldBindJSON(&param); err != nil {
-		c.JSON(200, result.Failure(c, "鍙傛暟閿欒: "+err.Error(), 400, nil))
+		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	if len(param.IDs) == 0 {
-		c.JSON(200, result.Failure(c, "ids涓嶈兘涓虹┖", 400, nil))
+		c.JSON(200, result.Failure(c, "ids不能为空", 400, nil))
 		return
 	}
 
@@ -158,7 +158,7 @@ func dictRemove(c *gin.Context) {
 func dictDetail(c *gin.Context) {
 	id := c.Query("id")
 	if id == "" {
-		c.JSON(200, result.Failure(c, "id涓嶈兘涓虹┖", 400, nil))
+		c.JSON(200, result.Failure(c, "id不能为空", 400, nil))
 		return
 	}
 

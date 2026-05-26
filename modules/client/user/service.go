@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"hei-gin/core/db"
+	"hei-gin/core/enums"
 	"hei-gin/core/exception"
 	"hei-gin/core/utils"
 
@@ -73,7 +74,7 @@ func ClientUserCreate(c *gin.Context, vo *ClientUserVO, userID string) {
 
 	entity := ClientUser{
 		ID:        utils.GenerateID(),
-		Status:    "ACTIVE",
+		Status: string(enums.UserStatusActive),
 		CreatedAt: &now,
 		UpdatedAt: &now,
 	}

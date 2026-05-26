@@ -1,4 +1,4 @@
-﻿package group
+package group
 
 import (
 	"context"
@@ -10,13 +10,17 @@ import (
 	"hei-gin/core/db"
 	"hei-gin/core/exception"
 	"hei-gin/core/result"
+	"hei-gin/core/enums"
 	"hei-gin/core/utils"
+
+	"hei-gin/core/pojo"
 
 	"github.com/gin-gonic/gin"
 )
 
-func formatTime(t *time.Time) string { if t == nil { return "" }; return t.Format("2006-01-02 15:04:05") }
 
+
+func formatTime(t *time.Time) string { if t == nil { return "" }; return pojo.FormatDateTime(*t) }
 func entToVO(entity *SysGroup) *GroupVO {
 	if entity == nil { return nil }
 	return &GroupVO{
@@ -27,7 +31,6 @@ func entToVO(entity *SysGroup) *GroupVO {
 		UpdatedAt: formatTime(entity.UpdatedAt), UpdatedBy: entity.UpdatedBy,
 	}
 }
-
 func groupToVOMap(entity *SysGroup) map[string]interface{} {
 	n := map[string]interface{}{
 		"id": entity.ID, "code": entity.Code, "name": entity.Name, "category": entity.Category,
@@ -102,13 +105,13 @@ func Create(c *gin.Context, vo *GroupVO, userID string) {
 	now := time.Now()
 	entity := SysGroup{
 		ID: utils.GenerateID(), Code: vo.Code, Name: vo.Name, Category: vo.Category,
-		OrgID: vo.OrgID, Status: "ENABLED", SortCode: vo.SortCode, CreatedAt: &now, UpdatedAt: &now,
+		OrgID: vo.OrgID, Status: string(enums.StatusEnabled), SortCode: vo.SortCode, CreatedAt: &now, UpdatedAt: &now,
 	}
 	if vo.ParentID != nil { entity.ParentID = vo.ParentID }
 	if vo.Description != nil { entity.Description = vo.Description }
 	if vo.Extra != nil { entity.Extra = vo.Extra }
 	if userID != "" { entity.CreatedBy = &userID; entity.UpdatedBy = &userID }
-	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil { panic(exception.NewBusinessError("添加用户组失败: "+err.Error(), 500)) }
+	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil { panic(exception.NewBusinessError("添加用户组失败 "+err.Error(), 500)) }
 }
 
 func Modify(c *gin.Context, vo *GroupVO, userID string) {
@@ -116,7 +119,7 @@ func Modify(c *gin.Context, vo *GroupVO, userID string) {
 	var entity SysGroup
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { panic(exception.NewBusinessError("数据不存在", 400)) }
-		panic(exception.NewBusinessError("查询用户组失败: "+err.Error(), 500))
+		panic(exception.NewBusinessError("查询用户组失败 "+err.Error(), 500))
 	}
 
 	up := map[string]interface{}{
@@ -128,7 +131,7 @@ func Modify(c *gin.Context, vo *GroupVO, userID string) {
 	if vo.Extra != nil { up["extra"] = *vo.Extra } else { up["extra"] = nil }
 	if userID != "" { up["updated_by"] = userID }
 
-	if err := db.DB.WithContext(ctx).Model(&SysGroup{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil { panic(exception.NewBusinessError("编辑用户组失败: "+err.Error(), 500)) }
+	if err := db.DB.WithContext(ctx).Model(&SysGroup{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil { panic(exception.NewBusinessError("编辑用户组失败 "+err.Error(), 500)) }
 }
 
 func Remove(c *gin.Context, ids []string) {
@@ -140,7 +143,7 @@ func Remove(c *gin.Context, ids []string) {
 	db.DB.WithContext(ctx).Table("sys_user").Where("group_id IN ?", allIDs).Count(&userCount)
 	if userCount > 0 { panic(exception.NewBusinessError("用户组存在关联用户，无法删除", 400)) }
 
-	if err := db.DB.WithContext(ctx).Where("id IN ?", allIDs).Delete(&SysGroup{}).Error; err != nil { panic(exception.NewBusinessError("删除用户组失败: "+err.Error(), 500)) }
+	if err := db.DB.WithContext(ctx).Where("id IN ?", allIDs).Delete(&SysGroup{}).Error; err != nil { panic(exception.NewBusinessError("删除用户组失败 "+err.Error(), 500)) }
 }
 
 func Detail(c *gin.Context, id string) *GroupVO {
@@ -149,7 +152,7 @@ func Detail(c *gin.Context, id string) *GroupVO {
 	var entity SysGroup
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { return nil }
-		panic(exception.NewBusinessError("查询用户组详情失败: "+err.Error(), 500))
+		panic(exception.NewBusinessError("查询用户组详情失败 "+err.Error(), 500))
 	}
 	return entToVO(&entity)
 }
@@ -176,3 +179,4 @@ func collectDescendantGroupIDs(ids []string) []string {
 	}
 	r := make([]string, 0, len(allIDs)); for id := range allIDs { r = append(r, id) }; return r
 }
+

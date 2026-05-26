@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"hei-gin/core/enums"
 	"hei-gin/core/db"
 	logModel "hei-gin/modules/sys/log"
 )
@@ -107,14 +108,14 @@ func Dashboard(c *gin.Context) *DashboardVO {
 	stats := DashboardStats{}
 
 	db.DB.WithContext(ctx).Table("sys_user").Count(&stats.TotalUsers)
-	db.DB.WithContext(ctx).Table("sys_user").Where("status = ?", "ACTIVE").Count(&stats.ActiveUsers)
+	db.DB.WithContext(ctx).Table("sys_user").Where("status = ?", string(enums.UserStatusActive)).Count(&stats.ActiveUsers)
 	db.DB.WithContext(ctx).Table("sys_role").Count(&stats.TotalRoles)
 	db.DB.WithContext(ctx).Table("sys_org").Count(&stats.TotalOrgs)
 	db.DB.WithContext(ctx).Table("sys_config").Count(&stats.TotalConfigs)
 
 	clientStats := ClientStats{}
 	db.DB.WithContext(ctx).Table("client_user").Count(&clientStats.TotalUsers)
-	db.DB.WithContext(ctx).Table("client_user").Where("status = ?", "ACTIVE").Count(&clientStats.ActiveUsers)
+	db.DB.WithContext(ctx).Table("client_user").Where("status = ?", string(enums.UserStatusActive)).Count(&clientStats.ActiveUsers)
 
 	sysInfo := SysInfo{
 		OsName:  runtime.GOOS,

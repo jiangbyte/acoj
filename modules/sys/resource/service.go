@@ -11,6 +11,7 @@ import (
 	"hei-gin/core/db"
 	"hei-gin/core/exception"
 	"hei-gin/core/result"
+	"hei-gin/core/enums"
 	"hei-gin/core/utils"
 )
 
@@ -134,7 +135,7 @@ func ResourceCreate(c *gin.Context, vo *ResourceVO, userID string) {
 	now := time.Now()
 	e := SysResource{
 		ID: utils.GenerateID(), Code: vo.Code, Name: vo.Name, Category: vo.Category,
-		Type: vo.Type, SortCode: vo.SortCode, Status: "ENABLED", CreatedAt: &now, UpdatedAt: &now,
+		Type: vo.Type, SortCode: vo.SortCode, Status: string(enums.StatusEnabled), CreatedAt: &now, UpdatedAt: &now,
 	}
 	if vo.ParentID != nil { e.ParentID = vo.ParentID }
 	if vo.Description != nil { e.Description = vo.Description }
