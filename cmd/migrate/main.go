@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import (
 	"context"
@@ -12,6 +12,19 @@ import (
 
 	"hei-gin/config"
 	"hei-gin/core/db"
+	clientUser "hei-gin/modules/client/user"
+	sysBanner "hei-gin/modules/sys/banner"
+	sysConfigModel "hei-gin/modules/sys/config"
+	sysDict "hei-gin/modules/sys/dict"
+	sysFile "hei-gin/modules/sys/file"
+	sysGroup "hei-gin/modules/sys/group"
+	sysHome "hei-gin/modules/sys/home"
+	sysLog "hei-gin/modules/sys/log"
+	sysNotice "hei-gin/modules/sys/notice"
+	sysOrg "hei-gin/modules/sys/org"
+	sysPosition "hei-gin/modules/sys/position"
+	sysResource "hei-gin/modules/sys/resource"
+	sysRole "hei-gin/modules/sys/role"
 	userModel "hei-gin/modules/sys/user"
 )
 
@@ -34,7 +47,7 @@ func main() {
 	if err := autoMigrate(db.DB); err != nil {
 		log.Fatalf("failed to apply migration: %v", err)
 	}
-	fmt.Println("Migration applied successfully")
+	fmt.Println("✓ Migration applied successfully")
 
 	if !*skipSeed {
 		seedAdminUser(context.Background())
@@ -43,11 +56,27 @@ func main() {
 
 func autoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
+		// ===== Sys (Admin) =====
 		&userModel.SysUser{},
 		&userModel.RelUserRole{},
 		&userModel.RelUserPermission{},
 		&userModel.RelRolePermission{},
 		&userModel.RelRoleResource{},
+		&sysRole.SysRole{},
+		&sysResource.SysResource{},
+		&sysResource.SysModule{},
+		&sysOrg.SysOrg{},
+		&sysGroup.SysGroup{},
+		&sysPosition.SysPosition{},
+		&sysDict.SysDict{},
+		&sysConfigModel.SysConfig{},
+		&sysBanner.SysBanner{},
+		&sysNotice.SysNotice{},
+		&sysLog.SysLog{},
+		&sysFile.SysFile{},
+		&sysHome.SysQuickAction{},
+		// ===== Client =====
+		&clientUser.ClientUser{},
 	)
 }
 
@@ -77,7 +106,7 @@ func seedAdminUser(ctx context.Context) {
 	if err := db.DB.Create(&user).Error; err != nil {
 		log.Fatalf("failed to create admin user: %v", err)
 	}
-	fmt.Println("[Seed] Admin user created (password: 123456)")
+	fmt.Println("[Seed] Admin user created (username: admin, password: 123456)")
 }
 
 func strPtr(s string) *string { return &s }
