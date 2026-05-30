@@ -1,5 +1,8 @@
 # Hei Gin
 
+> 本项目是我前段时间在公司内部为负责重构媒体项目独立开发的框架之一，目前已在实际生产中投入使用。该重构框架完全由我个人设计实现，现将其从内部分支中剥离，参考优秀框架，并添加了更多功能，最终以独立仓库的形式开源，不断在优化中，欢迎大家提意见、提issue、提PR。
+> 工作繁忙，时间维护不定。
+
 <img width="120" src="vitepress/docs/public/logo.svg">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
