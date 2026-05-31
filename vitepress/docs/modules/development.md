@@ -19,7 +19,7 @@ modules/<domain>/<module>/
 | 文件 | 必选 | 说明 |
 |------|------|------|
 | `params.go` | 是 | 定义请求参数结构体和响应结构体 |
-| `service.go` | 是 | 业务逻辑层，调用 Ent DAO 进行数据操作 |
+| `service.go` | 是 | 业务逻辑层，使用 GORM 进行数据操作 |
 | `api/v1/api.go` | 是 | 路由注册函数和 HTTP Handler（控制器）|
 
 ## 文件模板
@@ -310,37 +310,29 @@ func RegisterRouters(r *gin.Engine, client *ent.Client) {
 mkdir -p modules/sys/<module>/api/v1
 ```
 
-### 第二步：创建 Ent Schema
+### 第二步：创建数据模型
 
-在 `ent/schema/` 下创建对应的 Schema 文件：
+在 `modules/<domain>/<module>/model.go` 中定义 GORM 模型：
 
 ```go
-// ent/schema/sys<entity>.go
-package schema
+package <module>
 
-import (
-    "entgo.io/ent"
-    "entgo.io/ent/schema/field"
-)
+import "time"
 
 type Sys<Entity> struct {
-    ent.Schema
+    ID        string     `gorm:"primaryKey;size:32" json:"id"`
+    Name      string     `gorm:"size:64;not null" json:"name"`
+    Status    string     `gorm:"size:16;default:ENABLED" json:"status"`
+    CreatedAt *time.Time `json:"created_at"`
+    CreatedBy *string    `gorm:"size:32" json:"created_by"`
+    UpdatedAt *time.Time `json:"updated_at"`
+    UpdatedBy *string    `gorm:"size:32" json:"updated_by"`
 }
 
-func (Sys<Entity>) Fields() []ent.Field {
-    return []ent.Field{
-        field.String("id"),                    // 雪花 ID
-        field.String("name"),                  // 名称
-        field.Int("status").Default(1),        // 状态
-        field.Int64("created_at"),             // 创建时间
-        field.String("created_by").Optional(), // 创建人
-        field.Int64("updated_at"),             // 更新时间
-        field.String("updated_by").Optional(), // 更新人
-    }
-}
+func (Sys<Entity>) TableName() string { return "sys_<table>" }
 ```
 
-### 第三步：生成 Ent 代码
+### 第三步：实现 service.go
 
 ```bash
 go generate ./ent
@@ -354,7 +346,7 @@ go generate ./ent
 
 ### 第五步：实现 service.go
 
-实现业务逻辑，调用 Ent 生成的 DAO 方法。
+实现业务逻辑，使用 GORM 进行数据库操作。
 
 ### 第六步：实现 api/v1/api.go
 
@@ -452,7 +444,7 @@ if loginID == "" {
 }
 ```
 
-`authx.GetLoginID(c *gin.Context)` 从当前请求的 JWT Token 中解析出用户 ID，返回一个 `string` 类型值，未登录时返回空字符串。
+`authx.GetLoginID(c *gin.Context)` 从当前请求的 Token Token 中解析出用户 ID，返回一个 `string` 类型值，未登录时返回空字符串。
 
 ### 分页查询
 
@@ -467,7 +459,7 @@ if pageSize < 1 || pageSize > 100 {
     pageSize = 20
 }
 
-// Ent 分页查询
+// GORM 分页查询
 total, err := query.Count(ctx)
 data, err := query.
     Offset((page - 1) * pageSize).

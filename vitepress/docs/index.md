@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "Hei Gin"
   text: "Go 快速开发框架"
-  tagline: 基于 Gin + Ent 构建，开箱即用的后台管理系统解决方案
+  tagline: 基于 Gin + GORM 构建，开箱即用的后台管理系统解决方案
   image:
     src: /logo.svg
     alt: Hei Gin Logo
@@ -25,10 +25,11 @@ features:
     details: 基于 Gin 框架，极致性能表现，毫秒级 API 响应
   - icon: 🔐
     title: 双端认证
-    details: B端（管理端）和 C端（客户端）独立的 JWT 认证和权限体系
+    details: B端（管理端）和 C端（客户端）独立的 Token 认证和权限体系
   - icon: 🏗️
-    title: Ent ORM
-    details: 类型安全的 ORM 框架，代码生成，自动迁移
+  - icon: 🏗️
+    title: GORM
+    details: 功能完善的 ORM 框架，自动迁移，简化数据库操作
   - icon: 🗄️
     title: RBAC + 数据权限
     details: 完备的 RBAC 权限模型，支持行级数据范围控制

@@ -149,7 +149,7 @@ import middleware "hei-gin/core/auth/middleware"
 
 **文件**：`core/auth/middleware/check_login.go`
 
-验证请求携带的 JWT Token 是否有效。
+验证请求携带的 Token Token 是否有效。
 
 **函数签名**：
 
@@ -161,7 +161,7 @@ func HeiCheckLogin(loginType ...string) gin.HandlerFunc
 
 **功能**：
 - 从 `Authorization` 头中提取 Bearer Token
-- 解析 JWT Token 的有效性
+- 解析 Token Token 的有效性
 - 验证 Token 是否在禁用列表中
 - 从 Redis 中读取会话信息
 - 将会话信息注入到 Context 中
@@ -319,7 +319,7 @@ func SysLog(name string) gin.HandlerFunc
 - 记录请求方法、路径、参数
 - 自动捕获 handler 中的 panic（记录异常日志后重新 panic）
 - 记录响应状态（SUCCESS / FAIL）
-- 异步写入 sys_log 表（ent ORM）
+- 异步写入 sys_log 表（GORM）
 
 **注册方式**：
 
@@ -413,7 +413,7 @@ Request
 ② AuthCheck ───────────────────── 路径认证检查
 ③ Recovery ────────────────────── panic 保护（defer）
 ④ CORS ────────────────────────── 跨域处理
-⑤ HeiCheckLogin ───────────────── JWT 验证
+⑤ HeiCheckLogin ───────────────── Token 验证
 ⑥ HeiCheckPermission ──────────── 权限检查
 ⑦ SysLog ──────────────────────── 开始录制
 ⑧ NoRepeat ────────────────────── 防重复检查

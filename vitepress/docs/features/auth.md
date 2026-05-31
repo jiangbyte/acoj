@@ -1,6 +1,6 @@
 # 认证体系
 
-Hei Gin 实现了双端认证体系，B 端（管理后台）和 C 端（客户端）使用独立的认证工具实例和独立的 Redis 键空间，但共享同一个 JWT 配置。
+Hei Gin 实现了双端认证体系，B 端（管理后台）和 C 端（客户端）使用独立的认证工具实例和独立的 Redis 键空间，但共享同一个 Token 配置。
 
 ## 双端认证设计
 
@@ -20,21 +20,21 @@ B 端和 C 端是两种完全不同的用户群体，有着不同的安全要求
 | 实现方式 | 包级函数（全局） | 结构体方法（实例） |
 | 文件 | `core/auth/auth_tool.go` | `core/auth/client_auth_tool.go` |
 | 类型 | 包级函数 | `HeiClientAuthTool` 结构体 |
-| JWT Secret | `config.C.JWT.SecretKey` | `config.C.JWT.SecretKey`（**相同配置**） |
+| Token Secret | `config.C.Token.SecretKey` | `config.C.Token.SecretKey`（**相同配置**） |
 | Redis 键前缀 | `hei:auth:BUSINESS:` | `hei:auth:CONSUMER:` |
 | 认证中间件 | `middleware.AuthCheck()`（统一路由分流） | 同上 |
 
-> **注意**：B 端和 C 端使用同一份 JWT 配置（`config.yaml` 中的 `jwt` 段），包括 `secret_key`、`expire_seconds`、`token_name`、`algorithm`。没有独立的 b_side/c_side JWT 密钥。
+> **注意**：B 端和 C 端使用同一份 Token 配置（`config.yaml` 中的 `token` 段），包括 `expire_seconds`、`token_name`。
 
-## JWT 会话管理
+## Token 会话管理
 
 ### Token 设计
 
-每个登录会话生成一个 **单一 JWT Token**，没有 Access/Refresh Token 对。Token 的 `jti` 声明唯一标识该令牌，`iat` 记录签发时间。
+每个登录会话生成一个 **单一 Token Token**，没有 Access/Refresh Token 对。Token 的 `jti` 声明唯一标识该令牌，`iat` 记录签发时间。
 
 ### 会话存储
 
-JWT 会话信息存储在 Redis 中，数据结构如下：
+Token 会话信息存储在 Redis 中，数据结构如下：
 
 ```
 Redis Key: hei:auth:{BUSINESS|CONSUMER}:token:{signedToken}
@@ -72,7 +72,7 @@ Redis TTL: 等于 token 过期时间
 ```go
 import authx "hei-gin/core/auth"
 
-// 登录：通过用户 ID 签发 JWT，存储会话到 Redis
+// 登录：通过用户 ID 签发 Token，存储会话到 Redis
 // 参数：c *gin.Context, id string, extra map[string]any
 // 返回：signedToken string, error
 token, err := authx.Login(c, "user-id", map[string]any{"role": "admin"})
@@ -206,9 +206,9 @@ loginType := tool.GetLoginType()  // 返回 "CONSUMER"
  │     captcha_id,            │    验证码校验
  │     captcha_value,         │    SM2 私钥解密密码
  │     username,              │    bcrypt 比对密码
- │     password(加密后)        │    生成 JWT Token（单一 Token）
+ │     password(加密后)        │    生成 Token Token（单一 Token）
  │   }                        │    存储 Redis 会话
- │◄── 返回 Token ─────────────┤    返回 JWT Token
+ │◄── 返回 Token ─────────────┤    返回 Token Token
  │                             │
  ├── 5. 携带 Token 请求 API ─► │  Authorization: Bearer <token>
  │                             │  AuthCheck 中间件自动验证
@@ -283,7 +283,7 @@ publicB := r.Group("/api/v1/public/b")
 
 1. **密码传输加密**：使用 SM2 国密算法加密密码传输
 2. **密码存储哈希**：使用 bcrypt 加盐哈希存储密码
-3. **单一 JWT Token**：JWT 签名 + Redis 服务端会话，双重验证
+3. **单一 Token Token**：Token 签名 + Redis 服务端会话，双重验证
 4. **Redis 会话**：服务端会话管理，可主动失效
 5. **Token 禁用列表**：登出/踢下线后 Token 立即从 Redis 删除
 6. **Disable 机制**：支持按 loginID 临时禁止登录（防暴力破解）

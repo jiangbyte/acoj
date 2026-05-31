@@ -40,8 +40,8 @@ redis:
   retry_on_timeout: true
   health_check_interval: 30
 
-jwt:
-  secret_key: hei-fastapi-jwt-secret-key-2026-please-change-in-production
+token:
+  token_name: Authorization
   algorithm: HS256
   expire_seconds: 2592000
   token_name: Authorization
@@ -108,14 +108,12 @@ snowflake:
 | `retry_on_timeout` | bool | `true` | 超时后是否自动重试 |
 | `health_check_interval` | int | `30` | 健康检查间隔时间（秒） |
 
-### jwt 认证配置
+### token 认证配置
 
-JWT 配置为**单一共享配置**，管理端（B 端）和客户端（C 端）使用相同的配置字段，通过不同的 Redis Key 前缀区分登录类型。
+Token 配置为**单一共享配置**，管理端（B 端）和客户端（C 端）使用相同的配置字段，通过不同的 Redis Key 前缀区分登录类型。
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `secret_key` | string | - | JWT 签名密钥，生产环境务必修改为足够长的随机字符串 |
-| `algorithm` | string | `HS256` | JWT 签名算法，目前支持 HMAC 系算法 |
 | `expire_seconds` | int | `2592000` | Token 有效期（秒），默认 30 天 |
 | `token_name` | string | `Authorization` | HTTP 请求头名称，用于传递 Token |
 

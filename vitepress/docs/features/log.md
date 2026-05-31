@@ -209,7 +209,7 @@ GET /api/v1/sys/log/op/pie-chart-data
 
 ## 数据模型
 
-操作日志的数据模型定义在 `ent/schema/syslog.go`，映射数据库表 `sys_log`：
+操作日志的数据模型定义在 `modules/sys/log/model.go`，映射数据库表 `sys_log`：
 
 | 字段名 | 数据库类型 | Go 类型 | 说明 |
 |--------|----------|---------|------|
@@ -302,5 +302,5 @@ Content-Type: application/json
 | `core/log/syslog.go` | SysLog 中间件实现（自动录制 + 数据库写入） |
 | `core/log/record.go` | RecordAuthLog 函数（程序化记录，当前为控制台日志） |
 | `core/log/utils.go` | 工具函数：User-Agent 解析、参数提取、结果序列化、签名生成 |
-| `ent/schema/syslog.go` | 数据库模型定义 |
+| `modules/sys/log/model.go` | 数据库模型定义 |
 | `modules/sys/log/` | 日志查询管理模块（API + Service + 参数） |

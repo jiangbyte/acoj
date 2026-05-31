@@ -1,6 +1,6 @@
 # Hei Gin 框架介绍
 
-Hei Gin 是 HEI 快速开发框架的 Go 单体应用版本，基于 **Gin** + **Ent**（entgo.io）构建，提供开箱即用的快速开发解决方案。
+Hei Gin 是 HEI 快速开发框架的 Go 单体应用版本，基于 **Gin** + **GORM** 构建，提供开箱即用的快速开发解决方案。
 
 ## 适用场景
 
@@ -14,17 +14,17 @@ Hei Gin 是 HEI 快速开发框架的 Go 单体应用版本，基于 **Gin** + *
 | 类型 | 技术 |
 |------|------|
 | 核心框架 | Go 1.25+ / Gin 1.12+ |
-| ORM | Ent (entgo.io) |
+| ORM | GORM (gorm.io/gorm) |
 | 数据库 | MySQL 8.0+ |
 | 缓存 | Redis 6.0+ (go-redis) |
-| 认证 | JWT + SM2 国密 + bcrypt |
+| 认证 | Token + SM2 国密 + bcrypt |
 | 文件存储 | 本地 / MinIO / AWS S3 |
 | 分布式 ID | Snowflake |
 | IP 地理定位 | ip2region |
 
 ## 核心特性
 
-- **双端认证体系**：B 端（管理端）和 C 端（客户端）独立的 JWT 认证与权限中间件
+- **双端认证体系**：B 端（管理端）和 C 端（客户端）独立的 Token 认证与权限中间件
 - **SM2 国密加密**：登录密码传输使用国密 SM2 加密
 - **bcrypt 密码哈希**：存储密码使用 bcrypt 加盐哈希
 - **RBAC 权限控制**：用户 → 角色 → 权限 + 用户直授权限，双层模型

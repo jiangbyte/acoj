@@ -33,9 +33,7 @@ redis:
   retry_on_timeout: true
   health_check_interval: 30
 
-jwt:
-  secret_key: YOUR_JWT_SECRET_KEY
-  algorithm: HS256
+token:
   expire_seconds: 2592000
   token_name: Authorization
 

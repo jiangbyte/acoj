@@ -46,12 +46,12 @@ db.Client.SysDict.Query().All(ctx)
 
 ---
 
-### C02. JWT 不包含过期时间 (exp) 声明
+### C02. Token 不包含过期时间 (exp) 声明
 
 **文件:** `core/auth/base_auth.go:110-113`
 **类型:** 安全
 
-JWT claims 仅包含 `jti` 和 `iat`，**没有 `exp`（过期时间）、`nbf` 或 `aud` 声明**。JWT 本身永久有效 —— 过期完全依赖 Redis TTL。如果 Redis 被清空或故障，JWT 无法被验证为无效。
+Token claims 仅包含 `jti` 和 `iat`，**没有 `exp`（过期时间）、`nbf` 或 `aud` 声明**。Token 本身永久有效 —— 过期完全依赖 Redis TTL。如果 Redis 被清空或故障，Token 无法被验证为无效。
 
 ---
 
@@ -178,12 +178,12 @@ if err != nil {
 
 ## 2. 高危缺陷 (High)
 
-### H01. JWT 签名密钥和 SM2 私钥来自 YAML 配置
+### H01. Token 签名密钥和 SM2 私钥来自 YAML 配置
 
 **文件:** `config/config.go:57,63-66`
 **类型:** 安全
 
-`SecretKey` 和 SM2 私钥直接从 YAML 配置文件中读取。如果 YAML 文件泄露（例如提交到 Git、服务器被入侵），所有 JWT 都可以被伪造，所有传输密码可以被解密。
+`SecretKey` 和 SM2 私钥直接从 YAML 配置文件中读取。如果 YAML 文件泄露（例如提交到 Git、服务器被入侵），所有 Token 都可以被伪造，所有传输密码可以被解密。
 
 虽然已创建 `config.example.yaml` 并添加 `.gitignore`，但最佳实践是使用环境变量或密钥管理服务。
 
@@ -1013,7 +1013,7 @@ var svcCtx = context.Background()
 
 | 类别 | 数量 | 主要问题 |
 |------|------|----------|
-| 安全 (Security) | 18 | 无速率限制、会话未失效、JWT 无 exp、密钥泄露、外键禁用 |
+| 安全 (Security) | 18 | 无速率限制、会话未失效、Token 无 exp、密钥泄露、外键禁用 |
 | 性能 (Performance) | 14 | Context.Background() 滥用、N+1 查询（4处）、全量内存分页、缺少监控指标 |
 | 高并发 (Concurrency) | 8 | permissionRegistry 无锁、关闭竞态、无 Sentinel/Cluster、TOCTOU 竞态 |
 | 数据一致性 (Data Integrity) | 8 | 无事务包裹、外键禁用、无唯一约束、删除顺序、缓存漂移 |
@@ -1031,7 +1031,7 @@ var svcCtx = context.Background()
 ### 第一优先级（影响安全性）
 1. **C04** - 登录端点添加速率限制
 2. **C05/C06** - 密码更改后踢出会话
-3. **C02** - JWT 添加 exp 声明
+3. **C02** - Token 添加 exp 声明
 4. **C07** - 文件上传添加类型验证
 5. **H01/H08** - 密钥从环境变量/密钥管理服务读取
 6. **H09/H10** - 添加暴力破解防护和全局速率限制

@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"time"
@@ -12,7 +12,7 @@ import (
 	"hei-gin/core/db"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -21,8 +21,7 @@ import (
 type baseAuthTool struct {
 	expire    int
 	tokenName string
-	secret    string
-	algorithm string
+
 	loginType string
 }
 
@@ -34,22 +33,18 @@ func newBaseAuthTool(loginType string) *baseAuthTool {
 
 // ensureConfig initializes default values from the global config if not already set.
 func (t *baseAuthTool) ensureConfig() {
-	if t.secret != "" {
-		return
-	}
 	if config.C == nil {
 		return
 	}
-	t.expire = config.C.JWT.ExpireSeconds
-	t.tokenName = config.C.JWT.TokenName
-	t.secret = config.C.JWT.SecretKey
-	t.algorithm = config.C.JWT.Algorithm
+	t.expire = config.C.Token.ExpireSeconds
+	t.tokenName = config.C.Token.TokenName
+
 }
 
 func (t *baseAuthTool) tokenURLSafe(n int) string {
 	b := make([]byte, n)
 	_, _ = rand.Read(b)
-	return base64.RawURLEncoding.EncodeToString(b)
+	return hex.EncodeToString(b)
 }
 
 func (t *baseAuthTool) getRedis() *redis.Client {
@@ -100,23 +95,12 @@ func (t *baseAuthTool) GetTokenValue(c *gin.Context) string {
 	return c.GetHeader(t.tokenName)
 }
 
-// Login authenticates a user by user ID, stores token data in Redis, and returns the signed JWT token.
+// Login authenticates a user by user ID, stores token data in Redis, and returns the token.
 func (t *baseAuthTool) Login(c *gin.Context, id string, extra map[string]any) (string, error) {
 	t.ensureConfig()
 
 	now := time.Now()
-	jti := t.tokenURLSafe(32)
-
-	claims := jwt.MapClaims{
-		"jti": jti,
-		"iat": jwt.NewNumericDate(now),
-		"exp": jwt.NewNumericDate(now.Add(time.Duration(t.expire) * time.Second)),
-	}
-	token := jwt.NewWithClaims(jwt.GetSigningMethod(t.algorithm), claims)
-	signedToken, err := token.SignedString([]byte(t.secret))
-	if err != nil {
-		return "", err
-	}
+	signedToken := t.tokenURLSafe(32)
 
 	tokenData := map[string]any{
 		"user_id":    id,
@@ -274,7 +258,7 @@ func (t *baseAuthTool) GetLoginIDByToken(token string) string {
 	return userID
 }
 
-// decodeToken retrieves token data from Redis and verifies the JWT signature.
+// decodeToken retrieves token data from Redis .
 func (t *baseAuthTool) decodeToken(token string) map[string]any {
 	if token == "" {
 		return nil
@@ -282,16 +266,6 @@ func (t *baseAuthTool) decodeToken(token string) map[string]any {
 
 	data := t.getTokenData(token)
 	if data == nil {
-		return nil
-	}
-
-	_, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
-		if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
-		}
-		return []byte(t.secret), nil
-	})
-	if err != nil {
 		return nil
 	}
 

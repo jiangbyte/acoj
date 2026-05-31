@@ -11,7 +11,7 @@ Config 加载
 Logger 初始化
     │
     ▼
-DB (Ent Client) 初始化 ────────── MySQL 连接 + 自动迁移
+DB (GORM) 初始化 ────────── MySQL 连接 + 自动迁移
     │
     ▼
 Redis 初始化 ───────────────────── Redis 连接
@@ -20,7 +20,7 @@ Redis 初始化 ───────────────────── 
 SM2 初始化 ─────────────────────── 国密加密工具加载
     │
     ▼
-Auth 初始化 ────────────────────── JWT 认证工具初始化（B端 + C端）
+Auth 初始化 ────────────────────── Token 认证工具初始化（B端 + C端）
     │
     ▼
 Permission 接口注册 ────────────── 权限查询接口注册到管理器
@@ -81,7 +81,7 @@ HTTP Server 启动 ───────────────── 监听端
 │     └─ 匹配到对应的模块 handler               │
 │                                             │
 │  ⑥ 路由组中间件链                            │
-│     ├─ HeiCheckLogin    → JWT 令牌验证       │
+│     ├─ HeiCheckLogin    → Token 令牌验证       │
 │     ├─ HeiCheckPermission → 权限检查          │
 │     ├─ SysLog           → 操作日志录制        │
 │     └─ NoRepeat         → 防重复提交          │
@@ -143,7 +143,7 @@ Hei Gin 实现了完全隔离的双端认证体系：
 使用包级函数实现，通过 `core/auth/auth_tool.go` 提供全局访问点：
 
 - 用户：系统管理员、运营人员
-- 认证方式：JWT 单 Token
+- 认证方式：Token
 - 会话存储：Redis，键前缀 `hei:auth:BUSINESS:token:`、`hei:auth:BUSINESS:session:`
 - 权限控制：RBAC + 数据权限
 - 公开接口：验证码、SM2 公钥、登录、注册
@@ -153,7 +153,7 @@ Hei Gin 实现了完全隔离的双端认证体系：
 使用结构体方法实现，通过 `core/auth/client_auth_tool.go` 的 `HeiClientAuthTool` 实例提供：
 
 - 用户：前端普通用户
-- 认证方式：JWT 单 Token
+- 认证方式：Token
 - 会话存储：Redis，键前缀 `hei:auth:CONSUMER:token:`、`hei:auth:CONSUMER:session:`
 - 权限控制：基础权限校验
 - 公开接口：验证码、SM2 公钥、登录、注册
@@ -163,7 +163,7 @@ Hei Gin 实现了完全隔离的双端认证体系：
 认证和权限系统使用规范的 Redis 键结构：
 
 ```
-hei:auth:{BUSINESS|CONSUMER}:token:{token}       → JWT Token 数据
+hei:auth:{BUSINESS|CONSUMER}:token:{token}       → Token Token 数据
 hei:auth:{BUSINESS|CONSUMER}:session:{userID}    → 用户会话集合（存多个 token）
 hei:auth:{BUSINESS|CONSUMER}:disable:{loginID}   → 账号禁用标记
 hei:permission:keys                              → 系统全部权限定义（JSON）
@@ -189,7 +189,7 @@ Hei Gin 的中间件分为三个层次：
 
 按需组合到各个路由组：
 
-- **HeiCheckLogin** / **HeiClientCheckLogin** - JWT 登录验证
+- **HeiCheckLogin** / **HeiClientCheckLogin** - Token 登录验证
 - **HeiCheckPermission** / **HeiClientCheckPermission** - 权限检查（同时自动注册权限）
 - **HeiCheckRole** / **HeiClientCheckRole** - 角色检查
 - **SysLog** - 操作日志录制

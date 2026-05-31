@@ -40,8 +40,8 @@ func Run() {
 	utils.Init(config.C.SM2.PrivateKey, config.C.SM2.PublicKey)
 
 	// 5. Auth tool init
-	auth.Init(config.C.JWT.ExpireSeconds, config.C.JWT.TokenName)
-	auth.NewHeiClientAuthTool().Init(config.C.JWT.ExpireSeconds, config.C.JWT.TokenName)
+	auth.Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
+	auth.NewHeiClientAuthTool().Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
 
 	// 6. Register permission interface
 	auth.RegisterInterface(&auth.HeiPermissionInterfaceImpl{})

@@ -229,8 +229,8 @@ permissions, _ := authx.GetPermissionList(c, enums.LoginTypeBusiness)
 scopeMap, _ := authx.GetPermissionScopeMap(loginID, loginType)
 scopeInfo := scopeMap["sys:user:list"]
 
-// 根据 scope 构建 Ent 查询条件
-query := s.client.SysUser.Query()
+// 根据 scope 构建 GORM 查询条件
+query := db.DB.Model(&sysUser.SysUser{})
 
 switch scopeInfo.OrgScope {
 case string(enums.DataScopeSelf):
@@ -253,7 +253,7 @@ case string(enums.DataScopeOrgAndBelow):
     v
 HeiCheckPermission("sys:user:list") 中间件
     |
-    ├─ 1. 从 Context 获取当前用户 ID（通过 JWT Token）
+    ├─ 1. 从 Context 获取当前用户 ID（通过 Token Token）
     |
     ├─ 2. 获取用户权限列表
     |     ├─ 查询用户关联的角色

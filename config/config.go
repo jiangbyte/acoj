@@ -10,7 +10,7 @@ type Config struct {
 	App       AppConfig       `yaml:"app"`
 	DB        DatabaseConfig  `yaml:"db"`
 	Redis     RedisConfig     `yaml:"redis"`
-	JWT       JWTConfig       `yaml:"jwt"`
+	Token     TokenConfig     `yaml:"token"`
 	SM2       SM2Config       `yaml:"sm2"`
 	CORS      CORSConfig      `yaml:"cors"`
 	Snowflake SnowflakeConfig `yaml:"snowflake"`
@@ -53,9 +53,7 @@ type RedisConfig struct {
 	HealthCheckInterval  int    `yaml:"health_check_interval"`
 }
 
-type JWTConfig struct {
-	SecretKey     string `yaml:"secret_key"`
-	Algorithm     string `yaml:"algorithm"`
+type TokenConfig struct {
 	ExpireSeconds int    `yaml:"expire_seconds"`
 	TokenName     string `yaml:"token_name"`
 }

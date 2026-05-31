@@ -53,7 +53,7 @@ redis:
 CREATE DATABASE IF NOT EXISTS `hei-gin` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-数据库表结构由 Ent ORM 自动迁移生成，首次启动时会自动创建所有表。
+数据库表结构由 GORM 自动迁移生成，首次启动时会自动创建所有表。
 
 ## 第四步：运行项目
 

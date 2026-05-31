@@ -11,7 +11,6 @@ require (
 	github.com/gin-contrib/cors v1.7.7
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-sql-driver/mysql v1.10.0
-	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20260516030638-f4fcd5e900a9
 	github.com/minio/minio-go/v7 v7.1.0
