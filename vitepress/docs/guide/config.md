@@ -30,11 +30,9 @@ REDIS__PASSWORD=123456
 REDIS__DATABASE=1
 REDIS__MAX_CONNECTIONS=200
 
-# JWT 配置
-JWT__SECRET_KEY=hei-fastapi-jwt-secret-key-2026-please-change-in-production
-JWT__ALGORITHM=HS256
-JWT__EXPIRE_SECONDS=2592000
-JWT__TOKEN_NAME=Authorization
+# Token 配置
+TOKEN__EXPIRE_SECONDS=2592000
+TOKEN__TOKEN_NAME=Authorization
 
 # SM2 国密配置
 SM2__PRIVATE_KEY=your-sm2-private-key
@@ -90,18 +88,15 @@ SNOWFLAKE__INSTANCE=1
 
 `REDIS__URL` 由程序自动计算：`redis://{password}@{host}:{port}/{database}`（密码为空时省略）
 
-### JWT 认证配置
+### Token 认证配置
 
-JWT 配置为**单一共享配置**，管理端（B 端）和客户端（C 端）使用相同的配置字段，通过不同的 Redis Key 前缀区分登录类型。
+TOKEN 配置为**单一共享配置**，管理端（B 端）和客户端（C 端）使用相同的配置字段，通过不同的 Redis Key 前缀区分登录类型。
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `JWT__SECRET_KEY` | str | - | JWT 签名密钥，生产环境务必修改 |
-| `JWT__ALGORITHM` | str | `HS256` | JWT 签名算法 |
-| `JWT__EXPIRE_SECONDS` | int | `2592000` | Token 有效期（秒，默认 30 天） |
-| `JWT__TOKEN_NAME` | str | `Authorization` | HTTP 请求头名称 |
+| `TOKEN__TOKEN_NAME` | str | `Authorization` | HTTP 请求头名称 |
+| `TOKEN__EXPIRE_SECONDS` | int | `2592000` | Token 有效期（秒，默认 30 天） |
 
-> 安全提示：生产环境中 `secret_key` 应使用足够长的随机字符串，切勿使用默认值。
 
 ### SM2 国密配置
 

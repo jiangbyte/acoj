@@ -7,7 +7,7 @@ Hei FastAPI 项目采用垂直切片（Vertical Slice）架构，按业务领域
 ```
 hei-fastapi/
 ├── main.py                          # 应用入口，Uvicorn 启动
-├── .env                             # 环境配置（数据库、Redis、JWT 等）
+├── .env                             # 环境配置（数据库、Redis、Token 等）
 ├── pyproject.toml                   # 项目元数据与依赖定义
 ├── requirements.txt                 # 锁定依赖版本
 │
@@ -18,13 +18,13 @@ hei-fastapi/
 │   ├── app/                         # 应用工厂
 │   │   ├── setup.py                 # create_app() - FastAPI 应用工厂，初始化编排
 │   │   ├── router.py                # 路由注册总入口（所有模块路由在此汇聚）
-│   │   ├── lifespan.py              # 应用生命周期（DB/Redis/SM2/JWT/权限/验证码初始化）
+│   │   ├── lifespan.py              # 应用生命周期（DB/Redis/SM2/Token/权限/验证码初始化）
 │   │   └── health.py                # 健康检查 "GET /" 处理器
 │   │
 │   ├── auth/                        # 认证与权限系统
 │   │   ├── auth/
-│   │   │   ├── hei_auth_tool.py            # B端（BUSINESS）JWT 认证工具
-│   │   │   └── hei_client_auth_tool.py     # C端（CONSUMER）JWT 认证工具
+│   │   │   ├── hei_auth_tool.py            # B端（BUSINESS）Token 认证工具
+│   │   │   └── hei_client_auth_tool.py     # C端（CONSUMER）Token 认证工具
 │   │   ├── decorator/                      # 认证与权限装饰器
 │   │   │   ├── hei_check_login.py          # B端登录验证装饰器
 │   │   │   ├── hei_check_permission.py     # B端权限检查装饰器

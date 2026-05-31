@@ -25,7 +25,7 @@ features:
     details: 基于 FastAPI 异步框架，Python 类型安全，自动 OpenAPI 文档生成
   - icon: 🔐
     title: 双端认证
-    details: B端（管理端）和 C端（客户端）独立的 JWT 认证和权限体系
+    details: B端（管理端）和 C端（客户端）独立的 Token 认证和权限体系
   - icon: 🗄️
     title: SQLAlchemy 2.0
     details: 现代化 Mapped 映射，类型安全，Pydantic v2 深度集成

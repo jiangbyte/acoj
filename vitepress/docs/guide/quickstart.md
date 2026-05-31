@@ -64,7 +64,8 @@ REDIS__PASSWORD=123456
 SM2__PRIVATE_KEY=your-sm2-private-key
 SM2__PUBLIC_KEY=your-sm2-public-key
 
-JWT__SECRET_KEY=your-jwt-secret-key
+TOKEN__EXPIRE_SECONDS=2592000
+TOKEN__TOKEN_NAME=Authorization
 ```
 
 默认配置中包含了开发环境使用的账号密码，请务必在部署前修改。

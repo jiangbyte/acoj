@@ -140,7 +140,7 @@ raise BusinessException("用户名或密码错误", 400)
 
 **文件**：`core/auth/decorator/hei_check_login.py`
 
-验证请求携带的 JWT Token 是否有效。
+验证请求携带的 Token Token 是否有效。
 
 **函数签名**：
 
@@ -150,7 +150,7 @@ def HeiCheckLogin(func=None, *, login_type: str = LoginTypeEnum.BUSINESS)
 
 **功能**：
 - 从 `Authorization` 头中提取 Bearer Token
-- 解析 JWT Token 的有效性
+- 解析 Token 的有效性
 - 验证 Token 是否在禁用列表中
 - 从 Redis 中读取会话信息
 

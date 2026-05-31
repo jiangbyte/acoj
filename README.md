@@ -23,7 +23,7 @@
 | ORM | SQLAlchemy 2.0 (Mapped + mapped_column) |
 | 数据库 | MySQL 8.0+ (PyMySQL) |
 | 缓存 | Redis 6.0+ (redis-py async) |
-| 认证授权 | JWT (HS256) / SM2 国密加密 / bcrypt 密码哈希 |
+| 认证授权 | Token (Random String) / SM2 国密加密 / bcrypt 密码哈希 |
 | 文件存储 | 本地文件系统 / MinIO / S3 兼容对象存储 |
 | Excel处理 | OpenPyXL |
 | 分布式ID | Snowflake ID 算法 |
@@ -32,7 +32,7 @@
 
 ## 核心特性
 
-- **双端认证体系** — B端（后台管理）和 C端（客户端）独立的两套 JWT 认证、权限装饰器
+- **双端认证体系** — B端（后台管理）和 C端（客户端）独立的两套 Token 认证、权限装饰器
 - **SM2 国密加密** — 登录密码传输使用国密 SM2 C1C3C2 模式加密
 - **bcrypt 密码哈希** — 存储密码使用 bcrypt 加盐哈希
 - **RBAC 权限控制** — 用户→角色→权限 + 用户直授权限，双层模型
@@ -63,12 +63,12 @@ hei-fastapi/
 │   ├── app/                         # 应用工厂
 │   │   ├── setup.py                 # create_app() - FastAPI 应用工厂
 │   │   ├── router.py                # 路由注册总入口
-│   │   ├── lifespan.py              # 生命周期（DB/Redis/SM2/JWT/权限扫描初始化）
+│   │   ├── lifespan.py              # 生命周期（DB/Redis/SM2/Token/权限扫描初始化）
 │   │   └── health.py                # 健康检查 GET /
 │   ├── auth/                        # 认证与权限系统
 │   │   ├── auth/
-│   │   │   ├── hei_auth_tool.py             # B端 JWT 认证工具
-│   │   │   └── hei_client_auth_tool.py      # C端 JWT 认证工具
+│   │   │   ├── hei_auth_tool.py             # B端 Token 认证工具
+│   │   │   └── hei_client_auth_tool.py      # C端 Token 认证工具
 │   │   ├── decorator/
 │   │   │   ├── hei_check_login.py           # @HeiCheckLogin
 │   │   │   ├── hei_check_permission.py      # @HeiCheckPermission("module:action")
@@ -219,7 +219,7 @@ REDIS__PASSWORD=123456
 SM2__PRIVATE_KEY=your-sm2-private-key
 SM2__PUBLIC_KEY=your-sm2-public-key
 
-JWT__SECRET_KEY=your-jwt-secret-key
+
 ```
 
 ### 启动服务
