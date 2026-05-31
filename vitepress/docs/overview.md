@@ -18,7 +18,7 @@ Hei FastAPI 是 HEI 快速开发框架的 Python 单体应用版本，基于 **F
 | 数据验证 | Pydantic v2 + Pydantic-Settings |
 | 数据库 | MySQL 8.0+ (PyMySQL) |
 | 缓存 | Redis 6.0+ (redis-py async) |
-| 认证 | JWT (HS256) / SM2 国密 + bcrypt |
+| 认证 | Token (HS256) / SM2 国密 + bcrypt |
 | 文件存储 | 本地文件系统 / MinIO / AWS S3 |
 | 分布式 ID | Snowflake |
 | IP 地理定位 | ip2region |
@@ -27,7 +27,7 @@ Hei FastAPI 是 HEI 快速开发框架的 Python 单体应用版本，基于 **F
 
 ## 核心特性
 
-- **双端认证体系**：B 端（管理端）和 C 端（客户端）独立的 JWT 认证与权限装饰器
+- **双端认证体系**：B 端（管理端）和 C 端（客户端）独立的 Token 认证与权限装饰器
 - **SM2 国密加密**：登录密码传输使用国密 SM2 C1C3C2 模式加密
 - **bcrypt 密码哈希**：存储密码使用 bcrypt 加盐哈希
 - **RBAC 权限控制**：用户 → 角色 → 权限 + 用户直授权限，双层模型

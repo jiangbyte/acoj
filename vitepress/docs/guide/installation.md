@@ -46,7 +46,7 @@ mysql -u root -p hei_data < scripts/sqls/hei_ddl.sql
 
 需要 **Redis 6.0 或更高版本**，用于：
 
-- JWT 会话存储
+- Token 会话存储
 - 图形验证码存储
 - 权限缓存
 - 防重复提交令牌

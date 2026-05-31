@@ -40,9 +40,7 @@ class RedisConfig(BaseModel):
         return f"redis://{self.host}:{self.port}/{self.database}"
 
 
-class JWTConfig(BaseModel):
-    secret_key: str = "hei-fastapi-jwt-secret-key-2026-please-change-in-production"
-    algorithm: str = "HS256"
+class TokenConfig(BaseModel):
     expire_seconds: int = 2592000
     token_name: str = "Authorization"
 
@@ -84,7 +82,7 @@ class Settings(BaseSettings):
     app: AppConfig = AppConfig()
     db: DatabaseConfig = DatabaseConfig()
     redis: RedisConfig = RedisConfig()
-    jwt: JWTConfig = JWTConfig()
+    token: TokenConfig = TokenConfig()
     sm2: SM2Config = SM2Config()
     cors: CORSConfig = CORSConfig()
     snowflake: SnowflakeConfig = SnowflakeConfig()

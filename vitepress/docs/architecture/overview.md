@@ -31,7 +31,7 @@ Startup 生命周期
     ├─ MySQL 连接验证
     ├─ Redis 连接初始化
     ├─ SM2 国密工具初始化
-    ├─ JWT 认证工具初始化（B 端 + C 端）
+    ├─ Token 认证工具初始化（B 端 + C 端）
     ├─ 权限接口注册
     ├─ 验证码服务初始化（B 端 + C 端）
     └─ 权限自动扫描 → Redis 缓存
@@ -73,7 +73,7 @@ Uvicorn 启动 ──── 监听端口，提供服务
 │     └─ 执行依赖注入（get_db, 等）              │
 │                                               │
 │  ⑤ 装饰器链（从外到内执行）                    │
-│     ├─ @HeiCheckLogin → JWT 令牌验证          │
+│     ├─ @HeiCheckLogin → Token 令牌验证          │
 │     ├─ @HeiCheckPermission → 权限检查          │
 │     ├─ @SysLog → 操作日志录制开始              │
 │     └─ @NoRepeat → 防重复提交检查              │
@@ -135,7 +135,7 @@ Hei FastAPI 实现了完全隔离的双端认证体系：
 通过 `HeiAuthTool` 类方法提供全局访问点：
 
 - 用户：系统管理员、运营人员
-- 认证方式：JWT（单一 Token，jti + iat 声明）
+- 认证方式：Token（随机字符串，Redis 会话）
 - 会话存储：Redis，键前缀 `hei:auth:BUSINESS:`
 - 权限控制：RBAC + 数据权限
 - 公开接口：验证码、SM2 公钥、登录、注册
@@ -145,7 +145,7 @@ Hei FastAPI 实现了完全隔离的双端认证体系：
 通过 `HeiClientAuthTool` 独立实例提供：
 
 - 用户：前端普通用户
-- 认证方式：JWT（单一 Token）
+- 认证方式：Token（单一 Token）
 - 会话存储：Redis，键前缀 `hei:auth:CONSUMER:`
 - 权限控制：基础权限校验
 - 公开接口：验证码、SM2 公钥、登录、注册
@@ -155,7 +155,7 @@ Hei FastAPI 实现了完全隔离的双端认证体系：
 认证和权限系统使用规范的 Redis 键结构：
 
 ```
-hei:auth:{BUSINESS|CONSUMER}:token:{token_value}            → JWT 会话数据
+hei:auth:{BUSINESS|CONSUMER}:token:{token_value}            → 会话数据
 hei:auth:{BUSINESS|CONSUMER}:session:{user_id}              → 用户 Token 列表（Set）
 hei:auth:{BUSINESS|CONSUMER}:disable:{user_id}              → 禁用标记
 hei:permission:keys                                         → 权限定义缓存

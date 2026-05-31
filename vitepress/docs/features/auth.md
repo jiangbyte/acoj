@@ -1,6 +1,6 @@
 # 认证体系
 
-Hei FastAPI 实现了双端认证体系，B 端（管理后台）和 C 端（客户端）使用独立的认证工具和独立的 Redis 键空间，共享同一个 JWT 配置。
+Hei FastAPI 实现了双端认证体系，B 端（管理后台）和 C 端（客户端）使用独立的认证工具和独立的 Redis 键空间，共享同一个 Token 配置。
 
 ## 双端认证设计
 
@@ -19,26 +19,26 @@ B 端和 C 端是两种完全不同的用户群体，有着不同的安全要求
 |------|------------------|-----------------|
 | 实现方式 | 类方法（`HeiAuthTool`） | 独立实例（`HeiClientAuthTool`） |
 | 文件 | `core/auth/auth/hei_auth_tool.py` | `core/auth/auth/hei_client_auth_tool.py` |
-| JWT Secret | 共享配置 | 共享配置（相同 `JWT__SECRET_KEY`） |
+
 | Redis 键前缀 | `hei:auth:BUSINESS:` | `hei:auth:CONSUMER:` |
 | 认证装饰器 | `@HeiCheckLogin` | `@HeiClientCheckLogin` |
 | 权限装饰器 | `@HeiCheckPermission` | `@HeiClientCheckPermission` |
 | 登录类型 | `BUSINESS` | `CONSUMER` |
 
-> **注意**：B 端和 C 端使用同一份 JWT 配置（`.env` 中的 `JWT__*`），包括 `secret_key`、`expire_seconds`、`token_name`、`algorithm`。通过不同的 Redis Key 前缀区分登录类型。
+> **注意**：B 端和 C 端使用同一份 Token 配置（`.env` 中的 `Token__*`），包括 `expire_seconds`、`token_name`。通过不同的 Redis Key 前缀区分登录类型。
 
-## JWT 会话管理
+## Token 会话管理
 
 ### Token 设计
 
-每个登录会话生成一个 **单一 JWT Token**，没有 Access/Refresh Token 对。Token 的 `jti` 声明唯一标识该令牌，`iat` 记录签发时间。
+每个登录会话生成一个 **随机 Token**
 
 ### 会话存储
 
-JWT 会话信息存储在 Redis 中，数据结构如下：
+Token 会话信息存储在 Redis 中，数据结构如下：
 
 ```
-Redis Key: hei:auth:{BUSINESS|CONSUMER}:token:{signed_token}
+Redis Key: hei:auth:{BUSINESS|CONSUMER}:token:{random_token}
 Redis Value (JSON):
 {
   "user_id": "snowflake-id",
@@ -52,7 +52,7 @@ Redis Value (JSON):
 
 ```
 Redis Key: hei:auth:{BUSINESS|CONSUMER}:session:{user_id}
-Redis Value: 多个 signed_token（Redis Set）
+Redis Value: 多个 random_token（Redis Set）
 Redis TTL: 等于 token 过期时间
 ```
 
@@ -60,7 +60,7 @@ Redis TTL: 等于 token 过期时间
 
 当用户主动登出或被踢下线时：
 1. 从 `session:{user_id}` 的 Set 中移除该 token
-2. 删除 `token:{signed_token}` 键值对
+2. 删除 `token:{random_token}` 键值对
 3. Token 立即失效（下次请求时无法从 Redis 获取数据）
 
 ## 核心 API
@@ -70,7 +70,7 @@ Redis TTL: 等于 token 过期时间
 ```python
 from core.auth.auth.hei_auth_tool import HeiAuthTool
 
-# 登录：通过用户 ID 签发 JWT，存储会话到 Redis
+# 登录：通过用户 ID 签发 Token，存储会话到 Redis
 token = HeiAuthTool.login(request, user_id, extra={"role": "admin"})
 
 # 登出：销毁当前请求的 Token
@@ -160,9 +160,9 @@ login_type = auth_tool.getLoginType()  # 返回 "CONSUMER"
  │     captcha_id,            │    验证码校验
  │     captcha_value,         │    SM2 私钥解密密码
  │     username,              │    bcrypt 比对密码
- │     password(加密后)        │    生成 JWT Token（单一 Token）
+ │     password(加密后)        │    生成随机 Token（单一 Token）
  │   }                        │    存储 Redis 会话
- │◄── 返回 Token ─────────────┤    返回 JWT Token
+ │◄── 返回 Token ─────────────┤    返回随机 Token
  │                             │
  ├── 5. 携带 Token 请求 API ─► │  Authorization: Bearer <token>
  │                             │  AuthMiddleware 自动验证
@@ -218,7 +218,7 @@ GET    /api/v1/client/session/chart-data     # 会话图表数据
 
 1. **密码传输加密**：使用 SM2 国密算法（C1C3C2 模式）加密密码传输
 2. **密码存储哈希**：使用 bcrypt 加盐哈希存储密码
-3. **单一 JWT Token**：JWT 签名 + Redis 服务端会话，双重验证
+3. **随机 Token**：纯 Redis 服务端会话管理
 4. **Redis 会话**：服务端会话管理，可主动失效
 5. **Token 禁用**：登出/踢下线后 Token 立即从 Redis 删除
 6. **Disable 机制**：支持按 login_id 临时禁止登录（防暴力破解）

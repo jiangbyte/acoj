@@ -3,7 +3,6 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Optional, Any, Dict, List, Union
 import json
-import jwt
 from fastapi import Request, HTTPException, status
 
 from config.settings import settings
@@ -11,10 +10,8 @@ from core.db.redis import get_client
 
 
 class BaseAuthTool:
-    _expire: int = settings.jwt.expire_seconds
-    _token_name: str = settings.jwt.token_name
-    _secret: str = settings.jwt.secret_key
-    _algorithm: str = settings.jwt.algorithm
+    _expire: int = settings.token.expire_seconds
+    _token_name: str = settings.token.token_name
     _request_var: ContextVar[Optional[Request]] = ContextVar('base_auth_request', default=None)
 
     # Subclasses must override these
@@ -83,13 +80,7 @@ class BaseAuthTool:
         now = datetime.now(timezone.utc)
         user_id = str(id)
 
-        jti = secrets.token_urlsafe(32)
-        token = jwt.encode(
-            {"jti": jti, "iat": now},
-            cls._secret,
-            algorithm=cls._algorithm
-        )
-
+        token = secrets.token_hex(32)
         redis_client = cls._get_redis()
         token_data = {
             "user_id": user_id,
@@ -215,14 +206,7 @@ class BaseAuthTool:
     async def _decode_token(cls, token: str) -> Optional[Dict]:
         if not token:
             return None
-        data = await cls._get_token_data(token)
-        if not data:
-            return None
-        try:
-            jwt.decode(token, cls._secret, algorithms=[cls._algorithm])
-        except jwt.PyJWTError:
-            return None
-        return data
+        return await cls._get_token_data(token)
 
     @classmethod
     async def _get_token_data(cls, token: str) -> Optional[Dict]:

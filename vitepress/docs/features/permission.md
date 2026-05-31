@@ -173,7 +173,7 @@ sys:user:*                →  sys:user:list:detail   →  不匹配
     v
 @HeiCheckPermission("sys:user:list") 装饰器
     |
-    ├─ 1. 从 Request 获取当前用户 ID（通过 JWT Token）
+    ├─ 1. 从 Request 获取当前用户 ID（通过 Token Token）
     |
     ├─ 2. 获取用户权限列表
     |     ├─ 查询用户关联的角色

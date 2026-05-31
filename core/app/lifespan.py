@@ -25,12 +25,12 @@ async def lifespan(app: FastAPI):
     sm2_init(settings.sm2.private_key, settings.sm2.public_key)
 
     HeiAuthTool.init(
-        expire=settings.jwt.expire_seconds,
-        token_name=settings.jwt.token_name
+        expire=settings.token.expire_seconds,
+        token_name=settings.token.token_name
     )
     HeiClientAuthTool.init(
-        expire=settings.jwt.expire_seconds,
-        token_name=settings.jwt.token_name
+        expire=settings.token.expire_seconds,
+        token_name=settings.token.token_name
     )
 
     # Register permission interface (queries DB at runtime)
