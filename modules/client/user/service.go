@@ -9,6 +9,8 @@ import (
 	"hei-gin/core/db"
 	"hei-gin/core/enums"
 	"hei-gin/core/exception"
+	"hei-gin/core/pojo"
+	"hei-gin/core/result"
 	"hei-gin/core/utils"
 
 	"github.com/gin-gonic/gin"
@@ -20,40 +22,61 @@ func ClientUserPage(c *gin.Context, param *ClientUserPageParam) gin.H {
 	if param.Current < 1 {
 		param.Current = 1
 	}
-	if param.Size < 1 {
+	if param.Size < 1 || param.Size > 100 {
 		param.Size = 10
 	}
-	if param.Size > 100 {
-		param.Size = 100
-	}
 
-	query := db.DB.WithContext(ctx).Model(&ClientUser{})
+	q := db.DB.WithContext(ctx).Model(&ClientUser{})
 	if param.Keyword != "" {
 		like := "%" + param.Keyword + "%"
-		query = query.Where("username LIKE ? OR nickname LIKE ? OR phone LIKE ? OR email LIKE ?", like, like, like, like)
+		q = q.Where("username LIKE ? OR nickname LIKE ? OR phone LIKE ? OR email LIKE ?", like, like, like, like)
 	}
 	if param.Status != "" {
-		query = query.Where("status = ?", param.Status)
+		q = q.Where("status = ?", param.Status)
 	}
 
 	var total int64
-	query.Count(&total)
+	q.Count(&total)
 
 	var records []ClientUser
-	query.Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
-	return gin.H{
-		"code": 200, "message": "请求成功", "success": true,
-		"data": gin.H{
-			"records": records,
-			"total":   total,
-			"current": param.Current,
-			"size":    param.Size,
-			"pages":   int((total + int64(param.Size) - 1) / int64(param.Size)),
-		},
+	q.Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
+
+	vos := make([]ClientUserVO, len(records))
+	for i, r := range records {
+		vos[i] = toPageRecord(&r)
+	}
+
+	return result.PageDataResult(c, vos, total, param.Current, param.Size)
+}
+
+func toPageRecord(e *ClientUser) ClientUserVO {
+	return ClientUserVO{
+		ID:          e.ID,
+		Username:    e.Username,
+		Nickname:    e.Nickname,
+		Avatar:      e.Avatar,
+		Motto:       e.Motto,
+		Gender:      e.Gender,
+		Email:       e.Email,
+		Github:      e.Github,
+		Phone:       e.Phone,
+		Status:      e.Status,
+		LastLoginIP: e.LastLoginIP,
+		LoginCount:  e.LoginCount,
+		LastLoginAt: formatTime(e.LastLoginAt),
+		CreatedAt:   formatTime(e.CreatedAt),
+		UpdatedAt:   formatTime(e.UpdatedAt),
 	}
 }
 
-func ClientUserDetail(c *gin.Context, id string) *ClientUser {
+func formatTime(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return pojo.FormatDateTime(*t)
+}
+
+func ClientUserDetail(c *gin.Context, id string) *ClientUserVO {
 	if id == "" {
 		return nil
 	}
@@ -65,7 +88,8 @@ func ClientUserDetail(c *gin.Context, id string) *ClientUser {
 		}
 		panic(exception.NewBusinessError("查询用户详情失败: "+err.Error(), 500))
 	}
-	return &entity
+	rec := toPageRecord(&entity)
+	return &rec
 }
 
 func ClientUserCreate(c *gin.Context, vo *ClientUserVO, userID string) {
@@ -74,7 +98,7 @@ func ClientUserCreate(c *gin.Context, vo *ClientUserVO, userID string) {
 
 	entity := ClientUser{
 		ID:        utils.GenerateID(),
-		Status: string(enums.UserStatusActive),
+		Status:    string(enums.UserStatusActive),
 		CreatedAt: &now,
 		UpdatedAt: &now,
 	}
@@ -130,6 +154,9 @@ func ClientUserModify(c *gin.Context, vo *ClientUserVO, userID string) {
 	if vo.Nickname != nil {
 		updates["nickname"] = *vo.Nickname
 	}
+	if vo.Avatar != nil {
+		updates["avatar"] = *vo.Avatar
+	}
 	if vo.Email != nil {
 		updates["email"] = *vo.Email
 	}
@@ -156,27 +183,36 @@ func ClientUserRemove(c *gin.Context, ids []string) {
 	db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&ClientUser{})
 }
 
-func Current(c *gin.Context) *ClientUser {
-	userID := ""
-	// Get userID from auth context - pass empty for now
+func Current(c *gin.Context, userID string) *ClientUserVO {
 	if userID == "" {
 		return nil
 	}
-	var entity ClientUser
-	if err := db.DB.Where("id = ?", userID).First(&entity).Error; err != nil {
-		return nil
-	}
-	return &entity
+	return ClientUserDetail(c, userID)
 }
 
-func UpdateProfile(c *gin.Context, param *UpdateProfileParam) {
-	userID := ""
+func UpdateProfile(c *gin.Context, userID string, param *UpdateProfileParam) {
 	if userID == "" {
 		return
 	}
+	ctx := context.Background()
+
+	if param.Username != nil && *param.Username != "" {
+		var count int64
+		db.DB.WithContext(ctx).Model(&ClientUser{}).Where("username = ? AND id != ?", *param.Username, userID).Count(&count)
+		if count > 0 {
+			panic(exception.NewBusinessError("用户名已存在", 400))
+		}
+	}
+
 	updates := map[string]interface{}{"updated_at": time.Now()}
 	if param.Nickname != nil {
 		updates["nickname"] = *param.Nickname
+	}
+	if param.Username != nil {
+		updates["username"] = *param.Username
+	}
+	if param.Avatar != nil {
+		updates["avatar"] = *param.Avatar
 	}
 	if param.Email != nil {
 		updates["email"] = *param.Email
@@ -184,26 +220,50 @@ func UpdateProfile(c *gin.Context, param *UpdateProfileParam) {
 	if param.Phone != nil {
 		updates["phone"] = *param.Phone
 	}
-	db.DB.Model(&ClientUser{}).Where("id = ?", userID).Updates(updates)
+	db.DB.WithContext(ctx).Model(&ClientUser{}).Where("id = ?", userID).Updates(updates)
 }
 
-func UpdateAvatar(c *gin.Context, param *UpdateAvatarParam) {
-	userID := ""
+func UpdateAvatar(c *gin.Context, userID string, param *UpdateAvatarParam) {
 	if userID == "" {
-		return
+		panic(exception.NewBusinessError("用户未登录", 401))
 	}
-	db.DB.Model(&ClientUser{}).Where("id = ?", userID).Update("avatar", param.Avatar)
+	if param.Avatar == "" {
+		panic(exception.NewBusinessError("头像不能为空", 400))
+	}
+
+	avatar := utils.CompressBase64Image(param.Avatar, 512, 512, 80)
+
+	ctx := context.Background()
+	var entity ClientUser
+	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", userID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			panic(exception.NewBusinessError("用户不存在", 404))
+		}
+		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
+	}
+	if err := db.DB.WithContext(ctx).Model(&entity).Update("avatar", avatar).Error; err != nil {
+		panic(exception.NewBusinessError("保存头像失败: "+err.Error(), 500))
+	}
 }
 
-func UpdatePassword(c *gin.Context, param *UpdatePasswordParam) {
-	userID := ""
+func UpdatePassword(c *gin.Context, userID string, param *UpdatePasswordParam) {
 	if userID == "" {
-		return
+		panic(exception.NewBusinessError("用户未登录", 401))
 	}
-	hashed, err := bcrypt.GenerateFromPassword([]byte(param.NewPassword), bcrypt.DefaultCost)
-	if err != nil {
-		panic(exception.NewBusinessError("密码加密失败", 500))
+	ctx := context.Background()
+	var entity ClientUser
+	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", userID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			panic(exception.NewBusinessError("用户不存在", 404))
+		}
+		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
 	}
-	s := string(hashed)
-	db.DB.Model(&ClientUser{}).Where("id = ?", userID).Update("password", &s)
+	if entity.Password == nil || *entity.Password == "" {
+		panic(exception.NewBusinessError("未设置密码，无法修改", 400))
+	}
+	if bcrypt.CompareHashAndPassword([]byte(*entity.Password), []byte(utils.Decrypt(param.CurrentPassword))) != nil {
+		panic(exception.NewBusinessError("当前密码不正确", 400))
+	}
+	h, _ := bcrypt.GenerateFromPassword([]byte(utils.Decrypt(param.NewPassword)), bcrypt.DefaultCost)
+	db.DB.WithContext(ctx).Model(&ClientUser{}).Where("id = ?", userID).Update("password", string(h))
 }

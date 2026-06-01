@@ -21,6 +21,10 @@ type NoticeVO struct {
 	UpdatedBy *string `json:"updated_by"`
 }
 
+type NoticeLatestParam struct {
+	Size int `json:"size" form:"size"`
+}
+
 type NoticePageParam struct {
 	Current  int    `json:"current" form:"current"`
 	Size     int    `json:"size" form:"size"`

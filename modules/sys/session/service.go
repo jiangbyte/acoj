@@ -317,25 +317,34 @@ func ExitToken(c *gin.Context, userID, token string) {
 func ChartData(c *gin.Context) *SessionChartData {
 	ctx := context.Background()
 	bKeys, _ := scanKeys(ctx, db.Redis, constants.SESSION_PREFIX_BUSINESS+"*")
+	cKeys, _ := scanKeys(ctx, db.Redis, constants.SESSION_PREFIX_CONSUMER+"*")
+
 	bTotal, _, _ := countTokens(ctx, db.Redis, bKeys, constants.TOKEN_PREFIX_BUSINESS)
+	cTotal, _, _ := countTokens(ctx, db.Redis, cKeys, constants.TOKEN_PREFIX_CONSUMER)
+
 	bDaily := countDaily(ctx, db.Redis, bKeys, constants.TOKEN_PREFIX_BUSINESS)
+	cDaily := countDaily(ctx, db.Redis, cKeys, constants.TOKEN_PREFIX_CONSUMER)
 
 	days := lastNDays(7)
-	series := make([]int, 7)
+	bSeries := make([]int, 7)
+	cSeries := make([]int, 7)
 	for i, day := range days {
-		series[i] = bDaily[day]
+		bSeries[i] = bDaily[day]
+		cSeries[i] = cDaily[day]
 	}
 
 	return &SessionChartData{
 		BarChart: BarChartData{
 			Days: days,
 			Series: []CategorySeries{
-				{Name: "新增在线数", Data: series},
+				{Name: "BUSINESS", Data: bSeries},
+				{Name: "CONSUMER", Data: cSeries},
 			},
 		},
 		PieChart: PieChartData{
 			Data: []CategoryTotal{
 				{Category: "BUSINESS", Total: bTotal},
+				{Category: "CONSUMER", Total: cTotal},
 			},
 		},
 	}

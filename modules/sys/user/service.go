@@ -567,7 +567,21 @@ func UserUpdateAvatar(c *gin.Context, uid, avatar string) {
 	if uid == "" {
 		panic(exception.NewBusinessError("用户未登录", 401))
 	}
-	db.DB.WithContext(context.Background()).Model(&SysUser{}).Where("id = ?", uid).Update("avatar", avatar)
+	if avatar == "" {
+		panic(exception.NewBusinessError("头像不能为空", 400))
+	}
+	avatar = utils.CompressBase64Image(avatar, 512, 512, 80)
+	ctx := context.Background()
+	var entity SysUser
+	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", uid).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			panic(exception.NewBusinessError("用户不存在", 404))
+		}
+		panic(exception.NewBusinessError("查询用户失败: "+err.Error(), 500))
+	}
+	if err := db.DB.WithContext(ctx).Model(&entity).Update("avatar", avatar).Error; err != nil {
+		panic(exception.NewBusinessError("保存头像失败: "+err.Error(), 500))
+	}
 }
 
 func UserUpdatePassword(c *gin.Context, uid string, p *UpdatePasswordParam) {

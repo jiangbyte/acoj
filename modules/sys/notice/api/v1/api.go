@@ -108,3 +108,54 @@ func detailHandler(c *gin.Context) {
 	}
 	c.JSON(200, result.Success(c, vo))
 }
+
+// RegisterPublicRoutes registers public notice routes (no auth required).
+func RegisterPublicRoutes(r *gin.Engine) {
+	// GET /api/v1/public/c/notice/latest — latest published notices
+	r.GET("/api/v1/public/c/notice/latest", latestHandler)
+
+	// GET /api/v1/public/c/notice/page — paginated published notices
+	r.GET("/api/v1/public/c/notice/page", pagePublicHandler)
+
+	// GET /api/v1/public/c/notice/detail — published notice detail
+	r.GET("/api/v1/public/c/notice/detail", detailPublicHandler)
+}
+
+// pagePublicHandler handles GET /api/v1/public/c/notice/page
+func pagePublicHandler(c *gin.Context) {
+	var param notice.NoticePageParam
+	if err := c.ShouldBindQuery(&param); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		return
+	}
+	data := notice.PublicPage(c, &param)
+	c.JSON(200, data)
+}
+
+// detailPublicHandler handles GET /api/v1/public/c/notice/detail
+func detailPublicHandler(c *gin.Context) {
+	id := c.Query("id")
+	vo := notice.PublicDetail(c, id)
+	if vo == nil {
+		c.JSON(200, result.Success(c, nil))
+		return
+	}
+	c.JSON(200, result.Success(c, vo))
+}
+
+// latestHandler handles GET /api/v1/public/c/notice/latest
+func latestHandler(c *gin.Context) {
+	var param notice.NoticeLatestParam
+	if err := c.ShouldBindQuery(&param); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		return
+	}
+	if param.Size < 1 {
+		param.Size = 5
+	}
+	if param.Size > 20 {
+		param.Size = 20
+	}
+	data := notice.Latest(c, &param)
+	c.JSON(200, result.Success(c, data))
+}

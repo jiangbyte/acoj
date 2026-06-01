@@ -51,10 +51,12 @@ func SetupRouters(r *gin.Engine) {
 	permissionApi.RegisterRoutes(r) // Permission module list (Redis-only)
 
 	// Phase 2 modules
-	noticeApi.RegisterRoutes(r)   // Notice CRUD
+	noticeApi.RegisterRoutes(r)        // Notice CRUD
+	noticeApi.RegisterPublicRoutes(r)  // Public notice endpoints (no auth)
 	positionApi.RegisterRoutes(r) // Position CRUD + name path enrichment
 	orgApi.RegisterRoutes(r)      // Org CRUD + tree + cascading delete
-	fileApi.RegisterRoutes(r)     // File upload/download/CRUD
+	fileApi.RegisterRoutes(r)        // File upload/download/CRUD
+	fileApi.RegisterClientRoutes(r)  // C端 file upload
 	logApi.RegisterRoutes(r)      // Log CRUD + charts + delete-by-category
 	sessionApi.RegisterRoutes(r)  // Session management (Redis)
 	analyzeApi.RegisterRoutes(r)  // Dashboard stats (no permission)

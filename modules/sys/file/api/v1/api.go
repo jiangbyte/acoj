@@ -52,8 +52,24 @@ func RegisterRoutes(r *gin.Engine) {
 	)
 }
 
+// RegisterClientRoutes registers consumer file routes (C端, login required).
+func RegisterClientRoutes(r *gin.Engine) {
+	// POST /api/v1/c/file/upload — consumer file upload
+	r.POST("/api/v1/c/file/upload",
+		middleware.HeiClientCheckLogin(),
+		log.SysLog("C端上传文件"),
+		clientFileUpload,
+	)
+}
+
 // fileUpload handles POST /api/v1/sys/file/upload
 func fileUpload(c *gin.Context) {
+	data := file.Upload(c)
+	c.JSON(200, result.Success(c, data))
+}
+
+// clientFileUpload handles POST /api/v1/c/file/upload
+func clientFileUpload(c *gin.Context) {
 	data := file.Upload(c)
 	c.JSON(200, result.Success(c, data))
 }
