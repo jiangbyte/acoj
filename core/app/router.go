@@ -45,6 +45,7 @@ func SetupRouters(r *gin.Engine) {
 	userApi.RegisterRoutes(r)       // User CRUD + roles/permissions/current/menus
 	groupApi.RegisterRoutes(r)      // Group CRUD + tree + union-tree
 	dictApi.RegisterRoutes(r)       // Dict CRUD + tree + label lookup + cache
+	dictApi.RegisterPublicRoutes(r) // Public BIZ dict tree (no auth)
 	configApi.RegisterRoutes(r)     // Config CRUD + batch edit + cache
 	homeApi.RegisterRoutes(r)       // Home dashboard + quick actions
 	permissionApi.RegisterRoutes(r) // Permission module list (Redis-only)
