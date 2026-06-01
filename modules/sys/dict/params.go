@@ -17,6 +17,8 @@ type DictVO struct {
 }
 
 type DictPageParam struct {
+	DictGroup string `json:"dict_group" form:"dict_group"`
+	ParentID string `json:"parent_id" form:"parent_id"`
 	Current  int    `json:"current" form:"current"`
 	Size     int    `json:"size" form:"size"`
 	Category string `json:"category" form:"category"`
@@ -25,6 +27,7 @@ type DictPageParam struct {
 
 type DictTreeParam struct {
 	Category string `json:"category" form:"category"`
+	DictGroup string `json:"dict_group" form:"dict_group"`
 }
 
 type DictOptionsParam struct {

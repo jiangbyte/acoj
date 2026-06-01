@@ -37,6 +37,15 @@ func Page(c *gin.Context, p *DictPageParam) gin.H {
 	if p.Category != "" {
 		q = q.Where("category = ?", p.Category)
 	}
+	if p.ParentID != "" {
+		q = q.Where("id = ? OR parent_id = ?", p.ParentID, p.ParentID)
+	}
+	if p.DictGroup == "FRM" {
+		q = q.Where("category = ?", "FRM")
+	}
+	if p.DictGroup == "BIZ" {
+		q = q.Where("category = ?", "BIZ")
+	}
 
 	var total int64
 	q.Count(&total)
@@ -55,6 +64,12 @@ func Tree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
 	ctx := context.Background()
 	query := db.DB.WithContext(ctx).Model(&SysDict{}).Order("sort_code ASC")
 	if param.Category != "" { query = query.Where("category = ?", param.Category) }
+	if param.DictGroup == "FRM" {
+		query = query.Where("category = ?", "FRM")
+	}
+	if param.DictGroup == "BIZ" {
+		query = query.Where("category = ?", "BIZ")
+	}
 	var all []SysDict
 	query.Find(&all)
 	if len(all) == 0 { return make([]map[string]interface{}, 0) }
@@ -136,7 +151,7 @@ func Options(c *gin.Context, param *DictOptionsParam) []*DictVO {
 	ctx := context.Background()
 	query := db.DB.WithContext(ctx).Model(&SysDict{}).Order("sort_code ASC")
 	if param.Category != "" { query = query.Where("category = ?", param.Category) }
-	if param.ParentID != "" { query = query.Where("parent_id = ?", param.ParentID) }
+	if param.ParentID != "" { query = query.Where("id = ? OR parent_id = ?", param.ParentID, param.ParentID) }
 	var records []SysDict
 	query.Find(&records)
 	vos := make([]*DictVO, len(records))

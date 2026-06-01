@@ -10,7 +10,7 @@ type SysUser struct {
 	Username    *string    `gorm:"size:32;index" json:"username"`
 	Password    *string    `gorm:"size:255" json:"password"`
 	Nickname    *string    `gorm:"size:32" json:"nickname"`
-	Avatar      *string    `gorm:"type:text" json:"avatar"`
+	Avatar      *string    `gorm:"type:longtext" json:"avatar"`
 	Motto       *string    `gorm:"size:32" json:"motto"`
 	Gender      *string    `gorm:"size:8" json:"gender"`
 	Birthday    *time.Time `gorm:"type:date" json:"birthday"`

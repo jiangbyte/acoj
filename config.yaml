@@ -3,7 +3,7 @@ app:
   version: 1.0.0
   debug: true
   host: 127.0.0.1
-  port: 18885
+  port: 18886
   upload_max_size: 52428800
   import_max_file_size_mb: 10
   timeout_keep_alive: 15

@@ -191,23 +191,38 @@ func collectSessions(ctx context.Context, redis *redis.Client, sessionPrefix, to
 			continue
 		}
 
-		sessionData, err := redis.Get(ctx, sessionKey).Result()
-		if err != nil {
-			continue
-		}
-		var sessionInfo map[string]any
-		if err := json.Unmarshal([]byte(sessionData), &sessionInfo); err != nil {
-			continue
-		}
-
-		sessionCreateTime, _ := sessionInfo["created_at"].(string)
-		username, _ := sessionInfo["username"].(string)
-
+		// Session key is a Redis SET (stores token members via SAdd), NOT a String.
+		// Do NOT redis.Get() it — that causes WRONGTYPE error.
+		// Instead, read token data to derive session info.
 		tokens, err := redis.SMembers(ctx, sessionKey).Result()
 		if err != nil {
 			continue
 		}
 		tokenCount := len(tokens)
+
+		sessionCreateTime := ""
+		username := ""
+		for _, token := range tokens {
+			tokenKey := tokenPrefix + token
+			data, err := redis.Get(ctx, tokenKey).Result()
+			if err != nil {
+				continue
+			}
+			var tokenData map[string]any
+			if err := json.Unmarshal([]byte(data), &tokenData); err != nil {
+				continue
+			}
+			ct, _ := tokenData["created_at"].(string)
+			if ct != "" && (sessionCreateTime == "" || ct < sessionCreateTime) {
+				sessionCreateTime = ct
+			}
+			if ext, ok := tokenData["extra"].(map[string]any); ok {
+				if un, _ := ext["username"].(string); un != "" && username == "" {
+					username = un
+				}
+			}
+			break
+		}
 
 		ttl, err := redis.TTL(ctx, sessionKey).Result()
 		timeoutSeconds := -1

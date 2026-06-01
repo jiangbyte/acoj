@@ -13,6 +13,7 @@ import (
 	"hei-gin/core/enums"
 	"hei-gin/core/utils"
 
+	"hei-gin/core/constants"
 	"hei-gin/core/pojo"
 
 	"github.com/gin-gonic/gin"
@@ -644,7 +645,33 @@ func UserMenus(c *gin.Context, userID string) []map[string]interface{} {
 		return make([]map[string]interface{}, 0)
 	}
 
+	// Super admin: return all enabled resources
 	roleIDs := UserOwnRoleIDs(c, userID)
+	isSuperAdmin := false
+	if len(roleIDs) > 0 {
+		var roles []struct{ Code string }
+		db.DB.Table("sys_role").Where("id IN ?", roleIDs).Find(&roles)
+		for _, role := range roles {
+			if role.Code == constants.SUPER_ADMIN_CODE {
+				isSuperAdmin = true
+				break
+			}
+		}
+	}
+	if isSuperAdmin {
+		var resources []rawResource
+		db.DB.Table("sys_resource").Where("status = ?", string(enums.StatusEnabled)).Order("sort_code ASC").Find(&resources)
+		cm := make(map[string][]rawResource)
+		for _, r := range resources {
+			pid := ""
+			if r.ParentID != nil && *r.ParentID != "" {
+				pid = *r.ParentID
+			}
+			cm[pid] = append(cm[pid], r)
+		}
+		return buildUserMenuTree(cm, "")
+	}
+
 	if len(roleIDs) == 0 {
 		return make([]map[string]interface{}, 0)
 	}

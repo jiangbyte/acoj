@@ -16,12 +16,12 @@ type SysLog struct {
 	MethodName *string   `gorm:"size:255" json:"method_name"`
 	ReqMethod  *string   `gorm:"size:255" json:"req_method"`
 	ReqURL     *string   `gorm:"type:text" json:"req_url"`
-	ParamJSON  *string   `gorm:"type:text" json:"param_json"`
-	ResultJSON *string   `gorm:"type:text" json:"result_json"`
+	ParamJSON  *string   `gorm:"type:longtext" json:"param_json"`
+	ResultJSON *string   `gorm:"type:longtext" json:"result_json"`
 	OpTime     *time.Time `json:"op_time"`
 	TraceID    *string   `gorm:"size:64" json:"trace_id"`
 	OpUser     *string   `gorm:"size:255" json:"op_user"`
-	SignData   *string   `gorm:"type:text" json:"sign_data"`
+	SignData   *string   `gorm:"type:longtext" json:"sign_data"`
 	CreatedAt  *time.Time `json:"created_at"`
 	CreatedBy  *string    `gorm:"size:32" json:"created_by"`
 	UpdatedAt  *time.Time `json:"updated_at"`

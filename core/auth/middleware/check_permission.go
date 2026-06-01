@@ -1,9 +1,11 @@
 package middleware
 
 import (
+	"log"
 	"strings"
 
 	"hei-gin/core/auth"
+	"hei-gin/core/constants"
 	"hei-gin/core/result"
 
 	"github.com/gin-gonic/gin"
@@ -45,6 +47,19 @@ func heiCheckPermissionInner(loginType string, permissions []string, mode string
 			c.Abort()
 			c.JSON(200, result.Failure(c, "未授权/未登录", 401, nil))
 			return
+		}
+
+		// Super admin bypass: users with the SUPER_ADMIN role automatically pass all permission checks.
+		// This avoids reliance on the Redis permission cache which may not be populated.
+		roles, err := auth.GetRoleList(c, loginType)
+		if err != nil {
+			log.Printf("[Permission] Failed to get role list: %v", err)
+		}
+		for _, role := range roles {
+			if role == constants.SUPER_ADMIN_CODE {
+				c.Next()
+				return
+			}
 		}
 
 		// Check permission

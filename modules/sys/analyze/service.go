@@ -2,7 +2,10 @@ package analyze
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net"
+	"strings"
 	"runtime"
 	"time"
 
@@ -12,6 +15,39 @@ import (
 	"hei-gin/core/db"
 	logModel "hei-gin/modules/sys/log"
 )
+
+// Server start time, used for computing uptime/runtime display
+var serverStartTime = time.Now()
+
+// getServerIP attempts to detect a non-loopback IPv4 address
+func getServerIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+			ip := ipnet.IP.String()
+			if ip != "0.0.0.0" && !strings.HasPrefix(ip, "169.254") {
+				return ip
+			}
+		}
+	}
+	return ""
+}
+
+func formatDuration(d time.Duration) string {
+	days := int(d.Hours()) / 24
+	hours := int(d.Hours()) % 24
+	mins := int(d.Minutes()) % 60
+	if days > 0 {
+		return fmt.Sprintf("%d天%d小时%d分钟", days, hours, mins)
+	}
+	if hours > 0 {
+		return fmt.Sprintf("%d小时%d分钟", hours, mins)
+	}
+	return fmt.Sprintf("%d分钟", mins)
+}
 
 type LogAnalysisData struct {
 	LoginTotal     int `json:"login_total"`
@@ -112,19 +148,104 @@ func Dashboard(c *gin.Context) *DashboardVO {
 	db.DB.WithContext(ctx).Table("sys_role").Count(&stats.TotalRoles)
 	db.DB.WithContext(ctx).Table("sys_org").Count(&stats.TotalOrgs)
 	db.DB.WithContext(ctx).Table("sys_config").Count(&stats.TotalConfigs)
+	db.DB.WithContext(ctx).Table("sys_notice").Count(&stats.TotalNotices)
 
 	clientStats := ClientStats{}
 	db.DB.WithContext(ctx).Table("client_user").Count(&clientStats.TotalUsers)
 	db.DB.WithContext(ctx).Table("client_user").Where("status = ?", string(enums.UserStatusActive)).Count(&clientStats.ActiveUsers)
 
+	// User growth trend: monthly registration counts over the last 12 months
+	userTrend := getMonthlyTrend(ctx, "sys_user")
+	clientTrend := getMonthlyTrend(ctx, "client_user")
+
+	// Org user distribution
+	orgDist := getOrgUserDistribution(ctx)
+
+	// Role category distribution
+	roleDist := getRoleCategoryDistribution(ctx)
+
 	sysInfo := SysInfo{
-		OsName:  runtime.GOOS,
-		RunTime: time.Now().Format("2006-01-02 15:04:05"),
+		OsName:   runtime.GOOS,
+		ServerIP: getServerIP(),
+		RunTime:  fmt.Sprintf("已运行 %s", formatDuration(time.Since(serverStartTime))),
 	}
 
 	return &DashboardVO{
-		Stats:       stats,
-		ClientStats: clientStats,
-		SysInfo:     sysInfo,
+		Stats:                    stats,
+		ClientStats:              clientStats,
+		UserTrend:                userTrend,
+		ClientTrend:              clientTrend,
+		OrgUserDistribution:      orgDist,
+		RoleCategoryDistribution: roleDist,
+		SysInfo:                  sysInfo,
 	}
+}
+
+func getMonthlyTrend(ctx context.Context, table string) []TrendItem {
+	type MonthlyCount struct {
+		Month string
+		Count int
+	}
+	var rows []MonthlyCount
+	db.DB.WithContext(ctx).Table(table).
+		Select("DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count").
+		Where("created_at IS NOT NULL").
+		Group("month").
+		Order("month ASC").
+		Limit(12).
+		Find(&rows)
+	result := make([]TrendItem, len(rows))
+	for i, r := range rows {
+		result[i] = TrendItem{Month: r.Month, Count: r.Count}
+	}
+	if result == nil {
+		result = []TrendItem{}
+	}
+	return result
+}
+
+func getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
+	type OrgCount struct {
+		OrgID string
+		Count int
+	}
+	var rows []OrgCount
+	db.DB.WithContext(ctx).Table("sys_user").
+		Select("org_id, COUNT(*) AS count").
+		Where("org_id IS NOT NULL AND org_id != ''").
+		Group("org_id").
+		Find(&rows)
+	result := make([]OrgUserDistribution, 0, len(rows))
+	for _, r := range rows {
+		var orgName string
+		db.DB.WithContext(ctx).Table("sys_org").Select("name").Where("id = ?", r.OrgID).Scan(&orgName)
+		if orgName == "" {
+			orgName = "未分配"
+		}
+		result = append(result, OrgUserDistribution{Name: orgName, Count: r.Count})
+	}
+	if result == nil {
+		result = []OrgUserDistribution{}
+	}
+	return result
+}
+
+func getRoleCategoryDistribution(ctx context.Context) []CategoryDistribution {
+	type CatCount struct {
+		Category string
+		Count    int
+	}
+	var rows []CatCount
+	db.DB.WithContext(ctx).Table("sys_role").
+		Select("category, COUNT(*) AS count").
+		Group("category").
+		Find(&rows)
+	result := make([]CategoryDistribution, len(rows))
+	for i, r := range rows {
+		result[i] = CategoryDistribution{Category: r.Category, Count: r.Count}
+	}
+	if result == nil {
+		result = []CategoryDistribution{}
+	}
+	return result
 }

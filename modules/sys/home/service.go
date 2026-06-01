@@ -136,21 +136,27 @@ func getAvailableResources(userID string) []QuickActionVO {
 }
 func getNotices() []HomeNotice {
 	ctx := context.Background()
-	now := time.Now()
-	var notices []struct {
-		ID    string
-		Title string
+	type noticeRow struct {
+		ID        string
+		Title     string
+		Level     string
+		CreatedAt *time.Time
 	}
-	db.DB.WithContext(ctx).Model(&resModel.SysResource{}). // This should be SysNotice but using HomeNotice struct
-								Table("sys_notice").
-								Where("status = ? AND (publish_at IS NULL OR publish_at <= ?) AND (expire_at IS NULL OR expire_at >= ?)", "PUBLISHED", now, now).
-								Order("sort_code ASC").
-								Select("id, title").
-								Limit(5).
-								Find(&notices)
-	results := make([]HomeNotice, len(notices))
-	for i, n := range notices {
-		results[i] = HomeNotice{ID: n.ID, Title: n.Title}
+	var rows []noticeRow
+	db.DB.WithContext(ctx).Table("sys_notice").
+		Where("status = ?", "ENABLED").
+		Where("category = ?", "PLATFORM").
+		Order("sort_code ASC, is_top DESC").
+		Select("id, title, level, created_at").
+		Limit(5).
+		Find(&rows)
+	results := make([]HomeNotice, len(rows))
+	for i, r := range rows {
+		notice := HomeNotice{ID: r.ID, Title: r.Title, Level: r.Level}
+		if r.CreatedAt != nil {
+			notice.CreatedAt = r.CreatedAt.Format("2006-01-02 15:04:05")
+		}
+		results[i] = notice
 	}
 	return results
 }
