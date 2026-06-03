@@ -6,6 +6,8 @@ import (
 	_ "hei-gin/modules/client/auth/sm2/api/v1"
 	_ "hei-gin/modules/client/auth/username/api/v1"
 	_ "hei-gin/modules/client/session/api/v1"
+	_ "hei-gin/modules/client/message/api/v1"
+	_ "hei-gin/modules/client/ws"
 	_ "hei-gin/modules/client/user/api/v1"
 
 	_ "hei-gin/modules/sys/analyze/api/v1"
@@ -20,6 +22,8 @@ import (
 	_ "hei-gin/modules/sys/home/api/v1"
 	_ "hei-gin/modules/sys/log/api/v1"
 	_ "hei-gin/modules/sys/notice/api/v1"
+	_ "hei-gin/modules/sys/message/api/v1"
+	_ "hei-gin/modules/sys/ws"
 	_ "hei-gin/modules/sys/org/api/v1"
 	_ "hei-gin/modules/sys/permission/api/v1"
 	_ "hei-gin/modules/sys/position/api/v1"

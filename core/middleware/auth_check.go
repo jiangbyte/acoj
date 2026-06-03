@@ -22,6 +22,10 @@ var (
 	// apiSegmentPattern extracts the segment after /api/v<digits>/ from a path.
 	// Example: /api/v1/sys/user -> matches with capture "sys".
 	apiSegmentPattern = regexp.MustCompile(`^/api/v\d+/([^/]+)/`)
+
+	// wsPathSuffixes are API paths that end with /ws (WebSocket endpoints).
+	// These paths authenticate via query-parameter token, not session cookies.
+	wsPathSuffixes = []string{"/ws"}
 )
 
 // AuthCheck returns a Gin middleware that enforces authentication based on path patterns.
@@ -48,6 +52,14 @@ func AuthCheck() gin.HandlerFunc {
 		if method == "OPTIONS" {
 			c.Next()
 			return
+		}
+
+		// 2a. WebSocket paths – let WS handler do its own token-based auth
+		for _, suffix := range wsPathSuffixes {
+			if strings.HasSuffix(path, suffix) {
+				c.Next()
+				return
+			}
 		}
 
 		// 3. Check versioned API paths

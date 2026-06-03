@@ -18,11 +18,13 @@ import (
 	_ "hei-gin/modules/sys/home"
 	_ "hei-gin/modules/sys/log"
 	_ "hei-gin/modules/sys/notice"
+	_ "hei-gin/modules/sys/message"
 	_ "hei-gin/modules/sys/org"
 	_ "hei-gin/modules/sys/position"
 	_ "hei-gin/modules/sys/resource"
 	_ "hei-gin/modules/sys/role"
 	_ "hei-gin/modules/sys/user"
+	_ "hei-gin/modules/client/message"
 )
 
 func main() {
