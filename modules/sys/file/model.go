@@ -13,6 +13,8 @@ type SysFile struct {
 	FileSize    int64     `gorm:"default:0" json:"file_size"`
 	FileType    *string   `gorm:"size:64" json:"file_type"`
 	FileSuffix  *string   `gorm:"size:32" json:"file_suffix"`
+	Checksum     *string   `gorm:"size:128" json:"checksum"`
+	ChecksumAlgo  *string   `gorm:"size:16" json:"checksum_algo"`
 	Bucket      *string   `gorm:"size:128" json:"bucket"`
 	ObjectKey   *string   `gorm:"size:500" json:"object_key"`
 	Extra       *string   `gorm:"type:text" json:"extra"`

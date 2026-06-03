@@ -26,28 +26,33 @@
 | 缓存 | Redis 6.0+ (go-redis) |
 | 认证授权 | Token / SM2 国密加解密 / SM3 哈希 / bcrypt 密码哈希 |
 | 文件存储 | MinIO / S3 (AWS SDK) / Local 本地存储 |
+| 定时调度 | cron 表达式 (robfig/cron/v3) |
 | IP 定位 | IP2Region 离线库 |
-| 分布式ID | Snowflake ID (bwmarrin/snowflake) |
+| 分布式ID | Snowflake ID |
 
 ## 核心特性
 
-- **双端认证体系** — B端（后台管理）和 C端（客户端）独立的两套 Token 认证、权限中间件
-- **SM2 国密加密** — 登录密码传输使用国密 SM2 C1C3C2 模式加密，支持 C1C2C3 / C1C3C2 双模式解密
-- **SM3 哈希** — 支持 SM3 摘要算法，用于操作日志防篡改签名
+- **模块化架构** — 模块通过 `init()` 自注册路由、权限、中间件、定时任务、DB 模型、种子数据，**零侵入 core/**
+- **双端认证体系** — B 端（后台管理）和 C 端（客户端）独立的两套 Token 认证，通过 `auth.Business` / `auth.Consumer` 统一访问
+- **SM2 国密加密** — 登录密码传输使用国密 SM2 C1C3C2 模式加密
+- **SM3 哈希** — 操作日志防篡改签名
 - **bcrypt 密码哈希** — 存储密码使用 bcrypt 加盐哈希
 - **RBAC 权限控制** — 用户→角色→权限 + 用户直授权限，双层模型
 - **数据权限（行级）** — 支持 ALL / ORG / ORG_AND_BELOW / SELF / CUSTOM_ORG / GROUP / GROUP_AND_BELOW / CUSTOM_GROUP 等数据范围控制
-- **权限自动发现** — 启动时自动扫描 `middleware.HeiCheckPermission` / `auth.RegisterPermission` 注册的权限并缓存到 Redis
+- **权限自动发现** — 启动时自动扫描注册的权限并缓存到 Redis
 - **权限匹配器** — 支持 `*` 单级和 `**` 多级通配符匹配
-- **操作日志** — `SysLog` 中间件自动记录用户操作，支持请求参数、UA 解析、IP 归属地、SM3 签名防篡改
-- **防重复提交** — `NoRepeat` 中间件防止接口重复调用（基于 Redis）
-- **链路追踪** — 基于 `trace_id` 的全链路追踪，支持从请求头读取或自动生成
-- **统一验证码** — B端/C端独立的图形验证码服务
+- **操作日志** — `log.SysLog` 中间件自动记录用户操作，SM3 签名防篡改
+- **防重复提交** — `middleware.NoRepeat` 中间件（基于 Redis）
+- **链路追踪** — 基于 `trace_id` 的全链路追踪
+- **统一验证码** — B 端/C 端独立的图形验证码服务
 - **统一响应格式** — `{code, message, data, success, trace_id}` 标准结构
-- **全局异常处理** — Recovery 中间件统一捕获 BusinessException 返回业务错误码
-- **抽象文件存储** — 统一的 `FileStorage` 接口，支持本地存储、MinIO、S3 三种后端，切换无需修改业务代码
-- **IP 归属地** — 基于 IP2Region 离线库的 IP 地址定位
-- **在线会话管理** — B端和 C端独立的会话管理，支持在线用户查看和强制下线
+- **抽象文件存储** — 统一的 `FileStorage` 接口，支持分片上传、文件校验，三种后端（Local/MinIO/S3）
+- **定时调度** — 支持 cron 表达式和固定间隔的后台任务，优雅关闭
+- **DB 自动迁移** — 模块自注册 Model，`cmd/migrate` 自动发现，无需手动维护模型列表
+- **种子数据** — 模块自注册种子数据，幂等执行
+- **模块生命周期** — `module.Register()` 统一管理模块的 Init / Start / Stop
+- **模块级配置** — 通过 `config.C.Raw` 读取模块专属配置，无需修改 config.go
+- **在线会话管理** — B 端和 C 端独立的会话管理，支持在线用户查看和强制下线
 - **雪花ID** — 分布式 Snowflake ID 生成器
 
 ## 项目结构
@@ -59,147 +64,116 @@ hei-gin
 ├── core/                           # 框架核心
 │   ├── app/
 │   │   ├── app.go                  # 应用工厂 + 核心服务初始化
-│   │   ├── health.go               # 健康检查 GET /
+│   │   ├── gen.go                  # go:generate codegen
+│   │   ├── health.go               # 健康检查
+│   │   ├── modules_gen.go          # 模块自注册入口（自动生成）
 │   │   └── router.go               # 路由注册总入口
 │   ├── auth/
-│   │   ├── auth_tool.go            # B端 Token 认证工具
-│   │   ├── client_auth_tool.go     # C端 Token 认证工具
-│   │   ├── permission_tool.go      # 权限查询门面（HasPermission / CheckPermission）
-│   │   ├── permission_matcher.go   # 权限匹配器（支持 * / ** 通配符）
-│   │   ├── permission_interface.go # 权限查询接口定义（直授 + 角色双路径）
-│   │   ├── permission_interface_manager.go # 权限接口管理器
-│   │   ├── permission_scan.go      # 权限自动扫描与缓存
+│   │   ├── auth_tool.go            # Business + Consumer 认证单例
+│   │   ├── base_auth.go            # 认证基础实现（Token/Login/Logout/Disable）
+│   │   ├── permission_interface.go # 权限查询接口 + 默认实现（直授 + 角色双路径）
+│   │   ├── permission_matcher.go   # 权限匹配器（* / ** 通配符）
+│   │   ├── permission_scan.go      # 权限自动扫描与 Redis 缓存
+│   │   ├── permission_tool.go      # 权限查询门面 + 接口注册器
+│   │   ├── module.go               # 生命周期自注册
 │   │   ├── middleware/
-│   │   │   ├── check_login.go           # B端登录检查中间件
-│   │   │   ├── client_check_login.go    # C端登录检查中间件
-│   │   │   ├── check_permission.go      # B端权限检查中间件（HeiCheckPermission）
-│   │   │   ├── client_check_permission.go # C端权限检查中间件
-│   │   │   ├── check_role.go            # B端角色检查中间件
-│   │   │   ├── client_check_role.go     # C端角色检查中间件
-│   │   │   └── norepeat.go             # NoRepeat 防重复提交中间件
+│   │   │   ├── check_login.go      # 登录检查中间件
+│   │   │   ├── check_permission.go # 权限检查中间件
+│   │   │   ├── check_role.go       # 角色检查中间件
+│   │   │   └── norepeat.go         # 防重复提交中间件
 │   │   └── pojo/
-│   │       ├── login_user_info.go          # B端登录用户信息
-│   │       └── login_client_user_info.go   # C端登录用户信息
-│   ├── captcha/
-│   │   └── captcha.go              # 图形验证码服务（B端/C端）
+│   │       ├── login_user_info.go
+│   │       └── login_client_user_info.go
+│   ├── captcha/                    # 图形验证码服务
+│   │   ├── captcha.go
+│   │   └── module.go
 │   ├── constants/
-│   │   ├── constants.go            # 系统常量（SUPER_ADMIN_CODE）
-│   │   ├── cache_keys.go           # Redis 缓存键常量
-│   │   └── base_fields.go          # 系统基础字段定义
+│   │   └── constants.go            # 系统常量 + Redis key 定义
 │   ├── db/
-│   │   ├── gorm.go              # GORM 客户端初始化（MySQL）
-│   │   └── redis.go                # Redis 客户端初始化
-│   ├── enums/
-│   │   ├── permission.go           # 登录类型、权限类别、数据范围、检查模式枚举
-│   │   ├── status.go               # 状态枚举（启用/禁用/锁定等）
-│   │   ├── resource.go             # 资源类型和类别枚举
-│   │   └── page_data_field.go      # 分页响应字段枚举
+│   │   ├── gorm.go                 # MySQL 连接 + InitDB/Close
+│   │   ├── redis.go                # Redis 连接 + InitRedis/CloseRedis
+│   │   └── migrate.go              # Model + Seed 注册器
+│   ├── enums/                      # 枚举类型
 │   ├── exception/
-│   │   └── business_error.go       # BusinessException 业务异常
+│   │   └── business_error.go       # BusinessError
 │   ├── log/
 │   │   ├── syslog.go               # SysLog 操作日志中间件
-│   │   ├── record.go               # RecordAuthLog 认证日志记录
-│   │   └── utils.go                # 日志工具（UA 解析、参数提取、SM3 签名）
+│   │   ├── record.go               # RecordAuthLog 认证日志
+│   │   └── utils.go                # UA 解析 / 参数提取 / 签名
 │   ├── middleware/
-│   │   ├── auth_check.go           # Token 认证中间件（按路径分流 B/C/Public）
+│   │   ├── auth_check.go           # 路径分流认证中间件
 │   │   ├── cors.go                 # CORS 中间件
-│   │   ├── recovery.go             # 全局异常恢复中间件
-│   │   └── trace.go                # 链路追踪中间件（trace_id）
+│   │   ├── recovery.go             # 全局异常恢复
+│   │   └── trace.go                # 链路追踪
+│   ├── module/
+│   │   └── module.go               # Module 接口 + 生命周期注册器
 │   ├── pojo/
-│   │   ├── datetime_mixin.go       # 时间日期混入结构
-│   │   └── id_params.go            # ID 参数结构
+│   │   ├── datetime_mixin.go       # 时间解析工具
+│   │   └── id_params.go            # IdParam / IdsParam
+│   ├── registry/
+│   │   ├── route.go                # 路由注册器
+│   │   ├── perm.go                 # 权限注册器（Perm / ClientPerm）
+│   │   └── middleware.go           # 全局中间件注册器
 │   ├── result/
-│   │   └── result.go               # Success / Failure / Page 响应工具
+│   │   └── result.go               # 统一响应格式
+│   ├── scheduler/
+│   │   ├── scheduler.go            # 定时调度（cron 表达式）
+│   │   └── module.go               # 生命周期自注册
 │   ├── storage/
-│   │   ├── interface.go            # FileStorage 接口定义
-│   │   ├── local.go                # Local 本地文件存储
-│   │   ├── minio.go                # MinIO 对象存储
-│   │   └── s3.go                   # AWS S3 对象存储
-│   └── utils/
-│       ├── crypto.go               # SM2 加解密 + SM3 哈希 + bcrypt
-│       ├── ip.go                   # 客户端 IP 提取 + IP2Region 城市查询
-│       ├── model.go                # 模型工具（系统字段剥离、更新）
-│       ├── resolve.go              # 层级路径解析工具
-│       ├── snowflake.go            # 雪花 ID 生成
-│       ├── trace.go                # 链路追踪 ID 生成
-│       └── user_agent.go           # 浏览器 / OS 解析
-│   │   ├── sysuser.go              # 用户
-│   │   ├── sysrole.go              # 角色
-│   │   ├── syspermission.go        # 权限
-│   │   ├── sysresource.go          # 资源（菜单 / 按钮）
-│   │   ├── sysorg.go               # 组织
-│   │   ├── sysposition.go          # 职位
-│   │   ├── sysgroup.go             # 用户组
-│   │   ├── sysmodule.go            # 模块
-│   │   ├── sysbanner.go            # Banner
-│   │   ├── sysconfig.go            # 系统配置
-│   │   ├── sysdict.go              # 字典
-│   │   ├── sysfile.go              # 文件
-│   │   ├── syslog.go               # 操作日志
-│   │   ├── sysnotice.go            # 通知公告
-│   │   ├── sysquickaction.go       # 快捷操作
-│   │   ├── clientuser.go           # C端用户
-│   │   ├── reluserrole.go          # 用户角色关联
-│   │   ├── reluserpermission.go    # 用户直授权限关联
-│   │   ├── relrolepermission.go    # 角色权限关联
-│   │   └── relroleresource.go      # 角色资源关联
-├── modules/
-│   ├── sys/                         # B端（后台管理）
-│   │   ├── auth/                    # 认证模块（验证码 / SM2 公钥 / 登录注册登出）
-│   │   │   ├── route.go             # 子路由聚合
-│   │   │   ├── captcha/api/v1/api.go
-│   │   │   ├── sm2/api/v1/api.go
-│   │   │   └── username/
-│   │   │       ├── params.go        # 请求/响应参数
-│   │   │       ├── logic.go         # 登录逻辑
-│   │   │       └── api/v1/api.go    # 路由注册 + Handler
-│   │   ├── banner/                  # Banner 管理
-│   │   ├── config/                  # 系统配置管理
-│   │   ├── dict/                    # 字典管理
-│   │   ├── file/                    # 文件管理（上传/下载）
-│   │   ├── group/                   # 用户组管理
-│   │   ├── home/                    # 首页仪表盘 + 快捷操作
-│   │   ├── log/                     # 操作日志查询 + 图表
-│   │   ├── notice/                  # 通知公告管理
-│   │   ├── org/                     # 组织管理（树形结构）
-│   │   ├── permission/              # 权限管理
-│   │   ├── position/                # 职位管理
-│   │   ├── resource/                # 资源管理（模块 / 菜单 / 按钮）
-│   │   ├── role/                    # 角色管理（含权限 / 资源分配）
-│   │   ├── session/                 # 在线会话管理
-│   │   ├── analyze/                 # 系统分析仪表盘
-│   │   └── user/                    # 用户管理（含角色 / 组分配）
-│   └── client/                      # C端（客户端）
-│       ├── auth/                    # 认证模块（验证码 / SM2 公钥 / 登录注册登出）
-│       │   ├── route.go
-│       │   ├── captcha/api/v1/api.go
-│       │   ├── sm2/api/v1/api.go
-│       │   └── username/
-│       │       ├── params.go
-│       │       ├── logic.go
-│       │       └── api/v1/api.go
-│       ├── session/                 # 在线会话管理
-│       └── user/                    # C端用户管理
-├── config.yaml                      # 配置文件
-├── scripts/
-│   └── hei_data.sql                 # 数据库初始化脚本
-├── main.go                          # 应用入口
-└── go.mod                           # Go 模块定义
+│   │   ├── interface.go            # FileStorage 接口
+│   │   ├── chunk.go                # ChunkedUploader 分片上传接口
+│   │   ├── factory.go              # 存储后端工厂 + 配置加载
+│   │   ├── config.go               # 存储配置结构体
+│   │   ├── local.go                # LocalStorage + 分片上传实现
+│   │   ├── minio.go                # MinioStorage + 分片上传实现
+│   │   └── s3.go                   # S3Storage + 分片上传实现
+│   └── utils/                      # 工具函数
+│       ├── crypto.go               # SM2/SM3 加解密
+│       ├── module.go               # 生命周期自注册
+│       └── ...
+├── cmd/
+│   ├── migrate/
+│   │   └── main.go                 # DB 迁移 + 种子数据
+│   └── codegen/
+│       └── main.go                 # modules_gen.go 自动生成
+├── modules/                        # 业务模块
+│   ├── sys/                        # B端（后台管理）
+│   │   ├── banner/
+│   │   ├── config/
+│   │   ├── dict/
+│   │   ├── file/                   # 文件管理（含分片上传 API）
+│   │   ├── log/
+│   │   ├── notice/
+│   │   ├── org/
+│   │   ├── permission/
+│   │   ├── resource/
+│   │   ├── role/
+│   │   ├── session/
+│   │   └── user/
+│   └── client/                     # C端（客户端）
+│       ├── auth/
+│       ├── session/
+│       └── user/
+├── config.yaml                     # 配置文件
+├── main.go                         # 应用入口
+└── go.mod                          # Go 模块定义
 ```
 
 ### 模块结构约定
 
-每个业务模块遵循垂直切片布局：
+每个业务模块遵循垂直切片布局，支持零侵入自注册：
 
 ```
 modules/<domain>/<module>/
-├── params.go          # 请求/响应参数结构体
-├── service.go         # 业务逻辑层
+├── model.go           # GORM 模型
+├── params.go          # 请求/响应参数
+├── service.go         # 业务逻辑
+├── migrate.go         # DB 模型 + 种子数据自注册（可选）
+├── module.go          # 模块生命周期（可选）
 └── api/v1/
-    └── api.go         # Gin 路由注册 + Handler 函数
+    ├── api.go         # 路由 + Handler
+    └── register.go    # init() → registry.RegisterRoute()
 ```
-
-认证模块因包含多个子模块（captcha / sm2 / username），额外包含 `route.go` 聚合子路由和 `logic.go` 逻辑文件。
 
 ## 快速开始
 
@@ -239,8 +213,6 @@ redis:
   max_connections: 200
 
 token:
-  secret_key: your-token-secret-key
-  algorithm: HS256
   expire_seconds: 2592000
   token_name: Authorization
 
@@ -256,13 +228,28 @@ cors:
 
 snowflake:
   instance: 1
+
+storage:
+  default: LOCAL
+  local:
+    upload_folder: ./uploads
+  # minio:
+  #   endpoint: localhost:9000
+  #   access_key: minioadmin
+  #   secret_key: minioadmin
+  #   bucket: hei-files
+  #   secure: false
+  #   region: us-east-1
 ```
 
 ### 初始化数据库
 
 ```bash
-# 导入表结构和初始数据
-mysql -u root -p hei_data < scripts/hei_data.sql
+# 自动迁移（自动建表 + 种子数据）
+go run cmd/migrate/main.go
+
+# 跳过种子数据
+go run cmd/migrate/main.go -skip-seed
 ```
 
 ### 运行
@@ -271,9 +258,106 @@ mysql -u root -p hei_data < scripts/hei_data.sql
 go run main.go
 ```
 
-服务启动后访问：
+访问健康检查：<http://localhost:18885/>
 
-- 健康检查：<http://localhost:18885/>
+## 模块化机制
+
+框架提供零侵入的模块自注册机制，新增模块无需修改任何 `core/` 文件。
+
+### 路由注册
+
+每个模块在 `api/v1/register.go` 中自注册路由：
+
+```go
+func init() {
+    registry.RegisterRoute(RegisterRoutes)
+}
+
+func RegisterRoutes(r *gin.Engine) {
+    r.GET("/api/v1/sys/xxx/page", ...)
+}
+```
+
+### 权限声明
+
+路由注册时通过 `registry.Perm` 自动声明权限：
+
+```go
+r.GET("/api/v1/sys/xxx/page",
+    registry.Perm("sys:xxx:page", "XXX分页"),
+    handler,
+)
+```
+
+### 模块生命周期
+
+```go
+// module.go
+type xxxModule struct{ module.NoopModule }
+func (m *xxxModule) Name() string { return "xxx" }
+func (m *xxxModule) Init() error  { /* 初始化逻辑 */ return nil }
+func (m *xxxModule) Stop() error  { /* 清理逻辑 */ return nil }
+
+func init() { module.Register(&xxxModule{}) }
+```
+
+### DB 模型 + 种子数据
+
+```go
+// migrate.go
+func init() {
+    db.RegisterModel(&XxxModel{})
+    db.RegisterSeed("xxx initial data", seedXxx)
+}
+
+func seedXxx() error {
+    // 幂等：检查数据是否存在
+    var count int64
+    db.DB.Model(&XxxModel{}).Where(...).Count(&count)
+    if count > 0 { return nil }
+    // 插入初始数据
+    return nil
+}
+```
+
+### 定时任务
+
+```go
+func init() {
+    scheduler.Register("@every 1h", &CleanupTask{})
+}
+```
+
+### 全局中间件
+
+```go
+func init() {
+    registry.RegisterMiddleware(func(r *gin.Engine) {
+        r.Use(myMiddleware())
+    })
+}
+```
+
+### 模块配置
+
+```yaml
+# config.yaml — 自动捕获到 config.C.Raw 中
+xxx:
+  host: example.com
+  port: 8080
+```
+
+```go
+cfg := config.C.Raw["xxx"].(map[string]any)
+host := cfg["host"].(string)
+```
+
+### 生成模块注册表
+
+```bash
+go generate ./...
+# 自动生成 core/app/modules_gen.go
+```
 
 ## 认证体系
 
@@ -281,11 +365,21 @@ go run main.go
 
 | 路径模式 | 认证方式 | 说明 |
 |---------|---------|------|
-| `/api/v1/b/*` | AuthTool（B端Token）认证 + CheckPermission | B端后台管理 |
-| `/api/v1/c/*` | ClientAuthTool（C端Token）认证 + CheckPermission | C端客户端 |
+| `/api/v1/b/*` 或 `/api/v1/sys/*` | Business 认证 + 权限检查 | B 端后台管理 |
+| `/api/v1/c/*` | Consumer 认证 + 权限检查 | C 端客户端 |
 | `/api/v1/public/*` | 无认证 | 公开接口 |
 
-认证中间件按路径前缀自动分流，CORS 预检请求（OPTIONS）和静态路径（/favicon.ico 等）跳过认证。
+认证工具通过 `auth.Business` 和 `auth.Consumer` 两个单例统一访问：
+
+```go
+// B 端
+auth.Login(c, userID, extra)
+auth.GetLoginIDDefaultNull(c)
+
+// C 端
+auth.Consumer.Login(c, userID, extra)
+auth.Consumer.GetLoginIDDefaultNull(c)
+```
 
 ## 中间件参考
 
@@ -294,15 +388,9 @@ go run main.go
 ```go
 import "hei-gin/core/auth/middleware"
 
-r.GET("/api/v1/sys/banner/page",
-    middleware.HeiCheckPermission([]string{"sys:banner:page"}),
-    PageHandler,
-)
-```
+// AND 模式（默认）：需要全部权限
+middleware.HeiCheckPermission([]string{"sys:banner:page", "sys:banner:create"})
 
-支持 `AND`（默认，全部权限）和 `OR`（任一权限）两种模式：
-
-```go
 // OR 模式：满足任一权限即可
 middleware.HeiCheckPermission([]string{"sys:user:view", "sys:user:edit"}, "OR")
 ```
@@ -314,8 +402,7 @@ import "hei-gin/core/log"
 
 r.POST("/api/v1/sys/banner/create",
     log.SysLog("添加Banner"),
-    middleware.HeiCheckPermission([]string{"sys:banner:create"}),
-    CreateHandler,
+    handler,
 )
 ```
 
@@ -326,7 +413,7 @@ import "hei-gin/core/auth/middleware"
 
 r.POST("/api/v1/sys/xxx/create",
     middleware.NoRepeat(3000), // 3 秒内相同参数禁止重复提交
-    CreateHandler,
+    handler,
 )
 ```
 
@@ -369,17 +456,79 @@ User ──→ RelUserRole ──→ Role ──→ RelRolePermission ──→ 
 User ──→ RelUserPermission ──→ Permission (直授)
 ```
 
-权限匹配支持 `*`（单级通配符）和 `**`（多级通配符），例如 `sys:*` 匹配所有 sys 模块权限。
+权限匹配支持 `*`（单级通配符）和 `**`（多级通配符）。
 
 ## 文件存储
 
-框架通过统一的 `FileStorage` 接口抽象文件存储后端，支持三种实现，切换仅需修改初始化代码：
+框架通过 `FileStorage` 接口 + `ChunkedUploader` 接口抽象文件存储，三种后端均可通过配置切换。
 
-| 存储后端 | 实现 |
-|---------|------|
-| Local 本地存储 | `core/storage/local.go` |
-| MinIO 对象存储 | `core/storage/minio.go` |
-| AWS S3 对象存储 | `core/storage/s3.go` |
+### 支持的存储后端
+
+| 后端 | 实现 | 分片上传 |
+|------|------|---------|
+| **Local** | 本地文件系统 | ✅ 临时目录 → 顺序合并 |
+| **MinIO** | MinIO 对象存储 | ✅ 原生 Multipart Upload |
+| **S3** | AWS S3 | ✅ 原生 Multipart Upload |
+
+### 普通上传
+
+```go
+// 上传文件，自动计算 SHA256 校验和
+file.Upload(c)
+// 客户端可选传入 checksum 参数做完整性校验
+```
+
+### 分片上传 API
+
+| 端点 | 说明 |
+|------|------|
+| `POST /api/v1/sys/file/upload/init` | 初始化分片上传 |
+| `POST /api/v1/sys/file/upload/chunk` | 上传单个分片 |
+| `POST /api/v1/sys/file/upload/complete` | 完成合并 |
+| `POST /api/v1/sys/file/upload/abort` | 取消上传 |
+
+### 切换存储后端
+
+```yaml
+# config.yaml
+storage:
+  default: MINIO
+  minio:
+    endpoint: localhost:9000
+    access_key: minioadmin
+    secret_key: minioadmin
+    bucket: hei-files
+```
+
+业务代码无需任何修改。
+
+## 定时调度
+
+支持 cron 表达式和固定间隔的后台任务，优雅关闭。
+
+```go
+type CleanupTask struct{}
+func (t *CleanupTask) Name() string { return "cleanup" }
+func (t *CleanupTask) Run()         { /* ... */ }
+
+func init() {
+    scheduler.Register("0 */5 * * * *", &CleanupTask{})  // 每 5 分钟
+    scheduler.RegisterInterval(30*time.Second, &CleanupTask{})  // 30 秒
+    scheduler.Register("@daily", &CleanupTask{})          // 每天凌晨
+}
+```
+
+## DB 迁移
+
+```bash
+# 自动迁移所有模块注册的模型 + 种子数据
+go run cmd/migrate/main.go
+
+# 仅迁移，跳过种子
+go run cmd/migrate/main.go -skip-seed
+```
+
+新增模块只需在 `migrate.go` 中注册，`cmd/migrate` 自动发现。
 
 ## 相关项目
 

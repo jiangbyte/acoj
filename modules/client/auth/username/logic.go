@@ -72,7 +72,7 @@ func DoLogin(c *gin.Context) {
 		"device_id":   param.DeviceID,
 	}
 
-	clientAuth := auth.NewHeiClientAuthTool()
+	clientAuth := auth.Consumer
 	token, err := clientAuth.Login(c, user.ID, extra)
 	if err != nil {
 		panic(exception.NewBusinessError("登录失败", 500))
@@ -139,7 +139,7 @@ func DoRegister(c *gin.Context) {
 }
 
 func DoLogout(c *gin.Context) {
-	clientAuth := auth.NewHeiClientAuthTool()
+	clientAuth := auth.Consumer
 	userID := clientAuth.GetLoginIDDefaultNull(c)
 	if userID != "" {
 		var user cliUser.ClientUser

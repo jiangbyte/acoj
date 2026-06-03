@@ -38,7 +38,7 @@ func heiCheckPermissionInner(loginType string, permissions []string, mode string
 		// Check login first
 		var isLogin bool
 		if loginType == "CONSUMER" {
-			tool := &auth.HeiClientAuthTool{}
+			tool := auth.Consumer
 			isLogin = tool.IsLogin(c)
 		} else {
 			isLogin = auth.IsLogin(c)

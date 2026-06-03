@@ -13,12 +13,16 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/config"
-	"hei-gin/core/auth"
-	"hei-gin/core/captcha"
-	"hei-gin/core/cron"
 	"hei-gin/core/db"
 	"hei-gin/core/middleware"
-	"hei-gin/core/utils"
+	"hei-gin/core/module"
+	"hei-gin/core/registry"
+
+	// Blank-import core modules to trigger init() self-registration.
+	_ "hei-gin/core/auth"
+	_ "hei-gin/core/captcha"
+	_ "hei-gin/core/scheduler"
+	_ "hei-gin/core/utils"
 )
 
 func Run() {
@@ -37,39 +41,28 @@ func Run() {
 		log.Fatalf("[APP] Failed to init Redis: %v", err)
 	}
 
-	// SM2 Init
-	utils.Init(config.C.SM2.PrivateKey, config.C.SM2.PublicKey)
-
-	// Auth tool init
-	auth.Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
-	auth.NewHeiClientAuthTool().Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
-
-	// Register permission interface
-	auth.RegisterInterface(&auth.HeiPermissionInterfaceImpl{})
-
-	// Init captcha
-	captcha.BCaptcha.Init(db.Redis)
-	captcha.CCaptcha.Init(db.Redis)
+	// Init all registered modules (auth, captcha, utils, etc.)
+	if err := module.InitAll(); err != nil {
+		log.Fatalf("[APP] Module init failed: %v", err)
+	}
 
 	// Create Gin engine
 	r := gin.Default()
 
 	// Global middleware
-	// Recovery must be first so it can catch panics from all downstream middleware
 	r.Use(middleware.Recovery())
 	r.Use(middleware.Trace())
-	// CORS
 	r.Use(middleware.CORS())
 	r.Use(middleware.AuthCheck())
+
+	// Apply module-registered global middlewares
+	registry.ApplyMiddlewares(r)
 
 	// Setup routes
 	SetupRouters(r)
 
-	// Run permission scan
-	auth.RunPermissionScan()
-
-	// Start background cron jobs
-	cron.Start()
+	// Start background modules (cron jobs, etc.)
+	module.StartAll()
 
 	// Start HTTP server with graceful shutdown
 	addr := fmt.Sprintf("%s:%d", config.C.App.Host, config.C.App.Port)
@@ -97,6 +90,9 @@ func Run() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("[APP] Server forced to shutdown: %v", err)
 	}
+
+	// Stop all modules in reverse order
+	module.StopAll()
 
 	db.Close()
 	db.CloseRedis()

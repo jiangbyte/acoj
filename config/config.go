@@ -14,6 +14,7 @@ type Config struct {
 	SM2       SM2Config       `yaml:"sm2"`
 	CORS      CORSConfig      `yaml:"cors"`
 	Snowflake SnowflakeConfig `yaml:"snowflake"`
+	Raw map[string]any `yaml:",inline"`
 }
 
 type AppConfig struct {

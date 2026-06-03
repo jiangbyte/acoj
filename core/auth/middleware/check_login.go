@@ -18,7 +18,7 @@ func HeiCheckLogin(loginType ...string) gin.HandlerFunc {
 		}
 		var isLogin bool
 		if lt == "CONSUMER" {
-			tool := &auth.HeiClientAuthTool{}
+			tool := auth.Consumer
 			isLogin = tool.IsLogin(c)
 		} else {
 			isLogin = auth.IsLogin(c)

@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"errors"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 // S3Storage implements FileStorage using AWS S3 or any S3-compatible object store.
@@ -163,6 +165,96 @@ func (s *S3Storage) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
 		Bucket:     aws.String(dstBucket),
 		CopySource: aws.String(srcBucket + "/" + srcKey),
 		Key:        aws.String(dstKey),
+	})
+	return err
+}
+
+// ===== ChunkedUploader implementation (S3 native multipart upload) =====
+
+// InitChunkUpload initializes an S3 multipart upload session.
+func (s *S3Storage) InitChunkUpload(bucket, fileKey string, totalChunks int) (string, error) {
+	ctx := context.Background()
+	if err := s._ensureBucket(ctx, bucket); err != nil {
+		return "", err
+	}
+	output, err := s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(fileKey),
+	})
+	if err != nil {
+		return "", err
+	}
+	return *output.UploadId, nil
+}
+
+// UploadChunk uploads a single chunk as a part in the S3 multipart upload.
+func (s *S3Storage) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) error {
+	ctx := context.Background()
+	partNumber := int32(chunk.ChunkIndex + 1) // S3 parts are 1-based
+	_, err := s.client.UploadPart(ctx, &s3.UploadPartInput{
+		Bucket:     aws.String(bucket),
+		Key:        aws.String(fileKey),
+		UploadId:   aws.String(uploadID),
+		PartNumber: aws.Int32(partNumber),
+		Body:       chunk.Data,
+	})
+	return err
+}
+
+// CompleteChunkUpload lists all uploaded parts and completes the S3 multipart upload.
+func (s *S3Storage) CompleteChunkUpload(bucket, fileKey, uploadID string) (string, error) {
+	ctx := context.Background()
+
+	var completedParts []types.CompletedPart
+	var partNumberMarker *string
+
+	for {
+		output, err := s.client.ListParts(ctx, &s3.ListPartsInput{
+			Bucket:           aws.String(bucket),
+			Key:              aws.String(fileKey),
+			UploadId:         aws.String(uploadID),
+			PartNumberMarker: partNumberMarker,
+		})
+		if err != nil {
+			return "", err
+		}
+		for _, p := range output.Parts {
+			completedParts = append(completedParts, types.CompletedPart{
+				PartNumber: p.PartNumber,
+				ETag:       p.ETag,
+			})
+		}
+		if output.IsTruncated == nil || !*output.IsTruncated {
+			break
+		}
+		partNumberMarker = output.NextPartNumberMarker
+	}
+
+	if len(completedParts) == 0 {
+		return "", errors.New("no parts to complete")
+	}
+
+	_, err := s.client.CompleteMultipartUpload(ctx, &s3.CompleteMultipartUploadInput{
+		Bucket:   aws.String(bucket),
+		Key:      aws.String(fileKey),
+		UploadId: aws.String(uploadID),
+		MultipartUpload: &types.CompletedMultipartUpload{
+			Parts: completedParts,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	return bucket + "/" + fileKey, nil
+}
+
+// AbortChunkUpload aborts the S3 multipart upload and cleans up partial data.
+func (s *S3Storage) AbortChunkUpload(bucket, fileKey, uploadID string) error {
+	ctx := context.Background()
+	_, err := s.client.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
+		Bucket:   aws.String(bucket),
+		Key:      aws.String(fileKey),
+		UploadId: aws.String(uploadID),
 	})
 	return err
 }

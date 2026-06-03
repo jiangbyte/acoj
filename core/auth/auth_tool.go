@@ -2,7 +2,14 @@ package auth
 
 import "github.com/gin-gonic/gin"
 
+// Business singleton for BUSINESS login type.
 var businessAuth = newBaseAuthTool("BUSINESS")
+
+// Consumer singleton for CONSUMER (client) login type.
+// Consumer is the auth tool for CONSUMER (client) login type.
+var Consumer = newBaseAuthTool("CONSUMER")
+
+// ---- BUSINESS package-level convenience functions ----
 
 func Init(expire int, tokenName string)   { businessAuth.Init(expire, tokenName) }
 func GetLoginType() string                { return businessAuth.GetLoginType() }

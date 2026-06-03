@@ -67,7 +67,7 @@ func AuthCheck() gin.HandlerFunc {
 
 		// 5. Client auth path: /api/v{n}/c/...
 		if segment == "c" {
-			clientAuth := &auth.HeiClientAuthTool{}
+			clientAuth := auth.Consumer
 			if !clientAuth.IsLogin(c) {
 				c.Header("Access-Control-Allow-Origin", "*")
 				c.Header("Access-Control-Allow-Methods", "*")

@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var clientAuth = auth.NewHeiClientAuthTool()
+var clientAuth = auth.Consumer
 
 func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/client-user/page",

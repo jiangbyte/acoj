@@ -22,7 +22,7 @@ import (
 func NoRepeat(interval int) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get user ID (try CONSUMER first, fallback to BUSINESS)
-		clientAuth := auth.NewHeiClientAuthTool()
+		clientAuth := auth.Consumer
 		userID := clientAuth.GetLoginIDDefaultNull(c)
 		if userID == "" {
 			userID = auth.GetLoginIDDefaultNull(c)

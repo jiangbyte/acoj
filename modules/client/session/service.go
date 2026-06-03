@@ -263,7 +263,7 @@ func collectSessions(ctx context.Context, redis *redis.Client, sessionPrefix, to
 }
 
 func Exit(c *gin.Context, userID string) {
-	auth.NewHeiClientAuthTool().Kickout(userID)
+	auth.Consumer.Kickout(userID)
 }
 
 func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
@@ -306,7 +306,7 @@ func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
 }
 
 func ExitToken(c *gin.Context, userID, token string) {
-	auth.NewHeiClientAuthTool().KickoutToken(userID, token)
+	auth.Consumer.KickoutToken(userID, token)
 }
 
 func ChartData(c *gin.Context) *SessionChartData {

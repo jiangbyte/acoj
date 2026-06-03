@@ -4,6 +4,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 )
 
 // LocalStorage implements FileStorage on the local filesystem.
@@ -123,4 +126,99 @@ func copyFile(src, dst string) error {
 
 	_, err = io.Copy(destFile, sourceFile)
 	return err
+}
+
+// ===== ChunkedUploader implementation =====
+
+// InitChunkUpload creates a temporary directory for chunk storage.
+func (s *LocalStorage) InitChunkUpload(bucket, fileKey string, totalChunks int) (string, error) {
+	uploadID := filepath.Base(fileKey) + "_" + randomSuffix()
+	dir := filepath.Join(s.uploadFolder, "tmp", uploadID)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+	return uploadID, nil
+}
+
+// UploadChunk saves a single chunk to the temporary directory.
+// The chunk is written to a file named by its zero-padded ChunkIndex
+// so that directory listing yields correct order for merging.
+func (s *LocalStorage) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) error {
+	dir := filepath.Join(s.uploadFolder, "tmp", uploadID)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	chunkPath := filepath.Join(dir, chunkFileName(chunk.ChunkIndex, chunk.TotalChunks))
+	data, err := io.ReadAll(chunk.Data)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(chunkPath, data, 0644)
+}
+
+// CompleteChunkUpload reads all chunks in order, merges them into the final file,
+// and cleans up the temporary directory.
+func (s *LocalStorage) CompleteChunkUpload(bucket, fileKey, uploadID string) (string, error) {
+	tmpDir := filepath.Join(s.uploadFolder, "tmp", uploadID)
+	entries, err := os.ReadDir(tmpDir)
+	if err != nil {
+		return "", err
+	}
+	if len(entries) == 0 {
+		return "", os.ErrNotExist
+	}
+
+	finalPath, err := s._ensurePath(bucket, fileKey)
+	if err != nil {
+		return "", err
+	}
+
+	dst, err := os.Create(finalPath)
+	if err != nil {
+		return "", err
+	}
+	defer dst.Close()
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		chunkPath := filepath.Join(tmpDir, entry.Name())
+		src, err := os.Open(chunkPath)
+		if err != nil {
+			return "", err
+		}
+		if _, err := io.Copy(dst, src); err != nil {
+			src.Close()
+			return "", err
+		}
+		src.Close()
+	}
+
+	// Cleanup temp directory
+	os.RemoveAll(tmpDir)
+
+	return finalPath, nil
+}
+
+// AbortChunkUpload deletes the temporary directory and all chunks.
+func (s *LocalStorage) AbortChunkUpload(bucket, fileKey, uploadID string) error {
+	dir := filepath.Join(s.uploadFolder, "tmp", uploadID)
+	return os.RemoveAll(dir)
+}
+
+// chunkFileName returns a zero-padded filename so alphanumeric sort matches index order.
+func chunkFileName(index, total int) string {
+	digits := 1
+	for t := total; t >= 10; t /= 10 {
+		digits++
+	}
+	return fmt.Sprintf("%0*d", digits, index)
+}
+
+// randomSuffix generates a short random hex string for upload ID uniqueness.
+func randomSuffix() string {
+	b := make([]byte, 8)
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }

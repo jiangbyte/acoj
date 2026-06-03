@@ -13,7 +13,7 @@ import (
 // getLoginID extracts the login ID from the request using the appropriate auth tool.
 func getLoginID(c *gin.Context, loginType string) string {
 	if loginType == string(enums.LoginTypeConsumer) {
-		clientAuth := NewHeiClientAuthTool()
+		clientAuth := Consumer
 		return clientAuth.GetLoginID(c)
 	}
 	return GetLoginID(c)
@@ -224,4 +224,23 @@ func CheckRoleOr(c *gin.Context, loginType string, roles ...string) {
 		c.AbortWithStatusJSON(http.StatusForbidden, result.Failure(c, fmt.Sprintf("缺少角色: %v", roles), 403, nil))
 		return
 	}
+}
+
+// ---- Permission interface registry ----
+
+var _permissionInterface HeiPermissionInterface
+
+// RegisterInterface registers the permission interface implementation.
+func RegisterInterface(iface HeiPermissionInterface) {
+	_permissionInterface = iface
+}
+
+// GetInterface returns the registered permission interface, or nil.
+func GetInterface() HeiPermissionInterface {
+	return _permissionInterface
+}
+
+// HasInterface returns whether a permission interface has been registered.
+func HasInterface() bool {
+	return _permissionInterface != nil
 }

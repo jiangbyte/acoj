@@ -30,8 +30,6 @@ func SysLog(name string) gin.HandlerFunc {
 				switch e := rec.(type) {
 				case *exception.BusinessError:
 					exeMessage = fmt.Sprintf("BusinessError{code=%d, message=%s}", e.Code, e.Message)
-				case exception.BusinessError:
-					exeMessage = fmt.Sprintf("BusinessError{code=%d, message=%s}", e.Code, e.Message)
 				default:
 					exeMessage = fmt.Sprintf("%v", rec)
 				}
