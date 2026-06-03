@@ -24,6 +24,7 @@ func Page(c *gin.Context, param *ConfigPageParam) gin.H {
 
 	query := db.DB.WithContext(ctx).Model(&SysConfig{})
 	if param.Keyword != "" { query = query.Where("config_key LIKE ? OR remark LIKE ?", "%"+param.Keyword+"%", "%"+param.Keyword+"%") }
+	if param.Category != "" { query = query.Where("category = ?", param.Category) }
 
 	var total int64
 	query.Count(&total)
