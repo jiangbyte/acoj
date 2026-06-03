@@ -6,6 +6,7 @@ import (
 	"hei-gin/core/log"
 	"hei-gin/core/pojo"
 	"hei-gin/core/result"
+	"hei-gin/core/registry"
 	dict "hei-gin/modules/sys/dict"
 
 	"github.com/gin-gonic/gin"
@@ -15,13 +16,13 @@ import (
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/dict/page
 	r.GET("/api/v1/sys/dict/page",
-		middleware.HeiCheckPermission([]string{"sys:dict:page"}),
+		registry.Perm("sys:dict:page", "字典分页"),
 		dictPage,
 	)
 
 	// POST /api/v1/sys/dict/create
 	r.POST("/api/v1/sys/dict/create",
-		middleware.HeiCheckPermission([]string{"sys:dict:create"}),
+		registry.Perm("sys:dict:create", "添加字典"),
 		log.SysLog("添加字典"),
 		middleware.NoRepeat(3000),
 		dictCreate,
@@ -29,45 +30,45 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// POST /api/v1/sys/dict/modify
 	r.POST("/api/v1/sys/dict/modify",
-		middleware.HeiCheckPermission([]string{"sys:dict:modify"}),
+		registry.Perm("sys:dict:modify", "编辑字典"),
 		log.SysLog("编辑字典"),
 		dictModify,
 	)
 
 	// POST /api/v1/sys/dict/remove
 	r.POST("/api/v1/sys/dict/remove",
-		middleware.HeiCheckPermission([]string{"sys:dict:remove"}),
+		registry.Perm("sys:dict:remove", "删除字典"),
 		log.SysLog("删除字典"),
 		dictRemove,
 	)
 
 	// GET /api/v1/sys/dict/detail
 	r.GET("/api/v1/sys/dict/detail",
-		middleware.HeiCheckPermission([]string{"sys:dict:detail"}),
+		registry.Perm("sys:dict:detail", "字典详情"),
 		dictDetail,
 	)
 
 	// GET /api/v1/sys/dict/list
 	r.GET("/api/v1/sys/dict/list",
-		middleware.HeiCheckPermission([]string{"sys:dict:list"}),
+		registry.Perm("sys:dict:list", "字典列表"),
 		dictList,
 	)
 
 	// GET /api/v1/sys/dict/tree
 	r.GET("/api/v1/sys/dict/tree",
-		middleware.HeiCheckPermission([]string{"sys:dict:tree"}),
+		registry.Perm("sys:dict:tree", "字典树"),
 		dictTree,
 	)
 
 	// GET /api/v1/sys/dict/get-label
 	r.GET("/api/v1/sys/dict/get-label",
-		middleware.HeiCheckPermission([]string{"sys:dict:get-label"}),
+		registry.Perm("sys:dict:get-label", "字典标签"),
 		dictGetLabel,
 	)
 
 	// GET /api/v1/sys/dict/get-children
 	r.GET("/api/v1/sys/dict/get-children",
-		middleware.HeiCheckPermission([]string{"sys:dict:get-children"}),
+		registry.Perm("sys:dict:get-children", "字典子项"),
 		dictGetChildren,
 	)
 }

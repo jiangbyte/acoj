@@ -6,6 +6,7 @@ import (
 	"hei-gin/core/log"
 	"hei-gin/core/pojo"
 	"hei-gin/core/result"
+	"hei-gin/core/registry"
 	group "hei-gin/modules/sys/group"
 
 	"github.com/gin-gonic/gin"
@@ -13,41 +14,41 @@ import (
 
 func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/sys/group/page",
-		middleware.HeiCheckPermission([]string{"sys:group:page"}),
+		registry.Perm("sys:group:page", "分组分页"),
 		pageHandler,
 	)
 
 	r.GET("/api/v1/sys/group/union-tree",
-		middleware.HeiCheckPermission([]string{"sys:group:tree"}),
+		registry.Perm("sys:group:tree", "分组树"),
 		unionTreeHandler,
 	)
 
 	r.GET("/api/v1/sys/group/tree",
-		middleware.HeiCheckPermission([]string{"sys:group:tree"}),
+		registry.Perm("sys:group:tree", "分组树"),
 		treeHandler,
 	)
 
 	r.POST("/api/v1/sys/group/create",
-		middleware.HeiCheckPermission([]string{"sys:group:create"}),
+		registry.Perm("sys:group:create", "添加分组"),
 		log.SysLog("添加用户组"),
 		middleware.NoRepeat(3000),
 		createHandler,
 	)
 
 	r.POST("/api/v1/sys/group/modify",
-		middleware.HeiCheckPermission([]string{"sys:group:modify"}),
+		registry.Perm("sys:group:modify", "编辑分组"),
 		log.SysLog("编辑用户组"),
 		modifyHandler,
 	)
 
 	r.POST("/api/v1/sys/group/remove",
-		middleware.HeiCheckPermission([]string{"sys:group:remove"}),
+		registry.Perm("sys:group:remove", "删除分组"),
 		log.SysLog("删除用户组"),
 		removeHandler,
 	)
 
 	r.GET("/api/v1/sys/group/detail",
-		middleware.HeiCheckPermission([]string{"sys:group:detail"}),
+		registry.Perm("sys:group:detail", "分组详情"),
 		detailHandler,
 	)
 }

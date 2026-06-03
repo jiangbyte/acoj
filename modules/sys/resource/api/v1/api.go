@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/core/auth"
+	"hei-gin/core/registry"
 	authmw "hei-gin/core/auth/middleware"
 	"hei-gin/core/log"
 	"hei-gin/core/pojo"
@@ -17,57 +18,57 @@ import (
 func RegisterRoutes(r *gin.Engine) {
 	// ---- Module routes ----
 	r.GET("/api/v1/sys/module/page",
-		authmw.HeiCheckPermission([]string{"sys:module:page"}),
+		registry.Perm("sys:module:page", "模块分页"),
 		modulePage,
 	)
 	r.POST("/api/v1/sys/module/create",
-		authmw.HeiCheckPermission([]string{"sys:module:create"}),
+		registry.Perm("sys:module:create", "添加模块"),
 		log.SysLog("添加模块"),
 		authmw.NoRepeat(3000),
 		moduleCreate,
 	)
 	r.POST("/api/v1/sys/module/modify",
-		authmw.HeiCheckPermission([]string{"sys:module:modify"}),
+		registry.Perm("sys:module:modify", "编辑模块"),
 		log.SysLog("编辑模块"),
 		moduleModify,
 	)
 	r.POST("/api/v1/sys/module/remove",
-		authmw.HeiCheckPermission([]string{"sys:module:remove"}),
+		registry.Perm("sys:module:remove", "删除模块"),
 		log.SysLog("删除模块"),
 		moduleRemove,
 	)
 	r.GET("/api/v1/sys/module/detail",
-		authmw.HeiCheckPermission([]string{"sys:module:detail"}),
+		registry.Perm("sys:module:detail", "模块详情"),
 		moduleDetail,
 	)
 
 	// ---- Resource routes ----
 	r.GET("/api/v1/sys/resource/tree",
-		authmw.HeiCheckPermission([]string{"sys:resource:tree"}),
+		registry.Perm("sys:resource:tree", "资源树"),
 		resourceTree,
 	)
 	r.GET("/api/v1/sys/resource/page",
-		authmw.HeiCheckPermission([]string{"sys:resource:page"}),
+		registry.Perm("sys:resource:page", "资源分页"),
 		resourcePage,
 	)
 	r.POST("/api/v1/sys/resource/create",
-		authmw.HeiCheckPermission([]string{"sys:resource:create"}),
+		registry.Perm("sys:resource:create", "添加资源"),
 		log.SysLog("添加资源"),
 		authmw.NoRepeat(3000),
 		resourceCreate,
 	)
 	r.POST("/api/v1/sys/resource/modify",
-		authmw.HeiCheckPermission([]string{"sys:resource:modify"}),
+		registry.Perm("sys:resource:modify", "编辑资源"),
 		log.SysLog("编辑资源"),
 		resourceModify,
 	)
 	r.POST("/api/v1/sys/resource/remove",
-		authmw.HeiCheckPermission([]string{"sys:resource:remove"}),
+		registry.Perm("sys:resource:remove", "删除资源"),
 		log.SysLog("删除资源"),
 		resourceRemove,
 	)
 	r.GET("/api/v1/sys/resource/detail",
-		authmw.HeiCheckPermission([]string{"sys:resource:detail"}),
+		registry.Perm("sys:resource:detail", "资源详情"),
 		resourceDetail,
 	)
 }

@@ -2,6 +2,7 @@ package v1
 
 import (
 	"hei-gin/core/auth"
+	"hei-gin/core/registry"
 	middleware "hei-gin/core/auth/middleware"
 	"hei-gin/core/log"
 	"hei-gin/core/pojo"
@@ -15,27 +16,27 @@ var clientAuth = auth.NewHeiClientAuthTool()
 
 func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/client-user/page",
-		middleware.HeiCheckPermission([]string{"client:user:page"}),
+		registry.Perm("client:user:page", "C端用户分页"),
 		pageHandler,
 	)
 
 	r.POST("/api/v1/client-user/create",
-		middleware.HeiCheckPermission([]string{"client:user:create"}),
+		registry.Perm("client:user:create", "添加C端用户"),
 		createHandler,
 	)
 
 	r.POST("/api/v1/client-user/modify",
-		middleware.HeiCheckPermission([]string{"client:user:modify"}),
+		registry.Perm("client:user:modify", "编辑C端用户"),
 		modifyHandler,
 	)
 
 	r.POST("/api/v1/client-user/remove",
-		middleware.HeiCheckPermission([]string{"client:user:remove"}),
+		registry.Perm("client:user:remove", "删除C端用户"),
 		removeHandler,
 	)
 
 	r.GET("/api/v1/client-user/detail",
-		middleware.HeiCheckPermission([]string{"client:user:detail"}),
+		registry.Perm("client:user:detail", "C端用户详情"),
 		detailHandler,
 	)
 

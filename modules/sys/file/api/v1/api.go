@@ -5,6 +5,7 @@ import (
 	"hei-gin/core/log"
 	"hei-gin/core/pojo"
 	"hei-gin/core/result"
+	"hei-gin/core/registry"
 	file "hei-gin/modules/sys/file"
 
 	"github.com/gin-gonic/gin"
@@ -14,39 +15,39 @@ import (
 func RegisterRoutes(r *gin.Engine) {
 	// POST /api/v1/sys/file/upload
 	r.POST("/api/v1/sys/file/upload",
-		middleware.HeiCheckPermission([]string{"sys:file:upload"}),
+		registry.Perm("sys:file:upload", "上传文件"),
 		log.SysLog("上传文件"),
 		fileUpload,
 	)
 
 	// GET /api/v1/sys/file/download
 	r.GET("/api/v1/sys/file/download",
-		middleware.HeiCheckPermission([]string{"sys:file:download"}),
+		registry.Perm("sys:file:download", "下载文件"),
 		fileDownload,
 	)
 
 	// GET /api/v1/sys/file/page
 	r.GET("/api/v1/sys/file/page",
-		middleware.HeiCheckPermission([]string{"sys:file:page"}),
+		registry.Perm("sys:file:page", "文件分页"),
 		filePage,
 	)
 
 	// GET /api/v1/sys/file/detail
 	r.GET("/api/v1/sys/file/detail",
-		middleware.HeiCheckPermission([]string{"sys:file:detail"}),
+		registry.Perm("sys:file:detail", "文件详情"),
 		fileDetail,
 	)
 
 	// POST /api/v1/sys/file/remove
 	r.POST("/api/v1/sys/file/remove",
-		middleware.HeiCheckPermission([]string{"sys:file:remove"}),
+		registry.Perm("sys:file:remove", "删除文件"),
 		log.SysLog("删除文件"),
 		fileRemove,
 	)
 
 	// POST /api/v1/sys/file/remove-absolute
 	r.POST("/api/v1/sys/file/remove-absolute",
-		middleware.HeiCheckPermission([]string{"sys:file:remove"}),
+		registry.Perm("sys:file:remove", "删除文件"),
 		log.SysLog("物理删除文件"),
 		fileRemoveAbsolute,
 	)

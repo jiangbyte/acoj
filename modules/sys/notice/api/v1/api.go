@@ -6,6 +6,7 @@ import (
 	"hei-gin/core/log"
 	"hei-gin/core/pojo"
 	"hei-gin/core/result"
+	"hei-gin/core/registry"
 	notice "hei-gin/modules/sys/notice"
 
 	"github.com/gin-gonic/gin"
@@ -15,13 +16,13 @@ import (
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/notice/page
 	r.GET("/api/v1/sys/notice/page",
-		middleware.HeiCheckPermission([]string{"sys:notice:page"}),
+		registry.Perm("sys:notice:page", "通知分页"),
 		pageHandler,
 	)
 
 	// POST /api/v1/sys/notice/create
 	r.POST("/api/v1/sys/notice/create",
-		middleware.HeiCheckPermission([]string{"sys:notice:create"}),
+		registry.Perm("sys:notice:create", "添加通知"),
 		log.SysLog("添加通知"),
 		middleware.NoRepeat(3000),
 		createHandler,
@@ -29,21 +30,21 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// POST /api/v1/sys/notice/modify
 	r.POST("/api/v1/sys/notice/modify",
-		middleware.HeiCheckPermission([]string{"sys:notice:modify"}),
+		registry.Perm("sys:notice:modify", "编辑通知"),
 		log.SysLog("编辑通知"),
 		modifyHandler,
 	)
 
 	// POST /api/v1/sys/notice/remove
 	r.POST("/api/v1/sys/notice/remove",
-		middleware.HeiCheckPermission([]string{"sys:notice:remove"}),
+		registry.Perm("sys:notice:remove", "删除通知"),
 		log.SysLog("删除通知"),
 		deleteHandler,
 	)
 
 	// GET /api/v1/sys/notice/detail
 	r.GET("/api/v1/sys/notice/detail",
-		middleware.HeiCheckPermission([]string{"sys:notice:detail"}),
+		registry.Perm("sys:notice:detail", "通知详情"),
 		detailHandler,
 	)
 }

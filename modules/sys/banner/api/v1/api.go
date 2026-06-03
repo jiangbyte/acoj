@@ -6,6 +6,7 @@ import (
 	"hei-gin/core/log"
 	"hei-gin/core/pojo"
 	"hei-gin/core/result"
+	"hei-gin/core/registry"
 	banner "hei-gin/modules/sys/banner"
 
 	"github.com/gin-gonic/gin"
@@ -15,14 +16,14 @@ import (
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/banner/page
 	r.GET("/api/v1/sys/banner/page",
-		middleware.HeiCheckPermission([]string{"sys:banner:page"}),
+		registry.Perm("sys:banner:page", "横幅分页"),
 		log.SysLog("获取Banner列表"),
 		pageHandler,
 	)
 
 	// POST /api/v1/sys/banner/create
 	r.POST("/api/v1/sys/banner/create",
-		middleware.HeiCheckPermission([]string{"sys:banner:create"}),
+		registry.Perm("sys:banner:create", "添加横幅"),
 		log.SysLog("添加Banner"),
 		middleware.NoRepeat(3000),
 		createHandler,
@@ -30,21 +31,21 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// POST /api/v1/sys/banner/modify
 	r.POST("/api/v1/sys/banner/modify",
-		middleware.HeiCheckPermission([]string{"sys:banner:modify"}),
+		registry.Perm("sys:banner:modify", "编辑横幅"),
 		log.SysLog("编辑Banner"),
 		modifyHandler,
 	)
 
 	// POST /api/v1/sys/banner/remove
 	r.POST("/api/v1/sys/banner/remove",
-		middleware.HeiCheckPermission([]string{"sys:banner:remove"}),
+		registry.Perm("sys:banner:remove", "删除横幅"),
 		log.SysLog("删除Banner"),
 		deleteHandler,
 	)
 
 	// GET /api/v1/sys/banner/detail
 	r.GET("/api/v1/sys/banner/detail",
-		middleware.HeiCheckPermission([]string{"sys:banner:detail"}),
+		registry.Perm("sys:banner:detail", "横幅详情"),
 		detailHandler,
 	)
 }

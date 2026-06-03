@@ -6,6 +6,7 @@ import (
 	"hei-gin/core/log"
 	"hei-gin/core/pojo"
 	"hei-gin/core/result"
+	"hei-gin/core/registry"
 	role "hei-gin/modules/sys/role"
 
 	"github.com/gin-gonic/gin"
@@ -15,13 +16,13 @@ import (
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/role/page
 	r.GET("/api/v1/sys/role/page",
-		middleware.HeiCheckPermission([]string{"sys:role:page"}),
+		registry.Perm("sys:role:page", "角色分页"),
 		rolePage,
 	)
 
 	// POST /api/v1/sys/role/create
 	r.POST("/api/v1/sys/role/create",
-		middleware.HeiCheckPermission([]string{"sys:role:create"}),
+		registry.Perm("sys:role:create", "添加角色"),
 		log.SysLog("添加角色"),
 		middleware.NoRepeat(3000),
 		roleCreate,
@@ -29,27 +30,27 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// POST /api/v1/sys/role/modify
 	r.POST("/api/v1/sys/role/modify",
-		middleware.HeiCheckPermission([]string{"sys:role:modify"}),
+		registry.Perm("sys:role:modify", "编辑角色"),
 		log.SysLog("编辑角色"),
 		roleModify,
 	)
 
 	// POST /api/v1/sys/role/remove
 	r.POST("/api/v1/sys/role/remove",
-		middleware.HeiCheckPermission([]string{"sys:role:remove"}),
+		registry.Perm("sys:role:remove", "删除角色"),
 		log.SysLog("删除角色"),
 		roleRemove,
 	)
 
 	// GET /api/v1/sys/role/detail
 	r.GET("/api/v1/sys/role/detail",
-		middleware.HeiCheckPermission([]string{"sys:role:detail"}),
+		registry.Perm("sys:role:detail", "角色详情"),
 		roleDetail,
 	)
 
 	// POST /api/v1/sys/role/grant-permission
 	r.POST("/api/v1/sys/role/grant-permission",
-		middleware.HeiCheckPermission([]string{"sys:role:grant-permission"}),
+		registry.Perm("sys:role:grant-permission", "分配角色权限"),
 		log.SysLog("分配角色权限"),
 		middleware.NoRepeat(3000),
 		roleGrantPermission,
@@ -57,7 +58,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// POST /api/v1/sys/role/grant-resource
 	r.POST("/api/v1/sys/role/grant-resource",
-		middleware.HeiCheckPermission([]string{"sys:role:grant-resource"}),
+		registry.Perm("sys:role:grant-resource", "分配角色资源"),
 		log.SysLog("分配角色资源"),
 		middleware.NoRepeat(3000),
 		roleGrantResource,
@@ -65,19 +66,19 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// GET /api/v1/sys/role/own-permission
 	r.GET("/api/v1/sys/role/own-permission",
-		middleware.HeiCheckPermission([]string{"sys:role:own-permission"}),
+		registry.Perm("sys:role:own-permission", "角色权限列表"),
 		roleOwnPermission,
 	)
 
 	// GET /api/v1/sys/role/own-permission-detail
 	r.GET("/api/v1/sys/role/own-permission-detail",
-		middleware.HeiCheckPermission([]string{"sys:role:own-permission"}),
+		registry.Perm("sys:role:own-permission", "角色权限列表"),
 		roleOwnPermissionDetail,
 	)
 
 	// GET /api/v1/sys/role/own-resource
 	r.GET("/api/v1/sys/role/own-resource",
-		middleware.HeiCheckPermission([]string{"sys:role:own-resource"}),
+		registry.Perm("sys:role:own-resource", "角色资源列表"),
 		roleOwnResource,
 	)
 }

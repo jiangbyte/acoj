@@ -6,6 +6,7 @@ import (
 	"hei-gin/core/log"
 	"hei-gin/core/pojo"
 	"hei-gin/core/result"
+	"hei-gin/core/registry"
 	org "hei-gin/modules/sys/org"
 
 	"github.com/gin-gonic/gin"
@@ -15,19 +16,19 @@ import (
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/org/page
 	r.GET("/api/v1/sys/org/page",
-		middleware.HeiCheckPermission([]string{"sys:org:page"}),
+		registry.Perm("sys:org:page", "组织分页"),
 		orgPage,
 	)
 
 	// GET /api/v1/sys/org/tree
 	r.GET("/api/v1/sys/org/tree",
-		middleware.HeiCheckPermission([]string{"sys:org:tree"}),
+		registry.Perm("sys:org:tree", "组织树"),
 		orgTree,
 	)
 
 	// POST /api/v1/sys/org/create
 	r.POST("/api/v1/sys/org/create",
-		middleware.HeiCheckPermission([]string{"sys:org:create"}),
+		registry.Perm("sys:org:create", "添加组织"),
 		log.SysLog("添加组织"),
 		middleware.NoRepeat(3000),
 		orgCreate,
@@ -35,21 +36,21 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// POST /api/v1/sys/org/modify
 	r.POST("/api/v1/sys/org/modify",
-		middleware.HeiCheckPermission([]string{"sys:org:modify"}),
+		registry.Perm("sys:org:modify", "编辑组织"),
 		log.SysLog("编辑组织"),
 		orgModify,
 	)
 
 	// POST /api/v1/sys/org/remove
 	r.POST("/api/v1/sys/org/remove",
-		middleware.HeiCheckPermission([]string{"sys:org:remove"}),
+		registry.Perm("sys:org:remove", "删除组织"),
 		log.SysLog("删除组织"),
 		orgRemove,
 	)
 
 	// GET /api/v1/sys/org/detail
 	r.GET("/api/v1/sys/org/detail",
-		middleware.HeiCheckPermission([]string{"sys:org:detail"}),
+		registry.Perm("sys:org:detail", "组织详情"),
 		orgDetail,
 	)
 }

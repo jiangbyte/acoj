@@ -6,6 +6,7 @@ import (
 	"hei-gin/core/log"
 	"hei-gin/core/pojo"
 	"hei-gin/core/result"
+	"hei-gin/core/registry"
 	config "hei-gin/modules/sys/config"
 
 	"github.com/gin-gonic/gin"
@@ -13,48 +14,48 @@ import (
 
 func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/sys/config/page",
-		middleware.HeiCheckPermission([]string{"sys:config:page"}),
+		registry.Perm("sys:config:page", "配置分页"),
 		pageHandler,
 	)
 
 	r.GET("/api/v1/sys/config/list-by-category",
-		middleware.HeiCheckPermission([]string{"sys:config:list"}),
+		registry.Perm("sys:config:list", "配置列表"),
 		listByCategoryHandler,
 	)
 
 	r.POST("/api/v1/sys/config/create",
-		middleware.HeiCheckPermission([]string{"sys:config:create"}),
+		registry.Perm("sys:config:create", "添加配置"),
 		log.SysLog("添加配置"),
 		middleware.NoRepeat(3000),
 		createHandler,
 	)
 
 	r.POST("/api/v1/sys/config/modify",
-		middleware.HeiCheckPermission([]string{"sys:config:modify"}),
+		registry.Perm("sys:config:modify", "编辑配置"),
 		log.SysLog("编辑配置"),
 		modifyHandler,
 	)
 
 	r.POST("/api/v1/sys/config/remove",
-		middleware.HeiCheckPermission([]string{"sys:config:remove"}),
+		registry.Perm("sys:config:remove", "删除配置"),
 		log.SysLog("删除配置"),
 		deleteHandler,
 	)
 
 	r.GET("/api/v1/sys/config/detail",
-		middleware.HeiCheckPermission([]string{"sys:config:detail"}),
+		registry.Perm("sys:config:detail", "配置详情"),
 		detailHandler,
 	)
 
 	r.POST("/api/v1/sys/config/edit-batch",
-		middleware.HeiCheckPermission([]string{"sys:config:edit"}),
+		registry.Perm("sys:config:edit", "配置编辑"),
 		log.SysLog("批量编辑配置"),
 		middleware.NoRepeat(3000),
 		editBatchHandler,
 	)
 
 	r.POST("/api/v1/sys/config/edit-by-category",
-		middleware.HeiCheckPermission([]string{"sys:config:edit"}),
+		registry.Perm("sys:config:edit", "配置编辑"),
 		log.SysLog("按分类批量编辑配置"),
 		middleware.NoRepeat(3000),
 		editByCategoryHandler,

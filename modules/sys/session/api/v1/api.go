@@ -1,8 +1,8 @@
 package v1
 
 import (
-	"hei-gin/core/auth/middleware"
-	"hei-gin/core/result"
+		"hei-gin/core/result"
+	"hei-gin/core/registry"
 	session "hei-gin/modules/sys/session"
 
 	"github.com/gin-gonic/gin"
@@ -12,37 +12,37 @@ import (
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/session/analysis
 	r.GET("/api/v1/sys/session/analysis",
-		middleware.HeiCheckPermission([]string{"sys:session:page"}),
+		registry.Perm("sys:session:page", "会话分页"),
 		sessionAnalysis,
 	)
 
 	// GET /api/v1/sys/session/page
 	r.GET("/api/v1/sys/session/page",
-		middleware.HeiCheckPermission([]string{"sys:session:page"}),
+		registry.Perm("sys:session:page", "会话分页"),
 		sessionPage,
 	)
 
 	// POST /api/v1/sys/session/exit
 	r.POST("/api/v1/sys/session/exit",
-		middleware.HeiCheckPermission([]string{"sys:session:exit"}),
+		registry.Perm("sys:session:exit", "强退会话"),
 		sessionExit,
 	)
 
 	// GET /api/v1/sys/session/tokens
 	r.GET("/api/v1/sys/session/tokens",
-		middleware.HeiCheckPermission([]string{"sys:session:page"}),
+		registry.Perm("sys:session:page", "会话分页"),
 		sessionTokens,
 	)
 
 	// POST /api/v1/sys/session/exit-token
 	r.POST("/api/v1/sys/session/exit-token",
-		middleware.HeiCheckPermission([]string{"sys:session:exit"}),
+		registry.Perm("sys:session:exit", "强退会话"),
 		sessionExitToken,
 	)
 
 	// GET /api/v1/sys/session/chart-data
 	r.GET("/api/v1/sys/session/chart-data",
-		middleware.HeiCheckPermission([]string{"sys:session:page"}),
+		registry.Perm("sys:session:page", "会话分页"),
 		sessionChartData,
 	)
 }

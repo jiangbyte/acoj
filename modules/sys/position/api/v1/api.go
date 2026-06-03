@@ -6,6 +6,7 @@ import (
 	"hei-gin/core/log"
 	"hei-gin/core/pojo"
 	"hei-gin/core/result"
+	"hei-gin/core/registry"
 	position "hei-gin/modules/sys/position"
 
 	"github.com/gin-gonic/gin"
@@ -15,14 +16,14 @@ import (
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/position/page
 	r.GET("/api/v1/sys/position/page",
-		middleware.HeiCheckPermission([]string{"sys:position:page"}),
+		registry.Perm("sys:position:page", "岗位分页"),
 		log.SysLog("查看职位列表"),
 		pageHandler,
 	)
 
 	// POST /api/v1/sys/position/create
 	r.POST("/api/v1/sys/position/create",
-		middleware.HeiCheckPermission([]string{"sys:position:create"}),
+		registry.Perm("sys:position:create", "添加岗位"),
 		log.SysLog("添加职位"),
 		middleware.NoRepeat(3000),
 		createHandler,
@@ -30,21 +31,21 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// POST /api/v1/sys/position/modify
 	r.POST("/api/v1/sys/position/modify",
-		middleware.HeiCheckPermission([]string{"sys:position:modify"}),
+		registry.Perm("sys:position:modify", "编辑岗位"),
 		log.SysLog("编辑职位"),
 		modifyHandler,
 	)
 
 	// POST /api/v1/sys/position/remove
 	r.POST("/api/v1/sys/position/remove",
-		middleware.HeiCheckPermission([]string{"sys:position:remove"}),
+		registry.Perm("sys:position:remove", "删除岗位"),
 		log.SysLog("删除职位"),
 		deleteHandler,
 	)
 
 	// GET /api/v1/sys/position/detail
 	r.GET("/api/v1/sys/position/detail",
-		middleware.HeiCheckPermission([]string{"sys:position:detail"}),
+		registry.Perm("sys:position:detail", "岗位详情"),
 		detailHandler,
 	)
 }

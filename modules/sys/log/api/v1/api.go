@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/core/auth"
+	"hei-gin/core/registry"
 	middleware "hei-gin/core/auth/middleware"
 	sysLog "hei-gin/core/log"
 	"hei-gin/core/pojo"
@@ -17,63 +18,63 @@ import (
 func RegisterRoutes(r *gin.Engine) {
 	// GET /api/v1/sys/log/page
 	r.GET("/api/v1/sys/log/page",
-		middleware.HeiCheckPermission([]string{"sys:log:page"}),
+		registry.Perm("sys:log:page", "日志分页"),
 		logPage,
 	)
 
 	// POST /api/v1/sys/log/create
 	r.POST("/api/v1/sys/log/create",
-		middleware.HeiCheckPermission([]string{"sys:log:create"}),
+		registry.Perm("sys:log:create", "添加日志"),
 		logCreate,
 	)
 
 	// POST /api/v1/sys/log/modify
 	r.POST("/api/v1/sys/log/modify",
-		middleware.HeiCheckPermission([]string{"sys:log:modify"}),
+		registry.Perm("sys:log:modify", "编辑日志"),
 		logModify,
 	)
 
 	// POST /api/v1/sys/log/remove
 	r.POST("/api/v1/sys/log/remove",
-		middleware.HeiCheckPermission([]string{"sys:log:remove"}),
+		registry.Perm("sys:log:remove", "删除日志"),
 		sysLog.SysLog("删除操作日志"),
 		logRemove,
 	)
 
 	// GET /api/v1/sys/log/detail
 	r.GET("/api/v1/sys/log/detail",
-		middleware.HeiCheckPermission([]string{"sys:log:detail"}),
+		registry.Perm("sys:log:detail", "日志详情"),
 		logDetail,
 	)
 
 	// POST /api/v1/sys/log/delete-by-category
 	r.POST("/api/v1/sys/log/delete-by-category",
-		middleware.HeiCheckPermission([]string{"sys:log:remove"}),
+		registry.Perm("sys:log:remove", "删除日志"),
 		middleware.NoRepeat(5000),
 		logDeleteByCategory,
 	)
 
 	// GET /api/v1/sys/log/vis/line-chart-data
 	r.GET("/api/v1/sys/log/vis/line-chart-data",
-		middleware.HeiCheckPermission([]string{"sys:log:page"}),
+		registry.Perm("sys:log:page", "日志分页"),
 		logVisLineChart,
 	)
 
 	// GET /api/v1/sys/log/vis/pie-chart-data
 	r.GET("/api/v1/sys/log/vis/pie-chart-data",
-		middleware.HeiCheckPermission([]string{"sys:log:page"}),
+		registry.Perm("sys:log:page", "日志分页"),
 		logVisPieChart,
 	)
 
 	// GET /api/v1/sys/log/op/bar-chart-data
 	r.GET("/api/v1/sys/log/op/bar-chart-data",
-		middleware.HeiCheckPermission([]string{"sys:log:page"}),
+		registry.Perm("sys:log:page", "日志分页"),
 		logOpBarChart,
 	)
 
 	// GET /api/v1/sys/log/op/pie-chart-data
 	r.GET("/api/v1/sys/log/op/pie-chart-data",
-		middleware.HeiCheckPermission([]string{"sys:log:page"}),
+		registry.Perm("sys:log:page", "日志分页"),
 		logOpPieChart,
 	)
 }
