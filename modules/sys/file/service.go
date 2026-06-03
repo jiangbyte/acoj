@@ -1,6 +1,7 @@
 package file
 
 import (
+	"strings"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"hei-gin/core/db"
+	"hei-gin/core/pojo"
 	"hei-gin/core/exception"
 	"hei-gin/core/result"
 	"hei-gin/core/storage"
@@ -18,6 +20,24 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+
+// allowedExtensions is a whitelist of file extensions allowed for upload.
+var allowedExtensions = map[string]bool{
+	".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true, ".svg": true, ".ico": true,
+	".bmp": true, ".tiff": true,
+	".doc": true, ".docx": true, ".xls": true, ".xlsx": true, ".ppt": true, ".pptx": true, ".pdf": true,
+	".txt": true, ".csv": true, ".md": true,
+	".zip": true, ".rar": true, ".7z": true, ".tar": true, ".gz": true,
+	".mp3": true, ".wav": true, ".ogg": true,
+	".mp4": true, ".avi": true, ".mkv": true, ".mov": true, ".webm": true,
+	".json": true, ".xml": true, ".yaml": true, ".yml": true,
+}
+
+// isAllowedExtension checks whether a file extension is in the whitelist.
+func isAllowedExtension(ext string) bool {
+	return allowedExtensions[strings.ToLower(ext)]
+}
 
 // computeSHA256 computes the SHA-256 hex digest of a reader.
 // The reader is consumed; caller must reset if needed.
@@ -166,6 +186,9 @@ func Upload(c *gin.Context) *FileVO {
 
 	now := time.Now()
 	ext := filepath.Ext(header.Filename)
+	if !isAllowedExtension(ext) {
+		panic(exception.NewBusinessError("不支持的文件类型: "+ext, 400))
+	}
 	fileName := utils.GenerateID() + ext
 
 	s := storage.GetStorage(storageType)
@@ -230,6 +253,8 @@ func Upload(c *gin.Context) *FileVO {
 		FileSuffix: entity.FileSuffix, Checksum: entity.Checksum,
 		ChecksumAlgo: entity.ChecksumAlgo,
 		Bucket: entity.Bucket, ObjectKey: entity.ObjectKey,
+		CreatedAt:    pojo.FormatDateTime(*entity.CreatedAt),
+		UpdatedAt:    pojo.FormatDateTime(*entity.UpdatedAt),
 	}
 }
 
@@ -393,6 +418,9 @@ func CompleteChunkUpload(c *gin.Context) {
 	// Compute checksum for storage
 	now := time.Now()
 	ext := filepath.Ext(originalNameStr)
+	if !isAllowedExtension(ext) {
+		panic(exception.NewBusinessError("不支持的文件类型: "+ext, 400))
+	}
 	algo := "sha256"
 
 	var checksumPtr *string
@@ -431,6 +459,8 @@ func CompleteChunkUpload(c *gin.Context) {
 		FileSuffix: entity.FileSuffix, Checksum: entity.Checksum,
 		ChecksumAlgo: entity.ChecksumAlgo,
 		Bucket: entity.Bucket, ObjectKey: entity.ObjectKey,
+		CreatedAt:    pojo.FormatDateTime(*entity.CreatedAt),
+		UpdatedAt:    pojo.FormatDateTime(*entity.UpdatedAt),
 	}))
 }
 

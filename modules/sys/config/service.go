@@ -1,4 +1,4 @@
-﻿package config
+package config
 
 import (
 	"context"
@@ -14,6 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+
+
 func Page(c *gin.Context, param *ConfigPageParam) gin.H {
 	ctx := context.Background()
 	if param.Current < 1 { param.Current = 1 }
@@ -28,10 +30,10 @@ func Page(c *gin.Context, param *ConfigPageParam) gin.H {
 
 	var records []SysConfig
 	query.Order("sort_code ASC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
-	return result.PageDataResult(c, records, total, param.Current, param.Size)
+	return result.PageDataResult(c, toVOList(records), total, param.Current, param.Size)
 }
 
-func Detail(c *gin.Context, id string) *SysConfig {
+func Detail(c *gin.Context, id string) *ConfigVO {
 	if id == "" { return nil }
 	ctx := context.Background()
 	var entity SysConfig
@@ -39,7 +41,7 @@ func Detail(c *gin.Context, id string) *SysConfig {
 		if err == gorm.ErrRecordNotFound { return nil }
 		panic(exception.NewBusinessError("查询配置详情失败: "+err.Error(), 500))
 	}
-	return &entity
+	return toVO(&entity)
 }
 
 func Create(c *gin.Context, vo *ConfigVO, userID string) {
@@ -90,16 +92,17 @@ func Remove(c *gin.Context, ids []string) {
 	}
 }
 
-func ListByCategory(c *gin.Context, category string) []SysConfig {
+func ListByCategory(c *gin.Context, category string) []ConfigVO {
 	ctx := context.Background()
 	var records []SysConfig
 	db.DB.WithContext(ctx).Model(&SysConfig{}).Where("category = ?", category).Order("sort_code ASC").Find(&records)
-	return records
+	return toVOList(records)
 }
 
 func EditBatch(c *gin.Context, param *ConfigBatchEditParam, userID string) {
 	ctx := context.Background()
 	now := time.Now()
+	tx := db.DB.WithContext(ctx).Begin()
 	for _, item := range param.Configs {
 		up := map[string]interface{}{"updated_at": now}
 		if item.ConfigKey != nil { up["config_key"] = *item.ConfigKey }
@@ -107,9 +110,13 @@ func EditBatch(c *gin.Context, param *ConfigBatchEditParam, userID string) {
 		if item.Remark != nil { up["remark"] = *item.Remark }
 		if item.SortCode != 0 { up["sort_code"] = item.SortCode }
 		if userID != "" { up["updated_by"] = userID }
-		if err := db.DB.WithContext(ctx).Model(&SysConfig{}).Where("id = ?", item.ID).Updates(up).Error; err != nil {
+		if err := tx.Model(&SysConfig{}).Where("id = ?", item.ID).Updates(up).Error; err != nil {
+			tx.Rollback()
 			panic(exception.NewBusinessError("批量编辑配置失败: "+err.Error(), 500))
 		}
+	}
+	if err := tx.Commit().Error; err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
 	}
 }
 

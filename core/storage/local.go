@@ -2,6 +2,7 @@ package storage
 
 import (
 	"io"
+	"strings"
 	"os"
 	"path/filepath"
 	"crypto/rand"
@@ -24,9 +25,21 @@ func (s *LocalStorage) GetDefaultBucket() string {
 	return "local"
 }
 
+func (s *LocalStorage) safePath(bucket, fileKey string) (string, error) {
+	if strings.Contains(bucket, "..") || strings.Contains(fileKey, "..") ||
+		strings.Contains(bucket, "/") || strings.Contains(bucket, "\\") ||
+		strings.Contains(fileKey, "/") || strings.Contains(fileKey, "\\") {
+		return "", fmt.Errorf("invalid path: bucket or fileKey contains directory traversal characters")
+	}
+	return filepath.Join(s.uploadFolder, bucket, fileKey), nil
+}
+
 // _ensurePath creates parent directories and returns the full file path.
 func (s *LocalStorage) _ensurePath(bucket, fileKey string) (string, error) {
-	fullPath := filepath.Join(s.uploadFolder, bucket, fileKey)
+	fullPath, err := s.safePath(bucket, fileKey)
+	if err != nil {
+		return "", err
+	}
 	dir := filepath.Dir(fullPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", err
@@ -65,13 +78,20 @@ func (s *LocalStorage) StoreStream(bucket, fileKey string, reader io.Reader) (st
 
 // GetBytes reads and returns the raw bytes of a stored file.
 func (s *LocalStorage) GetBytes(bucket, fileKey string) ([]byte, error) {
-	path := filepath.Join(s.uploadFolder, bucket, fileKey)
+	path, err := s.safePath(bucket, fileKey)
+	if err != nil {
+		return nil, err
+	}
 	return os.ReadFile(path)
 }
 
 // GetURL returns the local file path as a URL.
 func (s *LocalStorage) GetURL(bucket, fileKey string) string {
-	return filepath.Join(s.uploadFolder, bucket, fileKey)
+	path, err := s.safePath(bucket, fileKey)
+	if err != nil {
+		return ""
+	}
+	return path
 }
 
 // GetAuthURL returns the same URL as GetURL since local files have no auth mechanism.
@@ -82,8 +102,11 @@ func (s *LocalStorage) GetAuthURL(bucket, fileKey string, timeoutMs int) (string
 // Delete removes a file from the local filesystem.
 // Ignores not-found errors for idempotent deletion.
 func (s *LocalStorage) Delete(bucket, fileKey string) error {
-	path := filepath.Join(s.uploadFolder, bucket, fileKey)
-	err := os.Remove(path)
+	path, err := s.safePath(bucket, fileKey)
+	if err != nil {
+		return err
+	}
+	err = os.Remove(path)
 	if os.IsNotExist(err) {
 		return nil
 	}
@@ -92,8 +115,11 @@ func (s *LocalStorage) Delete(bucket, fileKey string) error {
 
 // Exists checks whether a file exists on the local filesystem.
 func (s *LocalStorage) Exists(bucket, fileKey string) (bool, error) {
-	path := filepath.Join(s.uploadFolder, bucket, fileKey)
-	_, err := os.Stat(path)
+	path, err := s.safePath(bucket, fileKey)
+	if err != nil {
+		return false, err
+	}
+	_, err = os.Stat(path)
 	if os.IsNotExist(err) {
 		return false, nil
 	}
@@ -102,7 +128,10 @@ func (s *LocalStorage) Exists(bucket, fileKey string) (bool, error) {
 
 // Copy copies a file from source to destination on the local filesystem.
 func (s *LocalStorage) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
-	src := filepath.Join(s.uploadFolder, srcBucket, srcKey)
+	src, err := s.safePath(srcBucket, srcKey)
+	if err != nil {
+		return err
+	}
 	dst, err := s._ensurePath(dstBucket, dstKey)
 	if err != nil {
 		return err

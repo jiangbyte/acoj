@@ -1,5 +1,9 @@
 ﻿package group
 
+import (
+	"hei-gin/core/pojo"
+)
+
 type GroupVO struct {
 	ID          string   `json:"id"`
 	Code        string   `json:"code"`
@@ -29,4 +33,16 @@ type GroupPageParam struct {
 type GroupTreeParam struct {
 	Category string `json:"category" form:"category"`
 	OrgID    string `json:"org_id" form:"org_id"`
+}
+
+
+func toVO(entity *SysGroup) *GroupVO {
+	if entity == nil { return nil }
+	return &GroupVO{
+		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
+		ParentID: entity.ParentID, OrgID: entity.OrgID, Description: entity.Description,
+		Status: entity.Status, SortCode: entity.SortCode, Extra: entity.Extra,
+		CreatedAt: pojo.FormatDateTimePtr(entity.CreatedAt), CreatedBy: entity.CreatedBy,
+		UpdatedAt: pojo.FormatDateTimePtr(entity.UpdatedAt), UpdatedBy: entity.UpdatedBy,
+	}
 }

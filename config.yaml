@@ -41,6 +41,9 @@ sm2:
   private_key: dbc1da701ba293538f8d1df7d7286410503e25723a99e82c47b0c276dcbf86c0
   public_key: "043fcdbc656c5489a327060548c66c7af746baf31a6bfa04eb0215951e17dd272c8d87ce1da014b26952163143df32e07c0c5ed7000f409dc3e28729f7073469d2"
 
+user:
+  reset_password: "123456"
+
 cors:
   allow_origins: ["*"]
   allow_methods: ["*"]

@@ -11,24 +11,12 @@ import (
 	"hei-gin/core/result"
 	"hei-gin/core/utils"
 
-	"hei-gin/core/pojo"
 
 	"github.com/gin-gonic/gin"
 )
 
 
 
-func formatTime(t *time.Time) string { if t == nil { return "" }; return pojo.FormatDateTime(*t) }
-func entToVO(entity *SysPosition) *PositionVO {
-	if entity == nil { return nil }
-	return &PositionVO{
-		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
-		Description: entity.Description, Status: entity.Status, SortCode: entity.SortCode,
-		Extra: entity.Extra, CreatedAt: formatTime(entity.CreatedAt),
-		CreatedBy: entity.CreatedBy, UpdatedAt: formatTime(entity.UpdatedAt),
-		UpdatedBy: entity.UpdatedBy,
-	}
-}
 func Page(c *gin.Context, param *PositionPageParam) gin.H {
 	ctx := context.Background()
 	if param.Current < 1 { param.Current = 1 }
@@ -47,7 +35,7 @@ func Page(c *gin.Context, param *PositionPageParam) gin.H {
 	query.Order("sort_code ASC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
 
 	vos := make([]*PositionVO, len(records))
-	for i, r := range records { vos[i] = entToVO(&r) }
+	for i, r := range records { vos[i] = toVO(&r) }
 	return result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
@@ -59,7 +47,7 @@ func Detail(c *gin.Context, id string) *PositionVO {
 		if err == gorm.ErrRecordNotFound { return nil }
 		panic(exception.NewBusinessError("查询职位详情失败: "+err.Error(), 500))
 	}
-	vo := entToVO(&entity)
+	vo := toVO(&entity)
 	return vo
 }
 
@@ -107,7 +95,7 @@ func Options(c *gin.Context) []*PositionVO {
 	var records []SysPosition
 	db.DB.WithContext(ctx).Order("sort_code ASC").Find(&records)
 	vos := make([]*PositionVO, len(records))
-	for i, r := range records { vos[i] = entToVO(&r) }
+	for i, r := range records { vos[i] = toVO(&r) }
 	return vos
 }
 

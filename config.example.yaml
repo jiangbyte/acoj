@@ -41,6 +41,11 @@ sm2:
   private_key: YOUR_SM2_PRIVATE_KEY
   public_key: "YOUR_SM2_PUBLIC_KEY"
 
+# User settings
+user:
+  # Reset password (empty = generate random)
+  reset_password: "123456"
+
 cors:
   allow_origins: ["*"]
   allow_methods: ["*"]

@@ -78,16 +78,19 @@ func Tree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
 	for _, r := range all { pid := getParentIDKey(r.ParentID); childrenMap[pid] = append(childrenMap[pid], r) }
 	roots := childrenMap[""]
 	result := make([]map[string]interface{}, 0, len(roots))
-	for _, r := range roots { node := entityToNode(&r); node["children"] = buildTreeChildren(childrenMap, r.ID); result = append(result, node) }
+	for _, r := range roots { node := entityToNode(&r); node["children"] = buildTreeChildren(childrenMap, r.ID, 0); result = append(result, node) }
 	sortTreeNodes(result)
 	return result
 }
 
-func buildTreeChildren(childrenMap map[string][]SysDict, parentID string) []map[string]interface{} {
+func buildTreeChildren(childrenMap map[string][]SysDict, parentID string, depth int) []map[string]interface{} {
+	if depth > 50 {
+		return nil
+	}
 	children := childrenMap[parentID]
 	if len(children) == 0 { return []map[string]interface{}{} }
 	result := make([]map[string]interface{}, 0, len(children))
-	for _, r := range children { node := entityToNode(&r); node["children"] = buildTreeChildren(childrenMap, r.ID); result = append(result, node) }
+	for _, r := range children { node := entityToNode(&r); node["children"] = buildTreeChildren(childrenMap, r.ID, depth+1); result = append(result, node) }
 	sortTreeNodes(result)
 	return result
 }

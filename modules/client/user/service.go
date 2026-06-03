@@ -9,7 +9,6 @@ import (
 	"hei-gin/core/db"
 	"hei-gin/core/enums"
 	"hei-gin/core/exception"
-	"hei-gin/core/pojo"
 	"hei-gin/core/result"
 	"hei-gin/core/utils"
 
@@ -43,37 +42,10 @@ func ClientUserPage(c *gin.Context, param *ClientUserPageParam) gin.H {
 
 	vos := make([]ClientUserVO, len(records))
 	for i, r := range records {
-		vos[i] = toPageRecord(&r)
+		vos[i] = toVO(&r)
 	}
 
 	return result.PageDataResult(c, vos, total, param.Current, param.Size)
-}
-
-func toPageRecord(e *ClientUser) ClientUserVO {
-	return ClientUserVO{
-		ID:          e.ID,
-		Username:    e.Username,
-		Nickname:    e.Nickname,
-		Avatar:      e.Avatar,
-		Motto:       e.Motto,
-		Gender:      e.Gender,
-		Email:       e.Email,
-		Github:      e.Github,
-		Phone:       e.Phone,
-		Status:      e.Status,
-		LastLoginIP: e.LastLoginIP,
-		LoginCount:  e.LoginCount,
-		LastLoginAt: formatTime(e.LastLoginAt),
-		CreatedAt:   formatTime(e.CreatedAt),
-		UpdatedAt:   formatTime(e.UpdatedAt),
-	}
-}
-
-func formatTime(t *time.Time) string {
-	if t == nil {
-		return ""
-	}
-	return pojo.FormatDateTime(*t)
 }
 
 func ClientUserDetail(c *gin.Context, id string) *ClientUserVO {
@@ -88,7 +60,7 @@ func ClientUserDetail(c *gin.Context, id string) *ClientUserVO {
 		}
 		panic(exception.NewBusinessError("查询用户详情失败: "+err.Error(), 500))
 	}
-	rec := toPageRecord(&entity)
+	rec := toVO(&entity)
 	return &rec
 }
 

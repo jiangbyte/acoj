@@ -1,5 +1,9 @@
 package org
 
+import (
+	"hei-gin/core/pojo"
+)
+
 type OrgVO struct {
 	ID          string  `json:"id"`
 	Code        string  `json:"code"`
@@ -25,4 +29,24 @@ type OrgPageParam struct {
 
 type OrgTreeParam struct {
 	Category string `json:"category" form:"category"`
+}
+
+
+func toVO(entity *SysOrg) *OrgVO {
+	if entity == nil { return nil }
+	return &OrgVO{
+		ID:          entity.ID,
+		Code:        entity.Code,
+		Name:        entity.Name,
+		Category:    entity.Category,
+		ParentID:    entity.ParentID,
+		Description: entity.Description,
+		Status:      entity.Status,
+		SortCode:    entity.SortCode,
+		Extra:       entity.Extra,
+		CreatedAt:   pojo.FormatDateTimePtr(entity.CreatedAt),
+		CreatedBy:   entity.CreatedBy,
+		UpdatedAt:   pojo.FormatDateTimePtr(entity.UpdatedAt),
+		UpdatedBy:   entity.UpdatedBy,
+	}
 }

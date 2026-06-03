@@ -13,8 +13,8 @@ import (
 	"hei-gin/core/enums"
 	"hei-gin/core/utils"
 
+	"hei-gin/config"
 	"hei-gin/core/constants"
-	"hei-gin/core/pojo"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -38,14 +38,6 @@ var (
 	cacheExpiry  time.Time
 )
 
-func formatTime(t *time.Time) string { if t == nil { return "" }; return pojo.FormatDateTime(*t) }
-func fmtDate(t *time.Time) string {
-	if t == nil {
-		return ""
-	}
-	return t.Format("2006-01-02")
-}
-
 
 func parseDate(s string) *time.Time {
 	if s == "" {
@@ -56,21 +48,6 @@ func parseDate(s string) *time.Time {
 		return nil
 	}
 	return &t
-}
-
-func entToVO(e *SysUser) *UserVO {
-	if e == nil {
-		return nil
-	}
-	return &UserVO{
-		ID: e.ID, Username: e.Username, Nickname: e.Nickname, Avatar: e.Avatar,
-		Motto: e.Motto, Gender: e.Gender, Birthday: fmtDate(e.Birthday),
-		Email: e.Email, Github: e.Github, Phone: e.Phone,
-		OrgID: e.OrgID, PositionID: e.PositionID, GroupID: e.GroupID,
-		Status: e.Status, LastLoginAt: formatTime(e.LastLoginAt), LastLoginIP: e.LastLoginIP,
-		LoginCount: e.LoginCount, CreatedAt: formatTime(e.CreatedAt), CreatedBy: e.CreatedBy,
-		UpdatedAt: formatTime(e.UpdatedAt), UpdatedBy: e.UpdatedBy,
-	}
 }
 
 func batchRoleIDs(uids []string) map[string][]string {
@@ -210,7 +187,7 @@ func UserPage(c *gin.Context, p *UserPageParam) gin.H {
 
 	vos := make([]*UserVO, len(rows))
 	for i, r := range rows {
-		vos[i] = entToVO(&r)
+		vos[i] = toVO(&r)
 	}
 	enrichNames(vos)
 	rm := batchRoleIDs(func() []string {
@@ -300,7 +277,7 @@ func UserDetail(c *gin.Context, id string) *UserVO {
 		}
 		panic(exception.NewBusinessError("查询用户详情失败: "+err.Error(), 500))
 	}
-	vo := entToVO(&e)
+	vo := toVO(&e)
 	enrichNames([]*UserVO{vo})
 	if rm := batchRoleIDs([]string{e.ID}); rm != nil {
 		vo.RoleIDs = rm[e.ID]
@@ -384,11 +361,25 @@ func UserRemove(c *gin.Context, ids []string) {
 	}
 	ctx := context.Background()
 	tx := db.DB.WithContext(ctx).Begin()
-	tx.Where("user_id IN ?", ids).Delete(&RelUserRole{})
-	tx.Where("user_id IN ?", ids).Delete(&RelUserPermission{})
-	tx.Where("user_id IN ?", ids).Delete(&SysQuickAction{})
-	tx.Where("id IN ?", ids).Delete(&SysUser{})
-	tx.Commit()
+	if err := tx.Where("user_id IN ?", ids).Delete(&RelUserRole{}).Error; err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除用户角色关联失败: "+err.Error(), 500))
+	}
+	if err := tx.Where("user_id IN ?", ids).Delete(&RelUserPermission{}).Error; err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除用户权限关联失败: "+err.Error(), 500))
+	}
+	if err := tx.Where("user_id IN ?", ids).Delete(&SysQuickAction{}).Error; err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除快捷操作失败: "+err.Error(), 500))
+	}
+	if err := tx.Where("id IN ?", ids).Delete(&SysUser{}).Error; err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除用户失败: "+err.Error(), 500))
+	}
+	if err := tx.Commit().Error; err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+	}
 }
 
 func UserResetPassword(c *gin.Context, id string) {
@@ -396,13 +387,29 @@ func UserResetPassword(c *gin.Context, id string) {
 		panic(exception.NewBusinessError("ID不能为空", 400))
 	}
 	ctx := context.Background()
+	rawPwd := config.C.User.ResetPassword
+	if rawPwd == "" {
+		rawPwd = generateRandomPassword()
+	}
+	h, err := bcrypt.GenerateFromPassword([]byte(rawPwd), bcrypt.DefaultCost)
+	if err != nil {
+		panic(exception.NewBusinessError("密码加密失败", 500))
+	}
 	db.DB.WithContext(ctx).Model(&SysUser{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"password": func() string {
-			h, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
-			return string(h)
-		}(),
+		"password":   string(h),
 		"updated_at": time.Now(),
 	})
+}
+
+
+// generateRandomPassword generates a random password using a unique ID.
+func generateRandomPassword() string {
+	// Use utils.GenerateID which is already based on snowflake + crypto/rand
+	id := utils.GenerateID()
+	if len(id) > 16 {
+		return id[:16]
+	}
+	return id
 }
 
 func UserGrantRole(c *gin.Context, p *GrantRoleParam) {
@@ -411,15 +418,27 @@ func UserGrantRole(c *gin.Context, p *GrantRoleParam) {
 	}
 	ctx := context.Background()
 	tx := db.DB.WithContext(ctx).Begin()
-	tx.Where("user_id = ?", p.UserID).Delete(&RelUserRole{})
+	if err := tx.Where("user_id = ?", p.UserID).Delete(&RelUserRole{}).Error; err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除已有角色失败: "+err.Error(), 500))
+	}
 	seen := make(map[string]bool)
+	batch := make([]RelUserRole, 0)
 	for _, id := range p.RoleIDs {
 		if !seen[id] {
 			seen[id] = true
-			tx.Create(&RelUserRole{ID: utils.GenerateID(), UserID: p.UserID, RoleID: id})
+			batch = append(batch, RelUserRole{ID: utils.GenerateID(), UserID: p.UserID, RoleID: id})
 		}
 	}
-	tx.Commit()
+	if len(batch) > 0 {
+		if err := tx.Create(&batch).Error; err != nil {
+			tx.Rollback()
+			panic(exception.NewBusinessError("分配角色失败: "+err.Error(), 500))
+		}
+	}
+	if err := tx.Commit().Error; err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+	}
 }
 
 func UserGrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
@@ -428,8 +447,12 @@ func UserGrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
 	}
 	ctx := context.Background()
 	tx := db.DB.WithContext(ctx).Begin()
-	tx.Where("user_id = ?", p.UserID).Delete(&RelUserPermission{})
-	for _, pi := range p.Permissions {
+	if err := tx.Where("user_id = ?", p.UserID).Delete(&RelUserPermission{}).Error; err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除已有权限失败: "+err.Error(), 500))
+	}
+	batch := make([]RelUserPermission, len(p.Permissions))
+	for i, pi := range p.Permissions {
 		r := RelUserPermission{ID: utils.GenerateID(), UserID: p.UserID, PermissionCode: pi.PermissionCode, Scope: pi.Scope}
 		if pi.CustomScopeGroupIds != nil {
 			r.CustomScopeGroupIds = pi.CustomScopeGroupIds
@@ -437,9 +460,17 @@ func UserGrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
 		if pi.CustomScopeOrgIds != nil {
 			r.CustomScopeOrgIds = pi.CustomScopeOrgIds
 		}
-		tx.Create(&r)
+		batch[i] = r
 	}
-	tx.Commit()
+	if len(batch) > 0 {
+		if err := tx.Create(&batch).Error; err != nil {
+			tx.Rollback()
+			panic(exception.NewBusinessError("分配权限失败: "+err.Error(), 500))
+		}
+	}
+	if err := tx.Commit().Error; err != nil {
+		panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+	}
 }
 
 func UserBatchImport(c *gin.Context, p *BatchImportParam) {
@@ -448,6 +479,7 @@ func UserBatchImport(c *gin.Context, p *BatchImportParam) {
 	}
 	ctx := context.Background()
 	now := time.Now()
+	batch := make([]SysUser, 0, len(p.Users))
 	for _, u := range p.Users {
 		e := SysUser{ID: utils.GenerateID(), Status: "ACTIVE", CreatedAt: &now, UpdatedAt: &now}
 		if u.Username != nil {
@@ -465,7 +497,17 @@ func UserBatchImport(c *gin.Context, p *BatchImportParam) {
 		if u.Gender != nil {
 			e.Gender = u.Gender
 		}
-		db.DB.WithContext(ctx).Create(&e)
+		batch = append(batch, e)
+	}
+	if len(batch) > 0 {
+		tx := db.DB.WithContext(ctx).Begin()
+		if err := tx.Create(&batch).Error; err != nil {
+			tx.Rollback()
+			panic(exception.NewBusinessError("批量导入失败: "+err.Error(), 500))
+		}
+		if err := tx.Commit().Error; err != nil {
+			panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500))
+		}
 	}
 }
 
@@ -514,7 +556,7 @@ func UserExport(c *gin.Context, p *UserPageParam) []*UserVO {
 	q.Order("created_at DESC").Find(&rows)
 	vos := make([]*UserVO, len(rows))
 	for i, r := range rows {
-		vos[i] = entToVO(&r)
+		vos[i] = toVO(&r)
 	}
 	enrichNames(vos)
 	rm := batchRoleIDs(func() []string {

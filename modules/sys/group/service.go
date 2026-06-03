@@ -13,24 +13,12 @@ import (
 	"hei-gin/core/enums"
 	"hei-gin/core/utils"
 
-	"hei-gin/core/pojo"
 
 	"github.com/gin-gonic/gin"
 )
 
 
 
-func formatTime(t *time.Time) string { if t == nil { return "" }; return pojo.FormatDateTime(*t) }
-func entToVO(entity *SysGroup) *GroupVO {
-	if entity == nil { return nil }
-	return &GroupVO{
-		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
-		ParentID: entity.ParentID, OrgID: entity.OrgID, Description: entity.Description,
-		Status: entity.Status, SortCode: entity.SortCode, Extra: entity.Extra,
-		CreatedAt: formatTime(entity.CreatedAt), CreatedBy: entity.CreatedBy,
-		UpdatedAt: formatTime(entity.UpdatedAt), UpdatedBy: entity.UpdatedBy,
-	}
-}
 func groupToVOMap(entity *SysGroup) map[string]interface{} {
 	n := map[string]interface{}{
 		"id": entity.ID, "code": entity.Code, "name": entity.Name, "category": entity.Category,
@@ -71,7 +59,7 @@ func Page(c *gin.Context, param *GroupPageParam) gin.H {
 	query.Order("sort_code ASC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
 
 	vos := make([]*GroupVO, len(records))
-	for i, r := range records { vos[i] = entToVO(&r) }
+	for i, r := range records { vos[i] = toVO(&r) }
 	return result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
@@ -154,7 +142,7 @@ func Detail(c *gin.Context, id string) *GroupVO {
 		if err == gorm.ErrRecordNotFound { return nil }
 		panic(exception.NewBusinessError("查询用户组详情失败 "+err.Error(), 500))
 	}
-	return entToVO(&entity)
+	return toVO(&entity)
 }
 
 func Options(c *gin.Context) []*GroupVO {
@@ -162,7 +150,7 @@ func Options(c *gin.Context) []*GroupVO {
 	var records []SysGroup
 	db.DB.WithContext(ctx).Order("sort_code ASC").Find(&records)
 	vos := make([]*GroupVO, len(records))
-	for i, r := range records { vos[i] = entToVO(&r) }
+	for i, r := range records { vos[i] = toVO(&r) }
 	return vos
 }
 
@@ -170,12 +158,20 @@ func collectDescendantGroupIDs(ids []string) []string {
 	ctx := context.Background()
 	allIDs := make(map[string]bool)
 	for _, id := range ids { allIDs[id] = true }
+
+	var all []SysGroup
+	db.DB.WithContext(ctx).Find(&all)
+	cm := make(map[string][]string)
+	for _, g := range all {
+		if g.ParentID != nil && *g.ParentID != "" {
+			cm[*g.ParentID] = append(cm[*g.ParentID], g.ID)
+		}
+	}
+
 	q := make([]string, len(ids)); copy(q, ids)
 	for len(q) > 0 {
 		pid := q[len(q)-1]; q = q[:len(q)-1]
-		var children []SysGroup
-		db.DB.WithContext(ctx).Where("parent_id = ?", pid).Find(&children)
-		for _, c := range children { if !allIDs[c.ID] { allIDs[c.ID] = true; q = append(q, c.ID) } }
+		for _, cid := range cm[pid] { if !allIDs[cid] { allIDs[cid] = true; q = append(q, cid) } }
 	}
 	r := make([]string, 0, len(allIDs)); for id := range allIDs { r = append(r, id) }; return r
 }

@@ -1,6 +1,9 @@
 package resource
 
-import "time"
+import (
+	"hei-gin/core/pojo"
+)
+
 
 // ModuleVO represents a system module view object.
 type ModuleVO struct {
@@ -14,9 +17,9 @@ type ModuleVO struct {
 	IsVisible   string     `json:"is_visible"`
 	Status      string     `json:"status"`
 	SortCode    int        `json:"sort_code"`
-	CreatedAt   *time.Time `json:"created_at"`
+	CreatedAt   string `json:"created_at"`
 	CreatedBy   *string    `json:"created_by"`
-	UpdatedAt   *time.Time `json:"updated_at"`
+	UpdatedAt   string `json:"updated_at"`
 	UpdatedBy   *string    `json:"updated_by"`
 }
 
@@ -48,9 +51,9 @@ type ResourceVO struct {
 	Extra         *string       `json:"extra"`
 	Status        string        `json:"status"`
 	SortCode      int           `json:"sort_code"`
-	CreatedAt     *time.Time    `json:"created_at"`
+	CreatedAt     string    `json:"created_at"`
 	CreatedBy     *string       `json:"created_by"`
-	UpdatedAt     *time.Time    `json:"updated_at"`
+	UpdatedAt     string    `json:"updated_at"`
 	UpdatedBy     *string       `json:"updated_by"`
 	Children      []*ResourceVO `json:"children"`
 }
@@ -59,4 +62,32 @@ type ResourceVO struct {
 type ResourcePageParam struct {
 	Current int `json:"current" form:"current"`
 	Size    int `json:"size" form:"size"`
+}
+
+// ===== Internal types =====
+
+type relRoleResource struct {
+	ID         string
+	RoleID     string
+	ResourceID string
+}
+
+type relRolePermission struct {
+	ID             string
+	RoleID         string
+	PermissionCode string
+}
+
+// ===== Converters =====
+
+func toResourceVO(r *SysResource) *ResourceVO {
+	return &ResourceVO{
+		ID: r.ID, Code: r.Code, Name: r.Name, Category: r.Category, Type: r.Type,
+		Description: r.Description, ParentID: r.ParentID, RoutePath: r.RoutePath,
+		ComponentPath: r.ComponentPath, RedirectPath: r.RedirectPath, Icon: r.Icon,
+		Color: r.Color, IsVisible: r.IsVisible, IsCache: r.IsCache, IsAffix: r.IsAffix,
+		IsBreadcrumb: r.IsBreadcrumb, ExternalURL: r.ExternalURL, Extra: r.Extra,
+		Status: r.Status, SortCode: r.SortCode, CreatedAt: pojo.FormatDateTimePtr(r.CreatedAt), CreatedBy: r.CreatedBy,
+		UpdatedAt: pojo.FormatDateTimePtr(r.UpdatedAt), UpdatedBy: r.UpdatedBy,
+	}
 }

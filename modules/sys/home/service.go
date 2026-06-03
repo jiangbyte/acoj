@@ -64,10 +64,17 @@ func HomeSortQuickActions(c *gin.Context, param *SortQuickActionParam) {
 		return
 	}
 	ctx := context.Background()
+	tx := db.DB.WithContext(ctx).Begin()
 	for idx, id := range param.IDs {
-		db.DB.WithContext(ctx).Model(&SysQuickAction{}).Where("id = ?", id).Updates(map[string]interface{}{
+		if err := tx.Model(&SysQuickAction{}).Where("id = ?", id).Updates(map[string]interface{}{
 			"sort_code": (idx + 1) * 10,
-		})
+		}).Error; err != nil {
+			tx.Rollback()
+			return
+		}
+	}
+	if err := tx.Commit().Error; err != nil {
+		return
 	}
 }
 func findQuickActionsByUserID(userID string) []QuickActionVO {

@@ -1,5 +1,9 @@
 ﻿package position
 
+import (
+	"hei-gin/core/pojo"
+)
+
 type PositionVO struct {
 	ID          string   `json:"id"`
 	Code        string   `json:"code"`
@@ -25,4 +29,16 @@ type PositionPageParam struct {
 	Keyword  string `json:"keyword" form:"keyword"`
 	Category string `json:"category" form:"category"`
 	OrgID    string `json:"org_id" form:"org_id"`
+}
+
+
+func toVO(entity *SysPosition) *PositionVO {
+	if entity == nil { return nil }
+	return &PositionVO{
+		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
+		Description: entity.Description, Status: entity.Status, SortCode: entity.SortCode,
+		Extra: entity.Extra, CreatedAt: pojo.FormatDateTimePtr(entity.CreatedAt),
+		CreatedBy: entity.CreatedBy, UpdatedAt: pojo.FormatDateTimePtr(entity.UpdatedAt),
+		UpdatedBy: entity.UpdatedBy,
+	}
 }

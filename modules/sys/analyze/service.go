@@ -49,14 +49,6 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%d分钟", mins)
 }
 
-type LogAnalysisData struct {
-	LoginTotal     int `json:"login_total"`
-	LoginFailed    int `json:"login_failed"`
-	LoginToday     int `json:"login_today"`
-	LogTotal       int `json:"log_total"`
-	LogException   int `json:"log_exception"`
-	ExceptionToday int `json:"exception_today"`
-}
 
 func Page(c *gin.Context, param *logModel.LogPageParam) gin.H {
 	ctx := context.Background()
@@ -215,14 +207,26 @@ func getOrgUserDistribution(ctx context.Context) []OrgUserDistribution {
 		Where("org_id IS NOT NULL AND org_id != ''").
 		Group("org_id").
 		Find(&rows)
+	orgIDs := make([]string, len(rows))
+	for i, r := range rows {
+		orgIDs[i] = r.OrgID
+	}
+	orgNames := make(map[string]string)
+	if len(orgIDs) > 0 {
+		type orgNameRow struct{ ID, Name string }
+		var orgRows []orgNameRow
+		db.DB.WithContext(ctx).Table("sys_org").Select("id, name").Where("id IN ?", orgIDs).Find(&orgRows)
+		for _, o := range orgRows {
+			orgNames[o.ID] = o.Name
+		}
+	}
 	result := make([]OrgUserDistribution, 0, len(rows))
 	for _, r := range rows {
-		var orgName string
-		db.DB.WithContext(ctx).Table("sys_org").Select("name").Where("id = ?", r.OrgID).Scan(&orgName)
-		if orgName == "" {
-			orgName = "未分配"
+		name := orgNames[r.OrgID]
+		if name == "" {
+			name = "未分配"
 		}
-		result = append(result, OrgUserDistribution{Name: orgName, Count: r.Count})
+		result = append(result, OrgUserDistribution{Name: name, Count: r.Count})
 	}
 	if result == nil {
 		result = []OrgUserDistribution{}

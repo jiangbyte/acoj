@@ -16,32 +16,11 @@ import (
 	posModel "hei-gin/modules/sys/position"
 	userModel "hei-gin/modules/sys/user"
 
-	"hei-gin/core/pojo"
 
 	"github.com/gin-gonic/gin"
 )
 
 
-
-func formatTime(t *time.Time) string { if t == nil { return "" }; return pojo.FormatDateTime(*t) }
-func entToVO(entity *SysOrg) *OrgVO {
-	if entity == nil { return nil }
-	return &OrgVO{
-		ID:          entity.ID,
-		Code:        entity.Code,
-		Name:        entity.Name,
-		Category:    entity.Category,
-		ParentID:    entity.ParentID,
-		Description: entity.Description,
-		Status:      entity.Status,
-		SortCode:    entity.SortCode,
-		Extra:       entity.Extra,
-		CreatedAt:   formatTime(entity.CreatedAt),
-		CreatedBy:   entity.CreatedBy,
-		UpdatedAt:   formatTime(entity.UpdatedAt),
-		UpdatedBy:   entity.UpdatedBy,
-	}
-}
 
 func orgToVOMap(entity *SysOrg) map[string]interface{} {
 	node := map[string]interface{}{
@@ -105,7 +84,7 @@ func Page(c *gin.Context, param *OrgPageParam) gin.H {
 	query.Order("sort_code ASC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
 
 	vos := make([]*OrgVO, len(records))
-	for i, r := range records { vos[i] = entToVO(&r) }
+	for i, r := range records { vos[i] = toVO(&r) }
 
 	return result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
@@ -234,7 +213,7 @@ func Detail(c *gin.Context, id string) *OrgVO {
 		if err == gorm.ErrRecordNotFound { return nil }
 		panic(exception.NewBusinessError("查询组织详情失败: "+err.Error(), 500))
 	}
-	return entToVO(&entity)
+	return toVO(&entity)
 }
 
 func Options(c *gin.Context) []*OrgVO {
@@ -242,7 +221,7 @@ func Options(c *gin.Context) []*OrgVO {
 	var records []SysOrg
 	db.DB.WithContext(ctx).Order("sort_code ASC").Find(&records)
 	vos := make([]*OrgVO, len(records))
-	for i, r := range records { vos[i] = entToVO(&r) }
+	for i, r := range records { vos[i] = toVO(&r) }
 	return vos
 }
 
@@ -250,18 +229,26 @@ func collectDescendantOrgIDs(ids []string) []string {
 	ctx := context.Background()
 	allIDs := make(map[string]bool)
 	for _, id := range ids { allIDs[id] = true }
+
+	var all []SysOrg
+	db.DB.WithContext(ctx).Find(&all)
+	cm := make(map[string][]string)
+	for _, o := range all {
+		if o.ParentID != nil && *o.ParentID != "" {
+			cm[*o.ParentID] = append(cm[*o.ParentID], o.ID)
+		}
+	}
+
 	queue := make([]string, len(ids))
 	copy(queue, ids)
 
 	for len(queue) > 0 {
 		parentID := queue[len(queue)-1]
 		queue = queue[:len(queue)-1]
-		var children []SysOrg
-		db.DB.WithContext(ctx).Where("parent_id = ?", parentID).Find(&children)
-		for _, child := range children {
-			if !allIDs[child.ID] {
-				allIDs[child.ID] = true
-				queue = append(queue, child.ID)
+		for _, childID := range cm[parentID] {
+			if !allIDs[childID] {
+				allIDs[childID] = true
+				queue = append(queue, childID)
 			}
 		}
 	}

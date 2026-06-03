@@ -28,3 +28,19 @@ func FormatDateTime(t time.Time) string {
 func FormatDate(t time.Time) string {
 	return t.Format("2006-01-02")
 }
+
+// FormatDateTimePtr formats a *time.Time as "2006-01-02 15:04:05", returning "" if nil.
+func FormatDateTimePtr(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format("2006-01-02 15:04:05")
+}
+
+// FormatDatePtr formats a *time.Time as "2006-01-02", returning "" if nil.
+func FormatDatePtr(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format("2006-01-02")
+}

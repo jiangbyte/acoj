@@ -1,5 +1,9 @@
 package role
 
+import (
+	"hei-gin/core/pojo"
+)
+
 // RoleVO is the view object for a role, used for create/modify requests and API responses.
 type RoleVO struct {
 	ID          string  `json:"id"`
@@ -49,4 +53,16 @@ type GrantResourceParam struct {
 	RoleID      string                  `json:"role_id"`
 	ResourceIDs []string                `json:"resource_ids"`
 	Permissions []ButtonPermissionScope `json:"permissions"`
+}
+
+
+func toVO(entity *SysRole) *RoleVO {
+	if entity == nil { return nil }
+	return &RoleVO{
+		ID: entity.ID, Code: entity.Code, Name: entity.Name, Category: entity.Category,
+		Description: entity.Description, Status: entity.Status, SortCode: entity.SortCode,
+		Extra: entity.Extra, CreatedAt: pojo.FormatDateTimePtr(entity.CreatedAt),
+		CreatedBy: entity.CreatedBy, UpdatedAt: pojo.FormatDateTimePtr(entity.UpdatedAt),
+		UpdatedBy: entity.UpdatedBy,
+	}
 }

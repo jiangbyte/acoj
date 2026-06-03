@@ -1,5 +1,9 @@
 package user
 
+import (
+	"hei-gin/core/pojo"
+)
+
 type ClientUserVO struct {
 	ID          string  `json:"id"`
 	Username    *string `json:"username"`
@@ -55,4 +59,25 @@ type UpdateAvatarParam struct {
 type UpdatePasswordParam struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password"`
+}
+
+
+func toVO(e *ClientUser) ClientUserVO {
+	return ClientUserVO{
+		ID:          e.ID,
+		Username:    e.Username,
+		Nickname:    e.Nickname,
+		Avatar:      e.Avatar,
+		Motto:       e.Motto,
+		Gender:      e.Gender,
+		Email:       e.Email,
+		Github:      e.Github,
+		Phone:       e.Phone,
+		Status:      e.Status,
+		LastLoginIP: e.LastLoginIP,
+		LoginCount:  e.LoginCount,
+		LastLoginAt: pojo.FormatDateTimePtr(e.LastLoginAt),
+		CreatedAt:   pojo.FormatDateTimePtr(e.CreatedAt),
+		UpdatedAt:   pojo.FormatDateTimePtr(e.UpdatedAt),
+	}
 }

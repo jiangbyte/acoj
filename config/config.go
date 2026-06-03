@@ -13,6 +13,7 @@ type Config struct {
 	Token     TokenConfig     `yaml:"token"`
 	SM2       SM2Config       `yaml:"sm2"`
 	CORS      CORSConfig      `yaml:"cors"`
+	User      UserConfig      `yaml:"user"`
 	Snowflake SnowflakeConfig `yaml:"snowflake"`
 	Raw map[string]any `yaml:",inline"`
 }
@@ -62,6 +63,10 @@ type TokenConfig struct {
 type SM2Config struct {
 	PrivateKey string `yaml:"private_key"`
 	PublicKey  string `yaml:"public_key"`
+}
+
+type UserConfig struct {
+	ResetPassword string `yaml:"reset_password"`
 }
 
 type CORSConfig struct {

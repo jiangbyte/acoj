@@ -13,6 +13,7 @@ import (
 	"hei-gin/core/result"
 	"hei-gin/core/enums"
 	"hei-gin/core/utils"
+	"hei-gin/core/pojo"
 )
 
 func ModulePage(c *gin.Context, param *ModulePageParam) gin.H {
@@ -98,15 +99,18 @@ func ResourceTree(c *gin.Context, category string) []map[string]interface{} {
 		pid := ""; if r.ParentID != nil && *r.ParentID != "" && *r.ParentID != "0" { pid = *r.ParentID }
 		cm[pid] = append(cm[pid], r)
 	}
-	return buildRT(cm, "")
+	return buildRT(cm, "", 0)
 }
 
-func buildRT(cm map[string][]SysResource, pid string) []map[string]interface{} {
+func buildRT(cm map[string][]SysResource, pid string, depth int) []map[string]interface{} {
+	if depth > 50 {
+		return nil
+	}
 	cs := cm[pid]
 	r := make([]map[string]interface{}, 0, len(cs))
 	for _, c := range cs {
 		n := resToNode(&c)
-		n["children"] = buildRT(cm, c.ID)
+		n["children"] = buildRT(cm, c.ID, depth+1)
 		r = append(r, n)
 	}
 	return r
@@ -123,9 +127,9 @@ func resToNode(r *SysResource) map[string]interface{} {
 	if r.ParentID != nil { n["parent_id"] = *r.ParentID } else { n["parent_id"] = nil }
 	if r.Description != nil { n["description"] = *r.Description }
 	if r.Extra != nil { n["extra"] = *r.Extra }
-	if r.CreatedAt != nil { n["created_at"] = r.CreatedAt.Format("2006-01-02 15:04:05") }
+	if r.CreatedAt != nil { n["created_at"] = pojo.FormatDateTime(*r.CreatedAt) }
 	if r.CreatedBy != nil { n["created_by"] = *r.CreatedBy }
-	if r.UpdatedAt != nil { n["updated_at"] = r.UpdatedAt.Format("2006-01-02 15:04:05") }
+	if r.UpdatedAt != nil { n["updated_at"] = pojo.FormatDateTime(*r.UpdatedAt) }
 	if r.UpdatedBy != nil { n["updated_by"] = *r.UpdatedBy }
 	return n
 }
@@ -192,9 +196,18 @@ func ResourceRemove(c *gin.Context, ids []string) {
 	all := collectDescendant(ids)
 
 	tx := db.DB.WithContext(ctx).Begin()
-	tx.Exec("DELETE FROM rel_role_resource WHERE resource_id IN ?", all)
-	tx.Exec("DELETE FROM rel_role_permission WHERE role_id IN (SELECT role_id FROM rel_role_resource WHERE resource_id IN ?)", all)
-	tx.Where("id IN ?", all).Delete(&SysResource{})
+	if err := tx.Exec("DELETE FROM rel_role_resource WHERE resource_id IN ?", all).Error; err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除资源角色关联失败: "+err.Error(), 500))
+	}
+	if err := tx.Exec("DELETE FROM rel_role_permission WHERE role_id IN (SELECT role_id FROM rel_role_resource WHERE resource_id IN ?)", all).Error; err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除资源权限关联失败: "+err.Error(), 500))
+	}
+	if err := tx.Where("id IN ?", all).Delete(&SysResource{}).Error; err != nil {
+		tx.Rollback()
+		panic(exception.NewBusinessError("删除资源失败: "+err.Error(), 500))
+	}
 	if err := tx.Commit().Error; err != nil { panic(exception.NewBusinessError("提交事务失败: "+err.Error(), 500)) }
 }
 
@@ -203,7 +216,7 @@ func ResourceDetail(c *gin.Context, id string) *ResourceVO {
 	ctx := context.Background()
 	var e SysResource
 	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil { return nil }
-	return resFromEnt(&e)
+	return toResourceVO(&e)
 }
 
 func ResourceMenu(c *gin.Context) []map[string]interface{} {
@@ -220,19 +233,22 @@ func ResourceMenu(c *gin.Context) []map[string]interface{} {
 	r := make([]map[string]interface{}, 0, len(roots))
 	for _, rt := range roots {
 		n := menuNode(&rt)
-		n["children"] = buildMenuTree(cm, rt.ID)
+		n["children"] = buildMenuTree(cm, rt.ID, 0)
 		r = append(r, n)
 	}
 	return r
 }
 
-func buildMenuTree(cm map[string][]SysResource, pid string) []map[string]interface{} {
+func buildMenuTree(cm map[string][]SysResource, pid string, depth int) []map[string]interface{} {
+	if depth > 50 {
+		return nil
+	}
 	cs := cm[pid]
 	if len(cs) == 0 { return []map[string]interface{}{} }
 	r := make([]map[string]interface{}, 0, len(cs))
 	for _, c := range cs {
 		n := menuNode(&c)
-		n["children"] = buildMenuTree(cm, c.ID)
+		n["children"] = buildMenuTree(cm, c.ID, depth+1)
 		r = append(r, n)
 	}
 	return r
@@ -269,28 +285,26 @@ func collectDescendant(ids []string) []string {
 	ctx := context.Background()
 	m := make(map[string]bool)
 	for _, id := range ids { m[id] = true }
+
+	var all []SysResource
+	db.DB.WithContext(ctx).Find(&all)
+	cm := make(map[string][]string)
+	for _, r := range all {
+		if r.ParentID != nil && *r.ParentID != "" {
+			cm[*r.ParentID] = append(cm[*r.ParentID], r.ID)
+		}
+	}
+
 	q := make([]string, len(ids)); copy(q, ids)
 	for len(q) > 0 {
 		pid := q[len(q)-1]; q = q[:len(q)-1]
-		var children []SysResource
-		db.DB.WithContext(ctx).Where("parent_id = ?", pid).Find(&children)
-		for _, c := range children {
-			if !m[c.ID] { m[c.ID] = true; q = append(q, c.ID) }
+		for _, cid := range cm[pid] {
+			if !m[cid] { m[cid] = true; q = append(q, cid) }
 		}
 	}
 	r := make([]string, 0, len(m)); for id := range m { r = append(r, id) }; return r
 }
 
-type relRoleResource struct {
-	ID         string
-	RoleID     string
-	ResourceID string
-}
-type relRolePermission struct {
-	ID             string
-	RoleID         string
-	PermissionCode string
-}
 
 func syncPerm(resourceID string, oldExtra, newExtra *string) {
 	ctx := context.Background()
@@ -301,22 +315,51 @@ func syncPerm(resourceID string, oldExtra, newExtra *string) {
 	tx := db.DB.WithContext(ctx).Begin()
 
 	var roleResources []relRoleResource
-	tx.Table("rel_role_resource").Where("resource_id = ?", resourceID).Find(&roleResources)
+	if err := tx.Table("rel_role_resource").Where("resource_id = ?", resourceID).Find(&roleResources).Error; err != nil {
+		tx.Rollback()
+		log.Printf("[RESOURCE] Failed to query role resources: %v", err)
+		return
+	}
 	if len(roleResources) == 0 { tx.Rollback(); return }
 
 	roleIDs := make([]string, len(roleResources))
 	for i, rr := range roleResources { roleIDs[i] = rr.RoleID }
 
 	if oldCode != "" {
-		tx.Exec("DELETE FROM rel_role_permission WHERE role_id IN ? AND permission_code = ?", roleIDs, oldCode)
+		if err := tx.Exec("DELETE FROM rel_role_permission WHERE role_id IN ? AND permission_code = ?", roleIDs, oldCode).Error; err != nil {
+			tx.Rollback()
+			log.Printf("[RESOURCE] Failed to delete old permissions: %v", err)
+			return
+		}
 	}
 
 	if newCode != "" {
+		var existing []struct{ RoleID string }
+		if err := tx.Table("rel_role_permission").Where("role_id IN ? AND permission_code = ?", roleIDs, newCode).Select("role_id").Find(&existing).Error; err != nil {
+			tx.Rollback()
+			log.Printf("[RESOURCE] Failed to query existing permissions: %v", err)
+			return
+		}
+		existingMap := make(map[string]bool)
+		for _, e := range existing { existingMap[e.RoleID] = true }
+		permBatch := make([]struct {
+			ID             string
+			RoleID         string
+			PermissionCode string
+		}, 0)
 		for _, rid := range roleIDs {
-			var cnt int64
-			tx.Table("rel_role_permission").Where("role_id = ? AND permission_code = ?", rid, newCode).Count(&cnt)
-			if cnt == 0 {
-				tx.Exec("INSERT INTO rel_role_permission (id, role_id, permission_code) VALUES (?, ?, ?)", utils.GenerateID(), rid, newCode)
+			if existingMap[rid] { continue }
+			permBatch = append(permBatch, struct {
+				ID             string
+				RoleID         string
+				PermissionCode string
+			}{utils.GenerateID(), rid, newCode})
+		}
+		if len(permBatch) > 0 {
+			if err := tx.Table("rel_role_permission").CreateInBatches(permBatch, 100).Error; err != nil {
+				tx.Rollback()
+				log.Printf("[RESOURCE] Failed to batch insert permissions: %v", err)
+				return
 			}
 		}
 	}
@@ -332,14 +375,3 @@ func extractPermCode(extra *string) string {
 	return code
 }
 
-func resFromEnt(r *SysResource) *ResourceVO {
-	return &ResourceVO{
-		ID: r.ID, Code: r.Code, Name: r.Name, Category: r.Category, Type: r.Type,
-		Description: r.Description, ParentID: r.ParentID, RoutePath: r.RoutePath,
-		ComponentPath: r.ComponentPath, RedirectPath: r.RedirectPath, Icon: r.Icon,
-		Color: r.Color, IsVisible: r.IsVisible, IsCache: r.IsCache, IsAffix: r.IsAffix,
-		IsBreadcrumb: r.IsBreadcrumb, ExternalURL: r.ExternalURL, Extra: r.Extra,
-		Status: r.Status, SortCode: r.SortCode, CreatedAt: r.CreatedAt, CreatedBy: r.CreatedBy,
-		UpdatedAt: r.UpdatedAt, UpdatedBy: r.UpdatedBy,
-	}
-}

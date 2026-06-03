@@ -44,3 +44,13 @@ type DashboardVO struct {
 	RoleCategoryDistribution []CategoryDistribution `json:"role_category_distribution"`
 	SysInfo                  SysInfo                `json:"sys_info"`
 }
+
+// LogAnalysisData holds login/log analysis statistics for the dashboard.
+type LogAnalysisData struct {
+	LoginTotal     int `json:"login_total"`
+	LoginFailed    int `json:"login_failed"`
+	LoginToday     int `json:"login_today"`
+	LogTotal       int `json:"log_total"`
+	LogException   int `json:"log_exception"`
+	ExceptionToday int `json:"exception_today"`
+}
