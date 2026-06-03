@@ -15,62 +15,63 @@ import (
 	"hei-gin/config"
 	"hei-gin/core/auth"
 	"hei-gin/core/captcha"
+	"hei-gin/core/cron"
 	"hei-gin/core/db"
 	"hei-gin/core/middleware"
 	"hei-gin/core/utils"
 )
 
 func Run() {
-	// 1. Load config
+	// Load config
 	if err := config.Load("config.yaml"); err != nil {
 		log.Fatalf("[APP] Failed to load config: %v", err)
 	}
 
-	// 2. Init DB
+	// Init DB
 	if err := db.InitDB(); err != nil {
 		log.Fatalf("[APP] Failed to init database: %v", err)
 	}
 
-	// 3. Init Redis
+	// Init Redis
 	if err := db.InitRedis(); err != nil {
 		log.Fatalf("[APP] Failed to init Redis: %v", err)
 	}
 
-	// 4. SM2 Init
+	// SM2 Init
 	utils.Init(config.C.SM2.PrivateKey, config.C.SM2.PublicKey)
 
-	// 5. Auth tool init
+	// Auth tool init
 	auth.Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
 	auth.NewHeiClientAuthTool().Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
 
-	// 6. Register permission interface
+	// Register permission interface
 	auth.RegisterInterface(&auth.HeiPermissionInterfaceImpl{})
 
-	// 7. Init captcha
+	// Init captcha
 	captcha.BCaptcha.Init(db.Redis)
 	captcha.CCaptcha.Init(db.Redis)
 
-	// 8. Init auth login user provider
-
-	// 9. Create Gin engine
+	// Create Gin engine
 	r := gin.Default()
 
-	// 10. Global middleware
+	// Global middleware
 	// Recovery must be first so it can catch panics from all downstream middleware
 	r.Use(middleware.Recovery())
 	r.Use(middleware.Trace())
-	// 11. CORS
+	// CORS
 	r.Use(middleware.CORS())
 	r.Use(middleware.AuthCheck())
 
-
-	// 12. Setup routes
+	// Setup routes
 	SetupRouters(r)
 
-	// 13. Run permission scan
+	// Run permission scan
 	auth.RunPermissionScan()
 
-	// 14. Start HTTP server with graceful shutdown
+	// Start background cron jobs
+	cron.Start()
+
+	// Start HTTP server with graceful shutdown
 	addr := fmt.Sprintf("%s:%d", config.C.App.Host, config.C.App.Port)
 	srv := &http.Server{
 		Addr:    addr,
