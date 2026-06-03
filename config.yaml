@@ -1,0 +1,93 @@
+app:
+  name: hei-gin
+  version: 1.0.0
+  debug: true
+  host: 127.0.0.1
+  port: 18886
+  upload_max_size: 52428800
+  import_max_file_size_mb: 10
+  timeout_keep_alive: 15
+
+db:
+  host: localhost
+  port: 3306
+  user: root
+  password: "123456"
+  database: hei_data
+  pool_size: 20
+  max_overflow: 10
+  pool_recycle: 3600
+  pool_pre_ping: true
+  pool_timeout: 30
+  connect_timeout: 10
+  echo: false
+
+redis:
+  host: localhost
+  port: 6379
+  password: "123456"
+  database: 1
+  max_connections: 200
+  socket_connect_timeout: 10
+  socket_timeout: 30
+  retry_on_timeout: true
+  health_check_interval: 30
+
+token:
+  expire_seconds: 2592000
+  token_name: Authorization
+
+sm2:
+  private_key: dbc1da701ba293538f8d1df7d7286410503e25723a99e82c47b0c276dcbf86c0
+  public_key: "043fcdbc656c5489a327060548c66c7af746baf31a6bfa04eb0215951e17dd272c8d87ce1da014b26952163143df32e07c0c5ed7000f409dc3e28729f7073469d2"
+
+cors:
+  allow_origins: ["*"]
+  allow_methods: ["*"]
+  allow_headers: ["*"]
+  allow_credentials: false
+
+snowflake:
+  instance: 1
+
+judge:
+  sandbox:
+    addrs: ["127.0.0.1:5051"]
+  redis:
+    stream_key: "judge:queue"
+    consumer_group: "judge:workers"
+    claim_idle_ms: 300000
+  concurrency: 4
+  compile_time_limit: 120000
+  compile_memory_limit: 524288
+  output_limit: 65536
+  subtask_shortcut: true
+  shutdown_timeout: "30s"
+  registry:
+    heartbeat_timeout: "30s"
+    remove_after: "120s"
+    probe_interval: "10s"
+    probe_timeout: "5s"
+    max_failures: 3
+  languages:
+    - name: cpp
+      compile_args: ["g++", "-O2", "-o", "a.out", "main.cpp"]
+      run_args: ["./a.out"]
+      extension: ".cpp"
+    - name: c
+      compile_args: ["gcc", "-O2", "-o", "a.out", "main.c"]
+      run_args: ["./a.out"]
+      extension: ".c"
+    - name: python3
+      compile_args: []
+      run_args: ["python3", "main.py"]
+      extension: ".py"
+    - name: go
+      compile_args: ["/usr/bin/go", "build", "-p", "1", "-o", "a.out", "main.go"]
+      run_args: ["./a.out"]
+      extension: ".go"
+
+contest:
+  acm_penalty_minutes: 20
+  hack_time_limit_ms: 5000
+  system_test_concurrency: 4
