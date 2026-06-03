@@ -59,10 +59,10 @@ func Run() {
 	// Recovery must be first so it can catch panics from all downstream middleware
 	r.Use(middleware.Recovery())
 	r.Use(middleware.Trace())
-	r.Use(middleware.AuthCheck())
-
 	// 11. CORS
 	r.Use(middleware.CORS())
+	r.Use(middleware.AuthCheck())
+
 
 	// 12. Setup routes
 	SetupRouters(r)
