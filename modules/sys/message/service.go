@@ -19,7 +19,8 @@ import (
 
 func toVO(e *SysMessage) *MessageVO {
 	v := &MessageVO{
-		ID: e.ID, Title: e.Title, Content: e.Content,
+		ID: e.ID, ConversationID: e.ConversationID,
+		Title: e.Title, Content: e.Content,
 		SenderID: e.SenderID, SenderType: string(e.SenderType),
 		ReceiverID: e.ReceiverID, ReceiverType: string(e.ReceiverType),
 		MessageType: e.MessageType, Status: e.Status,
@@ -86,6 +87,11 @@ func Detail(id string) *MessageVO {
 func Send(c *gin.Context, param *MessageSendParam, senderID string) {
 	ctx := context.Background()
 	now := time.Now()
+
+	// Rate limiting
+	if !ws.GlobalCrossHub.AllowMessage(senderID, enums.LoginTypeBusiness) {
+		panic(exception.NewBusinessError("发送消息过于频繁，请稍后重试", 429))
+	}
 	receiverType := enums.LoginTypeEnum(param.ReceiverType)
 
 	if receiverType == "" {
@@ -93,42 +99,45 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string) {
 	}
 
 	if receiverType == enums.LoginTypeConsumer {
-		// B端→C端: batch write to client_message, push via SendToConsumer
 		records := make([]map[string]interface{}, len(param.ReceiverIDs))
 		for i, rid := range param.ReceiverIDs {
+			cid := GenerateConversationID(senderID, enums.LoginTypeBusiness, rid, enums.LoginTypeConsumer)
 			records[i] = map[string]interface{}{
-				"id":            utils.GenerateID(),
-				"title":         param.Title,
-				"content":       param.Content,
-				"sender_id":     senderID,
-				"sender_type":   enums.LoginTypeBusiness,
-				"receiver_id":   rid,
-				"receiver_type": enums.LoginTypeConsumer,
-				"message_type":  "system",
-				"status":        "unread",
-				"created_at":    now,
-				"updated_at":    now,
+				"id":              utils.GenerateID(),
+				"conversation_id": cid,
+				"title":           param.Title,
+				"content":         param.Content,
+				"sender_id":       senderID,
+				"sender_type":     enums.LoginTypeBusiness,
+				"receiver_id":     rid,
+				"receiver_type":   enums.LoginTypeConsumer,
+				"message_type":    "system",
+				"status":          "unread",
+				"created_at":      now,
+				"updated_at":      now,
 			}
 		}
 		if err := db.DB.WithContext(ctx).Table("client_message").Create(&records).Error; err != nil {
 			panic(exception.NewBusinessError("发送消息失败: "+err.Error(), 500))
 		}
 		for i, rid := range param.ReceiverIDs {
-			ws.GlobalHub.SendToConsumer(rid, ws.Message{
+			msgID := records[i]["id"].(string)
+			ws.GlobalCrossHub.SendToConsumer(rid, ws.Message{
 				Type: ws.MsgNewMessage,
 				Payload: ws.NewMessagePayload{
-					MessageID: records[i]["id"].(string), Title: param.Title, CreatedAt: pojo.FormatDateTime(now),
+					MessageID: msgID, Title: param.Title, CreatedAt: pojo.FormatDateTime(now),
 				},
-			})
+			}, msgID)
 		}
 		return
 	}
 
-	// B端→B端: batch write to sys_message, push via SendToUser
 	records := make([]SysMessage, len(param.ReceiverIDs))
 	for i, rid := range param.ReceiverIDs {
 		records[i] = SysMessage{
-			ID: utils.GenerateID(), Title: param.Title, Content: param.Content,
+			ID: utils.GenerateID(),
+			ConversationID: GenerateConversationID(senderID, enums.LoginTypeBusiness, rid, enums.LoginTypeBusiness),
+			Title: param.Title, Content: param.Content,
 			SenderID: &senderID, SenderType: enums.LoginTypeBusiness,
 			ReceiverID: rid, ReceiverType: enums.LoginTypeBusiness,
 			MessageType: "system", Status: "unread", CreatedAt: &now, UpdatedAt: &now,
@@ -138,12 +147,12 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string) {
 		panic(exception.NewBusinessError("发送消息失败: "+err.Error(), 500))
 	}
 	for i, rid := range param.ReceiverIDs {
-		ws.GlobalHub.SendToUser(rid, ws.Message{
+		ws.GlobalCrossHub.SendToUser(rid, ws.Message{
 			Type: ws.MsgNewMessage,
 			Payload: ws.NewMessagePayload{
 				MessageID: records[i].ID, Title: param.Title, CreatedAt: pojo.FormatDateTime(now),
 			},
-		})
+		}, records[i].ID)
 	}
 }
 
@@ -155,6 +164,15 @@ func MarkRead(id string) {
 	}
 }
 
+// MarkConversationRead marks all unread received messages in a conversation as read.
+func MarkConversationRead(receiverID string, conversationID string) {
+	now := time.Now()
+	if err := db.DB.Model(&SysMessage{}).
+		Where("conversation_id = ? AND receiver_id = ? AND status = ?", conversationID, receiverID, "unread").
+		Updates(map[string]interface{}{"status": "read", "read_at": &now}).Error; err != nil {
+		panic(exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
+	}
+}
 func MarkAllRead(receiverID string) {
 	now := time.Now()
 	if err := db.DB.Model(&SysMessage{}).

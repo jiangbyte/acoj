@@ -73,3 +73,18 @@ storage:
   #   bucket: hei-files
   #   region: ap-northeast-1
   #   path_style: false
+
+# WebSocket / IM 配置
+ws:
+  read_buffer_size: 1024
+  write_buffer_size: 1024
+  heartbeat_interval: 15          # 心跳间隔（秒）
+  instance_ttl: 60               # 实例TTL（秒）
+  stale_clean_interval: 5        # 过期实例清理间隔（分钟）
+  rate_limit_window: 10          # 限流时间窗口（秒）
+  rate_limit_max: 30             # 窗口内最大消息数
+  dedup_ttl: 30                  # 消息去重TTL（秒）
+  poll_timeout: 2                # Redis BRPOP超时（秒）
+  pong_timeout: 60               # WS Pong超时（秒）
+  write_timeout: 10              # WS写入超时（秒）
+  online_broadcast_interval: 60  # 在线人数广播间隔（秒）

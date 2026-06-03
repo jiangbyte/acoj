@@ -10,14 +10,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const (
-	// pongTimeout is how long the server waits for a pong before disconnecting.
-	pongTimeout = 60 * time.Second
-
-	// writeTimeout is how long the server waits to write a message.
-	writeTimeout = 10 * time.Second
-)
-
 // Client represents a single WebSocket connection.
 type Client struct {
 	Hub      *Hub
@@ -34,6 +26,7 @@ func (c *Client) ReadPump() {
 		c.Conn.Close()
 	}()
 
+	pongTimeout := time.Duration(wsConfig().PongTimeout) * time.Second
 	c.Conn.SetReadDeadline(time.Now().Add(pongTimeout))
 	c.Conn.SetPongHandler(func(string) error {
 		c.Conn.SetReadDeadline(time.Now().Add(pongTimeout))
@@ -63,7 +56,13 @@ func (c *Client) ReadPump() {
 
 // WritePump pumps messages from the hub to the WebSocket connection.
 func (c *Client) WritePump() {
-	ticker := time.NewTicker(30 * time.Second)
+	heartbeatInterval := time.Duration(wsConfig().HeartbeatInterval) * time.Second
+	if heartbeatInterval <= 0 {
+		heartbeatInterval = 30 * time.Second
+	}
+	writeTimeout := time.Duration(wsConfig().WriteTimeout) * time.Second
+
+	ticker := time.NewTicker(heartbeatInterval)
 	defer func() {
 		ticker.Stop()
 		c.Conn.Close()

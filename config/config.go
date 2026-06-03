@@ -15,7 +15,8 @@ type Config struct {
 	CORS      CORSConfig      `yaml:"cors"`
 	User      UserConfig      `yaml:"user"`
 	Snowflake SnowflakeConfig `yaml:"snowflake"`
-	Raw map[string]any `yaml:",inline"`
+	WS        WSConfig        `yaml:"ws"`
+	Raw       map[string]any  `yaml:",inline"`
 }
 
 type AppConfig struct {
@@ -78,6 +79,21 @@ type CORSConfig struct {
 
 type SnowflakeConfig struct {
 	Instance int64 `yaml:"instance"`
+}
+
+type WSConfig struct {
+	ReadBufferSize            int `yaml:"read_buffer_size"`
+	WriteBufferSize           int `yaml:"write_buffer_size"`
+	HeartbeatInterval         int `yaml:"heartbeat_interval"`
+	InstanceTTL               int `yaml:"instance_ttl"`
+	StaleCleanInterval        int `yaml:"stale_clean_interval"`
+	RateLimitWindow           int `yaml:"rate_limit_window"`
+	RateLimitMax              int `yaml:"rate_limit_max"`
+	DedupTTL                  int `yaml:"dedup_ttl"`
+	PollTimeout               int `yaml:"poll_timeout"`
+	PongTimeout               int `yaml:"pong_timeout"`
+	WriteTimeout              int `yaml:"write_timeout"`
+	OnlineBroadcastInterval   int `yaml:"online_broadcast_interval"`
 }
 
 var C *Config

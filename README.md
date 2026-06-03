@@ -29,6 +29,7 @@
 | 定时调度 | cron 表达式 (robfig/cron/v3) |
 | IP 定位 | IP2Region 离线库 |
 | 分布式ID | Snowflake ID |
+| WebSocket | gorilla/websocket + go-redis List/BRPOP 跨实例 IM |
 
 ## 核心特性
 
@@ -54,6 +55,7 @@
 - **模块级配置** — 通过 `config.C.Raw` 读取模块专属配置，无需修改 config.go
 - **在线会话管理** — B 端和 C 端独立的会话管理，支持在线用户查看和强制下线
 - **雪花ID** — 分布式 Snowflake ID 生成器
+- **跨实例 WebSocket IM** — Redis List + BRPOP 驱动的跨实例消息投递、在线状态感知、消息去重、限流、心跳检测
 
 ## 项目结构
 
@@ -539,3 +541,85 @@ go run cmd/migrate/main.go -skip-seed
 ## 开源协议
 
 本项目采用 [MIT License](LICENSE) 开源协议
+
+## WebSocket / 站内信 IM
+
+框架内置跨实例 WebSocket IM 系统，支持实时消息推送、在线状态感知、多实例水平扩展。
+
+### 架构
+
+```
+┌─ Instance A ─────────────┐    ┌─ Instance B ─────────────┐
+│  CrossHub                 │    │  CrossHub                 │
+│  ├─ Local Hub (in-mem)    │    │  ├─ Local Hub (in-mem)    │
+│  └─ Redis List BRPOP      │    │  └─ Redis List BRPOP      │
+└──────────┬────────────────┘    └──────────┬────────────────┘
+           │                                │
+           └────────── Redis ───────────────┘
+                      │
+        ┌─────────────┴─────────────┐
+        │  ws:user:{type}:{uid}     │ → 用户→实例映射（Set）
+        │  ws:messages:{instance}   │ → 实例消息队列（List）
+        │  ws:instance:{instance}   │ → 实例心跳（String + TTL）
+        └───────────────────────────┘
+```
+
+### WebSocket 端点
+
+| 路径 | 说明 |
+|------|------|
+| `ws://host:port/api/v1/sys/ws` | B 端（后台管理）WebSocket |
+| `ws://host:port/api/v1/c/ws`  | C 端（客户端）WebSocket |
+
+### 事件类型
+
+| 类型 | 方向 | 说明 |
+|------|------|------|
+| `heartbeat` | Client → Server | 客户端心跳，30s 间隔 |
+| `new_message` | Server → Client | 新消息推送 |
+| `unread_count` | Server → Client | 通知前端刷新未读数 |
+| `presence` | Server → Client | 用户在线/离线状态变更 |
+| `online_count` | Server → Client | 在线人数广播（60s） |
+
+### 跨实例特性
+
+| 特性 | 实现 |
+|------|------|
+| **跨实例消息投递** | Redis List + BRPOP，每个实例独享消息队列 |
+| **用户连接追踪** | `ws:user:{type}:{uid}` → Set（用户→实例映射） |
+| **消息去重** | Redis SETNX + TTL，防止跨实例重复投递 |
+| **限流** | Redis INCR 滑动窗口，默认 10s / 30 条 |
+| **心跳检测** | `ws:instance:{id}` 每 15s 刷新 TTL，60s 过期 |
+| **过期实例清理** | 后台协程每 5 分钟自动清理僵尸实例 |
+| **在线状态广播** | 用户连接/断开时广播 `presence` 事件 |
+
+### 配置
+
+```yaml
+# config.yaml
+ws:
+  read_buffer_size: 1024            # WS 读取缓冲区（字节）
+  write_buffer_size: 1024           # WS 写入缓冲区（字节）
+  heartbeat_interval: 15            # 心跳发送间隔（秒）
+  instance_ttl: 60                  # 实例心跳 TTL（秒），超时视为宕机
+  stale_clean_interval: 5           # 过期实例清理间隔（分钟）
+  rate_limit_window: 10             # 限流时间窗口（秒）
+  rate_limit_max: 30                # 窗口内最大消息数
+  dedup_ttl: 30                     # 消息去重 TTL（秒）
+  poll_timeout: 2                   # Redis BRPOP 超时（秒）
+  pong_timeout: 60                  # WS Pong 超时（秒）
+  write_timeout: 10                 # WS 写入超时（秒）
+  online_broadcast_interval: 60     # 在线人数广播间隔（秒）
+```
+
+实例 ID 使用 Snowflake 配置 `snowflake.instance`，生产环境每个实例需配置不同值。
+
+### 前端连接
+
+```typescript
+// ws store 自动管理连接、心跳、重连
+const wsUrl = `ws://${host}/api/v1/sys/ws?token=${token}`
+const ws = new WebSocket(wsUrl)
+// 心跳：每 30s 发送 { type: "heartbeat" }
+// 重连：指数退避，最多 10 次
+```

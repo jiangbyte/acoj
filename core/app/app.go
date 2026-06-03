@@ -23,6 +23,7 @@ import (
 	_ "hei-gin/core/captcha"
 	_ "hei-gin/core/scheduler"
 	_ "hei-gin/core/utils"
+	"hei-gin/core/ws"
 )
 
 func Run() {
@@ -40,6 +41,9 @@ func Run() {
 	if err := db.InitRedis(); err != nil {
 		log.Fatalf("[APP] Failed to init Redis: %v", err)
 	}
+
+	// Init cross-instance WebSocket hub
+	ws.GlobalCrossHub = ws.NewCrossHub(ws.GlobalHub, db.Redis)
 
 	// Init all registered modules (auth, captcha, utils, etc.)
 	if err := module.InitAll(); err != nil {
@@ -95,6 +99,7 @@ func Run() {
 	module.StopAll()
 
 	db.Close()
+	ws.GlobalCrossHub.Close()
 	db.CloseRedis()
 	log.Println("[APP] Server exited")
 }

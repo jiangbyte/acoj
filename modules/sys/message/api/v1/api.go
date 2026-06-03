@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"strconv"
+
 	"hei-gin/core/auth"
 	"hei-gin/core/pojo"
 	"hei-gin/core/result"
@@ -11,18 +13,17 @@ import (
 
 func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/sys/message/page", pageHandler)
-
 	r.GET("/api/v1/sys/message/detail", detailHandler)
-
 	r.GET("/api/v1/sys/message/unread-count", unreadCountHandler)
-
 	r.POST("/api/v1/sys/message/send", sendHandler)
-
 	r.POST("/api/v1/sys/message/mark-read", markReadHandler)
-
 	r.POST("/api/v1/sys/message/mark-all-read", markAllReadHandler)
-
 	r.POST("/api/v1/sys/message/remove", removeHandler)
+
+	// Conversation-based endpoints
+	r.GET("/api/v1/sys/message/conversations", conversationsHandler)
+	r.GET("/api/v1/sys/message/conversation/messages", conversationMessagesHandler)
+	r.POST("/api/v1/sys/message/conversation/read", conversationReadHandler)
 }
 
 func pageHandler(c *gin.Context) {
@@ -86,5 +87,41 @@ func removeHandler(c *gin.Context) {
 		return
 	}
 	message.Remove(param.IDs)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func conversationsHandler(c *gin.Context) {
+	userID := auth.GetLoginID(c)
+	list := message.Conversations(userID)
+	c.JSON(200, result.Success(c, list))
+}
+
+func conversationMessagesHandler(c *gin.Context) {
+	userID := auth.GetLoginID(c)
+	cid := c.Query("conversation_id")
+	cursor := c.Query("cursor")
+	size := 20
+	if s := c.Query("size"); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 {
+			size = n
+		}
+	}
+	messages, hasMore := message.ConversationMessages(userID, cid, cursor, size)
+	c.JSON(200, result.Success(c, gin.H{
+		"records":  messages,
+		"has_more": hasMore,
+	}))
+}
+
+func conversationReadHandler(c *gin.Context) {
+	var param struct {
+		ConversationID string `json:"conversation_id"`
+	}
+	if err := c.ShouldBindJSON(&param); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		return
+	}
+	userID := auth.GetLoginID(c)
+	message.MarkConversationRead(userID, param.ConversationID)
 	c.JSON(200, result.Success(c, nil))
 }
