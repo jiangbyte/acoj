@@ -79,6 +79,9 @@ func AuthCheck() gin.HandlerFunc {
 
 		// 6. B path (/api/v{n}/b/...) or DEFAULT (/api/v{n}/<other>/...)
 		if !auth.IsLogin(c) {
+			c.Header("Access-Control-Allow-Origin", "*")
+			c.Header("Access-Control-Allow-Methods", "*")
+			c.Header("Access-Control-Allow-Headers", "*")
 			c.Abort()
 			c.JSON(200, gin.H{"code": 401, "message": "未授权/未登录", "success": false})
 			return
