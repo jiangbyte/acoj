@@ -10,17 +10,34 @@ import (
 
 	sysUser "hei-gin/plugins/plugin-sys/user"
 	cliUser "hei-gin/plugins/plugin-client/user"
+	"hei-gin/plugins/plugin-im/group"
+)
+
+// ConversationType constants
+const (
+	ConvTypeSingle = "single"
+	ConvTypeGroup  = "group"
 )
 
 type ConversationVO struct {
 	ConversationID string `json:"conversation_id"`
-	OtherUserID    string `json:"other_user_id"`
-	OtherUserType  string `json:"other_user_type"`
-	OtherNickname  string `json:"other_nickname"`
-	OtherAvatar    string `json:"other_avatar"`
-	LastContent    string `json:"last_content"`
-	LastTime       string `json:"last_time"`
-	UnreadCount    int64  `json:"unread_count"`
+	ConversationType string `json:"conversation_type"` // "single" | "group"
+
+	// Single-chat fields
+	OtherUserID   string `json:"other_user_id,omitempty"`
+	OtherUserType string `json:"other_user_type,omitempty"`
+	OtherNickname string `json:"other_nickname,omitempty"`
+	OtherAvatar   string `json:"other_avatar,omitempty"`
+
+	// Group fields
+	GroupID     string `json:"group_id,omitempty"`
+	GroupName   string `json:"group_name,omitempty"`
+	GroupAvatar string `json:"group_avatar,omitempty"`
+	MemberCount int    `json:"member_count,omitempty"`
+
+	LastContent string `json:"last_content"`
+	LastTime    string `json:"last_time"`
+	UnreadCount int64  `json:"unread_count"`
 }
 
 type ConversationMessageVO struct {
@@ -28,6 +45,8 @@ type ConversationMessageVO struct {
 	SenderID   *string `json:"sender_id"`
 	SenderType string  `json:"sender_type"`
 	Content    string  `json:"content"`
+	MsgType    string  `json:"msg_type"`
+	Extra      string  `json:"extra,omitempty"`
 	Status     string  `json:"status"`
 	CreatedAt  string  `json:"created_at"`
 }
@@ -41,7 +60,7 @@ type convItem struct {
 	UnreadCount    int64
 }
 
-func Conversations(currentUserID string) []ConversationVO {
+func Conversations(currentUserID, userType string) []ConversationVO {
 	convMap := make(map[string]*convItem)
 
 	mergeConv := func(existing *convItem, r *convItem) {
@@ -63,6 +82,7 @@ func Conversations(currentUserID string) []ConversationVO {
 		}
 	}
 
+	// Single-chat: sys_message table
 	rows1 := fetchConversationRows("sys_message", currentUserID, "")
 	for _, r := range rows1 {
 		addConv(r)
@@ -71,15 +91,17 @@ func Conversations(currentUserID string) []ConversationVO {
 	for _, r := range rows2 {
 		addConv(r)
 	}
-	rows3 := fetchConversationRowsSender("client_message", currentUserID, string(enums.LoginTypeConsumer))
+	// Single-chat: client_message table (C端 messages where user is receiver as Consumer)
+	rows3 := fetchConversationRows("client_message", currentUserID, string(enums.LoginTypeConsumer))
 	for _, r := range rows3 {
 		addConv(r)
 	}
-
-	if len(convMap) == 0 {
-		return nil
+	rows4 := fetchConversationRowsSender("client_message", currentUserID, string(enums.LoginTypeConsumer))
+	for _, r := range rows4 {
+		addConv(r)
 	}
 
+	// Build result: single-chat conversations
 	businessIDs, consumerIDs := []string{}, []string{}
 	for _, item := range convMap {
 		switch item.OtherType {
@@ -118,19 +140,127 @@ func Conversations(currentUserID string) []ConversationVO {
 		}
 	}
 
-	result := make([]ConversationVO, 0, len(convMap))
+	result := make([]ConversationVO, 0, len(convMap)+4)
 	for _, item := range convMap {
 		key := item.OtherType + ":" + item.OtherID
 		result = append(result, ConversationVO{
-			ConversationID: item.ConversationID,
-			OtherUserID:    item.OtherID,
-			OtherUserType:  item.OtherType,
-			OtherNickname:  nicknameMap[key],
-			OtherAvatar:    avatarMap[key],
-			LastContent:    item.LastContent,
-			LastTime:       pojo.FormatDateTime(item.LastTime),
-			UnreadCount:    item.UnreadCount,
+			ConversationID:   item.ConversationID,
+			ConversationType: ConvTypeSingle,
+			OtherUserID:      item.OtherID,
+			OtherUserType:    item.OtherType,
+			OtherNickname:    nicknameMap[key],
+			OtherAvatar:      avatarMap[key],
+			LastContent:      item.LastContent,
+			LastTime:         pojo.FormatDateTime(item.LastTime),
+			UnreadCount:      item.UnreadCount,
 		})
+	}
+
+	// Group conversations
+	groupConvs := fetchGroupConversations(currentUserID, userType)
+	result = append(result, groupConvs...)
+
+	// Sort by LastTime descending
+	for i := 0; i < len(result); i++ {
+		for j := i + 1; j < len(result); j++ {
+			if result[j].LastTime > result[i].LastTime {
+				result[i], result[j] = result[j], result[i]
+			}
+		}
+	}
+
+	return result
+}
+
+func fetchGroupConversations(currentUserID, userType string) []ConversationVO {
+	// Get all groups the user is a member of
+	var members []group.GroupMember
+	db.DB.Model(&group.GroupMember{}).
+		Select("group_id, joined_at").
+		Where("user_id = ? AND user_type = ? AND status = ?", currentUserID, userType, group.MemberActive).
+		Find(&members)
+	if len(members) == 0 {
+		return nil
+	}
+
+	groupIDs := make([]string, len(members))
+	for i, m := range members {
+		groupIDs[i] = m.GroupID
+	}
+
+	// Get group info (single batch)
+	var groups []group.GroupChat
+	db.DB.Where("id IN ? AND status = ?", groupIDs, group.GroupNormal).Find(&groups)
+	if len(groups) == 0 {
+		return nil
+	}
+
+	// Get member count per group (single batch)
+	type cnt struct{ GroupID string; Count int }
+	var counts []cnt
+	db.DB.Model(&group.GroupMember{}).
+		Select("group_id, COUNT(*) as count").
+		Where("group_id IN ? AND status = ?", groupIDs, group.MemberActive).
+		Group("group_id").Scan(&counts)
+	countMap := make(map[string]int, len(counts))
+	for _, c := range counts {
+		countMap[c.GroupID] = c.Count
+	}
+
+	// Get last message per group (single batch, subquery)
+	type lm struct{ GroupID, Content, CreatedAt string }
+	var lastMsgs []lm
+	db.DB.Raw(
+		`SELECT g2.group_id, g2.content, g2.created_at FROM group_message g2
+		 INNER JOIN (SELECT group_id, MAX(created_at) max_ct FROM group_message WHERE group_id IN ? GROUP BY group_id) g1
+		 ON g2.group_id = g1.group_id AND g2.created_at = g1.max_ct`, groupIDs).Scan(&lastMsgs)
+	lastMap := make(map[string]lm, len(lastMsgs))
+	for _, l := range lastMsgs {
+		lastMap[l.GroupID] = l
+	}
+
+	// Get unread count per group
+	var unreads []struct {
+		GroupID string
+		Count   int64
+	}
+	db.DB.Raw(
+		`SELECT gm.group_id, COUNT(*) as count FROM group_message gm
+		 WHERE gm.group_id IN ? AND gm.created_at > COALESCE(
+			 (SELECT MAX(gmr.read_at) FROM group_message_read gmr
+			  WHERE gmr.group_id = gm.group_id AND gmr.user_id = ? AND gmr.user_type = ?), '1970-01-01'
+		 )
+		 GROUP BY gm.group_id`, groupIDs, currentUserID, userType).Scan(&unreads)
+	unreadMap := make(map[string]int64, len(unreads))
+	for _, u := range unreads {
+		unreadMap[u.GroupID] = u.Count
+	}
+
+	groupMap := make(map[string]group.GroupChat, len(groups))
+	for _, g := range groups {
+		groupMap[g.ID] = g
+	}
+
+	result := make([]ConversationVO, 0, len(groups))
+	for _, m := range members {
+		g, ok := groupMap[m.GroupID]
+		if !ok {
+			continue
+		}
+		vo := ConversationVO{
+			ConversationID:   "group:" + g.ID,
+			ConversationType: ConvTypeGroup,
+			GroupID:          g.ID,
+			GroupName:        g.Name,
+			GroupAvatar:      g.Avatar,
+			MemberCount:      countMap[g.ID],
+			UnreadCount:      unreadMap[g.ID],
+		}
+		if l, ok := lastMap[g.ID]; ok {
+			vo.LastContent = l.Content
+			vo.LastTime = l.CreatedAt
+		}
+		result = append(result, vo)
 	}
 	return result
 }
@@ -167,6 +297,7 @@ func fetchConversationRowsSender(table, userID, receiverType string) []*convItem
 	return results
 }
 
+// BusinessConversationMessages fetches single-chat messages for a BUSINESS user.
 func BusinessConversationMessages(currentUserID string, conversationID string, cursor string, size int) ([]ConversationMessageVO, bool) {
 	if size < 1 {
 		size = 20
@@ -183,7 +314,7 @@ func BusinessConversationMessages(currentUserID string, conversationID string, c
 			cursorArgs = append(cursorArgs, cursorTime)
 		}
 	}
-	q := fmt.Sprintf(`SELECT id, sender_id, sender_type, content, status, created_at FROM sys_message
+	q := fmt.Sprintf(`SELECT id, sender_id, sender_type, content, message_type as msg_type, extra, status, created_at FROM sys_message
 		WHERE conversation_id = ? AND (receiver_id = ? OR sender_id = ?) %s
 		ORDER BY created_at DESC LIMIT ?`, cursorCond)
 	args := []interface{}{conversationID, currentUserID, currentUserID}
@@ -195,6 +326,8 @@ func BusinessConversationMessages(currentUserID string, conversationID string, c
 		SenderID   *string
 		SenderType string
 		Content    string
+		MsgType    string
+		Extra      string
 		Status     string
 		CreatedAt  time.Time
 	}
@@ -209,13 +342,14 @@ func BusinessConversationMessages(currentUserID string, conversationID string, c
 	for i, r := range raw {
 		result[i] = ConversationMessageVO{
 			ID: r.ID, SenderID: r.SenderID, SenderType: r.SenderType,
-			Content: r.Content, Status: r.Status,
+			Content: r.Content, MsgType: r.MsgType, Extra: r.Extra, Status: r.Status,
 			CreatedAt: pojo.FormatDateTime(r.CreatedAt),
 		}
 	}
 	return result, hasMore
 }
 
+// ConsumerConversationMessages fetches single-chat messages for a CONSUMER user.
 func ConsumerConversationMessages(currentUserID string, conversationID string, cursor string, size int) ([]ConversationMessageVO, bool) {
 	if size < 1 {
 		size = 20
@@ -232,11 +366,11 @@ func ConsumerConversationMessages(currentUserID string, conversationID string, c
 			cursorArgs = append(cursorArgs, cursorTime)
 		}
 	}
-	q := fmt.Sprintf(`SELECT id, sender_id, sender_type, content, status, created_at FROM (
-		SELECT id, sender_id, sender_type, content, status, created_at FROM client_message
+	q := fmt.Sprintf(`SELECT id, sender_id, sender_type, content, message_type as msg_type, extra, status, created_at FROM (
+		SELECT id, sender_id, sender_type, content, message_type as msg_type, extra, status, created_at FROM client_message
 		WHERE conversation_id = ? AND (receiver_id = ? OR (sender_id = ? AND receiver_type = ?)) %s
 		UNION ALL
-		SELECT id, sender_id, sender_type, content, status, created_at FROM sys_message
+		SELECT id, sender_id, sender_type, content, message_type as msg_type, extra, status, created_at FROM sys_message
 		WHERE conversation_id = ? AND sender_id = ? AND sender_type = ? %s
 	) AS combined ORDER BY created_at DESC LIMIT ?`, cursorCond, cursorCond)
 	args := []interface{}{conversationID, currentUserID, currentUserID, enums.LoginTypeConsumer}
@@ -250,6 +384,8 @@ func ConsumerConversationMessages(currentUserID string, conversationID string, c
 		SenderID   *string
 		SenderType string
 		Content    string
+		MsgType    string
+		Extra      string
 		Status     string
 		CreatedAt  time.Time
 	}
@@ -264,7 +400,7 @@ func ConsumerConversationMessages(currentUserID string, conversationID string, c
 	for i, r := range raw {
 		result[i] = ConversationMessageVO{
 			ID: r.ID, SenderID: r.SenderID, SenderType: r.SenderType,
-			Content: r.Content, Status: r.Status,
+			Content: r.Content, MsgType: r.MsgType, Extra: r.Extra, Status: r.Status,
 			CreatedAt: pojo.FormatDateTime(r.CreatedAt),
 		}
 	}

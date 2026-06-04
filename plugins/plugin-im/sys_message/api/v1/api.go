@@ -4,9 +4,11 @@ import (
 	"strconv"
 
 	"hei-gin/sdk/auth"
+	"hei-gin/sdk/enums"
 	"hei-gin/sdk/pojo"
 	"hei-gin/sdk/result"
 	sys_message "hei-gin/plugins/plugin-im/sys_message"
+	"hei-gin/plugins/plugin-im/group"
 
 	"github.com/gin-gonic/gin"
 )
@@ -92,7 +94,7 @@ func removeHandler(c *gin.Context) {
 
 func conversationsHandler(c *gin.Context) {
 	userID := auth.GetLoginID(c)
-	list := sys_message.Conversations(userID)
+	list := sys_message.Conversations(userID, string(enums.LoginTypeBusiness))
 	c.JSON(200, result.Success(c, list))
 }
 
@@ -106,7 +108,25 @@ func conversationMessagesHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	messages, hasMore := sys_message.BusinessConversationMessages(userID, cid, cursor, size)
+
+	var messages []sys_message.ConversationMessageVO
+	var hasMore bool
+	if len(cid) > 6 && cid[:6] == "group:" {
+		gid := cid[6:]
+		msgs, more := group.Messages(nil, gid, cursor, size)
+		messages = make([]sys_message.ConversationMessageVO, len(msgs))
+		for i, m := range msgs {
+			senderID := m.SenderID
+			messages[i] = sys_message.ConversationMessageVO{
+				ID: m.ID, SenderID: &senderID, SenderType: m.SenderType,
+				Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
+				CreatedAt: m.CreatedAt,
+			}
+		}
+		hasMore = more
+	} else {
+		messages, hasMore = sys_message.BusinessConversationMessages(userID, cid, cursor, size)
+	}
 	c.JSON(200, result.Success(c, gin.H{
 		"records":  messages,
 		"has_more": hasMore,
@@ -122,6 +142,10 @@ func conversationReadHandler(c *gin.Context) {
 		return
 	}
 	userID := auth.GetLoginID(c)
-	sys_message.MarkConversationRead(userID, param.ConversationID)
+	if len(param.ConversationID) > 6 && param.ConversationID[:6] == "group:" {
+		group.MarkRead(nil, param.ConversationID[6:], userID, string(enums.LoginTypeBusiness), "")
+	} else {
+		sys_message.MarkConversationRead(userID, param.ConversationID)
+	}
 	c.JSON(200, result.Success(c, nil))
 }

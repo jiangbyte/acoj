@@ -38,6 +38,8 @@ type NewMessagePayload struct {
 	Content        string `json:"content,omitempty"`
 	SenderID       string `json:"sender_id,omitempty"`
 	SenderType     string `json:"sender_type,omitempty"`
+	MsgType        string `json:"msg_type,omitempty"`
+	Extra          string `json:"extra,omitempty"`
 	CreatedAt      string `json:"created_at"`
 }
 

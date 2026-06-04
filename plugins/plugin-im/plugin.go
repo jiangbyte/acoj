@@ -14,6 +14,8 @@ import (
 	_ "hei-gin/plugins/plugin-im/sys_message/api/v1"
 	_ "hei-gin/plugins/plugin-im/client_message"
 	_ "hei-gin/plugins/plugin-im/client_message/api/v1"
+	_ "hei-gin/plugins/plugin-im/group"
+	groupAPI "hei-gin/plugins/plugin-im/group/api/v1"
 )
 
 type IMPlugin struct{}
@@ -22,7 +24,7 @@ func (p *IMPlugin) Info() api.PluginInfo {
 	return api.PluginInfo{
 		Name:        "plugin-im",
 		Version:     "1.0.0",
-		Description: "Instant messaging plugin (WebSocket + messages + conversations)",
+		Description: "Instant messaging plugin (WebSocket + messages + group chat)",
 	}
 }
 
@@ -37,6 +39,9 @@ func init() {
 	registry.RegisterRoute(func(r *gin.Engine) {
 		r.GET("/api/v1/sys/ws", sysWSHandler)
 		r.GET("/api/v1/c/ws", clientWSHandler)
+
+		groupAPI.RegisterSysRoutes(r)
+		groupAPI.RegisterClientRoutes(r)
 	})
 }
 

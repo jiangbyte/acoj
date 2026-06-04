@@ -11,6 +11,7 @@ type MessageVO struct {
 	ReceiverID     string  `json:"receiver_id"`
 	ReceiverType   string  `json:"receiver_type"`
 	MessageType    string  `json:"message_type"`
+	Extra          string  `json:"extra,omitempty"`
 	Status         string  `json:"status"`
 	ReadAt         *string `json:"read_at"`
 	CreatedAt      string  `json:"created_at"`
@@ -28,6 +29,8 @@ type MessageSendParam struct {
 	Content      string   `json:"content"`
 	ReceiverIDs  []string `json:"receiver_ids"`
 	ReceiverType string   `json:"receiver_type"`
+	MsgType      string   `json:"msg_type"`
+	Extra        string   `json:"extra"`
 }
 
 type UnreadCountVO struct {

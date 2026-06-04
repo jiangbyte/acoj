@@ -20,7 +20,7 @@ import (
 func toVO(e *SysMessage) *MessageVO {
 	v := &MessageVO{
 		ID: e.ID, ConversationID: e.ConversationID,
-		Title: e.Title, Content: e.Content,
+		Title: e.Title, Content: e.Content, Extra: e.Extra,
 		SenderID: e.SenderID, SenderType: string(e.SenderType),
 		ReceiverID: e.ReceiverID, ReceiverType: string(e.ReceiverType),
 		MessageType: e.MessageType, Status: e.Status,
@@ -92,8 +92,14 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string) {
 	if !ws.GlobalCrossHub.AllowMessage(senderID, enums.LoginTypeBusiness) {
 		panic(exception.NewBusinessError("发送消息过于频繁，请稍后重试", 429))
 	}
-	receiverType := enums.LoginTypeEnum(param.ReceiverType)
 
+	msgType := param.MsgType
+	if msgType == "" {
+		msgType = "text"
+	}
+	extra := param.Extra
+
+	receiverType := enums.LoginTypeEnum(param.ReceiverType)
 	if receiverType == "" {
 		receiverType = enums.LoginTypeBusiness
 	}
@@ -111,7 +117,8 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string) {
 				"sender_type":     enums.LoginTypeBusiness,
 				"receiver_id":     rid,
 				"receiver_type":   enums.LoginTypeConsumer,
-				"message_type":    "system",
+				"message_type":    msgType,
+				"extra":           extra,
 				"status":          "unread",
 				"created_at":      now,
 				"updated_at":      now,
@@ -125,7 +132,9 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string) {
 			ws.GlobalCrossHub.SendToConsumer(rid, ws.Message{
 				Type: ws.MsgNewMessage,
 				Payload: ws.NewMessagePayload{
-					MessageID: msgID, Title: param.Title, CreatedAt: pojo.FormatDateTime(now),
+					MessageID: msgID, Title: param.Title, Content: param.Content,
+					MsgType: msgType, Extra: extra,
+					CreatedAt: pojo.FormatDateTime(now),
 				},
 			}, msgID)
 		}
@@ -137,10 +146,10 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string) {
 		records[i] = SysMessage{
 			ID: utils.GenerateID(),
 			ConversationID: GenerateConversationID(senderID, enums.LoginTypeBusiness, rid, enums.LoginTypeBusiness),
-			Title: param.Title, Content: param.Content,
+			Title: param.Title, Content: param.Content, Extra: extra,
 			SenderID: &senderID, SenderType: enums.LoginTypeBusiness,
 			ReceiverID: rid, ReceiverType: enums.LoginTypeBusiness,
-			MessageType: "system", Status: "unread", CreatedAt: &now, UpdatedAt: &now,
+			MessageType: msgType, Status: "unread", CreatedAt: &now, UpdatedAt: &now,
 		}
 	}
 	if err := db.DB.WithContext(ctx).Create(&records).Error; err != nil {
@@ -150,7 +159,9 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string) {
 		ws.GlobalCrossHub.SendToUser(rid, ws.Message{
 			Type: ws.MsgNewMessage,
 			Payload: ws.NewMessagePayload{
-				MessageID: records[i].ID, Title: param.Title, CreatedAt: pojo.FormatDateTime(now),
+				MessageID: records[i].ID, Title: param.Title, Content: param.Content,
+				MsgType: msgType, Extra: extra,
+				CreatedAt: pojo.FormatDateTime(now),
 			},
 		}, records[i].ID)
 	}
