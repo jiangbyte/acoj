@@ -5,44 +5,41 @@ import (
 	"fmt"
 	"log"
 
-	"hei-gin/config"
-	"hei-gin/core/db"
+	"hei-gin/sdk/config"
+	"hei-gin/sdk/db"
 
-	// Blank-import modules to trigger model + seed self-registration via init()
-	_ "hei-gin/modules/client/user"
-	_ "hei-gin/modules/sys/banner"
-	_ "hei-gin/modules/sys/config"
-	_ "hei-gin/modules/sys/dict"
-	_ "hei-gin/modules/sys/file"
-	_ "hei-gin/modules/sys/group"
-	_ "hei-gin/modules/sys/home"
-	_ "hei-gin/modules/sys/log"
-	_ "hei-gin/modules/sys/notice"
-	_ "hei-gin/modules/sys/message"
-	_ "hei-gin/modules/sys/org"
-	_ "hei-gin/modules/sys/position"
-	_ "hei-gin/modules/sys/resource"
-	_ "hei-gin/modules/sys/role"
-	_ "hei-gin/modules/sys/user"
-	_ "hei-gin/modules/client/message"
+	// Blank-import plugins to trigger model + seed self-registration via init()
+	_ "hei-gin/plugins/plugin-sys/user"
+	_ "hei-gin/plugins/plugin-sys/banner"
+	_ "hei-gin/plugins/plugin-sys/config"
+	_ "hei-gin/plugins/plugin-sys/dict"
+	_ "hei-gin/plugins/plugin-sys/file"
+	_ "hei-gin/plugins/plugin-sys/group"
+	_ "hei-gin/plugins/plugin-sys/home"
+	_ "hei-gin/plugins/plugin-sys/log"
+	_ "hei-gin/plugins/plugin-sys/notice"
+	_ "hei-gin/plugins/plugin-im/sys_message"
+	_ "hei-gin/plugins/plugin-sys/org"
+	_ "hei-gin/plugins/plugin-sys/position"
+	_ "hei-gin/plugins/plugin-sys/resource"
+	_ "hei-gin/plugins/plugin-sys/role"
+	_ "hei-gin/plugins/plugin-client/user"
+	_ "hei-gin/plugins/plugin-im/client_message"
 )
 
 func main() {
 	skipSeed := flag.Bool("skip-seed", false, "skip seeding initial data")
 	flag.Parse()
 
-	// 1. Load config
-	if err := config.Load("config.yaml"); err != nil {
+	if err := config.FindAndLoad(); err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	// 2. Connect to database
 	if err := db.InitDB(); err != nil {
 		log.Fatalf("failed to init database: %v", err)
 	}
 	defer db.Close()
 
-	// 3. AutoMigrate all registered models
 	models := db.GetModels()
 	if len(models) == 0 {
 		fmt.Println("No models registered, skipping migration")
@@ -53,7 +50,6 @@ func main() {
 	}
 	fmt.Println("✓ Migration applied successfully")
 
-	// 4. Run seeds
 	if !*skipSeed {
 		if err := db.RunSeeds(); err != nil {
 			log.Fatalf("failed to run seeds: %v", err)

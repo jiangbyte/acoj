@@ -1,0 +1,11 @@
+go 1.25.10
+
+use (
+	.
+	./api
+	./sdk
+	./plugins/plugin-sys
+	./plugins/plugin-client
+	./plugins/plugin-im
+	./app
+)
