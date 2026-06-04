@@ -1,8 +1,11 @@
 package sys_message
 
 import (
-	"fmt"
+	"context"
+	"sort"
 	"time"
+
+	"gorm.io/gorm"
 
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/enums"
@@ -10,6 +13,7 @@ import (
 
 	sysUser "hei-gin/plugins/plugin-sys/user"
 	cliUser "hei-gin/plugins/plugin-client/user"
+	cliMsg "hei-gin/plugins/plugin-im/client_message"
 	"hei-gin/plugins/plugin-im/group"
 )
 
@@ -20,7 +24,7 @@ const (
 )
 
 type ConversationVO struct {
-	ConversationID string `json:"conversation_id"`
+	ConversationID   string `json:"conversation_id"`
 	ConversationType string `json:"conversation_type"` // "single" | "group"
 
 	// Single-chat fields
@@ -58,6 +62,17 @@ type convItem struct {
 	LastTime       time.Time
 	LastContent    string
 	UnreadCount    int64
+}
+
+type messageItem struct {
+	ID         string
+	SenderID   *string
+	SenderType string
+	Content    string
+	MsgType    string
+	Extra      string
+	Status     string
+	CreatedAt  time.Time
 }
 
 func Conversations(currentUserID, userType string) []ConversationVO {
@@ -161,19 +176,14 @@ func Conversations(currentUserID, userType string) []ConversationVO {
 	result = append(result, groupConvs...)
 
 	// Sort by LastTime descending
-	for i := 0; i < len(result); i++ {
-		for j := i + 1; j < len(result); j++ {
-			if result[j].LastTime > result[i].LastTime {
-				result[i], result[j] = result[j], result[i]
-			}
-		}
-	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[j].LastTime < result[i].LastTime
+	})
 
 	return result
 }
 
 func fetchGroupConversations(currentUserID, userType string) []ConversationVO {
-	// Get all groups the user is a member of
 	var members []group.GroupMember
 	db.DB.Model(&group.GroupMember{}).
 		Select("group_id, joined_at").
@@ -188,14 +198,12 @@ func fetchGroupConversations(currentUserID, userType string) []ConversationVO {
 		groupIDs[i] = m.GroupID
 	}
 
-	// Get group info (single batch)
 	var groups []group.GroupChat
 	db.DB.Where("id IN ? AND status = ?", groupIDs, group.GroupNormal).Find(&groups)
 	if len(groups) == 0 {
 		return nil
 	}
 
-	// Get member count per group (single batch)
 	type cnt struct{ GroupID string; Count int }
 	var counts []cnt
 	db.DB.Model(&group.GroupMember{}).
@@ -207,7 +215,6 @@ func fetchGroupConversations(currentUserID, userType string) []ConversationVO {
 		countMap[c.GroupID] = c.Count
 	}
 
-	// Get last message per group (single batch, subquery)
 	type lm struct{ GroupID, Content, CreatedAt string }
 	var lastMsgs []lm
 	db.DB.Raw(
@@ -219,7 +226,6 @@ func fetchGroupConversations(currentUserID, userType string) []ConversationVO {
 		lastMap[l.GroupID] = l
 	}
 
-	// Get unread count per group
 	var unreads []struct {
 		GroupID string
 		Count   int64
@@ -228,7 +234,7 @@ func fetchGroupConversations(currentUserID, userType string) []ConversationVO {
 		`SELECT gm.group_id, COUNT(*) as count FROM group_message gm
 		 WHERE gm.group_id IN ? AND gm.created_at > COALESCE(
 			 (SELECT MAX(gmr.read_at) FROM group_message_read gmr
-			  WHERE gmr.group_id = gm.group_id AND gmr.user_id = ? AND gmr.user_type = ?), '1970-01-01'
+			  WHERE gmr.group_id = gm.group_id AND gmr.user_id = ? AND gmr.user_type = ?), '1970-01-01 00:00:00'
 		 )
 		 GROUP BY gm.group_id`, groupIDs, currentUserID, userType).Scan(&unreads)
 	unreadMap := make(map[string]int64, len(unreads))
@@ -298,52 +304,76 @@ func fetchConversationRowsSender(table, userID, receiverType string) []*convItem
 }
 
 // BusinessConversationMessages fetches single-chat messages for a BUSINESS user.
+// Messages from BUSINESS→CONSUMER are stored in client_message table.
+// Messages from CONSUMER→BUSINESS are stored in sys_message table.
+// Both must be queried to get the full conversation.
 func BusinessConversationMessages(currentUserID string, conversationID string, cursor string, size int) ([]ConversationMessageVO, bool) {
+	ctx := context.Background()
 	if size < 1 {
 		size = 20
 	}
 	if size > 100 {
 		size = 100
 	}
-	cursorCond := ""
-	var cursorArgs []interface{}
+
+	// Query sys_message: messages WHERE business is receiver (from CONSUMER) or sender (to BUSINESS)
+	sysQ := db.DB.WithContext(ctx).Model(&SysMessage{}).
+		Where("conversation_id = ? AND (receiver_id = ? OR sender_id = ?)", conversationID, currentUserID, currentUserID)
 	if cursor != "" {
-		cursorTime, err := time.Parse("2006-01-02 15:04:05", cursor)
-		if err == nil {
-			cursorCond = "AND created_at < ?"
-			cursorArgs = append(cursorArgs, cursorTime)
+		if t, err := time.Parse("2006-01-02 15:04:05", cursor); err == nil {
+			sysQ = sysQ.Where("created_at < ?", t)
 		}
 	}
-	q := fmt.Sprintf(`SELECT id, sender_id, sender_type, content, message_type as msg_type, extra, status, created_at FROM sys_message
-		WHERE conversation_id = ? AND (receiver_id = ? OR sender_id = ?) %s
-		ORDER BY created_at DESC LIMIT ?`, cursorCond)
-	args := []interface{}{conversationID, currentUserID, currentUserID}
-	args = append(args, cursorArgs...)
-	args = append(args, size+1)
 
-	type rawMsg struct {
-		ID         string
-		SenderID   *string
-		SenderType string
-		Content    string
-		MsgType    string
-		Extra      string
-		Status     string
-		CreatedAt  time.Time
+	// Query client_message: messages WHERE business is sender to CONSUMER
+	clientQ := db.DB.WithContext(ctx).Model(&cliMsg.ClientMessage{}).
+		Where("conversation_id = ? AND sender_id = ? AND receiver_type = ?", conversationID, currentUserID, enums.LoginTypeConsumer)
+	if cursor != "" {
+		if t, err := time.Parse("2006-01-02 15:04:05", cursor); err == nil {
+			clientQ = clientQ.Where("created_at < ?", t)
+		}
 	}
-	var raw []rawMsg
-	db.DB.Raw(q, args...).Scan(&raw)
 
-	hasMore := len(raw) > size
+	var sysMsgs []SysMessage
+	var clientMsgs []cliMsg.ClientMessage
+	sysQ.Order("created_at DESC").Limit(size + 1).Find(&sysMsgs)
+	clientQ.Order("created_at DESC").Limit(size + 1).Find(&clientMsgs)
+
+	// Merge and sort by created_at DESC in Go
+	allMsgs := make([]messageItem, 0, len(sysMsgs)+len(clientMsgs))
+	for i := range sysMsgs {
+		m := sysMsgs[i]
+		allMsgs = append(allMsgs, messageItem{
+			ID: m.ID, SenderID: m.SenderID, SenderType: string(m.SenderType),
+			Content: m.Content, MsgType: m.MessageType, Extra: m.Extra,
+			Status: m.Status, CreatedAt: *m.CreatedAt,
+		})
+	}
+	for i := range clientMsgs {
+		m := clientMsgs[i]
+		allMsgs = append(allMsgs, messageItem{
+			ID: m.ID, SenderID: m.SenderID, SenderType: string(m.SenderType),
+			Content: m.Content, MsgType: m.MessageType, Extra: m.Extra,
+			Status: m.Status, CreatedAt: *m.CreatedAt,
+		})
+	}
+
+	sort.Slice(allMsgs, func(i, j int) bool {
+		return allMsgs[i].CreatedAt.After(allMsgs[j].CreatedAt)
+	})
+
+	hasMore := len(allMsgs) > size
 	if hasMore {
-		raw = raw[:size]
+		allMsgs = allMsgs[:size]
 	}
-	result := make([]ConversationMessageVO, len(raw))
-	for i, r := range raw {
+
+	result := make([]ConversationMessageVO, len(allMsgs))
+	for i, m := range allMsgs {
 		result[i] = ConversationMessageVO{
-			ID: r.ID, SenderID: r.SenderID, SenderType: r.SenderType,
-			Content: r.Content, MsgType: r.MsgType, Extra: r.Extra, Status: r.Status,
-			CreatedAt: pojo.FormatDateTime(r.CreatedAt),
+			ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
+			Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
+			Status: m.Status,
+			CreatedAt: pojo.FormatDateTime(m.CreatedAt),
 		}
 	}
 	return result, hasMore
@@ -351,58 +381,79 @@ func BusinessConversationMessages(currentUserID string, conversationID string, c
 
 // ConsumerConversationMessages fetches single-chat messages for a CONSUMER user.
 func ConsumerConversationMessages(currentUserID string, conversationID string, cursor string, size int) ([]ConversationMessageVO, bool) {
+	ctx := context.Background()
 	if size < 1 {
 		size = 20
 	}
 	if size > 100 {
 		size = 100
 	}
-	cursorCond := ""
-	var cursorArgs []interface{}
+
+	// Query client_message (messages where user is receiver or sender as consumer)
+	clientQ := db.DB.WithContext(ctx).Model(&cliMsg.ClientMessage{}).
+		Where("conversation_id = ? AND (receiver_id = ? OR (sender_id = ? AND receiver_type = ?))",
+			conversationID, currentUserID, currentUserID, enums.LoginTypeConsumer)
 	if cursor != "" {
-		cursorTime, err := time.Parse("2006-01-02 15:04:05", cursor)
-		if err == nil {
-			cursorCond = "AND created_at < ?"
-			cursorArgs = append(cursorArgs, cursorTime)
+		if t, err := time.Parse("2006-01-02 15:04:05", cursor); err == nil {
+			clientQ = clientQ.Where("created_at < ?", t)
 		}
 	}
-	q := fmt.Sprintf(`SELECT id, sender_id, sender_type, content, message_type as msg_type, extra, status, created_at FROM (
-		SELECT id, sender_id, sender_type, content, message_type as msg_type, extra, status, created_at FROM client_message
-		WHERE conversation_id = ? AND (receiver_id = ? OR (sender_id = ? AND receiver_type = ?)) %s
-		UNION ALL
-		SELECT id, sender_id, sender_type, content, message_type as msg_type, extra, status, created_at FROM sys_message
-		WHERE conversation_id = ? AND sender_id = ? AND sender_type = ? %s
-	) AS combined ORDER BY created_at DESC LIMIT ?`, cursorCond, cursorCond)
-	args := []interface{}{conversationID, currentUserID, currentUserID, enums.LoginTypeConsumer}
-	args = append(args, cursorArgs...)
-	args = append(args, conversationID, currentUserID, enums.LoginTypeConsumer)
-	args = append(args, cursorArgs...)
-	args = append(args, size+1)
 
-	type rawMsg struct {
-		ID         string
-		SenderID   *string
-		SenderType string
-		Content    string
-		MsgType    string
-		Extra      string
-		Status     string
-		CreatedAt  time.Time
+	// Query sys_message (messages FROM BUSINESS admins to this consumer)
+	sysQ := db.DB.WithContext(ctx).Model(&SysMessage{}).
+		Where("conversation_id = ? AND sender_id = ? AND sender_type = ?",
+			conversationID, currentUserID, enums.LoginTypeConsumer)
+	if cursor != "" {
+		if t, err := time.Parse("2006-01-02 15:04:05", cursor); err == nil {
+			sysQ = sysQ.Where("created_at < ?", t)
+		}
 	}
-	var raw []rawMsg
-	db.DB.Raw(q, args...).Scan(&raw)
 
-	hasMore := len(raw) > size
+	// Fetch from both tables separately (avoid MySQL derived table bug with UNION ALL)
+	var clientMsgs []cliMsg.ClientMessage
+	var sysMsgs []SysMessage
+	clientQ.Order("created_at DESC").Limit(size + 1).Find(&clientMsgs)
+	sysQ.Order("created_at DESC").Limit(size + 1).Find(&sysMsgs)
+
+	// Merge and sort by created_at DESC in Go
+	allMsgs := make([]messageItem, 0, len(clientMsgs)+len(sysMsgs))
+	for i := range clientMsgs {
+		m := clientMsgs[i]
+		allMsgs = append(allMsgs, messageItem{
+			ID: m.ID, SenderID: m.SenderID, SenderType: string(m.SenderType),
+			Content: m.Content, MsgType: m.MessageType, Extra: m.Extra,
+			Status: m.Status, CreatedAt: *m.CreatedAt,
+		})
+	}
+	for i := range sysMsgs {
+		m := sysMsgs[i]
+		allMsgs = append(allMsgs, messageItem{
+			ID: m.ID, SenderID: m.SenderID, SenderType: string(m.SenderType),
+			Content: m.Content, MsgType: m.MessageType, Extra: m.Extra,
+			Status: m.Status, CreatedAt: *m.CreatedAt,
+		})
+	}
+
+	sort.Slice(allMsgs, func(i, j int) bool {
+		return allMsgs[i].CreatedAt.After(allMsgs[j].CreatedAt)
+	})
+
+	hasMore := len(allMsgs) > size
 	if hasMore {
-		raw = raw[:size]
+		allMsgs = allMsgs[:size]
 	}
-	result := make([]ConversationMessageVO, len(raw))
-	for i, r := range raw {
+
+	result := make([]ConversationMessageVO, len(allMsgs))
+	for i, m := range allMsgs {
 		result[i] = ConversationMessageVO{
-			ID: r.ID, SenderID: r.SenderID, SenderType: r.SenderType,
-			Content: r.Content, MsgType: r.MsgType, Extra: r.Extra, Status: r.Status,
-			CreatedAt: pojo.FormatDateTime(r.CreatedAt),
+			ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
+			Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
+			Status: m.Status,
+			CreatedAt: pojo.FormatDateTime(m.CreatedAt),
 		}
 	}
 	return result, hasMore
 }
+
+// Ensure gorm import is used
+var _ = gorm.ErrRecordNotFound

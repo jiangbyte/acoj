@@ -13,13 +13,11 @@ import (
 )
 
 func RegisterSysRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/sys/group")
+	g := r.Group("/api/v1/sys/im/group")
 	{
 		g.POST("/create", createHandler)
-		g.PUT("/update", updateHandler)
-		g.POST("/dissolve", dissolveHandler)
 		g.GET("/detail", detailHandler)
-		g.GET("/my-groups", myGroupsHandler)
+		g.POST("/dissolve", dissolveHandler)
 
 		g.POST("/invite", inviteHandler)
 		g.POST("/join", joinHandler)
@@ -39,10 +37,10 @@ func RegisterSysRoutes(r *gin.Engine) {
 }
 
 func RegisterClientRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/c/group")
+	g := r.Group("/api/v1/c/im/group")
 	{
 		g.POST("/create", createHandler)
-		g.GET("/my-groups", myGroupsHandler)
+		g.GET("/detail", detailHandler)
 		g.POST("/join", joinHandler)
 		g.POST("/leave", leaveHandler)
 		g.GET("/messages", messagesHandler)

@@ -7,6 +7,8 @@ import (
 	"time"
 
 
+	"gorm.io/gorm/clause"
+
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/pojo"
@@ -774,7 +776,10 @@ func MarkRead(ctx context.Context, groupID, userID, userType, messageID string) 
 		return
 	}
 	now := time.Now()
-	_ = db.DB.WithContext(ctx).Create(&GroupMessageRead{
+	_ = db.DB.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "message_id"}, {Name: "user_id"}, {Name: "user_type"}},
+		DoUpdates: clause.AssignmentColumns([]string{"read_at", "group_id"}),
+	}).Create(&GroupMessageRead{
 		MessageID: messageID, GroupID: groupID,
 		UserID: userID, UserType: userType, ReadAt: &now,
 	}).Error
