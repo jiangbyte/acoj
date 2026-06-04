@@ -1,114 +1,136 @@
-﻿package banner
+package banner
 
 import (
 	"time"
 
-	"gorm.io/gorm"
-
+	"hei-gin/sdk/crud"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
-	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
 func Page(c *gin.Context, param *BannerPageParam) gin.H {
-	ctx := c.Request.Context()
-	if param.Current < 1 { param.Current = 1 }
-	if param.Size < 1 { param.Size = 10 }
-
-	offset := (param.Current - 1) * param.Size
-
-	var total int64
-	db.DB.WithContext(ctx).Model(&SysBanner{}).Count(&total)
-
-	var records []SysBanner
-	db.DB.WithContext(ctx).Order("created_at DESC").Limit(param.Size).Offset(offset).Find(&records)
-
-	vos := make([]*BannerVO, 0, len(records))
-	for _, r := range records { vos = append(vos, entToVO(&r)) }
-	return result.PageDataResult(c, vos, total, param.Current, param.Size)
+	return crud.Page(c, &SysBanner{}, param, nil, "created_at DESC", func(e *SysBanner) any { return toVO(e) })
 }
 
 func Detail(c *gin.Context, id string) *BannerVO {
-	if id == "" { return nil }
-	ctx := c.Request.Context()
 	var entity SysBanner
-	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound { return nil }
-		panic(exception.NewBusinessError("查询Banner详情失败: "+err.Error(), 500))
-	}
-	return entToVO(&entity)
+	crud.Detail(c, &entity, id, "横幅")
+	return toVO(&entity)
 }
 
 func Create(c *gin.Context, vo *BannerVO, userID string) {
 	ctx := c.Request.Context()
 	now := time.Now()
-
 	entity := SysBanner{
-		ID: utils.GenerateID(), Title: vo.Title, Image: vo.Image,
-		Category: vo.Category, Type: vo.Type, Position: vo.Position,
-		SortCode: vo.SortCode, ViewCount: vo.ViewCount, ClickCount: vo.ClickCount,
-		CreatedAt: &now, UpdatedAt: &now,
+		ID:         utils.GenerateID(),
+		Title:      vo.Title,
+		Image:      vo.Image,
+		LinkType:   vo.LinkType,
+		Category:   vo.Category,
+		Type:       vo.Type,
+		Position:   vo.Position,
+		SortCode:   vo.SortCode,
+		ViewCount:  vo.ViewCount,
+		ClickCount: vo.ClickCount,
+		CreatedAt:  &now,
+		CreatedBy:  &userID,
+		UpdatedAt:  &now,
+		UpdatedBy:  &userID,
 	}
-	if vo.LinkType != "" { entity.LinkType = vo.LinkType }
-	if vo.URL != nil { entity.URL = vo.URL }
-	if vo.Summary != nil { entity.Summary = vo.Summary }
-	if vo.Description != nil { entity.Description = vo.Description }
-	if userID != "" { entity.CreatedBy = &userID; entity.UpdatedBy = &userID }
-
+	if vo.URL != nil {
+		entity.URL = vo.URL
+	}
+	if vo.Summary != nil {
+		entity.Summary = vo.Summary
+	}
+	if vo.Description != nil {
+		entity.Description = vo.Description
+	}
 	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil {
-		panic(exception.NewBusinessError("添加Banner失败: "+err.Error(), 500))
+		panic(exception.NewBusinessError("添加横幅失败: "+err.Error(), 500))
 	}
 }
 
 func Modify(c *gin.Context, vo *BannerVO, userID string) {
 	ctx := c.Request.Context()
-	if vo.ID == "" { panic(exception.NewBusinessError("ID不能为空", 400)) }
-
 	var entity SysBanner
-	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound { panic(exception.NewBusinessError("Banner不存在", 404)) }
-		panic(exception.NewBusinessError("查询Banner失败: "+err.Error(), 500))
+	if err := db.DB.WithContext(ctx).Where("id = ?", vo.ID).First(&entity).Error; err != nil {
+		panic(exception.NewBusinessError("横幅不存在: "+err.Error(), 500))
 	}
-
 	now := time.Now()
-	updates := map[string]interface{}{
-		"title": vo.Title, "image": vo.Image, "category": vo.Category,
-		"type": vo.Type, "position": vo.Position, "sort_code": vo.SortCode,
-		"view_count": vo.ViewCount, "click_count": vo.ClickCount, "updated_at": now,
+	up := map[string]any{
+		"title":       vo.Title,
+		"image":       vo.Image,
+		"link_type":   vo.LinkType,
+		"category":    vo.Category,
+		"type":        vo.Type,
+		"position":    vo.Position,
+		"sort_code":   vo.SortCode,
+		"view_count":  vo.ViewCount,
+		"click_count": vo.ClickCount,
+		"updated_at":  now,
+		"updated_by":  userID,
 	}
-	if vo.LinkType != "" { updates["link_type"] = vo.LinkType }
-	if vo.URL != nil { updates["url"] = *vo.URL }
-	if vo.Summary != nil { updates["summary"] = *vo.Summary }
-	if vo.Description != nil { updates["description"] = *vo.Description }
-	if userID != "" { updates["updated_by"] = userID }
-
-	if err := db.DB.WithContext(ctx).Model(&SysBanner{}).Where("id = ?", vo.ID).Updates(updates).Error; err != nil {
-		panic(exception.NewBusinessError("编辑Banner失败: "+err.Error(), 500))
+	if vo.URL != nil {
+		up["url"] = *vo.URL
+	}
+	if vo.Summary != nil {
+		up["summary"] = *vo.Summary
+	}
+	if vo.Description != nil {
+		up["description"] = *vo.Description
+	}
+	if err := db.DB.WithContext(ctx).Model(&entity).Updates(up).Error; err != nil {
+		panic(exception.NewBusinessError("编辑横幅失败: "+err.Error(), 500))
 	}
 }
 
 func Remove(c *gin.Context, ids []string) {
-	if len(ids) == 0 { return }
-	ctx := c.Request.Context()
-	db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysBanner{})
+	crud.Remove(c, &SysBanner{}, ids)
 }
 
-func entToVO(entity *SysBanner) *BannerVO {
+func Options(c *gin.Context) []any {
+	return crud.Options(c, &SysBanner{}, "sort_code ASC", func(e *SysBanner) any { return toVO(e) })
+}
+
+func toVO(entity *SysBanner) *BannerVO {
 	vo := &BannerVO{
-		ID: entity.ID, Title: entity.Title, Image: entity.Image,
-		LinkType: entity.LinkType, Category: entity.Category,
-		Type: entity.Type, Position: entity.Position,
-		SortCode: entity.SortCode, ViewCount: entity.ViewCount, ClickCount: entity.ClickCount,
+		ID:         entity.ID,
+		Title:      entity.Title,
+		Image:      entity.Image,
+		LinkType:   entity.LinkType,
+		Category:   entity.Category,
+		Type:       entity.Type,
+		Position:   entity.Position,
+		SortCode:   entity.SortCode,
+		ViewCount:  entity.ViewCount,
+		ClickCount: entity.ClickCount,
 	}
-	if entity.URL != nil { vo.URL = entity.URL }
-	if entity.Summary != nil { vo.Summary = entity.Summary }
-	if entity.Description != nil { vo.Description = entity.Description }
-	if entity.CreatedAt != nil { s := entity.CreatedAt.Format("2006-01-02 15:04:05"); vo.CreatedAt = &s }
-	if entity.CreatedBy != nil { vo.CreatedBy = entity.CreatedBy }
-	if entity.UpdatedAt != nil { s := entity.UpdatedAt.Format("2006-01-02 15:04:05"); vo.UpdatedAt = &s }
-	if entity.UpdatedBy != nil { vo.UpdatedBy = entity.UpdatedBy }
+	if entity.URL != nil {
+		vo.URL = entity.URL
+	}
+	if entity.Summary != nil {
+		vo.Summary = entity.Summary
+	}
+	if entity.Description != nil {
+		vo.Description = entity.Description
+	}
+	if entity.CreatedAt != nil {
+		s := entity.CreatedAt.Format("2006-01-02 15:04:05")
+		vo.CreatedAt = &s
+	}
+	if entity.CreatedBy != nil {
+		vo.CreatedBy = entity.CreatedBy
+	}
+	if entity.UpdatedAt != nil {
+		s := entity.UpdatedAt.Format("2006-01-02 15:04:05")
+		vo.UpdatedAt = &s
+	}
+	if entity.UpdatedBy != nil {
+		vo.UpdatedBy = entity.UpdatedBy
+	}
 	return vo
 }

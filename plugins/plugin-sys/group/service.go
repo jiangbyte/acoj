@@ -2,22 +2,17 @@ package group
 
 import (
 	"context"
-	"sort"
 	"time"
 
 	"gorm.io/gorm"
 
+	"hei-gin/sdk/crud"
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
-	"hei-gin/sdk/result"
-	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
-
 
 	"github.com/gin-gonic/gin"
 )
-
-
 
 func groupToVOMap(entity *SysGroup) map[string]interface{} {
 	n := map[string]interface{}{
@@ -27,122 +22,117 @@ func groupToVOMap(entity *SysGroup) map[string]interface{} {
 	}
 	if entity.ParentID != nil { n["parent_id"] = *entity.ParentID }
 	if entity.Description != nil { n["description"] = *entity.Description }
-	if entity.Extra != nil { n["extra"] = *entity.Extra }
 	return n
 }
 
-func getParentIDKey(parentID *string) string {
-	if parentID == nil || *parentID == "" || *parentID == "0" { return "" }
-	return *parentID
-}
-
-func sortTreeNodes(nodes []map[string]interface{}) {
-	sort.Slice(nodes, func(i, j int) bool { si, _ := nodes[i]["sort_code"].(int); sj, _ := nodes[j]["sort_code"].(int); return si < sj })
-	for _, n := range nodes { if children, ok := n["children"].([]map[string]interface{}); ok { sortTreeNodes(children) } }
-}
-
 func Page(c *gin.Context, param *GroupPageParam) gin.H {
-	ctx := c.Request.Context()
-	if param.Current < 1 { param.Current = 1 }
-	if param.Size < 1 { param.Size = 10 }
-	if param.Size > 100 { param.Size = 100 }
-
-	query := db.DB.WithContext(ctx).Model(&SysGroup{})
-	if param.Keyword != "" { query = query.Where("name LIKE ?", "%"+param.Keyword+"%") }
-	if param.Category != "" { query = query.Where("category = ?", param.Category) }
-	if param.OrgID != "" { query = query.Where("org_id = ?", param.OrgID) }
-
-	var total int64
-	query.Count(&total)
-
-	var records []SysGroup
-	query.Order("sort_code ASC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
-
-	vos := make([]*GroupVO, len(records))
-	for i, r := range records { vos[i] = toVO(&r) }
-	return result.PageDataResult(c, vos, total, param.Current, param.Size)
+	return crud.Page(c, &SysGroup{}, param, func(q *gorm.DB) *gorm.DB {
+		if param.Keyword != "" { q = q.Where("name LIKE ?", "%"+param.Keyword+"%") }
+		if param.Category != "" { q = q.Where("category = ?", param.Category) }
+	
+		if param.OrgID != "" { q = q.Where("org_id = ?", param.OrgID) }
+		return q
+	}, "sort_code ASC", func(e *SysGroup) any { return toVO(e) })
 }
 
 func Tree(c *gin.Context, param *GroupTreeParam) []map[string]interface{} {
 	ctx := c.Request.Context()
-	query := db.DB.WithContext(ctx).Model(&SysGroup{}).Order("sort_code ASC")
-	if param.Category != "" { query = query.Where("category = ?", param.Category) }
-	if param.OrgID != "" { query = query.Where("org_id = ?", param.OrgID) }
-
 	var all []SysGroup
-	query.Find(&all)
+	db.DB.WithContext(ctx).Order("sort_code ASC").Find(&all)
 	if len(all) == 0 { return make([]map[string]interface{}, 0) }
 
-	nodeMap := make(map[string]map[string]interface{}, len(all))
-	for _, e := range all { entry := e; nodeMap[entry.ID] = groupToVOMap(&entry) }
-
-	roots := make([]map[string]interface{}, 0)
-	for _, e := range all {
-		node := nodeMap[e.ID]
-		pid := getParentIDKey(e.ParentID)
-		if pid == "" { roots = append(roots, node) } else if parent, ok := nodeMap[pid]; ok {
-			parent["children"] = append(parent["children"].([]map[string]interface{}), node)
-		}
+	childrenMap := make(map[string][]SysGroup)
+	for _, r := range all {
+		pid := ""
+		if r.ParentID != nil { pid = *r.ParentID }
+		childrenMap[pid] = append(childrenMap[pid], r)
 	}
-	sortTreeNodes(roots)
-	return roots
+	roots := childrenMap[""]
+	result := make([]map[string]interface{}, 0, len(roots))
+	for _, r := range roots {
+		node := groupToVOMap(&r)
+		buildTree(node, &r, childrenMap)
+		result = append(result, node)
+	}
+	return result
+}
+
+func buildTree(node map[string]interface{}, parent *SysGroup, childrenMap map[string][]SysGroup) {
+	children := childrenMap[parent.ID]
+	if len(children) == 0 { return }
+	childNodes := make([]map[string]interface{}, len(children))
+	for i, c := range children {
+		childNode := groupToVOMap(&c)
+		buildTree(childNode, &c, childrenMap)
+		childNodes[i] = childNode
+	}
+	node["children"] = childNodes
+}
+
+func Detail(c *gin.Context, id string) *GroupVO {
+	ctx := c.Request.Context()
+	var entity SysGroup
+	if err := db.DB.WithContext(ctx).Where("id = ?", id).First(&entity).Error; err != nil {
+		panic(exception.NewBusinessError("群组不存在: "+err.Error(), 500))
+	}
+	return toVO(&entity)
 }
 
 func Create(c *gin.Context, vo *GroupVO, userID string) {
 	ctx := c.Request.Context()
 	now := time.Now()
 	entity := SysGroup{
-		ID: utils.GenerateID(), Code: vo.Code, Name: vo.Name, Category: vo.Category,
-		OrgID: vo.OrgID, Status: string(enums.StatusEnabled), SortCode: vo.SortCode, CreatedAt: &now, UpdatedAt: &now,
+		ID:        utils.GenerateID(),
+		Code:      vo.Code,
+		Name:      vo.Name,
+		Category:  vo.Category,
+		OrgID:     vo.OrgID,
+		ParentID:  vo.ParentID,
+		Status:    vo.Status,
+		SortCode:  vo.SortCode,
+		CreatedAt: &now,
+		CreatedBy: &userID,
+		UpdatedAt: &now,
+		UpdatedBy: &userID,
 	}
-	if vo.ParentID != nil { entity.ParentID = vo.ParentID }
 	if vo.Description != nil { entity.Description = vo.Description }
-	if vo.Extra != nil { entity.Extra = vo.Extra }
-	if userID != "" { entity.CreatedBy = &userID; entity.UpdatedBy = &userID }
-	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil { panic(exception.NewBusinessError("添加用户组失败 "+err.Error(), 500)) }
+	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil {
+		panic(exception.NewBusinessError("添加群组失败: "+err.Error(), 500))
+	}
 }
 
 func Modify(c *gin.Context, vo *GroupVO, userID string) {
 	ctx := c.Request.Context()
 	var entity SysGroup
-	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound { panic(exception.NewBusinessError("数据不存在", 400)) }
-		panic(exception.NewBusinessError("查询用户组失败 "+err.Error(), 500))
+	if err := db.DB.WithContext(ctx).Where("id = ?", vo.ID).First(&entity).Error; err != nil {
+		panic(exception.NewBusinessError("群组不存在: "+err.Error(), 500))
 	}
-
-	up := map[string]interface{}{
-		"code": vo.Code, "name": vo.Name, "category": vo.Category, "org_id": vo.OrgID,
-		"sort_code": vo.SortCode, "updated_at": time.Now(),
+	now := time.Now()
+	up := map[string]any{
+		"code":       vo.Code,
+		"name":       vo.Name,
+		"category":   vo.Category,
+		"org_id":     vo.OrgID,
+		"parent_id":  vo.ParentID,
+		"status":     vo.Status,
+		"sort_code":  vo.SortCode,
+		"updated_at": now,
+		"updated_by": userID,
 	}
-	if vo.ParentID != nil { up["parent_id"] = *vo.ParentID } else { up["parent_id"] = nil }
-	if vo.Description != nil { up["description"] = *vo.Description } else { up["description"] = nil }
-	if vo.Extra != nil { up["extra"] = *vo.Extra } else { up["extra"] = nil }
-	if userID != "" { up["updated_by"] = userID }
-
-	if err := db.DB.WithContext(ctx).Model(&SysGroup{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil { panic(exception.NewBusinessError("编辑用户组失败 "+err.Error(), 500)) }
+	if vo.Description != nil { up["description"] = *vo.Description }
+	if err := db.DB.WithContext(ctx).Model(&entity).Updates(up).Error; err != nil {
+		panic(exception.NewBusinessError("编辑群组失败: "+err.Error(), 500))
+	}
 }
 
 func Remove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
 	ctx := c.Request.Context()
-	allIDs := collectDescendantGroupIDs(ids)
-
-	var userCount int64
-	db.DB.WithContext(ctx).Table("sys_user").Where("group_id IN ?", allIDs).Count(&userCount)
-	if userCount > 0 { panic(exception.NewBusinessError("用户组存在关联用户，无法删除", 400)) }
-
-	if err := db.DB.WithContext(ctx).Where("id IN ?", allIDs).Delete(&SysGroup{}).Error; err != nil { panic(exception.NewBusinessError("删除用户组失败 "+err.Error(), 500)) }
-}
-
-func Detail(c *gin.Context, id string) *GroupVO {
-	if id == "" { return nil }
-	ctx := c.Request.Context()
-	var entity SysGroup
-	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound { return nil }
-		panic(exception.NewBusinessError("查询用户组详情失败 "+err.Error(), 500))
+	allIDs := getAllDescendantIDs(ctx, ids)
+	for _, id := range allIDs {
+		db.DB.WithContext(ctx).Table("sys_user").Where("group_id = ?", id).Update("group_id", nil)
 	}
-	return toVO(&entity)
+	db.DB.WithContext(ctx).Where("id IN ?", allIDs).Delete(&SysGroup{})
 }
 
 func Options(c *gin.Context) []*GroupVO {
@@ -154,8 +144,16 @@ func Options(c *gin.Context) []*GroupVO {
 	return vos
 }
 
-func collectDescendantGroupIDs(ids []string) []string {
-	ctx := context.Background()
+func GetAll(c *gin.Context) []*GroupVO {
+	ctx := c.Request.Context()
+	var records []SysGroup
+	db.DB.WithContext(ctx).Order("sort_code ASC").Find(&records)
+	vos := make([]*GroupVO, len(records))
+	for i, r := range records { vos[i] = toVO(&r) }
+	return vos
+}
+
+func getAllDescendantIDs(ctx context.Context, ids []string) []string {
 	allIDs := make(map[string]bool)
 	for _, id := range ids { allIDs[id] = true }
 
@@ -175,4 +173,3 @@ func collectDescendantGroupIDs(ids []string) []string {
 	}
 	r := make([]string, 0, len(allIDs)); for id := range allIDs { r = append(r, id) }; return r
 }
-

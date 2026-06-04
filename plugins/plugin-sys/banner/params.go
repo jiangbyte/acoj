@@ -26,3 +26,6 @@ type BannerPageParam struct {
 	Current int `json:"current" form:"current"`
 	Size    int `json:"size" form:"size"`
 }
+
+func (p *BannerPageParam) GetCurrent() int { return p.Current }
+func (p *BannerPageParam) GetSize() int    { return p.Size }

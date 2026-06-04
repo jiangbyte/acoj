@@ -4,22 +4,18 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gin-gonic/gin"
+
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/auth/middleware"
-
-	"github.com/gin-gonic/gin"
 )
 
-var (
-	registeredPerms sync.Map
-)
+var registeredPerms sync.Map
 
 // Perm registers a permission entry and returns a permission-checking middleware.
 // code: permission code, e.g. "sys:banner:page"
 // name: human-readable name, e.g. "横幅分页"
-// module is automatically extracted from the code prefix.
 func Perm(code, name string) gin.HandlerFunc {
-	// Register permission metadata (idempotent)
 	if _, loaded := registeredPerms.LoadOrStore(code, true); !loaded {
 		module := moduleFromCode(code)
 		auth.RegisterPermission(auth.PermissionEntry{
@@ -28,8 +24,6 @@ func Perm(code, name string) gin.HandlerFunc {
 			Name:   name,
 		})
 	}
-
-	// Return the permission-checking middleware (BUSINESS login type)
 	return middleware.HeiCheckPermission([]string{code})
 }
 
@@ -43,12 +37,9 @@ func ClientPerm(code, name string) gin.HandlerFunc {
 			Name:   name,
 		})
 	}
-
 	return middleware.HeiClientCheckPermission([]string{code})
 }
 
-// moduleFromCode extracts the module from a permission code.
-// e.g. "sys:banner:page" -> "sys:banner", "client:user:create" -> "client:user"
 func moduleFromCode(code string) string {
 	parts := strings.Split(code, ":")
 	if len(parts) > 1 {

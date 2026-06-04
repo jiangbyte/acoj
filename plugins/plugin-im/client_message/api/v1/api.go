@@ -13,6 +13,7 @@ import (
 	"hei-gin/plugins/plugin-im/group"
 
 	"github.com/gin-gonic/gin"
+	"hei-gin/sdk/registry"
 )
 
 func RegisterRoutes(r *gin.Engine) {
@@ -157,4 +158,7 @@ func conversationReadHandler(c *gin.Context) {
 		message.MarkConversationRead(userID, param.ConversationID)
 	}
 	c.JSON(200, result.Success(c, nil))
+}
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
 }

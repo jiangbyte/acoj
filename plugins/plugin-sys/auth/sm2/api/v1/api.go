@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"hei-gin/sdk/result"
+	"hei-gin/sdk/registry"
 	"hei-gin/sdk/utils"
 )
 
@@ -16,4 +17,7 @@ func RegisterRoutes(r *gin.Engine) {
 func GetPublicKey(c *gin.Context) {
 	publicKey := utils.GetPublicKey()
 	c.JSON(200, result.Success(c, publicKey))
+}
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
 }

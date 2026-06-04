@@ -204,3 +204,6 @@ func roleOwnResource(c *gin.Context) {
 	ids := role.RoleOwnResourceIDs(c, roleID)
 	c.JSON(200, result.Success(c, ids))
 }
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}

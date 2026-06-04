@@ -46,3 +46,7 @@ func toVO(entity *SysGroup) *GroupVO {
 		UpdatedAt: pojo.FormatDateTimePtr(entity.UpdatedAt), UpdatedBy: entity.UpdatedBy,
 	}
 }
+
+
+func (p *GroupPageParam) GetCurrent() int { return p.Current }
+func (p *GroupPageParam) GetSize() int    { return p.Size }

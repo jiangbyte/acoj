@@ -108,3 +108,6 @@ func sessionChartData(c *gin.Context) {
 	data := session.ChartData(c)
 	c.JSON(200, result.Success(c, data))
 }
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}

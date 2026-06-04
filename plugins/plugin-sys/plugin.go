@@ -2,14 +2,12 @@ package plugin_sys
 
 import (
 	"time"
-	syslog "hei-gin/plugins/plugin-sys/log"
 	stdlog "log"
 
 	"hei-gin/api"
 	"hei-gin/sdk/auth"
-	"hei-gin/sdk/module"
-	"hei-gin/sdk/db"
 	"hei-gin/sdk/log"
+	"hei-gin/sdk/module"
 	"hei-gin/sdk/utils"
 	"hei-gin/plugins/plugin-sys/provider"
 )
@@ -36,35 +34,35 @@ func (p *SysPlugin) Init() error {
 
 	auth.RegisterInterface(p.permProvider)
 
+	var persister api.LogPersistenceAPI = &logPersister{}
+
 	log.LogPersistence = func(ctx interface{}, category, name, exeStatus, exeMessage, opIP, opAddress, opBrowser, opOS, opUser, traceID, signData, method, url, params string, opTime interface{}) {
-		now := time.Now()
-		entry := syslog.SysLog{
-			ID:         utils.GenerateID(),
-			Category:   &category,
-			Name:       &name,
-			ExeStatus:  &exeStatus,
-			ExeMessage: &exeMessage,
-			OpIP:       &opIP,
-			OpAddress:  &opAddress,
-			OpBrowser:  &opBrowser,
-			OpOs:       &opOS,
-			OpUser:     &opUser,
-			TraceID:    &traceID,
-			SignData:   &signData,
-			ReqMethod:  &method,
-			ReqURL:     &url,
-			ParamJSON:  &params,
-			CreatedAt:  &now,
-			UpdatedAt:  &now,
-		}
+		opTimeStr := ""
 		if t, ok := opTime.(time.Time); ok {
-			entry.OpTime = &t
-		} else if s, ok := opTime.(string); ok && s != "" {
-			if parsed, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
-				entry.OpTime = &parsed
-			}
+			opTimeStr = t.Format("2006-01-02 15:04:05")
+		} else if s, ok := opTime.(string); ok {
+			opTimeStr = s
 		}
-		if err := db.DB.Create(&entry).Error; err != nil {
+
+		entry := api.LogEntry{
+			ID:         utils.GenerateID(),
+			Category:   category,
+			Name:       name,
+			ExeStatus:  exeStatus,
+			ExeMessage: exeMessage,
+			OpIP:       opIP,
+			OpAddress:  opAddress,
+			OpBrowser:  opBrowser,
+			OpOS:       opOS,
+			OpUser:     opUser,
+			TraceID:    traceID,
+			SignData:   signData,
+			ReqMethod:  method,
+			ReqURL:     url,
+			ParamJSON:  params,
+			OpTime:     opTimeStr,
+		}
+		if err := persister.SaveLog(entry); err != nil {
 			stdlog.Printf("[SYSLOG] Failed to persist log: %v", err)
 		}
 	}

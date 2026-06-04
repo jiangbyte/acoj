@@ -72,7 +72,17 @@ func RateLimiter(endpointKey string, window int, maxRequests int) gin.HandlerFun
 			return
 		}
 
-		count, _ := strconv.ParseInt(val.(string), 10, 64)
+		var count int64
+		switch v := val.(type) {
+		case int64:
+			count = v
+		case float64:
+			count = int64(v)
+		case string:
+			count, _ = strconv.ParseInt(v, 10, 64)
+		default:
+			count = 0
+		}
 		if count > int64(max) {
 			panic(exception.NewBusinessError("请求过于频繁，请稍后重试", http.StatusTooManyRequests))
 		}

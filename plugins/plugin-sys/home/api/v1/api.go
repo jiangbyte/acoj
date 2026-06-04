@@ -4,6 +4,7 @@ import (
 	"hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
 	"hei-gin/sdk/result"
+	"hei-gin/sdk/registry"
 	home "hei-gin/plugins/plugin-sys/home"
 
 	"github.com/gin-gonic/gin"
@@ -79,4 +80,7 @@ func homeSortQuickActions(c *gin.Context) {
 
 	home.HomeSortQuickActions(c, &param)
 	c.JSON(200, result.Success(c, nil))
+}
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
 }

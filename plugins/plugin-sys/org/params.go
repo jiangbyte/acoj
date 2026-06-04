@@ -50,3 +50,7 @@ func toVO(entity *SysOrg) *OrgVO {
 		UpdatedBy:   entity.UpdatedBy,
 	}
 }
+
+
+func (p *OrgPageParam) GetCurrent() int { return p.Current }
+func (p *OrgPageParam) GetSize() int    { return p.Size }

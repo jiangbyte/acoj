@@ -94,3 +94,8 @@ func Run() {
 	db.CloseRedis()
 	log.Println("[APP] Server exited")
 }
+
+func SetupRouters(r *gin.Engine) {
+	r.GET("/", HealthHandler)
+	registry.ExecuteRoutes(r)
+}

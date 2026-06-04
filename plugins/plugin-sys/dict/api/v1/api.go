@@ -188,3 +188,7 @@ func dictGetChildren(c *gin.Context) {
 	c.JSON(200, result.Success(c, data))
 }
 
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+	registry.RegisterRoute(RegisterPublicRoutes)
+}

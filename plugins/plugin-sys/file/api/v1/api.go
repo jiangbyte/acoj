@@ -168,3 +168,7 @@ func fileUploadAbort(c *gin.Context) {
 }
 
 // Ensure fmt import is used
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+	registry.RegisterRoute(RegisterClientRoutes)
+}

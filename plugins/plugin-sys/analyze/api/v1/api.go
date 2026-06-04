@@ -2,6 +2,7 @@ package v1
 
 import (
 	"hei-gin/sdk/result"
+	"hei-gin/sdk/registry"
 	analyze "hei-gin/plugins/plugin-sys/analyze"
 
 	"github.com/gin-gonic/gin"
@@ -15,4 +16,7 @@ func RegisterRoutes(r *gin.Engine) {
 func dashboard(c *gin.Context) {
 	data := analyze.Dashboard(c)
 	c.JSON(200, result.Success(c, data))
+}
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
 }

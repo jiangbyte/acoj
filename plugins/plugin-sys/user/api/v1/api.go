@@ -271,3 +271,6 @@ func updatePasswordHandler(c *gin.Context) {
 	user.UserUpdatePassword(c, auth.GetLoginIDDefaultNull(c), &param)
 	c.JSON(200, result.Success(c, nil))
 }
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}

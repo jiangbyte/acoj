@@ -8,9 +8,9 @@ import (
 	"gorm.io/gorm"
 
 	"hei-gin/sdk/db"
+	"hei-gin/sdk/crud"
 	"hei-gin/sdk/exception"
 
-	resultPkg "hei-gin/sdk/result"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/utils"
 
@@ -21,43 +21,25 @@ import (
 
 // Page handles GET /api/v1/sys/dict/page
 func Page(c *gin.Context, p *DictPageParam) gin.H {
-	ctx := c.Request.Context()
-	if p.Current < 1 {
-		p.Current = 1
-	}
-	if p.Size < 1 || p.Size > 100 {
-		p.Size = 10
-	}
-
-	q := db.DB.WithContext(ctx).Model(&SysDict{})
-	if p.Keyword != "" {
-		like := "%" + p.Keyword + "%"
-		q = q.Where("code LIKE ? OR label LIKE ? OR value LIKE ?", like, like, like)
-	}
-	if p.Category != "" {
-		q = q.Where("category = ?", p.Category)
-	}
-	if p.ParentID != "" {
-		q = q.Where("id = ? OR parent_id = ?", p.ParentID, p.ParentID)
-	}
-	if p.DictGroup == "FRM" {
-		q = q.Where("category = ?", "FRM")
-	}
-	if p.DictGroup == "BIZ" {
-		q = q.Where("category = ?", "BIZ")
-	}
-
-	var total int64
-	q.Count(&total)
-
-	var rows []SysDict
-	q.Order("created_at DESC").Limit(p.Size).Offset((p.Current - 1) * p.Size).Find(&rows)
-
-	vos := make([]*DictVO, len(rows))
-	for i, r := range rows {
-		vos[i] = entToVO(&r)
-	}
-	return resultPkg.PageDataResult(c, vos, total, p.Current, p.Size)
+	return crud.Page(c, &SysDict{}, p, func(q *gorm.DB) *gorm.DB {
+		if p.Keyword != "" {
+			like := "%" + p.Keyword + "%"
+			q = q.Where("code LIKE ? OR label LIKE ? OR value LIKE ?", like, like, like)
+		}
+		if p.Category != "" {
+			q = q.Where("category = ?", p.Category)
+		}
+		if p.ParentID != "" {
+			q = q.Where("id = ? OR parent_id = ?", p.ParentID, p.ParentID)
+		}
+		if p.DictGroup == "FRM" {
+			q = q.Where("category = ?", "FRM")
+		}
+		if p.DictGroup == "BIZ" {
+			q = q.Where("category = ?", "BIZ")
+		}
+		return q
+	}, "created_at DESC", func(e *SysDict) any { return entToVO(e) })
 }
 
 func Tree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {

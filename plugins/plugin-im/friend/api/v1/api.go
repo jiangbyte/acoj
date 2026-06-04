@@ -8,6 +8,7 @@ import (
 	"hei-gin/plugins/plugin-im/friend"
 
 	"github.com/gin-gonic/gin"
+	"hei-gin/sdk/registry"
 )
 
 func RegisterSysRoutes(r *gin.Engine) {
@@ -201,4 +202,8 @@ func clientSearchHandler(c *gin.Context) {
 	}
 	results := friend.SearchUsers(c.Request.Context(), keyword, size)
 	c.JSON(200, result.Success(c, results))
+}
+func init() {
+	registry.RegisterRoute(RegisterSysRoutes)
+	registry.RegisterRoute(RegisterClientRoutes)
 }

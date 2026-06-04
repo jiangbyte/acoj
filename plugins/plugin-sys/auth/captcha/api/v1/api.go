@@ -5,6 +5,7 @@ import (
 
 	"hei-gin/sdk/captcha"
 	"hei-gin/sdk/result"
+	"hei-gin/sdk/registry"
 )
 
 // RegisterRoutes registers captcha-related routes.
@@ -20,4 +21,7 @@ func GetCaptcha(c *gin.Context) {
 		return
 	}
 	c.JSON(200, result.Success(c, captchaResult))
+}
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
 }

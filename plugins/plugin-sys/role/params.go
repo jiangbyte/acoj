@@ -66,3 +66,7 @@ func toVO(entity *SysRole) *RoleVO {
 		UpdatedBy: entity.UpdatedBy,
 	}
 }
+
+
+func (p *RolePageParam) GetCurrent() int { return p.Current }
+func (p *RolePageParam) GetSize() int    { return p.Size }

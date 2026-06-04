@@ -190,3 +190,6 @@ func logOpPieChart(c *gin.Context) {
 	data := logPackage.OpPieChart(c)
 	c.JSON(http.StatusOK, result.Success(c, data))
 }
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}

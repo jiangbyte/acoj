@@ -32,3 +32,6 @@ type NoticePageParam struct {
 	Category string `json:"category" form:"category"`
 	Status   string `json:"status" form:"status"`
 }
+
+func (p *NoticePageParam) GetCurrent() int { return p.Current }
+func (p *NoticePageParam) GetSize() int    { return p.Size }

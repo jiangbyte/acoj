@@ -220,3 +220,6 @@ func resourceRemove(c *gin.Context) {
 	c.JSON(http.StatusOK, result.Success(c, nil))
 }
 
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}

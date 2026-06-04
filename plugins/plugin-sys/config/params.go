@@ -72,3 +72,6 @@ func toVOList(records []SysConfig) []ConfigVO {
 	}
 	return result
 }
+
+func (p *ConfigPageParam) GetCurrent() int { return p.Current }
+func (p *ConfigPageParam) GetSize() int    { return p.Size }

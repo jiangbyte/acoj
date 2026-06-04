@@ -160,3 +160,7 @@ func latestHandler(c *gin.Context) {
 	data := notice.Latest(c, &param)
 	c.JSON(200, result.Success(c, data))
 }
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+	registry.RegisterRoute(RegisterPublicRoutes)
+}

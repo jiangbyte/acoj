@@ -11,6 +11,7 @@ import (
 
 	"hei-gin/sdk/config"
 	"hei-gin/sdk/enums"
+	"hei-gin/sdk/eventbus"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -125,6 +126,7 @@ func NewCrossHub(local *Hub, rdb *redis.Client) *CrossHub {
 func (ch *CrossHub) onClientRegistered(c *Client) {
 	ch.TrackConnection(c.UserID, c.UserType)
 	ch.broadcastPresence(c.UserID, c.UserType, true)
+	eventbus.DefaultBus.Publish(eventbus.TopicUserConnected, c)
 	switch c.UserType {
 	case enums.LoginTypeBusiness:
 		ch.local.SendToUser(c.UserID, Message{Type: MsgUnreadCount})
@@ -138,6 +140,7 @@ func (ch *CrossHub) onClientUnregistered(c *Client) {
 	if !ch.IsUserOnlineAnywhere(c.UserID, c.UserType) {
 		ch.broadcastPresence(c.UserID, c.UserType, false)
 	}
+	eventbus.DefaultBus.Publish(eventbus.TopicUserDisconnected, c)
 }
 
 // ─── Redis key helpers ────────────────────────────────────────────────

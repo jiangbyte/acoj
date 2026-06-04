@@ -145,3 +145,6 @@ func editByCategoryHandler(c *gin.Context) {
 	config.EditByCategory(c, &param, userID)
 	c.JSON(200, result.Success(c, nil))
 }
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}

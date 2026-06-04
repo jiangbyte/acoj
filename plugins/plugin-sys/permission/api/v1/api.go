@@ -28,3 +28,6 @@ func permByModule(c *gin.Context) {
 	perms := permission.ListByModule(c, module)
 	c.JSON(200, result.Success(c, perms))
 }
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}

@@ -14,12 +14,14 @@ func (m *authModule) Name() string { return "auth" }
 func (m *authModule) Init() error {
 	Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
 	Consumer.Init(config.C.Token.ExpireSeconds, config.C.Token.TokenName)
+	log.Println("[auth] module initialized")
+	return nil
+}
 
+func (m *authModule) Start() error {
 	if err := RunPermissionScan(); err != nil {
 		return err
 	}
-
-	log.Println("[auth] module initialized")
 	return nil
 }
 

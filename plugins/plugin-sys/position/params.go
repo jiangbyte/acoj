@@ -42,3 +42,6 @@ func toVO(entity *SysPosition) *PositionVO {
 		UpdatedBy: entity.UpdatedBy,
 	}
 }
+
+func (p *PositionPageParam) GetCurrent() int { return p.Current }
+func (p *PositionPageParam) GetSize() int    { return p.Size }

@@ -142,3 +142,6 @@ func orgDetail(c *gin.Context) {
 	}
 	c.JSON(200, result.Success(c, vo))
 }
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+}

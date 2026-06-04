@@ -39,3 +39,7 @@ type DictListParam struct {
 	Category string `json:"category" form:"category"`
 	Keyword  string `json:"keyword" form:"keyword"`
 }
+
+
+func (p *DictPageParam) GetCurrent() int { return p.Current }
+func (p *DictPageParam) GetSize() int    { return p.Size }
