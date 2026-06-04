@@ -21,7 +21,7 @@ import (
 
 // Page handles GET /api/v1/sys/dict/page
 func Page(c *gin.Context, p *DictPageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
 	}
@@ -61,7 +61,7 @@ func Page(c *gin.Context, p *DictPageParam) gin.H {
 }
 
 func Tree(c *gin.Context, param *DictTreeParam) []map[string]interface{} {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	query := db.DB.WithContext(ctx).Model(&SysDict{}).Order("sort_code ASC")
 	if param.Category != "" { query = query.Where("category = ?", param.Category) }
 	if param.DictGroup == "FRM" {
@@ -96,10 +96,10 @@ func buildTreeChildren(childrenMap map[string][]SysDict, parentID string, depth 
 }
 
 func Create(c *gin.Context, vo *DictVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	dictCheckDuplicate(ctx, vo, "")
-	dictCheckCircularParent("", safeStrPtr(vo.ParentID))
+	dictCheckCircularParent(c.Request.Context(), "", safeStrPtr(vo.ParentID))
 
 	entity := SysDict{ID: utils.GenerateID(), Code: vo.Code, Status: string(enums.StatusEnabled), SortCode: vo.SortCode, CreatedAt: &now, UpdatedAt: &now}
 	if vo.Label != nil { entity.Label = vo.Label }
@@ -112,7 +112,7 @@ func Create(c *gin.Context, vo *DictVO, userID string) {
 }
 
 func Modify(c *gin.Context, vo *DictVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysDict
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { panic(exception.NewBusinessError("数据不存在", 400)) }
@@ -120,7 +120,7 @@ func Modify(c *gin.Context, vo *DictVO, userID string) {
 	}
 	dictCheckDuplicate(ctx, vo, vo.ID)
 	if vo.ParentID != nil && *vo.ParentID != "" && *vo.ParentID != getParentIDKey(entity.ParentID) {
-		dictCheckCircularParent(vo.ID, safeStrPtr(vo.ParentID))
+		dictCheckCircularParent(c.Request.Context(), vo.ID, safeStrPtr(vo.ParentID))
 	}
 	up := map[string]interface{}{"code": vo.Code, "sort_code": vo.SortCode, "updated_at": time.Now()}
 	if vo.Label != nil { up["label"] = *vo.Label }
@@ -134,14 +134,14 @@ func Modify(c *gin.Context, vo *DictVO, userID string) {
 
 func Remove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
-	ctx := context.Background()
-	allIDs := dictCollectDescendantIDs(ids)
+	ctx := c.Request.Context()
+	allIDs := dictCollectDescendantIDs(c.Request.Context(), ids)
 	if err := db.DB.WithContext(ctx).Where("id IN ?", allIDs).Delete(&SysDict{}).Error; err != nil { panic(exception.NewBusinessError("删除字典失败: "+err.Error(), 500)) }
 }
 
 func Detail(c *gin.Context, id string) *DictVO {
 	if id == "" { return nil }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysDict
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { return nil }
@@ -151,7 +151,7 @@ func Detail(c *gin.Context, id string) *DictVO {
 }
 
 func Options(c *gin.Context, param *DictOptionsParam) []*DictVO {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	query := db.DB.WithContext(ctx).Model(&SysDict{}).Order("sort_code ASC")
 	if param.Category != "" { query = query.Where("category = ?", param.Category) }
 	if param.ParentID != "" { query = query.Where("id = ? OR parent_id = ?", param.ParentID, param.ParentID) }
@@ -173,9 +173,9 @@ func dictCheckDuplicate(ctx context.Context, vo *DictVO, excludeID string) {
 	}
 }
 
-func dictCheckCircularParent(entityID, newParentID string) {
+func dictCheckCircularParent(ctx context.Context, entityID, newParentID string) {
 	if newParentID == "" || newParentID == "0" || entityID == "" { return }
-	ctx := context.Background()
+	
 	var all []SysDict
 	db.DB.WithContext(ctx).Find(&all)
 	parentMap := make(map[string]string)
@@ -187,8 +187,8 @@ func dictCheckCircularParent(entityID, newParentID string) {
 	}
 }
 
-func dictCollectDescendantIDs(ids []string) []string {
-	ctx := context.Background()
+func dictCollectDescendantIDs(ctx context.Context, ids []string) []string {
+	
 	var all []SysDict
 	db.DB.WithContext(ctx).Find(&all)
 	childrenMap := make(map[string][]string)
@@ -244,7 +244,7 @@ func getParentIDKey(parentID *string) string {
 }
 
 func DictList(c *gin.Context, param *DictListParam) []*DictVO {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	query := db.DB.WithContext(ctx).Model(&SysDict{}).Order("sort_code ASC")
 	if param.Category != "" { query = query.Where("category = ?", param.Category) }
 	if param.Keyword != "" {
@@ -259,7 +259,7 @@ func DictList(c *gin.Context, param *DictListParam) []*DictVO {
 }
 
 func DictGetLabel(c *gin.Context, typeCode, value string) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysDict
 	if err := db.DB.WithContext(ctx).Where("parent_id IN (SELECT id FROM sys_dict WHERE code = ?)", typeCode).Where("value = ?", value).First(&entity).Error; err != nil {
 		return gin.H{"code": 200, "message": "璇锋眰鎴愬姛", "success": true, "data": nil}
@@ -270,7 +270,7 @@ func DictGetLabel(c *gin.Context, typeCode, value string) gin.H {
 }
 
 func DictGetChildren(c *gin.Context, typeCode string) []*DictVO {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var parent SysDict
 	if err := db.DB.WithContext(ctx).Where("code = ?", typeCode).First(&parent).Error; err != nil {
 		return make([]*DictVO, 0)

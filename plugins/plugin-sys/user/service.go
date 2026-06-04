@@ -162,7 +162,7 @@ func enrichNames(vos []*UserVO) {
 }
 
 func UserPage(c *gin.Context, p *UserPageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
 	}
@@ -204,7 +204,7 @@ func UserPage(c *gin.Context, p *UserPageParam) gin.H {
 }
 
 func UserCreate(c *gin.Context, v *UserVO, uid string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	e := SysUser{ID: utils.GenerateID(), Status: string(enums.UserStatusActive), CreatedAt: &now, UpdatedAt: &now}
 	if v.Username != nil {
@@ -269,7 +269,7 @@ func UserDetail(c *gin.Context, id string) *UserVO {
 	if id == "" {
 		return nil
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var e SysUser
 	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -286,7 +286,7 @@ func UserDetail(c *gin.Context, id string) *UserVO {
 }
 
 func UserModify(c *gin.Context, v *UserVO, uid string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if v.ID == "" {
 		panic(exception.NewBusinessError("ID不能为空", 400))
 	}
@@ -359,7 +359,7 @@ func UserRemove(c *gin.Context, ids []string) {
 	if len(ids) == 0 {
 		return
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Where("user_id IN ?", ids).Delete(&RelUserRole{}).Error; err != nil {
 		tx.Rollback()
@@ -386,7 +386,7 @@ func UserResetPassword(c *gin.Context, id string) {
 	if id == "" {
 		panic(exception.NewBusinessError("ID不能为空", 400))
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	rawPwd := config.C.User.ResetPassword
 	if rawPwd == "" {
 		rawPwd = generateRandomPassword()
@@ -416,7 +416,7 @@ func UserGrantRole(c *gin.Context, p *GrantRoleParam) {
 	if p.UserID == "" {
 		panic(exception.NewBusinessError("用户ID不能为空", 400))
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Where("user_id = ?", p.UserID).Delete(&RelUserRole{}).Error; err != nil {
 		tx.Rollback()
@@ -445,7 +445,7 @@ func UserGrantPermission(c *gin.Context, p *GrantUserPermissionParam) {
 	if p.UserID == "" {
 		panic(exception.NewBusinessError("用户ID不能为空", 400))
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Where("user_id = ?", p.UserID).Delete(&RelUserPermission{}).Error; err != nil {
 		tx.Rollback()
@@ -477,7 +477,7 @@ func UserBatchImport(c *gin.Context, p *BatchImportParam) {
 	if len(p.Users) == 0 {
 		return
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	batch := make([]SysUser, 0, len(p.Users))
 	for _, u := range p.Users {
@@ -515,13 +515,13 @@ func UserUpdateStatus(c *gin.Context, p *UpdateStatusParam) {
 	if len(p.IDs) == 0 {
 		return
 	}
-	db.DB.WithContext(context.Background()).Model(&SysUser{}).Where("id IN ?", p.IDs).Updates(
+	db.DB.Model(&SysUser{}).Where("id IN ?", p.IDs).Updates(
 		map[string]interface{}{"status": p.Status, "updated_at": time.Now()})
 }
 
 func UserOwnRoleIDs(c *gin.Context, uid string) []string {
 	var rr []RelUserRole
-	db.DB.WithContext(context.Background()).Where("user_id = ?", uid).Find(&rr)
+	db.DB.Where("user_id = ?", uid).Find(&rr)
 	ids := make([]string, len(rr))
 	for i, r := range rr {
 		ids[i] = r.RoleID
@@ -531,7 +531,7 @@ func UserOwnRoleIDs(c *gin.Context, uid string) []string {
 
 func UserOwnPermissionDetails(c *gin.Context, uid string) []map[string]interface{} {
 	var pp []RelUserPermission
-	db.DB.WithContext(context.Background()).Where("user_id = ?", uid).Find(&pp)
+	db.DB.Where("user_id = ?", uid).Find(&pp)
 	r := make([]map[string]interface{}, len(pp))
 	for i, p := range pp {
 		r[i] = map[string]interface{}{
@@ -543,7 +543,7 @@ func UserOwnPermissionDetails(c *gin.Context, uid string) []map[string]interface
 }
 
 func UserExport(c *gin.Context, p *UserPageParam) []*UserVO {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	q := db.DB.WithContext(ctx).Model(&SysUser{})
 	if p.Keyword != "" {
 		like := "%" + p.Keyword + "%"
@@ -602,7 +602,7 @@ func UserUpdateProfile(c *gin.Context, uid string, p *UpdateProfileParam) {
 		up["phone"] = *p.Phone
 	}
 	up["updated_at"] = time.Now()
-	db.DB.WithContext(context.Background()).Model(&SysUser{}).Where("id = ?", uid).Updates(up)
+	db.DB.Model(&SysUser{}).Where("id = ?", uid).Updates(up)
 }
 
 func UserUpdateAvatar(c *gin.Context, uid, avatar string) {
@@ -613,7 +613,7 @@ func UserUpdateAvatar(c *gin.Context, uid, avatar string) {
 		panic(exception.NewBusinessError("头像不能为空", 400))
 	}
 	avatar = utils.CompressBase64Image(avatar, 512, 512, 80)
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysUser
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", uid).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -630,7 +630,7 @@ func UserUpdatePassword(c *gin.Context, uid string, p *UpdatePasswordParam) {
 	if uid == "" {
 		panic(exception.NewBusinessError("用户未登录", 401))
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var e SysUser
 	if err := db.DB.WithContext(ctx).First(&e, "id = ?", uid).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {

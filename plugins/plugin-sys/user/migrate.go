@@ -43,7 +43,7 @@ func seedAdminUser() error {
 		CreatedAt:  &now,
 		UpdatedAt:  &now,
 	}
-	if err := db.DB.WithContext(context.Background()).Create(&user).Error; err != nil {
+	if err := db.DB.WithContext(context.TODO()).Create(&user).Error; err != nil {
 		return err
 	}
 	log.Println("[Seed] Admin user created (username: admin, password: 123456)")

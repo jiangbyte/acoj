@@ -42,7 +42,7 @@ func sortTreeNodes(nodes []map[string]interface{}) {
 }
 
 func Page(c *gin.Context, param *GroupPageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
 	if param.Size > 100 { param.Size = 100 }
@@ -64,7 +64,7 @@ func Page(c *gin.Context, param *GroupPageParam) gin.H {
 }
 
 func Tree(c *gin.Context, param *GroupTreeParam) []map[string]interface{} {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	query := db.DB.WithContext(ctx).Model(&SysGroup{}).Order("sort_code ASC")
 	if param.Category != "" { query = query.Where("category = ?", param.Category) }
 	if param.OrgID != "" { query = query.Where("org_id = ?", param.OrgID) }
@@ -89,7 +89,7 @@ func Tree(c *gin.Context, param *GroupTreeParam) []map[string]interface{} {
 }
 
 func Create(c *gin.Context, vo *GroupVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	entity := SysGroup{
 		ID: utils.GenerateID(), Code: vo.Code, Name: vo.Name, Category: vo.Category,
@@ -103,7 +103,7 @@ func Create(c *gin.Context, vo *GroupVO, userID string) {
 }
 
 func Modify(c *gin.Context, vo *GroupVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysGroup
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { panic(exception.NewBusinessError("数据不存在", 400)) }
@@ -124,7 +124,7 @@ func Modify(c *gin.Context, vo *GroupVO, userID string) {
 
 func Remove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	allIDs := collectDescendantGroupIDs(ids)
 
 	var userCount int64
@@ -136,7 +136,7 @@ func Remove(c *gin.Context, ids []string) {
 
 func Detail(c *gin.Context, id string) *GroupVO {
 	if id == "" { return nil }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysGroup
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { return nil }
@@ -146,7 +146,7 @@ func Detail(c *gin.Context, id string) *GroupVO {
 }
 
 func Options(c *gin.Context) []*GroupVO {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var records []SysGroup
 	db.DB.WithContext(ctx).Order("sort_code ASC").Find(&records)
 	vos := make([]*GroupVO, len(records))

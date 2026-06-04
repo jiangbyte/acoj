@@ -2,7 +2,6 @@ package file
 
 import (
 	"strings"
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -52,7 +51,7 @@ func computeSHA256(r io.Reader) (string, error) {
 // ===== Basic CRUD =====
 
 func Page(c *gin.Context, param *FilePageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -84,7 +83,7 @@ func Page(c *gin.Context, param *FilePageParam) gin.H {
 }
 
 func Create(c *gin.Context, vo *FileVO) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 
 	entity := SysFile{
@@ -128,7 +127,7 @@ func Remove(c *gin.Context, ids []string) {
 	if len(ids) == 0 {
 		return
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysFile{})
 }
 
@@ -136,7 +135,7 @@ func Detail(c *gin.Context, id string) *SysFile {
 	if id == "" {
 		return nil
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysFile
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		return nil
@@ -150,7 +149,7 @@ func RemoveAbsolute(c *gin.Context, ids []string) {
 	if len(ids) == 0 {
 		return
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var files []SysFile
 	db.DB.WithContext(ctx).Where("id IN ?", ids).Find(&files)
 	for _, f := range files {
@@ -242,7 +241,7 @@ func Upload(c *gin.Context) *FileVO {
 		UpdatedAt:    &now,
 	}
 
-	if err := db.DB.WithContext(context.Background()).Create(&entity).Error; err != nil {
+	if err := db.DB.Create(&entity).Error; err != nil {
 		panic(exception.NewBusinessError("保存文件记录失败: "+err.Error(), 500))
 	}
 
@@ -447,7 +446,7 @@ func CompleteChunkUpload(c *gin.Context) {
 		UpdatedAt:    &now,
 	}
 
-	if err := db.DB.WithContext(context.Background()).Create(&entity).Error; err != nil {
+	if err := db.DB.Create(&entity).Error; err != nil {
 		panic(exception.NewBusinessError("保存文件记录失败: "+err.Error(), 500))
 	}
 
@@ -495,7 +494,7 @@ func AbortChunkUpload(c *gin.Context) {
 // ===== Download =====
 
 func Download(c *gin.Context, id string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysFile
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		panic(exception.NewBusinessError("文件不存在", 404))

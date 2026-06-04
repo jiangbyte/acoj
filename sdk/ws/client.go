@@ -17,6 +17,7 @@ type Client struct {
 	Send     chan []byte
 	UserID   string
 	UserType enums.LoginTypeEnum
+	IP       string
 }
 
 // ReadPump pumps messages from the WebSocket connection to the hub.

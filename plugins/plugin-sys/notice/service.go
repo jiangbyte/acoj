@@ -1,7 +1,6 @@
 ﻿package notice
 
 import (
-	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -22,7 +21,7 @@ func parseTime(s *string) *time.Time {
 }
 
 func Page(c *gin.Context, param *NoticePageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
 
@@ -44,7 +43,7 @@ func Page(c *gin.Context, param *NoticePageParam) gin.H {
 
 func Detail(c *gin.Context, id string) *NoticeVO {
 	if id == "" { return nil }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysNotice
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { return nil }
@@ -54,7 +53,7 @@ func Detail(c *gin.Context, id string) *NoticeVO {
 }
 
 func Create(c *gin.Context, vo *NoticeVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 
 	entity := SysNotice{
@@ -78,7 +77,7 @@ func Create(c *gin.Context, vo *NoticeVO, userID string) {
 }
 
 func Modify(c *gin.Context, vo *NoticeVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if vo.ID == "" { panic(exception.NewBusinessError("ID不能为空", 400)) }
 
 	var entity SysNotice
@@ -109,11 +108,11 @@ func Modify(c *gin.Context, vo *NoticeVO, userID string) {
 
 func Remove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
-	db.DB.WithContext(context.Background()).Where("id IN ?", ids).Delete(&SysNotice{})
+	db.DB.Where("id IN ?", ids).Delete(&SysNotice{})
 }
 
 func PublicPage(c *gin.Context, param *NoticePageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -146,7 +145,7 @@ func PublicDetail(c *gin.Context, id string) *NoticeVO {
 	if id == "" {
 		return nil
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysNotice
 	if err := db.DB.WithContext(ctx).Where("id = ? AND status = ?", id, "ENABLED").First(&entity).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -158,7 +157,7 @@ func PublicDetail(c *gin.Context, id string) *NoticeVO {
 }
 
 func Latest(c *gin.Context, param *NoticeLatestParam) []*NoticeVO {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var records []SysNotice
 	db.DB.WithContext(ctx).
 		Where("status = ?", "ENABLED").

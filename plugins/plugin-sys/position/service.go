@@ -1,7 +1,6 @@
 package position
 
 import (
-	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -18,7 +17,7 @@ import (
 
 
 func Page(c *gin.Context, param *PositionPageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
 	if param.Size > 100 { param.Size = 100 }
@@ -41,7 +40,7 @@ func Page(c *gin.Context, param *PositionPageParam) gin.H {
 
 func Detail(c *gin.Context, id string) *PositionVO {
 	if id == "" { return nil }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysPosition
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { return nil }
@@ -52,7 +51,7 @@ func Detail(c *gin.Context, id string) *PositionVO {
 }
 
 func Create(c *gin.Context, vo *PositionVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	entity := SysPosition{ID: utils.GenerateID(), Code: vo.Code, Name: vo.Name, Category: vo.Category, Status: vo.Status, SortCode: vo.SortCode, CreatedAt: &now, UpdatedAt: &now}
 	if vo.OrgID != nil { entity.OrgID = vo.OrgID }
@@ -64,7 +63,7 @@ func Create(c *gin.Context, vo *PositionVO, userID string) {
 }
 
 func Modify(c *gin.Context, vo *PositionVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if vo.ID == "" { panic(exception.NewBusinessError("ID不能为空", 400)) }
 
 	var entity SysPosition
@@ -85,13 +84,13 @@ func Modify(c *gin.Context, vo *PositionVO, userID string) {
 
 func Remove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	db.DB.WithContext(ctx).Table("sys_user").Where("position_id IN ?", ids).Update("position_id", nil)
 	db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysPosition{})
 }
 
 func Options(c *gin.Context) []*PositionVO {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var records []SysPosition
 	db.DB.WithContext(ctx).Order("sort_code ASC").Find(&records)
 	vos := make([]*PositionVO, len(records))

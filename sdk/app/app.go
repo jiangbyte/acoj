@@ -44,12 +44,17 @@ func Run() {
 		log.Fatalf("[APP] Module init failed: %v", err)
 	}
 
-	r := gin.Default()
+	// NOTE: Use gin.New() NOT gin.Default(). gin.Default() includes gin.Recovery()
+	// which returns HTML on panic, breaking our JSON API contract.
+	// Our custom middleware.Recovery() handles panics with proper JSON output + stack logging.
+	r := gin.New()
 
-	r.Use(middleware.Recovery())
-	r.Use(middleware.Trace())
-	r.Use(middleware.CORS())
-	r.Use(middleware.AuthCheck())
+	// Middleware order matters — outermost first (Recovery must be outermost to catch all)
+	r.Use(middleware.Recovery()) // Catch all panics → JSON
+	r.Use(gin.Logger())          // Request logging
+	r.Use(middleware.Trace())    // Trace ID injection
+	r.Use(middleware.CORS())     // CORS headers
+	r.Use(middleware.AuthCheck()) // Authentication
 
 	registry.ApplyMiddlewares(r)
 

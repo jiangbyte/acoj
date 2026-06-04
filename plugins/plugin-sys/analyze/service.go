@@ -51,7 +51,7 @@ func formatDuration(d time.Duration) string {
 
 
 func Page(c *gin.Context, param *logModel.LogPageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -86,7 +86,7 @@ func Page(c *gin.Context, param *logModel.LogPageParam) gin.H {
 }
 
 func LoginAnalysis(c *gin.Context) *LogAnalysisData {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
 	var loginTotal int64
 	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Where("category = ?", "LOGIN").Count(&loginTotal)
@@ -110,7 +110,7 @@ func LoginAnalysis(c *gin.Context) *LogAnalysisData {
 }
 
 func LogAnalysis(c *gin.Context) *LogAnalysisData {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
 	var logTotal int64
 	db.DB.WithContext(ctx).Model(&logModel.SysLog{}).Count(&logTotal)
@@ -132,7 +132,7 @@ func LogAnalysis(c *gin.Context) *LogAnalysisData {
 }
 
 func Dashboard(c *gin.Context) *DashboardVO {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	stats := DashboardStats{}
 
 	db.DB.WithContext(ctx).Table("sys_user").Count(&stats.TotalUsers)

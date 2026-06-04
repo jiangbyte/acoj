@@ -1,10 +1,10 @@
 package v1
 
 import (
-	"context"
 	"time"
 	"strconv"
 
+	"hei-gin/sdk/middleware"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/result"
 	"hei-gin/plugins/plugin-im/group"
@@ -27,7 +27,7 @@ func RegisterSysRoutes(r *gin.Engine) {
 
 		g.GET("/messages", messagesHandler)
 		g.GET("/search", searchHandler)
-		g.POST("/send", sendHandler)
+		g.POST("/send", middleware.RateLimiter("sys_group_send", 3, 20), sendHandler)
 		g.POST("/recall", recallHandler)
 		g.POST("/mark-read", markReadHandler)
 		g.POST("/mute", muteHandler)
@@ -45,7 +45,7 @@ func RegisterClientRoutes(r *gin.Engine) {
 		g.POST("/leave", leaveHandler)
 		g.GET("/messages", messagesHandler)
 		g.GET("/search", searchHandler)
-		g.POST("/send", sendHandler)
+		g.POST("/send", middleware.RateLimiter("c_group_send", 3, 20), sendHandler)
 		g.POST("/recall", recallHandler)
 		g.POST("/mark-read", markReadHandler)
 		g.GET("/members", membersHandler)
@@ -77,7 +77,7 @@ func createHandler(c *gin.Context) {
 		c.JSON(200, result.Failure(c, "未登录", 401, nil))
 		return
 	}
-	g := group.Create(context.Background(), userID, userType, &p)
+	g := group.Create(c.Request.Context(), userID, userType, &p)
 	c.JSON(200, result.Success(c, g))
 }
 
@@ -88,7 +88,7 @@ func updateHandler(c *gin.Context) {
 		return
 	}
 	userID, userType := getLoginID(c)
-	group.Update(context.Background(), userID, userType, &p)
+	group.Update(c.Request.Context(), userID, userType, &p)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -99,19 +99,19 @@ func dissolveHandler(c *gin.Context) {
 		return
 	}
 	userID, _ := getLoginID(c)
-	group.Dissolve(context.Background(), userID, p.GroupID)
+	group.Dissolve(c.Request.Context(), userID, p.GroupID)
 	c.JSON(200, result.Success(c, nil))
 }
 
 func detailHandler(c *gin.Context) {
 	groupID := c.Query("group_id")
-	vo := group.Detail(context.Background(), groupID)
+	vo := group.Detail(c.Request.Context(), groupID)
 	c.JSON(200, result.Success(c, vo))
 }
 
 func myGroupsHandler(c *gin.Context) {
 	userID, userType := getLoginID(c)
-	list := group.MyGroups(context.Background(), userID, userType)
+	list := group.MyGroups(c.Request.Context(), userID, userType)
 	c.JSON(200, result.Success(c, list))
 }
 
@@ -122,7 +122,7 @@ func inviteHandler(c *gin.Context) {
 		return
 	}
 	userID, userType := getLoginID(c)
-	group.Invite(context.Background(), userID, userType, &p)
+	group.Invite(c.Request.Context(), userID, userType, &p)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -133,7 +133,7 @@ func joinHandler(c *gin.Context) {
 		return
 	}
 	userID, userType := getLoginID(c)
-	group.Join(context.Background(), userID, userType, p.GroupID)
+	group.Join(c.Request.Context(), userID, userType, p.GroupID)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -144,7 +144,7 @@ func leaveHandler(c *gin.Context) {
 		return
 	}
 	userID, userType := getLoginID(c)
-	group.Leave(context.Background(), userID, userType, p.GroupID)
+	group.Leave(c.Request.Context(), userID, userType, p.GroupID)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -155,7 +155,7 @@ func kickHandler(c *gin.Context) {
 		return
 	}
 	userID, userType := getLoginID(c)
-	group.Kick(context.Background(), userID, userType, &p)
+	group.Kick(c.Request.Context(), userID, userType, &p)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -166,13 +166,13 @@ func setRoleHandler(c *gin.Context) {
 		return
 	}
 	userID, _ := getLoginID(c)
-	group.SetRole(context.Background(), userID, &p)
+	group.SetRole(c.Request.Context(), userID, &p)
 	c.JSON(200, result.Success(c, nil))
 }
 
 func membersHandler(c *gin.Context) {
 	groupID := c.Query("group_id")
-	list := group.Members(context.Background(), groupID)
+	list := group.Members(c.Request.Context(), groupID)
 	c.JSON(200, result.Success(c, list))
 }
 
@@ -185,7 +185,7 @@ func messagesHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	msgs, hasMore := group.Messages(context.Background(), groupID, cursor, size)
+	msgs, hasMore := group.Messages(c.Request.Context(), groupID, cursor, size)
 	c.JSON(200, result.Success(c, gin.H{"records": msgs, "has_more": hasMore}))
 }
 
@@ -199,7 +199,7 @@ func searchHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	msgs, hasMore := group.SearchMessages(context.Background(), groupID, keyword, cursor, size)
+	msgs, hasMore := group.SearchMessages(c.Request.Context(), groupID, keyword, cursor, size)
 	c.JSON(200, result.Success(c, gin.H{"records": msgs, "has_more": hasMore}))
 }
 
@@ -210,7 +210,7 @@ func sendHandler(c *gin.Context) {
 		return
 	}
 	userID, userType := getLoginID(c)
-	vo := group.SendMessage(context.Background(), userID, userType, &p)
+	vo := group.SendMessage(c.Request.Context(), userID, userType, &p)
 	c.JSON(200, result.Success(c, vo))
 }
 
@@ -224,7 +224,7 @@ func recallHandler(c *gin.Context) {
 		return
 	}
 	userID, userType := getLoginID(c)
-	group.RecallMessage(context.Background(), p.GroupID, p.MessageID, userID, userType)
+	group.RecallMessage(c.Request.Context(), p.GroupID, p.MessageID, userID, userType)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -238,7 +238,7 @@ func markReadHandler(c *gin.Context) {
 		return
 	}
 	userID, userType := getLoginID(c)
-	group.MarkRead(context.Background(), p.GroupID, userID, userType, p.MessageID)
+	group.MarkRead(c.Request.Context(), p.GroupID, userID, userType, p.MessageID)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -259,7 +259,7 @@ func muteHandler(c *gin.Context) {
 		duration = p.Duration
 	}
 	kp := group.KickParam{GroupID: p.GroupID, UserID: p.UserID, UserType: p.UserType}
-	group.MuteMember(context.Background(), userID, userType, &kp, time.Duration(duration)*time.Minute)
+	group.MuteMember(c.Request.Context(), userID, userType, &kp, time.Duration(duration)*time.Minute)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -275,6 +275,6 @@ func unmuteHandler(c *gin.Context) {
 	}
 	userID, userType := getLoginID(c)
 	kp := group.KickParam{GroupID: p.GroupID, UserID: p.UserID, UserType: p.UserType}
-	group.UnmuteMember(context.Background(), userID, userType, &kp)
+	group.UnmuteMember(c.Request.Context(), userID, userType, &kp)
 	c.JSON(200, result.Success(c, nil))
 }

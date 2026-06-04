@@ -1,0 +1,204 @@
+package v1
+
+import (
+	"strconv"
+
+	"hei-gin/sdk/auth"
+	"hei-gin/sdk/result"
+	"hei-gin/plugins/plugin-im/friend"
+
+	"github.com/gin-gonic/gin"
+)
+
+func RegisterSysRoutes(r *gin.Engine) {
+	g := r.Group("/api/v1/sys/im/friend")
+	{
+		g.POST("/send-request", sendRequestHandler)
+		g.POST("/accept", acceptHandler)
+		g.POST("/reject", rejectHandler)
+		g.GET("/list", listHandler)
+		g.GET("/pending-requests", pendingRequestsHandler)
+		g.POST("/remove", removeHandler)
+		g.GET("/search", searchHandler)
+	}
+}
+
+func RegisterClientRoutes(r *gin.Engine) {
+	g := r.Group("/api/v1/c/im/friend")
+	{
+		g.POST("/send-request", clientSendRequestHandler)
+		g.POST("/accept", clientAcceptHandler)
+		g.POST("/reject", clientRejectHandler)
+		g.GET("/list", clientListHandler)
+		g.GET("/pending-requests", clientPendingRequestsHandler)
+		g.POST("/remove", clientRemoveHandler)
+		g.GET("/search", clientSearchHandler)
+	}
+}
+
+func getLoginID(c *gin.Context) (string, string) {
+	uid := auth.GetLoginIDDefaultNull(c)
+	if uid != "" {
+		return uid, "BUSINESS"
+	}
+	token := auth.Consumer.GetTokenValue(c)
+	uid = auth.Consumer.GetLoginIDByToken(token)
+	if uid != "" {
+		return uid, "CONSUMER"
+	}
+	return "", ""
+}
+
+// ==================== Sys Handlers ====================
+
+func sysUserID(c *gin.Context) (string, string) {
+	return auth.GetLoginID(c), "BUSINESS"
+}
+
+func sendRequestHandler(c *gin.Context) {
+	var p friend.SendRequestParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := sysUserID(c)
+	friend.SendRequest(c.Request.Context(), uid, ut, &p)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func acceptHandler(c *gin.Context) {
+	var p friend.HandleRequestParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := sysUserID(c)
+	friend.AcceptRequest(c.Request.Context(), uid, ut, &p)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func rejectHandler(c *gin.Context) {
+	var p friend.HandleRequestParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := sysUserID(c)
+	friend.RejectRequest(c.Request.Context(), uid, ut, &p)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func listHandler(c *gin.Context) {
+	uid, ut := sysUserID(c)
+	list := friend.FriendList(c.Request.Context(), uid, ut)
+	c.JSON(200, result.Success(c, list))
+}
+
+func pendingRequestsHandler(c *gin.Context) {
+	uid, ut := sysUserID(c)
+	incoming, outgoing := friend.PendingRequests(c.Request.Context(), uid, ut)
+	c.JSON(200, result.Success(c, gin.H{"incoming": incoming, "outgoing": outgoing}))
+}
+
+func removeHandler(c *gin.Context) {
+	var p struct {
+		FriendID   string `json:"friend_id"`
+		FriendType string `json:"friend_type"`
+	}
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := sysUserID(c)
+	friend.RemoveFriend(c.Request.Context(), uid, ut, p.FriendID, p.FriendType)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func searchHandler(c *gin.Context) {
+	keyword := c.Query("keyword")
+	size := 20
+	if s := c.Query("size"); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 {
+			size = n
+		}
+	}
+	results := friend.SearchUsers(c.Request.Context(), keyword, size)
+	c.JSON(200, result.Success(c, results))
+}
+
+// ==================== Client Handlers ====================
+
+func clientUserID(c *gin.Context) (string, string) {
+	return auth.Consumer.GetLoginID(c), "CONSUMER"
+}
+
+func clientSendRequestHandler(c *gin.Context) {
+	var p friend.SendRequestParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := clientUserID(c)
+	friend.SendRequest(c.Request.Context(), uid, ut, &p)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func clientAcceptHandler(c *gin.Context) {
+	var p friend.HandleRequestParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := clientUserID(c)
+	friend.AcceptRequest(c.Request.Context(), uid, ut, &p)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func clientRejectHandler(c *gin.Context) {
+	var p friend.HandleRequestParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := clientUserID(c)
+	friend.RejectRequest(c.Request.Context(), uid, ut, &p)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func clientListHandler(c *gin.Context) {
+	uid, ut := clientUserID(c)
+	list := friend.FriendList(c.Request.Context(), uid, ut)
+	c.JSON(200, result.Success(c, list))
+}
+
+func clientPendingRequestsHandler(c *gin.Context) {
+	uid, ut := clientUserID(c)
+	incoming, outgoing := friend.PendingRequests(c.Request.Context(), uid, ut)
+	c.JSON(200, result.Success(c, gin.H{"incoming": incoming, "outgoing": outgoing}))
+}
+
+func clientRemoveHandler(c *gin.Context) {
+	var p struct {
+		FriendID   string `json:"friend_id"`
+		FriendType string `json:"friend_type"`
+	}
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := clientUserID(c)
+	friend.RemoveFriend(c.Request.Context(), uid, ut, p.FriendID, p.FriendType)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func clientSearchHandler(c *gin.Context) {
+	keyword := c.Query("keyword")
+	size := 20
+	if s := c.Query("size"); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 {
+			size = n
+		}
+	}
+	results := friend.SearchUsers(c.Request.Context(), keyword, size)
+	c.JSON(200, result.Success(c, results))
+}

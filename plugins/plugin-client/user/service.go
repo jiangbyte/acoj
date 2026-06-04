@@ -1,7 +1,6 @@
 package user
 
 import (
-	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -17,7 +16,7 @@ import (
 )
 
 func ClientUserPage(c *gin.Context, param *ClientUserPageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -52,7 +51,7 @@ func ClientUserDetail(c *gin.Context, id string) *ClientUserVO {
 	if id == "" {
 		return nil
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity ClientUser
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -65,7 +64,7 @@ func ClientUserDetail(c *gin.Context, id string) *ClientUserVO {
 }
 
 func ClientUserCreate(c *gin.Context, vo *ClientUserVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 
 	entity := ClientUser{
@@ -113,7 +112,7 @@ func ClientUserCreate(c *gin.Context, vo *ClientUserVO, userID string) {
 }
 
 func ClientUserModify(c *gin.Context, vo *ClientUserVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity ClientUser
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -151,7 +150,7 @@ func ClientUserRemove(c *gin.Context, ids []string) {
 	if len(ids) == 0 {
 		return
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&ClientUser{})
 }
 
@@ -166,7 +165,7 @@ func UpdateProfile(c *gin.Context, userID string, param *UpdateProfileParam) {
 	if userID == "" {
 		return
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
 	if param.Username != nil && *param.Username != "" {
 		var count int64
@@ -205,7 +204,7 @@ func UpdateAvatar(c *gin.Context, userID string, param *UpdateAvatarParam) {
 
 	avatar := utils.CompressBase64Image(param.Avatar, 512, 512, 80)
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity ClientUser
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", userID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -222,7 +221,7 @@ func UpdatePassword(c *gin.Context, userID string, param *UpdatePasswordParam) {
 	if userID == "" {
 		panic(exception.NewBusinessError("用户未登录", 401))
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity ClientUser
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", userID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {

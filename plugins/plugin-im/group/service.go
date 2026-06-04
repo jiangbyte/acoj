@@ -600,23 +600,35 @@ func MyGroups(ctx context.Context, userID, userType string) []GroupVO {
 
 	// Single batch: get last message per group (using subquery)
 	type lm struct{ GroupID, Content, CreatedAt string }
+	// Single batch: get last message per group using GORM subquery (no raw SQL)
 	var lastMsgs []lm
-	db.DB.WithContext(ctx).Raw(
-		`SELECT g2.group_id, g2.content, g2.created_at FROM group_message g2
-		 INNER JOIN (SELECT group_id, MAX(created_at) max_ct FROM group_message WHERE group_id IN ? GROUP BY group_id) g1
-		 ON g2.group_id = g1.group_id AND g2.created_at = g1.max_ct`, groupIDs).Scan(&lastMsgs)
+	lastSubQ := db.DB.WithContext(ctx).Table("group_message").
+		Select("group_id, MAX(created_at) as max_ct").
+		Where("group_id IN ?", groupIDs).
+		Group("group_id")
+	db.DB.WithContext(ctx).Table("group_message g2").
+		Select("g2.group_id, g2.content, g2.created_at").
+		Joins("INNER JOIN (?) g1 ON g1.group_id = g2.group_id AND g1.max_ct = g2.created_at", lastSubQ).
+		Scan(&lastMsgs)
 	lastMap := make(map[string]lm, len(lastMsgs))
 
 	type uc struct{ GroupID string; Count int64 }
 	var unreads []uc
-	db.DB.WithContext(ctx).Raw(
-		`SELECT gm.group_id, COUNT(*) as count FROM group_message gm
-		 WHERE gm.group_id IN ? AND gm.created_at > COALESCE(
-			(SELECT MAX(gmr.read_at) FROM group_message_read gmr
-			 WHERE gmr.group_id = gm.group_id AND gmr.user_id = ? AND gmr.user_type = ?), "1970-01-01 00:00:00"
-		 )
-		 GROUP BY gm.group_id`, groupIDs, userID, userType).Scan(&unreads)
+	readSubQ := db.DB.WithContext(ctx).Table("group_message_read").
+		Select("group_id, MAX(read_at) as max_read").
+		Where("user_id = ? AND user_type = ?", userID, userType).
+		Group("group_id")
+	db.DB.WithContext(ctx).Table("group_message gm").
+		Select("gm.group_id, COUNT(*) as count").
+		Joins("LEFT JOIN (?) gr ON gr.group_id = gm.group_id", readSubQ).
+		Where("gm.group_id IN ?", groupIDs).
+		Where("gm.created_at > COALESCE(gr.max_read, ?)", "1970-01-01 00:00:00").
+		Group("gm.group_id").
+		Scan(&unreads)
 	unreadMap := make(map[string]int64, len(unreads))
+	for _, u := range unreads {
+		unreadMap[u.GroupID] = u.Count
+	}
 	for _, u := range unreads {
 		unreadMap[u.GroupID] = u.Count
 	}
@@ -930,4 +942,39 @@ func buildPushPayload(msg *GroupMessage) map[string]interface{} {
 		"reply_to":    msg.ReplyTo,
 		"created_at":  pojo.FormatDateTimePtr(msg.CreatedAt),
 	}
+}
+
+// MarkConversationRead marks an entire group conversation as read by recording
+// the latest message as the user's last-read position (upserts on user_id+user_type+message_id).
+
+// MarkConversationRead marks an entire group conversation as read by recording
+// the latest message as the user's last-read position (upserts on user_id+user_type+message_id).
+func MarkConversationRead(ctx context.Context, groupID, userID, userType string) {
+	if groupID == "" || userID == "" {
+		return
+	}
+
+	// Find the latest message in the group
+	type lastMsg struct {
+		ID string
+	}
+	var lm lastMsg
+	err := db.DB.WithContext(ctx).Model(&GroupMessage{}).
+		Select("id").
+		Where("group_id = ?", groupID).
+		Order("created_at DESC").
+		Limit(1).
+		Scan(&lm).Error
+	if err != nil || lm.ID == "" {
+		return
+	}
+
+	now := time.Now()
+	_ = db.DB.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "message_id"}, {Name: "user_id"}, {Name: "user_type"}},
+		DoUpdates: clause.AssignmentColumns([]string{"read_at", "group_id"}),
+	}).Create(&GroupMessageRead{
+		MessageID: lm.ID, GroupID: groupID,
+		UserID: userID, UserType: userType, ReadAt: &now,
+	}).Error
 }

@@ -1,7 +1,6 @@
 ﻿package banner
 
 import (
-	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -15,7 +14,7 @@ import (
 )
 
 func Page(c *gin.Context, param *BannerPageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
 
@@ -34,7 +33,7 @@ func Page(c *gin.Context, param *BannerPageParam) gin.H {
 
 func Detail(c *gin.Context, id string) *BannerVO {
 	if id == "" { return nil }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysBanner
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { return nil }
@@ -44,7 +43,7 @@ func Detail(c *gin.Context, id string) *BannerVO {
 }
 
 func Create(c *gin.Context, vo *BannerVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 
 	entity := SysBanner{
@@ -65,7 +64,7 @@ func Create(c *gin.Context, vo *BannerVO, userID string) {
 }
 
 func Modify(c *gin.Context, vo *BannerVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if vo.ID == "" { panic(exception.NewBusinessError("ID不能为空", 400)) }
 
 	var entity SysBanner
@@ -93,7 +92,7 @@ func Modify(c *gin.Context, vo *BannerVO, userID string) {
 
 func Remove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysBanner{})
 }
 

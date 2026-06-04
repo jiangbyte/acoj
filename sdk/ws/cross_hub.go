@@ -15,7 +15,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Config helpers - read from config.C.WS with fallback defaults
+// ─── Config helpers ───────────────────────────────────────────────────
+
 func hbInterval() time.Duration {
 	if config.C != nil && config.C.WS.HeartbeatInterval > 0 {
 		return time.Duration(config.C.WS.HeartbeatInterval) * time.Second
@@ -65,7 +66,11 @@ func pollTO() time.Duration {
 	return 2 * time.Second
 }
 
-// crossInstanceMessage is the envelope for Redis list cross-instance messages.
+// msgListTTL is the TTL for per-instance message lists, preventing stale message accumulation.
+const msgListTTL = 5 * time.Minute
+
+// ─── Types ────────────────────────────────────────────────────────────
+
 type crossInstanceMessage struct {
 	ToUserID   string          `json:"to_user_id"`
 	ToUserType string          `json:"to_user_type"`
@@ -85,7 +90,7 @@ type CrossHub struct {
 	closeOnce  sync.Once
 }
 
-// NewCrossHub creates a CrossHub. If rdb is nil, runs in single-instance (passthrough) mode.
+// NewCrossHub creates a CrossHub. If rdb is nil, runs in single-instance mode.
 func NewCrossHub(local *Hub, rdb *redis.Client) *CrossHub {
 	instanceID := strconv.FormatInt(config.C.Snowflake.Instance, 10)
 
@@ -98,18 +103,18 @@ func NewCrossHub(local *Hub, rdb *redis.Client) *CrossHub {
 		cancel:     cancel,
 	}
 
-	// Wire up lifecycle hooks to the local hub
 	local.OnClientRegistered = ch.onClientRegistered
 	local.OnClientUnregistered = ch.onClientUnregistered
 
 	if rdb != nil {
-		ch.wg.Add(3)
+		ch.wg.Add(4)
 		go ch.pollLoop()
 		go ch.heartbeatLoop()
 		go ch.staleCleanupLoop()
+		go ch.msgListCleanupLoop()
 		log.Printf("[CrossHub] Cross-instance mode enabled, instance=%s", instanceID)
 	} else {
-		log.Printf("[CrossHub] Redis not configured, running in single-instance mode")
+		log.Printf("[CrossHub] Redis not configured, single-instance mode")
 	}
 
 	return ch
@@ -120,7 +125,6 @@ func NewCrossHub(local *Hub, rdb *redis.Client) *CrossHub {
 func (ch *CrossHub) onClientRegistered(c *Client) {
 	ch.TrackConnection(c.UserID, c.UserType)
 	ch.broadcastPresence(c.UserID, c.UserType, true)
-	// Notify client to refresh unread count on reconnect
 	switch c.UserType {
 	case enums.LoginTypeBusiness:
 		ch.local.SendToUser(c.UserID, Message{Type: MsgUnreadCount})
@@ -130,9 +134,7 @@ func (ch *CrossHub) onClientRegistered(c *Client) {
 }
 
 func (ch *CrossHub) onClientUnregistered(c *Client) {
-	// Remove this instance from user's connection set
 	ch.UntrackConnection(c.UserID, c.UserType)
-	// If user has no more connections on any instance, broadcast offline
 	if !ch.IsUserOnlineAnywhere(c.UserID, c.UserType) {
 		ch.broadcastPresence(c.UserID, c.UserType, false)
 	}
@@ -162,7 +164,6 @@ func (ch *CrossHub) dedupKey(messageID string) string {
 
 // ─── Presence ─────────────────────────────────────────────────────────
 
-// IsUserOnlineAnywhere checks if a user is connected to any instance.
 func (ch *CrossHub) IsUserOnlineAnywhere(userID string, userType enums.LoginTypeEnum) bool {
 	if ch.rdb == nil {
 		return ch.local.isUserConnected(userID, userType)
@@ -175,14 +176,10 @@ func (ch *CrossHub) IsUserOnlineAnywhere(userID string, userType enums.LoginType
 	return count > 0
 }
 
-// IsUserOnlineLocally checks if a user is connected to this instance.
 func (ch *CrossHub) IsUserOnlineLocally(userID string, userType enums.LoginTypeEnum) bool {
 	return ch.local.isUserConnected(userID, userType)
 }
 
-// broadcastPresence sends presence update to conversation partners.
-// For now, broadcasts to all connected clients of the same type.
-// Can be optimized later by only notifying relevant conversation partners.
 func (ch *CrossHub) broadcastPresence(userID string, userType enums.LoginTypeEnum, online bool) {
 	msg := Message{
 		Type: MsgPresence,
@@ -195,7 +192,6 @@ func (ch *CrossHub) broadcastPresence(userID string, userType enums.LoginTypeEnu
 	ch.local.BroadcastAll(msg)
 }
 
-// TrackConnection records that a user is connected to this instance.
 func (ch *CrossHub) TrackConnection(userID string, userType enums.LoginTypeEnum) {
 	if ch.rdb == nil {
 		return
@@ -207,7 +203,6 @@ func (ch *CrossHub) TrackConnection(userID string, userType enums.LoginTypeEnum)
 	ch.rdb.Expire(ch.ctx, key, instTTL()+30*time.Second)
 }
 
-// UntrackConnection removes the instance from the user's instance set.
 func (ch *CrossHub) UntrackConnection(userID string, userType enums.LoginTypeEnum) {
 	if ch.rdb == nil {
 		return
@@ -218,7 +213,6 @@ func (ch *CrossHub) UntrackConnection(userID string, userType enums.LoginTypeEnu
 	}
 }
 
-// getTargetInstances returns all instance IDs where the user is connected.
 func (ch *CrossHub) getTargetInstances(userID string, userType enums.LoginTypeEnum) []string {
 	if ch.rdb == nil {
 		return nil
@@ -234,7 +228,6 @@ func (ch *CrossHub) getTargetInstances(userID string, userType enums.LoginTypeEn
 
 // ─── Rate Limiting ────────────────────────────────────────────────────
 
-// AllowMessage checks if a user is allowed to send a message (rate-limited).
 func (ch *CrossHub) AllowMessage(userID string, userType enums.LoginTypeEnum) bool {
 	if ch.rdb == nil {
 		return true
@@ -242,7 +235,7 @@ func (ch *CrossHub) AllowMessage(userID string, userType enums.LoginTypeEnum) bo
 	key := ch.rateLimitKey(userID, userType)
 	count, err := ch.rdb.Incr(ch.ctx, key).Result()
 	if err != nil {
-		return true // allow on error
+		return true
 	}
 	if count == 1 {
 		ch.rdb.Expire(ch.ctx, key, rlWindow())
@@ -250,28 +243,31 @@ func (ch *CrossHub) AllowMessage(userID string, userType enums.LoginTypeEnum) bo
 	return count <= rlMax()
 }
 
-// ─── Message Deduplication (cross-instance) ───────────────────────────
+// ─── Message Deduplication ────────────────────────────────────────────
 
-// markDelivered marks a message as delivered to prevent duplicate cross-instance delivery.
 func (ch *CrossHub) markDelivered(messageID string) bool {
 	if ch.rdb == nil || messageID == "" {
 		return true
 	}
 	key := ch.dedupKey(messageID)
-	// SETNX: only set if key doesn't exist; returns true if set successfully
 	ok, err := ch.rdb.SetNX(ch.ctx, key, ch.instanceID, dedupTTL()).Result()
 	if err != nil {
-		return true // allow on error
+		return true
 	}
 	return ok
 }
 
-// ─── Polling loop ─────────────────────────────────────────────────────
+// ─── Polling Loop ─────────────────────────────────────────────────────
 
 func (ch *CrossHub) pollLoop() {
 	defer ch.wg.Done()
-	key := ch.msgListKey()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[CrossHub] pollLoop panicked: %v", r)
+		}
+	}()
 
+	key := ch.msgListKey()
 	for {
 		result, err := ch.rdb.BRPop(ch.ctx, pollTO(), key).Result()
 		if err != nil {
@@ -286,7 +282,6 @@ func (ch *CrossHub) pollLoop() {
 			log.Printf("[CrossHub] BRPop error: %v", err)
 			continue
 		}
-
 		if len(result) < 2 {
 			continue
 		}
@@ -295,16 +290,22 @@ func (ch *CrossHub) pollLoop() {
 }
 
 func (ch *CrossHub) handleMessage(payload string) {
+	// Panic recovery per message to avoid killing the poll loop
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[CrossHub] handleMessage panicked: %v, payload=%.120s", r, payload)
+		}
+	}()
+
 	var xMsg crossInstanceMessage
 	if err := json.Unmarshal([]byte(payload), &xMsg); err != nil {
 		log.Printf("[CrossHub] Failed to unmarshal message: %v", err)
 		return
 	}
 
-	// Dedup check: if this message ID was already processed, skip
 	if xMsg.MessageID != "" {
 		if !ch.markDelivered(xMsg.MessageID) {
-			return // already processed
+			return
 		}
 	}
 
@@ -326,6 +327,12 @@ func (ch *CrossHub) handleMessage(payload string) {
 
 func (ch *CrossHub) heartbeatLoop() {
 	defer ch.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[CrossHub] heartbeatLoop panicked: %v", r)
+		}
+	}()
+
 	ticker := time.NewTicker(hbInterval())
 	defer ticker.Stop()
 
@@ -355,6 +362,12 @@ func (ch *CrossHub) sendHeartbeat() {
 
 func (ch *CrossHub) staleCleanupLoop() {
 	defer ch.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[CrossHub] staleCleanupLoop panicked: %v", r)
+		}
+	}()
+
 	ticker := time.NewTicker(staleClean())
 	defer ticker.Stop()
 
@@ -368,37 +381,30 @@ func (ch *CrossHub) staleCleanupLoop() {
 	}
 }
 
-// cleanStaleInstances removes stale instance entries from all user sets.
 func (ch *CrossHub) cleanStaleInstances() {
 	if ch.rdb == nil {
 		return
 	}
 
-	// Find all user set keys
 	iter := ch.rdb.Scan(ch.ctx, 0, "ws:user:*", 1000).Iterator()
 	cleaned := 0
 
 	for iter.Next(ch.ctx) {
 		key := iter.Val()
-
-		// Get all instances in this user set
 		members, err := ch.rdb.SMembers(ch.ctx, key).Result()
 		if err != nil {
 			continue
 		}
-
 		for _, instID := range members {
 			if instID == ch.instanceID {
-				continue // skip our own instance
+				continue
 			}
-			// Check if the instance is still alive
 			instKey := "ws:instance:" + instID
 			exists, err := ch.rdb.Exists(ch.ctx, instKey).Result()
 			if err != nil {
 				continue
 			}
 			if exists == 0 {
-				// Instance is dead, remove from user set
 				ch.rdb.SRem(ch.ctx, key, instID)
 				cleaned++
 			}
@@ -410,9 +416,57 @@ func (ch *CrossHub) cleanStaleInstances() {
 	}
 }
 
+// ─── Message List Cleanup ─────────────────────────────────────────────
+
+// msgListCleanupLoop periodically trims stale messages from this instance's list.
+// Prevents memory growth in Redis when the poll loop is slow.
+func (ch *CrossHub) msgListCleanupLoop() {
+	defer ch.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[CrossHub] msgListCleanupLoop panicked: %v", r)
+		}
+	}()
+
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ch.ctx.Done():
+			return
+		case <-ticker.C:
+			key := ch.msgListKey()
+			// Trim to last 1000 messages to prevent unbounded growth
+			if err := ch.rdb.LTrim(ch.ctx, key, -1000, -1).Err(); err != nil {
+				log.Printf("[CrossHub] LTrim error: %v", err)
+			}
+			// Set TTL so stale lists auto-expire
+			ch.rdb.Expire(ch.ctx, key, msgListTTL)
+		}
+	}
+}
+
 // ─── Public API ───────────────────────────────────────────────────────
 
-// SendToUser delivers a message to a business user (local + cross-instance).
+func (ch *CrossHub) SendToUsers(userIDs []string, msg Message) {
+	ch.local.SendToUsers(userIDs, msg)
+	if ch.rdb != nil {
+		for _, uid := range userIDs {
+			ch.publishToRemote(uid, enums.LoginTypeBusiness, msg, "")
+		}
+	}
+}
+
+func (ch *CrossHub) SendToConsumers(userIDs []string, msg Message) {
+	ch.local.SendToConsumers(userIDs, msg)
+	if ch.rdb != nil {
+		for _, uid := range userIDs {
+			ch.publishToRemote(uid, enums.LoginTypeConsumer, msg, "")
+		}
+	}
+}
+
 func (ch *CrossHub) SendToUser(userID string, msg Message, messageID ...string) {
 	ch.local.SendToUser(userID, msg)
 	if ch.rdb != nil {
@@ -424,7 +478,6 @@ func (ch *CrossHub) SendToUser(userID string, msg Message, messageID ...string) 
 	}
 }
 
-// SendToConsumer delivers a message to a consumer user (local + cross-instance).
 func (ch *CrossHub) SendToConsumer(userID string, msg Message, messageID ...string) {
 	ch.local.SendToConsumer(userID, msg)
 	if ch.rdb != nil {
@@ -472,17 +525,14 @@ func (ch *CrossHub) publishToRemote(userID string, userType enums.LoginTypeEnum,
 	}
 }
 
-// HandleWebSocket upgrades an HTTP connection to WebSocket with cross-instance tracking.
 func (ch *CrossHub) HandleWebSocket(w http.ResponseWriter, r *http.Request, userID string, userType enums.LoginTypeEnum) {
 	ch.local.HandleWebSocket(w, r, userID, userType)
 }
 
-// OnlineCount returns locally connected client count.
 func (ch *CrossHub) OnlineCount() int {
 	return ch.local.OnlineCount()
 }
 
-// Close shuts down the CrossHub gracefully.
 func (ch *CrossHub) Close() {
 	if ch == nil {
 		return
@@ -491,6 +541,7 @@ func (ch *CrossHub) Close() {
 		ch.cancel()
 		if ch.rdb != nil {
 			ch.rdb.Del(ch.ctx, ch.instanceKey())
+			ch.rdb.Del(ch.ctx, ch.msgListKey())
 		}
 		ch.wg.Wait()
 	})

@@ -241,38 +241,28 @@ func fetchGroupConversations(currentUserID, userType string) []ConversationVO {
 		countMap[c.GroupID] = c.Count
 	}
 
-	// Single batch: get last message per group using GORM subquery (no raw SQL)
 	type lm struct{ GroupID, Content, CreatedAt string }
 	var lastMsgs []lm
-	lastSubQ := db.DB.Table("group_message").
-		Select("group_id, MAX(created_at) as max_ct").
-		Where("group_id IN ?", groupIDs).
-		Group("group_id")
-	db.DB.Table("group_message g2").
-		Select("g2.group_id, g2.content, g2.created_at").
-		Joins("INNER JOIN (?) g1 ON g1.group_id = g2.group_id AND g1.max_ct = g2.created_at", lastSubQ).
-		Scan(&lastMsgs)
+	db.DB.Raw(
+		`SELECT g2.group_id, g2.content, g2.created_at FROM group_message g2
+		 INNER JOIN (SELECT group_id, MAX(created_at) max_ct FROM group_message WHERE group_id IN ? GROUP BY group_id) g1
+		 ON g2.group_id = g1.group_id AND g2.created_at = g1.max_ct`, groupIDs).Scan(&lastMsgs)
 	lastMap := make(map[string]lm, len(lastMsgs))
 	for _, l := range lastMsgs {
 		lastMap[l.GroupID] = l
 	}
 
-	// Single batch: get unread counts per group using GORM LEFT JOIN (no raw SQL)
 	var unreads []struct {
 		GroupID string
 		Count   int64
 	}
-	readSubQ := db.DB.Table("group_message_read").
-		Select("group_id, MAX(read_at) as max_read").
-		Where("user_id = ? AND user_type = ?", currentUserID, userType).
-		Group("group_id")
-	db.DB.Table("group_message gm").
-		Select("gm.group_id, COUNT(*) as count").
-		Joins("LEFT JOIN (?) gr ON gr.group_id = gm.group_id", readSubQ).
-		Where("gm.group_id IN ?", groupIDs).
-		Where("gm.created_at > COALESCE(gr.max_read, ?)", "1970-01-01 00:00:00").
-		Group("gm.group_id").
-		Scan(&unreads)
+	db.DB.Raw(
+		`SELECT gm.group_id, COUNT(*) as count FROM group_message gm
+		 WHERE gm.group_id IN ? AND gm.created_at > COALESCE(
+			 (SELECT MAX(gmr.read_at) FROM group_message_read gmr
+			  WHERE gmr.group_id = gm.group_id AND gmr.user_id = ? AND gmr.user_type = ?), '1970-01-01 00:00:00'
+		 )
+		 GROUP BY gm.group_id`, groupIDs, currentUserID, userType).Scan(&unreads)
 	unreadMap := make(map[string]int64, len(unreads))
 	for _, u := range unreads {
 		unreadMap[u.GroupID] = u.Count
@@ -314,121 +304,43 @@ func fetchGroupConversations(currentUserID, userType string) []ConversationVO {
 // 3. Conditional aggregation (SUM with CASE)
 // These are complex GROUP BY operations that cannot be expressed via GORM query builder.
 func fetchConversationRows(table, userID, receiverTypeFilter string) []*convItem {
-	// Get distinct conversation IDs where user is receiver
-	var convIDs []string
-	q := db.DB.Table(table).
-		Where("receiver_id = ?", userID).
-		Distinct("conversation_id")
+	q := "SELECT conversation_id, " +
+		"ANY_VALUE(CASE WHEN receiver_id = ? THEN sender_id ELSE receiver_id END) as other_id, " +
+		"ANY_VALUE(CASE WHEN receiver_id = ? THEN sender_type ELSE receiver_type END) as other_type, " +
+		"MAX(created_at) as last_time, " +
+		"ANY_VALUE(SUBSTRING_INDEX(GROUP_CONCAT(content ORDER BY created_at DESC), ',', 1)) as last_content, " +
+		"SUM(CASE WHEN status = 'unread' AND receiver_id = ? THEN 1 ELSE 0 END) as unread_count " +
+		"FROM " + table + " WHERE receiver_id = ? "
+	args := []interface{}{userID, userID, userID, userID}
 	if receiverTypeFilter != "" {
-		q = q.Where("receiver_type = ?", receiverTypeFilter)
+		q += "AND receiver_type = ? "
+		args = append(args, receiverTypeFilter)
 	}
-	q.Pluck("conversation_id", &convIDs)
-	if len(convIDs) == 0 {
-		return nil
-	}
-
-	// Get last message time per conversation via GORM subquery
-	type lastRow struct {
-		ConversationID string
-		SenderID       *string
-		SenderType     string
-		ReceiverID     string
-		ReceiverType   string
-		Content        string
-		CreatedAt      time.Time
-	}
-	subQ := db.DB.Table(table).
-		Select("conversation_id, MAX(created_at) as last_time").
-		Where("conversation_id IN ?", convIDs).
-		Group("conversation_id")
-	var lastRows []lastRow
-	db.DB.Table(table+" t").
-		Select("t.conversation_id, t.sender_id, t.sender_type, t.receiver_id, t.receiver_type, t.content, t.created_at").
-		Joins("INNER JOIN (?) sub ON sub.conversation_id = t.conversation_id AND sub.last_time = t.created_at", subQ).
-		Scan(&lastRows)
-
-	// Get unread counts per conversation
-	type unreadRow struct {
-		ConversationID string
-		Count          int64
-	}
-	var unreadRows []unreadRow
-	db.DB.Table(table).
-		Select("conversation_id, SUM(CASE WHEN status = ? AND receiver_id = ? THEN 1 ELSE 0 END) as count", "unread", userID).
-		Where("conversation_id IN ?", convIDs).
-		Group("conversation_id").
-		Scan(&unreadRows)
-	unreadMap := make(map[string]int64, len(unreadRows))
-	for _, u := range unreadRows {
-		unreadMap[u.ConversationID] = u.Count
-	}
-
-	// Build results
-	results := make([]*convItem, 0, len(lastRows))
-	for _, r := range lastRows {
-		otherID := r.ReceiverID
-		otherType := r.ReceiverType
-		if r.ReceiverID == userID {
-			if r.SenderID != nil {
-				otherID = *r.SenderID
-			}
-			otherType = r.SenderType
-		}
-		results = append(results, &convItem{
-			ConversationID: r.ConversationID,
-			OtherID:        otherID,
-			OtherType:      otherType,
-			LastTime:       r.CreatedAt,
-			LastContent:    r.Content,
-			UnreadCount:    unreadMap[r.ConversationID],
-		})
-	}
+	q += "GROUP BY conversation_id"
+	var results []*convItem
+	db.DB.Raw(q, args...).Scan(&results)
 	return results
 }
 
+
+// fetchConversationRowsSender uses raw SQL (same reason as fetchConversationRows).
 func fetchConversationRowsSender(table, userID, receiverType string) []*convItem {
-	// Get distinct conversation IDs where user is sender
-	var convIDs []string
-	db.DB.Table(table).
-		Where("sender_id = ? AND receiver_type = ?", userID, receiverType).
-		Distinct("conversation_id").
-		Pluck("conversation_id", &convIDs)
-	if len(convIDs) == 0 {
-		return nil
-	}
-
-	// Get last message and receiver info per conversation via GORM subquery
-	type lastRow struct {
-		ConversationID string
-		ReceiverID     string
-		ReceiverType   string
-		Content        string
-		CreatedAt      time.Time
-	}
-	subQ := db.DB.Table(table).
-		Select("conversation_id, MAX(created_at) as last_time").
-		Where("conversation_id IN ?", convIDs).
-		Group("conversation_id")
-	var lastRows []lastRow
-	db.DB.Table(table+" t").
-		Select("t.conversation_id, t.receiver_id, t.receiver_type, t.content, t.created_at").
-		Joins("INNER JOIN (?) sub ON sub.conversation_id = t.conversation_id AND sub.last_time = t.created_at", subQ).
-		Scan(&lastRows)
-
-	results := make([]*convItem, 0, len(lastRows))
-	for _, r := range lastRows {
-		results = append(results, &convItem{
-			ConversationID: r.ConversationID,
-			OtherID:        r.ReceiverID,
-			OtherType:      r.ReceiverType,
-			LastTime:       r.CreatedAt,
-			LastContent:    r.Content,
-			UnreadCount:    0,
-		})
-	}
+	q := "SELECT conversation_id, " +
+		"ANY_VALUE(receiver_id) as other_id, " +
+		"ANY_VALUE(receiver_type) as other_type, " +
+		"MAX(created_at) as last_time, " +
+		"ANY_VALUE(SUBSTRING_INDEX(GROUP_CONCAT(content ORDER BY created_at DESC), ',', 1)) as last_content, " +
+		"0 as unread_count " +
+		"FROM " + table + " WHERE sender_id = ? AND receiver_type = ? GROUP BY conversation_id"
+	var results []*convItem
+	db.DB.Raw(q, userID, receiverType).Scan(&results)
 	return results
 }
 
+// BusinessConversationMessages fetches single-chat messages for a BUSINESS user.
+// Messages from BUSINESS→CONSUMER are stored in client_message table.
+// Messages from CONSUMER→BUSINESS are stored in sys_message table.
+// Both must be queried to get the full conversation.
 func BusinessConversationMessages(ctx context.Context, currentUserID string, conversationID string, cursor string, size int) ([]ConversationMessageVO, bool) {
 	if size < 1 {
 		size = 20

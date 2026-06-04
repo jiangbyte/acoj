@@ -17,7 +17,7 @@ import (
 )
 
 func ModulePage(c *gin.Context, param *ModulePageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
 	if param.Size > 100 { param.Size = 100 }
@@ -32,14 +32,14 @@ func ModulePage(c *gin.Context, param *ModulePageParam) gin.H {
 
 func ModuleDetail(c *gin.Context, id string) *SysModule {
 	if id == "" { return nil }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysModule
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil { return nil }
 	return &entity
 }
 
 func ModuleCreate(c *gin.Context, vo *ModuleVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	e := SysModule{ID: utils.GenerateID(), Code: vo.Code, Name: vo.Name, Category: vo.Category, CreatedAt: &now, UpdatedAt: &now}
 	if vo.Icon != nil { e.Icon = vo.Icon }
@@ -53,7 +53,7 @@ func ModuleCreate(c *gin.Context, vo *ModuleVO, userID string) {
 }
 
 func ModuleModify(c *gin.Context, vo *ModuleVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysModule
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil { panic(exception.NewBusinessError("模块不存在", 400)) }
 
@@ -70,11 +70,11 @@ func ModuleModify(c *gin.Context, vo *ModuleVO, userID string) {
 
 func ModuleRemove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
-	if err := db.DB.WithContext(context.Background()).Where("id IN ?", ids).Delete(&SysModule{}).Error; err != nil { panic(exception.NewBusinessError("删除模块失败: "+err.Error(), 500)) }
+	if err := db.DB.Where("id IN ?", ids).Delete(&SysModule{}).Error; err != nil { panic(exception.NewBusinessError("删除模块失败: "+err.Error(), 500)) }
 }
 
 func ResourcePage(c *gin.Context, param *ResourcePageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
 	if param.Size > 100 { param.Size = 100 }
@@ -88,7 +88,7 @@ func ResourcePage(c *gin.Context, param *ResourcePageParam) gin.H {
 }
 
 func ResourceTree(c *gin.Context, category string) []map[string]interface{} {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	q := db.DB.WithContext(ctx).Model(&SysResource{}).Order("sort_code ASC")
 	if category != "" { q = q.Where("category = ?", category) }
 	var all []SysResource
@@ -135,7 +135,7 @@ func resToNode(r *SysResource) map[string]interface{} {
 }
 
 func ResourceCreate(c *gin.Context, vo *ResourceVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	e := SysResource{
 		ID: utils.GenerateID(), Code: vo.Code, Name: vo.Name, Category: vo.Category,
@@ -160,7 +160,7 @@ func ResourceCreate(c *gin.Context, vo *ResourceVO, userID string) {
 }
 
 func ResourceModify(c *gin.Context, vo *ResourceVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var old SysResource
 	if err := db.DB.WithContext(ctx).First(&old, "id = ?", vo.ID).Error; err != nil { panic(exception.NewBusinessError("资源不存在", 400)) }
 
@@ -187,20 +187,21 @@ func ResourceModify(c *gin.Context, vo *ResourceVO, userID string) {
 
 	if err := db.DB.WithContext(ctx).Model(&SysResource{}).Where("id = ?", vo.ID).Updates(up).Error; err != nil { panic(exception.NewBusinessError("编辑资源失败: "+err.Error(), 500)) }
 
-	if vo.Extra != nil || oldExtra != nil { syncPerm(vo.ID, oldExtra, vo.Extra) }
+	if vo.Extra != nil || oldExtra != nil { syncPerm(c.Request.Context(), vo.ID, oldExtra, vo.Extra) }
 }
 
 func ResourceRemove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
-	ctx := context.Background()
-	all := collectDescendant(ids)
+	ctx := c.Request.Context()
+	all := collectDescendant(c.Request.Context(), ids)
 
 	tx := db.DB.WithContext(ctx).Begin()
-	if err := tx.Exec("DELETE FROM rel_role_resource WHERE resource_id IN ?", all).Error; err != nil {
+	if err := tx.Table("rel_role_resource").Where("resource_id IN ?", all).Delete(nil).Error; err != nil {
 		tx.Rollback()
 		panic(exception.NewBusinessError("删除资源角色关联失败: "+err.Error(), 500))
 	}
-	if err := tx.Exec("DELETE FROM rel_role_permission WHERE role_id IN (SELECT role_id FROM rel_role_resource WHERE resource_id IN ?)", all).Error; err != nil {
+	subQuery := tx.Table("rel_role_resource").Select("role_id").Where("resource_id IN ?", all)
+	if err := tx.Table("rel_role_permission").Where("role_id IN (?)", subQuery).Delete(nil).Error; err != nil {
 		tx.Rollback()
 		panic(exception.NewBusinessError("删除资源权限关联失败: "+err.Error(), 500))
 	}
@@ -213,14 +214,14 @@ func ResourceRemove(c *gin.Context, ids []string) {
 
 func ResourceDetail(c *gin.Context, id string) *ResourceVO {
 	if id == "" { return nil }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var e SysResource
 	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil { return nil }
 	return toResourceVO(&e)
 }
 
 func ResourceMenu(c *gin.Context) []map[string]interface{} {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var all []SysResource
 	db.DB.WithContext(ctx).Model(&SysResource{}).Order("sort_code ASC").Find(&all)
 	cm := make(map[string][]SysResource)
@@ -267,9 +268,9 @@ func menuNode(r *SysResource) map[string]interface{} {
 	return n
 }
 
-func isInPath(category, id, entityID string) bool {
+func isInPath(ctx context.Context, category, id, entityID string) bool {
 	if id == "" { return false }
-	ctx := context.Background()
+	
 	current := entityID
 	for current != "" && current != "0" {
 		if current == id { return true }
@@ -281,8 +282,8 @@ func isInPath(category, id, entityID string) bool {
 	return false
 }
 
-func collectDescendant(ids []string) []string {
-	ctx := context.Background()
+func collectDescendant(ctx context.Context, ids []string) []string {
+	
 	m := make(map[string]bool)
 	for _, id := range ids { m[id] = true }
 
@@ -306,8 +307,8 @@ func collectDescendant(ids []string) []string {
 }
 
 
-func syncPerm(resourceID string, oldExtra, newExtra *string) {
-	ctx := context.Background()
+func syncPerm(ctx context.Context, resourceID string, oldExtra, newExtra *string) {
+	
 	oldCode := extractPermCode(oldExtra)
 	newCode := extractPermCode(newExtra)
 	if oldCode == newCode { return }
@@ -326,7 +327,7 @@ func syncPerm(resourceID string, oldExtra, newExtra *string) {
 	for i, rr := range roleResources { roleIDs[i] = rr.RoleID }
 
 	if oldCode != "" {
-		if err := tx.Exec("DELETE FROM rel_role_permission WHERE role_id IN ? AND permission_code = ?", roleIDs, oldCode).Error; err != nil {
+		if err := tx.Table("rel_role_permission").Where("role_id IN ? AND permission_code = ?", roleIDs, oldCode).Delete(nil).Error; err != nil {
 			tx.Rollback()
 			log.Printf("[RESOURCE] Failed to delete old permissions: %v", err)
 			return

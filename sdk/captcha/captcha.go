@@ -119,7 +119,7 @@ func (s *CaptchaService) GetCaptcha() (*CaptchaResult, error) {
 
 	// Store code in Redis with 300s TTL
 	if s.redis != nil {
-		err := s.redis.Set(context.Background(), s.prefix+captchaID, codeStr, 300*time.Second).Err()
+		err := s.redis.Set(context.TODO(), s.prefix+captchaID, codeStr, 300*time.Second).Err()
 		if err != nil {
 			log.Printf("[CAPTCHA] failed to store captcha code in Redis: %v", err)
 		}
@@ -143,7 +143,7 @@ func (s *CaptchaService) CheckCaptcha(id, code string) error {
 		return nil
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	key := s.prefix + id
 	storedCode, err := s.redis.Get(ctx, key).Result()
 	if err == redis.Nil {

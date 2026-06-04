@@ -35,7 +35,7 @@ func scanKeys(ctx context.Context, redis *redis.Client, pattern string) ([]strin
 }
 
 func Analysis(c *gin.Context) *SessionAnalysisResult {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	bKeys, _ := scanKeys(ctx, db.Redis, constants.SESSION_PREFIX_BUSINESS+"*")
 	cKeys, _ := scanKeys(ctx, db.Redis, constants.SESSION_PREFIX_CONSUMER+"*")
 
@@ -129,7 +129,7 @@ func countDaily(ctx context.Context, redis *redis.Client, sessionKeys []string, 
 }
 
 func Page(c *gin.Context, param *SessionPageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	sessions, err := collectSessions(ctx, db.Redis, constants.SESSION_PREFIX_BUSINESS, constants.TOKEN_PREFIX_BUSINESS, param.Keyword)
 	if err != nil || sessions == nil {
 		sessions = []*SessionPageResult{}
@@ -272,7 +272,7 @@ func Exit(c *gin.Context, userID string) {
 
 func TokenList(c *gin.Context, userID string) []*SessionTokenResult {
 	sessionKey := constants.SESSION_PREFIX_BUSINESS + userID
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	tokens, err := db.Redis.SMembers(ctx, sessionKey).Result()
 	if err != nil || len(tokens) == 0 {
 		return []*SessionTokenResult{}
@@ -315,7 +315,7 @@ func ExitToken(c *gin.Context, userID, token string) {
 }
 
 func ChartData(c *gin.Context) *SessionChartData {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	bKeys, _ := scanKeys(ctx, db.Redis, constants.SESSION_PREFIX_BUSINESS+"*")
 	cKeys, _ := scanKeys(ctx, db.Redis, constants.SESSION_PREFIX_CONSUMER+"*")
 

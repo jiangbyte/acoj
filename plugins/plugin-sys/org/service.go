@@ -61,7 +61,7 @@ func getParentIDKey(parentID *string) string {
 }
 
 func Page(c *gin.Context, param *OrgPageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
 
@@ -90,7 +90,7 @@ func Page(c *gin.Context, param *OrgPageParam) gin.H {
 }
 
 func Tree(c *gin.Context, param *OrgTreeParam) []map[string]interface{} {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	query := db.DB.WithContext(ctx).Model(&SysOrg{}).Order("sort_code ASC")
 	if param.Category != "" {
 		query = query.Where("category = ?", param.Category)
@@ -125,7 +125,7 @@ func Tree(c *gin.Context, param *OrgTreeParam) []map[string]interface{} {
 }
 
 func Create(c *gin.Context, vo *OrgVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 
 	entity := SysOrg{
@@ -152,7 +152,7 @@ func Create(c *gin.Context, vo *OrgVO, userID string) {
 }
 
 func Modify(c *gin.Context, vo *OrgVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysOrg
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { panic(exception.NewBusinessError("数据不存在", 400)) }
@@ -178,9 +178,9 @@ func Modify(c *gin.Context, vo *OrgVO, userID string) {
 
 func Remove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
-	allIDs := collectDescendantOrgIDs(ids)
+	allIDs := collectDescendantOrgIDs(c.Request.Context(), ids)
 
 	var userCount int64
 	db.DB.WithContext(ctx).Model(&userModel.SysUser{}).Where("org_id IN ?", allIDs).Count(&userCount)
@@ -207,7 +207,7 @@ func Remove(c *gin.Context, ids []string) {
 
 func Detail(c *gin.Context, id string) *OrgVO {
 	if id == "" { return nil }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysOrg
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { return nil }
@@ -217,7 +217,7 @@ func Detail(c *gin.Context, id string) *OrgVO {
 }
 
 func Options(c *gin.Context) []*OrgVO {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var records []SysOrg
 	db.DB.WithContext(ctx).Order("sort_code ASC").Find(&records)
 	vos := make([]*OrgVO, len(records))
@@ -225,8 +225,8 @@ func Options(c *gin.Context) []*OrgVO {
 	return vos
 }
 
-func collectDescendantOrgIDs(ids []string) []string {
-	ctx := context.Background()
+func collectDescendantOrgIDs(ctx context.Context, ids []string) []string {
+	
 	allIDs := make(map[string]bool)
 	for _, id := range ids { allIDs[id] = true }
 

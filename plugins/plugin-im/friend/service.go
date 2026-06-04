@@ -1,0 +1,314 @@
+package friend
+
+import (
+	"context"
+	"time"
+
+	"hei-gin/sdk/db"
+	"hei-gin/sdk/exception"
+	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/utils"
+
+	sysUser "hei-gin/plugins/plugin-sys/user"
+	cliUser "hei-gin/plugins/plugin-client/user"
+)
+
+// ==================== Send Friend Request ====================
+
+func SendRequest(ctx context.Context, senderID, senderType string, p *SendRequestParam) {
+	if senderID == "" || p.ReceiverID == "" || p.ReceiverType == "" {
+		panic(exception.NewBusinessError("参数错误", 400))
+	}
+	if senderID == p.ReceiverID && senderType == p.ReceiverType {
+		panic(exception.NewBusinessError("不能添加自己为好友", 400))
+	}
+
+	// Check existing friendship
+	var count int64
+	db.DB.WithContext(ctx).Model(&Friendship{}).
+		Where("(user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?) OR "+
+			"(user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?)",
+			senderID, senderType, p.ReceiverID, p.ReceiverType,
+			p.ReceiverID, p.ReceiverType, senderID, senderType).
+		Count(&count)
+	if count > 0 {
+		panic(exception.NewBusinessError("已经是好友了", 400))
+	}
+
+	// Check pending request
+	var existing int64
+	db.DB.WithContext(ctx).Model(&FriendRequest{}).
+		Where("sender_id = ? AND sender_type = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
+			senderID, senderType, p.ReceiverID, p.ReceiverType, "pending").
+		Count(&existing)
+	if existing > 0 {
+		panic(exception.NewBusinessError("已发送过好友请求，请等待回复", 400))
+	}
+
+	now := time.Now()
+	if err := db.DB.WithContext(ctx).Create(&FriendRequest{
+		ID:           utils.GenerateID(),
+		SenderID:     senderID,
+		SenderType:   senderType,
+		ReceiverID:   p.ReceiverID,
+		ReceiverType: p.ReceiverType,
+		Remark:       p.Remark,
+		Status:       "pending",
+		CreatedAt:    &now,
+		UpdatedAt:    &now,
+	}).Error; err != nil {
+		panic(exception.NewBusinessError("发送好友请求失败", 500))
+	}
+}
+
+// ==================== Accept Friend Request ====================
+
+func AcceptRequest(ctx context.Context, userID, userType string, p *HandleRequestParam) {
+	if userID == "" || p.RequestID == "" {
+		panic(exception.NewBusinessError("参数错误", 400))
+	}
+
+	var req FriendRequest
+	if err := db.DB.WithContext(ctx).First(&req, "id = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
+		p.RequestID, userID, userType, "pending").Error; err != nil {
+		panic(exception.NewBusinessError("好友请求不存在或已处理", 400))
+	}
+
+	tx := db.DB.WithContext(ctx).Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	now := time.Now()
+	tx.Model(&req).Updates(map[string]interface{}{"status": "accepted", "updated_at": now})
+
+	// Create bidirectional friendship records
+	pair1 := Friendship{
+		ID: utils.GenerateID(), UserID: req.ReceiverID, UserType: req.ReceiverType,
+		FriendID: req.SenderID, FriendType: req.SenderType, CreatedAt: &now,
+	}
+	pair2 := Friendship{
+		ID: utils.GenerateID(), UserID: req.SenderID, UserType: req.SenderType,
+		FriendID: req.ReceiverID, FriendType: req.ReceiverType, CreatedAt: &now,
+	}
+	if err := tx.Create(&pair1).Error; err != nil {
+		panic(exception.NewBusinessError("添加好友失败", 500))
+	}
+	if err := tx.Create(&pair2).Error; err != nil {
+		panic(exception.NewBusinessError("添加好友失败", 500))
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		panic(exception.NewBusinessError("添加好友失败", 500))
+	}
+}
+
+// ==================== Reject Friend Request ====================
+
+func RejectRequest(ctx context.Context, userID, userType string, p *HandleRequestParam) {
+	if userID == "" || p.RequestID == "" {
+		panic(exception.NewBusinessError("参数错误", 400))
+	}
+
+	result := db.DB.WithContext(ctx).Model(&FriendRequest{}).
+		Where("id = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
+			p.RequestID, userID, userType, "pending").
+		Updates(map[string]interface{}{"status": "rejected", "updated_at": time.Now()})
+	if result.RowsAffected == 0 {
+		panic(exception.NewBusinessError("好友请求不存在或已处理", 400))
+	}
+}
+
+// ==================== Friend List ====================
+
+func FriendList(ctx context.Context, userID, userType string) []FriendVO {
+	var friendships []Friendship
+	db.DB.WithContext(ctx).Model(&Friendship{}).
+		Where("user_id = ? AND user_type = ?", userID, userType).
+		Find(&friendships)
+
+	if len(friendships) == 0 {
+		return nil
+	}
+
+	businessIDs, consumerIDs := []string{}, []string{}
+	for _, f := range friendships {
+		switch f.FriendType {
+		case "BUSINESS":
+			businessIDs = append(businessIDs, f.FriendID)
+		case "CONSUMER":
+			consumerIDs = append(consumerIDs, f.FriendID)
+		}
+	}
+
+	nicknameMap := make(map[string]string, len(friendships))
+	avatarMap := make(map[string]string, len(friendships))
+
+	if len(businessIDs) > 0 {
+		var users []sysUser.SysUser
+		db.DB.WithContext(ctx).Model(&sysUser.SysUser{}).Where("id IN ?", businessIDs).Find(&users)
+		for _, u := range users {
+			k := "BUSINESS:" + u.ID
+			if u.Nickname != nil {
+				nicknameMap[k] = *u.Nickname
+			}
+			if u.Avatar != nil {
+				avatarMap[k] = *u.Avatar
+			}
+		}
+	}
+	if len(consumerIDs) > 0 {
+		var users []cliUser.ClientUser
+		db.DB.WithContext(ctx).Model(&cliUser.ClientUser{}).Where("id IN ?", consumerIDs).Find(&users)
+		for _, u := range users {
+			k := "CONSUMER:" + u.ID
+			if u.Nickname != nil {
+				nicknameMap[k] = *u.Nickname
+			}
+			if u.Avatar != nil {
+				avatarMap[k] = *u.Avatar
+			}
+		}
+	}
+
+	result := make([]FriendVO, 0, len(friendships))
+	for _, f := range friendships {
+		k := f.FriendType + ":" + f.FriendID
+		result = append(result, FriendVO{
+			UserID:   f.FriendID,
+			UserType: f.FriendType,
+			Nickname: nicknameMap[k],
+			Avatar:   avatarMap[k],
+			Remark:   f.Remark,
+			AddedAt:  pojo.FormatDateTimePtr(f.CreatedAt),
+		})
+	}
+	return result
+}
+
+// ==================== Friend Requests (incoming + outgoing) ====================
+
+func PendingRequests(ctx context.Context, userID, userType string) ([]FriendRequestVO, []FriendRequestVO) {
+	var incoming []FriendRequest
+	db.DB.WithContext(ctx).Model(&FriendRequest{}).
+		Where("receiver_id = ? AND receiver_type = ? AND status = ?", userID, userType, "pending").
+		Order("created_at DESC").Find(&incoming)
+
+	var outgoing []FriendRequest
+	db.DB.WithContext(ctx).Model(&FriendRequest{}).
+		Where("sender_id = ? AND sender_type = ? AND status = ?", userID, userType, "pending").
+		Order("created_at DESC").Find(&outgoing)
+
+	return toVOList(incoming), toVOList(outgoing)
+}
+
+// ==================== Remove Friend ====================
+
+func RemoveFriend(ctx context.Context, userID, userType, friendID, friendType string) {
+	if userID == "" || friendID == "" || friendType == "" {
+		panic(exception.NewBusinessError("参数错误", 400))
+	}
+
+	tx := db.DB.WithContext(ctx).Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	r1 := tx.Where("user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?",
+		userID, userType, friendID, friendType).Delete(&Friendship{})
+	r2 := tx.Where("user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?",
+		friendID, friendType, userID, userType).Delete(&Friendship{})
+
+	if r1.RowsAffected == 0 && r2.RowsAffected == 0 {
+		panic(exception.NewBusinessError("好友关系不存在", 400))
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		panic(exception.NewBusinessError("删除好友失败", 500))
+	}
+}
+
+// ==================== Search Users ====================
+
+type SearchResult struct {
+	UserID   string `json:"user_id"`
+	UserType string `json:"user_type"`
+	Nickname string `json:"nickname"`
+	Avatar   string `json:"avatar"`
+}
+
+func SearchUsers(ctx context.Context, keyword string, limit int) []SearchResult {
+	if keyword == "" || limit < 1 {
+		return nil
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	like := "%" + keyword + "%"
+	results := make([]SearchResult, 0, limit)
+
+	var sysUsers []sysUser.SysUser
+	db.DB.WithContext(ctx).Model(&sysUser.SysUser{}).
+		Where("username LIKE ? OR nickname LIKE ?", like, like).
+		Limit(limit).Find(&sysUsers)
+	for _, u := range sysUsers {
+		nickname := ""
+		if u.Nickname != nil {
+			nickname = *u.Nickname
+		}
+		avatar := ""
+		if u.Avatar != nil {
+			avatar = *u.Avatar
+		}
+		results = append(results, SearchResult{
+			UserID: u.ID, UserType: "BUSINESS",
+			Nickname: nickname, Avatar: avatar,
+		})
+	}
+
+	if len(results) < limit {
+		remaining := limit - len(results)
+		var cliUsers []cliUser.ClientUser
+		db.DB.WithContext(ctx).Model(&cliUser.ClientUser{}).
+			Where("username LIKE ? OR nickname LIKE ?", like, like).
+			Limit(remaining).Find(&cliUsers)
+		for _, u := range cliUsers {
+			nickname := ""
+			if u.Nickname != nil {
+				nickname = *u.Nickname
+			}
+			avatar := ""
+			if u.Avatar != nil {
+				avatar = *u.Avatar
+			}
+			results = append(results, SearchResult{
+				UserID: u.ID, UserType: "CONSUMER",
+				Nickname: nickname, Avatar: avatar,
+			})
+		}
+	}
+
+	return results
+}
+
+// ==================== Helpers ====================
+
+func toVOList(requests []FriendRequest) []FriendRequestVO {
+	r := make([]FriendRequestVO, len(requests))
+	for i, req := range requests {
+		r[i] = FriendRequestVO{
+			ID: req.ID, SenderID: req.SenderID, SenderType: req.SenderType,
+			ReceiverID: req.ReceiverID, ReceiverType: req.ReceiverType,
+			Remark: req.Remark, Status: req.Status,
+			CreatedAt: pojo.FormatDateTimePtr(req.CreatedAt),
+		}
+	}
+	return r
+}

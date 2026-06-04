@@ -21,11 +21,11 @@ func HomeGet(c *gin.Context) *HomeVO {
 		Stats:              HomeStats{},
 	}
 	if userID != "" {
-		result.QuickActions = findQuickActionsByUserID(userID)
-		result.AvailableResources = getAvailableResources(userID)
+		result.QuickActions = findQuickActionsByUserID(c.Request.Context(), userID)
+		result.AvailableResources = getAvailableResources(c.Request.Context(), userID)
 	}
-	result.Notices = getNotices()
-	result.Stats.TotalUsers = getUserCount()
+	result.Notices = getNotices(c.Request.Context())
+	result.Stats.TotalUsers = getUserCount(c.Request.Context())
 	return result
 }
 func HomeAddQuickAction(c *gin.Context, param *AddQuickActionParam) {
@@ -33,7 +33,7 @@ func HomeAddQuickAction(c *gin.Context, param *AddQuickActionParam) {
 	if userID == "" {
 		return
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var count int64
 	db.DB.WithContext(ctx).Model(&SysQuickAction{}).Where("user_id = ? AND resource_id = ?", userID, param.ResourceID).Count(&count)
 	if count > 0 {
@@ -55,7 +55,7 @@ func HomeRemoveQuickAction(c *gin.Context, param *RemoveQuickActionParam) {
 	if userID == "" {
 		return
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	db.DB.WithContext(ctx).Delete(&SysQuickAction{}, "id = ?", param.ID)
 }
 func HomeSortQuickActions(c *gin.Context, param *SortQuickActionParam) {
@@ -63,7 +63,7 @@ func HomeSortQuickActions(c *gin.Context, param *SortQuickActionParam) {
 	if userID == "" {
 		return
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	tx := db.DB.WithContext(ctx).Begin()
 	for idx, id := range param.IDs {
 		if err := tx.Model(&SysQuickAction{}).Where("id = ?", id).Updates(map[string]interface{}{
@@ -77,8 +77,8 @@ func HomeSortQuickActions(c *gin.Context, param *SortQuickActionParam) {
 		return
 	}
 }
-func findQuickActionsByUserID(userID string) []QuickActionVO {
-	ctx := context.Background()
+func findQuickActionsByUserID(ctx context.Context, userID string) []QuickActionVO {
+	
 	var actions []SysQuickAction
 	db.DB.WithContext(ctx).Where("user_id = ?", userID).Order("sort_code ASC, created_at ASC").Find(&actions)
 	if len(actions) == 0 {
@@ -114,8 +114,8 @@ func findQuickActionsByUserID(userID string) []QuickActionVO {
 	}
 	return vos
 }
-func getAvailableResources(userID string) []QuickActionVO {
-	ctx := context.Background()
+func getAvailableResources(ctx context.Context, userID string) []QuickActionVO {
+	
 	var actionIDs []string
 	db.DB.WithContext(ctx).Model(&SysQuickAction{}).Where("user_id = ?", userID).Select("resource_id").Find(&actionIDs)
 	var resources []resModel.SysResource
@@ -141,8 +141,8 @@ func getAvailableResources(userID string) []QuickActionVO {
 	}
 	return vos
 }
-func getNotices() []HomeNotice {
-	ctx := context.Background()
+func getNotices(ctx context.Context) []HomeNotice {
+	
 	type noticeRow struct {
 		ID        string
 		Title     string
@@ -167,8 +167,8 @@ func getNotices() []HomeNotice {
 	}
 	return results
 }
-func getUserCount() int {
-	ctx := context.Background()
+func getUserCount(ctx context.Context) int {
+	
 	// This references the user model
 	type _user struct{}
 	_ = _user{}

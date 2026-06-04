@@ -97,6 +97,7 @@ func (t *baseAuthTool) GetTokenValue(c *gin.Context) string {
 
 // Login authenticates a user by user ID, stores token data in Redis, and returns the token.
 func (t *baseAuthTool) Login(c *gin.Context, id string, extra map[string]any) (string, error) {
+	ctx := c.Request.Context()
 	t.ensureConfig()
 
 	now := time.Now()
@@ -118,7 +119,7 @@ func (t *baseAuthTool) Login(c *gin.Context, id string, extra map[string]any) (s
 	}
 
 	redisClient := t.getRedis()
-	ctx := context.Background()
+	
 
 	err = redisClient.SetEx(ctx, t.getTokenKey(signedToken), tokenDataJSON, time.Duration(t.expire)*time.Second).Err()
 	if err != nil {
@@ -149,6 +150,7 @@ func (t *baseAuthTool) Login(c *gin.Context, id string, extra map[string]any) (s
 
 // Logout invalidates the current session. If loginID is provided, it kicks out all sessions for that user.
 func (t *baseAuthTool) Logout(c *gin.Context, loginID ...string) {
+	ctx := c.Request.Context()
 	t.ensureConfig()
 
 	if len(loginID) > 0 {
@@ -166,14 +168,12 @@ func (t *baseAuthTool) Logout(c *gin.Context, loginID ...string) {
 		userID, _ := data["user_id"].(string)
 		if userID != "" {
 			redisClient := t.getRedis()
-			ctx := context.Background()
 			sessionKey := t.getSessionKey(userID)
 			_ = redisClient.SRem(ctx, sessionKey, token).Err()
 		}
 	}
 
 	redisClient := t.getRedis()
-	ctx := context.Background()
 	tokenKey := t.getTokenKey(token)
 	_ = redisClient.Del(ctx, tokenKey).Err()
 }

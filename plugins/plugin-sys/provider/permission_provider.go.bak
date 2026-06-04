@@ -59,8 +59,8 @@ func (p *PermissionProvider) isSuperAdmin(ctx context.Context, roleIDs []string)
 	return count > 0
 }
 
-func (p *PermissionProvider) GetPermissionList(ctx context.Context, loginID string, loginType string) ([]string, error) {
-	
+func (p *PermissionProvider) GetPermissionList(loginID string, loginType string) ([]string, error) {
+	ctx := context.TODO()
 
 	roleIDs, err := p.getRoleIDs(ctx, loginID)
 	if err != nil {
@@ -103,8 +103,8 @@ func (p *PermissionProvider) GetPermissionList(ctx context.Context, loginID stri
 	return result, nil
 }
 
-func (p *PermissionProvider) GetRoleList(ctx context.Context, loginID, loginType string) ([]string, error) {
-	
+func (p *PermissionProvider) GetRoleList(loginID, loginType string) ([]string, error) {
+	ctx := context.TODO()
 
 	roleIDs, err := p.getRoleIDs(ctx, loginID)
 	if err != nil || len(roleIDs) == 0 {
@@ -124,8 +124,8 @@ func (p *PermissionProvider) GetRoleList(ctx context.Context, loginID, loginType
 	return roleCodes, nil
 }
 
-func (p *PermissionProvider) GetPermissionScopeMap(ctx context.Context, loginID, loginType string) (map[string]api.ScopeInfo, error) {
-	
+func (p *PermissionProvider) GetPermissionScopeMap(loginID, loginType string) (map[string]api.ScopeInfo, error) {
+	ctx := context.TODO()
 
 	if loginType != string(enums.LoginTypeBusiness) && loginType != string(enums.LoginTypeConsumer) {
 		return map[string]api.ScopeInfo{}, nil

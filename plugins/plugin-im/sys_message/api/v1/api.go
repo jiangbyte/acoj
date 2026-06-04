@@ -3,6 +3,7 @@ package v1
 import (
 	"strconv"
 
+	"hei-gin/sdk/middleware"
 	"hei-gin/sdk/auth"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/pojo"
@@ -17,7 +18,7 @@ func RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/sys/message/page", pageHandler)
 	r.GET("/api/v1/sys/message/detail", detailHandler)
 	r.GET("/api/v1/sys/message/unread-count", unreadCountHandler)
-	r.POST("/api/v1/sys/message/send", sendHandler)
+	r.POST("/api/v1/sys/message/send", middleware.RateLimiter("sys_send", 5, 20), sendHandler)
 	r.POST("/api/v1/sys/message/mark-read", markReadHandler)
 	r.POST("/api/v1/sys/message/mark-all-read", markAllReadHandler)
 	r.POST("/api/v1/sys/message/remove", removeHandler)
@@ -94,8 +95,15 @@ func removeHandler(c *gin.Context) {
 
 func conversationsHandler(c *gin.Context) {
 	userID := auth.GetLoginID(c)
-	list := sys_message.Conversations(userID, string(enums.LoginTypeBusiness))
-	c.JSON(200, result.Success(c, list))
+	cursor := c.Query("cursor")
+	size := 20
+	if s := c.Query("size"); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 {
+			size = n
+		}
+	}
+	list, hasMore := sys_message.Conversations(userID, string(enums.LoginTypeBusiness), cursor, size)
+	c.JSON(200, result.Success(c, gin.H{"records": list, "has_more": hasMore}))
 }
 
 func conversationMessagesHandler(c *gin.Context) {
@@ -113,7 +121,7 @@ func conversationMessagesHandler(c *gin.Context) {
 	var hasMore bool
 	if len(cid) > 6 && cid[:6] == "group:" {
 		gid := cid[6:]
-		msgs, more := group.Messages(nil, gid, cursor, size)
+		msgs, more := group.Messages(c.Request.Context(), gid, cursor, size)
 		messages = make([]sys_message.ConversationMessageVO, len(msgs))
 		for i, m := range msgs {
 			senderID := m.SenderID
@@ -125,7 +133,7 @@ func conversationMessagesHandler(c *gin.Context) {
 		}
 		hasMore = more
 	} else {
-		messages, hasMore = sys_message.BusinessConversationMessages(userID, cid, cursor, size)
+		messages, hasMore = sys_message.BusinessConversationMessages(c.Request.Context(), userID, cid, cursor, size)
 	}
 	c.JSON(200, result.Success(c, gin.H{
 		"records":  messages,
@@ -143,7 +151,7 @@ func conversationReadHandler(c *gin.Context) {
 	}
 	userID := auth.GetLoginID(c)
 	if len(param.ConversationID) > 6 && param.ConversationID[:6] == "group:" {
-		group.MarkRead(nil, param.ConversationID[6:], userID, string(enums.LoginTypeBusiness), "")
+		group.MarkConversationRead(c.Request.Context(), param.ConversationID[6:], userID, string(enums.LoginTypeBusiness))
 	} else {
 		sys_message.MarkConversationRead(userID, param.ConversationID)
 	}

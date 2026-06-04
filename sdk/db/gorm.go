@@ -1,4 +1,4 @@
-﻿package db
+package db
 
 import (
 	"fmt"
@@ -21,8 +21,9 @@ func InitDB() error {
 
 	var err error
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		SkipDefaultTransaction: true,
-		PrepareStmt:            true,
+		// Auto-transaction enabled: GORM wraps single Create/Update/Delete in a transaction.
+		// Explicit transactions are used for multi-step operations.
+		PrepareStmt: true,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
@@ -33,15 +34,29 @@ func InitDB() error {
 		return fmt.Errorf("failed to get sql.DB: %w", err)
 	}
 
+	// Connection pool configuration
 	sqlDB.SetMaxOpenConns(cfg.PoolSize + cfg.MaxOverflow)
 	sqlDB.SetMaxIdleConns(cfg.PoolSize)
-	sqlDB.SetConnMaxLifetime(time.Duration(cfg.PoolRecycle) * time.Second)
-	sqlDB.SetConnMaxIdleTime(time.Duration(cfg.PoolRecycle) * time.Second)
+
+	// Set connection max lifetime with a hard upper bound to prevent connections
+	// living indefinitely. Use PoolRecycle if configured, otherwise default to 1 hour.
+	maxLifetime := time.Duration(cfg.PoolRecycle) * time.Second
+	if maxLifetime <= 0 || maxLifetime > 1*time.Hour {
+		maxLifetime = 1 * time.Hour
+	}
+	sqlDB.SetConnMaxLifetime(maxLifetime)
+
+	// Set idle timeout to half of max lifetime to cycle idle connections faster
+	sqlDB.SetConnMaxIdleTime(maxLifetime / 2)
 
 	if err := sqlDB.Ping(); err != nil {
+		sqlDB.Close()
 		return fmt.Errorf("database ping failed: %w", err)
 	}
-	log.Println("[Database] MySQL connection verified")
+
+	log.Printf("[Database] MySQL connection verified, max_conns=%d, max_lifetime=%v",
+		cfg.PoolSize+cfg.MaxOverflow, maxLifetime)
+
 	return nil
 }
 

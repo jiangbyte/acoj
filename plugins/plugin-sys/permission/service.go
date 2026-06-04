@@ -1,7 +1,6 @@
 package permission
 
 import (
-	"context"
 	"encoding/json"
 	"sort"
 
@@ -13,7 +12,7 @@ import (
 
 // ListModules returns sorted permission module names from Redis.
 func ListModules(c *gin.Context) []string {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	data, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
 	if err != nil {
 		return []string{}
@@ -32,7 +31,7 @@ func ListModules(c *gin.Context) []string {
 
 // ListByModule returns permission list for a specific module from Redis.
 func ListByModule(c *gin.Context, module string) []interface{} {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	data, err := db.Redis.Get(ctx, constants.PERMISSION_CACHE_KEY).Result()
 	if err != nil {
 		return []interface{}{}

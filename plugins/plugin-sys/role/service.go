@@ -1,7 +1,6 @@
 package role
 
 import (
-	"context"
 	"encoding/json"
 	"time"
 
@@ -20,7 +19,7 @@ import (
 
 // RolePage handles GET /api/v1/sys/role/page
 func RolePage(c *gin.Context, p *RolePageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if p.Current < 1 {
 		p.Current = 1
 	}
@@ -44,7 +43,7 @@ func RolePage(c *gin.Context, p *RolePageParam) gin.H {
 }
 
 func RoleCreate(c *gin.Context, vo *RoleVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	e := SysRole{ID: utils.GenerateID(), Code: vo.Code, Name: vo.Name, Category: vo.Category, SortCode: vo.SortCode, Status: string(enums.StatusEnabled), CreatedAt: &now, UpdatedAt: &now}
 	if vo.Description != nil { e.Description = vo.Description }
@@ -55,7 +54,7 @@ func RoleCreate(c *gin.Context, vo *RoleVO, userID string) {
 }
 
 func RoleModify(c *gin.Context, vo *RoleVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if vo.ID == "" { panic(exception.NewBusinessError("ID不能为空", 400)) }
 
 	var e SysRole
@@ -74,7 +73,7 @@ func RoleModify(c *gin.Context, vo *RoleVO, userID string) {
 
 func RoleRemove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
 	var cnt int64
 	db.DB.WithContext(ctx).Model(&userModel.RelUserRole{}).Where("role_id IN ?", ids).Count(&cnt)
@@ -104,7 +103,7 @@ func RoleRemove(c *gin.Context, ids []string) {
 
 func RoleDetail(c *gin.Context, id string) *RoleVO {
 	if id == "" { return nil }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var e SysRole
 	if err := db.DB.WithContext(ctx).First(&e, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { return nil }
@@ -115,7 +114,7 @@ func RoleDetail(c *gin.Context, id string) *RoleVO {
 
 func RoleAssignResource(c *gin.Context, roleID string, resourceIDs []string) {
 	if roleID == "" { panic(exception.NewBusinessError("角色ID不能为空", 400)) }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
 	uIDs := make([]string, 0)
 	seen := make(map[string]bool)
@@ -166,7 +165,7 @@ func RoleAssignResource(c *gin.Context, roleID string, resourceIDs []string) {
 
 func RoleAssignPermission(c *gin.Context, roleID string, permissions []userModel.PermissionItem) {
 	if roleID == "" { panic(exception.NewBusinessError("角色ID不能为空", 400)) }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
 	tx := db.DB.WithContext(ctx).Begin()
 	if err := tx.Where("role_id = ?", roleID).Delete(&userModel.RelRolePermission{}).Error; err != nil {
@@ -190,7 +189,7 @@ func RoleAssignPermission(c *gin.Context, roleID string, permissions []userModel
 }
 
 func RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var perms []userModel.RelRolePermission
 	db.DB.WithContext(ctx).Where("role_id = ?", roleID).Select("permission_code").Find(&perms)
 	codes := make([]string, len(perms))
@@ -199,7 +198,7 @@ func RoleOwnPermissionCodes(c *gin.Context, roleID string) []string {
 }
 
 func RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interface{} {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var perms []userModel.RelRolePermission
 	db.DB.WithContext(ctx).Where("role_id = ?", roleID).Find(&perms)
 	r := make([]map[string]interface{}, len(perms))
@@ -210,7 +209,7 @@ func RoleOwnPermissionDetails(c *gin.Context, roleID string) []map[string]interf
 }
 
 func RoleOwnResourceIDs(c *gin.Context, roleID string) []string {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var resources []userModel.RelRoleResource
 	db.DB.WithContext(ctx).Where("role_id = ?", roleID).Select("resource_id").Find(&resources)
 	ids := make([]string, len(resources))

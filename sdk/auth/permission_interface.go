@@ -20,13 +20,10 @@ func RegisterInterface(impl api.PermissionAPI) {
 	log.Println("[auth] PermissionInterface registered via delegate")
 }
 
-type ScopeRow struct {
-	PermissionCode string
-	Scope          string
-	CustomGroupIDs *string
-	CustomOrgIDs   *string
-}
+// ScopeRow is an alias for api.ScopeRow to avoid import conflicts.
+type ScopeRow = api.ScopeRow
 
+// ScopeInfo is an alias for api.ScopeInfo.
 type ScopeInfo = api.ScopeInfo
 
 func MergeScope(permScope map[string]map[string]interface{}, path string, rows []ScopeRow) {

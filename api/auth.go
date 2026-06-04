@@ -1,9 +1,13 @@
 package api
 
+import "context"
+
+// PermissionAPI defines the interface for permission queries.
+// Context is passed through for tracing and timeout propagation.
 type PermissionAPI interface {
-	GetPermissionList(loginID string, loginType string) ([]string, error)
-	GetRoleList(loginID string, loginType string) ([]string, error)
-	GetPermissionScopeMap(loginID string, loginType string) (map[string]ScopeInfo, error)
+	GetPermissionList(ctx context.Context, loginID string, loginType string) ([]string, error)
+	GetRoleList(ctx context.Context, loginID string, loginType string) ([]string, error)
+	GetPermissionScopeMap(ctx context.Context, loginID string, loginType string) (map[string]ScopeInfo, error)
 }
 
 type ScopeInfo struct {

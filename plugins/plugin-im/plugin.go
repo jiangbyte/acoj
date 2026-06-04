@@ -15,6 +15,8 @@ import (
 	_ "hei-gin/plugins/plugin-im/client_message"
 	_ "hei-gin/plugins/plugin-im/client_message/api/v1"
 	_ "hei-gin/plugins/plugin-im/group"
+	_ "hei-gin/plugins/plugin-im/friend"
+	_ "hei-gin/plugins/plugin-im/friend/api/v1"
 	groupAPI "hei-gin/plugins/plugin-im/group/api/v1"
 )
 

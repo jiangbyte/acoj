@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"hash/fnv"
 	"io"
@@ -40,7 +39,7 @@ func NoRepeat(interval int) gin.HandlerFunc {
 		// Check Redis
 		redisClient := db.Redis
 		if redisClient != nil {
-			ctx := context.Background()
+			ctx := c.Request.Context()
 			cached, err := redisClient.Get(ctx, cacheKey).Result()
 			if err == nil {
 				var data struct {

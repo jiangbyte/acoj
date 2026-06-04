@@ -1,7 +1,6 @@
 ﻿package log
 
 import (
-	"context"
 	"time"
 
 	"hei-gin/sdk/db"
@@ -13,7 +12,7 @@ import (
 )
 
 func Page(c *gin.Context, param *LogPageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
 	if param.Size > 100 { param.Size = 100 }
@@ -37,7 +36,7 @@ func Page(c *gin.Context, param *LogPageParam) gin.H {
 }
 
 func LoginBarChart(c *gin.Context) *BarChartData {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	since := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, -6)
 
@@ -76,7 +75,7 @@ func LoginBarChart(c *gin.Context) *BarChartData {
 }
 
 func LoginPieChart(c *gin.Context) *PieChartData {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
 	var loginTotal int64
 	db.DB.WithContext(ctx).Model(&SysLog{}).Where("category = ?", "LOGIN").Count(&loginTotal)
@@ -93,7 +92,7 @@ func LoginPieChart(c *gin.Context) *PieChartData {
 }
 
 func OpBarChart(c *gin.Context) *BarChartData {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	since := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, -6)
 
@@ -132,7 +131,7 @@ func OpBarChart(c *gin.Context) *BarChartData {
 }
 
 func OpPieChart(c *gin.Context) *PieChartData {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 
 	var operateTotal int64
 	db.DB.WithContext(ctx).Model(&SysLog{}).Where("category = ?", "OPERATE").Count(&operateTotal)
@@ -178,7 +177,7 @@ func entToVO(entity *SysLog) *LogVO {
 
 
 func Create(c *gin.Context, vo *LogVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	entity := SysLog{
 		ID: utils.GenerateID(), CreatedAt: &now, UpdatedAt: &now,
@@ -196,7 +195,7 @@ func Create(c *gin.Context, vo *LogVO, userID string) {
 }
 
 func Modify(c *gin.Context, vo *LogVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysLog
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { panic(exception.NewBusinessError("数据不存在", 400)) }
@@ -214,7 +213,7 @@ func Modify(c *gin.Context, vo *LogVO, userID string) {
 
 func Remove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if err := db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysLog{}).Error; err != nil {
 		panic(exception.NewBusinessError("删除日志失败: "+err.Error(), 500))
 	}
@@ -222,7 +221,7 @@ func Remove(c *gin.Context, ids []string) {
 
 func Detail(c *gin.Context, id string) *LogVO {
 	if id == "" { return nil }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysLog
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { return nil }
@@ -232,7 +231,7 @@ func Detail(c *gin.Context, id string) *LogVO {
 }
 
 func DeleteByCategory(c *gin.Context, param *LogDeleteByCategoryParam) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if err := db.DB.WithContext(ctx).Where("category = ?", param.Category).Delete(&SysLog{}).Error; err != nil {
 		panic(exception.NewBusinessError("按分类删除日志失败: "+err.Error(), 500))
 	}

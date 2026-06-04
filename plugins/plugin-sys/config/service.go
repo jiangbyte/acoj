@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -15,7 +14,7 @@ import (
 )
 
 func Page(c *gin.Context, param *ConfigPageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 { param.Current = 1 }
 	if param.Size < 1 { param.Size = 10 }
 	if param.Size > 100 { param.Size = 100 }
@@ -34,7 +33,7 @@ func Page(c *gin.Context, param *ConfigPageParam) gin.H {
 
 func Detail(c *gin.Context, id string) *ConfigVO {
 	if id == "" { return nil }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysConfig
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { return nil }
@@ -44,7 +43,7 @@ func Detail(c *gin.Context, id string) *ConfigVO {
 }
 
 func Create(c *gin.Context, vo *ConfigVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 
 	entity := SysConfig{
@@ -63,7 +62,7 @@ func Create(c *gin.Context, vo *ConfigVO, userID string) {
 }
 
 func Modify(c *gin.Context, vo *ConfigVO, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var entity SysConfig
 	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", vo.ID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound { panic(exception.NewBusinessError("配置不存在", 400)) }
@@ -85,21 +84,21 @@ func Modify(c *gin.Context, vo *ConfigVO, userID string) {
 
 func Remove(c *gin.Context, ids []string) {
 	if len(ids) == 0 { return }
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if err := db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysConfig{}).Error; err != nil {
 		panic(exception.NewBusinessError("删除配置失败: "+err.Error(), 500))
 	}
 }
 
 func ListByCategory(c *gin.Context, category string) []ConfigVO {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	var records []SysConfig
 	db.DB.WithContext(ctx).Model(&SysConfig{}).Where("category = ?", category).Order("sort_code ASC").Find(&records)
 	return toVOList(records)
 }
 
 func EditBatch(c *gin.Context, param *ConfigBatchEditParam, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	tx := db.DB.WithContext(ctx).Begin()
 	for _, item := range param.Configs {
@@ -120,7 +119,7 @@ func EditBatch(c *gin.Context, param *ConfigBatchEditParam, userID string) {
 }
 
 func EditByCategory(c *gin.Context, param *ConfigCategoryEditParam, userID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 	up := map[string]interface{}{"updated_at": now}
 	if param.ConfigKey != nil { up["config_key"] = *param.ConfigKey }

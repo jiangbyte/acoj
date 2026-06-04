@@ -1,7 +1,6 @@
 package client_message
 
 import (
-	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -13,11 +12,12 @@ import (
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/ws"
+	imModel "hei-gin/plugins/plugin-im/model"
 
 	"github.com/gin-gonic/gin"
 )
 
-func toVO(e *ClientMessage) *MessageVO {
+func toVO(e *imModel.ClientMessage) *MessageVO {
 	v := &MessageVO{
 		ID: e.ID, ConversationID: e.ConversationID,
 		Title: e.Title, Content: e.Content, Extra: e.Extra,
@@ -34,7 +34,7 @@ func toVO(e *ClientMessage) *MessageVO {
 	return v
 }
 
-func toVOList(records []ClientMessage) []MessageVO {
+func toVOList(records []imModel.ClientMessage) []MessageVO {
 	r := make([]MessageVO, len(records))
 	for i, e := range records {
 		r[i] = *toVO(&e)
@@ -43,7 +43,7 @@ func toVOList(records []ClientMessage) []MessageVO {
 }
 
 func Page(c *gin.Context, receiverID string, param *MessagePageParam) gin.H {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	if param.Current < 1 {
 		param.Current = 1
 	}
@@ -54,7 +54,7 @@ func Page(c *gin.Context, receiverID string, param *MessagePageParam) gin.H {
 		param.Size = 100
 	}
 
-	query := db.DB.WithContext(ctx).Model(&ClientMessage{}).Where("receiver_id = ?", receiverID)
+	query := db.DB.WithContext(ctx).Model(&imModel.ClientMessage{}).Where("receiver_id = ?", receiverID)
 	if param.Status != "" {
 		query = query.Where("status = ?", param.Status)
 	}
@@ -62,19 +62,19 @@ func Page(c *gin.Context, receiverID string, param *MessagePageParam) gin.H {
 	var total int64
 	query.Count(&total)
 
-	var records []ClientMessage
+	var records []imModel.ClientMessage
 	query.Order("created_at DESC").Limit(param.Size).Offset((param.Current-1)*param.Size).Find(&records)
 	return result.PageDataResult(c, toVOList(records), total, param.Current, param.Size)
 }
 
 func UnreadCount(receiverID string) int64 {
 	var count int64
-	db.DB.Model(&ClientMessage{}).Where("receiver_id = ? AND status = ?", receiverID, "unread").Count(&count)
+	db.DB.Model(&imModel.ClientMessage{}).Where("receiver_id = ? AND status = ?", receiverID, "unread").Count(&count)
 	return count
 }
 
 func Detail(id string) *MessageVO {
-	var entity ClientMessage
+	var entity imModel.ClientMessage
 	if err := db.DB.First(&entity, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil
@@ -85,10 +85,9 @@ func Detail(id string) *MessageVO {
 }
 
 func Send(c *gin.Context, param *MessageSendParam, senderID string) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	now := time.Now()
 
-	// Rate limiting
 	if !ws.GlobalCrossHub.AllowMessage(senderID, enums.LoginTypeConsumer) {
 		panic(exception.NewBusinessError("发送消息过于频繁，请稍后重试", 429))
 	}
@@ -105,47 +104,47 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string) {
 	}
 
 	if receiverType == enums.LoginTypeBusiness {
-		records := make([]map[string]interface{}, len(param.ReceiverIDs))
+		// Cross-table write: consumer → business, stored in sys_message table
+		records := make([]imModel.SysMessage, len(param.ReceiverIDs))
 		for i, rid := range param.ReceiverIDs {
-			cid := GenerateConversationID(senderID, enums.LoginTypeConsumer, rid, enums.LoginTypeBusiness)
-			records[i] = map[string]interface{}{
-				"id":              utils.GenerateID(),
-				"conversation_id": cid,
-				"title":           param.Title,
-				"content":         param.Content,
-				"sender_id":       senderID,
-				"sender_type":     enums.LoginTypeConsumer,
-				"receiver_id":     rid,
-				"receiver_type":   enums.LoginTypeBusiness,
-				"message_type":    msgType,
-				"extra":           extra,
-				"status":          "unread",
-				"created_at":      now,
-				"updated_at":      now,
+			cid := imModel.GenerateConversationID(senderID, enums.LoginTypeConsumer, rid, enums.LoginTypeBusiness)
+			records[i] = imModel.SysMessage{
+				ID:             utils.GenerateID(),
+				ConversationID: cid,
+				Title:          param.Title,
+				Content:        param.Content,
+				SenderID:       &senderID,
+				SenderType:     enums.LoginTypeConsumer,
+				ReceiverID:     rid,
+				ReceiverType:   enums.LoginTypeBusiness,
+				MessageType:    msgType,
+				Extra:          extra,
+				Status:         "unread",
+				CreatedAt:      &now,
+				UpdatedAt:      &now,
 			}
 		}
-		if err := db.DB.WithContext(ctx).Table("sys_message").Create(&records).Error; err != nil {
+		if err := db.DB.WithContext(ctx).Create(&records).Error; err != nil {
 			panic(exception.NewBusinessError("发送消息失败: "+err.Error(), 500))
 		}
 		for i, rid := range param.ReceiverIDs {
-			msgID := records[i]["id"].(string)
 			ws.GlobalCrossHub.SendToUser(rid, ws.Message{
 				Type: ws.MsgNewMessage,
 				Payload: ws.NewMessagePayload{
-					MessageID: msgID, Title: param.Title, Content: param.Content,
+					MessageID: records[i].ID, Title: param.Title, Content: param.Content,
 					MsgType: msgType, Extra: extra,
 					CreatedAt: pojo.FormatDateTime(now),
 				},
-			}, msgID)
+			}, records[i].ID)
 		}
 		return
 	}
 
-	records := make([]ClientMessage, len(param.ReceiverIDs))
+	records := make([]imModel.ClientMessage, len(param.ReceiverIDs))
 	for i, rid := range param.ReceiverIDs {
-		records[i] = ClientMessage{
+		records[i] = imModel.ClientMessage{
 			ID: utils.GenerateID(),
-			ConversationID: GenerateConversationID(senderID, enums.LoginTypeConsumer, rid, enums.LoginTypeConsumer),
+			ConversationID: imModel.GenerateConversationID(senderID, enums.LoginTypeConsumer, rid, enums.LoginTypeConsumer),
 			Title: param.Title, Content: param.Content, Extra: extra,
 			SenderID: &senderID, SenderType: enums.LoginTypeConsumer,
 			ReceiverID: rid, ReceiverType: enums.LoginTypeConsumer,
@@ -169,24 +168,24 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string) {
 
 func MarkRead(id string) {
 	now := time.Now()
-	if err := db.DB.Model(&ClientMessage{}).Where("id = ?", id).
+	if err := db.DB.Model(&imModel.ClientMessage{}).Where("id = ?", id).
 		Updates(map[string]interface{}{"status": "read", "read_at": &now}).Error; err != nil {
 		panic(exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
 	}
 }
 
-// MarkConversationRead marks all unread received messages in a conversation as read.
 func MarkConversationRead(receiverID string, conversationID string) {
 	now := time.Now()
-	if err := db.DB.Model(&ClientMessage{}).
+	if err := db.DB.Model(&imModel.ClientMessage{}).
 		Where("conversation_id = ? AND receiver_id = ? AND status = ?", conversationID, receiverID, "unread").
 		Updates(map[string]interface{}{"status": "read", "read_at": &now}).Error; err != nil {
 		panic(exception.NewBusinessError("标记已读失败: "+err.Error(), 500))
 	}
 }
+
 func MarkAllRead(receiverID string) {
 	now := time.Now()
-	if err := db.DB.Model(&ClientMessage{}).
+	if err := db.DB.Model(&imModel.ClientMessage{}).
 		Where("receiver_id = ? AND status = ?", receiverID, "unread").
 		Updates(map[string]interface{}{"status": "read", "read_at": &now}).Error; err != nil {
 		panic(exception.NewBusinessError("标记全部已读失败: "+err.Error(), 500))
@@ -197,7 +196,7 @@ func Remove(ids []string) {
 	if len(ids) == 0 {
 		return
 	}
-	if err := db.DB.Where("id IN ?", ids).Delete(&ClientMessage{}).Error; err != nil {
+	if err := db.DB.Where("id IN ?", ids).Delete(&imModel.ClientMessage{}).Error; err != nil {
 		panic(exception.NewBusinessError("删除消息失败: "+err.Error(), 500))
 	}
 }

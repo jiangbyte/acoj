@@ -1,6 +1,8 @@
 package plugin_sys
 
 import (
+	"time"
+	syslog "hei-gin/plugins/plugin-sys/log"
 	stdlog "log"
 
 	"hei-gin/api"
@@ -35,8 +37,36 @@ func (p *SysPlugin) Init() error {
 	auth.RegisterInterface(p.permProvider)
 
 	log.LogPersistence = func(ctx interface{}, category, name, exeStatus, exeMessage, opIP, opAddress, opBrowser, opOS, opUser, traceID, signData, method, url, params string, opTime interface{}) {
-		db.DB.Exec("INSERT INTO sys_log (id, category, name, exe_status, exe_message, op_ip, op_address, op_browser, op_os, op_user, trace_id, sign_data, req_method, req_url, param_json, op_time, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
-			utils.GenerateID(), category, name, exeStatus, exeMessage, opIP, opAddress, opBrowser, opOS, opUser, traceID, signData, method, url, params, opTime)
+		now := time.Now()
+		entry := syslog.SysLog{
+			ID:         utils.GenerateID(),
+			Category:   &category,
+			Name:       &name,
+			ExeStatus:  &exeStatus,
+			ExeMessage: &exeMessage,
+			OpIP:       &opIP,
+			OpAddress:  &opAddress,
+			OpBrowser:  &opBrowser,
+			OpOs:       &opOS,
+			OpUser:     &opUser,
+			TraceID:    &traceID,
+			SignData:   &signData,
+			ReqMethod:  &method,
+			ReqURL:     &url,
+			ParamJSON:  &params,
+			CreatedAt:  &now,
+			UpdatedAt:  &now,
+		}
+		if t, ok := opTime.(time.Time); ok {
+			entry.OpTime = &t
+		} else if s, ok := opTime.(string); ok && s != "" {
+			if parsed, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+				entry.OpTime = &parsed
+			}
+		}
+		if err := db.DB.Create(&entry).Error; err != nil {
+			stdlog.Printf("[SYSLOG] Failed to persist log: %v", err)
+		}
 	}
 	stdlog.Println("[plugin-sys] initialized")
 	return nil

@@ -28,6 +28,31 @@ var (
 	wsPathSuffixes = []string{"/ws"}
 )
 
+// getTraceID retrieves the trace_id from gin context, returning empty string if not set.
+func getTraceID(c *gin.Context) string {
+	v, exists := c.Get("trace_id")
+	if !exists {
+		return ""
+	}
+	s, ok := v.(string)
+	if !ok {
+		return ""
+	}
+	return s
+}
+
+// unauthorizedResponse writes a consistent 401 JSON response with trace_id.
+func unauthorizedResponse(c *gin.Context) {
+	traceID := getTraceID(c)
+	c.Abort()
+	c.JSON(200, gin.H{
+		"code":     401,
+		"message":  "未授权/未登录",
+		"success":  false,
+		"trace_id": traceID,
+	})
+}
+
 // AuthCheck returns a Gin middleware that enforces authentication based on path patterns.
 //
 //	Static paths (favicon.ico, docs, etc.)        -> pass
@@ -81,11 +106,7 @@ func AuthCheck() gin.HandlerFunc {
 		if segment == "c" {
 			clientAuth := auth.Consumer
 			if !clientAuth.IsLogin(c) {
-				c.Header("Access-Control-Allow-Origin", "*")
-				c.Header("Access-Control-Allow-Methods", "*")
-				c.Header("Access-Control-Allow-Headers", "*")
-				c.Abort()
-				c.JSON(200, gin.H{"code": 401, "message": "未授权/未登录", "success": false})
+				unauthorizedResponse(c)
 				return
 			}
 			c.Next()
@@ -94,11 +115,7 @@ func AuthCheck() gin.HandlerFunc {
 
 		// 6. B path (/api/v{n}/b/...) or DEFAULT (/api/v{n}/<other>/...)
 		if !auth.IsLogin(c) {
-			c.Header("Access-Control-Allow-Origin", "*")
-			c.Header("Access-Control-Allow-Methods", "*")
-			c.Header("Access-Control-Allow-Headers", "*")
-			c.Abort()
-			c.JSON(200, gin.H{"code": 401, "message": "未授权/未登录", "success": false})
+			unauthorizedResponse(c)
 			return
 		}
 

@@ -1,7 +1,6 @@
 ﻿package username
 
 import (
-	"context"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -21,12 +20,13 @@ import (
 )
 
 func DoLogin(c *gin.Context) {
+	ctx := c.Request.Context()
 	var param UsernameLoginParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		panic(exception.NewBusinessError("请求参数错误", 400))
 	}
 
-	ctx := context.Background()
+	
 
 	if err := captcha.CCaptcha.CheckCaptcha(param.CaptchaID, param.CaptchaCode); err != nil {
 		panic(exception.NewBusinessError(err.Error(), 400))
@@ -93,12 +93,13 @@ func DoLogin(c *gin.Context) {
 }
 
 func DoRegister(c *gin.Context) {
+	ctx := c.Request.Context()
 	var param UsernameRegisterParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		panic(exception.NewBusinessError("请求参数错误", 400))
 	}
 
-	ctx := context.Background()
+	ctx = c.Request.Context()
 
 	if err := captcha.CCaptcha.CheckCaptcha(param.CaptchaID, param.CaptchaCode); err != nil {
 		panic(exception.NewBusinessError(err.Error(), 400))
@@ -143,7 +144,7 @@ func DoLogout(c *gin.Context) {
 	userID := clientAuth.GetLoginIDDefaultNull(c)
 	if userID != "" {
 		var user cliUser.ClientUser
-		if err := db.DB.WithContext(context.Background()).First(&user, "id = ?", userID).Error; err == nil {
+		if err := db.DB.First(&user, "id = ?", userID).Error; err == nil {
 			username := safeStr(user.Username)
 			log.RecordAuthLog(c, "登出", "LOGOUT", "SUCCESS", "", username)
 		}

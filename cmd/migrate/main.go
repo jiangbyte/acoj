@@ -26,6 +26,7 @@ import (
 	_ "hei-gin/plugins/plugin-client/user"
 	_ "hei-gin/plugins/plugin-im/client_message"
 	_ "hei-gin/plugins/plugin-im/group"
+	_ "hei-gin/plugins/plugin-im/friend"
 )
 
 func main() {
