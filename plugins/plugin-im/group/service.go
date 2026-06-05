@@ -531,7 +531,7 @@ func MyGroups(ctx context.Context, userID, userType string) []GroupVO {
 	}
 
 	// Single batch: get last message per group (using subquery)
-	type lm struct{ GroupID, Content, CreatedAt string }
+	type lm struct{ GroupID string; Content string; CreatedAt time.Time }
 	// Single batch: get last message per group using GORM subquery (no raw SQL)
 	var lastMsgs []lm
 	lastSubQ := db.DB.WithContext(ctx).Table("im_group_message").
@@ -579,7 +579,7 @@ func MyGroups(ctx context.Context, userID, userType string) []GroupVO {
 		}
 		if l, ok := lastMap[g.ID]; ok {
 			vo.LastContent = l.Content
-			vo.LastTime = l.CreatedAt
+			vo.LastTime = pojo.FormatDateTime(l.CreatedAt)
 		}
 		result = append(result, vo)
 	}
@@ -1196,7 +1196,7 @@ func MyGroupConversations(userID, userType string) []*ConversationVO {
 	}
 
 	// Last message per group
-	type lm struct{ GroupID, Content, CreatedAt string }
+	type lm struct{ GroupID string; Content string; CreatedAt time.Time }
 	var lastMsgs []lm
 	lastSubQ := db.DB.Table("im_group_message").
 		Select("group_id, MAX(created_at) as max_ct").
@@ -1241,7 +1241,7 @@ func MyGroupConversations(userID, userType string) []*ConversationVO {
 		}
 		if l, ok := lastMap[g.ID]; ok {
 			vo.LastContent = l.Content
-			vo.LastTime = l.CreatedAt
+			vo.LastTime = pojo.FormatDateTime(l.CreatedAt)
 		}
 		result = append(result, vo)
 	}
