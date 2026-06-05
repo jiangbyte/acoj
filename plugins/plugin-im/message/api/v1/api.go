@@ -8,7 +8,7 @@ import (
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/pojo"
 	"hei-gin/sdk/result"
-	sys_message "hei-gin/plugins/plugin-im/sys_message"
+	"hei-gin/plugins/plugin-im/message"
 	"hei-gin/plugins/plugin-im/group"
 
 	"github.com/gin-gonic/gin"
@@ -40,19 +40,19 @@ func RegisterRoutes(r *gin.Engine) {
 }
 
 func pageHandler(c *gin.Context) {
-	var param sys_message.MessagePageParam
+	var param message.MessagePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID := auth.GetLoginID(c)
-	data := sys_message.Page(c, userID, &param)
+	data := message.Page(c, userID, &param)
 	c.JSON(200, data)
 }
 
 func detailHandler(c *gin.Context) {
 	id := c.Query("id")
-	vo := sys_message.Detail(id)
+	vo := message.Detail(id)
 	if vo == nil {
 		c.JSON(200, result.Success(c, nil))
 		return
@@ -62,17 +62,17 @@ func detailHandler(c *gin.Context) {
 
 func unreadCountHandler(c *gin.Context) {
 	userID := auth.GetLoginID(c)
-	count := sys_message.UnreadCount(userID)
-	c.JSON(200, result.Success(c, sys_message.UnreadCountVO{Count: count}))
+	count := message.UnreadCount(userID)
+	c.JSON(200, result.Success(c, message.UnreadCountVO{Count: count}))
 }
   func sendHandler(c *gin.Context) {
-	var param sys_message.MessageSendParam
+	var param message.MessageSendParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID := auth.GetLoginID(c)
-	convIDs := sys_message.Send(c, &param, userID, string(enums.LoginTypeBusiness))
+	convIDs := message.Send(c, &param, userID, string(enums.LoginTypeBusiness))
 	data := gin.H{}
 	if len(convIDs) > 0 {
 		data["conversation_id"] = convIDs[0]
@@ -81,24 +81,24 @@ func unreadCountHandler(c *gin.Context) {
 }
 
 func recallHandler(c *gin.Context) {
-	var param sys_message.RecallParam
+	var param message.RecallParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID := auth.GetLoginID(c)
-	sys_message.Recall(userID, string(enums.LoginTypeBusiness), &param)
+	message.Recall(userID, string(enums.LoginTypeBusiness), &param)
 	c.JSON(200, result.Success(c, nil))
 }
 
 func forwardHandler(c *gin.Context) {
-	var param sys_message.ForwardParam
+	var param message.ForwardParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID := auth.GetLoginID(c)
-	sys_message.Forward(c, userID, string(enums.LoginTypeBusiness), &param)
+	message.Forward(c, userID, string(enums.LoginTypeBusiness), &param)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -111,18 +111,18 @@ func deleteHandler(c *gin.Context) {
 		return
 	}
 	userID := auth.GetLoginID(c)
-	sys_message.Remove(userID, param.IDs)
+	message.Remove(userID, param.IDs)
 	c.JSON(200, result.Success(c, nil))
 }
 
 func searchHandler(c *gin.Context) {
-	var param sys_message.SearchParam
+	var param message.SearchParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID := auth.GetLoginID(c)
-	list, hasMore := sys_message.Search(c, userID, &param)
+	list, hasMore := message.Search(c, userID, &param)
 	c.JSON(200, result.Success(c, gin.H{"records": list, "has_more": hasMore}))
 }
 
@@ -132,13 +132,13 @@ func markReadHandler(c *gin.Context) {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
-	sys_message.MarkRead(param.ID)
+	message.MarkRead(param.ID)
 	c.JSON(200, result.Success(c, nil))
 }
 
 func markAllReadHandler(c *gin.Context) {
 	userID := auth.GetLoginID(c)
-	sys_message.MarkAllRead(userID)
+	message.MarkAllRead(userID)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -149,7 +149,7 @@ func removeHandler(c *gin.Context) {
 		return
 	}
 	userID := auth.GetLoginID(c)
-	sys_message.Remove(userID, param.IDs)
+	message.Remove(userID, param.IDs)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -162,7 +162,7 @@ func conversationsHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	list, hasMore := sys_message.Conversations(userID, string(enums.LoginTypeBusiness), cursor, size)
+	list, hasMore := message.Conversations(userID, string(enums.LoginTypeBusiness), cursor, size)
 	c.JSON(200, result.Success(c, gin.H{"records": list, "has_more": hasMore}))
 }
 
@@ -177,14 +177,14 @@ func conversationMessagesHandler(c *gin.Context) {
 		}
 	}
 
-	var messages []sys_message.ConversationMessageVO
+	var messages []message.ConversationMessageVO
 	var hasMore bool
 	if len(cid) > 6 && cid[:6] == "group:" {
 		gid := cid[6:]
 		msgs, more := group.Messages(c.Request.Context(), gid, cursor, size)
-		messages = make([]sys_message.ConversationMessageVO, len(msgs))
+		messages = make([]message.ConversationMessageVO, len(msgs))
 		for i, m := range msgs {
-			messages[i] = sys_message.ConversationMessageVO{
+			messages[i] = message.ConversationMessageVO{
 				ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
 				Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
 				CreatedAt: m.CreatedAt,
@@ -192,7 +192,7 @@ func conversationMessagesHandler(c *gin.Context) {
 		}
 		hasMore = more
 	} else {
-		messages, hasMore = sys_message.BusinessConversationMessages(c.Request.Context(), userID, cid, cursor, size)
+		messages, hasMore = message.BusinessConversationMessages(c.Request.Context(), userID, cid, cursor, size)
 	}
 	c.JSON(200, result.Success(c, gin.H{
 		"records":  messages,
@@ -212,19 +212,19 @@ func conversationReadHandler(c *gin.Context) {
 	if len(param.ConversationID) > 6 && param.ConversationID[:6] == "group:" {
 		group.MarkConversationRead(c.Request.Context(), param.ConversationID[6:], userID, string(enums.LoginTypeBusiness))
 	} else {
-		sys_message.MarkConversationRead(userID, param.ConversationID)
+		message.MarkConversationRead(userID, param.ConversationID)
 	}
 	c.JSON(200, result.Success(c, nil))
 }
 
 func getOrCreateConversationHandler(c *gin.Context) {
-	var param sys_message.GetOrCreateConversationParam
+	var param message.GetOrCreateConversationParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID := auth.GetLoginID(c)
-	cid, displayName := sys_message.GetOrCreateConversation(userID, string(enums.LoginTypeBusiness), &param)
+	cid, displayName := message.GetOrCreateConversation(userID, string(enums.LoginTypeBusiness), &param)
 	c.JSON(200, result.Success(c, gin.H{"conversation_id": cid, "display_name": displayName}))
 }
 
@@ -262,19 +262,19 @@ func clientUserID(c *gin.Context) (string, string) {
 }
 
 func clientPageHandler(c *gin.Context) {
-	var param sys_message.MessagePageParam
+	var param message.MessagePageParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID := auth.Consumer.GetLoginID(c)
-	data := sys_message.Page(c, userID, &param)
+	data := message.Page(c, userID, &param)
 	c.JSON(200, data)
 }
 
 func clientDetailHandler(c *gin.Context) {
 	id := c.Query("id")
-	vo := sys_message.Detail(id)
+	vo := message.Detail(id)
 	if vo == nil {
 		c.JSON(200, result.Success(c, nil))
 		return
@@ -284,45 +284,44 @@ func clientDetailHandler(c *gin.Context) {
 
 func clientUnreadCountHandler(c *gin.Context) {
 	userID := auth.Consumer.GetLoginID(c)
-	count := sys_message.UnreadCount(userID)
-	c.JSON(200, result.Success(c, sys_message.UnreadCountVO{Count: count}))
+	count := message.UnreadCount(userID)
+	c.JSON(200, result.Success(c, message.UnreadCountVO{Count: count}))
 }
 
 func clientSendHandler(c *gin.Context) {
-	var param sys_message.MessageSendParam
+	var param message.MessageSendParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID, userType := clientUserID(c)
-	convIDs := sys_message.Send(c, &param, userID, userType)
+	convIDs := message.Send(c, &param, userID, userType)
 	data := gin.H{}
 	if len(convIDs) > 0 {
 		data["conversation_id"] = convIDs[0]
 	}
 	c.JSON(200, result.Success(c, data))
-	c.JSON(200, result.Success(c, nil))
 }
 
 func clientRecallHandler(c *gin.Context) {
-	var param sys_message.RecallParam
+	var param message.RecallParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID, userType := clientUserID(c)
-	sys_message.Recall(userID, userType, &param)
+	message.Recall(userID, userType, &param)
 	c.JSON(200, result.Success(c, nil))
 }
 
 func clientForwardHandler(c *gin.Context) {
-	var param sys_message.ForwardParam
+	var param message.ForwardParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID, userType := clientUserID(c)
-	sys_message.Forward(c, userID, userType, &param)
+	message.Forward(c, userID, userType, &param)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -335,18 +334,18 @@ func clientDeleteHandler(c *gin.Context) {
 		return
 	}
 	userID := auth.Consumer.GetLoginID(c)
-	sys_message.Remove(userID, param.IDs)
+	message.Remove(userID, param.IDs)
 	c.JSON(200, result.Success(c, nil))
 }
 
 func clientSearchHandler(c *gin.Context) {
-	var param sys_message.SearchParam
+	var param message.SearchParam
 	if err := c.ShouldBindQuery(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID := auth.Consumer.GetLoginID(c)
-	list, hasMore := sys_message.Search(c, userID, &param)
+	list, hasMore := message.Search(c, userID, &param)
 	c.JSON(200, result.Success(c, gin.H{"records": list, "has_more": hasMore}))
 }
 
@@ -356,13 +355,13 @@ func clientMarkReadHandler(c *gin.Context) {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
-	sys_message.MarkRead(param.ID)
+	message.MarkRead(param.ID)
 	c.JSON(200, result.Success(c, nil))
 }
 
 func clientMarkAllReadHandler(c *gin.Context) {
 	userID := auth.Consumer.GetLoginID(c)
-	sys_message.MarkAllRead(userID)
+	message.MarkAllRead(userID)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -373,7 +372,7 @@ func clientRemoveHandler(c *gin.Context) {
 		return
 	}
 	userID := auth.Consumer.GetLoginID(c)
-	sys_message.Remove(userID, param.IDs)
+	message.Remove(userID, param.IDs)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -386,7 +385,7 @@ func clientConversationsHandler(c *gin.Context) {
 			size = n
 		}
 	}
-	list, hasMore := sys_message.Conversations(userID, string(enums.LoginTypeConsumer), cursor, size)
+	list, hasMore := message.Conversations(userID, string(enums.LoginTypeConsumer), cursor, size)
 	c.JSON(200, result.Success(c, gin.H{"records": list, "has_more": hasMore}))
 }
 
@@ -401,14 +400,14 @@ func clientConversationMessagesHandler(c *gin.Context) {
 		}
 	}
 
-	var messages []sys_message.ConversationMessageVO
+	var messages []message.ConversationMessageVO
 	var hasMore bool
 	if len(cid) > 6 && cid[:6] == "group:" {
 		gid := cid[6:]
 		msgs, more := group.Messages(c.Request.Context(), gid, cursor, size)
-		messages = make([]sys_message.ConversationMessageVO, len(msgs))
+		messages = make([]message.ConversationMessageVO, len(msgs))
 		for i, m := range msgs {
-			messages[i] = sys_message.ConversationMessageVO{
+			messages[i] = message.ConversationMessageVO{
 				ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
 				Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
 				CreatedAt: m.CreatedAt,
@@ -416,7 +415,7 @@ func clientConversationMessagesHandler(c *gin.Context) {
 		}
 		hasMore = more
 	} else {
-		messages, hasMore = sys_message.ConsumerConversationMessages(c.Request.Context(), userID, cid, cursor, size)
+		messages, hasMore = message.ConsumerConversationMessages(c.Request.Context(), userID, cid, cursor, size)
 	}
 	c.JSON(200, result.Success(c, gin.H{
 		"records":  messages,
@@ -436,18 +435,18 @@ func clientConversationReadHandler(c *gin.Context) {
 	if len(param.ConversationID) > 6 && param.ConversationID[:6] == "group:" {
 		group.MarkConversationRead(c.Request.Context(), param.ConversationID[6:], userID, string(enums.LoginTypeConsumer))
 	} else {
-		sys_message.MarkConversationRead(userID, param.ConversationID)
+		message.MarkConversationRead(userID, param.ConversationID)
 	}
 	c.JSON(200, result.Success(c, nil))
 }
 
 func clientGetOrCreateConversationHandler(c *gin.Context) {
-	var param sys_message.GetOrCreateConversationParam
+	var param message.GetOrCreateConversationParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
 	userID, userType := clientUserID(c)
-	cid, displayName := sys_message.GetOrCreateConversation(userID, userType, &param)
+	cid, displayName := message.GetOrCreateConversation(userID, userType, &param)
 	c.JSON(200, result.Success(c, gin.H{"conversation_id": cid, "display_name": displayName}))
 }

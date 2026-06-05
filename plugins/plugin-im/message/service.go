@@ -1,6 +1,7 @@
-package sys_message
+package message
 
 import (
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -43,9 +44,14 @@ func toVOList(records []imModel.Message) []MessageVO {
 	return r
 }
 
+// fixSchemaOnce ensures the im_conversation table is fixed once.
+var fixSchemaOnce sync.Once
+
 // ==================== Send ====================
 
 func Send(c *gin.Context, param *MessageSendParam, senderID string, senderType string) []string {
+	fixSchemaOnce.Do(FixConversationSchema)
+
 	ctx := c.Request.Context()
 	now := time.Now()
 
@@ -83,22 +89,31 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string, senderType s
 	if err := db.DB.WithContext(ctx).Create(&records).Error; err != nil {
 		panic(exception.NewBusinessError("发送消息失败: "+err.Error(), 500))
 	}
-	for i, rid := range param.ReceiverIDs {
-		cid := records[i].ConversationID
+
+	// Update im_conversation cache for each receiver
+	for _, rec := range records {
 		conv := imModel.Conversation{
-			ID:        cid,
-			UserID1:   senderID,
-			UserType1: senderType,
-			UserID2:   rid,
-			UserType2: receiverType,
-			LastMsg:   param.Content,
+			ID:        rec.ConversationID,
+			UserID1:   rec.SenderID,
+			UserType1: rec.SenderType,
+			UserID2:   rec.ReceiverID,
+			UserType2: rec.ReceiverType,
+			LastMsg:   rec.Content,
 			LastTime:  &now,
+			CreatedAt: &now,
+			UpdatedAt: &now,
 		}
 		db.DB.WithContext(ctx).Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "id"}},
-			DoUpdates: clause.AssignmentColumns([]string{"last_msg", "last_time", "updated_at"}),
+			Columns: []clause.Column{{Name: "id"}},
+			DoUpdates: clause.AssignmentColumns([]string{
+				"last_msg", "last_time", "updated_at",
+			}),
 		}).Create(&conv)
+	}
 
+	// Send WS notifications
+	for i, rid := range param.ReceiverIDs {
+		cid := records[i].ConversationID
 		msg := ws.Message{
 			Type: ws.MsgNewMessage,
 			Payload: ws.NewMessagePayload{
@@ -124,6 +139,9 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string, senderType s
 	}
 	return convIDs
 }
+
+// ==================== Page ====================
+
 func Page(c *gin.Context, userID string, param *MessagePageParam) gin.H {
 	ctx := c.Request.Context()
 	if param.Current < 1 {
@@ -204,7 +222,6 @@ func Remove(userID string, ids []string) {
 	if len(ids) == 0 {
 		return
 	}
-	// Soft-delete: mark as deleted by this user
 	if err := db.DB.Model(&imModel.Message{}).
 		Where("id IN ? AND (sender_id = ? OR receiver_id = ?)", ids, userID, userID).
 		Update("deleted_by", userID).Error; err != nil {
@@ -239,7 +256,6 @@ func Recall(userID string, userType string, param *RecallParam) {
 // ==================== Forward ====================
 
 func Forward(c *gin.Context, userID string, userType string, param *ForwardParam) {
-	// Get original message
 	var original imModel.Message
 	if err := db.DB.First(&original, "id = ?", param.MessageID).Error; err != nil {
 		panic(exception.NewBusinessError("消息不存在", 400))
@@ -269,7 +285,7 @@ func Search(c *gin.Context, userID string, param *SearchParam) ([]MessageVO, boo
 	query := db.DB.WithContext(ctx).Model(&imModel.Message{}).
 		Where("(sender_id = ? OR receiver_id = ?) AND content LIKE ?", userID, userID, "%"+param.Keyword+"%")
 	if param.Cursor != "" {
-		if t, err := time.Parse("2006-01-02 15:04:05", param.Cursor); err == nil {
+		if t, err := pojo.ParseDateTimeLocal(param.Cursor); err == nil {
 			query = query.Where("created_at < ?", t)
 		}
 	}

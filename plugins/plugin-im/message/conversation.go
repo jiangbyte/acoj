@@ -1,0 +1,270 @@
+package message
+
+import (
+	"context"
+	"sort"
+	"time"
+
+	"hei-gin/sdk/db"
+	"hei-gin/sdk/enums"
+	"hei-gin/sdk/exception"
+	"hei-gin/sdk/pojo"
+	imModel "hei-gin/plugins/plugin-im/model"
+
+	sysUser "hei-gin/plugins/plugin-sys/user"
+	cliUser "hei-gin/plugins/plugin-client/user"
+	"hei-gin/plugins/plugin-im/group"
+)
+
+// ==================== Conversations ====================
+//
+// Single-chat conversations are ALWAYS derived from im_message directly.
+// The im_conversation cache table is NOT used for reads — this ensures
+// conversations are never out of sync with messages.
+// Group conversations come from group.MyGroupConversations().
+
+func Conversations(currentUserID, userType string, cursor string, size int) ([]ConversationVO, bool) {
+	if size < 1 {
+		size = 20
+	}
+	if size > 100 {
+		size = 100
+	}
+
+	// Build single-chat conversations from im_message
+	singleResult := buildFromMessages(currentUserID, userType)
+
+	// Add group conversations
+	groupConvs := group.MyGroupConversations(currentUserID, userType)
+	for _, gv := range groupConvs {
+		singleResult["group:"+gv.GroupID] = &ConversationVO{
+			ConversationID:   "group:" + gv.GroupID,
+			ConversationType: ConvTypeGroup,
+			GroupID:          gv.GroupID,
+			GroupName:        gv.GroupName,
+			GroupAvatar:      gv.GroupAvatar,
+			MemberCount:      gv.MemberCount,
+			LastContent:      gv.LastContent,
+			LastTime:         gv.LastTime,
+			UnreadCount:      gv.UnreadCount,
+		}
+	}
+
+	// Sort: all conversations mixed together by last_time
+	result := make([]ConversationVO, 0, len(singleResult))
+	for _, vo := range singleResult {
+		result = append(result, *vo)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].LastTime > result[j].LastTime
+	})
+
+	// Apply cursor pagination on the sorted result
+	hasMore := false
+	if cursor != "" {
+		cut := -1
+		for i, vo := range result {
+			if vo.LastTime <= cursor {
+				cut = i
+				break
+			}
+		}
+		if cut >= 0 {
+			result = result[:cut]
+		}
+	}
+	if len(result) > size {
+		result = result[:size]
+		hasMore = true
+	}
+
+	return result, hasMore
+}
+
+// buildFromMessages derives single-chat conversation VOs directly from im_message.
+func buildFromMessages(currentUserID, userType string) map[string]*ConversationVO {
+	// Single query: get the latest message per conversation where user participates
+	type msgRow struct {
+		ConversationID string
+		SenderID       string
+		SenderType     string
+		ReceiverID     string
+		ReceiverType   string
+		Content        string
+		CreatedAt      time.Time
+		Status         string
+	}
+
+	var rows []msgRow
+	// Get the latest message per conversation using a derived table approach
+	subQuery := db.DB.Table("im_message").
+		Select("conversation_id, MAX(created_at) as max_ct").
+		Where("(sender_id = ? OR receiver_id = ?) AND (deleted_by IS NULL OR deleted_by != ?)",
+			currentUserID, currentUserID, currentUserID).
+		Group("conversation_id")
+
+	db.DB.Table("im_message m").
+		Select("m.conversation_id, m.sender_id, m.sender_type, m.receiver_id, m.receiver_type, m.content, m.created_at, m.status").
+		Joins("INNER JOIN (?) latest ON latest.conversation_id = m.conversation_id AND latest.max_ct = m.created_at", subQuery).
+		Order("m.created_at DESC").
+		Scan(&rows)
+
+	// Build VOs
+	resultMap := make(map[string]*ConversationVO, len(rows))
+	userKeys := make(map[string]bool) // "type:id" for batch resolve
+
+	for _, r := range rows {
+		var otherID, otherType string
+		if r.SenderID == currentUserID && r.SenderType == userType {
+			otherID, otherType = r.ReceiverID, r.ReceiverType
+		} else {
+			otherID, otherType = r.SenderID, r.SenderType
+		}
+
+		userKeys[otherType+":"+otherID] = true
+
+		// Count unread
+		var unread int64
+		db.DB.Model(&imModel.Message{}).
+			Where("conversation_id = ? AND receiver_id = ? AND status = ?",
+				r.ConversationID, currentUserID, "unread").
+			Count(&unread)
+
+		resultMap[r.ConversationID] = &ConversationVO{
+			ConversationID:   r.ConversationID,
+			ConversationType: ConvTypeSingle,
+			OtherUserID:      otherID,
+			OtherUserType:    otherType,
+			LastContent:      r.Content,
+			LastTime:         pojo.FormatDateTime(r.CreatedAt),
+			UnreadCount:      unread,
+		}
+	}
+
+	// Batch resolve nicknames and avatars
+	if len(userKeys) > 0 {
+		businessIDs, consumerIDs := []string{}, []string{}
+		for key := range userKeys {
+			for i := 0; i < len(key); i++ {
+				if key[i] == ':' {
+					t, id := key[:i], key[i+1:]
+					switch t {
+					case string(enums.LoginTypeBusiness):
+						businessIDs = append(businessIDs, id)
+					case string(enums.LoginTypeConsumer):
+						consumerIDs = append(consumerIDs, id)
+					}
+					break
+				}
+			}
+		}
+
+		nicknameMap := make(map[string]string)
+		avatarMap := make(map[string]string)
+
+		if len(businessIDs) > 0 {
+			var busUsers []sysUser.SysUser
+			db.DB.Model(&sysUser.SysUser{}).Where("id IN ?", businessIDs).Find(&busUsers)
+			for _, u := range busUsers {
+				if u.Nickname != nil {
+					nicknameMap["BUSINESS:"+u.ID] = *u.Nickname
+				}
+				if u.Avatar != nil {
+					avatarMap["BUSINESS:"+u.ID] = *u.Avatar
+				}
+			}
+		}
+		if len(consumerIDs) > 0 {
+			var conUsers []cliUser.ClientUser
+			db.DB.Model(&cliUser.ClientUser{}).Where("id IN ?", consumerIDs).Find(&conUsers)
+			for _, u := range conUsers {
+				if u.Nickname != nil {
+					nicknameMap["CONSUMER:"+u.ID] = *u.Nickname
+				}
+				if u.Avatar != nil {
+					avatarMap["CONSUMER:"+u.ID] = *u.Avatar
+				}
+			}
+		}
+
+		for _, vo := range resultMap {
+			key := vo.OtherUserType + ":" + vo.OtherUserID
+			vo.OtherNickname = nicknameMap[key]
+			vo.OtherAvatar = avatarMap[key]
+		}
+	}
+
+	return resultMap
+}
+
+// ==================== Conversation Messages ====================
+
+func BusinessConversationMessages(ctx context.Context, currentUserID string, conversationID string, cursor string, size int) ([]ConversationMessageVO, bool) {
+	return conversationMessages(ctx, currentUserID, conversationID, cursor, size)
+}
+
+func ConsumerConversationMessages(ctx context.Context, currentUserID string, conversationID string, cursor string, size int) ([]ConversationMessageVO, bool) {
+	return conversationMessages(ctx, currentUserID, conversationID, cursor, size)
+}
+
+func conversationMessages(ctx context.Context, currentUserID string, conversationID string, cursor string, size int) ([]ConversationMessageVO, bool) {
+	if size < 1 {
+		size = 20
+	}
+	if size > 100 {
+		size = 100
+	}
+
+	q := db.DB.WithContext(ctx).Model(&imModel.Message{}).
+		Where("conversation_id = ? AND (sender_id = ? OR receiver_id = ?) AND (deleted_by != ? OR deleted_by IS NULL)",
+			conversationID, currentUserID, currentUserID, currentUserID)
+	if cursor != "" {
+		if t, err := pojo.ParseDateTimeLocal(cursor); err == nil {
+			q = q.Where("created_at < ?", t)
+		}
+	}
+	var records []imModel.Message
+	q.Order("created_at DESC").Limit(size + 1).Find(&records)
+
+	hasMore := len(records) > size
+	if hasMore {
+		records = records[:size]
+	}
+
+	result := make([]ConversationMessageVO, len(records))
+	for i, m := range records {
+		result[i] = ConversationMessageVO{
+			ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
+			Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
+			Status: m.Status,
+			CreatedAt: pojo.FormatDateTimePtr(m.CreatedAt),
+		}
+	}
+	return result, hasMore
+}
+
+// ==================== Get or Create Conversation ====================
+// Simply generates a deterministic conversation ID from the user pair.
+// No DB write — the conversation is derived from messages on read.
+
+func GetOrCreateConversation(userID string, userType string, param *GetOrCreateConversationParam) (string, string) {
+	if param.UserID == "" || param.UserType == "" {
+		panic(exception.NewBusinessError("参数错误", 400))
+	}
+	cid := imModel.GenerateConversationID(userID, enums.LoginTypeEnum(userType), param.UserID, enums.LoginTypeEnum(param.UserType))
+
+	// Resolve display name
+	displayName := param.UserID
+	if param.UserType == string(enums.LoginTypeBusiness) {
+		var u sysUser.SysUser
+		if err := db.DB.First(&u, "id = ?", param.UserID).Error; err == nil && u.Nickname != nil {
+			displayName = *u.Nickname
+		}
+	} else {
+		var u cliUser.ClientUser
+		if err := db.DB.First(&u, "id = ?", param.UserID).Error; err == nil && u.Nickname != nil {
+			displayName = *u.Nickname
+		}
+	}
+	return cid, displayName
+}

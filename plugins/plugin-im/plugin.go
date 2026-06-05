@@ -10,15 +10,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	_ "hei-gin/plugins/plugin-im/sys_message"
-	_ "hei-gin/plugins/plugin-im/sys_message/api/v1"
+	_ "hei-gin/plugins/plugin-im/message"
+	_ "hei-gin/plugins/plugin-im/message/api/v1"
 	_ "hei-gin/plugins/plugin-im/group"
 	_ "hei-gin/plugins/plugin-im/friend"
 	_ "hei-gin/plugins/plugin-im/friend/api/v1"
 	_ "hei-gin/plugins/plugin-im/broadcast"
 	_ "hei-gin/plugins/plugin-im/broadcast/api/v1"
 	groupAPI "hei-gin/plugins/plugin-im/group/api/v1"
-	sysAPI "hei-gin/plugins/plugin-im/sys_message/api/v1"
+	msgAPI "hei-gin/plugins/plugin-im/message/api/v1"
 )
 
 type IMPlugin struct{}
@@ -45,7 +45,7 @@ func init() {
 
 		groupAPI.RegisterSysRoutes(r)
 		groupAPI.RegisterClientRoutes(r)
-		sysAPI.RegisterClientRoutes(r)
+		msgAPI.RegisterClientRoutes(r)
 	})
 }
 

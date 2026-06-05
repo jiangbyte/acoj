@@ -550,7 +550,7 @@ func MyGroups(ctx context.Context, userID, userType string) []GroupVO {
 		Select("group_id, MAX(read_at) as max_read").
 		Where("user_id = ? AND user_type = ?", userID, userType).
 		Group("group_id")
-	db.DB.WithContext(ctx).Table("group_message gm").
+	db.DB.WithContext(ctx).Table("im_group_message gm").
 		Select("gm.group_id, COUNT(*) as count").
 		Joins("LEFT JOIN (?) gr ON gr.group_id = gm.group_id", readSubQ).
 		Where("gm.group_id IN ?", groupIDs).
@@ -703,7 +703,7 @@ func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageV
 
 	q := db.DB.WithContext(ctx).Model(&GroupMessage{}).Where("group_id = ?", groupID)
 	if cursor != "" {
-		if t, err := time.Parse("2006-01-02 15:04:05", cursor); err == nil {
+		if t, err := pojo.ParseDateTimeLocal(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}
@@ -745,7 +745,7 @@ func SearchMessages(ctx context.Context, groupID, keyword string, cursor string,
 	q := db.DB.WithContext(ctx).Model(&GroupMessage{}).
 		Where("group_id = ? AND content LIKE ? AND msg_type != ?", groupID, "%"+keyword+"%", imModel.MsgTypeSystem)
 	if cursor != "" {
-		if t, err := time.Parse("2006-01-02 15:04:05", cursor); err == nil {
+		if t, err := pojo.ParseDateTimeLocal(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}

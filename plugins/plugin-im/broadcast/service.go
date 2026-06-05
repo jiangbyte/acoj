@@ -63,7 +63,7 @@ func List(cursor string, size int) ([]BroadcastVO, bool) {
 
 	q := db.DB.Model(&Broadcast{})
 	if cursor != "" {
-		if t, err := time.Parse("2006-01-02 15:04:05", cursor); err == nil {
+		if t, err := pojo.ParseDateTimeLocal(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}

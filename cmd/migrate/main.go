@@ -18,7 +18,7 @@ import (
 	_ "hei-gin/plugins/plugin-sys/home"
 	_ "hei-gin/plugins/plugin-sys/log"
 	_ "hei-gin/plugins/plugin-sys/notice"
-	_ "hei-gin/plugins/plugin-im/sys_message"
+	_ "hei-gin/plugins/plugin-im/message"
 	_ "hei-gin/plugins/plugin-sys/org"
 	_ "hei-gin/plugins/plugin-sys/position"
 	_ "hei-gin/plugins/plugin-sys/resource"

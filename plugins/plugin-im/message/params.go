@@ -1,4 +1,4 @@
-package sys_message
+package message
 
 // MessageVO is the view object for a message.
 type MessageVO struct {
@@ -36,9 +36,9 @@ type RecallParam struct {
 }
 
 type ForwardParam struct {
-	MessageID      string   `json:"message_id"`
-	TargetIDs      []string `json:"target_ids"`
-	TargetType     string   `json:"target_type"`
+	MessageID  string   `json:"message_id"`
+	TargetIDs  []string `json:"target_ids"`
+	TargetType string   `json:"target_type"`
 }
 
 type SearchParam struct {
@@ -79,14 +79,14 @@ type ConversationVO struct {
 }
 
 type ConversationMessageVO struct {
-	ID         string  `json:"id"`
-	SenderID   string  `json:"sender_id"`
-	SenderType string  `json:"sender_type"`
-	Content    string  `json:"content"`
-	MsgType    string  `json:"msg_type"`
-	Extra      string  `json:"extra,omitempty"`
-	Status     string  `json:"status"`
-	CreatedAt  string  `json:"created_at"`
+	ID         string `json:"id"`
+	SenderID   string `json:"sender_id"`
+	SenderType string `json:"sender_type"`
+	Content    string `json:"content"`
+	MsgType    string `json:"msg_type"`
+	Extra      string `json:"extra,omitempty"`
+	Status     string `json:"status"`
+	CreatedAt  string `json:"created_at"`
 }
 
 type GetOrCreateConversationParam struct {

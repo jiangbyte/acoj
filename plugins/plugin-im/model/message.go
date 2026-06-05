@@ -33,10 +33,10 @@ func (Message) TableName() string { return "im_message" }
 // Conversation tracks conversation metadata (cache table).
 type Conversation struct {
 	ID        string     `gorm:"primaryKey;size:32" json:"id"`
-	UserID1   string     `gorm:"size:32;not null" json:"user_id_1"`
-	UserType1 string     `gorm:"size:20;not null" json:"user_type_1"`
-	UserID2   string     `gorm:"size:32;not null" json:"user_id_2"`
-	UserType2 string     `gorm:"size:20;not null" json:"user_type_2"`
+	UserID1   string     `gorm:"column:user_id_1;size:32;not null" json:"user_id_1"`
+	UserType1 string     `gorm:"column:user_type_1;size:20;not null" json:"user_type_1"`
+	UserID2   string     `gorm:"column:user_id_2;size:32;not null" json:"user_id_2"`
+	UserType2 string     `gorm:"column:user_type_2;size:20;not null" json:"user_type_2"`
 	LastMsg   string     `gorm:"type:text" json:"last_msg"`
 	LastTime  *time.Time `json:"last_time"`
 	CreatedAt *time.Time `json:"created_at"`
@@ -88,45 +88,7 @@ type MsgExtraSystem struct {
 	UserType   string `json:"user_type,omitempty"`
 }
 
-// ClientMessage is the model for client_message table.
-type ClientMessage struct {
-	ID             string              `gorm:"primaryKey;size:32" json:"id"`
-	ConversationID string              `gorm:"size:32;not null;index" json:"conversation_id"`
-	Title          string              `gorm:"size:255;not null" json:"title"`
-	Content        string              `gorm:"type:text" json:"content"`
-	Extra          string              `gorm:"type:text" json:"extra"`
-	SenderID       *string             `gorm:"size:32;index" json:"sender_id"`
-	SenderType     enums.LoginTypeEnum `gorm:"size:20;index" json:"sender_type"`
-	ReceiverID     string              `gorm:"size:32;not null;index" json:"receiver_id"`
-	ReceiverType   enums.LoginTypeEnum `gorm:"size:20;index" json:"receiver_type"`
-	MessageType    string              `gorm:"size:20;not null;default:text" json:"message_type"`
-	Status         string              `gorm:"size:10;not null;index;default:unread" json:"status"`
-	ReadAt         *time.Time          `json:"read_at"`
-	CreatedAt      *time.Time          `json:"created_at"`
-	UpdatedAt      *time.Time          `json:"updated_at"`
-}
 
-func (ClientMessage) TableName() string { return "client_message" }
-
-// SysMessage is the model for sys_message table.
-type SysMessage struct {
-	ID             string              `gorm:"primaryKey;size:32" json:"id"`
-	ConversationID string              `gorm:"size:32;not null;index" json:"conversation_id"`
-	Title          string              `gorm:"size:255;not null" json:"title"`
-	Content        string              `gorm:"type:text" json:"content"`
-	Extra          string              `gorm:"type:text" json:"extra"`
-	SenderID       *string             `gorm:"size:32;index" json:"sender_id"`
-	SenderType     enums.LoginTypeEnum `gorm:"size:20;index" json:"sender_type"`
-	ReceiverID     string              `gorm:"size:32;not null;index" json:"receiver_id"`
-	ReceiverType   enums.LoginTypeEnum `gorm:"size:20;index" json:"receiver_type"`
-	MessageType    string              `gorm:"size:20;not null;default:text" json:"message_type"`
-	Status         string              `gorm:"size:10;not null;index;default:unread" json:"status"`
-	ReadAt         *time.Time          `json:"read_at"`
-	CreatedAt      *time.Time          `json:"created_at"`
-	UpdatedAt      *time.Time          `json:"updated_at"`
-}
-
-func (SysMessage) TableName() string { return "sys_message" }
 
 // GenerateConversationID generates a deterministic conversation ID from two user identifiers.
 func GenerateConversationID(u1ID string, u1Type enums.LoginTypeEnum, u2ID string, u2Type enums.LoginTypeEnum) string {
