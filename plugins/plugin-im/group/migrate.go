@@ -7,4 +7,5 @@ func init() {
 	db.RegisterModel(&GroupMember{})
 	db.RegisterModel(&GroupMessage{})
 	db.RegisterModel(&GroupMessageRead{})
+	db.RegisterModel(&GroupJoinRequest{})
 }

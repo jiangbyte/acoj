@@ -8,6 +8,55 @@ import (
 	"hei-gin/sdk/enums"
 )
 
+// ─── New Unified Models ───────────────────────────────────────────────
+
+// Message is the unified single-chat message table, replacing both SysMessage and ClientMessage.
+type Message struct {
+	ID             string     `gorm:"primaryKey;size:32" json:"id"`
+	ConversationID string     `gorm:"size:32;not null;index" json:"conversation_id"`
+	Content        string     `gorm:"type:text" json:"content"`
+	Extra          string     `gorm:"type:text" json:"extra"`
+	MsgType        string     `gorm:"size:20;default:TEXT" json:"msg_type"`
+	SenderID       string     `gorm:"size:32;index" json:"sender_id"`
+	SenderType     string     `gorm:"size:20" json:"sender_type"`
+	ReceiverID     string     `gorm:"size:32;index" json:"receiver_id"`
+	ReceiverType   string     `gorm:"size:20" json:"receiver_type"`
+	Status         string     `gorm:"size:10;not null;default:unread" json:"status"`
+	DeletedBy      string     `gorm:"size:32" json:"deleted_by,omitempty"`
+	ReadAt         *time.Time `json:"read_at,omitempty"`
+	CreatedAt      *time.Time `json:"created_at"`
+	UpdatedAt      *time.Time `json:"updated_at"`
+}
+
+func (Message) TableName() string { return "im_message" }
+
+// Conversation tracks conversation metadata (cache table).
+type Conversation struct {
+	ID        string     `gorm:"primaryKey;size:32" json:"id"`
+	UserID1   string     `gorm:"size:32;not null" json:"user_id_1"`
+	UserType1 string     `gorm:"size:20;not null" json:"user_type_1"`
+	UserID2   string     `gorm:"size:32;not null" json:"user_id_2"`
+	UserType2 string     `gorm:"size:20;not null" json:"user_type_2"`
+	LastMsg   string     `gorm:"type:text" json:"last_msg"`
+	LastTime  *time.Time `json:"last_time"`
+	CreatedAt *time.Time `json:"created_at"`
+	UpdatedAt *time.Time `json:"updated_at"`
+}
+
+func (Conversation) TableName() string { return "im_conversation" }
+
+// ConversationUnread tracks per-user unread count per conversation.
+type ConversationUnread struct {
+	ConversationID string `gorm:"primaryKey;size:32" json:"conversation_id"`
+	UserID         string `gorm:"primaryKey;size:32" json:"user_id"`
+	UserType       string `gorm:"primaryKey;size:20" json:"user_type"`
+	UnreadCount    int    `gorm:"default:0" json:"unread_count"`
+}
+
+func (ConversationUnread) TableName() string { return "im_conversation_unread" }
+
+// ─── Legacy Models (keep for backward compat during migration) ──────
+
 // Shared message type constants
 const (
 	MsgTypeText   = "TEXT"

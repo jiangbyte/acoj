@@ -8,6 +8,7 @@ import (
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/pojo"
 	"hei-gin/sdk/utils"
+	"hei-gin/sdk/ws"
 
 	sysUser "hei-gin/plugins/plugin-sys/user"
 	cliUser "hei-gin/plugins/plugin-client/user"
@@ -46,7 +47,7 @@ func SendRequest(ctx context.Context, senderID, senderType string, p *SendReques
 	}
 
 	now := time.Now()
-	if err := db.DB.WithContext(ctx).Create(&FriendRequest{
+	req := &FriendRequest{
 		ID:           utils.GenerateID(),
 		SenderID:     senderID,
 		SenderType:   senderType,
@@ -56,8 +57,24 @@ func SendRequest(ctx context.Context, senderID, senderType string, p *SendReques
 		Status:       "pending",
 		CreatedAt:    &now,
 		UpdatedAt:    &now,
-	}).Error; err != nil {
+	}
+	if err := db.DB.WithContext(ctx).Create(req).Error; err != nil {
 		panic(exception.NewBusinessError("发送好友请求失败", 500))
+	}
+
+	// WS push to receiver
+	payload := map[string]interface{}{
+		"request_id":  req.ID,
+		"sender_id":   senderID,
+		"sender_type": senderType,
+		"remark":      p.Remark,
+		"action":      "friend_request",
+	}
+	msg := ws.Message{Type: "friend_request", Payload: payload}
+	if p.ReceiverType == "CONSUMER" {
+		ws.GlobalCrossHub.SendToConsumer(p.ReceiverID, msg)
+	} else {
+		ws.GlobalCrossHub.SendToUser(p.ReceiverID, msg)
 	}
 }
 
@@ -103,6 +120,20 @@ func AcceptRequest(ctx context.Context, userID, userType string, p *HandleReques
 
 	if err := tx.Commit().Error; err != nil {
 		panic(exception.NewBusinessError("添加好友失败", 500))
+	}
+
+	// WS push to sender
+	payload := map[string]interface{}{
+		"request_id":  req.ID,
+		"receiver_id":   userID,
+		"receiver_type": userType,
+		"action":      "friend_request_accepted",
+	}
+	msg := ws.Message{Type: "friend_request", Payload: payload}
+	if req.SenderType == "CONSUMER" {
+		ws.GlobalCrossHub.SendToConsumer(req.SenderID, msg)
+	} else {
+		ws.GlobalCrossHub.SendToUser(req.SenderID, msg)
 	}
 }
 
@@ -296,6 +327,91 @@ func SearchUsers(ctx context.Context, keyword string, limit int) []SearchResult 
 	}
 
 	return results
+}
+
+// ==================== Block / Unblock / BlockList ====================
+
+func BlockUser(ctx context.Context, userID, userType, blockedID, blockedType string) {
+	if userID == "" || blockedID == "" || blockedType == "" {
+		panic(exception.NewBusinessError("参数错误", 400))
+	}
+	if userID == blockedID && userType == blockedType {
+		panic(exception.NewBusinessError("不能拉黑自己", 400))
+	}
+
+	// Check if already blocked
+	var existing int64
+	db.DB.WithContext(ctx).Model(&FriendBlock{}).
+		Where("user_id = ? AND user_type = ? AND blocked_id = ? AND blocked_type = ?",
+			userID, userType, blockedID, blockedType).Count(&existing)
+	if existing > 0 {
+		panic(exception.NewBusinessError("已经拉黑了该用户", 400))
+	}
+
+	now := time.Now()
+	if err := db.DB.WithContext(ctx).Create(&FriendBlock{
+		ID:          utils.GenerateID(),
+		UserID:      userID,
+		UserType:    userType,
+		BlockedID:   blockedID,
+		BlockedType: blockedType,
+		CreatedAt:   &now,
+	}).Error; err != nil {
+		panic(exception.NewBusinessError("拉黑失败", 500))
+	}
+
+	// Also remove friendship if exists
+	db.DB.WithContext(ctx).
+		Where("(user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?) OR "+
+			"(user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?)",
+			userID, userType, blockedID, blockedType,
+			blockedID, blockedType, userID, userType).
+		Delete(&Friendship{})
+}
+
+func UnblockUser(ctx context.Context, userID, userType, blockedID, blockedType string) {
+	if userID == "" || blockedID == "" {
+		panic(exception.NewBusinessError("参数错误", 400))
+	}
+
+	result := db.DB.WithContext(ctx).
+		Where("user_id = ? AND user_type = ? AND blocked_id = ? AND blocked_type = ?",
+			userID, userType, blockedID, blockedType).
+		Delete(&FriendBlock{})
+	if result.RowsAffected == 0 {
+		panic(exception.NewBusinessError("未拉黑该用户", 400))
+	}
+}
+
+func BlockList(ctx context.Context, userID, userType string) []BlockVO {
+	var blocks []FriendBlock
+	db.DB.WithContext(ctx).Model(&FriendBlock{}).
+		Where("user_id = ? AND user_type = ?", userID, userType).
+		Find(&blocks)
+
+	result := make([]BlockVO, len(blocks))
+	for i, b := range blocks {
+		result[i] = BlockVO{
+			BlockedID:   b.BlockedID,
+			BlockedType: b.BlockedType,
+			CreatedAt:   pojo.FormatDateTimePtr(b.CreatedAt),
+		}
+	}
+	return result
+}
+
+// ==================== Update Friend Remark ====================
+
+func UpdateFriendRemark(ctx context.Context, userID, userType, friendID, friendType, remark string) {
+	if userID == "" || friendID == "" {
+		panic(exception.NewBusinessError("参数错误", 400))
+	}
+	if err := db.DB.WithContext(ctx).Model(&Friendship{}).
+		Where("user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?",
+			userID, userType, friendID, friendType).
+		Update("remark", remark).Error; err != nil {
+		panic(exception.NewBusinessError("修改备注失败", 500))
+	}
 }
 
 // ==================== Helpers ====================

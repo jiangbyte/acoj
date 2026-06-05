@@ -20,6 +20,10 @@ func RegisterSysRoutes(r *gin.Engine) {
 		g.GET("/list", listHandler)
 		g.GET("/pending-requests", pendingRequestsHandler)
 		g.POST("/remove", removeHandler)
+		g.POST("/block", blockHandler)
+		g.POST("/unblock", unblockHandler)
+		g.GET("/block-list", blockListHandler)
+		g.POST("/remark", remarkHandler)
 		g.GET("/search", searchHandler)
 	}
 }
@@ -33,6 +37,10 @@ func RegisterClientRoutes(r *gin.Engine) {
 		g.GET("/list", clientListHandler)
 		g.GET("/pending-requests", clientPendingRequestsHandler)
 		g.POST("/remove", clientRemoveHandler)
+		g.POST("/block", clientBlockHandler)
+		g.POST("/unblock", clientUnblockHandler)
+		g.GET("/block-list", clientBlockListHandler)
+		g.POST("/remark", clientRemarkHandler)
 		g.GET("/search", clientSearchHandler)
 	}
 }
@@ -115,6 +123,45 @@ func removeHandler(c *gin.Context) {
 	c.JSON(200, result.Success(c, nil))
 }
 
+func blockHandler(c *gin.Context) {
+	var p friend.BlockParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := sysUserID(c)
+	friend.BlockUser(c.Request.Context(), uid, ut, p.BlockedID, p.BlockedType)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func unblockHandler(c *gin.Context) {
+	var p friend.BlockParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := sysUserID(c)
+	friend.UnblockUser(c.Request.Context(), uid, ut, p.BlockedID, p.BlockedType)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func blockListHandler(c *gin.Context) {
+	uid, ut := sysUserID(c)
+	list := friend.BlockList(c.Request.Context(), uid, ut)
+	c.JSON(200, result.Success(c, list))
+}
+
+func remarkHandler(c *gin.Context) {
+	var p friend.RemarkParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := sysUserID(c)
+	friend.UpdateFriendRemark(c.Request.Context(), uid, ut, p.FriendID, p.FriendType, p.Remark)
+	c.JSON(200, result.Success(c, nil))
+}
+
 func searchHandler(c *gin.Context) {
 	keyword := c.Query("keyword")
 	size := 20
@@ -192,6 +239,45 @@ func clientRemoveHandler(c *gin.Context) {
 	c.JSON(200, result.Success(c, nil))
 }
 
+func clientBlockHandler(c *gin.Context) {
+	var p friend.BlockParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := clientUserID(c)
+	friend.BlockUser(c.Request.Context(), uid, ut, p.BlockedID, p.BlockedType)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func clientUnblockHandler(c *gin.Context) {
+	var p friend.BlockParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := clientUserID(c)
+	friend.UnblockUser(c.Request.Context(), uid, ut, p.BlockedID, p.BlockedType)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func clientBlockListHandler(c *gin.Context) {
+	uid, ut := clientUserID(c)
+	list := friend.BlockList(c.Request.Context(), uid, ut)
+	c.JSON(200, result.Success(c, list))
+}
+
+func clientRemarkHandler(c *gin.Context) {
+	var p friend.RemarkParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	uid, ut := clientUserID(c)
+	friend.UpdateFriendRemark(c.Request.Context(), uid, ut, p.FriendID, p.FriendType, p.Remark)
+	c.JSON(200, result.Success(c, nil))
+}
+
 func clientSearchHandler(c *gin.Context) {
 	keyword := c.Query("keyword")
 	size := 20
@@ -203,6 +289,7 @@ func clientSearchHandler(c *gin.Context) {
 	results := friend.SearchUsers(c.Request.Context(), keyword, size)
 	c.JSON(200, result.Success(c, results))
 }
+
 func init() {
 	registry.RegisterRoute(RegisterSysRoutes)
 	registry.RegisterRoute(RegisterClientRoutes)

@@ -1,0 +1,108 @@
+package v1
+
+import (
+	"strconv"
+
+	"hei-gin/sdk/auth"
+	"hei-gin/sdk/result"
+	"hei-gin/plugins/plugin-im/broadcast"
+
+	"github.com/gin-gonic/gin"
+	"hei-gin/sdk/registry"
+)
+
+func RegisterRoutes(r *gin.Engine) {
+	g := r.Group("/api/v1/sys/im/broadcast")
+	{
+		g.POST("/send", sendHandler)
+		g.GET("/list", listHandler)
+		g.GET("/unread-list", unreadListHandler)
+		g.POST("/read", readHandler)
+		g.GET("/detail", detailHandler)
+	}
+}
+
+func RegisterClientRoutes(r *gin.Engine) {
+	g := r.Group("/api/v1/c/im/broadcast")
+	{
+		g.GET("/unread-list", clientUnreadListHandler)
+		g.POST("/read", clientReadHandler)
+		g.GET("/detail", detailHandler)
+	}
+}
+
+func sendHandler(c *gin.Context) {
+	var p broadcast.SendBroadcastParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	userID := auth.GetLoginID(c)
+	broadcast.Send(userID, &p)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func listHandler(c *gin.Context) {
+	cursor := c.Query("cursor")
+	size := 20
+	if s := c.Query("size"); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 {
+			size = n
+		}
+	}
+	list, hasMore := broadcast.List(cursor, size)
+	c.JSON(200, result.Success(c, gin.H{"records": list, "has_more": hasMore}))
+}
+
+func unreadListHandler(c *gin.Context) {
+	userID := auth.GetLoginID(c)
+	list, _ := broadcast.UnreadList(userID, "BUSINESS")
+	c.JSON(200, result.Success(c, list))
+}
+
+func clientUnreadListHandler(c *gin.Context) {
+	userID := auth.Consumer.GetLoginID(c)
+	list, _ := broadcast.UnreadList(userID, "CONSUMER")
+	c.JSON(200, result.Success(c, list))
+}
+
+func readHandler(c *gin.Context) {
+	var p struct {
+		BroadcastID string `json:"broadcast_id"`
+	}
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	userID := auth.GetLoginID(c)
+	broadcast.MarkRead(userID, "BUSINESS", p.BroadcastID)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func clientReadHandler(c *gin.Context) {
+	var p struct {
+		BroadcastID string `json:"broadcast_id"`
+	}
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	userID := auth.Consumer.GetLoginID(c)
+	broadcast.MarkRead(userID, "CONSUMER", p.BroadcastID)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func detailHandler(c *gin.Context) {
+	id := c.Query("id")
+	vo := broadcast.Detail(id)
+	if vo == nil {
+		c.JSON(200, result.Success(c, nil))
+		return
+	}
+	c.JSON(200, result.Success(c, vo))
+}
+
+func init() {
+	registry.RegisterRoute(RegisterRoutes)
+	registry.RegisterRoute(RegisterClientRoutes)
+}

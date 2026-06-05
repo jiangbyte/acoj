@@ -247,6 +247,20 @@ func (h *Hub) BroadcastBusiness(msg Message) {
 	}
 }
 
+func (h *Hub) BroadcastConsumers(msg Message) {
+	data, _ := json.Marshal(msg)
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for client := range h.clients {
+		if client.UserType == enums.LoginTypeConsumer {
+			select {
+			case client.Send <- data:
+			default:
+			}
+		}
+	}
+}
+
 // StartOnlineBroadcast periodically broadcasts the online count to all clients.
 func (h *Hub) StartOnlineBroadcast() {
 	interval := time.Duration(wsConfig().OnlineBroadcastInterval) * time.Second

@@ -24,9 +24,10 @@ import (
 	_ "hei-gin/plugins/plugin-sys/resource"
 	_ "hei-gin/plugins/plugin-sys/role"
 	_ "hei-gin/plugins/plugin-client/user"
-	_ "hei-gin/plugins/plugin-im/client_message"
+	_ "hei-gin/plugins/plugin-im/model"
 	_ "hei-gin/plugins/plugin-im/group"
 	_ "hei-gin/plugins/plugin-im/friend"
+	_ "hei-gin/plugins/plugin-im/broadcast"
 )
 
 func main() {

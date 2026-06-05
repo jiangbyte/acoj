@@ -536,6 +536,18 @@ func (ch *CrossHub) OnlineCount() int {
 	return ch.local.OnlineCount()
 }
 
+func (ch *CrossHub) BroadcastAll(msg Message) {
+	ch.local.BroadcastAll(msg)
+}
+
+func (ch *CrossHub) BroadcastBusiness(msg Message) {
+	ch.local.BroadcastBusiness(msg)
+}
+
+func (ch *CrossHub) BroadcastConsumers(msg Message) {
+	ch.local.BroadcastConsumers(msg)
+}
+
 func (ch *CrossHub) Close() {
 	if ch == nil {
 		return

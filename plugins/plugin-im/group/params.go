@@ -74,3 +74,40 @@ type MessageVO struct {
 	ReplyTo    string  `json:"reply_to"`
 	CreatedAt  string  `json:"created_at"`
 }
+
+// ─── New Params for Phase 4 ───────────────────────────────────────────
+
+type HandleJoinRequestParam struct {
+	RequestID string `json:"request_id" binding:"required"`
+	Action    string `json:"action" binding:"required"` // approved | rejected
+}
+
+type TransferOwnerParam struct {
+	GroupID string `json:"group_id" binding:"required"`
+	NewOwnerID   string `json:"new_owner_id" binding:"required"`
+	NewOwnerType string `json:"new_owner_type" binding:"required"`
+}
+
+type SetNicknameParam struct {
+	GroupID  string `json:"group_id" binding:"required"`
+	UserID   string `json:"user_id" binding:"required"`
+	UserType string `json:"user_type" binding:"required"`
+	Nickname string `json:"nickname"`
+}
+
+// ConversationVO is used by MyGroupConversations for the unified conversation list.
+type ConversationVO struct {
+	ConversationID   string `json:"conversation_id,omitempty"`
+	ConversationType string `json:"conversation_type,omitempty"`
+	OtherUserID      string `json:"other_user_id,omitempty"`
+	OtherUserType    string `json:"other_user_type,omitempty"`
+	OtherNickname    string `json:"other_nickname,omitempty"`
+	OtherAvatar      string `json:"other_avatar,omitempty"`
+	GroupID          string `json:"group_id,omitempty"`
+	GroupName        string `json:"group_name,omitempty"`
+	GroupAvatar      string `json:"group_avatar,omitempty"`
+	MemberCount      int    `json:"member_count,omitempty"`
+	LastContent      string `json:"last_content"`
+	LastTime         string `json:"last_time"`
+	UnreadCount      int64  `json:"unread_count"`
+}

@@ -33,3 +33,23 @@ type FriendRequestVO struct {
 	Status       string `json:"status"`
 	CreatedAt    string `json:"created_at"`
 }
+
+// BlockVO 黑名单视图
+type BlockVO struct {
+	BlockedID   string `json:"blocked_id"`
+	BlockedType string `json:"blocked_type"`
+	CreatedAt   string `json:"created_at"`
+}
+
+// RemarkParam 修改备注
+type RemarkParam struct {
+	FriendID   string `json:"friend_id" binding:"required"`
+	FriendType string `json:"friend_type" binding:"required"`
+	Remark     string `json:"remark"`
+}
+
+// BlockParam 拉黑/取消拉黑
+type BlockParam struct {
+	BlockedID   string `json:"blocked_id" binding:"required"`
+	BlockedType string `json:"blocked_type" binding:"required"`
+}

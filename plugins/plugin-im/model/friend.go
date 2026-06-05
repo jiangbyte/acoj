@@ -1,8 +1,8 @@
-package friend
+package model
 
-import (
-	"time"
-)
+import "time"
+
+// ─── Friend Models ─────────────────────────────────────────────────────
 
 // FriendRequest 好友请求
 type FriendRequest struct {
@@ -12,7 +12,7 @@ type FriendRequest struct {
 	ReceiverID   string     `gorm:"size:32;not null;index:idx_fr_receiver_status" json:"receiver_id"`
 	ReceiverType string     `gorm:"size:20;not null" json:"receiver_type"`
 	Remark       string     `gorm:"size:255" json:"remark"`
-	Status       string     `gorm:"size:10;not null;default:pending;index:idx_fr_sender_status;index:idx_fr_receiver_status" json:"status"` // pending | accepted | rejected
+	Status       string     `gorm:"size:10;not null;default:pending" json:"status"` // pending | accepted | rejected
 	CreatedAt    *time.Time `json:"created_at"`
 	UpdatedAt    *time.Time `json:"updated_at"`
 }
@@ -34,12 +34,12 @@ func (Friendship) TableName() string { return "im_friendship" }
 
 // FriendBlock 黑名单
 type FriendBlock struct {
-	ID          string     `gorm:"primaryKey;size:32" json:"id"`
-	UserID      string     `gorm:"size:32;not null;uniqueIndex:idx_fb_pair" json:"user_id"`
-	UserType    string     `gorm:"size:20;not null;uniqueIndex:idx_fb_pair" json:"user_type"`
-	BlockedID   string     `gorm:"size:32;not null;uniqueIndex:idx_fb_pair" json:"blocked_id"`
-	BlockedType string     `gorm:"size:20;not null;uniqueIndex:idx_fb_pair" json:"blocked_type"`
-	CreatedAt   *time.Time `json:"created_at"`
+	ID         string     `gorm:"primaryKey;size:32" json:"id"`
+	UserID     string     `gorm:"size:32;not null;uniqueIndex:idx_fb_pair" json:"user_id"`
+	UserType   string     `gorm:"size:20;not null;uniqueIndex:idx_fb_pair" json:"user_type"`
+	BlockedID  string     `gorm:"size:32;not null;uniqueIndex:idx_fb_pair" json:"blocked_id"`
+	BlockedType string    `gorm:"size:20;not null;uniqueIndex:idx_fb_pair" json:"blocked_type"`
+	CreatedAt  *time.Time `json:"created_at"`
 }
 
 func (FriendBlock) TableName() string { return "im_friend_block" }

@@ -1,17 +1,16 @@
 package sys_message
 
-// MessageVO is the view object for a business site message.
+// MessageVO is the view object for a message.
 type MessageVO struct {
 	ConversationID string  `json:"conversation_id"`
 	ID             string  `json:"id"`
-	Title          string  `json:"title"`
 	Content        string  `json:"content,omitempty"`
-	SenderID       *string `json:"sender_id"`
+	MsgType        string  `json:"msg_type"`
+	Extra          string  `json:"extra,omitempty"`
+	SenderID       string  `json:"sender_id"`
 	SenderType     string  `json:"sender_type"`
 	ReceiverID     string  `json:"receiver_id"`
 	ReceiverType   string  `json:"receiver_type"`
-	MessageType    string  `json:"message_type"`
-	Extra          string  `json:"extra,omitempty"`
 	Status         string  `json:"status"`
 	ReadAt         *string `json:"read_at"`
 	CreatedAt      string  `json:"created_at"`
@@ -25,14 +24,72 @@ type MessagePageParam struct {
 }
 
 type MessageSendParam struct {
-	Title        string   `json:"title" binding:"required"`
 	Content      string   `json:"content"`
-	ReceiverIDs  []string `json:"receiver_ids"`
-	ReceiverType string   `json:"receiver_type"`
 	MsgType      string   `json:"msg_type"`
 	Extra        string   `json:"extra"`
+	ReceiverIDs  []string `json:"receiver_ids"`
+	ReceiverType string   `json:"receiver_type"`
+}
+
+type RecallParam struct {
+	MessageID string `json:"message_id"`
+}
+
+type ForwardParam struct {
+	MessageID      string   `json:"message_id"`
+	TargetIDs      []string `json:"target_ids"`
+	TargetType     string   `json:"target_type"`
+}
+
+type SearchParam struct {
+	Keyword string `json:"keyword" form:"keyword"`
+	Cursor  string `json:"cursor" form:"cursor"`
+	Size    int    `json:"size" form:"size"`
 }
 
 type UnreadCountVO struct {
 	Count int64 `json:"count"`
+}
+
+// Conversation types
+const (
+	ConvTypeSingle = "single"
+	ConvTypeGroup  = "group"
+)
+
+type ConversationVO struct {
+	ConversationID   string `json:"conversation_id"`
+	ConversationType string `json:"conversation_type"`
+
+	// Single-chat fields
+	OtherUserID   string `json:"other_user_id,omitempty"`
+	OtherUserType string `json:"other_user_type,omitempty"`
+	OtherNickname string `json:"other_nickname,omitempty"`
+	OtherAvatar   string `json:"other_avatar,omitempty"`
+
+	// Group fields
+	GroupID     string `json:"group_id,omitempty"`
+	GroupName   string `json:"group_name,omitempty"`
+	GroupAvatar string `json:"group_avatar,omitempty"`
+	MemberCount int    `json:"member_count,omitempty"`
+
+	LastContent string `json:"last_content"`
+	LastTime    string `json:"last_time"`
+	UnreadCount int64  `json:"unread_count"`
+}
+
+type ConversationMessageVO struct {
+	ID         string  `json:"id"`
+	SenderID   string  `json:"sender_id"`
+	SenderType string  `json:"sender_type"`
+	Content    string  `json:"content"`
+	MsgType    string  `json:"msg_type"`
+	Extra      string  `json:"extra,omitempty"`
+	Status     string  `json:"status"`
+	CreatedAt  string  `json:"created_at"`
+}
+
+type GetOrCreateConversationParam struct {
+	UserID   string `json:"user_id"`
+	UserType string `json:"user_type"`
 }

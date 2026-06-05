@@ -16,17 +16,24 @@ func RegisterSysRoutes(r *gin.Engine) {
 	g := r.Group("/api/v1/sys/im/group")
 	{
 		g.POST("/create", createHandler)
+		g.GET("/my-groups", myGroupsHandler)
 		g.GET("/detail", detailHandler)
+		g.POST("/update", updateHandler)
 		g.POST("/dissolve", dissolveHandler)
 
 		g.POST("/invite", inviteHandler)
 		g.POST("/join", joinHandler)
+		g.GET("/pending-join-requests", pendingJoinRequestsHandler)
+		g.POST("/handle-join-request", handleJoinRequestHandler)
 		g.POST("/leave", leaveHandler)
 		g.POST("/kick", kickHandler)
-		g.PUT("/set-role", setRoleHandler)
+		g.POST("/set-role", setRoleHandler)
+		g.POST("/transfer-owner", transferOwnerHandler)
+		g.POST("/set-nickname", setNicknameHandler)
 
 		g.GET("/messages", messagesHandler)
 		g.GET("/search", searchHandler)
+		g.GET("/search-groups", searchGroupsHandler)
 		g.POST("/send", middleware.RateLimiter("sys_group_send", 3, 20), sendHandler)
 		g.POST("/recall", recallHandler)
 		g.POST("/mark-read", markReadHandler)
@@ -40,11 +47,13 @@ func RegisterClientRoutes(r *gin.Engine) {
 	g := r.Group("/api/v1/c/im/group")
 	{
 		g.POST("/create", createHandler)
+		g.GET("/my-groups", myGroupsHandler)
 		g.GET("/detail", detailHandler)
 		g.POST("/join", joinHandler)
 		g.POST("/leave", leaveHandler)
 		g.GET("/messages", messagesHandler)
 		g.GET("/search", searchHandler)
+		g.GET("/search-groups", searchGroupsHandler)
 		g.POST("/send", middleware.RateLimiter("c_group_send", 3, 20), sendHandler)
 		g.POST("/recall", recallHandler)
 		g.POST("/mark-read", markReadHandler)
@@ -57,7 +66,6 @@ func getLoginID(c *gin.Context) (string, string) {
 	if uid != "" {
 		return uid, group.UserTypeBusiness
 	}
-	// Fallback: consumer login
 	token := auth.Consumer.GetTokenValue(c)
 	uid = auth.Consumer.GetLoginIDByToken(token)
 	if uid != "" {
@@ -137,6 +145,23 @@ func joinHandler(c *gin.Context) {
 	c.JSON(200, result.Success(c, nil))
 }
 
+func pendingJoinRequestsHandler(c *gin.Context) {
+	groupID := c.Query("group_id")
+	requests := group.PendingJoinRequests(c.Request.Context(), groupID)
+	c.JSON(200, result.Success(c, requests))
+}
+
+func handleJoinRequestHandler(c *gin.Context) {
+	var p group.HandleJoinRequestParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	userID, userType := getLoginID(c)
+	group.HandleJoinRequest(c.Request.Context(), userID, userType, &p)
+	c.JSON(200, result.Success(c, nil))
+}
+
 func leaveHandler(c *gin.Context) {
 	var p struct{ GroupID string `json:"group_id"` }
 	if err := c.ShouldBindJSON(&p); err != nil {
@@ -167,6 +192,28 @@ func setRoleHandler(c *gin.Context) {
 	}
 	userID, _ := getLoginID(c)
 	group.SetRole(c.Request.Context(), userID, &p)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func transferOwnerHandler(c *gin.Context) {
+	var p group.TransferOwnerParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	userID, _ := getLoginID(c)
+	group.TransferOwner(c.Request.Context(), userID, &p)
+	c.JSON(200, result.Success(c, nil))
+}
+
+func setNicknameHandler(c *gin.Context) {
+	var p group.SetNicknameParam
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
+		return
+	}
+	userID, userType := getLoginID(c)
+	group.SetMemberNickname(c.Request.Context(), userID, userType, &p)
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -201,6 +248,18 @@ func searchHandler(c *gin.Context) {
 	}
 	msgs, hasMore := group.SearchMessages(c.Request.Context(), groupID, keyword, cursor, size)
 	c.JSON(200, result.Success(c, gin.H{"records": msgs, "has_more": hasMore}))
+}
+
+func searchGroupsHandler(c *gin.Context) {
+	keyword := c.Query("keyword")
+	size := 20
+	if s := c.Query("size"); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 {
+			size = n
+		}
+	}
+	list := group.SearchGroups(c.Request.Context(), keyword, size)
+	c.JSON(200, result.Success(c, list))
 }
 
 func sendHandler(c *gin.Context) {
@@ -247,7 +306,7 @@ func muteHandler(c *gin.Context) {
 		GroupID  string `json:"group_id"`
 		UserID   string `json:"user_id"`
 		UserType string `json:"user_type"`
-		Duration int    `json:"duration"` // minutes
+		Duration int    `json:"duration"`
 	}
 	if err := c.ShouldBindJSON(&p); err != nil {
 		c.JSON(200, result.Failure(c, "参数错误", 400, nil))
