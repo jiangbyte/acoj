@@ -222,16 +222,6 @@ go run main.go
 
 启动成功后访问 `http://localhost:18885/` 验证服务运行状态。
 
-## 相关项目
-
-- **[Hei Boot](https://github.com/jiangbyte/hei-boot)** — Java Spring Boot 单体版本
-- **[Hei FastAPI](https://github.com/jiangbyte/hei-fastapi)** — Python FastAPI 单体版本
-- **[Hei Admin Vue](https://github.com/jiangbyte/hei-admin-vue)** — Vue3 前端管理后台
-
-## 开源协议
-
-本项目采用 [MIT License](LICENSE) 开源协议
-
 ## WebSocket / 站内信 IM
 
 框架内置跨实例 WebSocket IM 系统，支持实时消息推送、在线状态感知、多实例水平扩展。
@@ -346,3 +336,13 @@ redisPort := config.C.Redis.Port
 // 读取模块专属配置（无需修改 config.go）
 rawVal := config.C.Raw["my_module"]
 ```
+
+## 相关项目
+
+- **[Hei Boot](https://github.com/jiangbyte/hei-boot)** — Java Spring Boot 单体版本
+- **[Hei FastAPI](https://github.com/jiangbyte/hei-fastapi)** — Python FastAPI 单体版本
+- **[Hei Admin Vue](https://github.com/jiangbyte/hei-admin-vue)** — Vue3 前端管理后台
+
+## 开源协议
+
+本项目采用 [MIT License](LICENSE) 开源协议
