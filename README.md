@@ -17,6 +17,14 @@
 
 **在线文档**: [https://jiangbyte.github.io/hei-gin/](https://jiangbyte.github.io/hei-gin/)
 
+## 预览
+
+![](./docs/readme/login.png)
+
+![](./docs/readme/dashboard.png)
+
+![](./docs/readme/home.png)
+
 ## 技术栈
 
 | 类型 | 技术 |

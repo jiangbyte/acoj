@@ -42,8 +42,7 @@ hei-gin/
 │   │   ├── module.go                # 认证模块初始化
 │   │   ├── middleware/
 │   │   │   ├── check_login.go       # B 端登录验证中间件
-│   │   │   ├── check_permission.go  # B 端权限检查中间件
-│   │   │   ├── check_permission.go # B 端 + C 端权限检查中间件
+│   │   │   ├── check_permission.go  # B 端 + C 端权限检查中间件
 │   │   │   ├── check_role.go        # B 端角色检查中间件
 │   │   │   └── norepeat.go          # 防重复提交中间件
 │   │   └── pojo/

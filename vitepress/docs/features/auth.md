@@ -180,7 +180,7 @@ loginType := tool.GetLoginType()  // 返回 "CONSUMER"
  ├── 1. 获取验证码 ──────────► │  GET /api/v1/public/b/captcha
  │◄── 返回验证码图片 ──────────┤
  │                             │
- ├── 2. 获取 SM2 公钥 ───────► │  GET /api/v1/public/b/sm2-public-key
+ ├── 2. 获取 SM2 公钥 ───────► │  GET /api/v1/public/b/sm2/public-key
  │◄── 返回公钥 ────────────────┤
  │                             │
  ├── 3. 加密密码 ──────────────┤  前端使用公钥 SM2 C1C3C2 模式加密密码

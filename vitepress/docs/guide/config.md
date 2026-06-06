@@ -13,7 +13,6 @@ app:
   port: 18885
   upload_max_size: 52428800
   timeout_keep_alive: 15
-  timeout_keep_alive: 15
 
 db:
   host: localhost
