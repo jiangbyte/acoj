@@ -12,6 +12,7 @@ import (
 var (
 	// staticPaths lists paths that require no authentication.
 	staticPaths = []string{
+		"/api/v1/sys/dict/tree",
 		"/favicon.ico",
 		"/docs",
 		"/redoc",

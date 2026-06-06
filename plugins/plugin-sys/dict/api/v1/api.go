@@ -56,7 +56,6 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// GET /api/v1/sys/dict/tree
 	r.GET("/api/v1/sys/dict/tree",
-		registry.Perm("sys:dict:tree", "字典树"),
 		dictTree,
 	)
 
@@ -190,5 +189,4 @@ func dictGetChildren(c *gin.Context) {
 
 func init() {
 	registry.RegisterRoute(RegisterRoutes)
-	registry.RegisterRoute(RegisterPublicRoutes)
 }
