@@ -12,7 +12,7 @@ import (
 	"hei-gin/sdk/pojo"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
-	"hei-gin/sdk/ws"
+	"hei-gin/plugins/plugin-im/ws"
 	imModel "hei-gin/plugins/plugin-im/model"
 
 	"github.com/gin-gonic/gin"

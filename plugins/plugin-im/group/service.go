@@ -13,7 +13,7 @@ import (
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/pojo"
 	"hei-gin/sdk/utils"
-	ws "hei-gin/sdk/ws"
+	ws "hei-gin/plugins/plugin-im/ws"
 
 	imModel "hei-gin/plugins/plugin-im/model"
 )

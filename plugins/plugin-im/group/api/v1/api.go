@@ -9,6 +9,7 @@ import (
 	authMW "hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/log"
 	"hei-gin/sdk/result"
+	"hei-gin/sdk/registry"
 	"hei-gin/plugins/plugin-im/group"
 
 	"github.com/gin-gonic/gin"
@@ -335,4 +336,9 @@ func unmuteHandler(c *gin.Context) {
 	kp := group.KickParam{GroupID: p.GroupID, UserID: p.UserID, UserType: p.UserType}
 	group.UnmuteMember(c.Request.Context(), userID, userType, &kp)
 	c.JSON(200, result.Success(c, nil))
+}
+
+func init() {
+	registry.RegisterRoute(RegisterSysRoutes)
+	registry.RegisterRoute(RegisterClientRoutes)
 }

@@ -19,50 +19,50 @@ import (
 // ─── Config helpers ───────────────────────────────────────────────────
 
 func hbInterval() time.Duration {
-	if config.C != nil && config.C.WS.HeartbeatInterval > 0 {
-		return time.Duration(config.C.WS.HeartbeatInterval) * time.Second
+	if cfg.HeartbeatInterval > 0 {
+		return time.Duration(cfg.HeartbeatInterval) * time.Second
 	}
 	return 15 * time.Second
 }
 
 func instTTL() time.Duration {
-	if config.C != nil && config.C.WS.InstanceTTL > 0 {
-		return time.Duration(config.C.WS.InstanceTTL) * time.Second
+	if cfg.InstanceTTL > 0 {
+		return time.Duration(cfg.InstanceTTL) * time.Second
 	}
 	return 60 * time.Second
 }
 
 func staleClean() time.Duration {
-	if config.C != nil && config.C.WS.StaleCleanInterval > 0 {
-		return time.Duration(config.C.WS.StaleCleanInterval) * time.Minute
+	if cfg.StaleCleanInterval > 0 {
+		return time.Duration(cfg.StaleCleanInterval) * time.Minute
 	}
 	return 5 * time.Minute
 }
 
 func rlWindow() time.Duration {
-	if config.C != nil && config.C.WS.RateLimitWindow > 0 {
-		return time.Duration(config.C.WS.RateLimitWindow) * time.Second
+	if cfg.RateLimitWindow > 0 {
+		return time.Duration(cfg.RateLimitWindow) * time.Second
 	}
 	return 10 * time.Second
 }
 
 func rlMax() int64 {
-	if config.C != nil && config.C.WS.RateLimitMax > 0 {
-		return int64(config.C.WS.RateLimitMax)
+	if cfg.RateLimitMax > 0 {
+		return int64(cfg.RateLimitMax)
 	}
 	return 30
 }
 
 func dedupTTL() time.Duration {
-	if config.C != nil && config.C.WS.DedupTTL > 0 {
-		return time.Duration(config.C.WS.DedupTTL) * time.Second
+	if cfg.DedupTTL > 0 {
+		return time.Duration(cfg.DedupTTL) * time.Second
 	}
 	return 30 * time.Second
 }
 
 func pollTO() time.Duration {
-	if config.C != nil && config.C.WS.PollTimeout > 0 {
-		return time.Duration(config.C.WS.PollTimeout) * time.Second
+	if cfg.PollTimeout > 0 {
+		return time.Duration(cfg.PollTimeout) * time.Second
 	}
 	return 2 * time.Second
 }

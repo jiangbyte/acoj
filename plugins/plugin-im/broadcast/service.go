@@ -10,7 +10,7 @@ import (
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/pojo"
 	"hei-gin/sdk/utils"
-	"hei-gin/sdk/ws"
+	"hei-gin/plugins/plugin-im/ws"
 )
 
 // ==================== Send ====================

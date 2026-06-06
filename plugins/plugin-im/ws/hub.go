@@ -8,11 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"hei-gin/sdk/config"
 	"hei-gin/sdk/enums"
 
 	"github.com/gorilla/websocket"
 )
+
+// cfg is the package-level ws configuration, loaded once from config.C.Raw["ws"].
+var cfg = loadConfig()
 
 // maxClientsPerIP limits the number of concurrent WebSocket connections from a single IP.
 const maxClientsPerIP = 10
@@ -21,8 +23,8 @@ const maxClientsPerIP = 10
 const maxClientsPerUser = 3
 
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:  wsConfig().ReadBufferSize,
-	WriteBufferSize: wsConfig().WriteBufferSize,
+	ReadBufferSize:  cfg.ReadBufferSize,
+	WriteBufferSize: cfg.WriteBufferSize,
 	CheckOrigin: func(r *http.Request) bool {
 		// In production, validate against config.C.CORS.AllowOrigins
 		// For development, allow all origins (consistent with CORS config)
@@ -30,29 +32,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func wsConfig() *config.WSConfig {
-	if config.C != nil {
-		return &config.C.WS
-	}
-	return defaultConfig()
-}
 
-func defaultConfig() *config.WSConfig {
-	return &config.WSConfig{
-		ReadBufferSize:          1024,
-		WriteBufferSize:         1024,
-		HeartbeatInterval:       15,
-		InstanceTTL:             60,
-		StaleCleanInterval:      5,
-		RateLimitWindow:         10,
-		RateLimitMax:            30,
-		DedupTTL:                30,
-		PollTimeout:             2,
-		PongTimeout:             60,
-		WriteTimeout:            10,
-		OnlineBroadcastInterval: 60,
-	}
-}
 
 // Hub maintains the set of active clients and broadcasts online counts.
 type Hub struct {
@@ -263,7 +243,7 @@ func (h *Hub) BroadcastConsumers(msg Message) {
 
 // StartOnlineBroadcast periodically broadcasts the online count to all clients.
 func (h *Hub) StartOnlineBroadcast() {
-	interval := time.Duration(wsConfig().OnlineBroadcastInterval) * time.Second
+	interval := time.Duration(cfg.OnlineBroadcastInterval) * time.Second
 	if interval <= 0 {
 		interval = 60 * time.Second
 	}

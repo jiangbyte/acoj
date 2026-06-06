@@ -231,6 +231,7 @@ func getOrCreateConversationHandler(c *gin.Context) {
 
 func init() {
 	registry.RegisterRoute(RegisterRoutes)
+	registry.RegisterRoute(RegisterClientRoutes)
 }
 
 // ==================== Consumer (C端) Routes ====================

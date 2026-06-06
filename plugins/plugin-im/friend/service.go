@@ -8,7 +8,7 @@ import (
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/pojo"
 	"hei-gin/sdk/utils"
-	"hei-gin/sdk/ws"
+	"hei-gin/plugins/plugin-im/ws"
 	imModel "hei-gin/plugins/plugin-im/model"
 
 	sysUser "hei-gin/plugins/plugin-sys/user"

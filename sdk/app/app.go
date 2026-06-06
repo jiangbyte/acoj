@@ -17,7 +17,6 @@ import (
 	"hei-gin/sdk/middleware"
 	"hei-gin/sdk/module"
 	"hei-gin/sdk/registry"
-	"hei-gin/sdk/ws"
 
 	_ "hei-gin/sdk/auth"
 	_ "hei-gin/sdk/captcha"
@@ -38,7 +37,6 @@ func Run() {
 		log.Fatalf("[APP] Failed to init Redis: %v", err)
 	}
 
-	ws.GlobalCrossHub = ws.NewCrossHub(ws.GlobalHub, db.Redis)
 
 	if err := module.InitAll(); err != nil {
 		log.Fatalf("[APP] Module init failed: %v", err)
@@ -90,7 +88,6 @@ func Run() {
 	module.StopAll()
 
 	db.Close()
-	ws.GlobalCrossHub.Close()
 	db.CloseRedis()
 	log.Println("[APP] Server exited")
 }
