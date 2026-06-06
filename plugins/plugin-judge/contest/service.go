@@ -219,8 +219,20 @@ func RemoveService(c *gin.Context, param ContestRemoveParam) error {
 	})
 }
 
-// DetailService 竞赛详情
+// DetailService 竞赛详情（B端，不检测报名状态）
 func DetailService(c *gin.Context, id string) (*ContestDetailVO, error) {
+	return getContestDetail(c, id, "")
+}
+
+// PublicDetailService 公开竞赛详情（C端，检测用户登录状态并返回 is_registered）
+func PublicDetailService(c *gin.Context, id string) (*ContestDetailVO, error) {
+	// 可选地检测C端用户是否已登录，不强制
+	userID := auth.Consumer.GetLoginIDDefaultNull(c)
+	return getContestDetail(c, id, userID)
+}
+
+// getContestDetail 内部详情查询
+func getContestDetail(c *gin.Context, id, userID string) (*ContestDetailVO, error) {
 	ctx := context.Background()
 	var contest JudgeContest
 	if err := db.DB.WithContext(ctx).Where("id = ?", id).First(&contest).Error; err != nil {
@@ -229,6 +241,16 @@ func DetailService(c *gin.Context, id string) (*ContestDetailVO, error) {
 
 	vo := &ContestDetailVO{}
 	vo.ContestVO = modelToVO(&contest)
+	vo.IsRegistered = false
+
+	// 检测当前用户是否已报名
+	if userID != "" {
+		var count int64
+		db.DB.WithContext(ctx).Model(&RelContestUser{}).
+			Where("contest_id = ? AND user_id = ?", id, userID).
+			Count(&count)
+		vo.IsRegistered = count > 0
+	}
 
 	var rels []RelContestProblem
 	db.DB.WithContext(ctx).Where("contest_id = ?", id).Order("sort ASC").Find(&rels)
@@ -264,7 +286,6 @@ func DetailService(c *gin.Context, id string) (*ContestDetailVO, error) {
 	return vo, nil
 }
 
-// RegisterService 报名竞赛
 // RegisterService 报名竞赛（B端管理员）
 func RegisterService(c *gin.Context, param *ContestRegisterParam) error {
 	return doRegister(c, param, auth.GetLoginID(c))
@@ -304,6 +325,7 @@ func doRegister(c *gin.Context, param *ContestRegisterParam, userID string) erro
 	}
 	return db.DB.WithContext(ctx).Create(&rel).Error
 }
+
 func modelToVO(c *JudgeContest) ContestVO {
 	startTime := ""
 	if c.StartTime != nil {

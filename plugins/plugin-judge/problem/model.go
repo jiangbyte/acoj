@@ -3,6 +3,7 @@ package problem
 import "time"
 
 // JudgeProblem 题目实体
+// 资源限制已移至 judge_problem_language_limit 表, 按语言独立配置
 type JudgeProblem struct {
 	ID            string     `gorm:"primaryKey;size:32" json:"id"`
 	Title         string     `gorm:"size:255;index" json:"title"`
@@ -13,10 +14,6 @@ type JudgeProblem struct {
 	SampleOutput  string     `gorm:"type:text" json:"sample_output"`
 	Hint          string     `gorm:"type:text" json:"hint"`
 	Source        string     `gorm:"size:255" json:"source"`
-	TimeLimit     int64      `gorm:"default:1000" json:"time_limit"`     // ms
-	MemoryLimit   int64      `gorm:"default:262144" json:"memory_limit"` // KB
-	StackLimit    int64      `gorm:"default:65536" json:"stack_limit"`   // KB
-	OutputLimit   int64      `gorm:"default:65536" json:"output_limit"`  // KB
 	JudgeType     string     `gorm:"size:16;default:default" json:"judge_type"` // default / spj / interactive
 	SpjCode       string     `gorm:"type:text" json:"spj_code"`
 	SpjLanguage   string     `gorm:"size:32" json:"spj_language"`

@@ -13,6 +13,7 @@ const spjSeparator = "---SPLIT---"
 
 // judgeSPJ SPJ 判题
 // 编译用户代码和 SPJ 代码各一次, 缓存二进制, 对每个测试用例复用
+// 支持比赛模式: ACM 模式下首个 WA/非AC 终止, OI/IOI 跑完全部用例
 func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestcase) {
 	backend := sandbox.DefaultPool.Get()
 	if backend == nil {
@@ -21,16 +22,15 @@ func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestca
 	}
 
 	// 编译用户代码
-	_, userBinary := compileAndGetBinary(backend, task.Code, task.Language)
-	if task.Code != "" && !isInterpretedLanguage(task.Language) && len(userBinary) == 0 {
-		// 编译型语言编译失败已经在 compileAndGetBinary 中返回 CompileError
-		// 这里处理解释型语言的语法错误
+	_, userBinary, ok := compileCodeWithCheck(backend, task.SubmissionID, task.Code, task.Language)
+	if !ok {
+		return
 	}
 
 	// 编译 SPJ 代码
-	_, spjBinary := compileAndGetBinary(backend, task.SpjCode, task.SpjLanguage)
-	if task.SpjCode != "" && !isInterpretedLanguage(task.SpjLanguage) && len(spjBinary) == 0 {
-		// 同样处理
+	_, spjBinary, ok := compileCodeWithCheck(backend, task.SubmissionID, task.SpjCode, task.SpjLanguage)
+	if !ok {
+		return
 	}
 
 	totalScore := 0
@@ -56,6 +56,9 @@ func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestca
 		if userResult.Status != judgetypes.StatusAccepted {
 			if p, ok := statusPriority[userResult.Status]; ok && p < statusPriority[overallStatus] {
 				overallStatus = userResult.Status
+			}
+			if shouldBreakOnFirstFail(task) {
+				break
 			}
 			continue
 		}
@@ -83,6 +86,9 @@ func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestca
 			totalScore += tc.Score
 		} else if overallStatus == judgetypes.StatusAccepted {
 			overallStatus = judgetypes.StatusWrongAnswer
+			if shouldBreakOnFirstFail(task) {
+				break
+			}
 		}
 	}
 

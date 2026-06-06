@@ -9,6 +9,7 @@ import (
 	"hei-gin/plugins/plugin-judge/judgetypes"
 	"hei-gin/plugins/plugin-judge/judge"
 	"hei-gin/plugins/plugin-judge/sandbox"
+	"hei-gin/plugins/plugin-judge/langconf"
 	submissionApi "hei-gin/plugins/plugin-judge/submission/api/v1"
 )
 
@@ -31,6 +32,7 @@ func (p *JudgePlugin) Name() string { return "plugin-judge" }
 func (p *JudgePlugin) Init() error {
 	workerCount := judge.GetConfigInt("worker_count", 4)
 	healthCheckInterval := judge.GetConfigInt("health_check_interval", 30)
+	langconf.Init()
 	maxRetry := judge.GetConfigInt("max_retry", 3)
 	recoveryInterval := judge.GetConfigInt("recovery_interval", 120)
 

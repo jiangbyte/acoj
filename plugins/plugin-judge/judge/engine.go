@@ -7,6 +7,7 @@ import (
 
 	"hei-gin/sdk/db"
 	"hei-gin/plugins/plugin-judge/judgetypes"
+	"hei-gin/plugins/plugin-judge/langconf"
 	"hei-gin/plugins/plugin-judge/sandbox"
 	"hei-gin/plugins/plugin-judge/testcase"
 )
@@ -53,7 +54,8 @@ func (e *JudgeEngine) worker(id int) {
 }
 
 func (e *JudgeEngine) processTask(task *JudgeTask) {
-	log.Printf("[judge] worker processing submission %s", task.SubmissionID)
+	log.Printf("[judge] worker processing submission %s (judge_type=%s, contest_type=%s)",
+		task.SubmissionID, task.JudgeType, task.ContestType)
 
 	updateJudgeResult(task.SubmissionID, "JUDGING", 0, 0, 0, "")
 
@@ -83,13 +85,18 @@ func (e *JudgeEngine) processTask(task *JudgeTask) {
 	}
 }
 
-// isInterpretedLanguage 判断是否为解释型语言
+// ---------- 比赛模式辅助 ----------
+
+// shouldBreakOnFirstFail 判断是否应在遇到首个失败测试用例时立即终止
+// ACM模式: 是. OI/IOI: 否（需要跑完所有用例以获取部分分）
+func shouldBreakOnFirstFail(task *JudgeTask) bool {
+	return task.ContestType == "ACM"
+}
+
+// ---------- 语言判断（委托 langconf 实现动态扩展） ----------
+
 func isInterpretedLanguage(lang string) bool {
-	switch lang {
-	case "python", "python3", "bash", "sh", "javascript", "js", "node":
-		return true
-	}
-	return false
+	return langconf.IsInterpreted(lang)
 }
 
 // compileAndGetBinary 编译用户代码并返回二进制 (解释型语言返回 nil)
@@ -100,15 +107,14 @@ func compileAndGetBinary(backend judgetypes.SandboxBackend, code, language strin
 	if code == "" {
 		return &judgetypes.ExecResult{Status: judgetypes.StatusAccepted}, nil
 	}
-	// 执行一次编译+运行 (无 stdin), 获取二进制
 	result, err := backend.Exec(&judgetypes.ExecRequest{
 		Code:        code,
 		Language:    language,
-		MaxCPUTime:  10000 * 1e6,        // 10s ns
-		MaxRealTime: 30000 * 1e6,        // 30s ns
-		MaxMemory:   512 * 1024 * 1024,  // 512MB
-		MaxStack:    256 * 1024 * 1024,  // 256MB
-		MaxOutput:   64 * 1024 * 1024,   // 64MB
+		MaxCPUTime:  10000 * 1e6,
+		MaxRealTime: 30000 * 1e6,
+		MaxMemory:   512 * 1024 * 1024,
+		MaxStack:    256 * 1024 * 1024,
+		MaxOutput:   64 * 1024 * 1024,
 	})
 	if err != nil {
 		return &judgetypes.ExecResult{Status: judgetypes.StatusSE, Error: err.Error()}, nil
@@ -116,8 +122,22 @@ func compileAndGetBinary(backend judgetypes.SandboxBackend, code, language strin
 	if result.Status == judgetypes.StatusCompileError {
 		return result, nil
 	}
-	// 编译成功, 缓存二进制
 	return result, result.Binary
+}
+
+// compileCodeWithCheck 执行编译并检查编译结果, 返回编译结果和二进制.
+// 如果编译失败, 直接更新提交状态为 CompileError 或 SE 并返回 false.
+func compileCodeWithCheck(backend judgetypes.SandboxBackend, submissionID, code, language string) (*judgetypes.ExecResult, []byte, bool) {
+	compileResult, binary := compileAndGetBinary(backend, code, language)
+	if compileResult.Status == judgetypes.StatusCompileError {
+		updateJudgeResult(submissionID, judgetypes.StatusCompileError, 0, 0, 0, compileResult.Stderr)
+		return compileResult, nil, false
+	}
+	if compileResult.Status == judgetypes.StatusSE {
+		updateJudgeResult(submissionID, judgetypes.StatusSE, 0, 0, 0, compileResult.Error)
+		return compileResult, nil, false
+	}
+	return compileResult, binary, true
 }
 
 // runTestCase 运行单个测试用例 (使用缓存的二进制)
@@ -148,14 +168,8 @@ func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTe
 		return
 	}
 
-	// 编译一次, 缓存二进制
-	compileResult, binary := compileAndGetBinary(backend, task.Code, task.Language)
-	if compileResult.Status == judgetypes.StatusCompileError {
-		e.updateSimple(task.SubmissionID, judgetypes.StatusCompileError, 0, 0, 0, compileResult.Stderr)
-		return
-	}
-	if compileResult.Status == judgetypes.StatusSE {
-		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, compileResult.Error)
+	_, binary, ok := compileCodeWithCheck(backend, task.SubmissionID, task.Code, task.Language)
+	if !ok {
 		return
 	}
 
@@ -167,6 +181,9 @@ func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTe
 				Status: judgetypes.StatusSE,
 				Error:  err.Error(),
 			})
+			if shouldBreakOnFirstFail(task) {
+				break
+			}
 			continue
 		}
 
@@ -177,11 +194,18 @@ func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTe
 		}
 
 		details = append(details, *runResult)
+
+		// ACM 模式: 遇到首个非 AC 立即终止
+		if shouldBreakOnFirstFail(task) && runResult.Status != judgetypes.StatusAccepted {
+			break
+		}
 	}
 
 	result := e.aggregateResult(details, testcases)
 	e.updateSimple(task.SubmissionID, result.Status, result.Score, result.TimeUsed, result.MemoryUsed, result.Error)
 }
+
+// ---------- 输出比对 ----------
 
 // compareOutput 比对用户输出与标准答案（忽略行尾空白和末尾空行差异）
 func compareOutput(userOutput, expectedOutput string) bool {
@@ -200,6 +224,8 @@ func compareOutput(userOutput, expectedOutput string) bool {
 	return true
 }
 
+// ---------- 结果聚合 ----------
+
 // statusPriority 判题结果优先级（数值越小优先级越高）
 var statusPriority = map[string]int{
 	judgetypes.StatusSE:          0,
@@ -211,7 +237,9 @@ var statusPriority = map[string]int{
 }
 
 // aggregateResult 聚合所有测试用例的判题结果
-// 分数为通过测试用例的分数之和
+//
+//	ACM: 首个非 AC 停止, 分数=通过测试用例分数之和
+//	OI/IOI: 执行所有用例, 分数=通过测试用例分数之和
 func (e *JudgeEngine) aggregateResult(details []judgetypes.ExecResult, testcases []testcase.JudgeTestcase) JudgeResult {
 	result := JudgeResult{
 		Status:   judgetypes.StatusAccepted,
@@ -242,6 +270,8 @@ func (e *JudgeEngine) aggregateResult(details []judgetypes.ExecResult, testcases
 
 	return result
 }
+
+// ---------- 更新判题结果 ----------
 
 func (e *JudgeEngine) updateSimple(submissionID, status string, score int, timeUsed, memoryUsed int64, errMsg string) {
 	updateJudgeResult(submissionID, status, score, timeUsed, memoryUsed, errMsg)

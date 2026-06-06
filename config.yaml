@@ -103,3 +103,90 @@ judge:
   worker_count: 4                     # 判题 Worker 数量
   compile_time_limit: 10000           # 编译时间限制（ms）
   compile_memory_limit: 524288        # 编译内存限制（KB）
+
+  # 语言定义：可动态扩展，添加新语言只需在此配置
+  languages:
+    - name: c
+      interpreted: false
+      compiler: gcc
+      compile_args: ["main.c", "-o", "main"]
+      compile_out: ["main"]
+      run_args: ["./main"]
+      source_file: main.c
+    - name: cpp
+      interpreted: false
+      compiler: g++
+      compile_args: ["main.cpp", "-o", "main"]
+      compile_out: ["main"]
+      run_args: ["./main"]
+      source_file: main.cpp
+    - name: go
+      interpreted: false
+      compiler: go
+      compile_args: ["build", "-o", "main", "main.go"]
+      compile_out: ["main"]
+      run_args: ["./main"]
+      source_file: main.go
+    - name: rust
+      interpreted: false
+      compiler: rustc
+      compile_args: ["main.rs", "-o", "main"]
+      compile_out: ["main"]
+      run_args: ["./main"]
+      source_file: main.rs
+    - name: java
+      interpreted: false
+      compiler: javac
+      compile_args: ["Main.java"]
+      compile_out: ["Main.class"]
+      run_args: ["java", "Main"]
+      source_file: Main.java
+    - name: python3
+      interpreted: true
+      compiler: ""
+      compile_args: []
+      compile_out: []
+      run_args: ["python3", "main.py"]
+      source_file: main.py
+    - name: python
+      interpreted: true
+      compiler: ""
+      compile_args: []
+      compile_out: []
+      run_args: ["python3", "main.py"]
+      source_file: main.py
+    - name: bash
+      interpreted: true
+      compiler: ""
+      compile_args: []
+      compile_out: []
+      run_args: ["sh", "main.sh"]
+      source_file: main.sh
+    - name: sh
+      interpreted: true
+      compiler: ""
+      compile_args: []
+      compile_out: []
+      run_args: ["sh", "main.sh"]
+      source_file: main.sh
+    - name: javascript
+      interpreted: true
+      compiler: ""
+      compile_args: []
+      compile_out: []
+      run_args: ["node", "main.js"]
+      source_file: main.js
+    - name: js
+      interpreted: true
+      compiler: ""
+      compile_args: []
+      compile_out: []
+      run_args: ["node", "main.js"]
+      source_file: main.js
+    - name: node
+      interpreted: true
+      compiler: ""
+      compile_args: []
+      compile_out: []
+      run_args: ["node", "main.js"]
+      source_file: main.js

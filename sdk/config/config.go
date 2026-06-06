@@ -130,3 +130,41 @@ func FindAndLoad() error {
 	C = &Config{}
 	return nil
 }
+
+// ======== Judge / Language Config ========
+
+// LanguageConfig 语言配置（可动态扩展）
+type LanguageConfig struct {
+	Name          string   `yaml:"name"`           // c / cpp / python3 / go / java / rust ...
+	Interpreted   bool     `yaml:"interpreted"`    // 是否为解释型语言
+	Compiler      string   `yaml:"compiler"`       // 编译器名称（解释型语言为空）
+	CompileArgs   []string `yaml:"compile_args"`   // 编译参数
+	CompileOut    []string `yaml:"compile_out"`    // 编译产出文件列表（用于 copyOut）
+	RunArgs       []string `yaml:"run_args"`       // 运行参数
+	SourceFile    string   `yaml:"source_file"`    // 源代码文件名
+}
+
+// JudgeConfig 判题配置
+type JudgeConfig struct {
+	Languages       []LanguageConfig `yaml:"languages"`
+}
+
+// SandboxBackendConfig 沙箱后端配置
+type SandboxBackendConfig struct {
+	Name     string `yaml:"name"`
+	Endpoint string `yaml:"endpoint"`
+	Timeout  int    `yaml:"timeout"`
+}
+
+// HealthCheckConfig 健康检查配置
+type HealthCheckConfig struct {
+	Interval         int `yaml:"interval"`
+	MaxRetry         int `yaml:"max_retry"`
+	RecoveryInterval int `yaml:"recovery_interval"`
+}
+
+// SandboxConfig 沙箱配置
+type SandboxConfig struct {
+	Backends     []SandboxBackendConfig `yaml:"backends"`
+	HealthCheck  HealthCheckConfig      `yaml:"health_check"`
+}

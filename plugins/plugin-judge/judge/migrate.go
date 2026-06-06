@@ -23,6 +23,8 @@ func seedJudgeConfig() error {
 		"recovery_interval":       "120",
 		"default_time_limit":      "1000",
 		"default_memory_limit":    "262144",
+		"default_stack_limit":     "65536",
+		"default_output_limit":    "65536",
 		"compile_time_limit":      "10000",
 		"compile_memory_limit":    "524288",
 	}

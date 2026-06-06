@@ -6,6 +6,7 @@ import (
 
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/utils"
+	"hei-gin/plugins/plugin-judge/judge"
 )
 
 // JudgeProblemLanguageLimit 题目各语言资源限制与代码模板
@@ -13,11 +14,11 @@ type JudgeProblemLanguageLimit struct {
 	ID          string     `gorm:"primaryKey;size:32" json:"id"`
 	ProblemID   string     `gorm:"size:32;uniqueIndex:idx_problem_lang;index" json:"problem_id"`
 	Language    string     `gorm:"size:32;uniqueIndex:idx_problem_lang" json:"language"` // c / cpp / python3 / go / java / rust / node ...
-	TimeLimit   int64      `gorm:"default:0" json:"time_limit"`                          // 0=使用题目默认值 (ms)
-	MemoryLimit int64      `gorm:"default:0" json:"memory_limit"`                        // 0=使用题目默认值 (KB)
-	StackLimit  int64      `gorm:"default:0" json:"stack_limit"`                         // 0=使用题目默认值 (KB)
-	OutputLimit int64      `gorm:"default:0" json:"output_limit"`                        // 0=使用题目默认值 (KB)
-	Template    string     `gorm:"type:text" json:"template"`                            // 代码模板
+	TimeLimit   int64      `gorm:"default:1000" json:"time_limit"`                       // ms
+	MemoryLimit int64      `gorm:"default:262144" json:"memory_limit"`                    // KB
+	StackLimit  int64      `gorm:"default:65536" json:"stack_limit"`                      // KB
+	OutputLimit int64      `gorm:"default:65536" json:"output_limit"`                     // KB
+	Template    string     `gorm:"type:text" json:"template"`                             // 代码模板
 	CreatedAt   *time.Time `json:"created_at"`
 	UpdatedAt   *time.Time `json:"updated_at"`
 }
@@ -39,11 +40,19 @@ type LanguageLimitVO struct {
 // LanguageLimitInput 创建/修改语言限制参数
 type LanguageLimitInput struct {
 	Language    string `json:"language" binding:"required"`
-	TimeLimit   *int64 `json:"time_limit"`   // nil = 使用默认值
-	MemoryLimit *int64 `json:"memory_limit"` // nil = 使用默认值
-	StackLimit  *int64 `json:"stack_limit"`  // nil = 使用默认值
-	OutputLimit *int64 `json:"output_limit"` // nil = 使用默认值
+	TimeLimit   int64  `json:"time_limit"`
+	MemoryLimit int64  `json:"memory_limit"`
+	StackLimit  int64  `json:"stack_limit"`
+	OutputLimit int64  `json:"output_limit"`
 	Template    string `json:"template"`
+}
+
+// ResolvedLimits 解析后的资源限制（一定有值）
+type ResolvedLimits struct {
+	TimeLimit   int64 // ms
+	MemoryLimit int64 // KB
+	StackLimit  int64 // KB
+	OutputLimit int64 // KB
 }
 
 // GetLanguageLimits 获取题目的所有语言限制
@@ -71,31 +80,47 @@ func GetLanguageLimits(problemID string) ([]LanguageLimitVO, error) {
 	return vos, nil
 }
 
-// GetEffectiveLimits 获取某语言的有效限制（如语言限制为0则回退到题目默认值）
-func GetEffectiveLimits(problemID, language string, defaults ProblemLimits) ProblemLimits {
+// GetLanguageLimit 获取某语言的资源限制记录
+func GetLanguageLimit(problemID, language string) (LanguageLimitVO, error) {
 	ctx := context.Background()
 	var ll JudgeProblemLanguageLimit
 	err := db.DB.WithContext(ctx).
 		Where("problem_id = ? AND language = ?", problemID, language).
 		First(&ll).Error
 	if err != nil {
-		return defaults
+		return LanguageLimitVO{}, err
 	}
+	return LanguageLimitVO{
+		ID:          ll.ID,
+		ProblemID:   ll.ProblemID,
+		Language:    ll.Language,
+		TimeLimit:   ll.TimeLimit,
+		MemoryLimit: ll.MemoryLimit,
+		StackLimit:  ll.StackLimit,
+		OutputLimit: ll.OutputLimit,
+		Template:    ll.Template,
+	}, nil
+}
 
-	result := defaults
-	if ll.TimeLimit > 0 {
-		result.TimeLimit = ll.TimeLimit
+// GetEffectiveLimits 获取某语言的有效限制
+// 如果该语言没有配置, 则使用系统默认值
+func GetEffectiveLimits(problemID, language string) ResolvedLimits {
+	ll, err := GetLanguageLimit(problemID, language)
+	if err != nil {
+		// 未配置 → 使用系统默认值
+		return ResolvedLimits{
+			TimeLimit:   int64(judge.GetConfigInt("default_time_limit", 1000)),
+			MemoryLimit: int64(judge.GetConfigInt("default_memory_limit", 262144)),
+			StackLimit:  int64(judge.GetConfigInt("default_stack_limit", 65536)),
+			OutputLimit: int64(judge.GetConfigInt("default_output_limit", 65536)),
+		}
 	}
-	if ll.MemoryLimit > 0 {
-		result.MemoryLimit = ll.MemoryLimit
+	return ResolvedLimits{
+		TimeLimit:   ll.TimeLimit,
+		MemoryLimit: ll.MemoryLimit,
+		StackLimit:  ll.StackLimit,
+		OutputLimit: ll.OutputLimit,
 	}
-	if ll.StackLimit > 0 {
-		result.StackLimit = ll.StackLimit
-	}
-	if ll.OutputLimit > 0 {
-		result.OutputLimit = ll.OutputLimit
-	}
-	return result
 }
 
 // GetLanguageTemplate 获取某语言的代码模板（空串表示无模板）
@@ -122,47 +147,39 @@ func UpsertLanguageLimit(problemID string, input LanguageLimitInput) error {
 		First(&existing).Error
 
 	if err != nil {
-		// 创建
 		ll := JudgeProblemLanguageLimit{
-			ID:        utils.GenerateID(),
-			ProblemID: problemID,
-			Language:  input.Language,
-			Template:  input.Template,
-			CreatedAt: &now,
-			UpdatedAt: &now,
+			ID:          utils.GenerateID(),
+			ProblemID:   problemID,
+			Language:    input.Language,
+			TimeLimit:   input.TimeLimit,
+			MemoryLimit: input.MemoryLimit,
+			StackLimit:  input.StackLimit,
+			OutputLimit: input.OutputLimit,
+			Template:    input.Template,
+			CreatedAt:   &now,
+			UpdatedAt:   &now,
 		}
-		if input.TimeLimit != nil {
-			ll.TimeLimit = *input.TimeLimit
+		if ll.TimeLimit <= 0 {
+			ll.TimeLimit = 1000
 		}
-		if input.MemoryLimit != nil {
-			ll.MemoryLimit = *input.MemoryLimit
+		if ll.MemoryLimit <= 0 {
+			ll.MemoryLimit = 262144
 		}
-		if input.StackLimit != nil {
-			ll.StackLimit = *input.StackLimit
+		if ll.StackLimit <= 0 {
+			ll.StackLimit = 65536
 		}
-		if input.OutputLimit != nil {
-			ll.OutputLimit = *input.OutputLimit
+		if ll.OutputLimit <= 0 {
+			ll.OutputLimit = 65536
 		}
 		return db.DB.WithContext(ctx).Create(&ll).Error
 	}
 
-	// 更新
 	updates := map[string]any{"updated_at": now}
-	if input.TimeLimit != nil {
-		updates["time_limit"] = *input.TimeLimit
-	}
-	if input.MemoryLimit != nil {
-		updates["memory_limit"] = *input.MemoryLimit
-	}
-	if input.StackLimit != nil {
-		updates["stack_limit"] = *input.StackLimit
-	}
-	if input.OutputLimit != nil {
-		updates["output_limit"] = *input.OutputLimit
-	}
-	if input.Template != "" {
-		updates["template"] = input.Template
-	}
+	updates["time_limit"] = input.TimeLimit
+	updates["memory_limit"] = input.MemoryLimit
+	updates["stack_limit"] = input.StackLimit
+	updates["output_limit"] = input.OutputLimit
+	updates["template"] = input.Template
 	return db.DB.WithContext(ctx).
 		Model(&JudgeProblemLanguageLimit{}).
 		Where("id = ?", existing.ID).
@@ -179,12 +196,4 @@ func DeleteLanguageLimit(problemID, language string) error {
 
 func init() {
 	db.RegisterModel(&JudgeProblemLanguageLimit{})
-}
-
-// ProblemLimits 资源限制集合
-type ProblemLimits struct {
-	TimeLimit   int64
-	MemoryLimit int64
-	StackLimit  int64
-	OutputLimit int64
 }

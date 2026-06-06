@@ -16,20 +16,22 @@ type JudgeConfigUpdateParam struct {
 
 type JudgeConfigBatchUpdateParam []JudgeConfigUpdateParam
 
-// Engine 判题引擎参数
+// JudgeTask 判题任务
 type JudgeTask struct {
-	SubmissionID string `json:"submission_id"`
-	ProblemID    string `json:"problem_id"`
-	UserID       string `json:"user_id"`
-	Language     string `json:"language"`
-	Code         string `json:"code"`
-	JudgeType    string `json:"judge_type"`
-	TimeLimit    int64  `json:"time_limit"`
-	MemoryLimit  int64  `json:"memory_limit"`
-	StackLimit   int64  `json:"stack_limit"`
-	OutputLimit  int64  `json:"output_limit"`
-	SpjCode      string `json:"spj_code"`
-	SpjLanguage  string `json:"spj_language"`
+	SubmissionID    string `json:"submission_id"`
+	ProblemID       string `json:"problem_id"`
+	UserID          string `json:"user_id"`
+	Language        string `json:"language"`
+	Code            string `json:"code"`
+	JudgeType       string `json:"judge_type"`        // default / spj / interactive
+	ContestType     string `json:"contest_type"`      // "" / ACM / OI / IOI (竞赛模式)
+	ContestID       string `json:"contest_id"`        // 竞赛ID (非空时启用竞赛模式判题)
+	TimeLimit       int64  `json:"time_limit"`
+	MemoryLimit     int64  `json:"memory_limit"`
+	StackLimit      int64  `json:"stack_limit"`
+	OutputLimit     int64  `json:"output_limit"`
+	SpjCode         string `json:"spj_code"`
+	SpjLanguage     string `json:"spj_language"`
 	InteractiveCode string `json:"interactive_code"`
 	InteractiveLang string `json:"interactive_lang"`
 }

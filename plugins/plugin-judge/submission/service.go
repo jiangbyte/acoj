@@ -74,30 +74,19 @@ func PageService(c *gin.Context, param *SubmissionPageParam) gin.H {
 	}
 
 	if len(userIDs) > 0 {
-		type UserBrief struct {
+		type ClientUserBrief struct {
 			ID       string `gorm:"column:id"`
-			Username string `gorm:"column:username"`
+			Nickname string `gorm:"column:nickname"`
 		}
-		var users []UserBrief
-		db.DB.WithContext(ctx).Table("sys_user").Where("id IN ?", userIDs).Find(&users)
-		for _, u := range users {
-			userMap[u.ID] = u.Username
+		var clientUsers []ClientUserBrief
+		db.DB.WithContext(ctx).Table("client_user").Where("id IN ?", userIDs).Find(&clientUsers)
+		for _, u := range clientUsers {
+			userMap[u.ID] = u.Nickname
 		}
-		var unresolvedIDs []string
+		// 未找到的用户显示 ID
 		for _, uid := range userIDs {
 			if _, ok := userMap[uid]; !ok {
-				unresolvedIDs = append(unresolvedIDs, uid)
-			}
-		}
-		if len(unresolvedIDs) > 0 {
-			type ClientUserBrief struct {
-				ID       string `gorm:"column:id"`
-				Nickname string `gorm:"column:nickname"`
-			}
-			var clientUsers []ClientUserBrief
-			db.DB.WithContext(ctx).Table("client_user").Where("id IN ?", unresolvedIDs).Find(&clientUsers)
-			for _, u := range clientUsers {
-				userMap[u.ID] = u.Nickname
+				userMap[uid] = uid
 			}
 		}
 	}
@@ -125,18 +114,10 @@ func ClientCreateService(c *gin.Context, param *SubmissionCreateParam, judgeEngi
 	return createSubmissionWithID(c, param, judgeEngine, userID)
 }
 
-// buildJudgeTask 构建判题任务，使用语言特定的资源限制和代码模板
-func buildJudgeTask(prob *problem.JudgeProblem, submissionID, userID, language, code string) *judge.JudgeTask {
-	// 获取语言特定的限制（回退到题目默认值）
-	defaults := problem.ProblemLimits{
-		TimeLimit:   prob.TimeLimit,
-		MemoryLimit: prob.MemoryLimit,
-		StackLimit:  prob.StackLimit,
-		OutputLimit: prob.OutputLimit,
-	}
-	limits := problem.GetEffectiveLimits(prob.ID, language, defaults)
+// buildJudgeTask 构建判题任务
+func buildJudgeTask(prob *problem.JudgeProblem, submissionID, userID, language, code string, contestID ...string) *judge.JudgeTask {
+	limits := problem.GetEffectiveLimits(prob.ID, language)
 
-	// 获取语言模板（如果代码为空则使用模板）
 	finalCode := code
 	if finalCode == "" {
 		tpl := problem.GetLanguageTemplate(prob.ID, language)
@@ -145,7 +126,7 @@ func buildJudgeTask(prob *problem.JudgeProblem, submissionID, userID, language, 
 		}
 	}
 
-	return &judge.JudgeTask{
+	task := &judge.JudgeTask{
 		SubmissionID:    submissionID,
 		ProblemID:       prob.ID,
 		UserID:          userID,
@@ -161,6 +142,19 @@ func buildJudgeTask(prob *problem.JudgeProblem, submissionID, userID, language, 
 		InteractiveCode: prob.InteractiveCode,
 		InteractiveLang: prob.InteractiveLang,
 	}
+
+	if len(contestID) > 0 && contestID[0] != "" {
+		task.ContestID = contestID[0]
+		type ContestBrief struct {
+			Type string `gorm:"column:type"`
+		}
+		var cb ContestBrief
+		if err := db.DB.Table("judge_contest").Select("`type`").Where("id = ?", contestID[0]).First(&cb).Error; err == nil {
+			task.ContestType = cb.Type
+		}
+	}
+
+	return task
 }
 
 func createSubmissionWithID(c *gin.Context, param *SubmissionCreateParam, judgeEngine *judge.JudgeEngine, userID string) (string, error) {
@@ -197,7 +191,7 @@ func createSubmissionWithID(c *gin.Context, param *SubmissionCreateParam, judgeE
 		return "", err
 	}
 
-	judgeEngine.Submit(buildJudgeTask(&prob, submission.ID, userID, param.Language, param.Code))
+	judgeEngine.Submit(buildJudgeTask(&prob, submission.ID, userID, param.Language, param.Code, param.ContestID))
 
 	return submission.ID, nil
 }
@@ -236,7 +230,7 @@ func createSubmission(c *gin.Context, param *SubmissionCreateParam, judgeEngine 
 		return err
 	}
 
-	judgeEngine.Submit(buildJudgeTask(&prob, submission.ID, userID, param.Language, param.Code))
+	judgeEngine.Submit(buildJudgeTask(&prob, submission.ID, userID, param.Language, param.Code, param.ContestID))
 
 	return nil
 }
@@ -258,20 +252,15 @@ func DetailService(c *gin.Context, id string) (*SubmissionVO, error) {
 	db.DB.WithContext(ctx).Where("id = ?", sub.ProblemID).First(&prob)
 	vo.ProblemTitle = prob.Title
 
-	type UserBrief struct {
-		Username string `gorm:"column:username"`
+	// 只查 client_user（C端用户），不 fallback 到 sys_user
+	type ClientUserBrief struct {
+		Nickname string `gorm:"column:nickname"`
 	}
-	var user UserBrief
-	err := db.DB.WithContext(ctx).Table("sys_user").Where("id = ?", sub.UserID).First(&user).Error
-	if err != nil || user.Username == "" {
-		type ClientUserBrief struct {
-			Nickname string `gorm:"column:nickname"`
-		}
-		var cu ClientUserBrief
-		db.DB.WithContext(ctx).Table("client_user").Where("id = ?", sub.UserID).First(&cu)
+	var cu ClientUserBrief
+	if err := db.DB.WithContext(ctx).Table("client_user").Where("id = ?", sub.UserID).First(&cu).Error; err == nil && cu.Nickname != "" {
 		vo.Username = cu.Nickname
 	} else {
-		vo.Username = user.Username
+		vo.Username = sub.UserID
 	}
 
 	return &vo, nil
@@ -299,7 +288,7 @@ func RejudgeService(c *gin.Context, param SubmissionRejudgeParam, judgeEngine *j
 			"error_message": "",
 		})
 
-		judgeEngine.Submit(buildJudgeTask(&prob, sub.ID, sub.UserID, sub.Language, sub.Code))
+		judgeEngine.Submit(buildJudgeTask(&prob, sub.ID, sub.UserID, sub.Language, sub.Code, sub.ContestID))
 	}
 
 	return nil

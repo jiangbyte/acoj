@@ -42,7 +42,7 @@ func publicDetailHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, result.Failure(c, "id不能为空", 400, nil))
 		return
 	}
-	vo, err := contest.DetailService(c, id)
+	vo, err := contest.PublicDetailService(c, id)
 	if err != nil {
 		c.JSON(http.StatusOK, result.Failure(c, err.Error(), 500, nil))
 		return
@@ -70,7 +70,6 @@ func clientRegisterHandler(c *gin.Context) {
 		c.JSON(http.StatusOK, result.Failure(c, "参数错误", 400, nil))
 		return
 	}
-	// 使用C端报名服务（内部使用 Consumer.GetLoginID）
 	if err := contest.ClientRegisterService(c, &param); err != nil {
 		c.JSON(http.StatusOK, result.Failure(c, err.Error(), 500, nil))
 		return

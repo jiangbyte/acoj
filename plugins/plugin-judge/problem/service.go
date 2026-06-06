@@ -46,6 +46,9 @@ func PageService(c *gin.Context, param *ProblemPageParam) gin.H {
 	if param.TagID != "" {
 		tx = tx.Where("id IN (SELECT problem_id FROM rel_problem_tag WHERE tag_id = ?)", param.TagID)
 	}
+	if param.JudgeType != "" {
+		tx = tx.Where("judge_type = ?", param.JudgeType)
+	}
 
 	var total int64
 	tx.Count(&total)
@@ -62,7 +65,6 @@ func PageService(c *gin.Context, param *ProblemPageParam) gin.H {
 	var problems []JudgeProblem
 	tx.Offset((page - 1) * size).Limit(size).Order("created_at DESC").Find(&problems)
 
-	// 批量查询标签
 	problemIDs := make([]string, len(problems))
 	for i, p := range problems {
 		problemIDs[i] = p.ID
@@ -80,7 +82,6 @@ func PageService(c *gin.Context, param *ProblemPageParam) gin.H {
 		for _, p := range problems {
 			vo := modelToVO(&p)
 			vo.Tags = tagMap[p.ID]
-			// 加载语言限制
 			langLimits, _ := GetLanguageLimits(p.ID)
 			if len(langLimits) > 0 {
 				vo.LanguageLimits = langLimits
@@ -108,10 +109,6 @@ func CreateService(c *gin.Context, param *ProblemCreateParam) error {
 		SampleOutput:    param.SampleOutput,
 		Hint:            param.Hint,
 		Source:          param.Source,
-		TimeLimit:       param.TimeLimit,
-		MemoryLimit:     param.MemoryLimit,
-		StackLimit:      param.StackLimit,
-		OutputLimit:     param.OutputLimit,
 		JudgeType:       param.JudgeType,
 		SpjCode:         param.SpjCode,
 		SpjLanguage:     param.SpjLanguage,
@@ -124,18 +121,6 @@ func CreateService(c *gin.Context, param *ProblemCreateParam) error {
 		UpdatedAt:       &now,
 	}
 
-	if problem.TimeLimit <= 0 {
-		problem.TimeLimit = 1000
-	}
-	if problem.MemoryLimit <= 0 {
-		problem.MemoryLimit = 262144
-	}
-	if problem.StackLimit <= 0 {
-		problem.StackLimit = 65536
-	}
-	if problem.OutputLimit <= 0 {
-		problem.OutputLimit = 65536
-	}
 	if problem.JudgeType == "" {
 		problem.JudgeType = "default"
 	}
@@ -162,7 +147,6 @@ func CreateService(c *gin.Context, param *ProblemCreateParam) error {
 				}
 			}
 		}
-		// 创建语言限制
 		for _, ll := range param.LanguageLimits {
 			if err := UpsertLanguageLimit(problem.ID, ll); err != nil {
 				return err
@@ -200,18 +184,6 @@ func ModifyService(c *gin.Context, param *ProblemModifyParam) error {
 	}
 	if param.Source != "" {
 		updates["source"] = param.Source
-	}
-	if param.TimeLimit != nil {
-		updates["time_limit"] = *param.TimeLimit
-	}
-	if param.MemoryLimit != nil {
-		updates["memory_limit"] = *param.MemoryLimit
-	}
-	if param.StackLimit != nil {
-		updates["stack_limit"] = *param.StackLimit
-	}
-	if param.OutputLimit != nil {
-		updates["output_limit"] = *param.OutputLimit
 	}
 	if param.JudgeType != "" {
 		updates["judge_type"] = param.JudgeType
@@ -253,7 +225,6 @@ func ModifyService(c *gin.Context, param *ProblemModifyParam) error {
 				}
 			}
 		}
-		// 更新语言限制: 删除旧的, 创建新的
 		if param.LanguageLimits != nil {
 			tx.Where("problem_id = ?", param.ID).Delete(&JudgeProblemLanguageLimit{})
 			for _, ll := range param.LanguageLimits {
@@ -298,7 +269,6 @@ func DetailService(c *gin.Context, id string) (*ProblemVO, error) {
 		vo.Tags = append(vo.Tags, rel.TagID)
 	}
 
-	// 加载语言限制
 	langLimits, _ := GetLanguageLimits(id)
 	if len(langLimits) > 0 {
 		vo.LanguageLimits = langLimits
@@ -327,10 +297,6 @@ func modelToVO(p *JudgeProblem) ProblemVO {
 		SampleOutput:    p.SampleOutput,
 		Hint:            p.Hint,
 		Source:          p.Source,
-		TimeLimit:       p.TimeLimit,
-		MemoryLimit:     p.MemoryLimit,
-		StackLimit:      p.StackLimit,
-		OutputLimit:     p.OutputLimit,
 		JudgeType:       p.JudgeType,
 		SpjCode:         p.SpjCode,
 		SpjLanguage:     p.SpjLanguage,
@@ -353,28 +319,23 @@ func PublicDetailService(c *gin.Context, id string) (*PublicProblemVO, error) {
 		return nil, err
 	}
 	publicVO := &PublicProblemVO{
-		ID:           vo.ID,
-		Title:        vo.Title,
-		Description:  vo.Description,
-		InputDesc:    vo.InputDesc,
-		OutputDesc:   vo.OutputDesc,
-		SampleInput:  vo.SampleInput,
+		ID:          vo.ID,
+		Title:       vo.Title,
+		Description: vo.Description,
+		InputDesc:   vo.InputDesc,
+		OutputDesc:  vo.OutputDesc,
+		SampleInput: vo.SampleInput,
 		SampleOutput: vo.SampleOutput,
-		Hint:         vo.Hint,
-		Source:       vo.Source,
-		TimeLimit:    vo.TimeLimit,
-		MemoryLimit:  vo.MemoryLimit,
-		StackLimit:   vo.StackLimit,
-		OutputLimit:  vo.OutputLimit,
-		JudgeType:    vo.JudgeType,
-		Difficulty:   vo.Difficulty,
-		SubmitCount:  vo.SubmitCount,
-		AcceptCount:  vo.AcceptCount,
-		CreatedAt:    vo.CreatedAt,
-		UpdatedAt:    vo.UpdatedAt,
-		Tags:         vo.Tags,
+		Hint:        vo.Hint,
+		Source:      vo.Source,
+		JudgeType:   vo.JudgeType,
+		Difficulty:  vo.Difficulty,
+		SubmitCount: vo.SubmitCount,
+		AcceptCount: vo.AcceptCount,
+		CreatedAt:   vo.CreatedAt,
+		UpdatedAt:   vo.UpdatedAt,
+		Tags:        vo.Tags,
 	}
-	// 公开接口也暴露语言限制和模板
 	if len(vo.LanguageLimits) > 0 {
 		publicVO.LanguageLimits = vo.LanguageLimits
 	}

@@ -12,10 +12,6 @@ type ProblemVO struct {
 	SampleOutput    string            `json:"sample_output"`
 	Hint            string            `json:"hint"`
 	Source          string            `json:"source"`
-	TimeLimit       int64             `json:"time_limit"`
-	MemoryLimit     int64             `json:"memory_limit"`
-	StackLimit      int64             `json:"stack_limit"`
-	OutputLimit     int64             `json:"output_limit"`
 	JudgeType       string            `json:"judge_type"`
 	SpjCode         string            `json:"spj_code"`
 	SpjLanguage     string            `json:"spj_language"`
@@ -39,6 +35,7 @@ type ProblemPageParam struct {
 	Difficulty string `json:"difficulty" form:"difficulty"`
 	Status     string `json:"status" form:"status"`
 	TagID      string `json:"tag_id" form:"tag_id"`
+	JudgeType   string `json:"judge_type" form:"judge_type"`
 }
 
 type ProblemCreateParam struct {
@@ -50,10 +47,6 @@ type ProblemCreateParam struct {
 	SampleOutput    string              `json:"sample_output"`
 	Hint            string              `json:"hint"`
 	Source          string              `json:"source"`
-	TimeLimit       int64               `json:"time_limit"`
-	MemoryLimit     int64               `json:"memory_limit"`
-	StackLimit      int64               `json:"stack_limit"`
-	OutputLimit     int64               `json:"output_limit"`
 	JudgeType       string              `json:"judge_type"`
 	SpjCode         string              `json:"spj_code"`
 	SpjLanguage     string              `json:"spj_language"`
@@ -75,10 +68,6 @@ type ProblemModifyParam struct {
 	SampleOutput    string               `json:"sample_output"`
 	Hint            string               `json:"hint"`
 	Source          string               `json:"source"`
-	TimeLimit       *int64               `json:"time_limit"`
-	MemoryLimit     *int64               `json:"memory_limit"`
-	StackLimit      *int64               `json:"stack_limit"`
-	OutputLimit     *int64               `json:"output_limit"`
 	JudgeType       string               `json:"judge_type"`
 	SpjCode         string               `json:"spj_code"`
 	SpjLanguage     string               `json:"spj_language"`
@@ -103,10 +92,6 @@ type PublicProblemVO struct {
 	SampleOutput  string            `json:"sample_output"`
 	Hint          string            `json:"hint"`
 	Source        string            `json:"source"`
-	TimeLimit     int64             `json:"time_limit"`
-	MemoryLimit   int64             `json:"memory_limit"`
-	StackLimit    int64             `json:"stack_limit"`
-	OutputLimit   int64             `json:"output_limit"`
 	JudgeType     string            `json:"judge_type"`
 	Difficulty    string            `json:"difficulty"`
 	SubmitCount   int               `json:"submit_count"`

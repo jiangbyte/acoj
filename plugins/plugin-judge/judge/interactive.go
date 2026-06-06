@@ -13,6 +13,7 @@ import (
 // 顺序执行方案:
 //  1. 编译用户代码一次 + 编译交互器代码一次
 //  2. 对每个测试用例: 运行用户程序 → 运行交互器验证
+//  支持比赛模式: ACM 模式下首个非 AC 终止, OI/IOI 跑完全部用例
 func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.JudgeTestcase) {
 	backend := sandbox.DefaultPool.Get()
 	if backend == nil {
@@ -20,21 +21,20 @@ func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.Jud
 		return
 	}
 
-	// 预编译用户代码
-	compileResult, userBinary := compileAndGetBinary(backend, task.Code, task.Language)
-	if compileResult.Status == judgetypes.StatusCompileError {
-		e.updateSimple(task.SubmissionID, judgetypes.StatusCompileError, 0, 0, 0, compileResult.Stderr)
-		return
-	}
-	if compileResult.Status == judgetypes.StatusSE {
-		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, compileResult.Error)
+	// 编译用户代码
+	_, userBinary, ok := compileCodeWithCheck(backend, task.SubmissionID, task.Code, task.Language)
+	if !ok {
 		return
 	}
 
-	// 预编译交互器代码
+	// 编译交互器代码
 	interCompileResult, interactorBinary := compileAndGetBinary(backend, task.InteractiveCode, task.InteractiveLang)
 	if interCompileResult.Status == judgetypes.StatusCompileError {
 		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "交互器编译失败: "+interCompileResult.Stderr)
+		return
+	}
+	if interCompileResult.Status == judgetypes.StatusSE {
+		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "交互器编译失败: "+interCompileResult.Error)
 		return
 	}
 
@@ -59,6 +59,9 @@ func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.Jud
 		if userResult.Status != judgetypes.StatusAccepted {
 			if p, ok := statusPriority[userResult.Status]; ok && p < statusPriority[overallStatus] {
 				overallStatus = userResult.Status
+			}
+			if shouldBreakOnFirstFail(task) {
+				break
 			}
 			continue
 		}
@@ -92,12 +95,18 @@ func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.Jud
 			if p, ok := statusPriority[interResult.Status]; ok && p < statusPriority[overallStatus] {
 				overallStatus = interResult.Status
 			}
+			if shouldBreakOnFirstFail(task) {
+				break
+			}
 			continue
 		}
 		if interResult.ExitCode == 0 {
 			totalScore += tc.Score
 		} else if overallStatus == judgetypes.StatusAccepted {
 			overallStatus = judgetypes.StatusWrongAnswer
+			if shouldBreakOnFirstFail(task) {
+				break
+			}
 		}
 	}
 

@@ -19,7 +19,8 @@ type ContestVO struct {
 
 type ContestDetailVO struct {
 	ContestVO
-	Problems []ContestProblemItem `json:"problems"`
+	IsRegistered bool                 `json:"is_registered"`
+	Problems     []ContestProblemItem `json:"problems"`
 }
 
 type ContestProblemItem struct {
@@ -79,11 +80,11 @@ type ContestRankItem struct {
 }
 
 type ProblemRankItem struct {
-	ProblemID    string `json:"problem_id"`
-	Label        string `json:"label"`
-	Accepted     bool   `json:"accepted"`
-	Attempts     int    `json:"attempts"`
-	TimeUsed     int64  `json:"time_used"`
-	Score        int    `json:"score"`
-	SubmitTime   string `json:"submit_time"`
+	ProblemID   string `json:"problem_id"`
+	Label       string `json:"label"`
+	Accepted    bool   `json:"accepted"`
+	Attempts    int    `json:"attempts"`
+	TimeUsed    int64  `json:"time_used"`
+	Score       int    `json:"score"`
+	SubmitTime  string `json:"submit_time"`
 }
