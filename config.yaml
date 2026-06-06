@@ -13,7 +13,7 @@ db:
   port: 3306
   user: root
   password: "123456"
-  database: hei
+  database: acoj
   pool_size: 20
   max_overflow: 10
   pool_recycle: 3600
@@ -88,3 +88,18 @@ ws:
   write_timeout: 10
   online_broadcast_interval: 60
 
+
+# Judge / Sandbox 配置
+judge:
+  sandbox:
+    backends:
+      - name: go-judge
+        endpoint: localhost:5051
+        timeout: 30
+    health_check:
+      interval: 30                    # 健康检查周期（秒）
+      max_retry: 3                    # 连续失败次数后下线
+      recovery_interval: 120          # 下线后每隔多久尝试恢复（秒）
+  worker_count: 4                     # 判题 Worker 数量
+  compile_time_limit: 10000           # 编译时间限制（ms）
+  compile_memory_limit: 524288        # 编译内存限制（KB）

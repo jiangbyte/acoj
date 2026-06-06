@@ -18,16 +18,26 @@ import (
 	_ "hei-gin/plugins/plugin-sys/home"
 	_ "hei-gin/plugins/plugin-sys/log"
 	_ "hei-gin/plugins/plugin-sys/notice"
-	_ "hei-gin/plugins/plugin-im/message"
 	_ "hei-gin/plugins/plugin-sys/org"
 	_ "hei-gin/plugins/plugin-sys/position"
 	_ "hei-gin/plugins/plugin-sys/resource"
 	_ "hei-gin/plugins/plugin-sys/role"
 	_ "hei-gin/plugins/plugin-client/user"
+	_ "hei-gin/plugins/plugin-im/message"
 	_ "hei-gin/plugins/plugin-im/model"
 	_ "hei-gin/plugins/plugin-im/group"
 	_ "hei-gin/plugins/plugin-im/friend"
 	_ "hei-gin/plugins/plugin-im/broadcast"
+
+	// Plugin-judge model registrations
+	_ "hei-gin/plugins/plugin-judge/sandbox"
+	_ "hei-gin/plugins/plugin-judge/judge"
+	_ "hei-gin/plugins/plugin-judge/problem"
+	_ "hei-gin/plugins/plugin-judge/testcase"
+	_ "hei-gin/plugins/plugin-judge/submission"
+	_ "hei-gin/plugins/plugin-judge/contest"
+	_ "hei-gin/plugins/plugin-judge/problemset"
+	_ "hei-gin/plugins/plugin-judge/tag"
 )
 
 func main() {
