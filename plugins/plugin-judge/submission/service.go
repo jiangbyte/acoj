@@ -83,6 +83,23 @@ func PageService(c *gin.Context, param *SubmissionPageParam) gin.H {
 		for _, u := range users {
 			userMap[u.ID] = u.Username
 		}
+		var unresolvedIDs []string
+		for _, uid := range userIDs {
+			if _, ok := userMap[uid]; !ok {
+				unresolvedIDs = append(unresolvedIDs, uid)
+			}
+		}
+		if len(unresolvedIDs) > 0 {
+			type ClientUserBrief struct {
+				ID       string `gorm:"column:id"`
+				Nickname string `gorm:"column:nickname"`
+			}
+			var clientUsers []ClientUserBrief
+			db.DB.WithContext(ctx).Table("client_user").Where("id IN ?", unresolvedIDs).Find(&clientUsers)
+			for _, u := range clientUsers {
+				userMap[u.ID] = u.Nickname
+			}
+		}
 	}
 
 	voList := make([]SubmissionVO, len(submissions))
@@ -96,10 +113,97 @@ func PageService(c *gin.Context, param *SubmissionPageParam) gin.H {
 	return result.PageDataResult(c, voList, total, page, size)
 }
 
-// CreateService 创建提交并入队判题
+// CreateService 创建提交并入队判题（B端管理员）
 func CreateService(c *gin.Context, param *SubmissionCreateParam, judgeEngine *judge.JudgeEngine) error {
-	ctx := context.Background()
 	userID := auth.GetLoginID(c)
+	return createSubmission(c, param, judgeEngine, userID)
+}
+
+// ClientCreateService 创建提交并入队判题（C端用户），返回 submissionID
+func ClientCreateService(c *gin.Context, param *SubmissionCreateParam, judgeEngine *judge.JudgeEngine) (string, error) {
+	userID := auth.Consumer.GetLoginID(c)
+	return createSubmissionWithID(c, param, judgeEngine, userID)
+}
+
+// buildJudgeTask 构建判题任务，使用语言特定的资源限制和代码模板
+func buildJudgeTask(prob *problem.JudgeProblem, submissionID, userID, language, code string) *judge.JudgeTask {
+	// 获取语言特定的限制（回退到题目默认值）
+	defaults := problem.ProblemLimits{
+		TimeLimit:   prob.TimeLimit,
+		MemoryLimit: prob.MemoryLimit,
+		StackLimit:  prob.StackLimit,
+		OutputLimit: prob.OutputLimit,
+	}
+	limits := problem.GetEffectiveLimits(prob.ID, language, defaults)
+
+	// 获取语言模板（如果代码为空则使用模板）
+	finalCode := code
+	if finalCode == "" {
+		tpl := problem.GetLanguageTemplate(prob.ID, language)
+		if tpl != "" {
+			finalCode = tpl
+		}
+	}
+
+	return &judge.JudgeTask{
+		SubmissionID:    submissionID,
+		ProblemID:       prob.ID,
+		UserID:          userID,
+		Language:        language,
+		Code:            finalCode,
+		JudgeType:       prob.JudgeType,
+		TimeLimit:       limits.TimeLimit,
+		MemoryLimit:     limits.MemoryLimit,
+		StackLimit:      limits.StackLimit,
+		OutputLimit:     limits.OutputLimit,
+		SpjCode:         prob.SpjCode,
+		SpjLanguage:     prob.SpjLanguage,
+		InteractiveCode: prob.InteractiveCode,
+		InteractiveLang: prob.InteractiveLang,
+	}
+}
+
+func createSubmissionWithID(c *gin.Context, param *SubmissionCreateParam, judgeEngine *judge.JudgeEngine, userID string) (string, error) {
+	ctx := context.Background()
+	now := time.Now()
+
+	var prob problem.JudgeProblem
+	if err := db.DB.WithContext(ctx).Where("id = ? AND status = ?", param.ProblemID, "ACTIVE").First(&prob).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return "", errors.New("题目不存在或未激活")
+		}
+		return "", err
+	}
+
+	if sandbox.DefaultPool.Get() == nil {
+		return "", errors.New("无可用判题节点")
+	}
+
+	submission := JudgeSubmission{
+		ID:           utils.GenerateID(),
+		ProblemID:    param.ProblemID,
+		UserID:       userID,
+		ContestID:    param.ContestID,
+		Language:     param.Language,
+		Code:         param.Code,
+		Status:       "PENDING",
+		Score:        0,
+		ErrorMessage: "",
+		CreatedAt:    &now,
+		UpdatedAt:    &now,
+	}
+
+	if err := db.DB.WithContext(ctx).Create(&submission).Error; err != nil {
+		return "", err
+	}
+
+	judgeEngine.Submit(buildJudgeTask(&prob, submission.ID, userID, param.Language, param.Code))
+
+	return submission.ID, nil
+}
+
+func createSubmission(c *gin.Context, param *SubmissionCreateParam, judgeEngine *judge.JudgeEngine, userID string) error {
+	ctx := context.Background()
 	now := time.Now()
 
 	var prob problem.JudgeProblem
@@ -132,22 +236,7 @@ func CreateService(c *gin.Context, param *SubmissionCreateParam, judgeEngine *ju
 		return err
 	}
 
-	judgeEngine.Submit(&judge.JudgeTask{
-		SubmissionID:    submission.ID,
-		ProblemID:       prob.ID,
-		UserID:          userID,
-		Language:        param.Language,
-		Code:            param.Code,
-		JudgeType:       prob.JudgeType,
-		TimeLimit:       prob.TimeLimit,
-		MemoryLimit:     prob.MemoryLimit,
-		StackLimit:      prob.StackLimit,
-		OutputLimit:     prob.OutputLimit,
-		SpjCode:         prob.SpjCode,
-		SpjLanguage:     prob.SpjLanguage,
-		InteractiveCode: prob.InteractiveCode,
-		InteractiveLang: prob.InteractiveLang,
-	})
+	judgeEngine.Submit(buildJudgeTask(&prob, submission.ID, userID, param.Language, param.Code))
 
 	return nil
 }
@@ -173,8 +262,17 @@ func DetailService(c *gin.Context, id string) (*SubmissionVO, error) {
 		Username string `gorm:"column:username"`
 	}
 	var user UserBrief
-	db.DB.WithContext(ctx).Table("sys_user").Where("id = ?", sub.UserID).First(&user)
-	vo.Username = user.Username
+	err := db.DB.WithContext(ctx).Table("sys_user").Where("id = ?", sub.UserID).First(&user).Error
+	if err != nil || user.Username == "" {
+		type ClientUserBrief struct {
+			Nickname string `gorm:"column:nickname"`
+		}
+		var cu ClientUserBrief
+		db.DB.WithContext(ctx).Table("client_user").Where("id = ?", sub.UserID).First(&cu)
+		vo.Username = cu.Nickname
+	} else {
+		vo.Username = user.Username
+	}
 
 	return &vo, nil
 }
@@ -201,22 +299,7 @@ func RejudgeService(c *gin.Context, param SubmissionRejudgeParam, judgeEngine *j
 			"error_message": "",
 		})
 
-		judgeEngine.Submit(&judge.JudgeTask{
-			SubmissionID:    sub.ID,
-			ProblemID:       prob.ID,
-			UserID:          sub.UserID,
-			Language:        sub.Language,
-			Code:            sub.Code,
-			JudgeType:       prob.JudgeType,
-			TimeLimit:       prob.TimeLimit,
-			MemoryLimit:     prob.MemoryLimit,
-			StackLimit:      prob.StackLimit,
-			OutputLimit:     prob.OutputLimit,
-			SpjCode:         prob.SpjCode,
-			SpjLanguage:     prob.SpjLanguage,
-			InteractiveCode: prob.InteractiveCode,
-			InteractiveLang: prob.InteractiveLang,
-		})
+		judgeEngine.Submit(buildJudgeTask(&prob, sub.ID, sub.UserID, sub.Language, sub.Code))
 	}
 
 	return nil

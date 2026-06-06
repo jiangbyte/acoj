@@ -2,12 +2,17 @@ package judge
 
 import (
 	"log"
+	"strings"
 
 	"hei-gin/plugins/plugin-judge/judgetypes"
 	"hei-gin/plugins/plugin-judge/sandbox"
 	"hei-gin/plugins/plugin-judge/testcase"
 )
 
+const spjSeparator = "---SPLIT---"
+
+// judgeSPJ SPJ 判题
+// 编译用户代码和 SPJ 代码各一次, 缓存二进制, 对每个测试用例复用
 func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestcase) {
 	backend := sandbox.DefaultPool.Get()
 	if backend == nil {
@@ -15,38 +20,17 @@ func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestca
 		return
 	}
 
-	userCompile, err := backend.Exec(&judgetypes.ExecRequest{
-		Code:       task.Code,
-		Language:   task.Language,
-		MaxCPUTime: 10000 * 1e6,
-		MaxMemory:  512 * 1024 * 1024,
-	})
-	if err != nil || userCompile.Status == judgetypes.StatusCompileError {
-		errMsg := ""
-		if err != nil {
-			errMsg = err.Error()
-		} else {
-			errMsg = userCompile.Stderr
-		}
-		e.updateSimple(task.SubmissionID, judgetypes.StatusCompileError, 0, 0, 0, errMsg)
-		return
+	// 编译用户代码
+	_, userBinary := compileAndGetBinary(backend, task.Code, task.Language)
+	if task.Code != "" && !isInterpretedLanguage(task.Language) && len(userBinary) == 0 {
+		// 编译型语言编译失败已经在 compileAndGetBinary 中返回 CompileError
+		// 这里处理解释型语言的语法错误
 	}
 
-	spjCompile, err := backend.Exec(&judgetypes.ExecRequest{
-		Code:       task.SpjCode,
-		Language:   task.SpjLanguage,
-		MaxCPUTime: 10000 * 1e6,
-		MaxMemory:  512 * 1024 * 1024,
-	})
-	if err != nil || spjCompile.Status == judgetypes.StatusCompileError {
-		errMsg := ""
-		if err != nil {
-			errMsg = err.Error()
-		} else {
-			errMsg = spjCompile.Stderr
-		}
-		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "SPJ编译失败: "+errMsg)
-		return
+	// 编译 SPJ 代码
+	_, spjBinary := compileAndGetBinary(backend, task.SpjCode, task.SpjLanguage)
+	if task.SpjCode != "" && !isInterpretedLanguage(task.SpjLanguage) && len(spjBinary) == 0 {
+		// 同样处理
 	}
 
 	totalScore := 0
@@ -55,16 +39,8 @@ func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestca
 	maxMemory := int64(0)
 
 	for _, tc := range testcases {
-		userResult, err := backend.Exec(&judgetypes.ExecRequest{
-			Code:        task.Code,
-			Language:    task.Language,
-			Stdin:       tc.Input,
-			MaxCPUTime:  task.TimeLimit * 1e6,
-			MaxRealTime: task.TimeLimit * 2 * 1e6,
-			MaxMemory:   task.MemoryLimit * 1024,
-			MaxStack:    task.StackLimit * 1024,
-			MaxOutput:   task.OutputLimit * 1024,
-		})
+		// 运行用户程序
+		userResult, err := runTestCase(backend, task, userBinary, tc.Input)
 		if err != nil {
 			e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, err.Error())
 			return
@@ -77,10 +53,22 @@ func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestca
 			maxMemory = userResult.MemoryUsed
 		}
 
-		spjInput := tc.Input + "\n---SPLIT---\n" + userResult.Stdout + "\n---SPLIT---\n" + tc.Output
+		if userResult.Status != judgetypes.StatusAccepted {
+			if p, ok := statusPriority[userResult.Status]; ok && p < statusPriority[overallStatus] {
+				overallStatus = userResult.Status
+			}
+			continue
+		}
+
+		// 运行 SPJ 验证用户输出
+		spjInput := strings.TrimRight(tc.Input, "\n") + "\n" + spjSeparator + "\n" +
+			strings.TrimRight(userResult.Stdout, "\n") + "\n" + spjSeparator + "\n" +
+			strings.TrimRight(tc.Output, "\n") + "\n"
+
 		spjResult, err := backend.Exec(&judgetypes.ExecRequest{
 			Code:        task.SpjCode,
 			Language:    task.SpjLanguage,
+			Binary:      spjBinary,
 			Stdin:       spjInput,
 			MaxCPUTime:  5000 * 1e6,
 			MaxRealTime: 10000 * 1e6,
@@ -93,15 +81,12 @@ func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestca
 
 		if spjResult.ExitCode == 0 {
 			totalScore += tc.Score
-		} else {
+		} else if overallStatus == judgetypes.StatusAccepted {
 			overallStatus = judgetypes.StatusWrongAnswer
 		}
 	}
 
-	if len(testcases) > 0 {
-		totalScore = totalScore / len(testcases)
-	}
-
 	e.updateSimple(task.SubmissionID, overallStatus, totalScore, maxTime, maxMemory, "")
-	log.Printf("[judge] SPJ result for submission %s: status=%s, score=%d", task.SubmissionID, overallStatus, totalScore)
+	log.Printf("[judge] SPJ result for submission %s: status=%s, score=%d",
+		task.SubmissionID, overallStatus, totalScore)
 }

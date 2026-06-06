@@ -2,6 +2,7 @@ package problemset
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -10,6 +11,8 @@ import (
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/utils"
+
+	"hei-gin/plugins/plugin-judge/problem"
 
 	"github.com/gin-gonic/gin"
 )
@@ -74,21 +77,30 @@ func PageService(c *gin.Context, param *ProblemsetPageParam) gin.H {
 	return result.PageDataResult(c, voList, total, page, size)
 }
 
-// CreateService 创建题单
+// CreateService 创建题单（B端管理员）
 func CreateService(c *gin.Context, param *ProblemsetCreateParam) error {
+	return createProblemset(c, param, "BUSINESS", func() string { return auth.GetLoginID(c) })
+}
+
+// ClientCreateService 创建题单（C端用户）
+func ClientCreateService(c *gin.Context, param *ProblemsetCreateParam) error {
+	return createProblemset(c, param, "CONSUMER", func() string { return auth.Consumer.GetLoginID(c) })
+}
+
+func createProblemset(c *gin.Context, param *ProblemsetCreateParam, createdByType string, getLoginID func() string) error {
 	ctx := context.Background()
 	now := time.Now()
-	userID := auth.GetLoginID(c)
 
 	ps := JudgeProblemset{
-		ID:          utils.GenerateID(),
-		Title:       param.Title,
-		Description: param.Description,
-		Status:      param.Status,
-		Sort:        param.Sort,
-		CreatedBy:   userID,
-		CreatedAt:   &now,
-		UpdatedAt:   &now,
+		ID:            utils.GenerateID(),
+		Title:         param.Title,
+		Description:   param.Description,
+		Status:        param.Status,
+		Sort:          param.Sort,
+		CreatedBy:     getLoginID(),
+		CreatedByType: createdByType,
+		CreatedAt:     &now,
+		UpdatedAt:     &now,
 	}
 	if ps.Status == "" {
 		ps.Status = "ACTIVE"
@@ -166,20 +178,105 @@ func RemoveService(c *gin.Context, param ProblemsetRemoveParam) error {
 }
 
 // DetailService 题单详情（含题目列表）
-func DetailService(c *gin.Context, id string) (*ProblemsetVO, error) {
+func DetailService(c *gin.Context, id string) (*ProblemsetDetailVO, error) {
 	ctx := context.Background()
 	var ps JudgeProblemset
 	if err := db.DB.WithContext(ctx).Where("id = ?", id).First(&ps).Error; err != nil {
 		return nil, err
 	}
 
-	vo := modelToVO(&ps)
+	vo := &ProblemsetDetailVO{}
+	vo.ProblemsetVO = modelToVO(&ps)
 
-	var count int64
-	db.DB.WithContext(ctx).Model(&RelProblemsetProblem{}).Where("problemset_id = ?", id).Count(&count)
-	vo.ProblemCount = int(count)
+	// 查询关联题目
+	var rels []RelProblemsetProblem
+	db.DB.WithContext(ctx).Where("problemset_id = ?", id).Order("sort ASC").Find(&rels)
 
-	return &vo, nil
+	var problemIDs []string
+	for _, r := range rels {
+		problemIDs = append(problemIDs, r.ProblemID)
+	}
+
+	titleMap := make(map[string]string)
+	if len(problemIDs) > 0 {
+		var problems []problem.JudgeProblem
+		db.DB.WithContext(ctx).Where("id IN ?", problemIDs).Find(&problems)
+		for _, p := range problems {
+			titleMap[p.ID] = p.Title
+		}
+	}
+
+	for _, r := range rels {
+		vo.Problems = append(vo.Problems, ProblemsetProblemItem{
+			ProblemID: r.ProblemID,
+			Title:     titleMap[r.ProblemID],
+			Sort:      r.Sort,
+		})
+	}
+	vo.ProblemCount = len(vo.Problems)
+
+	return vo, nil
+}
+
+// ClientMySetsService 获取当前C端用户的题单列表
+func ClientMySetsService(c *gin.Context, param *ProblemsetPageParam) gin.H {
+	ctx := context.Background()
+	userID := auth.Consumer.GetLoginID(c)
+
+	tx := db.DB.WithContext(ctx).Model(&JudgeProblemset{}).Where("created_by = ? AND created_by_type = ?", userID, "CONSUMER")
+
+	if param.Keyword != "" {
+		tx = tx.Where("title LIKE ?", "%"+param.Keyword+"%")
+	}
+	if param.Status != "" {
+		tx = tx.Where("status = ?", param.Status)
+	}
+
+	var total int64
+	tx.Count(&total)
+
+	page := param.Current
+	size := param.Size
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 || size > 100 {
+		size = 10
+	}
+
+	var sets []JudgeProblemset
+	tx.Offset((page - 1) * size).Limit(size).Order("updated_at DESC").Find(&sets)
+
+	setIDs := make([]string, len(sets))
+	for i, s := range sets {
+		setIDs[i] = s.ID
+	}
+
+	type CountResult struct {
+		ProblemsetID string `gorm:"column:problemset_id"`
+		Count        int    `gorm:"column:cnt"`
+	}
+	var counts []CountResult
+	if len(setIDs) > 0 {
+		db.DB.WithContext(ctx).Table("rel_problemset_problem").
+			Select("problemset_id, COUNT(*) as cnt").
+			Where("problemset_id IN ?", setIDs).
+			Group("problemset_id").
+			Find(&counts)
+	}
+	countMap := make(map[string]int)
+	for _, c := range counts {
+		countMap[c.ProblemsetID] = c.Count
+	}
+
+	voList := make([]ProblemsetVO, len(sets))
+	for i, s := range sets {
+		vo := modelToVO(&s)
+		vo.ProblemCount = countMap[s.ID]
+		voList[i] = vo
+	}
+
+	return result.PageDataResult(c, voList, total, page, size)
 }
 
 func modelToVO(ps *JudgeProblemset) ProblemsetVO {
@@ -196,4 +293,30 @@ func modelToVO(ps *JudgeProblemset) ProblemsetVO {
 		CreatedBy:   ps.CreatedBy,
 		CreatedAt:   createdAt,
 	}
+}
+
+// ClientModifyService 编辑题单（C端用户，校验归属）
+func ClientModifyService(c *gin.Context, param *ProblemsetModifyParam) error {
+	ctx := context.Background()
+	userID := auth.Consumer.GetLoginID(c)
+
+	var ps JudgeProblemset
+	if err := db.DB.WithContext(ctx).Where("id = ? AND created_by = ? AND created_by_type = ?", param.ID, userID, "CONSUMER").First(&ps).Error; err != nil {
+		return errors.New("题单不存在或无权修改")
+	}
+	return ModifyService(c, param)
+}
+
+// ClientRemoveService 删除题单（C端用户，校验归属）
+func ClientRemoveService(c *gin.Context, param ProblemsetRemoveParam) error {
+	ctx := context.Background()
+	userID := auth.Consumer.GetLoginID(c)
+
+	for _, id := range param.IDs {
+		var ps JudgeProblemset
+		if err := db.DB.WithContext(ctx).Where("id = ? AND created_by = ? AND created_by_type = ?", id, userID, "CONSUMER").First(&ps).Error; err != nil {
+			return errors.New("题单不存在或无权删除")
+		}
+	}
+	return RemoveService(c, param)
 }

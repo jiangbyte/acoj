@@ -54,11 +54,40 @@ func (c *GoJudgeClient) Exec(req *pb.Request) (*pb.Response, error) {
 	return c.client.Exec(ctx, req)
 }
 
-// Health 检查连接状态（不发起 RPC，仅检查 gRPC 连接状态）
+// Health 检查 go-judge 是否正常工作
+// 先检查 gRPC 连接状态，再发送一个简单的 true 命令验证
 func (c *GoJudgeClient) Health() (bool, string, error) {
 	state := c.conn.GetState()
-	if state == connectivity.Ready || state == connectivity.Idle {
-		return true, state.String(), nil
+	if state != connectivity.Ready && state != connectivity.Idle {
+		return false, state.String(), fmt.Errorf("connection state: %s", state.String())
 	}
-	return false, state.String(), fmt.Errorf("connection state: %s", state.String())
+
+	// 发送一个简单命令验证 go-judge 实际可用
+	checkCmd := &pb.Request_CmdType{}
+	checkCmd.SetArgs([]string{"/usr/bin/true"})
+	checkCmd.SetCpuTimeLimit(1000000000)     // 1s
+	checkCmd.SetEnv([]string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"})
+	checkCmd.SetMemoryLimit(16777216)         // 16MB
+	checkCmd.SetProcLimit(10)
+
+	req := &pb.Request{}
+	req.SetCmd([]*pb.Request_CmdType{checkCmd})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := c.client.Exec(ctx, req)
+	if err != nil {
+		return false, state.String(), fmt.Errorf("health check exec failed: %w", err)
+	}
+	results := resp.GetResults()
+	if len(results) == 0 || results[0].GetStatus() != pb.Response_Result_Accepted {
+		errMsg := "health check: unexpected result"
+		if len(results) > 0 {
+			errMsg = fmt.Sprintf("health check: status=%v, error=%s", results[0].GetStatus(), results[0].GetError())
+		}
+		return false, state.String(), fmt.Errorf("%s", errMsg)
+	}
+
+	return true, state.String(), nil
 }

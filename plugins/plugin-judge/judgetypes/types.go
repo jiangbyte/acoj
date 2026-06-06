@@ -11,6 +11,7 @@ type ExecRequest struct {
 	MaxStack    int64    `json:"max_stack"`
 	MaxOutput   int64    `json:"max_output"`
 	Env         []string `json:"env"`
+	Binary      []byte   `json:"-"` // 预编译二进制: 非空时跳过编译阶段, 直接运行
 }
 
 // ExecResult 单次执行结果
@@ -22,6 +23,7 @@ type ExecResult struct {
 	Stdout     string `json:"stdout"`
 	Stderr     string `json:"stderr"`
 	Error      string `json:"error"`
+	Binary     []byte `json:"-"` // 编译产出的二进制文件 (引擎可缓存复用)
 }
 
 // HealthStatus 健康状态
@@ -38,6 +40,11 @@ type SandboxBackend interface {
 	Exec(req *ExecRequest) (*ExecResult, error)
 	BatchExec(reqs []*ExecRequest) ([]*ExecResult, error)
 	Health() *HealthStatus
+	// InteractiveExec 交互式判题
+	// 用户程序与交互器通过管道连接, 在同一沙箱中并行运行
+	// testInput: 测试用例输入, 以文件形式提供给交互器
+	// 返回交互器的执行结果 (exit_code=0=AC)
+	InteractiveExec(userReq, interactorReq *ExecRequest, testInput string) (*ExecResult, error)
 }
 
 const (

@@ -4,14 +4,15 @@ import "time"
 
 // JudgeProblemset 题单实体
 type JudgeProblemset struct {
-	ID          string     `gorm:"primaryKey;size:32" json:"id"`
-	Title       string     `gorm:"size:255;index" json:"title"`
-	Description string     `gorm:"type:text" json:"description"`
-	Status      string     `gorm:"size:16;default:ACTIVE" json:"status"` // ACTIVE / HIDDEN / DELETED
-	Sort        int        `gorm:"default:0" json:"sort"`
-	CreatedBy   string     `gorm:"size:32" json:"created_by"`
-	CreatedAt   *time.Time `json:"created_at"`
-	UpdatedAt   *time.Time `json:"updated_at"`
+	ID             string     `gorm:"primaryKey;size:32" json:"id"`
+	Title          string     `gorm:"size:255;index" json:"title"`
+	Description    string     `gorm:"type:text" json:"description"`
+	Status         string     `gorm:"size:16;default:ACTIVE" json:"status"` // ACTIVE / HIDDEN / DELETED
+	Sort           int        `gorm:"default:0" json:"sort"`
+	CreatedBy      string     `gorm:"size:32" json:"created_by"`
+	CreatedByType  string     `gorm:"size:16;default:BUSINESS" json:"created_by_type"` // BUSINESS / CONSUMER
+	CreatedAt      *time.Time `json:"created_at"`
+	UpdatedAt      *time.Time `json:"updated_at"`
 }
 
 func (JudgeProblemset) TableName() string { return "judge_problemset" }

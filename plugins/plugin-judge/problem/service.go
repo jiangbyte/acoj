@@ -80,6 +80,11 @@ func PageService(c *gin.Context, param *ProblemPageParam) gin.H {
 		for _, p := range problems {
 			vo := modelToVO(&p)
 			vo.Tags = tagMap[p.ID]
+			// 加载语言限制
+			langLimits, _ := GetLanguageLimits(p.ID)
+			if len(langLimits) > 0 {
+				vo.LanguageLimits = langLimits
+			}
 			voList = append(voList, vo)
 		}
 	}
@@ -155,6 +160,12 @@ func CreateService(c *gin.Context, param *ProblemCreateParam) error {
 				if err := tx.Create(&rel).Error; err != nil {
 					return err
 				}
+			}
+		}
+		// 创建语言限制
+		for _, ll := range param.LanguageLimits {
+			if err := UpsertLanguageLimit(problem.ID, ll); err != nil {
+				return err
 			}
 		}
 		return nil
@@ -242,6 +253,15 @@ func ModifyService(c *gin.Context, param *ProblemModifyParam) error {
 				}
 			}
 		}
+		// 更新语言限制: 删除旧的, 创建新的
+		if param.LanguageLimits != nil {
+			tx.Where("problem_id = ?", param.ID).Delete(&JudgeProblemLanguageLimit{})
+			for _, ll := range param.LanguageLimits {
+				if err := UpsertLanguageLimit(param.ID, ll); err != nil {
+					return err
+				}
+			}
+		}
 		return nil
 	})
 }
@@ -254,6 +274,7 @@ func RemoveService(c *gin.Context, param pojo.IdsParam) error {
 			return err
 		}
 		tx.Where("problem_id IN ?", param.IDs).Delete(&RelProblemTag{})
+		tx.Where("problem_id IN ?", param.IDs).Delete(&JudgeProblemLanguageLimit{})
 		return nil
 	})
 }
@@ -275,6 +296,12 @@ func DetailService(c *gin.Context, id string) (*ProblemVO, error) {
 	db.DB.WithContext(ctx).Where("problem_id = ?", id).Find(&rels)
 	for _, rel := range rels {
 		vo.Tags = append(vo.Tags, rel.TagID)
+	}
+
+	// 加载语言限制
+	langLimits, _ := GetLanguageLimits(id)
+	if len(langLimits) > 0 {
+		vo.LanguageLimits = langLimits
 	}
 
 	return &vo, nil
@@ -317,4 +344,39 @@ func modelToVO(p *JudgeProblem) ProblemVO {
 		CreatedAt:       createdAt,
 		UpdatedAt:       updatedAt,
 	}
+}
+
+// PublicDetailService 对外公开的题目详情（隐藏判题配置等敏感信息）
+func PublicDetailService(c *gin.Context, id string) (*PublicProblemVO, error) {
+	vo, err := DetailService(c, id)
+	if err != nil {
+		return nil, err
+	}
+	publicVO := &PublicProblemVO{
+		ID:           vo.ID,
+		Title:        vo.Title,
+		Description:  vo.Description,
+		InputDesc:    vo.InputDesc,
+		OutputDesc:   vo.OutputDesc,
+		SampleInput:  vo.SampleInput,
+		SampleOutput: vo.SampleOutput,
+		Hint:         vo.Hint,
+		Source:       vo.Source,
+		TimeLimit:    vo.TimeLimit,
+		MemoryLimit:  vo.MemoryLimit,
+		StackLimit:   vo.StackLimit,
+		OutputLimit:  vo.OutputLimit,
+		JudgeType:    vo.JudgeType,
+		Difficulty:   vo.Difficulty,
+		SubmitCount:  vo.SubmitCount,
+		AcceptCount:  vo.AcceptCount,
+		CreatedAt:    vo.CreatedAt,
+		UpdatedAt:    vo.UpdatedAt,
+		Tags:         vo.Tags,
+	}
+	// 公开接口也暴露语言限制和模板
+	if len(vo.LanguageLimits) > 0 {
+		publicVO.LanguageLimits = vo.LanguageLimits
+	}
+	return publicVO, nil
 }

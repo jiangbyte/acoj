@@ -3,14 +3,25 @@ package problemset
 import "hei-gin/sdk/pojo"
 
 type ProblemsetVO struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Status      string `json:"status"`
-	Sort        int    `json:"sort"`
-	ProblemCount int   `json:"problem_count"`
-	CreatedBy   string `json:"created_by"`
-	CreatedAt   string `json:"created_at"`
+	ID           string `json:"id"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	Status       string `json:"status"`
+	Sort         int    `json:"sort"`
+	ProblemCount int    `json:"problem_count"`
+	CreatedBy    string `json:"created_by"`
+	CreatedAt    string `json:"created_at"`
+}
+
+type ProblemsetDetailVO struct {
+	ProblemsetVO
+	Problems []ProblemsetProblemItem `json:"problems"`
+}
+
+type ProblemsetProblemItem struct {
+	ProblemID string `json:"problem_id"`
+	Title     string `json:"title"`
+	Sort      int    `json:"sort"`
 }
 
 type ProblemsetPageParam struct {
@@ -21,10 +32,10 @@ type ProblemsetPageParam struct {
 }
 
 type ProblemsetCreateParam struct {
-	Title       string `json:"title" binding:"required"`
-	Description string `json:"description"`
-	Status      string `json:"status"`
-	Sort        int    `json:"sort"`
+	Title       string   `json:"title" binding:"required"`
+	Description string   `json:"description"`
+	Status      string   `json:"status"`
+	Sort        int      `json:"sort"`
 	ProblemIDs  []string `json:"problem_ids"`
 }
 

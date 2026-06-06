@@ -265,9 +265,18 @@ func DetailService(c *gin.Context, id string) (*ContestDetailVO, error) {
 }
 
 // RegisterService 报名竞赛
+// RegisterService 报名竞赛（B端管理员）
 func RegisterService(c *gin.Context, param *ContestRegisterParam) error {
+	return doRegister(c, param, auth.GetLoginID(c))
+}
+
+// ClientRegisterService 报名竞赛（C端用户）
+func ClientRegisterService(c *gin.Context, param *ContestRegisterParam) error {
+	return doRegister(c, param, auth.Consumer.GetLoginID(c))
+}
+
+func doRegister(c *gin.Context, param *ContestRegisterParam, userID string) error {
 	ctx := context.Background()
-	userID := auth.GetLoginID(c)
 
 	var contest JudgeContest
 	if err := db.DB.WithContext(ctx).Where("id = ?", param.ContestID).First(&contest).Error; err != nil {
@@ -295,7 +304,6 @@ func RegisterService(c *gin.Context, param *ContestRegisterParam) error {
 	}
 	return db.DB.WithContext(ctx).Create(&rel).Error
 }
-
 func modelToVO(c *JudgeContest) ContestVO {
 	startTime := ""
 	if c.StartTime != nil {

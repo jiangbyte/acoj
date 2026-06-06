@@ -2,12 +2,17 @@ package judge
 
 import (
 	"log"
+	"strings"
 
 	"hei-gin/plugins/plugin-judge/judgetypes"
 	"hei-gin/plugins/plugin-judge/sandbox"
 	"hei-gin/plugins/plugin-judge/testcase"
 )
 
+// judgeInteractive 交互式判题
+// 顺序执行方案:
+//  1. 编译用户代码一次 + 编译交互器代码一次
+//  2. 对每个测试用例: 运行用户程序 → 运行交互器验证
 func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.JudgeTestcase) {
 	backend := sandbox.DefaultPool.Get()
 	if backend == nil {
@@ -15,37 +20,21 @@ func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.Jud
 		return
 	}
 
-	userCompile, err := backend.Exec(&judgetypes.ExecRequest{
-		Code:       task.Code,
-		Language:   task.Language,
-		MaxCPUTime: 10000 * 1e6,
-		MaxMemory:  512 * 1024 * 1024,
-	})
-	if err != nil || userCompile.Status == judgetypes.StatusCompileError {
-		errMsg := ""
-		if err != nil {
-			errMsg = err.Error()
-		} else {
-			errMsg = userCompile.Stderr
-		}
-		e.updateSimple(task.SubmissionID, judgetypes.StatusCompileError, 0, 0, 0, errMsg)
+	// 预编译用户代码
+	compileResult, userBinary := compileAndGetBinary(backend, task.Code, task.Language)
+	if compileResult.Status == judgetypes.StatusCompileError {
+		e.updateSimple(task.SubmissionID, judgetypes.StatusCompileError, 0, 0, 0, compileResult.Stderr)
+		return
+	}
+	if compileResult.Status == judgetypes.StatusSE {
+		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, compileResult.Error)
 		return
 	}
 
-	interCompile, err := backend.Exec(&judgetypes.ExecRequest{
-		Code:       task.InteractiveCode,
-		Language:   task.InteractiveLang,
-		MaxCPUTime: 10000 * 1e6,
-		MaxMemory:  512 * 1024 * 1024,
-	})
-	if err != nil || interCompile.Status == judgetypes.StatusCompileError {
-		errMsg := ""
-		if err != nil {
-			errMsg = err.Error()
-		} else {
-			errMsg = interCompile.Stderr
-		}
-		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "交互器编译失败: "+errMsg)
+	// 预编译交互器代码
+	interCompileResult, interactorBinary := compileAndGetBinary(backend, task.InteractiveCode, task.InteractiveLang)
+	if interCompileResult.Status == judgetypes.StatusCompileError {
+		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "交互器编译失败: "+interCompileResult.Stderr)
 		return
 	}
 
@@ -55,37 +44,64 @@ func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.Jud
 	maxMemory := int64(0)
 
 	for _, tc := range testcases {
+		// 步骤 1: 运行用户程序
+		userResult, err := runTestCase(backend, task, userBinary, tc.Input)
+		if err != nil {
+			e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, err.Error())
+			return
+		}
+		if userResult.TimeUsed > maxTime {
+			maxTime = userResult.TimeUsed
+		}
+		if userResult.MemoryUsed > maxMemory {
+			maxMemory = userResult.MemoryUsed
+		}
+		if userResult.Status != judgetypes.StatusAccepted {
+			if p, ok := statusPriority[userResult.Status]; ok && p < statusPriority[overallStatus] {
+				overallStatus = userResult.Status
+			}
+			continue
+		}
+
+		// 步骤 2: 运行交互器验证
+		interInput := strings.TrimRight(tc.Input, "\n") + "\n---USER_OUT---\n" +
+			strings.TrimRight(userResult.Stdout, "\n") + "\n"
+
 		interResult, err := backend.Exec(&judgetypes.ExecRequest{
 			Code:        task.InteractiveCode,
 			Language:    task.InteractiveLang,
-			Stdin:       tc.Input + "\n---USER_OUTPUT---\n",
+			Binary:      interactorBinary,
+			Stdin:       interInput,
 			MaxCPUTime:  task.TimeLimit * 3 * 1e6,
 			MaxRealTime: task.TimeLimit * 6 * 1e6,
 			MaxMemory:   task.MemoryLimit * 1024,
+			MaxStack:    task.StackLimit * 1024,
+			MaxOutput:   task.OutputLimit * 1024,
 		})
 		if err != nil {
 			e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, err.Error())
 			return
 		}
-
 		if interResult.TimeUsed > maxTime {
 			maxTime = interResult.TimeUsed
 		}
 		if interResult.MemoryUsed > maxMemory {
 			maxMemory = interResult.MemoryUsed
 		}
-
+		if interResult.Status != judgetypes.StatusAccepted {
+			if p, ok := statusPriority[interResult.Status]; ok && p < statusPriority[overallStatus] {
+				overallStatus = interResult.Status
+			}
+			continue
+		}
 		if interResult.ExitCode == 0 {
 			totalScore += tc.Score
-		} else {
+		} else if overallStatus == judgetypes.StatusAccepted {
 			overallStatus = judgetypes.StatusWrongAnswer
 		}
 	}
 
-	if len(testcases) > 0 {
-		totalScore = totalScore / len(testcases)
-	}
-
 	e.updateSimple(task.SubmissionID, overallStatus, totalScore, maxTime, maxMemory, "")
-	log.Printf("[judge] Interactive result for submission %s: status=%s, score=%d", task.SubmissionID, overallStatus, totalScore)
+	log.Printf("[judge] Interactive result for submission %s: status=%s, score=%d",
+		task.SubmissionID, overallStatus, totalScore)
 }
