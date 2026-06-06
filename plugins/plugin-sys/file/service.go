@@ -1,18 +1,18 @@
 package file
 
 import (
-	"strings"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"hash"
 	"io"
-	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"hei-gin/sdk/config"
 	"hei-gin/sdk/db"
-	"hei-gin/sdk/pojo"
-	"hei-gin/sdk/exception"
 	"hei-gin/sdk/result"
 	"hei-gin/sdk/storage"
 	"hei-gin/sdk/utils"
@@ -20,8 +20,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
-// allowedExtensions is a whitelist of file extensions allowed for upload.
 var allowedExtensions = map[string]bool{
 	".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true, ".svg": true, ".ico": true,
 	".bmp": true, ".tiff": true,
@@ -33,22 +31,60 @@ var allowedExtensions = map[string]bool{
 	".json": true, ".xml": true, ".yaml": true, ".yml": true,
 }
 
-// isAllowedExtension checks whether a file extension is in the whitelist.
 func isAllowedExtension(ext string) bool {
 	return allowedExtensions[strings.ToLower(ext)]
 }
 
-// computeSHA256 computes the SHA-256 hex digest of a reader.
-// The reader is consumed; caller must reset if needed.
-func computeSHA256(r io.Reader) (string, error) {
-	h := sha256.New()
-	if _, err := io.Copy(h, r); err != nil {
-		return "", err
+func isImageExt(ext string) bool {
+	switch strings.ToLower(ext) {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".ico", ".bmp", ".tiff":
+		return true
 	}
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return false
 }
 
-// ===== Basic CRUD =====
+func formatFileSize(bytes int64) (kb int64, info string) {
+	if bytes < 1024 {
+		return 0, fmt.Sprintf("%d B", bytes)
+	}
+	kb = bytes / 1024
+	if kb < 1024 {
+		return kb, fmt.Sprintf("%d KB", kb)
+	}
+	mb := float64(kb) / 1024
+	return kb, fmt.Sprintf("%.1f MB", mb)
+}
+
+func maxUploadSize() int64 {
+	if config.C != nil && config.C.App.UploadMaxSize > 0 {
+		return config.C.App.UploadMaxSize
+	}
+	return 50 << 20
+}
+
+// hashReader wraps an io.Reader to compute SHA256 on-the-fly during streaming.
+type hashReader struct {
+	reader io.Reader
+	hash   hash.Hash
+}
+
+func (r *hashReader) Read(p []byte) (int, error) {
+	n, err := r.reader.Read(p)
+	if n > 0 {
+		r.hash.Write(p[:n])
+	}
+	return n, err
+}
+
+func (r *hashReader) Sum() string {
+	return hex.EncodeToString(r.hash.Sum(nil))
+}
+
+func newHashReader(reader io.Reader) *hashReader {
+	return &hashReader{reader: reader, hash: sha256.New()}
+}
+
+// ===== CRUD =====
 
 func Page(c *gin.Context, param *FilePageParam) gin.H {
 	ctx := c.Request.Context()
@@ -63,15 +99,15 @@ func Page(c *gin.Context, param *FilePageParam) gin.H {
 	}
 
 	query := db.DB.WithContext(ctx).Model(&SysFile{})
-	if param.Category != "" {
-		query = query.Where("category = ?", param.Category)
+	if param.Engine != "" {
+		query = query.Where("engine = ?", param.Engine)
 	}
-	if param.Storage != "" {
-		query = query.Where("storage = ?", param.Storage)
+	if param.Bucket != "" {
+		query = query.Where("bucket = ?", param.Bucket)
 	}
 	if param.Keyword != "" {
 		kw := "%" + param.Keyword + "%"
-		query = query.Where("original_name LIKE ? OR file_name LIKE ?", kw, kw)
+		query = query.Where("original_name LIKE ? OR original_name LIKE ?", kw, kw)
 	}
 
 	var total int64
@@ -79,453 +115,384 @@ func Page(c *gin.Context, param *FilePageParam) gin.H {
 
 	var records []SysFile
 	query.Order("created_at DESC").Limit(param.Size).Offset((param.Current - 1) * param.Size).Find(&records)
-	return result.PageDataResult(c, records, total, param.Current, param.Size)
+
+	vos := make([]*FileVO, len(records))
+	for i := range records {
+		vos[i] = records[i].ToVO()
+	}
+	return result.PageDataResult(c, vos, total, param.Current, param.Size)
 }
 
-func Create(c *gin.Context, vo *FileVO) {
-	ctx := c.Request.Context()
-	now := time.Now()
-
-	entity := SysFile{
-		ID: utils.GenerateID(), Storage: vo.Storage, Category: vo.Category,
-		OriginalName: vo.OriginalName, FileName: vo.FileName, FileSize: vo.FileSize,
-		CreatedAt: &now, UpdatedAt: &now,
-	}
-	if vo.FilePath != nil {
-		entity.FilePath = vo.FilePath
-	}
-	if vo.FileURL != nil {
-		entity.FileURL = vo.FileURL
-	}
-	if vo.FileType != nil {
-		entity.FileType = vo.FileType
-	}
-	if vo.FileSuffix != nil {
-		entity.FileSuffix = vo.FileSuffix
-	}
-	if vo.Checksum != nil {
-		entity.Checksum = vo.Checksum
-		algo := "sha256"
-		entity.ChecksumAlgo = &algo
-	}
-	if vo.Bucket != nil {
-		entity.Bucket = vo.Bucket
-	}
-	if vo.ObjectKey != nil {
-		entity.ObjectKey = vo.ObjectKey
-	}
-	if vo.Extra != nil {
-		entity.Extra = vo.Extra
-	}
-
-	if err := db.DB.WithContext(ctx).Create(&entity).Error; err != nil {
-		panic(exception.NewBusinessError("添加文件记录失败: "+err.Error(), 500))
-	}
-}
-
-func Remove(c *gin.Context, ids []string) {
-	if len(ids) == 0 {
-		return
-	}
-	ctx := c.Request.Context()
-	db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysFile{})
-}
-
-func Detail(c *gin.Context, id string) *SysFile {
+func Detail(c *gin.Context, id string) *FileVO {
 	if id == "" {
 		return nil
 	}
-	ctx := c.Request.Context()
 	var entity SysFile
-	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
+	if err := db.DB.WithContext(c.Request.Context()).First(&entity, "id = ?", id).Error; err != nil {
 		return nil
 	}
-	return &entity
+	return entity.ToVO()
 }
 
-// ===== Storage backend =====
-
-func RemoveAbsolute(c *gin.Context, ids []string) {
+func Remove(c *gin.Context, ids []string) error {
 	if len(ids) == 0 {
-		return
+		return nil
+	}
+	return db.DB.WithContext(c.Request.Context()).Where("id IN ?", ids).Delete(&SysFile{}).Error
+}
+
+func RemoveAbsolute(c *gin.Context, ids []string) error {
+	if len(ids) == 0 {
+		return nil
 	}
 	ctx := c.Request.Context()
 	var files []SysFile
 	db.DB.WithContext(ctx).Where("id IN ?", ids).Find(&files)
 	for _, f := range files {
-		s := storage.GetStorage(f.Storage)
-		if s == nil {
-			continue
-		}
-		if f.Bucket != nil && f.ObjectKey != nil {
-			_ = s.Delete(*f.Bucket, *f.ObjectKey)
+		if f.Engine != "" {
+			if eng := storage.GetStorage(f.Engine); eng != nil {
+				eng.Delete(f.Bucket, f.FileKey)
+			}
 		}
 	}
-	db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysFile{})
+	return db.DB.WithContext(ctx).Where("id IN ?", ids).Delete(&SysFile{}).Error
 }
 
-// ===== Single-file Upload =====
+// ===== Single-file Upload (streaming) =====
 
-func Upload(c *gin.Context) *FileVO {
+func Upload(c *gin.Context) (*FileUploadResult, error) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		panic(exception.NewBusinessError("上传文件失败: "+err.Error(), 400))
+		return nil, fmt.Errorf("上传文件失败: %w", err)
 	}
 	defer file.Close()
 
-	storageType := c.PostForm("storage")
-	if storageType == "" {
-		storageType = "LOCAL"
+	if header.Size > maxUploadSize() {
+		return nil, fmt.Errorf("文件大小超过限制 (%d MB)", maxUploadSize()/(1<<20))
 	}
-	category := c.PostForm("category")
-	if category == "" {
-		category = "DEFAULT"
+
+	engineType := c.PostForm("engine")
+	if engineType == "" {
+		engineType = "LOCAL"
 	}
-	expectedChecksum := c.PostForm("checksum") // optional SHA256 from client
+	bucket := c.PostForm("bucket")
+	if bucket == "" {
+		bucket = "DEFAULT"
+	}
 
 	now := time.Now()
 	ext := filepath.Ext(header.Filename)
 	if !isAllowedExtension(ext) {
-		panic(exception.NewBusinessError("不支持的文件类型: "+ext, 400))
+		return nil, fmt.Errorf("不支持的文件类型: %s", ext)
 	}
-	fileName := utils.GenerateID() + ext
+	fileKey := utils.GenerateID() + ext
 
-	s := storage.GetStorage(storageType)
-	if s == nil {
-		panic(exception.NewBusinessError("不支持的存储类型: "+storageType, 400))
+	eng := storage.GetStorage(engineType)
+	if eng == nil {
+		return nil, fmt.Errorf("不支持的存储类型: %s", engineType)
 	}
 
-	// Store the file
-	bucket := category
-	fileKey := fileName
-
-	// Read into buffer to compute checksum and store simultaneously.
-	// For large files, this uses memory — the chunked upload API is the
-	// recommended path for large files.
-	data, err := io.ReadAll(file)
+	// Stream file to storage while computing SHA256 on-the-fly
+	hr := newHashReader(file)
+	storagePath, err := eng.StoreStream(bucket, fileKey, hr)
 	if err != nil {
-		panic(exception.NewBusinessError("读取文件失败: "+err.Error(), 500))
+		return nil, fmt.Errorf("保存文件失败: %w", err)
 	}
 
-	// Compute checksum before storing
-	fileChecksum, err := computeSHA256(byteReader(data))
-	if err != nil {
-		panic(exception.NewBusinessError("计算文件校验和失败: "+err.Error(), 500))
+	checksum := hr.Sum()
+	fileSizeKb, sizeInfo := formatFileSize(header.Size)
+	downloadPath := storage.GetURL(engineType, bucket, fileKey)
+
+	thumbnail := ""
+	if isImageExt(ext) {
+		thumbnail = downloadPath
 	}
 
-	// Verify checksum if client provided one
-	if expectedChecksum != "" && expectedChecksum != fileChecksum {
-		panic(exception.NewBusinessError(fmt.Sprintf("文件校验和不匹配: 期望 %s, 实际 %s", expectedChecksum, fileChecksum), 400))
-	}
-
-	filePath, err := s.Store(bucket, fileKey, data)
-	if err != nil {
-		panic(exception.NewBusinessError("保存文件失败: "+err.Error(), 500))
-	}
-
-	algo := "sha256"
 	entity := SysFile{
 		ID:           utils.GenerateID(),
-		Storage:      storageType,
-		Category:     category,
-		OriginalName: header.Filename,
-		FileName:     fileName,
-		FilePath:     &filePath,
-		FileSize:     header.Size,
-		FileSuffix:   &ext,
-		Checksum:     &fileChecksum,
-		ChecksumAlgo: &algo,
-		Bucket:       &bucket,
-		ObjectKey:    &fileKey,
-		CreatedAt:    &now,
-		UpdatedAt:    &now,
+		Engine:       engineType,
+		Bucket:       bucket,
+		FileKey:      fileKey,
+		ObjName:      fileKey,
+		Name: header.Filename,
+		Suffix:   ext,
+		SizeKb:   fileSizeKb,
+		SizeInfo:     sizeInfo,
+		StoragePath:  storagePath,
+		DownloadPath: downloadPath,
+		Thumbnail:    thumbnail,
+		Checksum:     checksum,
+		ChecksumAlgo: "sha256",
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
-
 	if err := db.DB.Create(&entity).Error; err != nil {
-		panic(exception.NewBusinessError("保存文件记录失败: "+err.Error(), 500))
+		return nil, fmt.Errorf("保存文件记录失败: %w", err)
 	}
 
-	return &FileVO{
-		ID: entity.ID, Storage: entity.Storage, Category: entity.Category,
-		OriginalName: entity.OriginalName, FileName: entity.FileName,
-		FilePath: entity.FilePath, FileSize: entity.FileSize,
-		FileSuffix: entity.FileSuffix, Checksum: entity.Checksum,
-		ChecksumAlgo: entity.ChecksumAlgo,
-		Bucket: entity.Bucket, ObjectKey: entity.ObjectKey,
-		CreatedAt:    pojo.FormatDateTime(*entity.CreatedAt),
-		UpdatedAt:    pojo.FormatDateTime(*entity.UpdatedAt),
-	}
+	return &FileUploadResult{
+		ID:           entity.ID,
+		Engine:       entity.Engine,
+		Bucket:       entity.Bucket,
+		FileKey:      entity.FileKey,
+		Name: entity.Name,
+		Suffix:   entity.Suffix,
+		SizeKb:   entity.SizeKb,
+		SizeInfo:     entity.SizeInfo,
+		DownloadPath: entity.DownloadPath,
+		Thumbnail:    entity.Thumbnail,
+	}, nil
 }
 
 // ===== Chunked Upload =====
 
-func InitChunkUpload(c *gin.Context, param *ChunkUploadInitParam) *ChunkUploadResult {
-	storageType := param.Storage
-	if storageType == "" {
-		storageType = "LOCAL"
+func InitChunkUpload(c *gin.Context, param *ChunkUploadInitParam) (*ChunkUploadResult, error) {
+	engineType := param.Engine
+	if engineType == "" {
+		engineType = "LOCAL"
 	}
-	category := param.Category
-	if category == "" {
-		category = "DEFAULT"
-	}
-
-	s := storage.GetStorage(storageType)
-	if s == nil {
-		panic(exception.NewBusinessError("不支持的存储类型: "+storageType, 400))
+	bucket := param.Bucket
+	if bucket == "" {
+		bucket = "DEFAULT"
 	}
 
-	cu, ok := s.(storage.ChunkedUploader)
-	if !ok {
-		panic(exception.NewBusinessError("存储后端不支持分片上传: "+storageType, 400))
+	eng := storage.GetStorage(engineType)
+	if eng == nil {
+		return nil, fmt.Errorf("不支持的存储类型: %s", engineType)
 	}
 
 	ext := filepath.Ext(param.FileName)
 	fileKey := utils.GenerateID() + ext
-	bucket := category
 
-	uploadID, err := cu.InitChunkUpload(bucket, fileKey, param.TotalChunks)
-	if err != nil {
-		panic(exception.NewBusinessError("初始化分片上传失败: "+err.Error(), 500))
+	var uploadID string
+	if cu, ok := eng.(storage.ChunkedUploader); ok {
+		id, err := cu.InitChunkUpload(bucket, fileKey, param.TotalChunks)
+		if err != nil {
+			return nil, fmt.Errorf("初始化分片上传失败: %w", err)
+		}
+		uploadID = id
+	} else {
+		uploadID = utils.GenerateID()
+		tmpDir := filepath.Join(os.TempDir(), "chunk_"+uploadID)
+		if err := os.MkdirAll(tmpDir, 0755); err != nil {
+			return nil, fmt.Errorf("创建临时目录失败: %w", err)
+		}
 	}
 
-	// Calculate per-chunk size
 	chunkSize := param.FileSize / int64(param.TotalChunks)
 	if param.FileSize%int64(param.TotalChunks) != 0 {
 		chunkSize++
 	}
 
-	// Store metadata in context for later completion
-	c.Set("_chunk_bucket", bucket)
-	c.Set("_chunk_fileKey", fileKey)
-	c.Set("_chunk_storage", storageType)
-	c.Set("_chunk_category", category)
-	c.Set("_chunk_originalName", param.FileName)
-	c.Set("_chunk_fileSize", param.FileSize)
-	c.Set("_chunk_expectedChecksum", param.Checksum)
-	c.Set("_chunk_uploadID", uploadID)
-
 	return &ChunkUploadResult{
 		UploadID:    uploadID,
+		FileKey:     fileKey,
 		ChunkSize:   chunkSize,
 		TotalChunks: param.TotalChunks,
-	}
+	}, nil
 }
 
-func UploadChunk(c *gin.Context, param *ChunkUploadParam) {
-	uploadID := param.UploadID
-	if uploadID == "" {
-		panic(exception.NewBusinessError("upload_id 不能为空", 400))
+func UploadChunk(c *gin.Context, param *ChunkUploadParam) error {
+	engineType, _ := c.Get("_chunk_engine")
+	engineStr, _ := engineType.(string)
+	if engineStr == "" {
+		engineStr = c.PostForm("engine")
+		if engineStr == "" {
+			engineStr = "LOCAL"
+		}
 	}
-
-	// Determine storage from the init context
-	storageType, _ := c.Get("_chunk_storage")
-	if storageType == nil {
-		storageType = "LOCAL"
-	}
-	bucket, _ := c.Get("_chunk_bucket")
-	if bucket == nil {
-		bucket = "DEFAULT"
-	}
-	fileKey, _ := c.Get("_chunk_fileKey")
-	if fileKey == nil {
-		fileKey = "unknown"
-	}
-
-	s := storage.GetStorage(storageType.(string))
-	if s == nil {
-		panic(exception.NewBusinessError("不支持的存储类型", 400))
-	}
-
-	cu, ok := s.(storage.ChunkedUploader)
-	if !ok {
-		panic(exception.NewBusinessError("存储后端不支持分片上传", 400))
-	}
-
-	file, _, err := c.Request.FormFile("chunk")
-	if err != nil {
-		panic(exception.NewBusinessError("读取分片失败: "+err.Error(), 400))
-	}
-	defer file.Close()
-
-	chunk := storage.ChunkInfo{
-		UploadID:   uploadID,
-		ChunkIndex: param.ChunkIndex,
-		Checksum:   param.Checksum,
-		Data:       file,
-	}
-
-	if err := cu.UploadChunk(bucket.(string), fileKey.(string), uploadID, chunk); err != nil {
-		panic(exception.NewBusinessError("上传分片失败: "+err.Error(), 500))
-	}
-}
-
-func CompleteChunkUpload(c *gin.Context) {
-	uploadID, _ := c.Get("_chunk_uploadID")
-	if uploadID == nil {
-		uploadID = c.PostForm("upload_id")
-	}
-	uploadIDStr, ok := uploadID.(string)
-	if !ok || uploadIDStr == "" {
-		panic(exception.NewBusinessError("upload_id 不能为空", 400))
-	}
-
-	storageType, _ := c.Get("_chunk_storage")
-	if storageType == nil {
-		storageType = "LOCAL"
-	}
-	storageTypeStr := storageType.(string)
-
 	bucket, _ := c.Get("_chunk_bucket")
 	bucketStr, _ := bucket.(string)
 	fileKey, _ := c.Get("_chunk_fileKey")
 	fileKeyStr, _ := fileKey.(string)
-	category, _ := c.Get("_chunk_category")
-	categoryStr, _ := category.(string)
-	originalName, _ := c.Get("_chunk_originalName")
-	originalNameStr, _ := originalName.(string)
-	fileSize, _ := c.Get("_chunk_fileSize")
-	fileSizeInt, _ := fileSize.(int64)
-	expectedChecksum, _ := c.Get("_chunk_expectedChecksum")
-	expectedChecksumStr, _ := expectedChecksum.(string)
 
-	s := storage.GetStorage(storageTypeStr)
-	if s == nil {
-		panic(exception.NewBusinessError("不支持的存储类型", 400))
+	eng := storage.GetStorage(engineStr)
+	if eng == nil {
+		return fmt.Errorf("不支持的存储类型: %s", engineStr)
 	}
 
-	cu, ok := s.(storage.ChunkedUploader)
-	if !ok {
-		panic(exception.NewBusinessError("存储后端不支持分片上传", 400))
-	}
-
-	filePath, err := cu.CompleteChunkUpload(bucketStr, fileKeyStr, uploadIDStr)
+	file, _, err := c.Request.FormFile("file")
 	if err != nil {
-		panic(exception.NewBusinessError("合并分片文件失败: "+err.Error(), 500))
+		return fmt.Errorf("读取分片文件失败: %w", err)
 	}
+	defer file.Close()
 
-	// Verify checksum if requested
-	if expectedChecksumStr != "" {
-		data, err := s.GetBytes(bucketStr, fileKeyStr)
-		if err == nil {
-			actualChecksum, _ := computeSHA256(byteReader(data))
-			if actualChecksum != expectedChecksumStr {
-				panic(exception.NewBusinessError(fmt.Sprintf("文件校验和不匹配: 期望 %s, 实际 %s", expectedChecksumStr, actualChecksum), 400))
-			}
+	if cu, ok := eng.(storage.ChunkedUploader); ok {
+		chunk := storage.ChunkInfo{
+			UploadID:    param.UploadID,
+			ChunkIndex:  param.ChunkIndex,
+			TotalChunks: param.TotalChunks,
+			Checksum:    param.Checksum,
+			Data:        file,
+		}
+		if err := cu.UploadChunk(bucketStr, fileKeyStr, param.UploadID, chunk); err != nil {
+			return fmt.Errorf("上传分片失败: %w", err)
+		}
+	} else {
+		tmpDir := filepath.Join(os.TempDir(), "chunk_"+param.UploadID)
+		chunkFile := filepath.Join(tmpDir, fmt.Sprintf("chunk_%06d", param.ChunkIndex))
+		data, err := io.ReadAll(file)
+		if err != nil {
+			return fmt.Errorf("读取分片数据失败: %w", err)
+		}
+		if err := os.WriteFile(chunkFile, data, 0644); err != nil {
+			return fmt.Errorf("保存分片文件失败: %w", err)
 		}
 	}
+	return nil
+}
 
-	// Compute checksum for storage
+func CompleteChunkUpload(c *gin.Context, param *ChunkCompleteParam) (*FileUploadResult, error) {
+	engineType := param.Engine
+	if engineType == "" {
+		engineType = "LOCAL"
+	}
+	bucket := param.Bucket
+	if bucket == "" {
+		bucket = "DEFAULT"
+	}
+	if param.FileKey == "" {
+		return nil, fmt.Errorf("file_key 不能为空")
+	}
+
+	eng := storage.GetStorage(engineType)
+	if eng == nil {
+		return nil, fmt.Errorf("不支持的存储类型: %s", engineType)
+	}
+
 	now := time.Now()
-	ext := filepath.Ext(originalNameStr)
-	if !isAllowedExtension(ext) {
-		panic(exception.NewBusinessError("不支持的文件类型: "+ext, 400))
-	}
-	algo := "sha256"
 
-	var checksumPtr *string
-	data, err := s.GetBytes(bucketStr, fileKeyStr)
-	if err == nil {
-		cs, _ := computeSHA256(byteReader(data))
-		checksumPtr = &cs
+	var storagePath string
+	if cu, ok := eng.(storage.ChunkedUploader); ok {
+		path, err := cu.CompleteChunkUpload(bucket, param.FileKey, param.UploadID)
+		if err != nil {
+			return nil, fmt.Errorf("合并分片失败: %w", err)
+		}
+		storagePath = path
+	} else {
+		tmpDir := filepath.Join(os.TempDir(), "chunk_"+param.UploadID)
+		defer os.RemoveAll(tmpDir)
+
+		path, err := mergeAndStore(eng, bucket, param.FileKey, tmpDir)
+		if err != nil {
+			return nil, err
+		}
+		storagePath = path
 	}
+
+	ext := filepath.Ext(param.Name)
+	downloadPath := storage.GetURL(engineType, bucket, param.FileKey)
+
+	thumbnail := ""
+	if isImageExt(ext) {
+		thumbnail = downloadPath
+	}
+
+	fileSizeKb, sizeInfo := formatFileSize(param.FileSize)
 
 	entity := SysFile{
 		ID:           utils.GenerateID(),
-		Storage:      storageTypeStr,
-		Category:     categoryStr,
-		OriginalName: originalNameStr,
-		FileName:     fileKeyStr,
-		FilePath:     &filePath,
-		FileSize:     fileSizeInt,
-		FileSuffix:   &ext,
-		Checksum:     checksumPtr,
-		ChecksumAlgo: &algo,
-		Bucket:       &bucketStr,
-		ObjectKey:    &fileKeyStr,
-		CreatedAt:    &now,
-		UpdatedAt:    &now,
+		Engine:       engineType,
+		Bucket:       bucket,
+		FileKey:      param.FileKey,
+		ObjName:      param.FileKey,
+		Name: param.Name,
+		Suffix:   ext,
+		SizeKb:   fileSizeKb,
+		SizeInfo:     sizeInfo,
+		StoragePath:  storagePath,
+		DownloadPath: downloadPath,
+		Thumbnail:    thumbnail,
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
-
 	if err := db.DB.Create(&entity).Error; err != nil {
-		panic(exception.NewBusinessError("保存文件记录失败: "+err.Error(), 500))
+		return nil, fmt.Errorf("保存文件记录失败: %w", err)
 	}
 
-	// Return FileVO
-	c.JSON(200, result.Success(c, &FileVO{
-		ID: entity.ID, Storage: entity.Storage, Category: entity.Category,
-		OriginalName: entity.OriginalName, FileName: entity.FileName,
-		FilePath: entity.FilePath, FileSize: entity.FileSize,
-		FileSuffix: entity.FileSuffix, Checksum: entity.Checksum,
-		ChecksumAlgo: entity.ChecksumAlgo,
-		Bucket: entity.Bucket, ObjectKey: entity.ObjectKey,
-		CreatedAt:    pojo.FormatDateTime(*entity.CreatedAt),
-		UpdatedAt:    pojo.FormatDateTime(*entity.UpdatedAt),
-	}))
+	return &FileUploadResult{
+		ID:           entity.ID,
+		Engine:       entity.Engine,
+		Bucket:       entity.Bucket,
+		FileKey:      entity.FileKey,
+		Name: entity.Name,
+		Suffix:   entity.Suffix,
+		SizeKb:   entity.SizeKb,
+		SizeInfo:     entity.SizeInfo,
+		DownloadPath: entity.DownloadPath,
+		Thumbnail:    entity.Thumbnail,
+	}, nil
 }
 
-func AbortChunkUpload(c *gin.Context) {
-	uploadID := c.PostForm("upload_id")
-	if uploadID == "" {
-		panic(exception.NewBusinessError("upload_id 不能为空", 400))
+func AbortChunkUpload(c *gin.Context, param *ChunkAbortParam) error {
+	engineType := param.Engine
+	if engineType == "" {
+		engineType = "LOCAL"
 	}
 
-	storageType := c.PostForm("storage")
-	if storageType == "" {
-		storageType = "LOCAL"
-	}
-	bucket := c.PostForm("bucket")
-	fileKey := c.PostForm("file_key")
-
-	s := storage.GetStorage(storageType)
-	if s == nil {
-		panic(exception.NewBusinessError("不支持的存储类型", 400))
+	eng := storage.GetStorage(engineType)
+	if eng == nil {
+		return fmt.Errorf("不支持的存储类型: %s", engineType)
 	}
 
-	cu, ok := s.(storage.ChunkedUploader)
-	if !ok {
-		panic(exception.NewBusinessError("存储后端不支持分片上传", 400))
+	if cu, ok := eng.(storage.ChunkedUploader); ok {
+		return cu.AbortChunkUpload(param.Bucket, param.FileKey, param.UploadID)
 	}
 
-	if err := cu.AbortChunkUpload(bucket, fileKey, uploadID); err != nil {
-		panic(exception.NewBusinessError("取消分片上传失败: "+err.Error(), 500))
-	}
+	tmpDir := filepath.Join(os.TempDir(), "chunk_"+param.UploadID)
+	return os.RemoveAll(tmpDir)
 }
+
+func mergeAndStore(eng storage.Engine, bucket, fileKey, tmpDir string) (string, error) {
+	entries, err := os.ReadDir(tmpDir)
+	if err != nil {
+		return "", fmt.Errorf("读取临时目录失败: %w", err)
+	}
+
+	pr, pw := io.Pipe()
+	go func() {
+		defer pw.Close()
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			chunkPath := filepath.Join(tmpDir, entry.Name())
+			f, err := os.Open(chunkPath)
+			if err != nil {
+				pw.CloseWithError(fmt.Errorf("打开分片文件失败: %w", err))
+				return
+			}
+			_, err = io.Copy(pw, f)
+			f.Close()
+			if err != nil {
+				pw.CloseWithError(fmt.Errorf("读取分片数据失败: %w", err))
+				return
+			}
+		}
+	}()
+
+	return eng.StoreStream(bucket, fileKey, pr)
+}
+
+// If storage provides a URL, use it; otherwise auto-construct from the request.
 
 // ===== Download =====
 
-func Download(c *gin.Context, id string) {
-	ctx := c.Request.Context()
+func Download(c *gin.Context, id string) error {
 	var entity SysFile
-	if err := db.DB.WithContext(ctx).First(&entity, "id = ?", id).Error; err != nil {
-		panic(exception.NewBusinessError("文件不存在", 404))
+	if err := db.DB.WithContext(c.Request.Context()).First(&entity, "id = ?", id).Error; err != nil {
+		return fmt.Errorf("文件不存在")
 	}
 
-	if entity.FileURL != nil && *entity.FileURL != "" {
-		c.Redirect(http.StatusFound, *entity.FileURL)
-		return
+	if entity.DownloadPath != "" {
+		c.Redirect(302, entity.DownloadPath)
+		return nil
 	}
 
-	if entity.FilePath == nil || *entity.FilePath == "" {
-		panic(exception.NewBusinessError("文件路径为空", 404))
+	if entity.StoragePath != "" {
+		c.File(entity.StoragePath)
+		return nil
 	}
-	c.File(*entity.FilePath)
-}
 
-// byteReader returns an io.Reader from a byte slice.
-func byteReader(data []byte) io.Reader {
-	return &byteSliceReader{data: data}
-}
-
-type byteSliceReader struct {
-	data []byte
-	pos  int
-}
-
-func (r *byteSliceReader) Read(p []byte) (int, error) {
-	if r.pos >= len(r.data) {
-		return 0, io.EOF
-	}
-	n := copy(p, r.data[r.pos:])
-	r.pos += n
-	return n, nil
+	return fmt.Errorf("文件路径为空")
 }

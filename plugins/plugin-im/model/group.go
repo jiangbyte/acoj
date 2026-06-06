@@ -69,10 +69,11 @@ func (GroupMessage) TableName() string { return "im_group_message" }
 
 // GroupMessageRead 群消息已读
 type GroupMessageRead struct {
-	MessageID string     `gorm:"primaryKey;size:32" json:"message_id"`
+	ID        string     `gorm:"primaryKey;size:32" json:"id"`
+	MessageID string     `gorm:"size:32;not null;uniqueIndex:idx_gmr_msg_user" json:"message_id"`
 	GroupID   string     `gorm:"size:32;not null;index" json:"group_id"`
-	UserID    string     `gorm:"primaryKey;size:32" json:"user_id"`
-	UserType  string     `gorm:"primaryKey;size:20" json:"user_type"`
+	UserID    string     `gorm:"size:32;not null;uniqueIndex:idx_gmr_msg_user" json:"user_id"`
+	UserType  string     `gorm:"size:20;not null;uniqueIndex:idx_gmr_msg_user" json:"user_type"`
 	ReadAt    *time.Time `json:"read_at"`
 }
 

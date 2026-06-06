@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 
@@ -12,6 +13,7 @@ import (
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
 	"hei-gin/sdk/pojo"
+	"hei-gin/sdk/storage"
 	"hei-gin/sdk/utils"
 	ws "hei-gin/plugins/plugin-im/ws"
 
@@ -485,10 +487,14 @@ func SendMessage(ctx context.Context, senderID, senderType string, p *SendMessag
 		}
 	}
 
+	fileURL := ""
+	if msg.MsgType == "IMAGE" || msg.MsgType == "FILE" {
+		fileURL = resolveFileURL(msg.Content, msg.Extra)
+	}
 	return &MessageVO{
 		ID: msg.ID, SenderID: msg.SenderID, SenderType: msg.SenderType,
 		Content: msg.Content, Extra: msg.Extra, MsgType: msg.MsgType,
-		ReplyTo: msg.ReplyTo,
+		ReplyTo: msg.ReplyTo, FileURL: fileURL,
 		CreatedAt: pojo.FormatDateTimePtr(msg.CreatedAt),
 	}
 }
@@ -716,10 +722,14 @@ func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageV
 
 	result := make([]MessageVO, len(msgs))
 	for i, m := range msgs {
+		fileURL := ""
+		if m.MsgType == "IMAGE" || m.MsgType == "FILE" {
+			fileURL = resolveFileURL(m.Content, m.Extra)
+		}
 		result[i] = MessageVO{
 			ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
 			Content: m.Content, Extra: m.Extra, MsgType: m.MsgType,
-			ReplyTo: m.ReplyTo,
+			ReplyTo: m.ReplyTo, FileURL: fileURL,
 			CreatedAt: pojo.FormatDateTimePtr(m.CreatedAt),
 		}
 	}
@@ -758,10 +768,14 @@ func SearchMessages(ctx context.Context, groupID, keyword string, cursor string,
 
 	result := make([]MessageVO, len(msgs))
 	for i, m := range msgs {
+		fileURL := ""
+		if m.MsgType == "IMAGE" || m.MsgType == "FILE" {
+			fileURL = resolveFileURL(m.Content, m.Extra)
+		}
 		result[i] = MessageVO{
 			ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
 			Content: m.Content, Extra: m.Extra, MsgType: m.MsgType,
-			ReplyTo: m.ReplyTo,
+			ReplyTo: m.ReplyTo, FileURL: fileURL,
 			CreatedAt: pojo.FormatDateTimePtr(m.CreatedAt),
 		}
 	}
@@ -778,6 +792,7 @@ func MarkRead(ctx context.Context, groupID, userID, userType, messageID string) 
 		DoUpdates: clause.AssignmentColumns([]string{"read_at", "group_id"}),
 	}).Create(&imModel.GroupMessageRead{
 		MessageID: messageID, GroupID: groupID,
+		ID: utils.GenerateID(),
 		UserID: userID, UserType: userType, ReadAt: &now,
 	}).Error
 }
@@ -960,6 +975,7 @@ func MarkConversationRead(ctx context.Context, groupID, userID, userType string)
 		DoUpdates: clause.AssignmentColumns([]string{"read_at", "group_id"}),
 	}).Create(&imModel.GroupMessageRead{
 		MessageID: lm.ID, GroupID: groupID,
+		ID: utils.GenerateID(),
 		UserID: userID, UserType: userType, ReadAt: &now,
 	}).Error
 }
@@ -1246,4 +1262,31 @@ func MyGroupConversations(userID, userType string) []*ConversationVO {
 		result = append(result, vo)
 	}
 	return result
+}
+// resolveFileURL constructs a full HTTP URL from file message content and extra.
+// Used by the group package to avoid circular imports with message.ResolveFileURL.
+func resolveFileURL(content, extra string) string {
+	if strings.HasPrefix(content, "http") {
+		return content
+	}
+	if content == "" {
+		return ""
+	}
+	engine := "LOCAL"
+	bucket := "DEFAULT"
+	if extra != "" {
+		var meta struct {
+			Engine string `json:"engine"`
+			Bucket string `json:"bucket"`
+		}
+		if err := json.Unmarshal([]byte(extra), &meta); err == nil {
+			if meta.Engine != "" {
+				engine = meta.Engine
+			}
+			if meta.Bucket != "" {
+				bucket = meta.Bucket
+			}
+		}
+	}
+	return storage.GetURL(engine, bucket, content)
 }

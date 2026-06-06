@@ -246,10 +246,15 @@ func conversationMessages(ctx context.Context, currentUserID string, conversatio
 
 	result := make([]ConversationMessageVO, len(records))
 	for i, m := range records {
+		fileURL := ""
+		if m.MsgType == "IMAGE" || m.MsgType == "FILE" {
+			fileURL = ResolveFileURL(m.Content, m.Extra)
+		}
 		result[i] = ConversationMessageVO{
 			ID: m.ID, SenderID: m.SenderID, SenderType: m.SenderType,
 			Content: m.Content, MsgType: m.MsgType, Extra: m.Extra,
 			Status: m.Status,
+			FileURL: fileURL,
 			CreatedAt: pojo.FormatDateTimePtr(m.CreatedAt),
 		}
 	}

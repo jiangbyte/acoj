@@ -1,41 +1,34 @@
 package storage
 
 import (
+	"fmt"
 	"io"
-	"strings"
 	"os"
 	"path/filepath"
-	"crypto/rand"
-	"encoding/hex"
-	"fmt"
+	"strings"
 )
 
-// LocalStorage implements FileStorage on the local filesystem.
-type LocalStorage struct {
+// Local implements Engine on the local filesystem.
+type Local struct {
 	uploadFolder string
+	baseURL      string
 }
 
-// NewLocalStorage creates a new local filesystem storage backend.
-func NewLocalStorage(uploadFolder string) *LocalStorage {
-	return &LocalStorage{uploadFolder: uploadFolder}
+// NewLocal creates a new local filesystem storage backend.
+func NewLocal(uploadFolder, baseURL string) *Local {
+	return &Local{uploadFolder: uploadFolder, baseURL: baseURL}
 }
 
-// GetDefaultBucket returns the default bucket name for local storage.
-func (s *LocalStorage) GetDefaultBucket() string {
-	return "local"
-}
-
-func (s *LocalStorage) safePath(bucket, fileKey string) (string, error) {
+func (s *Local) safePath(bucket, fileKey string) (string, error) {
 	if strings.Contains(bucket, "..") || strings.Contains(fileKey, "..") ||
 		strings.Contains(bucket, "/") || strings.Contains(bucket, "\\") ||
 		strings.Contains(fileKey, "/") || strings.Contains(fileKey, "\\") {
-		return "", fmt.Errorf("invalid path: bucket or fileKey contains directory traversal characters")
+		return "", fmt.Errorf("invalid path: contains directory traversal characters")
 	}
 	return filepath.Join(s.uploadFolder, bucket, fileKey), nil
 }
 
-// _ensurePath creates parent directories and returns the full file path.
-func (s *LocalStorage) _ensurePath(bucket, fileKey string) (string, error) {
+func (s *Local) ensurePath(bucket, fileKey string) (string, error) {
 	fullPath, err := s.safePath(bucket, fileKey)
 	if err != nil {
 		return "", err
@@ -47,9 +40,13 @@ func (s *LocalStorage) _ensurePath(bucket, fileKey string) (string, error) {
 	return fullPath, nil
 }
 
+func (s *Local) getPath(bucket, fileKey string) (string, error) {
+	return s.safePath(bucket, fileKey)
+}
+
 // Store writes raw bytes to the local filesystem and returns the full path.
-func (s *LocalStorage) Store(bucket, fileKey string, data []byte) (string, error) {
-	path, err := s._ensurePath(bucket, fileKey)
+func (s *Local) Store(bucket, fileKey string, data []byte) (string, error) {
+	path, err := s.ensurePath(bucket, fileKey)
 	if err != nil {
 		return "", err
 	}
@@ -59,9 +56,9 @@ func (s *LocalStorage) Store(bucket, fileKey string, data []byte) (string, error
 	return path, nil
 }
 
-// StoreStream copies data from a reader to the local filesystem and returns the full path.
-func (s *LocalStorage) StoreStream(bucket, fileKey string, reader io.Reader) (string, error) {
-	path, err := s._ensurePath(bucket, fileKey)
+// StoreStream copies data from a reader to the local filesystem.
+func (s *Local) StoreStream(bucket, fileKey string, reader io.Reader) (string, error) {
+	path, err := s.ensurePath(bucket, fileKey)
 	if err != nil {
 		return "", err
 	}
@@ -77,32 +74,27 @@ func (s *LocalStorage) StoreStream(bucket, fileKey string, reader io.Reader) (st
 }
 
 // GetBytes reads and returns the raw bytes of a stored file.
-func (s *LocalStorage) GetBytes(bucket, fileKey string) ([]byte, error) {
-	path, err := s.safePath(bucket, fileKey)
+func (s *Local) GetBytes(bucket, fileKey string) ([]byte, error) {
+	path, err := s.getPath(bucket, fileKey)
 	if err != nil {
 		return nil, err
 	}
 	return os.ReadFile(path)
 }
 
-// GetURL returns the local file path as a URL.
-func (s *LocalStorage) GetURL(bucket, fileKey string) string {
-	path, err := s.safePath(bucket, fileKey)
-	if err != nil {
-		return ""
+// GetURL returns the HTTP access URL for the file.
+// If baseURL is configured (e.g. "http://localhost:18886/"), returns baseURL + bucket + "/" + fileKey.
+// Otherwise returns a relative path "/uploads/" + bucket + "/" + fileKey for the static file server.
+func (s *Local) GetURL(bucket, fileKey string) string {
+	if s.baseURL != "" {
+		return s.baseURL + bucket + "/" + fileKey
 	}
-	return path
-}
-
-// GetAuthURL returns the same URL as GetURL since local files have no auth mechanism.
-func (s *LocalStorage) GetAuthURL(bucket, fileKey string, timeoutMs int) (string, error) {
-	return s.GetURL(bucket, fileKey), nil
+	return "/uploads/" + bucket + "/" + fileKey
 }
 
 // Delete removes a file from the local filesystem.
-// Ignores not-found errors for idempotent deletion.
-func (s *LocalStorage) Delete(bucket, fileKey string) error {
-	path, err := s.safePath(bucket, fileKey)
+func (s *Local) Delete(bucket, fileKey string) error {
+	path, err := s.getPath(bucket, fileKey)
 	if err != nil {
 		return err
 	}
@@ -114,8 +106,8 @@ func (s *LocalStorage) Delete(bucket, fileKey string) error {
 }
 
 // Exists checks whether a file exists on the local filesystem.
-func (s *LocalStorage) Exists(bucket, fileKey string) (bool, error) {
-	path, err := s.safePath(bucket, fileKey)
+func (s *Local) Exists(bucket, fileKey string) (bool, error) {
+	path, err := s.getPath(bucket, fileKey)
 	if err != nil {
 		return false, err
 	}
@@ -127,19 +119,18 @@ func (s *LocalStorage) Exists(bucket, fileKey string) (bool, error) {
 }
 
 // Copy copies a file from source to destination on the local filesystem.
-func (s *LocalStorage) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
-	src, err := s.safePath(srcBucket, srcKey)
+func (s *Local) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
+	src, err := s.getPath(srcBucket, srcKey)
 	if err != nil {
 		return err
 	}
-	dst, err := s._ensurePath(dstBucket, dstKey)
+	dst, err := s.ensurePath(dstBucket, dstKey)
 	if err != nil {
 		return err
 	}
 	return copyFile(src, dst)
 }
 
-// copyFile is a helper that copies a file from src to dst.
 func copyFile(src, dst string) error {
 	sourceFile, err := os.Open(src)
 	if err != nil {
@@ -155,99 +146,4 @@ func copyFile(src, dst string) error {
 
 	_, err = io.Copy(destFile, sourceFile)
 	return err
-}
-
-// ===== ChunkedUploader implementation =====
-
-// InitChunkUpload creates a temporary directory for chunk storage.
-func (s *LocalStorage) InitChunkUpload(bucket, fileKey string, totalChunks int) (string, error) {
-	uploadID := filepath.Base(fileKey) + "_" + randomSuffix()
-	dir := filepath.Join(s.uploadFolder, "tmp", uploadID)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", err
-	}
-	return uploadID, nil
-}
-
-// UploadChunk saves a single chunk to the temporary directory.
-// The chunk is written to a file named by its zero-padded ChunkIndex
-// so that directory listing yields correct order for merging.
-func (s *LocalStorage) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) error {
-	dir := filepath.Join(s.uploadFolder, "tmp", uploadID)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-	chunkPath := filepath.Join(dir, chunkFileName(chunk.ChunkIndex, chunk.TotalChunks))
-	data, err := io.ReadAll(chunk.Data)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(chunkPath, data, 0644)
-}
-
-// CompleteChunkUpload reads all chunks in order, merges them into the final file,
-// and cleans up the temporary directory.
-func (s *LocalStorage) CompleteChunkUpload(bucket, fileKey, uploadID string) (string, error) {
-	tmpDir := filepath.Join(s.uploadFolder, "tmp", uploadID)
-	entries, err := os.ReadDir(tmpDir)
-	if err != nil {
-		return "", err
-	}
-	if len(entries) == 0 {
-		return "", os.ErrNotExist
-	}
-
-	finalPath, err := s._ensurePath(bucket, fileKey)
-	if err != nil {
-		return "", err
-	}
-
-	dst, err := os.Create(finalPath)
-	if err != nil {
-		return "", err
-	}
-	defer dst.Close()
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		chunkPath := filepath.Join(tmpDir, entry.Name())
-		src, err := os.Open(chunkPath)
-		if err != nil {
-			return "", err
-		}
-		if _, err := io.Copy(dst, src); err != nil {
-			src.Close()
-			return "", err
-		}
-		src.Close()
-	}
-
-	// Cleanup temp directory
-	os.RemoveAll(tmpDir)
-
-	return finalPath, nil
-}
-
-// AbortChunkUpload deletes the temporary directory and all chunks.
-func (s *LocalStorage) AbortChunkUpload(bucket, fileKey, uploadID string) error {
-	dir := filepath.Join(s.uploadFolder, "tmp", uploadID)
-	return os.RemoveAll(dir)
-}
-
-// chunkFileName returns a zero-padded filename so alphanumeric sort matches index order.
-func chunkFileName(index, total int) string {
-	digits := 1
-	for t := total; t >= 10; t /= 10 {
-		digits++
-	}
-	return fmt.Sprintf("%0*d", digits, index)
-}
-
-// randomSuffix generates a short random hex string for upload ID uniqueness.
-func randomSuffix() string {
-	b := make([]byte, 8)
-	rand.Read(b)
-	return hex.EncodeToString(b)
 }

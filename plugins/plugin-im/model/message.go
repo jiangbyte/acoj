@@ -47,9 +47,10 @@ func (Conversation) TableName() string { return "im_conversation" }
 
 // ConversationUnread tracks per-user unread count per conversation.
 type ConversationUnread struct {
-	ConversationID string `gorm:"primaryKey;size:32" json:"conversation_id"`
-	UserID         string `gorm:"primaryKey;size:32" json:"user_id"`
-	UserType       string `gorm:"primaryKey;size:20" json:"user_type"`
+	ID             string     `gorm:"primaryKey;size:32" json:"id"`
+	ConversationID string `gorm:"size:32;uniqueIndex:idx_conv_unread" json:"conversation_id"`
+	UserID         string `gorm:"size:32;uniqueIndex:idx_conv_unread" json:"user_id"`
+	UserType       string `gorm:"size:20;uniqueIndex:idx_conv_unread" json:"user_type"`
 	UnreadCount    int    `gorm:"default:0" json:"unread_count"`
 }
 

@@ -26,9 +26,10 @@ func (Broadcast) TableName() string { return "im_broadcast" }
 
 // BroadcastRead tracks which users have read a broadcast.
 type BroadcastRead struct {
-	BroadcastID string     `gorm:"primaryKey;size:32" json:"broadcast_id"`
-	UserID      string     `gorm:"primaryKey;size:32" json:"user_id"`
-	UserType    string     `gorm:"primaryKey;size:20" json:"user_type"`
+	ID        string     `gorm:"primaryKey;size:32" json:"id"`
+	BroadcastID string     `gorm:"size:32;not null;uniqueIndex:idx_br_broadcast_user" json:"broadcast_id"`
+	UserID      string     `gorm:"size:32;not null;uniqueIndex:idx_br_broadcast_user" json:"user_id"`
+	UserType    string     `gorm:"size:20;not null;uniqueIndex:idx_br_broadcast_user" json:"user_type"`
 	ReadAt      *time.Time `json:"read_at"`
 }
 

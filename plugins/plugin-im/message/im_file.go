@@ -1,12 +1,17 @@
 package message
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"hash"
 	"io"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"hei-gin/sdk/db"
-	"hei-gin/sdk/exception"
 	"hei-gin/sdk/storage"
 	"hei-gin/sdk/utils"
 	imModel "hei-gin/plugins/plugin-im/model"
@@ -16,41 +21,107 @@ import (
 
 type FileUploadResult struct {
 	URL          string `json:"url"`
+	FileKey      string `json:"file_key"`
+	Bucket       string `json:"bucket"`
+	Engine       string `json:"engine"`
 	OriginalName string `json:"original_name"`
 	FileSize     int64  `json:"file_size"`
 	FileType     string `json:"file_type"`
 }
 
-func UploadFile(c *gin.Context, senderID, senderType string) *FileUploadResult {
+var allowedExtensions = map[string]bool{
+	".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true, ".svg": true, ".ico": true,
+	".bmp": true, ".tiff": true,
+	".doc": true, ".docx": true, ".xls": true, ".xlsx": true, ".ppt": true, ".pptx": true, ".pdf": true,
+	".txt": true, ".csv": true, ".md": true,
+	".zip": true, ".rar": true, ".7z": true, ".tar": true, ".gz": true,
+	".mp3": true, ".wav": true, ".ogg": true,
+	".mp4": true, ".avi": true, ".mkv": true, ".mov": true, ".webm": true,
+	".json": true, ".xml": true, ".yaml": true, ".yml": true,
+}
+
+func isImageExt(ext string) bool {
+	switch strings.ToLower(ext) {
+	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".ico", ".bmp", ".tiff":
+		return true
+	}
+	return false
+}
+
+type hashReader struct {
+	reader io.Reader
+	hash   hash.Hash
+}
+
+func (r *hashReader) Read(p []byte) (int, error) {
+	n, err := r.reader.Read(p)
+	if n > 0 {
+		r.hash.Write(p[:n])
+	}
+	return n, err
+}
+
+func (r *hashReader) Sum() string {
+	return hex.EncodeToString(r.hash.Sum(nil))
+}
+
+func newHashReader(reader io.Reader) *hashReader {
+	return &hashReader{reader: reader, hash: sha256.New()}
+}
+
+func formatFileSize(bytes int64) (kb int64, info string) {
+	if bytes < 1024 {
+		return 0, fmt.Sprintf("%d B", bytes)
+	}
+	kb = bytes / 1024
+	if kb < 1024 {
+		return kb, fmt.Sprintf("%d KB", kb)
+	}
+	mb := float64(kb) / 1024
+	return kb, fmt.Sprintf("%.1f MB", mb)
+}
+
+func UploadFile(c *gin.Context, senderID, senderType string) (*FileUploadResult, error) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		panic(exception.NewBusinessError("上传文件失败: "+err.Error(), 400))
+		return nil, NewAppError("上传文件失败: "+err.Error(), 400)
 	}
 	defer file.Close()
 
-	now := time.Now()
 	ext := filepath.Ext(header.Filename)
-	fileName := utils.GenerateID() + ext
-
-	s := storage.GetStorage("LOCAL")
-	if s == nil {
-		panic(exception.NewBusinessError("存储服务不可用", 500))
+	if !allowedExtensions[strings.ToLower(ext)] {
+		return nil, NewAppError("不支持的文件类型: "+ext, 400)
 	}
 
-	data, err := io.ReadAll(file)
+	engineType := c.PostForm("engine")
+	if engineType == "" {
+		engineType = "LOCAL"
+	}
+	bucket := c.PostForm("bucket")
+	if bucket == "" {
+		bucket = "DEFAULT"
+	}
+
+	now := time.Now()
+	fileKey := utils.GenerateID() + ext
+
+	eng := storage.GetStorage(engineType)
+	if eng == nil {
+		return nil, NewAppError("不支持的存储类型: "+engineType, 500)
+	}
+
+	hr := newHashReader(file)
+	storagePath, err := eng.StoreStream(bucket, fileKey, hr)
 	if err != nil {
-		panic(exception.NewBusinessError("读取文件失败: "+err.Error(), 500))
+		return nil, NewAppError("保存文件失败: "+err.Error(), 500)
 	}
 
-	filePath, err := s.Store("im", fileName, data)
-	if err != nil {
-		panic(exception.NewBusinessError("保存文件失败: "+err.Error(), 500))
-	}
+	checksum := hr.Sum()
+	fileSizeKb, sizeInfo := formatFileSize(header.Size)
 
-	// Build file URL
-	fileURL := filePath
-	if s.GetURL("im", fileName) != "" {
-		fileURL = s.GetURL("im", fileName)
+	thumbnail := ""
+	if isImageExt(ext) {
+		thumbnail = fileKey
 	}
 
 	msgType := c.PostForm("msg_type")
@@ -58,29 +129,70 @@ func UploadFile(c *gin.Context, senderID, senderType string) *FileUploadResult {
 		msgType = "FILE"
 	}
 
-	imFile := imModel.ImFile{
-		ID:           utils.GenerateID(),
-		SenderID:     senderID,
-		SenderType:   senderType,
-		MsgType:      msgType,
-		OriginalName: header.Filename,
-		FileURL:      fileURL,
-		FileSize:     header.Size,
-		FileType:     ext,
-		CreatedAt:    &now,
+	record := imModel.ImFile{
+		ID:             utils.GenerateID(),
+		Engine:         engineType,
+		Bucket:         bucket,
+		FileKey:        fileKey,
+		Name:           header.Filename,
+		Suffix:         ext,
+		SizeKb:         fileSizeKb,
+		SizeInfo:       sizeInfo,
+		StoragePath:    storagePath,
+		DownloadPath:   "",  // not stored — constructed dynamically
+		Thumbnail:      thumbnail,
+		Checksum:       checksum,
+		ChecksumAlgo:   "sha256",
+		ConversationID: c.PostForm("conversation_id"),
+		SenderID:       senderID,
+		SenderType:     senderType,
+		MsgType:        msgType,
+		CreatedAt:      now,
 	}
-	if cid := c.PostForm("conversation_id"); cid != "" {
-		imFile.ConversationID = cid
-	}
-
-	if err := db.DB.Create(&imFile).Error; err != nil {
-		panic(exception.NewBusinessError("保存文件记录失败: "+err.Error(), 500))
+	if err := db.DB.Create(&record).Error; err != nil {
+		return nil, NewAppError("保存文件记录失败: "+err.Error(), 500)
 	}
 
 	return &FileUploadResult{
-		URL:          fileURL,
+		URL:          storage.GetURL(engineType, bucket, fileKey),
+		FileKey:      fileKey,
+		Bucket:       bucket,
+		Engine:       engineType,
 		OriginalName: header.Filename,
 		FileSize:     header.Size,
 		FileType:     ext,
+	}, nil
+}
+
+// ResolveFileURL constructs a full HTTP URL from message content and extra for IMAGE/FILE types.
+// If content is already a full URL (starts with http), returns as-is for backward compatibility.
+// Otherwise reads engine/bucket from extra JSON and constructs via storage.GetURL().
+func ResolveFileURL(content, extra string) string {
+	if strings.HasPrefix(content, "http") {
+		return content
 	}
+	if content == "" {
+		return ""
+	}
+
+	engine := "LOCAL"
+	bucket := "DEFAULT"
+
+	// Try to read engine/bucket from extra JSON
+	if extra != "" {
+		var meta struct {
+			Engine string `json:"engine"`
+			Bucket string `json:"bucket"`
+		}
+		if err := json.Unmarshal([]byte(extra), &meta); err == nil {
+			if meta.Engine != "" {
+				engine = meta.Engine
+			}
+			if meta.Bucket != "" {
+				bucket = meta.Bucket
+			}
+		}
+	}
+
+	return storage.GetURL(engine, bucket, content)
 }

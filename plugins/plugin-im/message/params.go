@@ -79,6 +79,7 @@ type ConversationVO struct {
 }
 
 type ConversationMessageVO struct {
+	FileURL      string `json:"file_url"`
 	ID         string `json:"id"`
 	SenderID   string `json:"sender_id"`
 	SenderType string `json:"sender_type"`

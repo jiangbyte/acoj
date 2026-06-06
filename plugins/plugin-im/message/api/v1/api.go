@@ -37,6 +37,7 @@ func RegisterRoutes(r *gin.Engine) {
 		g.GET("/conversation/messages", conversationMessagesHandler)
 		g.POST("/conversation/read", conversationReadHandler)
 		g.POST("/conversation/get-or-create", getOrCreateConversationHandler)
+		g.POST("/file/upload", uploadFileHandler)
 	}
 }
 
@@ -255,6 +256,7 @@ func RegisterClientRoutes(r *gin.Engine) {
 		g.GET("/conversation/messages", clientConversationMessagesHandler)
 		g.POST("/conversation/read", clientConversationReadHandler)
 		g.POST("/conversation/get-or-create", clientGetOrCreateConversationHandler)
+		g.POST("/file/upload", clientUploadFileHandler)
 	}
 }
 
@@ -451,4 +453,32 @@ func clientGetOrCreateConversationHandler(c *gin.Context) {
 	userID, userType := clientUserID(c)
 	cid, displayName := message.GetOrCreateConversation(userID, userType, &param)
 	c.JSON(200, result.Success(c, gin.H{"conversation_id": cid, "display_name": displayName}))
+}
+
+func uploadFileHandler(c *gin.Context) {
+	userID := auth.GetLoginID(c)
+	data, err := message.UploadFile(c, userID, string(enums.LoginTypeBusiness))
+	if err != nil {
+		if appErr, ok := err.(*message.AppError); ok {
+			c.JSON(200, result.Failure(c, appErr.Message, appErr.Code, nil))
+		} else {
+			c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		}
+		return
+	}
+	c.JSON(200, result.Success(c, data))
+}
+
+func clientUploadFileHandler(c *gin.Context) {
+	userID := auth.Consumer.GetLoginID(c)
+	data, err := message.UploadFile(c, userID, string(enums.LoginTypeConsumer))
+	if err != nil {
+		if appErr, ok := err.(*message.AppError); ok {
+			c.JSON(200, result.Failure(c, appErr.Message, appErr.Code, nil))
+		} else {
+			c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		}
+		return
+	}
+	c.JSON(200, result.Success(c, data))
 }

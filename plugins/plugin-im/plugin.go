@@ -48,6 +48,7 @@ func init() {
 	module.Register(&IMPlugin{})
 
 	registry.RegisterRoute(func(r *gin.Engine) {
+	r.Static("/uploads", "./uploads")
 		r.GET("/api/v1/sys/im/ws", sysWSHandler)
 		r.GET("/api/v1/c/im/ws", clientWSHandler)
 	})

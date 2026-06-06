@@ -15,14 +15,15 @@ import (
 )
 
 // S3Storage implements FileStorage using AWS S3 or any S3-compatible object store.
-type S3Storage struct {
+type S3 struct {
 	client        *s3.Client
 	defaultBucket string
+	baseURL      string
 	endpoint      string
 }
 
 // NewS3Storage creates a new S3-compatible storage backend.
-func NewS3Storage(endpoint, accessKey, secretKey, defaultBucket, region string, pathStyle bool) *S3Storage {
+func NewS3(endpoint, accessKey, secretKey, defaultBucket, region string, pathStyle bool, baseURL string) *S3 {
 	cfg, err := config.LoadDefaultConfig(context.Background(),
 		config.WithRegion(region),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
@@ -36,20 +37,21 @@ func NewS3Storage(endpoint, accessKey, secretKey, defaultBucket, region string, 
 		o.UsePathStyle = pathStyle
 	})
 
-	return &S3Storage{
+	return &S3{
 		client:        client,
 		defaultBucket: defaultBucket,
+		baseURL:       baseURL,
 		endpoint:      endpoint,
 	}
 }
 
 // GetDefaultBucket returns the default bucket name.
-func (s *S3Storage) GetDefaultBucket() string {
+func (s *S3) GetDefaultBucket() string {
 	return s.defaultBucket
 }
 
 // _ensureBucket creates the bucket if it does not already exist.
-func (s *S3Storage) _ensureBucket(ctx context.Context, bucket string) error {
+func (s *S3) _ensureBucket(ctx context.Context, bucket string) error {
 	_, err := s.client.HeadBucket(ctx, &s3.HeadBucketInput{
 		Bucket: aws.String(bucket),
 	})
@@ -63,7 +65,7 @@ func (s *S3Storage) _ensureBucket(ctx context.Context, bucket string) error {
 }
 
 // Store uploads raw bytes to S3 and returns the object key.
-func (s *S3Storage) Store(bucket, fileKey string, data []byte) (string, error) {
+func (s *S3) Store(bucket, fileKey string, data []byte) (string, error) {
 	ctx := context.Background()
 	if err := s._ensureBucket(ctx, bucket); err != nil {
 		return "", err
@@ -80,7 +82,7 @@ func (s *S3Storage) Store(bucket, fileKey string, data []byte) (string, error) {
 }
 
 // StoreStream reads all data from the reader and uploads it to S3.
-func (s *S3Storage) StoreStream(bucket, fileKey string, reader io.Reader) (string, error) {
+func (s *S3) StoreStream(bucket, fileKey string, reader io.Reader) (string, error) {
 	ctx := context.Background()
 	if err := s._ensureBucket(ctx, bucket); err != nil {
 		return "", err
@@ -101,7 +103,7 @@ func (s *S3Storage) StoreStream(bucket, fileKey string, reader io.Reader) (strin
 }
 
 // GetBytes downloads and returns the raw bytes of an object from S3.
-func (s *S3Storage) GetBytes(bucket, fileKey string) ([]byte, error) {
+func (s *S3) GetBytes(bucket, fileKey string) ([]byte, error) {
 	ctx := context.Background()
 	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
@@ -115,12 +117,15 @@ func (s *S3Storage) GetBytes(bucket, fileKey string) ([]byte, error) {
 }
 
 // GetURL returns the endpoint-based URL for the object.
-func (s *S3Storage) GetURL(bucket, fileKey string) string {
+func (s *S3) GetURL(bucket, fileKey string) string {
+	if s.baseURL != "" {
+		return s.baseURL + bucket + "/" + fileKey
+	}
 	return s.endpoint + "/" + bucket + "/" + fileKey
 }
 
 // GetAuthURL returns a time-limited presigned URL for the object.
-func (s *S3Storage) GetAuthURL(bucket, fileKey string, timeoutMs int) (string, error) {
+func (s *S3) GetAuthURL(bucket, fileKey string, timeoutMs int) (string, error) {
 	ctx := context.Background()
 	presignClient := s3.NewPresignClient(s.client)
 	req, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
@@ -136,7 +141,7 @@ func (s *S3Storage) GetAuthURL(bucket, fileKey string, timeoutMs int) (string, e
 }
 
 // Delete removes an object from S3.
-func (s *S3Storage) Delete(bucket, fileKey string) error {
+func (s *S3) Delete(bucket, fileKey string) error {
 	ctx := context.Background()
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
@@ -146,7 +151,7 @@ func (s *S3Storage) Delete(bucket, fileKey string) error {
 }
 
 // Exists checks whether an object exists in S3.
-func (s *S3Storage) Exists(bucket, fileKey string) (bool, error) {
+func (s *S3) Exists(bucket, fileKey string) (bool, error) {
 	ctx := context.Background()
 	_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
@@ -159,7 +164,7 @@ func (s *S3Storage) Exists(bucket, fileKey string) (bool, error) {
 }
 
 // Copy copies an object from source to destination within S3.
-func (s *S3Storage) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
+func (s *S3) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
 	ctx := context.Background()
 	_, err := s.client.CopyObject(ctx, &s3.CopyObjectInput{
 		Bucket:     aws.String(dstBucket),
@@ -172,7 +177,7 @@ func (s *S3Storage) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
 // ===== ChunkedUploader implementation (S3 native multipart upload) =====
 
 // InitChunkUpload initializes an S3 multipart upload session.
-func (s *S3Storage) InitChunkUpload(bucket, fileKey string, totalChunks int) (string, error) {
+func (s *S3) InitChunkUpload(bucket, fileKey string, totalChunks int) (string, error) {
 	ctx := context.Background()
 	if err := s._ensureBucket(ctx, bucket); err != nil {
 		return "", err
@@ -188,7 +193,7 @@ func (s *S3Storage) InitChunkUpload(bucket, fileKey string, totalChunks int) (st
 }
 
 // UploadChunk uploads a single chunk as a part in the S3 multipart upload.
-func (s *S3Storage) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) error {
+func (s *S3) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) error {
 	ctx := context.Background()
 	partNumber := int32(chunk.ChunkIndex + 1) // S3 parts are 1-based
 	_, err := s.client.UploadPart(ctx, &s3.UploadPartInput{
@@ -202,7 +207,7 @@ func (s *S3Storage) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInf
 }
 
 // CompleteChunkUpload lists all uploaded parts and completes the S3 multipart upload.
-func (s *S3Storage) CompleteChunkUpload(bucket, fileKey, uploadID string) (string, error) {
+func (s *S3) CompleteChunkUpload(bucket, fileKey, uploadID string) (string, error) {
 	ctx := context.Background()
 
 	var completedParts []types.CompletedPart
@@ -249,7 +254,7 @@ func (s *S3Storage) CompleteChunkUpload(bucket, fileKey, uploadID string) (strin
 }
 
 // AbortChunkUpload aborts the S3 multipart upload and cleans up partial data.
-func (s *S3Storage) AbortChunkUpload(bucket, fileKey, uploadID string) error {
+func (s *S3) AbortChunkUpload(bucket, fileKey, uploadID string) error {
 	ctx := context.Background()
 	_, err := s.client.AbortMultipartUpload(ctx, &s3.AbortMultipartUploadInput{
 		Bucket:   aws.String(bucket),

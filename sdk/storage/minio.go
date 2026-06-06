@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"context"
+	"strings"
 	"errors"
 	"io"
 	"time"
@@ -14,14 +15,13 @@ import (
 // MinioStorage implements FileStorage using MinIO (S3-compatible object storage).
 // It uses minio.Core for both standard operations (via embedded *Client) and
 // low-level multipart upload APIs.
-type MinioStorage struct {
+type Minio struct {
 	core          *minio.Core
 	defaultBucket string
+	baseURL      string
 	endpoint      string
 }
-
-// NewMinioStorage creates a new MinIO storage backend.
-func NewMinioStorage(endpoint, accessKey, secretKey, defaultBucket string, secure bool, region string) *MinioStorage {
+func NewMinio(endpoint, accessKey, secretKey, defaultBucket string, secure bool, region string, baseURL string) *Minio {
 	core, err := minio.NewCore(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: secure,
@@ -30,25 +30,26 @@ func NewMinioStorage(endpoint, accessKey, secretKey, defaultBucket string, secur
 	if err != nil {
 		panic(err)
 	}
-	return &MinioStorage{
+	return &Minio{
 		core:          core,
 		defaultBucket: defaultBucket,
+		baseURL:       baseURL,
 		endpoint:      endpoint,
-	}
 }
+	}
 
 // client returns the embedded *minio.Client for standard operations.
-func (m *MinioStorage) client() *minio.Client {
+func (m *Minio) client() *minio.Client {
 	return m.core.Client
 }
 
 // GetDefaultBucket returns the default bucket name.
-func (m *MinioStorage) GetDefaultBucket() string {
+func (m *Minio) GetDefaultBucket() string {
 	return m.defaultBucket
 }
 
 // _ensureBucket creates the bucket if it does not already exist.
-func (m *MinioStorage) _ensureBucket(ctx context.Context, bucket string) error {
+func (m *Minio) _ensureBucket(ctx context.Context, bucket string) error {
 	exists, err := m.client().BucketExists(ctx, bucket)
 	if err != nil {
 		return err
@@ -60,7 +61,7 @@ func (m *MinioStorage) _ensureBucket(ctx context.Context, bucket string) error {
 }
 
 // Store uploads raw bytes to MinIO and returns the object key.
-func (m *MinioStorage) Store(bucket, fileKey string, data []byte) (string, error) {
+func (m *Minio) Store(bucket, fileKey string, data []byte) (string, error) {
 	ctx := context.Background()
 	if err := m._ensureBucket(ctx, bucket); err != nil {
 		return "", err
@@ -73,7 +74,7 @@ func (m *MinioStorage) Store(bucket, fileKey string, data []byte) (string, error
 }
 
 // StoreStream uploads data from a reader to MinIO.
-func (m *MinioStorage) StoreStream(bucket, fileKey string, reader io.Reader) (string, error) {
+func (m *Minio) StoreStream(bucket, fileKey string, reader io.Reader) (string, error) {
 	ctx := context.Background()
 	if err := m._ensureBucket(ctx, bucket); err != nil {
 		return "", err
@@ -90,7 +91,7 @@ func (m *MinioStorage) StoreStream(bucket, fileKey string, reader io.Reader) (st
 }
 
 // GetBytes downloads and returns the raw bytes of an object from MinIO.
-func (m *MinioStorage) GetBytes(bucket, fileKey string) ([]byte, error) {
+func (m *Minio) GetBytes(bucket, fileKey string) ([]byte, error) {
 	ctx := context.Background()
 	obj, err := m.client().GetObject(ctx, bucket, fileKey, minio.GetObjectOptions{})
 	if err != nil {
@@ -101,12 +102,23 @@ func (m *MinioStorage) GetBytes(bucket, fileKey string) ([]byte, error) {
 }
 
 // GetURL returns the public endpoint-based URL for the object.
-func (m *MinioStorage) GetURL(bucket, fileKey string) string {
-	return m.endpoint + "/" + bucket + "/" + fileKey
+func (m *Minio) GetURL(bucket, fileKey string) string {
+	if m.baseURL != "" {
+		return m.baseURL + bucket + "/" + fileKey
+	}
+	scheme := "http"
+	endpoint := m.endpoint
+	if strings.HasPrefix(endpoint, "https://") {
+		scheme = "https"
+		endpoint = strings.TrimPrefix(endpoint, "https://")
+	} else if strings.HasPrefix(endpoint, "http://") {
+		endpoint = strings.TrimPrefix(endpoint, "http://")
+	}
+	return scheme + "://" + endpoint + "/" + bucket + "/" + fileKey
 }
 
 // GetAuthURL returns a time-limited presigned URL for the object.
-func (m *MinioStorage) GetAuthURL(bucket, fileKey string, timeoutMs int) (string, error) {
+func (m *Minio) GetAuthURL(bucket, fileKey string, timeoutMs int) (string, error) {
 	ctx := context.Background()
 	expiry := time.Duration(timeoutMs) * time.Millisecond
 	u, err := m.client().PresignedGetObject(ctx, bucket, fileKey, expiry, nil)
@@ -117,7 +129,7 @@ func (m *MinioStorage) GetAuthURL(bucket, fileKey string, timeoutMs int) (string
 }
 
 // Delete removes an object from MinIO.
-func (m *MinioStorage) Delete(bucket, fileKey string) error {
+func (m *Minio) Delete(bucket, fileKey string) error {
 	ctx := context.Background()
 	err := m.client().RemoveObject(ctx, bucket, fileKey, minio.RemoveObjectOptions{})
 	if err != nil {
@@ -131,7 +143,7 @@ func (m *MinioStorage) Delete(bucket, fileKey string) error {
 }
 
 // Exists checks whether an object exists in MinIO.
-func (m *MinioStorage) Exists(bucket, fileKey string) (bool, error) {
+func (m *Minio) Exists(bucket, fileKey string) (bool, error) {
 	ctx := context.Background()
 	_, err := m.client().StatObject(ctx, bucket, fileKey, minio.StatObjectOptions{})
 	if err != nil {
@@ -145,7 +157,7 @@ func (m *MinioStorage) Exists(bucket, fileKey string) (bool, error) {
 }
 
 // Copy copies an object from source to destination within MinIO.
-func (m *MinioStorage) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
+func (m *Minio) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
 	ctx := context.Background()
 	src := minio.CopySrcOptions{
 		Bucket: srcBucket,
@@ -162,7 +174,7 @@ func (m *MinioStorage) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
 // ===== ChunkedUploader implementation (MinIO native multipart upload) =====
 
 // InitChunkUpload initializes a MinIO multipart upload session.
-func (m *MinioStorage) InitChunkUpload(bucket, fileKey string, totalChunks int) (string, error) {
+func (m *Minio) InitChunkUpload(bucket, fileKey string, totalChunks int) (string, error) {
 	ctx := context.Background()
 	if err := m._ensureBucket(ctx, bucket); err != nil {
 		return "", err
@@ -175,7 +187,7 @@ func (m *MinioStorage) InitChunkUpload(bucket, fileKey string, totalChunks int) 
 }
 
 // UploadChunk uploads a single chunk as a part in the MinIO multipart upload.
-func (m *MinioStorage) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) error {
+func (m *Minio) UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) error {
 	ctx := context.Background()
 	data, err := io.ReadAll(chunk.Data)
 	if err != nil {
@@ -188,7 +200,7 @@ func (m *MinioStorage) UploadChunk(bucket, fileKey, uploadID string, chunk Chunk
 }
 
 // CompleteChunkUpload lists all uploaded parts and completes the multipart upload.
-func (m *MinioStorage) CompleteChunkUpload(bucket, fileKey, uploadID string) (string, error) {
+func (m *Minio) CompleteChunkUpload(bucket, fileKey, uploadID string) (string, error) {
 	ctx := context.Background()
 
 	var parts []minio.CompletePart
@@ -222,7 +234,7 @@ func (m *MinioStorage) CompleteChunkUpload(bucket, fileKey, uploadID string) (st
 }
 
 // AbortChunkUpload aborts the MinIO multipart upload and cleans up partial data.
-func (m *MinioStorage) AbortChunkUpload(bucket, fileKey, uploadID string) error {
+func (m *Minio) AbortChunkUpload(bucket, fileKey, uploadID string) error {
 	ctx := context.Background()
 	return m.core.AbortMultipartUpload(ctx, bucket, fileKey, uploadID)
 }

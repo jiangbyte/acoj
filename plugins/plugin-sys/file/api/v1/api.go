@@ -13,16 +13,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes registers all admin file routes.
 func RegisterRoutes(r *gin.Engine) {
-	// ---- Single-file upload ----
 	r.POST("/api/v1/sys/file/upload",
 		registry.Perm("sys:file:upload", "上传文件"),
 		log.SysLog("上传文件"),
 		fileUpload,
 	)
 
-	// ---- Chunked upload ----
 	r.POST("/api/v1/sys/file/upload/init",
 		registry.Perm("sys:file:upload", "分片上传-初始化"),
 		log.SysLog("分片上传-初始化"),
@@ -44,7 +41,6 @@ func RegisterRoutes(r *gin.Engine) {
 		fileUploadAbort,
 	)
 
-	// ---- Basic CRUD ----
 	r.GET("/api/v1/sys/file/download",
 		registry.Perm("sys:file:download", "下载文件"),
 		fileDownload,
@@ -63,13 +59,12 @@ func RegisterRoutes(r *gin.Engine) {
 		fileRemove,
 	)
 	r.POST("/api/v1/sys/file/remove-absolute",
-		registry.Perm("sys:file:remove", "删除文件"),
+		registry.Perm("sys:file:remove", "物理删除文件"),
 		log.SysLog("物理删除文件"),
 		fileRemoveAbsolute,
 	)
 }
 
-// RegisterClientRoutes registers consumer file routes.
 func RegisterClientRoutes(r *gin.Engine) {
 	r.POST("/api/v1/c/file/upload",
 		middleware.HeiClientCheckLogin(),
@@ -78,21 +73,29 @@ func RegisterClientRoutes(r *gin.Engine) {
 	)
 }
 
-// ---- Handlers ----
-
 func fileUpload(c *gin.Context) {
-	data := file.Upload(c)
+	data, err := file.Upload(c)
+	if err != nil {
+		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		return
+	}
 	c.JSON(200, result.Success(c, data))
 }
 
 func clientFileUpload(c *gin.Context) {
-	data := file.Upload(c)
+	data, err := file.Upload(c)
+	if err != nil {
+		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		return
+	}
 	c.JSON(200, result.Success(c, data))
 }
 
 func fileDownload(c *gin.Context) {
 	id := c.Query("id")
-	file.Download(c, id)
+	if err := file.Download(c, id); err != nil {
+		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+	}
 }
 
 func filePage(c *gin.Context) {
@@ -117,7 +120,10 @@ func fileRemove(c *gin.Context) {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
-	file.Remove(c, param.IDs)
+	if err := file.Remove(c, param.IDs); err != nil {
+		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		return
+	}
 	c.JSON(200, result.Success(c, nil))
 }
 
@@ -127,11 +133,12 @@ func fileRemoveAbsolute(c *gin.Context) {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
-	file.RemoveAbsolute(c, param.IDs)
+	if err := file.RemoveAbsolute(c, param.IDs); err != nil {
+		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		return
+	}
 	c.JSON(200, result.Success(c, nil))
 }
-
-// ---- Chunked upload handlers ----
 
 func fileUploadInit(c *gin.Context) {
 	var param file.ChunkUploadInitParam
@@ -139,35 +146,61 @@ func fileUploadInit(c *gin.Context) {
 		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
 		return
 	}
-	data := file.InitChunkUpload(c, &param)
+	data, err := file.InitChunkUpload(c, &param)
+	if err != nil {
+		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		return
+	}
 	c.JSON(200, result.Success(c, data))
 }
 
 func fileUploadChunk(c *gin.Context) {
 	chunkIndex, _ := strconv.Atoi(c.PostForm("chunk_index"))
+	totalChunks, _ := strconv.Atoi(c.PostForm("total_chunks"))
 	param := file.ChunkUploadParam{
-		UploadID:   c.PostForm("upload_id"),
-		ChunkIndex: chunkIndex,
-		Checksum:   c.PostForm("checksum"),
+		UploadID:    c.PostForm("upload_id"),
+		ChunkIndex:  chunkIndex,
+		TotalChunks: totalChunks,
+		Checksum:    c.PostForm("checksum"),
 	}
 	if param.UploadID == "" {
 		c.JSON(200, result.Failure(c, "upload_id 不能为空", 400, nil))
 		return
 	}
-	file.UploadChunk(c, &param)
+	if err := file.UploadChunk(c, &param); err != nil {
+		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		return
+	}
 	c.JSON(200, result.Success(c, nil))
 }
 
 func fileUploadComplete(c *gin.Context) {
-	file.CompleteChunkUpload(c)
+	var param file.ChunkCompleteParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		return
+	}
+	data, err := file.CompleteChunkUpload(c, &param)
+	if err != nil {
+		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		return
+	}
+	c.JSON(200, result.Success(c, data))
 }
 
 func fileUploadAbort(c *gin.Context) {
-	file.AbortChunkUpload(c)
+	var param file.ChunkAbortParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		c.JSON(200, result.Failure(c, "参数错误: "+err.Error(), 400, nil))
+		return
+	}
+	if err := file.AbortChunkUpload(c, &param); err != nil {
+		c.JSON(200, result.Failure(c, err.Error(), 400, nil))
+		return
+	}
 	c.JSON(200, result.Success(c, nil))
 }
 
-// Ensure fmt import is used
 func init() {
 	registry.RegisterRoute(RegisterRoutes)
 	registry.RegisterRoute(RegisterClientRoutes)

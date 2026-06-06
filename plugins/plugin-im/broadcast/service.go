@@ -108,6 +108,7 @@ func UnreadList(userID, userType string) ([]BroadcastVO, bool) {
 		readAt, read := readMap[b.ID]
 		vo := BroadcastVO{
 			ID: b.ID, Title: b.Title,
+			Content: b.Content,
 			Scope: b.Scope, Read: read,
 			CreatedAt: pojo.FormatDateTimePtr(b.CreatedAt),
 		}
@@ -127,6 +128,7 @@ func MarkRead(userID, userType, broadcastID string) {
 	_ = db.DB.Where("broadcast_id = ? AND user_id = ? AND user_type = ?", broadcastID, userID, userType).
 		FirstOrCreate(&imModel.BroadcastRead{
 			BroadcastID: broadcastID,
+			ID: utils.GenerateID(),
 			UserID:      userID,
 			UserType:    userType,
 			ReadAt:      &now,

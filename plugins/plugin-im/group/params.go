@@ -72,6 +72,7 @@ type MessageVO struct {
 	Extra      string  `json:"extra"`
 	MsgType    string  `json:"msg_type"`
 	ReplyTo    string  `json:"reply_to"`
+	FileURL    string  `json:"file_url"`
 	CreatedAt  string  `json:"created_at"`
 }
 

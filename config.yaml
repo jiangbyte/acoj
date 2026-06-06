@@ -54,6 +54,7 @@ snowflake:
   instance: 1
 
 storage:
+  default_base_url: "http://localhost:18886"
   default: LOCAL
   local:
     upload_folder: ./uploads
@@ -86,3 +87,4 @@ ws:
   pong_timeout: 60
   write_timeout: 10
   online_broadcast_interval: 60
+
