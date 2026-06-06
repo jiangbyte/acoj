@@ -3,6 +3,7 @@ package message
 import (
 	"context"
 	"sort"
+	"strings"
 	"time"
 
 	"hei-gin/sdk/db"
@@ -113,6 +114,28 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 	resultMap := make(map[string]*ConversationVO, len(rows))
 	userKeys := make(map[string]bool) // "type:id" for batch resolve
 
+	// Batch collect conversation IDs for unread count
+	convIDs := make([]string, 0, len(rows))
+	for _, r := range rows {
+		convIDs = append(convIDs, r.ConversationID)
+	}
+
+	// Batch query unread counts
+	type unreadRow struct {
+		ConversationID string
+		Count          int64
+	}
+	var unreads []unreadRow
+	db.DB.Model(&imModel.Message{}).
+		Select("conversation_id, COUNT(*) as count").
+		Where("conversation_id IN ? AND receiver_id = ? AND status = ?", convIDs, currentUserID, "unread").
+		Group("conversation_id").
+		Scan(&unreads)
+	unreadMap := make(map[string]int64, len(unreads))
+	for _, u := range unreads {
+		unreadMap[u.ConversationID] = u.Count
+	}
+
 	for _, r := range rows {
 		var otherID, otherType string
 		if r.SenderID == currentUserID && r.SenderType == userType {
@@ -123,13 +146,6 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 
 		userKeys[otherType+":"+otherID] = true
 
-		// Count unread
-		var unread int64
-		db.DB.Model(&imModel.Message{}).
-			Where("conversation_id = ? AND receiver_id = ? AND status = ?",
-				r.ConversationID, currentUserID, "unread").
-			Count(&unread)
-
 		resultMap[r.ConversationID] = &ConversationVO{
 			ConversationID:   r.ConversationID,
 			ConversationType: ConvTypeSingle,
@@ -137,7 +153,7 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 			OtherUserType:    otherType,
 			LastContent:      r.Content,
 			LastTime:         pojo.FormatDateTime(r.CreatedAt),
-			UnreadCount:      unread,
+			UnreadCount:      unreadMap[r.ConversationID],
 		}
 	}
 
@@ -145,16 +161,13 @@ func buildFromMessages(currentUserID, userType string) map[string]*ConversationV
 	if len(userKeys) > 0 {
 		businessIDs, consumerIDs := []string{}, []string{}
 		for key := range userKeys {
-			for i := 0; i < len(key); i++ {
-				if key[i] == ':' {
-					t, id := key[:i], key[i+1:]
-					switch t {
-					case string(enums.LoginTypeBusiness):
-						businessIDs = append(businessIDs, id)
-					case string(enums.LoginTypeConsumer):
-						consumerIDs = append(consumerIDs, id)
-					}
-					break
+			parts := strings.SplitN(key, ":", 2)
+			if len(parts) == 2 {
+				switch parts[0] {
+				case string(enums.LoginTypeBusiness):
+					businessIDs = append(businessIDs, parts[1])
+				case string(enums.LoginTypeConsumer):
+					consumerIDs = append(consumerIDs, parts[1])
 				}
 			}
 		}

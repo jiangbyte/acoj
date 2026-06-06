@@ -4,6 +4,8 @@ import (
 	"strconv"
 
 	"hei-gin/sdk/auth"
+	authMW "hei-gin/sdk/auth/middleware"
+	"hei-gin/sdk/log"
 	"hei-gin/sdk/result"
 	"hei-gin/plugins/plugin-im/broadcast"
 
@@ -12,10 +14,10 @@ import (
 )
 
 func RegisterRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/sys/im/broadcast")
+	g := r.Group("/api/v1/sys/im/broadcast").Use(authMW.HeiCheckLogin())
 	{
-		g.POST("/send", sendHandler)
-		g.GET("/list", listHandler)
+		g.POST("/send", registry.Perm("sys:im:broadcast:send", "发送通知"), log.SysLog("发送通知"), authMW.NoRepeat(5000), sendHandler)
+		g.GET("/list", registry.Perm("sys:im:broadcast:list", "通知列表"), listHandler)
 		g.GET("/unread-list", unreadListHandler)
 		g.POST("/read", readHandler)
 		g.GET("/detail", detailHandler)
@@ -23,7 +25,7 @@ func RegisterRoutes(r *gin.Engine) {
 }
 
 func RegisterClientRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/c/im/broadcast")
+	g := r.Group("/api/v1/c/im/broadcast").Use(authMW.HeiClientCheckLogin())
 	{
 		g.GET("/unread-list", clientUnreadListHandler)
 		g.POST("/read", clientReadHandler)

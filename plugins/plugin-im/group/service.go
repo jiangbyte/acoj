@@ -20,7 +20,7 @@ import (
 
 // ==================== Create ====================
 
-func Create(ctx context.Context, ownerID, ownerType string, p *CreateParam) *GroupChat {
+func Create(ctx context.Context, ownerID, ownerType string, p *CreateParam) *imModel.Group {
 	if p.Name == "" {
 		panic(exception.NewBusinessError("群名称不能为空", 400))
 	}
@@ -37,7 +37,7 @@ func Create(ctx context.Context, ownerID, ownerType string, p *CreateParam) *Gro
 	}
 
 	now := time.Now()
-	group := GroupChat{
+	group := imModel.Group{
 		ID:         utils.GenerateID(),
 		Name:       p.Name,
 		Avatar:     p.Avatar,
@@ -62,7 +62,7 @@ func Create(ctx context.Context, ownerID, ownerType string, p *CreateParam) *Gro
 		panic(exception.NewBusinessError("创建群失败", 500))
 	}
 
-	ownerMember := GroupMember{
+	ownerMember := imModel.GroupMember{
 		ID: utils.GenerateID(), GroupID: group.ID,
 		UserID: ownerID, UserType: ownerType,
 		Role: RoleOwner, JoinedAt: &now, Status: MemberActive,
@@ -75,7 +75,7 @@ func Create(ctx context.Context, ownerID, ownerType string, p *CreateParam) *Gro
 		validateMemberType(groupType, p.MemberType)
 
 		var existingCount int64
-		tx.Model(&GroupMember{}).
+		tx.Model(&imModel.GroupMember{}).
 			Where("group_id = ? AND user_id IN ? AND user_type = ? AND status = ?",
 				group.ID, p.MemberIDs, p.MemberType, MemberActive).
 			Count(&existingCount)
@@ -84,25 +84,25 @@ func Create(ctx context.Context, ownerID, ownerType string, p *CreateParam) *Gro
 		}
 
 		var currentCount int64
-		tx.Model(&GroupMember{}).Where("group_id = ? AND status = ?", group.ID, MemberActive).Count(&currentCount)
+		tx.Model(&imModel.GroupMember{}).Where("group_id = ? AND status = ?", group.ID, MemberActive).Count(&currentCount)
 		if int(currentCount)+len(p.MemberIDs) > group.MaxMembers {
 			panic(exception.NewBusinessError(fmt.Sprintf("群成员数量不能超过%d人", group.MaxMembers), 400))
 		}
 
-		batch := make([]GroupMember, 0, len(p.MemberIDs))
-		sysBatch := make([]GroupMessage, 0, len(p.MemberIDs))
+		batch := make([]imModel.GroupMember, 0, len(p.MemberIDs))
+		sysBatch := make([]imModel.GroupMessage, 0, len(p.MemberIDs))
 		for _, uid := range p.MemberIDs {
 			if uid == ownerID {
 				continue
 			}
-			batch = append(batch, GroupMember{
+			batch = append(batch, imModel.GroupMember{
 				ID: utils.GenerateID(), GroupID: group.ID,
 				UserID: uid, UserType: p.MemberType,
 				Role: RoleMember, JoinedAt: &now, Status: MemberActive,
 			})
 			extra := imModel.MsgExtraSystem{Action: "join", UserID: uid, UserType: p.MemberType}
 			extraBytes, _ := json.Marshal(extra)
-			sysBatch = append(sysBatch, GroupMessage{
+			sysBatch = append(sysBatch, imModel.GroupMessage{
 				ID: utils.GenerateID(), GroupID: group.ID,
 				SenderID: ownerID, SenderType: ownerType,
 				Content: "欢迎加入群聊", Extra: string(extraBytes),
@@ -149,7 +149,7 @@ func Update(ctx context.Context, operatorID, operatorType string, p *UpdateParam
 		updates["notice"] = *p.Notice
 	}
 
-	if err := db.DB.WithContext(ctx).Model(&GroupChat{}).Where("id = ?", p.GroupID).Updates(updates).Error; err != nil {
+	if err := db.DB.WithContext(ctx).Model(&imModel.Group{}).Where("id = ?", p.GroupID).Updates(updates).Error; err != nil {
 		panic(exception.NewBusinessError("修改群信息失败", 500))
 	}
 }
@@ -161,7 +161,7 @@ func Dissolve(ctx context.Context, operatorID string, groupID string) {
 		panic(exception.NewBusinessError("参数错误", 400))
 	}
 
-	var group GroupChat
+	var group imModel.Group
 	if err := db.DB.WithContext(ctx).First(&group, "id = ?", groupID).Error; err != nil {
 		panic(exception.NewBusinessError("群不存在", 400))
 	}
@@ -177,12 +177,12 @@ func Dissolve(ctx context.Context, operatorID string, groupID string) {
 		}
 	}()
 
-	if err := tx.Model(&GroupChat{}).Where("id = ?", groupID).
+	if err := tx.Model(&imModel.Group{}).Where("id = ?", groupID).
 		Updates(map[string]interface{}{"status": GroupDissolved, "updated_at": time.Now()}).Error; err != nil {
 		panic(exception.NewBusinessError("解散群失败", 500))
 	}
 
-	if err := tx.Model(&GroupMember{}).Where("group_id = ? AND status = ?", groupID, MemberActive).
+	if err := tx.Model(&imModel.GroupMember{}).Where("group_id = ? AND status = ?", groupID, MemberActive).
 		Update("status", MemberLeft).Error; err != nil {
 		panic(exception.NewBusinessError("解散群失败", 500))
 	}
@@ -202,7 +202,7 @@ func Invite(ctx context.Context, operatorID, operatorType string, p *InviteParam
 		panic(exception.NewBusinessError("参数错误", 400))
 	}
 
-	var group GroupChat
+	var group imModel.Group
 	if err := db.DB.WithContext(ctx).First(&group, "id = ?", p.GroupID).Error; err != nil {
 		panic(exception.NewBusinessError("群不存在", 400))
 	}
@@ -216,7 +216,7 @@ func Invite(ctx context.Context, operatorID, operatorType string, p *InviteParam
 
 	// Single batch check for existing members
 	var existingIDs []string
-	db.DB.WithContext(ctx).Model(&GroupMember{}).
+	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id IN ? AND user_type = ? AND status = ?",
 			p.GroupID, p.UserIDs, p.UserType, MemberActive).
 		Pluck("user_id", &existingIDs)
@@ -226,7 +226,7 @@ func Invite(ctx context.Context, operatorID, operatorType string, p *InviteParam
 
 	// Check max members
 	var currentCount int64
-	db.DB.WithContext(ctx).Model(&GroupMember{}).
+	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND status = ?", p.GroupID, MemberActive).Count(&currentCount)
 	if int(currentCount)+len(p.UserIDs) > group.MaxMembers {
 		panic(exception.NewBusinessError(fmt.Sprintf("群成员数量不能超过%d人", group.MaxMembers), 400))
@@ -241,17 +241,17 @@ func Invite(ctx context.Context, operatorID, operatorType string, p *InviteParam
 		}
 	}()
 
-	batch := make([]GroupMember, 0, len(p.UserIDs))
-	sysBatch := make([]GroupMessage, 0, len(p.UserIDs))
+	batch := make([]imModel.GroupMember, 0, len(p.UserIDs))
+	sysBatch := make([]imModel.GroupMessage, 0, len(p.UserIDs))
 	for _, uid := range p.UserIDs {
-		batch = append(batch, GroupMember{
+		batch = append(batch, imModel.GroupMember{
 			ID: utils.GenerateID(), GroupID: p.GroupID,
 			UserID: uid, UserType: p.UserType,
 			Role: RoleMember, JoinedAt: &now, Status: MemberActive,
 		})
 		extra := imModel.MsgExtraSystem{Action: "join", UserID: uid, UserType: p.UserType}
 		extraBytes, _ := json.Marshal(extra)
-		sysBatch = append(sysBatch, GroupMessage{
+		sysBatch = append(sysBatch, imModel.GroupMessage{
 			ID: utils.GenerateID(), GroupID: p.GroupID,
 			SenderID: operatorID, SenderType: operatorType,
 			Content: "欢迎加入群聊", Extra: string(extraBytes),
@@ -277,7 +277,7 @@ func Leave(ctx context.Context, userID, userType string, groupID string) {
 		panic(exception.NewBusinessError("参数错误", 400))
 	}
 
-	var member GroupMember
+	var member imModel.GroupMember
 	if err := db.DB.WithContext(ctx).
 		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
 			groupID, userID, userType, MemberActive).First(&member).Error; err != nil {
@@ -302,7 +302,7 @@ func Leave(ctx context.Context, userID, userType string, groupID string) {
 
 	extra := imModel.MsgExtraSystem{Action: "leave", UserID: userID, UserType: userType}
 	extraBytes, _ := json.Marshal(extra)
-	if err := tx.Create(&GroupMessage{
+	if err := tx.Create(&imModel.GroupMessage{
 		ID: utils.GenerateID(), GroupID: groupID,
 		SenderID: userID, SenderType: userType,
 		Content: "退出了群聊", Extra: string(extraBytes),
@@ -328,7 +328,7 @@ func Kick(ctx context.Context, operatorID, operatorType string, p *KickParam) {
 		panic(exception.NewBusinessError("不能踢出群主", 400))
 	}
 	if operatorMember.Role == RoleAdmin {
-		var target GroupMember
+		var target imModel.GroupMember
 		if err := db.DB.WithContext(ctx).
 			Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
 				p.GroupID, p.UserID, p.UserType, MemberActive).First(&target).Error; err != nil {
@@ -348,7 +348,7 @@ func Kick(ctx context.Context, operatorID, operatorType string, p *KickParam) {
 		}
 	}()
 
-	if err := tx.Model(&GroupMember{}).
+	if err := tx.Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.UserID, p.UserType).
 		Update("status", MemberKicked).Error; err != nil {
 		panic(exception.NewBusinessError("踢出失败", 500))
@@ -356,7 +356,7 @@ func Kick(ctx context.Context, operatorID, operatorType string, p *KickParam) {
 
 	extra := imModel.MsgExtraSystem{Action: "kick", UserID: p.UserID, UserType: p.UserType, OperatorID: operatorID}
 	extraBytes, _ := json.Marshal(extra)
-	if err := tx.Create(&GroupMessage{
+	if err := tx.Create(&imModel.GroupMessage{
 		ID: utils.GenerateID(), GroupID: p.GroupID,
 		SenderID: operatorID, SenderType: operatorType,
 		Content: "被移出群聊", Extra: string(extraBytes),
@@ -377,7 +377,7 @@ func SetRole(ctx context.Context, operatorID string, p *SetRoleParam) {
 		panic(exception.NewBusinessError("参数错误", 400))
 	}
 
-	var group GroupChat
+	var group imModel.Group
 	if err := db.DB.WithContext(ctx).First(&group, "id = ?", p.GroupID).Error; err != nil {
 		panic(exception.NewBusinessError("群不存在", 400))
 	}
@@ -387,7 +387,7 @@ func SetRole(ctx context.Context, operatorID string, p *SetRoleParam) {
 
 	switch p.Role {
 	case RoleAdmin:
-		if err := db.DB.WithContext(ctx).Model(&GroupMember{}).
+		if err := db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 			Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
 				p.GroupID, p.UserID, p.UserType, MemberActive).
 			Update("role", RoleAdmin).Error; err != nil {
@@ -403,17 +403,17 @@ func SetRole(ctx context.Context, operatorID string, p *SetRoleParam) {
 			}
 		}()
 
-		if err := tx.Model(&GroupMember{}).
+		if err := tx.Model(&imModel.GroupMember{}).
 			Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, group.OwnerID, group.OwnerType).
 			Update("role", RoleAdmin).Error; err != nil {
 			panic(exception.NewBusinessError("转让群失败", 500))
 		}
-		if err := tx.Model(&GroupMember{}).
+		if err := tx.Model(&imModel.GroupMember{}).
 			Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.UserID, p.UserType).
 			Update("role", RoleOwner).Error; err != nil {
 			panic(exception.NewBusinessError("转让群失败", 500))
 		}
-		if err := tx.Model(&GroupChat{}).Where("id = ?", p.GroupID).
+		if err := tx.Model(&imModel.Group{}).Where("id = ?", p.GroupID).
 			Updates(map[string]interface{}{"owner_id": p.UserID, "owner_type": p.UserType, "updated_at": now}).Error; err != nil {
 			panic(exception.NewBusinessError("转让群失败", 500))
 		}
@@ -438,7 +438,7 @@ func SendMessage(ctx context.Context, senderID, senderType string, p *SendMessag
 		panic(exception.NewBusinessError("消息内容不能超过5000个字符", 400))
 	}
 
-	var member GroupMember
+	var member imModel.GroupMember
 	if err := db.DB.WithContext(ctx).
 		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
 			p.GroupID, senderID, senderType, MemberActive).
@@ -455,7 +455,7 @@ func SendMessage(ctx context.Context, senderID, senderType string, p *SendMessag
 	}
 
 	now := time.Now()
-	msg := GroupMessage{
+	msg := imModel.GroupMessage{
 		ID: utils.GenerateID(), GroupID: p.GroupID,
 		SenderID: senderID, SenderType: senderType,
 		Content: p.Content, Extra: p.Extra, MsgType: msgType,
@@ -470,7 +470,7 @@ func SendMessage(ctx context.Context, senderID, senderType string, p *SendMessag
 		UserID   string
 		UserType string
 	}
-	db.DB.WithContext(ctx).Model(&GroupMember{}).
+	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Select("user_id, user_type").
 		Where("group_id = ? AND status = ? AND NOT (user_id = ? AND user_type = ?)",
 			p.GroupID, MemberActive, senderID, senderType).
@@ -500,7 +500,7 @@ func MyGroups(ctx context.Context, userID, userType string) []GroupVO {
 		return nil
 	}
 
-	var members []GroupMember
+	var members []imModel.GroupMember
 	db.DB.WithContext(ctx).
 		Select("group_id, joined_at").
 		Where("user_id = ? AND user_type = ? AND status = ?", userID, userType, MemberActive).
@@ -515,13 +515,13 @@ func MyGroups(ctx context.Context, userID, userType string) []GroupVO {
 	}
 
 	// Single batch: get all groups
-	var groups []GroupChat
+	var groups []imModel.Group
 	db.DB.WithContext(ctx).Where("id IN ? AND status = ?", groupIDs, GroupNormal).Find(&groups)
 
 	// Single batch: count active members per group
 	type cnt struct{ GroupID string; Count int }
 	var counts []cnt
-	db.DB.WithContext(ctx).Model(&GroupMember{}).
+	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Select("group_id, COUNT(*) as count").
 		Where("group_id IN ? AND status = ?", groupIDs, MemberActive).
 		Group("group_id").Scan(&counts)
@@ -538,7 +538,7 @@ func MyGroups(ctx context.Context, userID, userType string) []GroupVO {
 		Select("group_id, MAX(created_at) as max_ct").
 		Where("group_id IN ?", groupIDs).
 		Group("group_id")
-	db.DB.WithContext(ctx).Table("group_message g2").
+	db.DB.WithContext(ctx).Table("im_group_message g2").
 		Select("g2.group_id, g2.content, g2.created_at").
 		Joins("INNER JOIN (?) g1 ON g1.group_id = g2.group_id AND g1.max_ct = g2.created_at", lastSubQ).
 		Scan(&lastMsgs)
@@ -593,12 +593,12 @@ func Detail(ctx context.Context, groupID string) *GroupVO {
 		return nil
 	}
 
-	var group GroupChat
+	var group imModel.Group
 	if err := db.DB.WithContext(ctx).First(&group, "id = ?", groupID).Error; err != nil {
 		return nil
 	}
 	var count int64
-	db.DB.WithContext(ctx).Model(&GroupMember{}).
+	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND status = ?", groupID, MemberActive).Count(&count)
 	return &GroupVO{
 		ID: group.ID, Name: group.Name, Avatar: group.Avatar,
@@ -620,7 +620,7 @@ func SearchGroups(ctx context.Context, keyword string, limit int) []GroupVO {
 	}
 	like := "%" + keyword + "%"
 
-	var groups []GroupChat
+	var groups []imModel.Group
 	db.DB.WithContext(ctx).
 		Where("name LIKE ? AND status = ?", like, GroupNormal).
 		Limit(limit).
@@ -636,7 +636,7 @@ func SearchGroups(ctx context.Context, keyword string, limit int) []GroupVO {
 
 	type cnt struct{ GroupID string; Count int }
 	var counts []cnt
-	db.DB.WithContext(ctx).Model(&GroupMember{}).
+	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Select("group_id, COUNT(*) as count").
 		Where("group_id IN ? AND status = ?", groupIDs, MemberActive).
 		Group("group_id").Scan(&counts)
@@ -668,7 +668,7 @@ func Members(ctx context.Context, groupID string) []MemberVO {
 		return nil
 	}
 
-	var members []GroupMember
+	var members []imModel.GroupMember
 	db.DB.WithContext(ctx).
 		Where("group_id = ? AND status = ?", groupID, MemberActive).
 		Order("FIELD(role, 'owner', 'admin', 'member'), joined_at ASC").
@@ -701,13 +701,13 @@ func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageV
 		size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&GroupMessage{}).Where("group_id = ?", groupID)
+	q := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).Where("group_id = ?", groupID)
 	if cursor != "" {
 		if t, err := pojo.ParseDateTimeLocal(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}
-	var msgs []GroupMessage
+	var msgs []imModel.GroupMessage
 	q.Order("created_at DESC").Limit(size + 1).Find(&msgs)
 	hasMore := len(msgs) > size
 	if hasMore {
@@ -742,14 +742,14 @@ func SearchMessages(ctx context.Context, groupID, keyword string, cursor string,
 		size = 100
 	}
 
-	q := db.DB.WithContext(ctx).Model(&GroupMessage{}).
+	q := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).
 		Where("group_id = ? AND content LIKE ? AND msg_type != ?", groupID, "%"+keyword+"%", imModel.MsgTypeSystem)
 	if cursor != "" {
 		if t, err := pojo.ParseDateTimeLocal(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}
-	var msgs []GroupMessage
+	var msgs []imModel.GroupMessage
 	q.Order("created_at DESC").Limit(size + 1).Find(&msgs)
 	hasMore := len(msgs) > size
 	if hasMore {
@@ -776,7 +776,7 @@ func MarkRead(ctx context.Context, groupID, userID, userType, messageID string) 
 	_ = db.DB.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "message_id"}, {Name: "user_id"}, {Name: "user_type"}},
 		DoUpdates: clause.AssignmentColumns([]string{"read_at", "group_id"}),
-	}).Create(&GroupMessageRead{
+	}).Create(&imModel.GroupMessageRead{
 		MessageID: messageID, GroupID: groupID,
 		UserID: userID, UserType: userType, ReadAt: &now,
 	}).Error
@@ -789,7 +789,7 @@ func RecallMessage(ctx context.Context, groupID, messageID, operatorID, operator
 		panic(exception.NewBusinessError("参数错误", 400))
 	}
 
-	var msg GroupMessage
+	var msg imModel.GroupMessage
 	if err := db.DB.WithContext(ctx).Where("id = ? AND group_id = ?", messageID, groupID).First(&msg).Error; err != nil {
 		panic(exception.NewBusinessError("消息不存在", 400))
 	}
@@ -803,14 +803,14 @@ func RecallMessage(ctx context.Context, groupID, messageID, operatorID, operator
 		panic(exception.NewBusinessError("系统消息不能撤回", 400))
 	}
 
-	if err := db.DB.WithContext(ctx).Model(&GroupMessage{}).Where("id = ?", messageID).
+	if err := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).Where("id = ?", messageID).
 		Updates(map[string]interface{}{"content": "消息已被撤回", "msg_type": imModel.MsgTypeSystem}).Error; err != nil {
 		panic(exception.NewBusinessError("撤回消息失败", 500))
 	}
 
 	// Push recall notification to all members EXCEPT sender
 	var memberIDs []struct{ UserID string; UserType string }
-	db.DB.WithContext(ctx).Model(&GroupMember{}).
+	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Select("user_id, user_type").
 		Where("group_id = ? AND status = ? AND NOT (user_id = ? AND user_type = ?)",
 			groupID, MemberActive, operatorID, operatorType).
@@ -828,7 +828,7 @@ func RecallMessage(ctx context.Context, groupID, messageID, operatorID, operator
 	}
 }
 
-func buildRecallPayload(msg *GroupMessage, recallerID, recallerType string) map[string]interface{} {
+func buildRecallPayload(msg *imModel.GroupMessage, recallerID, recallerType string) map[string]interface{} {
 	return map[string]interface{}{
 		"message_id":  msg.ID,
 		"group_id":    msg.GroupID,
@@ -854,7 +854,7 @@ func MuteMember(ctx context.Context, operatorID, operatorType string, p *KickPar
 		panic(exception.NewBusinessError("不能禁言群主", 400))
 	}
 	if operator.Role == RoleAdmin {
-		var target GroupMember
+		var target imModel.GroupMember
 		if err := db.DB.WithContext(ctx).
 			Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
 				p.GroupID, p.UserID, p.UserType, MemberActive).First(&target).Error; err != nil {
@@ -865,7 +865,7 @@ func MuteMember(ctx context.Context, operatorID, operatorType string, p *KickPar
 		}
 	}
 	until := time.Now().Add(duration)
-	if err := db.DB.WithContext(ctx).Model(&GroupMember{}).
+	if err := db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.UserID, p.UserType).
 		Update("muted_until", &until).Error; err != nil {
 		panic(exception.NewBusinessError("禁言失败", 500))
@@ -878,7 +878,7 @@ func UnmuteMember(ctx context.Context, operatorID, operatorType string, p *KickP
 	}
 
 	checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType)
-	if err := db.DB.WithContext(ctx).Model(&GroupMember{}).
+	if err := db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.UserID, p.UserType).
 		Update("muted_until", nil).Error; err != nil {
 		panic(exception.NewBusinessError("解除禁言失败", 500))
@@ -893,16 +893,16 @@ func validateMemberType(groupType, userType string) {
 	}
 }
 
-func checkOwnerOrAdmin(ctx context.Context, groupID, userID, userType string) (*GroupChat, *GroupMember) {
+func checkOwnerOrAdmin(ctx context.Context, groupID, userID, userType string) (*imModel.Group, *imModel.GroupMember) {
 	if groupID == "" || userID == "" {
 		panic(exception.NewBusinessError("参数错误", 400))
 	}
 
-	var group GroupChat
+	var group imModel.Group
 	if err := db.DB.WithContext(ctx).First(&group, "id = ?", groupID).Error; err != nil {
 		panic(exception.NewBusinessError("群不存在", 400))
 	}
-	var member GroupMember
+	var member imModel.GroupMember
 	if err := db.DB.WithContext(ctx).
 		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
 			groupID, userID, userType, MemberActive).
@@ -915,7 +915,7 @@ func checkOwnerOrAdmin(ctx context.Context, groupID, userID, userType string) (*
 	return &group, &member
 }
 
-func buildPushPayload(msg *GroupMessage) map[string]interface{} {
+func buildPushPayload(msg *imModel.GroupMessage) map[string]interface{} {
 	return map[string]interface{}{
 		"message_id":  msg.ID,
 		"group_id":    msg.GroupID,
@@ -944,7 +944,7 @@ func MarkConversationRead(ctx context.Context, groupID, userID, userType string)
 		ID string
 	}
 	var lm lastMsg
-	err := db.DB.WithContext(ctx).Model(&GroupMessage{}).
+	err := db.DB.WithContext(ctx).Model(&imModel.GroupMessage{}).
 		Select("id").
 		Where("group_id = ?", groupID).
 		Order("created_at DESC").
@@ -958,7 +958,7 @@ func MarkConversationRead(ctx context.Context, groupID, userID, userType string)
 	_ = db.DB.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "message_id"}, {Name: "user_id"}, {Name: "user_type"}},
 		DoUpdates: clause.AssignmentColumns([]string{"read_at", "group_id"}),
-	}).Create(&GroupMessageRead{
+	}).Create(&imModel.GroupMessageRead{
 		MessageID: lm.ID, GroupID: groupID,
 		UserID: userID, UserType: userType, ReadAt: &now,
 	}).Error
@@ -971,7 +971,7 @@ func Join(ctx context.Context, userID, userType string, groupID string) {
 		panic(exception.NewBusinessError("参数错误", 400))
 	}
 
-	var group GroupChat
+	var group imModel.Group
 	if err := db.DB.WithContext(ctx).First(&group, "id = ?", groupID).Error; err != nil {
 		panic(exception.NewBusinessError("群不存在", 400))
 	}
@@ -982,7 +982,7 @@ func Join(ctx context.Context, userID, userType string, groupID string) {
 
 	// Check if already a member
 	var existing int64
-	db.DB.WithContext(ctx).Model(&GroupMember{}).
+	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
 			groupID, userID, userType, MemberActive).Count(&existing)
 	if existing > 0 {
@@ -991,7 +991,7 @@ func Join(ctx context.Context, userID, userType string, groupID string) {
 
 	// Check pending join request
 	var pending int64
-	db.DB.WithContext(ctx).Model(&GroupJoinRequest{}).
+	db.DB.WithContext(ctx).Model(&imModel.GroupJoinRequest{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
 			groupID, userID, userType, "pending").Count(&pending)
 	if pending > 0 {
@@ -999,7 +999,7 @@ func Join(ctx context.Context, userID, userType string, groupID string) {
 	}
 
 	now := time.Now()
-	if err := db.DB.WithContext(ctx).Create(&GroupJoinRequest{
+	if err := db.DB.WithContext(ctx).Create(&imModel.GroupJoinRequest{
 		ID:        utils.GenerateID(),
 		GroupID:   groupID,
 		UserID:    userID,
@@ -1012,8 +1012,8 @@ func Join(ctx context.Context, userID, userType string, groupID string) {
 	}
 
 	// Notify group admins via WS
-	var members []GroupMember
-	db.DB.WithContext(ctx).Model(&GroupMember{}).
+	var members []imModel.GroupMember
+	db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND (role = ? OR role = ?) AND status = ?", groupID, RoleOwner, RoleAdmin, MemberActive).
 		Find(&members)
 	for _, m := range members {
@@ -1034,7 +1034,7 @@ func Join(ctx context.Context, userID, userType string, groupID string) {
 // ==================== Handle Join Request ====================
 
 func HandleJoinRequest(ctx context.Context, operatorID, operatorType string, p *HandleJoinRequestParam) {
-	var req GroupJoinRequest
+	var req imModel.GroupJoinRequest
 	if err := db.DB.WithContext(ctx).First(&req, "id = ? AND status = ?", p.RequestID, "pending").Error; err != nil {
 		panic(exception.NewBusinessError("申请不存在或已处理", 400))
 	}
@@ -1048,14 +1048,14 @@ func HandleJoinRequest(ctx context.Context, operatorID, operatorType string, p *
 		"handled_by": operatorID,
 		"updated_at": &now,
 	}
-	if err := db.DB.WithContext(ctx).Model(&GroupJoinRequest{}).Where("id = ?", p.RequestID).Updates(updates).Error; err != nil {
+	if err := db.DB.WithContext(ctx).Model(&imModel.GroupJoinRequest{}).Where("id = ?", p.RequestID).Updates(updates).Error; err != nil {
 		panic(exception.NewBusinessError("处理失败", 500))
 	}
 
 	if p.Action == "approved" {
 		// Actually add member
 		joinedAt := time.Now()
-		if err := db.DB.WithContext(ctx).Create(&GroupMember{
+		if err := db.DB.WithContext(ctx).Create(&imModel.GroupMember{
 			ID:       utils.GenerateID(),
 			GroupID:  req.GroupID,
 			UserID:   req.UserID,
@@ -1070,7 +1070,7 @@ func HandleJoinRequest(ctx context.Context, operatorID, operatorType string, p *
 		// System message
 		extra := imModel.MsgExtraSystem{Action: "join", UserID: req.UserID, UserType: req.UserType}
 		extraBytes, _ := json.Marshal(extra)
-		db.DB.WithContext(ctx).Create(&GroupMessage{
+		db.DB.WithContext(ctx).Create(&imModel.GroupMessage{
 			ID: utils.GenerateID(), GroupID: req.GroupID,
 			SenderID: req.UserID, SenderType: req.UserType,
 			Content: "加入了群聊", Extra: string(extraBytes),
@@ -1093,9 +1093,9 @@ func HandleJoinRequest(ctx context.Context, operatorID, operatorType string, p *
 
 // ==================== Pending Join Requests ====================
 
-func PendingJoinRequests(ctx context.Context, groupID string) []GroupJoinRequest {
-	var requests []GroupJoinRequest
-	db.DB.WithContext(ctx).Model(&GroupJoinRequest{}).
+func PendingJoinRequests(ctx context.Context, groupID string) []imModel.GroupJoinRequest {
+	var requests []imModel.GroupJoinRequest
+	db.DB.WithContext(ctx).Model(&imModel.GroupJoinRequest{}).
 		Where("group_id = ? AND status = ?", groupID, "pending").
 		Order("created_at DESC").Find(&requests)
 	return requests
@@ -1104,7 +1104,7 @@ func PendingJoinRequests(ctx context.Context, groupID string) []GroupJoinRequest
 // ==================== Transfer Owner ====================
 
 func TransferOwner(ctx context.Context, operatorID string, p *TransferOwnerParam) {
-	var group GroupChat
+	var group imModel.Group
 	if err := db.DB.WithContext(ctx).First(&group, "id = ?", p.GroupID).Error; err != nil {
 		panic(exception.NewBusinessError("群不存在", 400))
 	}
@@ -1113,7 +1113,7 @@ func TransferOwner(ctx context.Context, operatorID string, p *TransferOwnerParam
 	}
 
 	// Verify new owner is a member
-	var newOwner GroupMember
+	var newOwner imModel.GroupMember
 	if err := db.DB.WithContext(ctx).
 		Where("group_id = ? AND user_id = ? AND user_type = ? AND status = ?",
 			p.GroupID, p.NewOwnerID, p.NewOwnerType, MemberActive).First(&newOwner).Error; err != nil {
@@ -1129,16 +1129,16 @@ func TransferOwner(ctx context.Context, operatorID string, p *TransferOwnerParam
 	}()
 
 	// Update group owner
-	tx.Model(&GroupChat{}).Where("id = ?", p.GroupID).
+	tx.Model(&imModel.Group{}).Where("id = ?", p.GroupID).
 		Updates(map[string]interface{}{"owner_id": p.NewOwnerID, "owner_type": p.NewOwnerType})
 
 	// Demote old owner to admin
-	tx.Model(&GroupMember{}).
+	tx.Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, operatorID, group.OwnerType).
 		Update("role", RoleAdmin)
 
 	// Promote new owner
-	tx.Model(&GroupMember{}).
+	tx.Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.NewOwnerID, p.NewOwnerType).
 		Update("role", RoleOwner)
 
@@ -1153,7 +1153,7 @@ func SetMemberNickname(ctx context.Context, operatorID, operatorType string, p *
 	// Verify operator is admin/owner
 	checkOwnerOrAdmin(ctx, p.GroupID, operatorID, operatorType)
 
-	if err := db.DB.WithContext(ctx).Model(&GroupMember{}).
+	if err := db.DB.WithContext(ctx).Model(&imModel.GroupMember{}).
 		Where("group_id = ? AND user_id = ? AND user_type = ?", p.GroupID, p.UserID, p.UserType).
 		Update("nickname", p.Nickname).Error; err != nil {
 		panic(exception.NewBusinessError("设置昵称失败", 500))
@@ -1167,8 +1167,8 @@ func MyGroupConversations(userID, userType string) []*ConversationVO {
 		return nil
 	}
 
-	var members []GroupMember
-	db.DB.WithContext(nil).
+	var members []imModel.GroupMember
+	db.DB.
 		Select("group_id").
 		Where("user_id = ? AND user_type = ? AND status = ?", userID, userType, MemberActive).
 		Find(&members)
@@ -1181,12 +1181,12 @@ func MyGroupConversations(userID, userType string) []*ConversationVO {
 		groupIDs[i] = m.GroupID
 	}
 
-	var groups []GroupChat
+	var groups []imModel.Group
 	db.DB.Where("id IN ? AND status = ?", groupIDs, GroupNormal).Find(&groups)
 
 	type cnt struct{ GroupID string; Count int }
 	var counts []cnt
-	db.DB.Model(&GroupMember{}).
+	db.DB.Model(&imModel.GroupMember{}).
 		Select("group_id, COUNT(*) as count").
 		Where("group_id IN ? AND status = ?", groupIDs, MemberActive).
 		Group("group_id").Scan(&counts)

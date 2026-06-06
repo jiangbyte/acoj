@@ -5,6 +5,7 @@ import (
 
 	"hei-gin/sdk/middleware"
 	"hei-gin/sdk/auth"
+	authMW "hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/enums"
 	"hei-gin/sdk/pojo"
 	"hei-gin/sdk/result"
@@ -16,13 +17,13 @@ import (
 )
 
 func RegisterRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/sys/im")
+	g := r.Group("/api/v1/sys/im").Use(authMW.HeiCheckLogin())
 	{
 		// Message
 		g.GET("/message/page", pageHandler)
 		g.GET("/message/detail", detailHandler)
 		g.GET("/message/unread-count", unreadCountHandler)
-		g.POST("/message/send", middleware.RateLimiter("sys_send", 5, 20), sendHandler)
+		g.POST("/message/send", middleware.RateLimiter("sys_send", 5, 20), authMW.NoRepeat(3000), sendHandler)
 		g.POST("/message/recall", recallHandler)
 		g.POST("/message/forward", forwardHandler)
 		g.POST("/message/delete", deleteHandler)
@@ -235,7 +236,7 @@ func init() {
 // ==================== Consumer (C端) Routes ====================
 
 func RegisterClientRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/c/im")
+	g := r.Group("/api/v1/c/im").Use(authMW.HeiClientCheckLogin())
 	{
 		g.GET("/message/page", clientPageHandler)
 		g.GET("/message/detail", clientDetailHandler)

@@ -1,7 +1,6 @@
 package message
 
 import (
-	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -44,13 +43,10 @@ func toVOList(records []imModel.Message) []MessageVO {
 	return r
 }
 
-// fixSchemaOnce ensures the im_conversation table is fixed once.
-var fixSchemaOnce sync.Once
 
 // ==================== Send ====================
 
 func Send(c *gin.Context, param *MessageSendParam, senderID string, senderType string) []string {
-	fixSchemaOnce.Do(FixConversationSchema)
 
 	ctx := c.Request.Context()
 	now := time.Now()
@@ -94,10 +90,10 @@ func Send(c *gin.Context, param *MessageSendParam, senderID string, senderType s
 	for _, rec := range records {
 		conv := imModel.Conversation{
 			ID:        rec.ConversationID,
-			UserID1:   rec.SenderID,
-			UserType1: rec.SenderType,
-			UserID2:   rec.ReceiverID,
-			UserType2: rec.ReceiverType,
+			FromID:   rec.SenderID,
+			FromType: rec.SenderType,
+			ToID:   rec.ReceiverID,
+			ToType: rec.ReceiverType,
 			LastMsg:   rec.Content,
 			LastTime:  &now,
 			CreatedAt: &now,

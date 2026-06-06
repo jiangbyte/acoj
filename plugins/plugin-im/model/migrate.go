@@ -6,6 +6,7 @@ func init() {
 	db.RegisterModel(&Message{})
 	db.RegisterModel(&Conversation{})
 	db.RegisterModel(&ConversationUnread{})
+	db.RegisterModel(&ImFile{})
 	db.RegisterModel(&Broadcast{})
 	db.RegisterModel(&BroadcastRead{})
 	db.RegisterModel(&FriendRequest{})

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	imModel "hei-gin/plugins/plugin-im/model"
 
 	"hei-gin/sdk/db"
 	"hei-gin/sdk/exception"
@@ -21,7 +22,7 @@ func Send(senderID string, p *SendBroadcastParam) {
 	}
 
 	now := time.Now()
-	if err := db.DB.Create(&Broadcast{
+	if err := db.DB.Create(&imModel.Broadcast{
 		ID:        utils.GenerateID(),
 		Title:     p.Title,
 		Content:   p.Content,
@@ -61,13 +62,13 @@ func List(cursor string, size int) ([]BroadcastVO, bool) {
 		size = 100
 	}
 
-	q := db.DB.Model(&Broadcast{})
+	q := db.DB.Model(&imModel.Broadcast{})
 	if cursor != "" {
 		if t, err := pojo.ParseDateTimeLocal(cursor); err == nil {
 			q = q.Where("created_at < ?", t)
 		}
 	}
-	var records []Broadcast
+	var records []imModel.Broadcast
 	q.Order("created_at DESC").Limit(size + 1).Find(&records)
 
 	hasMore := len(records) > size
@@ -89,12 +90,12 @@ func List(cursor string, size int) ([]BroadcastVO, bool) {
 // ==================== Unread List ====================
 
 func UnreadList(userID, userType string) ([]BroadcastVO, bool) {
-	var records []Broadcast
-	db.DB.Model(&Broadcast{}).Order("created_at DESC").Limit(50).Find(&records)
+	var records []imModel.Broadcast
+	db.DB.Model(&imModel.Broadcast{}).Order("created_at DESC").Limit(50).Find(&records)
 
 	// Check read status
-	var readRecords []BroadcastRead
-	db.DB.Model(&BroadcastRead{}).
+	var readRecords []imModel.BroadcastRead
+	db.DB.Model(&imModel.BroadcastRead{}).
 		Where("user_id = ? AND user_type = ?", userID, userType).
 		Find(&readRecords)
 	readMap := make(map[string]*time.Time)
@@ -124,7 +125,7 @@ func UnreadList(userID, userType string) ([]BroadcastVO, bool) {
 func MarkRead(userID, userType, broadcastID string) {
 	now := time.Now()
 	_ = db.DB.Where("broadcast_id = ? AND user_id = ? AND user_type = ?", broadcastID, userID, userType).
-		FirstOrCreate(&BroadcastRead{
+		FirstOrCreate(&imModel.BroadcastRead{
 			BroadcastID: broadcastID,
 			UserID:      userID,
 			UserType:    userType,
@@ -135,7 +136,7 @@ func MarkRead(userID, userType, broadcastID string) {
 // ==================== Detail ====================
 
 func Detail(id string) *BroadcastVO {
-	var b Broadcast
+	var b imModel.Broadcast
 	if err := db.DB.First(&b, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil

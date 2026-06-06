@@ -4,17 +4,18 @@ import (
 	"strconv"
 
 	"hei-gin/sdk/auth"
+	authMW "hei-gin/sdk/auth/middleware"
 	"hei-gin/sdk/result"
+	"hei-gin/sdk/registry"
 	"hei-gin/plugins/plugin-im/friend"
 
 	"github.com/gin-gonic/gin"
-	"hei-gin/sdk/registry"
 )
 
 func RegisterSysRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/sys/im/friend")
+	g := r.Group("/api/v1/sys/im/friend").Use(authMW.HeiCheckLogin())
 	{
-		g.POST("/send-request", sendRequestHandler)
+		g.POST("/send-request", authMW.NoRepeat(3000), sendRequestHandler)
 		g.POST("/accept", acceptHandler)
 		g.POST("/reject", rejectHandler)
 		g.GET("/list", listHandler)
@@ -29,7 +30,7 @@ func RegisterSysRoutes(r *gin.Engine) {
 }
 
 func RegisterClientRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/c/im/friend")
+	g := r.Group("/api/v1/c/im/friend").Use(authMW.HeiClientCheckLogin())
 	{
 		g.POST("/send-request", clientSendRequestHandler)
 		g.POST("/accept", clientAcceptHandler)
@@ -46,17 +47,13 @@ func RegisterClientRoutes(r *gin.Engine) {
 }
 
 func getLoginID(c *gin.Context) (string, string) {
-	uid := auth.GetLoginIDDefaultNull(c)
-	if uid != "" {
-		return uid, "BUSINESS"
+	path := c.Request.URL.Path
+	if len(path) > 8 && path[:8] == "/api/v1/c" {
+		return auth.Consumer.GetLoginID(c), "CONSUMER"
 	}
-	token := auth.Consumer.GetTokenValue(c)
-	uid = auth.Consumer.GetLoginIDByToken(token)
-	if uid != "" {
-		return uid, "CONSUMER"
-	}
-	return "", ""
+	return auth.GetLoginID(c), "BUSINESS"
 }
+
 
 // ==================== Sys Handlers ====================
 

@@ -6,6 +6,8 @@ import (
 
 	"hei-gin/sdk/middleware"
 	"hei-gin/sdk/auth"
+	authMW "hei-gin/sdk/auth/middleware"
+	"hei-gin/sdk/log"
 	"hei-gin/sdk/result"
 	"hei-gin/plugins/plugin-im/group"
 
@@ -13,38 +15,38 @@ import (
 )
 
 func RegisterSysRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/sys/im/group")
+	g := r.Group("/api/v1/sys/im/group").Use(authMW.HeiCheckLogin())
 	{
-		g.POST("/create", createHandler)
+		g.POST("/create", authMW.NoRepeat(3000), createHandler)
 		g.GET("/my-groups", myGroupsHandler)
 		g.GET("/detail", detailHandler)
 		g.POST("/update", updateHandler)
-		g.POST("/dissolve", dissolveHandler)
+		g.POST("/dissolve", log.SysLog("解散群"), dissolveHandler)
 
-		g.POST("/invite", inviteHandler)
+		g.POST("/invite", authMW.NoRepeat(3000), inviteHandler)
 		g.POST("/join", joinHandler)
 		g.GET("/pending-join-requests", pendingJoinRequestsHandler)
 		g.POST("/handle-join-request", handleJoinRequestHandler)
 		g.POST("/leave", leaveHandler)
-		g.POST("/kick", kickHandler)
-		g.POST("/set-role", setRoleHandler)
-		g.POST("/transfer-owner", transferOwnerHandler)
+		g.POST("/kick", log.SysLog("踢出成员"), kickHandler)
+		g.POST("/set-role", log.SysLog("设置角色"), setRoleHandler)
+		g.POST("/transfer-owner", log.SysLog("转让群"), transferOwnerHandler)
 		g.POST("/set-nickname", setNicknameHandler)
 
 		g.GET("/messages", messagesHandler)
 		g.GET("/search", searchHandler)
 		g.GET("/search-groups", searchGroupsHandler)
-		g.POST("/send", middleware.RateLimiter("sys_group_send", 3, 20), sendHandler)
+		g.POST("/send", middleware.RateLimiter("sys_group_send", 3, 20), authMW.NoRepeat(3000), sendHandler)
 		g.POST("/recall", recallHandler)
 		g.POST("/mark-read", markReadHandler)
-		g.POST("/mute", muteHandler)
-		g.POST("/unmute", unmuteHandler)
+		g.POST("/mute", log.SysLog("禁言"), muteHandler)
+		g.POST("/unmute", log.SysLog("解禁"), unmuteHandler)
 		g.GET("/members", membersHandler)
 	}
 }
 
 func RegisterClientRoutes(r *gin.Engine) {
-	g := r.Group("/api/v1/c/im/group")
+	g := r.Group("/api/v1/c/im/group").Use(authMW.HeiClientCheckLogin())
 	{
 		g.POST("/create", createHandler)
 		g.GET("/my-groups", myGroupsHandler)
@@ -61,18 +63,15 @@ func RegisterClientRoutes(r *gin.Engine) {
 	}
 }
 
+// getLoginID returns the authenticated user based on route prefix.
 func getLoginID(c *gin.Context) (string, string) {
-	uid := auth.GetLoginIDDefaultNull(c)
-	if uid != "" {
-		return uid, group.UserTypeBusiness
+	path := c.Request.URL.Path
+	if len(path) > 8 && path[:8] == "/api/v1/c" {
+		return auth.Consumer.GetLoginID(c), group.UserTypeConsumer
 	}
-	token := auth.Consumer.GetTokenValue(c)
-	uid = auth.Consumer.GetLoginIDByToken(token)
-	if uid != "" {
-		return uid, group.UserTypeConsumer
-	}
-	return "", ""
+	return auth.GetLoginID(c), group.UserTypeBusiness
 }
+
 
 func createHandler(c *gin.Context) {
 	var p group.CreateParam

@@ -9,6 +9,7 @@ import (
 	"hei-gin/sdk/pojo"
 	"hei-gin/sdk/utils"
 	"hei-gin/sdk/ws"
+	imModel "hei-gin/plugins/plugin-im/model"
 
 	sysUser "hei-gin/plugins/plugin-sys/user"
 	cliUser "hei-gin/plugins/plugin-client/user"
@@ -26,7 +27,7 @@ func SendRequest(ctx context.Context, senderID, senderType string, p *SendReques
 
 	// Check existing friendship
 	var count int64
-	db.DB.WithContext(ctx).Model(&Friendship{}).
+	db.DB.WithContext(ctx).Model(&imModel.Friendship{}).
 		Where("(user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?) OR "+
 			"(user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?)",
 			senderID, senderType, p.ReceiverID, p.ReceiverType,
@@ -38,7 +39,7 @@ func SendRequest(ctx context.Context, senderID, senderType string, p *SendReques
 
 	// Check pending request
 	var existing int64
-	db.DB.WithContext(ctx).Model(&FriendRequest{}).
+	db.DB.WithContext(ctx).Model(&imModel.FriendRequest{}).
 		Where("sender_id = ? AND sender_type = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
 			senderID, senderType, p.ReceiverID, p.ReceiverType, "pending").
 		Count(&existing)
@@ -47,7 +48,7 @@ func SendRequest(ctx context.Context, senderID, senderType string, p *SendReques
 	}
 
 	now := time.Now()
-	req := &FriendRequest{
+	req := &imModel.FriendRequest{
 		ID:           utils.GenerateID(),
 		SenderID:     senderID,
 		SenderType:   senderType,
@@ -85,7 +86,7 @@ func AcceptRequest(ctx context.Context, userID, userType string, p *HandleReques
 		panic(exception.NewBusinessError("参数错误", 400))
 	}
 
-	var req FriendRequest
+	var req imModel.FriendRequest
 	if err := db.DB.WithContext(ctx).First(&req, "id = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
 		p.RequestID, userID, userType, "pending").Error; err != nil {
 		panic(exception.NewBusinessError("好友请求不存在或已处理", 400))
@@ -103,11 +104,11 @@ func AcceptRequest(ctx context.Context, userID, userType string, p *HandleReques
 	tx.Model(&req).Updates(map[string]interface{}{"status": "accepted", "updated_at": now})
 
 	// Create bidirectional friendship records
-	pair1 := Friendship{
+	pair1 := imModel.Friendship{
 		ID: utils.GenerateID(), UserID: req.ReceiverID, UserType: req.ReceiverType,
 		FriendID: req.SenderID, FriendType: req.SenderType, CreatedAt: &now,
 	}
-	pair2 := Friendship{
+	pair2 := imModel.Friendship{
 		ID: utils.GenerateID(), UserID: req.SenderID, UserType: req.SenderType,
 		FriendID: req.ReceiverID, FriendType: req.ReceiverType, CreatedAt: &now,
 	}
@@ -144,7 +145,7 @@ func RejectRequest(ctx context.Context, userID, userType string, p *HandleReques
 		panic(exception.NewBusinessError("参数错误", 400))
 	}
 
-	result := db.DB.WithContext(ctx).Model(&FriendRequest{}).
+	result := db.DB.WithContext(ctx).Model(&imModel.FriendRequest{}).
 		Where("id = ? AND receiver_id = ? AND receiver_type = ? AND status = ?",
 			p.RequestID, userID, userType, "pending").
 		Updates(map[string]interface{}{"status": "rejected", "updated_at": time.Now()})
@@ -156,8 +157,8 @@ func RejectRequest(ctx context.Context, userID, userType string, p *HandleReques
 // ==================== Friend List ====================
 
 func FriendList(ctx context.Context, userID, userType string) []FriendVO {
-	var friendships []Friendship
-	db.DB.WithContext(ctx).Model(&Friendship{}).
+	var friendships []imModel.Friendship
+	db.DB.WithContext(ctx).Model(&imModel.Friendship{}).
 		Where("user_id = ? AND user_type = ?", userID, userType).
 		Find(&friendships)
 
@@ -223,13 +224,13 @@ func FriendList(ctx context.Context, userID, userType string) []FriendVO {
 // ==================== Friend Requests (incoming + outgoing) ====================
 
 func PendingRequests(ctx context.Context, userID, userType string) ([]FriendRequestVO, []FriendRequestVO) {
-	var incoming []FriendRequest
-	db.DB.WithContext(ctx).Model(&FriendRequest{}).
+	var incoming []imModel.FriendRequest
+	db.DB.WithContext(ctx).Model(&imModel.FriendRequest{}).
 		Where("receiver_id = ? AND receiver_type = ? AND status = ?", userID, userType, "pending").
 		Order("created_at DESC").Find(&incoming)
 
-	var outgoing []FriendRequest
-	db.DB.WithContext(ctx).Model(&FriendRequest{}).
+	var outgoing []imModel.FriendRequest
+	db.DB.WithContext(ctx).Model(&imModel.FriendRequest{}).
 		Where("sender_id = ? AND sender_type = ? AND status = ?", userID, userType, "pending").
 		Order("created_at DESC").Find(&outgoing)
 
@@ -252,9 +253,9 @@ func RemoveFriend(ctx context.Context, userID, userType, friendID, friendType st
 	}()
 
 	r1 := tx.Where("user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?",
-		userID, userType, friendID, friendType).Delete(&Friendship{})
+		userID, userType, friendID, friendType).Delete(&imModel.Friendship{})
 	r2 := tx.Where("user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?",
-		friendID, friendType, userID, userType).Delete(&Friendship{})
+		friendID, friendType, userID, userType).Delete(&imModel.Friendship{})
 
 	if r1.RowsAffected == 0 && r2.RowsAffected == 0 {
 		panic(exception.NewBusinessError("好友关系不存在", 400))
@@ -341,7 +342,7 @@ func BlockUser(ctx context.Context, userID, userType, blockedID, blockedType str
 
 	// Check if already blocked
 	var existing int64
-	db.DB.WithContext(ctx).Model(&FriendBlock{}).
+	db.DB.WithContext(ctx).Model(&imModel.FriendBlock{}).
 		Where("user_id = ? AND user_type = ? AND blocked_id = ? AND blocked_type = ?",
 			userID, userType, blockedID, blockedType).Count(&existing)
 	if existing > 0 {
@@ -349,7 +350,7 @@ func BlockUser(ctx context.Context, userID, userType, blockedID, blockedType str
 	}
 
 	now := time.Now()
-	if err := db.DB.WithContext(ctx).Create(&FriendBlock{
+	if err := db.DB.WithContext(ctx).Create(&imModel.FriendBlock{
 		ID:          utils.GenerateID(),
 		UserID:      userID,
 		UserType:    userType,
@@ -366,7 +367,7 @@ func BlockUser(ctx context.Context, userID, userType, blockedID, blockedType str
 			"(user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?)",
 			userID, userType, blockedID, blockedType,
 			blockedID, blockedType, userID, userType).
-		Delete(&Friendship{})
+		Delete(&imModel.Friendship{})
 }
 
 func UnblockUser(ctx context.Context, userID, userType, blockedID, blockedType string) {
@@ -377,15 +378,15 @@ func UnblockUser(ctx context.Context, userID, userType, blockedID, blockedType s
 	result := db.DB.WithContext(ctx).
 		Where("user_id = ? AND user_type = ? AND blocked_id = ? AND blocked_type = ?",
 			userID, userType, blockedID, blockedType).
-		Delete(&FriendBlock{})
+		Delete(&imModel.FriendBlock{})
 	if result.RowsAffected == 0 {
 		panic(exception.NewBusinessError("未拉黑该用户", 400))
 	}
 }
 
 func BlockList(ctx context.Context, userID, userType string) []BlockVO {
-	var blocks []FriendBlock
-	db.DB.WithContext(ctx).Model(&FriendBlock{}).
+	var blocks []imModel.FriendBlock
+	db.DB.WithContext(ctx).Model(&imModel.FriendBlock{}).
 		Where("user_id = ? AND user_type = ?", userID, userType).
 		Find(&blocks)
 
@@ -406,7 +407,7 @@ func UpdateFriendRemark(ctx context.Context, userID, userType, friendID, friendT
 	if userID == "" || friendID == "" {
 		panic(exception.NewBusinessError("参数错误", 400))
 	}
-	if err := db.DB.WithContext(ctx).Model(&Friendship{}).
+	if err := db.DB.WithContext(ctx).Model(&imModel.Friendship{}).
 		Where("user_id = ? AND user_type = ? AND friend_id = ? AND friend_type = ?",
 			userID, userType, friendID, friendType).
 		Update("remark", remark).Error; err != nil {
@@ -416,7 +417,7 @@ func UpdateFriendRemark(ctx context.Context, userID, userType, friendID, friendT
 
 // ==================== Helpers ====================
 
-func toVOList(requests []FriendRequest) []FriendRequestVO {
+func toVOList(requests []imModel.FriendRequest) []FriendRequestVO {
 	r := make([]FriendRequestVO, len(requests))
 	for i, req := range requests {
 		r[i] = FriendRequestVO{

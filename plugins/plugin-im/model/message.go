@@ -33,10 +33,10 @@ func (Message) TableName() string { return "im_message" }
 // Conversation tracks conversation metadata (cache table).
 type Conversation struct {
 	ID        string     `gorm:"primaryKey;size:32" json:"id"`
-	UserID1   string     `gorm:"column:user_id_1;size:32;not null" json:"user_id_1"`
-	UserType1 string     `gorm:"column:user_type_1;size:20;not null" json:"user_type_1"`
-	UserID2   string     `gorm:"column:user_id_2;size:32;not null" json:"user_id_2"`
-	UserType2 string     `gorm:"column:user_type_2;size:20;not null" json:"user_type_2"`
+	FromID   string     `gorm:"column:from_id;size:32;not null" json:"from_id"`
+	FromType string     `gorm:"column:from_type;size:20;not null" json:"from_type"`
+	ToID   string     `gorm:"column:to_id;size:32;not null" json:"to_id"`
+	ToType string     `gorm:"column:to_type;size:20;not null" json:"to_type"`
 	LastMsg   string     `gorm:"type:text" json:"last_msg"`
 	LastTime  *time.Time `json:"last_time"`
 	CreatedAt *time.Time `json:"created_at"`
