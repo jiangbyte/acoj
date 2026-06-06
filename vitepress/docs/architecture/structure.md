@@ -59,7 +59,8 @@ hei-gin/
 │   │   ├── trace.go                # 链路追踪
 │   │   ├── auth_check.go           # 认证路由分流
 │   │   ├── recovery.go             # 全局异常恢复
-│   │   └── cors.go                 # CORS 跨域
+│   │   ├── cors.go                 # CORS 跨域
+│   │   └── ratelimit.go            # API 限流
 │   ├── module/                      # 模块生命周期管理
 │   ├── pojo/                        # 通用 POJO
 │   ├── registry/                    # 注册中心（路由/中间件/权限）

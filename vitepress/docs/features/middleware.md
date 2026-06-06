@@ -179,6 +179,33 @@ import (
     "github.com/gin-gonic/gin"
     "hei-gin/sdk/middleware"
     authMiddleware "hei-gin/sdk/auth/middleware"
+### RateLimiter（API 限流）
+
+**文件**：`sdk/middleware/ratelimit.go`
+
+```go
+func RateLimiter(endpointKey string, window int, maxRequests int) gin.HandlerFunc
+```
+
+基于 Redis 的分布式 API 限流中间件，可在路由组上按需注册：
+
+- `endpointKey`：端点标识，用于区分不同的限流规则
+- `window`：时间窗口（秒），默认 10 秒
+- `maxRequests`：窗口内最大请求数，默认 30
+- 用户标识：优先使用登录用户 ID，回退到客户端 IP
+- 原理：Redis Lua 脚本原子性 INCR + EXPIRE，首次访问时设置过期时间
+- 超出限制：panic `BusinessError{code=429, message="请求过于频繁，请稍后重试"}`
+
+```go
+import "hei-gin/sdk/middleware"
+
+// 路由组级别限流：每分钟最多 60 次
+r.POST("/api/v1/sys/user/save",
+    middleware.RateLimiter("user-save", 60, 60),
+    handler.UserSave,
+)
+```
+
     "hei-gin/sdk/log"
 )
 
