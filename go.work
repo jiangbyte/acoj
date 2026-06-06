@@ -7,4 +7,5 @@ use (
 	./plugins/plugin-sys
 	./plugins/plugin-client
 	./plugins/plugin-im
+	./app
 )
