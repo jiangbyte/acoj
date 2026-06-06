@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   lang: 'zh-CN',
   title: 'Hei Gin',
-  description: 'Hei Gin - 基于 Gin + Ent 的 Go 快速开发框架官方文档',
+  description: 'Hei Gin - 基于 Gin + GORM 的 Go 快速开发框架官方文档',
   base: '/hei-gin/',
 
   head: [['link', { rel: 'icon', href: '/logo.svg' }]],

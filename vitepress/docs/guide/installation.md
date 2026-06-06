@@ -6,18 +6,14 @@
 
 ### Go 语言环境
 
-Hei Gin 需要 **Go 1.25 或更高版本**。安装步骤如下：
-
-1. **下载 Go**：访问 [Go 官方下载页面](https://go.dev/dl/) 下载对应操作系统的安装包
-2. **安装 Go**：按照官方指引完成安装
-3. **验证安装**：
+需要 **Go 1.25 或更高版本**：
 
 ```bash
 go version
-# 输出示例：go version go1.25.0 windows/amd64
+# 输出示例：go version go1.25.0 linux/amd64
 ```
 
-4. **配置 Go 模块代理**（可选，国内推荐）：
+国内推荐配置 Go 模块代理：
 
 ```bash
 go env -w GOPROXY=https://goproxy.cn,direct
@@ -25,76 +21,68 @@ go env -w GOPROXY=https://goproxy.cn,direct
 
 ### MySQL 数据库
 
-Hei Gin 使用 **MySQL 8.0 或更高版本**，需要支持 JSON 数据类型和窗口函数。
-
-1. **安装 MySQL**：可从 [MySQL 官方下载](https://dev.mysql.com/downloads/) 获取
-2. **创建数据库**：
+需要 **MySQL 8.0 或更高版本**，支持 JSON 数据类型和窗口函数。
 
 ```sql
-CREATE DATABASE IF NOT EXISTS `hei-gin` 
-  DEFAULT CHARACTER SET utf8mb4 
+CREATE DATABASE IF NOT EXISTS `hei-gin`
+  DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
-```
-
-3. **创建用户并授权**（可选）：
-
-```sql
-CREATE USER 'hei'@'%' IDENTIFIED BY 'your-password';
-GRANT ALL PRIVILEGES ON `hei-gin`.* TO 'hei'@'%';
-FLUSH PRIVILEGES;
 ```
 
 ### Redis 缓存
 
-Hei Gin 需要 **Redis 6.0 或更高版本**，用于：
-
-- Token 会话存储
-- 图形验证码存储
-- 权限缓存
-- 防重复提交令牌
-
-1. **安装 Redis**：可从 [Redis 官方下载](https://redis.io/download/) 获取
-2. **Windows 用户**：Redis 官方不支持 Windows，建议使用 WSL2 或 Docker
-3. **使用 Docker**：
+需要 **Redis 6.0 或更高版本**，用于 Token 会话存储、验证码、权限缓存和防重复提交。
 
 ```bash
+# 使用 Docker
 docker run -d --name redis -p 6379:6379 redis:7-alpine
 ```
 
-4. **验证连接**：
+## Go Workspace 结构
 
-```bash
-redis-cli ping
-# 输出：PONG
+Hei Gin 使用 Go Workspace 管理多模块：
+
+```
+hei-gin/
+├── go.work              # Workspace 定义
+├── go.mod               # 根模块
+├── sdk/go.mod           # SDK 模块
+├── api/go.mod           # 接口定义模块
+├── plugins/plugin-sys/go.mod    # 系统插件
+├── plugins/plugin-client/go.mod # 客户端插件
+├── plugins/plugin-im/go.mod     # IM 插件
+└── app/go.mod           # 应用模块
 ```
 
 ## 完整安装步骤
 
-### 步骤 1：获取项目代码
+### 步骤 1：获取项目
 
 ```bash
-git clone <项目仓库地址>
+git clone https://github.com/jiangbyte/hei-gin.git
 cd hei-gin
 ```
 
-### 步骤 2：安装 Go 依赖
+### 步骤 2：安装依赖
 
 ```bash
 go mod tidy
 go mod download
 ```
 
-`go mod tidy` 会自动清理无用依赖并添加缺失依赖，`go mod download` 将依赖下载到本地缓存。
+Go Workspace 会自动处理所有子模块的依赖。
 
 ### 步骤 3：配置 config.yaml
 
-将项目根目录的 `config.yaml` 修改为你的本地环境配置。详细配置项说明请参考 [配置文件说明](config)。
+复制 `config.example.yaml` 为 `config.yaml`，修改数据库和 Redis 连接信息。
 
-### 步骤 4：初始化数据库
+### 步骤 4：DB 迁移（可选）
 
-Hei Gin 使用 GORM 的自动迁移功能。启动时应用会自动创建和更新数据库表结构，无需手动执行 SQL 迁移脚本。
+```bash
+go run cmd/migrate/main.go
+```
 
-但如果需要手动初始化，可以在 MySQL 中执行项目提供的初始化 SQL 脚本（如果存在）。
+迁移需要通过 `cmd/migrate` 工具手动执行（`app.Run()` 不会自动执行迁移）：
 
 ### 步骤 5：启动服务
 
@@ -102,33 +90,29 @@ Hei Gin 使用 GORM 的自动迁移功能。启动时应用会自动创建和更
 go run main.go
 ```
 
-推荐使用 `air` 或 `gowatch` 等热重载工具进行开发：
+推荐使用 `air` 热重载：
 
 ```bash
-# 安装 air
 go install github.com/air-verse/air@latest
-
-# 启动热重载
 air
 ```
 
-### 步骤 6：验证部署
+### 步骤 6：验证
 
-访问以下接口验证服务正常运行：
-
-- 健康检查：`GET http://localhost:18885/`
-- B 端获取验证码：`GET http://localhost:18885/api/v1/public/b/captcha`
-- B 端获取 SM2 公钥：`GET http://localhost:18885/api/v1/public/b/sm2-public-key`
+```bash
+curl http://localhost:18885/
+# 响应：{"message":"hei-gin is running","version":"1.0.0"}
+```
 
 ## 生产环境部署
 
 ### 编译二进制
 
 ```bash
-go build -o hei-gin .
+go build -o hei-gin main.go
 ```
 
-### 使用 Systemd 管理（Linux）
+### 使用 Systemd（Linux）
 
 ```ini
 [Unit]
@@ -147,34 +131,17 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-### 使用 Docker 部署
+### 多实例部署
 
-参考项目根目录下的 Dockerfile：
-
-```dockerfile
-FROM golang:1.25-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN go build -o hei-gin .
-
-FROM alpine:3.19
-WORKDIR /app
-COPY --from=builder /app/hei-gin .
-COPY config.yaml .
-EXPOSE 18885
-CMD ["./hei-gin"]
-```
+需确保每个实例的 `snowflake.instance` 配置不同值以避免雪花 ID 冲突。IM 模块依赖 Redis 实现跨实例通信。
 
 ## 常见问题
 
 **Q: 启动报错 "connect: connection refused"**
-
 A：请确认 MySQL 和 Redis 服务已启动，且 config.yaml 中的连接信息正确。
 
-**Q: 数据库迁移失败**
-
-A：确认 MySQL 版本 >= 8.0，且数据库用户有 CREATE TABLE 权限。
-
 **Q: go mod tidy 下载失败**
+A：配置 Go 模块代理：`go env -w GOPROXY=https://goproxy.cn,direct`。
 
-A：国内用户建议配置 Go 模块代理：`go env -w GOPROXY=https://goproxy.cn,direct`。
+**Q: 如何添加新的业务模块？**
+A：参考 [模块开发](../modules/development) 创建新的 plugin 目录，添加到 go.work，在 app/main.go 中导入。

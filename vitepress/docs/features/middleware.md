@@ -1,385 +1,187 @@
 # 中间件体系
 
-Hei Gin 的中间件系统分为三个层次：全局中间件、业务中间件和内置中间件。以下逐一介绍每个中间件的功能、配置和使用方式。
+Hei Gin 的中间件系统分为全局中间件和业务中间件两层。
 
 ## 全局中间件
 
-全局中间件注册在 Gin Engine 上，对所有请求生效。
-
-### 1. Trace 中间件
-
-**文件**：`core/middleware/trace.go`
-
-Trace 中间件负责全链路追踪，为每个请求生成或透传唯一的 trace_id。
-
-**功能**：
-- 检查请求头中是否包含 `trace_id`
-- 如果存在，透传该 Trace ID
-- 如果不存在，调用 `utils.GenerateTraceID()` 生成新的 Trace ID（UUID 的十六进制编码，不含连字符）
-- 将 Trace ID 设置到 Gin Context 的 `"trace_id"` 键中
-
-**注册方式**：
+全局中间件注册在 Gin Engine 上，对所有请求生效。注册顺序见 `sdk/app/app.go`：
 
 ```go
-import "hei-gin/core/middleware"
-
-r.Use(middleware.Trace())
+r := gin.New()
+r.Use(middleware.Recovery())  // ① 最外层：panic → JSON
+r.Use(gin.Logger())           // ② 请求日志
+r.Use(middleware.Trace())     // ③ 链路追踪
+r.Use(middleware.CORS())      // ④ 跨域
+r.Use(middleware.AuthCheck()) // ⑤ 认证路由分流
 ```
 
-**使用方式**：
+### 1. Recovery 中间件
+
+**文件**：`sdk/middleware/recovery.go`
+
+捕获 Gin 处理过程中发生的 panic，转换为友好 JSON 响应。
+
+**处理逻辑**：
+- `*exception.BusinessError` → 200 + `{code, message, success:false}`（不记录栈追踪）
+- `error` 或其他 panic → 200 + `{code:500, message:"服务器内部错误"}`（日志记录栈追踪）
+- `c.Next()` 后的 `c.Errors` → 200 + `{code:400, message: err.Error()}`
 
 ```go
-// 在 Handler 中获取 Trace ID
-traceID := c.GetString("trace_id")
+import "hei-gin/sdk/exception"
 
-// 使用 result 包自动在响应中包含 trace_id
-import "hei-gin/core/result"
-
-result.Success(c, data)  // 响应中自动包含 "trace_id" 字段
-result.Failure(c, message, code, data)  // 同上
-```
-
-**响应示例**：
-
-```json
-{
-  "code": 200,
-  "message": "请求成功",
-  "data": {},
-  "success": true,
-  "trace_id": "a1b2c3d4e5f67890abcdef1234567890"
-}
-```
-
-### 2. AuthCheck 中间件
-
-**文件**：`core/middleware/auth_check.go`
-
-AuthCheck 中间件根据请求路径自动识别认证类型，对无需认证的路径放行，对需要认证的路径进行登录检查。
-
-**路由分流规则**：
-
-```
-静态路径 (/favicon.ico, /docs, /redoc, /openapi.json, /v3/api-docs)  -> 放行
-OPTIONS 方法                                                          -> 放行
-/api/v{n}/public/*                                                    -> 放行（无需认证）
-/api/v{n}/c/*                                                         -> 要求 C 端登录认证
-/api/v{n}/b/* 或 /api/v{n}/<其他>/*                                   -> 要求 B 端登录认证
-```
-
-未通过认证的请求会收到 401 JSON 响应。
-
-**注册方式**：
-
-```go
-r.Use(middleware.AuthCheck())
-```
-
-### 3. Recovery 中间件
-
-**文件**：`core/middleware/recovery.go`
-
-Recovery 中间件捕获 Gin 处理过程中发生的 panic，转换为友好的 JSON 错误响应。它替换了 Gin 默认的 Recovery 中间件，提供了业务异常（BusinessError）支持。
-
-**功能**：
-- 捕获所有 panic
-- 如果是 `*exception.BusinessError` 或 `exception.BusinessError`，提取错误码和错误信息，通过 `result.Failure` 返回 200 状态码（业务码在 JSON body 中）
-- 如果是其他 panic，返回 500 "服务器内部错误"
-- 处理 handler 链中通过 `c.Error()` 收集的错误，返回 400
-
-**BusinessError 使用方式**：
-
-```go
-import "hei-gin/core/exception"
-
-// 使用构造函数创建业务异常并 panic
 panic(exception.NewBusinessError("用户名或密码错误", 400))
-
-// 或直接使用结构体字面量
-panic(exception.BusinessError{
-    Code:    400,
-    Message: "用户名或密码错误",
-})
+// 响应：{"code": 400, "message": "用户名或密码错误", "success": false, "trace_id": "..."}
 ```
 
-**对应响应**：
+### 2. Logger 中间件
 
-```json
-{
-  "code": 400,
-  "message": "用户名或密码错误",
-  "data": null,
-  "success": false,
-  "trace_id": "a1b2c3d4..."
-}
-```
+Gin 内置的日志中间件，记录每个请求的方法、路径、状态码和耗时。
 
-**注册方式**：
+### 3. Trace 中间件
+
+**文件**：`sdk/middleware/trace.go`
+
+生成或透传 `trace_id`。读取请求头的 `trace_id`，不存在则调用 `utils.GenerateTraceID()` 生成新的 UUID（无连字符 hex 编码）。设置到 `gin.Context("trace_id")`。
 
 ```go
-r.Use(middleware.Recovery())
+// 在 Handler 中获取
+traceID := c.GetString("trace_id")
 ```
+
+所有响应自动包含 `trace_id` 字段（通过 `result.Success/Failure` 等函数）。
 
 ### 4. CORS 中间件
 
-**文件**：`core/middleware/cors.go`
+**文件**：`sdk/middleware/cors.go`
 
-CORS 中间件处理跨域请求，配置项来源于 `config.yaml` 中的 `cors` 配置段。
-
-**功能**：
-- 处理 OPTIONS 预检请求
-- 配置允许的来源、方法、头
-- 支持 Allow Credentials 配置
-
-**注册方式**：
+基于 `gin-contrib/cors` 库，配置项来自 `config.yaml` 的 `cors` 段。
 
 ```go
-r.Use(middleware.CORS())
+// 使用 gin-contrib/cors 库
+// AllowOrigins / AllowMethods / AllowHeaders / AllowCredentials 均来自配置
 ```
+
+### 5. AuthCheck 中间件
+
+**文件**：`sdk/middleware/auth_check.go`
+
+根据请求路径自动识别认证类型：
+
+```
+静态路径（/favicon.ico, /docs, /openapi.json 等）         → 放行
+/api/v1/sys/dict/tree                                      → 放行
+OPTIONS 方法                                                → 放行
+以 /ws 结尾的 WebSocket 路径                                 → 放行（由 WS Handler 自认证）
+/api/v{n}/public/*                                          → 放行
+/api/v{n}/c/*                                               → Consumer.IsLogin() 检查
+/api/v{n}/b/* 或 /api/v{n}/<其他>/*                         → auth.IsLogin() 检查
+```
+
+未通过认证的请求返回 `{"code":401, "message":"未授权/未登录", "success":false, "trace_id":"..."}`。
+
+WebSocket 路径豁免的原因：WS 连接建立前 AuthCheck 无法从 query 参数中提取 Token，需要在 WS Handler 中使用 `HeiCheckLogin` 中间件手动验证。
 
 ## 业务中间件
 
-业务中间件按需注册到具体的路由组上。以下中间件均位于 `core/auth/middleware` 包，导入方式：
+业务中间件按需注册到具体的路由组上。位于 `sdk/auth/middleware` 包：
 
 ```go
-import middleware "hei-gin/core/auth/middleware"
+import authMiddleware "hei-gin/sdk/auth/middleware"
 ```
 
-### 5. HeiCheckLogin（B 端登录验证）
+### HeiCheckLogin（B 端登录验证）
 
-**文件**：`core/auth/middleware/check_login.go`
-
-验证请求携带的 Token Token 是否有效。
-
-**函数签名**：
+**文件**：`sdk/auth/middleware/check_login.go`
 
 ```go
 func HeiCheckLogin(loginType ...string) gin.HandlerFunc
 ```
 
-`loginType` 默认为 `"BUSINESS"`。传入 `"CONSUMER"` 可复用此中间件做 C 端登录检查。
+- `loginType` 默认为 `"BUSINESS"`，传入 `"CONSUMER"` 可复用做 C 端检查
+- 从 `Authorization` 头（或配置的 `token_name`）提取 Token
+- 调用 `auth.IsLogin(c)` 或 `auth.Consumer.IsLogin(c)` 验证
+- 验证通过后设置 `loginUser` 到 context（用于操作日志录制）
 
-**功能**：
-- 从 `Authorization` 头中提取 Bearer Token
-- 解析 Token Token 的有效性
-- 验证 Token 是否在禁用列表中
-- 从 Redis 中读取会话信息
-- 将会话信息注入到 Context 中
+### HeiClientCheckLogin（C 端登录验证）
 
-**注册方式**：
-
-```go
-bApi := r.Group("/api/v1/b", middleware.HeiCheckLogin())
-```
-
-### 6. HeiClientCheckLogin（C 端登录验证）
-
-**文件**：`core/auth/middleware/client_check_login.go`
-
-C 端的专用登录验证中间件，内部委托给 `HeiCheckLogin("CONSUMER")`。
-
-**函数签名**：
+**文件**：`sdk/auth/middleware/check_login.go`
 
 ```go
 func HeiClientCheckLogin() gin.HandlerFunc
 ```
 
-**注册方式**：
+委托给 `HeiCheckLogin("CONSUMER")`。
 
-```go
-cApi := r.Group("/api/v1/c", middleware.HeiClientCheckLogin())
-```
+### HeiCheckPermission（B 端权限检查）
 
-### 7. HeiCheckPermission（B 端权限检查）
-
-**文件**：`core/auth/middleware/check_permission.go`
-
-检查当前登录用户是否拥有指定的权限。同时具有**权限自动注册**功能。
-
-**函数签名**：
+**文件**：`sdk/auth/middleware/check_permission.go`
 
 ```go
 func HeiCheckPermission(permissions []string, mode ...string) gin.HandlerFunc
 ```
 
-- `permissions`：权限代码列表（如 `[]string{"sys:user:list"}`）
-- `mode`：匹配模式，默认为 `"AND"`（需要全部权限），传入 `"OR"` 则满足任意一个即可
+- `permissions`：权限代码列表
+- `mode`：默认为 `"AND"`（全部匹配），传入 `"OR"` 匹配任意一个
+- 检查登录状态 → SUPER_ADMIN 放行 → 通过 PermissionDelegate 查询权限 → 通配符匹配
 
-**功能**：
-- 自动注册权限代码到权限扫描系统
-- 检查用户是否为 SUPER_ADMIN，是则直接放行
-- 从 Redis 缓存中获取用户权限集合
-- 使用权限匹配器进行通配符匹配
-- 匹配成功则放行，失败则返回 403
+### HeiClientCheckPermission（C 端权限检查）
 
-**注册方式**：
-
-```go
-// 单个权限（AND 模式）
-sysApi.GET("/user/list",
-    middleware.HeiCheckPermission([]string{"sys:user:list"}),
-    handler.UserList,
-)
-
-// 多个权限（OR 模式：任意一个匹配即可）
-sysApi.POST("/user/save",
-    middleware.HeiCheckPermission([]string{"sys:user:create", "sys:user:update"}, "OR"),
-    handler.UserSave,
-)
-```
-
-### 8. HeiClientCheckPermission（C 端权限检查）
-
-**文件**：`core/auth/middleware/client_check_permission.go`
-
-C 端的权限检查中间件，内部委托给 `heiCheckPermissionInner("CONSUMER", ...)`。
-
-**函数签名**：
+**文件**：`sdk/auth/middleware/check_permission.go`
 
 ```go
 func HeiClientCheckPermission(permissions []string, mode ...string) gin.HandlerFunc
 ```
 
-用法与 `HeiCheckPermission` 相同，但检查的是 C 端用户的权限。
+委托给 `heiCheckPermissionInner("CONSUMER", permissions, mode)`。
 
-**注册方式**：
+### HeiCheckRole / HeiClientCheckRole（角色检查）
 
-```go
-clientApi.GET("/order/list",
-    middleware.HeiClientCheckPermission([]string{"client:order:list"}),
-    handler.OrderList,
-)
-```
-
-### 9. HeiCheckRole（B 端角色检查）
-
-**文件**：`core/auth/middleware/check_role.go`
-
-检查当前用户是否拥有指定的角色。
-
-**函数签名**：
+**文件**：`sdk/auth/middleware/check_role.go`
 
 ```go
 func HeiCheckRole(roles []string, mode ...string) gin.HandlerFunc
-```
-
-- `roles`：角色代码列表
-- `mode`：匹配模式，默认为 `"AND"`（需要全部角色），传入 `"OR"` 则满足任意一个即可
-
-**功能**：
-- 检查用户是否为 SUPER_ADMIN，是则直接放行
-- 从 Redis/DB 获取用户角色
-- 检查用户是否拥有指定的角色代码
-
-**注册方式**：
-
-```go
-// 单个角色
-sysApi.DELETE("/user/delete",
-    middleware.HeiCheckRole([]string{"admin"}),
-    handler.UserDelete,
-)
-
-// 多个角色（OR 模式：任意一个匹配即可）
-sysApi.POST("/sys/config/save",
-    middleware.HeiCheckRole([]string{"admin", "operator"}, "OR"),
-    handler.ConfigSave,
-)
-```
-
-### 10. HeiClientCheckRole（C 端角色检查）
-
-**文件**：`core/auth/middleware/client_check_role.go`
-
-C 端的角色检查中间件。
-
-**函数签名**：
-
-```go
 func HeiClientCheckRole(roles []string, mode ...string) gin.HandlerFunc
 ```
 
-用法与 `HeiCheckRole` 相同，但检查的是 C 端用户的角色。
+- `mode`：`"AND"`（默认，全部匹配）或 `"OR"`（匹配任意一个）
 
-### 11. SysLog（操作日志录制）
+### SysLog（操作日志录制）
 
-**文件**：`core/log/syslog.go`
-
-自动录制用户的操作日志，在 handler 执行完成后异步写入 sys_log 表。
-
-**函数签名**：
+**文件**：`sdk/log/syslog.go`
 
 ```go
 func SysLog(name string) gin.HandlerFunc
 ```
 
-- `name`：操作日志的名称（如 "新增用户"、"删除配置"）
+- `name`：操作名称，如"新增用户"
+- 录制内容：请求方法、URL、参数、User-Agent（浏览器+OS）、客户端IP、地理位置、执行状态、trace_id、SM3 签名
+- 参数提取：仅 POST/PUT/PATCH 方法，排除 `request`/`db`/`file` 参数
+- 异步通过 `LogPersistence` 函数变量写入数据库（由 `plugin-sys` 插件提供实现）
+- 异常处理：捕获 handler 中的 BusinessError panic，记录异常日志后重新 panic
 
-**功能**：
-- 记录请求方法、路径、参数
-- 自动捕获 handler 中的 panic（记录异常日志后重新 panic）
-- 记录响应状态（SUCCESS / FAIL）
-- 异步写入 sys_log 表（GORM）
+### NoRepeat（防重复提交）
 
-**注册方式**：
-
-```go
-import "hei-gin/core/log"
-
-// 注册到具体路由
-sysApi.POST("/user/save",
-    middleware.HeiCheckLogin(),
-    middleware.HeiCheckPermission([]string{"sys:user:create"}),
-    log.SysLog("新增用户"),
-    handler.UserSave,
-)
-```
-
-### 12. NoRepeat（防重复提交）
-
-**文件**：`core/auth/middleware/norepeat.go`
-
-防止用户在指定时间间隔内重复提交相同的请求。
-
-**函数签名**：
+**文件**：`sdk/auth/middleware/norepeat.go`
 
 ```go
 func NoRepeat(interval int) gin.HandlerFunc
 ```
 
-- `interval`：防重复时间间隔，单位**毫秒**（ms）
-
-**原理**：
-- 基于请求的路径 + 参数 + 用户 ID + IP 生成缓存键
-- 对请求参数（Query、Form、Body）计算 FNV-1a 64 位哈希值
-- 在 Redis 中记录该哈希值和时间戳（TTL 为 3600 秒）
-- 同一请求在指定间隔内重复提交会被拒绝（返回 429）
-
-**注册方式**：
-
-```go
-// 3 秒内禁止重复提交
-sysApi.POST("/user/save",
-    middleware.HeiCheckLogin(),
-    middleware.HeiCheckPermission([]string{"sys:user:create"}),
-    middleware.NoRepeat(3000),
-    handler.UserSave,
-)
-```
+- `interval`：时间窗口，单位**毫秒**
+- 原理：对请求参数（Query + Form + Body）计算 FNV-1a 64 位哈希 → Redis 存储哈希+时间戳 → 窗口内重复返回 429
+- 用户标识：优先使用 Consumer 登录 ID，回退到 Business 登录 ID，拼接客户端 IP
+- Redis TTL：自动计算，最短 60 秒，最长 3600 秒
 
 ## 中间件链完整示例
-
-一个典型的 B 端 API 路由注册：
 
 ```go
 import (
     "github.com/gin-gonic/gin"
-    "hei-gin/core/middleware"
-    authMiddleware "hei-gin/core/auth/middleware"
-    "hei-gin/core/log"
+    "hei-gin/sdk/middleware"
+    authMiddleware "hei-gin/sdk/auth/middleware"
+    "hei-gin/sdk/log"
 )
 
-// 在模块的 api.go 中
 func RegisterRoutes(r *gin.RouterGroup) {
     // 需要登录 + 权限检查 + 操作日志 + 防重复（3 秒）
     r.POST("/save",
@@ -396,43 +198,37 @@ func RegisterRoutes(r *gin.RouterGroup) {
         h.GetUserInfo,
     )
 
-    // 公开接口（无需认证）
+    // 公开接口（无中间件）
     r.GET("/public-info", h.PublicInfo)
 }
 ```
 
-## 中间件执行顺序
+### registry.Perm / registry.ClientPerm（权限注册 + 检查快捷方式）
 
-在同一个请求中，中间件的执行顺序遵循**先进后出**原则（类似洋葱模型）：
+**文件**：`sdk/registry/perm.go`
 
-```
-Request
-  │
-  ▼
-① Trace ───────────────────────── 生成 Trace ID
-② AuthCheck ───────────────────── 路径认证检查
-③ Recovery ────────────────────── panic 保护（defer）
-④ CORS ────────────────────────── 跨域处理
-⑤ HeiCheckLogin ───────────────── Token 验证
-⑥ HeiCheckPermission ──────────── 权限检查
-⑦ SysLog ──────────────────────── 开始录制
-⑧ NoRepeat ────────────────────── 防重复检查
-  │
-  ▼
-Handler ────────────────────────── 业务逻辑
-  │
-  ▼
-⑨ NoRepeat ────────────────────── 设置防重复标记
-⑩ SysLog ──────────────────────── 完成录制（写入 DB）
-⑪ HeiCheckPermission ──────────── 后处理
-⑫ HeiCheckLogin ───────────────── 后处理
-⑬ CORS ────────────────────────── 后处理
-⑭ Recovery ────────────────────── 后处理（如有 panic）
-⑮ AuthCheck ───────────────────── 后处理
-⑯ Trace ───────────────────────── 后处理
-  │
-  ▼
-Response
+```go
+func Perm(code, name string) gin.HandlerFunc
+func ClientPerm(code, name string) gin.HandlerFunc
 ```
 
-> 注意：中间件的"后处理"阶段通常不执行额外操作，核心逻辑在"前处理"阶段完成。Recovery 的 defer 在请求全过程中都有效。
+这是实际项目中最常用的权限模式。`Perm` 同时完成两件事：
+1. 通过 `auth.RegisterPermission()` 注册权限（仅首次调用时注册，带去重）
+2. 返回 `HeiCheckPermission([]string{code})` 中间件
+
+```go
+import "hei-gin/sdk/registry"
+
+// 实际项目中最常用的写法
+g.GET("/list",
+    registry.Perm("sys:user:list", "用户列表查询"),
+    handler.UserList,
+)
+g.POST("/create",
+    registry.Perm("sys:user:create", "创建用户"),
+    log.SysLog("创建用户"),
+    handler.UserCreate,
+)
+```
+
+`ClientPerm` 对应 C 端权限检查（返回 `HeiClientCheckPermission([]string{code})`）。

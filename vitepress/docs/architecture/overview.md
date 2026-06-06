@@ -2,104 +2,108 @@
 
 ## 应用初始化流程
 
-Hei Gin 的应用启动流程由 `core/app/app.go` 中的应用工厂（App Factory）编排，遵循清晰的初始化顺序：
+Hei Gin 的应用启动流程由 `sdk/app/app.go` 中的应用工厂编排，遵循清晰的初始化顺序：
 
 ```
-Config 加载
+config.FindAndLoad() ──── 搜索并加载 config.yaml（HEI_CONFIG env → CWD → 父目录 → go.work 目录）
     │
     ▼
-Logger 初始化
+db.InitDB() ────────────── GORM 初始化（MySQL 连接池：MaxOpenConns = PoolSize + MaxOverflow）
     │
     ▼
-DB (GORM) 初始化 ────────── MySQL 连接 + 自动迁移
+db.InitRedis() ─────────── go-redis 初始化（连接池、超时、健康检查）
     │
     ▼
-Redis 初始化 ───────────────────── Redis 连接
+module.InitAll() ───────── 所有插件模块的 Init() 调用
+    │                        ├── auth 模块：初始化 Business + Consumer Token 配置
+    │                        ├── scheduler 模块：无操作
+    │                        ├── plugin-sys：注册 PermissionDelegate、初始化日志持久化
+    │                        ├── plugin-client：客户端插件初始化
+    │                        └── plugin-im：IM 插件初始化
     │
     ▼
-SM2 初始化 ─────────────────────── 国密加密工具加载
+gin.New() ──────────────── 创建 Gin 引擎（非 gin.Default()，避免内置 Recovery）
     │
     ▼
-Auth 初始化 ────────────────────── Token 认证工具初始化（B端 + C端）
+全局 Middleware 注册 ─────── 按顺序：
+    │                        ① Recovery（最外层，捕获所有 panic）
+    │                        ② Logger（Gin 内置）
+    │                        ③ Trace（trace_id 注入）
+    │                        ④ CORS（跨域配置）
+    │                        ⑤ AuthCheck（认证路由分流）
     │
     ▼
-Permission 接口注册 ────────────── 权限查询接口注册到管理器
+registry.ApplyMiddlewares() ─ 执行模块注册的额外中间件
     │
     ▼
-Captcha 初始化 ─────────────────── 图形验证码服务
+SetupRouters() ──────────── 执行所有模块通过 registry.RegisterRoute 注册的路由
+    │                         ├── 健康检查 GET /
+    │                         └── 各模块 API 路由
     │
     ▼
-Gin Engine 创建 ────────────────── 路由引擎
+module.StartAll() ───────── 启动所有模块（auth → RunPermissionScan, scheduler → cron.Start）
     │
     ▼
-Middleware 注册 ────────────────── 全局中间件链
+HTTP Server 启动 ────────── 监听端口，Enter 循环
     │
     ▼
-Router 注册 ────────────────────── 业务路由挂载
-    │
-    ▼
-Permission 扫描 ────────────────── 扫描路由注册的权限并缓存到 Redis
-    │
-    ▼
-HTTP Server 启动 ───────────────── 监听端口，提供服务
+SIGINT/SIGTERM 信号 ─────── 优雅关闭
+                             ├── Server Shutdown（15s 超时）
+                             ├── module.StopAll()（逆序停止）
+                             ├── db.Close()
+                             └── db.CloseRedis()
 ```
 
 ## 请求生命周期
 
-一个完整的 HTTP 请求在 Hei Gin 中的处理流程如下：
+一个完整的 HTTP 请求处理流程：
 
 ```
 客户端请求
     │
     ▼
-┌─────────────────────────────────────────────┐
-│              Gin Engine                      │
-│                                             │
-│  ① Trace 中间件                             │
-│     ├─ 生成/透传 X-Trace-Id                  │
-│     └─ 设置到 Context                        │
-│                                             │
-│  ② AuthCheck 中间件                          │
-│     ├─ 解析请求路径前缀                       │
-│     ├─ /api/v1/public/b/* → B端公开          │
-│     ├─ /api/v1/public/c/* → C端公开          │
-│     ├─ /api/v1/b/*        → B端认证          │
-│     ├─ /api/v1/c/*        → C端认证          │
-│     └─ 设置 auth 上下文                      │
-│                                             │
-│  ③ Recovery 中间件                          │
-│     ├─ 捕获 panic                           │
-│     ├─ BusinessException → 业务错误响应       │
-│     └─ 其他 panic → 500 内部错误              │
-│                                             │
-│  ④ CORS 中间件                              │
-│     ├─ 处理跨域请求                          │
-│     └─ OPTIONS 预检请求直接返回               │
-│                                             │
-│  ⑤ 路由匹配 → Handler                       │
-│     ├─ 路径 /api/v1/b/xxx                   │
-│     └─ 匹配到对应的模块 handler               │
-│                                             │
-│  ⑥ 路由组中间件链                            │
-│     ├─ HeiCheckLogin    → Token 令牌验证       │
-│     ├─ HeiCheckPermission → 权限检查          │
-│     ├─ SysLog           → 操作日志录制        │
-│     └─ NoRepeat         → 防重复提交          │
-│                                             │
-│  ⑦ 业务 Handler                             │
-│     ├─ 参数校验                              │
-│     ├─ 业务逻辑处理                           │
-│     └─ 统一响应返回                           │
-│                                             │
-└─────────────────────────────────────────────┘
+① Recovery 中间件（defer）
+    ├─ 捕获 panic → JSON 响应
+    │   ├─ *exception.BusinessError → 200 + {code, message, success: false}
+    │   └─ 其他 panic → 200 + {code:500, message:"服务器内部错误"} + 日志栈追踪
+    └─ c.Next() 后检查 c.Errors → 400 响应
+    │
+② Logger 中间件（Gin 内置）
+    └─ 请求日志记录
+    │
+③ Trace 中间件
+    ├─ 读取请求头 trace_id（原样透传），不存在则生成
+    ├─ 不存在则生成 UUID 无连字符格式
+    └─ 设置到 gin.Context("trace_id")
+    │
+④ CORS 中间件（gin-contrib/cors）
+    ├─ config.yaml cors 配置
+    └─ OPTIONS 预检自动处理
+    │
+⑤ AuthCheck 中间件
+    ├─ 静态路径（/favicon.ico, /docs 等）→ 放行
+    ├─ WebSocket 路径（/ws 后缀）→ 放行（由 WS Handler 自行认证）
+    ├─ OPTIONS 请求 → 放行
+    ├─ /api/v{n}/public/* → 放行（无需认证）
+    ├─ /api/v{n}/c/* → consumer.IsLogin() 检查
+    └─ 其他 /api/v{n}/* → auth.IsLogin() 检查（B 端）
+    │
+⑥ 路由匹配 → 路由组中间件链
+    ├─ HeiCheckLogin()        → 从 Header 取 Token → Redis 查询会话
+    ├─ HeiCheckPermission()   → 通过 PermissionDelegate 查询用户权限 → 通配符匹配
+    ├─ SysLog("操作名")        → 录制请求参数、响应、User-Agent、IP、签名
+    └─ NoRepeat(ms)           → 基于 Redis 的请求哈希去重
+    │
+⑦ 业务 Handler
+    ├─ 参数校验（ShouldBindQuery/ShouldBindJSON）
+    ├─ 业务逻辑（panic-based 异常处理）
+    └─ 统一响应 result.Success / result.PageDataResult / result.Failure
     │
     ▼
-客户端收到响应
+客户端收到 JSON 响应
 ```
 
 ## 双端认证架构
-
-Hei Gin 实现了完全隔离的双端认证体系：
 
 ```
                       ┌──────────────────────┐
@@ -110,141 +114,114 @@ Hei Gin 实现了完全隔离的双端认证体系：
                       ┌──────────────────────┐
                       │   AuthCheck 中间件     │
                       │   基于路径自动分流      │
-                      └──────┬──────────┬─────┘
-                             │          │
-              ┌──────────────┘          └──────────────┐
-              ▼                                         ▼
-┌─────────────────────────┐         ┌─────────────────────────┐
-│     B 端 (BUSINESS)      │         │     C 端 (CONSUMER)      │
-│                         │         │                         │
-│  auth_tool.go (包级函数)  │         │  client_auth_tool.go    │
-│                         │         │  (结构体方法)             │
-│  ◆ Login()              │         │  ◆ Login()               │
-│  ◆ Logout()             │         │  ◆ Logout()              │
-│  ◆ Kickout()            │         │  ◆ Kickout()             │
-│  ◆ IsLogin()            │         │  ◆ IsLogin()             │
-│  ◆ GetLoginID()         │         │  ◆ GetLoginID()          │
-│                         │         │                         │
-│  check_login.go          │         │  client_check_login.go   │
-│  check_permission.go     │         │  client_check_permission.│
-│  check_role.go           │         │  go                     │
-│                         │         │  client_check_role.go    │
-│  /api/v1/public/b/*      │         │                         │
-│  /api/v1/b/*             │         │  /api/v1/public/c/*      │
-│  /api/v1/sys/*           │         │  /api/v1/c/*             │
-│                         │         │  /api/v1/client/*        │
-│  → 后台管理员             │         │                         │
-└─────────────────────────┘         │  → 普通用户               │
-                                    └─────────────────────────┘
+                      └─────┬────────────────┘
+                            │
+              ┌─────────────┴─────────────┐
+              │                           │
+              ▼                           ▼
+  ┌─────────────────────┐   ┌─────────────────────┐
+  │  B 端 (BUSINESS)     │   │  C 端 (CONSUMER)     │
+  │                     │   │                     │
+  │  auth.Business      │   │  auth.Consumer      │
+  │  (baseAuthTool 实例) │   │  (baseAuthTool 实例) │
+  │                     │   │                     │
+  │  Redis 键前缀:       │   │  Redis 键前缀:       │
+  │  hei:auth:BUSINESS: │   │  hei:auth:CONSUMER: │
+  │                     │   │                     │
+  │  Token: 32字节随机   │   │  Token: 32字节随机   │
+  │  hex 字符串          │   │  hex 字符串          │
+  │                     │   │                     │
+  │  /api/v1/public/b/* │   │  /api/v1/public/c/* │
+  │  /api/v1/sys/*      │   │  /api/v1/c/*        │
+  │  /api/v1/b/*        │   │                     │
+  │                     │   │                     │
+  │  → 后台管理员        │   │  → 普通用户          │
+  └─────────────────────┘   └─────────────────────┘
 ```
 
-### B 端认证（BUSINESS）
+## Token 认证机制
 
-使用包级函数实现，通过 `core/auth/auth_tool.go` 提供全局访问点：
+**不是 JWT**。Token 是 32 字节随机 hex 字符串，无签名/加密。
 
-- 用户：系统管理员、运营人员
-- 认证方式：Token
-- 会话存储：Redis，键前缀 `hei:auth:BUSINESS:token:`、`hei:auth:BUSINESS:session:`
-- 权限控制：RBAC + 数据权限
-- 公开接口：验证码、SM2 公钥、登录、注册
+```
+登录成功：
+  1. crypto/rand 生成 32 字节随机数 → hex 编码（64 字符）
+  2. 构建 Token 数据 JSON：
+     {"user_id": "snowflake-id", "type": "BUSINESS",
+      "created_at": "2026-01-15 10:00:00", "extra": {...}}
+  3. 存储到 Redis：SETEX hei:auth:BUSINESS:token:{token} {json} {expire}
+  4. 用户会话集：SADD hei:auth:BUSINESS:session:{userID} {token}
+  5. 返回 token 字符串给客户端
 
-### C 端认证（CONSUMER）
+请求验证：
+  1. 从请求头 Authorization（可配置）中提取 token
+  2. Redis GET hei:auth:BUSINESS:token:{token}
+  3. 存在 → 有效，不存在 / 过期 → 401
 
-使用结构体方法实现，通过 `core/auth/client_auth_tool.go` 的 `HeiClientAuthTool` 实例提供：
-
-- 用户：前端普通用户
-- 认证方式：Token
-- 会话存储：Redis，键前缀 `hei:auth:CONSUMER:token:`、`hei:auth:CONSUMER:session:`
-- 权限控制：基础权限校验
-- 公开接口：验证码、SM2 公钥、登录、注册
+登出 / 踢下线：
+  1. DEL hei:auth:BUSINESS:token:{token}
+  2. SREM hei:auth:BUSINESS:session:{userID} {token}
+```
 
 ## Redis 键结构
 
-认证和权限系统使用规范的 Redis 键结构：
-
 ```
-hei:auth:{BUSINESS|CONSUMER}:token:{token}       → Token Token 数据
-hei:auth:{BUSINESS|CONSUMER}:session:{userID}    → 用户会话集合（存多个 token）
-hei:auth:{BUSINESS|CONSUMER}:disable:{loginID}   → 账号禁用标记
-hei:permission:keys                              → 系统全部权限定义（JSON）
-hei:dict:tree / hei:dict:fulltree                → 数据字典缓存
-{BUSINESS|CONSUMER}:captcha:{captchaId}           → 验证码（300s TTL）
-norepeat:{ip}:{userId}:{path}                    → 防重复提交指纹
+hei:auth:{BUSINESS|CONSUMER}:token:{tokenHex}      → String: Token 数据 JSON
+hei:auth:{BUSINESS|CONSUMER}:session:{userID}       → Set: 用户的所有活跃 token
+hei:auth:{BUSINESS|CONSUMER}:disable:{loginID}      → String: 禁用标记（1）
+hei:permission:keys                                 → String: 权限树 JSON（TTL=0 永不过期）
+hei:dict:tree                                       → String: 数据字典树
+hei:dict:fulltree                                   → String: 完整字典树
+{BUSINESS|CONSUMER}:captcha:{captchaId}              → String: 验证码（300s TTL）
+norepeat:{ip}:{userID}:{path}                        → String: 防重复指纹 JSON（hash + timestamp）
 ```
 
 ## 中间件体系
 
-Hei Gin 的中间件分为三个层次：
-
-### 全局中间件（注册在 Gin Engine 上）
-
-按注册顺序执行：
-
-1. **Trace** - 链路追踪，生成/透传 X-Trace-Id
-2. **AuthCheck** - 认证路由分流，根据路径前缀自动识别 B/C/Public
-3. **Recovery** - 全局异常恢复，捕获 panic 返回友好错误
-4. **CORS** - 跨域配置
-
-### 业务中间件（注册在路由组上）
-
-按需组合到各个路由组：
-
-- **HeiCheckLogin** / **HeiClientCheckLogin** - Token 登录验证
-- **HeiCheckPermission** / **HeiClientCheckPermission** - 权限检查（同时自动注册权限）
-- **HeiCheckRole** / **HeiClientCheckRole** - 角色检查
-- **SysLog** - 操作日志录制
-- **NoRepeat** - 防重复提交
-
-### 内置中间件
-
-Gin 框架自带的中间件：
-
-- **Logger** - 请求日志
-- **Recovery** - Gin 内置恢复（Hei Gin 使用自定义 Recovery 替代）
-
-## 权限系统数据流
+全局中间件注册顺序（`sdk/app/app.go`）：
 
 ```
-路由注册时（启动阶段）
-    │
-    ▼
-Permission 中间件捕获路由信息
-    │
-    ▼
-Permission 自动扫描 ──────────→ Redis 缓存权限列表
-    │
-    ▼
-运行时请求到达
-    │
-    ▼
-HeiCheckPermission 中间件
-    ├─ 从 Redis 获取用户权限
-    ├─ 权限匹配器匹配（支持 * 和 ** 通配符）
-    ├─ 匹配成功 → 放行
-    └─ 匹配失败 → 403 拒绝
+① Recovery（sdk/middleware/recovery.go）— 最外层
+② Logger（gin.Logger）
+③ Trace（sdk/middleware/trace.go）
+④ CORS（sdk/middleware/cors.go）
+⑤ AuthCheck（sdk/middleware/auth_check.go）
 ```
+
+业务中间件（注册在路由组，位于 `sdk/auth/middleware/`）：
+
+- **HeiCheckLogin(loginType...)** — Token 登录验证，设置 `loginUser` 到 Context
+- **HeiClientCheckLogin()** — C 端登录验证（委托给 HeiCheckLogin("CONSUMER")）
+- **HeiCheckPermission(permissions []string, mode ...string)** — 权限检查（AND/OR 模式）
+- **HeiClientCheckPermission(permissions []string, mode ...string)** — C 端权限检查
+- **HeiCheckRole(roles []string, mode ...string)** — 角色检查
+- **HeiClientCheckRole(roles []string, mode ...string)** — C 端角色检查
+- **SysLog(name string)** — 操作日志录制（位于 `sdk/log/`）
+- **NoRepeat(interval int)** — 防重复提交（interval 毫秒）
 
 ## 异常处理机制
 
-Hei Gin 使用 panic-based 的异常处理模式：
+```go
+import "hei-gin/sdk/exception"
 
-```
-业务层
-    │
-    ├─ 正常逻辑 → 返回正常响应
-    │
-    └─ 异常逻辑 → panic(exception.NewBusinessError("错误描述", 400))
-                      │
-                      ▼
-                Recovery 中间件捕获
-                      │
-                      ▼
-                解析 BusinessError
-                      │
-                      ▼
-                返回标准错误响应
-                {code: 400, message: "错误描述", success: false}
-                （HTTP 状态码始终为 200，错误码在 body 的 code 字段）
+// 业务层抛出异常
+panic(exception.NewBusinessError("用户名已存在", 400))
+// 或直接使用结构体
+panic(&exception.BusinessError{Message: "错误", Code: 400})
+
+// Recovery 中间件捕获（sdk/middleware/recovery.go）：
+//   *BusinessError → 200 + {code:400, message:"用户名已存在", success:false}（无栈追踪日志）
+//   error          → 200 + {code:500, message:"服务器内部错误"}（日志记录栈追踪）
+//   其他 panic     → 200 + {code:500, message:"服务器内部错误"}（日志记录栈追踪）
+//   c.Errors       → 200 + {code:400, message: err.Error(), success:false}
 ```
 
-这种模式使得业务代码不需要层层 `if err != nil` 判断错误处理，异常流程统一由 Recovery 中间件管理。
+## 安全特性
+
+1. **密码传输加密**：SM2 国密 C1C3C2 模式加密（前端使用公钥加密，后端私钥解密）
+2. **密码存储**：bcrypt 加盐哈希
+3. **防篡改日志**：SM3 哈希 + 盐值 "hei-log-sign" 签名
+4. **服务端会话**：Token 存储在 Redis，服务端可主动失效
+5. **防暴力破解**：Disable 机制临时禁止登录（Redis TTL）
+6. **防重复提交**：NoRepeat 中间件（请求哈希 + 时间窗口）
+7. **验证码**：图形验证码 Redis 存储 300s TTL

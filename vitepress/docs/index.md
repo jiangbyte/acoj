@@ -27,16 +27,15 @@ features:
     title: 双端认证
     details: B端（管理端）和 C端（客户端）独立的 Token 认证和权限体系
   - icon: 🏗️
-  - icon: 🏗️
-    title: GORM
-    details: 功能完善的 ORM 框架，自动迁移，简化数据库操作
+    title: 插件化架构
+    details: Go Workspace 多模块架构，业务以插件自注册，零侵入 SDK
   - icon: 🗄️
     title: RBAC + 数据权限
     details: 完备的 RBAC 权限模型，支持行级数据范围控制
   - icon: 📝
     title: 操作日志
-    details: 全量操作记录，支持参数/结果录制，SM3 防篡改签名
+    details: 全量操作记录，SM3 签名防篡改，可审计追溯
   - icon: 📁
     title: 文件存储
-    details: 本地/MinIO/S3 多种存储后端，一键切换
+    details: 本地/MinIO/S3 多种存储后端，支持分片上传
 ---

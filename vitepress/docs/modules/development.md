@@ -1,37 +1,100 @@
 # 模块开发规范
 
-Hei Gin 采用垂直切片（Vertical Slice）架构组织业务模块。每个模块独立包含参数定义、业务逻辑和 API 层，具有高内聚低耦合的特点。
+Hei Gin 采用 **Go Workspace + 插件化架构** 组织业务模块。每个业务插件是一个独立的 Go 模块，通过 `module.Register()` 自注册路由、权限、中间件、定时任务和种子数据。
 
-## 模块结构约定
+## 插件结构约定
 
-每个业务模块必须遵循统一的结构约定：
+每个业务插件遵循统一的结构约定：
 
 ```
-modules/<domain>/<module>/
-├── params.go              # 请求参数和响应结构体
-├── service.go             # 业务逻辑层
-└── api/v1/
-    └── api.go             # 路由注册 + HTTP Handler
+plugins/<plugin-name>/
+├── plugin.go              # 插件入口：实现 api.Plugin 接口 + module.Register()
+├── imports.go             # 导入所有子模块触发 init() 自注册
+├── persistence.go         # 日志持久化（可选）
+├── provider/              # Provider 实现（如权限/用户 Provider）
+├── <module>/              # 子模块目录
+│   ├── api/v1/
+│   │   └── api.go         # 路由注册 + HTTP Handler
+│   ├── service.go         # 业务逻辑层
+│   ├── params.go          # 请求参数和响应结构体
+│   └── model.go           # GORM 数据模型（可选）
+└── go.mod / go.sum        # 独立 Go 模块
 ```
 
-### 文件名说明
+### 文件说明
 
 | 文件 | 必选 | 说明 |
 |------|------|------|
-| `params.go` | 是 | 定义请求参数结构体和响应结构体 |
+| `plugin.go` | 是 | 插件入口，实现 `api.Plugin` 接口，通过 `init()` 调用 `module.Register()` |
+| `imports.go` | 是 | 导入所有子模块包，触发其 `init()` 函数执行自注册 |
+| `persistence.go` | 否 | 日志持久化实现（plugin-sys 中实现了 `api.LogPersistenceAPI`）|
+| `provider/` | 否 | Provider 实现（如权限查询、用户信息 Provider）|
+| `params.go` | 是 | 定义请求参数和响应结构体 |
 | `service.go` | 是 | 业务逻辑层，使用 GORM 进行数据操作 |
-| `api/v1/api.go` | 是 | 路由注册函数和 HTTP Handler（控制器）|
+| `api/v1/api.go` | 是 | 路由注册函数和 HTTP Handler |
+| `model.go` | 否 | GORM 数据模型定义（含自动迁移注册）|
 
 ## 文件模板
+
+### plugin.go - 插件入口
+
+```go
+package plugin_sys
+
+import (
+    "hei-gin/api"
+    "hei-gin/sdk/module"
+)
+
+type SysPlugin struct {
+    module.NoopModule
+}
+
+func (p *SysPlugin) Info() api.PluginInfo {
+    return api.PluginInfo{
+        Name:        "plugin-sys",
+        Version:     "1.0.0",
+        Description: "System management plugin",
+    }
+}
+
+func (p *SysPlugin) Name() string { return "plugin-sys" }
+
+func (p *SysPlugin) Init() error {
+    // 插件初始化逻辑
+    return nil
+}
+
+func init() {
+    module.Register(&SysPlugin{})
+}
+```
+
+### model.go - GORM 数据模型
+
+```go
+package sysuser
+
+import "time"
+
+type SysUser struct {
+    ID        string     `gorm:"primaryKey;size:32" json:"id"`
+    Username  string     `gorm:"size:64;uniqueIndex;not null" json:"username"`
+    Password  string     `gorm:"size:255;not null" json:"-"`
+    RealName  string     `gorm:"size:64" json:"real_name"`
+    Email     string     `gorm:"size:128" json:"email"`
+    Status    int        `gorm:"default:1" json:"status"`
+    CreatedAt *time.Time `json:"created_at"`
+    UpdatedAt *time.Time `json:"updated_at"`
+}
+
+func (SysUser) TableName() string { return "sys_user" }
+```
 
 ### params.go - 参数定义
 
 ```go
 package sysuser
-
-import "hei-gin/core/enums"
-
-// ---------- 请求参数 ----------
 
 // UserListReq 用户列表查询参数
 type UserListReq struct {
@@ -39,7 +102,6 @@ type UserListReq struct {
     PageSize int    `json:"page_size" form:"page_size"`
     Username string `json:"username" form:"username"`
     Status   int    `json:"status" form:"status"`
-    OrgID    string `json:"org_id" form:"org_id"`
 }
 
 // UserCreateReq 创建用户请求参数
@@ -49,37 +111,7 @@ type UserCreateReq struct {
     RealName string   `json:"real_name" binding:"required"`
     Email    string   `json:"email"`
     Phone    string   `json:"phone"`
-    OrgID    string   `json:"org_id"`
     RoleIDs  []string `json:"role_ids"`
-}
-
-// UserUpdateReq 更新用户请求参数
-type UserUpdateReq struct {
-    ID       string   `json:"id" binding:"required"`
-    RealName string   `json:"real_name"`
-    Email    string   `json:"email"`
-    Phone    string   `json:"phone"`
-    Status   int      `json:"status"`
-    OrgID    string   `json:"org_id"`
-    RoleIDs  []string `json:"role_ids"`
-}
-
-// ---------- 响应结构体 ----------
-
-// UserListResp 用户列表响应
-type UserListResp struct {
-    Total int          `json:"total"`
-    List  []*UserItem  `json:"list"`
-}
-
-// UserItem 用户列表项
-type UserItem struct {
-    ID        string `json:"id"`
-    Username  string `json:"username"`
-    RealName  string `json:"real_name"`
-    Email     string `json:"email"`
-    Status    int    `json:"status"`
-    CreatedAt int64  `json:"created_at"`
 }
 ```
 
@@ -89,272 +121,229 @@ type UserItem struct {
 package sysuser
 
 import (
-    "context"
     "golang.org/x/crypto/bcrypt"
-    "hei-gin/core/exception"
-    "hei-gin/ent"
-    "hei-gin/ent/sysuser"
+    "gorm.io/gorm"
+
+    "hei-gin/sdk/db"
+    "hei-gin/sdk/exception"
 )
 
-// Service 用户管理业务逻辑
-type Service struct {
-    client *ent.Client
-}
-
-// NewService 创建 Service 实例
-func NewService(client *ent.Client) *Service {
-    return &Service{client: client}
-}
+type Service struct{}
 
 // List 用户列表查询
-func (s *Service) List(ctx context.Context, req *UserListReq) (*UserListResp, error) {
-    query := s.client.SysUser.Query()
-
-    // 条件查询
+func (s *Service) List(req *UserListReq) ([]SysUser, int64, error) {
+    query := db.DB.Model(&SysUser{})
     if req.Username != "" {
-        query = query.Where(sysuser.UsernameContains(req.Username))
+        query = query.Where("username LIKE ?", "%"+req.Username+"%")
     }
     if req.Status > 0 {
-        query = query.Where(sysuser.StatusEQ(req.Status))
-    }
-    if req.OrgID != "" {
-        query = query.Where(sysuser.OrgID(req.OrgID))
+        query = query.Where("status = ?", req.Status)
     }
 
-    // 分页
-    total, err := query.Count(ctx)
-    if err != nil {
-        return nil, err
-    }
+    var total int64
+    query.Count(&total)
 
-    users, err := query.
+    var users []SysUser
+    query.Order("created_at DESC").
         Offset((req.Page - 1) * req.PageSize).
         Limit(req.PageSize).
-        Order(ent.Desc(sysuser.FieldCreatedAt)).
-        All(ctx)
-    if err != nil {
-        return nil, err
-    }
+        Find(&users)
 
-    // 转换为响应结构
-    items := make([]*UserItem, 0, len(users))
-    for _, u := range users {
-        items = append(items, &UserItem{
-            ID:        u.ID,
-            Username:  u.Username,
-            RealName:  u.RealName,
-            Email:     u.Email,
-            Status:    u.Status,
-            CreatedAt: u.CreatedAt,
-        })
-    }
-
-    return &UserListResp{
-        Total: total,
-        List:  items,
-    }, nil
+    return users, total, nil
 }
 
 // Create 创建用户
-func (s *Service) Create(ctx context.Context, req *UserCreateReq) error {
-    // 参数校验
-    exist, err := s.client.SysUser.Query().
-        Where(sysuser.UsernameEQ(req.Username)).
-        Exist(ctx)
-    if err != nil {
-        return err
-    }
-    if exist {
+func (s *Service) Create(req *UserCreateReq) error {
+    var count int64
+    db.DB.Model(&SysUser{}).Where("username = ?", req.Username).Count(&count)
+    if count > 0 {
         return exception.NewBusinessError("用户名已存在", 400)
     }
 
-    // bcrypt 加密密码（直接使用 bcrypt 包，无 utils.HashPassword 封装）
-    hashedPwd, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-    if err != nil {
-        return err
+    hashedPwd, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+    user := SysUser{
+        Username: req.Username,
+        Password: string(hashedPwd),
+        RealName: req.RealName,
+        Email:    req.Email,
+        Status:   1,
     }
-
-    // 创建用户
-    return s.client.SysUser.Create().
-        SetUsername(req.Username).
-        SetPassword(string(hashedPwd)).
-        SetRealName(req.RealName).
-        SetEmail(req.Email).
-        SetPhone(req.Phone).
-        SetOrgID(req.OrgID).
-        Exec(ctx)
+    return db.DB.Create(&user).Error
 }
 ```
 
-### api/v1/api.go - 路由与 Handler
+### api/v1/api.go - 路由注册 + Handler
 
 ```go
-package sysuser
+package api
 
 import (
     "github.com/gin-gonic/gin"
-    "hei-gin/core/result"
-    middleware "hei-gin/core/auth/middleware"
-    "hei-gin/core/log"
-    "hei-gin/core/exception"
+
+    "hei-gin/sdk/middleware"
+    authMiddleware "hei-gin/sdk/auth/middleware"
+    "hei-gin/sdk/result"
+    "hei-gin/sdk/log"
+    "hei-gin/sdk/registry"
+    "hei-gin/sdk/crud"
 )
 
-// Handler 用户管理控制器
-type Handler struct {
-    svc *Service
-}
+var srv = &Service{}
 
-// NewHandler 创建 Handler 实例
-func NewHandler(svc *Service) *Handler {
-    return &Handler{svc: svc}
-}
-
-// RegisterRoutes 注册路由（模块入口）
-func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
-    // 用户管理路由组 - 需要登录 + 权限
+func RegisterRoutes(r *gin.RouterGroup) {
+    h := &Handler{}
     r.GET("/list",
-        middleware.HeiCheckLogin(),
-        middleware.HeiCheckPermission("sys:user:list"),
-        h.List,
+        authMiddleware.HeiCheckLogin(),
+        registry.Perm("sys:user:list", "用户列表查询"),
+        h.UserList,
     )
-
     r.POST("/create",
-        middleware.HeiCheckLogin(),
-        middleware.HeiCheckPermission("sys:user:create"),
+        authMiddleware.HeiCheckLogin(),
+        registry.Perm("sys:user:create", "创建用户"),
         log.SysLog("创建用户"),
-        middleware.NoRepeat(),
-        h.Create,
-    )
-
-    r.POST("/update",
-        middleware.HeiCheckLogin(),
-        middleware.HeiCheckPermission("sys:user:update"),
-        log.SysLog("更新用户"),
-        h.Update,
-    )
-
-    r.POST("/delete",
-        middleware.HeiCheckLogin(),
-        middleware.HeiCheckPermission("sys:user:delete"),
-        log.SysLog("删除用户"),
-        h.Delete,
+        h.UserCreate,
     )
 }
 
-// ---------- Handler 方法 ----------
+type Handler struct{}
 
-func (h *Handler) List(c *gin.Context) {
+func (h *Handler) UserList(c *gin.Context) {
     var req UserListReq
     if err := c.ShouldBindQuery(&req); err != nil {
-        c.JSON(200, result.Failure(c, "参数错误", 400, nil))
-        return
+        panic(exception.NewBusinessError("参数错误", 400))
     }
-
-    resp, err := h.svc.List(c.Request.Context(), &req)
+    users, total, err := srv.List(&req)
     if err != nil {
-        c.JSON(200, result.Failure(c, err.Error(), 500, nil))
-        return
+        panic(exception.NewBusinessError(err.Error(), 500))
     }
-
-    c.JSON(200, result.Success(c, resp))
+    c.JSON(200, result.PageDataResult(c, users, total, req.Page, req.PageSize))
 }
 
-func (h *Handler) Create(c *gin.Context) {
+func (h *Handler) UserCreate(c *gin.Context) {
     var req UserCreateReq
     if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(200, result.Failure(c, "参数错误", 400, nil))
-        return
+        panic(exception.NewBusinessError("参数错误", 400))
     }
-
-    if err := h.svc.Create(c.Request.Context(), &req); err != nil {
-        if bizErr, ok := err.(*exception.BusinessError); ok {
-            panic(bizErr)
-        }
-        c.JSON(200, result.Failure(c, "创建失败", 500, nil))
-        return
+    if err := srv.Create(&req); err != nil {
+        panic(err)
     }
-
     c.JSON(200, result.Success(c, nil))
 }
-```
 
-## 路由注册
-
-在模块创建完成后，需要在 `core/app/router.go` 中注册模块路由：
-
-```go
-// core/app/router.go
-
-func RegisterRouters(r *gin.Engine, client *ent.Client) {
-    // ... 现有路由 ...
-
-    // 注册 B 端路由组
-    sysApi := r.Group("/api/v1/sys")
-    {
-        // ... 已有模块 ...
-
-        // 注册新模块
-        userSvc := sysuser.NewService(client)
-        userHdl := sysuser.NewHandler(userSvc)
-        userGroup := sysApi.Group("/user")
-        userHdl.RegisterRoutes(userGroup)
-    }
+// 在 init 中注册路由
+func init() {
+    registry.RegisterRoute(func(r *gin.Engine) {
+        group := r.Group("/api/v1/sys/user")
+        RegisterRoutes(group)
+    })
 }
 ```
 
-## 创建新模块的完整步骤
+## 创建新插件的完整步骤
 
-### 第一步：创建模块目录
+### 第一步：创建插件目录
 
 ```bash
-mkdir -p modules/sys/<module>/api/v1
+mkdir -p plugins/plugin-<name>/
+cd plugins/plugin-<name>
+go mod init hei-gin/plugins/plugin-<name>
 ```
 
-### 第二步：创建数据模型
+### 第二步：添加依赖
 
-在 `modules/<domain>/<module>/model.go` 中定义 GORM 模型：
+```bash
+go mod edit -require hei-gin/sdk@v0.0.0
+go mod edit -require hei-gin/api@v0.0.0
+go mod edit -replace hei-gin/sdk=../../sdk
+go mod edit -replace hei-gin/api=../../api
+```
+
+### 第三步：创建子模块目录
+
+```bash
+mkdir -p <module>/api/v1
+```
+
+### 第四步：实现 GORM 模型
+
+在 `<module>/model.go` 中定义数据模型：
 
 ```go
-package <module>
-
-import "time"
-
-type Sys<Entity> struct {
+type MyEntity struct {
     ID        string     `gorm:"primaryKey;size:32" json:"id"`
     Name      string     `gorm:"size:64;not null" json:"name"`
     Status    string     `gorm:"size:16;default:ENABLED" json:"status"`
     CreatedAt *time.Time `json:"created_at"`
-    CreatedBy *string    `gorm:"size:32" json:"created_by"`
     UpdatedAt *time.Time `json:"updated_at"`
-    UpdatedBy *string    `gorm:"size:32" json:"updated_by"`
 }
 
-func (Sys<Entity>) TableName() string { return "sys_<table>" }
+func (MyEntity) TableName() string { return "sys_<table>" }
 ```
-
-### 第三步：实现 service.go
-
-```bash
-go generate ./ent
-```
-
-这会自动生成 CRUD 操作代码到 `ent/gen/` 目录。
-
-### 第四步：实现 params.go
-
-定义请求和响应结构体。
 
 ### 第五步：实现 service.go
 
-实现业务逻辑，使用 GORM 进行数据库操作。
+使用 GORM 编写业务逻辑。
 
-### 第六步：实现 api/v1/api.go
+### 第六步：实现 params.go
 
-实现 HTTP Handler 和路由注册。
+定义请求和响应结构体。
 
-### 第七步：在 router.go 中注册
+### 第七步：实现 api/v1/api.go
 
-将模块路由挂载到对应的路由组。
+实现 HTTP Handler 和路由注册（通过 `registry.RegisterRoute` 自注册）。
+
+### 第八步：实现 plugin.go 和 imports.go
+
+```go
+// plugin.go
+package plugin_<name>
+
+import "hei-gin/sdk/module"
+
+type MyPlugin struct{ module.NoopModule }
+func (p *MyPlugin) Name() string { return "plugin-<name>" }
+
+func init() { module.Register(&MyPlugin{}) }
+```
+
+```go
+// imports.go
+package plugin_<name>
+
+import _ "hei-gin/plugins/plugin-<name>/<module>"
+```
+
+### 第九步：注册到 Workspace
+
+编辑根目录 `go.work`：
+
+```
+go 1.25.10
+
+use (
+    .
+    ./sdk
+    ./api
+    ./plugins/plugin-<name>
+)
+```
+
+### 第十步：在 app/main.go 中导入
+
+编辑 `app/main.go`：
+
+```go
+package main
+
+import (
+    "hei-gin/sdk/app"
+    _ "hei-gin/plugins/plugin-<name>"
+)
+
+func main() {
+    app.Run()
+}
+```
 
 ## 权限代码命名规范
 
@@ -372,110 +361,90 @@ go generate ./ent
 | `<module>:export` | 导出 |
 | `<module>:import` | 导入 |
 
-### 示例
-
-| 模块 | 权限代码示例 |
-|------|------------|
-| 用户管理 | `sys:user:list`, `sys:user:create`, `sys:user:delete` |
-| 角色管理 | `sys:role:list`, `sys:role:assign` |
-| 配置管理 | `sys:config:list`, `sys:config:update` |
-| 字典管理 | `sys:dict:list`, `sys:dict:create`, `sys:dict:delete` |
-| C 端订单 | `client:order:list`, `client:order:create` |
-
 ## 技术要点
 
 ### 统一响应
 
-所有 API 响应必须使用 `result` 包提供的函数：
-
 ```go
-import "hei-gin/core/result"
+import "hei-gin/sdk/result"
 
 // 成功响应
 c.JSON(200, result.Success(c, data))
+
+// 分页响应
+c.JSON(200, result.PageDataResult(c, records, total, page, size))
 
 // 失败响应
 c.JSON(200, result.Failure(c, message, code, data))
 ```
 
-函数签名说明：
-
-```go
-// Success 返回标准成功响应
-func Success(c *gin.Context, data any) gin.H
-
-// Failure 返回标准失败响应，参数顺序为：(c, message, code, data)
-func Failure(c *gin.Context, message string, code int, data any) gin.H
-```
-
-注意：`result.Failure()` 的参数顺序是 `(c, message, code, data)`，与常见的 `(c, code, message)` 顺序不同。
+注意：`result.Failure()` 的参数顺序是 `(c, message, code, data)`。
 
 ### 业务异常
 
-业务错误使用 `panic` + `BusinessError` 模式：
-
 ```go
-import "hei-gin/core/exception"
+import "hei-gin/sdk/exception"
 
-// 抛出业务异常
 panic(exception.NewBusinessError("用户名已存在", 400))
-
-// BusinessError 结构体定义
-type BusinessError struct {
-    Message string
-    Code    int
-}
-
-// 构造函数
-func NewBusinessError(message string, code int) *BusinessError
 ```
-
-`SysLog` 中间件会自动捕获 `panic(exception.BusinessError)`，记录异常日志后重新 panic，由 Gin 的 Recovery 中间件返回统一响应。
 
 ### 获取当前登录用户
 
 ```go
-import authx "hei-gin/core/auth"
+import authx "hei-gin/sdk/auth"
 
-// 获取当前登录用户 ID（返回 string，空字符串表示未登录）
 loginID := authx.GetLoginID(c)
 if loginID == "" {
     panic(exception.NewBusinessError("未登录", 401))
 }
 ```
 
-`authx.GetLoginID(c *gin.Context)` 从当前请求的 Token Token 中解析出用户 ID，返回一个 `string` 类型值，未登录时返回空字符串。
+### 通用 CRUD
 
-### 分页查询
+`sdk/crud` 提供了通用分页、详情、删除函数：
 
 ```go
-// 标准分页参数
-page := req.Page
-if page < 1 {
-    page = 1
-}
-pageSize := req.PageSize
-if pageSize < 1 || pageSize > 100 {
-    pageSize = 20
-}
+import "hei-gin/sdk/crud"
 
-// GORM 分页查询
-total, err := query.Count(ctx)
-data, err := query.
-    Offset((page - 1) * pageSize).
-    Limit(pageSize).
-    Order(ent.Desc(sysuser.FieldCreatedAt)).
-    All(ctx)
+// 分页查询
+c.JSON(200, crud.Page[MyEntity, *MyListReq](c, &MyEntity{}, param, buildQuery, "created_at DESC", toVO))
+
+// 查询详情
+crud.Detail[MyEntity](c, &entity, id, "实体名称")
+
+// 删除
+crud.Remove[MyEntity](c, &MyEntity{}, ids)
 ```
 
-## 现有模块参考
+### 定时任务
 
-编写新模块时，可以参考以下现有模块的实现：
+```go
+import "hei-gin/sdk/scheduler"
 
-- **sys/auth**：认证模块，包含登录、注册、验证码、SM2 公钥。结构为 `route.go` 作为入口，内含三个子模块目录：`captcha/`（验证码）、`sm2/`（SM2 公钥）、`username/`（用户名密码登录）
-- **sys/user**：用户管理，标准的 CRUD 模块
-- **sys/role**：角色管理，包含权限分配
-- **sys/org**：组织管理，树形结构
-- **sys/banner**：Banner 管理，包含文件上传
+type CleanupTask struct{}
+func (t *CleanupTask) Name() string { return "cleanup" }
+func (t *CleanupTask) Run()         { /* ... */ }
 
-每个模块都遵循相同的 `params.go` + `service.go` + `api/v1/api.go` 结构。对于复杂的模块（如 sys/auth），可以在模块内进一步划分子模块目录，并通过顶层的 `route.go` 统一注册子路由。
+func init() {
+    scheduler.Register("0 */5 * * * *", &CleanupTask{})  // 每 5 分钟
+    scheduler.RegisterInterval(30*time.Second, &CleanupTask{}) // 30 秒间隔
+}
+```
+
+### DB 迁移
+
+```bash
+# 自动迁移所有插件注册的模型 + 种子数据
+go run cmd/migrate/main.go
+
+# 仅迁移，跳过种子
+go run cmd/migrate/main.go -skip-seed
+```
+
+## 现有插件参考
+
+编写新插件时，可以参考以下现有插件：
+
+- **plugin-sys**：系统管理插件，包含认证、用户、角色、组织等完整管理功能
+- **plugin-client**：C 端客户端插件，包含认证、会话、用户管理等
+- **plugin-im**：WebSocket IM 插件，包含好友、群组、消息、广播等功能

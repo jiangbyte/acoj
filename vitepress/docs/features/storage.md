@@ -1,66 +1,30 @@
 # 文件存储
 
-Hei Gin 提供统一的文件存储抽象层，支持多种存储后端的无缝切换。开发者通过接口操作文件，无需关心底层存储实现。
+Hei Gin 提供统一的文件存储抽象层，支持多种存储后端的无缝切换。开发者通过 `Engine` 接口操作文件，无需关心底层存储实现。
 
 ## 存储接口
 
-**文件**：`core/storage/interface.go`
+**文件**：`sdk/storage/interface.go`
 
 ```go
-// FileStorage 定义文件存储操作的标准接口
-type FileStorage interface {
-    // GetDefaultBucket 返回默认存储桶/命名空间名称
-    GetDefaultBucket() string
-
+// Engine 定义文件存储操作的标准接口
+type Engine interface {
     // Store 将字节数组存储到指定位置
-    // bucket: 存储桶名称
-    // fileKey: 文件键值（路径）
-    // data: 文件字节数据
-    // returns: 对象标识（如 bucket/fileKey）, 错误
     Store(bucket, fileKey string, data []byte) (string, error)
 
     // StoreStream 从 Reader 读取数据并存储到指定位置
-    // bucket: 存储桶名称
-    // fileKey: 文件键值（路径）
-    // reader: 文件内容读取流
-    // returns: 对象标识（如 bucket/fileKey）, 错误
     StoreStream(bucket, fileKey string, reader io.Reader) (string, error)
 
     // GetBytes 获取文件内容
-    // bucket: 存储桶名称
-    // fileKey: 文件键值（路径）
-    // returns: 文件字节数据, 错误
     GetBytes(bucket, fileKey string) ([]byte, error)
 
-    // GetURL 获取文件访问 URL
-    // bucket: 存储桶名称
-    // fileKey: 文件键值（路径）
-    // returns: 可直接访问的 URL
-    GetURL(bucket, fileKey string) string
-
-    // GetAuthURL 获取带鉴权的文件访问 URL
-    // bucket: 存储桶名称
-    // fileKey: 文件键值（路径）
-    // timeoutMs: URL 有效期（毫秒）
-    // returns: 带时效性的访问 URL, 错误
-    GetAuthURL(bucket, fileKey string, timeoutMs int) (string, error)
-
-    // Delete 删除文件
-    // bucket: 存储桶名称
-    // fileKey: 文件键值（路径）
+    // Delete 删除文件（幂等）
     Delete(bucket, fileKey string) error
 
     // Exists 检查文件是否存在
-    // bucket: 存储桶名称
-    // fileKey: 文件键值（路径）
-    // returns: true=存在, false=不存在
     Exists(bucket, fileKey string) (bool, error)
 
     // Copy 复制文件
-    // srcBucket: 源存储桶
-    // srcKey: 源文件键值
-    // dstBucket: 目标存储桶
-    // dstKey: 目标文件键值
     Copy(srcBucket, srcKey, dstBucket, dstKey string) error
 }
 ```
@@ -69,195 +33,199 @@ type FileStorage interface {
 
 ### 1. 本地存储（Local）
 
-**文件**：`core/storage/local.go`
+**文件**：`sdk/storage/local.go`
 
 将文件存储在服务器的本地文件系统中。
 
 **特点**：
 - 无需额外服务，开箱即用
 - 适合开发和单机部署
-- 默认 Bucket 为 `"local"`
 
 **创建方式**：
 
 ```go
-localStorage := storage.NewLocalStorage("./data/uploads")
+localStorage := storage.NewLocal("./data/uploads", "")
 ```
 
-所有文件将存储在指定的 `uploadFolder` 目录下，以 `{uploadFolder}/{bucket}/{fileKey}` 的路径结构组织。
-
-**注意**：`GetURL` 返回的是本地文件系统路径，而非 HTTP URL。`GetAuthURL` 与 `GetURL` 返回相同路径（本地文件系统无鉴权机制）。`Delete` 会忽略文件不存在的错误以实现幂等删除。
+`baseURL` 可配置为静态文件服务器的 HTTP 基础地址（如 `http://localhost:18886/`），为空时返回相对路径 `/uploads/{bucket}/{fileKey}`。
 
 ### 2. MinIO 存储
 
-**文件**：`core/storage/minio.go`
+**文件**：`sdk/storage/minio.go`
 
 使用 MinIO 对象存储服务（基于 `minio-go/v7`）。
-
-**特点**：
-- 高性能对象存储
-- 兼容 S3 API
-- 支持私有和公开 Bucket
-- 支持自动创建 Bucket
-- 适合自建存储服务
 
 **创建方式**：
 
 ```go
-minioStorage := storage.NewMinioStorage(
+minioStorage := storage.NewMinio(
     "play.min.io",      // endpoint
     "accessKey",         // access key
     "secretKey",         // secret key
     "my-bucket",         // default bucket
     false,               // secure (true for HTTPS)
     "us-east-1",         // region
+    "",                  // baseURL（可选，用于自定义域名）
 )
 ```
 
-**使用前提**：需要部署 MinIO 服务并提供访问密钥。
-
-**行为细节**：
-- `Store` / `StoreStream` 会自动检测并创建不存在的 Bucket
-- `Store` / `StoreStream` 返回 `"{bucket}/{fileKey}"` 格式的对象标识
-- `GetURL` 返回 `"{endpoint}/{bucket}/{fileKey}"` 格式的端点 URL
-- `GetAuthURL` 使用 `PresignedGetObject` 生成临时的预签名 URL
-- `Delete` 会忽略 `minio.ErrorResponse` 类型的服务端错误以实现幂等删除
-- `Exists` 通过 `StatObject` 检测对象是否存在
-
 ### 3. AWS S3 存储
 
-**文件**：`core/storage/s3.go`
+**文件**：`sdk/storage/s3.go`
 
 使用 Amazon S3 对象存储服务（基于 `aws-sdk-go-v2`）。
-
-**特点**：
-- 高可用、高持久性
-- 全球 CDN 加速
-- 按量付费
-- 适合生产环境
 
 **创建方式**：
 
 ```go
-s3Storage := storage.NewS3Storage(
+s3Storage := storage.NewS3(
     "s3.amazonaws.com",  // endpoint
     "accessKey",         // access key
     "secretKey",         // secret key
     "my-bucket",         // default bucket
     "us-east-1",         // region
     false,               // pathStyle (false for virtual hosted style)
+    "",                  // baseURL（可选，用于自定义域名）
 )
 ```
 
-**使用前提**：需要 AWS 账号并创建 S3 Bucket。
+## 工厂模式
 
-**行为细节**：
-- `Store` / `StoreStream` 会自动检测并创建不存在的 Bucket
-- `Store` / `StoreStream` 返回 `"{bucket}/{fileKey}"` 格式的对象标识
-- `GetURL` 返回 `"{endpoint}/{bucket}/{fileKey}"` 格式的端点 URL
-- `GetAuthURL` 使用 `s3.NewPresignClient` 和 `PresignGetObject` 生成预签名 URL
-- `Exists` 通过 `HeadObject` 检测对象是否存在
-- `Copy` 通过 `CopyObject` 实现服务端拷贝
+SDK 提供工厂函数 `storage.GetStorage()` 根据配置自动创建对应的存储后端实例：
 
-## 使用方式
-
-存储包仅定义了接口和具体实现，不包含全局管理器。使用时应直接实例化具体实现，或通过依赖注入（DI）传递 `FileStorage` 接口实例。
-
-### 直接实例化
+**文件**：`sdk/storage/factory.go`
 
 ```go
-import "hei-gin/core/storage"
+import "hei-gin/sdk/storage"
 
-// 选择一种后端并创建实例
-localStorage := storage.NewLocalStorage("./data/uploads")
-minioStorage := storage.NewMinioStorage("play.min.io", "ak", "sk", "bucket", false, "us-east-1")
-s3Storage := storage.NewS3Storage("s3.amazonaws.com", "ak", "sk", "bucket", "us-east-1", false)
+// 根据存储类型名称获取 Engine 实例
+// 支持 "LOCAL"、"MINIO"、"S3"，未知类型回退到 LOCAL
+eng := storage.GetStorage("LOCAL")
+
+// 从 config.yaml 的 storage 配置段加载配置
+cfg := storage.GetConfig()
 ```
 
-### 依赖注入
+### 配置方式
 
-在应用启动时，将存储实例注册到依赖注入容器中，业务代码通过接口类型使用：
-
-```go
-type FileService struct {
-    storage storage.FileStorage
-}
-
-func NewFileService(s storage.FileStorage) *FileService {
-    return &FileService{storage: s}
-}
-
-func (s *FileService) Upload(fileKey string, data []byte) (string, error) {
-    return s.storage.Store(s.storage.GetDefaultBucket(), fileKey, data)
-}
+```yaml
+# config.yaml
+storage:
+  default: LOCAL                     # 默认存储类型
+  default_base_url: ""               # 文件访问基础 URL（可选）
+  local:
+    upload_folder: ./uploads
+    base_url: ""
+  minio:
+    endpoint: localhost:9000
+    access_key: minioadmin
+    secret_key: minioadmin
+    bucket: hei-files
+    secure: false
+    region: us-east-1
+    base_url: ""
+  s3:
+    endpoint: https://s3.amazonaws.com
+    access_key: YOUR_S3_ACCESS_KEY
+    secret_key: YOUR_S3_SECRET_KEY
+    bucket: hei-files
+    region: ap-northeast-1
+    path_style: false
+    base_url: ""
 ```
 
 ## 使用示例
 
-### 文件上传
+### 直接实例化
 
 ```go
-import (
-    "io"
-    "hei-gin/core/storage"
-)
+import "hei-gin/sdk/storage"
 
-// 使用本地存储
-store := storage.NewLocalStorage("./data/uploads")
+// 选择一种后端并创建实例
+store := storage.NewLocal("./uploads", "")
+store.Store("my-bucket", "images/avatar.jpg", data)
 
-func uploadFile(bucket, fileKey string, data []byte) (string, error) {
-    return store.Store(bucket, fileKey, data)
-}
-
-// 或使用流式上传
-func uploadStream(bucket, fileKey string, reader io.Reader) (string, error) {
-    return store.StoreStream(bucket, fileKey, reader)
-}
+// 或通过工厂函数
+store := storage.GetStorage("LOCAL")
 ```
 
-### 文件删除
+### 配置驱动（推荐）
+
+生产环境推荐通过 `config.yaml` 配置存储后端，业务代码通过工厂函数获取：
 
 ```go
-func deleteFile(bucket, fileKey string) error {
-    return store.Delete(bucket, fileKey)
-}
-```
+import "hei-gin/sdk/storage"
 
-### 文件访问
-
-```go
-// 获取公开访问 URL
-url := store.GetURL("public", "images/avatar.jpg")
-
-// 获取带鉴权的临时访问 URL（有效期为 30 秒 = 30000 毫秒）
-authURL, err := store.GetAuthURL("private", "documents/report.pdf", 30000)
+store := storage.GetStorage("LOCAL")
+store.Store("files", "doc/report.pdf", data)
 ```
 
 ## 选择建议
 
 | 场景 | 推荐方案 |
 |------|---------|
-| 本地开发 | LocalStorage |
-| 自建服务器 | MinioStorage |
-| 云原生部署 | S3Storage |
-| 高并发生产环境 | S3Storage 或 MinioStorage |
-| 内网环境 | MinioStorage |
+| 本地开发 | Local |
+| 自建服务器 | MinIO |
+| 云原生部署 | S3 |
+| 高并发生产环境 | S3 或 MinIO |
 
 ## 扩展自定义存储
 
-实现自定义存储后端只需要实现 `FileStorage` 接口的所有方法：
+实现自定义存储后端只需实现 `Engine` 接口的所有方法：
 
 ```go
 type MyCustomStorage struct{}
 
-func (s *MyCustomStorage) GetDefaultBucket() string {
-    return "my-bucket"
-}
-
 func (s *MyCustomStorage) Store(bucket, fileKey string, data []byte) (string, error) {
-    // 实现自定义存储逻辑
     return bucket + "/" + fileKey, nil
 }
 
-// 实现其他接口方法...
+func (s *MyCustomStorage) StoreStream(bucket, fileKey string, reader io.Reader) (string, error) {
+    // implementation
+}
+
+func (s *MyCustomStorage) GetBytes(bucket, fileKey string) ([]byte, error) {
+    // implementation
+}
+
+func (s *MyCustomStorage) Delete(bucket, fileKey string) error {
+    // implementation
+}
+
+func (s *MyCustomStorage) Exists(bucket, fileKey string) (bool, error) {
+    // implementation
+}
+
+func (s *MyCustomStorage) Copy(srcBucket, srcKey, dstBucket, dstKey string) error {
+    // implementation
+}
 ```
+
+## 分片上传
+
+MinIO 和 S3 后端实现了 `ChunkedUploader` 接口（`sdk/storage/chunk.go`），支持大文件分片上传：
+
+```go
+type ChunkedUploader interface {
+    InitChunkUpload(bucket, fileKey string, totalChunks int) (uploadID string, err error)
+    UploadChunk(bucket, fileKey, uploadID string, chunk ChunkInfo) error
+    CompleteChunkUpload(bucket, fileKey, uploadID string) (filePath string, err error)
+    AbortChunkUpload(bucket, fileKey, uploadID string) error
+}
+```
+
+分片由 `ChunkInfo` 描述：
+
+```go
+type ChunkInfo struct {
+    UploadID    string    // Upload session identifier
+    ChunkIndex  int       // 0-based chunk index
+    TotalChunks int       // Total number of chunks
+    Checksum    string    // Optional SHA256 hex checksum
+    Data        io.Reader // Chunk data
+}
+```
+
+使用流程：初始化会话 → 按任意顺序上传分片 → 完成后合并。失败时可中止并清理临时数据。
+
+> 注意：Local 后端不实现 `ChunkedUploader` 接口。
