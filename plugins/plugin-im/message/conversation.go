@@ -237,7 +237,11 @@ func conversationMessages(ctx context.Context, currentUserID string, conversatio
 		}
 	}
 	var records []imModel.Message
-	q.Order("created_at DESC").Limit(size + 1).Find(&records)
+	order := "created_at DESC"
+	if cursor != "" {
+		order = "created_at ASC"
+	}
+	q.Order(order).Limit(size + 1).Find(&records)
 
 	hasMore := len(records) > size
 	if hasMore {

@@ -714,7 +714,11 @@ func Messages(ctx context.Context, groupID, cursor string, size int) ([]MessageV
 		}
 	}
 	var msgs []imModel.GroupMessage
-	q.Order("created_at DESC").Limit(size + 1).Find(&msgs)
+	order := "created_at DESC"
+	if cursor != "" {
+		order = "created_at ASC"
+	}
+	q.Order(order).Limit(size + 1).Find(&msgs)
 	hasMore := len(msgs) > size
 	if hasMore {
 		msgs = msgs[:size]
@@ -760,7 +764,11 @@ func SearchMessages(ctx context.Context, groupID, keyword string, cursor string,
 		}
 	}
 	var msgs []imModel.GroupMessage
-	q.Order("created_at DESC").Limit(size + 1).Find(&msgs)
+	order := "created_at DESC"
+	if cursor != "" {
+		order = "created_at ASC"
+	}
+	q.Order(order).Limit(size + 1).Find(&msgs)
 	hasMore := len(msgs) > size
 	if hasMore {
 		msgs = msgs[:size]
