@@ -209,6 +209,29 @@ async def client_unread_count_handler(request: Request):
     uid, _ = await _client_user(request)
     return success(UnreadCountVO(count=unread_count(uid)).__dict__)
 
+@client_router.get("/message/page")
+@HeiClientCheckLogin
+async def client_message_page_handler(request: Request, current: int = QueryParam(1),
+                                        size: int = QueryParam(10), status: str = QueryParam("")):
+    uid, _ = await _client_user(request)
+    param = MessagePageParam(current=current, size=size, status=status)
+    return page_messages(uid, param)
+
+
+@client_router.get("/message/detail")
+@HeiClientCheckLogin
+async def client_message_detail_handler(request: Request, id: str = QueryParam("")):
+    return success(detail_message(id).__dict__ if detail_message(id) else None)
+
+
+@client_router.post("/message/remove")
+@HeiClientCheckLogin
+async def client_message_remove_handler(request: Request, p: dict):
+    uid, _ = await _client_user(request)
+    remove_messages(uid, p.get("ids", []))
+    return success()
+
+
 
 @client_router.post("/message/send")
 @HeiClientCheckLogin
