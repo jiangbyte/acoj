@@ -27,7 +27,7 @@ from . import models
 # ── 3. Sub-modules (each auto-registers its router) ─────────────────
 from . import user, role, permission, resource
 from . import dict, config, banner, log
-from . import notice, org, position, group
+from . import notice, org, position, group, file
 from . import home, session, analyze
 from .auth import captcha, sm2, username
 
