@@ -53,7 +53,7 @@ async def modify(request: Request, vo: UserVO, db: Session = Depends(get_db)):
 @SysLog("删除用户")
 @Perm("sys:user:remove", "删除用户")
 async def remove(request: Request, param: IdsParam, db: Session = Depends(get_db)):
-    user_remove(db, param)
+    user_remove(db, param.ids)
     return success()
 
 

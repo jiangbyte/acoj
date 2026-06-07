@@ -25,6 +25,8 @@ class RoleVO(DateTimeValidatorMixin, BaseModel):
 class RolePageParam(BaseModel):
     current: int = 1
     size: int = 10
+    keyword: Optional[str] = None
+    category: Optional[str] = None
 
 
 class PermissionItem(BaseModel):

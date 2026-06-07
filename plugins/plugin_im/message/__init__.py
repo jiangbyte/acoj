@@ -1,3 +1,4 @@
+
 from plugins.plugin_im.message.params import *
 from plugins.plugin_im.message.service import *
 from plugins.plugin_im.message.conversation import *
@@ -17,3 +18,4 @@ __all__ = [
     "get_or_create_conversation",
     "UploadFileResult", "upload_file",
 ]
+from plugins.plugin_im.message import api  # trigger register_router()

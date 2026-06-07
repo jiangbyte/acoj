@@ -22,6 +22,11 @@ class RoleDao:
         size = max(1, param.size)
         offset = (current - 1) * size
         stmt = select(SysRole)
+        if param.keyword:
+            like = f"%{param.keyword}%"
+            stmt = stmt.where(SysRole.name.like(like) | SysRole.code.like(like))
+        if param.category:
+            stmt = stmt.where(SysRole.category == param.category)
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = self.db.execute(count_stmt).scalar() or 0
         records = list(self.db.execute(stmt.offset(offset).limit(size)).scalars().all())

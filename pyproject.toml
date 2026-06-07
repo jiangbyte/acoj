@@ -33,6 +33,7 @@ dependencies = [
     "bcrypt>=5.0.0",
     "gmssl>=3.2.2",
     "pillow>=12.1.1",
+    "user-agents>=2.2.0",
     "openpyxl>=3.1.5",
     "snowflake-id>=0.0.2",
 ]

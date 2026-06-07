@@ -16,8 +16,10 @@ class ModuleDao:
     def find_page(self, param: ModulePageParam) -> Dict[str, Any]:
         current = max(1, param.current)
         size = max(1, param.size)
+        if size > 100:
+            size = 100
         offset = (current - 1) * size
-        stmt = select(SysModule)
+        stmt = select(SysModule).order_by(SysModule.created_at.desc())
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = self.db.execute(count_stmt).scalar() or 0
         records = list(self.db.execute(stmt.offset(offset).limit(size)).scalars().all())
@@ -68,8 +70,10 @@ class ResourceDao:
     def find_page(self, param: ResourcePageParam) -> Dict[str, Any]:
         current = max(1, param.current)
         size = max(1, param.size)
+        if size > 100:
+            size = 100
         offset = (current - 1) * size
-        stmt = select(SysResource)
+        stmt = select(SysResource).order_by(SysResource.sort_code.asc())
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = self.db.execute(count_stmt).scalar() or 0
         records = list(self.db.execute(stmt.offset(offset).limit(size)).scalars().all())

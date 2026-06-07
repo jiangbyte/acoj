@@ -1,3 +1,4 @@
+
 from plugins.plugin_im.group.constants import *
 from plugins.plugin_im.group.params import *
 from plugins.plugin_im.group.service import *
@@ -18,3 +19,4 @@ __all__ = [
     "send_message", "recall_message", "mark_read", "mute_member", "unmute_member",
     "my_group_conversations",
 ]
+from plugins.plugin_im.group import api  # trigger register_router()
