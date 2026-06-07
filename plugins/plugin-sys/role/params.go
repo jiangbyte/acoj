@@ -22,8 +22,10 @@ type RoleVO struct {
 
 // RolePageParam holds pagination parameters for the role page query.
 type RolePageParam struct {
-	Current int `json:"current" form:"current"`
-	Size    int `json:"size" form:"size"`
+	Current  int    `json:"current" form:"current"`
+	Size     int    `json:"size" form:"size"`
+	Keyword  string `json:"keyword" form:"keyword"`
+	Category string `json:"category" form:"category"`
 }
 
 // PermissionItem represents a permission to be granted to a role.
