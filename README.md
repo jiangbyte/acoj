@@ -166,13 +166,16 @@ hei-gin/
 │       ├── broadcast/               # 广播消息
 │       └── model/                   # IM 数据模型
 │
-├── app/                             # 应用模块（独立 Go 模块，组装所有插件）
-│   ├── main.go                      # 导入插件并启动
-│   └── go.mod                       # 依赖所有插件和 SDK
+├── sdk/app/                         # 应用工厂（Run() 入口）
+│   ├── app.go                       # 初始化编排（Config→DB→Redis→Auth→Router→Server）
+│   └── health.go                    # 健康检查 Handler
 │
 ├── cmd/                             # 命令行工具
 │   ├── migrate/main.go              # DB 迁移 + 种子数据
-│   └── codegen/main.go              # 代码生成器
+│   └── codegen/main.go              # 代码生成器（scaffold / list / gen-imports）
+│
+├── Makefile                         # 开发命令（dev / build / scaffold / migrate ...）
+├── .air.toml                        # air 热重载配置
 │
 ├── scripts/                         # 辅助脚本
 ├── docs/                            # 设计文档
@@ -225,10 +228,94 @@ redis:
 ### 4. 运行项目
 
 ```bash
+# 方式一：直接运行
 go run main.go
+
+# 方式二：热重载（推荐开发时使用）
+# 安装 air：go install github.com/air-verse/air@latest
+air
+
+# 方式三：使用 Makefile
+make dev
 ```
 
 启动成功后访问 `http://localhost:18885/` 验证服务运行状态。
+
+## 开发工具
+
+### Makefile 命令
+
+| 命令 | 说明 |
+|------|------|
+| `make dev` | 热重载启动（需安装 air） |
+| `make build` | 编译二进制到 `bin/hei-gin` |
+| `make run` | 直接运行 |
+| `make scaffold name=plugin-xxx` | 创建新插件脚手架 |
+| `make list-plugins` | 列出所有插件 |
+| `make gen-imports` | 重新生成 `main.go` 中的空白导入 |
+| `make migrate` | 执行数据库迁移 |
+| `make test` | 运行测试 |
+| `make lint` | 代码检查（go vet） |
+| `make clean` | 清理构建产物 |
+
+### 插件脚手架
+
+使用代码生成器快速创建插件：
+
+```bash
+# 列出已发现的插件
+go run cmd/codegen/main.go list
+
+# 创建新插件（自动注册到 main.go）
+go run cmd/codegen/main.go scaffold plugin-xxx
+
+# 重新生成 main.go 中的插件导入
+go run cmd/codegen/main.go gen-imports
+```
+
+生成的插件结构：
+
+```
+plugins/plugin-xxx/
+├── plugin.go      # Module 实现 + init() 注册
+├── model.go       # GORM 模型
+├── migrate.go     # db.RegisterModel()
+├── params.go      # 请求/响应参数
+├── service.go     # 业务逻辑
+└── api/v1/
+    └── api.go     # 路由 + Handler
+```
+
+### 热重载（air）
+
+hei-gin 内置 [air](https://github.com/air-verse/air) 配置，文件变化时自动重编译重启：
+
+```bash
+# 安装 air
+go install github.com/air-verse/air@latest
+
+# 启动（.air.toml 已预配置）
+air
+```
+
+配置说明：
+
+| 参数 | 值 |
+|------|-----|
+| 监控扩展 | `.go`, `.tpl`, `.tmpl`, `.html`, `.yaml`, `.yml` |
+| 排除目录 | `.air_tmp`, `.git`, `node_modules`, `vitepress` |
+| 延迟 | 1000ms（防频繁触发） |
+| 异常时停止 | true |
+
+### 数据库迁移
+
+```bash
+# 迁移 + 种子数据
+go run cmd/migrate/main.go
+
+# 仅迁移，跳过种子数据
+go run cmd/migrate/main.go -skip-seed
+```
 
 ## WebSocket / 站内信 IM
 
