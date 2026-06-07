@@ -1,57 +1,46 @@
+"""
+Application lifespan — mirrors hei-gin's ``sdk/app/app.go``.
+
+Simplified: core services (auth, SM2, captcha, scheduler) are now
+independent ``HeiPlugin`` instances that manage their own lifecycle.
+
+Lifespan only handles:
+  1. DB + Redis connectivity (fail fast)
+  2. Plugin lifecycle via ``start_plugins(app)`` / ``stop_plugins()``
+"""
+
 import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-
-from config.settings import settings
-from core.db import verify_connection, redis_init, get_redis, dispose, redis_close, SessionLocal
-from core.utils import init as sm2_init
-from core.auth import HeiAuthTool, HeiClientAuthTool, HeiPermissionInterfaceManager, HeiPermissionInterface
-from core.captcha import b_captcha, c_captcha
-from modules.sys.auth import init_auth
-from modules.client.auth.username import init_auth as init_client_auth
-from modules.sys.user import LoginUserApiProvider as BLoginUserApiProvider
-from modules.client.user import LoginUserApiProvider as CLoginUserApiProvider
+from core.db import verify_connection, redis_init, dispose, redis_close
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Verify database connectivity first — fail fast if either is unreachable
+    # =================================================================
+    # STARTUP
+    # =================================================================
     await verify_connection()
     await redis_init()
 
-    sm2_init(settings.sm2.private_key, settings.sm2.public_key)
+    from core.plugin import start_plugins
+    from core.plugin.core_plugins import set_current_app
 
-    HeiAuthTool.init(
-        expire=settings.token.expire_seconds,
-        token_name=settings.token.token_name
-    )
-    HeiClientAuthTool.init(
-        expire=settings.token.expire_seconds,
-        token_name=settings.token.token_name
-    )
+    set_current_app(app)
+    await start_plugins()
 
-    # Register permission interface (queries DB at runtime)
-    HeiPermissionInterfaceManager.registerInterface(HeiPermissionInterface())
-
-    # Auto-discover permissions from decorators and cache in Redis
-    try:
-        from core.auth.permission_scan import run_permission_scan
-        await run_permission_scan(app)
-    except Exception as e:
-        logger.warning(f"Permission scan skipped: {e}")
-
-    b_captcha.init(get_redis())
-    c_captcha.init(get_redis())
-
-    login_user_api = BLoginUserApiProvider(SessionLocal)
-    init_auth(login_user_api)
-    client_login_user_api = CLoginUserApiProvider(SessionLocal)
-    init_client_auth(client_login_user_api)
-
+    logger.info("Application startup complete")
     yield
+
+    # =================================================================
+    # SHUTDOWN
+    # =================================================================
+    from core.plugin import stop_plugins
+    await stop_plugins()
 
     await redis_close()
     dispose()
+    logger.info("Application shutdown complete")

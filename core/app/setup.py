@@ -1,10 +1,21 @@
+"""
+Application factory — mirrors hei-gin's ``sdk/app/app.go Run()``.
+
+Orchestration order (matching hei-gin):
+
+  1. ``discover_and_load()``   —  import plugins (fires __init_subclass__ + module-level reg)
+  2. ``init_plugins()``        —  plugin instances + on_init()
+  3. Core middleware            —  Trace, Auth, CORS, Exception
+  4. ``execute_middlewares()``  —  plugin-supplied middleware
+  5. ``execute_routes()``      —  plugin-supplied routes
+"""
+
 import logging
 
 from fastapi import FastAPI
 
 from config.settings import settings
 from .lifespan import lifespan
-from .router import setup_routers
 from core.middleware import setup_cors, setup_exception_handlers, AuthMiddleware, TraceMiddleware
 from core.log.utils import TraceIdFilter
 
@@ -18,12 +29,28 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # ── 1. Plugin discovery + on_init() ─────────────────────────────
+    from core.plugin import discover_and_load, init_plugins
+
+    discover_and_load()
+    init_plugins()
+
+    # ── 2. Core middleware (always applied, outermost first) ─────────
     app.add_middleware(TraceMiddleware)
     app.add_middleware(AuthMiddleware)
 
     setup_cors(app)
     setup_exception_handlers(app)
-    setup_routers(app)
+
+    # ── 3. Plugin-supplied middleware ────────────────────────────────
+    from core.plugin import execute_middlewares
+
+    execute_middlewares(app)
+
+    # ── 4. Plugin-supplied routes ────────────────────────────────────
+    from core.plugin import execute_routes
+
+    execute_routes(app)
 
     return app
 

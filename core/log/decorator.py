@@ -32,7 +32,7 @@ async def _get_op_user(request: Request) -> Optional[str]:
         if not user_id:
             return None
 
-        from modules.sys.user.service import UserService
+        from plugins.plugin_sys.user.service import UserService
         from core.db import SessionLocal
         db = SessionLocal()
         try:
@@ -103,8 +103,8 @@ async def _save_log(request: Request, func, name: str, category: str,
               params_json: str, result_json: Optional[str],
               start_time: datetime) -> None:
     """Persist the log entry to database."""
-    from modules.sys.log.service import LogService
-    from modules.sys.log.models import SysLog as LogModel
+    from plugins.plugin_sys.log.service import LogService
+    from plugins.plugin_sys.log.models import SysLog as LogModel
     db = SessionLocal()
     try:
         now = datetime.now()
@@ -164,8 +164,8 @@ async def save_exception_log(request: Request, exc: Exception, name: Optional[st
     the @SysLog decorator.  Creates its own DB session so it is
     independent of the request's transaction.
     """
-    from modules.sys.log.service import LogService
-    from modules.sys.log.models import SysLog as LogModel
+    from plugins.plugin_sys.log.service import LogService
+    from plugins.plugin_sys.log.models import SysLog as LogModel
     db = SessionLocal()
     try:
         now = datetime.now()
@@ -228,8 +228,8 @@ def record_auth_log(request: Request, name: str, category: str,
     and accepts the operator name directly — which is essential for login
     events where there is no active auth token yet.
     """
-    from modules.sys.log.service import LogService
-    from modules.sys.log.models import SysLog as LogModel
+    from plugins.plugin_sys.log.service import LogService
+    from plugins.plugin_sys.log.models import SysLog as LogModel
     db = SessionLocal()
     try:
         now = datetime.now()
