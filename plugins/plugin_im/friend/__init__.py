@@ -1,3 +1,4 @@
+
 from plugins.plugin_im.friend.params import (
     SendRequestParam, HandleRequestParam, FriendVO, FriendRequestVO,
     BlockVO, RemarkParam, BlockParam, SearchResult,
@@ -15,3 +16,4 @@ __all__ = [
     "friend_list", "pending_requests", "remove_friend",
     "search_users", "block_user", "unblock_user", "block_list", "update_friend_remark",
 ]
+from plugins.plugin_im.friend import api  # trigger register_router()

@@ -53,6 +53,7 @@ class UserVO(DateTimeValidatorMixin, BaseModel):
     created_by: Optional[str] = None
     updated_at: Optional[datetime] = None
     updated_by: Optional[str] = None
+    password: Optional[str] = None
     role_ids: Optional[List[str]] = None
 
 

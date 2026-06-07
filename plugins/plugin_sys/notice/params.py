@@ -15,11 +15,12 @@ class NoticeVO(DateTimeValidatorMixin, BaseModel):
     content: Optional[str] = None
     cover: Optional[str] = None
     level: Optional[str] = None
-    view_count: Optional[int] = 0
     is_top: Optional[str] = None
-    position: Optional[str] = None
     status: Optional[str] = None
     sort_code: Optional[int] = 0
+    author: Optional[str] = None
+    publish_at: Optional[str] = None
+    expire_at: Optional[str] = None
     created_at: Optional[datetime] = None
     created_by: Optional[str] = None
     updated_at: Optional[datetime] = None

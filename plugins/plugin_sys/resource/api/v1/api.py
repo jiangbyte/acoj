@@ -110,3 +110,10 @@ async def resource_remove(request: Request, param: IdsParam, db: Session = Depen
 async def resource_tree(request: Request, db: Session = Depends(get_db)):
     service = ResourceService(db)
     return success(service.tree())
+
+
+@router.get("/api/v1/sys/resource/menu", summary="获取资源菜单树")
+@HeiCheckPermission("sys:resource:menu")
+async def resource_menu(request: Request, db: Session = Depends(get_db)):
+    service = ResourceService(db)
+    return success(service.menu())

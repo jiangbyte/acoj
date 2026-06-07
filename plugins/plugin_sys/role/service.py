@@ -82,13 +82,15 @@ def role_detail(db: Session, id: str) -> Optional[dict]:
 
 
 def role_create(db: Session, vo: RoleVO, user_id: Optional[str] = None) -> None:
+    if not vo.code or not vo.name or not vo.category:
+        raise BusinessException("角色编码、名称、类别不能为空", 400)
     now = datetime.now()
     entity = SysRole(
         id=generate_id(),
         code=vo.code,
         name=vo.name,
         category=vo.category,
-        sort_code=vo.sort_code,
+        sort_code=vo.sort_code or 0,
         status=vo.status or "ENABLED",
         created_at=now,
         updated_at=now,
@@ -104,21 +106,24 @@ def role_create(db: Session, vo: RoleVO, user_id: Optional[str] = None) -> None:
 
 
 def role_modify(db: Session, vo: RoleVO, user_id: Optional[str] = None) -> None:
+    if not vo.id:
+        raise BusinessException("ID不能为空", 400)
     dao = RoleDao(db)
     entity = dao.find_by_id(vo.id)
     if not entity:
         raise BusinessException("数据不存在")
     now = datetime.now()
-    up = {
+    up: dict = {
         "code": vo.code,
         "name": vo.name,
         "category": vo.category,
         "sort_code": vo.sort_code,
-        "status": vo.status,
         "updated_at": now,
     }
     if vo.description is not None:
         up["description"] = vo.description
+    if vo.status:
+        up["status"] = vo.status
     if vo.extra is not None:
         up["extra"] = vo.extra
     if user_id:
@@ -130,14 +135,18 @@ def role_modify(db: Session, vo: RoleVO, user_id: Optional[str] = None) -> None:
 def role_remove(db: Session, ids: list) -> None:
     if not ids:
         return
-    dao = RoleDao(db)
     cnt = db.execute(select(func.count()).select_from(RelUserRole).where(RelUserRole.role_id.in_(ids))).scalar() or 0
     if cnt > 0:
         raise BusinessException("角色存在关联用户，无法删除")
-
-    for model in [RelRolePermission, RelRoleResource, RelUserRole]:
-        db.execute(sa_delete(model).where(model.role_id.in_(ids)))
-    dao.delete_by_ids(ids)
+    try:
+        db.execute(sa_delete(RelRolePermission).where(RelRolePermission.role_id.in_(ids)))
+        db.execute(sa_delete(RelRoleResource).where(RelRoleResource.role_id.in_(ids)))
+        db.execute(sa_delete(RelUserRole).where(RelUserRole.role_id.in_(ids)))
+        db.execute(sa_delete(SysRole).where(SysRole.id.in_(ids)))
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
 
 def role_grant_permissions(db: Session, role_id: str, permissions: list, created_by: Optional[str] = None) -> None:
