@@ -1,7 +1,7 @@
 """
 Broadcast API routes.
 
-Mirrors hei-gin plugins/plugin-im/broadcast/api/v1/api.go.
+Mirrors hei-gin plugins/plugin-im/broadcast/api/v1/api.go 1:1.
 """
 
 from __future__ import annotations
@@ -10,7 +10,9 @@ from fastapi import APIRouter, Request, Query as QueryParam
 
 from core.auth import HeiAuthTool, HeiClientAuthTool
 from core.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, NoRepeat
+from core.log import SysLog
 from core.result import success
+from core.plugin import Perm
 from core.plugin.registry import register_router
 from plugins.plugin_im.broadcast import (
     SendBroadcastParam, send, list_broadcasts, unread_list, mark_read, detail,
@@ -20,7 +22,11 @@ sys_router = APIRouter(prefix="/api/v1/sys/im/broadcast", tags=["IM Broadcast (S
 client_router = APIRouter(prefix="/api/v1/c/im/broadcast", tags=["IM Broadcast (Client)"])
 
 
+# ── Sys admin routes ──
+
 @sys_router.post("/send")
+@Perm("sys:im:broadcast:send", "发送通知")
+@SysLog("发送通知")
 @NoRepeat(5000)
 @HeiCheckLogin
 async def send_handler(request: Request, p: SendBroadcastParam):
@@ -30,6 +36,7 @@ async def send_handler(request: Request, p: SendBroadcastParam):
 
 
 @sys_router.get("/list")
+@Perm("sys:im:broadcast:list", "通知列表")
 @HeiCheckLogin
 async def list_handler(request: Request, cursor: str = QueryParam(""), size: int = QueryParam(20)):
     records, has_more = list_broadcasts(cursor, size)
@@ -44,14 +51,6 @@ async def unread_list_handler(request: Request):
     return success(records)
 
 
-@client_router.get("/unread-list")
-@HeiClientCheckLogin
-async def client_unread_list_handler(request: Request):
-    uid = await HeiClientAuthTool.getLoginIdDefaultNull(request)
-    records, _ = unread_list(uid or "", "CONSUMER")
-    return success(records)
-
-
 @sys_router.post("/read")
 @HeiCheckLogin
 async def read_handler(request: Request, p: dict):
@@ -60,19 +59,29 @@ async def read_handler(request: Request, p: dict):
     return success()
 
 
+@sys_router.get("/detail")
+@HeiCheckLogin
+async def detail_handler(request: Request, id: str = QueryParam("")):
+    vo = detail(id)
+    return success(vo.__dict__ if vo else None)
+
+
+# ── Client (C-end) routes ──
+
+@client_router.get("/unread-list")
+@HeiClientCheckLogin
+async def client_unread_list_handler(request: Request):
+    uid = await HeiClientAuthTool.getLoginIdDefaultNull(request)
+    records, _ = unread_list(uid or "", "CONSUMER")
+    return success(records)
+
+
 @client_router.post("/read")
 @HeiClientCheckLogin
 async def client_read_handler(request: Request, p: dict):
     uid = await HeiClientAuthTool.getLoginIdDefaultNull(request)
     mark_read(uid or "", "CONSUMER", p.get("broadcast_id", ""))
     return success()
-
-
-@sys_router.get("/detail")
-@HeiCheckLogin
-async def detail_handler(request: Request, id: str = QueryParam("")):
-    vo = detail(id)
-    return success(vo.__dict__ if vo else None)
 
 
 @client_router.get("/detail")

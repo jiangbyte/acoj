@@ -37,7 +37,6 @@ class GroupMember(HeiBase):
     user_type: Mapped[str] = mapped_column(String(20), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="member")  # owner | admin | member
     nickname: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    is_muted: Mapped[bool] = mapped_column(Boolean, default=False)
     muted_until: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     joined_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     status: Mapped[str] = mapped_column(String(10), nullable=False, default="active")  # active | left | kicked
@@ -85,11 +84,12 @@ class GroupMessageRead(HeiBase):
     __tablename__ = "im_group_message_read"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    message_id: Mapped[str] = mapped_column(String(32), nullable=False)
     group_id: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     user_id: Mapped[str] = mapped_column(String(32), nullable=False)
     user_type: Mapped[str] = mapped_column(String(20), nullable=False)
     read_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     __table_args__ = (
-        UniqueConstraint("group_id", "user_id", "user_type", name="uq_gmr_read"),
+        UniqueConstraint("message_id", "user_id", "user_type", name="uq_gmr_msg_user"),
     )

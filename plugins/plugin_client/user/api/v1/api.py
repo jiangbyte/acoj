@@ -29,28 +29,28 @@ router = APIRouter()
 
 @router.get("/api/v1/client-user/page", summary="获取C端用户分页",
             response_model=Result[PageData[ClientUserVO]])
-@Perm("client:user:page", "C端用户分页", login_type="CONSUMER")
+@Perm("client:user:page", "C端用户分页")
 async def page(request: Request, param: ClientUserPageParam = Depends(),
                db: Session = Depends(get_db)):
     return success(client_user_page(db, param))
 
 
 @router.post("/api/v1/client-user/create", summary="添加C端用户", response_model=Result)
-@Perm("client:user:create", "添加C端用户", login_type="CONSUMER")
+@Perm("client:user:create", "添加C端用户")
 async def create(request: Request, vo: ClientUserVO, db: Session = Depends(get_db)):
     await client_user_create(db, vo, request)
     return success()
 
 
 @router.post("/api/v1/client-user/modify", summary="编辑C端用户", response_model=Result)
-@Perm("client:user:modify", "编辑C端用户", login_type="CONSUMER")
+@Perm("client:user:modify", "编辑C端用户")
 async def modify(request: Request, vo: ClientUserVO, db: Session = Depends(get_db)):
     await client_user_modify(db, vo, request)
     return success()
 
 
 @router.post("/api/v1/client-user/remove", summary="删除C端用户", response_model=Result)
-@Perm("client:user:remove", "删除C端用户", login_type="CONSUMER")
+@Perm("client:user:remove", "删除C端用户")
 async def remove(request: Request, param: IdsParam, db: Session = Depends(get_db)):
     client_user_remove(db, param)
     return success()
@@ -58,7 +58,7 @@ async def remove(request: Request, param: IdsParam, db: Session = Depends(get_db
 
 @router.get("/api/v1/client-user/detail", summary="获取C端用户详情",
             response_model=Result[ClientUserVO])
-@Perm("client:user:detail", "C端用户详情", login_type="CONSUMER")
+@Perm("client:user:detail", "C端用户详情")
 async def detail(request: Request, id: str = Query(...), db: Session = Depends(get_db)):
     data = client_user_detail(db, id)
     return success(data)

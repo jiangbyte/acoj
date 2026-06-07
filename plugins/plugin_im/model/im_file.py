@@ -1,4 +1,4 @@
-"""IM file upload ORM model."""
+"""IM file upload ORM model and VO."""
 
 from __future__ import annotations
 
@@ -31,3 +31,63 @@ class ImFile(HeiBase):
     sender_type: Mapped[str] = mapped_column(String(20), nullable=False)
     msg_type: Mapped[str] = mapped_column(String(20), nullable=False)  # IMAGE | FILE
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    def to_vo(self) -> ImFileVO:
+        """Convert to view object."""
+        created_at_str = ""
+        if self.created_at:
+            created_at_str = self.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        return ImFileVO(
+            id=self.id or "",
+            engine=self.engine or "",
+            bucket=self.bucket or "",
+            file_key=self.file_key or "",
+            name=self.name or "",
+            suffix=self.suffix or "",
+            size_kb=self.size_kb or 0,
+            size_info=self.size_info or "",
+            download_path=self.download_path or "",
+            thumbnail=self.thumbnail or "",
+            conversation_id=self.conversation_id or "",
+            sender_id=self.sender_id or "",
+            sender_type=self.sender_type or "",
+            msg_type=self.msg_type or "",
+            created_at=created_at_str,
+        )
+
+
+class ImFileVO:
+    """IM file view object."""
+    def __init__(
+        self,
+        id: str = "",
+        engine: str = "",
+        bucket: str = "",
+        file_key: str = "",
+        name: str = "",
+        suffix: str = "",
+        size_kb: int = 0,
+        size_info: str = "",
+        download_path: str = "",
+        thumbnail: str = "",
+        conversation_id: str = "",
+        sender_id: str = "",
+        sender_type: str = "",
+        msg_type: str = "",
+        created_at: str = "",
+    ):
+        self.id = id
+        self.engine = engine
+        self.bucket = bucket
+        self.file_key = file_key
+        self.name = name
+        self.suffix = suffix
+        self.size_kb = size_kb
+        self.size_info = size_info
+        self.download_path = download_path
+        self.thumbnail = thumbnail
+        self.conversation_id = conversation_id
+        self.sender_id = sender_id
+        self.sender_type = sender_type
+        self.msg_type = msg_type
+        self.created_at = created_at

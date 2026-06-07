@@ -9,6 +9,13 @@ from sqlalchemy.orm import Mapped, mapped_column
 from core.plugin.registry import HeiBase
 
 
+# ─── Broadcast scope constants ─────────────────────────────────────────
+
+BroadcastScopeAll = "ALL"
+BroadcastScopeBusiness = "BUSINESS"
+BroadcastScopeConsumer = "CONSUMER"
+
+
 class Broadcast(HeiBase):
     """全站通知/公告"""
     __tablename__ = "im_broadcast"

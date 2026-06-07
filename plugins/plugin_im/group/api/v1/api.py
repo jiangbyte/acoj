@@ -13,6 +13,8 @@ from fastapi import APIRouter, Request, Query as QueryParam
 
 from core.auth import HeiAuthTool, HeiClientAuthTool
 from core.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, NoRepeat
+from core.log import SysLog
+from core.middleware import RateLimiter
 from core.result import success
 from core.plugin.registry import register_router
 from plugins.plugin_im.group import (
@@ -73,6 +75,7 @@ async def update_handler(request: Request, p: UpdateParam):
 
 
 @sys_router.post("/dissolve")
+@SysLog("解散群")
 @HeiCheckLogin
 async def dissolve_handler(request: Request, p: dict):
     uid, _ = await _sys_user(request)
@@ -120,6 +123,7 @@ async def leave_handler(request: Request, p: dict):
 
 
 @sys_router.post("/kick")
+@SysLog("踢出成员")
 @HeiCheckLogin
 async def kick_handler(request: Request, p: KickParam):
     uid, ut = await _sys_user(request)
@@ -128,6 +132,7 @@ async def kick_handler(request: Request, p: KickParam):
 
 
 @sys_router.post("/set-role")
+@SysLog("设置角色")
 @HeiCheckLogin
 async def set_role_handler(request: Request, p: SetRoleParam):
     uid, _ = await _sys_user(request)
@@ -136,6 +141,7 @@ async def set_role_handler(request: Request, p: SetRoleParam):
 
 
 @sys_router.post("/transfer-owner")
+@SysLog("转让群")
 @HeiCheckLogin
 async def transfer_owner_handler(request: Request, p: TransferOwnerParam):
     uid, _ = await _sys_user(request)
@@ -160,7 +166,7 @@ async def members_handler(request: Request, group_id: str = QueryParam("")):
 @sys_router.get("/messages")
 @HeiCheckLogin
 async def messages_handler(request: Request, group_id: str = QueryParam(""),
-                            cursor: str = QueryParam(""), size: int = QueryParam(20)):
+                           cursor: str = QueryParam(""), size: int = QueryParam(20)):
     msgs, has_more = messages(group_id, cursor, size)
     return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
 
@@ -182,6 +188,7 @@ async def search_groups_handler(request: Request, keyword: str = QueryParam(""),
 
 
 @sys_router.post("/send")
+@RateLimiter("sys_group_send", 3, 20)
 @NoRepeat(3000)
 @HeiCheckLogin
 async def send_handler(request: Request, p: SendMessageParam):
@@ -206,6 +213,7 @@ async def mark_read_handler(request: Request, p: dict):
 
 
 @sys_router.post("/mute")
+@SysLog("禁言")
 @HeiCheckLogin
 async def mute_handler(request: Request, p: dict):
     uid, ut = await _sys_user(request)
@@ -217,6 +225,7 @@ async def mute_handler(request: Request, p: dict):
 
 
 @sys_router.post("/unmute")
+@SysLog("解禁")
 @HeiCheckLogin
 async def unmute_handler(request: Request, p: dict):
     uid, ut = await _sys_user(request)
@@ -291,6 +300,7 @@ async def client_search_groups_handler(request: Request, keyword: str = QueryPar
 
 
 @client_router.post("/send")
+@RateLimiter("c_group_send", 3, 20)
 @HeiClientCheckLogin
 async def client_send_handler(request: Request, p: SendMessageParam):
     uid, ut = await _client_user(request)
