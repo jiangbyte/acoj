@@ -88,12 +88,14 @@ class IMPlugin(HeiPlugin):
         # Start online count broadcast
         asyncio.ensure_future(GlobalHub.start_online_broadcast())
 
-        # Start CrossHub poll loop and heartbeat if Redis is available
+        # Start CrossHub background tasks if Redis is available
         import plugins.plugin_im.ws as ws_mod
         ch = ws_mod.GlobalCrossHub
         if ch and ch._rdb:
             asyncio.ensure_future(ch.start_poll_loop())
             asyncio.ensure_future(ch.start_heartbeat())
+            asyncio.ensure_future(ch.start_stale_cleanup())
+            asyncio.ensure_future(ch.start_msg_list_cleanup())
 
         logger.info("[IMPlugin] Background tasks started")
 
