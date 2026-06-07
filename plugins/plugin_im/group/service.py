@@ -589,7 +589,7 @@ def members(group_id: str) -> list[MemberVO]:
             result.append(MemberVO(
                 user_id=m.user_id, user_type=m.user_type,
                 role=m.role, nickname=nick,
-                joined_at=_fmt_dt(m.joined_at), is_muted=m.is_muted,
+                joined_at=_fmt_dt(m.joined_at), is_muted=m.muted_until is not None and m.muted_until > datetime.now(),
             ))
         return result
     finally:
@@ -784,7 +784,7 @@ def mute_member(operator_id: str, operator_type: str, p: KickParam, duration: ti
             GroupMember.group_id == p.group_id,
             GroupMember.user_id == p.user_id,
             GroupMember.user_type == p.user_type,
-        ).update({"is_muted": True, "muted_until": now + duration})
+        ).update({"muted_until": now + duration})
         db.commit()
     except Exception:
         db.rollback()
@@ -801,7 +801,7 @@ def unmute_member(operator_id: str, operator_type: str, p: KickParam) -> None:
             GroupMember.group_id == p.group_id,
             GroupMember.user_id == p.user_id,
             GroupMember.user_type == p.user_type,
-        ).update({"is_muted": False, "muted_until": None})
+        ).update({"muted_until": None})
         db.commit()
     except Exception:
         db.rollback()
