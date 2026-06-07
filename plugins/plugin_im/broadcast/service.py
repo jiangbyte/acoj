@@ -13,7 +13,8 @@ from core.exception import BusinessException
 from core.utils import generate_id
 from plugins.plugin_im.model.broadcast import Broadcast, BroadcastRead
 from plugins.plugin_im.broadcast.params import BroadcastVO, SendBroadcastParam
-from plugins.plugin_im.ws import GlobalCrossHub, Message as WSMessage
+from plugins.plugin_im import ws as im_ws
+from plugins.plugin_im.ws import Message as WSMessage
 
 import asyncio
 import logging
@@ -57,11 +58,11 @@ def send(sender_id: str, p: SendBroadcastParam) -> None:
     ws_msg = WSMessage(type="broadcast", payload=payload)
 
     if scope == "ALL":
-        asyncio.ensure_future(GlobalCrossHub.broadcast_all(ws_msg))
+        if im_ws.GlobalCrossHub: asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_all(ws_msg))
     elif scope == "BUSINESS":
-        asyncio.ensure_future(GlobalCrossHub.broadcast_business(ws_msg))
+        if im_ws.GlobalCrossHub: asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_business(ws_msg))
     elif scope == "CONSUMER":
-        asyncio.ensure_future(GlobalCrossHub.broadcast_consumers(ws_msg))
+        if im_ws.GlobalCrossHub: asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_consumers(ws_msg))
 
 
 # ═════════════════════════════════════════════════════════════════════

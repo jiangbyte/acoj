@@ -19,7 +19,8 @@ from plugins.plugin_im.model.friend import FriendRequest, Friendship, FriendBloc
 from plugins.plugin_im.friend.params import (
     SendRequestParam, HandleRequestParam, FriendVO, FriendRequestVO, BlockVO, SearchResult,
 )
-from plugins.plugin_im.ws import GlobalCrossHub, Message
+from plugins.plugin_im import ws as im_ws
+from plugins.plugin_im.ws import Message
 
 
 def _fmt_dt(dt: Optional[datetime]) -> str:
@@ -79,11 +80,11 @@ def send_request(sender_id: str, sender_type: str, p: SendRequestParam) -> None:
         payload = {"request_id": req.id, "sender_id": sender_id,
                     "sender_type": sender_type, "remark": p.remark, "action": "friend_request"}
         msg = Message(type="friend_request", payload=payload)
-        if GlobalCrossHub is not None:
+        if im_ws.GlobalCrossHub is not None:
             if p.receiver_type == "CONSUMER":
-                asyncio.ensure_future(GlobalCrossHub.send_to_consumer(p.receiver_id, msg))
+                asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_consumer(p.receiver_id, msg))
             else:
-                asyncio.ensure_future(GlobalCrossHub.send_to_user(p.receiver_id, msg))
+                asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_user(p.receiver_id, msg))
     except Exception:
         db.rollback()
         raise
@@ -131,11 +132,11 @@ def accept_request(user_id: str, user_type: str, p: HandleRequestParam) -> None:
             "receiver_type": user_type, "action": "friend_request_accepted",
         }
         msg = Message(type="friend_request", payload=payload)
-        if GlobalCrossHub is not None:
+        if im_ws.GlobalCrossHub is not None:
             if req.sender_type == "CONSUMER":
-                asyncio.ensure_future(GlobalCrossHub.send_to_consumer(req.sender_id, msg))
+                asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_consumer(req.sender_id, msg))
             else:
-                asyncio.ensure_future(GlobalCrossHub.send_to_user(req.sender_id, msg))
+                asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_user(req.sender_id, msg))
     except Exception:
         db.rollback()
         raise
