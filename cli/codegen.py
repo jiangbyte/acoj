@@ -20,6 +20,99 @@ logger = logging.getLogger("codegen")
 PLUGINS_DIR = Path(__file__).resolve().parent.parent / "plugins"
 
 
+PLUGIN_SCAFFOLD = {
+    "__init__.py": """
+\"\"\"
+{name} plugin.
+\"\"\"
+
+from . import plugin as _plugin
+
+__all__ = []
+
+""",
+    "plugin.py": """
+\"\"\"
+{PluginCls} — plugin definition.
+\"\"\"
+
+import logging
+from core.plugin import HeiPlugin, PluginInfo, register_router
+from .api.v1 import api as v1_router
+
+logger = logging.getLogger(__name__)
+register_router(v1_router)
+
+
+class {PluginCls}(HeiPlugin):
+    @classmethod
+    def info(cls) -> PluginInfo:
+        return PluginInfo(name="{name}", version="1.0.0", description="{name} plugin")
+
+    def on_init(self):
+        logger.info("[{PluginCls}] Initialised")
+
+    async def on_start(self):
+        logger.info("[{PluginCls}] Started")
+
+    async def on_stop(self):
+        logger.info("[{PluginCls}] Stopped")
+
+""",
+    "models.py": """
+\"\"\"
+{PluginCls} — ORM models.
+\"\"\"
+
+from core.plugin.registry import HeiBase
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
+
+
+class SampleModel(HeiBase):
+    __tablename__ = "{table_name}"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+
+""",
+    "params.py": """
+\"\"\"
+{PluginCls} — request/response parameters.
+\"\"\"
+
+from typing import Optional
+from pydantic import BaseModel
+
+
+class SampleVO(BaseModel):
+    id: str = ""
+    name: str = ""
+
+""",
+    "service.py": """
+\"\"\"
+{PluginCls} — business logic.
+\"\"\"
+
+import logging
+from typing import Optional, List
+from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
+
+""",
+    "dao.py": """
+\"\"\"
+{PluginCls} — data access.
+\"\"\"
+
+from typing import Optional, List
+from sqlalchemy.orm import Session
+from sqlalchemy import select, func
+
+""",
+}
+
+
 def cmd_list():
     """List all discovered plugins."""
     if not PLUGINS_DIR.exists():
@@ -39,118 +132,52 @@ def cmd_list():
         logger.info("No plugins found.")
 
 
-PLUGIN_SCAFFOLD = {
-    "__init__.py": """\"\"\"
-{name} plugin — auto-discovered by ``plugins/__init__.py``.
-\"\"\"
-
-from .plugin import {PluginCls}
-
-__all__ = ["{PluginCls}"]
-""",
-    "plugin.py": """\"\"\"
-{PluginCls} — plugin definition.
-\"\"\"
-
-import logging
-
-from core.plugin import HeiPlugin, PluginInfo, register_router
-
-logger = logging.getLogger(__name__)
-
-
-class {PluginCls}(HeiPlugin):
-    @classmethod
-    def info(cls) -> PluginInfo:
-        return PluginInfo(
-            name="{name}",
-            version="1.0.0",
-            description="{name} plugin",
-        )
-
-    @classmethod
-    def on_init(cls):
-        logger.info("[{PluginCls}] Initialised")
-
-    @classmethod
-    async def on_start(cls):
-        logger.info("[{PluginCls}] Started")
-
-    @classmethod
-    async def on_stop(cls):
-        logger.info("[{PluginCls}] Stopped")
-""",
-    "models.py": """\"\"\"
-{PluginCls} — ORM models.
-\"\"\"
-
-from core.plugin.registry import HeiBase
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
-
-
-class SampleModel(HeiBase):
-    __tablename__ = '{table_name}'
-
-    id: Mapped[str] = mapped_column(String(32), primary_key=True)
-""",
-    "admin.py": """\"\"\"
-{PluginCls} — seed data.
-\"\"\"
-
-import logging
-
-logger = logging.getLogger(__name__)
-
-
-def run_seed(db):
-    \"\"\"Seed initial data for this plugin.\"\"\"
-    logger.info("[{PluginCls}] No seed data defined")
-""",
-}
-
-
 def cmd_scaffold(name: str):
     """Create a new plugin scaffold directory."""
     target = PLUGINS_DIR / name
     if target.exists():
-        logger.error("Plugin '%s' already exists at %s", name, target)
+        logger.error("Plugin \"%s\" already exists at %s", name, target)
         return
 
     plugin_cls = "".join(part.capitalize() for part in name.split("_")) + "Plugin"
     table_name = name.replace("plugin_", "", 1) if name.startswith("plugin_") else name
 
-    context = {
-        "name": name,
-        "PluginCls": plugin_cls,
-        "table_name": table_name,
-    }
+    context = {"name": name, "PluginCls": plugin_cls, "table_name": table_name}
 
-    target.mkdir(parents=True, exist_ok=True)
+    # Create directories
+    (target / "api" / "v1").mkdir(parents=True, exist_ok=True)
 
     for filename, template in PLUGIN_SCAFFOLD.items():
-        content = template.format(**context)
-        (target / filename).write_text(content, encoding="utf-8")
-        logger.info("  Created %s/%s", name, filename)
+        (target / filename).write_text(template.format(**context), encoding="utf-8")
 
-    (
-        PLUGINS_DIR / "__init__.py"
-    ).write_text(
-        (PLUGINS_DIR / "__init__.py").read_text(encoding="utf-8").rstrip()
-        + f"\nimport plugins.{name}\n",
+    # Create api/__init__.py and api/v1/__init__.py + api.py
+    (target / "api" / "__init__.py").write_text("", encoding="utf-8")
+    (target / "api" / "v1" / "__init__.py").write_text(
+        "from . import api as v1_router\n\n__all__ = [\"v1_router\"]\n",
+        encoding="utf-8",
+    )
+    (target / "api" / "v1" / "api.py").write_text(
+        '"""\n{name} API routes.\n"""\n\nfrom fastapi import APIRouter\n\nrouter = APIRouter()\n'.format(**context),
         encoding="utf-8",
     )
 
-    logger.info("✓ Created plugin scaffold: %s", name)
-    logger.info("  Next: add route handlers and register_router() to plugin.py")
+    # Register in plugins/__init__.py
+    plugin_init = PLUGINS_DIR / "__init__.py"
+    existing = plugin_init.read_text(encoding="utf-8").rstrip()
+    if f"import plugins.{name}" not in existing:
+        plugin_init.write_text(existing + f"\nimport plugins.{name}\n", encoding="utf-8")
+
+    logger.info("Created plugin scaffold: %s", name)
+    for p in sorted(target.rglob("*.py")):
+        logger.info("  %s", p.relative_to(PLUGINS_DIR))
 
 
 def main():
-    parser = argparse.ArgumentParser(description="hei-fastapi 代码生成工具")
+    parser = argparse.ArgumentParser(description="hei-fastapi code generation tool")
     sub = parser.add_subparsers(dest="command")
-    sub.add_parser("list", help="列出所有插件")
-    scaffold = sub.add_parser("scaffold", help="创建新插件脚手架")
-    scaffold.add_argument("name", help="插件名称（如 plugin_xxx）")
+    sub.add_parser("list", help="list all plugins")
+    scaffold = sub.add_parser("scaffold", help="create new plugin scaffold")
+    scaffold.add_argument("name", help="plugin name (e.g. plugin_xxx)")
 
     args = parser.parse_args()
     if args.command == "list":
