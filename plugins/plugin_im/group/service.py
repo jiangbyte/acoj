@@ -259,22 +259,26 @@ def my_groups(user_id: str, user_type: str) -> list[GroupVO]:
             Group.status == GroupNormal,
         ).all()
 
+        # Batch count active members per group -- avoid N+1
+        counts = db.query(
+            GroupMember.group_id, func.count(GroupMember.id)
+        ).filter(
+            GroupMember.group_id.in_(group_ids),
+            GroupMember.status == MemberActive,
+        ).group_by(GroupMember.group_id).all()
+        count_map = {c[0]: c[1] for c in counts}
+
         result = []
         for g in groups:
-            count = db.query(GroupMember).filter(
-                GroupMember.group_id == g.id,
-                GroupMember.status == MemberActive,
-            ).count()
             result.append(GroupVO(
                 id=g.id, name=g.name, avatar=g.avatar or "",
                 owner_id=g.owner_id, owner_type=g.owner_type,
                 group_type=g.group_type, notice=g.notice or "",
-                member_count=count,
+                member_count=count_map.get(g.id, 0),
             ))
         return result
     finally:
         db.close()
-
 
 # ═════════════════════════════════════════════════════════════════════
 # Invite
@@ -561,10 +565,27 @@ def members(group_id: str) -> list[MemberVO]:
             GroupMember.group_id == group_id,
             GroupMember.status == MemberActive,
         ).all()
+
+        # Batch resolve user names -- avoid N+1
+        business_ids = [m.user_id for m in records if m.user_type == UserTypeBusiness]
+        consumer_ids = [m.user_id for m in records if m.user_type == UserTypeConsumer]
+        name_map: dict[str, str] = {}
+
+        if business_ids:
+            from plugins.plugin_sys.user.models import SysUser
+            users = db.query(SysUser).filter(SysUser.id.in_(business_ids)).all()
+            for u in users:
+                name_map[f"BUSINESS:{u.id}"] = u.nickname or u.username or u.id
+
+        if consumer_ids:
+            from plugins.plugin_client.user.models import ClientUser
+            users = db.query(ClientUser).filter(ClientUser.id.in_(consumer_ids)).all()
+            for u in users:
+                name_map[f"CONSUMER:{u.id}"] = u.nickname or u.username or u.id
+
         result = []
         for m in records:
-            nickname = _resolve_user_name(m.user_id, m.user_type, db)
-            nick = m.nickname or nickname
+            nick = m.nickname or name_map.get(f"{m.user_type}:{m.user_id}", m.user_id)
             result.append(MemberVO(
                 user_id=m.user_id, user_type=m.user_type,
                 role=m.role, nickname=nick,
@@ -573,7 +594,6 @@ def members(group_id: str) -> list[MemberVO]:
         return result
     finally:
         db.close()
-
 
 # ═════════════════════════════════════════════════════════════════════
 # Messages
@@ -805,13 +825,21 @@ def search_groups(keyword: str, limit: int = 20) -> list[dict]:
             Group.name.like(f"%{keyword}%"),
             Group.status == GroupNormal,
         ).limit(limit).all()
+
+        # Batch count members -- avoid N+1
+        group_ids = [g.id for g in groups]
+        counts = db.query(
+            GroupMember.group_id, func.count(GroupMember.id)
+        ).filter(
+            GroupMember.group_id.in_(group_ids),
+            GroupMember.status == MemberActive,
+        ).group_by(GroupMember.group_id).all()
+        count_map = {c[0]: c[1] for c in counts}
+
         return [{"id": g.id, "name": g.name, "avatar": g.avatar or "",
-                  "member_count": db.query(GroupMember).filter(
-                      GroupMember.group_id == g.id, GroupMember.status == MemberActive).count()
-                  } for g in groups]
+                  "member_count": count_map.get(g.id, 0)} for g in groups]
     finally:
         db.close()
-
 
 # ═════════════════════════════════════════════════════════════════════
 # My Group Conversations (for unified conversation list in message module)

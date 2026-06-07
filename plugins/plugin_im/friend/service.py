@@ -180,32 +180,43 @@ def friend_list(user_id: str, user_type: str) -> list[FriendVO]:
             Friendship.user_id == user_id,
             Friendship.user_type == user_type,
         ).all()
+
+        # Batch resolve user names/avatars -- avoid N+1
+        business_ids = [r.friend_id for r in rows if r.friend_type == "BUSINESS"]
+        consumer_ids = [r.friend_id for r in rows if r.friend_type == "CONSUMER"]
+        nickname_map: dict[str, str] = {}
+        avatar_map: dict[str, str] = {}
+
+        if business_ids:
+            from plugins.plugin_sys.user.models import SysUser
+            users = db.query(SysUser).filter(SysUser.id.in_(business_ids)).all()
+            for u in users:
+                key = f"BUSINESS:{u.id}"
+                nickname_map[key] = u.nickname or ""
+                avatar_map[key] = u.avatar or ""
+
+        if consumer_ids:
+            from plugins.plugin_client.user.models import ClientUser
+            users = db.query(ClientUser).filter(ClientUser.id.in_(consumer_ids)).all()
+            for u in users:
+                key = f"CONSUMER:{u.id}"
+                nickname_map[key] = u.nickname or ""
+                avatar_map[key] = u.avatar or ""
+
         results = []
         for r in rows:
-            vo = FriendVO(
+            key = f"{r.friend_type}:{r.friend_id}"
+            results.append(FriendVO(
                 user_id=r.friend_id,
                 user_type=r.friend_type,
+                nickname=nickname_map.get(key, ""),
+                avatar=avatar_map.get(key, ""),
                 remark=r.remark or "",
                 added_at=_fmt_dt(r.created_at),
-            )
-            # Fetch nickname/avatar
-            if r.friend_type == "BUSINESS":
-                from plugins.plugin_sys.user.models import SysUser
-                u = db.query(SysUser).filter(SysUser.id == r.friend_id).first()
-                if u:
-                    vo.nickname = u.nickname or ""
-                    vo.avatar = u.avatar or ""
-            else:
-                from plugins.plugin_client.user.models import ClientUser
-                u = db.query(ClientUser).filter(ClientUser.id == r.friend_id).first()
-                if u:
-                    vo.nickname = u.nickname or ""
-                    vo.avatar = u.avatar or ""
-            results.append(vo)
+            ))
         return results
     finally:
         db.close()
-
 
 # ═════════════════════════════════════════════════════════════════════
 # Pending Requests
