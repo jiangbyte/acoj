@@ -123,11 +123,6 @@ def modify(db: Session, vo: PositionVO, user_id: Optional[str] = None) -> None:
 
 
 def remove(db: Session, ids: list) -> None:
-
-
-def options(db: Session) -> list:
-    rows = db.execute(select(SysPosition).order_by(SysPosition.sort_code.asc())).scalars().all()
-    return [to_vo(r) for r in rows]
     if not ids:
         return
     dao = PositionDao(db)

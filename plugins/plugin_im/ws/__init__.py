@@ -1,7 +1,7 @@
 from .hub import Hub, GlobalHub
 from .client import Client
 from .message import (
-    Message, MessageType,
+    Message,
     MsgHeartbeat, MsgOnlineCount, MsgNewMessage, MsgUnreadCount,
     MsgPresence, MsgDeliveryAck, MsgTyping, MsgConversation,
     HeartbeatPayload, OnlineCountPayload, NewMessagePayload,
@@ -15,7 +15,7 @@ GlobalCrossHub = None
 
 __all__ = [
     "Hub", "GlobalHub", "GlobalCrossHub", "Client", "CrossHub",
-    "Message", "MessageType",
+    "Message",
     "MsgHeartbeat", "MsgOnlineCount", "MsgNewMessage", "MsgUnreadCount",
     "MsgPresence", "MsgDeliveryAck", "MsgTyping", "MsgConversation",
     "HeartbeatPayload", "OnlineCountPayload", "NewMessagePayload",

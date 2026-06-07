@@ -24,7 +24,8 @@ from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils import generate_id
 from core.auth import HeiAuthTool
-from ..user.models import RelUserRole, RelRolePermission, RelRoleResource
+from ..user.models import RelUserRole
+from .models import RelRolePermission, RelRoleResource
 
 logger = logging.getLogger(__name__)
 
