@@ -19,7 +19,7 @@ from .message import (
 )
 from .config import ws_cfg
 from core.db import get_redis
-from core.plugin import event_bus
+from core.plugin import publish as event_publish
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +53,18 @@ class CrossHub:
         asyncio.ensure_future(self._track_connection(client))
         asyncio.ensure_future(self._broadcast_presence(client.user_id, client.user_type, True))
         asyncio.ensure_future(self._send_unread_on_connect(client))
+        asyncio.ensure_future(self._publish_event("user:connected", client))
 
     def _on_client_unregistered(self, client: Client) -> None:
         asyncio.ensure_future(self._untrack_connection(client))
         asyncio.ensure_future(self._check_presence(client))
+        asyncio.ensure_future(self._publish_event("user:disconnected", client))
+
+    async def _publish_event(self, topic: str, client: Client) -> None:
+        try:
+            await event_publish(topic, client=client)
+        except Exception:
+            logger.exception("Failed to publish event %s", topic)
 
     async def _send_unread_on_connect(self, client: Client) -> None:
         msg = Message(type=MsgUnreadCount)
@@ -132,15 +140,12 @@ class CrossHub:
                 user_id=user_id, user_type=user_type, online=online,
             ).__dict__,
         )
-        if user_type == "BUSINESS":
-            await self.local.broadcast_business(msg)
-        else:
-            await self.local.broadcast_consumers(msg)
+        await self.local.broadcast_business(msg)
+        await self.local.broadcast_consumers(msg)
 
     # ── Rate limiting ────────────────────────────────────────────────
 
     async def allow_message(self, sender_id: str, sender_type: str) -> bool:
-        """Check if the sender is allowed to send a message (rate limit)."""
         if not self._rdb:
             return True
         key = self._rate_limit_key(sender_id, sender_type)
@@ -151,6 +156,21 @@ class CrossHub:
             return current <= ws_cfg.rate_limit_max
         except Exception:
             return True
+
+    # ── Dedup ────────────────────────────────────────────────────────
+
+    async def is_dedup(self, message_id: str) -> bool:
+        if not self._rdb or not message_id:
+            return False
+        key = self._dedup_key(message_id)
+        try:
+            existed = await self._rdb.setnx(key, "1")
+            if existed:
+                await self._rdb.expire(key, ws_cfg.dedup_ttl)
+                return False
+            return True
+        except Exception:
+            return False
 
     # ── Cross-instance delivery ──────────────────────────────────────
 
@@ -255,6 +275,58 @@ class CrossHub:
                 await self._rdb.setex(inst_key, ws_cfg.instance_ttl, str(time.time()))
             except Exception:
                 logger.exception("CrossHub heartbeat error")
+
+    # ── Stale Instance Cleanup ───────────────────────────────────────
+
+    async def start_stale_cleanup(self) -> None:
+        """Periodically remove stale instance references from Redis user sets."""
+        if not self._rdb:
+            return
+        interval = max(ws_cfg.stale_clean_interval, 1) * 60
+        while self._running:
+            await asyncio.sleep(interval)
+            try:
+                await self._clean_stale_instances()
+            except Exception:
+                logger.exception("CrossHub stale cleanup error")
+
+    async def _clean_stale_instances(self) -> None:
+        """Scan Redis for user sets and remove references to dead instances."""
+        cursor = 0
+        cleaned = 0
+        pattern = "ws:user:*"
+        while True:
+            cursor, keys = await self._rdb.scan(cursor, match=pattern, count=1000)
+            for key in keys:
+                members = await self._rdb.smembers(key)
+                for inst_id in members:
+                    inst_id_str = inst_id.decode() if isinstance(inst_id, bytes) else inst_id
+                    if inst_id_str == self._instance_id:
+                        continue
+                    inst_key = f"ws:instance:{inst_id_str}"
+                    exists = await self._rdb.exists(inst_key)
+                    if not exists:
+                        await self._rdb.srem(key, inst_id)
+                        cleaned += 1
+            if cursor == 0:
+                break
+        if cleaned > 0:
+            logger.info("Cleaned %d stale instance references", cleaned)
+
+    # ── Message List Cleanup ─────────────────────────────────────────
+
+    async def start_msg_list_cleanup(self) -> None:
+        """Periodically trim the message list and refresh TTL."""
+        if not self._rdb:
+            return
+        while self._running:
+            await asyncio.sleep(300)  # 5 minutes
+            try:
+                key = self._msg_list_key()
+                await self._rdb.ltrim(key, -1000, -1)
+                await self._rdb.expire(key, 300)
+            except Exception:
+                logger.exception("CrossHub msg list cleanup error")
 
     # ── Close ────────────────────────────────────────────────────────
 
