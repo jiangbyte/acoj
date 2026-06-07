@@ -24,7 +24,8 @@ from plugins.plugin_im.message.params import (
     MessageVO, MessagePageParam, MessageSendParam,
     RecallParam, ForwardParam, SearchParam, ConversationMessageVO,
 )
-from plugins.plugin_im.ws import GlobalCrossHub, Message as WSMessage
+from plugins.plugin_im import ws as im_ws
+from plugins.plugin_im.ws import Message as WSMessage
 
 import logging
 import asyncio
@@ -64,7 +65,7 @@ async def send_message(param: MessageSendParam, sender_id: str, sender_type: str
     db = SessionLocal()
     try:
         # Rate limit check
-        if GlobalCrossHub and not await GlobalCrossHub.allow_message(sender_id, sender_type):
+        if im_ws.GlobalCrossHub and not await im_ws.GlobalCrossHub.allow_message(sender_id, sender_type):
             raise BusinessException("发送消息过于频繁，请稍后重试", 429)
 
         msg_type = param.msg_type or "TEXT"
@@ -127,9 +128,9 @@ async def send_message(param: MessageSendParam, sender_id: str, sender_type: str
             }
             ws_msg = WSMessage(type="new_message", payload=ws_payload)
             if receiver_type == "CONSUMER":
-                asyncio.ensure_future(GlobalCrossHub.send_to_consumer(rid, ws_msg, rec.id))
+                if im_ws.GlobalCrossHub: asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_consumer(rid, ws_msg, rec.id))
             else:
-                asyncio.ensure_future(GlobalCrossHub.send_to_user(rid, ws_msg, rec.id))
+                if im_ws.GlobalCrossHub: asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_user(rid, ws_msg, rec.id))
 
         return [r.conversation_id for r in records]
     except Exception:

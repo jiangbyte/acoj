@@ -21,7 +21,8 @@ from plugins.plugin_im.group.params import (
     SendMessageParam, GroupVO, MemberVO, MessageVO,
     HandleJoinRequestParam, TransferOwnerParam, SetNicknameParam, ConversationVO,
 )
-from plugins.plugin_im.ws import GlobalCrossHub, Message as WSMessage
+from plugins.plugin_im import ws as im_ws
+from plugins.plugin_im.ws import Message as WSMessage
 
 import logging
 logger = logging.getLogger(__name__)
@@ -699,9 +700,9 @@ def send_message(sender_id: str, sender_type: str, p: SendMessageParam) -> Messa
         ).all()
         for m in members_list:
             if m.user_type == UserTypeConsumer:
-                asyncio.ensure_future(GlobalCrossHub.send_to_consumer(m.user_id, ws_msg))
+                if im_ws.GlobalCrossHub: asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_consumer(m.user_id, ws_msg))
             else:
-                asyncio.ensure_future(GlobalCrossHub.send_to_user(m.user_id, ws_msg))
+                if im_ws.GlobalCrossHub: asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_user(m.user_id, ws_msg))
 
         return vo
     except Exception:
