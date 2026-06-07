@@ -17,7 +17,7 @@ class SysDict(Base):
     )
 
     id: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), primary_key=True, comment='主键')
-    code: Mapped[str] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='字典编码')
+    code: Mapped[str] = mapped_column(VARCHAR(50, charset='utf8mb4', collation='utf8mb4_general_ci'), nullable=False, comment='字典编码')
     label: Mapped[Optional[str]] = mapped_column(VARCHAR(255, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='字典标签')
     value: Mapped[Optional[str]] = mapped_column(VARCHAR(255, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='字典值')
     color: Mapped[Optional[str]] = mapped_column(VARCHAR(32, charset='utf8mb4', collation='utf8mb4_general_ci'), comment='字典颜色')

@@ -24,6 +24,7 @@ def _to_vo(entity: SysOrg) -> dict:
         "name": entity.name,
         "category": entity.category,
         "sort_code": entity.sort_code,
+        "status": entity.status,
     }
     if entity.parent_id is not None:
         vo["parent_id"] = entity.parent_id
@@ -126,6 +127,7 @@ def create(db: Session, vo: OrgVO, user_id: Optional[str] = None) -> None:
         code=vo.code,
         name=vo.name,
         category=vo.category or "",
+        status="ENABLED",
         sort_code=vo.sort_code or 0,
         created_at=now,
         updated_at=now,
@@ -159,10 +161,16 @@ def modify(db: Session, vo: OrgVO, user_id: Optional[str] = None) -> None:
     }
     if vo.parent_id is not None:
         up["parent_id"] = vo.parent_id if vo.parent_id not in ("", "0") else None
+    else:
+        up["parent_id"] = None
     if vo.description is not None:
         up["description"] = vo.description
+    else:
+        up["description"] = None
     if vo.extra is not None:
         up["extra"] = vo.extra
+    else:
+        up["extra"] = None
     if user_id:
         up["updated_by"] = user_id
     dao.db.execute(sa_update(SysOrg).where(SysOrg.id == vo.id).values(**up))

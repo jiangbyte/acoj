@@ -1,4 +1,4 @@
-"""Client user service — explicit field-by-field pattern."""
+"""Client user service — aligned with hei-gin."""
 
 from typing import Optional, Dict
 from datetime import datetime
@@ -11,7 +11,7 @@ from .params import (
 )
 from .dao import ClientUserDao
 from .models import ClientUser
-from core.utils import decrypt
+from core.utils import decrypt, compress_base64_image
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
@@ -21,6 +21,7 @@ import bcrypt
 
 
 def _to_vo(entity: ClientUser) -> dict:
+    """Mirrors hei-gin ClientUserVO + toVO()."""
     vo = {
         "id": entity.id,
         "username": entity.username,
@@ -29,25 +30,18 @@ def _to_vo(entity: ClientUser) -> dict:
         "motto": entity.motto,
         "gender": entity.gender,
         "email": entity.email,
+        "github": entity.github,
+        "phone": entity.phone,
         "status": entity.status,
-        "login_count": entity.login_count,
+        "last_login_ip": entity.last_login_ip,
+        "login_count": entity.login_count or 0,
     }
-    if entity.phone is not None:
-        vo["phone"] = entity.phone
-    if entity.birthday is not None:
-        vo["birthday"] = entity.birthday.strftime("%Y-%m-%d") if hasattr(entity.birthday, "strftime") else str(entity.birthday)
     if entity.last_login_at is not None:
         vo["last_login_at"] = entity.last_login_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.last_login_ip is not None:
-        vo["last_login_ip"] = entity.last_login_ip
     if entity.created_at is not None:
         vo["created_at"] = entity.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.created_by is not None:
-        vo["created_by"] = entity.created_by
     if entity.updated_at is not None:
         vo["updated_at"] = entity.updated_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.updated_by is not None:
-        vo["updated_by"] = entity.updated_by
     return vo
 
 
@@ -90,7 +84,8 @@ def page(db: Session, param: ClientUserPageParam) -> dict:
     dao = ClientUserDao(db)
     result = dao.find_page_by_filters(param)
     records = [_to_vo(r) for r in result.get("records", [])]
-    return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
+    return page_data(records=records, total=result[PageDataField.TOTAL],
+                     page=param.current, size=param.size)
 
 
 def detail(db: Session, id: str) -> Optional[dict]:
@@ -103,62 +98,64 @@ def detail(db: Session, id: str) -> Optional[dict]:
 
 
 def create(db: Session, vo: ClientUserVO, user_id: Optional[str] = None) -> None:
-    from core.utils import generate_id
+    """Mirrors hei-gin ClientUserCreate — bcrypt, duplicate check."""
     now = datetime.now()
+
+    # duplicate username check
+    if vo.username:
+        existing = find_by_username(db, vo.username)
+        if existing:
+            raise BusinessException("帐号已存在")
+
     entity = ClientUser(
         id=generate_id(),
-        username=vo.username,
-        nickname=vo.nickname or "",
-        avatar=vo.avatar or "",
-        motto=vo.motto or "",
-        gender=vo.gender or "",
-        email=vo.email or "",
-        phone=vo.phone or "",
-        status=vo.status or "ENABLED",
+        status="ACTIVE",
         login_count=0,
         created_at=now,
         updated_at=now,
     )
+    if vo.username:
+        entity.username = vo.username
     if vo.password:
         hashed = bcrypt.hashpw(vo.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
         entity.password = hashed
+    if vo.nickname:
+        entity.nickname = vo.nickname
+    if vo.avatar:
+        entity.avatar = vo.avatar
+    if vo.email:
+        entity.email = vo.email
+    if vo.phone:
+        entity.phone = vo.phone
     if user_id:
         entity.created_by = user_id
         entity.updated_by = user_id
+
     ClientUserDao(db).insert(entity)
 
 
 def modify(db: Session, vo: ClientUserVO, user_id: Optional[str] = None) -> None:
+    """Mirrors hei-gin ClientUserModify — updates map: nickname, avatar, email, phone, status."""
     dao = ClientUserDao(db)
     entity = dao.find_by_id(vo.id)
     if not entity:
         raise BusinessException("数据不存在")
-    if vo.username is not None and vo.username != entity.username:
-        if find_by_username(db, vo.username):
-            raise BusinessException("账号已存在")
+
     now = datetime.now()
-    up = {"updated_at": now}
-    if vo.username is not None:
-        up["username"] = vo.username
+    up: dict = {"updated_at": now}
     if vo.nickname is not None:
         up["nickname"] = vo.nickname
     if vo.avatar is not None:
         up["avatar"] = vo.avatar
-    if vo.motto is not None:
-        up["motto"] = vo.motto
-    if vo.gender is not None:
-        up["gender"] = vo.gender
     if vo.email is not None:
         up["email"] = vo.email
     if vo.phone is not None:
         up["phone"] = vo.phone
-    if vo.status is not None:
+    if vo.status:
         up["status"] = vo.status
-    if vo.password is not None:
-        hashed = bcrypt.hashpw(vo.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-        up["password"] = hashed
     if user_id:
         up["updated_by"] = user_id
+
     dao.db.execute(sa_update(ClientUser).where(ClientUser.id == vo.id).values(**up))
     dao.db.commit()
 
@@ -203,9 +200,7 @@ class ClientUserService:
 
     async def create(self, vo: ClientUserVO, request: Optional[Request] = None) -> None:
         if vo.username and self.find_by_username(vo.username):
-            raise BusinessException("账号已存在")
-        if vo.email and self.find_by_email(vo.email):
-            raise BusinessException("邮箱已存在")
+            raise BusinessException("帐号已存在")
         return create(self.db, vo, await self._get_current_user_id(request))
 
     async def modify(self, vo: ClientUserVO, request: Optional[Request] = None) -> None:
@@ -230,39 +225,53 @@ class ClientUserService:
         return _to_vo(entity)
 
     async def update_profile(self, param: UpdateProfileParam, request: Request) -> None:
+        """Mirrors hei-gin UpdateProfile — nickname, avatar, email, phone, username."""
         user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
         if not user_id:
             raise BusinessException("用户未登录")
         entity = self.dao.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在")
+
+        # duplicate username check (exclude self)
+        if param.username:
+            existing = self.find_by_username(param.username)
+            if existing and existing.id != user_id:
+                raise BusinessException("用户名已存在")
+
         now = datetime.now()
-        up = {"updated_at": now}
+        up: dict = {"updated_at": now}
         if param.nickname is not None:
             up["nickname"] = param.nickname
+        if param.username is not None:
+            up["username"] = param.username
         if param.avatar is not None:
             up["avatar"] = param.avatar
-        if param.motto is not None:
-            up["motto"] = param.motto
-        if param.gender is not None:
-            up["gender"] = param.gender
         if param.email is not None:
             up["email"] = param.email
+        if param.phone is not None:
+            up["phone"] = param.phone
         up["updated_by"] = user_id
         self.db.execute(sa_update(ClientUser).where(ClientUser.id == user_id).values(**up))
         self.db.commit()
 
     async def update_avatar(self, param: UpdateAvatarParam, request: Request) -> None:
+        """Mirrors hei-gin UpdateAvatar — compress base64 512×512 80%."""
         user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
         if not user_id:
             raise BusinessException("用户未登录")
+        if not param.avatar:
+            raise BusinessException("头像不能为空")
         entity = self.dao.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在")
-        entity.avatar = param.avatar
+
+        compressed = compress_base64_image(param.avatar, 512, 512, 80)
+        entity.avatar = compressed
         self.dao.update(entity, user_id=user_id)
 
     async def update_password(self, param: UpdatePasswordParam, request: Request) -> None:
+        """Mirrors hei-gin UpdatePassword — verify current via decrypt, hash new."""
         user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
         if not user_id:
             raise BusinessException("用户未登录")
@@ -285,19 +294,24 @@ class ClientUserService:
 def client_user_page(db: Session, param: ClientUserPageParam) -> dict:
     return page(db, param)
 
+
 def client_user_detail(db: Session, id: str) -> Optional[dict]:
     return detail(db, id)
+
 
 async def client_user_create(db: Session, vo: ClientUserVO, request: Request) -> None:
     user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
     return create(db, vo, user_id)
 
+
 async def client_user_modify(db: Session, vo: ClientUserVO, request: Request) -> None:
     user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
     return modify(db, vo, user_id)
 
+
 def client_user_remove(db: Session, param: IdsParam) -> None:
     return remove(db, param.ids)
+
 
 async def client_user_get_current(db: Session, request: Request) -> Optional[Dict]:
     user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
@@ -308,41 +322,60 @@ async def client_user_get_current(db: Session, request: Request) -> Optional[Dic
         return None
     return _to_vo(entity)
 
-async def client_user_update_profile(db: Session, param: UpdateProfileParam, request: Request) -> None:
-    from sqlalchemy import update as sa_update
+
+async def client_user_update_profile(db: Session, param: UpdateProfileParam,
+                                     request: Request) -> None:
+    """Mirrors hei-gin UpdateProfile."""
     user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
     if not user_id:
         raise BusinessException("用户未登录")
     entity = find_by_id(db, user_id)
     if not entity:
         raise BusinessException("用户不存在")
+
+    # duplicate username check (exclude self)
+    if param.username:
+        existing = find_by_username(db, param.username)
+        if existing and existing.id != user_id:
+            raise BusinessException("用户名已存在")
+
     now = datetime.now()
-    up = {"updated_at": now}
+    up: dict = {"updated_at": now}
     if param.nickname is not None:
         up["nickname"] = param.nickname
+    if param.username is not None:
+        up["username"] = param.username
     if param.avatar is not None:
         up["avatar"] = param.avatar
-    if param.motto is not None:
-        up["motto"] = param.motto
-    if param.gender is not None:
-        up["gender"] = param.gender
     if param.email is not None:
         up["email"] = param.email
+    if param.phone is not None:
+        up["phone"] = param.phone
     up["updated_by"] = user_id
     db.execute(sa_update(ClientUser).where(ClientUser.id == user_id).values(**up))
     db.commit()
 
-async def client_user_update_avatar(db: Session, param: UpdateAvatarParam, request: Request) -> None:
+
+async def client_user_update_avatar(db: Session, param: UpdateAvatarParam,
+                                    request: Request) -> None:
+    """Mirrors hei-gin UpdateAvatar — compress base64 512×512 80%."""
     user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
     if not user_id:
         raise BusinessException("用户未登录")
+    if not param.avatar:
+        raise BusinessException("头像不能为空")
     entity = find_by_id(db, user_id)
     if not entity:
         raise BusinessException("用户不存在")
-    entity.avatar = param.avatar
+
+    compressed = compress_base64_image(param.avatar, 512, 512, 80)
+    entity.avatar = compressed
     ClientUserDao(db).update(entity, user_id=user_id)
 
-async def client_user_update_password(db: Session, param: UpdatePasswordParam, request: Request) -> None:
+
+async def client_user_update_password(db: Session, param: UpdatePasswordParam,
+                                      request: Request) -> None:
+    """Mirrors hei-gin UpdatePassword."""
     user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
     if not user_id:
         raise BusinessException("用户未登录")

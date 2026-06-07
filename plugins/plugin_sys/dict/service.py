@@ -154,8 +154,7 @@ def page(db: Session, param: DictPageParam) -> dict:
 
 
 def list_dicts(db: Session, param: DictListParam) -> list:
-    dao = DictDao(db)
-    records = dao.find_list_by_filters(param)
+    records = DictDao(db).find_list_by_filters(param)
     return [to_vo(r) for r in records]
 
 
@@ -163,6 +162,10 @@ def tree(db: Session, param: DictTreeParam) -> list:
     q = select(SysDict).order_by(SysDict.sort_code.asc())
     if param.category:
         q = q.where(SysDict.category == param.category)
+    if param.dict_group == "FRM":
+        q = q.where(SysDict.category == "FRM")
+    if param.dict_group == "BIZ":
+        q = q.where(SysDict.category == "BIZ")
     all_rows = db.execute(q).scalars().all()
     if not all_rows:
         return []
@@ -225,6 +228,9 @@ def modify(db: Session, vo: DictVO, user_id: Optional[str] = None) -> None:
 
     _check_duplicate(db, vo, vo.id)
 
+    if vo.parent_id is not None and vo.parent_id not in ("", "0") and vo.parent_id != _get_parent_id_key(entity.parent_id):
+        _check_circular_parent(db, vo.id, vo.parent_id)
+
     now = datetime.now()
     up = {
         "code": vo.code,
@@ -260,15 +266,16 @@ def options(db: Session) -> list:
 
 
 def get_dict_label(db: Session, type_code: str, value: str) -> Optional[str]:
-    dao = DictDao(db)
-    root = dao.find_by_code(type_code)
-    if not root:
+    """Get dict label by type code and value (subquery match Go's DictGetLabel)."""
+    entity = db.execute(
+        select(SysDict).where(
+            SysDict.parent_id.in_(select(SysDict.id).where(SysDict.code == type_code)),
+            SysDict.value == value,
+        )
+    ).scalar_one_or_none()
+    if not entity:
         return None
-    children = dao.find_by_parent_id(root.id)
-    for child in children:
-        if child.value == value:
-            return child.label
-    return None
+    return entity.label
 
 
 def get_dict_children(db: Session, type_code: str) -> list:
@@ -319,7 +326,3 @@ class DictService:
 
     def get_dict_children(self, type_code: str) -> list:
         return get_dict_children(self.db, type_code)
-
-def options(db: Session) -> list:
-    rows = db.execute(select(SysDict).order_by(SysDict.sort_code.asc())).scalars().all()
-    return [to_vo(r) for r in rows]

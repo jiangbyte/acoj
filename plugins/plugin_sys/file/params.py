@@ -27,6 +27,30 @@ class FileUploadResult(BaseModel):
     thumbnail: str = ""
 
 
+class FileVO(BaseModel):
+    """Full file VO — matches hei-gin's FileVO for page/detail responses."""
+    id: str = ""
+    engine: str = ""
+    bucket: str = ""
+    file_key: str = ""
+    name: str = ""
+    suffix: str = ""
+    size_kb: int = 0
+    size_info: str = ""
+    obj_name: str = ""
+    storage_path: str = ""
+    download_path: str = ""
+    is_download_auth: bool = False
+    thumbnail: str = ""
+    checksum: str = ""
+    checksum_algo: str = ""
+    ext_json: str = ""
+    created_at: str = ""
+    created_by: str = ""
+    updated_at: str = ""
+    updated_by: str = ""
+
+
 class ChunkUploadInitParam(BaseModel):
     file_name: str = Field(..., description="文件名")
     file_size: int = Field(..., description="文件大小")

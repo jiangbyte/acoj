@@ -1,12 +1,23 @@
+"""Client session API — standalone, mirrors hei-gin plugin-client/session/api/v1/api.go."""
+
 from typing import List
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from core.db import get_db
 from core.result import Result, PageData, success
-from core.auth.decorator import HeiCheckPermission
-from core.constants import SESSION_PREFIX_CONSUMER, TOKEN_PREFIX_CONSUMER
-from ...params import SessionAnalysisResult, SessionPageResult, SessionPageParam, SessionExitParam, SessionExitTokenParam, SessionTokenResult, SessionChartData
-from ...service import analysis as svc_analysis, list_c_sessions as svc_list_c, exit_c_session as svc_exit_c, exit_c_session_token as svc_exit_c_token, chart_data as svc_chart_data, token_list as svc_token_list
+from core.plugin import Perm
+from ...params import (
+    SessionAnalysisResult, SessionPageResult, SessionPageParam,
+    SessionExitParam, SessionExitTokenParam, SessionTokenResult, SessionChartData,
+)
+from ...service import (
+    analysis as svc_analysis,
+    page as svc_page,
+    exit_session as svc_exit,
+    token_list as svc_token_list,
+    exit_token as svc_exit_token,
+    chart_data as svc_chart_data,
+)
 
 router = APIRouter()
 
@@ -16,7 +27,7 @@ router = APIRouter()
     summary="获取C端会话分析统计",
     response_model=Result[SessionAnalysisResult],
 )
-@HeiCheckPermission("sys:session:page")
+@Perm("sys:session:page", "会话分页")
 async def analysis(
     request: Request,
     db: Session = Depends(get_db),
@@ -30,13 +41,13 @@ async def analysis(
     summary="获取C端在线用户分页",
     response_model=Result[PageData[SessionPageResult]],
 )
-@HeiCheckPermission("sys:session:page")
+@Perm("sys:session:page", "会话分页")
 async def page(
     request: Request,
     param: SessionPageParam = Depends(),
     db: Session = Depends(get_db),
 ):
-    result = await svc_list_c(db, param)
+    result = await svc_page(db, param)
     return success({
         "records": result["records"],
         "total": result["total"],
@@ -50,12 +61,12 @@ async def page(
     summary="强退C端用户会话",
     response_model=Result,
 )
-@HeiCheckPermission("sys:session:exit")
+@Perm("sys:session:exit", "强退会话")
 async def exit_session(
     request: Request,
     param: SessionExitParam,
 ):
-    await svc_exit_c(param.user_id)
+    await svc_exit(param.user_id)
     return success()
 
 
@@ -64,12 +75,12 @@ async def exit_session(
     summary="获取C端用户令牌列表",
     response_model=Result[List[SessionTokenResult]],
 )
-@HeiCheckPermission("sys:session:page")
+@Perm("sys:session:page", "会话分页")
 async def token_list(
     request: Request,
     user_id: str = Query(..., description="用户ID"),
 ):
-    result = await svc_token_list(SESSION_PREFIX_CONSUMER, TOKEN_PREFIX_CONSUMER, user_id)
+    result = await svc_token_list(user_id)
     return success(result)
 
 
@@ -78,12 +89,12 @@ async def token_list(
     summary="强退C端指定令牌",
     response_model=Result,
 )
-@HeiCheckPermission("sys:session:exit")
+@Perm("sys:session:exit", "强退会话")
 async def exit_token(
     request: Request,
     param: SessionExitTokenParam,
 ):
-    await svc_exit_c_token(param.user_id, param.token)
+    await svc_exit_token(param.user_id, param.token)
     return success()
 
 
@@ -92,10 +103,9 @@ async def exit_token(
     summary="获取C端会话图表数据",
     response_model=Result[SessionChartData],
 )
-@HeiCheckPermission("sys:session:page")
+@Perm("sys:session:page", "会话分页")
 async def chart_data(
     request: Request,
-    db: Session = Depends(get_db),
 ):
-    result = await svc_chart_data(db)
+    result = await svc_chart_data()
     return success(result)

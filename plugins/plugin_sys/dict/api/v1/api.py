@@ -26,7 +26,6 @@ async def dict_list(request: Request, param: DictListParam = Depends(), db: Sess
 
 
 @router.get("/api/v1/sys/dict/tree", summary="获取字典树")
-@HeiCheckPermission("sys:dict:tree")
 async def dict_tree(request: Request, param: DictTreeParam = Depends(), db: Session = Depends(get_db)):
     service = DictService(db)
     return success(service.tree(param))
@@ -69,6 +68,7 @@ async def detail(request: Request, id: str = Query(...), db: Session = Depends(g
 
 
 @router.get("/api/v1/sys/dict/get-label", summary="根据字典类型和值获取标签")
+@HeiCheckPermission("sys:dict:get-label")
 async def get_label(request: Request, type_code: str = Query(...), value: str = Query(...), db: Session = Depends(get_db)):
     service = DictService(db)
     data = service.get_dict_label(type_code, value)
@@ -76,6 +76,7 @@ async def get_label(request: Request, type_code: str = Query(...), value: str = 
 
 
 @router.get("/api/v1/sys/dict/get-children", summary="根据字典类型获取子字典列表")
+@HeiCheckPermission("sys:dict:get-children")
 async def get_children(request: Request, type_code: str = Query(...), db: Session = Depends(get_db)):
     service = DictService(db)
     return success(service.get_dict_children(type_code))

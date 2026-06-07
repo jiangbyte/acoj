@@ -57,7 +57,7 @@ class ClientUserDao:
         filters = []
         if param.keyword:
             keyword = f"%{param.keyword}%"
-            filters.append(or_(ClientUser.username.ilike(keyword), ClientUser.nickname.ilike(keyword)))
+            filters.append(or_(ClientUser.username.ilike(keyword), ClientUser.nickname.ilike(keyword), ClientUser.phone.ilike(keyword), ClientUser.email.ilike(keyword)))
         if param.status:
             filters.append(ClientUser.status == param.status)
 

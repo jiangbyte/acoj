@@ -34,6 +34,8 @@ def _to_vo(entity: SysGroup) -> dict:
         vo["parent_id"] = entity.parent_id
     if entity.description is not None:
         vo["description"] = entity.description
+    if entity.extra is not None:
+        vo["extra"] = entity.extra
     if entity.created_at is not None:
         vo["created_at"] = entity.created_at.strftime("%Y-%m-%d %H:%M:%S")
     if entity.created_by is not None:
@@ -126,8 +128,6 @@ def _collect_descendant_ids(db: Session, ids: List[str]) -> List[str]:
 # ── Service functions ──
 
 def page(db: Session, param: GroupPageParam) -> dict:
-    if not param.parent_id and not param.org_id:
-        return page_data(records=[], total=0, page=param.current, size=param.size)
     dao = GroupDao(db)
     result = dao.find_page_by_filters(param)
     records = [_to_vo(r) for r in result.get("records", [])]
@@ -147,13 +147,10 @@ def detail(db: Session, id: str) -> Optional[dict]:
 
 
 def tree(db: Session, param: GroupTreeParam) -> list:
-    if not param.org_id:
-        return []
     all_rows = db.execute(select(SysGroup).order_by(SysGroup.sort_code.asc())).scalars().all()
-    filtered = [r for r in all_rows if r.org_id == param.org_id]
-    if param.keyword:
-        keyword = param.keyword.lower()
-        filtered = [r for r in filtered if keyword in (r.name or "").lower()]
+    filtered = all_rows
+    if param.category:
+        filtered = [r for r in filtered if r.category == param.category]
 
     children_map = {}
     for r in filtered:
@@ -212,6 +209,12 @@ def modify(db: Session, vo: GroupVO, user_id: Optional[str] = None) -> None:
     }
     if vo.description is not None:
         up["description"] = vo.description
+    else:
+        up["description"] = None
+    if vo.extra is not None:
+        up["extra"] = vo.extra
+    else:
+        up["extra"] = None
     if user_id:
         up["updated_by"] = user_id
     dao.db.execute(sa_update(SysGroup).where(SysGroup.id == vo.id).values(**up))
@@ -222,8 +225,7 @@ def remove(db: Session, ids: list) -> None:
     if not ids:
         return
     all_ids = _collect_descendant_ids(db, ids)
-    for gid in all_ids:
-        db.execute(sa_update(SysUser).where(SysUser.group_id == gid).values(group_id=None))
+    db.execute(sa_update(SysUser).where(SysUser.group_id.in_(all_ids)).values(group_id=None))
     GroupDao(db).delete_by_ids(all_ids)
 
 

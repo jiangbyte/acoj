@@ -6,6 +6,7 @@ Mirrors hei-gin plugins/plugin-sys/file/service.go.
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import logging
 import os
@@ -75,6 +76,34 @@ def _to_vo(entity: SysFile) -> FileUploadResult:
     )
 
 
+def _entity_to_dict(entity: SysFile) -> dict:
+    """Full entity-to-dict conversion — matches hei-gin's ToVO() for page/detail."""
+    def _fmt(dt):
+        return dt.strftime("%Y-%m-%d %H:%M:%S") if dt else ""
+    return {
+        "id": entity.id,
+        "engine": entity.engine,
+        "bucket": entity.bucket,
+        "file_key": entity.file_key,
+        "name": entity.name,
+        "suffix": entity.suffix or "",
+        "size_kb": entity.size_kb,
+        "size_info": entity.size_info or "",
+        "obj_name": entity.obj_name or "",
+        "storage_path": entity.storage_path or "",
+        "download_path": entity.download_path or "",
+        "is_download_auth": entity.is_download_auth or False,
+        "thumbnail": entity.thumbnail or "",
+        "checksum": entity.checksum or "",
+        "checksum_algo": entity.checksum_algo or "",
+        "ext_json": entity.ext_json or "",
+        "created_at": _fmt(entity.created_at),
+        "created_by": entity.created_by or "",
+        "updated_at": _fmt(entity.updated_at),
+        "updated_by": entity.updated_by or "",
+    }
+
+
 # ═════════════════════════════════════════════════════════════════════
 # Upload
 # ═════════════════════════════════════════════════════════════════════
@@ -103,7 +132,7 @@ async def upload(
     if not eng:
         raise BusinessException(f"不支持的存储类型: {engine_type}", 500)
 
-    storage_path = eng.store_stream(bucket, file_key, content)
+    storage_path = eng.store_stream(bucket, file_key, io.BytesIO(content))
     download_path = get_url(engine_type, bucket, file_key)
 
     now = datetime.now()
@@ -163,7 +192,7 @@ def page(param: FilePageParam) -> dict:
             (param.current - 1) * param.size
         ).limit(param.size).all()
 
-        return page_data([_to_vo(r).__dict__ for r in records], total, param.current, param.size)
+        return page_data([_entity_to_dict(r) for r in records], total, param.current, param.size)
     finally:
         db.close()
 
@@ -315,8 +344,8 @@ def max_upload_size() -> int:
 # Detail  —  mirrors hei-gin's Detail()
 # ═════════════════════════════════════════════════════════════════════
 
-def detail(file_id: str) -> Optional[FileUploadResult]:
-    """Return file detail VO by ID.
+def detail(file_id: str) -> Optional[dict]:
+    """Return file detail dict by ID — matches hei-gin's Detail() returning FileVO.
 
     Mirrors hei-gin's Detail().
     """
@@ -327,7 +356,7 @@ def detail(file_id: str) -> Optional[FileUploadResult]:
         entity = db.query(SysFile).filter(SysFile.id == file_id).first()
         if not entity:
             return None
-        return _to_vo(entity)
+        return _entity_to_dict(entity)
     finally:
         db.close()
 

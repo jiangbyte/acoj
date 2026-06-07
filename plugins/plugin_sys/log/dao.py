@@ -1,3 +1,5 @@
+"""Log DAO — mirrors hei-gin plugin-sys/log/service.go queries."""
+
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from sqlalchemy import func, select, delete as sa_delete
@@ -56,14 +58,18 @@ class LogDao:
     # ---- custom ----
 
     def find_page(self, param: LogPageParam, query_builder=None) -> Dict[str, Any]:
+        """Mirrors Go Page: keyword → name/op_user/op_ip, order by created_at DESC."""
         filters = []
 
-        if param.keyword:
-            filters.append(SysLog.name.ilike(f"%{param.keyword}%"))
         if param.category:
             filters.append(SysLog.category == param.category)
-        if param.exe_status:
-            filters.append(SysLog.exe_status == param.exe_status)
+        if param.keyword:
+            kw = f"%{param.keyword}%"
+            filters.append(
+                SysLog.name.ilike(kw) |
+                SysLog.op_user.ilike(kw) |
+                SysLog.op_ip.ilike(kw)
+            )
 
         current = max(1, param.current)
         size = max(1, param.size)
@@ -78,7 +84,7 @@ class LogDao:
             select(SysLog)
             .where(*filters)
             .options(load_only(*load_attrs))
-            .order_by(SysLog.op_time.desc())
+            .order_by(SysLog.created_at.desc())
             .offset(offset)
             .limit(size)
         )

@@ -11,7 +11,7 @@ from core.result import success, failure
 from core.plugin.registry import register_router
 from core.pojo import IdsParam
 from plugins.plugin_sys.file.params import (
-    FilePageParam, FileUploadResult, ChunkUploadInitParam,
+    FilePageParam, FileUploadResult, FileVO, ChunkUploadInitParam,
     ChunkUploadPartParam, ChunkCompleteParam, ChunkAbortParam,
 )
 from plugins.plugin_sys.file.service import (
@@ -38,25 +38,24 @@ async def upload_handler(request: Request, file: UploadFile = File(...),
 
 @router.get("/page", summary="文件分页")
 @HeiCheckPermission("sys:file:page")
-@HeiCheckLogin
-async def page_handler(current: int = QueryParam(1), size: int = QueryParam(10),
+async def page_handler(request: Request, current: int = QueryParam(1), size: int = QueryParam(10),
                         keyword: str = QueryParam(""), engine: str = QueryParam(""),
                         bucket: str = QueryParam("")):
     param = FilePageParam(current=current, size=size, keyword=keyword,
                           engine=engine, bucket=bucket)
-    return page(param)
+    return success(page(param))
 
 
 @router.get("/detail", summary="文件详情")
 @HeiCheckPermission("sys:file:detail")
-@HeiCheckLogin
-async def detail_handler(id: str = QueryParam(...)):
-    return success(detail(id).__dict__ if detail(id) else None)
+async def detail_handler(request: Request, id: str = QueryParam(...)):
+    data = detail(id)
+    return success(data if data else None)
 
 
 @router.get("/download", summary="下载文件")
-@HeiCheckLogin
-async def download_handler(id: str = QueryParam(...)):
+@HeiCheckPermission("sys:file:download")
+async def download_handler(request: Request, id: str = QueryParam(...)):
     from core.db import SessionLocal
     db = SessionLocal()
     try:

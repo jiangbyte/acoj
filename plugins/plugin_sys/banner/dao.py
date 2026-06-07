@@ -16,8 +16,10 @@ class BannerDao:
     def find_page(self, param: BannerPageParam) -> Dict[str, Any]:
         current = max(1, param.current)
         size = max(1, param.size)
+        if size > 100:
+            size = 100
         offset = (current - 1) * size
-        stmt = select(SysBanner)
+        stmt = select(SysBanner).order_by(SysBanner.created_at.desc())
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = self.db.execute(count_stmt).scalar() or 0
         records = list(self.db.execute(stmt.offset(offset).limit(size)).scalars().all())

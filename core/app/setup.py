@@ -52,5 +52,15 @@ def create_app() -> FastAPI:
 
     execute_routes(app)
 
+    # ── 5. Static file mount for uploads ──────────────────────────────
+    # Serves `/uploads/{bucket}/{file_key}` from the local upload folder.
+    # Mirrors hei-gin where `/uploads/` is served by the web server / nginx.
+    from fastapi.staticfiles import StaticFiles
+    import os
+
+    uploads_path = os.path.abspath(settings.storage.local.upload_folder)
+    os.makedirs(uploads_path, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
+
     return app
 

@@ -1,3 +1,5 @@
+"""Client auth username params — mirrors hei-gin plugin-client/auth/username/params.go."""
+
 from typing import Optional
 from pydantic import BaseModel
 
@@ -7,11 +9,11 @@ class UsernameLoginParam(BaseModel):
     password: str
     captcha_code: str
     captcha_id: str
-    device_id: Optional[str]
+    device_id: Optional[str] = None
 
 
 class UsernameLoginResult(BaseModel):
-    token: Optional[str] = None
+    token: str = ""
 
 
 class UsernameRegisterParam(BaseModel):
@@ -22,8 +24,8 @@ class UsernameRegisterParam(BaseModel):
 
 
 class UsernameRegisterResult(BaseModel):
-    message: Optional[str] = None
+    message: str = ""
 
 
 class UsernameLogoutResult(BaseModel):
-    message: Optional[str] = None
+    message: str = ""

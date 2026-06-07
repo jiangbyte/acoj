@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from core.result import Result, PageData, success
-from core.pojo import IdParam, IdsParam
+from core.pojo import IdsParam
 from core.db import get_db
 from core.auth.decorator import HeiCheckPermission, NoRepeat
 from core.log import SysLog
@@ -89,7 +89,7 @@ async def remove(
     db: Session = Depends(get_db)
 ):
     service = OrgService(db)
-    service.remove(param)
+    service.remove(param.ids)
     return success()
 
 
@@ -105,6 +105,6 @@ async def detail(
     db: Session = Depends(get_db)
 ):
     service = OrgService(db)
-    data = service.detail(IdParam(id=id))
+    data = service.detail(id)
     return success(data if data else None)
 

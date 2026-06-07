@@ -1,14 +1,14 @@
+"""Home params — mirrors hei-gin plugin-sys/home/params.go."""
+
 from typing import Optional, List
-from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
 class QuickActionVO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: Optional[str] = None
-    resource_id: str
+    resource_id: str = ""
     parent_id: Optional[str] = None
     type: str = ""
     name: str = ""
@@ -29,11 +29,12 @@ class SortQuickActionParam(BaseModel):
     ids: List[str]
 
 
-class HomeNotice(DateTimeValidatorMixin, BaseModel):
-    id: str
-    title: str
+class HomeNotice(BaseModel):
+    """Mirrors Go HomeNotice — created_at is a formatted string."""
+    id: str = ""
+    title: str = ""
     level: str = "NORMAL"
-    created_at: Optional[datetime] = None
+    created_at: str = ""
 
 
 class HomeStats(BaseModel):

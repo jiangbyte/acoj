@@ -90,10 +90,10 @@ async def _collect_sessions(
         except json.JSONDecodeError:
             continue
 
-        # Filter by keyword (username/nickname)
         extra = token_data.get("extra", {})
         username_val = extra.get("username", "")
-        if keyword and keyword.lower() not in username_val.lower():
+        # Filter by keyword (matches userID or username, case-sensitive like Go)
+        if keyword and keyword not in user_id and keyword not in username_val:
             continue
 
         ttl = await redis_client.ttl(token_key)
@@ -117,7 +117,7 @@ async def _collect_sessions(
             avatar = user.avatar or ""
             status = user.status or ""
             last_login_ip = user.last_login_ip or ""
-            last_login_time = user.last_login_at
+            last_login_time = user.last_login_at if user.last_login_at else None
             if last_login_ip:
                 last_login_address = get_city_info(last_login_ip)
 
@@ -137,7 +137,10 @@ async def _collect_sessions(
         ))
 
     # Sort by session create time desc
-    sessions.sort(key=lambda s: s.session_create_time or "", reverse=True)
+    sessions.sort(
+        key=lambda s: s.session_create_time.strftime("%Y-%m-%d %H:%M:%S") if s.session_create_time else "",
+        reverse=True,
+    )
     return sessions
 
 
@@ -248,10 +251,13 @@ async def token_list(session_prefix: str, token_prefix: str, user_id: str) -> Li
         created_at_str = token_data.get("created_at", "")
         created_at_dt = None
         if created_at_str:
-            try:
-                created_at_dt = datetime.fromisoformat(created_at_str)
-            except (ValueError, TypeError):
-                pass
+            if isinstance(created_at_str, datetime):
+                created_at_dt = created_at_str
+            else:
+                try:
+                    created_at_dt = datetime.strptime(created_at_str, "%Y-%m-%d %H:%M:%S")
+                except (ValueError, TypeError):
+                    pass
 
         results.append(SessionTokenResult(
             token=t_str,
@@ -298,8 +304,8 @@ async def chart_data(db: DbSession) -> SessionChartData:
     b_total, _, _ = await _count_tokens(b_keys, TOKEN_PREFIX_BUSINESS)
     c_total, _, _ = await _count_tokens(c_keys, TOKEN_PREFIX_CONSUMER)
     pie_data = [
-        LogCategoryTotal(category="B端", total=b_total),
-        LogCategoryTotal(category="C端", total=c_total),
+        LogCategoryTotal(category="BUSINESS", total=b_total),
+        LogCategoryTotal(category="CONSUMER", total=c_total),
     ]
 
     # --- Bar chart: last 7 days daily new sessions ---
@@ -334,8 +340,8 @@ async def chart_data(db: DbSession) -> SessionChartData:
     bar_chart = LogBarChartData(
         days=days,
         series=[
-            LogCategorySeries(name="B端", data=b_daily),
-            LogCategorySeries(name="C端", data=c_daily),
+            LogCategorySeries(name="BUSINESS", data=b_daily),
+            LogCategorySeries(name="CONSUMER", data=c_daily),
         ],
     )
 
