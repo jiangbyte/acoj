@@ -8,7 +8,7 @@
 
 ## 简介
 
-**Hei FastAPI** 是 HEI 快速开发框架的 Python 单体应用版本，基于 FastAPI + SQLAlchemy 2.0 构建。采用 **插件化架构**，业务模块自包含于 `plugins/` 目录，自动注册路由、模型和权限，对标 hei-gin (Go) 的设计。
+**Hei FastAPI** —— Python + FastAPI + SQLAlchemy 构建的快速开发框架，开箱即用。采用 **插件化架构**，业务模块自包含于 `plugins/` 目录，自动注册路由、模型和权限，对标 hei-gin (Go) 的设计。
 
 **在线文档**: [https://jiangbyte.github.io/hei-fastapi/](https://jiangbyte.github.io/hei-fastapi/)
 
