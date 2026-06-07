@@ -467,7 +467,7 @@ def user_reset_password(db: Session, user_id: str) -> None:
     if not user_id:
         raise BusinessException("ID不能为空", 400)
     from config.settings import settings
-    raw_pwd = settings.user.reset_password
+    raw_pwd = settings.user_config.reset_password
     if not raw_pwd:
         raw_pwd = _generate_random_password()
     hashed = bcrypt.hashpw(raw_pwd.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
@@ -645,11 +645,11 @@ class UserService:
         return user_batch_import(self.db, param)
 
     def update_status(self, param: UpdateStatusParam) -> None:
+        return user_update_status(self.db, param)
+
 
     def export(self, param: UserPageParam) -> List[dict]:
         return user_export(self.db, param)
-        return user_update_status(self.db, param)
-
 
 # ═════════════════════════════════════════════════════════════════════
 

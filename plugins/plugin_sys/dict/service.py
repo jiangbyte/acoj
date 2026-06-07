@@ -248,15 +248,15 @@ def modify(db: Session, vo: DictVO, user_id: Optional[str] = None) -> None:
 
 
 def remove(db: Session, ids: list) -> None:
+    if not ids:
+        return
+    all_ids = _collect_descendant_ids(db, ids)
+    DictDao(db).delete_by_ids(all_ids)
 
 
 def options(db: Session) -> list:
     rows = db.execute(select(SysDict).order_by(SysDict.sort_code.asc())).scalars().all()
     return [to_vo(r) for r in rows]
-    if not ids:
-        return
-    all_ids = _collect_descendant_ids(db, ids)
-    DictDao(db).delete_by_ids(all_ids)
 
 
 def get_dict_label(db: Session, type_code: str, value: str) -> Optional[str]:

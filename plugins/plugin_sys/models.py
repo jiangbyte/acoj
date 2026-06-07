@@ -48,10 +48,8 @@ register_model(_SysResource)
 # ── Dict ──
 from plugins.plugin_sys.dict.models import (
     SysDict as _SysDict,
-    SysDictItem as _SysDictItem,
-)
+    )
 register_model(_SysDict)
-register_model(_SysDictItem)
 
 # ── Config ──
 from plugins.plugin_sys.config.models import SysConfig as _SysConfig
@@ -101,7 +99,7 @@ logger.info(
 from plugins.plugin_sys.user.models import SysUser, RelUserRole, RelUserPermission
 from plugins.plugin_sys.role.models import SysRole, RelRolePermission, RelRoleResource
 from plugins.plugin_sys.resource.models import SysModule, SysResource
-from plugins.plugin_sys.dict.models import SysDict, SysDictItem
+from plugins.plugin_sys.dict.models import SysDict
 from plugins.plugin_sys.config.models import SysConfig
 from plugins.plugin_sys.banner.models import SysBanner
 from plugins.plugin_sys.log.models import SysLog
@@ -117,7 +115,7 @@ __all__ = [
     "SysUser", "RelUserRole", "RelUserPermission",
     "SysRole", "RelRolePermission", "RelRoleResource",
     "SysModule", "SysResource",
-    "SysDict", "SysDictItem",
+    "SysDict",
     "SysConfig",
     "SysBanner",
     "SysLog",

@@ -1,13 +1,13 @@
 """
 WebSocket configuration, loaded from settings.
 
-Mirrors hei-gin's ``plugins/plugin-im/ws/config.go``.
+Mirrors hei-gin's plugins/plugin-im/ws/config.go.
 """
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -18,41 +18,41 @@ class WSConfig:
     """WebSocket configuration."""
     read_buffer_size: int = 1024
     write_buffer_size: int = 1024
-    heartbeat_interval: int = 30          # seconds
-    instance_ttl: int = 60                # seconds
-    stale_clean_interval: int = 5         # minutes
-    rate_limit_window: int = 10           # seconds
-    rate_limit_max: int = 30              # messages per window
-    dedup_ttl: int = 30                   # seconds
-    poll_timeout: int = 2                 # seconds
-    pong_timeout: int = 10                # seconds
-    write_timeout: int = 10               # seconds
-    online_broadcast_interval: int = 60   # seconds
+    heartbeat_interval: int = 30
+    instance_ttl: int = 60
+    stale_clean_interval: int = 5
+    rate_limit_window: int = 10
+    rate_limit_max: int = 30
+    dedup_ttl: int = 30
+    poll_timeout: int = 2
+    pong_timeout: int = 10
+    write_timeout: int = 10
+    online_broadcast_interval: int = 60
     max_clients_per_ip: int = 10
     max_clients_per_user: int = 3
 
 
 def load_config() -> WSConfig:
     """Load WS config from settings."""
-    cfg = WSConfig()
-    raw = getattr(settings, "ws", None) or {}
-    for key, default_type in [
-        ("read_buffer_size", int), ("write_buffer_size", int),
-        ("heartbeat_interval", int), ("instance_ttl", int),
-        ("stale_clean_interval", int), ("rate_limit_window", int),
-        ("rate_limit_max", int), ("dedup_ttl", int),
-        ("poll_timeout", int), ("pong_timeout", int),
-        ("write_timeout", int), ("online_broadcast_interval", int),
-        ("max_clients_per_ip", int), ("max_clients_per_user", int),
-    ]:
-        val = raw.get(key)
-        if val is not None:
-            try:
-                setattr(cfg, key, default_type(val))
-            except (ValueError, TypeError):
-                logger.warning("Invalid ws config value for %s: %s", key, val)
-    return cfg
+    s = getattr(settings, "ws", None)
+    if s is None:
+        return WSConfig()
+    return WSConfig(
+        read_buffer_size=getattr(s, "read_buffer_size", 1024),
+        write_buffer_size=getattr(s, "write_buffer_size", 1024),
+        heartbeat_interval=getattr(s, "heartbeat_interval", 30),
+        instance_ttl=getattr(s, "instance_ttl", 60),
+        stale_clean_interval=getattr(s, "stale_clean_interval", 5),
+        rate_limit_window=getattr(s, "rate_limit_window", 10),
+        rate_limit_max=getattr(s, "rate_limit_max", 30),
+        dedup_ttl=getattr(s, "dedup_ttl", 30),
+        poll_timeout=getattr(s, "poll_timeout", 2),
+        pong_timeout=getattr(s, "pong_timeout", 10),
+        write_timeout=getattr(s, "write_timeout", 10),
+        online_broadcast_interval=getattr(s, "online_broadcast_interval", 60),
+        max_clients_per_ip=getattr(s, "max_clients_per_ip", 10),
+        max_clients_per_user=getattr(s, "max_clients_per_user", 3),
+    )
 
 
-# Module-level singleton
 ws_cfg: WSConfig = load_config()

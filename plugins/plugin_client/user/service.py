@@ -358,3 +358,39 @@ async def client_user_update_password(db: Session, param: UpdatePasswordParam, r
     hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     entity.password = hashed
     ClientUserDao(db).update(entity, user_id=user_id)
+
+
+class LoginUserApiProvider:
+    def __init__(self, session_factory):
+        self._session_factory = session_factory
+
+    async def get_current_login_user_info(self, request) -> Optional[LoginUserInfo]:
+        from core.auth import HeiClientAuthTool
+        user_id = await HeiClientAuthTool.getLoginIdAsString(request)
+        if not user_id:
+            return None
+        return self.get_login_user_info_by_id(user_id)
+
+    def get_login_user_info_by_id(self, user_id: str) -> Optional[LoginUserInfo]:
+        db = self._session_factory()
+        try:
+            entity = find_by_id(db, user_id)
+            return to_login_user_info(entity)
+        finally:
+            db.close()
+
+    def get_login_user_info_by_username(self, username: str) -> Optional[LoginUserInfo]:
+        db = self._session_factory()
+        try:
+            entity = find_by_username(db, username)
+            return to_login_user_info(entity)
+        finally:
+            db.close()
+
+    def get_login_user_info_by_email(self, email: str) -> Optional[LoginUserInfo]:
+        db = self._session_factory()
+        try:
+            entity = find_by_email(db, email)
+            return to_login_user_info(entity)
+        finally:
+            db.close()

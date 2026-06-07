@@ -170,7 +170,7 @@ class Settings(BaseSettings):
     redis: RedisConfig = RedisConfig()
     token: TokenConfig = TokenConfig()
     sm2: SM2Config = SM2Config()
-    user: UserConfig = UserConfig()
+    user_config: UserConfig = UserConfig()
     cors: CORSConfig = CORSConfig()
     snowflake: SnowflakeConfig = SnowflakeConfig()
     storage: StorageConfig = StorageConfig()
