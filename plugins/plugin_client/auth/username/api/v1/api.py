@@ -1,10 +1,16 @@
+"""Client auth username API — mirrors hei-gin plugin-client/auth/username/api/v1/api.go."""
+
 from fastapi import APIRouter, Request
 from core.result import Result, success
 from core.auth.decorator import HeiClientCheckLogin
 from core.log import SysLog
 from core.auth.decorator import NoRepeat
 from ...logic import do_login, do_register, do_logout
-from ...params import UsernameLoginParam, UsernameLoginResult, UsernameRegisterParam, UsernameRegisterResult, UsernameLogoutResult
+from ...params import (
+    UsernameLoginParam, UsernameLoginResult,
+    UsernameRegisterParam, UsernameRegisterResult,
+    UsernameLogoutResult,
+)
 
 router = APIRouter()
 
@@ -12,7 +18,7 @@ router = APIRouter()
 @router.post(
     "/api/v1/public/c/login",
     summary="C端用户名密码登录",
-    response_model=Result[UsernameLoginResult]
+    response_model=Result[UsernameLoginResult],
 )
 async def login(request: Request, param: UsernameLoginParam):
     result = await do_login(param, request)
@@ -22,19 +28,19 @@ async def login(request: Request, param: UsernameLoginParam):
 @router.post(
     "/api/v1/public/c/register",
     summary="C端用户名注册",
-    response_model=Result[UsernameRegisterResult]
+    response_model=Result[UsernameRegisterResult],
 )
 @SysLog("注册")
 @NoRepeat(interval=5000)
-async def register(param: UsernameRegisterParam):
-    result = await do_register(param)
+async def register(request: Request, param: UsernameRegisterParam):
+    result = await do_register(param, request=request)
     return success(result.model_dump())
 
 
 @router.post(
     "/api/v1/c/logout",
     summary="C端用户登出",
-    response_model=Result[UsernameLogoutResult]
+    response_model=Result[UsernameLogoutResult],
 )
 @HeiClientCheckLogin
 async def logout(request: Request):

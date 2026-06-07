@@ -112,6 +112,8 @@ async def do_register(param: UsernameRegisterParam, request: Request = None) -> 
             raise BusinessException("用户名已存在")
 
         raw_password = decrypt(param.password)
+        if not raw_password:
+            raise BusinessException("密码解密失败")
         hashed_password = (await asyncio.to_thread(lambda: bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()))).decode('utf-8')
 
         user_id = str(generate_id())
@@ -126,6 +128,10 @@ async def do_register(param: UsernameRegisterParam, request: Request = None) -> 
         )
         db.add(user)
         db.commit()
+
+        # Record auth log — mirrors Go log.RecordAuthLog(c, "注册", "REGISTER", "SUCCESS", "", param.Username)
+        if request:
+            record_auth_log(request, "注册", "REGISTER", op_user=param.username)
     except Exception:
         db.rollback()
         raise

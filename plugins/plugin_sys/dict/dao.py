@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, or_, delete as sa_delete
+from sqlalchemy import select, func, delete as sa_delete
 from .models import SysDict
 from .params import DictPageParam, DictListParam
 
@@ -58,37 +58,39 @@ class DictDao:
 
     def find_page_by_filters(self, param: DictPageParam) -> Dict[str, Any]:
         filters = []
-        if param.parent_id is not None:
-            if param.parent_id in ("", "0"):
-                filters.append(or_(SysDict.parent_id.is_(None), SysDict.parent_id == "0"))
-            else:
-                filters.append((SysDict.parent_id == param.parent_id) | (SysDict.id == param.parent_id))
+        if param.keyword:
+            kw = f"%{param.keyword}%"
+            filters.append(SysDict.code.like(kw) | SysDict.label.like(kw) | SysDict.value.like(kw))
         if param.category:
             filters.append(SysDict.category == param.category)
-        if param.keyword:
-            filters.append(SysDict.label.like(f"%{param.keyword}%"))
+        if param.parent_id:
+            filters.append((SysDict.id == param.parent_id) | (SysDict.parent_id == param.parent_id))
+        if param.dict_group == "FRM":
+            filters.append(SysDict.category == "FRM")
+        if param.dict_group == "BIZ":
+            filters.append(SysDict.category == "BIZ")
 
         current = max(1, param.current)
         size = max(1, param.size)
+        if size > 100:
+            size = 100
         offset = (current - 1) * size
 
         count_stmt = select(func.count()).select_from(SysDict).where(*filters)
         total = self.db.execute(count_stmt).scalar() or 0
 
-        stmt = select(SysDict).where(*filters).order_by(SysDict.sort_code.asc()).offset(offset).limit(size)
+        stmt = select(SysDict).where(*filters).order_by(SysDict.created_at.desc()).offset(offset).limit(size)
         records = list(self.db.execute(stmt).scalars().all())
 
         return {"records": records, "total": total}
 
     def find_list_by_filters(self, param: DictListParam) -> List[SysDict]:
         filters = []
-        if param.parent_id is not None:
-            if param.parent_id in ("", "0"):
-                filters.append(or_(SysDict.parent_id.is_(None), SysDict.parent_id == "0"))
-            else:
-                filters.append(SysDict.parent_id == param.parent_id)
-        if param.category is not None:
+        if param.category:
             filters.append(SysDict.category == param.category)
+        if param.keyword:
+            kw = f"%{param.keyword}%"
+            filters.append(SysDict.label.like(kw) | SysDict.code.like(kw))
         stmt = select(SysDict).where(*filters).order_by(SysDict.sort_code.asc())
         return list(self.db.execute(stmt).scalars().all())
 

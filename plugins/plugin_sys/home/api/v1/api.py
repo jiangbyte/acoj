@@ -1,7 +1,10 @@
+"""Home API — mirrors hei-gin plugin-sys/home/api/v1/api.go."""
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from core.db import get_db
 from core.result import Result, success
+from core.auth.decorator import HeiCheckLogin
 from core.log import SysLog
 from ...service import HomeService
 from ...params import AddQuickActionParam, RemoveQuickActionParam, SortQuickActionParam
@@ -10,6 +13,7 @@ router = APIRouter()
 
 
 @router.get("/api/v1/sys/home", summary="获取首页数据", response_model=Result)
+@HeiCheckLogin
 async def get_home(request: Request, db: Session = Depends(get_db)):
     service = HomeService(db)
     result = await service.home(request)
@@ -17,6 +21,7 @@ async def get_home(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/api/v1/sys/home/quick-actions/add", summary="添加快捷方式", response_model=Result)
+@HeiCheckLogin
 @SysLog("添加快捷方式")
 async def add_quick_action(param: AddQuickActionParam, request: Request, db: Session = Depends(get_db)):
     service = HomeService(db)
@@ -25,6 +30,7 @@ async def add_quick_action(param: AddQuickActionParam, request: Request, db: Ses
 
 
 @router.post("/api/v1/sys/home/quick-actions/remove", summary="移除快捷方式", response_model=Result)
+@HeiCheckLogin
 @SysLog("移除快捷方式")
 async def remove_quick_action(param: RemoveQuickActionParam, request: Request, db: Session = Depends(get_db)):
     service = HomeService(db)
@@ -33,6 +39,7 @@ async def remove_quick_action(param: RemoveQuickActionParam, request: Request, d
 
 
 @router.post("/api/v1/sys/home/quick-actions/sort", summary="排序快捷方式", response_model=Result)
+@HeiCheckLogin
 @SysLog("排序快捷方式")
 async def sort_quick_actions(param: SortQuickActionParam, request: Request, db: Session = Depends(get_db)):
     service = HomeService(db)

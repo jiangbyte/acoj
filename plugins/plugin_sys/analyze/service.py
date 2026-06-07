@@ -12,6 +12,7 @@ from .params import (
     LogAnalysisData,
 )
 from ..log.models import SysLog
+from core.enums import UserStatusEnum
 
 SERVER_START_TIME = datetime.now(timezone.utc)
 
@@ -144,7 +145,7 @@ def dashboard(db: Session) -> dict:
     stats = DashboardStats(
         total_users=db.query(func.count(SysUser.id)).scalar() or 0,
         active_users=db.query(func.count(SysUser.id)).filter(
-            SysUser.status == "ENABLED"
+            SysUser.status == UserStatusEnum.ACTIVE.value
         ).scalar() or 0,
         total_roles=db.query(func.count(SysRole.id)).scalar() or 0,
         total_orgs=db.query(func.count(SysOrg.id)).scalar() or 0,
@@ -155,7 +156,7 @@ def dashboard(db: Session) -> dict:
     client_stats = ClientStats(
         total_users=db.query(func.count(ClientUser.id)).scalar() or 0,
         active_users=db.query(func.count(ClientUser.id)).filter(
-            ClientUser.status == "ENABLED"
+            ClientUser.status == UserStatusEnum.ACTIVE.value
         ).scalar() or 0,
     )
 
@@ -165,7 +166,7 @@ def dashboard(db: Session) -> dict:
     role_dist = get_role_category_distribution(db)
 
     sys_info = SysInfo(
-        os_name=f"{platform.system()} {platform.release()}",
+        os_name=platform.system().lower(),
         server_ip=get_server_ip(),
         run_time=f"已运行 {format_duration(SERVER_START_TIME)}",
     )
@@ -192,7 +193,7 @@ class AnalyzeService:
 
     def _get_sys_info(self) -> SysInfo:
         return SysInfo(
-            os_name=platform.system() + " " + platform.release(),
+            os_name=platform.system().lower(),
             server_ip=get_server_ip(),
             run_time=f"已运行 {format_duration(SERVER_START_TIME)}",
         )

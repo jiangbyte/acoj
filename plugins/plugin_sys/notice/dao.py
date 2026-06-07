@@ -14,13 +14,25 @@ class NoticeDao:
         return self.db.execute(select(SysNotice).where(SysNotice.id == id)).scalar_one_or_none()
 
     def find_page(self, param: NoticePageParam) -> Dict[str, Any]:
+        filters = []
+        if param.keyword:
+            filters.append(SysNotice.title.like(f"%{param.keyword}%"))
+        if param.category:
+            filters.append(SysNotice.category == param.category)
+        if param.status:
+            filters.append(SysNotice.status == param.status)
+
         current = max(1, param.current)
         size = max(1, param.size)
+        if size > 100:
+            size = 100
         offset = (current - 1) * size
-        stmt = select(SysNotice)
-        count_stmt = select(func.count()).select_from(stmt.subquery())
+
+        count_stmt = select(func.count()).select_from(SysNotice).where(*filters)
         total = self.db.execute(count_stmt).scalar() or 0
-        records = list(self.db.execute(stmt.offset(offset).limit(size)).scalars().all())
+
+        stmt = select(SysNotice).where(*filters).order_by(SysNotice.created_at.desc()).offset(offset).limit(size)
+        records = list(self.db.execute(stmt).scalars().all())
         return {"records": records, "total": total}
 
     def insert(self, entity: SysNotice, user_id: Optional[str] = None) -> SysNotice:
@@ -71,14 +83,30 @@ class NoticeDao:
 
     def find_public_page(self, param):
         """Paginate published notices — mirrors hei-gin."""
+        filters = [SysNotice.status == "ENABLED"]
+        if param.keyword:
+            filters.append(SysNotice.title.like(f"%{param.keyword}%"))
+        if param.category:
+            filters.append(SysNotice.category == param.category)
+
+        size = max(1, param.size)
+        if size > 100:
+            size = 100
+        offset = (max(1, param.current) - 1) * size
+
+        from sqlalchemy import desc, nullslast
         stmt = (
             select(SysNotice)
-            .where(SysNotice.status == "ENABLED")
-            .order_by(desc(SysNotice.created_at))
-            .offset((max(1, param.current) - 1) * max(1, param.size))
-            .limit(max(1, param.size))
+            .where(*filters)
+            .order_by(
+                nullslast(desc(SysNotice.is_top)),
+                desc(SysNotice.sort_code),
+                desc(SysNotice.created_at),
+            )
+            .offset(offset)
+            .limit(size)
         )
         records = list(self.db.execute(stmt).scalars().all())
-        count_stmt = select(func.count()).select_from(SysNotice).where(SysNotice.status == "ENABLED")
+        count_stmt = select(func.count()).select_from(SysNotice).where(*filters)
         total = self.db.execute(count_stmt).scalar() or 0
         return {"records": records, "total": total}

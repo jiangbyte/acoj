@@ -39,15 +39,17 @@ class DictTreeVO(BaseModel):
 class DictPageParam(BaseModel):
     current: int = 1
     size: int = 10
+    dict_group: Optional[str] = None
     parent_id: Optional[str] = None
     category: Optional[str] = None
     keyword: Optional[str] = None
 
 
 class DictListParam(BaseModel):
-    parent_id: Optional[str] = None
     category: Optional[str] = None
+    keyword: Optional[str] = None
 
 
 class DictTreeParam(BaseModel):
     category: Optional[str] = None
+    dict_group: Optional[str] = None

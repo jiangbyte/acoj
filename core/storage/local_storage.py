@@ -6,10 +6,11 @@ from .interface import FileStorageInterface
 
 
 class LocalStorage(FileStorageInterface):
-    """Local filesystem storage."""
+    """Local filesystem storage — mirrors hei-gin's storage/local.go."""
 
-    def __init__(self, upload_folder: str):
+    def __init__(self, upload_folder: str, base_url: str = ""):
         self.upload_folder = Path(upload_folder)
+        self.base_url = base_url
 
     def get_default_bucket(self) -> str:
         return "local"
@@ -35,7 +36,10 @@ class LocalStorage(FileStorageInterface):
         return path.read_bytes()
 
     def get_url(self, bucket: str, file_key: str) -> str:
-        return str(self.upload_folder / bucket / file_key)
+        """Get download URL — mirrors hei-gin's Local.GetURL()."""
+        if self.base_url:
+            return f"{self.base_url.rstrip('/')}/{bucket}/{file_key}"
+        return f"/uploads/{bucket}/{file_key}"
 
     def get_auth_url(self, bucket: str, file_key: str, timeout_ms: int = 60000) -> str:
         return self.get_url(bucket, file_key)

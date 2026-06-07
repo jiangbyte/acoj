@@ -38,14 +38,14 @@ class GroupTreeVO(BaseModel):
 
 
 class GroupTreeParam(BaseModel):
+    category: Optional[str] = None
     org_id: Optional[str] = None
-    keyword: Optional[str] = None
 
 
 class GroupPageParam(BaseModel):
     current: int = 1
     size: int = 10
-    parent_id: Optional[str] = None
     keyword: Optional[str] = None
+    category: Optional[str] = None
     org_id: Optional[str] = None
 

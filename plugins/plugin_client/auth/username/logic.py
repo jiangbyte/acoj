@@ -1,4 +1,7 @@
+"""Client auth username logic — mirrors hei-gin plugin-client/auth/username/logic.go."""
+
 import bcrypt
+from typing import Optional
 from fastapi import Request
 from core.auth import HeiClientAuthTool
 from core.db import SessionLocal
@@ -8,7 +11,11 @@ from core.utils import decrypt, generate_id
 from core.utils.user_agent_utils import get_browser
 from core.captcha import c_captcha
 from core.log import record_auth_log
-from .params import UsernameLoginParam, UsernameLoginResult, UsernameRegisterParam, UsernameRegisterResult, UsernameLogoutResult
+from .params import (
+    UsernameLoginParam, UsernameLoginResult,
+    UsernameRegisterParam, UsernameRegisterResult,
+    UsernameLogoutResult,
+)
 from plugins.plugin_client.user.models import ClientUser
 import logging
 
@@ -59,16 +66,15 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         extra = {
             "username": user_info.username,
             "nickname": user_info.nickname,
-            "status": user_info.status
+            "status": user_info.status,
         }
-        # Auto-detect device type from User-Agent, device_id from frontend
         user_agent = request.headers.get("User-Agent", "")
         extra["device_type"] = get_browser(user_agent)
         extra["device_id"] = param.device_id
 
         token = await HeiClientAuthTool.login(user_info.id, request, extra)
 
-        # 记录登录信息
+        # Record login info
         db = None
         try:
             db = SessionLocal()
@@ -80,7 +86,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
             if db:
                 db.close()
 
-        # 记录登录日志
+        # Record auth log
         record_auth_log(request, "登录", "LOGIN", op_user=user_info.username)
 
         return UsernameLoginResult(token=token)
@@ -94,7 +100,8 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         raise
 
 
-async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
+async def do_register(param: UsernameRegisterParam, request: Optional[Request] = None) -> UsernameRegisterResult:
+    """Mirrors hei-gin DoRegister — captcha check, duplicate check, bcrypt, auth log."""
     try:
         await c_captcha.check_captcha(param.captcha_id, param.captcha_code)
     except Exception as e:
@@ -124,6 +131,11 @@ async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
         )
         db.add(user)
         db.commit()
+
+        # Record auth log — mirrors Go log.RecordAuthLog(c, "注册", "REGISTER", "SUCCESS", "", param.Username)
+        if request:
+            record_auth_log(request, "注册", "REGISTER", op_user=param.username)
+
     except Exception:
         db.rollback()
         raise
@@ -134,7 +146,7 @@ async def do_register(param: UsernameRegisterParam) -> UsernameRegisterResult:
 
 
 async def do_logout(request: Request) -> UsernameLogoutResult:
-    # 获取当前用户用于日志记录
+    """Mirrors hei-gin DoLogout — auth log, then logout."""
     try:
         user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
         if user_id:

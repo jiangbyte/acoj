@@ -1,34 +1,36 @@
+"""Log params — mirrors hei-gin plugin-sys/log/params.go."""
+
 from typing import Optional, List
-from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
-from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
 
-class LogVO(DateTimeValidatorMixin, BaseModel):
+class LogVO(BaseModel):
+    """Mirrors Go LogVO — all fields are strings including datetimes."""
     model_config = ConfigDict(from_attributes=True)
 
-    id: Optional[str] = None
-    category: Optional[str] = None
-    name: Optional[str] = None
-    exe_status: Optional[str] = None
-    exe_message: Optional[str] = None
-    op_ip: Optional[str] = None
-    op_address: Optional[str] = None
-    op_browser: Optional[str] = None
-    op_os: Optional[str] = None
-    class_name: Optional[str] = None
-    method_name: Optional[str] = None
-    req_method: Optional[str] = None
-    req_url: Optional[str] = None
-    param_json: Optional[str] = None
-    result_json: Optional[str] = None
-    op_time: Optional[datetime] = None
-    op_user: Optional[str] = None
-    sign_data: Optional[str] = None
-    created_at: Optional[datetime] = None
-    created_by: Optional[str] = None
-    updated_at: Optional[datetime] = None
-    updated_by: Optional[str] = None
+    id: str = ""
+    category: str = ""
+    name: str = ""
+    exe_status: str = ""
+    exe_message: str = ""
+    op_ip: str = ""
+    op_address: str = ""
+    op_browser: str = ""
+    op_os: str = ""
+    class_name: str = ""
+    method_name: str = ""
+    req_method: str = ""
+    req_url: str = ""
+    param_json: str = ""
+    result_json: str = ""
+    op_time: str = ""
+    trace_id: str = ""
+    op_user: str = ""
+    sign_data: str = ""
+    created_at: str = ""
+    created_by: str = ""
+    updated_at: str = ""
+    updated_by: str = ""
 
 
 class LogPageParam(BaseModel):
@@ -44,33 +46,22 @@ class LogDeleteByCategoryParam(BaseModel):
 
 
 # ---- Chart / Statistics result models ----
-
-class LogDailyCount(BaseModel):
-    """Daily log count for a single category."""
-    day: str = Field(..., description="日期 YYYY-MM-DD")
-    category: str = Field(..., description="日志分类")
-    count: int = Field(..., ge=0, description="数量")
-
+# Mirrors Go's BarChartData / PieChartData / CategorySeries / CategoryTotal
 
 class LogCategoryTotal(BaseModel):
-    """Total log count for a single category."""
-    category: str = Field(..., description="日志分类")
-    total: int = Field(..., ge=0, description="总数")
+    category: str = ""
+    total: int = 0
+
+
+class LogCategorySeries(BaseModel):
+    name: str = ""
+    data: List[int] = Field(default_factory=list)
 
 
 class LogBarChartData(BaseModel):
-    """Bar chart: daily counts per category for last N days."""
     days: List[str] = Field(default_factory=list)
     series: List["LogCategorySeries"] = Field(default_factory=list)
 
 
-class LogCategorySeries(BaseModel):
-    name: str = Field(..., description="系列名称")
-    data: List[int] = Field(default_factory=list, description="每天的数量")
-
-
 class LogPieChartData(BaseModel):
-    """Pie chart: category -> total."""
     data: List[LogCategoryTotal] = Field(default_factory=list)
-
-

@@ -1,8 +1,9 @@
+"""Home DAO — mirrors hei-gin plugin-sys/home/service.go queries."""
+
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from sqlalchemy import select, and_, func, delete as sa_delete
 from sqlalchemy.orm import Session
-from core.enums import StatusEnum
 from plugins.plugin_sys.user.models import SysUser
 from plugins.plugin_sys.notice.models import SysNotice
 from plugins.plugin_sys.resource.models import SysResource
@@ -33,6 +34,7 @@ class QuickActionDao:
         entity.updated_at = now
         if user_id is not None and entity.created_by is None:
             entity.created_by = user_id
+            entity.updated_by = user_id
         self.db.add(entity)
         self.db.commit()
         self.db.refresh(entity)
@@ -48,36 +50,46 @@ class QuickActionDao:
 
     # ---- custom ----
 
-    def find_by_user_id(self, user_id: str) -> List[dict]:
-        stmt = (
-            select(
-                SysQuickAction.id,
-                SysQuickAction.resource_id,
-                SysQuickAction.sort_code,
-                SysResource.name,
-                SysResource.icon,
-                SysResource.route_path,
-            )
-            .join(SysResource, and_(
-                SysResource.id == SysQuickAction.resource_id,
-            ))
-            .where(
-                SysQuickAction.user_id == user_id,
-            )
+    def find_by_user_id(self, user_id: str) -> List[Dict[str, Any]]:
+        """Quick actions for a user, enriched with resource info — mirrors Go findQuickActionsByUserID."""
+        actions = list(self.db.execute(
+            select(SysQuickAction).where(SysQuickAction.user_id == user_id)
             .order_by(SysQuickAction.sort_code.asc(), SysQuickAction.created_at.asc())
-        )
-        result = self.db.execute(stmt).all()
-        return [
-            {
-                "id": row[0],
-                "resource_id": row[1],
-                "sort_code": row[2] or 0,
-                "name": row[3] or "",
-                "icon": row[4] or "",
-                "route_path": row[5] or "",
+        ).scalars().all())
+
+        if not actions:
+            return []
+
+        resource_ids = [a.resource_id for a in actions]
+        resources = list(self.db.execute(
+            select(SysResource).where(SysResource.id.in_(resource_ids))
+        ).scalars().all())
+        resource_map = {r.id: r for r in resources}
+
+        result = []
+        for a in actions:
+            vo = {
+                "id": a.id,
+                "resource_id": a.resource_id,
+                "parent_id": "",
+                "type": "",
+                "name": "",
+                "icon": "",
+                "route_path": "",
+                "sort_code": a.sort_code or 0,
             }
-            for row in result
-        ]
+            r = resource_map.get(a.resource_id)
+            if r:
+                vo["name"] = r.name
+                vo["type"] = r.type
+                if r.icon:
+                    vo["icon"] = r.icon
+                if r.route_path:
+                    vo["route_path"] = r.route_path
+                if r.parent_id:
+                    vo["parent_id"] = r.parent_id
+            result.append(vo)
+        return result
 
     def find_by_user_and_resource(self, user_id: str, resource_id: str) -> Optional[SysQuickAction]:
         stmt = select(SysQuickAction).where(
@@ -92,8 +104,9 @@ class QuickActionDao:
         )
         return self.db.execute(stmt).scalar() or 0
 
-    def get_notices(self, limit: int = 5) -> List[dict]:
-        stmt = (
+    def get_notices(self, limit: int = 5) -> List[Dict[str, Any]]:
+        """Get notices — mirrors Go getNotices: status=ENABLED, category=PLATFORM."""
+        rows = self.db.execute(
             select(
                 SysNotice.id,
                 SysNotice.title,
@@ -101,30 +114,34 @@ class QuickActionDao:
                 SysNotice.created_at,
             )
             .where(
-                SysNotice.status == StatusEnum.ENABLED,
+                SysNotice.status == "ENABLED",
+                SysNotice.category == "PLATFORM",
             )
-            .order_by(SysNotice.is_top.desc(), SysNotice.created_at.desc())
+            .order_by(SysNotice.sort_code.asc(), SysNotice.is_top.desc())
             .limit(limit)
-        )
-        result = self.db.execute(stmt).all()
+        ).all()
         return [
-            {"id": row[0], "title": row[1], "level": row[2] or "NORMAL", "created_at": row[3]}
-            for row in result
+            {
+                "id": row[0],
+                "title": row[1],
+                "level": row[2] if row[2] else "NORMAL",
+                "created_at": row[3].strftime("%Y-%m-%d %H:%M:%S") if row[3] else "",
+            }
+            for row in rows
         ]
 
     def get_stats(self) -> dict:
         stmt = select(func.count()).select_from(SysUser)
         return {"total_users": self.db.execute(stmt).scalar() or 0}
 
-    def get_available_resources(self, user_id: str) -> List[dict]:
+    def get_available_resources(self, user_id: str) -> List[Dict[str, Any]]:
+        """Available resources for quick actions — mirrors Go getAvailableResources."""
         subq = (
             select(SysQuickAction.resource_id)
-            .where(
-                SysQuickAction.user_id == user_id,
-            )
+            .where(SysQuickAction.user_id == user_id)
             .scalar_subquery()
         )
-        stmt = (
+        rows = self.db.execute(
             select(
                 SysResource.id,
                 SysResource.parent_id,
@@ -134,15 +151,20 @@ class QuickActionDao:
                 SysResource.route_path,
             )
             .where(
-                SysResource.status == StatusEnum.ENABLED,
-                SysResource.type.in_(["MENU", "DIRECTORY"]),
+                SysResource.status == "ENABLED",
+                SysResource.category.in_(["BACKEND_MENU", "FRONTEND_MENU"]),
                 SysResource.id.notin_(subq),
             )
             .order_by(SysResource.sort_code.asc())
-            .limit(50)
-        )
-        result = self.db.execute(stmt).all()
+        ).all()
         return [
-            {"id": row[0], "parent_id": row[1] or "", "type": row[2] or "", "name": row[3] or "", "icon": row[4] or "", "route_path": row[5] or ""}
-            for row in result
+            {
+                "id": row[0],
+                "parent_id": row[1] if row[1] else "",
+                "type": row[2] if row[2] else "",
+                "name": row[3] if row[3] else "",
+                "icon": row[4] if row[4] else "",
+                "route_path": row[5] if row[5] else "",
+            }
+            for row in rows
         ]

@@ -1,7 +1,7 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, or_, delete as sa_delete
+from sqlalchemy import select, func, delete as sa_delete
 from .models import SysGroup
 from .params import GroupPageParam
 
@@ -58,15 +58,12 @@ class GroupDao:
 
     def find_page_by_filters(self, param: GroupPageParam) -> Dict[str, Any]:
         filters = []
-        if param.parent_id is not None:
-            if param.parent_id in ("", "0"):
-                filters.append(SysGroup.parent_id.is_(None))
-            else:
-                filters.append(or_(SysGroup.parent_id == param.parent_id, SysGroup.id == param.parent_id))
-        if param.org_id:
-            filters.append(SysGroup.org_id == param.org_id)
         if param.keyword:
             filters.append(SysGroup.name.like(f"%{param.keyword}%"))
+        if param.category:
+            filters.append(SysGroup.category == param.category)
+        if param.org_id:
+            filters.append(SysGroup.org_id == param.org_id)
 
         current = max(1, param.current)
         size = max(1, param.size)

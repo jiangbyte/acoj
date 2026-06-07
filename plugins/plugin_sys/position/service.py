@@ -3,7 +3,7 @@
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import update as sa_update, select, func
+from sqlalchemy import update as sa_update, select, delete as sa_delete
 from fastapi import Request
 from . import SysPosition
 from .params import PositionVO, PositionPageParam
@@ -32,6 +32,8 @@ def to_vo(entity: SysPosition) -> dict:
     }
     if entity.description is not None:
         vo["description"] = entity.description
+    if entity.extra is not None:
+        vo["extra"] = entity.extra
     if entity.created_at is not None:
         vo["created_at"] = entity.created_at.strftime("%Y-%m-%d %H:%M:%S")
     if entity.created_by is not None:
@@ -44,8 +46,6 @@ def to_vo(entity: SysPosition) -> dict:
 
 
 def page(db: Session, param: PositionPageParam) -> dict:
-    if not param.group_id:
-        return page_data(records=[], total=0, page=param.current, size=param.size)
     dao = PositionDao(db)
     result = dao.find_page_by_filters(param)
     records = [to_vo(r) for r in result.get("records", [])]
@@ -83,8 +83,8 @@ def create(db: Session, vo: PositionVO, user_id: Optional[str] = None) -> None:
         code=vo.code,
         name=vo.name,
         category=vo.category,
-        org_id=vo.org_id or "",
-        group_id=vo.group_id or "",
+        org_id=vo.org_id,
+        group_id=vo.group_id,
         status=vo.status or "ENABLED",
         sort_code=vo.sort_code or 0,
         created_at=now,
@@ -108,14 +108,20 @@ def modify(db: Session, vo: PositionVO, user_id: Optional[str] = None) -> None:
         "code": vo.code,
         "name": vo.name,
         "category": vo.category,
-        "org_id": vo.org_id or "",
-        "group_id": vo.group_id or "",
+        "org_id": vo.org_id,
+        "group_id": vo.group_id,
         "status": vo.status,
         "sort_code": vo.sort_code,
         "updated_at": now,
     }
     if vo.description is not None:
         up["description"] = vo.description
+    else:
+        up["description"] = None
+    if vo.extra is not None:
+        up["extra"] = vo.extra
+    else:
+        up["extra"] = None
     if user_id:
         up["updated_by"] = user_id
     dao.db.execute(sa_update(SysPosition).where(SysPosition.id == vo.id).values(**up))
@@ -125,11 +131,8 @@ def modify(db: Session, vo: PositionVO, user_id: Optional[str] = None) -> None:
 def remove(db: Session, ids: list) -> None:
     if not ids:
         return
-    dao = PositionDao(db)
-    cnt = db.execute(select(func.count()).select_from(SysUser).where(SysUser.position_id.in_(ids))).scalar() or 0
-    if cnt > 0:
-        raise BusinessException("职位存在关联用户，无法删除")
-    dao.delete_by_ids(ids)
+    db.execute(sa_update(SysUser).where(SysUser.position_id.in_(ids)).values(position_id=None))
+    PositionDao(db).delete_by_ids(ids)
 
 
 class PositionService:

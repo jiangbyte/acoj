@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import datetime, date
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
 
@@ -13,17 +13,15 @@ class ClientUserVO(DateTimeValidatorMixin, BaseModel):
     avatar: Optional[str] = None
     motto: Optional[str] = None
     gender: Optional[str] = None
-    birthday: Optional[date] = None
     email: Optional[str] = None
     github: Optional[str] = None
+    phone: Optional[str] = None
     status: Optional[str] = None
     last_login_at: Optional[datetime] = None
     last_login_ip: Optional[str] = None
     login_count: Optional[int] = 0
     created_at: Optional[datetime] = None
-    created_by: Optional[str] = None
     updated_at: Optional[datetime] = None
-    updated_by: Optional[str] = None
 
 
 class ClientUserPageParam(BaseModel):
@@ -35,11 +33,10 @@ class ClientUserPageParam(BaseModel):
 
 class UpdateProfileParam(BaseModel):
     nickname: Optional[str] = None
-    motto: Optional[str] = None
-    gender: Optional[str] = None
-    birthday: Optional[date] = None
+    avatar: Optional[str] = None
     email: Optional[str] = None
-    github: Optional[str] = None
+    phone: Optional[str] = None
+    username: Optional[str] = None
 
 
 class UpdateAvatarParam(BaseModel):

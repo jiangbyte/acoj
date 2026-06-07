@@ -1,5 +1,6 @@
 """
 Client user API — uses Perm() and standalone service functions.
+Mirrors hei-gin plugins/plugin-client/user/api/v1/api.go
 """
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -23,6 +24,8 @@ from ...service import (
 
 router = APIRouter()
 
+
+# ── Admin routes (管理端) ──
 
 @router.get("/api/v1/client-user/page", summary="获取C端用户分页",
             response_model=Result[PageData[ClientUserVO]])
@@ -61,15 +64,18 @@ async def detail(request: Request, id: str = Query(...), db: Session = Depends(g
     return success(data)
 
 
-@router.get("/api/v1/client-user/current", summary="获取当前C端用户信息")
+# ── Self-service routes (C端) ──
+
+@router.get("/api/v1/c/client-user/current", summary="获取当前C端用户信息")
 @HeiClientCheckLogin
 async def get_current_user(request: Request, db: Session = Depends(get_db)):
     data = await client_user_get_current(db, request)
     return success(data)
 
 
-@router.post("/api/v1/client-user/update-profile", summary="更新当前C端用户个人信息",
+@router.post("/api/v1/c/client-user/update-profile", summary="更新当前C端用户个人信息",
              response_model=Result)
+@SysLog("C端用户更新个人信息")
 @HeiClientCheckLogin
 @NoRepeat(interval=3000)
 async def update_profile(request: Request, param: UpdateProfileParam,
@@ -78,8 +84,9 @@ async def update_profile(request: Request, param: UpdateProfileParam,
     return success()
 
 
-@router.post("/api/v1/client-user/update-avatar", summary="更新当前C端用户头像（base64）",
+@router.post("/api/v1/c/client-user/update-avatar", summary="更新当前C端用户头像（base64）",
              response_model=Result)
+@SysLog("C端用户更新头像")
 @HeiClientCheckLogin
 async def update_avatar(request: Request, param: UpdateAvatarParam,
                          db: Session = Depends(get_db)):
@@ -87,8 +94,9 @@ async def update_avatar(request: Request, param: UpdateAvatarParam,
     return success()
 
 
-@router.post("/api/v1/client-user/update-password", summary="修改当前C端用户密码",
+@router.post("/api/v1/c/client-user/update-password", summary="修改当前C端用户密码",
              response_model=Result)
+@SysLog("C端用户修改密码")
 @HeiClientCheckLogin
 @NoRepeat(interval=3000)
 async def update_password(request: Request, param: UpdatePasswordParam,

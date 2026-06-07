@@ -58,12 +58,12 @@ class PositionDao:
 
     def find_page_by_filters(self, param: PositionPageParam) -> Dict[str, Any]:
         filters = []
-        if param.group_id:
-            filters.append(SysPosition.group_id == param.group_id)
-        if param.org_id:
-            filters.append(SysPosition.org_id == param.org_id)
         if param.keyword:
             filters.append(SysPosition.name.like(f"%{param.keyword}%"))
+        if param.category:
+            filters.append(SysPosition.category == param.category)
+        if param.org_id:
+            filters.append(SysPosition.org_id == param.org_id)
 
         current = max(1, param.current)
         size = max(1, param.size)

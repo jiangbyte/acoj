@@ -18,8 +18,8 @@ async def page(request: Request, param: PositionPageParam = Depends(), db: Sessi
     return success(service.page(param))
 
 
-@router.post("/api/v1/sys/position/create", summary="添加工位")
-@SysLog("添加工位")
+@router.post("/api/v1/sys/position/create", summary="添加岗位")
+@SysLog("添加职位")
 @HeiCheckPermission("sys:position:create")
 @NoRepeat(interval=3000)
 async def create(request: Request, vo: PositionVO, db: Session = Depends(get_db)):
@@ -28,8 +28,8 @@ async def create(request: Request, vo: PositionVO, db: Session = Depends(get_db)
     return success()
 
 
-@router.post("/api/v1/sys/position/modify", summary="编辑工位")
-@SysLog("编辑工位")
+@router.post("/api/v1/sys/position/modify", summary="编辑岗位")
+@SysLog("编辑职位")
 @HeiCheckPermission("sys:position:modify")
 async def modify(request: Request, vo: PositionVO, db: Session = Depends(get_db)):
     service = PositionService(db)
@@ -37,8 +37,8 @@ async def modify(request: Request, vo: PositionVO, db: Session = Depends(get_db)
     return success()
 
 
-@router.post("/api/v1/sys/position/remove", summary="删除工位")
-@SysLog("删除工位")
+@router.post("/api/v1/sys/position/remove", summary="删除岗位")
+@SysLog("删除职位")
 @HeiCheckPermission("sys:position:remove")
 async def remove(request: Request, param: IdsParam, db: Session = Depends(get_db)):
     service = PositionService(db)
@@ -46,7 +46,7 @@ async def remove(request: Request, param: IdsParam, db: Session = Depends(get_db
     return success()
 
 
-@router.get("/api/v1/sys/position/detail", summary="获取工位详情")
+@router.get("/api/v1/sys/position/detail", summary="获取岗位详情")
 @HeiCheckPermission("sys:position:detail")
 async def detail(request: Request, id: str = Query(...), db: Session = Depends(get_db)):
     service = PositionService(db)

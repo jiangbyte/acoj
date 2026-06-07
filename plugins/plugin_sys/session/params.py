@@ -23,10 +23,10 @@ class SessionPageResult(DateTimeValidatorMixin, BaseModel):
     last_login_ip: Optional[str] = None
     last_login_address: Optional[str] = None
     last_login_time: Optional[datetime] = None
-    session_create_time: Optional[str] = None
+    session_create_time: Optional[datetime] = None
     session_timeout: Optional[str] = None
     session_timeout_seconds: Optional[int] = 0
-    token_count: int = 1
+    token_count: int = 0
 
 
 class SessionExitParam(BaseModel):

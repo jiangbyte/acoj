@@ -29,5 +29,5 @@ class PositionPageParam(BaseModel):
     current: int = 1
     size: int = 10
     keyword: Optional[str] = None
-    group_id: Optional[str] = None
+    category: Optional[str] = None
     org_id: Optional[str] = None
