@@ -395,7 +395,6 @@ STORAGE__S3__BUCKET=my-bucket
 
 ```
 User ──→ RelUserRole ──→ Role ──→ RelRolePermission ──→ Permission
-User ──→ RelUserGroup ──→ Group ──→ RelGroupRole ──→ Role ──→ ... ──→ Permission
 User ──→ RelUserPermission ──→ Permission (直授)
 ```
 
