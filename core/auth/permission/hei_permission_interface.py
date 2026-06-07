@@ -21,7 +21,7 @@ class HeiPermissionInterface:
     """
 
     def _get_role_ids(self, db, login_id: str) -> List[str]:
-        from modules.sys.user.models import RelUserRole
+        from plugins.plugin_sys.user.models import RelUserRole
 
         role_ids = set()
         query = select(RelUserRole.role_id).where(RelUserRole.user_id == login_id)
@@ -108,8 +108,8 @@ class HeiPermissionInterface:
 
     async def getPermissionList(self, login_id: Union[str, int], login_type: str) -> List[str]:
         """Return the user's permission codes, or ALL codes for SUPER_ADMIN."""
-        from modules.sys.role.models import RelRolePermission
-        from modules.sys.user.models import RelUserPermission
+        from plugins.plugin_sys.role.models import RelRolePermission
+        from plugins.plugin_sys.user.models import RelUserPermission
 
         db = SessionLocal()
         try:
@@ -138,8 +138,8 @@ class HeiPermissionInterface:
             db.close()
 
     async def getRoleList(self, login_id: Union[str, int], login_type: str) -> List[str]:
-        from modules.sys.role.models import SysRole
-        from modules.sys.user.models import RelUserRole
+        from plugins.plugin_sys.role.models import SysRole
+        from plugins.plugin_sys.user.models import RelUserRole
 
         db = SessionLocal()
         try:
@@ -153,8 +153,8 @@ class HeiPermissionInterface:
 
     async def getPermissionScopeMap(self, login_id: Union[str, int], login_type: str) -> dict:
         from core.enums import PermissionPathEnum
-        from modules.sys.user.models import RelUserRole, RelUserPermission
-        from modules.sys.role.models import RelRolePermission
+        from plugins.plugin_sys.user.models import RelUserRole, RelUserPermission
+        from plugins.plugin_sys.role.models import RelRolePermission
 
         db = SessionLocal()
         try:
