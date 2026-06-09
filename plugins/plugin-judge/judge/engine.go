@@ -7,10 +7,19 @@ import (
 
 	"hei-gin/sdk/db"
 	"hei-gin/plugins/plugin-judge/judgetypes"
+	"gorm.io/gorm"
 	"hei-gin/plugins/plugin-judge/langconf"
 	"hei-gin/plugins/plugin-judge/sandbox"
 	"hei-gin/plugins/plugin-judge/testcase"
 )
+
+// detailWriter 判题详情写入回调（由外部注入，避免循环导入）
+var detailWriter func(submissionID, problemID string, details []testcase.TestCaseResult)
+
+// SetDetailWriter 设置判题详情写入回调
+func SetDetailWriter(w func(submissionID, problemID string, details []testcase.TestCaseResult)) {
+	detailWriter = w
+}
 
 // JudgeEngine 判题引擎
 type JudgeEngine struct {
@@ -75,31 +84,33 @@ func (e *JudgeEngine) processTask(task *JudgeTask) {
 		return
 	}
 
+	// 解析严格比对模式（题目级，测试用例级可覆盖）
+	strictCompare := task.StrictCompare
+
 	switch task.JudgeType {
 	case "spj":
-		e.judgeSPJ(task, testcases)
+		e.judgeSPJ(task, testcases, strictCompare)
 	case "interactive":
-		e.judgeInteractive(task, testcases)
+		e.judgeInteractive(task, testcases, strictCompare)
 	default:
-		e.judgeDefault(task, testcases)
+		e.judgeDefault(task, testcases, strictCompare)
 	}
 }
 
 // ---------- 比赛模式辅助 ----------
 
-// shouldBreakOnFirstFail 判断是否应在遇到首个失败测试用例时立即终止
-// ACM模式: 是. OI/IOI: 否（需要跑完所有用例以获取部分分）
 func shouldBreakOnFirstFail(task *JudgeTask) bool {
 	return task.ContestType == "ACM"
 }
 
-// ---------- 语言判断（委托 langconf 实现动态扩展） ----------
+// ---------- 语言判断 ----------
 
 func isInterpretedLanguage(lang string) bool {
 	return langconf.IsInterpreted(lang)
 }
 
-// compileAndGetBinary 编译用户代码并返回二进制 (解释型语言返回 nil)
+// ---------- 编译 ----------
+
 func compileAndGetBinary(backend judgetypes.SandboxBackend, code, language string) (*judgetypes.ExecResult, []byte) {
 	if isInterpretedLanguage(language) {
 		return &judgetypes.ExecResult{Status: judgetypes.StatusAccepted}, nil
@@ -125,8 +136,6 @@ func compileAndGetBinary(backend judgetypes.SandboxBackend, code, language strin
 	return result, result.Binary
 }
 
-// compileCodeWithCheck 执行编译并检查编译结果, 返回编译结果和二进制.
-// 如果编译失败, 直接更新提交状态为 CompileError 或 SE 并返回 false.
 func compileCodeWithCheck(backend judgetypes.SandboxBackend, submissionID, code, language string) (*judgetypes.ExecResult, []byte, bool) {
 	compileResult, binary := compileAndGetBinary(backend, code, language)
 	if compileResult.Status == judgetypes.StatusCompileError {
@@ -140,7 +149,6 @@ func compileCodeWithCheck(backend judgetypes.SandboxBackend, submissionID, code,
 	return compileResult, binary, true
 }
 
-// runTestCase 运行单个测试用例 (使用缓存的二进制)
 func runTestCase(backend judgetypes.SandboxBackend, task *JudgeTask, binary []byte, input string) (*judgetypes.ExecResult, error) {
 	req := &judgetypes.ExecRequest{
 		Language:    task.Language,
@@ -159,9 +167,39 @@ func runTestCase(backend judgetypes.SandboxBackend, task *JudgeTask, binary []by
 	return backend.Exec(req)
 }
 
+// ---------- 输出比对 ----------
+
+// compareOutput 比对用户输出与标准答案
+// strictCompare=true: 逐字节精确比对
+// strictCompare=false: 忽略行尾空白和末尾空行差异（宽容模式）
+// 返回 (是否通过, 是否格式错误) — 格式错误指宽容比对通过但严格比对不通过
+func compareOutput(userOutput, expectedOutput string, strictCompare bool) (passed bool, isPE bool) {
+	if strictCompare {
+		passed = userOutput == expectedOutput
+		return passed, false // 严格模式下无PE概念
+	}
+
+	// 宽容比对: 先检查严格是否一致（用于PE检测）
+	trimUser := judgetypes.NormalizeOutput(userOutput, false)
+	trimExp := judgetypes.NormalizeOutput(expectedOutput, false)
+
+	if trimUser == trimExp {
+		return true, false
+	}
+
+	// 内容一致但格式不同 → PE
+	normUser := judgetypes.NormalizeOutput(userOutput, true)
+	normExp := judgetypes.NormalizeOutput(expectedOutput, true)
+	if normUser == normExp {
+		return false, true
+	}
+
+	return false, false
+}
+
 // ---------- 标准判题 ----------
 
-func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTestcase) {
+func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTestcase, strictCompare bool) {
 	backend := sandbox.DefaultPool.Get()
 	if backend == nil {
 		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "无可用判题节点")
@@ -173,13 +211,13 @@ func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTe
 		return
 	}
 
-	var details []judgetypes.ExecResult
+	var details []testcase.TestCaseResult
 	for _, tc := range testcases {
 		runResult, err := runTestCase(backend, task, binary, tc.Input)
 		if err != nil {
-			details = append(details, judgetypes.ExecResult{
-				Status: judgetypes.StatusSE,
-				Error:  err.Error(),
+			details = append(details, testcase.TestCaseResult{
+				Status:   judgetypes.StatusSE,
+				Error: err.Error(),
 			})
 			if shouldBreakOnFirstFail(task) {
 				break
@@ -187,88 +225,307 @@ func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTe
 			continue
 		}
 
-		if runResult.Status == judgetypes.StatusAccepted {
-			if !compareOutput(runResult.Stdout, tc.Output) {
-				runResult.Status = judgetypes.StatusWrongAnswer
+		// 沙箱层已上报的运行时状态
+		tcStatus := runResult.Status
+
+		// 运行时正常 → 比对输出
+		if tcStatus == judgetypes.StatusAccepted {
+			passed, isPE := compareOutput(runResult.Stdout, tc.Output, strictCompare || tc.StrictCompare)
+			if passed {
+				tcStatus = judgetypes.StatusAccepted
+			} else if isPE {
+				tcStatus = judgetypes.StatusPE
+			} else {
+				tcStatus = judgetypes.StatusWrongAnswer
 			}
 		}
 
-		details = append(details, *runResult)
+		details = append(details, testcase.TestCaseResult{
+			TestCaseID: tc.ID,
+			GroupID:    tc.GroupID,
+			Order:      tc.Order,
+			Status:     tcStatus,
+			TimeUsed:   runResult.TimeUsed,
+			MemoryUsed: runResult.MemoryUsed,
+			Stderr:     runResult.Stderr,
+		})
 
-		// ACM 模式: 遇到首个非 AC 立即终止
-		if shouldBreakOnFirstFail(task) && runResult.Status != judgetypes.StatusAccepted {
+		if shouldBreakOnFirstFail(task) && tcStatus != judgetypes.StatusAccepted {
 			break
 		}
 	}
 
-	result := e.aggregateResult(details, testcases)
-	e.updateSimple(task.SubmissionID, result.Status, result.Score, result.TimeUsed, result.MemoryUsed, result.Error)
+	e.finalize(task, details, testcases)
 }
 
-// ---------- 输出比对 ----------
+// ---------- SPJ 判题 ----------
 
-// compareOutput 比对用户输出与标准答案（忽略行尾空白和末尾空行差异）
-func compareOutput(userOutput, expectedOutput string) bool {
-	userLines := strings.Split(strings.TrimRight(userOutput, "\n"), "\n")
-	expLines := strings.Split(strings.TrimRight(expectedOutput, "\n"), "\n")
-
-	if len(userLines) != len(expLines) {
-		return false
+func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestcase, strictCompare bool) {
+	backend := sandbox.DefaultPool.Get()
+	if backend == nil {
+		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "无可用判题节点")
+		return
 	}
 
-	for i := 0; i < len(userLines); i++ {
-		if strings.TrimRight(userLines[i], " \t\r\n") != strings.TrimRight(expLines[i], " \t\r\n") {
-			return false
-		}
-	}
-	return true
-}
-
-// ---------- 结果聚合 ----------
-
-// statusPriority 判题结果优先级（数值越小优先级越高）
-var statusPriority = map[string]int{
-	judgetypes.StatusSE:          0,
-	judgetypes.StatusMLE:         1,
-	judgetypes.StatusTLE:         2,
-	judgetypes.StatusRE:          3,
-	judgetypes.StatusWrongAnswer: 4,
-	judgetypes.StatusAccepted:    5,
-}
-
-// aggregateResult 聚合所有测试用例的判题结果
-//
-//	ACM: 首个非 AC 停止, 分数=通过测试用例分数之和
-//	OI/IOI: 执行所有用例, 分数=通过测试用例分数之和
-func (e *JudgeEngine) aggregateResult(details []judgetypes.ExecResult, testcases []testcase.JudgeTestcase) JudgeResult {
-	result := JudgeResult{
-		Status:   judgetypes.StatusAccepted,
-		Score:    0,
-		TimeUsed: 0,
+	_, userBinary, ok := compileCodeWithCheck(backend, task.SubmissionID, task.Code, task.Language)
+	if !ok {
+		return
 	}
 
-	for i, d := range details {
-		if p, ok := statusPriority[d.Status]; ok && p < statusPriority[result.Status] {
-			result.Status = d.Status
-		} else if !ok {
-			result.Status = judgetypes.StatusSE
+	_, spjBinary, ok := compileCodeWithCheck(backend, task.SubmissionID, task.SpjCode, task.SpjLanguage)
+	if !ok {
+		return
+	}
+
+	var details []testcase.TestCaseResult
+	for _, tc := range testcases {
+		userResult, err := runTestCase(backend, task, userBinary, tc.Input)
+		if err != nil {
+			details = append(details, testcase.TestCaseResult{
+				TestCaseID: tc.ID,
+				GroupID:    tc.GroupID,
+				Order:      tc.Order,
+				Status:     judgetypes.StatusSE,
+				Error:      err.Error(),
+			})
+			if shouldBreakOnFirstFail(task) {
+				break
+			}
+			continue
 		}
 
-		if d.Status == judgetypes.StatusAccepted {
-			if i < len(testcases) {
-				result.Score += testcases[i].Score
+		tcStatus := userResult.Status
+
+		if tcStatus == judgetypes.StatusAccepted {
+			// 运行 SPJ 验证用户输出
+			spjInput := strings.TrimRight(tc.Input, "\n") + "\n---SPLIT---\n" +
+				strings.TrimRight(userResult.Stdout, "\n") + "\n---SPLIT---\n" +
+				strings.TrimRight(tc.Output, "\n") + "\n"
+
+			spjResult, err := backend.Exec(&judgetypes.ExecRequest{
+				Code:        task.SpjCode,
+				Language:    task.SpjLanguage,
+				Binary:      spjBinary,
+				Stdin:       spjInput,
+				MaxCPUTime:  5000 * 1e6,
+				MaxRealTime: 10000 * 1e6,
+				MaxMemory:   256 * 1024 * 1024,
+			})
+			if err != nil {
+				details = append(details, testcase.TestCaseResult{
+					TestCaseID: tc.ID,
+					GroupID:    tc.GroupID,
+					Order:      tc.Order,
+					Status:     judgetypes.StatusSE,
+					Error:      err.Error(),
+				})
+				if shouldBreakOnFirstFail(task) {
+					break
+				}
+				continue
+			}
+
+			if spjResult.ExitCode == 0 {
+				tcStatus = judgetypes.StatusAccepted
+			} else {
+				tcStatus = judgetypes.StatusWrongAnswer
 			}
 		}
 
-		if d.TimeUsed > result.TimeUsed {
-			result.TimeUsed = d.TimeUsed
-		}
-		if d.MemoryUsed > result.MemoryUsed {
-			result.MemoryUsed = d.MemoryUsed
+		details = append(details, testcase.TestCaseResult{
+			TestCaseID: tc.ID,
+			GroupID:    tc.GroupID,
+			Order:      tc.Order,
+			Status:     tcStatus,
+			TimeUsed:   userResult.TimeUsed,
+			MemoryUsed: userResult.MemoryUsed,
+		})
+
+		if shouldBreakOnFirstFail(task) && tcStatus != judgetypes.StatusAccepted {
+			break
 		}
 	}
 
-	return result
+	e.finalize(task, details, testcases)
+}
+
+// ---------- 交互判题 ----------
+
+func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.JudgeTestcase, strictCompare bool) {
+	backend := sandbox.DefaultPool.Get()
+	if backend == nil {
+		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "无可用判题节点")
+		return
+	}
+
+	_, userBinary, ok := compileCodeWithCheck(backend, task.SubmissionID, task.Code, task.Language)
+	if !ok {
+		return
+	}
+
+	interCompileResult, interactorBinary := compileAndGetBinary(backend, task.InteractiveCode, task.InteractiveLang)
+	if interCompileResult.Status == judgetypes.StatusCompileError {
+		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "交互器编译失败: "+interCompileResult.Stderr)
+		return
+	}
+	if interCompileResult.Status == judgetypes.StatusSE {
+		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "交互器编译失败: "+interCompileResult.Error)
+		return
+	}
+
+	var details []testcase.TestCaseResult
+	for _, tc := range testcases {
+		userResult, err := runTestCase(backend, task, userBinary, tc.Input)
+		if err != nil {
+			details = append(details, testcase.TestCaseResult{
+				TestCaseID: tc.ID,
+				GroupID:    tc.GroupID,
+				Order:      tc.Order,
+				Status:     judgetypes.StatusSE,
+				Error:      err.Error(),
+			})
+			if shouldBreakOnFirstFail(task) {
+				break
+			}
+			continue
+		}
+
+		tcStatus := userResult.Status
+
+		if tcStatus == judgetypes.StatusAccepted {
+			interInput := strings.TrimRight(tc.Input, "\n") + "\n---USER_OUT---\n" +
+				strings.TrimRight(userResult.Stdout, "\n") + "\n"
+
+			interResult, err := backend.Exec(&judgetypes.ExecRequest{
+				Code:        task.InteractiveCode,
+				Language:    task.InteractiveLang,
+				Binary:      interactorBinary,
+				Stdin:       interInput,
+				MaxCPUTime:  task.TimeLimit * 3 * 1e6,
+				MaxRealTime: task.TimeLimit * 6 * 1e6,
+				MaxMemory:   task.MemoryLimit * 1024,
+				MaxStack:    task.StackLimit * 1024,
+				MaxOutput:   task.OutputLimit * 1024,
+			})
+			if err != nil {
+				details = append(details, testcase.TestCaseResult{
+					TestCaseID: tc.ID,
+					GroupID:    tc.GroupID,
+					Order:      tc.Order,
+					Status:     judgetypes.StatusSE,
+					Error:      err.Error(),
+				})
+				if shouldBreakOnFirstFail(task) {
+					break
+				}
+				continue
+			}
+
+			if interResult.Status != judgetypes.StatusAccepted {
+				tcStatus = interResult.Status
+			} else if interResult.ExitCode == 0 {
+				tcStatus = judgetypes.StatusAccepted
+			} else {
+				tcStatus = judgetypes.StatusWrongAnswer
+			}
+		}
+
+		details = append(details, testcase.TestCaseResult{
+			TestCaseID: tc.ID,
+			GroupID:    tc.GroupID,
+			Order:      tc.Order,
+			Status:     tcStatus,
+			TimeUsed:   userResult.TimeUsed,
+			MemoryUsed: userResult.MemoryUsed,
+		})
+
+		if shouldBreakOnFirstFail(task) && tcStatus != judgetypes.StatusAccepted {
+			break
+		}
+	}
+
+	e.finalize(task, details, testcases)
+}
+
+// ---------- 结果聚合与持久化 ----------
+
+// finalize 聚合所有测试用例结果、写入详情、更新提交记录
+func (e *JudgeEngine) finalize(task *JudgeTask, details []testcase.TestCaseResult, testcases []testcase.JudgeTestcase) {
+	if len(details) == 0 {
+		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "没有判题结果")
+		return
+	}
+
+	// 按子任务分组计算得分
+	groups := testcase.GroupBySubtaskForResult(details)
+
+	// 计算总分和最终状态
+	totalScore := 0
+	overallStatus := judgetypes.StatusAccepted
+	maxTime := int64(0)
+	maxMemory := int64(0)
+
+	for _, g := range groups {
+		groupAllAC := true
+		for _, d := range g.Testcases {
+			if judgetypes.IsWorseThan(d.Status, overallStatus) {
+				overallStatus = d.Status
+			}
+			if d.TimeUsed > maxTime {
+				maxTime = d.TimeUsed
+			}
+			if d.MemoryUsed > maxMemory {
+				maxMemory = d.MemoryUsed
+			}
+			if d.Status != judgetypes.StatusAccepted {
+				groupAllAC = false
+			}
+		}
+		// 子任务捆绑: 同组全部 AC 才给该组总分
+		if groupAllAC {
+			totalScore += g.Score
+		}
+	}
+
+	// 写 JudgeSubmissionDetail
+	e.writeDetails(task.SubmissionID, task.ProblemID, details)
+
+	// 更新提交记录
+	e.updateSimple(task.SubmissionID, overallStatus, totalScore, maxTime, maxMemory, "")
+	log.Printf("[judge] submission %s result: status=%s, score=%d, time=%dns, memory=%dB, details=%d",
+		task.SubmissionID, overallStatus, totalScore, maxTime, maxMemory, len(details))
+
+	// 更新题目统计（仅非测试提交）
+	if task.SubmissionType != "test" {
+		db.DB.Table("judge_problem").Where("id = ?", task.ProblemID).
+			UpdateColumn("submit_count", gorm.Expr("submit_count + 1"))
+		if overallStatus == judgetypes.StatusAccepted {
+			db.DB.Table("judge_problem").Where("id = ?", task.ProblemID).
+				UpdateColumn("accept_count", gorm.Expr("accept_count + 1"))
+		}
+	}
+}
+
+// writeDetails 写入每个测试用例的判题详情（通过回调函数，避免循环导入）
+func (e *JudgeEngine) writeDetails(submissionID, problemID string, details []testcase.TestCaseResult) {
+	if detailWriter == nil {
+		return
+	}
+	detailWriter(submissionID, problemID, details)
+}
+
+// ---------- 状态优先级（聚合用） ----------
+
+var statusPriority = map[string]int{
+	judgetypes.StatusSE:          0,
+	judgetypes.StatusRF:          1,
+	judgetypes.StatusOLE:         2,
+	judgetypes.StatusMLE:         3,
+	judgetypes.StatusTLE:         4,
+	judgetypes.StatusRE:          5,
+	judgetypes.StatusPE:          6,
+	judgetypes.StatusWrongAnswer: 7,
+	judgetypes.StatusAccepted:    8,
 }
 
 // ---------- 更新判题结果 ----------
@@ -290,14 +547,4 @@ func updateJudgeResult(submissionID, status string, score int, timeUsed, memoryU
 
 	log.Printf("[judge] submission %s result: status=%s, score=%d, time=%dns, memory=%dB",
 		submissionID, status, score, timeUsed, memoryUsed)
-}
-
-func isCompileError(result *judgetypes.ExecResult) bool {
-	if result == nil {
-		return false
-	}
-	if result.Status == judgetypes.StatusCompileError {
-		return true
-	}
-	return result.Status == judgetypes.StatusRE && result.Stderr != ""
 }

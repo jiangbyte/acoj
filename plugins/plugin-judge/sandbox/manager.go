@@ -15,7 +15,9 @@ func CreateSandbox(sb *JudgeSandbox) error {
 	}
 	now := time.Now()
 	sb.CreatedAt = &now
+	sb.CreatedBy = nil
 	sb.UpdatedAt = &now
+	sb.UpdatedBy = nil
 	return db.DB.WithContext(context.Background()).Create(sb).Error
 }
 

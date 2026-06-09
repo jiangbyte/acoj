@@ -39,6 +39,9 @@ func PageService(c *gin.Context, param *SubmissionPageParam) gin.H {
 	if param.ContestID != "" {
 		tx = tx.Where("contest_id = ?", param.ContestID)
 	}
+	if param.SubmissionType != "" {
+		tx = tx.Where("submission_type = ?", param.SubmissionType)
+	}
 
 	var total int64
 	tx.Count(&total)
@@ -105,17 +108,24 @@ func PageService(c *gin.Context, param *SubmissionPageParam) gin.H {
 // CreateService 创建提交并入队判题（B端管理员）
 func CreateService(c *gin.Context, param *SubmissionCreateParam, judgeEngine *judge.JudgeEngine) error {
 	userID := auth.GetLoginID(c)
+	if param.SubmissionType == "" {
+		param.SubmissionType = "test"
+	}
 	return createSubmission(c, param, judgeEngine, userID)
 }
 
 // ClientCreateService 创建提交并入队判题（C端用户），返回 submissionID
 func ClientCreateService(c *gin.Context, param *SubmissionCreateParam, judgeEngine *judge.JudgeEngine) (string, error) {
 	userID := auth.Consumer.GetLoginID(c)
+	if param.SubmissionType == "" {
+		param.SubmissionType = "contest"
+	}
 	return createSubmissionWithID(c, param, judgeEngine, userID)
 }
 
 // buildJudgeTask 构建判题任务
 func buildJudgeTask(prob *problem.JudgeProblem, submissionID, userID, language, code string, contestID ...string) *judge.JudgeTask {
+	submissionType := getSubmissionType(submissionID)
 	limits := problem.GetEffectiveLimits(prob.ID, language)
 
 	finalCode := code
@@ -137,6 +147,8 @@ func buildJudgeTask(prob *problem.JudgeProblem, submissionID, userID, language, 
 		MemoryLimit:     limits.MemoryLimit,
 		StackLimit:      limits.StackLimit,
 		OutputLimit:     limits.OutputLimit,
+		StrictCompare:   prob.StrictCompare,
+		SubmissionType:  submissionType,
 		SpjCode:         prob.SpjCode,
 		SpjLanguage:     prob.SpjLanguage,
 		InteractiveCode: prob.InteractiveCode,
@@ -174,17 +186,18 @@ func createSubmissionWithID(c *gin.Context, param *SubmissionCreateParam, judgeE
 	}
 
 	submission := JudgeSubmission{
-		ID:           utils.GenerateID(),
-		ProblemID:    param.ProblemID,
-		UserID:       userID,
-		ContestID:    param.ContestID,
-		Language:     param.Language,
-		Code:         param.Code,
-		Status:       "PENDING",
-		Score:        0,
-		ErrorMessage: "",
-		CreatedAt:    &now,
-		UpdatedAt:    &now,
+		ID:             utils.GenerateID(),
+		ProblemID:      param.ProblemID,
+		UserID:         userID,
+		ContestID:      param.ContestID,
+		Language:       param.Language,
+		Code:           param.Code,
+		Status:         "PENDING",
+		SubmissionType: param.SubmissionType,
+		Score:          0,
+		ErrorMessage:   "",
+		CreatedAt:      &now,
+		UpdatedAt:      &now,
 	}
 
 	if err := db.DB.WithContext(ctx).Create(&submission).Error; err != nil {
@@ -213,17 +226,18 @@ func createSubmission(c *gin.Context, param *SubmissionCreateParam, judgeEngine 
 	}
 
 	submission := JudgeSubmission{
-		ID:           utils.GenerateID(),
-		ProblemID:    param.ProblemID,
-		UserID:       userID,
-		ContestID:    param.ContestID,
-		Language:     param.Language,
-		Code:         param.Code,
-		Status:       "PENDING",
-		Score:        0,
-		ErrorMessage: "",
-		CreatedAt:    &now,
-		UpdatedAt:    &now,
+		ID:             utils.GenerateID(),
+		ProblemID:      param.ProblemID,
+		UserID:         userID,
+		ContestID:      param.ContestID,
+		Language:       param.Language,
+		Code:           param.Code,
+		Status:         "PENDING",
+		SubmissionType: param.SubmissionType,
+		Score:          0,
+		ErrorMessage:   "",
+		CreatedAt:      &now,
+		UpdatedAt:      &now,
 	}
 
 	if err := db.DB.WithContext(ctx).Create(&submission).Error; err != nil {
@@ -300,17 +314,30 @@ func modelToVO(s *JudgeSubmission) SubmissionVO {
 		createdAt = s.CreatedAt.Format("2006-01-02 15:04:05")
 	}
 	return SubmissionVO{
-		ID:           s.ID,
-		ProblemID:    s.ProblemID,
-		UserID:       s.UserID,
-		ContestID:    s.ContestID,
-		Language:     s.Language,
-		Code:         s.Code,
-		Status:       s.Status,
-		Score:        s.Score,
-		TimeUsed:     s.TimeUsed,
-		MemoryUsed:   s.MemoryUsed,
-		ErrorMessage: s.ErrorMessage,
-		CreatedAt:    createdAt,
+		ID:             s.ID,
+		ProblemID:      s.ProblemID,
+		UserID:         s.UserID,
+		ContestID:      s.ContestID,
+		Language:       s.Language,
+		Code:           s.Code,
+		Status:         s.Status,
+		SubmissionType: s.SubmissionType,
+		Score:          s.Score,
+		TimeUsed:       s.TimeUsed,
+		MemoryUsed:     s.MemoryUsed,
+		ErrorMessage:   s.ErrorMessage,
+		CreatedAt:      createdAt,
 	}
+}
+
+func getSubmissionType(submissionID string) string {
+	ctx := context.Background()
+	var sub JudgeSubmission
+	if err := db.DB.WithContext(ctx).Select("submission_type").Where("id = ?", submissionID).First(&sub).Error; err != nil {
+		return "contest"
+	}
+	if sub.SubmissionType == "" {
+		return "contest"
+	}
+	return sub.SubmissionType
 }

@@ -91,13 +91,14 @@ func createProblemset(c *gin.Context, param *ProblemsetCreateParam, createdByTyp
 	ctx := context.Background()
 	now := time.Now()
 
+	loginID := getLoginID()
 	ps := JudgeProblemset{
 		ID:            utils.GenerateID(),
 		Title:         param.Title,
 		Description:   param.Description,
 		Status:        param.Status,
 		Sort:          param.Sort,
-		CreatedBy:     getLoginID(),
+		CreatedBy:     &loginID,
 		CreatedByType: createdByType,
 		CreatedAt:     &now,
 		UpdatedAt:     &now,
@@ -290,7 +291,7 @@ func modelToVO(ps *JudgeProblemset) ProblemsetVO {
 		Description: ps.Description,
 		Status:      ps.Status,
 		Sort:        ps.Sort,
-		CreatedBy:   ps.CreatedBy,
+		CreatedBy:   strPtrToStr(ps.CreatedBy),
 		CreatedAt:   createdAt,
 	}
 }
@@ -319,4 +320,12 @@ func ClientRemoveService(c *gin.Context, param ProblemsetRemoveParam) error {
 		}
 	}
 	return RemoveService(c, param)
+}
+
+// strPtrToStr 安全解引用 *string，nil 返回空串
+func strPtrToStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

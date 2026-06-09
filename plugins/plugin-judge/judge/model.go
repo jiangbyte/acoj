@@ -8,8 +8,10 @@ type JudgeConfig struct {
 	Key       string     `gorm:"size:64;uniqueIndex" json:"key"`
 	Value     string     `gorm:"type:text" json:"value"`
 	Desc      string     `gorm:"size:255" json:"desc"`
-	CreatedAt *time.Time `json:"created_at"`
-	UpdatedAt *time.Time `json:"updated_at"`
+	CreatedAt   *time.Time `json:"created_at"`
+	CreatedBy   *string    `gorm:"size:32" json:"created_by"`
+	UpdatedAt   *time.Time `json:"updated_at"`
+	UpdatedBy   *string    `gorm:"size:32" json:"updated_by"`
 }
 
 func (JudgeConfig) TableName() string { return "judge_config" }

@@ -1,5 +1,7 @@
 package judgetypes
 
+import "strings"
+
 // ExecRequest 单次执行请求
 type ExecRequest struct {
 	Code        string   `json:"code"`
@@ -47,12 +49,62 @@ type SandboxBackend interface {
 	InteractiveExec(userReq, interactorReq *ExecRequest, testInput string) (*ExecResult, error)
 }
 
+// 判题结果状态码
 const (
-	StatusAccepted     = "Accepted"
-	StatusCompileError = "CompileError"
-	StatusTLE          = "TLE"
-	StatusMLE          = "MLE"
-	StatusRE           = "RE"
-	StatusSE           = "SE"
-	StatusWrongAnswer  = "WrongAnswer"
+	StatusAccepted        = "Accepted"
+	StatusCompileError    = "CompileError"
+	StatusTLE             = "TLE"
+	StatusMLE             = "MLE"
+	StatusOLE             = "OutputLimitExceeded"
+	StatusRE              = "RE"
+	StatusSE              = "SE"
+	StatusWrongAnswer     = "WrongAnswer"
+	StatusPE              = "PresentationError"
+	StatusRF              = "RestrictedFunction"
 )
+
+// StatusWorse 判题结果严重程度排序（数值越小越严重）
+// 用于聚合多个测试用例结果时取最严重状态
+var StatusWorse = map[string]int{
+	StatusSE: 0, StatusRF: 1, StatusOLE: 2, StatusMLE: 3,
+	StatusTLE: 4, StatusRE: 5, StatusPE: 6, StatusWrongAnswer: 7,
+	StatusCompileError: 8, StatusAccepted: 9,
+}
+
+// IsWorseThan returns true if newStatus represents a worse result than oldStatus
+func IsWorseThan(newStatus, oldStatus string) bool {
+	np, nok := StatusWorse[newStatus]
+	op, _ := StatusWorse[oldStatus]
+	if !nok {
+		return false
+	}
+	return np < op
+}
+
+// IsAccepted returns true if the status is Accepted
+func IsAccepted(status string) bool {
+	return status == StatusAccepted
+}
+
+// HasStdoutStatus returns true if the sandbox result status has usable stdout
+func HasStdoutStatus(status string) bool {
+	return status == StatusAccepted || status == StatusWrongAnswer || status == StatusPE
+}
+
+// IsOutputTrimmable returns true if trailing whitespace differences may be ignored
+func IsOutputTrimmable(strictCompare bool) bool {
+	return !strictCompare
+}
+
+// NormalizeOutput 根据是否严格模式标准化输出字符串
+func NormalizeOutput(s string, strictCompare bool) string {
+	if strictCompare {
+		return s
+	}
+	// 宽容模式: 移除行尾空白 + 末尾空行
+	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
+	for i, l := range lines {
+		lines[i] = strings.TrimRight(l, " \t\r")
+	}
+	return strings.Join(lines, "\n")
+}

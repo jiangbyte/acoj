@@ -53,7 +53,9 @@ func CreateService(c *gin.Context, param *TagCreateParam) error {
 		Name:      param.Name,
 		Color:     param.Color,
 		CreatedAt: &now,
+		CreatedBy: nil,
 		UpdatedAt: &now,
+		UpdatedBy: nil,
 	}
 
 	return db.DB.WithContext(ctx).Create(&tag).Error

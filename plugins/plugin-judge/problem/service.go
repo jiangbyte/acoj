@@ -114,9 +114,10 @@ func CreateService(c *gin.Context, param *ProblemCreateParam) error {
 		SpjLanguage:     param.SpjLanguage,
 		InteractiveCode: param.InteractiveCode,
 		InteractiveLang: param.InteractiveLang,
+		StrictCompare:   param.StrictCompare,
 		Difficulty:      param.Difficulty,
 		Status:          param.Status,
-		CreatedBy:       userID,
+		CreatedBy:       &userID,
 		CreatedAt:       &now,
 		UpdatedAt:       &now,
 	}
@@ -302,11 +303,12 @@ func modelToVO(p *JudgeProblem) ProblemVO {
 		SpjLanguage:     p.SpjLanguage,
 		InteractiveCode: p.InteractiveCode,
 		InteractiveLang: p.InteractiveLang,
+		StrictCompare:   p.StrictCompare,
 		Difficulty:      p.Difficulty,
 		Status:          p.Status,
 		SubmitCount:     p.SubmitCount,
 		AcceptCount:     p.AcceptCount,
-		CreatedBy:       p.CreatedBy,
+		CreatedBy:       strPtrToStr(p.CreatedBy),
 		CreatedAt:       createdAt,
 		UpdatedAt:       updatedAt,
 	}
@@ -340,4 +342,12 @@ func PublicDetailService(c *gin.Context, id string) (*PublicProblemVO, error) {
 		publicVO.LanguageLimits = vo.LanguageLimits
 	}
 	return publicVO, nil
+}
+
+// strPtrToStr 安全解引用 *string，nil 返回空串
+func strPtrToStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

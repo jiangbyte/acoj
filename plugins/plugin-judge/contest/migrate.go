@@ -8,4 +8,5 @@ func init() {
 	db.RegisterModel(&JudgeContest{})
 	db.RegisterModel(&RelContestProblem{})
 	db.RegisterModel(&RelContestUser{})
+	db.RegisterModel(&JudgeTeam{})
 }

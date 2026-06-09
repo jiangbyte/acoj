@@ -111,7 +111,7 @@ func CalculateRank(contestID string) ([]ContestRankItem, error) {
 							detail.SubmitTime = s.CreatedAt.Format("2006-01-02 15:04:05")
 						}
 						item.Solved++
-						penaltyNs := int64(detail.Attempts-1) * 20 * 60 * 1000 * 1000000
+						penaltyNs := int64(detail.Attempts-1) * int64(contest.PenaltyPerFail) * 60 * 1000 * 1000000
 						item.TotalTime += s.TimeUsed + penaltyNs
 						item.Score += rel.Score
 						break

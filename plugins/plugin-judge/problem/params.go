@@ -17,6 +17,7 @@ type ProblemVO struct {
 	SpjLanguage     string            `json:"spj_language"`
 	InteractiveCode string            `json:"interactive_code"`
 	InteractiveLang string            `json:"interactive_lang"`
+	StrictCompare   bool               `json:"strict_compare"`
 	Difficulty      string            `json:"difficulty"`
 	Status          string            `json:"status"`
 	SubmitCount     int               `json:"submit_count"`
@@ -52,6 +53,7 @@ type ProblemCreateParam struct {
 	SpjLanguage     string              `json:"spj_language"`
 	InteractiveCode string              `json:"interactive_code"`
 	InteractiveLang string              `json:"interactive_lang"`
+	StrictCompare   bool                `json:"strict_compare"`
 	Difficulty      string              `json:"difficulty"`
 	Status          string              `json:"status"`
 	TagIDs          []string            `json:"tag_ids"`
@@ -73,6 +75,7 @@ type ProblemModifyParam struct {
 	SpjLanguage     string               `json:"spj_language"`
 	InteractiveCode string               `json:"interactive_code"`
 	InteractiveLang string               `json:"interactive_lang"`
+	StrictCompare   *bool                `json:"strict_compare"`
 	Difficulty      string               `json:"difficulty"`
 	Status          string               `json:"status"`
 	TagIDs          []string             `json:"tag_ids"`

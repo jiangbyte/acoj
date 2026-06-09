@@ -114,12 +114,18 @@ func CreateService(c *gin.Context, param *ContestCreateParam) error {
 		Title:       param.Title,
 		Description: param.Description,
 		Type:        param.Type,
-		Rule:        param.Rule,
-		Password:    param.Password,
+		Rule:             param.Rule,
+		Password:         param.Password,
+		PenaltyPerFail:   20,
+		AllowHack:        false,
+		StandingsVisible: true,
+		AllowPractice:    false,
+		IsTeam:           false,
+		TeamMaxSize:      3,
 		StartTime:   &startTime,
 		EndTime:     &endTime,
 		Status:      "PENDING",
-		CreatedBy:   userID,
+		CreatedBy:   &userID,
 		CreatedAt:   &now,
 		UpdatedAt:   &now,
 	}
@@ -182,6 +188,28 @@ func ModifyService(c *gin.Context, param *ContestModifyParam) error {
 		}
 	}
 	updates["updated_at"] = time.Now()
+
+	if param.PenaltyPerFail != nil {
+		updates["penalty_per_fail"] = *param.PenaltyPerFail
+	}
+	if param.AllowHack != nil {
+		updates["allow_hack"] = *param.AllowHack
+	}
+	if param.ScoreDecay != nil {
+		updates["score_decay"] = *param.ScoreDecay
+	}
+	if param.IsTeam != nil {
+		updates["is_team"] = *param.IsTeam
+	}
+	if param.TeamMaxSize != nil {
+		updates["team_max_size"] = *param.TeamMaxSize
+	}
+	if param.StandingsVisible != nil {
+		updates["standings_visible"] = *param.StandingsVisible
+	}
+	if param.AllowPractice != nil {
+		updates["allow_practice"] = *param.AllowPractice
+	}
 
 	return db.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&JudgeContest{}).Where("id = ?", param.ID).Updates(updates).Error; err != nil {
@@ -340,15 +368,29 @@ func modelToVO(c *JudgeContest) ContestVO {
 		createdAt = c.CreatedAt.Format("2006-01-02 15:04:05")
 	}
 	return ContestVO{
-		ID:          c.ID,
-		Title:       c.Title,
-		Description: c.Description,
-		Type:        c.Type,
-		Rule:        c.Rule,
-		StartTime:   startTime,
-		EndTime:     endTime,
-		Status:      c.Status,
-		CreatedBy:   c.CreatedBy,
-		CreatedAt:   createdAt,
+		ID:               c.ID,
+		Title:            c.Title,
+		Description:      c.Description,
+		Type:             c.Type,
+		Rule:             c.Rule,
+		StartTime:        startTime,
+		EndTime:          endTime,
+		Status:           c.Status,
+		PenaltyPerFail:   c.PenaltyPerFail,
+		AllowHack:        c.AllowHack,
+		AllowPractice:    c.AllowPractice,
+		StandingsVisible: c.StandingsVisible,
+		IsTeam:           c.IsTeam,
+		TeamMaxSize:      c.TeamMaxSize,
+		CreatedBy:        strPtrToStr(c.CreatedBy),
+		CreatedAt:        createdAt,
 	}
+}
+
+// strPtrToStr 安全解引用 *string，nil 返回空串
+func strPtrToStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

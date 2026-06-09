@@ -10,7 +10,9 @@ type JudgeSandbox struct {
 	Timeout   int        `gorm:"default:30" json:"timeout"`
 	Status    string     `gorm:"size:16;default:active;index" json:"status"` // active / offline / removed
 	CreatedAt *time.Time `json:"created_at"`
+	CreatedBy *string    `gorm:"size:32" json:"created_by"`
 	UpdatedAt *time.Time `json:"updated_at"`
+	UpdatedBy *string    `gorm:"size:32" json:"updated_by"`
 }
 
 func (JudgeSandbox) TableName() string { return "judge_sandbox" }

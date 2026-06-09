@@ -9,10 +9,11 @@ type JudgeProblemset struct {
 	Description    string     `gorm:"type:text" json:"description"`
 	Status         string     `gorm:"size:16;default:ACTIVE" json:"status"` // ACTIVE / HIDDEN / DELETED
 	Sort           int        `gorm:"default:0" json:"sort"`
-	CreatedBy      string     `gorm:"size:32" json:"created_by"`
+	CreatedBy      *string    `gorm:"size:32" json:"created_by"`
 	CreatedByType  string     `gorm:"size:16;default:BUSINESS" json:"created_by_type"` // BUSINESS / CONSUMER
 	CreatedAt      *time.Time `json:"created_at"`
 	UpdatedAt      *time.Time `json:"updated_at"`
+	UpdatedBy      *string    `gorm:"size:32" json:"updated_by"`
 }
 
 func (JudgeProblemset) TableName() string { return "judge_problemset" }

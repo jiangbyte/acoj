@@ -24,7 +24,7 @@ type JudgeTask struct {
 	Language        string `json:"language"`
 	Code            string `json:"code"`
 	JudgeType       string `json:"judge_type"`        // default / spj / interactive
-	ContestType     string `json:"contest_type"`      // "" / ACM / OI / IOI (竞赛模式)
+	ContestType     string `json:"contest_type"`      // "" / ACM / OI / IOI / CF (竞赛模式)
 	ContestID       string `json:"contest_id"`        // 竞赛ID (非空时启用竞赛模式判题)
 	TimeLimit       int64  `json:"time_limit"`
 	MemoryLimit     int64  `json:"memory_limit"`
@@ -34,6 +34,8 @@ type JudgeTask struct {
 	SpjLanguage     string `json:"spj_language"`
 	InteractiveCode string `json:"interactive_code"`
 	InteractiveLang string `json:"interactive_lang"`
+	StrictCompare   bool   `json:"strict_compare"`    // 严格逐字节比对输出
+	SubmissionType  string `json:"submission_type"`   // contest / practice / test
 }
 
 type JudgeResult struct {
@@ -46,6 +48,7 @@ type JudgeResult struct {
 	Error        string           `json:"error,omitempty"`
 }
 
+// TestCaseResult 单个测试用例判题结果（由 judge 包导出）
 type TestCaseResult struct {
 	Index      int    `json:"index"`
 	Status     string `json:"status"`

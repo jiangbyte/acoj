@@ -350,9 +350,9 @@ func mapPBStatus(status pb.Response_Result_StatusType) string {
 	case pb.Response_Result_NonZeroExitStatus:
 		return judgetypes.StatusRE
 	case pb.Response_Result_OutputLimitExceeded:
-		return judgetypes.StatusRE
+		return judgetypes.StatusOLE
 	case pb.Response_Result_DangerousSyscall:
-		return judgetypes.StatusRE
+		return judgetypes.StatusRF
 	case pb.Response_Result_Signalled:
 		return judgetypes.StatusRE
 	case pb.Response_Result_InternalError:

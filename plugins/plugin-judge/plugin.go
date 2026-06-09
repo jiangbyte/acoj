@@ -4,13 +4,17 @@ import (
 	"log"
 
 	"hei-gin/api"
+	"hei-gin/sdk/db"
 	"hei-gin/sdk/module"
+	"hei-gin/sdk/utils"
 
 	"hei-gin/plugins/plugin-judge/judgetypes"
 	"hei-gin/plugins/plugin-judge/judge"
 	"hei-gin/plugins/plugin-judge/sandbox"
 	"hei-gin/plugins/plugin-judge/langconf"
 	submissionApi "hei-gin/plugins/plugin-judge/submission/api/v1"
+	"hei-gin/plugins/plugin-judge/submission"
+	"hei-gin/plugins/plugin-judge/testcase"
 )
 
 type JudgePlugin struct {
@@ -56,6 +60,29 @@ func (p *JudgePlugin) Init() error {
 
 	p.healthChecker = sandbox.NewHealthChecker(healthCheckInterval, maxRetry, recoveryInterval)
 	p.engine = judge.NewJudgeEngine(workerCount)
+
+	// 设置判题详情写入回调
+	judge.SetDetailWriter(func(submissionID, problemID string, details []testcase.TestCaseResult) {
+		records := make([]submission.JudgeSubmissionDetail, len(details))
+		for i, d := range details {
+			records[i] = submission.JudgeSubmissionDetail{
+				ID:           utils.GenerateID(),
+				SubmissionID: submissionID,
+				ProblemID:    problemID,
+				TestCaseID:   d.TestCaseID,
+				GroupID:      d.GroupID,
+				Order:        d.Order,
+				Status:       d.Status,
+				Score:        d.Score,
+				TimeUsed:     d.TimeUsed,
+				MemoryUsed:   d.MemoryUsed,
+				Stderr:       d.Stderr,
+			}
+		}
+		if err := db.DB.Create(&records).Error; err != nil {
+			log.Printf("[judge] write details error: %v", err)
+		}
+	})
 
 	submissionApi.JudgeEngineRef = p.engine
 
