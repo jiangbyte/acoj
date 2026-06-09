@@ -18,7 +18,16 @@ import (
 
 
 func RolePage(c *gin.Context, p *RolePageParam) gin.H {
-	return crud.Page(c, &SysRole{}, p, nil, "created_at DESC", func(e *SysRole) any { return toVO(e) })
+	return crud.Page(c, &SysRole{}, p, func(q *gorm.DB) *gorm.DB {
+		if p.Keyword != "" {
+			like := "%" + p.Keyword + "%"
+			q = q.Where("name LIKE ? OR code LIKE ?", like, like)
+		}
+		if p.Category != "" {
+			q = q.Where("category = ?", p.Category)
+		}
+		return q
+	}, "created_at DESC", func(e *SysRole) any { return toVO(e) })
 }
 
 func RoleCreate(c *gin.Context, vo *RoleVO, userID string) {
