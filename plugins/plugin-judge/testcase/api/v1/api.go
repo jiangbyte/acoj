@@ -17,6 +17,10 @@ func RegisterRoutes(r *gin.Engine) {
 		registry.Perm("judge:testcase:list", "测试用例列表"),
 		listHandler,
 	)
+	r.GET("/api/v1/judge/testcase/content",
+		registry.Perm("judge:testcase:content", "测试用例内容"),
+		contentHandler,
+	)
 	r.POST("/api/v1/judge/testcase/create",
 		registry.Perm("judge:testcase:create", "创建测试用例"),
 		createHandler,
@@ -42,6 +46,21 @@ func listHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, testcase.ListByProblemService(c, problemID))
+}
+
+func contentHandler(c *gin.Context) {
+	id := c.Query("id")
+	if id == "" {
+		c.JSON(http.StatusOK, result.Failure(c, "id不能为空", 400, nil))
+		return
+	}
+	field := c.DefaultQuery("field", "")
+	vo, err := testcase.GetContentService(c, id, field)
+	if err != nil {
+		c.JSON(http.StatusOK, result.Failure(c, err.Error(), 500, nil))
+		return
+	}
+	c.JSON(http.StatusOK, result.Success(c, vo))
 }
 
 func createHandler(c *gin.Context) {

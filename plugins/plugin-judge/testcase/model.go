@@ -6,8 +6,11 @@ import "time"
 type JudgeTestcase struct {
 	ID            string     `gorm:"primaryKey;size:32" json:"id"`
 	ProblemID     string     `gorm:"size:32;index" json:"problem_id"`
-	Input         string     `gorm:"type:longtext" json:"input"`
-	Output        string     `gorm:"type:longtext" json:"output"`
+	InputPath     string     `gorm:"size:512;default:''" json:"input_path"`    // 输入文件存储路径
+	OutputPath    string     `gorm:"size:512;default:''" json:"output_path"`   // 输出文件存储路径
+	FileSize      int64      `gorm:"default:0" json:"file_size"`               // 文件总大小（字节）
+	Input         string     `gorm:"type:longtext" json:"input"`               // 临时兼容：迁移完成后移除
+	Output        string     `gorm:"type:longtext" json:"output"`              // 临时兼容：迁移完成后移除
 	Order         int        `gorm:"default:0" json:"order"`
 	IsSample      bool       `gorm:"default:false" json:"is_sample"`
 	Score         int        `gorm:"default:100" json:"score"`
@@ -29,7 +32,6 @@ type JudgeTestcaseGroup struct {
 }
 
 // GroupBySubtask 将测试用例按 GroupID 分组
-// GroupID == "" 的测试用例各自独立成组
 func GroupBySubtask(testcases []JudgeTestcase) []JudgeTestcaseGroup {
 	groupMap := make(map[string]*JudgeTestcaseGroup)
 	var groups []JudgeTestcaseGroup
@@ -37,7 +39,7 @@ func GroupBySubtask(testcases []JudgeTestcase) []JudgeTestcaseGroup {
 	for _, tc := range testcases {
 		gid := tc.GroupID
 		if gid == "" {
-			gid = tc.ID // 无分组则每个用例自成一组
+			gid = tc.ID
 		}
 		if _, ok := groupMap[gid]; !ok {
 			groupMap[gid] = &JudgeTestcaseGroup{
@@ -48,7 +50,6 @@ func GroupBySubtask(testcases []JudgeTestcase) []JudgeTestcaseGroup {
 		groupMap[gid].Score += tc.Score
 	}
 
-	// 按首次出现顺序排列
 	seen := make(map[string]bool)
 	for _, tc := range testcases {
 		gid := tc.GroupID

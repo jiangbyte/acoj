@@ -84,16 +84,24 @@ func (e *JudgeEngine) processTask(task *JudgeTask) {
 		return
 	}
 
+	// 批量加载测试用例文件内容（文件存储 or DB 兼容）
+	inCache, outCache, err := testcase.BatchLoadFiles(task.ProblemID, testcases)
+	if err != nil {
+		log.Printf("[judge] load testcase files error: %v", err)
+		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, err.Error())
+		return
+	}
+
 	// 解析严格比对模式（题目级，测试用例级可覆盖）
 	strictCompare := task.StrictCompare
 
 	switch task.JudgeType {
 	case "spj":
-		e.judgeSPJ(task, testcases, strictCompare)
+		e.judgeSPJ(task, testcases, inCache, outCache, strictCompare)
 	case "interactive":
-		e.judgeInteractive(task, testcases, strictCompare)
+		e.judgeInteractive(task, testcases, inCache, outCache, strictCompare)
 	default:
-		e.judgeDefault(task, testcases, strictCompare)
+		e.judgeDefault(task, testcases, inCache, outCache, strictCompare)
 	}
 }
 
@@ -199,7 +207,7 @@ func compareOutput(userOutput, expectedOutput string, strictCompare bool) (passe
 
 // ---------- 标准判题 ----------
 
-func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTestcase, strictCompare bool) {
+func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTestcase, inCache, outCache map[string][]byte, strictCompare bool) {
 	backend := sandbox.DefaultPool.Get()
 	if backend == nil {
 		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "无可用判题节点")
@@ -213,7 +221,7 @@ func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTe
 
 	var details []testcase.TestCaseResult
 	for _, tc := range testcases {
-		runResult, err := runTestCase(backend, task, binary, tc.Input)
+		runResult, err := runTestCase(backend, task, binary, getTestCaseInput(tc, inCache))
 		if err != nil {
 			details = append(details, testcase.TestCaseResult{
 				Status:   judgetypes.StatusSE,
@@ -230,7 +238,7 @@ func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTe
 
 		// 运行时正常 → 比对输出
 		if tcStatus == judgetypes.StatusAccepted {
-			passed, isPE := compareOutput(runResult.Stdout, tc.Output, strictCompare || tc.StrictCompare)
+			passed, isPE := compareOutput(runResult.Stdout, getTestCaseOutput(tc, outCache), strictCompare || tc.StrictCompare)
 			if passed {
 				tcStatus = judgetypes.StatusAccepted
 			} else if isPE {
@@ -260,7 +268,7 @@ func (e *JudgeEngine) judgeDefault(task *JudgeTask, testcases []testcase.JudgeTe
 
 // ---------- SPJ 判题 ----------
 
-func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestcase, strictCompare bool) {
+func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestcase, inCache, outCache map[string][]byte, strictCompare bool) {
 	backend := sandbox.DefaultPool.Get()
 	if backend == nil {
 		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "无可用判题节点")
@@ -279,7 +287,7 @@ func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestca
 
 	var details []testcase.TestCaseResult
 	for _, tc := range testcases {
-		userResult, err := runTestCase(backend, task, userBinary, tc.Input)
+		userResult, err := runTestCase(backend, task, userBinary, getTestCaseInput(tc, inCache))
 		if err != nil {
 			details = append(details, testcase.TestCaseResult{
 				TestCaseID: tc.ID,
@@ -298,9 +306,9 @@ func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestca
 
 		if tcStatus == judgetypes.StatusAccepted {
 			// 运行 SPJ 验证用户输出
-			spjInput := strings.TrimRight(tc.Input, "\n") + "\n---SPLIT---\n" +
+			spjInput := strings.TrimRight(getTestCaseInput(tc, inCache), "\n") + "\n---SPLIT---\n" +
 				strings.TrimRight(userResult.Stdout, "\n") + "\n---SPLIT---\n" +
-				strings.TrimRight(tc.Output, "\n") + "\n"
+				strings.TrimRight(getTestCaseOutput(tc, outCache), "\n") + "\n"
 
 			spjResult, err := backend.Exec(&judgetypes.ExecRequest{
 				Code:        task.SpjCode,
@@ -351,7 +359,7 @@ func (e *JudgeEngine) judgeSPJ(task *JudgeTask, testcases []testcase.JudgeTestca
 
 // ---------- 交互判题 ----------
 
-func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.JudgeTestcase, strictCompare bool) {
+func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.JudgeTestcase, inCache, outCache map[string][]byte, strictCompare bool) {
 	backend := sandbox.DefaultPool.Get()
 	if backend == nil {
 		e.updateSimple(task.SubmissionID, judgetypes.StatusSE, 0, 0, 0, "无可用判题节点")
@@ -375,7 +383,7 @@ func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.Jud
 
 	var details []testcase.TestCaseResult
 	for _, tc := range testcases {
-		userResult, err := runTestCase(backend, task, userBinary, tc.Input)
+		userResult, err := runTestCase(backend, task, userBinary, getTestCaseInput(tc, inCache))
 		if err != nil {
 			details = append(details, testcase.TestCaseResult{
 				TestCaseID: tc.ID,
@@ -393,7 +401,7 @@ func (e *JudgeEngine) judgeInteractive(task *JudgeTask, testcases []testcase.Jud
 		tcStatus := userResult.Status
 
 		if tcStatus == judgetypes.StatusAccepted {
-			interInput := strings.TrimRight(tc.Input, "\n") + "\n---USER_OUT---\n" +
+			interInput := strings.TrimRight(getTestCaseInput(tc, inCache), "\n") + "\n---USER_OUT---\n" +
 				strings.TrimRight(userResult.Stdout, "\n") + "\n"
 
 			interResult, err := backend.Exec(&judgetypes.ExecRequest{
@@ -547,4 +555,22 @@ func updateJudgeResult(submissionID, status string, score int, timeUsed, memoryU
 
 	log.Printf("[judge] submission %s result: status=%s, score=%d, time=%dns, memory=%dB",
 		submissionID, status, score, timeUsed, memoryUsed)
+}
+
+// ─── 测试用例数据读取辅助 ──────────────────────────────────────────────
+
+// getTestCaseInput 从缓存读取测试用例输入
+func getTestCaseInput(tc testcase.JudgeTestcase, cache map[string][]byte) string {
+	if data, ok := cache[tc.ID]; ok {
+		return string(data)
+	}
+	return ""
+}
+
+// getTestCaseOutput 从缓存读取测试用例输出
+func getTestCaseOutput(tc testcase.JudgeTestcase, cache map[string][]byte) string {
+	if data, ok := cache[tc.ID]; ok {
+		return string(data)
+	}
+	return ""
 }
