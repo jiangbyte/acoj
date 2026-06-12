@@ -18,6 +18,7 @@ from .service import (
     user_reset_password, user_batch_import, user_update_status,
     user_export,
 )
+from . import migrate
 from .api import v1_router as router
 
 from core.plugin.registry import register_router

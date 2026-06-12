@@ -1,107 +1,80 @@
 """
 Database migration tool for hei-fastapi.
 
-Creates database tables based on all registered ORM models.
+Mirrors hei-gin's model + seed registration flow.
 
 Usage::
 
-    python -m cli.migrate                  # dry-run (show pending)
-    python -m cli.migrate --apply           # apply pending migrations
+    python -m cli.migrate                  # dry-run
+    python -m cli.migrate --apply          # create missing tables
+    python -m cli.migrate --seed           # run seeds only
+    python -m cli.migrate --apply --seed   # migrate then seed
 """
 
 from __future__ import annotations
 
 import argparse
 import logging
-import sys
 
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import inspect
 
-from config.settings import settings
+from core.db import engine, get_models, run_seeds
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger("migrate")
 
 
-def _collect_metadata():
-    """Collect metadata from all loaded ``DeclarativeBase`` subclasses."""
-    from sqlalchemy.orm import DeclarativeBase
-
-    seen = set()
-    metadata = None
-
-    for mod_name, mod in list(sys.modules.items()):
-        if mod_name.startswith("_") or mod is None:
-            continue
-        for name in dir(mod):
-            obj = getattr(mod, name, None)
-            if isinstance(obj, type) and issubclass(obj, DeclarativeBase) and obj is not DeclarativeBase:
-                if obj not in seen:
-                    seen.add(obj)
-                    if metadata is None:
-                        metadata = obj.metadata
-                    else:
-                        for tname, table in obj.metadata.tables.items():
-                            if tname not in metadata.tables:
-                                metadata._add_table(tname, table.schema, table)
-
-    # Also ensure HeiBase models are included
-    from core.plugin.registry import HeiBase, get_registered_models
-    hei_models = get_registered_models()
-    if hei_models:
-        if metadata is None:
-            metadata = HeiBase.metadata
-        else:
-            for tname, table in HeiBase.metadata.tables.items():
-                if tname not in metadata.tables:
-                    metadata._add_table(tname, table.schema, table)
-
-    return metadata
-
-
-def run_migration(dry_run: bool = False) -> list[str]:
-    """Compare ORM metadata against the database and create missing tables."""
-    engine = create_engine(settings.db.url, echo=False)
-    inspector = inspect(engine)
-    existing_tables = set(inspector.get_table_names())
-
-    metadata = _collect_metadata()
-    statements: list[str] = []
-
-    if metadata is None:
-        logger.warning("No ORM metadata found – have you imported your models?")
-        engine.dispose()
-        return statements
-
-    for name, table in metadata.tables.items():
-        if name not in existing_tables:
-            if not dry_run:
-                table.create(engine)
-                logger.info("Created table: %s", name)
-            else:
-                logger.info("[dry-run] Would create table: %s", name)
-        else:
-            logger.debug("Table exists: %s", name)
-
-    if not statements:
-        logger.info("Database is up-to-date (no new tables).")
-
-    engine.dispose()
-    return statements
-
-
-def main():
-    parser = argparse.ArgumentParser(description="hei-fastapi database migration tool")
-    parser.add_argument("--apply", action="store_true", help="Apply pending migrations")
-    args = parser.parse_args()
-
-    # Ensure models are loaded
+def ensure_plugins_loaded() -> None:
     import plugins  # noqa: F401
 
-    if args.apply:
-        run_migration(dry_run=False)
-    else:
-        run_migration(dry_run=True)
+
+def run_migration(*, dry_run: bool) -> list[str]:
+    """Create missing tables from the registered model set."""
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    created_tables: list[str] = []
+
+    models = get_models()
+    if not models:
+        logger.warning("No registered models found")
+        return created_tables
+
+    seen_tables: set[str] = set()
+    for model in models:
+        table = getattr(model, "__table__", None)
+        if table is None or table.name in seen_tables:
+            continue
+        seen_tables.add(table.name)
+
+        if table.name in existing_tables:
+            logger.debug("Table exists: %s", table.name)
+            continue
+
+        if dry_run:
+            logger.info("[dry-run] Would create table: %s", table.name)
+        else:
+            table.create(bind=engine)
+            logger.info("Created table: %s", table.name)
+        created_tables.append(table.name)
+
+    if not created_tables:
+        logger.info("Database is up-to-date (no new tables).")
+
+    return created_tables
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="hei-fastapi database migration tool")
+    parser.add_argument("--apply", action="store_true", help="Apply pending migrations")
+    parser.add_argument("--seed", action="store_true", help="Run registered seed data")
+    args = parser.parse_args()
+
+    ensure_plugins_loaded()
+
+    run_migration(dry_run=not args.apply)
+
+    if args.seed:
+        run_seeds()
 
 
 if __name__ == "__main__":

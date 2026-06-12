@@ -19,6 +19,8 @@ from typing import Any, Callable
 from fastapi import FastAPI, APIRouter
 from sqlalchemy.orm import DeclarativeBase
 
+from core.db.migrate import register_model as register_migrate_model
+
 from core.enums import LoginTypeEnum
 
 logger = logging.getLogger(__name__)
@@ -172,6 +174,7 @@ class HeiBase(DeclarativeBase):
         super().__init_subclass__(**kwargs)
         if hasattr(cls, "__tablename__") and cls.__tablename__:
             _models[cls.__tablename__] = cls
+            register_migrate_model(cls)
             logger.debug("Model auto-registered: %s (%s)", cls.__name__, cls.__tablename__)
 
 
@@ -179,6 +182,7 @@ def register_model(model_class: type) -> None:
     """Explicitly register a model (fallback for legacy models)."""
     if hasattr(model_class, "__tablename__") and model_class.__tablename__:
         _models[model_class.__tablename__] = model_class
+        register_migrate_model(model_class)
 
 
 def get_registered_models() -> dict[str, type]:
