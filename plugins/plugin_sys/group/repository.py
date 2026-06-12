@@ -24,7 +24,7 @@ class GroupRepository:
         return list(self.db.execute(select(SysGroup)).scalars().all())
 
     def insert(self, entity: SysGroup, user_id: Optional[str] = None) -> SysGroup:
-        from core.utils.snowflake_utils import generate_id
+        from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
             entity.id = generate_id()

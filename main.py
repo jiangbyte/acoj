@@ -1,10 +1,10 @@
-from core.app.setup import create_app
+from sdk.kernel.app.setup import create_app
 
 app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
-    from config.settings import settings
+    from sdk.config.settings import settings
     
     uvicorn.run(
         "main:app",

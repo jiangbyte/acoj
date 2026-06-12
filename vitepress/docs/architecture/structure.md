@@ -11,10 +11,10 @@ hei-fastapi/
 ├── pyproject.toml                   # 项目元数据与依赖定义
 ├── requirements.txt                 # 锁定依赖版本
 │
-├── config/                          # 配置层
+├── sdk/config/                          # 配置层
 │   └── settings.py                  # Pydantic-Settings 嵌套模型配置
 │
-├── core/                            # 框架核心（与业务无关的通用能力）
+├── sdk/                            # 框架核心（与业务无关的通用能力）
 │   ├── app/                         # 应用工厂
 │   │   ├── setup.py                 # create_app() - FastAPI 应用工厂，初始化编排
 │   │   ├── router.py                # 路由注册总入口（所有模块路由在此汇聚）
@@ -100,14 +100,14 @@ hei-fastapi/
 │       ├── resolve_utils.py          # 依赖解析工具
 │       └── user_agent_utils.py       # UA 解析
 │
-├── modules/                          # 业务模块（垂直切片架构）
+├── plugins/                          # 业务模块（垂直切片架构）
 │   ├── sys/                          # B端（后台管理）
 │   │   ├── auth/                     # 认证模块
 │   │   │   ├── captcha/              # 图形验证码
 │   │   │   ├── sm2/                  # SM2 公钥获取
 │   │   │   └── username/             # 登录/注册/登出
 │   │   ├── banner/                   # Banner 管理
-│   │   ├── config/                   # 系统配置管理
+│   │   ├── sdk/config/                   # 系统配置管理
 │   │   ├── dict/                     # 数据字典（树形结构）
 │   │   ├── file/                     # 文件上传与管理
 │   │   ├── group/                    # 用户组管理
@@ -144,9 +144,9 @@ hei-fastapi/
 
 ## 目录设计说明
 
-### core/ 框架核心
+### sdk/ 框架核心
 
-`core/` 目录包含与具体业务无关的通用框架能力，是整个项目的基础设施层。每个子包职责单一、高内聚低耦合：
+`sdk/` 目录包含与具体业务无关的通用框架能力，是整个项目的基础设施层。每个子包职责单一、高内聚低耦合：
 
 - **app/**：应用生命周期管理，统一的初始化编排
 - **auth/**：完整的认证授权体系，包含 B/C 双端认证、权限装饰器、权限匹配器
@@ -154,9 +154,9 @@ hei-fastapi/
 - **storage/**：文件存储抽象层，支持本地/MinIO/S3 多种后端
 - **db/**：数据库访问层，包含 MySQL 连接、Redis 客户端
 
-### modules/ 业务模块
+### plugins/ 业务模块
 
-`modules/` 采用垂直切片架构，每个模块独立包含其模型、参数、服务、Repository 和 API 层。这种结构的好处：
+`plugins/` 采用垂直切片架构，每个模块独立包含其模型、参数、服务、Repository 和 API 层。这种结构的好处：
 
 - **高内聚**：一个功能的所有代码在同一个目录下
 - **低耦合**：模块之间通过接口交互，不直接依赖
@@ -168,7 +168,7 @@ hei-fastapi/
 每个业务模块遵循统一的结构约定：
 
 ```
-modules/<domain>/<module>/
+plugins/<domain>/<module>/
 ├── models.py        # SQLAlchemy ORM 模型（Mapped + mapped_column）
 ├── params.py        # Pydantic v2 请求参数和响应模型
 ├── repository.py    # Repository 层

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from core.result import Result, success
-from core.utils.sm2_crypto_util import get_public_key
+from sdk.web.result import Result, success
+from sdk.utils.sm2_crypto_util import get_public_key
 
 router = APIRouter()
 

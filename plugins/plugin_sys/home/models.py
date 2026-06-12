@@ -7,7 +7,7 @@ from typing import Optional
 from sqlalchemy import UniqueConstraint, text
 from sqlalchemy.dialects.mysql import DATETIME, INTEGER, VARCHAR
 from sqlalchemy.orm import Mapped, mapped_column
-from core.plugin.registry import HeiBase
+from sdk.kernel.registry import HeiBase
 
 
 class SysQuickAction(HeiBase):

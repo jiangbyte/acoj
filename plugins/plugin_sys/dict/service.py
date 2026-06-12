@@ -1,22 +1,19 @@
-"""
-Dict service — explicit field-by-field matching Go's dict/service.go pattern.
-"""
+"""Dict service — class-based service with DI-friendly provider."""
 
 from typing import Optional, List
 from datetime import datetime
+from fastapi import Depends
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from sqlalchemy import update as sa_update, select, func
-from fastapi import Request
+
+from sdk.infra.db import get_db
+from sdk.shared.di import ActorContext
 from .params import DictVO, DictPageParam, DictListParam, DictTreeParam, SysDictToDictVO, SysDictToDictTreeVO
 from .repository import DictRepository
 from .models import SysDict
-from core.result import page_data, PageDataField
-from core.exception import BusinessException
-from core.utils import generate_id
-from core.auth import HeiAuthTool
-from core.db.redis import get_client
-from core.constants import DICT_CACHE_KEY, DICT_TREE_CACHE_KEY
-import json
+from sdk.web.result import page_data, PageDataField
+from sdk.web.exception import BusinessException
+from sdk.utils import generate_id
 import logging
 
 logger = logging.getLogger(__name__)
@@ -151,79 +148,6 @@ def detail(db: Session, id: str) -> Optional[dict]:
     return SysDictToDictVO(entity)
 
 
-def create(db: Session, vo: DictVO, user_id: Optional[str] = None) -> None:
-    _check_duplicate(db, vo, None)
-
-    now = datetime.now()
-    entity = SysDict(
-        id=generate_id(),
-        code=vo.code,
-        status="ENABLED",
-        sort_code=vo.sort_code or 0,
-        created_at=now,
-        updated_at=now,
-    )
-    if vo.label is not None:
-        entity.label = vo.label
-    if vo.value is not None:
-        entity.value = vo.value
-    if vo.color is not None:
-        entity.color = vo.color
-    if vo.category is not None:
-        entity.category = vo.category
-    if vo.parent_id is not None and vo.parent_id not in ("", "0"):
-        entity.parent_id = vo.parent_id
-    if user_id:
-        entity.created_by = user_id
-        entity.updated_by = user_id
-    DictRepository(db).insert(entity)
-
-
-def modify(db: Session, vo: DictVO, user_id: Optional[str] = None) -> None:
-    repository = DictRepository(db)
-    entity = repository.find_by_id(vo.id)
-    if not entity:
-        raise BusinessException("数据不存在", 400)
-
-    _check_duplicate(db, vo, vo.id)
-
-    if vo.parent_id is not None and vo.parent_id not in ("", "0") and vo.parent_id != _get_parent_id_key(entity.parent_id):
-        _check_circular_parent(db, vo.id, vo.parent_id)
-
-    now = datetime.now()
-    up = {
-        "code": vo.code,
-        "sort_code": vo.sort_code,
-        "updated_at": now,
-    }
-    if vo.label is not None:
-        up["label"] = vo.label
-    if vo.value is not None:
-        up["value"] = vo.value
-    if vo.color is not None:
-        up["color"] = vo.color
-    if vo.category is not None:
-        up["category"] = vo.category
-    if vo.parent_id is not None:
-        up["parent_id"] = vo.parent_id if vo.parent_id not in ("", "0") else None
-    if user_id:
-        up["updated_by"] = user_id
-    repository.db.execute(sa_update(SysDict).where(SysDict.id == vo.id).values(**up))
-    repository.db.commit()
-
-
-def remove(db: Session, ids: list) -> None:
-    if not ids:
-        return
-    all_ids = _collect_descendant_ids(db, ids)
-    DictRepository(db).delete_by_ids(all_ids)
-
-
-def options(db: Session) -> list:
-    rows = db.execute(select(SysDict).order_by(SysDict.sort_code.asc())).scalars().all()
-    return [to_vo(r) for r in rows]
-
-
 def get_dict_label(db: Session, type_code: str, value: str) -> Optional[str]:
     """Get dict label by type code and value (subquery match Go's DictGetLabel)."""
     entity = db.execute(
@@ -243,21 +167,19 @@ def get_dict_children(db: Session, type_code: str) -> list:
     if not root:
         return []
     children = repository.find_by_parent_id(root.id)
-    return [to_vo(c) for c in children]
+    return [SysDictToDictVO(c) for c in children]
 
 
 # ── Backward-compat class ──
 
 class DictService:
-    def __init__(self, db: Session):
-        self.db = db
-        self.repository = DictRepository(db)
+    def __init__(self, repository: DictRepository):
+        self.repository = repository
+        self.db = repository.db
 
-    async def _get_user_id(self, request: Optional[Request] = None) -> Optional[str]:
-        try:
-            return await HeiAuthTool.getLoginIdDefaultNull(request)
-        except Exception:
-            return None
+    @classmethod
+    def from_db(cls, db: Session) -> "DictService":
+        return cls(DictRepository(db))
 
     def page(self, param: DictPageParam) -> dict:
         return page(self.db, param)
@@ -271,17 +193,70 @@ class DictService:
     def detail(self, id: str):
         return detail(self.db, id)
 
-    async def create(self, vo: DictVO, request: Optional[Request] = None) -> None:
-        return create(self.db, vo, await self._get_user_id(request))
+    def create(self, vo: DictVO, actor: Optional[ActorContext] = None) -> None:
+        _check_duplicate(self.db, vo, None)
+        now = datetime.now()
+        entity = SysDict(
+            id=generate_id(),
+            code=vo.code,
+            status="ENABLED",
+            sort_code=vo.sort_code or 0,
+            created_at=now,
+            updated_at=now,
+        )
+        if vo.label is not None:
+            entity.label = vo.label
+        if vo.value is not None:
+            entity.value = vo.value
+        if vo.color is not None:
+            entity.color = vo.color
+        if vo.category is not None:
+            entity.category = vo.category
+        if vo.parent_id is not None and vo.parent_id not in ("", "0"):
+            entity.parent_id = vo.parent_id
+        if actor and actor.user_id:
+            entity.created_by = actor.user_id
+            entity.updated_by = actor.user_id
+        self.repository.insert(entity)
 
-    async def modify(self, vo: DictVO, request: Optional[Request] = None) -> None:
-        return modify(self.db, vo, await self._get_user_id(request))
+    def modify(self, vo: DictVO, actor: Optional[ActorContext] = None) -> None:
+        entity = self.repository.find_by_id(vo.id)
+        if not entity:
+            raise BusinessException("数据不存在", 400)
+        _check_duplicate(self.db, vo, vo.id)
+        if vo.parent_id is not None and vo.parent_id not in ("", "0") and vo.parent_id != _get_parent_id_key(entity.parent_id):
+            _check_circular_parent(self.db, vo.id, vo.parent_id)
+        up = {
+            "code": vo.code,
+            "sort_code": vo.sort_code,
+            "updated_at": datetime.now(),
+        }
+        if vo.label is not None:
+            up["label"] = vo.label
+        if vo.value is not None:
+            up["value"] = vo.value
+        if vo.color is not None:
+            up["color"] = vo.color
+        if vo.category is not None:
+            up["category"] = vo.category
+        if vo.parent_id is not None:
+            up["parent_id"] = vo.parent_id if vo.parent_id not in ("", "0") else None
+        if actor and actor.user_id:
+            up["updated_by"] = actor.user_id
+        self.repository.update_by_id(vo.id, up)
 
     def remove(self, ids: list) -> None:
-        return remove(self.db, ids)
+        if not ids:
+            return
+        all_ids = _collect_descendant_ids(self.db, ids)
+        self.repository.delete_by_ids(all_ids)
 
     def get_dict_label(self, type_code: str, value: str) -> Optional[str]:
         return get_dict_label(self.db, type_code, value)
 
     def get_dict_children(self, type_code: str) -> list:
         return get_dict_children(self.db, type_code)
+
+
+def get_dict_service(db: Session = Depends(get_db)) -> DictService:
+    return DictService.from_db(db)

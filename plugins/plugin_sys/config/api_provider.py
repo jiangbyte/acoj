@@ -10,5 +10,5 @@ from .service import ConfigService
 
 async def get_config_value(db: Session, key: str) -> Optional[str]:
     """Read a config value by key, with Redis caching."""
-    service = ConfigService(db)
+    service = ConfigService.from_db(db)
     return await service.get_value_by_key(key)

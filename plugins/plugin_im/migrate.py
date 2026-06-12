@@ -1,6 +1,6 @@
 """Centralized migration registration for plugin_im."""
 
-from core.plugin.registry import register_model
+from sdk.kernel.registry import register_model
 from plugins.plugin_im.model.message import Message, Conversation, ConversationUnread
 from plugins.plugin_im.model.im_file import ImFile
 from plugins.plugin_im.model.broadcast import Broadcast, BroadcastRead

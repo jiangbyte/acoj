@@ -12,12 +12,13 @@ from .params import (
 )
 from .repository import ClientUserRepository
 from .models import ClientUser
-from core.utils import decrypt, compress_base64_image
-from core.pojo import IdParam, IdsParam
-from core.result import page_data, PageDataField
-from core.exception import BusinessException
-from core.auth import HeiClientAuthTool, LoginUserInfo
-from core.utils import generate_id
+from sdk.utils import decrypt, compress_base64_image
+from sdk.shared.types import IdParam, IdsParam
+from sdk.web.result import page_data, PageDataField
+from sdk.web.exception import BusinessException
+from sdk.auth import HeiClientAuthTool
+from sdk.shared.contracts import LoginUserInfo
+from sdk.utils import generate_id
 import bcrypt
 def find_by_id(db: Session, user_id: str) -> Optional[ClientUser]:
     return ClientUserRepository(db).find_by_id(user_id)
@@ -363,7 +364,7 @@ class LoginUserApiProvider:
         self._session_factory = session_factory
 
     async def get_current_login_user_info(self, request) -> Optional[LoginUserInfo]:
-        from core.auth import HeiClientAuthTool
+        from sdk.auth import HeiClientAuthTool
         user_id = await HeiClientAuthTool.getLoginIdAsString(request)
         if not user_id:
             return None

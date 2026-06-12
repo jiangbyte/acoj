@@ -18,7 +18,7 @@ import logging
 
 from sqlalchemy import inspect
 
-from core.db import engine, get_models, run_seeds
+from sdk.infra.db import engine, get_models, run_seeds
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger("migrate")

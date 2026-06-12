@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
-from core.result import success
-from core.db import get_db
+from sdk.web.result import success
+from sdk.infra.db import get_db
 from ...service import AnalyzeService
 
 router = APIRouter()

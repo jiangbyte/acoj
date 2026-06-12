@@ -6,10 +6,10 @@ Mirrors hei-gin's ``plugins/plugin-sys/plugin.go``.
 
 import logging
 
-from core.plugin import HeiPlugin, PluginInfo
-from core.auth import HeiPermissionInterface, HeiPermissionInterfaceManager
-from core.db import SessionLocal
-from core.log import set_log_persister
+from sdk.kernel.plugin import HeiPlugin, PluginInfo
+from sdk.auth import HeiPermissionInterface, HeiPermissionInterfaceManager
+from sdk.infra.db import SessionLocal
+from sdk.log import set_log_persister
 from plugins.plugin_sys.persistence import DbLogPersister
 from plugins.plugin_sys.migrate import register_all_models, register_all_seeds
 from plugins.plugin_sys.user import LoginUserApiProvider as BLoginUserApiProvider

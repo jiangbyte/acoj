@@ -57,7 +57,7 @@
 - **在线会话管理** — B 端和 C 端独立的会话管理，支持在线用户查看和强制下线
 - **雪花 ID** — 分布式 Snowflake ID 生成器
 - **事件总线** — 异步 `@subscribe` / `await publish` 跨插件通信
-- **通用 CRUD** — `core/crud` 提供通用分页、详情、删除等标准操作函数
+- **通用 CRUD** — `sdk/crud` 提供通用分页、详情、删除等标准操作函数
 - **跨实例 WebSocket IM** — Redis List + BRPOP 驱动的跨实例消息投递、在线状态感知、消息去重、限流、心跳检测
 
 ## 项目结构
@@ -71,9 +71,9 @@ hei-fastapi/
 ├── cli/                             # CLI 工具
 │   ├── codegen.py                   # 插件脚手架生成
 │   └── migrate.py                   # 数据库迁移
-├── config/
+├── sdk/config/
 │   └── settings.py                  # Pydantic-Settings 模型定义
-├── core/                            # 框架核心
+├── sdk/                            # 框架核心
 │   ├── app/
 │   │   ├── setup.py                 # create_app() — 应用工厂
 │   │   ├── lifespan.py              # 生命周期（DB/Redis/插件启停）
@@ -291,7 +291,7 @@ ws:
 ### 权限注册 + 校验
 
 ```python
-from core.plugin import Perm
+from sdk.plugin import Perm
 
 @router.get("/api/v1/sys/banner/page")
 @Perm("sys:banner:page", "横幅分页")
@@ -304,7 +304,7 @@ async def page(...):
 ### 操作日志
 
 ```python
-from core.log import SysLog
+from sdk.log import SysLog
 
 @router.post("/api/v1/sys/config/create")
 @SysLog("新增系统配置")
@@ -316,7 +316,7 @@ async def create(...):
 ### 防重复提交
 
 ```python
-from core.auth.decorator import NoRepeat
+from sdk.auth.decorator import NoRepeat
 
 @router.post("/api/v1/sys/xxx/create")
 @NoRepeat(interval=3000)  # 3 秒内禁止重复提交

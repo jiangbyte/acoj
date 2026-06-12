@@ -6,7 +6,7 @@ Mirrors hei-gin's ``plugins/plugin-sys/provider/user_provider.go``.
 
 from __future__ import annotations
 
-from core.db import SessionLocal
+from sdk.infra.db import SessionLocal
 from plugins.plugin_sys.user.repository import UserRepository
 
 

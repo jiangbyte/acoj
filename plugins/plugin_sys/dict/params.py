@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.pojo.datetime_mixin import DateTimeValidatorMixin
+from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
 from .models import SysDict
 
 

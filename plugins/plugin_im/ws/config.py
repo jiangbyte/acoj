@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from config.settings import settings
+from sdk.config.settings import settings
 
 logger = logging.getLogger(__name__)
 

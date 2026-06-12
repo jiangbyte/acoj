@@ -10,8 +10,8 @@ Each sub-module import triggers:
 """
 
 import logging
-from core.plugin.registry import register_router
-from core.app.health import router as health_router
+from sdk.kernel.registry import register_router
+from sdk.kernel.app.health import router as health_router
 
 logger = logging.getLogger(__name__)
 

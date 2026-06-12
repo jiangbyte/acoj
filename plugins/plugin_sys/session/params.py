@@ -1,7 +1,7 @@
 from typing import Optional, Any
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
-from core.pojo.datetime_mixin import DateTimeValidatorMixin
+from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
 from plugins.plugin_sys.log.params import LogBarChartData, LogPieChartData
 
 

@@ -3,9 +3,9 @@
 from typing import List
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
-from core.db import get_db
-from core.result import Result, PageData, success
-from core.plugin import Perm
+from sdk.infra.db import get_db
+from sdk.web.result import Result, PageData, success
+from sdk.kernel.plugin import Perm
 from ...params import (
     SessionAnalysisResult, SessionPageResult, SessionPageParam,
     SessionExitParam, SessionExitTokenParam, SessionTokenResult, SessionChartData,

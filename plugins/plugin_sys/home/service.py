@@ -1,8 +1,8 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from fastapi import Request
-from core.utils import generate_id
-from core.auth import HeiAuthTool
+from sdk.utils import generate_id
+from sdk.auth import HeiAuthTool
 from .repository import QuickActionRepository
 from .params import (
     QuickActionVO, HomeVO, HomeNotice, HomeStats,

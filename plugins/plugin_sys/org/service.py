@@ -11,10 +11,10 @@ from .models import SysOrg
 from ..user.models import SysUser
 from ..group.models import SysGroup
 from ..position.models import SysPosition
-from core.result import page_data, PageDataField
-from core.exception import BusinessException
-from core.utils import generate_id
-from core.auth import HeiAuthTool
+from sdk.web.result import page_data, PageDataField
+from sdk.web.exception import BusinessException
+from sdk.utils import generate_id
+from sdk.auth import HeiAuthTool
 def _sort_tree(nodes: List[dict]) -> None:
     nodes.sort(key=lambda x: x.get("sort_code", 0) or 0)
     for n in nodes:

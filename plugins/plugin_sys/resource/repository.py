@@ -26,7 +26,7 @@ class ModuleRepository:
         return {"records": records, "total": total}
 
     def insert(self, entity: SysModule, user_id: Optional[str] = None) -> SysModule:
-        from core.utils.snowflake_utils import generate_id
+        from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
             entity.id = generate_id()
@@ -80,7 +80,7 @@ class ResourceRepository:
         return {"records": records, "total": total}
 
     def insert(self, entity: SysResource, user_id: Optional[str] = None) -> SysResource:
-        from core.utils.snowflake_utils import generate_id
+        from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
             entity.id = generate_id()

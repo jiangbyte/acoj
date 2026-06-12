@@ -1,6 +1,6 @@
 """Centralized migration registration for plugin_client."""
 
-from core.db import register_model
+from sdk.infra.db import register_model
 
 from plugins.plugin_client.user.models import ClientUser
 

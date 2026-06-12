@@ -1,41 +1,22 @@
-"""Position service — explicit field-by-field matching Go pattern."""
+"""Position service — class-based service with DI-friendly provider."""
 
 from typing import Optional, List
 from datetime import datetime
+from fastapi import Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import update as sa_update, select, delete as sa_delete
-from fastapi import Request
+
+from sdk.infra.db import get_db
+from sdk.shared.di import ActorContext
 from . import SysPosition
 from .params import PositionVO, PositionPageParam, SysPositionToPositionVO
 from .repository import PositionRepository
-from core.utils import generate_id
-from core.exception import BusinessException
-from core.result import page_data, PageDataField
-from core.auth import HeiAuthTool
-from core.utils.resolve_utils import resolve_name_path
-from ..user.models import SysUser
+from sdk.utils import generate_id
+from sdk.web.exception import BusinessException
+from sdk.web.result import page_data, PageDataField
+from sdk.utils.resolve_utils import resolve_name_path
 import logging
 
 logger = logging.getLogger(__name__)
-def page(db: Session, param: PositionPageParam) -> dict:
-    repository = PositionRepository(db)
-    result = repository.find_page_by_filters(param)
-    records = [SysPositionToPositionVO(r) for r in result.get("records", [])]
-    _batch_enrich(db, records)
-    return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
-
-
-def detail(db: Session, id: str) -> Optional[dict]:
-    if not id:
-        return None
-    entity = PositionRepository(db).find_by_id(id)
-    if not entity:
-        return None
-    vo = SysPositionToPositionVO(entity)
-    _enrich_vo(db, vo)
-    return vo
-
-
 def _enrich_vo(db: Session, vo: dict) -> None:
     from ..org.models import SysOrg
     from ..group.models import SysGroup
@@ -46,93 +27,81 @@ def _enrich_vo(db: Session, vo: dict) -> None:
 def _batch_enrich(db: Session, vo_list: List[dict]) -> None:
     for vo in vo_list:
         _enrich_vo(db, vo)
-
-
-def create(db: Session, vo: PositionVO, user_id: Optional[str] = None) -> None:
-    now = datetime.now()
-    entity = SysPosition(
-        id=generate_id(),
-        code=vo.code,
-        name=vo.name,
-        category=vo.category,
-        org_id=vo.org_id,
-        group_id=vo.group_id,
-        status=vo.status or "ENABLED",
-        sort_code=vo.sort_code or 0,
-        created_at=now,
-        updated_at=now,
-    )
-    if vo.description is not None:
-        entity.description = vo.description
-    if user_id:
-        entity.created_by = user_id
-        entity.updated_by = user_id
-    PositionRepository(db).insert(entity)
-
-
-def modify(db: Session, vo: PositionVO, user_id: Optional[str] = None) -> None:
-    repository = PositionRepository(db)
-    entity = repository.find_by_id(vo.id)
-    if not entity:
-        raise BusinessException("数据不存在")
-    now = datetime.now()
-    up = {
-        "code": vo.code,
-        "name": vo.name,
-        "category": vo.category,
-        "org_id": vo.org_id,
-        "group_id": vo.group_id,
-        "status": vo.status,
-        "sort_code": vo.sort_code,
-        "updated_at": now,
-    }
-    if vo.description is not None:
-        up["description"] = vo.description
-    else:
-        up["description"] = None
-    if vo.extra is not None:
-        up["extra"] = vo.extra
-    else:
-        up["extra"] = None
-    if user_id:
-        up["updated_by"] = user_id
-    repository.db.execute(sa_update(SysPosition).where(SysPosition.id == vo.id).values(**up))
-    repository.db.commit()
-
-
-def remove(db: Session, ids: list) -> None:
-    if not ids:
-        return
-    db.execute(sa_update(SysUser).where(SysUser.position_id.in_(ids)).values(position_id=None))
-    PositionRepository(db).delete_by_ids(ids)
-
-
 class PositionService:
-    def __init__(self, db: Session):
-        self.db = db
-        self.repository = PositionRepository(db)
+    def __init__(self, repository: PositionRepository):
+        self.repository = repository
+        self.db = repository.db
 
-    async def _get_user_id(self, request: Optional[Request] = None) -> Optional[str]:
-        try:
-            return await HeiAuthTool.getLoginIdDefaultNull(request)
-        except Exception:
-            return None
+    @classmethod
+    def from_db(cls, db: Session) -> "PositionService":
+        return cls(PositionRepository(db))
 
     def page(self, param: PositionPageParam) -> dict:
-        return page(self.db, param)
+        result = self.repository.find_page_by_filters(param)
+        records = [SysPositionToPositionVO(r) for r in result.get("records", [])]
+        _batch_enrich(self.db, records)
+        return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
 
-    def detail(self, id: str):
-        return detail(self.db, id)
+    def detail(self, id: str) -> Optional[PositionVO]:
+        if not id:
+            return None
+        entity = self.repository.find_by_id(id)
+        if not entity:
+            return None
+        vo = SysPositionToPositionVO(entity)
+        _enrich_vo(self.db, vo)
+        return vo
 
-    async def create(self, vo: PositionVO, request: Optional[Request] = None) -> None:
-        return create(self.db, vo, await self._get_user_id(request))
+    def create(self, vo: PositionVO, actor: Optional[ActorContext] = None) -> None:
+        now = datetime.now()
+        entity = SysPosition(
+            id=generate_id(),
+            code=vo.code,
+            name=vo.name,
+            category=vo.category,
+            org_id=vo.org_id,
+            group_id=vo.group_id,
+            status=vo.status or "ENABLED",
+            sort_code=vo.sort_code or 0,
+            created_at=now,
+            updated_at=now,
+        )
+        if vo.description is not None:
+            entity.description = vo.description
+        if actor and actor.user_id:
+            entity.created_by = actor.user_id
+            entity.updated_by = actor.user_id
+        self.repository.insert(entity)
 
-    async def modify(self, vo: PositionVO, request: Optional[Request] = None) -> None:
-        return modify(self.db, vo, await self._get_user_id(request))
+    def modify(self, vo: PositionVO, actor: Optional[ActorContext] = None) -> None:
+        entity = self.repository.find_by_id(vo.id)
+        if not entity:
+            raise BusinessException("数据不存在")
+        up = {
+            "code": vo.code,
+            "name": vo.name,
+            "category": vo.category,
+            "org_id": vo.org_id,
+            "group_id": vo.group_id,
+            "status": vo.status,
+            "sort_code": vo.sort_code,
+            "updated_at": datetime.now(),
+            "description": vo.description if vo.description is not None else None,
+            "extra": vo.extra if vo.extra is not None else None,
+        }
+        if actor and actor.user_id:
+            up["updated_by"] = actor.user_id
+        self.repository.update_by_id(vo.id, up)
 
-    def remove(self, ids: list) -> None:
-        return remove(self.db, ids)
+    def remove(self, ids: list[str]) -> None:
+        if not ids:
+            return
+        self.repository.clear_user_positions(ids)
+        self.repository.delete_by_ids(ids)
 
-def options(db: Session) -> list:
-    rows = db.execute(select(SysPosition).order_by(SysPosition.sort_code.asc())).scalars().all()
-    return [SysPositionToPositionVO(r) for r in rows]
+    def options(self) -> list:
+        return [SysPositionToPositionVO(r) for r in self.repository.find_all_ordered()]
+
+
+def get_position_service(db: Session = Depends(get_db)) -> PositionService:
+    return PositionService.from_db(db)

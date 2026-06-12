@@ -13,11 +13,11 @@ from ..org.repository import OrgRepository
 from ..org.models import SysOrg
 from ..user.models import SysUser
 from ..position.models import SysPosition
-from core.result import page_data, PageDataField
-from core.exception import BusinessException
-from core.utils import generate_id
-from core.auth import HeiAuthTool
-from core.utils.resolve_utils import resolve_name_path
+from sdk.web.result import page_data, PageDataField
+from sdk.web.exception import BusinessException
+from sdk.utils import generate_id
+from sdk.auth import HeiAuthTool
+from sdk.utils.resolve_utils import resolve_name_path
 def _tree_node(entity: SysGroup) -> dict:
     return SysGroupToGroupTreeVO(entity).model_dump()
 

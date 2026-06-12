@@ -3,14 +3,14 @@
 import bcrypt
 from typing import Optional
 from fastapi import Request
-from core.auth import HeiClientAuthTool
-from core.db import SessionLocal
-from core.exception import BusinessException
-from core.enums import UserStatusEnum
-from core.utils import decrypt, generate_id
-from core.utils.user_agent_utils import get_browser
-from core.captcha import c_captcha
-from core.log import record_auth_log
+from sdk.auth import HeiClientAuthTool
+from sdk.infra.db import SessionLocal
+from sdk.web.exception import BusinessException
+from sdk.enums import UserStatusEnum
+from sdk.utils import decrypt, generate_id
+from sdk.utils.user_agent_utils import get_browser
+from sdk.captcha import c_captcha
+from sdk.log import record_auth_log
 from .params import (
     UsernameLoginParam, UsernameLoginResult,
     UsernameRegisterParam, UsernameRegisterResult,

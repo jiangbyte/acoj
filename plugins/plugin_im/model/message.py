@@ -8,8 +8,8 @@ from typing import Optional
 from sqlalchemy import Index, text
 from sqlalchemy.dialects.mysql import DATETIME, INTEGER, TEXT, VARCHAR
 from sqlalchemy.orm import Mapped, mapped_column
-from core.plugin.registry import HeiBase
-from core.enums import LoginTypeEnum
+from sdk.kernel.registry import HeiBase
+from sdk.enums import LoginTypeEnum
 
 
 # Message type constants

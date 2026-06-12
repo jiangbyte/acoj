@@ -2,14 +2,14 @@ import asyncio
 import bcrypt
 from typing import Optional
 from fastapi import Request
-from core.auth import HeiAuthTool
-from core.db import SessionLocal
-from core.exception import BusinessException
-from core.enums import UserStatusEnum
-from core.utils import decrypt, generate_id
-from core.utils.user_agent_utils import get_browser
-from core.captcha import b_captcha
-from core.log import record_auth_log
+from sdk.auth import HeiAuthTool
+from sdk.infra.db import SessionLocal
+from sdk.web.exception import BusinessException
+from sdk.enums import UserStatusEnum
+from sdk.utils import decrypt, generate_id
+from sdk.utils.user_agent_utils import get_browser
+from sdk.captcha import b_captcha
+from sdk.log import record_auth_log
 from .params import UsernameLoginParam, UsernameLoginResult, UsernameRegisterParam, UsernameRegisterResult, UsernameLogoutResult
 from plugins.plugin_sys.user.models import SysUser
 import logging

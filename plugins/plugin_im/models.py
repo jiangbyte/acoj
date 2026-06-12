@@ -1,7 +1,7 @@
 """plugin_im compatibility exports."""
 
 import logging
-from core.plugin.registry import get_registered_models
+from sdk.kernel.registry import get_registered_models
 
 logger = logging.getLogger(__name__)
 

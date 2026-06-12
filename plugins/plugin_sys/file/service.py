@@ -17,11 +17,11 @@ from typing import Optional
 
 from fastapi import UploadFile
 
-from core.db import SessionLocal
-from core.exception import BusinessException
-from core.result import page_data
-from core.utils import generate_id
-from core.storage import get_storage, get_url, ChunkedUploader
+from sdk.infra.db import SessionLocal
+from sdk.web.exception import BusinessException
+from sdk.web.result import page_data
+from sdk.utils import generate_id
+from sdk.infra.storage import get_storage, get_url, ChunkedUploader
 from plugins.plugin_sys.file.models import SysFile
 from plugins.plugin_sys.file.repository import FileRepository
 from plugins.plugin_sys.file.params import (
@@ -273,7 +273,7 @@ def abort_chunk_upload(param: ChunkAbortParam) -> None:
 
 def max_upload_size() -> int:
     """Return the configured max upload size in bytes."""
-    from config.settings import settings
+    from sdk.config.settings import settings
     return settings.app.upload_max_size or 50 << 20
 
 

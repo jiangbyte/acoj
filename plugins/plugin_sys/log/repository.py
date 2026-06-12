@@ -25,7 +25,7 @@ class LogRepository:
         ).scalars().all())
 
     def insert(self, entity: SysLog, user_id: Optional[str] = None) -> SysLog:
-        from core.utils.snowflake_utils import generate_id
+        from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
             entity.id = generate_id()

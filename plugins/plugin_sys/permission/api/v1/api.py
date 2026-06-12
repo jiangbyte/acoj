@@ -2,8 +2,8 @@
 
 from typing import List
 from fastapi import APIRouter, Query, Request
-from core.result import Result, success
-from core.plugin import Perm
+from sdk.web.result import Result, success
+from sdk.kernel.plugin import Perm
 from ...service import PermissionService
 
 router = APIRouter()

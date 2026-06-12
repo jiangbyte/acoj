@@ -2,7 +2,7 @@
 
 import logging
 
-from core.plugin.registry import HeiBase, get_registered_models
+from sdk.kernel.registry import HeiBase, get_registered_models
 
 logger = logging.getLogger(__name__)
 

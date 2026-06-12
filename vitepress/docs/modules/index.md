@@ -4,4 +4,4 @@
 
 ## 内容
 
-- [模块开发规范](/modules/development) — 模块结构约定、文件模板、路由注册
+- [模块开发规范](/plugins/development) — 模块结构约定、文件模板、路由注册

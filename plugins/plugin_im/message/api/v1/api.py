@@ -6,13 +6,13 @@ from __future__ import annotations
 
 
 from fastapi import APIRouter, Request, UploadFile, File, Form, Query as QueryParam
-from core.auth import HeiAuthTool, HeiClientAuthTool
-from core.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, NoRepeat
-from core.middleware import RateLimiter
-from core.exception import BusinessException
-from core.result import success, failure
-from core.plugin.registry import register_router
-from core.enums import LoginTypeEnum
+from sdk.auth import HeiAuthTool, HeiClientAuthTool
+from sdk.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, NoRepeat
+from sdk.web.middleware import RateLimiter
+from sdk.web.exception import BusinessException
+from sdk.web.result import success, failure
+from sdk.kernel.registry import register_router
+from sdk.enums import LoginTypeEnum
 from plugins.plugin_im.message import (
     MessagePageParam, MessageSendParam, RecallParam, ForwardParam, SearchParam,
     GetOrCreateConversationParam,

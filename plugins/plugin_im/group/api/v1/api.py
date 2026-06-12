@@ -11,12 +11,12 @@ from typing import Optional
 
 from fastapi import APIRouter, Request, Query as QueryParam
 
-from core.auth import HeiAuthTool, HeiClientAuthTool
-from core.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, NoRepeat
-from core.log import SysLog
-from core.middleware import RateLimiter
-from core.result import success
-from core.plugin.registry import register_router
+from sdk.auth import HeiAuthTool, HeiClientAuthTool
+from sdk.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, NoRepeat
+from sdk.log import SysLog
+from sdk.web.middleware import RateLimiter
+from sdk.web.result import success
+from sdk.kernel.registry import register_router
 from plugins.plugin_im.group import (
     CreateParam, UpdateParam, InviteParam, KickParam, SetRoleParam,
     SendMessageParam, HandleJoinRequestParam, TransferOwnerParam, SetNicknameParam,

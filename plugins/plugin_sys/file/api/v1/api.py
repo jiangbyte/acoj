@@ -5,11 +5,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Request, UploadFile, File, Form, Query as QueryParam
 from fastapi.responses import FileResponse, RedirectResponse
 
-from core.auth import HeiAuthTool, HeiClientAuthTool
-from core.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, HeiCheckPermission
-from core.result import success, failure
-from core.plugin.registry import register_router
-from core.pojo import IdsParam
+from sdk.auth import HeiAuthTool, HeiClientAuthTool
+from sdk.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, HeiCheckPermission
+from sdk.web.result import success, failure
+from sdk.kernel.registry import register_router
+from sdk.shared.types import IdsParam
 from plugins.plugin_sys.file.params import (
     FilePageParam, FileUploadResult, FileVO, ChunkUploadInitParam,
     ChunkUploadPartParam, ChunkCompleteParam, ChunkAbortParam,

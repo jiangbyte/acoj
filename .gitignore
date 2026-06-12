@@ -17,8 +17,6 @@ vitepress/*.local
 # 任意一级的node_modules目录
 /**/node_modules/
 
-web/
-
 .idea/
 
 # Distribution / packaging

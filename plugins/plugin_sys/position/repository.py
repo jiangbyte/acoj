@@ -1,9 +1,10 @@
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, delete as sa_delete
+from sqlalchemy import select, func, delete as sa_delete, update as sa_update
 from .models import SysPosition
 from .params import PositionPageParam
+from ..user.models import SysUser
 
 
 class PositionRepository:
@@ -23,8 +24,11 @@ class PositionRepository:
     def find_all(self) -> List[SysPosition]:
         return list(self.db.execute(select(SysPosition)).scalars().all())
 
+    def find_all_ordered(self) -> List[SysPosition]:
+        return list(self.db.execute(select(SysPosition).order_by(SysPosition.sort_code.asc())).scalars().all())
+
     def insert(self, entity: SysPosition, user_id: Optional[str] = None) -> SysPosition:
-        from core.utils.snowflake_utils import generate_id
+        from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
             entity.id = generate_id()
@@ -76,3 +80,13 @@ class PositionRepository:
         records = list(self.db.execute(stmt).scalars().all())
 
         return {"records": records, "total": total}
+
+    def update_by_id(self, position_id: str, updates: dict) -> None:
+        self.db.execute(sa_update(SysPosition).where(SysPosition.id == position_id).values(**updates))
+        self.db.commit()
+
+    def clear_user_positions(self, ids: List[str]) -> None:
+        if not ids:
+            return
+        self.db.execute(sa_update(SysUser).where(SysUser.position_id.in_(ids)).values(position_id=None))
+        self.db.commit()

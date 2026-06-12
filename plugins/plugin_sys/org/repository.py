@@ -24,7 +24,7 @@ class OrgRepository:
         return list(self.db.execute(select(SysOrg)).scalars().all())
 
     def insert(self, entity: SysOrg, user_id: Optional[str] = None) -> SysOrg:
-        from core.utils.snowflake_utils import generate_id
+        from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
             entity.id = generate_id()
