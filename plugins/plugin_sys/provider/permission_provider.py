@@ -11,7 +11,6 @@ import logging
 from typing import Optional
 
 from sdk.constants import PERMISSION_CACHE_KEY, SUPER_ADMIN_CODE
-from sdk.infra.db import SessionLocal
 from sdk.enums import LoginTypeEnum, DataScopeEnum, PermissionPathEnum
 from plugins.plugin_sys.role.repository import RoleRepository
 from plugins.plugin_sys.user.repository import UserRepository
@@ -25,8 +24,12 @@ class PermissionProvider:
     Mirrors hei-gin's provider/permission_provider.go.
     """
 
+    def __init__(self, session_factory, redis_client_getter=None):
+        self._session_factory = session_factory
+        self._redis_client_getter = redis_client_getter
+
     def _get_role_ids(self, login_id: str) -> list[str]:
-        db = SessionLocal()
+        db = self._session_factory()
         try:
             return UserRepository(db).get_role_ids_by_user_id(login_id)
         finally:
@@ -35,7 +38,7 @@ class PermissionProvider:
     def _get_roles_by_ids(self, role_ids: list[str]):
         if not role_ids:
             return []
-        db = SessionLocal()
+        db = self._session_factory()
         try:
             return RoleRepository(db).find_by_ids(role_ids)
         finally:
@@ -44,16 +47,14 @@ class PermissionProvider:
     def _is_super_admin(self, role_ids: list[str]) -> bool:
         if not role_ids:
             return False
-        db = SessionLocal()
+        db = self._session_factory()
         try:
             return RoleRepository(db).exists_super_admin(role_ids)
         finally:
             db.close()
 
     def _get_all_permissions_from_redis(self) -> list[str]:
-        from sdk.infra.db.redis import get_client
-
-        redis_client = get_client()
+        redis_client = self._redis_client_getter() if self._redis_client_getter else None
         if not redis_client:
             return []
         try:
@@ -71,7 +72,7 @@ class PermissionProvider:
 
     def getPermissionList(self, login_id: str, login_type: str) -> list[str]:
         """Return the user's permission codes."""
-        db = SessionLocal()
+        db = self._session_factory()
         try:
             role_repository = RoleRepository(db)
             user_repository = UserRepository(db)
@@ -106,7 +107,7 @@ class PermissionProvider:
         if login_type not in (LoginTypeEnum.BUSINESS, LoginTypeEnum.CONSUMER):
             return {}
 
-        db = SessionLocal()
+        db = self._session_factory()
         try:
             role_repository = RoleRepository(db)
             user_repository = UserRepository(db)
