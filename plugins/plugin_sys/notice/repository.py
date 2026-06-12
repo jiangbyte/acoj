@@ -6,7 +6,7 @@ from .models import SysNotice
 from .params import NoticePageParam
 
 
-class NoticeDao:
+class NoticeRepository:
     def __init__(self, db: Session):
         self.db = db
 

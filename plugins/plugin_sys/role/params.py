@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from core.enums import DataScopeEnum
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
+from .models import SysRole
 
 
 class RoleVO(DateTimeValidatorMixin, BaseModel):
@@ -52,3 +53,22 @@ class GrantResourceParam(BaseModel):
     role_id: str
     resource_ids: List[str]
     permissions: List[ButtonPermissionScope] = []
+
+
+def SysRoleToRoleVO(src: Optional[SysRole]) -> Optional[RoleVO]:
+    if src is None:
+        return None
+    return RoleVO(
+        id=src.id,
+        code=src.code,
+        name=src.name,
+        category=src.category,
+        description=src.description,
+        status=src.status,
+        sort_code=src.sort_code,
+        extra=src.extra,
+        created_at=src.created_at,
+        created_by=src.created_by,
+        updated_at=src.updated_at,
+        updated_by=src.updated_by,
+    )

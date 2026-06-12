@@ -15,7 +15,7 @@ from core.plugin import HeiPlugin, PluginInfo
 from core.plugin.registry import register_router
 from core.auth import HeiAuthTool, HeiClientAuthTool
 from plugins.plugin_im.ws import GlobalHub, GlobalCrossHub, CrossHub
-from plugins.plugin_im.model.migrate import register_all_models
+from plugins.plugin_im.migrate import register_all_models
 
 logger = logging.getLogger(__name__)
 

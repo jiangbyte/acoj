@@ -7,8 +7,8 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import update as sa_update, select, func
 from fastapi import Request
-from .params import DictVO, DictPageParam, DictListParam, DictTreeParam
-from .dao import DictDao
+from .params import DictVO, DictPageParam, DictListParam, DictTreeParam, SysDictToDictVO, SysDictToDictTreeVO
+from .repository import DictRepository
 from .models import SysDict
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
@@ -30,49 +30,8 @@ def _get_parent_id_key(parent_id: Optional[str]) -> str:
     if not parent_id or parent_id == "0":
         return ""
     return parent_id
-
-
-def to_vo(entity: SysDict) -> dict:
-    vo = {
-        "id": entity.id,
-        "code": entity.code,
-        "status": entity.status,
-        "sort_code": entity.sort_code,
-    }
-    if entity.label is not None:
-        vo["label"] = entity.label
-    if entity.value is not None:
-        vo["value"] = entity.value
-    if entity.color is not None:
-        vo["color"] = entity.color
-    if entity.category is not None:
-        vo["category"] = entity.category
-    if entity.parent_id is not None:
-        vo["parent_id"] = entity.parent_id
-    if entity.created_at is not None:
-        vo["created_at"] = entity.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.created_by is not None:
-        vo["created_by"] = entity.created_by
-    if entity.updated_at is not None:
-        vo["updated_at"] = entity.updated_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.updated_by is not None:
-        vo["updated_by"] = entity.updated_by
-    return vo
-
-
 def entity_to_node(e: SysDict) -> dict:
-    node = {"id": e.id, "code": e.code, "status": e.status, "sort_code": e.sort_code}
-    if e.label is not None:
-        node["label"] = e.label
-    if e.value is not None:
-        node["value"] = e.value
-    if e.color is not None:
-        node["color"] = e.color
-    if e.category is not None:
-        node["category"] = e.category
-    if e.parent_id is not None:
-        node["parent_id"] = e.parent_id
-    return node
+    return SysDictToDictTreeVO(e).model_dump()
 
 
 def _sort_tree(nodes: List[dict]) -> None:
@@ -147,15 +106,15 @@ def _collect_descendant_ids(ctx_db: Session, ids: List[str]) -> List[str]:
 # ── Service functions ──
 
 def page(db: Session, param: DictPageParam) -> dict:
-    dao = DictDao(db)
-    result = dao.find_page_by_filters(param)
-    records = [to_vo(r) for r in result.get("records", [])]
+    repository = DictRepository(db)
+    result = repository.find_page_by_filters(param)
+    records = [SysDictToDictVO(r) for r in result.get("records", [])]
     return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
 
 
 def list_dicts(db: Session, param: DictListParam) -> list:
-    records = DictDao(db).find_list_by_filters(param)
-    return [to_vo(r) for r in records]
+    records = DictRepository(db).find_list_by_filters(param)
+    return [SysDictToDictVO(r) for r in records]
 
 
 def tree(db: Session, param: DictTreeParam) -> list:
@@ -186,10 +145,10 @@ def tree(db: Session, param: DictTreeParam) -> list:
 def detail(db: Session, id: str) -> Optional[dict]:
     if not id:
         return None
-    entity = DictDao(db).find_by_id(id)
+    entity = DictRepository(db).find_by_id(id)
     if not entity:
         return None
-    return to_vo(entity)
+    return SysDictToDictVO(entity)
 
 
 def create(db: Session, vo: DictVO, user_id: Optional[str] = None) -> None:
@@ -217,12 +176,12 @@ def create(db: Session, vo: DictVO, user_id: Optional[str] = None) -> None:
     if user_id:
         entity.created_by = user_id
         entity.updated_by = user_id
-    DictDao(db).insert(entity)
+    DictRepository(db).insert(entity)
 
 
 def modify(db: Session, vo: DictVO, user_id: Optional[str] = None) -> None:
-    dao = DictDao(db)
-    entity = dao.find_by_id(vo.id)
+    repository = DictRepository(db)
+    entity = repository.find_by_id(vo.id)
     if not entity:
         raise BusinessException("数据不存在", 400)
 
@@ -249,15 +208,15 @@ def modify(db: Session, vo: DictVO, user_id: Optional[str] = None) -> None:
         up["parent_id"] = vo.parent_id if vo.parent_id not in ("", "0") else None
     if user_id:
         up["updated_by"] = user_id
-    dao.db.execute(sa_update(SysDict).where(SysDict.id == vo.id).values(**up))
-    dao.db.commit()
+    repository.db.execute(sa_update(SysDict).where(SysDict.id == vo.id).values(**up))
+    repository.db.commit()
 
 
 def remove(db: Session, ids: list) -> None:
     if not ids:
         return
     all_ids = _collect_descendant_ids(db, ids)
-    DictDao(db).delete_by_ids(all_ids)
+    DictRepository(db).delete_by_ids(all_ids)
 
 
 def options(db: Session) -> list:
@@ -279,11 +238,11 @@ def get_dict_label(db: Session, type_code: str, value: str) -> Optional[str]:
 
 
 def get_dict_children(db: Session, type_code: str) -> list:
-    dao = DictDao(db)
-    root = dao.find_by_code(type_code)
+    repository = DictRepository(db)
+    root = repository.find_by_code(type_code)
     if not root:
         return []
-    children = dao.find_by_parent_id(root.id)
+    children = repository.find_by_parent_id(root.id)
     return [to_vo(c) for c in children]
 
 
@@ -292,7 +251,7 @@ def get_dict_children(db: Session, type_code: str) -> list:
 class DictService:
     def __init__(self, db: Session):
         self.db = db
-        self.dao = DictDao(db)
+        self.repository = DictRepository(db)
 
     async def _get_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:

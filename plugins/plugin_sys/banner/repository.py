@@ -6,7 +6,7 @@ from .models import SysBanner
 from .params import BannerPageParam
 
 
-class BannerDao:
+class BannerRepository:
     def __init__(self, db: Session):
         self.db = db
 

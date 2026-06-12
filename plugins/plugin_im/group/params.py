@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 from typing import Optional
+from plugins.plugin_im.model.group import GroupMessage
 
 
 class CreateParam(BaseModel):
@@ -114,3 +115,18 @@ class ConversationVO(BaseModel):
     last_content: str = ""
     last_time: str = ""
     unread_count: int = 0
+
+
+def GroupMessageToMessageVO(src: Optional[GroupMessage]) -> Optional[MessageVO]:
+    if src is None:
+        return None
+    return MessageVO(
+        id=src.id,
+        sender_id=src.sender_id,
+        sender_type=src.sender_type,
+        content=src.content or "",
+        extra=src.extra or "",
+        msg_type=src.msg_type,
+        reply_to=src.reply_to or "",
+        created_at=src.created_at.strftime("%Y-%m-%d %H:%M:%S") if src.created_at else "",
+    )

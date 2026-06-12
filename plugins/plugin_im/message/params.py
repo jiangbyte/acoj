@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 from typing import Optional
+from plugins.plugin_im.model.message import Message
+from plugins.plugin_im.model.im_file import ImFile
 
 
 class MessageVO(BaseModel):
@@ -99,6 +101,66 @@ class UploadFileResult(BaseModel):
     file_type: str = ""
 
 
+class ImFileVO(BaseModel):
+    id: str = ""
+    engine: str = ""
+    bucket: str = ""
+    file_key: str = ""
+    name: str = ""
+    suffix: str = ""
+    size_kb: int = 0
+    size_info: str = ""
+    download_path: str = ""
+    thumbnail: str = ""
+    conversation_id: str = ""
+    sender_id: str = ""
+    sender_type: str = ""
+    msg_type: str = ""
+    created_at: str = ""
+
+
 # Conversation type constants
 ConvTypeSingle = "single"
 ConvTypeGroup = "group"
+
+
+def MessageToMessageVO(src: Optional[Message]) -> Optional[MessageVO]:
+    if src is None:
+        return None
+    return MessageVO(
+        id=src.id,
+        conversation_id=src.conversation_id,
+        content=src.content or "",
+        msg_type=src.msg_type,
+        extra=src.extra or "",
+        sender_id=src.sender_id or "",
+        sender_type=src.sender_type or "",
+        receiver_id=src.receiver_id or "",
+        receiver_type=src.receiver_type or "",
+        status=src.status,
+        read_at=src.read_at.strftime("%Y-%m-%d %H:%M:%S") if src.read_at else None,
+        created_at=src.created_at.strftime("%Y-%m-%d %H:%M:%S") if src.created_at else "",
+        updated_at=src.updated_at.strftime("%Y-%m-%d %H:%M:%S") if src.updated_at else "",
+    )
+
+
+def ImFileToImFileVO(src: Optional[ImFile]) -> Optional[ImFileVO]:
+    if src is None:
+        return None
+    return ImFileVO(
+        id=src.id or "",
+        engine=src.engine or "",
+        bucket=src.bucket or "",
+        file_key=src.file_key or "",
+        name=src.name or "",
+        suffix=src.suffix or "",
+        size_kb=src.size_kb or 0,
+        size_info=src.size_info or "",
+        download_path=src.download_path or "",
+        thumbnail=src.thumbnail or "",
+        conversation_id=src.conversation_id or "",
+        sender_id=src.sender_id or "",
+        sender_type=src.sender_type or "",
+        msg_type=src.msg_type or "",
+        created_at=src.created_at.strftime("%Y-%m-%d %H:%M:%S") if src.created_at else "",
+    )

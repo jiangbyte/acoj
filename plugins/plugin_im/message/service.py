@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import or_, and_
-from sqlalchemy.dialects.mysql import insert as mysql_upsert
 
 from core.db import SessionLocal
 from core.exception import BusinessException
@@ -22,8 +21,9 @@ from plugins.plugin_im.model.message import (
 )
 from plugins.plugin_im.message.params import (
     MessageVO, MessagePageParam, MessageSendParam,
-    RecallParam, ForwardParam, SearchParam, ConversationMessageVO,
+    RecallParam, ForwardParam, SearchParam, ConversationMessageVO, MessageToMessageVO,
 )
+from plugins.plugin_im.message.repository import MessageRepository
 from plugins.plugin_im import ws as im_ws
 from plugins.plugin_im.ws import Message as WSMessage
 
@@ -31,30 +31,10 @@ import logging
 import asyncio
 
 logger = logging.getLogger(__name__)
-
-
 def _fmt_dt(dt) -> str:
     if dt is None:
         return ""
     return dt.strftime("%Y-%m-%d %H:%M:%S")
-
-
-def _to_vo(e: Message) -> MessageVO:
-    return MessageVO(
-        id=e.id, conversation_id=e.conversation_id,
-        content=e.content or "", msg_type=e.msg_type,
-        extra=e.extra or "",
-        sender_id=e.sender_id or "", sender_type=e.sender_type or "",
-        receiver_id=e.receiver_id or "", receiver_type=e.receiver_type or "",
-        status=e.status,
-        read_at=_fmt_dt(e.read_at) if e.read_at else None,
-        created_at=_fmt_dt(e.created_at),
-        updated_at=_fmt_dt(e.updated_at),
-    )
-
-
-def _to_vo_list(records: list[Message]) -> list[MessageVO]:
-    return [_to_vo(r) for r in records]
 
 
 # ═════════════════════════════════════════════════════════════════════
@@ -64,6 +44,7 @@ def _to_vo_list(records: list[Message]) -> list[MessageVO]:
 async def send_message(param: MessageSendParam, sender_id: str, sender_type: str) -> list[str]:
     db = SessionLocal()
     try:
+        repository = MessageRepository(db)
         # Rate limit check
         if im_ws.GlobalCrossHub and not await im_ws.GlobalCrossHub.allow_message(sender_id, sender_type):
             raise BusinessException("发送消息过于频繁，请稍后重试", 429)
@@ -93,24 +74,24 @@ async def send_message(param: MessageSendParam, sender_id: str, sender_type: str
                 updated_at=now,
             ))
 
-        for rec in records:
-            db.add(rec)
-        db.flush()
+        repository.create_messages(records)
 
-        # Upsert conversation cache
-        for rec in records:
-            stmt = mysql_upsert(Conversation).values(
+        conversations = [
+            Conversation(
                 id=rec.conversation_id,
-                from_id=rec.sender_id, from_type=rec.sender_type,
-                to_id=rec.receiver_id, to_type=rec.receiver_type,
-                last_msg=rec.content, last_time=now,
-                created_at=now, updated_at=now,
-            ).on_duplicate_key_update(
-                last_msg=rec.content, last_time=now, updated_at=now,
+                from_id=rec.sender_id,
+                from_type=rec.sender_type,
+                to_id=rec.receiver_id,
+                to_type=rec.receiver_type,
+                last_msg=rec.content,
+                last_time=now,
+                created_at=now,
+                updated_at=now,
             )
-            db.execute(stmt)
-
-        db.commit()
+            for rec in records
+        ]
+        repository.upsert_conversations(conversations)
+        repository.commit()
 
         # WS notifications
         for i, rid in enumerate(param.receiver_ids):
@@ -147,19 +128,9 @@ async def send_message(param: MessageSendParam, sender_id: str, sender_type: str
 def page_messages(user_id: str, param: MessagePageParam) -> dict:
     db = SessionLocal()
     try:
-        q = db.query(Message).filter(
-            or_(Message.sender_id == user_id, Message.receiver_id == user_id),
-            or_(Message.deleted_by != user_id, Message.deleted_by.is_(None)),
-        )
-        if param.status:
-            q = q.filter(Message.status == param.status)
-
-        total = q.count()
-        records = q.order_by(Message.created_at.desc()).offset(
-            (param.current - 1) * param.size
-        ).limit(param.size).all()
-
-        return page_data(_to_vo_list(records), total, param.current, param.size)
+        repository = MessageRepository(db)
+        records, total = repository.page_messages(user_id, param)
+        return page_data([MessageToMessageVO(r) for r in records], total, param.current, param.size)
     finally:
         db.close()
 
@@ -171,10 +142,7 @@ def page_messages(user_id: str, param: MessagePageParam) -> dict:
 def unread_count(user_id: str) -> int:
     db = SessionLocal()
     try:
-        return db.query(Message).filter(
-            Message.receiver_id == user_id,
-            Message.status == "unread",
-        ).count()
+        return MessageRepository(db).count_unread(user_id)
     finally:
         db.close()
 
@@ -186,8 +154,8 @@ def unread_count(user_id: str) -> int:
 def detail_message(message_id: str) -> Optional[MessageVO]:
     db = SessionLocal()
     try:
-        entity = db.query(Message).filter(Message.id == message_id).first()
-        return _to_vo(entity) if entity else None
+        entity = MessageRepository(db).find_by_id(message_id)
+        return MessageToMessageVO(entity) if entity else None
     finally:
         db.close()
 
@@ -199,11 +167,7 @@ def detail_message(message_id: str) -> Optional[MessageVO]:
 def mark_read(message_id: str) -> None:
     db = SessionLocal()
     try:
-        now = datetime.now()
-        db.query(Message).filter(Message.id == message_id).update(
-            {"status": "read", "read_at": now}
-        )
-        db.commit()
+        MessageRepository(db).mark_read(message_id)
     except Exception:
         db.rollback()
         raise
@@ -214,13 +178,7 @@ def mark_read(message_id: str) -> None:
 def mark_conversation_read(receiver_id: str, conversation_id: str) -> None:
     db = SessionLocal()
     try:
-        now = datetime.now()
-        db.query(Message).filter(
-            Message.conversation_id == conversation_id,
-            Message.receiver_id == receiver_id,
-            Message.status == "unread",
-        ).update({"status": "read", "read_at": now})
-        db.commit()
+        MessageRepository(db).mark_conversation_read(receiver_id, conversation_id)
     except Exception:
         db.rollback()
         raise
@@ -231,12 +189,7 @@ def mark_conversation_read(receiver_id: str, conversation_id: str) -> None:
 def mark_all_read(receiver_id: str) -> None:
     db = SessionLocal()
     try:
-        now = datetime.now()
-        db.query(Message).filter(
-            Message.receiver_id == receiver_id,
-            Message.status == "unread",
-        ).update({"status": "read", "read_at": now})
-        db.commit()
+        MessageRepository(db).mark_all_read(receiver_id)
     except Exception:
         db.rollback()
         raise
@@ -253,11 +206,7 @@ def remove_messages(user_id: str, ids: list[str]) -> None:
         return
     db = SessionLocal()
     try:
-        db.query(Message).filter(
-            Message.id.in_(ids),
-            or_(Message.sender_id == user_id, Message.receiver_id == user_id),
-        ).update({"deleted_by": user_id})
-        db.commit()
+        MessageRepository(db).soft_delete_messages(user_id, ids)
     except Exception:
         db.rollback()
         raise
@@ -272,7 +221,7 @@ def remove_messages(user_id: str, ids: list[str]) -> None:
 def recall_message(user_id: str, user_type: str, param: RecallParam) -> None:
     db = SessionLocal()
     try:
-        msg = db.query(Message).filter(Message.id == param.message_id).first()
+        msg = MessageRepository(db).find_by_id(param.message_id)
         if not msg:
             raise BusinessException("消息不存在", 400)
         if msg.sender_id != user_id or msg.sender_type != user_type:
@@ -299,7 +248,7 @@ def recall_message(user_id: str, user_type: str, param: RecallParam) -> None:
 async def forward_message(user_id: str, user_type: str, param: ForwardParam) -> None:
     db = SessionLocal()
     try:
-        original = db.query(Message).filter(Message.id == param.message_id).first()
+        original = MessageRepository(db).find_by_id(param.message_id)
         if not original:
             raise BusinessException("消息不存在", 400)
     finally:
@@ -326,20 +275,16 @@ def search_messages(user_id: str, param: SearchParam) -> tuple[list[MessageVO], 
         param.size = 100
     db = SessionLocal()
     try:
-        q = db.query(Message).filter(
-            or_(Message.sender_id == user_id, Message.receiver_id == user_id),
-            Message.content.like(f"%{param.keyword}%"),
-        )
+        cursor_dt = None
         if param.cursor:
             try:
-                t = datetime.strptime(param.cursor, "%Y-%m-%d %H:%M:%S")
-                q = q.filter(Message.created_at < t)
+                cursor_dt = datetime.strptime(param.cursor, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 pass
-        records = q.order_by(Message.created_at.desc()).limit(param.size + 1).all()
+        records = MessageRepository(db).search_messages(user_id, param.keyword, cursor_dt, param.size)
         has_more = len(records) > param.size
         if has_more:
             records = records[:param.size]
-        return _to_vo_list(records), has_more
+        return [MessageToMessageVO(r) for r in records], has_more
     finally:
         db.close()

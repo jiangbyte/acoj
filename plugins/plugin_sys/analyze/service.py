@@ -4,15 +4,12 @@ import platform
 import socket
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from sqlalchemy import func, text
-from .dao import AnalyzeDao
+from .repository import AnalyzeRepository
 from .params import (
     DashboardVO, DashboardStats, ClientStats, TrendItem,
     OrgUserDistribution, CategoryDistribution, SysInfo,
     LogAnalysisData,
 )
-from ..log.models import SysLog
-from core.enums import UserStatusEnum
 
 SERVER_START_TIME = datetime.now(timezone.utc)
 
@@ -47,42 +44,18 @@ def format_duration(d: datetime) -> str:
 
 def get_monthly_trend(db: Session, table: str) -> list:
     try:
-        rows = db.execute(
-            text(f"SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count "
-                 f"FROM {table} WHERE created_at IS NOT NULL "
-                 f"GROUP BY month ORDER BY month ASC LIMIT 12")
-        ).fetchall()
+        rows = AnalyzeRepository(db).monthly_trend(table)
         return [TrendItem(month=r[0], count=r[1]) for r in rows]
     except Exception:
         return []
 
 
 def get_org_user_distribution(db: Session) -> list:
-    from ..user.models import SysUser
-    from ..org.models import SysOrg
-    rows = db.query(
-        SysUser.org_id, func.count(SysUser.id).label("count")
-    ).filter(
-        SysUser.org_id.isnot(None), SysUser.org_id != ""
-    ).group_by(SysUser.org_id).all()
-    org_ids = [r[0] for r in rows]
-    org_names = {}
-    if org_ids:
-        org_rows = db.query(SysOrg.id, SysOrg.name).filter(SysOrg.id.in_(org_ids)).all()
-        org_names = {r.id: r.name for r in org_rows}
-    result = []
-    for org_id, cnt in rows:
-        name = org_names.get(org_id, "未分配")
-        result.append(OrgUserDistribution(name=name, count=cnt))
-    return result
+    return [OrgUserDistribution(**item) for item in AnalyzeRepository(db).org_user_distribution_with_names()]
 
 
 def get_role_category_distribution(db: Session) -> list:
-    from ..role.models import SysRole
-    rows = db.query(
-        SysRole.category, func.count(SysRole.id).label("count")
-    ).group_by(SysRole.category).all()
-    return [CategoryDistribution(category=r[0], count=r[1]) for r in rows]
+    return [CategoryDistribution(**item) for item in AnalyzeRepository(db).role_category_distribution_with_counts()]
 
 
 # ── Standalone service functions ──
@@ -95,69 +68,34 @@ def page(db: Session, param) -> dict:
 
 def login_analysis(db: Session) -> LogAnalysisData:
     """Login statistics — mirrors Go's LoginAnalysis()."""
-    login_total = db.query(func.count(SysLog.id)).filter(
-        SysLog.category == "LOGIN"
-    ).scalar() or 0
-
-    login_failed = db.query(func.count(SysLog.id)).filter(
-        SysLog.category == "LOGIN", SysLog.exe_status == "FAIL"
-    ).scalar() or 0
-
-    login_today = db.query(func.count(SysLog.id)).filter(
-        SysLog.category == "LOGIN",
-        func.DATE(SysLog.op_time) == func.CURDATE()
-    ).scalar() or 0
-
-    return LogAnalysisData(
-        login_total=login_total,
-        login_failed=login_failed,
-        login_today=login_today,
-    )
+    return LogAnalysisData(**AnalyzeRepository(db).login_stats())
 
 
 def log_analysis(db: Session) -> LogAnalysisData:
     """Log/exception statistics — mirrors Go's LogAnalysis()."""
-    log_total = db.query(func.count(SysLog.id)).scalar() or 0
-    exception_total = db.query(func.count(SysLog.id)).filter(
-        SysLog.category == "EXCEPTION"
-    ).scalar() or 0
-    exception_today = db.query(func.count(SysLog.id)).filter(
-        SysLog.category == "EXCEPTION",
-        func.DATE(SysLog.op_time) == func.CURDATE()
-    ).scalar() or 0
-
     data = login_analysis(db)
-    data.log_total = log_total
-    data.log_exception = exception_total
-    data.exception_today = exception_today
+    stats = AnalyzeRepository(db).log_stats()
+    data.log_total = stats["log_total"]
+    data.log_exception = stats["log_exception"]
+    data.exception_today = stats["exception_today"]
     return data
 
 
 def dashboard(db: Session) -> dict:
     """Main dashboard — mirrors Go's Dashboard()."""
-    from ..user.models import SysUser
-    from ..role.models import SysRole
-    from ..org.models import SysOrg
-    from ..config.models import SysConfig
-    from ..notice.models import SysNotice
-    from ...plugin_client.user.models import ClientUser
-
+    repository = AnalyzeRepository(db)
     stats = DashboardStats(
-        total_users=db.query(func.count(SysUser.id)).scalar() or 0,
-        active_users=db.query(func.count(SysUser.id)).filter(
-            SysUser.status == UserStatusEnum.ACTIVE.value
-        ).scalar() or 0,
-        total_roles=db.query(func.count(SysRole.id)).scalar() or 0,
-        total_orgs=db.query(func.count(SysOrg.id)).scalar() or 0,
-        total_configs=db.query(func.count(SysConfig.id)).scalar() or 0,
-        total_notices=db.query(func.count(SysNotice.id)).scalar() or 0,
+        total_users=repository.count_users(),
+        active_users=repository.count_active_users(),
+        total_roles=repository.count_roles(),
+        total_orgs=repository.count_orgs(),
+        total_configs=repository.count_configs(),
+        total_notices=repository.count_notices(),
     )
 
     client_stats = ClientStats(
-        total_users=db.query(func.count(ClientUser.id)).scalar() or 0,
-        active_users=db.query(func.count(ClientUser.id)).filter(
-            ClientUser.status == UserStatusEnum.ACTIVE.value
-        ).scalar() or 0,
+        total_users=repository.count_client_users(),
+        active_users=repository.count_active_client_users(),
     )
 
     user_trend = get_monthly_trend(db, "sys_user")
@@ -189,7 +127,7 @@ def dashboard(db: Session) -> dict:
 class AnalyzeService:
     def __init__(self, db: Session):
         self.db = db
-        self.dao = AnalyzeDao(db)
+        self.repository = AnalyzeRepository(db)
 
     def _get_sys_info(self) -> SysInfo:
         return SysInfo(

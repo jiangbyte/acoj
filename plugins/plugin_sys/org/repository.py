@@ -6,7 +6,7 @@ from .models import SysOrg
 from .params import OrgPageParam
 
 
-class OrgDao:
+class OrgRepository:
     def __init__(self, db: Session):
         self.db = db
 

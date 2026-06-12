@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from core.db import get_db
 from core.result import Result, PageData, success
 from core.auth.decorator import HeiCheckPermission
-from core.constants import SESSION_PREFIX_BUSINESS, TOKEN_PREFIX_BUSINESS
 from ...params import SessionAnalysisResult, SessionPageResult, SessionPageParam, SessionExitParam, SessionExitTokenParam, SessionTokenResult, SessionChartData
 from ...service import analysis as svc_analysis, list_b_sessions as svc_list_b, exit_b_session as svc_exit_b, exit_b_session_token as svc_exit_b_token, chart_data as svc_chart_data, token_list as svc_token_list
 
@@ -69,7 +68,7 @@ async def token_list(
     request: Request,
     user_id: str = Query(..., description="用户ID"),
 ):
-    result = await svc_token_list(SESSION_PREFIX_BUSINESS, TOKEN_PREFIX_BUSINESS, user_id)
+    result = await svc_token_list(user_id)
     return success(result)
 
 

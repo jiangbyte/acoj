@@ -13,6 +13,8 @@ from typing import Optional
 from core.constants import PERMISSION_CACHE_KEY, SUPER_ADMIN_CODE
 from core.db import SessionLocal
 from core.enums import LoginTypeEnum, DataScopeEnum, PermissionPathEnum
+from plugins.plugin_sys.role.repository import RoleRepository
+from plugins.plugin_sys.user.repository import UserRepository
 
 logger = logging.getLogger(__name__)
 
@@ -24,36 +26,27 @@ class PermissionProvider:
     """
 
     def _get_role_ids(self, login_id: str) -> list[str]:
-        from plugins.plugin_sys.user.models import RelUserRole
-
         db = SessionLocal()
         try:
-            rows = db.query(RelUserRole.role_id).filter(RelUserRole.user_id == login_id).all()
-            return [r[0] for r in rows]
+            return UserRepository(db).get_role_ids_by_user_id(login_id)
         finally:
             db.close()
 
     def _get_roles_by_ids(self, role_ids: list[str]):
-        from plugins.plugin_sys.role.models import SysRole
-
         if not role_ids:
             return []
         db = SessionLocal()
         try:
-            return db.query(SysRole).filter(SysRole.id.in_(role_ids)).all()
+            return RoleRepository(db).find_by_ids(role_ids)
         finally:
             db.close()
 
     def _is_super_admin(self, role_ids: list[str]) -> bool:
-        from plugins.plugin_sys.role.models import SysRole
-
         if not role_ids:
             return False
         db = SessionLocal()
         try:
-            return db.query(SysRole).filter(
-                SysRole.id.in_(role_ids), SysRole.code == SUPER_ADMIN_CODE
-            ).count() > 0
+            return RoleRepository(db).exists_super_admin(role_ids)
         finally:
             db.close()
 
@@ -78,11 +71,10 @@ class PermissionProvider:
 
     def getPermissionList(self, login_id: str, login_type: str) -> list[str]:
         """Return the user's permission codes."""
-        from plugins.plugin_sys.role.models import RelRolePermission
-        from plugins.plugin_sys.user.models import RelUserPermission
-
         db = SessionLocal()
         try:
+            role_repository = RoleRepository(db)
+            user_repository = UserRepository(db)
             role_ids = self._get_role_ids(login_id)
 
             if self._is_super_admin(role_ids):
@@ -92,15 +84,9 @@ class PermissionProvider:
 
             if login_type in (LoginTypeEnum.BUSINESS, LoginTypeEnum.CONSUMER):
                 if role_ids:
-                    rows = db.query(RelRolePermission.permission_code).filter(
-                        RelRolePermission.role_id.in_(role_ids)
-                    ).all()
-                    permission_codes.update(r[0] for r in rows)
-
-                rows = db.query(RelUserPermission.permission_code).filter(
-                    RelUserPermission.user_id == login_id
-                ).all()
-                permission_codes.update(r[0] for r in rows)
+                    for role_id in role_ids:
+                        permission_codes.update(role_repository.get_permission_codes_by_role_id(role_id))
+                permission_codes.update(user_repository.get_permission_codes_by_user_id(login_id))
 
             return list(permission_codes)
         finally:
@@ -117,14 +103,13 @@ class PermissionProvider:
 
     def getPermissionScopeMap(self, login_id: str, login_type: str) -> dict:
         """Return permission-to-scope info map."""
-        from plugins.plugin_sys.user.models import RelUserPermission, RelUserRole
-        from plugins.plugin_sys.role.models import RelRolePermission
-
         if login_type not in (LoginTypeEnum.BUSINESS, LoginTypeEnum.CONSUMER):
             return {}
 
         db = SessionLocal()
         try:
+            role_repository = RoleRepository(db)
+            user_repository = UserRepository(db)
             role_ids = self._get_role_ids(login_id)
 
             if role_ids:
@@ -145,20 +130,26 @@ class PermissionProvider:
             perm_scope = {}
 
             if role_ids:
-                rows = db.query(
-                    RelRolePermission.permission_code,
-                    RelRolePermission.scope,
-                    RelRolePermission.custom_scope_group_ids,
-                    RelRolePermission.custom_scope_org_ids,
-                ).filter(RelRolePermission.role_id.in_(role_ids)).all()
+                rows = []
+                for role_id in role_ids:
+                    for item in role_repository.get_permission_details_by_role_id(role_id):
+                        rows.append((
+                            item["permission_code"],
+                            item["scope"],
+                            item["custom_scope_group_ids"],
+                            item["custom_scope_org_ids"],
+                        ))
                 self._merge_scope(perm_scope, PermissionPathEnum.USER_ROLE, rows)
 
-            rows = db.query(
-                RelUserPermission.permission_code,
-                RelUserPermission.scope,
-                RelUserPermission.custom_scope_group_ids,
-                RelUserPermission.custom_scope_org_ids,
-            ).filter(RelUserPermission.user_id == login_id).all()
+            rows = [
+                (
+                    item["permission_code"],
+                    item["scope"],
+                    item["custom_scope_group_ids"],
+                    item["custom_scope_org_ids"],
+                )
+                for item in user_repository.get_permission_details_by_user_id(login_id)
+            ]
             self._merge_scope(perm_scope, PermissionPathEnum.DIRECT, rows)
 
             return {

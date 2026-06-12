@@ -10,7 +10,7 @@ from core.utils import generate_id
 from plugins.plugin_sys.role.params import PermissionItem
 
 
-class UserDao:
+class UserRepository:
     def __init__(self, db: Session):
         self.db = db
 
@@ -18,6 +18,10 @@ class UserDao:
 
     def find_by_id(self, id: str) -> Optional[SysUser]:
         return self.db.execute(select(SysUser).where(SysUser.id == id)).scalar_one_or_none()
+
+    def find_nickname_by_id(self, user_id: str) -> Optional[str]:
+        stmt = select(SysUser.nickname).where(SysUser.id == user_id)
+        return self.db.execute(stmt).scalar_one_or_none()
 
     def find_by_ids(self, ids: List[str]) -> List[SysUser]:
         return list(self.db.execute(
@@ -170,6 +174,12 @@ class UserDao:
             }
             for r in rows
         ]
+
+    def get_permission_codes_by_user_id(self, user_id: str) -> list[str]:
+        rows = self.db.execute(
+            select(RelUserPermission.permission_code).where(RelUserPermission.user_id == user_id)
+        ).scalars().all()
+        return list(rows)
 
     def grant_permissions(self, user_id: str, permissions: Optional[List[PermissionItem]] = None, created_by: Optional[str] = None):
         try:

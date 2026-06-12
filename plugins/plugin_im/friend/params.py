@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 from typing import Optional
+from plugins.plugin_im.model.friend import FriendRequest
 
 
 class SendRequestParam(BaseModel):
@@ -58,3 +59,18 @@ class SearchResult(BaseModel):
     user_type: str = ""
     nickname: str = ""
     avatar: str = ""
+
+
+def FriendRequestToFriendRequestVO(src: Optional[FriendRequest]) -> Optional[FriendRequestVO]:
+    if src is None:
+        return None
+    return FriendRequestVO(
+        id=src.id,
+        sender_id=src.sender_id,
+        sender_type=src.sender_type,
+        receiver_id=src.receiver_id,
+        receiver_type=src.receiver_type,
+        remark=src.remark or "",
+        status=src.status,
+        created_at=src.created_at.strftime("%Y-%m-%d %H:%M:%S") if src.created_at else "",
+    )

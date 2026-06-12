@@ -1,4 +1,3 @@
-from . import migrate
 from .api.v1 import router
 
 from core.plugin.registry import register_router

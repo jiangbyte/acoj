@@ -147,7 +147,7 @@ async def _save_log(request: Request, func, name: str, category: str,
         entry.sign_data = sign_data
 
         service = LogService(db)
-        service.dao.insert(entry)
+        service.repository.insert(entry)
         db.commit()
     except Exception as e:
         logger.warning(f"Failed to save operation log: {e}")
@@ -209,7 +209,7 @@ async def save_exception_log(request: Request, exc: Exception, name: Optional[st
         entry.sign_data = sign_data
 
         service = LogService(db)
-        service.dao.insert(entry)
+        service.repository.insert(entry)
         db.commit()
     except Exception as e:
         logger.warning(f"Failed to save exception log: {e}")
@@ -264,7 +264,7 @@ def record_auth_log(request: Request, name: str, category: str,
         })
         entry.sign_data = sign_data
         service = LogService(db)
-        service.dao.insert(entry)
+        service.repository.insert(entry)
         db.commit()
     except Exception as e:
         logger.warning(f"Failed to save auth log: {e}")

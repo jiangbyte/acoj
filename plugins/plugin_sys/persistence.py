@@ -47,7 +47,7 @@ class DbLogPersister:
                 op_user=entry.op_user,
                 sign_data=entry.sign_data,
             )
-            LogService(db).dao.insert(model)
+            LogService(db).repository.insert(model)
             db.commit()
         except Exception:
             logger.exception("[LogPersister] Failed to save log")

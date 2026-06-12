@@ -10,8 +10,8 @@ from plugins.plugin_im.model.message import (
     MsgExtraImage, MsgExtraFile, MsgExtraSystem,
     generate_conversation_id,
 )
-from plugins.plugin_im.model.im_file import ImFile, ImFileVO
-from plugins.plugin_im.model.migrate import register_all_models
+from plugins.plugin_im.model.im_file import ImFile
+from plugins.plugin_im.migrate import register_all_models
 
 __all__ = [
     "Broadcast", "BroadcastRead",
@@ -22,6 +22,6 @@ __all__ = [
     "MsgTypeText", "MsgTypeImage", "MsgTypeFile", "MsgTypeSystem",
     "MsgExtraImage", "MsgExtraFile", "MsgExtraSystem",
     "generate_conversation_id",
-    "ImFile", "ImFileVO",
+    "ImFile",
     "register_all_models",
 ]

@@ -8,8 +8,9 @@ from fastapi import Request
 from .params import (
     ClientUserVO, ClientUserPageParam,
     UpdateProfileParam, UpdateAvatarParam, UpdatePasswordParam,
+    ClientUserToClientUserVO, ClientUserVOToClientUser,
 )
-from .dao import ClientUserDao
+from .repository import ClientUserRepository
 from .models import ClientUser
 from core.utils import decrypt, compress_base64_image
 from core.pojo import IdParam, IdsParam
@@ -18,43 +19,16 @@ from core.exception import BusinessException
 from core.auth import HeiClientAuthTool, LoginUserInfo
 from core.utils import generate_id
 import bcrypt
-
-
-def _to_vo(entity: ClientUser) -> dict:
-    """Mirrors hei-gin ClientUserVO + toVO()."""
-    vo = {
-        "id": entity.id,
-        "username": entity.username,
-        "nickname": entity.nickname,
-        "avatar": entity.avatar,
-        "motto": entity.motto,
-        "gender": entity.gender,
-        "email": entity.email,
-        "github": entity.github,
-        "phone": entity.phone,
-        "status": entity.status,
-        "last_login_ip": entity.last_login_ip,
-        "login_count": entity.login_count or 0,
-    }
-    if entity.last_login_at is not None:
-        vo["last_login_at"] = entity.last_login_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.created_at is not None:
-        vo["created_at"] = entity.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.updated_at is not None:
-        vo["updated_at"] = entity.updated_at.strftime("%Y-%m-%d %H:%M:%S")
-    return vo
-
-
 def find_by_id(db: Session, user_id: str) -> Optional[ClientUser]:
-    return ClientUserDao(db).find_by_id(user_id)
+    return ClientUserRepository(db).find_by_id(user_id)
 
 
 def find_by_username(db: Session, username: str) -> Optional[ClientUser]:
-    return ClientUserDao(db).find_by_username(username)
+    return ClientUserRepository(db).find_by_username(username)
 
 
 def find_by_email(db: Session, email: str) -> Optional[ClientUser]:
-    return ClientUserDao(db).find_by_email(email)
+    return ClientUserRepository(db).find_by_email(email)
 
 
 def to_login_user_info(entity: Optional[ClientUser]) -> Optional[LoginUserInfo]:
@@ -70,20 +44,20 @@ def to_login_user_info(entity: Optional[ClientUser]) -> Optional[LoginUserInfo]:
 
 
 def record_login(db: Session, user_id: str, request: Request) -> None:
-    dao = ClientUserDao(db)
-    entity = dao.find_by_id(user_id)
+    repository = ClientUserRepository(db)
+    entity = repository.find_by_id(user_id)
     if not entity:
         return
     entity.last_login_at = datetime.now()
     entity.last_login_ip = request.client.host if request.client else None
     entity.login_count = (entity.login_count or 0) + 1
-    dao.update(entity)
+    repository.update(entity)
 
 
 def page(db: Session, param: ClientUserPageParam) -> dict:
-    dao = ClientUserDao(db)
-    result = dao.find_page_by_filters(param)
-    records = [_to_vo(r) for r in result.get("records", [])]
+    repository = ClientUserRepository(db)
+    result = repository.find_page_by_filters(param)
+    records = [ClientUserToClientUserVO(r) for r in result.get("records", [])]
     return page_data(records=records, total=result[PageDataField.TOTAL],
                      page=param.current, size=param.size)
 
@@ -91,10 +65,10 @@ def page(db: Session, param: ClientUserPageParam) -> dict:
 def detail(db: Session, id: str) -> Optional[dict]:
     if not id:
         return None
-    entity = ClientUserDao(db).find_by_id(id)
+    entity = ClientUserRepository(db).find_by_id(id)
     if not entity:
         return None
-    return _to_vo(entity)
+    return ClientUserToClientUserVO(entity)
 
 
 def create(db: Session, vo: ClientUserVO, user_id: Optional[str] = None) -> None:
@@ -107,37 +81,28 @@ def create(db: Session, vo: ClientUserVO, user_id: Optional[str] = None) -> None
         if existing:
             raise BusinessException("帐号已存在")
 
-    entity = ClientUser(
-        id=generate_id(),
-        status="ACTIVE",
-        login_count=0,
-        created_at=now,
-        updated_at=now,
-    )
+    entity = ClientUserVOToClientUser(vo)
+    entity.id = generate_id()
+    entity.status = "ACTIVE"
+    entity.login_count = 0
+    entity.created_at = now
+    entity.updated_at = now
     if vo.username:
         entity.username = vo.username
     if vo.password:
         hashed = bcrypt.hashpw(vo.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
         entity.password = hashed
-    if vo.nickname:
-        entity.nickname = vo.nickname
-    if vo.avatar:
-        entity.avatar = vo.avatar
-    if vo.email:
-        entity.email = vo.email
-    if vo.phone:
-        entity.phone = vo.phone
     if user_id:
         entity.created_by = user_id
         entity.updated_by = user_id
 
-    ClientUserDao(db).insert(entity)
+    ClientUserRepository(db).insert(entity)
 
 
 def modify(db: Session, vo: ClientUserVO, user_id: Optional[str] = None) -> None:
     """Mirrors hei-gin ClientUserModify — updates map: nickname, avatar, email, phone, status."""
-    dao = ClientUserDao(db)
-    entity = dao.find_by_id(vo.id)
+    repository = ClientUserRepository(db)
+    entity = repository.find_by_id(vo.id)
     if not entity:
         raise BusinessException("数据不存在")
 
@@ -156,14 +121,14 @@ def modify(db: Session, vo: ClientUserVO, user_id: Optional[str] = None) -> None
     if user_id:
         up["updated_by"] = user_id
 
-    dao.db.execute(sa_update(ClientUser).where(ClientUser.id == vo.id).values(**up))
-    dao.db.commit()
+    repository.db.execute(sa_update(ClientUser).where(ClientUser.id == vo.id).values(**up))
+    repository.db.commit()
 
 
 def remove(db: Session, ids: list) -> None:
     if not ids:
         return
-    ClientUserDao(db).delete_by_ids(ids)
+    ClientUserRepository(db).delete_by_ids(ids)
 
 
 # ── Backward-compatible class ──
@@ -171,7 +136,7 @@ def remove(db: Session, ids: list) -> None:
 class ClientUserService:
     def __init__(self, db: Session):
         self.db = db
-        self.dao = ClientUserDao(db)
+        self.repository = ClientUserRepository(db)
 
     @property
     def _auth_tool(self):
@@ -229,7 +194,7 @@ class ClientUserService:
         user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
         if not user_id:
             raise BusinessException("用户未登录")
-        entity = self.dao.find_by_id(user_id)
+        entity = self.repository.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在")
 
@@ -262,20 +227,20 @@ class ClientUserService:
             raise BusinessException("用户未登录")
         if not param.avatar:
             raise BusinessException("头像不能为空")
-        entity = self.dao.find_by_id(user_id)
+        entity = self.repository.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在")
 
         compressed = compress_base64_image(param.avatar, 512, 512, 80)
         entity.avatar = compressed
-        self.dao.update(entity, user_id=user_id)
+        self.repository.update(entity, user_id=user_id)
 
     async def update_password(self, param: UpdatePasswordParam, request: Request) -> None:
         """Mirrors hei-gin UpdatePassword — verify current via decrypt, hash new."""
         user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
         if not user_id:
             raise BusinessException("用户未登录")
-        entity = self.dao.find_by_id(user_id)
+        entity = self.repository.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在")
         if not entity.password:
@@ -286,7 +251,7 @@ class ClientUserService:
         new_password = decrypt(param.new_password)
         hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         entity.password = hashed
-        self.dao.update(entity, user_id=user_id)
+        self.repository.update(entity, user_id=user_id)
 
 
 # ── Standalone function aliases for API compatibility ──
@@ -370,7 +335,7 @@ async def client_user_update_avatar(db: Session, param: UpdateAvatarParam,
 
     compressed = compress_base64_image(param.avatar, 512, 512, 80)
     entity.avatar = compressed
-    ClientUserDao(db).update(entity, user_id=user_id)
+    ClientUserRepository(db).update(entity, user_id=user_id)
 
 
 async def client_user_update_password(db: Session, param: UpdatePasswordParam,
@@ -390,7 +355,7 @@ async def client_user_update_password(db: Session, param: UpdatePasswordParam,
     new_password = decrypt(param.new_password)
     hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     entity.password = hashed
-    ClientUserDao(db).update(entity, user_id=user_id)
+    ClientUserRepository(db).update(entity, user_id=user_id)
 
 
 class LoginUserApiProvider:

@@ -2,6 +2,7 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
+from .models import SysGroup
 
 
 class GroupVO(DateTimeValidatorMixin, BaseModel):
@@ -49,3 +50,39 @@ class GroupPageParam(BaseModel):
     category: Optional[str] = None
     org_id: Optional[str] = None
 
+
+def SysGroupToGroupVO(src: Optional[SysGroup]) -> Optional[GroupVO]:
+    if src is None:
+        return None
+    return GroupVO(
+        id=src.id,
+        code=src.code,
+        name=src.name,
+        category=src.category,
+        parent_id=src.parent_id,
+        org_id=src.org_id,
+        description=src.description,
+        status=src.status,
+        sort_code=src.sort_code,
+        extra=src.extra,
+        created_at=src.created_at,
+        created_by=src.created_by,
+        updated_at=src.updated_at,
+        updated_by=src.updated_by,
+    )
+
+
+def SysGroupToGroupTreeVO(src: Optional[SysGroup]) -> Optional[GroupTreeVO]:
+    if src is None:
+        return None
+    return GroupTreeVO(
+        id=src.id,
+        code=src.code,
+        name=src.name,
+        category=src.category,
+        parent_id=src.parent_id,
+        org_id=src.org_id,
+        status=src.status,
+        sort_code=src.sort_code,
+        children=[],
+    )

@@ -1,12 +1,10 @@
-"""Group chat service — mirrors hei-gin plugins/plugin-im/group/service.go."""
+"""Group chat service — thin orchestration over GroupRepository."""
 
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import datetime, timedelta
-from typing import Optional
-
-from sqlalchemy import or_, and_, func
 
 from core.db import SessionLocal
 from core.exception import BusinessException
@@ -20,7 +18,10 @@ from plugins.plugin_im.group.params import (
     CreateParam, UpdateParam, InviteParam, KickParam, SetRoleParam,
     SendMessageParam, GroupVO, MemberVO, MessageVO,
     HandleJoinRequestParam, TransferOwnerParam, SetNicknameParam, ConversationVO,
+    GroupMessageToMessageVO,
 )
+from plugins.plugin_im.group.repository import GroupRepository
+from plugins.plugin_im.message.user_repository import IMUserRepository
 from plugins.plugin_im import ws as im_ws
 from plugins.plugin_im.ws import Message as WSMessage
 
@@ -34,26 +35,8 @@ def _fmt_dt(dt) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _resolve_user_name(user_id: str, user_type: str, db) -> str:
-    if user_type == UserTypeBusiness:
-        from plugins.plugin_sys.user.models import SysUser
-        u = db.query(SysUser).filter(SysUser.id == user_id).first()
-        return u.nickname or u.username or user_id if u else user_id
-    else:
-        from plugins.plugin_client.user.models import ClientUser
-        u = db.query(ClientUser).filter(ClientUser.id == user_id).first()
-        return u.nickname or u.username or user_id if u else user_id
-
-
-# ── Helpers ────────────────────────────────────────────────────────────
-
-def _check_owner_or_admin(db, group_id: str, operator_id: str, operator_type: str) -> Optional[GroupMember]:
-    member = db.query(GroupMember).filter(
-        GroupMember.group_id == group_id,
-        GroupMember.user_id == operator_id,
-        GroupMember.user_type == operator_type,
-        GroupMember.status == MemberActive,
-    ).first()
+def _check_owner_or_admin(repository: GroupRepository, group_id: str, operator_id: str, operator_type: str) -> GroupMember:
+    member = repository.find_active_member(group_id, operator_id, operator_type)
     if not member or member.role not in (RoleOwner, RoleAdmin):
         raise BusinessException("无权限", 403)
     return member
@@ -71,6 +54,7 @@ def _validate_member_type(group_type: str, member_type: str) -> None:
 def create(owner_id: str, owner_type: str, p: CreateParam) -> GroupVO:
     db = SessionLocal()
     try:
+        repository = GroupRepository(db)
         if not p.name:
             raise BusinessException("群名称不能为空", 400)
         if len(p.name) > 100:
@@ -95,55 +79,48 @@ def create(owner_id: str, owner_type: str, p: CreateParam) -> GroupVO:
             created_at=now,
             updated_at=now,
         )
-        db.add(group)
-        db.flush()
+        repository.add(group)
+        repository.flush()
 
         owner_member = GroupMember(
             id=generate_id(), group_id=group.id,
             user_id=owner_id, user_type=owner_type,
             role=RoleOwner, joined_at=now, status=MemberActive,
         )
-        db.add(owner_member)
+        repository.add(owner_member)
 
         if p.member_ids:
             _validate_member_type(group_type, p.member_type)
-            existing = db.query(GroupMember).filter(
-                GroupMember.group_id == group.id,
-                GroupMember.user_id.in_(p.member_ids),
-                GroupMember.user_type == p.member_type,
-                GroupMember.status == MemberActive,
-            ).count()
+            existing = repository.count_existing_active_members(group.id, p.member_ids, p.member_type)
             if existing > 0:
                 raise BusinessException("部分成员已在群中", 400)
-
-            current_count = db.query(GroupMember).filter(
-                GroupMember.group_id == group.id,
-                GroupMember.status == MemberActive,
-            ).count()
+            current_count = repository.count_active_members(group.id)
             if current_count + len(p.member_ids) > group.max_members:
                 raise BusinessException(f"群成员数量不能超过{group.max_members}人", 400)
-
+            members_to_add: list[GroupMember] = []
+            messages_to_add: list[GroupMessage] = []
             for uid in p.member_ids:
                 if uid == owner_id:
                     continue
-                db.add(GroupMember(
+                members_to_add.append(GroupMember(
                     id=generate_id(), group_id=group.id,
                     user_id=uid, user_type=p.member_type,
                     role=RoleMember, joined_at=now, status=MemberActive,
                 ))
                 extra_sys = MsgExtraSystem(action="join", user_id=uid, user_type=p.member_type)
-                db.add(GroupMessage(
+                messages_to_add.append(GroupMessage(
                     id=generate_id(), group_id=group.id,
                     sender_id=owner_id, sender_type=owner_type,
                     content="欢迎加入群聊",
                     extra=json.dumps(extra_sys.__dict__, ensure_ascii=False),
                     msg_type=MsgTypeSystem, created_at=now,
                 ))
-
-        db.commit()
+            repository.add_members(members_to_add)
+            repository.add_messages(messages_to_add)
+        repository.commit()
         return GroupVO(id=group.id, name=group.name, avatar=group.avatar or "",
                        owner_id=group.owner_id, owner_type=group.owner_type,
-                       group_type=group.group_type, member_count=1)
+                       group_type=group.group_type, member_count=repository.count_active_members(group.id))
     except Exception:
         db.rollback()
         raise
@@ -158,9 +135,10 @@ def create(owner_id: str, owner_type: str, p: CreateParam) -> GroupVO:
 def update_group(operator_id: str, operator_type: str, p: UpdateParam) -> None:
     db = SessionLocal()
     try:
+        repository = GroupRepository(db)
         if not p.group_id:
             raise BusinessException("参数错误", 400)
-        member = _check_owner_or_admin(db, p.group_id, operator_id, operator_type)
+        member = _check_owner_or_admin(repository, p.group_id, operator_id, operator_type)
 
         updates = {}
         if p.name is not None:
@@ -172,8 +150,8 @@ def update_group(operator_id: str, operator_type: str, p: UpdateParam) -> None:
         if p.notice is not None and member.role == RoleOwner:
             updates["notice"] = p.notice
         if updates:
-            db.query(Group).filter(Group.id == p.group_id).update(updates)
-            db.commit()
+            repository.update_group(p.group_id, updates)
+            repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -188,22 +166,16 @@ def update_group(operator_id: str, operator_type: str, p: UpdateParam) -> None:
 def dissolve(operator_id: str, group_id: str) -> None:
     db = SessionLocal()
     try:
+        repository = GroupRepository(db)
         if not group_id or not operator_id:
             raise BusinessException("参数错误", 400)
-        group = db.query(Group).filter(Group.id == group_id).first()
+        group = repository.find_group(group_id)
         if not group:
             raise BusinessException("群不存在", 400)
         if group.owner_id != operator_id:
             raise BusinessException("仅群主可解散群", 403)
-
-        now = datetime.now()
-        group.status = GroupDissolved
-        group.updated_at = now
-        db.query(GroupMember).filter(
-            GroupMember.group_id == group_id,
-            GroupMember.status == MemberActive,
-        ).update({"status": MemberLeft})
-        db.commit()
+        repository.dissolve_group(group_id, datetime.now(), MemberLeft, GroupDissolved)
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -220,18 +192,15 @@ def detail(group_id: str) -> Optional[GroupVO]:
         return None
     db = SessionLocal()
     try:
-        group = db.query(Group).filter(Group.id == group_id).first()
+        repository = GroupRepository(db)
+        group = repository.find_group(group_id)
         if not group:
             return None
-        count = db.query(GroupMember).filter(
-            GroupMember.group_id == group_id,
-            GroupMember.status == MemberActive,
-        ).count()
         return GroupVO(
             id=group.id, name=group.name, avatar=group.avatar or "",
             owner_id=group.owner_id, owner_type=group.owner_type,
             group_type=group.group_type, notice=group.notice or "",
-            member_count=count,
+            member_count=repository.count_active_members(group_id),
         )
     finally:
         db.close()
@@ -246,38 +215,19 @@ def my_groups(user_id: str, user_type: str) -> list[GroupVO]:
         return []
     db = SessionLocal()
     try:
-        members = db.query(GroupMember).filter(
-            GroupMember.user_id == user_id,
-            GroupMember.user_type == user_type,
-            GroupMember.status == MemberActive,
-        ).all()
-        if not members:
-            return []
-
-        group_ids = [m.group_id for m in members]
-        groups = db.query(Group).filter(
-            Group.id.in_(group_ids),
-            Group.status == GroupNormal,
-        ).all()
-
-        # Batch count active members per group -- avoid N+1
-        counts = db.query(
-            GroupMember.group_id, func.count(GroupMember.id)
-        ).filter(
-            GroupMember.group_id.in_(group_ids),
-            GroupMember.status == MemberActive,
-        ).group_by(GroupMember.group_id).all()
-        count_map = {c[0]: c[1] for c in counts}
-
-        result = []
-        for g in groups:
-            result.append(GroupVO(
+        repository = GroupRepository(db)
+        group_ids = repository.list_member_group_ids(user_id, user_type)
+        groups = repository.list_groups_by_ids(group_ids)
+        count_map = repository.active_member_counts(group_ids)
+        return [
+            GroupVO(
                 id=g.id, name=g.name, avatar=g.avatar or "",
                 owner_id=g.owner_id, owner_type=g.owner_type,
                 group_type=g.group_type, notice=g.notice or "",
                 member_count=count_map.get(g.id, 0),
-            ))
-        return result
+            )
+            for g in groups
+        ]
     finally:
         db.close()
 
@@ -290,37 +240,28 @@ def invite(operator_id: str, operator_type: str, p: InviteParam) -> None:
         return
     db = SessionLocal()
     try:
-        _check_owner_or_admin(db, p.group_id, operator_id, operator_type)
-        group = db.query(Group).filter(Group.id == p.group_id).first()
+        repository = GroupRepository(db)
+        _check_owner_or_admin(repository, p.group_id, operator_id, operator_type)
+        group = repository.find_group(p.group_id)
         if not group:
             raise BusinessException("群不存在", 400)
         _validate_member_type(group.group_type, p.user_type)
-
-        existing = db.query(GroupMember).filter(
-            GroupMember.group_id == p.group_id,
-            GroupMember.user_id.in_(p.user_ids),
-            GroupMember.user_type == p.user_type,
-            GroupMember.status == MemberActive,
-        ).count()
+        existing = repository.count_existing_active_members(p.group_id, p.user_ids, p.user_type)
         if existing > 0:
             raise BusinessException("部分成员已在群中", 400)
-
-        current_count = db.query(GroupMember).filter(
-            GroupMember.group_id == p.group_id,
-            GroupMember.status == MemberActive,
-        ).count()
+        current_count = repository.count_active_members(p.group_id)
         if current_count + len(p.user_ids) > group.max_members:
             raise BusinessException(f"群成员数量不能超过{group.max_members}人", 400)
-
         now = datetime.now()
-        for uid in p.user_ids:
-            db.add(GroupMember(
+        repository.add_members([
+            GroupMember(
                 id=generate_id(), group_id=p.group_id,
                 user_id=uid, user_type=p.user_type,
                 role=RoleMember, joined_at=now, status=MemberActive,
-            ))
-
-        db.commit()
+            )
+            for uid in p.user_ids
+        ])
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -335,33 +276,29 @@ def invite(operator_id: str, operator_type: str, p: InviteParam) -> None:
 def join_group(user_id: str, user_type: str, group_id: str) -> None:
     db = SessionLocal()
     try:
-        group = db.query(Group).filter(Group.id == group_id).first()
+        repository = GroupRepository(db)
+        group = repository.find_group(group_id)
         if not group:
             raise BusinessException("群不存在", 400)
 
         if group.is_public:
             now = datetime.now()
-            db.add(GroupMember(
+            repository.add_member(GroupMember(
                 id=generate_id(), group_id=group_id,
                 user_id=user_id, user_type=user_type,
                 role=RoleMember, joined_at=now, status=MemberActive,
             ))
-            db.commit()
+            repository.commit()
         else:
-            existing_req = db.query(GroupJoinRequest).filter(
-                GroupJoinRequest.group_id == group_id,
-                GroupJoinRequest.user_id == user_id,
-                GroupJoinRequest.user_type == user_type,
-                GroupJoinRequest.status == "pending",
-            ).count()
+            existing_req = repository.count_pending_join_request(group_id, user_id, user_type)
             if existing_req > 0:
                 raise BusinessException("已发送过加群请求", 400)
-            db.add(GroupJoinRequest(
+            repository.create_join_request(GroupJoinRequest(
                 id=generate_id(), group_id=group_id,
                 user_id=user_id, user_type=user_type,
                 status="pending", created_at=datetime.now(),
             ))
-            db.commit()
+            repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -372,12 +309,9 @@ def join_group(user_id: str, user_type: str, group_id: str) -> None:
 def pending_join_requests(group_id: str) -> list:
     db = SessionLocal()
     try:
-        reqs = db.query(GroupJoinRequest).filter(
-            GroupJoinRequest.group_id == group_id,
-            GroupJoinRequest.status == "pending",
-        ).all()
+        reqs = GroupRepository(db).list_pending_join_requests(group_id)
         return [{"id": r.id, "group_id": r.group_id, "user_id": r.user_id,
-                  "user_type": r.user_type, "remark": r.remark or "",
+                  "user_type": r.user_type, "remark": getattr(r, "remark", "") or "",
                   "created_at": _fmt_dt(r.created_at)} for r in reqs]
     finally:
         db.close()
@@ -386,22 +320,22 @@ def pending_join_requests(group_id: str) -> list:
 def handle_join_request(operator_id: str, operator_type: str, p: HandleJoinRequestParam) -> None:
     db = SessionLocal()
     try:
-        _check_owner_or_admin(db, "", operator_id, operator_type)
-        req = db.query(GroupJoinRequest).filter(GroupJoinRequest.id == p.request_id).first()
+        repository = GroupRepository(db)
+        req = repository.find_join_request(p.request_id)
         if not req or req.status != "pending":
             raise BusinessException("请求不存在或已处理", 400)
+        _check_owner_or_admin(repository, req.group_id, operator_id, operator_type)
 
         req.status = p.action
         req.updated_at = datetime.now()
 
         if p.action == "approved":
-            now = datetime.now()
-            db.add(GroupMember(
+            repository.add_member(GroupMember(
                 id=generate_id(), group_id=req.group_id,
                 user_id=req.user_id, user_type=req.user_type,
-                role=RoleMember, joined_at=now, status=MemberActive,
+                role=RoleMember, joined_at=datetime.now(), status=MemberActive,
             ))
-        db.commit()
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -416,12 +350,9 @@ def handle_join_request(operator_id: str, operator_type: str, p: HandleJoinReque
 def leave_group(user_id: str, user_type: str, group_id: str) -> None:
     db = SessionLocal()
     try:
-        db.query(GroupMember).filter(
-            GroupMember.group_id == group_id,
-            GroupMember.user_id == user_id,
-            GroupMember.user_type == user_type,
-        ).update({"status": MemberLeft})
-        db.commit()
+        repository = GroupRepository(db)
+        repository.update_member_status(group_id, user_id, user_type, MemberLeft)
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -436,13 +367,10 @@ def leave_group(user_id: str, user_type: str, group_id: str) -> None:
 def kick(operator_id: str, operator_type: str, p: KickParam) -> None:
     db = SessionLocal()
     try:
-        _check_owner_or_admin(db, p.group_id, operator_id, operator_type)
-        db.query(GroupMember).filter(
-            GroupMember.group_id == p.group_id,
-            GroupMember.user_id == p.user_id,
-            GroupMember.user_type == p.user_type,
-        ).update({"status": MemberKicked})
-        db.commit()
+        repository = GroupRepository(db)
+        _check_owner_or_admin(repository, p.group_id, operator_id, operator_type)
+        repository.update_member_status(p.group_id, p.user_id, p.user_type, MemberKicked)
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -457,33 +385,18 @@ def kick(operator_id: str, operator_type: str, p: KickParam) -> None:
 def set_role(operator_id: str, p: SetRoleParam) -> None:
     db = SessionLocal()
     try:
-        # Verify operator is owner
-        group = db.query(Group).filter(Group.id == p.group_id).first()
+        repository = GroupRepository(db)
+        group = repository.find_group(p.group_id)
         if not group or group.owner_id != operator_id:
             raise BusinessException("仅群主可设置角色", 403)
-
         now = datetime.now()
         if p.role == RoleOwner:
-            # Transfer owner: demote old owner to admin, promote new
-            db.query(GroupMember).filter(
-                GroupMember.group_id == p.group_id,
-                GroupMember.user_id == operator_id,
-            ).update({"role": RoleAdmin})
-            db.query(GroupMember).filter(
-                GroupMember.group_id == p.group_id,
-                GroupMember.user_id == p.user_id,
-                GroupMember.user_type == p.user_type,
-            ).update({"role": RoleOwner})
-            db.query(Group).filter(Group.id == p.group_id).update(
-                {"owner_id": p.user_id, "owner_type": p.user_type, "updated_at": now}
-            )
+            repository.update_member_role(p.group_id, operator_id, group.owner_type, RoleAdmin)
+            repository.update_member_role(p.group_id, p.user_id, p.user_type, RoleOwner)
+            repository.update_group(p.group_id, {"owner_id": p.user_id, "owner_type": p.user_type, "updated_at": now})
         else:
-            db.query(GroupMember).filter(
-                GroupMember.group_id == p.group_id,
-                GroupMember.user_id == p.user_id,
-                GroupMember.user_type == p.user_type,
-            ).update({"role": p.role})
-        db.commit()
+            repository.update_member_role(p.group_id, p.user_id, p.user_type, p.role)
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -498,33 +411,18 @@ def set_role(operator_id: str, p: SetRoleParam) -> None:
 def transfer_owner(operator_id: str, p: TransferOwnerParam) -> None:
     db = SessionLocal()
     try:
-        group = db.query(Group).filter(Group.id == p.group_id).first()
+        repository = GroupRepository(db)
+        group = repository.find_group(p.group_id)
         if not group or group.owner_id != operator_id:
             raise BusinessException("仅群主可转让群", 403)
-
-        new_owner = db.query(GroupMember).filter(
-            GroupMember.group_id == p.group_id,
-            GroupMember.user_id == p.new_owner_id,
-            GroupMember.user_type == p.new_owner_type,
-            GroupMember.status == MemberActive,
-        ).first()
+        new_owner = repository.find_active_member(p.group_id, p.new_owner_id, p.new_owner_type)
         if not new_owner:
             raise BusinessException("新群主不在群中", 400)
-
         now = datetime.now()
-        db.query(Group).filter(Group.id == p.group_id).update(
-            {"owner_id": p.new_owner_id, "owner_type": p.new_owner_type, "updated_at": now}
-        )
-        db.query(GroupMember).filter(
-            GroupMember.group_id == p.group_id,
-            GroupMember.user_id == operator_id,
-        ).update({"role": RoleAdmin})
-        db.query(GroupMember).filter(
-            GroupMember.group_id == p.group_id,
-            GroupMember.user_id == p.new_owner_id,
-            GroupMember.user_type == p.new_owner_type,
-        ).update({"role": RoleOwner})
-        db.commit()
+        repository.update_group(p.group_id, {"owner_id": p.new_owner_id, "owner_type": p.new_owner_type, "updated_at": now})
+        repository.update_member_role(p.group_id, operator_id, group.owner_type, RoleAdmin)
+        repository.update_member_role(p.group_id, p.new_owner_id, p.new_owner_type, RoleOwner)
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -539,13 +437,10 @@ def transfer_owner(operator_id: str, p: TransferOwnerParam) -> None:
 def set_member_nickname(operator_id: str, operator_type: str, p: SetNicknameParam) -> None:
     db = SessionLocal()
     try:
-        _check_owner_or_admin(db, p.group_id, operator_id, operator_type)
-        db.query(GroupMember).filter(
-            GroupMember.group_id == p.group_id,
-            GroupMember.user_id == p.user_id,
-            GroupMember.user_type == p.user_type,
-        ).update({"nickname": p.nickname})
-        db.commit()
+        repository = GroupRepository(db)
+        _check_owner_or_admin(repository, p.group_id, operator_id, operator_type)
+        repository.update_member_nickname(p.group_id, p.user_id, p.user_type, p.nickname)
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -562,37 +457,28 @@ def members(group_id: str) -> list[MemberVO]:
         return []
     db = SessionLocal()
     try:
-        records = db.query(GroupMember).filter(
-            GroupMember.group_id == group_id,
-            GroupMember.status == MemberActive,
-        ).all()
-
-        # Batch resolve user names -- avoid N+1
+        repository = GroupRepository(db)
+        user_repository = IMUserRepository(db)
+        records = repository.list_members(group_id)
         business_ids = [m.user_id for m in records if m.user_type == UserTypeBusiness]
         consumer_ids = [m.user_id for m in records if m.user_type == UserTypeConsumer]
         name_map: dict[str, str] = {}
-
         if business_ids:
-            from plugins.plugin_sys.user.models import SysUser
-            users = db.query(SysUser).filter(SysUser.id.in_(business_ids)).all()
+            users = user_repository.list_sys_users(business_ids)
             for u in users:
                 name_map[f"BUSINESS:{u.id}"] = u.nickname or u.username or u.id
-
         if consumer_ids:
-            from plugins.plugin_client.user.models import ClientUser
-            users = db.query(ClientUser).filter(ClientUser.id.in_(consumer_ids)).all()
+            users = user_repository.list_client_users(consumer_ids)
             for u in users:
                 name_map[f"CONSUMER:{u.id}"] = u.nickname or u.username or u.id
-
-        result = []
-        for m in records:
-            nick = m.nickname or name_map.get(f"{m.user_type}:{m.user_id}", m.user_id)
-            result.append(MemberVO(
+        return [
+            MemberVO(
                 user_id=m.user_id, user_type=m.user_type,
-                role=m.role, nickname=nick,
+                role=m.role, nickname=m.nickname or name_map.get(f"{m.user_type}:{m.user_id}", m.user_id),
                 joined_at=_fmt_dt(m.joined_at), is_muted=m.muted_until is not None and m.muted_until > datetime.now(),
-            ))
-        return result
+            )
+            for m in records
+        ]
     finally:
         db.close()
 
@@ -607,19 +493,18 @@ def messages(group_id: str, cursor: str = "", size: int = 20) -> tuple[list[Mess
         size = 100
     db = SessionLocal()
     try:
-        q = db.query(GroupMessage).filter(GroupMessage.group_id == group_id)
+        repository = GroupRepository(db)
+        cursor_dt = None
         if cursor:
             try:
-                t = datetime.strptime(cursor, "%Y-%m-%d %H:%M:%S")
-                q = q.filter(GroupMessage.created_at < t)
+                cursor_dt = datetime.strptime(cursor, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 pass
-        records = q.order_by(GroupMessage.created_at.desc()).limit(size + 1).all()
+        records = repository.page_group_messages(group_id, "", cursor_dt, size)
         has_more = len(records) > size
         if has_more:
             records = records[:size]
-        vos = [_msg_to_vo(m) for m in records]
-        return vos, has_more
+        return [GroupMessageToMessageVO(m) for m in records], has_more
     finally:
         db.close()
 
@@ -631,32 +516,20 @@ def search_messages(group_id: str, keyword: str, cursor: str = "", size: int = 2
         size = 100
     db = SessionLocal()
     try:
-        q = db.query(GroupMessage).filter(
-            GroupMessage.group_id == group_id,
-            GroupMessage.content.like(f"%{keyword}%"),
-        )
+        repository = GroupRepository(db)
+        cursor_dt = None
         if cursor:
             try:
-                t = datetime.strptime(cursor, "%Y-%m-%d %H:%M:%S")
-                q = q.filter(GroupMessage.created_at < t)
+                cursor_dt = datetime.strptime(cursor, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 pass
-        records = q.order_by(GroupMessage.created_at.desc()).limit(size + 1).all()
+        records = repository.page_group_messages(group_id, keyword, cursor_dt, size)
         has_more = len(records) > size
         if has_more:
             records = records[:size]
-        return [_msg_to_vo(m) for m in records], has_more
+        return [GroupMessageToMessageVO(m) for m in records], has_more
     finally:
         db.close()
-
-
-def _msg_to_vo(m: GroupMessage) -> MessageVO:
-    return MessageVO(
-        id=m.id, sender_id=m.sender_id, sender_type=m.sender_type,
-        content=m.content or "", extra=m.extra or "",
-        msg_type=m.msg_type, reply_to=m.reply_to or "",
-        created_at=_fmt_dt(m.created_at),
-    )
 
 
 # ═════════════════════════════════════════════════════════════════════
@@ -666,9 +539,9 @@ def _msg_to_vo(m: GroupMessage) -> MessageVO:
 def send_message(sender_id: str, sender_type: str, p: SendMessageParam) -> MessageVO:
     db = SessionLocal()
     try:
+        repository = GroupRepository(db)
         msg_type = p.msg_type or "TEXT"
         now = datetime.now()
-
         msg = GroupMessage(
             id=generate_id(),
             group_id=p.group_id,
@@ -680,24 +553,15 @@ def send_message(sender_id: str, sender_type: str, p: SendMessageParam) -> Messa
             reply_to=p.reply_to or None,
             created_at=now,
         )
-        db.add(msg)
-        db.commit()
-
-        vo = _msg_to_vo(msg)
-
-        # WS push to all group members
-        import asyncio
+        repository.add(msg)
+        repository.commit()
+        vo = GroupMessageToMessageVO(msg)
         payload = {"message_id": msg.id, "group_id": p.group_id,
                     "sender_id": sender_id, "sender_type": sender_type,
                     "content": p.content, "msg_type": msg_type,
                     "extra": p.extra, "created_at": _fmt_dt(now)}
         ws_msg = WSMessage(type="group_message", payload=payload)
-
-        members_list = db.query(GroupMember).filter(
-            GroupMember.group_id == p.group_id,
-            GroupMember.status == MemberActive,
-            or_(GroupMember.user_id != sender_id, GroupMember.user_type != sender_type),
-        ).all()
+        members_list = repository.list_other_active_members(p.group_id, sender_id, sender_type)
         for m in members_list:
             if m.user_type == UserTypeConsumer:
                 if im_ws.GlobalCrossHub: asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_consumer(m.user_id, ws_msg))
@@ -719,20 +583,17 @@ def send_message(sender_id: str, sender_type: str, p: SendMessageParam) -> Messa
 def recall_message(group_id: str, message_id: str, user_id: str, user_type: str) -> None:
     db = SessionLocal()
     try:
-        msg = db.query(GroupMessage).filter(
-            GroupMessage.id == message_id,
-            GroupMessage.group_id == group_id,
-        ).first()
+        repository = GroupRepository(db)
+        msg = repository.find_group_message(group_id, message_id)
         if not msg:
             raise BusinessException("消息不存在", 400)
         if msg.sender_id != user_id or msg.sender_type != user_type:
             raise BusinessException("只能撤回自己的消息", 403)
         if msg.created_at and (datetime.now() - msg.created_at) > timedelta(minutes=5):
             raise BusinessException("超过5分钟，无法撤回", 400)
-
         msg.content = "消息已被撤回"
         msg.msg_type = MsgTypeSystem
-        db.commit()
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -747,20 +608,17 @@ def recall_message(group_id: str, message_id: str, user_id: str, user_type: str)
 def mark_read(group_id: str, user_id: str, user_type: str, message_id: str = "") -> None:
     db = SessionLocal()
     try:
+        repository = GroupRepository(db)
         now = datetime.now()
-        existing = db.query(GroupMessageRead).filter(
-            GroupMessageRead.group_id == group_id,
-            GroupMessageRead.user_id == user_id,
-            GroupMessageRead.user_type == user_type,
-        ).first()
+        existing = repository.find_group_read(group_id, user_id, user_type)
         if existing:
             existing.read_at = now
         else:
-            db.add(GroupMessageRead(
+            repository.add(GroupMessageRead(
                 id=generate_id(), group_id=group_id,
                 user_id=user_id, user_type=user_type, read_at=now,
             ))
-        db.commit()
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -779,14 +637,10 @@ def mark_conversation_read(group_id: str, user_id: str, user_type: str) -> None:
 def mute_member(operator_id: str, operator_type: str, p: KickParam, duration: timedelta = timedelta(minutes=60)) -> None:
     db = SessionLocal()
     try:
-        _check_owner_or_admin(db, p.group_id, operator_id, operator_type)
-        now = datetime.now()
-        db.query(GroupMember).filter(
-            GroupMember.group_id == p.group_id,
-            GroupMember.user_id == p.user_id,
-            GroupMember.user_type == p.user_type,
-        ).update({"muted_until": now + duration})
-        db.commit()
+        repository = GroupRepository(db)
+        _check_owner_or_admin(repository, p.group_id, operator_id, operator_type)
+        repository.update_member_muted_until(p.group_id, p.user_id, p.user_type, datetime.now() + duration)
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -797,13 +651,10 @@ def mute_member(operator_id: str, operator_type: str, p: KickParam, duration: ti
 def unmute_member(operator_id: str, operator_type: str, p: KickParam) -> None:
     db = SessionLocal()
     try:
-        _check_owner_or_admin(db, p.group_id, operator_id, operator_type)
-        db.query(GroupMember).filter(
-            GroupMember.group_id == p.group_id,
-            GroupMember.user_id == p.user_id,
-            GroupMember.user_type == p.user_type,
-        ).update({"muted_until": None})
-        db.commit()
+        repository = GroupRepository(db)
+        _check_owner_or_admin(repository, p.group_id, operator_id, operator_type)
+        repository.update_member_muted_until(p.group_id, p.user_id, p.user_type, None)
+        repository.commit()
     except Exception:
         db.rollback()
         raise
@@ -822,21 +673,10 @@ def search_groups(keyword: str, limit: int = 20) -> list[dict]:
         limit = 50
     db = SessionLocal()
     try:
-        groups = db.query(Group).filter(
-            Group.name.like(f"%{keyword}%"),
-            Group.status == GroupNormal,
-        ).limit(limit).all()
-
-        # Batch count members -- avoid N+1
+        repository = GroupRepository(db)
+        groups = repository.search_groups(keyword, limit)
         group_ids = [g.id for g in groups]
-        counts = db.query(
-            GroupMember.group_id, func.count(GroupMember.id)
-        ).filter(
-            GroupMember.group_id.in_(group_ids),
-            GroupMember.status == MemberActive,
-        ).group_by(GroupMember.group_id).all()
-        count_map = {c[0]: c[1] for c in counts}
-
+        count_map = repository.active_member_counts(group_ids)
         return [{"id": g.id, "name": g.name, "avatar": g.avatar or "",
                   "member_count": count_map.get(g.id, 0)} for g in groups]
     finally:
@@ -851,71 +691,12 @@ def my_group_conversations(user_id: str, user_type: str) -> list[ConversationVO]
         return []
     db = SessionLocal()
     try:
-        members = db.query(GroupMember.group_id).filter(
-            GroupMember.user_id == user_id,
-            GroupMember.user_type == user_type,
-            GroupMember.status == MemberActive,
-        ).all()
-        if not members:
-            return []
-        group_ids = [m.group_id for m in members]
-
-        groups = db.query(Group).filter(
-            Group.id.in_(group_ids),
-            Group.status == GroupNormal,
-        ).all()
-
-        # Member counts
-        counts = db.query(
-            GroupMember.group_id, func.count(GroupMember.id)
-        ).filter(
-            GroupMember.group_id.in_(group_ids),
-            GroupMember.status == MemberActive,
-        ).group_by(GroupMember.group_id).all()
-        count_map = {c[0]: c[1] for c in counts}
-
-        # Last message per group
-        last_sub = db.query(
-            GroupMessage.group_id,
-            func.max(GroupMessage.created_at).label("max_ct")
-        ).filter(
-            GroupMessage.group_id.in_(group_ids)
-        ).group_by(GroupMessage.group_id).subquery()
-
-        last_msgs = db.query(
-            GroupMessage.group_id, GroupMessage.content, GroupMessage.created_at
-        ).join(
-            last_sub,
-            and_(
-                last_sub.c.group_id == GroupMessage.group_id,
-                last_sub.c.max_ct == GroupMessage.created_at,
-            )
-        ).all()
-        last_map = {m.group_id: m for m in last_msgs}
-
-        # Unread counts
-        read_sub = db.query(
-            GroupMessageRead.group_id,
-            func.max(GroupMessageRead.read_at).label("max_read")
-        ).filter(
-            GroupMessageRead.user_id == user_id,
-            GroupMessageRead.user_type == user_type,
-        ).group_by(GroupMessageRead.group_id).subquery()
-
-        unreads = db.query(
-            GroupMessage.group_id,
-            func.count(GroupMessage.id).label("count")
-        ).outerjoin(
-            read_sub, read_sub.c.group_id == GroupMessage.group_id
-        ).filter(
-            GroupMessage.group_id.in_(group_ids),
-            or_(
-                read_sub.c.max_read.is_(None),
-                GroupMessage.created_at > read_sub.c.max_read,
-            )
-        ).group_by(GroupMessage.group_id).all()
-        unread_map = {u.group_id: u.count for u in unreads}
-
+        repository = GroupRepository(db)
+        group_ids = repository.list_member_group_ids(user_id, user_type)
+        groups = repository.list_groups_by_ids(group_ids)
+        count_map = repository.active_member_counts(group_ids)
+        last_map = repository.list_group_last_messages(group_ids)
+        unread_map = repository.unread_group_counts(group_ids, user_id, user_type)
         result = []
         for g in groups:
             vo = ConversationVO(

@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import update as sa_update, select, func
 from fastapi import Request
 from . import SysGroup
-from .params import GroupVO, GroupPageParam, GroupTreeParam
-from .dao import GroupDao
+from .params import GroupVO, GroupPageParam, GroupTreeParam, SysGroupToGroupVO, SysGroupToGroupTreeVO
+from .repository import GroupRepository
 from ..org.params import OrgVO
-from ..org.dao import OrgDao
+from ..org.repository import OrgRepository
 from ..org.models import SysOrg
 from ..user.models import SysUser
 from ..position.models import SysPosition
@@ -18,51 +18,8 @@ from core.exception import BusinessException
 from core.utils import generate_id
 from core.auth import HeiAuthTool
 from core.utils.resolve_utils import resolve_name_path
-
-
-def _to_vo(entity: SysGroup) -> dict:
-    vo = {
-        "id": entity.id,
-        "code": entity.code,
-        "name": entity.name,
-        "category": entity.category,
-        "org_id": entity.org_id,
-        "status": entity.status,
-        "sort_code": entity.sort_code,
-    }
-    if entity.parent_id is not None:
-        vo["parent_id"] = entity.parent_id
-    if entity.description is not None:
-        vo["description"] = entity.description
-    if entity.extra is not None:
-        vo["extra"] = entity.extra
-    if entity.created_at is not None:
-        vo["created_at"] = entity.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.created_by is not None:
-        vo["created_by"] = entity.created_by
-    if entity.updated_at is not None:
-        vo["updated_at"] = entity.updated_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.updated_by is not None:
-        vo["updated_by"] = entity.updated_by
-    return vo
-
-
 def _tree_node(entity: SysGroup) -> dict:
-    node = {
-        "id": entity.id,
-        "code": entity.code,
-        "name": entity.name,
-        "category": entity.category,
-        "org_id": entity.org_id,
-        "status": entity.status,
-        "sort_code": entity.sort_code,
-        "children": [],
-    }
-    if entity.parent_id is not None:
-        node["parent_id"] = entity.parent_id
-    if entity.description is not None:
-        node["description"] = entity.description
-    return node
+    return SysGroupToGroupTreeVO(entity).model_dump()
 
 
 def _build_tree(node: dict, parent: SysGroup, children_map: dict) -> None:
@@ -128,9 +85,9 @@ def _collect_descendant_ids(db: Session, ids: List[str]) -> List[str]:
 # ── Service functions ──
 
 def page(db: Session, param: GroupPageParam) -> dict:
-    dao = GroupDao(db)
-    result = dao.find_page_by_filters(param)
-    records = [_to_vo(r) for r in result.get("records", [])]
+    repository = GroupRepository(db)
+    result = repository.find_page_by_filters(param)
+    records = [SysGroupToGroupVO(r) for r in result.get("records", [])]
     _batch_enrich(db, records)
     return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
 
@@ -138,10 +95,10 @@ def page(db: Session, param: GroupPageParam) -> dict:
 def detail(db: Session, id: str) -> Optional[dict]:
     if not id:
         return None
-    entity = GroupDao(db).find_by_id(id)
+    entity = GroupRepository(db).find_by_id(id)
     if not entity:
         return None
-    vo = _to_vo(entity)
+    vo = SysGroupToGroupVO(entity)
     _enrich_vo(db, vo)
     return vo
 
@@ -186,12 +143,12 @@ def create(db: Session, vo: GroupVO, user_id: Optional[str] = None) -> None:
     if user_id:
         entity.created_by = user_id
         entity.updated_by = user_id
-    GroupDao(db).insert(entity)
+    GroupRepository(db).insert(entity)
 
 
 def modify(db: Session, vo: GroupVO, user_id: Optional[str] = None) -> None:
-    dao = GroupDao(db)
-    entity = dao.find_by_id(vo.id)
+    repository = GroupRepository(db)
+    entity = repository.find_by_id(vo.id)
     if not entity:
         raise BusinessException("数据不存在")
     if vo.parent_id is not None and vo.parent_id != entity.parent_id:
@@ -217,8 +174,8 @@ def modify(db: Session, vo: GroupVO, user_id: Optional[str] = None) -> None:
         up["extra"] = None
     if user_id:
         up["updated_by"] = user_id
-    dao.db.execute(sa_update(SysGroup).where(SysGroup.id == vo.id).values(**up))
-    dao.db.commit()
+    repository.db.execute(sa_update(SysGroup).where(SysGroup.id == vo.id).values(**up))
+    repository.db.commit()
 
 
 def remove(db: Session, ids: list) -> None:
@@ -226,12 +183,12 @@ def remove(db: Session, ids: list) -> None:
         return
     all_ids = _collect_descendant_ids(db, ids)
     db.execute(sa_update(SysUser).where(SysUser.group_id.in_(all_ids)).values(group_id=None))
-    GroupDao(db).delete_by_ids(all_ids)
+    GroupRepository(db).delete_by_ids(all_ids)
 
 
 def options(db: Session) -> list:
     rows = db.execute(select(SysGroup).order_by(SysGroup.sort_code.asc())).scalars().all()
-    return [_to_vo(r) for r in rows]
+    return [SysGroupToGroupVO(r) for r in rows]
 
 
 def union_tree(db: Session) -> list:
@@ -247,7 +204,7 @@ def union_tree(db: Session) -> list:
 
     group_nodes = {}
     for g in group_rows:
-        node = _to_vo(g)
+        node = SysGroupToGroupVO(g)
         node["_type"] = "group"
         node["children"] = []
         group_nodes[g.id] = node
@@ -283,7 +240,7 @@ def union_tree(db: Session) -> list:
 class GroupService:
     def __init__(self, db: Session):
         self.db = db
-        self.dao = GroupDao(db)
+        self.repository = GroupRepository(db)
 
     async def _get_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:

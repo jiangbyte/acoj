@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import update as sa_update, select, delete as sa_delete
 from fastapi import Request
 from . import SysPosition
-from .params import PositionVO, PositionPageParam
-from .dao import PositionDao
+from .params import PositionVO, PositionPageParam, SysPositionToPositionVO
+from .repository import PositionRepository
 from core.utils import generate_id
 from core.exception import BusinessException
 from core.result import page_data, PageDataField
@@ -17,38 +17,10 @@ from ..user.models import SysUser
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-def to_vo(entity: SysPosition) -> dict:
-    vo = {
-        "id": entity.id,
-        "code": entity.code,
-        "name": entity.name,
-        "category": entity.category,
-        "org_id": entity.org_id,
-        "group_id": entity.group_id,
-        "status": entity.status,
-        "sort_code": entity.sort_code,
-    }
-    if entity.description is not None:
-        vo["description"] = entity.description
-    if entity.extra is not None:
-        vo["extra"] = entity.extra
-    if entity.created_at is not None:
-        vo["created_at"] = entity.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.created_by is not None:
-        vo["created_by"] = entity.created_by
-    if entity.updated_at is not None:
-        vo["updated_at"] = entity.updated_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.updated_by is not None:
-        vo["updated_by"] = entity.updated_by
-    return vo
-
-
 def page(db: Session, param: PositionPageParam) -> dict:
-    dao = PositionDao(db)
-    result = dao.find_page_by_filters(param)
-    records = [to_vo(r) for r in result.get("records", [])]
+    repository = PositionRepository(db)
+    result = repository.find_page_by_filters(param)
+    records = [SysPositionToPositionVO(r) for r in result.get("records", [])]
     _batch_enrich(db, records)
     return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
 
@@ -56,10 +28,10 @@ def page(db: Session, param: PositionPageParam) -> dict:
 def detail(db: Session, id: str) -> Optional[dict]:
     if not id:
         return None
-    entity = PositionDao(db).find_by_id(id)
+    entity = PositionRepository(db).find_by_id(id)
     if not entity:
         return None
-    vo = to_vo(entity)
+    vo = SysPositionToPositionVO(entity)
     _enrich_vo(db, vo)
     return vo
 
@@ -95,12 +67,12 @@ def create(db: Session, vo: PositionVO, user_id: Optional[str] = None) -> None:
     if user_id:
         entity.created_by = user_id
         entity.updated_by = user_id
-    PositionDao(db).insert(entity)
+    PositionRepository(db).insert(entity)
 
 
 def modify(db: Session, vo: PositionVO, user_id: Optional[str] = None) -> None:
-    dao = PositionDao(db)
-    entity = dao.find_by_id(vo.id)
+    repository = PositionRepository(db)
+    entity = repository.find_by_id(vo.id)
     if not entity:
         raise BusinessException("数据不存在")
     now = datetime.now()
@@ -124,21 +96,21 @@ def modify(db: Session, vo: PositionVO, user_id: Optional[str] = None) -> None:
         up["extra"] = None
     if user_id:
         up["updated_by"] = user_id
-    dao.db.execute(sa_update(SysPosition).where(SysPosition.id == vo.id).values(**up))
-    dao.db.commit()
+    repository.db.execute(sa_update(SysPosition).where(SysPosition.id == vo.id).values(**up))
+    repository.db.commit()
 
 
 def remove(db: Session, ids: list) -> None:
     if not ids:
         return
     db.execute(sa_update(SysUser).where(SysUser.position_id.in_(ids)).values(position_id=None))
-    PositionDao(db).delete_by_ids(ids)
+    PositionRepository(db).delete_by_ids(ids)
 
 
 class PositionService:
     def __init__(self, db: Session):
         self.db = db
-        self.dao = PositionDao(db)
+        self.repository = PositionRepository(db)
 
     async def _get_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:
@@ -163,4 +135,4 @@ class PositionService:
 
 def options(db: Session) -> list:
     rows = db.execute(select(SysPosition).order_by(SysPosition.sort_code.asc())).scalars().all()
-    return [to_vo(r) for r in rows]
+    return [SysPositionToPositionVO(r) for r in rows]

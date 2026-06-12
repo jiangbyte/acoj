@@ -6,7 +6,7 @@ from .models import SysConfig
 from .params import ConfigPageParam
 
 
-class ConfigDao:
+class ConfigRepository:
     def __init__(self, db: Session):
         self.db = db
 

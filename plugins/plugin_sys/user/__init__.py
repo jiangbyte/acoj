@@ -5,7 +5,7 @@ from .params import (
     BatchImportParam, BatchImportUser,
     UpdateProfileParam, UpdateAvatarParam, UpdatePasswordParam,
 )
-from .dao import UserDao
+from .repository import UserRepository
 from .service import (
     UserService, LoginUserApiProvider,
     user_find_by_id, user_find_by_username, user_find_by_email,
@@ -18,7 +18,6 @@ from .service import (
     user_reset_password, user_batch_import, user_update_status,
     user_export,
 )
-from . import migrate
 from .api import v1_router as router
 
 from core.plugin.registry import register_router
@@ -29,7 +28,7 @@ __all__ = [
     "GrantUserPermissionParam", "UpdateStatusParam",
     "BatchImportParam", "BatchImportUser",
     "UpdateProfileParam", "UpdateAvatarParam", "UpdatePasswordParam",
-    "UserDao", "UserService", "LoginUserApiProvider",
+    "UserRepository", "UserService", "LoginUserApiProvider",
     "user_find_by_id", "user_find_by_username", "user_find_by_email",
     "user_to_login_info", "user_record_login",
     "user_page", "user_create", "user_modify", "user_remove", "user_detail",

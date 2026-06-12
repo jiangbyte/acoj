@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 from .models import SysRole, RelRolePermission, RelRoleResource
 from .params import PermissionItem, RolePageParam
 from core.utils import generate_id
+from core.constants import SUPER_ADMIN_CODE
 
 
-class RoleDao:
+class RoleRepository:
     def __init__(self, db: Session):
         self.db = db
 
@@ -16,6 +17,20 @@ class RoleDao:
 
     def find_by_id(self, id: str) -> Optional[SysRole]:
         return self.db.execute(select(SysRole).where(SysRole.id == id)).scalar_one_or_none()
+
+    def find_by_ids(self, ids: List[str]) -> List[SysRole]:
+        if not ids:
+            return []
+        return list(self.db.execute(select(SysRole).where(SysRole.id.in_(ids))).scalars().all())
+
+    def exists_super_admin(self, role_ids: List[str]) -> bool:
+        if not role_ids:
+            return False
+        stmt = select(func.count()).select_from(SysRole).where(
+            SysRole.id.in_(role_ids),
+            SysRole.code == SUPER_ADMIN_CODE,
+        )
+        return int(self.db.execute(stmt).scalar() or 0) > 0
 
     def find_page(self, param: RolePageParam) -> Dict[str, Any]:
         current = max(1, param.current)

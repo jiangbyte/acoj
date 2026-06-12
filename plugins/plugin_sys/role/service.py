@@ -15,9 +15,9 @@ from fastapi import Request
 from .models import SysRole
 from .params import (
     RoleVO, RolePageParam, GrantPermissionParam, GrantResourceParam,
-    ButtonPermissionScope, PermissionItem,
+    ButtonPermissionScope, PermissionItem, SysRoleToRoleVO,
 )
-from .dao import RoleDao
+from .repository import RoleRepository
 from core.enums import DataScopeEnum
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
@@ -28,34 +28,6 @@ from ..user.models import RelUserRole
 from .models import RelRolePermission, RelRoleResource
 
 logger = logging.getLogger(__name__)
-
-
-# ── Helpers ──
-
-def _to_vo(entity: SysRole) -> dict:
-    vo = {
-        "id": entity.id,
-        "code": entity.code,
-        "name": entity.name,
-        "category": entity.category,
-        "sort_code": entity.sort_code,
-        "status": entity.status,
-    }
-    if entity.description is not None:
-        vo["description"] = entity.description
-    if entity.extra is not None:
-        vo["extra"] = entity.extra
-    if entity.created_at is not None:
-        vo["created_at"] = entity.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.created_by is not None:
-        vo["created_by"] = entity.created_by
-    if entity.updated_at is not None:
-        vo["updated_at"] = entity.updated_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.updated_by is not None:
-        vo["updated_by"] = entity.updated_by
-    return vo
-
-
 # ── Standalone service functions ──
 
 async def _get_cur_user_id(request: Optional[Request] = None) -> Optional[str]:
@@ -66,19 +38,19 @@ async def _get_cur_user_id(request: Optional[Request] = None) -> Optional[str]:
 
 
 def role_page(db: Session, param: RolePageParam) -> dict:
-    dao = RoleDao(db)
-    result = dao.find_page(param)
-    records = [_to_vo(r) for r in result.get("records", [])]
+    repository = RoleRepository(db)
+    result = repository.find_page(param)
+    records = [SysRoleToRoleVO(r) for r in result.get("records", [])]
     return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
 
 
 def role_detail(db: Session, id: str) -> Optional[dict]:
     if not id:
         return None
-    entity = RoleDao(db).find_by_id(id)
+    entity = RoleRepository(db).find_by_id(id)
     if not entity:
         return None
-    return _to_vo(entity)
+    return SysRoleToRoleVO(entity)
 
 
 def role_create(db: Session, vo: RoleVO, user_id: Optional[str] = None) -> None:
@@ -102,14 +74,14 @@ def role_create(db: Session, vo: RoleVO, user_id: Optional[str] = None) -> None:
     if user_id:
         entity.created_by = user_id
         entity.updated_by = user_id
-    RoleDao(db).insert(entity)
+    RoleRepository(db).insert(entity)
 
 
 def role_modify(db: Session, vo: RoleVO, user_id: Optional[str] = None) -> None:
     if not vo.id:
         raise BusinessException("ID不能为空", 400)
-    dao = RoleDao(db)
-    entity = dao.find_by_id(vo.id)
+    repository = RoleRepository(db)
+    entity = repository.find_by_id(vo.id)
     if not entity:
         raise BusinessException("数据不存在")
     now = datetime.now()
@@ -128,8 +100,8 @@ def role_modify(db: Session, vo: RoleVO, user_id: Optional[str] = None) -> None:
         up["extra"] = vo.extra
     if user_id:
         up["updated_by"] = user_id
-    dao.db.execute(sa_update(SysRole).where(SysRole.id == vo.id).values(**up))
-    dao.db.commit()
+    repository.db.execute(sa_update(SysRole).where(SysRole.id == vo.id).values(**up))
+    repository.db.commit()
 
 
 def role_remove(db: Session, ids: list) -> None:
@@ -150,14 +122,14 @@ def role_remove(db: Session, ids: list) -> None:
 
 
 def role_grant_permissions(db: Session, role_id: str, permissions: list, created_by: Optional[str] = None) -> None:
-    RoleDao(db).grant_permissions(role_id, permissions, created_by)
+    RoleRepository(db).grant_permissions(role_id, permissions, created_by)
 
 
 def role_grant_resources(db: Session, role_id: str, resource_ids: list, permissions: list[ButtonPermissionScope], created_by: Optional[str] = None) -> None:
-    dao = RoleDao(db)
-    dao.grant_resources(role_id, resource_ids, created_by)
+    repository = RoleRepository(db)
+    repository.grant_resources(role_id, resource_ids, created_by)
 
-    resources = dao.find_resources_with_extra_by_ids(resource_ids)
+    resources = repository.find_resources_with_extra_by_ids(resource_ids)
     scope_map = {p.permission_code: p for p in permissions}
     permission_items = []
     for r in resources:
@@ -183,19 +155,19 @@ def role_grant_resources(db: Session, role_id: str, resource_ids: list, permissi
             if item.permission_code not in seen:
                 seen.add(item.permission_code)
                 unique_items.append(item)
-        dao.add_missing_permissions(role_id, unique_items)
+        repository.add_missing_permissions(role_id, unique_items)
 
 
 def role_permission_codes(db: Session, role_id: str) -> List[str]:
-    return RoleDao(db).get_permission_codes_by_role_id(role_id)
+    return RoleRepository(db).get_permission_codes_by_role_id(role_id)
 
 
 def role_permission_details(db: Session, role_id: str) -> list[dict]:
-    return RoleDao(db).get_permission_details_by_role_id(role_id)
+    return RoleRepository(db).get_permission_details_by_role_id(role_id)
 
 
 def role_resource_ids(db: Session, role_id: str) -> List[str]:
-    return RoleDao(db).get_resource_ids_by_role_id(role_id)
+    return RoleRepository(db).get_resource_ids_by_role_id(role_id)
 
 
 # ═════════════════════════════════════════════════════════════════════
@@ -204,7 +176,7 @@ def role_resource_ids(db: Session, role_id: str) -> List[str]:
 
 class RoleService:
     def __init__(self, db: Session):
-        self.dao = RoleDao(db)
+        self.repository = RoleRepository(db)
         self.db = db
 
     def page(self, param: RolePageParam) -> dict:

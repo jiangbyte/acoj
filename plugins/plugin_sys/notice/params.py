@@ -2,6 +2,7 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
+from .models import SysNotice
 
 
 class NoticeVO(DateTimeValidatorMixin, BaseModel):
@@ -38,3 +39,28 @@ class NoticePageParam(BaseModel):
 class NoticeLatestParam(BaseModel):
     """Latest notices param — mirrors hei-gin's NoticeLatestParam."""
     size: int = 5
+
+
+def SysNoticeToNoticeVO(src: Optional[SysNotice]) -> Optional[NoticeVO]:
+    if src is None:
+        return None
+    return NoticeVO(
+        id=src.id,
+        title=src.title,
+        category=src.category,
+        type=src.type,
+        summary=src.summary,
+        content=src.content,
+        cover=src.cover,
+        level=src.level,
+        is_top=src.is_top,
+        status=src.status,
+        sort_code=src.sort_code,
+        author=src.author,
+        publish_at=src.publish_at.strftime("%Y-%m-%d %H:%M:%S") if src.publish_at else None,
+        expire_at=src.expire_at.strftime("%Y-%m-%d %H:%M:%S") if src.expire_at else None,
+        created_at=src.created_at,
+        created_by=src.created_by,
+        updated_at=src.updated_at,
+        updated_by=src.updated_by,
+    )

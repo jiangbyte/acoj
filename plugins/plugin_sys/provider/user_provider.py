@@ -7,7 +7,7 @@ Mirrors hei-gin's ``plugins/plugin-sys/provider/user_provider.go``.
 from __future__ import annotations
 
 from core.db import SessionLocal
-from plugins.plugin_sys.user.models import SysUser
+from plugins.plugin_sys.user.repository import UserRepository
 
 
 class UserProvider:
@@ -17,9 +17,9 @@ class UserProvider:
         """Return the user's nickname, falling back to their ID if not found."""
         db = SessionLocal()
         try:
-            user = db.query(SysUser).filter(SysUser.id == user_id).first()
-            if user and user.nickname:
-                return user.nickname
+            nickname = UserRepository(db).find_nickname_by_id(user_id)
+            if nickname:
+                return nickname
             return user_id
         finally:
             db.close()

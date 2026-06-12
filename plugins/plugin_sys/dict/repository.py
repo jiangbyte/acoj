@@ -6,7 +6,7 @@ from .models import SysDict
 from .params import DictPageParam, DictListParam
 
 
-class DictDao:
+class DictRepository:
     def __init__(self, db: Session):
         self.db = db
 

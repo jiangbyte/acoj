@@ -1,4 +1,4 @@
-"""Log DAO — mirrors hei-gin plugin-sys/log/service.go queries."""
+"""Log Repository — mirrors hei-gin plugin-sys/log/service.go queries."""
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -10,7 +10,7 @@ from .params import LogPageParam
 _PAGE_EXCLUDED = {"param_json", "result_json", "exe_message", "sign_data"}
 
 
-class LogDao:
+class LogRepository:
     def __init__(self, db: Session):
         self.db = db
 
