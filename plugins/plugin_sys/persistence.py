@@ -19,12 +19,14 @@ class DbLogPersister:
     Mirrors hei-gin's logPersister struct.
     """
 
+    def __init__(self, session_factory):
+        self._session_factory = session_factory
+
     def save_log(self, entry: LogEntry) -> None:
         from plugins.plugin_sys.log.service import LogService
         from plugins.plugin_sys.log.models import SysLog as LogModel
-        from sdk.infra.db import SessionLocal
 
-        db = SessionLocal()
+        db = self._session_factory()
         try:
             model = LogModel(
                 id=entry.id,

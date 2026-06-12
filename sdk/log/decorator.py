@@ -6,9 +6,9 @@ from typing import Any, Optional
 
 from fastapi import Request
 
-from sdk.infra.db import SessionLocal
 from sdk.utils import get_client_ip, get_city_info, generate_id
 from sdk.utils.trace_utils import get_trace_id
+from .persistence import LogEntry, get_op_user_resolver, save_log
 from .utils import parse_user_agent, extract_params_json, get_result_json, generate_log_signature
 
 logger = logging.getLogger(__name__)
@@ -32,14 +32,10 @@ async def _get_op_user(request: Request) -> Optional[str]:
         if not user_id:
             return None
 
-        from plugins.plugin_sys.user.service import UserService
-        from sdk.infra.db import SessionLocal
-        db = SessionLocal()
-        try:
-            entity = UserService(db).find_by_id(user_id)
-            return entity.username if entity else None
-        finally:
-            db.close()
+        resolver = get_op_user_resolver()
+        if resolver is None:
+            return None
+        return resolver(user_id)
     except Exception:
         return None
 
@@ -103,17 +99,13 @@ async def _save_log(request: Request, func, name: str, category: str,
               params_json: str, result_json: Optional[str],
               start_time: datetime) -> None:
     """Persist the log entry to database."""
-    from plugins.plugin_sys.log.service import LogService
-    from plugins.plugin_sys.log.models import SysLog as LogModel
-    db = SessionLocal()
     try:
-        now = datetime.now()
         user_agent = request.headers.get("user-agent", "")
         browser, os_name = parse_user_agent(user_agent)
         op_user = await _get_op_user(request)
 
         op_ip = get_client_ip(request)
-        entry = LogModel(
+        entry = LogEntry(
             id=generate_id(),
             category=category,
             name=name,
@@ -146,14 +138,9 @@ async def _save_log(request: Request, func, name: str, category: str,
         })
         entry.sign_data = sign_data
 
-        service = LogService(db)
-        service.repository.insert(entry)
-        db.commit()
+        save_log(entry)
     except Exception as e:
         logger.warning(f"Failed to save operation log: {e}")
-        db.rollback()
-    finally:
-        db.close()
 
 
 async def save_exception_log(request: Request, exc: Exception, name: Optional[str] = None) -> None:
@@ -164,9 +151,6 @@ async def save_exception_log(request: Request, exc: Exception, name: Optional[st
     the @SysLog decorator.  Creates its own DB session so it is
     independent of the request's transaction.
     """
-    from plugins.plugin_sys.log.service import LogService
-    from plugins.plugin_sys.log.models import SysLog as LogModel
-    db = SessionLocal()
     try:
         now = datetime.now()
         user_agent = request.headers.get("user-agent", "")
@@ -175,7 +159,7 @@ async def save_exception_log(request: Request, exc: Exception, name: Optional[st
         op_ip = get_client_ip(request)
         log_name = name or f"{request.method} {request.url.path}"
 
-        entry = LogModel(
+        entry = LogEntry(
             id=generate_id(),
             category="EXCEPTION",
             name=log_name,
@@ -208,14 +192,9 @@ async def save_exception_log(request: Request, exc: Exception, name: Optional[st
         })
         entry.sign_data = sign_data
 
-        service = LogService(db)
-        service.repository.insert(entry)
-        db.commit()
+        save_log(entry)
     except Exception as e:
         logger.warning(f"Failed to save exception log: {e}")
-        db.rollback()
-    finally:
-        db.close()
 
 
 def record_auth_log(request: Request, name: str, category: str,
@@ -228,15 +207,12 @@ def record_auth_log(request: Request, name: str, category: str,
     and accepts the operator name directly — which is essential for login
     events where there is no active auth token yet.
     """
-    from plugins.plugin_sys.log.service import LogService
-    from plugins.plugin_sys.log.models import SysLog as LogModel
-    db = SessionLocal()
     try:
         now = datetime.now()
         user_agent = request.headers.get("user-agent", "")
         browser, os_name = parse_user_agent(user_agent)
         op_ip = get_client_ip(request)
-        entry = LogModel(
+        entry = LogEntry(
             id=generate_id(),
             category=category,
             name=name,
@@ -263,11 +239,6 @@ def record_auth_log(request: Request, name: str, category: str,
             "op_user": op_user, "trace_id": entry.trace_id,
         })
         entry.sign_data = sign_data
-        service = LogService(db)
-        service.repository.insert(entry)
-        db.commit()
+        save_log(entry)
     except Exception as e:
         logger.warning(f"Failed to save auth log: {e}")
-        db.rollback()
-    finally:
-        db.close()

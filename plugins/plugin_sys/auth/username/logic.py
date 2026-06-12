@@ -3,15 +3,13 @@ import bcrypt
 from typing import Optional
 from fastapi import Request
 from sdk.auth import HeiAuthTool
-from sdk.infra.db import SessionLocal
 from sdk.web.exception import BusinessException
 from sdk.enums import UserStatusEnum
-from sdk.utils import decrypt, generate_id
+from sdk.utils import decrypt
 from sdk.utils.user_agent_utils import get_browser
 from sdk.captcha import b_captcha
 from sdk.log import record_auth_log
 from .params import UsernameLoginParam, UsernameLoginResult, UsernameRegisterParam, UsernameRegisterResult, UsernameLogoutResult
-from plugins.plugin_sys.user.models import SysUser
 import logging
 
 logger = logging.getLogger(__name__)
@@ -70,17 +68,10 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
 
         token = await HeiAuthTool.login(user_info.id, request, extra)
 
-        # 记录登录信息
-        db = None
         try:
-            db = SessionLocal()
-            from plugins.plugin_sys.user.service import UserService
-            UserService(db).record_login(user_info.id, request)
+            _login_user_api.record_login(user_info.id, request)
         except Exception as e:
             logger.warning(f"Failed to record login info: {e}")
-        finally:
-            if db:
-                db.close()
 
         # 记录登录日志
         record_auth_log(request, "登录", "LOGIN", op_user=user_info.username)
@@ -102,41 +93,17 @@ async def do_register(param: UsernameRegisterParam, request: Request = None) -> 
     except Exception as e:
         raise BusinessException(str(e))
 
-    db = SessionLocal()
-    try:
-        from sqlalchemy import select
-        existing_user = db.scalar(
-            select(SysUser).where(SysUser.username == param.username)
-        )
-        if existing_user:
-            raise BusinessException("用户名已存在")
+    raw_password = decrypt(param.password)
+    if not raw_password:
+        raise BusinessException("密码解密失败")
+    hashed_password = (
+        await asyncio.to_thread(lambda: bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()))
+    ).decode('utf-8')
 
-        raw_password = decrypt(param.password)
-        if not raw_password:
-            raise BusinessException("密码解密失败")
-        hashed_password = (await asyncio.to_thread(lambda: bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()))).decode('utf-8')
+    _login_user_api.create_user(param.username, hashed_password)
 
-        user_id = str(generate_id())
-
-        user = SysUser(
-            id=user_id,
-            username=param.username,
-            password=hashed_password,
-            nickname=param.username,
-            status=UserStatusEnum.ACTIVE.value,
-            created_by=user_id,
-        )
-        db.add(user)
-        db.commit()
-
-        # Record auth log — mirrors Go log.RecordAuthLog(c, "注册", "REGISTER", "SUCCESS", "", param.Username)
-        if request:
-            record_auth_log(request, "注册", "REGISTER", op_user=param.username)
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
+    if request:
+        record_auth_log(request, "注册", "REGISTER", op_user=param.username)
 
     return UsernameRegisterResult(message="注册成功")
 
@@ -146,14 +113,8 @@ async def do_logout(request: Request) -> UsernameLogoutResult:
     try:
         user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
         if user_id:
-            db = SessionLocal()
-            try:
-                from plugins.plugin_sys.user.service import UserService
-                entity = UserService(db).find_by_id(user_id)
-                op_user = entity.username if entity else None
-                record_auth_log(request, "登出", "LOGOUT", op_user=op_user)
-            finally:
-                db.close()
+            op_user = _login_user_api.get_username_by_id(user_id)
+            record_auth_log(request, "登出", "LOGOUT", op_user=op_user)
     except Exception as e:
         logger.warning(f"Failed to record logout log: {e}")
 

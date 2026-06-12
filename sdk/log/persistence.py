@@ -18,7 +18,7 @@ Usage::
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional, Protocol
+from typing import Any, Callable, Optional, Protocol
 
 
 @dataclass
@@ -62,6 +62,7 @@ class LogPersistenceAPI(Protocol):
 # ── Global persister ────────────────────────────────────────────────
 
 _log_persister: Optional[LogPersistenceAPI] = None
+_op_user_resolver: Optional[Callable[[str], Optional[str]]] = None
 
 
 def set_log_persister(persister: LogPersistenceAPI) -> None:
@@ -76,6 +77,15 @@ def set_log_persister(persister: LogPersistenceAPI) -> None:
 def get_log_persister() -> Optional[LogPersistenceAPI]:
     """Return the current log persistence backend."""
     return _log_persister
+
+
+def set_op_user_resolver(resolver: Callable[[str], Optional[str]]) -> None:
+    global _op_user_resolver
+    _op_user_resolver = resolver
+
+
+def get_op_user_resolver() -> Optional[Callable[[str], Optional[str]]]:
+    return _op_user_resolver
 
 
 def save_log(entry: LogEntry) -> None:

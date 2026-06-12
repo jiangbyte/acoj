@@ -1,9 +1,8 @@
 import json
 import logging
-from typing import List, Optional, Union
+from typing import Callable, List, Optional, Union
 from sqlalchemy import select
 
-from sdk.infra.db.mysql import SessionLocal
 from sdk.enums import LoginTypeEnum, DataScopeEnum
 from sdk.constants import PERMISSION_CACHE_KEY, SUPER_ADMIN_CODE
 
@@ -19,6 +18,16 @@ class HeiPermissionInterface:
     Scope resolution: higher path priority (lower P value) wins.
     Same priority: most restrictive scope wins within each dimension (group/org).
     """
+
+    def __init__(self, session_factory=None, redis_client_getter=None):
+        self._session_factory = session_factory
+        self._redis_client_getter = redis_client_getter
+
+    def _open_db(self):
+        if self._session_factory is None:
+            from sdk.infra.db.mysql import SessionLocal
+            self._session_factory = SessionLocal
+        return self._session_factory()
 
     def _get_role_ids(self, db, login_id: str) -> List[str]:
         from plugins.plugin_sys.user.models import RelUserRole
@@ -89,8 +98,10 @@ class HeiPermissionInterface:
 
     async def _get_all_permissions_from_redis(self) -> List[str]:
         """Read all permission codes from the Redis cache (populated at startup from route annotations)."""
-        from sdk.infra.db.redis import get_client
-        redis_client = get_client()
+        redis_client = self._redis_client_getter() if self._redis_client_getter else None
+        if redis_client is None:
+            from sdk.infra.db.redis import get_client
+            redis_client = get_client()
         if not redis_client:
             return []
         try:
@@ -111,7 +122,7 @@ class HeiPermissionInterface:
         from plugins.plugin_sys.role.models import RelRolePermission
         from plugins.plugin_sys.user.models import RelUserPermission
 
-        db = SessionLocal()
+        db = self._open_db()
         try:
             login_id = str(login_id)
 
@@ -141,7 +152,7 @@ class HeiPermissionInterface:
         from plugins.plugin_sys.role.models import SysRole
         from plugins.plugin_sys.user.models import RelUserRole
 
-        db = SessionLocal()
+        db = self._open_db()
         try:
             login_id = str(login_id)
             query = select(SysRole.code).join(RelUserRole, SysRole.id == RelUserRole.role_id).where(
@@ -156,7 +167,7 @@ class HeiPermissionInterface:
         from plugins.plugin_sys.user.models import RelUserRole, RelUserPermission
         from plugins.plugin_sys.role.models import RelRolePermission
 
-        db = SessionLocal()
+        db = self._open_db()
         try:
             login_id = str(login_id)
             if login_type != LoginTypeEnum.BUSINESS and login_type != LoginTypeEnum.CONSUMER:

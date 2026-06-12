@@ -1,25 +1,18 @@
-"""
-UserProvider — resolves user names by ID.
-
-Mirrors hei-gin's ``plugins/plugin-sys/provider/user_provider.go``.
-"""
+"""User provider."""
 
 from __future__ import annotations
 
-from sdk.infra.db import SessionLocal
 from plugins.plugin_sys.user.repository import UserRepository
 
 
 class UserProvider:
-    """Resolves a user's display name (nickname) by their ID."""
+    def __init__(self, session_factory):
+        self._session_factory = session_factory
 
     def get_user_name_by_id(self, user_id: str) -> str:
-        """Return the user's nickname, falling back to their ID if not found."""
-        db = SessionLocal()
+        db = self._session_factory()
         try:
             nickname = UserRepository(db).find_nickname_by_id(user_id)
-            if nickname:
-                return nickname
-            return user_id
+            return nickname or user_id
         finally:
             db.close()

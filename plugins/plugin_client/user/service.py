@@ -220,3 +220,47 @@ class LoginUserApiProvider:
             return ClientUserToLoginUserInfo(entity)
         finally:
             db.close()
+
+    def record_login(self, user_id: str, request: Request) -> None:
+        db = self._session_factory()
+        try:
+            ClientUserService.from_db(db).record_login(user_id, request)
+        finally:
+            db.close()
+
+    def get_username_by_id(self, user_id: str) -> Optional[str]:
+        db = self._session_factory()
+        try:
+            entity = ClientUserRepository(db).find_by_id(user_id)
+            return entity.username if entity else None
+        finally:
+            db.close()
+
+    def create_user(self, username: str, hashed_password: str) -> str:
+        db = self._session_factory()
+        try:
+            existing = ClientUserRepository(db).find_by_username(username)
+            if existing:
+                raise BusinessException("用户名已存在")
+
+            user_id = str(generate_id())
+            now = datetime.now()
+            user = ClientUser(
+                id=user_id,
+                username=username,
+                password=hashed_password,
+                nickname=username,
+                status="ACTIVE",
+                created_at=now,
+                updated_at=now,
+                created_by=user_id,
+                updated_by=user_id,
+            )
+            db.add(user)
+            db.commit()
+            return user_id
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
