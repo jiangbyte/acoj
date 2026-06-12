@@ -1,21 +1,24 @@
+from .models import Message, Conversation, ConversationUnread
+from ..model.im_file import ImFile
+from .params import *
+from .repository import MessageRepository
+from .service import MessageService, get_message_service
+from .api.v1.api import router, client_router
 
-from plugins.plugin_im.message.params import *
-from plugins.plugin_im.message.service import *
-from plugins.plugin_im.message.conversation import *
-from plugins.plugin_im.message.im_file import *
+from sdk.kernel.registry import register_router
+
+register_router(router)
+register_router(client_router)
 
 __all__ = [
+    "Message", "Conversation", "ConversationUnread", "ImFile",
     "MessageVO", "MessagePageParam", "MessageSendParam",
     "RecallParam", "ForwardParam", "SearchParam",
     "UnreadCountVO", "ConversationVO", "ConversationMessageVO",
     "GetOrCreateConversationParam",
     "ConvTypeSingle", "ConvTypeGroup",
-    "send_message", "page_messages", "unread_count",
-    "detail_message", "mark_read", "mark_conversation_read",
-    "mark_all_read", "remove_messages", "recall_message",
-    "forward_message", "search_messages",
-    "conversations", "conversation_messages",
-    "get_or_create_conversation",
-    "UploadFileResult", "upload_file",
+    "UploadFileResult", "ImFileVO",
+    "MessageRepository",
+    "MessageService", "get_message_service",
+    "router", "client_router",
 ]
-from plugins.plugin_im.message import api  # trigger register_router()

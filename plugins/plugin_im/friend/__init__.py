@@ -1,19 +1,22 @@
-
-from plugins.plugin_im.friend.params import (
+from .models import FriendRequest, Friendship, FriendBlock
+from .params import (
     SendRequestParam, HandleRequestParam, FriendVO, FriendRequestVO,
     BlockVO, RemarkParam, BlockParam, SearchResult,
 )
-from plugins.plugin_im.friend.service import (
-    send_request, accept_request, reject_request,
-    friend_list, pending_requests, remove_friend,
-    search_users, block_user, unblock_user, block_list, update_friend_remark,
-)
+from .repository import FriendRepository
+from .service import FriendService, get_friend_service
+from .api.v1.api import sys_router as router, client_router
+
+from sdk.kernel.registry import register_router
+
+register_router(router)
+register_router(client_router)
 
 __all__ = [
+    "FriendRequest", "Friendship", "FriendBlock",
     "SendRequestParam", "HandleRequestParam", "FriendVO", "FriendRequestVO",
     "BlockVO", "RemarkParam", "BlockParam", "SearchResult",
-    "send_request", "accept_request", "reject_request",
-    "friend_list", "pending_requests", "remove_friend",
-    "search_users", "block_user", "unblock_user", "block_list", "update_friend_remark",
+    "FriendRepository",
+    "FriendService", "get_friend_service",
+    "router", "client_router",
 ]
-from plugins.plugin_im.friend import api  # trigger register_router()

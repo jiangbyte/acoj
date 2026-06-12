@@ -1,7 +1,9 @@
-from typing import Optional, List
-import logging
+from typing import List
 
-logger = logging.getLogger(__name__)
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from sdk.infra.db import get_db
 
 
 class PermissionService:
@@ -15,3 +17,7 @@ class PermissionService:
         """Get permissions under a module from Redis cache."""
         from sdk.auth.permission_scan import get_permissions_by_module_from_redis
         return await get_permissions_by_module_from_redis(module)
+
+
+def get_permission_service(db: Session = Depends(get_db)) -> PermissionService:
+    return PermissionService()

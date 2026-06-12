@@ -1,23 +1,14 @@
 """Client session API — standalone, mirrors hei-gin plugin-client/session/api/v1/api.go."""
 
 from typing import List
-from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy.orm import Session
-from sdk.infra.db import get_db
+from fastapi import APIRouter, Depends, Query
 from sdk.web.result import Result, PageData, success
 from sdk.kernel.plugin import Perm
 from ...params import (
     SessionAnalysisResult, SessionPageResult, SessionPageParam,
     SessionExitParam, SessionExitTokenParam, SessionTokenResult, SessionChartData,
 )
-from ...service import (
-    analysis as svc_analysis,
-    page as svc_page,
-    exit_session as svc_exit,
-    token_list as svc_token_list,
-    exit_token as svc_exit_token,
-    chart_data as svc_chart_data,
-)
+from ...service import ClientSessionService, get_client_session_service
 
 router = APIRouter()
 
@@ -29,10 +20,9 @@ router = APIRouter()
 )
 @Perm("sys:session:page", "会话分页")
 async def analysis(
-    request: Request,
-    db: Session = Depends(get_db),
+    service: ClientSessionService = Depends(get_client_session_service),
 ):
-    result = await svc_analysis(db)
+    result = await service.analysis()
     return success(result)
 
 
@@ -43,11 +33,10 @@ async def analysis(
 )
 @Perm("sys:session:page", "会话分页")
 async def page(
-    request: Request,
     param: SessionPageParam = Depends(),
-    db: Session = Depends(get_db),
+    service: ClientSessionService = Depends(get_client_session_service),
 ):
-    result = await svc_page(db, param)
+    result = await service.page(param)
     return success({
         "records": result["records"],
         "total": result["total"],
@@ -63,10 +52,10 @@ async def page(
 )
 @Perm("sys:session:exit", "强退会话")
 async def exit_session(
-    request: Request,
     param: SessionExitParam,
+    service: ClientSessionService = Depends(get_client_session_service),
 ):
-    await svc_exit(param.user_id)
+    await service.exit_session(param.user_id)
     return success()
 
 
@@ -77,10 +66,10 @@ async def exit_session(
 )
 @Perm("sys:session:page", "会话分页")
 async def token_list(
-    request: Request,
     user_id: str = Query(..., description="用户ID"),
+    service: ClientSessionService = Depends(get_client_session_service),
 ):
-    result = await svc_token_list(user_id)
+    result = await service.token_list(user_id)
     return success(result)
 
 
@@ -91,10 +80,10 @@ async def token_list(
 )
 @Perm("sys:session:exit", "强退会话")
 async def exit_token(
-    request: Request,
     param: SessionExitTokenParam,
+    service: ClientSessionService = Depends(get_client_session_service),
 ):
-    await svc_exit_token(param.user_id, param.token)
+    await service.exit_token(param.user_id, param.token)
     return success()
 
 
@@ -105,7 +94,7 @@ async def exit_token(
 )
 @Perm("sys:session:page", "会话分页")
 async def chart_data(
-    request: Request,
+    service: ClientSessionService = Depends(get_client_session_service),
 ):
-    result = await svc_chart_data()
+    result = await service.chart_data()
     return success(result)

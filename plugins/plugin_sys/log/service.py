@@ -1,10 +1,12 @@
 """Log service — mirrors hei-gin plugin-sys/log/service.go."""
 
 from typing import Optional, List, Dict
-from fastapi import Request
 from datetime import datetime, timedelta
+from fastapi import Depends
 from sqlalchemy import delete as sa_delete
 from sqlalchemy.orm import Session
+from sdk.infra.db import get_db
+from sdk.shared.di import ActorContext
 from .models import SysLog
 from .params import (
     LogVO, LogPageParam,
@@ -15,9 +17,19 @@ from .params import (
 from .repository import LogRepository
 from sdk.shared.types import IdParam
 from sdk.web.result import page_data, PageDataField
+
+
 class LogService:
-    def __init__(self, db: Session):
-        self.repository = LogRepository(db)
+    def __init__(self, repository_or_db):
+        if isinstance(repository_or_db, LogRepository):
+            self.repository = repository_or_db
+        else:
+            self.repository = LogRepository(repository_or_db)
+        self.db = self.repository.db
+
+    @classmethod
+    def from_db(cls, db: Session) -> "LogService":
+        return cls(LogRepository(db))
 
     def page(self, param: LogPageParam) -> dict:
         """Mirrors Go Page — keyword filters name/op_user/op_ip, order by created_at DESC."""
@@ -103,16 +115,10 @@ class LogService:
             LogCategoryTotal(category="异常", total=totals.get("EXCEPTION", 0)),
         ])
 
-    async def create(self, vo: LogVO, request: Optional[Request] = None) -> None:
+    def create(self, vo: LogVO, actor: Optional[ActorContext] = None) -> None:
         """Mirrors Go Create()."""
         from sdk.utils import generate_id
-        from sdk.auth import HeiAuthTool
         now = datetime.now()
-        user_id = None
-        try:
-            user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
-        except Exception:
-            pass
         entity = SysLog(
             id=generate_id(),
             created_at=now,
@@ -130,24 +136,17 @@ class LogService:
             entity.op_ip = vo.op_ip
         if vo.op_address:
             entity.op_address = vo.op_address
-        if user_id:
-            entity.created_by = user_id
-            entity.updated_by = user_id
-        self.repository.db.add(entity)
-        self.repository.db.commit()
+        if actor and actor.user_id:
+            entity.created_by = actor.user_id
+            entity.updated_by = actor.user_id
+        self.repository.insert(entity)
 
-    async def modify(self, vo: LogVO, request: Optional[Request] = None) -> None:
+    def modify(self, vo: LogVO, actor: Optional[ActorContext] = None) -> None:
         """Mirrors Go Modify()."""
-        from sdk.auth import HeiAuthTool
         entity = self.repository.find_by_id(vo.id)
         if not entity:
             from sdk.web.exception import BusinessException
             raise BusinessException("数据不存在")
-        user_id = None
-        try:
-            user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
-        except Exception:
-            pass
         now = datetime.now()
         up = {"updated_at": now}
         if vo.category:
@@ -156,11 +155,11 @@ class LogService:
             up["name"] = vo.name
         if vo.exe_status:
             up["exe_status"] = vo.exe_status
-        if user_id:
-            up["updated_by"] = user_id
+        if actor and actor.user_id:
+            up["updated_by"] = actor.user_id
         from sqlalchemy import update as sa_update
-        self.repository.db.execute(sa_update(SysLog).where(SysLog.id == vo.id).values(**up))
-        self.repository.db.commit()
+        self.db.execute(sa_update(SysLog).where(SysLog.id == vo.id).values(**up))
+        self.db.commit()
 
     def remove(self, param) -> None:
         """Mirrors Go Remove()."""
@@ -168,5 +167,9 @@ class LogService:
         if not ids:
             return
         from sqlalchemy import delete as sa_delete
-        self.repository.db.execute(sa_delete(SysLog).where(SysLog.id.in_(ids)))
-        self.repository.db.commit()
+        self.db.execute(sa_delete(SysLog).where(SysLog.id.in_(ids)))
+        self.db.commit()
+
+
+def get_log_service(db: Session = Depends(get_db)) -> LogService:
+    return LogService.from_db(db)

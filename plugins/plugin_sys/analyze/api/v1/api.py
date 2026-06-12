@@ -1,14 +1,12 @@
 """Analyze API — mirrors hei-gin plugins/plugin-sys/analyze/api/v1/api.go 1:1."""
 
-from fastapi import APIRouter, Depends, Request
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends
 from sdk.web.result import success
-from sdk.infra.db import get_db
-from ...service import AnalyzeService
+from ...service import AnalyzeService, get_analyze_service
 
 router = APIRouter()
 
 
 @router.get("/api/v1/sys/analyze/dashboard", summary="获取仪表盘数据")
-async def dashboard(request: Request, db: Session = Depends(get_db)):
-    return success(AnalyzeService(db).dashboard())
+async def dashboard(service: AnalyzeService = Depends(get_analyze_service)):
+    return success(service.dashboard())

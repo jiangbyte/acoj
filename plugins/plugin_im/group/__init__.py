@@ -1,9 +1,17 @@
+from .constants import *
+from .models import Group, GroupMember, GroupJoinRequest, GroupMessage, GroupMessageRead
+from .params import *
+from .repository import GroupRepository
+from .service import GroupService, get_group_service
+from .api.v1.api import sys_router as router, client_router
 
-from plugins.plugin_im.group.constants import *
-from plugins.plugin_im.group.params import *
-from plugins.plugin_im.group.service import *
+from sdk.kernel.registry import register_router
+
+register_router(router)
+register_router(client_router)
 
 __all__ = [
+    "Group", "GroupMember", "GroupJoinRequest", "GroupMessage", "GroupMessageRead",
     "GroupTypeMixed", "GroupTypeConsumerOnly",
     "RoleOwner", "RoleAdmin", "RoleMember",
     "MemberActive", "MemberLeft", "MemberKicked",
@@ -12,11 +20,7 @@ __all__ = [
     "CreateParam", "UpdateParam", "InviteParam", "KickParam",
     "SetRoleParam", "SendMessageParam", "GroupVO", "MemberVO", "MessageVO",
     "HandleJoinRequestParam", "TransferOwnerParam", "SetNicknameParam", "ConversationVO",
-    "create", "update_group", "dissolve", "detail", "my_groups",
-    "invite", "join_group", "pending_join_requests", "handle_join_request",
-    "leave_group", "kick", "set_role", "transfer_owner", "set_member_nickname",
-    "members", "messages", "search_messages", "search_groups",
-    "send_message", "recall_message", "mark_read", "mute_member", "unmute_member",
-    "my_group_conversations",
+    "GroupRepository",
+    "GroupService", "get_group_service",
+    "router", "client_router",
 ]
-from plugins.plugin_im.group import api  # trigger register_router()

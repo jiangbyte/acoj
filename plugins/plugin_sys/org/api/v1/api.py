@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, Query
 from sdk.web.result import Result, PageData, success
+from sdk.shared.di import ActorContext, get_current_actor
 from sdk.shared.types import IdsParam
-from sdk.infra.db import get_db
 from sdk.auth.decorator import HeiCheckPermission, NoRepeat
 from sdk.log import SysLog
 from ...params import OrgVO, OrgPageParam, OrgTreeParam
-from ...service import OrgService
+from ...service import OrgService, get_org_service
 
 router = APIRouter()
 
@@ -18,11 +17,9 @@ router = APIRouter()
 )
 @HeiCheckPermission("sys:org:page")
 async def page(
-    request: Request,
     param: OrgPageParam = Depends(),
-    db: Session = Depends(get_db)
+    service: OrgService = Depends(get_org_service),
 ):
-    service = OrgService(db)
     return success(service.page(param))
 
 
@@ -33,11 +30,9 @@ async def page(
 )
 @HeiCheckPermission("sys:org:tree")
 async def tree(
-    request: Request,
     param: OrgTreeParam = Depends(),
-    db: Session = Depends(get_db)
+    service: OrgService = Depends(get_org_service),
 ):
-    service = OrgService(db)
     return success(service.tree(param))
 
 
@@ -50,12 +45,11 @@ async def tree(
 @HeiCheckPermission("sys:org:create")
 @NoRepeat(interval=3000)
 async def create(
-    request: Request,
     vo: OrgVO,
-    db: Session = Depends(get_db)
+    service: OrgService = Depends(get_org_service),
+    actor: ActorContext = Depends(get_current_actor),
 ):
-    service = OrgService(db)
-    await service.create(vo, request)
+    service.create(vo, actor)
     return success()
 
 
@@ -67,12 +61,11 @@ async def create(
 @SysLog("编辑组织")
 @HeiCheckPermission("sys:org:modify")
 async def modify(
-    request: Request,
     vo: OrgVO,
-    db: Session = Depends(get_db)
+    service: OrgService = Depends(get_org_service),
+    actor: ActorContext = Depends(get_current_actor),
 ):
-    service = OrgService(db)
-    await service.modify(vo, request)
+    service.modify(vo, actor)
     return success()
 
 
@@ -84,11 +77,9 @@ async def modify(
 @SysLog("删除组织")
 @HeiCheckPermission("sys:org:remove")
 async def remove(
-    request: Request,
     param: IdsParam,
-    db: Session = Depends(get_db)
+    service: OrgService = Depends(get_org_service),
 ):
-    service = OrgService(db)
     service.remove(param.ids)
     return success()
 
@@ -100,11 +91,8 @@ async def remove(
 )
 @HeiCheckPermission("sys:org:detail")
 async def detail(
-    request: Request,
     id: str = Query(...),
-    db: Session = Depends(get_db)
+    service: OrgService = Depends(get_org_service),
 ):
-    service = OrgService(db)
     data = service.detail(id)
     return success(data if data else None)
-

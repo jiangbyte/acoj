@@ -1,55 +1,48 @@
-"""User service — mirrors hei-gin plugins/plugin-sys/user/service.go."""
+"""User service."""
 
 from __future__ import annotations
 
 import asyncio
-import logging
-from typing import Optional, List, Dict
 from datetime import datetime
+from typing import Optional
 
 import bcrypt
-from fastapi import Request
+from fastapi import Depends, Request
+from sqlalchemy import delete as sa_delete
+from sqlalchemy import select, update as sa_update
 from sqlalchemy.orm import Session
-from sqlalchemy import select, update as sa_update, delete as sa_delete
-from sqlalchemy.sql import func
 
-from .models import SysUser, RelUserRole, RelUserPermission
-from .params import (
-    UpdateStatusParam, BatchImportParam, BatchImportUser,
-    UserVO, UserPageParam, GrantRoleParam,
-    GrantUserPermissionParam, UpdateProfileParam,
-    UpdateAvatarParam, UpdatePasswordParam,
-)
-from .repository import UserRepository
-from sdk.shared.types import IdParam, IdsParam
-from sdk.web.result import page_data, PageDataField
-from sdk.web.exception import BusinessException
-from sdk.utils import decrypt, apply_update, generate_id
-from sdk.auth import HeiAuthTool
-from sdk.shared.contracts import LoginUserInfo
-from sdk.utils.resolve_utils import resolve_name_path, resolve_path_from_map
-from plugins.plugin_sys.resource.models import SysResource
+from plugins.plugin_sys.group.models import SysGroup
 from plugins.plugin_sys.home.models import SysQuickAction
 from plugins.plugin_sys.org.models import SysOrg
-from plugins.plugin_sys.group.models import SysGroup
 from plugins.plugin_sys.position.models import SysPosition
+from plugins.plugin_sys.resource.models import SysResource
 from plugins.plugin_sys.role.models import RelRolePermission, RelRoleResource
+from sdk.auth import HeiAuthTool
 from sdk.auth.permission.hei_permission_interface import SUPER_ADMIN_CODE
+from sdk.config.settings import settings
+from sdk.infra.db import get_db
+from sdk.shared.contracts import LoginUserInfo
+from sdk.shared.di import ActorContext
+from sdk.shared.types import IdParam, IdsParam
+from sdk.utils import decrypt, generate_id
+from sdk.utils.resolve_utils import resolve_path_from_map
+from sdk.web.exception import BusinessException
+from sdk.web.result import PageDataField, page_data
 
-logger = logging.getLogger(__name__)
-
-
-# ═════════════════════════════════════════════════════════════════════
-# Helpers
-# ═════════════════════════════════════════════════════════════════════
-
-def _parse_date(s: Optional[str]) -> Optional[datetime]:
-    if not s:
-        return None
-    try:
-        return datetime.strptime(s, "%Y-%m-%d")
-    except ValueError:
-        return None
+from .models import RelUserPermission, RelUserRole, SysUser
+from .params import (
+    BatchImportParam,
+    GrantRoleParam,
+    GrantUserPermissionParam,
+    UpdateAvatarParam,
+    UpdatePasswordParam,
+    UpdateProfileParam,
+    UpdateStatusParam,
+    UserPageParam,
+    UserVO,
+)
+from .repository import UserRepository
 
 
 def _batch_role_ids(db: Session, user_ids: list[str]) -> dict[str, list[str]]:
@@ -58,825 +51,578 @@ def _batch_role_ids(db: Session, user_ids: list[str]) -> dict[str, list[str]]:
     rows = db.execute(
         select(RelUserRole.user_id, RelUserRole.role_id).where(RelUserRole.user_id.in_(user_ids))
     ).all()
-    m: dict[str, list[str]] = {}
-    for r in rows:
-        m.setdefault(r.user_id, []).append(r.role_id)
-    return m
+    role_map: dict[str, list[str]] = {}
+    for row in rows:
+        role_map.setdefault(row.user_id, []).append(row.role_id)
+    return role_map
 
 
 def _enrich_names(db: Session, vo_list: list[dict]) -> None:
-    """Mirrors hei-gin's enrichNames — resolves org/group names with parent chain, position name."""
-    from sqlalchemy import select as _s
     if not vo_list:
         return
 
-    # Position names
     position_ids = {vo.get("position_id") for vo in vo_list if vo.get("position_id")}
-    pos_name_map = {}
+    position_name_map: dict[str, str] = {}
     if position_ids:
         rows = db.execute(
-            _s(SysPosition.id, SysPosition.name).where(SysPosition.id.in_(position_ids))
+            select(SysPosition.id, SysPosition.name).where(SysPosition.id.in_(position_ids))
         ).all()
-        pos_name_map = {r.id: r.name for r in rows}
+        position_name_map = {row.id: row.name for row in rows}
 
-    # Org/group nodes for parent chain resolution
-    org_rows = db.execute(_s(SysOrg.id, SysOrg.name, SysOrg.parent_id)).all()
-    org_node_map = {r.id: {"name": r.name, "parent_id": r.parent_id} for r in org_rows}
-    group_rows = db.execute(_s(SysGroup.id, SysGroup.name, SysGroup.parent_id)).all()
-    group_node_map = {r.id: {"name": r.name, "parent_id": r.parent_id} for r in group_rows}
+    org_rows = db.execute(select(SysOrg.id, SysOrg.name, SysOrg.parent_id)).all()
+    org_node_map = {row.id: {"name": row.name, "parent_id": row.parent_id} for row in org_rows}
+    group_rows = db.execute(select(SysGroup.id, SysGroup.name, SysGroup.parent_id)).all()
+    group_node_map = {row.id: {"name": row.name, "parent_id": row.parent_id} for row in group_rows}
 
-    org_paths, group_paths = {}, {}
+    org_paths: dict[str, list[str]] = {}
+    group_paths: dict[str, list[str]] = {}
     for vo in vo_list:
-        oid = vo.get("org_id")
-        if oid:
-            if oid not in org_paths:
-                org_paths[oid] = resolve_path_from_map(oid, org_node_map)
-            vo["org_names"] = org_paths[oid]
-        gid = vo.get("group_id")
-        if gid:
-            if gid not in group_paths:
-                group_paths[gid] = resolve_path_from_map(gid, group_node_map)
-            vo["group_names"] = group_paths[gid]
-        pid = vo.get("position_id")
-        if pid:
-            vo["position_name"] = pos_name_map.get(pid)
+        org_id = vo.get("org_id")
+        if org_id:
+            if org_id not in org_paths:
+                org_paths[org_id] = resolve_path_from_map(org_id, org_node_map)
+            vo["org_names"] = org_paths[org_id]
+
+        group_id = vo.get("group_id")
+        if group_id:
+            if group_id not in group_paths:
+                group_paths[group_id] = resolve_path_from_map(group_id, group_node_map)
+            vo["group_names"] = group_paths[group_id]
+
+        position_id = vo.get("position_id")
+        if position_id:
+            vo["position_name"] = position_name_map.get(position_id)
 
 
-# ═════════════════════════════════════════════════════════════════════
-# UserFindById / UserFindByUsername / UserFindByEmail
-# ═════════════════════════════════════════════════════════════════════
+def _build_menu_tree(resources: list[SysResource]) -> list[dict]:
+    node_map: dict[str, dict] = {}
+    roots: list[dict] = []
+
+    for resource in resources:
+        node_map[resource.id] = {
+            "id": resource.id,
+            "code": resource.code,
+            "name": resource.name,
+            "category": resource.category,
+            "type": resource.type,
+            "parent_id": resource.parent_id,
+            "route_path": resource.route_path,
+            "component_path": resource.component_path,
+            "redirect_path": resource.redirect_path,
+            "icon": resource.icon,
+            "color": resource.color,
+            "is_visible": resource.is_visible,
+            "is_cache": resource.is_cache,
+            "is_affix": resource.is_affix,
+            "is_breadcrumb": resource.is_breadcrumb,
+            "external_url": resource.external_url,
+            "description": resource.description,
+            "sort_code": resource.sort_code,
+            "status": resource.status,
+            "children": [],
+        }
+
+    for node in node_map.values():
+        parent_id = node.get("parent_id")
+        if parent_id and parent_id in node_map:
+            node_map[parent_id]["children"].append(node)
+        else:
+            roots.append(node)
+
+    roots.sort(key=lambda item: item.get("sort_code", 0) or 0)
+    return roots
+
+
+async def _hash_password(password: str) -> str:
+    hashed = await asyncio.to_thread(
+        lambda: bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    )
+    return hashed.decode("utf-8")
+
+
+def _generate_random_password() -> str:
+    value = generate_id()
+    return value[:16] if len(value) > 16 else value
+
 
 def user_find_by_id(db: Session, user_id: str) -> Optional[SysUser]:
-    repository = UserRepository(db)
-    return repository.find_by_id(user_id)
+    return UserRepository(db).find_by_id(user_id)
 
 
 def user_find_by_username(db: Session, username: str) -> Optional[SysUser]:
-    repository = UserRepository(db)
-    return repository.find_by_username(username)
+    return UserRepository(db).find_by_username(username)
 
 
 def user_find_by_email(db: Session, email: str) -> Optional[SysUser]:
-    repository = UserRepository(db)
-    return repository.find_by_email(email)
+    return UserRepository(db).find_by_email(email)
 
-
-# ═════════════════════════════════════════════════════════════════════
-# UserToLoginInfo / UserRecordLogin
-# ═════════════════════════════════════════════════════════════════════
 
 def user_to_login_info(entity: Optional[SysUser]) -> Optional[LoginUserInfo]:
     if not entity:
         return None
     return LoginUserInfo(
-        id=entity.id, username=entity.username, password=entity.password,
-        nickname=entity.nickname, avatar=entity.avatar, motto=entity.motto,
-        gender=entity.gender, birthday=entity.birthday, email=entity.email,
-        github=entity.github, status=entity.status,
-        last_login_at=entity.last_login_at, last_login_ip=entity.last_login_ip,
+        id=entity.id,
+        username=entity.username,
+        password=entity.password,
+        nickname=entity.nickname,
+        avatar=entity.avatar,
+        motto=entity.motto,
+        gender=entity.gender,
+        birthday=entity.birthday,
+        email=entity.email,
+        github=entity.github,
+        status=entity.status,
+        last_login_at=entity.last_login_at,
+        last_login_ip=entity.last_login_ip,
         login_count=entity.login_count,
     )
 
 
-def user_record_login(db: Session, user_id: str, request: Request) -> None:
-    repository = UserRepository(db)
-    entity = repository.find_by_id(user_id)
-    if not entity:
-        return
-    entity.last_login_at = datetime.now()
-    entity.last_login_ip = request.client.host if request.client else None
-    entity.login_count = (entity.login_count or 0) + 1
-    repository.update(entity)
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserPage
-# ═════════════════════════════════════════════════════════════════════
-
-def user_page(db: Session, param: UserPageParam) -> dict:
-    """Mirrors hei-gin's UserPage."""
-    repository = UserRepository(db)
-    result = repository.find_page_by_filters(param)
-    records = result[PageDataField.RECORDS]
-    user_ids = [r.id for r in records]
-
-    role_map = _batch_role_ids(db, user_ids)
-
-    vo_list = []
-    for r in records:
-        vo = UserVO.model_validate(r).model_dump()
-        vo["role_ids"] = role_map.get(r.id, [])
-        vo_list.append(vo)
-    _enrich_names(db, vo_list)
-    return page_data(records=vo_list, total=result[PageDataField.TOTAL],
-                     page=param.current, size=param.size)
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserCreate
-# ═════════════════════════════════════════════════════════════════════
-
-async def user_create(db: Session, vo: UserVO, request: Request) -> None:
-    """Mirrors hei-gin's UserCreate."""
-    now = datetime.now()
-    e = SysUser(id=generate_id(), status="ACTIVE", created_at=now, updated_at=now)
-
-    if vo.username:
-        existing = db.execute(select(SysUser).where(SysUser.username == vo.username)).scalar_one_or_none()
-        if existing:
-            raise BusinessException("账号已存在", 400)
-        e.username = vo.username
-
-    if vo.password:
-        e.password = await _hash_password(vo.password)
-
-    if vo.nickname:
-        e.nickname = vo.nickname
-    if vo.avatar:
-        e.avatar = vo.avatar
-    if vo.motto:
-        e.motto = vo.motto
-    if vo.gender:
-        e.gender = vo.gender
-    if vo.birthday:
-        e.birthday = vo.birthday
-    if vo.email:
-        e.email = vo.email
-    if vo.github:
-        e.github = vo.github
-    if vo.phone:
-        e.phone = vo.phone
-
-    if vo.org_id:
-        e.org_id = vo.org_id
-    if vo.position_id:
-        e.position_id = vo.position_id
-    if vo.group_id:
-        e.group_id = vo.group_id
-
-    try:
-        uid = await HeiAuthTool.getLoginIdDefaultNull(request)
-        if uid:
-            e.created_by = uid
-            e.updated_by = uid
-    except Exception:
-        pass
-
-    db.add(e)
-    db.flush()
-
-    if vo.role_ids:
-        for rid in vo.role_ids:
-            db.add(RelUserRole(id=generate_id(), user_id=e.id, role_id=rid))
-    db.commit()
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserDetail
-# ═════════════════════════════════════════════════════════════════════
-
-def user_detail(db: Session, id: str) -> Optional[dict]:
-    """Mirrors hei-gin's UserDetail — returns enriched VO with role IDs."""
-    if not id:
-        return None
-    repository = UserRepository(db)
-    entity = repository.find_by_id(id)
-    if not entity:
-        return None
-    vo = UserVO.model_validate(entity).model_dump()
-    # Enrich names (mirrors Go: enrichNames)
-    _enrich_names(db, [vo])
-    # Resolve role IDs (mirrors Go: batchRoleIDs)
-    role_map = _batch_role_ids(db, [entity.id])
-    vo["role_ids"] = role_map.get(entity.id, [])
-    return vo
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserModify
-# ═════════════════════════════════════════════════════════════════════
-
-async def user_modify(db: Session, vo: UserVO, request: Request) -> None:
-    """Mirrors hei-gin's UserModify."""
-    if not vo.id:
-        raise BusinessException("ID不能为空", 400)
-
-    old = db.execute(select(SysUser).where(SysUser.id == vo.id)).scalar_one_or_none()
-    if not old:
-        raise BusinessException("数据不存在", 400)
-
-    up: dict = {}
-    if vo.username:
-        existing = db.execute(
-            select(SysUser).where(SysUser.username == vo.username, SysUser.id != vo.id)
-        ).scalar_one_or_none()
-        if existing:
-            raise BusinessException("账号已存在", 400)
-        up["username"] = vo.username
-
-    if vo.nickname:
-        up["nickname"] = vo.nickname
-    if vo.avatar:
-        up["avatar"] = vo.avatar
-    if vo.motto:
-        up["motto"] = vo.motto
-    if vo.gender:
-        up["gender"] = vo.gender
-    if vo.birthday:
-        up["birthday"] = vo.birthday
-    if vo.email:
-        up["email"] = vo.email
-    if vo.github:
-        up["github"] = vo.github
-    if vo.phone:
-        up["phone"] = vo.phone
-    if vo.org_id is not None:
-        up["org_id"] = vo.org_id
-    elif old.org_id is not None:
-        up["org_id"] = None
-    if vo.position_id is not None:
-        up["position_id"] = vo.position_id
-    elif old.position_id is not None:
-        up["position_id"] = None
-    if vo.group_id is not None:
-        up["group_id"] = vo.group_id
-    elif old.group_id is not None:
-        up["group_id"] = None
-    if vo.status:
-        up["status"] = vo.status
-    if vo.password:
-        up["password"] = await _hash_password(vo.password)
-
-    up["updated_at"] = datetime.now()
-    try:
-        uid = await HeiAuthTool.getLoginIdDefaultNull(request)
-        if uid:
-            up["updated_by"] = uid
-    except Exception:
-        pass
-
-    if up:
-        db.execute(sa_update(SysUser).where(SysUser.id == vo.id).values(**up))
-
-    if vo.role_ids is not None:
-        db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id == vo.id))
-        for rid in vo.role_ids:
-            db.add(RelUserRole(id=generate_id(), user_id=vo.id, role_id=rid))
-    db.commit()
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserRemove — mirrors Go: transaction with cascading deletes
-# ═════════════════════════════════════════════════════════════════════
-
-def user_remove(db: Session, ids: list[str]) -> None:
-    """Mirrors hei-gin's UserRemove — deletes user + rels + quick actions in transaction."""
-    if not ids:
-        return
-    try:
-        db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id.in_(ids)))
-        db.execute(sa_delete(RelUserPermission).where(RelUserPermission.user_id.in_(ids)))
-        db.execute(sa_delete(SysQuickAction).where(SysQuickAction.user_id.in_(ids)))
-        db.execute(sa_delete(SysUser).where(SysUser.id.in_(ids)))
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserGrantRole
-# ═════════════════════════════════════════════════════════════════════
-
-def user_grant_role(db: Session, param: GrantRoleParam) -> None:
-    """Mirrors hei-gin's UserGrantRole — with dedup + transaction."""
-    if not param.user_id:
-        raise BusinessException("用户ID不能为空", 400)
-    try:
-        db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id == param.user_id))
-        seen: set[str] = set()
-        batch = []
-        for rid in param.role_ids:
-            if rid not in seen:
-                seen.add(rid)
-                batch.append(RelUserRole(id=generate_id(), user_id=param.user_id, role_id=rid))
-        if batch:
-            db.add_all(batch)
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-
-
-def user_grant_roles(db: Session, param: GrantRoleParam, request: Request) -> None:
-    """Convenience wrapper — mirrors hei-gin's UserGrantRoles."""
-    user_grant_role(db, param)
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserGrantPermission
-# ═════════════════════════════════════════════════════════════════════
-
-def user_grant_permission(db: Session, param: GrantUserPermissionParam) -> None:
-    """Mirrors hei-gin's UserGrantPermission — with transaction."""
-    if not param.user_id:
-        raise BusinessException("用户ID不能为空", 400)
-    try:
-        db.execute(sa_delete(RelUserPermission).where(RelUserPermission.user_id == param.user_id))
-        batch = []
-        for pi in param.permissions or []:
-            r = RelUserPermission(
-                id=generate_id(), user_id=param.user_id,
-                permission_code=pi.permission_code, scope=pi.scope or "ALL",
-            )
-            if pi.custom_scope_group_ids:
-                r.custom_scope_group_ids = pi.custom_scope_group_ids
-            if pi.custom_scope_org_ids:
-                r.custom_scope_org_ids = pi.custom_scope_org_ids
-            batch.append(r)
-        if batch:
-            db.add_all(batch)
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-
-
-def user_grant_permissions(db: Session, param: GrantUserPermissionParam, request: Request) -> None:
-    """Convenience wrapper — mirrors hei-gin's UserGrantPermissions."""
-    user_grant_permission(db, param)
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserOwnPermissionDetails / UserOwnRoleIDs / UserOwnRoles
-# ═════════════════════════════════════════════════════════════════════
-
-def user_get_permission_details(db: Session, user_id: str) -> list[dict]:
-    """Mirrors hei-gin's UserOwnPermissionDetails."""
-    if not user_id:
-        return []
-    rows = db.execute(
-        select(RelUserPermission).where(RelUserPermission.user_id == user_id)
-    ).scalars().all()
-    return [
-        {
-            "permission_code": r.permission_code,
-            "scope": r.scope,
-            "custom_scope_group_ids": r.custom_scope_group_ids,
-            "custom_scope_org_ids": r.custom_scope_org_ids,
-        }
-        for r in rows
-    ]
-
-
-def user_get_role_ids(db: Session, user_id: str) -> list[str]:
-    """Mirrors hei-gin's UserOwnRoleIDs."""
-    if not user_id:
-        return []
-    rows = db.execute(
-        select(RelUserRole.role_id).where(RelUserRole.user_id == user_id)
-    ).scalars().all()
-    return list(rows)
-
-
-def user_own_roles(db: Session, user_id: str) -> list[str]:
-    """Mirrors hei-gin's UserOwnRoles — returns role IDs list."""
-    return user_get_role_ids(db, user_id)
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserCurrent — mirrors Go: just calls UserDetail
-# ═════════════════════════════════════════════════════════════════════
-
-async def user_get_current(db: Session, request: Request) -> Optional[dict]:
-    """Mirrors hei-gin's UserCurrent."""
-    user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
-    if not user_id:
-        return None
-    return user_detail(db, user_id)
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserMenus — mirrors Go: build menu tree from resources
-# ═════════════════════════════════════════════════════════════════════
-
-async def user_get_menus(db: Session, request: Request) -> list[dict]:
-    """Mirrors hei-gin's UserMenus."""
-    user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
-    if not user_id:
-        return []
-
-    from plugins.plugin_sys.role.models import SysRole
-
-    # Check super admin
-    role_ids = user_get_role_ids(db, user_id)
-    is_super_admin = False
-    if role_ids:
-        roles = db.execute(select(SysRole.code).where(SysRole.id.in_(role_ids))).scalars().all()
-        is_super_admin = SUPER_ADMIN_CODE in roles
-
-    if is_super_admin:
-        resources = db.execute(
-            select(SysResource).where(SysResource.status == "ENABLED").order_by(SysResource.sort_code)
-        ).scalars().all()
-        return _build_menu_tree(resources)
-
-    if not role_ids:
-        return []
-
-    # Get resource IDs from role-resource relations
-    rr_rows = db.execute(
-        select(RelRoleResource.resource_id).where(RelRoleResource.role_id.in_(role_ids))
-    ).scalars().all()
-    if not rr_rows:
-        return []
-
-    resource_ids = list(set(rr_rows))
-    resources = db.execute(
-        select(SysResource).where(
-            SysResource.id.in_(resource_ids),
-            SysResource.status == "ENABLED",
-        ).order_by(SysResource.sort_code)
-    ).scalars().all()
-    return _build_menu_tree(resources)
-
-
-def _build_menu_tree(resources: list[SysResource]) -> list[dict]:
-    """Mirrors hei-gin's buildUserMenuTree."""
-    resource_map: dict[str, dict] = {}
-    parent_set: set[str] = set()
-
-    for r in resources:
-        resource_map[r.id] = {
-            "id": r.id, "code": r.code, "name": r.name,
-            "category": r.category, "type": r.type,
-            "parent_id": r.parent_id,
-            "route_path": r.route_path, "component_path": r.component_path,
-            "redirect_path": r.redirect_path,
-            "icon": r.icon, "color": r.color,
-            "is_visible": r.is_visible, "is_cache": r.is_cache,
-            "is_affix": r.is_affix, "is_breadcrumb": r.is_breadcrumb,
-            "external_url": r.external_url,
-            "description": r.description,
-            "sort_code": r.sort_code, "status": r.status,
-            "children": [],
-        }
-        if r.parent_id:
-            parent_set.add(r.parent_id)
-
-    tree: list[dict] = []
-    for r_id, node in resource_map.items():
-        pid = node.get("parent_id")
-        if pid and pid in resource_map:
-            resource_map[pid]["children"].append(node)
-        else:
-            tree.append(node)
-
-    tree.sort(key=lambda x: x.get("sort_code", 0) or 0)
-    return tree
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserPermissions — mirrors Go: role permissions + direct user permissions
-# ═════════════════════════════════════════════════════════════════════
-
-async def user_get_permissions(db: Session, request: Request) -> list[str]:
-    """Mirrors hei-gin's UserPermissions — combines role perms + direct user perms."""
-    user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
-    if not user_id:
-        return []
-
-    perm_codes: list[str] = []
-
-    # Role permissions
-    role_ids = user_get_role_ids(db, user_id)
-    if role_ids:
-        codes = db.execute(
-            select(RelRolePermission.permission_code).distinct().where(
-                RelRolePermission.role_id.in_(role_ids)
-            )
-        ).scalars().all()
-        perm_codes.extend(codes)
-
-    # Direct user permissions
-    direct_codes = db.execute(
-        select(RelUserPermission.permission_code).distinct().where(
-            RelUserPermission.user_id == user_id
-        )
-    ).scalars().all()
-    perm_codes.extend(direct_codes)
-
-    return sorted(set(perm_codes))
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserUpdateProfile
-# ═════════════════════════════════════════════════════════════════════
-
-async def user_update_profile(db: Session, param: UpdateProfileParam, request: Request) -> None:
-    """Mirrors hei-gin's UserUpdateProfile."""
-    uid = await HeiAuthTool.getLoginIdDefaultNull(request)
-    if not uid:
-        raise BusinessException("用户未登录", 401)
-
-    up: dict = {}
-    if param.username is not None:
-        up["username"] = param.username
-    if param.nickname is not None:
-        up["nickname"] = param.nickname
-    if param.motto is not None:
-        up["motto"] = param.motto
-    if param.gender is not None:
-        up["gender"] = param.gender
-    if param.birthday is not None:
-        up["birthday"] = param.birthday
-    if param.email is not None:
-        up["email"] = param.email
-    if param.github is not None:
-        up["github"] = param.github
-    if param.phone is not None:
-        up["phone"] = param.phone
-
-    if up:
-        up["updated_at"] = datetime.now()
-        db.execute(sa_update(SysUser).where(SysUser.id == uid).values(**up))
-        db.commit()
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserUpdateAvatar — mirrors Go: compress base64 + update
-# ═════════════════════════════════════════════════════════════════════
-
-async def user_update_avatar(db: Session, param: UpdateAvatarParam, request: Request) -> None:
-    """Mirrors hei-gin's UserUpdateAvatar."""
-    uid = await HeiAuthTool.getLoginIdDefaultNull(request)
-    if not uid:
-        raise BusinessException("用户未登录", 401)
-    if not param.avatar:
-        raise BusinessException("头像不能为空", 400)
-
-    from sdk.utils.image_utils import compress_base64_image
-    compressed = compress_base64_image(param.avatar, max_width=512, max_height=512, quality=80)
-
-    entity = db.execute(select(SysUser).where(SysUser.id == uid)).scalar_one_or_none()
-    if not entity:
-        raise BusinessException("用户不存在", 404)
-
-    entity.avatar = compressed
-    db.commit()
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserUpdatePassword — mirrors Go: decrypt + bcrypt
-# ═════════════════════════════════════════════════════════════════════
-
-async def user_update_password(db: Session, param: UpdatePasswordParam, request: Request) -> None:
-    """Mirrors hei-gin's UserUpdatePassword."""
-    uid = await HeiAuthTool.getLoginIdDefaultNull(request)
-    if not uid:
-        raise BusinessException("用户未登录", 401)
-
-    entity = db.execute(select(SysUser).where(SysUser.id == uid)).scalar_one_or_none()
-    if not entity:
-        raise BusinessException("用户不存在", 404)
-
-    if not entity.password:
-        raise BusinessException("未设置密码，无法修改", 400)
-
-    if not bcrypt.checkpw(
-        decrypt(param.current_password).encode("utf-8"),
-        entity.password.encode("utf-8"),
-    ):
-        raise BusinessException("当前密码不正确", 400)
-
-    new_hashed = bcrypt.hashpw(
-        decrypt(param.new_password).encode("utf-8"), bcrypt.gensalt()
-    ).decode("utf-8")
-    entity.password = new_hashed
-    entity.updated_at = datetime.now()
-    db.commit()
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserResetPassword
-# ═════════════════════════════════════════════════════════════════════
-
-def user_reset_password(db: Session, user_id: str) -> None:
-    """Mirrors hei-gin's UserResetPassword."""
-    if not user_id:
-        raise BusinessException("ID不能为空", 400)
-    from sdk.config.settings import settings
-    raw_pwd = settings.user_config.reset_password
-    if not raw_pwd:
-        raw_pwd = _generate_random_password()
-    hashed = bcrypt.hashpw(raw_pwd.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    db.execute(
-        sa_update(SysUser).where(SysUser.id == user_id).values(
-            password=hashed, updated_at=datetime.now()
-        )
-    )
-    db.commit()
-
-
-def _generate_random_password() -> str:
-    """Mirrors hei-gin's generateRandomPassword."""
-    pid = generate_id()
-    return pid[:16] if len(pid) > 16 else pid
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserBatchImport — mirrors Go: with transaction
-# ═════════════════════════════════════════════════════════════════════
-
-def user_batch_import(db: Session, param: BatchImportParam) -> None:
-    """Mirrors hei-gin's UserBatchImport."""
-    if not param.users:
-        return
-    now = datetime.now()
-    batch = []
-    for u in param.users:
-        e = SysUser(id=generate_id(), status="ACTIVE", created_at=now, updated_at=now)
-        if u.username is not None:
-            e.username = u.username
-        if u.nickname is not None:
-            e.nickname = u.nickname
-        if u.phone is not None:
-            e.phone = u.phone
-        if u.email is not None:
-            e.email = u.email
-        if u.gender is not None:
-            e.gender = u.gender
-        batch.append(e)
-
-    if batch:
-        try:
-            db.add_all(batch)
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserUpdateStatus
-# ═════════════════════════════════════════════════════════════════════
-
-def user_update_status(db: Session, param: UpdateStatusParam) -> None:
-    """Mirrors hei-gin's UserUpdateStatus."""
-    if not param.ids:
-        return
-    db.execute(
-        sa_update(SysUser).where(SysUser.id.in_(param.ids)).values(
-            status=param.status, updated_at=datetime.now()
-        )
-    )
-    db.commit()
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserExport
-# ═════════════════════════════════════════════════════════════════════
-
-def user_export(db: Session, param: UserPageParam) -> list[dict]:
-    """Mirrors hei-gin's UserExport."""
-    repository = UserRepository(db)
-    rows = repository.find_all_by_filters(param)
-    vo_list = []
-    for r in rows:
-        vo = UserVO.model_validate(r).model_dump()
-        vo_list.append(vo)
-
-    if vo_list:
-        user_ids = [r.id for r in rows]
-        role_map = _batch_role_ids(db, user_ids)
-        for vo in vo_list:
-            vo["role_ids"] = role_map.get(vo["id"], [])
-        _enrich_names(db, vo_list)
-    return vo_list
-
-
-# ═════════════════════════════════════════════════════════════════════
-# _hash_password
-# ═════════════════════════════════════════════════════════════════════
-
-async def _hash_password(password: str) -> str:
-    return (
-        await asyncio.to_thread(
-            lambda: bcrypt.hashpw(
-                password.encode("utf-8"), bcrypt.gensalt()
-            )
-        )
-    ).decode("utf-8")
-
-
-# ═════════════════════════════════════════════════════════════════════
-# CheckSuperAdmin
-# ═════════════════════════════════════════════════════════════════════
-
-def check_super_admin(db: Session, user_id: str) -> bool:
-    """Mirrors hei-gin's CheckSuperAdmin."""
-    if not user_id:
-        return False
-    role_ids = user_get_role_ids(db, user_id)
-    if not role_ids:
-        return False
-    from plugins.plugin_sys.role.models import SysRole
-    roles = db.execute(
-        select(SysRole.code).where(SysRole.id.in_(role_ids))
-    ).scalars().all()
-    return SUPER_ADMIN_CODE in roles
-
-
-# ═════════════════════════════════════════════════════════════════════
-# UserService — legacy class-based API
-# ═════════════════════════════════════════════════════════════════════
-
 class UserService:
-    """Legacy class-based API.  New code should use the standalone functions above."""
+    def __init__(self, repository_or_db):
+        if isinstance(repository_or_db, UserRepository):
+            self.repository = repository_or_db
+        else:
+            self.repository = UserRepository(repository_or_db)
+        self.db = self.repository.db
 
-    def __init__(self, db: Session):
-        self.db = db
-        self.repository = UserRepository(db)
+    @classmethod
+    def from_db(cls, db: Session) -> "UserService":
+        return cls(UserRepository(db))
 
     def find_by_id(self, user_id: str) -> Optional[SysUser]:
-        return user_find_by_id(self.db, user_id)
+        return self.repository.find_by_id(user_id)
 
     def find_by_username(self, username: str) -> Optional[SysUser]:
-        return user_find_by_username(self.db, username)
+        return self.repository.find_by_username(username)
 
     def find_by_email(self, email: str) -> Optional[SysUser]:
-        return user_find_by_email(self.db, email)
+        return self.repository.find_by_email(email)
 
     def to_login_user_info(self, entity: Optional[SysUser]) -> Optional[LoginUserInfo]:
         return user_to_login_info(entity)
 
     def record_login(self, user_id: str, request: Request) -> None:
-        return user_record_login(self.db, user_id, request)
+        entity = self.find_by_id(user_id)
+        if not entity:
+            return
+        entity.last_login_at = datetime.now()
+        entity.last_login_ip = request.client.host if request.client else None
+        entity.login_count = (entity.login_count or 0) + 1
+        self.repository.update(entity)
 
     def page(self, param: UserPageParam) -> dict:
-        return user_page(self.db, param)
+        result = self.repository.find_page_by_filters(param)
+        records = result[PageDataField.RECORDS]
+        role_map = _batch_role_ids(self.db, [record.id for record in records])
 
-    async def create(self, vo: UserVO, request: Request) -> None:
-        return await user_create(self.db, vo, request)
+        vo_list = []
+        for record in records:
+            data = UserVO.model_validate(record).model_dump()
+            data["role_ids"] = role_map.get(record.id, [])
+            vo_list.append(data)
+        _enrich_names(self.db, vo_list)
 
-    async def modify(self, vo: UserVO, request: Request) -> None:
-        return await user_modify(self.db, vo, request)
+        return page_data(
+            records=vo_list,
+            total=result[PageDataField.TOTAL],
+            page=param.current,
+            size=param.size,
+        )
+
+    async def create(self, vo: UserVO, actor: Optional[ActorContext] = None) -> None:
+        entity = SysUser(
+            id=generate_id(),
+            status="ACTIVE",
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+        )
+
+        if vo.username:
+            existing = self.db.execute(
+                select(SysUser).where(SysUser.username == vo.username)
+            ).scalar_one_or_none()
+            if existing:
+                raise BusinessException("账号已存在", 400)
+            entity.username = vo.username
+
+        if vo.password:
+            entity.password = await _hash_password(vo.password)
+
+        entity.nickname = vo.nickname
+        entity.avatar = vo.avatar
+        entity.motto = vo.motto
+        entity.gender = vo.gender
+        entity.birthday = vo.birthday
+        entity.email = vo.email
+        entity.github = vo.github
+        entity.phone = vo.phone
+        entity.org_id = vo.org_id
+        entity.position_id = vo.position_id
+        entity.group_id = vo.group_id
+
+        if actor and actor.user_id:
+            entity.created_by = actor.user_id
+            entity.updated_by = actor.user_id
+
+        self.db.add(entity)
+        self.db.flush()
+
+        if vo.role_ids:
+            for role_id in vo.role_ids:
+                self.db.add(RelUserRole(id=generate_id(), user_id=entity.id, role_id=role_id))
+
+        self.db.commit()
+
+    async def modify(self, vo: UserVO, actor: Optional[ActorContext] = None) -> None:
+        if not vo.id:
+            raise BusinessException("ID不能为空", 400)
+
+        entity = self.find_by_id(vo.id)
+        if not entity:
+            raise BusinessException("数据不存在", 400)
+
+        updates: dict = {}
+        if vo.username:
+            existing = self.db.execute(
+                select(SysUser).where(SysUser.username == vo.username, SysUser.id != vo.id)
+            ).scalar_one_or_none()
+            if existing:
+                raise BusinessException("账号已存在", 400)
+            updates["username"] = vo.username
+
+        for field in ["nickname", "avatar", "motto", "gender", "birthday", "email", "github", "phone"]:
+            value = getattr(vo, field)
+            if value:
+                updates[field] = value
+
+        for field in ["org_id", "position_id", "group_id"]:
+            value = getattr(vo, field)
+            if value is not None:
+                updates[field] = value
+            elif getattr(entity, field) is not None:
+                updates[field] = None
+
+        if vo.status:
+            updates["status"] = vo.status
+        if vo.password:
+            updates["password"] = await _hash_password(vo.password)
+
+        updates["updated_at"] = datetime.now()
+        if actor and actor.user_id:
+            updates["updated_by"] = actor.user_id
+
+        self.db.execute(sa_update(SysUser).where(SysUser.id == vo.id).values(**updates))
+
+        if vo.role_ids is not None:
+            self.db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id == vo.id))
+            for role_id in vo.role_ids:
+                self.db.add(RelUserRole(id=generate_id(), user_id=vo.id, role_id=role_id))
+
+        self.db.commit()
 
     def remove(self, param: IdsParam) -> None:
-        return user_remove(self.db, param.ids)
+        if not param.ids:
+            return
+        try:
+            self.db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id.in_(param.ids)))
+            self.db.execute(sa_delete(RelUserPermission).where(RelUserPermission.user_id.in_(param.ids)))
+            self.db.execute(sa_delete(SysQuickAction).where(SysQuickAction.user_id.in_(param.ids)))
+            self.db.execute(sa_delete(SysUser).where(SysUser.id.in_(param.ids)))
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
 
     def detail(self, param: IdParam) -> Optional[dict]:
-        return user_detail(self.db, param.id)
+        if not param.id:
+            return None
+        entity = self.find_by_id(param.id)
+        if not entity:
+            return None
+
+        data = UserVO.model_validate(entity).model_dump()
+        data["role_ids"] = _batch_role_ids(self.db, [entity.id]).get(entity.id, [])
+        _enrich_names(self.db, [data])
+        return data
 
     def grant_role(self, param: GrantRoleParam) -> None:
-        return user_grant_role(self.db, param)
+        if not param.user_id:
+            raise BusinessException("用户ID不能为空", 400)
+        try:
+            self.db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id == param.user_id))
+            seen: set[str] = set()
+            for role_id in param.role_ids:
+                if role_id in seen:
+                    continue
+                seen.add(role_id)
+                self.db.add(RelUserRole(id=generate_id(), user_id=param.user_id, role_id=role_id))
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
 
     def grant_permission(self, param: GrantUserPermissionParam) -> None:
-        return user_grant_permission(self.db, param)
+        if not param.user_id:
+            raise BusinessException("用户ID不能为空", 400)
+        try:
+            self.db.execute(
+                sa_delete(RelUserPermission).where(RelUserPermission.user_id == param.user_id)
+            )
+            for item in param.permissions or []:
+                entity = RelUserPermission(
+                    id=generate_id(),
+                    user_id=param.user_id,
+                    permission_code=item.permission_code,
+                    scope=item.scope or "ALL",
+                )
+                if item.custom_scope_group_ids:
+                    entity.custom_scope_group_ids = item.custom_scope_group_ids
+                if item.custom_scope_org_ids:
+                    entity.custom_scope_org_ids = item.custom_scope_org_ids
+                self.db.add(entity)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
 
     def get_user_permission_details(self, user_id: str) -> list[dict]:
-        return user_get_permission_details(self.db, user_id)
+        if not user_id:
+            return []
+        rows = self.db.execute(
+            select(RelUserPermission).where(RelUserPermission.user_id == user_id)
+        ).scalars().all()
+        return [
+            {
+                "permission_code": row.permission_code,
+                "scope": row.scope,
+                "custom_scope_group_ids": row.custom_scope_group_ids,
+                "custom_scope_org_ids": row.custom_scope_org_ids,
+            }
+            for row in rows
+        ]
 
     def get_user_role_ids(self, user_id: str) -> list[str]:
-        return user_get_role_ids(self.db, user_id)
+        if not user_id:
+            return []
+        return list(
+            self.db.execute(
+                select(RelUserRole.role_id).where(RelUserRole.user_id == user_id)
+            ).scalars().all()
+        )
 
-    def own_roles(self, user_id: str) -> list[str]:
-        return user_own_roles(self.db, user_id)
+    def get_current_user(self, actor: Optional[ActorContext] = None) -> Optional[dict]:
+        user_id = actor.user_id if actor and actor.user_id else ""
+        if not user_id:
+            return None
+        return self.detail(IdParam(id=user_id))
 
-    async def get_current_user(self, request: Request) -> Optional[dict]:
-        return await user_get_current(self.db, request)
+    def _is_super_admin(self, role_ids: list[str]) -> bool:
+        if not role_ids:
+            return False
+        from plugins.plugin_sys.role.models import SysRole
 
-    async def get_current_user_menus(self, request: Request) -> list[dict]:
-        return await user_get_menus(self.db, request)
+        codes = self.db.execute(select(SysRole.code).where(SysRole.id.in_(role_ids))).scalars().all()
+        return SUPER_ADMIN_CODE in codes
 
-    async def get_current_user_permissions(self, request: Request) -> list[str]:
-        return await user_get_permissions(self.db, request)
+    async def get_current_user_menus(self, actor: Optional[ActorContext] = None) -> list[dict]:
+        user_id = actor.user_id if actor and actor.user_id else ""
+        if not user_id:
+            return []
 
-    async def update_profile(self, param: UpdateProfileParam, request: Request) -> None:
-        return await user_update_profile(self.db, param, request)
+        role_ids = self.get_user_role_ids(user_id)
+        if self._is_super_admin(role_ids):
+            resources = self.db.execute(
+                select(SysResource)
+                .where(SysResource.status == "ENABLED")
+                .order_by(SysResource.sort_code.asc())
+            ).scalars().all()
+            return _build_menu_tree(resources)
 
-    async def update_avatar(self, param: UpdateAvatarParam, request: Request) -> None:
-        return await user_update_avatar(self.db, param, request)
+        if not role_ids:
+            return []
 
-    async def update_password(self, param: UpdatePasswordParam, request: Request) -> None:
-        return await user_update_password(self.db, param, request)
+        resource_ids = list(
+            set(
+                self.db.execute(
+                    select(RelRoleResource.resource_id).where(RelRoleResource.role_id.in_(role_ids))
+                ).scalars().all()
+            )
+        )
+        if not resource_ids:
+            return []
+
+        resources = self.db.execute(
+            select(SysResource)
+            .where(SysResource.id.in_(resource_ids), SysResource.status == "ENABLED")
+            .order_by(SysResource.sort_code.asc())
+        ).scalars().all()
+        return _build_menu_tree(resources)
+
+    async def get_current_user_permissions(self, actor: Optional[ActorContext] = None) -> list[str]:
+        user_id = actor.user_id if actor and actor.user_id else ""
+        if not user_id:
+            return []
+
+        permission_codes = set()
+        role_ids = self.get_user_role_ids(user_id)
+        if role_ids:
+            permission_codes.update(
+                self.db.execute(
+                    select(RelRolePermission.permission_code)
+                    .distinct()
+                    .where(RelRolePermission.role_id.in_(role_ids))
+                ).scalars().all()
+            )
+
+        permission_codes.update(
+            self.db.execute(
+                select(RelUserPermission.permission_code)
+                .distinct()
+                .where(RelUserPermission.user_id == user_id)
+            ).scalars().all()
+        )
+        return sorted(permission_codes)
+
+    async def update_profile(
+        self,
+        param: UpdateProfileParam,
+        actor: Optional[ActorContext] = None,
+    ) -> None:
+        user_id = actor.user_id if actor and actor.user_id else ""
+        if not user_id:
+            raise BusinessException("用户未登录", 401)
+
+        updates: dict = {}
+        for field in ["username", "nickname", "motto", "gender", "birthday", "email", "github", "phone"]:
+            value = getattr(param, field)
+            if value is not None:
+                updates[field] = value
+
+        if updates:
+            updates["updated_at"] = datetime.now()
+            self.db.execute(sa_update(SysUser).where(SysUser.id == user_id).values(**updates))
+            self.db.commit()
+
+    async def update_avatar(
+        self,
+        param: UpdateAvatarParam,
+        actor: Optional[ActorContext] = None,
+    ) -> None:
+        user_id = actor.user_id if actor and actor.user_id else ""
+        if not user_id:
+            raise BusinessException("用户未登录", 401)
+        if not param.avatar:
+            raise BusinessException("头像不能为空", 400)
+
+        from sdk.utils.image_utils import compress_base64_image
+
+        entity = self.find_by_id(user_id)
+        if not entity:
+            raise BusinessException("用户不存在", 404)
+
+        entity.avatar = compress_base64_image(
+            param.avatar,
+            max_width=512,
+            max_height=512,
+            quality=80,
+        )
+        self.db.commit()
+
+    async def update_password(
+        self,
+        param: UpdatePasswordParam,
+        actor: Optional[ActorContext] = None,
+    ) -> None:
+        user_id = actor.user_id if actor and actor.user_id else ""
+        if not user_id:
+            raise BusinessException("用户未登录", 401)
+
+        entity = self.find_by_id(user_id)
+        if not entity:
+            raise BusinessException("用户不存在", 404)
+        if not entity.password:
+            raise BusinessException("未设置密码，无法修改", 400)
+
+        current_password = decrypt(param.current_password).encode("utf-8")
+        if not bcrypt.checkpw(current_password, entity.password.encode("utf-8")):
+            raise BusinessException("当前密码不正确", 400)
+
+        entity.password = bcrypt.hashpw(
+            decrypt(param.new_password).encode("utf-8"),
+            bcrypt.gensalt(),
+        ).decode("utf-8")
+        entity.updated_at = datetime.now()
+        self.db.commit()
 
     def reset_password(self, user_id: str) -> None:
-        return user_reset_password(self.db, user_id)
+        if not user_id:
+            raise BusinessException("ID不能为空", 400)
+        raw_password = settings.user_config.reset_password or _generate_random_password()
+        hashed_password = bcrypt.hashpw(
+            raw_password.encode("utf-8"),
+            bcrypt.gensalt(),
+        ).decode("utf-8")
+        self.db.execute(
+            sa_update(SysUser).where(SysUser.id == user_id).values(
+                password=hashed_password,
+                updated_at=datetime.now(),
+            )
+        )
+        self.db.commit()
 
     def batch_import(self, param: BatchImportParam) -> None:
-        return user_batch_import(self.db, param)
+        if not param.users:
+            return
+        now = datetime.now()
+        entities = []
+        for item in param.users:
+            entities.append(
+                SysUser(
+                    id=generate_id(),
+                    username=item.username,
+                    nickname=item.nickname,
+                    phone=item.phone,
+                    email=item.email,
+                    gender=item.gender,
+                    status="ACTIVE",
+                    created_at=now,
+                    updated_at=now,
+                )
+            )
+        try:
+            self.db.add_all(entities)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
 
     def update_status(self, param: UpdateStatusParam) -> None:
-        return user_update_status(self.db, param)
+        if not param.ids:
+            return
+        self.db.execute(
+            sa_update(SysUser).where(SysUser.id.in_(param.ids)).values(
+                status=param.status,
+                updated_at=datetime.now(),
+            )
+        )
+        self.db.commit()
 
     def export(self, param: UserPageParam) -> list[dict]:
-        return user_export(self.db, param)
+        rows = self.repository.find_all_by_filters(param)
+        role_map = _batch_role_ids(self.db, [row.id for row in rows])
+        data = []
+        for row in rows:
+            item = UserVO.model_validate(row).model_dump()
+            item["role_ids"] = role_map.get(row.id, [])
+            data.append(item)
+        _enrich_names(self.db, data)
+        return data
 
 
-# ═════════════════════════════════════════════════════════════════════
-# LoginUserApiProvider
-# ═════════════════════════════════════════════════════════════════════
+def get_user_service(db: Session = Depends(get_db)) -> UserService:
+    return UserService.from_db(db)
+
 
 class LoginUserApiProvider:
     def __init__(self, session_factory):
@@ -891,23 +637,23 @@ class LoginUserApiProvider:
     def get_login_user_info_by_id(self, user_id: str) -> Optional[LoginUserInfo]:
         db = self._session_factory()
         try:
-            entity = user_find_by_id(db, user_id)
-            return user_to_login_info(entity)
+            service = UserService.from_db(db)
+            return service.to_login_user_info(service.find_by_id(user_id))
         finally:
             db.close()
 
     def get_login_user_info_by_username(self, username: str) -> Optional[LoginUserInfo]:
         db = self._session_factory()
         try:
-            entity = user_find_by_username(db, username)
-            return user_to_login_info(entity)
+            service = UserService.from_db(db)
+            return service.to_login_user_info(service.find_by_username(username))
         finally:
             db.close()
 
     def get_login_user_info_by_email(self, email: str) -> Optional[LoginUserInfo]:
         db = self._session_factory()
         try:
-            entity = user_find_by_email(db, email)
-            return user_to_login_info(entity)
+            service = UserService.from_db(db)
+            return service.to_login_user_info(service.find_by_email(email))
         finally:
             db.close()

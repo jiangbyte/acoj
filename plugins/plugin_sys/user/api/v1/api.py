@@ -4,10 +4,9 @@ No extra routes beyond what Go registers.
 """
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy.orm import Session
 from sdk.web.result import Result, PageData, success
-from sdk.shared.types import IdParam, IdsParam
-from sdk.infra.db import get_db
+from sdk.shared.di import ActorContext, get_current_actor
+from sdk.shared.types import IdsParam
 from sdk.kernel.plugin import Perm
 from sdk.auth.decorator import HeiCheckLogin, NoRepeat
 from sdk.log import SysLog
@@ -15,52 +14,54 @@ from ...params import (
     UserVO, UserPageParam, GrantRoleParam, GrantUserPermissionParam,
     UpdateProfileParam, UpdateAvatarParam, UpdatePasswordParam,
 )
-from ...service import (
-    user_page, user_detail, user_create, user_modify, user_remove,
-    user_grant_roles, user_grant_permissions,
-    user_get_permission_details, user_get_role_ids,
-    user_get_current, user_get_menus, user_get_permissions,
-    user_update_profile, user_update_avatar, user_update_password,
-)
+from ...service import UserService, get_user_service
 
 router = APIRouter()
 
 
 @router.get("/api/v1/sys/user/page", summary="获取用户分页", response_model=Result[PageData[UserVO]])
 @Perm("sys:user:page", "用户分页")
-async def page(request: Request, param: UserPageParam = Depends(), db: Session = Depends(get_db)):
-    return success(user_page(db, param))
+async def page(param: UserPageParam = Depends(), service: UserService = Depends(get_user_service)):
+    return success(service.page(param))
 
 
 @router.post("/api/v1/sys/user/create", summary="添加用户", response_model=Result)
 @SysLog("添加用户")
 @Perm("sys:user:create", "添加用户")
 @NoRepeat(interval=3000)
-async def create(request: Request, vo: UserVO, db: Session = Depends(get_db)):
-    await user_create(db, vo, request)
+async def create(
+    vo: UserVO,
+    service: UserService = Depends(get_user_service),
+    actor: ActorContext = Depends(get_current_actor),
+):
+    await service.create(vo, actor)
     return success()
 
 
 @router.post("/api/v1/sys/user/modify", summary="编辑用户", response_model=Result)
 @SysLog("编辑用户")
 @Perm("sys:user:modify", "编辑用户")
-async def modify(request: Request, vo: UserVO, db: Session = Depends(get_db)):
-    await user_modify(db, vo, request)
+async def modify(
+    vo: UserVO,
+    service: UserService = Depends(get_user_service),
+    actor: ActorContext = Depends(get_current_actor),
+):
+    await service.modify(vo, actor)
     return success()
 
 
 @router.post("/api/v1/sys/user/remove", summary="删除用户", response_model=Result)
 @SysLog("删除用户")
 @Perm("sys:user:remove", "删除用户")
-async def remove(request: Request, param: IdsParam, db: Session = Depends(get_db)):
-    user_remove(db, param.ids)
+async def remove(param: IdsParam, service: UserService = Depends(get_user_service)):
+    service.remove(param)
     return success()
 
 
 @router.get("/api/v1/sys/user/detail", summary="获取用户详情", response_model=Result[UserVO])
 @Perm("sys:user:detail", "用户详情")
-async def detail(request: Request, id: str = Query(...), db: Session = Depends(get_db)):
-    data = user_detail(db, id)
+async def detail(id: str = Query(...), service: UserService = Depends(get_user_service)):
+    data = service.detail(type("P", (), {"id": id})())
     return success(data if data else None)
 
 
@@ -68,8 +69,8 @@ async def detail(request: Request, id: str = Query(...), db: Session = Depends(g
 @SysLog("分配用户角色")
 @Perm("sys:user:grant-role", "分配用户角色")
 @NoRepeat(interval=3000)
-async def grant_role(request: Request, param: GrantRoleParam, db: Session = Depends(get_db)):
-    await user_grant_roles(db, param, request)
+async def grant_role(param: GrantRoleParam, service: UserService = Depends(get_user_service)):
+    service.grant_role(param)
     return success()
 
 
@@ -77,41 +78,50 @@ async def grant_role(request: Request, param: GrantRoleParam, db: Session = Depe
 @SysLog("分配用户权限")
 @Perm("sys:user:grant-permission", "分配用户权限")
 @NoRepeat(interval=3000)
-async def grant_permission(request: Request, param: GrantUserPermissionParam, db: Session = Depends(get_db)):
-    await user_grant_permissions(db, param, request)
+async def grant_permission(param: GrantUserPermissionParam, service: UserService = Depends(get_user_service)):
+    service.grant_permission(param)
     return success()
 
 
 @router.get("/api/v1/sys/user/own-permission-detail", summary="获取用户已分配的权限详情")
 @Perm("sys:user:own-permission-detail", "用户权限详情")
-async def own_permission_detail(request: Request, user_id: str = Query(...), db: Session = Depends(get_db)):
-    return success(user_get_permission_details(db, user_id))
+async def own_permission_detail(user_id: str = Query(...), service: UserService = Depends(get_user_service)):
+    return success(service.get_user_permission_details(user_id))
 
 
 @router.get("/api/v1/sys/user/own-roles", summary="获取用户已分配的角色ID列表")
 @Perm("sys:user:own-roles", "用户角色列表")
-async def own_roles(request: Request, user_id: str = Query(...), db: Session = Depends(get_db)):
-    return success(user_get_role_ids(db, user_id))
+async def own_roles(user_id: str = Query(...), service: UserService = Depends(get_user_service)):
+    return success(service.get_user_role_ids(user_id))
 
 
 @router.get("/api/v1/sys/user/current", summary="获取当前用户信息")
 @HeiCheckLogin
-async def get_current_user(request: Request, db: Session = Depends(get_db)):
-    data = await user_get_current(db, request)
+async def get_current_user(
+    service: UserService = Depends(get_user_service),
+    actor: ActorContext = Depends(get_current_actor),
+):
+    data = service.get_current_user(actor)
     return success(data)
 
 
 @router.get("/api/v1/sys/user/menus", summary="获取当前用户菜单树")
 @HeiCheckLogin
-async def get_current_user_menus(request: Request, db: Session = Depends(get_db)):
-    data = await user_get_menus(db, request)
+async def get_current_user_menus(
+    service: UserService = Depends(get_user_service),
+    actor: ActorContext = Depends(get_current_actor),
+):
+    data = await service.get_current_user_menus(actor)
     return success(data)
 
 
 @router.get("/api/v1/sys/user/permissions", summary="获取当前用户权限码列表")
 @HeiCheckLogin
-async def get_current_user_permissions(request: Request, db: Session = Depends(get_db)):
-    data = await user_get_permissions(db, request)
+async def get_current_user_permissions(
+    service: UserService = Depends(get_user_service),
+    actor: ActorContext = Depends(get_current_actor),
+):
+    data = await service.get_current_user_permissions(actor)
     return success(data)
 
 
@@ -119,16 +129,24 @@ async def get_current_user_permissions(request: Request, db: Session = Depends(g
 @SysLog("更新个人信息")
 @HeiCheckLogin
 @NoRepeat(interval=3000)
-async def update_profile(request: Request, param: UpdateProfileParam, db: Session = Depends(get_db)):
-    await user_update_profile(db, param, request)
+async def update_profile(
+    param: UpdateProfileParam,
+    service: UserService = Depends(get_user_service),
+    actor: ActorContext = Depends(get_current_actor),
+):
+    await service.update_profile(param, actor)
     return success()
 
 
 @router.post("/api/v1/sys/user/update-avatar", summary="更新当前用户头像（base64）", response_model=Result)
 @SysLog("更新头像")
 @HeiCheckLogin
-async def update_avatar(request: Request, param: UpdateAvatarParam, db: Session = Depends(get_db)):
-    await user_update_avatar(db, param, request)
+async def update_avatar(
+    param: UpdateAvatarParam,
+    service: UserService = Depends(get_user_service),
+    actor: ActorContext = Depends(get_current_actor),
+):
+    await service.update_avatar(param, actor)
     return success()
 
 
@@ -136,6 +154,10 @@ async def update_avatar(request: Request, param: UpdateAvatarParam, db: Session 
 @SysLog("修改密码")
 @HeiCheckLogin
 @NoRepeat(interval=3000)
-async def update_password(request: Request, param: UpdatePasswordParam, db: Session = Depends(get_db)):
-    await user_update_password(db, param, request)
+async def update_password(
+    param: UpdatePasswordParam,
+    service: UserService = Depends(get_user_service),
+    actor: ActorContext = Depends(get_current_actor),
+):
+    await service.update_password(param, actor)
     return success()

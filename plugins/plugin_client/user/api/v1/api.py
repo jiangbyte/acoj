@@ -4,10 +4,9 @@ Mirrors hei-gin plugins/plugin-client/user/api/v1/api.go
 """
 
 from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy.orm import Session
 from sdk.web.result import Result, PageData, success
-from sdk.shared.types import IdParam, IdsParam
-from sdk.infra.db import get_db
+from sdk.shared.di import ActorContext, get_current_client_actor
+from sdk.shared.types import IdsParam
 from sdk.kernel.plugin import Perm
 from sdk.auth.decorator import HeiClientCheckLogin, NoRepeat
 from sdk.log import SysLog
@@ -15,12 +14,7 @@ from ...params import (
     ClientUserVO, ClientUserPageParam,
     UpdateProfileParam, UpdateAvatarParam, UpdatePasswordParam,
 )
-from ...service import (
-    client_user_page, client_user_detail, client_user_create,
-    client_user_modify, client_user_remove,
-    client_user_get_current, client_user_update_profile,
-    client_user_update_avatar, client_user_update_password,
-)
+from ...service import ClientUserService, get_client_user_service
 
 router = APIRouter()
 
@@ -30,37 +24,47 @@ router = APIRouter()
 @router.get("/api/v1/client-user/page", summary="获取C端用户分页",
             response_model=Result[PageData[ClientUserVO]])
 @Perm("client:user:page", "C端用户分页")
-async def page(request: Request, param: ClientUserPageParam = Depends(),
-               db: Session = Depends(get_db)):
-    return success(client_user_page(db, param))
+async def page(
+    param: ClientUserPageParam = Depends(),
+    service: ClientUserService = Depends(get_client_user_service),
+):
+    return success(service.page(param))
 
 
 @router.post("/api/v1/client-user/create", summary="添加C端用户", response_model=Result)
 @Perm("client:user:create", "添加C端用户")
-async def create(request: Request, vo: ClientUserVO, db: Session = Depends(get_db)):
-    await client_user_create(db, vo, request)
+async def create(
+    vo: ClientUserVO,
+    service: ClientUserService = Depends(get_client_user_service),
+    actor: ActorContext = Depends(get_current_client_actor),
+):
+    service.create(vo, actor)
     return success()
 
 
 @router.post("/api/v1/client-user/modify", summary="编辑C端用户", response_model=Result)
 @Perm("client:user:modify", "编辑C端用户")
-async def modify(request: Request, vo: ClientUserVO, db: Session = Depends(get_db)):
-    await client_user_modify(db, vo, request)
+async def modify(
+    vo: ClientUserVO,
+    service: ClientUserService = Depends(get_client_user_service),
+    actor: ActorContext = Depends(get_current_client_actor),
+):
+    service.modify(vo, actor)
     return success()
 
 
 @router.post("/api/v1/client-user/remove", summary="删除C端用户", response_model=Result)
 @Perm("client:user:remove", "删除C端用户")
-async def remove(request: Request, param: IdsParam, db: Session = Depends(get_db)):
-    client_user_remove(db, param)
+async def remove(param: IdsParam, service: ClientUserService = Depends(get_client_user_service)):
+    service.remove(param.ids)
     return success()
 
 
 @router.get("/api/v1/client-user/detail", summary="获取C端用户详情",
             response_model=Result[ClientUserVO])
 @Perm("client:user:detail", "C端用户详情")
-async def detail(request: Request, id: str = Query(...), db: Session = Depends(get_db)):
-    data = client_user_detail(db, id)
+async def detail(id: str = Query(...), service: ClientUserService = Depends(get_client_user_service)):
+    data = service.detail(id)
     return success(data)
 
 
@@ -68,8 +72,11 @@ async def detail(request: Request, id: str = Query(...), db: Session = Depends(g
 
 @router.get("/api/v1/c/client-user/current", summary="获取当前C端用户信息")
 @HeiClientCheckLogin
-async def get_current_user(request: Request, db: Session = Depends(get_db)):
-    data = await client_user_get_current(db, request)
+async def get_current_user(
+    service: ClientUserService = Depends(get_client_user_service),
+    actor: ActorContext = Depends(get_current_client_actor),
+):
+    data = service.get_current_user(actor)
     return success(data)
 
 
@@ -78,9 +85,12 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
 @SysLog("C端用户更新个人信息")
 @HeiClientCheckLogin
 @NoRepeat(interval=3000)
-async def update_profile(request: Request, param: UpdateProfileParam,
-                          db: Session = Depends(get_db)):
-    await client_user_update_profile(db, param, request)
+async def update_profile(
+    param: UpdateProfileParam,
+    service: ClientUserService = Depends(get_client_user_service),
+    actor: ActorContext = Depends(get_current_client_actor),
+):
+    service.update_profile(param, actor)
     return success()
 
 
@@ -88,9 +98,12 @@ async def update_profile(request: Request, param: UpdateProfileParam,
              response_model=Result)
 @SysLog("C端用户更新头像")
 @HeiClientCheckLogin
-async def update_avatar(request: Request, param: UpdateAvatarParam,
-                         db: Session = Depends(get_db)):
-    await client_user_update_avatar(db, param, request)
+async def update_avatar(
+    param: UpdateAvatarParam,
+    service: ClientUserService = Depends(get_client_user_service),
+    actor: ActorContext = Depends(get_current_client_actor),
+):
+    service.update_avatar(param, actor)
     return success()
 
 
@@ -99,7 +112,10 @@ async def update_avatar(request: Request, param: UpdateAvatarParam,
 @SysLog("C端用户修改密码")
 @HeiClientCheckLogin
 @NoRepeat(interval=3000)
-async def update_password(request: Request, param: UpdatePasswordParam,
-                           db: Session = Depends(get_db)):
-    await client_user_update_password(db, param, request)
+async def update_password(
+    param: UpdatePasswordParam,
+    service: ClientUserService = Depends(get_client_user_service),
+    actor: ActorContext = Depends(get_current_client_actor),
+):
+    service.update_password(param, actor)
     return success()

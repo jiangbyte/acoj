@@ -1,161 +1,128 @@
-"""Broadcast management service.
-
-Mirrors hei-gin plugins/plugin-im/broadcast/service.go.
-"""
+"""Broadcast service."""
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 from typing import Optional
 
-from sdk.infra.db import SessionLocal
-from sdk.web.exception import BusinessException
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from sdk.infra.db import get_db
 from sdk.utils import generate_id
-from plugins.plugin_im.model.broadcast import Broadcast, BroadcastRead
-from plugins.plugin_im.broadcast.params import BroadcastVO, SendBroadcastParam, BroadcastToBroadcastVO
-from plugins.plugin_im.broadcast.repository import BroadcastRepository
 from plugins.plugin_im import ws as im_ws
 from plugins.plugin_im.ws import Message as WSMessage
 
-import asyncio
-import logging
-logger = logging.getLogger(__name__)
+from .models import Broadcast, BroadcastRead
+from .params import BroadcastToBroadcastVO, BroadcastVO, SendBroadcastParam
+from .repository import BroadcastRepository
 
 
-def _fmt_dt(dt) -> str:
+def _fmt_dt(dt: Optional[datetime]) -> str:
     if dt is None:
         return ""
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
-# ═════════════════════════════════════════════════════════════════════
-# Send
-# ═════════════════════════════════════════════════════════════════════
+class BroadcastService:
+    def __init__(self, repository: BroadcastRepository):
+        self.repository = repository
 
-def send(sender_id: str, p: SendBroadcastParam) -> None:
-    scope = p.scope or "ALL"
-    now = datetime.now()
+    @classmethod
+    def from_db(cls, db: Session) -> "BroadcastService":
+        return cls(BroadcastRepository(db))
 
-    db = SessionLocal()
-    try:
-        BroadcastRepository(db).insert(Broadcast(
-            id=generate_id(),
-            title=p.title,
-            content=p.content,
-            scope=scope,
-            sender_id=sender_id,
-            created_at=now,
-            updated_at=now,
-        ))
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
+    def send(self, sender_id: str, param: SendBroadcastParam) -> None:
+        scope = param.scope or "ALL"
+        now = datetime.now()
+        self.repository.insert(
+            Broadcast(
+                id=generate_id(),
+                title=param.title,
+                content=param.content,
+                scope=scope,
+                sender_id=sender_id,
+                created_at=now,
+                updated_at=now,
+            )
+        )
 
-    # WS broadcast
-    payload = {"title": p.title, "content": p.content, "scope": scope, "action": "broadcast"}
-    ws_msg = WSMessage(type="broadcast", payload=payload)
+        payload = {
+            "title": param.title,
+            "content": param.content,
+            "scope": scope,
+            "action": "broadcast",
+        }
+        ws_msg = WSMessage(type="broadcast", payload=payload)
 
-    if scope == "ALL":
-        if im_ws.GlobalCrossHub: asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_all(ws_msg))
-    elif scope == "BUSINESS":
-        if im_ws.GlobalCrossHub: asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_business(ws_msg))
-    elif scope == "CONSUMER":
-        if im_ws.GlobalCrossHub: asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_consumers(ws_msg))
+        if scope == "ALL":
+            if im_ws.GlobalCrossHub:
+                asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_all(ws_msg))
+        elif scope == "BUSINESS":
+            if im_ws.GlobalCrossHub:
+                asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_business(ws_msg))
+        elif scope == "CONSUMER":
+            if im_ws.GlobalCrossHub:
+                asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_consumers(ws_msg))
 
+    def list(self, cursor: str = "", size: int = 20) -> tuple[list[BroadcastVO], bool]:
+        if size < 1:
+            size = 20
+        if size > 100:
+            size = 100
 
-# ═════════════════════════════════════════════════════════════════════
-# List (admin)
-# ═════════════════════════════════════════════════════════════════════
-
-def list_broadcasts(cursor: str = "", size: int = 20) -> tuple[list[BroadcastVO], bool]:
-    if size < 1:
-        size = 20
-    if size > 100:
-        size = 100
-
-    db = SessionLocal()
-    try:
-        repository = BroadcastRepository(db)
         cursor_dt = None
         if cursor:
             try:
                 cursor_dt = datetime.strptime(cursor, "%Y-%m-%d %H:%M:%S")
             except ValueError:
-                pass
+                cursor_dt = None
 
-        records = repository.page(cursor_dt, size)
+        records = self.repository.page(cursor_dt, size)
         has_more = len(records) > size
         if has_more:
             records = records[:size]
-        result = [BroadcastToBroadcastVO(b) for b in records]
-        return result, has_more
-    finally:
-        db.close()
+        return [BroadcastToBroadcastVO(record) for record in records], has_more
 
+    def unread_list(self, user_id: str, user_type: str) -> tuple[list[BroadcastVO], bool]:
+        records = self.repository.latest(50)
+        read_records = self.repository.list_reads(user_id, user_type)
+        read_map = {record.broadcast_id: record.read_at for record in read_records}
 
-# ═════════════════════════════════════════════════════════════════════
-# Unread List
-# ═════════════════════════════════════════════════════════════════════
-
-def unread_list(user_id: str, user_type: str) -> tuple[list[BroadcastVO], bool]:
-    db = SessionLocal()
-    try:
-        repository = BroadcastRepository(db)
-        records = repository.latest(50)
-        read_records = repository.list_reads(user_id, user_type)
-        read_map = {r.broadcast_id: r.read_at for r in read_records}
-
-        result = []
-        for b in records:
-            is_read = b.id in read_map
-            read_at = read_map.get(b.id)
-            vo = BroadcastToBroadcastVO(b)
+        results = []
+        for record in records:
+            vo = BroadcastToBroadcastVO(record)
+            is_read = record.id in read_map
             vo.read = is_read
+            read_at = read_map.get(record.id)
             if is_read and read_at:
                 vo.read_at = _fmt_dt(read_at)
-            result.append(vo)
-        return result, False
-    finally:
-        db.close()
+            results.append(vo)
+        return results, False
 
-
-# ═════════════════════════════════════════════════════════════════════
-# Mark Read
-# ═════════════════════════════════════════════════════════════════════
-
-def mark_read(user_id: str, user_type: str, broadcast_id: str) -> None:
-    db = SessionLocal()
-    try:
-        repository = BroadcastRepository(db)
-        now = datetime.now()
-        existing = repository.find_read(broadcast_id, user_id, user_type)
-        if not existing:
-            repository.mark_read(BroadcastRead(
+    def mark_read(self, user_id: str, user_type: str, broadcast_id: str) -> None:
+        existing = self.repository.find_read(broadcast_id, user_id, user_type)
+        if existing:
+            return
+        self.repository.mark_read(
+            BroadcastRead(
                 id=generate_id(),
                 broadcast_id=broadcast_id,
                 user_id=user_id,
                 user_type=user_type,
-                read_at=now,
-            ))
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
+                read_at=datetime.now(),
+            )
+        )
 
-
-# ═════════════════════════════════════════════════════════════════════
-# Detail
-# ═════════════════════════════════════════════════════════════════════
-
-def detail(broadcast_id: str) -> Optional[BroadcastVO]:
-    db = SessionLocal()
-    try:
-        b = BroadcastRepository(db).find_by_id(broadcast_id)
-        if not b:
+    def detail(self, broadcast_id: str) -> Optional[BroadcastVO]:
+        if not broadcast_id:
             return None
-        return BroadcastToBroadcastVO(b)
-    finally:
-        db.close()
+        entity = self.repository.find_by_id(broadcast_id)
+        if not entity:
+            return None
+        return BroadcastToBroadcastVO(entity)
+
+
+def get_broadcast_service(db: Session = Depends(get_db)) -> BroadcastService:
+    return BroadcastService.from_db(db)
