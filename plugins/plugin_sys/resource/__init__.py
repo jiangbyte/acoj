@@ -2,6 +2,7 @@ from .models import SysModule, SysResource
 from .params import ModuleVO, ResourceVO, ModulePageParam, ResourcePageParam
 from .dao import ModuleDao, ResourceDao
 from .service import ModuleService, ResourceService
+from . import migrate
 from .api import v1_router as router
 
 from core.plugin.registry import register_router

@@ -5,7 +5,8 @@ from __future__ import annotations
 import hashlib
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import String, Text, Integer, DateTime, Index, UniqueConstraint
+from sqlalchemy import Index, text
+from sqlalchemy.dialects.mysql import DATETIME, INTEGER, TEXT, VARCHAR
 from sqlalchemy.orm import Mapped, mapped_column
 from core.plugin.registry import HeiBase
 from core.enums import LoginTypeEnum
@@ -23,57 +24,60 @@ ConvTypeGroup = "group"
 
 
 class Message(HeiBase):
-    """统一单聊消息表"""
+    """Unified single-chat message table."""
     __tablename__ = "im_message"
-
-    id: Mapped[str] = mapped_column(String(32), primary_key=True)
-    conversation_id: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
-    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    extra: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    msg_type: Mapped[str] = mapped_column(String(20), default="TEXT")
-    sender_id: Mapped[str] = mapped_column(String(32), index=True, nullable=True)
-    sender_type: Mapped[str] = mapped_column(String(20), nullable=True)
-    receiver_id: Mapped[str] = mapped_column(String(32), index=True, nullable=True)
-    receiver_type: Mapped[str] = mapped_column(String(20), nullable=True)
-    status: Mapped[str] = mapped_column(String(10), nullable=False, default="unread")  # unread | read
-    deleted_by: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
-    read_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-
     __table_args__ = (
-        Index("idx_msg_conv_time", "conversation_id", "created_at"),
+        Index("idx_conversation_id", "conversation_id"),
+        Index("idx_msg_conv_created", "conversation_id", "created_at"),
+        Index("idx_sender_id", "sender_id"),
+        Index("idx_msg_sender_type_created", "sender_id", "sender_type", "created_at"),
+        Index("idx_receiver_id", "receiver_id"),
+        Index("idx_msg_receiver_type_status", "receiver_id", "receiver_type", "status"),
     )
+
+    id: Mapped[str] = mapped_column(VARCHAR(32, charset="utf8mb4", collation="utf8mb4_general_ci"), primary_key=True)
+    conversation_id: Mapped[str] = mapped_column(VARCHAR(32, charset="utf8mb4", collation="utf8mb4_general_ci"), nullable=False)
+    content: Mapped[str] = mapped_column(TEXT(collation="utf8mb4_general_ci"))
+    extra: Mapped[str] = mapped_column(TEXT(collation="utf8mb4_general_ci"))
+    msg_type: Mapped[str] = mapped_column(VARCHAR(20, charset="utf8mb4", collation="utf8mb4_general_ci"), default="TEXT", server_default=text("'TEXT'"))
+    sender_id: Mapped[str] = mapped_column(VARCHAR(32, charset="utf8mb4", collation="utf8mb4_general_ci"))
+    sender_type: Mapped[str] = mapped_column(VARCHAR(20, charset="utf8mb4", collation="utf8mb4_general_ci"))
+    receiver_id: Mapped[str] = mapped_column(VARCHAR(32, charset="utf8mb4", collation="utf8mb4_general_ci"))
+    receiver_type: Mapped[str] = mapped_column(VARCHAR(20, charset="utf8mb4", collation="utf8mb4_general_ci"))
+    status: Mapped[str] = mapped_column(VARCHAR(10, charset="utf8mb4", collation="utf8mb4_general_ci"), nullable=False, default="unread", server_default=text("'unread'"))
+    deleted_by: Mapped[str] = mapped_column(VARCHAR(32, charset="utf8mb4", collation="utf8mb4_general_ci"), default="", server_default=text("''"))
+    read_at: Mapped[Optional[datetime]] = mapped_column(DATETIME)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DATETIME)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DATETIME)
 
 
 class Conversation(HeiBase):
-    """会话缓存表"""
+    """Conversation metadata cache table."""
     __tablename__ = "im_conversation"
 
-    id: Mapped[str] = mapped_column(String(32), primary_key=True)
-    from_id: Mapped[str] = mapped_column("from_id", String(32), nullable=False)
-    from_type: Mapped[str] = mapped_column("from_type", String(20), nullable=False)
-    to_id: Mapped[str] = mapped_column("to_id", String(32), nullable=False)
-    to_type: Mapped[str] = mapped_column("to_type", String(20), nullable=False)
-    last_msg: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    last_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    id: Mapped[str] = mapped_column(VARCHAR(32, charset="utf8mb4", collation="utf8mb4_general_ci"), primary_key=True)
+    from_id: Mapped[str] = mapped_column("from_id", VARCHAR(32, charset="utf8mb4", collation="utf8mb4_general_ci"), nullable=False)
+    from_type: Mapped[str] = mapped_column("from_type", VARCHAR(20, charset="utf8mb4", collation="utf8mb4_general_ci"), nullable=False)
+    to_id: Mapped[str] = mapped_column("to_id", VARCHAR(32, charset="utf8mb4", collation="utf8mb4_general_ci"), nullable=False)
+    to_type: Mapped[str] = mapped_column("to_type", VARCHAR(20, charset="utf8mb4", collation="utf8mb4_general_ci"), nullable=False)
+    last_msg: Mapped[str] = mapped_column(TEXT(collation="utf8mb4_general_ci"), default="", server_default=text("''"))
+    last_time: Mapped[Optional[datetime]] = mapped_column(DATETIME)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DATETIME)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DATETIME)
 
 
 class ConversationUnread(HeiBase):
-    """每用户每会话未读数"""
+    """Per-user unread count per conversation."""
     __tablename__ = "im_conversation_unread"
-
-    id: Mapped[str] = mapped_column(String(32), primary_key=True)
-    conversation_id: Mapped[str] = mapped_column(String(32), nullable=False)
-    user_id: Mapped[str] = mapped_column(String(32), nullable=False)
-    user_type: Mapped[str] = mapped_column(String(20), nullable=False)
-    unread_count: Mapped[int] = mapped_column(Integer, default=0)
-
     __table_args__ = (
-        UniqueConstraint("conversation_id", "user_id", "user_type", name="uq_conv_unread"),
+        Index("idx_conv_unread", "conversation_id", "user_id", "user_type", unique=True),
     )
+
+    id: Mapped[str] = mapped_column(VARCHAR(32, charset="utf8mb4", collation="utf8mb4_general_ci"), primary_key=True)
+    conversation_id: Mapped[str] = mapped_column(VARCHAR(32, charset="utf8mb4", collation="utf8mb4_general_ci"), nullable=False)
+    user_id: Mapped[str] = mapped_column(VARCHAR(32, charset="utf8mb4", collation="utf8mb4_general_ci"), nullable=False)
+    user_type: Mapped[str] = mapped_column(VARCHAR(20, charset="utf8mb4", collation="utf8mb4_general_ci"), nullable=False)
+    unread_count: Mapped[int] = mapped_column(INTEGER, default=0, server_default=text("0"))
 
 
 # ── Helper data classes (not ORM models) ──────────────────────────────

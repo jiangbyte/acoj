@@ -2,6 +2,7 @@ from .models import SysGroup
 from .params import GroupVO, GroupPageParam
 from .dao import GroupDao
 from .service import GroupService
+from . import migrate
 from .api import v1_router as router
 
 from core.plugin.registry import register_router

@@ -2,6 +2,7 @@ from .models import SysOrg
 from .params import OrgVO, OrgPageParam
 from .dao import OrgDao
 from .service import OrgService
+from . import migrate
 from .api import v1_router as router
 
 from core.plugin.registry import register_router
