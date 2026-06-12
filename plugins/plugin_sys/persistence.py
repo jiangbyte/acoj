@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 
-from core.log import LogEntry
+from sdk.log import LogEntry
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class DbLogPersister:
     def save_log(self, entry: LogEntry) -> None:
         from plugins.plugin_sys.log.service import LogService
         from plugins.plugin_sys.log.models import SysLog as LogModel
-        from core.db import SessionLocal
+        from sdk.infra.db import SessionLocal
 
         db = SessionLocal()
         try:

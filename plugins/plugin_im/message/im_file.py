@@ -13,12 +13,12 @@ from typing import Optional
 
 from fastapi import UploadFile
 
-from core.db import SessionLocal
-from core.utils import generate_id
+from sdk.infra.db import SessionLocal
+from sdk.utils import generate_id
 from plugins.plugin_im.model.im_file import ImFile
 from plugins.plugin_im.message.params import UploadFileResult
 from plugins.plugin_im.message.im_file_repository import ImFileRepository
-from core.exception import BusinessException
+from sdk.web.exception import BusinessException
 
 import logging
 logger = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ def resolve_file_url(content: str, extra: str) -> str:
 
     # Resolve URL from storage
     try:
-        from core.storage.factory import get_url
+        from sdk.infra.storage.factory import get_url
         return get_url(engine, bucket, content)
     except (ImportError, Exception):
         return f"/uploads/im/{content}"

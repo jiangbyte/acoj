@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from core.result import Result, success
-from core.captcha import b_captcha, CaptchaResult
+from sdk.web.result import Result, success
+from sdk.captcha import b_captcha, CaptchaResult
 
 router = APIRouter()
 

@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, delete as sa_delete
+from sqlalchemy import select, func, delete as sa_delete, update as sa_update
 from .models import SysDict
 from .params import DictPageParam, DictListParam
 
@@ -24,7 +24,7 @@ class DictRepository:
         return list(self.db.execute(select(SysDict)).scalars().all())
 
     def insert(self, entity: SysDict, user_id: Optional[str] = None) -> SysDict:
-        from core.utils.snowflake_utils import generate_id
+        from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
             entity.id = generate_id()
@@ -128,3 +128,7 @@ class DictRepository:
         if exclude_id:
             filters.append(SysDict.id != exclude_id)
         return self.db.execute(select(func.count()).select_from(SysDict).where(*filters)).scalar() or 0
+
+    def update_by_id(self, dict_id: str, updates: dict) -> None:
+        self.db.execute(sa_update(SysDict).where(SysDict.id == dict_id).values(**updates))
+        self.db.commit()

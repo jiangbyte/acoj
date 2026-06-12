@@ -2,7 +2,7 @@
 
 ## 应用初始化流程
 
-Hei FastAPI 的应用启动流程由 `core/app/setup.py` 中的应用工厂（`create_app` 函数）编排，遵循清晰的初始化顺序：
+Hei FastAPI 的应用启动流程由 `sdk/app/setup.py` 中的应用工厂（`create_app` 函数）编排，遵循清晰的初始化顺序：
 
 ```
 Config 加载（.env → Pydantic Settings）
@@ -80,7 +80,7 @@ Uvicorn 启动 ──── 监听端口，提供服务
 │                                               │
 │  ⑥ 业务 Handler                               │
 │     ├─ 参数校验（Pydantic 自动）               │
-│     ├─ Controller → Service → DAO             │
+│     ├─ Controller → Service → Repository             │
 │     ├─ 业务逻辑处理                            │
 │     └─ 统一响应返回                            │
 │                                               │

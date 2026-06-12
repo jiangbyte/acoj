@@ -10,11 +10,11 @@ from typing import Optional
 
 from sqlalchemy import or_, and_
 
-from core.db import SessionLocal
-from core.exception import BusinessException
-from core.result import page_data
-from core.utils import generate_id
-from core.enums import LoginTypeEnum as LTE
+from sdk.infra.db import SessionLocal
+from sdk.web.exception import BusinessException
+from sdk.web.result import page_data
+from sdk.utils import generate_id
+from sdk.enums import LoginTypeEnum as LTE
 from plugins.plugin_im.model.message import (
     Message, Conversation, MsgTypeText, MsgTypeSystem,
     generate_conversation_id,

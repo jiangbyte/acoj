@@ -6,8 +6,8 @@ from typing import Dict, Any, List, Optional, Tuple
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session as DbSession
 
-from core.auth.auth.hei_client_auth_tool import HeiClientAuthTool
-from core.auth import HeiAuthTool
+from sdk.auth.auth.hei_client_auth_tool import HeiClientAuthTool
+from sdk.auth import HeiAuthTool
 from plugins.plugin_client.user.models import ClientUser
 from .params import (
     SessionAnalysisResult, SessionPageResult, SessionPageParam,

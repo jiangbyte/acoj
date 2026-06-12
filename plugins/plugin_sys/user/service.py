@@ -21,19 +21,20 @@ from .params import (
     UpdateAvatarParam, UpdatePasswordParam,
 )
 from .repository import UserRepository
-from core.pojo import IdParam, IdsParam
-from core.result import page_data, PageDataField
-from core.exception import BusinessException
-from core.utils import decrypt, apply_update, generate_id
-from core.auth import HeiAuthTool, LoginUserInfo
-from core.utils.resolve_utils import resolve_name_path, resolve_path_from_map
+from sdk.shared.types import IdParam, IdsParam
+from sdk.web.result import page_data, PageDataField
+from sdk.web.exception import BusinessException
+from sdk.utils import decrypt, apply_update, generate_id
+from sdk.auth import HeiAuthTool
+from sdk.shared.contracts import LoginUserInfo
+from sdk.utils.resolve_utils import resolve_name_path, resolve_path_from_map
 from plugins.plugin_sys.resource.models import SysResource
 from plugins.plugin_sys.home.models import SysQuickAction
 from plugins.plugin_sys.org.models import SysOrg
 from plugins.plugin_sys.group.models import SysGroup
 from plugins.plugin_sys.position.models import SysPosition
 from plugins.plugin_sys.role.models import RelRolePermission, RelRoleResource
-from core.auth.permission.hei_permission_interface import SUPER_ADMIN_CODE
+from sdk.auth.permission.hei_permission_interface import SUPER_ADMIN_CODE
 
 logger = logging.getLogger(__name__)
 
@@ -614,7 +615,7 @@ async def user_update_avatar(db: Session, param: UpdateAvatarParam, request: Req
     if not param.avatar:
         raise BusinessException("头像不能为空", 400)
 
-    from core.utils.image_utils import compress_base64_image
+    from sdk.utils.image_utils import compress_base64_image
     compressed = compress_base64_image(param.avatar, max_width=512, max_height=512, quality=80)
 
     entity = db.execute(select(SysUser).where(SysUser.id == uid)).scalar_one_or_none()
@@ -664,7 +665,7 @@ def user_reset_password(db: Session, user_id: str) -> None:
     """Mirrors hei-gin's UserResetPassword."""
     if not user_id:
         raise BusinessException("ID不能为空", 400)
-    from config.settings import settings
+    from sdk.config.settings import settings
     raw_pwd = settings.user_config.reset_password
     if not raw_pwd:
         raw_pwd = _generate_random_password()

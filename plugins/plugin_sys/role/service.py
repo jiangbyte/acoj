@@ -18,12 +18,12 @@ from .params import (
     ButtonPermissionScope, PermissionItem, SysRoleToRoleVO,
 )
 from .repository import RoleRepository
-from core.enums import DataScopeEnum
-from core.pojo import IdParam, IdsParam
-from core.result import page_data, PageDataField
-from core.exception import BusinessException
-from core.utils import generate_id
-from core.auth import HeiAuthTool
+from sdk.enums import DataScopeEnum
+from sdk.shared.types import IdParam, IdsParam
+from sdk.web.result import page_data, PageDataField
+from sdk.web.exception import BusinessException
+from sdk.utils import generate_id
+from sdk.auth import HeiAuthTool
 from ..user.models import RelUserRole
 from .models import RelRolePermission, RelRoleResource
 

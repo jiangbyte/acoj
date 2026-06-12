@@ -2,7 +2,7 @@ from typing import Optional, List
 from plugins.plugin_sys.role.params import PermissionItem
 from datetime import datetime, date
 from pydantic import BaseModel, ConfigDict
-from core.pojo.datetime_mixin import DateTimeValidatorMixin
+from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
 
 
 class UpdateStatusParam(BaseModel):

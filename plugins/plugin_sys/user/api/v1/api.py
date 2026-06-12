@@ -5,12 +5,12 @@ No extra routes beyond what Go registers.
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
-from core.result import Result, PageData, success
-from core.pojo import IdParam, IdsParam
-from core.db import get_db
-from core.plugin import Perm
-from core.auth.decorator import HeiCheckLogin, NoRepeat
-from core.log import SysLog
+from sdk.web.result import Result, PageData, success
+from sdk.shared.types import IdParam, IdsParam
+from sdk.infra.db import get_db
+from sdk.kernel.plugin import Perm
+from sdk.auth.decorator import HeiCheckLogin, NoRepeat
+from sdk.log import SysLog
 from ...params import (
     UserVO, UserPageParam, GrantRoleParam, GrantUserPermissionParam,
     UpdateProfileParam, UpdateAvatarParam, UpdatePasswordParam,

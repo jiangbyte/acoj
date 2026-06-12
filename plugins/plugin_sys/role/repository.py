@@ -5,8 +5,8 @@ from sqlalchemy import select, func, delete as sa_delete
 from sqlalchemy.orm import Session
 from .models import SysRole, RelRolePermission, RelRoleResource
 from .params import PermissionItem, RolePageParam
-from core.utils import generate_id
-from core.constants import SUPER_ADMIN_CODE
+from sdk.utils import generate_id
+from sdk.constants import SUPER_ADMIN_CODE
 
 
 class RoleRepository:
@@ -48,7 +48,7 @@ class RoleRepository:
         return {"records": records, "total": total}
 
     def insert(self, entity: SysRole, user_id: Optional[str] = None) -> SysRole:
-        from core.utils.snowflake_utils import generate_id as gen_snowflake
+        from sdk.utils.snowflake_utils import generate_id as gen_snowflake
         now = datetime.now()
         if not entity.id:
             entity.id = gen_snowflake()

@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, delete as sa_delete
+from sqlalchemy import select, func, delete as sa_delete, update as sa_update
 from .models import SysConfig
 from .params import ConfigPageParam
 
@@ -21,7 +21,7 @@ class ConfigRepository:
         ).scalars().all())
 
     def insert(self, entity: SysConfig, user_id: Optional[str] = None) -> SysConfig:
-        from core.utils.snowflake_utils import generate_id
+        from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
             entity.id = generate_id()
@@ -79,7 +79,7 @@ class ConfigRepository:
 
     def find_by_category(self, category: str) -> List[SysConfig]:
         return list(self.db.execute(
-            select(SysConfig).where(SysConfig.category == category)
+            select(SysConfig).where(SysConfig.category == category).order_by(SysConfig.sort_code.asc())
         ).scalars().all())
 
     def find_by_category_and_key(self, category: str, key: str) -> Optional[SysConfig]:
@@ -104,3 +104,21 @@ class ConfigRepository:
             select(SysConfig).where(SysConfig.config_key.in_(keys))
         ).scalars().all()
         return {r.config_key: r for r in rows}
+
+    def list_all_ordered(self) -> List[SysConfig]:
+        return list(self.db.execute(
+            select(SysConfig).order_by(SysConfig.sort_code.asc())
+        ).scalars().all())
+
+    def update_by_id(self, config_id: str, updates: dict) -> None:
+        self.db.execute(sa_update(SysConfig).where(SysConfig.id == config_id).values(**updates))
+        self.db.commit()
+
+    def update_many_by_ids(self, items: list[tuple[str, dict]]) -> None:
+        for config_id, updates in items:
+            self.db.execute(sa_update(SysConfig).where(SysConfig.id == config_id).values(**updates))
+        self.db.commit()
+
+    def update_by_category(self, category: str, updates: dict) -> None:
+        self.db.execute(sa_update(SysConfig).where(SysConfig.category == category).values(**updates))
+        self.db.commit()

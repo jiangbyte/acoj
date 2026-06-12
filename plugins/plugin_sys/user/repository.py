@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, or_, func, delete as sa_delete, update as sa_update
 from .models import SysUser, RelUserRole, RelUserPermission
 from .params import UserPageParam
-from core.enums import ResourceCategoryEnum, ResourceTypeEnum, StatusEnum, DataScopeEnum
-from core.utils import generate_id
+from sdk.enums import ResourceCategoryEnum, ResourceTypeEnum, StatusEnum, DataScopeEnum
+from sdk.utils import generate_id
 from plugins.plugin_sys.role.params import PermissionItem
 
 
@@ -29,7 +29,7 @@ class UserRepository:
         ).scalars().all())
 
     def insert(self, entity: SysUser, user_id: Optional[str] = None) -> SysUser:
-        from core.utils.snowflake_utils import generate_id
+        from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
             entity.id = generate_id()

@@ -10,9 +10,9 @@ import json
 import logging
 from typing import Optional
 
-from core.constants import PERMISSION_CACHE_KEY, SUPER_ADMIN_CODE
-from core.db import SessionLocal
-from core.enums import LoginTypeEnum, DataScopeEnum, PermissionPathEnum
+from sdk.constants import PERMISSION_CACHE_KEY, SUPER_ADMIN_CODE
+from sdk.infra.db import SessionLocal
+from sdk.enums import LoginTypeEnum, DataScopeEnum, PermissionPathEnum
 from plugins.plugin_sys.role.repository import RoleRepository
 from plugins.plugin_sys.user.repository import UserRepository
 
@@ -51,7 +51,7 @@ class PermissionProvider:
             db.close()
 
     def _get_all_permissions_from_redis(self) -> list[str]:
-        from core.db.redis import get_client
+        from sdk.infra.db.redis import get_client
 
         redis_client = get_client()
         if not redis_client:

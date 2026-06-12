@@ -13,8 +13,8 @@ from .params import (
     SysLogToLogVO,
 )
 from .repository import LogRepository
-from core.pojo import IdParam
-from core.result import page_data, PageDataField
+from sdk.shared.types import IdParam
+from sdk.web.result import page_data, PageDataField
 class LogService:
     def __init__(self, db: Session):
         self.repository = LogRepository(db)
@@ -105,8 +105,8 @@ class LogService:
 
     async def create(self, vo: LogVO, request: Optional[Request] = None) -> None:
         """Mirrors Go Create()."""
-        from core.utils import generate_id
-        from core.auth import HeiAuthTool
+        from sdk.utils import generate_id
+        from sdk.auth import HeiAuthTool
         now = datetime.now()
         user_id = None
         try:
@@ -138,10 +138,10 @@ class LogService:
 
     async def modify(self, vo: LogVO, request: Optional[Request] = None) -> None:
         """Mirrors Go Modify()."""
-        from core.auth import HeiAuthTool
+        from sdk.auth import HeiAuthTool
         entity = self.repository.find_by_id(vo.id)
         if not entity:
-            from core.exception import BusinessException
+            from sdk.web.exception import BusinessException
             raise BusinessException("数据不存在")
         user_id = None
         try:

@@ -129,4 +129,4 @@ curl http://localhost:18885/
 
 - 了解 [配置文件说明](config) 中的详细配置项
 - 阅读 [架构概述](../architecture/overview) 理解框架设计
-- 参考 [模块开发](../modules/development) 开始业务功能开发
+- 参考 [模块开发](../plugins/development) 开始业务功能开发

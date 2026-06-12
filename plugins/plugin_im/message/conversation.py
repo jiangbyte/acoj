@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from core.db import SessionLocal
-from core.exception import BusinessException
-from core.enums import LoginTypeEnum
+from sdk.infra.db import SessionLocal
+from sdk.web.exception import BusinessException
+from sdk.enums import LoginTypeEnum
 from plugins.plugin_im.model.message import (
     generate_conversation_id,
 )

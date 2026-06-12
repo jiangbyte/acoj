@@ -6,7 +6,7 @@ from datetime import datetime
 from sqlalchemy import Index, text
 from sqlalchemy.dialects.mysql import BIGINT, DATETIME, VARCHAR
 from sqlalchemy.orm import Mapped, mapped_column
-from core.plugin.registry import HeiBase
+from sdk.kernel.registry import HeiBase
 
 
 class ImFile(HeiBase):

@@ -6,8 +6,8 @@ Core services (auth, captcha) are handled by core_plugins.
 
 import logging
 
-from core.plugin import HeiPlugin, PluginInfo
-from core.db import SessionLocal
+from sdk.kernel.plugin import HeiPlugin, PluginInfo
+from sdk.infra.db import SessionLocal
 from plugins.plugin_client.migrate import register_all_models
 from plugins.plugin_client.auth.username import init_auth as init_client_auth
 from plugins.plugin_client.user import LoginUserApiProvider as CLoginUserApiProvider

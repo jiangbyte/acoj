@@ -10,9 +10,9 @@ import asyncio
 from datetime import datetime
 from typing import Optional
 
-from core.db import SessionLocal
-from core.exception import BusinessException
-from core.utils import generate_id
+from sdk.infra.db import SessionLocal
+from sdk.web.exception import BusinessException
+from sdk.utils import generate_id
 from plugins.plugin_im.model.friend import FriendRequest, Friendship, FriendBlock
 from plugins.plugin_im.friend.params import (
     SendRequestParam, HandleRequestParam, FriendVO, FriendRequestVO, BlockVO, SearchResult,

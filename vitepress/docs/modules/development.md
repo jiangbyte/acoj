@@ -7,7 +7,7 @@ Hei FastAPI 采用垂直切片（Vertical Slice）架构组织业务模块。每
 每个业务模块遵循统一的结构约定：
 
 ```
-modules/<domain>/<module>/
+plugins/<domain>/<module>/
 ├── models.py        # SQLAlchemy ORM 模型
 ├── params.py        # Pydantic v2 请求/响应模型
 ├── repository.py    # Repository 层
@@ -33,7 +33,7 @@ modules/<domain>/<module>/
 from datetime import datetime
 from sqlalchemy import String, Text, Integer, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
-from core.db.mysql import Base
+from sdk.db.mysql import Base
 
 
 class SysDemo(Base):
@@ -65,7 +65,7 @@ class SysDemo(Base):
 from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from core.pojo.id_params import IdParam
+from sdk.pojo.id_params import IdParam
 
 
 # ---------- 请求参数 ----------
@@ -118,7 +118,7 @@ class SysDemoVO(BaseModel):
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, delete as sa_delete
-from core.utils import generate_id
+from sdk.utils import generate_id
 from .models import SysDemo
 
 
@@ -185,8 +185,8 @@ class SysDemoRepository:
 ```python
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from core.utils import generate_id
-from core.exception import BusinessException
+from sdk.utils import generate_id
+from sdk.exception import BusinessException
 from .repository import SysDemoRepository
 from .params import (
     SysDemoPageParam, SysDemoCreateParam,
@@ -251,10 +251,10 @@ class SysDemoService:
 ```python
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from core.db.mysql import get_db
-from core.result import success, page_data
-from core.auth.decorator import HeiCheckPermission
-from core.log import SysLog
+from sdk.db.mysql import get_db
+from sdk.result import success, page_data
+from sdk.auth.decorator import HeiCheckPermission
+from sdk.log import SysLog
 from ..service import SysDemoService
 from ..params import (
     SysDemoPageParam, SysDemoCreateParam,
@@ -315,10 +315,10 @@ async def detail(id: str, db: Session = Depends(get_db)):
 
 ## 路由注册
 
-在模块创建完成后，需要在 `core/app/router.py` 中注册模块路由：
+在模块创建完成后，需要在 `sdk/app/router.py` 中注册模块路由：
 
 ```python
-# core/app/router.py
+# sdk/app/router.py
 
 def register_routers(app: FastAPI):
     """注册所有模块路由"""
@@ -335,7 +335,7 @@ def register_routers(app: FastAPI):
 ### 第一步：创建模块目录
 
 ```bash
-mkdir -p modules/sys/<module>/api/v1
+mkdir -p plugins/sys/<module>/api/v1
 ```
 
 ### 第二步：实现 models.py
@@ -396,7 +396,7 @@ mkdir -p modules/sys/<module>/api/v1
 所有 API 响应必须使用 `core.result` 包提供的函数：
 
 ```python
-from core.result import success, failure, page_data
+from sdk.result import success, failure, page_data
 
 # 成功响应
 success(data)
@@ -413,7 +413,7 @@ page_data(records, total, page, size)
 业务错误使用 `raise BusinessException` 模式：
 
 ```python
-from core.exception import BusinessException
+from sdk.exception import BusinessException
 
 # 抛出业务异常
 raise BusinessException("用户名已存在", 400)
@@ -424,7 +424,7 @@ raise BusinessException("用户名已存在", 400)
 ### 获取当前登录用户
 
 ```python
-from core.auth.auth.hei_auth_tool import HeiAuthTool
+from sdk.auth.auth.hei_auth_tool import HeiAuthTool
 
 # 获取当前登录用户 ID
 user_id = await HeiAuthTool.getLoginId(request)
@@ -461,7 +461,7 @@ def find_page_by_filters(self, keyword=None, status=None, current=1, size=10):
 ### 生成雪花 ID
 
 ```python
-from core.utils import generate_id
+from sdk.utils import generate_id
 
 # 生成分布式唯一 ID
 id = generate_id()

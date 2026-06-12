@@ -21,7 +21,7 @@ class ClientUserRepository:
         ).scalars().all())
 
     def insert(self, entity: ClientUser, user_id: Optional[str] = None) -> ClientUser:
-        from core.utils.snowflake_utils import generate_id
+        from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
             entity.id = generate_id()

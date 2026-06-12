@@ -2,7 +2,7 @@ from typing import List
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, and_, text
-from core.enums import UserStatusEnum
+from sdk.enums import UserStatusEnum
 from plugins.plugin_sys.user.models import SysUser
 from plugins.plugin_sys.role.models import SysRole
 from plugins.plugin_sys.org.models import SysOrg

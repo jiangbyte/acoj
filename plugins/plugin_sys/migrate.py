@@ -21,10 +21,10 @@ from plugins.plugin_sys.position.models import SysPosition
 from plugins.plugin_sys.resource.models import SysModule, SysResource
 from plugins.plugin_sys.role.models import SysRole, RelRolePermission, RelRoleResource
 from plugins.plugin_sys.user.models import SysUser, RelUserRole, RelUserPermission
-from core.db import register_model
-from core.db import SessionLocal, register_seed
-from core.enums import UserStatusEnum
-from core.utils import generate_id
+from sdk.infra.db import register_model
+from sdk.infra.db import SessionLocal, register_seed
+from sdk.enums import UserStatusEnum
+from sdk.utils import generate_id
 
 logger = logging.getLogger(__name__)
 

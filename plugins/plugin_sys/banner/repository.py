@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, delete as sa_delete
+from sqlalchemy import select, func, delete as sa_delete, update as sa_update
 from .models import SysBanner
 from .params import BannerPageParam
 
@@ -26,7 +26,7 @@ class BannerRepository:
         return {"records": records, "total": total}
 
     def insert(self, entity: SysBanner, user_id: Optional[str] = None) -> SysBanner:
-        from core.utils.snowflake_utils import generate_id
+        from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
             entity.id = generate_id()
@@ -48,6 +48,10 @@ class BannerRepository:
         self.db.refresh(entity)
         return entity
 
+    def update_by_id(self, banner_id: str, updates: dict) -> None:
+        self.db.execute(sa_update(SysBanner).where(SysBanner.id == banner_id).values(**updates))
+        self.db.commit()
+
     def delete_by_ids(self, ids: List[str]) -> int:
         if not ids:
             return 0
@@ -55,3 +59,8 @@ class BannerRepository:
         affected = self.db.execute(stmt).rowcount
         self.db.commit()
         return affected
+
+    def list_all_ordered(self) -> List[SysBanner]:
+        return list(self.db.execute(
+            select(SysBanner).order_by(SysBanner.sort_code.asc())
+        ).scalars().all())

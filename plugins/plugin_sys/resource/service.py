@@ -11,10 +11,10 @@ from sqlalchemy import select, delete as sa_delete, update as sa_update
 from .models import SysModule, SysResource
 from .params import ModuleVO, ResourceVO, ModulePageParam, ResourcePageParam
 from .repository import ModuleRepository, ResourceRepository
-from core.exception import BusinessException
-from core.utils import generate_id
-from core.auth import HeiAuthTool
-from core.result import page_data
+from sdk.web.exception import BusinessException
+from sdk.utils import generate_id
+from sdk.auth import HeiAuthTool
+from sdk.web.result import page_data
 from ..role.models import RelRoleResource, RelRolePermission
 import json
 import logging

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Request
-from core.result import Result, success
-from core.auth.decorator import HeiCheckLogin
-from core.log import SysLog
-from core.auth.decorator import NoRepeat
+from sdk.web.result import Result, success
+from sdk.auth.decorator import HeiCheckLogin
+from sdk.log import SysLog
+from sdk.auth.decorator import NoRepeat
 from ...logic import do_login, do_register, do_logout
 from ...params import UsernameLoginParam, UsernameLoginResult, UsernameRegisterParam, UsernameRegisterResult, UsernameLogoutResult
 

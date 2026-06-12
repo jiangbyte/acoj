@@ -18,7 +18,7 @@ B 端和 C 端是两种完全不同的用户群体，有着不同的安全要求
 | 维度 | B 端（BUSINESS） | C 端（CONSUMER） |
 |------|------------------|-----------------|
 | 实现方式 | 类方法（`HeiAuthTool`） | 独立实例（`HeiClientAuthTool`） |
-| 文件 | `core/auth/auth/hei_auth_tool.py` | `core/auth/auth/hei_client_auth_tool.py` |
+| 文件 | `sdk/auth/auth/hei_auth_tool.py` | `sdk/auth/auth/hei_client_auth_tool.py` |
 
 | Redis 键前缀 | `hei:auth:BUSINESS:` | `hei:auth:CONSUMER:` |
 | 认证装饰器 | `@HeiCheckLogin` | `@HeiClientCheckLogin` |
@@ -68,7 +68,7 @@ Redis TTL: 等于 token 过期时间
 ### B 端认证 API（HeiAuthTool 类方法）
 
 ```python
-from core.auth.auth.hei_auth_tool import HeiAuthTool
+from sdk.auth.auth.hei_auth_tool import HeiAuthTool
 
 # 登录：通过用户 ID 签发 Token，存储会话到 Redis
 token = HeiAuthTool.login(request, user_id, extra={"role": "admin"})
@@ -107,7 +107,7 @@ login_type = HeiAuthTool.getLoginType()  # 返回 "BUSINESS"
 ### C 端认证 API（HeiClientAuthTool 实例方法）
 
 ```python
-from core.auth.auth.hei_client_auth_tool import HeiClientAuthTool
+from sdk.auth.auth.hei_client_auth_tool import HeiClientAuthTool
 
 auth_tool = HeiClientAuthTool()
 
@@ -171,7 +171,7 @@ login_type = auth_tool.getLoginType()  # 返回 "CONSUMER"
 
 ## 认证路由分流
 
-`core/middleware/auth.py` 中的 `AuthMiddleware` 是一个原始 ASGI 中间件，根据请求路径的前缀自动识别认证上下文。使用正则 `^/api/v\d+/([^/]+)/` 提取路径第一个分段：
+`sdk/middleware/auth.py` 中的 `AuthMiddleware` 是一个原始 ASGI 中间件，根据请求路径的前缀自动识别认证上下文。使用正则 `^/api/v\d+/([^/]+)/` 提取路径第一个分段：
 
 ```
 路由分流逻辑：

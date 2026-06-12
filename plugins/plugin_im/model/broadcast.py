@@ -7,7 +7,7 @@ from typing import Optional
 from sqlalchemy import Index, text
 from sqlalchemy.dialects.mysql import DATETIME, TEXT, VARCHAR
 from sqlalchemy.orm import Mapped, mapped_column
-from core.plugin.registry import HeiBase
+from sdk.kernel.registry import HeiBase
 
 
 # ─── Broadcast scope constants ─────────────────────────────────────────

@@ -18,8 +18,8 @@ from .message import (
     Message, MsgNewMessage, MsgUnreadCount, MsgPresence, PresencePayload,
 )
 from .config import ws_cfg
-from core.db import get_redis
-from core.plugin import publish as event_publish
+from sdk.infra.db import get_redis
+from sdk.infra.eventbus import publish as event_publish
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class CrossHub:
 
         # Try to get instance ID from settings
         try:
-            from config.settings import settings
+            from sdk.config.settings import settings
             self._instance_id = str(getattr(settings, "snowflake", {}).get("instance", 0) or 0)
         except Exception:
             self._instance_id = "0"

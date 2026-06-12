@@ -37,7 +37,7 @@ __all__ = []
 \"\"\"
 
 import logging
-from core.plugin import HeiPlugin, PluginInfo, register_router
+from sdk.kernel.plugin import HeiPlugin, PluginInfo, register_router
 from .api.v1 import api as v1_router
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class {PluginCls}(HeiPlugin):
 {PluginCls} — ORM models.
 \"\"\"
 
-from core.plugin.registry import HeiBase
+from sdk.kernel.registry import HeiBase
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 

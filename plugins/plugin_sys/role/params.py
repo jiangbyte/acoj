@@ -1,8 +1,8 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from core.enums import DataScopeEnum
-from core.pojo.datetime_mixin import DateTimeValidatorMixin
+from sdk.enums import DataScopeEnum
+from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
 from .models import SysRole
 
 

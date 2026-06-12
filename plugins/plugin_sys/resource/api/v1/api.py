@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
-from core.result import success
-from core.pojo import IdParam, IdsParam
-from core.db import get_db
-from core.auth.decorator import HeiCheckPermission, NoRepeat
-from core.log import SysLog
+from sdk.web.result import success
+from sdk.shared.types import IdParam, IdsParam
+from sdk.infra.db import get_db
+from sdk.auth.decorator import HeiCheckPermission, NoRepeat
+from sdk.log import SysLog
 from ...params import ResourceVO, ResourcePageParam, ModuleVO, ModulePageParam
 from ...service import ResourceService, ModuleService
 
