@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, delete as sa_delete, update as sa_update
 from .models import SysModule, SysResource
 from .params import ModuleVO, ResourceVO, ModulePageParam, ResourcePageParam
-from .dao import ModuleDao, ResourceDao
+from .repository import ModuleRepository, ResourceRepository
 from core.exception import BusinessException
 from core.utils import generate_id
 from core.auth import HeiAuthTool
@@ -166,7 +166,7 @@ def _sync_perm(db: Session, resource_id: str, old_extra: Optional[str], new_extr
 # ═════════════════════════════════════════════════════════════════════
 
 def module_page(db: Session, param: ModulePageParam) -> dict:
-    result = ModuleDao(db).find_page(param)
+    result = ModuleRepository(db).find_page(param)
     records = [_module_to_vo(r) for r in result.get("records", [])]
     return page_data(records=records, total=result["total"], page=param.current, size=param.size)
 
@@ -174,7 +174,7 @@ def module_page(db: Session, param: ModulePageParam) -> dict:
 def module_detail(db: Session, id: str) -> Optional[dict]:
     if not id:
         return None
-    entity = ModuleDao(db).find_by_id(id)
+    entity = ModuleRepository(db).find_by_id(id)
     if not entity:
         return None
     return _module_to_vo(entity)
@@ -205,12 +205,12 @@ def module_create(db: Session, vo: ModuleVO, user_id: Optional[str] = None) -> N
     if user_id:
         entity.created_by = user_id
         entity.updated_by = user_id
-    ModuleDao(db).insert(entity)
+    ModuleRepository(db).insert(entity)
 
 
 def module_modify(db: Session, vo: ModuleVO, user_id: Optional[str] = None) -> None:
-    dao = ModuleDao(db)
-    entity = dao.find_by_id(vo.id)
+    repository = ModuleRepository(db)
+    entity = repository.find_by_id(vo.id)
     if not entity:
         raise BusinessException("数据不存在")
 
@@ -240,14 +240,14 @@ def module_modify(db: Session, vo: ModuleVO, user_id: Optional[str] = None) -> N
     if user_id:
         up["updated_by"] = user_id
 
-    dao.db.execute(sa_update(SysModule).where(SysModule.id == vo.id).values(**up))
-    dao.db.commit()
+    repository.db.execute(sa_update(SysModule).where(SysModule.id == vo.id).values(**up))
+    repository.db.commit()
 
 
 def module_remove(db: Session, ids: list) -> None:
     if not ids:
         return
-    ModuleDao(db).delete_by_ids(ids)
+    ModuleRepository(db).delete_by_ids(ids)
 
 
 # ═════════════════════════════════════════════════════════════════════
@@ -255,7 +255,7 @@ def module_remove(db: Session, ids: list) -> None:
 # ═════════════════════════════════════════════════════════════════════
 
 def resource_page(db: Session, param: ResourcePageParam) -> dict:
-    result = ResourceDao(db).find_page(param)
+    result = ResourceRepository(db).find_page(param)
     records = [_resource_to_vo(r) for r in result.get("records", [])]
     return page_data(records=records, total=result["total"], page=param.current, size=param.size)
 
@@ -263,7 +263,7 @@ def resource_page(db: Session, param: ResourcePageParam) -> dict:
 def resource_detail(db: Session, id: str) -> Optional[dict]:
     if not id:
         return None
-    entity = ResourceDao(db).find_by_id(id)
+    entity = ResourceRepository(db).find_by_id(id)
     if not entity:
         return None
     return _resource_to_vo(entity)
@@ -311,12 +311,12 @@ def resource_create(db: Session, vo: ResourceVO, user_id: Optional[str] = None) 
     if user_id:
         entity.created_by = user_id
         entity.updated_by = user_id
-    ResourceDao(db).insert(entity)
+    ResourceRepository(db).insert(entity)
 
 
 def resource_modify(db: Session, vo: ResourceVO, user_id: Optional[str] = None) -> None:
-    dao = ResourceDao(db)
-    entity = dao.find_by_id(vo.id)
+    repository = ResourceRepository(db)
+    entity = repository.find_by_id(vo.id)
     if not entity:
         raise BusinessException("数据不存在")
 
@@ -378,8 +378,8 @@ def resource_modify(db: Session, vo: ResourceVO, user_id: Optional[str] = None) 
     if user_id:
         up["updated_by"] = user_id
 
-    dao.db.execute(sa_update(SysResource).where(SysResource.id == vo.id).values(**up))
-    dao.db.commit()
+    repository.db.execute(sa_update(SysResource).where(SysResource.id == vo.id).values(**up))
+    repository.db.commit()
 
     # Sync permission code change
     if vo.extra is not None or old_extra is not None:
@@ -405,7 +405,7 @@ def resource_remove(db: Session, ids: list) -> None:
     # Delete role-resource relations
     db.execute(sa_delete(RelRoleResource).where(RelRoleResource.resource_id.in_(all_ids)))
     # Delete resources
-    ResourceDao(db).delete_by_ids(all_ids)
+    ResourceRepository(db).delete_by_ids(all_ids)
 
 
 def resource_tree(db: Session) -> list:
@@ -500,7 +500,7 @@ def resource_menu(db: Session) -> list:
 class ModuleService:
     def __init__(self, db: Session):
         self.db = db
-        self.dao = ModuleDao(db)
+        self.repository = ModuleRepository(db)
 
     async def _get_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:
@@ -527,7 +527,7 @@ class ModuleService:
 class ResourceService:
     def __init__(self, db: Session):
         self.db = db
-        self.dao = ResourceDao(db)
+        self.repository = ResourceRepository(db)
 
     async def _get_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:

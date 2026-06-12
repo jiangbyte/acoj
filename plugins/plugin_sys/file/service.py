@@ -16,7 +16,6 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import UploadFile
-from sqlalchemy import or_
 
 from core.db import SessionLocal
 from core.exception import BusinessException
@@ -24,10 +23,12 @@ from core.result import page_data
 from core.utils import generate_id
 from core.storage import get_storage, get_url, ChunkedUploader
 from plugins.plugin_sys.file.models import SysFile
+from plugins.plugin_sys.file.repository import FileRepository
 from plugins.plugin_sys.file.params import (
     FilePageParam, FileUploadResult,
     ChunkUploadInitParam, ChunkUploadPartParam,
     ChunkCompleteParam, ChunkAbortParam,
+    SysFileToFileUploadResult, SysFileToFileVO,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,51 +60,6 @@ def _format_size(bytes_size: int) -> tuple[int, str]:
         return kb, f"{kb} KB"
     mb = kb / 1024
     return kb, f"{mb:.1f} MB"
-
-
-def _to_vo(entity: SysFile) -> FileUploadResult:
-    return FileUploadResult(
-        id=entity.id,
-        engine=entity.engine,
-        bucket=entity.bucket,
-        file_key=entity.file_key,
-        original_name=entity.name,
-        file_suffix=entity.suffix or "",
-        file_size_kb=entity.size_kb,
-        size_info=entity.size_info or "",
-        download_path=entity.download_path or "",
-        thumbnail=entity.thumbnail or "",
-    )
-
-
-def _entity_to_dict(entity: SysFile) -> dict:
-    """Full entity-to-dict conversion — matches hei-gin's ToVO() for page/detail."""
-    def _fmt(dt):
-        return dt.strftime("%Y-%m-%d %H:%M:%S") if dt else ""
-    return {
-        "id": entity.id,
-        "engine": entity.engine,
-        "bucket": entity.bucket,
-        "file_key": entity.file_key,
-        "name": entity.name,
-        "suffix": entity.suffix or "",
-        "size_kb": entity.size_kb,
-        "size_info": entity.size_info or "",
-        "obj_name": entity.obj_name or "",
-        "storage_path": entity.storage_path or "",
-        "download_path": entity.download_path or "",
-        "is_download_auth": entity.is_download_auth or False,
-        "thumbnail": entity.thumbnail or "",
-        "checksum": entity.checksum or "",
-        "checksum_algo": entity.checksum_algo or "",
-        "ext_json": entity.ext_json or "",
-        "created_at": _fmt(entity.created_at),
-        "created_by": entity.created_by or "",
-        "updated_at": _fmt(entity.updated_at),
-        "updated_by": entity.updated_by or "",
-    }
-
-
 # ═════════════════════════════════════════════════════════════════════
 # Upload
 # ═════════════════════════════════════════════════════════════════════
@@ -159,9 +115,7 @@ async def upload(
 
     db = SessionLocal()
     try:
-        db.add(entity)
-        db.commit()
-        return _to_vo(entity)
+        return SysFileToFileUploadResult(FileRepository(db).insert(entity))
     except Exception:
         db.rollback()
         raise
@@ -176,23 +130,8 @@ async def upload(
 def page(param: FilePageParam) -> dict:
     db = SessionLocal()
     try:
-        q = db.query(SysFile)
-        if param.keyword:
-            like = f"%{param.keyword}%"
-            q = q.filter(
-                or_(SysFile.name.like(like), SysFile.file_key.like(like))
-            )
-        if param.engine:
-            q = q.filter(SysFile.engine == param.engine)
-        if param.bucket:
-            q = q.filter(SysFile.bucket == param.bucket)
-
-        total = q.count()
-        records = q.order_by(SysFile.created_at.desc()).offset(
-            (param.current - 1) * param.size
-        ).limit(param.size).all()
-
-        return page_data([_entity_to_dict(r) for r in records], total, param.current, param.size)
+        records, total = FileRepository(db).page(param)
+        return page_data([SysFileToFileVO(r) for r in records], total, param.current, param.size)
     finally:
         db.close()
 
@@ -204,7 +143,7 @@ def page(param: FilePageParam) -> dict:
 def get_download_path(file_id: str) -> Optional[str]:
     db = SessionLocal()
     try:
-        entity = db.query(SysFile).filter(SysFile.id == file_id).first()
+        entity = FileRepository(db).find_by_id(file_id)
         if not entity:
             raise BusinessException("文件不存在", 404)
         if entity.download_path:
@@ -309,9 +248,7 @@ def complete_chunk_upload(param: ChunkCompleteParam) -> FileUploadResult:
 
     db = SessionLocal()
     try:
-        db.add(entity)
-        db.commit()
-        return _to_vo(entity)
+        return SysFileToFileUploadResult(FileRepository(db).insert(entity))
     except Exception:
         db.rollback()
         raise
@@ -353,10 +290,10 @@ def detail(file_id: str) -> Optional[dict]:
         return None
     db = SessionLocal()
     try:
-        entity = db.query(SysFile).filter(SysFile.id == file_id).first()
+        entity = FileRepository(db).find_by_id(file_id)
         if not entity:
             return None
-        return _entity_to_dict(entity)
+        return SysFileToFileVO(entity).model_dump()
     finally:
         db.close()
 
@@ -374,8 +311,7 @@ def remove(ids: list[str]) -> None:
         return
     db = SessionLocal()
     try:
-        db.query(SysFile).filter(SysFile.id.in_(ids)).delete(synchronize_session=False)
-        db.commit()
+        FileRepository(db).delete_by_ids(ids)
     except Exception:
         db.rollback()
         raise
@@ -396,7 +332,8 @@ def remove_absolute(ids: list[str]) -> None:
         return
     db = SessionLocal()
     try:
-        files = db.query(SysFile).filter(SysFile.id.in_(ids)).all()
+        repository = FileRepository(db)
+        files = repository.find_by_ids(ids)
         for f in files:
             if f.engine:
                 eng = get_storage(f.engine)
@@ -405,8 +342,7 @@ def remove_absolute(ids: list[str]) -> None:
                         eng.delete(f.bucket, f.file_key)
                     except Exception:
                         logger.warning("Failed to delete file from storage: %s/%s", f.bucket, f.file_key)
-        db.query(SysFile).filter(SysFile.id.in_(ids)).delete(synchronize_session=False)
-        db.commit()
+        repository.delete_by_ids(ids)
     except Exception:
         db.rollback()
         raise

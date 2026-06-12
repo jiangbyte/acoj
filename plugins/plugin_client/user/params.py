@@ -2,6 +2,7 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
+from .models import ClientUser
 
 
 class ClientUserVO(DateTimeValidatorMixin, BaseModel):
@@ -46,3 +47,44 @@ class UpdateAvatarParam(BaseModel):
 class UpdatePasswordParam(BaseModel):
     current_password: str
     new_password: str
+
+
+def ClientUserToClientUserVO(src: Optional[ClientUser]) -> Optional[ClientUserVO]:
+    if src is None:
+        return None
+    return ClientUserVO(
+        id=src.id,
+        username=src.username,
+        nickname=src.nickname,
+        avatar=src.avatar,
+        motto=src.motto,
+        gender=src.gender,
+        email=src.email,
+        github=src.github,
+        phone=src.phone,
+        status=src.status,
+        last_login_at=src.last_login_at,
+        last_login_ip=src.last_login_ip,
+        login_count=src.login_count or 0,
+        created_at=src.created_at,
+        updated_at=src.updated_at,
+    )
+
+
+def ClientUserVOToClientUser(src: Optional[ClientUserVO]) -> Optional[ClientUser]:
+    if src is None:
+        return None
+    dst = ClientUser(id=src.id or "")
+    dst.username = src.username
+    dst.nickname = src.nickname
+    dst.avatar = src.avatar
+    dst.motto = src.motto
+    dst.gender = src.gender
+    dst.email = src.email
+    dst.github = src.github
+    dst.phone = src.phone
+    dst.status = src.status
+    dst.last_login_at = src.last_login_at
+    dst.last_login_ip = src.last_login_ip
+    dst.login_count = src.login_count or 0
+    return dst

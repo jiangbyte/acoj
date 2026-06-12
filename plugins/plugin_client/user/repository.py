@@ -6,7 +6,7 @@ from .models import ClientUser
 from .params import ClientUserPageParam
 
 
-class ClientUserDao:
+class ClientUserRepository:
     def __init__(self, db: Session):
         self.db = db
 

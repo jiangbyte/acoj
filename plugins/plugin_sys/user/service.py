@@ -20,7 +20,7 @@ from .params import (
     GrantUserPermissionParam, UpdateProfileParam,
     UpdateAvatarParam, UpdatePasswordParam,
 )
-from .dao import UserDao
+from .repository import UserRepository
 from core.pojo import IdParam, IdsParam
 from core.result import page_data, PageDataField
 from core.exception import BusinessException
@@ -106,18 +106,18 @@ def _enrich_names(db: Session, vo_list: list[dict]) -> None:
 # ═════════════════════════════════════════════════════════════════════
 
 def user_find_by_id(db: Session, user_id: str) -> Optional[SysUser]:
-    dao = UserDao(db)
-    return dao.find_by_id(user_id)
+    repository = UserRepository(db)
+    return repository.find_by_id(user_id)
 
 
 def user_find_by_username(db: Session, username: str) -> Optional[SysUser]:
-    dao = UserDao(db)
-    return dao.find_by_username(username)
+    repository = UserRepository(db)
+    return repository.find_by_username(username)
 
 
 def user_find_by_email(db: Session, email: str) -> Optional[SysUser]:
-    dao = UserDao(db)
-    return dao.find_by_email(email)
+    repository = UserRepository(db)
+    return repository.find_by_email(email)
 
 
 # ═════════════════════════════════════════════════════════════════════
@@ -138,14 +138,14 @@ def user_to_login_info(entity: Optional[SysUser]) -> Optional[LoginUserInfo]:
 
 
 def user_record_login(db: Session, user_id: str, request: Request) -> None:
-    dao = UserDao(db)
-    entity = dao.find_by_id(user_id)
+    repository = UserRepository(db)
+    entity = repository.find_by_id(user_id)
     if not entity:
         return
     entity.last_login_at = datetime.now()
     entity.last_login_ip = request.client.host if request.client else None
     entity.login_count = (entity.login_count or 0) + 1
-    dao.update(entity)
+    repository.update(entity)
 
 
 # ═════════════════════════════════════════════════════════════════════
@@ -154,8 +154,8 @@ def user_record_login(db: Session, user_id: str, request: Request) -> None:
 
 def user_page(db: Session, param: UserPageParam) -> dict:
     """Mirrors hei-gin's UserPage."""
-    dao = UserDao(db)
-    result = dao.find_page_by_filters(param)
+    repository = UserRepository(db)
+    result = repository.find_page_by_filters(param)
     records = result[PageDataField.RECORDS]
     user_ids = [r.id for r in records]
 
@@ -238,8 +238,8 @@ def user_detail(db: Session, id: str) -> Optional[dict]:
     """Mirrors hei-gin's UserDetail — returns enriched VO with role IDs."""
     if not id:
         return None
-    dao = UserDao(db)
-    entity = dao.find_by_id(id)
+    repository = UserRepository(db)
+    entity = repository.find_by_id(id)
     if not entity:
         return None
     vo = UserVO.model_validate(entity).model_dump()
@@ -738,8 +738,8 @@ def user_update_status(db: Session, param: UpdateStatusParam) -> None:
 
 def user_export(db: Session, param: UserPageParam) -> list[dict]:
     """Mirrors hei-gin's UserExport."""
-    dao = UserDao(db)
-    rows = dao.find_all_by_filters(param)
+    repository = UserRepository(db)
+    rows = repository.find_all_by_filters(param)
     vo_list = []
     for r in rows:
         vo = UserVO.model_validate(r).model_dump()
@@ -795,7 +795,7 @@ class UserService:
 
     def __init__(self, db: Session):
         self.db = db
-        self.dao = UserDao(db)
+        self.repository = UserRepository(db)
 
     def find_by_id(self, user_id: str) -> Optional[SysUser]:
         return user_find_by_id(self.db, user_id)

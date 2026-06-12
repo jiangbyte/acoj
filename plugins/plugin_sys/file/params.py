@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 from typing import Optional
+from .models import SysFile
 
 
 class FilePageParam(BaseModel):
@@ -84,3 +85,47 @@ class ChunkAbortParam(BaseModel):
     engine: str = Field("LOCAL", description="存储引擎")
     bucket: str = Field("DEFAULT", description="存储桶")
     file_key: str = Field("", description="文件Key")
+
+
+def SysFileToFileUploadResult(src: Optional[SysFile]) -> Optional[FileUploadResult]:
+    if src is None:
+        return None
+    return FileUploadResult(
+        id=src.id,
+        engine=src.engine,
+        bucket=src.bucket,
+        file_key=src.file_key,
+        original_name=src.name,
+        file_suffix=src.suffix or "",
+        file_size_kb=src.size_kb,
+        size_info=src.size_info or "",
+        download_path=src.download_path or "",
+        thumbnail=src.thumbnail or "",
+    )
+
+
+def SysFileToFileVO(src: Optional[SysFile]) -> Optional[FileVO]:
+    if src is None:
+        return None
+    return FileVO(
+        id=src.id,
+        engine=src.engine,
+        bucket=src.bucket,
+        file_key=src.file_key,
+        name=src.name,
+        suffix=src.suffix or "",
+        size_kb=src.size_kb,
+        size_info=src.size_info or "",
+        obj_name=src.obj_name or "",
+        storage_path=src.storage_path or "",
+        download_path=src.download_path or "",
+        is_download_auth=src.is_download_auth or False,
+        thumbnail=src.thumbnail or "",
+        checksum=src.checksum or "",
+        checksum_algo=src.checksum_algo or "",
+        ext_json=src.ext_json or "",
+        created_at=src.created_at.strftime("%Y-%m-%d %H:%M:%S") if src.created_at else "",
+        created_by=src.created_by or "",
+        updated_at=src.updated_at.strftime("%Y-%m-%d %H:%M:%S") if src.updated_at else "",
+        updated_by=src.updated_by or "",
+    )

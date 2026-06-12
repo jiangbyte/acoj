@@ -2,6 +2,7 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from core.pojo.datetime_mixin import DateTimeValidatorMixin
+from .models import SysDict
 
 
 class DictVO(DateTimeValidatorMixin, BaseModel):
@@ -53,3 +54,40 @@ class DictListParam(BaseModel):
 class DictTreeParam(BaseModel):
     category: Optional[str] = None
     dict_group: Optional[str] = None
+
+
+def SysDictToDictVO(src: Optional[SysDict]) -> Optional[DictVO]:
+    if src is None:
+        return None
+    return DictVO(
+        id=src.id,
+        code=src.code,
+        label=src.label,
+        value=src.value,
+        color=src.color,
+        category=src.category,
+        parent_id=src.parent_id,
+        status=src.status,
+        sort_code=src.sort_code,
+        created_at=src.created_at,
+        created_by=src.created_by,
+        updated_at=src.updated_at,
+        updated_by=src.updated_by,
+    )
+
+
+def SysDictToDictTreeVO(src: Optional[SysDict]) -> Optional[DictTreeVO]:
+    if src is None:
+        return None
+    return DictTreeVO(
+        id=src.id,
+        code=src.code,
+        label=src.label,
+        value=src.value,
+        color=src.color,
+        category=src.category,
+        parent_id=src.parent_id,
+        status=src.status,
+        sort_code=src.sort_code,
+        children=[],
+    )

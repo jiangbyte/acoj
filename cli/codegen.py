@@ -100,9 +100,9 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger(__name__)
 
 """,
-    "dao.py": """
+    "repository.py": """
 \"\"\"
-{PluginCls} — data access.
+{PluginCls} — repository layer.
 \"\"\"
 
 from typing import Optional, List

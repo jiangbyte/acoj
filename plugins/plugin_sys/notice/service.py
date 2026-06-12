@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import update as sa_update, select
 from fastapi import Request
 from .models import SysNotice
-from .params import NoticeVO, NoticePageParam, NoticeLatestParam
-from .dao import NoticeDao
+from .params import NoticeVO, NoticePageParam, NoticeLatestParam, SysNoticeToNoticeVO
+from .repository import NoticeRepository
 from core.utils import generate_id
 from core.exception import BusinessException
 from core.result import page_data, PageDataField
@@ -24,59 +24,20 @@ def _parse_time(s: Optional[str]) -> Optional[datetime]:
         return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
     except ValueError:
         return None
-
-
-def to_vo(entity: SysNotice) -> dict:
-    vo = {
-        "id": entity.id,
-        "title": entity.title,
-        "category": entity.category,
-        "type": entity.type,
-        "sort_code": entity.sort_code,
-    }
-    if entity.summary is not None:
-        vo["summary"] = entity.summary
-    if entity.content is not None:
-        vo["content"] = entity.content
-    if entity.cover is not None:
-        vo["cover"] = entity.cover
-    if entity.level:
-        vo["level"] = entity.level
-    if entity.status:
-        vo["status"] = entity.status
-    if entity.is_top:
-        vo["is_top"] = entity.is_top
-    if entity.author is not None:
-        vo["author"] = entity.author
-    if entity.publish_at is not None:
-        vo["publish_at"] = entity.publish_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.expire_at is not None:
-        vo["expire_at"] = entity.expire_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.created_at is not None:
-        vo["created_at"] = entity.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.created_by is not None:
-        vo["created_by"] = entity.created_by
-    if entity.updated_at is not None:
-        vo["updated_at"] = entity.updated_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.updated_by is not None:
-        vo["updated_by"] = entity.updated_by
-    return vo
-
-
 def page(db: Session, param: NoticePageParam) -> dict:
-    dao = NoticeDao(db)
-    result = dao.find_page(param)
-    records = [to_vo(r) for r in result.get("records", [])]
+    repository = NoticeRepository(db)
+    result = repository.find_page(param)
+    records = [SysNoticeToNoticeVO(r) for r in result.get("records", [])]
     return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
 
 
 def detail(db: Session, id: str) -> Optional[dict]:
     if not id:
         return None
-    entity = NoticeDao(db).find_by_id(id)
+    entity = NoticeRepository(db).find_by_id(id)
     if not entity:
         return None
-    return to_vo(entity)
+    return SysNoticeToNoticeVO(entity)
 
 
 def create(db: Session, vo: NoticeVO, user_id: Optional[str] = None) -> None:
@@ -111,12 +72,12 @@ def create(db: Session, vo: NoticeVO, user_id: Optional[str] = None) -> None:
     if user_id:
         entity.created_by = user_id
         entity.updated_by = user_id
-    NoticeDao(db).insert(entity)
+    NoticeRepository(db).insert(entity)
 
 
 def modify(db: Session, vo: NoticeVO, user_id: Optional[str] = None) -> None:
-    dao = NoticeDao(db)
-    entity = dao.find_by_id(vo.id)
+    repository = NoticeRepository(db)
+    entity = repository.find_by_id(vo.id)
     if not entity:
         raise BusinessException("数据不存在")
     now = datetime.now()
@@ -147,33 +108,33 @@ def modify(db: Session, vo: NoticeVO, user_id: Optional[str] = None) -> None:
         up["expire_at"] = _parse_time(vo.expire_at)
     if user_id:
         up["updated_by"] = user_id
-    dao.db.execute(sa_update(SysNotice).where(SysNotice.id == vo.id).values(**up))
-    dao.db.commit()
+    repository.db.execute(sa_update(SysNotice).where(SysNotice.id == vo.id).values(**up))
+    repository.db.commit()
 
 
 def remove(db: Session, ids: list) -> None:
     if not ids:
         return
-    NoticeDao(db).delete_by_ids(ids)
+    NoticeRepository(db).delete_by_ids(ids)
 
 
 def options(db: Session) -> list:
     rows = db.execute(select(SysNotice).order_by(SysNotice.sort_code.asc())).scalars().all()
-    return [to_vo(r) for r in rows]
+    return [SysNoticeToNoticeVO(r) for r in rows]
 
 
 def latest(db: Session, param: NoticeLatestParam) -> list:
     """Return latest published notices."""
-    dao = NoticeDao(db)
-    entities = dao.find_latest(param.size)
-    return [to_vo(r) for r in entities]
+    repository = NoticeRepository(db)
+    entities = repository.find_latest(param.size)
+    return [SysNoticeToNoticeVO(r) for r in entities]
 
 
 def public_page(db: Session, param: NoticePageParam) -> dict:
     """Paginate published notices — only ENABLED status."""
-    dao = NoticeDao(db)
-    result = dao.find_public_page(param)
-    records = [to_vo(r) for r in result.get("records", [])]
+    repository = NoticeRepository(db)
+    result = repository.find_public_page(param)
+    records = [SysNoticeToNoticeVO(r) for r in result.get("records", [])]
     return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
 
 
@@ -181,16 +142,16 @@ def public_detail(db: Session, id: str) -> Optional[dict]:
     """Return a published notice — only if ENABLED."""
     if not id:
         return None
-    entity = NoticeDao(db).find_public_by_id(id)
+    entity = NoticeRepository(db).find_public_by_id(id)
     if not entity:
         return None
-    return to_vo(entity)
+    return SysNoticeToNoticeVO(entity)
 
 
 class NoticeService:
     def __init__(self, db: Session):
         self.db = db
-        self.dao = NoticeDao(db)
+        self.repository = NoticeRepository(db)
 
     async def _get_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:

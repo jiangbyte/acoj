@@ -1,6 +1,6 @@
 # 模块开发规范
 
-Hei FastAPI 采用垂直切片（Vertical Slice）架构组织业务模块。每个模块独立包含模型、参数定义、数据访问、业务逻辑和 API 层，具有高内聚低耦合的特点。
+Hei FastAPI 采用垂直切片（Vertical Slice）架构组织业务模块。每个模块独立包含模型、参数定义、Repository、业务逻辑和 API 层，具有高内聚低耦合的特点。
 
 ## 模块结构约定
 
@@ -10,7 +10,7 @@ Hei FastAPI 采用垂直切片（Vertical Slice）架构组织业务模块。每
 modules/<domain>/<module>/
 ├── models.py        # SQLAlchemy ORM 模型
 ├── params.py        # Pydantic v2 请求/响应模型
-├── dao.py           # 数据访问层
+├── repository.py    # Repository 层
 ├── service.py       # 业务逻辑层
 └── api/v1/api.py    # FastAPI 路由定义 + Controller
 ```
@@ -21,7 +21,7 @@ modules/<domain>/<module>/
 |------|------|------|
 | `models.py` | 是 | SQLAlchemy ORM 模型定义（Mapped + mapped_column） |
 | `params.py` | 是 | Pydantic v2 请求参数和响应模型 |
-| `dao.py` | 是 | 数据访问层 |
+| `repository.py` | 是 | Repository 层 |
 | `service.py` | 是 | 业务逻辑层 |
 | `api/v1/api.py` | 是 | FastAPI APIRouter 路由定义 + Controller |
 
@@ -112,7 +112,7 @@ class SysDemoVO(BaseModel):
         from_attributes = True
 ```
 
-### dao.py - 数据访问层
+### repository.py - Repository 层
 
 ```python
 from typing import Optional, List, Dict, Any
@@ -122,8 +122,8 @@ from core.utils import generate_id
 from .models import SysDemo
 
 
-class SysDemoDao:
-    """示例表数据访问层"""
+class SysDemoRepository:
+    """示例表 Repository"""
 
     def __init__(self, db: Session):
         self.db = db
@@ -187,7 +187,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from core.utils import generate_id
 from core.exception import BusinessException
-from .dao import SysDemoDao
+from .repository import SysDemoRepository
 from .params import (
     SysDemoPageParam, SysDemoCreateParam,
     SysDemoModifyParam, SysDemoVO
@@ -199,11 +199,11 @@ class SysDemoService:
     """示例表业务逻辑层"""
 
     def __init__(self, db: Session):
-        self.dao = SysDemoDao(db)
+        self.repository = SysDemoRepository(db)
 
     def page(self, param: SysDemoPageParam):
         """分页查询"""
-        result = self.dao.find_page_by_filters(
+        result = self.repository.find_page_by_filters(
             keyword=param.keyword,
             status=param.status,
             current=param.current,
@@ -223,11 +223,11 @@ class SysDemoService:
             sort_code=param.sort_code,
             created_by=user_id,
         )
-        return self.dao.insert(entity)
+        return self.repository.insert(entity)
 
     def modify(self, param: SysDemoModifyParam, user_id: str) -> SysDemo:
         """修改"""
-        entity = self.dao.find_by_id(param.id)
+        entity = self.repository.find_by_id(param.id)
         if not entity:
             raise BusinessException("记录不存在", 404)
 
@@ -235,15 +235,15 @@ class SysDemoService:
         for key, value in update_data.items():
             setattr(entity, key, value)
         entity.updated_by = user_id
-        return self.dao.update(entity)
+        return self.repository.update(entity)
 
     def remove(self, ids: List[str]):
         """删除"""
-        self.dao.delete_by_ids(ids)
+        self.repository.delete_by_ids(ids)
 
     def detail(self, id: str) -> Optional[SysDemo]:
         """详情"""
-        return self.dao.find_by_id(id)
+        return self.repository.find_by_id(id)
 ```
 
 ### api/v1/api.py - 路由与 Controller
@@ -346,13 +346,13 @@ mkdir -p modules/sys/<module>/api/v1
 
 定义 Pydantic v2 请求参数和响应模型。
 
-### 第四步：实现 dao.py
+### 第四步：实现 repository.py
 
-编写独立的数据访问类，实现数据访问逻辑。参考现有模块的 Dao 模式（如 `modules/sys/user/dao.py`）。
+编写独立的 Repository 类，实现数据访问逻辑。参考现有模块的 Repository 模式。
 
 ### 第五步：实现 service.py
 
-编写独立的业务逻辑类，组合 Dao 完成业务操作。
+编写独立的业务逻辑类，组合 Repository 完成业务操作。
 
 ### 第六步：实现 api/v1/api.py
 
@@ -478,4 +478,4 @@ id = generate_id()
 - **sys/banner**：Banner 管理，包含文件上传
 - **sys/config**：系统配置，包含批量编辑
 
-每个模块都遵循相同的 `models.py` + `params.py` + `dao.py` + `service.py` + `api/v1/api.py` 结构。
+每个模块都遵循相同的 `models.py` + `params.py` + `repository.py` + `service.py` + `api/v1/api.py` 结构。

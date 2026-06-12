@@ -12,7 +12,8 @@ from core.db import SessionLocal
 from core.exception import BusinessException
 from core.utils import generate_id
 from plugins.plugin_im.model.broadcast import Broadcast, BroadcastRead
-from plugins.plugin_im.broadcast.params import BroadcastVO, SendBroadcastParam
+from plugins.plugin_im.broadcast.params import BroadcastVO, SendBroadcastParam, BroadcastToBroadcastVO
+from plugins.plugin_im.broadcast.repository import BroadcastRepository
 from plugins.plugin_im import ws as im_ws
 from plugins.plugin_im.ws import Message as WSMessage
 
@@ -37,7 +38,7 @@ def send(sender_id: str, p: SendBroadcastParam) -> None:
 
     db = SessionLocal()
     try:
-        db.add(Broadcast(
+        BroadcastRepository(db).insert(Broadcast(
             id=generate_id(),
             title=p.title,
             content=p.content,
@@ -46,7 +47,6 @@ def send(sender_id: str, p: SendBroadcastParam) -> None:
             created_at=now,
             updated_at=now,
         ))
-        db.commit()
     except Exception:
         db.rollback()
         raise
@@ -77,27 +77,19 @@ def list_broadcasts(cursor: str = "", size: int = 20) -> tuple[list[BroadcastVO]
 
     db = SessionLocal()
     try:
-        q = db.query(Broadcast)
+        repository = BroadcastRepository(db)
+        cursor_dt = None
         if cursor:
             try:
-                t = datetime.strptime(cursor, "%Y-%m-%d %H:%M:%S")
-                q = q.filter(Broadcast.created_at < t)
+                cursor_dt = datetime.strptime(cursor, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 pass
 
-        records = q.order_by(Broadcast.created_at.desc()).limit(size + 1).all()
+        records = repository.page(cursor_dt, size)
         has_more = len(records) > size
         if has_more:
             records = records[:size]
-
-        result = [
-            BroadcastVO(
-                id=b.id, title=b.title, content=b.content or "",
-                scope=b.scope, sender_id=b.sender_id,
-                created_at=_fmt_dt(b.created_at),
-            )
-            for b in records
-        ]
+        result = [BroadcastToBroadcastVO(b) for b in records]
         return result, has_more
     finally:
         db.close()
@@ -110,22 +102,17 @@ def list_broadcasts(cursor: str = "", size: int = 20) -> tuple[list[BroadcastVO]
 def unread_list(user_id: str, user_type: str) -> tuple[list[BroadcastVO], bool]:
     db = SessionLocal()
     try:
-        records = db.query(Broadcast).order_by(Broadcast.created_at.desc()).limit(50).all()
-        read_records = db.query(BroadcastRead).filter(
-            BroadcastRead.user_id == user_id,
-            BroadcastRead.user_type == user_type,
-        ).all()
+        repository = BroadcastRepository(db)
+        records = repository.latest(50)
+        read_records = repository.list_reads(user_id, user_type)
         read_map = {r.broadcast_id: r.read_at for r in read_records}
 
         result = []
         for b in records:
             is_read = b.id in read_map
             read_at = read_map.get(b.id)
-            vo = BroadcastVO(
-                id=b.id, title=b.title, content=b.content or "",
-                scope=b.scope, read=is_read,
-                created_at=_fmt_dt(b.created_at),
-            )
+            vo = BroadcastToBroadcastVO(b)
+            vo.read = is_read
             if is_read and read_at:
                 vo.read_at = _fmt_dt(read_at)
             result.append(vo)
@@ -141,21 +128,17 @@ def unread_list(user_id: str, user_type: str) -> tuple[list[BroadcastVO], bool]:
 def mark_read(user_id: str, user_type: str, broadcast_id: str) -> None:
     db = SessionLocal()
     try:
+        repository = BroadcastRepository(db)
         now = datetime.now()
-        existing = db.query(BroadcastRead).filter(
-            BroadcastRead.broadcast_id == broadcast_id,
-            BroadcastRead.user_id == user_id,
-            BroadcastRead.user_type == user_type,
-        ).first()
+        existing = repository.find_read(broadcast_id, user_id, user_type)
         if not existing:
-            db.add(BroadcastRead(
+            repository.mark_read(BroadcastRead(
                 id=generate_id(),
                 broadcast_id=broadcast_id,
                 user_id=user_id,
                 user_type=user_type,
                 read_at=now,
             ))
-            db.commit()
     except Exception:
         db.rollback()
         raise
@@ -170,13 +153,9 @@ def mark_read(user_id: str, user_type: str, broadcast_id: str) -> None:
 def detail(broadcast_id: str) -> Optional[BroadcastVO]:
     db = SessionLocal()
     try:
-        b = db.query(Broadcast).filter(Broadcast.id == broadcast_id).first()
+        b = BroadcastRepository(db).find_by_id(broadcast_id)
         if not b:
             return None
-        return BroadcastVO(
-            id=b.id, title=b.title, content=b.content or "",
-            scope=b.scope, sender_id=b.sender_id,
-            created_at=_fmt_dt(b.created_at),
-        )
+        return BroadcastToBroadcastVO(b)
     finally:
         db.close()

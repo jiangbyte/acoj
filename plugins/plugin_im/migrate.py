@@ -1,4 +1,4 @@
-"""Model registration for the IM plugin."""
+"""Centralized migration registration for plugin_im."""
 
 from core.plugin.registry import register_model
 from plugins.plugin_im.model.message import Message, Conversation, ConversationUnread
@@ -9,7 +9,6 @@ from plugins.plugin_im.model.group import Group, GroupMember, GroupJoinRequest, 
 
 
 def register_all_models() -> None:
-    """Register all IM models so the migration tool can discover them."""
     register_model(Message)
     register_model(Conversation)
     register_model(ConversationUnread)
@@ -24,3 +23,6 @@ def register_all_models() -> None:
     register_model(GroupJoinRequest)
     register_model(GroupMessage)
     register_model(GroupMessageRead)
+
+
+__all__ = ["register_all_models"]

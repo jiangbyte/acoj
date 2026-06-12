@@ -54,7 +54,6 @@ hei-fastapi/
 │   ├── db/                           # 数据库层
 │   │   ├── mysql.py                  # SQLAlchemy 引擎 + SessionLocal + get_db()
 │   │   ├── redis.py                  # Redis 异步客户端
-│   │   ├── base_dao.py               # BaseDAO 通用 CRUD 基类（仅 .pyc）
 │   │   ├── base_service.py           # BaseService 通用业务逻辑基类（已移除）
 │   │   ├── query_wrapper.py          # QueryWrapper 链式查询构建器（已移除）
 │   │   └── meta_object_handler.py    # 系统字段自动填充（已移除）
@@ -157,7 +156,7 @@ hei-fastapi/
 
 ### modules/ 业务模块
 
-`modules/` 采用垂直切片架构，每个模块独立包含其模型、参数、服务、数据访问和 API 层。这种结构的好处：
+`modules/` 采用垂直切片架构，每个模块独立包含其模型、参数、服务、Repository 和 API 层。这种结构的好处：
 
 - **高内聚**：一个功能的所有代码在同一个目录下
 - **低耦合**：模块之间通过接口交互，不直接依赖
@@ -172,7 +171,7 @@ hei-fastapi/
 modules/<domain>/<module>/
 ├── models.py        # SQLAlchemy ORM 模型（Mapped + mapped_column）
 ├── params.py        # Pydantic v2 请求参数和响应模型
-├── dao.py           # 数据访问层
+├── repository.py    # Repository 层
 ├── service.py       # 业务逻辑层
 └── api/v1/api.py    # FastAPI 路由定义 + Controller
 ```

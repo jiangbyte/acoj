@@ -1,11 +1,10 @@
 from .models import SysOrg
 from .params import OrgVO, OrgPageParam
-from .dao import OrgDao
+from .repository import OrgRepository
 from .service import OrgService
-from . import migrate
 from .api import v1_router as router
 
 from core.plugin.registry import register_router
 register_router(router)
 
-__all__ = ["SysOrg", "OrgVO", "OrgPageParam", "OrgDao", "OrgService", "router"]
+__all__ = ["SysOrg", "OrgVO", "OrgPageParam", "OrgRepository", "OrgService", "router"]

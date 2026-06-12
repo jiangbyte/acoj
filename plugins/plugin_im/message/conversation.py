@@ -6,20 +6,19 @@ Mirrors hei-gin plugins/plugin-im/message/conversation.go.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
-
-from sqlalchemy import func, and_, or_, text
 
 from core.db import SessionLocal
 from core.exception import BusinessException
 from core.enums import LoginTypeEnum
 from plugins.plugin_im.model.message import (
-    Message, Conversation, generate_conversation_id,
+    generate_conversation_id,
 )
 from plugins.plugin_im.message.params import (
     ConversationVO, ConversationMessageVO, GetOrCreateConversationParam,
 )
 from plugins.plugin_im.group import my_group_conversations
+from plugins.plugin_im.message.repository import MessageRepository
+from plugins.plugin_im.message.user_repository import IMUserRepository
 
 import logging
 logger = logging.getLogger(__name__)
@@ -75,52 +74,16 @@ def conversations(current_user_id: str, user_type: str, cursor: str = "", size: 
 
 
 def _build_from_messages(current_user_id: str, user_type: str) -> dict[str, ConversationVO]:
-    """Derive single-chat conversation VOs directly from im_message."""
     db = SessionLocal()
     try:
-        # Get latest message per conversation
-        subq = db.query(
-            Message.conversation_id,
-            func.max(Message.created_at).label("max_ct")
-        ).filter(
-            or_(Message.sender_id == current_user_id, Message.receiver_id == current_user_id),
-            or_(Message.deleted_by != current_user_id, Message.deleted_by.is_(None)),
-        ).group_by(Message.conversation_id).subquery()
-
-        rows = db.query(
-            Message.conversation_id,
-            Message.sender_id,
-            Message.sender_type,
-            Message.receiver_id,
-            Message.receiver_type,
-            Message.content,
-            Message.created_at,
-            Message.status,
-        ).join(
-            subq,
-            and_(
-                subq.c.conversation_id == Message.conversation_id,
-                subq.c.max_ct == Message.created_at,
-            )
-        ).order_by(Message.created_at.desc()).all()
-
+        repository = MessageRepository(db)
+        user_repository = IMUserRepository(db)
+        rows = repository.list_latest_message_rows(current_user_id)
         if not rows:
             return {}
 
         conv_ids = [r.conversation_id for r in rows]
-
-        # Batch unread counts
-        unread_counts = db.query(
-            Message.conversation_id,
-            func.count(Message.id).label("count")
-        ).filter(
-            Message.conversation_id.in_(conv_ids),
-            Message.receiver_id == current_user_id,
-            Message.status == "unread",
-        ).group_by(Message.conversation_id).all()
-        unread_map = {u.conversation_id: u.count for u in unread_counts}
-
-        # Collect user IDs for batch resolve
+        unread_map = repository.unread_counts_by_conversation(conv_ids, current_user_id)
         business_ids = []
         consumer_ids = []
         result_map = {}
@@ -146,24 +109,18 @@ def _build_from_messages(current_user_id: str, user_type: str) -> dict[str, Conv
                 unread_count=unread_map.get(r.conversation_id, 0),
             )
 
-        # Batch resolve nicknames and avatars
         nickname_map = {}
         avatar_map = {}
-
         if business_ids:
-            from plugins.plugin_sys.user.models import SysUser
-            users = db.query(SysUser).filter(SysUser.id.in_(business_ids)).all()
+            users = user_repository.list_sys_users(business_ids)
             for u in users:
                 nickname_map["BUSINESS:" + u.id] = u.nickname or u.username or ""
                 avatar_map["BUSINESS:" + u.id] = u.avatar or ""
-
         if consumer_ids:
-            from plugins.plugin_client.user.models import ClientUser
-            users = db.query(ClientUser).filter(ClientUser.id.in_(consumer_ids)).all()
+            users = user_repository.list_client_users(consumer_ids)
             for u in users:
                 nickname_map["CONSUMER:" + u.id] = u.nickname or u.username or ""
                 avatar_map["CONSUMER:" + u.id] = u.avatar or ""
-
         for vo in result_map.values():
             key = vo.other_user_type + ":" + vo.other_user_id
             vo.other_nickname = nickname_map.get(key, "")
@@ -188,21 +145,14 @@ def conversation_messages(
 
     db = SessionLocal()
     try:
-        q = db.query(Message).filter(
-            Message.conversation_id == conversation_id,
-            or_(Message.sender_id == current_user_id, Message.receiver_id == current_user_id),
-            or_(Message.deleted_by != current_user_id, Message.deleted_by.is_(None)),
-        )
+        repository = MessageRepository(db)
+        cursor_dt = None
         if cursor:
             try:
-                t = datetime.strptime(cursor, "%Y-%m-%d %H:%M:%S")
-                q = q.filter(Message.created_at < t)
+                cursor_dt = datetime.strptime(cursor, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 pass
-
-        order = "created_at ASC" if cursor else "created_at DESC"
-        records = q.order_by(text(order)).limit(size + 1).all()
-
+        records = repository.list_conversation_messages(current_user_id, conversation_id, cursor_dt, size)
         has_more = len(records) > size
         if has_more:
             records = records[:size]
@@ -242,18 +192,16 @@ def get_or_create_conversation(user_id: str, user_type: str, param: GetOrCreateC
         param.user_id, LoginTypeEnum(param.user_type),
     )
 
-    # Resolve display name
     display_name = param.user_id
     db = SessionLocal()
     try:
+        user_repository = IMUserRepository(db)
         if param.user_type == "BUSINESS":
-            from plugins.plugin_sys.user.models import SysUser
-            u = db.query(SysUser).filter(SysUser.id == param.user_id).first()
+            u = user_repository.find_sys_user(param.user_id)
             if u:
                 display_name = u.nickname or u.username or param.user_id
         else:
-            from plugins.plugin_client.user.models import ClientUser
-            u = db.query(ClientUser).filter(ClientUser.id == param.user_id).first()
+            u = user_repository.find_client_user(param.user_id)
             if u:
                 display_name = u.nickname or u.username or param.user_id
     finally:

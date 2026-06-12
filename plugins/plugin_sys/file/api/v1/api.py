@@ -18,7 +18,6 @@ from plugins.plugin_sys.file.service import (
     upload, page, get_download_path, detail, remove, remove_absolute,
     init_chunk_upload, upload_chunk, complete_chunk_upload, abort_chunk_upload,
 )
-from plugins.plugin_sys.file.models import SysFile
 
 router = APIRouter(prefix="/api/v1/sys/file", tags=["Sys File"])
 
@@ -56,19 +55,17 @@ async def detail_handler(request: Request, id: str = QueryParam(...)):
 @router.get("/download", summary="下载文件")
 @HeiCheckPermission("sys:file:download")
 async def download_handler(request: Request, id: str = QueryParam(...)):
-    from core.db import SessionLocal
-    db = SessionLocal()
     try:
-        entity = db.query(SysFile).filter(SysFile.id == id).first()
+        entity = detail(id)
         if not entity:
             return failure("文件不存在", 404)
-        if entity.download_path:
-            return RedirectResponse(url=entity.download_path)
-        if entity.storage_path:
-            return FileResponse(entity.storage_path, filename=entity.name or "download")
+        if entity.get("download_path"):
+            return RedirectResponse(url=entity["download_path"])
+        if entity.get("storage_path"):
+            return FileResponse(entity["storage_path"], filename=entity.get("name") or "download")
         return failure("文件路径为空", 404)
-    finally:
-        db.close()
+    except Exception as e:
+        return failure(str(e), 400)
 
 
 @router.post("/remove", summary="删除文件记录（保留存储文件）")

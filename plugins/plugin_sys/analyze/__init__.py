@@ -1,5 +1,5 @@
 from .params import DashboardVO, DashboardStats, TrendItem, OrgUserDistribution, CategoryDistribution
-from .dao import AnalyzeDao
+from .repository import AnalyzeRepository
 from .service import AnalyzeService
 from .api import v1_router as router
 
@@ -8,5 +8,5 @@ register_router(router)
 
 __all__ = [
     "DashboardVO", "DashboardStats", "TrendItem", "OrgUserDistribution",
-    "CategoryDistribution", "AnalyzeDao", "AnalyzeService", "router",
+    "CategoryDistribution", "AnalyzeRepository", "AnalyzeService", "router",
 ]

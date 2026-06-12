@@ -5,8 +5,8 @@ from datetime import datetime
 from fastapi import Request
 from sqlalchemy.orm import Session
 from sqlalchemy import update as sa_update, select, func
-from .params import OrgVO, OrgPageParam, OrgTreeParam
-from .dao import OrgDao
+from .params import OrgVO, OrgPageParam, OrgTreeParam, SysOrgToOrgVO, SysOrgToOrgTreeVO
+from .repository import OrgRepository
 from .models import SysOrg
 from ..user.models import SysUser
 from ..group.models import SysGroup
@@ -15,34 +15,6 @@ from core.result import page_data, PageDataField
 from core.exception import BusinessException
 from core.utils import generate_id
 from core.auth import HeiAuthTool
-
-
-def _to_vo(entity: SysOrg) -> dict:
-    vo = {
-        "id": entity.id,
-        "code": entity.code,
-        "name": entity.name,
-        "category": entity.category,
-        "sort_code": entity.sort_code,
-        "status": entity.status,
-    }
-    if entity.parent_id is not None:
-        vo["parent_id"] = entity.parent_id
-    if entity.description is not None:
-        vo["description"] = entity.description
-    if entity.extra is not None:
-        vo["extra"] = entity.extra
-    if entity.created_at is not None:
-        vo["created_at"] = entity.created_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.created_by is not None:
-        vo["created_by"] = entity.created_by
-    if entity.updated_at is not None:
-        vo["updated_at"] = entity.updated_at.strftime("%Y-%m-%d %H:%M:%S")
-    if entity.updated_by is not None:
-        vo["updated_by"] = entity.updated_by
-    return vo
-
-
 def _sort_tree(nodes: List[dict]) -> None:
     nodes.sort(key=lambda x: x.get("sort_code", 0) or 0)
     for n in nodes:
@@ -85,19 +57,19 @@ def _collect_descendant_ids(db: Session, ids: List[str]) -> List[str]:
 # ── Service functions ──
 
 def page(db: Session, param: OrgPageParam) -> dict:
-    dao = OrgDao(db)
-    result = dao.find_page_by_filters(param)
-    records = [_to_vo(r) for r in result.get("records", [])]
+    repository = OrgRepository(db)
+    result = repository.find_page_by_filters(param)
+    records = [SysOrgToOrgVO(r) for r in result.get("records", [])]
     return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
 
 
 def detail(db: Session, id: str) -> Optional[dict]:
     if not id:
         return None
-    entity = OrgDao(db).find_by_id(id)
+    entity = OrgRepository(db).find_by_id(id)
     if not entity:
         return None
-    return _to_vo(entity)
+    return SysOrgToOrgVO(entity)
 
 
 def tree(db: Session, param: OrgTreeParam) -> list:
@@ -107,8 +79,7 @@ def tree(db: Session, param: OrgTreeParam) -> list:
     node_map = {}
     roots = []
     for r in all_rows:
-        r_dict = _to_vo(r)
-        r_dict["children"] = []
+        r_dict = SysOrgToOrgTreeVO(r).model_dump()
         node_map[r.id] = r_dict
     for r_dict in node_map.values():
         pid = r_dict.get("parent_id") or ""
@@ -141,12 +112,12 @@ def create(db: Session, vo: OrgVO, user_id: Optional[str] = None) -> None:
     if user_id:
         entity.created_by = user_id
         entity.updated_by = user_id
-    OrgDao(db).insert(entity)
+    OrgRepository(db).insert(entity)
 
 
 def modify(db: Session, vo: OrgVO, user_id: Optional[str] = None) -> None:
-    dao = OrgDao(db)
-    entity = dao.find_by_id(vo.id)
+    repository = OrgRepository(db)
+    entity = repository.find_by_id(vo.id)
     if not entity:
         raise BusinessException("数据不存在")
     if vo.parent_id is not None and vo.parent_id != entity.parent_id:
@@ -173,8 +144,8 @@ def modify(db: Session, vo: OrgVO, user_id: Optional[str] = None) -> None:
         up["extra"] = None
     if user_id:
         up["updated_by"] = user_id
-    dao.db.execute(sa_update(SysOrg).where(SysOrg.id == vo.id).values(**up))
-    dao.db.commit()
+    repository.db.execute(sa_update(SysOrg).where(SysOrg.id == vo.id).values(**up))
+    repository.db.commit()
 
 
 def remove(db: Session, ids: list) -> None:
@@ -190,18 +161,18 @@ def remove(db: Session, ids: list) -> None:
     cnt_pos = db.execute(select(func.count()).select_from(SysPosition).where(SysPosition.org_id.in_(all_ids))).scalar() or 0
     if cnt_pos > 0:
         raise BusinessException("组织存在关联职位，无法删除")
-    OrgDao(db).delete_by_ids(all_ids)
+    OrgRepository(db).delete_by_ids(all_ids)
 
 
 def options(db: Session) -> list:
     rows = db.execute(select(SysOrg).order_by(SysOrg.sort_code.asc())).scalars().all()
-    return [_to_vo(r) for r in rows]
+    return [SysOrgToOrgVO(r) for r in rows]
 
 
 class OrgService:
     def __init__(self, db: Session):
         self.db = db
-        self.dao = OrgDao(db)
+        self.repository = OrgRepository(db)
 
     async def _get_user_id(self, request: Optional[Request] = None) -> Optional[str]:
         try:

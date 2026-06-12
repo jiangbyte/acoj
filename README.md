@@ -119,7 +119,7 @@ plugins/plugin_xxx/
 ├── plugin.py         # HeiPlugin 子类（生命周期钩子）
 ├── models.py         # ORM 模型
 ├── params.py         # Pydantic 请求/响应模型
-├── dao.py            # 数据访问层
+├── repository.py     # Repository 层
 ├── service.py        # 业务逻辑层
 └── api/
     └── v1/

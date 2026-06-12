@@ -1,4 +1,4 @@
-"""Home DAO — mirrors hei-gin plugin-sys/home/service.go queries."""
+"""Home Repository — mirrors hei-gin plugin-sys/home/service.go queries."""
 
 from datetime import datetime
 from typing import List, Optional, Dict, Any
@@ -10,7 +10,7 @@ from plugins.plugin_sys.resource.models import SysResource
 from .models import SysQuickAction
 
 
-class QuickActionDao:
+class QuickActionRepository:
     def __init__(self, db: Session):
         self.db = db
 

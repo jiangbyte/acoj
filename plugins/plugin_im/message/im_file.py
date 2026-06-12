@@ -17,6 +17,7 @@ from core.db import SessionLocal
 from core.utils import generate_id
 from plugins.plugin_im.model.im_file import ImFile
 from plugins.plugin_im.message.params import UploadFileResult
+from plugins.plugin_im.message.im_file_repository import ImFileRepository
 from core.exception import BusinessException
 
 import logging
@@ -117,8 +118,7 @@ async def upload_file(
 
     db = SessionLocal()
     try:
-        db.add(record)
-        db.commit()
+        ImFileRepository(db).insert(record)
     except Exception:
         db.rollback()
         raise

@@ -1,7 +1,7 @@
 from typing import List
-from datetime import datetime, timedelta
+from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, text
 from core.enums import UserStatusEnum
 from plugins.plugin_sys.user.models import SysUser
 from plugins.plugin_sys.role.models import SysRole
@@ -9,9 +9,10 @@ from plugins.plugin_sys.org.models import SysOrg
 from plugins.plugin_sys.config.models import SysConfig
 from plugins.plugin_sys.notice.models import SysNotice
 from plugins.plugin_client.user.models import ClientUser
+from plugins.plugin_sys.log.models import SysLog
 
 
-class AnalyzeDao:
+class AnalyzeRepository:
     def __init__(self, db: Session):
         self.db = db
 
@@ -102,3 +103,60 @@ class AnalyzeDao:
         result = self.db.execute(stmt).all()
         return [{"month": row[0], "count": row[1]} for row in result]
 
+    def monthly_trend(self, table: str, months: int = 12) -> List[dict]:
+        rows = self.db.execute(
+            text(
+                f"SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count "
+                f"FROM {table} WHERE created_at IS NOT NULL "
+                f"GROUP BY month ORDER BY month ASC LIMIT {months}"
+            )
+        ).fetchall()
+        return [{"month": row[0], "count": row[1]} for row in rows]
+
+    def org_user_distribution_with_names(self) -> List[dict]:
+        stmt = (
+            select(SysOrg.name, func.count(SysUser.id).label("count"))
+            .outerjoin(SysUser, and_(SysUser.org_id == SysOrg.id))
+            .group_by(SysOrg.id, SysOrg.name)
+            .order_by(func.count(SysUser.id).desc())
+        )
+        return [{"name": row[0] or "未分配", "count": row[1]} for row in self.db.execute(stmt).all()]
+
+    def role_category_distribution_with_counts(self) -> List[dict]:
+        stmt = select(SysRole.category, func.count(SysRole.id).label("count")).group_by(SysRole.category)
+        return [{"category": row[0], "count": row[1]} for row in self.db.execute(stmt).all()]
+
+    def login_stats(self) -> dict:
+        total = self.db.execute(
+            select(func.count(SysLog.id)).where(SysLog.category == "LOGIN")
+        ).scalar() or 0
+        failed = self.db.execute(
+            select(func.count(SysLog.id)).where(
+                SysLog.category == "LOGIN",
+                SysLog.exe_status == "FAIL",
+            )
+        ).scalar() or 0
+        today = self.db.execute(
+            select(func.count(SysLog.id)).where(
+                SysLog.category == "LOGIN",
+                func.date(SysLog.op_time) == func.curdate(),
+            )
+        ).scalar() or 0
+        return {"login_total": total, "login_failed": failed, "login_today": today}
+
+    def log_stats(self) -> dict:
+        total = self.db.execute(select(func.count(SysLog.id))).scalar() or 0
+        exception_total = self.db.execute(
+            select(func.count(SysLog.id)).where(SysLog.category == "EXCEPTION")
+        ).scalar() or 0
+        exception_today = self.db.execute(
+            select(func.count(SysLog.id)).where(
+                SysLog.category == "EXCEPTION",
+                func.date(SysLog.op_time) == func.curdate(),
+            )
+        ).scalar() or 0
+        return {
+            "log_total": total,
+            "log_exception": exception_total,
+            "exception_today": exception_today,
+        }

@@ -1,6 +1,6 @@
 """Client session params — standalone, mirrors hei-gin plugin-client/session/params.go."""
 
-from typing import Optional, List
+from typing import Optional, List, Any
 from pydantic import BaseModel, Field
 
 
@@ -75,3 +75,43 @@ class SessionChartData(BaseModel):
     """Session chart data — mirrors Go SessionChartData."""
     bar_chart: BarChartData = Field(default_factory=BarChartData)
     pie_chart: PieChartData = Field(default_factory=PieChartData)
+
+
+def SessionInfoToSessionPageResult(
+    info: dict[str, Any],
+    session_timeout: str,
+    *,
+    username: Optional[str] = None,
+    nickname: Optional[str] = None,
+    avatar: Optional[str] = None,
+    status: Optional[str] = None,
+    last_login_ip: Optional[str] = None,
+    last_login_time: str = "",
+) -> SessionPageResult:
+    return SessionPageResult(
+        user_id=info.get("user_id", ""),
+        username=username or info.get("username"),
+        nickname=nickname,
+        avatar=avatar,
+        status=status,
+        last_login_ip=last_login_ip,
+        last_login_time=last_login_time,
+        token_count=info.get("token_count", 0),
+        session_create_time=info.get("session_create_time", ""),
+        session_timeout=session_timeout,
+        session_timeout_seconds=info.get("session_timeout_seconds", 0),
+    )
+
+
+def SessionTokenInfoToSessionTokenResult(
+    token_info: dict[str, Any],
+    timeout: str,
+) -> SessionTokenResult:
+    return SessionTokenResult(
+        token=token_info["token"],
+        created_at=token_info.get("created_at", ""),
+        timeout=timeout,
+        timeout_seconds=token_info.get("timeout_seconds", 0),
+        device_type=token_info.get("device_type"),
+        device_id=token_info.get("device_id"),
+    )

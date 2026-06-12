@@ -11,6 +11,7 @@ from core.auth import HeiPermissionInterface, HeiPermissionInterfaceManager
 from core.db import SessionLocal
 from core.log import set_log_persister
 from plugins.plugin_sys.persistence import DbLogPersister
+from plugins.plugin_sys.migrate import register_all_models, register_all_seeds
 from plugins.plugin_sys.user import LoginUserApiProvider as BLoginUserApiProvider
 from plugins.plugin_sys.auth import init_auth as init_sys_auth
 
@@ -28,6 +29,8 @@ class SysPlugin(HeiPlugin):
 
     def on_init(self):
         """Register permission interface + B-side auth providers + log persister."""
+        register_all_models()
+        register_all_seeds()
         HeiPermissionInterfaceManager.registerInterface(HeiPermissionInterface())
 
         login_user_api = BLoginUserApiProvider(SessionLocal)

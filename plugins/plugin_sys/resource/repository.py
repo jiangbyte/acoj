@@ -6,7 +6,7 @@ from .models import SysModule, SysResource
 from .params import ModulePageParam, ResourcePageParam
 
 
-class ModuleDao:
+class ModuleRepository:
     def __init__(self, db: Session):
         self.db = db
 
@@ -57,7 +57,7 @@ class ModuleDao:
         return affected
 
 
-class ResourceDao:
+class ResourceRepository:
     def __init__(self, db: Session):
         self.db = db
 

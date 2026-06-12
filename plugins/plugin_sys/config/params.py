@@ -1,5 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
+from .models import SysConfig
 
 
 class ConfigVO(BaseModel):
@@ -47,3 +48,21 @@ class ConfigCategoryEditParam(BaseModel):
     config_key: Optional[str] = None
     config_value: Optional[str] = None
     remark: Optional[str] = None
+
+
+def SysConfigToConfigVO(src: Optional[SysConfig]) -> Optional[ConfigVO]:
+    if src is None:
+        return None
+    return ConfigVO(
+        id=src.id,
+        config_key=src.config_key,
+        config_value=src.config_value,
+        category=src.category,
+        remark=src.remark,
+        sort_code=src.sort_code,
+        extra=src.extra,
+        created_at=src.created_at.strftime("%Y-%m-%d %H:%M:%S") if src.created_at else None,
+        created_by=src.created_by,
+        updated_at=src.updated_at.strftime("%Y-%m-%d %H:%M:%S") if src.updated_at else None,
+        updated_by=src.updated_by,
+    )
