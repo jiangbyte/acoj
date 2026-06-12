@@ -1,38 +1,36 @@
-"""SysFile service — upload, chunk upload, download, page.
-
-Mirrors hei-gin plugins/plugin-sys/file/service.go.
-"""
+"""Sys file service."""
 
 from __future__ import annotations
 
 import hashlib
 import io
-import json
-import logging
 import os
 import shutil
 import tempfile
 from datetime import datetime
 from typing import Optional
 
-from fastapi import UploadFile
+from fastapi import Depends, UploadFile
+from sqlalchemy.orm import Session
 
-from sdk.infra.db import SessionLocal
+from sdk.infra.db import get_db
+from sdk.infra.storage import ChunkedUploader, get_storage, get_url
+from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
 from sdk.web.result import page_data
-from sdk.utils import generate_id
-from sdk.infra.storage import get_storage, get_url, ChunkedUploader
-from plugins.plugin_sys.file.models import SysFile
-from plugins.plugin_sys.file.repository import FileRepository
-from plugins.plugin_sys.file.params import (
-    FilePageParam, FileUploadResult,
-    ChunkUploadInitParam, ChunkUploadPartParam,
-    ChunkCompleteParam, ChunkAbortParam,
-    SysFileToFileUploadResult, SysFileToFileVO,
+
+from .models import SysFile
+from .params import (
+    ChunkAbortParam,
+    ChunkCompleteParam,
+    ChunkUploadInitParam,
+    ChunkUploadPartParam,
+    FilePageParam,
+    FileUploadResult,
+    SysFileToFileUploadResult,
+    SysFileToFileVO,
 )
-
-logger = logging.getLogger(__name__)
-
+from .repository import FileRepository
 
 ALLOWED_EXTENSIONS = {
     ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".ico",
@@ -60,291 +58,214 @@ def _format_size(bytes_size: int) -> tuple[int, str]:
         return kb, f"{kb} KB"
     mb = kb / 1024
     return kb, f"{mb:.1f} MB"
-# ═════════════════════════════════════════════════════════════════════
-# Upload
-# ═════════════════════════════════════════════════════════════════════
-
-async def upload(
-    file: UploadFile,
-    user_id: str,
-    engine_type: str = "LOCAL",
-    bucket: str = "DEFAULT",
-) -> FileUploadResult:
-    if not file.filename:
-        raise BusinessException("文件名为空", 400)
-
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        raise BusinessException(f"不支持的文件类型: {ext}", 400)
-
-    content = await file.read()
-    file_size = len(content)
-    checksum = hashlib.sha256(content).hexdigest()
-    file_key = generate_id() + ext
-    size_kb, size_info = _format_size(file_size)
-    thumbnail = file_key if _is_image_ext(ext) else ""
-
-    eng = get_storage(engine_type)
-    if not eng:
-        raise BusinessException(f"不支持的存储类型: {engine_type}", 500)
-
-    storage_path = eng.store_stream(bucket, file_key, io.BytesIO(content))
-    download_path = get_url(engine_type, bucket, file_key)
-
-    now = datetime.now()
-    entity = SysFile(
-        id=generate_id(),
-        engine=engine_type,
-        bucket=bucket,
-        file_key=file_key,
-        name=file.filename,
-        suffix=ext,
-        size_kb=size_kb,
-        size_info=size_info,
-        obj_name=file_key,
-        storage_path=storage_path,
-        download_path=download_path,
-        thumbnail=thumbnail,
-        checksum=checksum,
-        checksum_algo="sha256",
-        created_at=now,
-        created_by=user_id,
-        updated_at=now,
-        updated_by=user_id,
-    )
-
-    db = SessionLocal()
-    try:
-        return SysFileToFileUploadResult(FileRepository(db).insert(entity))
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
 
 
-# ═════════════════════════════════════════════════════════════════════
-# Page
-# ═════════════════════════════════════════════════════════════════════
+class FileService:
+    def __init__(self, repository_or_db):
+        if isinstance(repository_or_db, FileRepository):
+            self.repository = repository_or_db
+        else:
+            self.repository = FileRepository(repository_or_db)
+        self.db = self.repository.db
 
-def page(param: FilePageParam) -> dict:
-    db = SessionLocal()
-    try:
-        records, total = FileRepository(db).page(param)
-        return page_data([SysFileToFileVO(r) for r in records], total, param.current, param.size)
-    finally:
-        db.close()
+    @classmethod
+    def from_db(cls, db: Session) -> "FileService":
+        return cls(FileRepository(db))
 
+    async def upload(
+        self,
+        file: UploadFile,
+        user_id: str,
+        engine_type: str = "LOCAL",
+        bucket: str = "DEFAULT",
+    ) -> FileUploadResult:
+        if not file.filename:
+            raise BusinessException("文件名为空", 400)
 
-# ═════════════════════════════════════════════════════════════════════
-# Download
-# ═════════════════════════════════════════════════════════════════════
+        ext = os.path.splitext(file.filename)[1].lower()
+        if ext not in ALLOWED_EXTENSIONS:
+            raise BusinessException(f"不支持的文件类型: {ext}", 400)
 
-def get_download_path(file_id: str) -> Optional[str]:
-    db = SessionLocal()
-    try:
-        entity = FileRepository(db).find_by_id(file_id)
-        if not entity:
-            raise BusinessException("文件不存在", 404)
-        if entity.download_path:
-            return entity.download_path
-        if entity.storage_path:
-            return entity.storage_path
-        return None
-    finally:
-        db.close()
+        content = await file.read()
+        file_size = len(content)
+        checksum = hashlib.sha256(content).hexdigest()
+        file_key = generate_id() + ext
+        size_kb, size_info = _format_size(file_size)
+        thumbnail = file_key if _is_image_ext(ext) else ""
 
+        engine = get_storage(engine_type)
+        if not engine:
+            raise BusinessException(f"不支持的存储类型: {engine_type}", 500)
 
-# ═════════════════════════════════════════════════════════════════════
-# Chunk Upload
-# ═════════════════════════════════════════════════════════════════════
+        storage_path = engine.store_stream(bucket, file_key, io.BytesIO(content))
+        download_path = get_url(engine_type, bucket, file_key)
 
-def init_chunk_upload(param: ChunkUploadInitParam) -> dict:
-    eng = get_storage(param.engine)
-    if not eng:
-        raise BusinessException(f"不支持的存储类型: {param.engine}", 500)
-
-    file_key = generate_id() + os.path.splitext(param.file_name)[1]
-
-    if isinstance(eng, ChunkedUploader):
-        upload_id = eng.init_chunk_upload(param.bucket, file_key, param.total_chunks)
-    else:
-        upload_id = generate_id()
-
-    return {"upload_id": upload_id, "file_key": file_key}
-
-
-async def upload_chunk(
-    file: UploadFile,
-    param: ChunkUploadPartParam,
-) -> None:
-    eng = get_storage(param.engine)
-    if not eng:
-        raise BusinessException(f"不支持的存储类型: {param.engine}", 500)
-
-    content = await file.read()
-
-    if isinstance(eng, ChunkedUploader):
-        await eng.upload_chunk(param.bucket, param.file_key, param.upload_id, param.chunk_index, content)
-    else:
-        tmp_dir = os.path.join(tempfile.gettempdir(), f"chunk_{param.upload_id}")
-        os.makedirs(tmp_dir, exist_ok=True)
-        chunk_file = os.path.join(tmp_dir, f"chunk_{param.chunk_index:06d}")
-        with open(chunk_file, "wb") as f:
-            f.write(content)
-
-
-def complete_chunk_upload(param: ChunkCompleteParam) -> FileUploadResult:
-    eng = get_storage(param.engine)
-    if not eng:
-        raise BusinessException(f"不支持的存储类型: {param.engine}", 500)
-
-    if not param.file_key:
-        raise BusinessException("file_key 不能为空", 400)
-
-    ext = os.path.splitext(param.name)[1].lower()
-    size_kb, size_info = _format_size(param.file_size)
-
-    if isinstance(eng, ChunkedUploader):
-        storage_path = eng.complete_chunk_upload(param.bucket, param.file_key, param.upload_id)
-    else:
-        tmp_dir = os.path.join(tempfile.gettempdir(), f"chunk_{param.upload_id}")
-        if not os.path.exists(tmp_dir):
-            raise BusinessException("分片上传会话不存在", 400)
-
-        chunks = sorted(
-            [f for f in os.listdir(tmp_dir) if f.startswith("chunk_")],
-            key=lambda x: int(x.split("_")[1]),
+        now = datetime.now()
+        entity = SysFile(
+            id=generate_id(),
+            engine=engine_type,
+            bucket=bucket,
+            file_key=file_key,
+            name=file.filename,
+            suffix=ext,
+            size_kb=size_kb,
+            size_info=size_info,
+            obj_name=file_key,
+            storage_path=storage_path,
+            download_path=download_path,
+            thumbnail=thumbnail,
+            checksum=checksum,
+            checksum_algo="sha256",
+            created_at=now,
+            created_by=user_id,
+            updated_at=now,
+            updated_by=user_id,
         )
-        all_content = b""
-        for chunk_name in chunks:
-            chunk_path = os.path.join(tmp_dir, chunk_name)
-            with open(chunk_path, "rb") as cf:
-                all_content += cf.read()
+        return SysFileToFileUploadResult(self.repository.insert(entity))
 
-        storage_path = eng.store_stream(param.bucket, param.file_key, all_content)
-        shutil.rmtree(tmp_dir, ignore_errors=True)
+    def page(self, param: FilePageParam) -> dict:
+        records, total = self.repository.page(param)
+        return page_data([SysFileToFileVO(record) for record in records], total, param.current, param.size)
 
-    download_path = get_url(param.engine, param.bucket, param.file_key)
-    thumbnail = download_path if _is_image_ext(ext) else ""
-
-    now = datetime.now()
-    entity = SysFile(
-        id=generate_id(),
-        engine=param.engine,
-        bucket=param.bucket,
-        file_key=param.file_key,
-        name=param.name,
-        suffix=ext,
-        size_kb=size_kb,
-        size_info=size_info,
-        obj_name=param.file_key,
-        storage_path=storage_path,
-        download_path=download_path,
-        thumbnail=thumbnail,
-        created_at=now,
-        updated_at=now,
-    )
-
-    db = SessionLocal()
-    try:
-        return SysFileToFileUploadResult(FileRepository(db).insert(entity))
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
-
-
-def abort_chunk_upload(param: ChunkAbortParam) -> None:
-    eng = get_storage(param.engine)
-    if not eng:
-        raise BusinessException(f"不支持的存储类型: {param.engine}", 500)
-
-    if isinstance(eng, ChunkedUploader):
-        eng.abort_chunk_upload(param.bucket, param.file_key, param.upload_id)
-    else:
-        tmp_dir = os.path.join(tempfile.gettempdir(), f"chunk_{param.upload_id}")
-        shutil.rmtree(tmp_dir, ignore_errors=True)
-
-# ═════════════════════════════════════════════════════════════════════
-# Max upload size  —  mirrors hei-gin's maxUploadSize()
-# ═════════════════════════════════════════════════════════════════════
-
-def max_upload_size() -> int:
-    """Return the configured max upload size in bytes."""
-    from sdk.config.settings import settings
-    return settings.app.upload_max_size or 50 << 20
-
-
-# ═════════════════════════════════════════════════════════════════════
-# Detail  —  mirrors hei-gin's Detail()
-# ═════════════════════════════════════════════════════════════════════
-
-def detail(file_id: str) -> Optional[dict]:
-    """Return file detail dict by ID — matches hei-gin's Detail() returning FileVO.
-
-    Mirrors hei-gin's Detail().
-    """
-    if not file_id:
-        return None
-    db = SessionLocal()
-    try:
-        entity = FileRepository(db).find_by_id(file_id)
+    def detail(self, file_id: str) -> Optional[dict]:
+        if not file_id:
+            return None
+        entity = self.repository.find_by_id(file_id)
         if not entity:
             return None
         return SysFileToFileVO(entity).model_dump()
-    finally:
-        db.close()
 
+    def get_download_path(self, file_id: str) -> Optional[str]:
+        entity = self.repository.find_by_id(file_id)
+        if not entity:
+            raise BusinessException("文件不存在", 404)
+        return entity.download_path or entity.storage_path
 
-# ═════════════════════════════════════════════════════════════════════
-# Remove  —  mirrors hei-gin's Remove()
-# ═════════════════════════════════════════════════════════════════════
+    def remove(self, ids: list[str]) -> None:
+        if not ids:
+            return
+        self.repository.delete_by_ids(ids)
 
-def remove(ids: list[str]) -> None:
-    """Remove file records by IDs (DB only, does not delete from storage).
-
-    Mirrors hei-gin's Remove().
-    """
-    if not ids:
-        return
-    db = SessionLocal()
-    try:
-        FileRepository(db).delete_by_ids(ids)
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
-
-
-# ═════════════════════════════════════════════════════════════════════
-# RemoveAbsolute  —  mirrors hei-gin's RemoveAbsolute()
-# ═════════════════════════════════════════════════════════════════════
-
-def remove_absolute(ids: list[str]) -> None:
-    """Remove file records AND delete from storage engine.
-
-    Mirrors hei-gin's RemoveAbsolute().
-    """
-    if not ids:
-        return
-    db = SessionLocal()
-    try:
-        repository = FileRepository(db)
-        files = repository.find_by_ids(ids)
-        for f in files:
-            if f.engine:
-                eng = get_storage(f.engine)
-                if eng:
+    def remove_absolute(self, ids: list[str]) -> None:
+        if not ids:
+            return
+        files = self.repository.find_by_ids(ids)
+        for file_item in files:
+            if file_item.engine:
+                engine = get_storage(file_item.engine)
+                if engine:
                     try:
-                        eng.delete(f.bucket, f.file_key)
+                        if file_item.file_key:
+                            engine.delete(file_item.bucket or "DEFAULT", file_item.file_key)
                     except Exception:
-                        logger.warning("Failed to delete file from storage: %s/%s", f.bucket, f.file_key)
-        repository.delete_by_ids(ids)
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
+                        pass
+        self.repository.delete_by_ids(ids)
+
+    def init_chunk_upload(self, param: ChunkUploadInitParam) -> dict:
+        engine = get_storage(param.engine)
+        if not engine:
+            raise BusinessException(f"不支持的存储类型: {param.engine}", 500)
+
+        file_key = generate_id() + os.path.splitext(param.file_name)[1]
+        if isinstance(engine, ChunkedUploader):
+            upload_id = engine.init_chunk_upload(param.bucket, file_key, param.total_chunks)
+        else:
+            upload_id = generate_id()
+        return {"upload_id": upload_id, "file_key": file_key}
+
+    async def upload_chunk(
+        self,
+        file: UploadFile,
+        param: ChunkUploadPartParam,
+    ) -> None:
+        engine = get_storage(param.engine)
+        if not engine:
+            raise BusinessException(f"不支持的存储类型: {param.engine}", 500)
+
+        content = await file.read()
+        if isinstance(engine, ChunkedUploader):
+            await engine.upload_chunk(
+                param.bucket,
+                param.file_key,
+                param.upload_id,
+                param.chunk_index,
+                content,
+            )
+            return
+
+        tmp_dir = os.path.join(tempfile.gettempdir(), f"chunk_{param.upload_id}")
+        os.makedirs(tmp_dir, exist_ok=True)
+        chunk_file = os.path.join(tmp_dir, f"chunk_{param.chunk_index:06d}")
+        with open(chunk_file, "wb") as target:
+            target.write(content)
+
+    def complete_chunk_upload(self, param: ChunkCompleteParam) -> FileUploadResult:
+        engine = get_storage(param.engine)
+        if not engine:
+            raise BusinessException(f"不支持的存储类型: {param.engine}", 500)
+        if not param.file_key:
+            raise BusinessException("file_key 不能为空", 400)
+
+        ext = os.path.splitext(param.name)[1].lower()
+        size_kb, size_info = _format_size(param.file_size)
+
+        if isinstance(engine, ChunkedUploader):
+            storage_path = engine.complete_chunk_upload(param.bucket, param.file_key, param.upload_id)
+        else:
+            tmp_dir = os.path.join(tempfile.gettempdir(), f"chunk_{param.upload_id}")
+            if not os.path.exists(tmp_dir):
+                raise BusinessException("分片上传会话不存在", 400)
+
+            chunks = sorted(
+                [name for name in os.listdir(tmp_dir) if name.startswith("chunk_")],
+                key=lambda name: int(name.split("_")[1]),
+            )
+            all_content = b""
+            for chunk_name in chunks:
+                with open(os.path.join(tmp_dir, chunk_name), "rb") as chunk_file:
+                    all_content += chunk_file.read()
+
+            storage_path = engine.store_stream(param.bucket, param.file_key, all_content)
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+        download_path = get_url(param.engine, param.bucket, param.file_key)
+        thumbnail = download_path if _is_image_ext(ext) else ""
+        now = datetime.now()
+        entity = SysFile(
+            id=generate_id(),
+            engine=param.engine,
+            bucket=param.bucket,
+            file_key=param.file_key,
+            name=param.name,
+            suffix=ext,
+            size_kb=size_kb,
+            size_info=size_info,
+            obj_name=param.file_key,
+            storage_path=storage_path,
+            download_path=download_path,
+            thumbnail=thumbnail,
+            created_at=now,
+            updated_at=now,
+        )
+        return SysFileToFileUploadResult(self.repository.insert(entity))
+
+    def abort_chunk_upload(self, param: ChunkAbortParam) -> None:
+        engine = get_storage(param.engine)
+        if not engine:
+            raise BusinessException(f"不支持的存储类型: {param.engine}", 500)
+
+        if isinstance(engine, ChunkedUploader):
+            engine.abort_chunk_upload(param.bucket, param.file_key, param.upload_id)
+            return
+
+        tmp_dir = os.path.join(tempfile.gettempdir(), f"chunk_{param.upload_id}")
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    def max_upload_size(self) -> int:
+        from sdk.config.settings import settings
+
+        return settings.app.upload_max_size or 50 << 20
+
+
+def get_file_service(db: Session = Depends(get_db)) -> FileService:
+    return FileService.from_db(db)

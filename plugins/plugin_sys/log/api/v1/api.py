@@ -1,16 +1,15 @@
 from typing import List
-from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, Query
 from sdk.web.result import Result, PageData, success
+from sdk.shared.di import ActorContext, get_current_actor
 from sdk.shared.types import IdParam, IdsParam
-from sdk.infra.db import get_db
 from sdk.auth.decorator import HeiCheckPermission, NoRepeat
 from sdk.log import SysLog
 from ...params import (
     LogVO, LogPageParam,
     LogDeleteByCategoryParam, LogBarChartData, LogPieChartData,
 )
-from ...service import LogService
+from ...service import LogService, get_log_service
 
 router = APIRouter()
 
@@ -22,11 +21,9 @@ router = APIRouter()
 )
 @HeiCheckPermission("sys:log:page")
 async def page(
-    request: Request,
     param: LogPageParam = Depends(),
-    db: Session = Depends(get_db)
+    service: LogService = Depends(get_log_service),
 ):
-    service = LogService(db)
     return success(service.page(param))
 
 
@@ -37,12 +34,11 @@ async def page(
 )
 @HeiCheckPermission("sys:log:create")
 async def create(
-    request: Request,
     vo: LogVO,
-    db: Session = Depends(get_db)
+    service: LogService = Depends(get_log_service),
+    actor: ActorContext = Depends(get_current_actor),
 ):
-    service = LogService(db)
-    await service.create(vo, request)
+    service.create(vo, actor)
     return success()
 
 
@@ -53,12 +49,11 @@ async def create(
 )
 @HeiCheckPermission("sys:log:modify")
 async def modify(
-    request: Request,
     vo: LogVO,
-    db: Session = Depends(get_db)
+    service: LogService = Depends(get_log_service),
+    actor: ActorContext = Depends(get_current_actor),
 ):
-    service = LogService(db)
-    await service.modify(vo, request)
+    service.modify(vo, actor)
     return success()
 
 
@@ -70,11 +65,9 @@ async def modify(
 @SysLog("删除操作日志")
 @HeiCheckPermission("sys:log:remove")
 async def remove(
-    request: Request,
     param: IdsParam,
-    db: Session = Depends(get_db)
+    service: LogService = Depends(get_log_service),
 ):
-    service = LogService(db)
     service.remove(param)
     return success()
 
@@ -86,11 +79,9 @@ async def remove(
 )
 @HeiCheckPermission("sys:log:detail")
 async def detail(
-    request: Request,
     id: str = Query(...),
-    db: Session = Depends(get_db)
+    service: LogService = Depends(get_log_service),
 ):
-    service = LogService(db)
     data = service.detail(IdParam(id=id))
     return success(data if data else None)
 
@@ -104,11 +95,9 @@ async def detail(
 @HeiCheckPermission("sys:log:remove")
 @NoRepeat(interval=5000)
 async def delete_by_category(
-    request: Request,
     param: LogDeleteByCategoryParam,
-    db: Session = Depends(get_db)
+    service: LogService = Depends(get_log_service),
 ):
-    service = LogService(db)
     service.delete_by_category(param)
     return success()
 
@@ -122,10 +111,8 @@ async def delete_by_category(
 )
 @HeiCheckPermission("sys:log:page")
 async def vis_line_chart_data(
-    request: Request,
-    db: Session = Depends(get_db),
+    service: LogService = Depends(get_log_service),
 ):
-    service = LogService(db)
     return success(service.vis_log_line_chart_data())
 
 
@@ -136,10 +123,8 @@ async def vis_line_chart_data(
 )
 @HeiCheckPermission("sys:log:page")
 async def vis_pie_chart_data(
-    request: Request,
-    db: Session = Depends(get_db),
+    service: LogService = Depends(get_log_service),
 ):
-    service = LogService(db)
     return success(service.vis_log_pie_chart_data())
 
 
@@ -150,10 +135,8 @@ async def vis_pie_chart_data(
 )
 @HeiCheckPermission("sys:log:page")
 async def op_bar_chart_data(
-    request: Request,
-    db: Session = Depends(get_db),
+    service: LogService = Depends(get_log_service),
 ):
-    service = LogService(db)
     return success(service.op_log_bar_chart_data())
 
 
@@ -164,8 +147,6 @@ async def op_bar_chart_data(
 )
 @HeiCheckPermission("sys:log:page")
 async def op_pie_chart_data(
-    request: Request,
-    db: Session = Depends(get_db),
+    service: LogService = Depends(get_log_service),
 ):
-    service = LogService(db)
     return success(service.op_log_pie_chart_data())

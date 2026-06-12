@@ -2,6 +2,7 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
+from sdk.shared.contracts import LoginUserInfo
 from .models import ClientUser
 
 
@@ -88,3 +89,23 @@ def ClientUserVOToClientUser(src: Optional[ClientUserVO]) -> Optional[ClientUser
     dst.last_login_ip = src.last_login_ip
     dst.login_count = src.login_count or 0
     return dst
+
+
+def ClientUserToLoginUserInfo(src: Optional[ClientUser]) -> Optional[LoginUserInfo]:
+    if src is None:
+        return None
+    return LoginUserInfo(
+        id=src.id,
+        username=src.username,
+        password=src.password,
+        nickname=src.nickname,
+        avatar=src.avatar,
+        motto=src.motto,
+        gender=src.gender,
+        birthday=src.birthday,
+        email=src.email,
+        status=src.status,
+        last_login_at=src.last_login_at,
+        last_login_ip=src.last_login_ip,
+        login_count=src.login_count,
+    )

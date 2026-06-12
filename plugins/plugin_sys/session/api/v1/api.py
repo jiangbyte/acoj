@@ -1,11 +1,9 @@
 from typing import List
-from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy.orm import Session
-from sdk.infra.db import get_db
+from fastapi import APIRouter, Depends, Query
 from sdk.web.result import Result, PageData, success
 from sdk.auth.decorator import HeiCheckPermission
 from ...params import SessionAnalysisResult, SessionPageResult, SessionPageParam, SessionExitParam, SessionExitTokenParam, SessionTokenResult, SessionChartData
-from ...service import analysis as svc_analysis, list_b_sessions as svc_list_b, exit_b_session as svc_exit_b, exit_b_session_token as svc_exit_b_token, chart_data as svc_chart_data, token_list as svc_token_list
+from ...service import SessionService, get_session_service
 
 router = APIRouter()
 
@@ -17,10 +15,9 @@ router = APIRouter()
 )
 @HeiCheckPermission("sys:session:page")
 async def analysis(
-    request: Request,
-    db: Session = Depends(get_db),
+    service: SessionService = Depends(get_session_service),
 ):
-    result = await svc_analysis(db)
+    result = await service.analysis()
     return success(result)
 
 
@@ -31,11 +28,10 @@ async def analysis(
 )
 @HeiCheckPermission("sys:session:page")
 async def page(
-    request: Request,
     param: SessionPageParam = Depends(),
-    db: Session = Depends(get_db),
+    service: SessionService = Depends(get_session_service),
 ):
-    result = await svc_list_b(db, param)
+    result = await service.page(param)
     return success({
         "records": result["records"],
         "total": result["total"],
@@ -51,10 +47,10 @@ async def page(
 )
 @HeiCheckPermission("sys:session:exit")
 async def exit_session(
-    request: Request,
     param: SessionExitParam,
+    service: SessionService = Depends(get_session_service),
 ):
-    await svc_exit_b(param.user_id)
+    await service.exit_session(param.user_id)
     return success()
 
 
@@ -65,10 +61,10 @@ async def exit_session(
 )
 @HeiCheckPermission("sys:session:page")
 async def token_list(
-    request: Request,
     user_id: str = Query(..., description="用户ID"),
+    service: SessionService = Depends(get_session_service),
 ):
-    result = await svc_token_list(user_id)
+    result = await service.token_list(user_id)
     return success(result)
 
 
@@ -79,10 +75,10 @@ async def token_list(
 )
 @HeiCheckPermission("sys:session:exit")
 async def exit_token(
-    request: Request,
     param: SessionExitTokenParam,
+    service: SessionService = Depends(get_session_service),
 ):
-    await svc_exit_b_token(param.user_id, param.token)
+    await service.exit_token(param.user_id, param.token)
     return success()
 
 
@@ -93,8 +89,7 @@ async def exit_token(
 )
 @HeiCheckPermission("sys:session:page")
 async def chart_data(
-    request: Request,
-    db: Session = Depends(get_db),
+    service: SessionService = Depends(get_session_service),
 ):
-    result = await svc_chart_data(db)
+    result = await service.chart_data()
     return success(result)

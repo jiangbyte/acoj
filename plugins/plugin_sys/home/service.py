@@ -1,40 +1,35 @@
-from typing import Optional, List
+from typing import Optional
+
+from fastapi import Depends
 from sqlalchemy.orm import Session
-from fastapi import Request
-from sdk.utils import generate_id
-from sdk.auth import HeiAuthTool
-from .repository import QuickActionRepository
-from .params import (
-    QuickActionVO, HomeVO, HomeNotice, HomeStats,
-    AddQuickActionParam, RemoveQuickActionParam, SortQuickActionParam,
-)
+
+from sdk.infra.db import get_db
+from sdk.shared.di import ActorContext
+
 from .models import SysQuickAction
+from .params import AddQuickActionParam, HomeNotice, HomeStats, HomeVO, QuickActionVO, RemoveQuickActionParam, SortQuickActionParam
+from .repository import QuickActionRepository
 
 
 class HomeService:
-    def __init__(self, db: Session):
-        self.repository = QuickActionRepository(db)
+    def __init__(self, repository: QuickActionRepository):
+        self.repository = repository
 
-    async def _get_current_user_id(self, request: Optional[Request] = None) -> Optional[str]:
-        try:
-            return await HeiAuthTool.getLoginIdDefaultNull(request)
-        except Exception:
-            return None
+    @classmethod
+    def from_db(cls, db: Session) -> "HomeService":
+        return cls(QuickActionRepository(db))
 
-    async def home(self, request: Request) -> HomeVO:
-        user_id = await self._get_current_user_id(request)
+    def home(self, actor: Optional[ActorContext] = None) -> HomeVO:
+        user_id = actor.user_id if actor and actor.user_id else ""
         quick_actions: list[QuickActionVO] = []
         available_resources: list[QuickActionVO] = []
-
         if user_id:
             quick_actions = [QuickActionVO(**item) for item in self.repository.find_by_user_id(user_id)]
             available_resources = [
                 QuickActionVO(resource_id=item["id"], **item) for item in self.repository.get_available_resources(user_id)
             ]
-
         notices = [HomeNotice(**item) for item in self.repository.get_notices()]
         stats = HomeStats(**self.repository.get_stats())
-
         return HomeVO(
             quick_actions=quick_actions,
             available_resources=available_resources,
@@ -42,37 +37,35 @@ class HomeService:
             stats=stats,
         )
 
-    async def add_quick_action(self, param: AddQuickActionParam, request: Request) -> None:
-        user_id = await self._get_current_user_id(request)
+    def add_quick_action(self, param: AddQuickActionParam, actor: Optional[ActorContext] = None) -> None:
+        user_id = actor.user_id if actor and actor.user_id else ""
         if not user_id:
             return
-
         existing = self.repository.find_by_user_and_resource(user_id, param.resource_id)
         if existing:
             return
-
         count = self.repository.count_quick_actions(user_id)
-        entity = SysQuickAction(
-            user_id=user_id,
-            resource_id=param.resource_id,
-            sort_code=(count + 1) * 10,
-        )
+        entity = SysQuickAction(user_id=user_id, resource_id=param.resource_id, sort_code=(count + 1) * 10)
         self.repository.insert(entity, user_id=user_id)
 
-    async def remove_quick_action(self, param: RemoveQuickActionParam, request: Request) -> None:
-        user_id = await self._get_current_user_id(request)
+    def remove_quick_action(self, param: RemoveQuickActionParam, actor: Optional[ActorContext] = None) -> None:
+        user_id = actor.user_id if actor and actor.user_id else ""
         if not user_id:
             return
         self.repository.delete_by_id(param.id)
 
-    async def sort_quick_actions(self, param: SortQuickActionParam, request: Request) -> None:
-        user_id = await self._get_current_user_id(request)
+    def sort_quick_actions(self, param: SortQuickActionParam, actor: Optional[ActorContext] = None) -> None:
+        user_id = actor.user_id if actor and actor.user_id else ""
         if not user_id:
             return
         entities = self.repository.find_by_ids(param.ids)
-        entity_map = {e.id: e for e in entities if e.user_id == user_id}
-        for idx, qa_id in enumerate(param.ids):
-            entity = entity_map.get(qa_id)
+        entity_map = {entity.id: entity for entity in entities if entity.user_id == user_id}
+        for index, quick_action_id in enumerate(param.ids):
+            entity = entity_map.get(quick_action_id)
             if entity:
-                entity.sort_code = (idx + 1) * 10
+                entity.sort_code = (index + 1) * 10
         self.repository.db.commit()
+
+
+def get_home_service(db: Session = Depends(get_db)) -> HomeService:
+    return HomeService.from_db(db)

@@ -1,10 +1,10 @@
 from .models import SysNotice
 from .params import NoticeVO, NoticePageParam
 from .repository import NoticeRepository
-from .service import NoticeService
+from .service import NoticeService, get_notice_service
 from .api import v1_router as router
 
 from sdk.kernel.registry import register_router
 register_router(router)
 
-__all__ = ["SysNotice", "NoticeVO", "NoticePageParam", "NoticeRepository", "NoticeService", "router"]
+__all__ = ["SysNotice", "NoticeVO", "NoticePageParam", "NoticeRepository", "NoticeService", "get_notice_service", "router"]
