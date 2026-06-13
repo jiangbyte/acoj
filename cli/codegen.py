@@ -615,7 +615,7 @@ def api_v1_init_template() -> str:
 
 def api_template(plugin: PluginNames, module_info: ModuleNames) -> str:
     return f'''
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
 from sdk.auth.decorator import CheckLogin
 from sdk.shared.types import IdsParam
@@ -629,32 +629,32 @@ router = APIRouter()
 
 @router.get("/api/v1/{module_info.route}/page", summary="{module_info.pascal}分页", response_model=Result[PageData[{module_info.vo_cls}]])
 @CheckLogin
-def page(param: {module_info.page_param_cls} = Depends(), service: {module_info.service_cls} = Depends({module_info.service_getter})):
+def page(request: Request, param: {module_info.page_param_cls} = Depends(), service: {module_info.service_cls} = Depends({module_info.service_getter})):
     return success(service.page(param))
 
 
 @router.post("/api/v1/{module_info.route}/create", summary="创建{module_info.pascal}", response_model=Result[{module_info.vo_cls}])
 @CheckLogin
-def create(param: {module_info.create_param_cls}, service: {module_info.service_cls} = Depends({module_info.service_getter})):
+def create(request: Request, param: {module_info.create_param_cls}, service: {module_info.service_cls} = Depends({module_info.service_getter})):
     return success(service.create(param))
 
 
 @router.post("/api/v1/{module_info.route}/modify", summary="修改{module_info.pascal}", response_model=Result[{module_info.vo_cls}])
 @CheckLogin
-def modify(param: {module_info.modify_param_cls}, service: {module_info.service_cls} = Depends({module_info.service_getter})):
+def modify(request: Request, param: {module_info.modify_param_cls}, service: {module_info.service_cls} = Depends({module_info.service_getter})):
     return success(service.modify(param))
 
 
 @router.post("/api/v1/{module_info.route}/remove", summary="删除{module_info.pascal}", response_model=Result)
 @CheckLogin
-def remove(param: IdsParam, service: {module_info.service_cls} = Depends({module_info.service_getter})):
+def remove(request: Request, param: IdsParam, service: {module_info.service_cls} = Depends({module_info.service_getter})):
     service.remove(param)
     return success()
 
 
 @router.get("/api/v1/{module_info.route}/detail", summary="{module_info.pascal}详情", response_model=Result[{module_info.vo_cls}])
 @CheckLogin
-def detail(id: str = Query(...), service: {module_info.service_cls} = Depends({module_info.service_getter})):
+def detail(request: Request, id: str = Query(...), service: {module_info.service_cls} = Depends({module_info.service_getter})):
     return success(service.detail(id))
 '''
 
