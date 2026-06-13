@@ -145,7 +145,7 @@ async def remark_handler(
 
 @sys_router.get("/search")
 @CheckLogin
-async def search_handler(
+def search_handler(
     keyword: str = QueryParam(""),
     size: int = QueryParam(20),
     service: FriendService = Depends(get_friend_service),
@@ -267,7 +267,7 @@ async def client_remark_handler(
 
 @client_router.get("/search")
 @CheckLogin(realm_id=RealmID.CONSUMER)
-async def client_search_handler(
+def client_search_handler(
     keyword: str = QueryParam(""),
     size: int = QueryParam(20),
     service: FriendService = Depends(get_friend_service),

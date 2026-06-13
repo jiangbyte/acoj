@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from fastapi import FastAPI
 
 from sdk.config.settings import settings
+from sdk.infra.db import freeze as freeze_migrations
+from sdk.infra.db import snapshot as migration_snapshot
 from sdk.kernel.plugin import discover_and_load, init_plugins, plugin_snapshot, start_plugins, stop_plugins
 from sdk.kernel.plugin.core_plugins import set_current_app
 from sdk.kernel.registry import execute_middlewares, execute_routes, freeze, snapshot_state
@@ -21,6 +23,7 @@ class RuntimeSnapshot:
     middlewares: list[str]
     permissions: list[str]
     models: list[str]
+    seeds: list[str]
 
 
 class ApplicationRuntime:
@@ -55,17 +58,20 @@ class ApplicationRuntime:
         discover_and_load()
         init_plugins()
         freeze()
+        freeze_migrations()
         self._assembled = True
         self._log_assembly_summary()
 
     def snapshot(self) -> RuntimeSnapshot:
         reg = snapshot_state()
+        migrations = migration_snapshot()
         return RuntimeSnapshot(
             plugins=plugin_snapshot(),
             routes=reg.routes,
             middlewares=reg.middlewares,
             permissions=reg.permissions,
-            models=reg.models,
+            models=migrations.models,
+            seeds=migrations.seeds,
         )
 
     async def startup(self) -> None:
@@ -77,11 +83,12 @@ class ApplicationRuntime:
     def _log_assembly_summary(self) -> None:
         snapshot = self.snapshot()
         logger.info(
-            "[APP] Assembly frozen: plugins=%d routes=%d middlewares=%d models=%d permissions=%d",
+            "[APP] Assembly frozen: plugins=%d routes=%d middlewares=%d models=%d seeds=%d permissions=%d",
             len(snapshot.plugins),
             len(snapshot.routes),
             len(snapshot.middlewares),
             len(snapshot.models),
+            len(snapshot.seeds),
             len(snapshot.permissions),
         )
 

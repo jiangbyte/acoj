@@ -6,11 +6,10 @@ from dataclasses import dataclass
 from typing import Optional
 from sdk.config.settings import settings
 
-from .interface import FileStorageInterface
-from .interface import ChunkedUploader  # re-export
+from .interface import ChunkInfo, ChunkedUploader, FileStorageInterface
 
 __all__ = [
-    "FileStorageInterface", "ChunkedUploader",
+    "FileStorageInterface", "ChunkInfo", "ChunkedUploader",
     "StorageConfig", "get_config", "get_storage", "get_default_storage",
     "LocalStorage", "MinioStorage", "S3Storage",
     "get_url",
@@ -44,8 +43,11 @@ def get_storage(storage_type: str) -> Optional[FileStorageInterface]:
         m = cfg.minio
         if not m.endpoint:
             return None
-        return MinioStorage(m.endpoint, m.access_key, m.secret_key,
-                            m.bucket, m.secure, m.region, m.base_url)
+        endpoint = m.endpoint
+        if not endpoint.startswith(("http://", "https://")):
+            endpoint = ("https://" if m.secure else "http://") + endpoint
+        return S3Storage(endpoint, m.access_key, m.secret_key,
+                         m.bucket, m.region, True, m.base_url)
     if storage_type == "S3":
         s = cfg.s3
         if not s.endpoint:
@@ -71,8 +73,9 @@ def LocalStorage(upload_folder: str = "./uploads", base_url: str = ""):
 def MinioStorage(endpoint: str, access_key: str, secret_key: str,
                  bucket: str = "hei", secure: bool = False,
                  region: str = "us-east-1", base_url: str = ""):
-    from .minio_storage import MinioStorage as _cls
-    return _cls(endpoint, access_key, secret_key, bucket, secure, region, base_url)
+    if not endpoint.startswith(("http://", "https://")):
+        endpoint = ("https://" if secure else "http://") + endpoint
+    return S3Storage(endpoint, access_key, secret_key, bucket, region, True, base_url)
 
 
 def S3Storage(endpoint: str, access_key: str, secret_key: str,

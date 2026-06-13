@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 import os
@@ -10,15 +9,18 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import Depends, UploadFile
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from sdk.auth.enums import RealmID as LTE
+from sdk.infra.storage import get_storage, get_url
 from sdk.infra.db import get_db
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
 from sdk.web.result import page_data
 from plugins.plugin_im import ws as im_ws
 from plugins.plugin_im.ws import Message as WSMessage
+from plugins.plugin_im.ws.tasks import schedule as schedule_ws_task
 
 from ..group import GroupService, get_group_service
 from ..model.im_file import ImFile
@@ -174,10 +176,10 @@ class MessageService:
             ws_msg = WSMessage(type="new_message", payload=ws_payload)
             if receiver_type == "CONSUMER":
                 if im_ws.GlobalCrossHub:
-                    asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_consumer(receiver_id, ws_msg, record.id))
+                    schedule_ws_task(im_ws.GlobalCrossHub.send_to_consumer(receiver_id, ws_msg, record.id))
             else:
                 if im_ws.GlobalCrossHub:
-                    asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_user(receiver_id, ws_msg, record.id))
+                    schedule_ws_task(im_ws.GlobalCrossHub.send_to_user(receiver_id, ws_msg, record.id))
 
         return [record.conversation_id for record in records]
 
@@ -291,7 +293,7 @@ class MessageService:
         return result, has_more
 
     def conversation_messages(
-        self, current_user_id: str, conversation_id: str, cursor: str = "", size: int = 20
+        self, current_user_id: str, user_type: str, conversation_id: str, cursor: str = "", size: int = 20
     ) -> tuple[list[ConversationMessageVO], bool]:
         if size < 1:
             size = 20
@@ -430,11 +432,27 @@ class MessageService:
                 pass
 
         try:
-            from sdk.infra.storage.factory import get_url
-
             return get_url(engine, bucket, content)
-        except (ImportError, Exception):
-            return f"/uploads/im/{content}"
+        except Exception:
+            return f"/uploads/{bucket}/{content}"
+
+    def serve_uploaded_file(self, bucket: str, file_key: str) -> Response:
+        if _invalid_storage_path_part(bucket) or _invalid_storage_path_part(file_key):
+            raise BusinessException("文件不存在", 404)
+
+        entity = self.file_repository.find_by_key(bucket, file_key)
+        if not entity:
+            raise BusinessException("文件不存在", 404)
+
+        if (entity.engine or "").upper() == "LOCAL" and entity.storage_path:
+            return FileResponse(entity.storage_path, filename=entity.name or file_key)
+        if entity.download_path:
+            return RedirectResponse(entity.download_path, status_code=302)
+
+        engine = get_storage(entity.engine or "LOCAL")
+        if engine and engine.exists(bucket, file_key):
+            return RedirectResponse(get_url(entity.engine or "LOCAL", bucket, file_key), status_code=302)
+        raise BusinessException("文件路径为空", 404)
 
     def _build_single_conversations(self, current_user_id: str, user_type: str) -> dict[str, ConversationVO]:
         rows = self.repository.list_latest_message_rows(current_user_id, user_type)
@@ -493,3 +511,7 @@ def get_message_service(db: Session = Depends(get_db)) -> MessageService:
 
 
 __all__ = ["MessageService", "get_message_service"]
+
+
+def _invalid_storage_path_part(value: str) -> bool:
+    return not value or ".." in value or "/" in value or "\\" in value

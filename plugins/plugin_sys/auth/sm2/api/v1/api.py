@@ -10,7 +10,7 @@ router = APIRouter()
     summary="获取SM2公钥(B端)",
     response_model=Result[str]
 )
-async def get_sm2_public_key_b():
+def get_sm2_public_key_b():
     return success(get_public_key())
 
 

@@ -182,7 +182,4 @@ def ClientPerm(code: str, name: str = "") -> Callable[..., Any]:
 
 
 class HeiBase(DeclarativeBase):
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        if getattr(cls, "__tablename__", ""):
-            register_model(cls)
+    pass

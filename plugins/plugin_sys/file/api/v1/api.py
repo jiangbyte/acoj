@@ -35,7 +35,7 @@ async def upload_handler(request: Request, file: UploadFile = File(...),
 
 @router.get("/page", summary="文件分页")
 @CheckPermission("sys:file:page")
-async def page_handler(request: Request, current: int = QueryParam(1), size: int = QueryParam(10),
+def page_handler(request: Request, current: int = QueryParam(1), size: int = QueryParam(10),
                         keyword: str = QueryParam(""), engine: str = QueryParam(""),
                         bucket: str = QueryParam(""), service: FileService = Depends(get_file_service)):
     param = FilePageParam(current=current, size=size, keyword=keyword,
@@ -45,14 +45,14 @@ async def page_handler(request: Request, current: int = QueryParam(1), size: int
 
 @router.get("/detail", summary="文件详情")
 @CheckPermission("sys:file:detail")
-async def detail_handler(request: Request, id: str = QueryParam(...), service: FileService = Depends(get_file_service)):
+def detail_handler(request: Request, id: str = QueryParam(...), service: FileService = Depends(get_file_service)):
     data = service.detail(id)
     return success(data if data else None)
 
 
 @router.get("/download", summary="下载文件")
 @CheckPermission("sys:file:download")
-async def download_handler(request: Request, id: str = QueryParam(...), service: FileService = Depends(get_file_service)):
+def download_handler(request: Request, id: str = QueryParam(...), service: FileService = Depends(get_file_service)):
     try:
         entity = service.detail(id)
         if not entity:
@@ -69,7 +69,7 @@ async def download_handler(request: Request, id: str = QueryParam(...), service:
 @router.post("/remove", summary="删除文件记录（保留存储文件）")
 @CheckPermission("sys:file:remove")
 @CheckLogin
-async def remove_handler(request: Request, p: IdsParam, service: FileService = Depends(get_file_service)):
+def remove_handler(request: Request, p: IdsParam, service: FileService = Depends(get_file_service)):
     service.remove(p.ids)
     return success()
 
@@ -77,7 +77,7 @@ async def remove_handler(request: Request, p: IdsParam, service: FileService = D
 @router.post("/remove-absolute", summary="删除文件（含存储文件）")
 @CheckPermission("sys:file:remove-absolute")
 @CheckLogin
-async def remove_absolute_handler(request: Request, p: IdsParam, service: FileService = Depends(get_file_service)):
+def remove_absolute_handler(request: Request, p: IdsParam, service: FileService = Depends(get_file_service)):
     service.remove_absolute(p.ids)
     return success()
 
@@ -85,7 +85,7 @@ async def remove_absolute_handler(request: Request, p: IdsParam, service: FileSe
 @router.post("/upload/init", summary="初始化分片上传")
 @CheckPermission("sys:file:upload")
 @CheckLogin
-async def chunk_init_handler(request: Request, p: ChunkUploadInitParam, service: FileService = Depends(get_file_service)):
+def chunk_init_handler(request: Request, p: ChunkUploadInitParam, service: FileService = Depends(get_file_service)):
     result = service.init_chunk_upload(p)
     return success(result)
 
@@ -121,7 +121,7 @@ async def chunk_upload_handler(
 @router.post("/upload/complete", summary="完成分片上传")
 @CheckPermission("sys:file:upload")
 @CheckLogin
-async def chunk_complete_handler(request: Request, p: ChunkCompleteParam, service: FileService = Depends(get_file_service)):
+def chunk_complete_handler(request: Request, p: ChunkCompleteParam, service: FileService = Depends(get_file_service)):
     result = service.complete_chunk_upload(p)
     return success(result.__dict__)
 
@@ -129,7 +129,7 @@ async def chunk_complete_handler(request: Request, p: ChunkCompleteParam, servic
 @router.post("/upload/abort", summary="中止分片上传")
 @CheckPermission("sys:file:upload")
 @CheckLogin
-async def chunk_abort_handler(request: Request, p: ChunkAbortParam, service: FileService = Depends(get_file_service)):
+def chunk_abort_handler(request: Request, p: ChunkAbortParam, service: FileService = Depends(get_file_service)):
     service.abort_chunk_upload(p)
     return success()
 

@@ -10,12 +10,11 @@ import asyncio
 import json
 import logging
 import time
-from typing import Optional
 
 from .hub import Hub
 from .client import Client
 from .message import (
-    Message, MsgNewMessage, MsgUnreadCount, MsgPresence, PresencePayload,
+    Message, MsgUnreadCount, MsgPresence, PresencePayload,
 )
 from .config import ws_cfg
 from sdk.infra.db import get_redis
@@ -32,6 +31,7 @@ class CrossHub:
         self._rdb = get_redis()
         self._instance_id = "0"
         self._running = True
+        self._tasks: set[asyncio.Task] = set()
 
         # Try to get instance ID from settings
         try:
@@ -50,15 +50,32 @@ class CrossHub:
     # ── Lifecycle hooks ──────────────────────────────────────────────
 
     def _on_client_registered(self, client: Client) -> None:
-        asyncio.ensure_future(self._track_connection(client))
-        asyncio.ensure_future(self._broadcast_presence(client.user_id, client.user_type, True))
-        asyncio.ensure_future(self._send_unread_on_connect(client))
-        asyncio.ensure_future(self._publish_event("user:connected", client))
+        self.create_task(self._track_connection(client))
+        self.create_task(self._broadcast_presence(client.user_id, client.user_type, True))
+        self.create_task(self._send_unread_on_connect(client))
+        self.create_task(self._publish_event("user:connected", client))
 
     def _on_client_unregistered(self, client: Client) -> None:
-        asyncio.ensure_future(self._untrack_connection(client))
-        asyncio.ensure_future(self._check_presence(client))
-        asyncio.ensure_future(self._publish_event("user:disconnected", client))
+        self.create_task(self._untrack_connection(client))
+        self.create_task(self._check_presence(client))
+        self.create_task(self._publish_event("user:disconnected", client))
+
+    def create_task(self, coro) -> asyncio.Task | None:
+        if not self._running:
+            return None
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return None
+        task = loop.create_task(coro)
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+        return task
+
+    def refresh_redis(self) -> None:
+        self._rdb = get_redis()
+        if self._rdb:
+            logger.info("CrossHub cross-instance mode enabled, instance=%s", self._instance_id)
 
     async def _publish_event(self, topic: str, client: Client) -> None:
         try:
@@ -112,12 +129,12 @@ class CrossHub:
         key = self._user_set_key(client.user_type, client.user_id)
         await self._rdb.srem(key, self._instance_id)
 
-    def _get_target_instances(self, user_id: str, user_type: str) -> list[str]:
-        """Get all instance IDs where a user is connected (synchronous Redis call)."""
+    async def _get_target_instances(self, user_id: str, user_type: str) -> list[str]:
+        """Get all instance IDs where a user is connected."""
         if not self._rdb:
             return []
         try:
-            members = self._rdb.smembers(self._user_set_key(user_type, user_id))
+            members = await self._rdb.smembers(self._user_set_key(user_type, user_id))
             return [m.decode() if isinstance(m, bytes) else m for m in members]
         except Exception:
             return []
@@ -179,7 +196,7 @@ class CrossHub:
     ) -> None:
         if not self._rdb:
             return
-        instances = self._get_target_instances(user_id, user_type)
+        instances = await self._get_target_instances(user_id, user_type)
         if not instances:
             return
 
@@ -332,9 +349,17 @@ class CrossHub:
 
     async def close(self) -> None:
         self._running = False
+        self.local.on_client_registered = None
+        self.local.on_client_unregistered = None
         if self._rdb:
             try:
                 await self._rdb.delete(self._instance_key())
                 await self._rdb.delete(self._msg_list_key())
             except Exception:
                 pass
+        await self.local.close()
+        if self._tasks:
+            for task in list(self._tasks):
+                task.cancel()
+            await asyncio.gather(*list(self._tasks), return_exceptions=True)
+            self._tasks.clear()

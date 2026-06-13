@@ -12,19 +12,19 @@ router = APIRouter()
 
 @router.get("/api/v1/sys/group/page", summary="获取用户组分页")
 @CheckPermission("sys:group:page")
-async def page(param: GroupPageParam = Depends(), service: GroupService = Depends(get_group_service)):
+def page(param: GroupPageParam = Depends(), service: GroupService = Depends(get_group_service)):
     return success(service.page(param))
 
 
 @router.get("/api/v1/sys/group/tree", summary="获取用户组树")
 @CheckPermission("sys:group:tree")
-async def group_tree(param: GroupTreeParam = Depends(), service: GroupService = Depends(get_group_service)):
+def group_tree(param: GroupTreeParam = Depends(), service: GroupService = Depends(get_group_service)):
     return success(service.tree(param))
 
 
 @router.get("/api/v1/sys/group/union-tree", summary="获取组织用户组合并树")
 @CheckPermission("sys:group:tree")
-async def union_tree(service: GroupService = Depends(get_group_service)):
+def union_tree(service: GroupService = Depends(get_group_service)):
     return success(service.union_tree())
 
 
@@ -32,7 +32,7 @@ async def union_tree(service: GroupService = Depends(get_group_service)):
 @SysLog("添加用户组")
 @CheckPermission("sys:group:create")
 @NoRepeat(interval=3000)
-async def create(
+def create(
     vo: GroupVO,
     service: GroupService = Depends(get_group_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -44,7 +44,7 @@ async def create(
 @router.post("/api/v1/sys/group/modify", summary="编辑用户组")
 @SysLog("编辑用户组")
 @CheckPermission("sys:group:modify")
-async def modify(
+def modify(
     vo: GroupVO,
     service: GroupService = Depends(get_group_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -56,13 +56,13 @@ async def modify(
 @router.post("/api/v1/sys/group/remove", summary="删除用户组")
 @SysLog("删除用户组")
 @CheckPermission("sys:group:remove")
-async def remove(param: IdsParam, service: GroupService = Depends(get_group_service)):
+def remove(param: IdsParam, service: GroupService = Depends(get_group_service)):
     service.remove(param.ids)
     return success()
 
 
 @router.get("/api/v1/sys/group/detail", summary="获取用户组详情")
 @CheckPermission("sys:group:detail")
-async def detail(id: str = Query(...), service: GroupService = Depends(get_group_service)):
+def detail(id: str = Query(...), service: GroupService = Depends(get_group_service)):
     data = service.detail(id)
     return success(data if data else None)

@@ -1,4 +1,5 @@
 import io
+from datetime import timedelta
 from typing import BinaryIO, Optional
 
 from minio import Minio
@@ -10,8 +11,11 @@ class MinioStorage(FileStorageInterface):
     """MinIO S3-compatible storage."""
 
     def __init__(self, endpoint: str, access_key: str, secret_key: str,
-                 default_bucket: str, secure: bool = False, region: Optional[str] = None):
+                 default_bucket: str, secure: bool = False, region: Optional[str] = None,
+                 base_url: str = ""):
         self._default_bucket = default_bucket
+        self._base_url = base_url
+        self._endpoint = endpoint
         self._client = Minio(
             endpoint=endpoint,
             access_key=access_key,
@@ -50,10 +54,19 @@ class MinioStorage(FileStorageInterface):
             response.close()
 
     def get_url(self, bucket: str, file_key: str) -> str:
-        return f"{self._client._endpoint_url}/{bucket}/{file_key}"
+        if self._base_url:
+            return f"{self._base_url.rstrip('/')}/{bucket}/{file_key}"
+        endpoint = self._endpoint
+        scheme = "http"
+        if endpoint.startswith("https://"):
+            scheme = "https"
+            endpoint = endpoint.removeprefix("https://")
+        elif endpoint.startswith("http://"):
+            endpoint = endpoint.removeprefix("http://")
+        return f"{scheme}://{endpoint}/{bucket}/{file_key}"
 
     def get_auth_url(self, bucket: str, file_key: str, timeout_ms: int = 60000) -> str:
-        return self._client.presigned_get_object(bucket, file_key, expires=timeout_ms // 1000)
+        return self._client.presigned_get_object(bucket, file_key, expires=timedelta(milliseconds=timeout_ms))
 
     def delete(self, bucket: str, file_key: str) -> None:
         try:

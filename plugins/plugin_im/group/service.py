@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 from datetime import datetime, timedelta
 from typing import Optional
@@ -15,6 +14,7 @@ from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
 from plugins.plugin_im import ws as im_ws
 from plugins.plugin_im.ws import Message as WSMessage
+from plugins.plugin_im.ws.tasks import schedule as schedule_ws_task
 
 from ..message.user_repository import IMUserRepository
 from ..model.group import Group, GroupJoinRequest, GroupMember, GroupMessage, GroupMessageRead
@@ -442,10 +442,10 @@ class GroupService:
         for member in self.repository.list_other_active_members(param.group_id, sender_id, sender_type):
             if member.user_type == UserTypeConsumer:
                 if im_ws.GlobalCrossHub:
-                    asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_consumer(member.user_id, ws_msg))
+                    schedule_ws_task(im_ws.GlobalCrossHub.send_to_consumer(member.user_id, ws_msg))
             else:
                 if im_ws.GlobalCrossHub:
-                    asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_user(member.user_id, ws_msg))
+                    schedule_ws_task(im_ws.GlobalCrossHub.send_to_user(member.user_id, ws_msg))
         return GroupMessageToMessageVO(message)
 
     def recall_message(self, group_id: str, message_id: str, user_id: str, user_type: str) -> None:

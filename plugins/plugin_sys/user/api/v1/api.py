@@ -22,7 +22,7 @@ router = APIRouter()
 
 @router.get("/api/v1/sys/user/page", summary="获取用户分页", response_model=Result[PageData[UserVO]])
 @Perm("sys:user:page", "用户分页")
-async def page(param: UserPageParam = Depends(), service: UserService = Depends(get_user_service)):
+def page(param: UserPageParam = Depends(), service: UserService = Depends(get_user_service)):
     return success(service.page(param))
 
 
@@ -54,14 +54,14 @@ async def modify(
 @router.post("/api/v1/sys/user/remove", summary="删除用户", response_model=Result)
 @SysLog("删除用户")
 @Perm("sys:user:remove", "删除用户")
-async def remove(param: IdsParam, service: UserService = Depends(get_user_service)):
+def remove(param: IdsParam, service: UserService = Depends(get_user_service)):
     service.remove(param)
     return success()
 
 
 @router.get("/api/v1/sys/user/detail", summary="获取用户详情", response_model=Result[UserVO])
 @Perm("sys:user:detail", "用户详情")
-async def detail(id: str = Query(...), service: UserService = Depends(get_user_service)):
+def detail(id: str = Query(...), service: UserService = Depends(get_user_service)):
     data = service.detail(type("P", (), {"id": id})())
     return success(data if data else None)
 
@@ -110,19 +110,19 @@ async def batch_refresh_session_acl(
 
 @router.get("/api/v1/sys/user/own-permission-detail", summary="获取用户已分配的权限详情")
 @Perm("sys:user:own-permission-detail", "用户权限详情")
-async def own_permission_detail(user_id: str = Query(...), service: UserService = Depends(get_user_service)):
+def own_permission_detail(user_id: str = Query(...), service: UserService = Depends(get_user_service)):
     return success(service.get_user_permission_details(user_id))
 
 
 @router.get("/api/v1/sys/user/own-roles", summary="获取用户已分配的角色ID列表")
 @Perm("sys:user:own-roles", "用户角色列表")
-async def own_roles(user_id: str = Query(...), service: UserService = Depends(get_user_service)):
+def own_roles(user_id: str = Query(...), service: UserService = Depends(get_user_service)):
     return success(service.get_user_role_ids(user_id))
 
 
 @router.get("/api/v1/sys/user/current", summary="获取当前用户信息")
 @CheckLogin
-async def get_current_user(
+def get_current_user(
     service: UserService = Depends(get_user_service),
     actor: ActorContext = Depends(get_current_actor),
 ):

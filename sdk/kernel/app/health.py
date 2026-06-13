@@ -8,7 +8,10 @@ from sdk.config.settings import settings
 from sdk.infra.db import get_redis
 from sdk.infra.db.mysql import engine
 from sdk.kernel.plugin import plugins_ready
+from sdk.infra.db import snapshot as migration_snapshot
 from sdk.kernel.registry import snapshot_state
+from sdk.observability import handler as metrics_handler
+from sdk.log import log_persister_snapshot
 
 router = APIRouter()
 
@@ -37,6 +40,8 @@ async def ready_check(response: Response):
         "ready": ready,
         "service": settings.app.name,
         "version": settings.app.version,
+        "env": settings.app.env,
+        "loaded_env_files": settings.loaded_env_files,
         "checked_at": _checked_at(),
         "components": components,
         "plugins": plugins,
@@ -46,6 +51,7 @@ async def ready_check(response: Response):
 @router.get("/debug/registry", summary="Registry Snapshot")
 async def registry_snapshot():
     snapshot = snapshot_state()
+    migrations = migration_snapshot()
     return {
         "service": settings.app.name,
         "version": settings.app.version,
@@ -53,9 +59,16 @@ async def registry_snapshot():
         "routes": snapshot.routes,
         "middlewares": snapshot.middlewares,
         "permissions": snapshot.permissions,
-        "models": snapshot.models,
-        "frozen": snapshot.frozen,
+        "models": migrations.models,
+        "seeds": migrations.seeds,
+        "log_persister": log_persister_snapshot(),
+        "frozen": snapshot.frozen and migrations.frozen,
     }
+
+
+@router.get("/metrics", include_in_schema=False)
+async def metrics():
+    return metrics_handler()
 
 
 def _checked_at() -> str:

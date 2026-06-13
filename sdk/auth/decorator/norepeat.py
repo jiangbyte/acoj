@@ -5,7 +5,7 @@ from functools import wraps
 from fastapi import Request
 
 from sdk.auth.consts import NoRepeatPrefix
-from sdk.auth.decorator._support import get_request, params_hash
+from sdk.auth.decorator._support import call_maybe_awaitable, get_request, params_hash
 from sdk.auth.enums import RealmID
 from sdk.auth.realm import infer_realm_id_from_path, realm_from_id
 from sdk.infra.db.redis import get_client
@@ -81,7 +81,7 @@ def no_repeat(interval: int = 5000):
         async def wrapper(*args, **kwargs):
             request = get_request(*args, **kwargs)
             if not request:
-                return await func(*args, **kwargs)
+                return await call_maybe_awaitable(func, *args, **kwargs)
 
             user_id = await _get_current_user_id(request)
             ip = get_client_ip(request)
@@ -96,7 +96,7 @@ def no_repeat(interval: int = 5000):
                 if not accepted:
                     raise BusinessException(f"请求过于频繁，请{ttl_seconds}秒后再试")
 
-            return await func(*args, **kwargs)
+            return await call_maybe_awaitable(func, *args, **kwargs)
         return wrapper
     return decorator
 

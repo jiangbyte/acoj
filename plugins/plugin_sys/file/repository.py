@@ -37,6 +37,10 @@ class FileRepository:
         stmt = select(SysFile).where(SysFile.id == file_id)
         return self.db.execute(stmt).scalar_one_or_none()
 
+    def find_by_key(self, bucket: str, file_key: str) -> Optional[SysFile]:
+        stmt = select(SysFile).where(SysFile.bucket == bucket, SysFile.file_key == file_key)
+        return self.db.execute(stmt).scalar_one_or_none()
+
     def find_by_ids(self, ids: list[str]) -> list[SysFile]:
         if not ids:
             return []
@@ -48,4 +52,3 @@ class FileRepository:
             return
         self.db.execute(sa_delete(SysFile).where(SysFile.id.in_(ids)))
         self.db.commit()
-

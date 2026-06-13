@@ -12,18 +12,18 @@ router = APIRouter()
 
 @router.get("/api/v1/sys/dict/page", summary="获取字典分页")
 @CheckPermission("sys:dict:page")
-async def page(request: Request, param: DictPageParam = Depends(), service: DictService = Depends(get_dict_service)):
+def page(request: Request, param: DictPageParam = Depends(), service: DictService = Depends(get_dict_service)):
     return success(service.page(param))
 
 
 @router.get("/api/v1/sys/dict/list", summary="获取字典列表")
 @CheckPermission("sys:dict:list")
-async def dict_list(request: Request, param: DictListParam = Depends(), service: DictService = Depends(get_dict_service)):
+def dict_list(request: Request, param: DictListParam = Depends(), service: DictService = Depends(get_dict_service)):
     return success(service.list(param))
 
 
 @router.get("/api/v1/sys/dict/tree", summary="获取字典树")
-async def dict_tree(request: Request, param: DictTreeParam = Depends(), service: DictService = Depends(get_dict_service)):
+def dict_tree(request: Request, param: DictTreeParam = Depends(), service: DictService = Depends(get_dict_service)):
     return success(service.tree(param))
 
 
@@ -31,7 +31,7 @@ async def dict_tree(request: Request, param: DictTreeParam = Depends(), service:
 @SysLog("添加字典")
 @CheckPermission("sys:dict:create")
 @NoRepeat(interval=3000)
-async def create(
+def create(
     request: Request,
     vo: DictVO,
     actor: ActorContext = Depends(get_current_actor),
@@ -44,7 +44,7 @@ async def create(
 @router.post("/api/v1/sys/dict/modify", summary="编辑字典")
 @SysLog("编辑字典")
 @CheckPermission("sys:dict:modify")
-async def modify(
+def modify(
     request: Request,
     vo: DictVO,
     actor: ActorContext = Depends(get_current_actor),
@@ -57,26 +57,26 @@ async def modify(
 @router.post("/api/v1/sys/dict/remove", summary="删除字典")
 @SysLog("删除字典")
 @CheckPermission("sys:dict:remove")
-async def remove(request: Request, param: IdsParam, service: DictService = Depends(get_dict_service)):
+def remove(request: Request, param: IdsParam, service: DictService = Depends(get_dict_service)):
     service.remove(param.ids)
     return success()
 
 
 @router.get("/api/v1/sys/dict/detail", summary="获取字典详情")
 @CheckPermission("sys:dict:detail")
-async def detail(request: Request, id: str = Query(...), service: DictService = Depends(get_dict_service)):
+def detail(request: Request, id: str = Query(...), service: DictService = Depends(get_dict_service)):
     data = service.detail(id)
     return success(data if data else None)
 
 
 @router.get("/api/v1/sys/dict/get-label", summary="根据字典类型和值获取标签")
 @CheckPermission("sys:dict:get-label")
-async def get_label(request: Request, type_code: str = Query(...), value: str = Query(...), service: DictService = Depends(get_dict_service)):
+def get_label(request: Request, type_code: str = Query(...), value: str = Query(...), service: DictService = Depends(get_dict_service)):
     data = service.get_dict_label(type_code, value)
     return success(data)
 
 
 @router.get("/api/v1/sys/dict/get-children", summary="根据字典类型获取子字典列表")
 @CheckPermission("sys:dict:get-children")
-async def get_children(request: Request, type_code: str = Query(...), service: DictService = Depends(get_dict_service)):
+def get_children(request: Request, type_code: str = Query(...), service: DictService = Depends(get_dict_service)):
     return success(service.get_dict_children(type_code))

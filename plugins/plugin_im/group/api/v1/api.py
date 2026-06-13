@@ -67,7 +67,7 @@ async def my_groups_handler(
 
 @sys_router.get("/detail")
 @CheckLogin
-async def detail_handler(
+def detail_handler(
     request: Request,
     group_id: str = QueryParam(""),
     service: GroupService = Depends(get_group_service),
@@ -128,7 +128,7 @@ async def join_handler(
 
 @sys_router.get("/pending-join-requests")
 @CheckLogin
-async def pending_join_requests_handler(
+def pending_join_requests_handler(
     request: Request,
     group_id: str = QueryParam(""),
     service: GroupService = Depends(get_group_service),
@@ -213,7 +213,7 @@ async def set_nickname_handler(
 
 @sys_router.get("/members")
 @CheckLogin
-async def members_handler(
+def members_handler(
     request: Request,
     group_id: str = QueryParam(""),
     service: GroupService = Depends(get_group_service),
@@ -223,7 +223,7 @@ async def members_handler(
 
 @sys_router.get("/messages")
 @CheckLogin
-async def messages_handler(
+def messages_handler(
     request: Request,
     group_id: str = QueryParam(""),
     cursor: str = QueryParam(""),
@@ -236,7 +236,7 @@ async def messages_handler(
 
 @sys_router.get("/search")
 @CheckLogin
-async def search_messages_handler(
+def search_messages_handler(
     request: Request,
     group_id: str = QueryParam(""),
     keyword: str = QueryParam(""),
@@ -250,7 +250,7 @@ async def search_messages_handler(
 
 @sys_router.get("/search-groups")
 @CheckLogin
-async def search_groups_handler(
+def search_groups_handler(
     request: Request,
     keyword: str = QueryParam(""),
     size: int = QueryParam(20),
@@ -356,7 +356,7 @@ async def client_my_groups_handler(
 
 @client_router.get("/detail")
 @CheckLogin(realm_id=RealmID.CONSUMER)
-async def client_detail_handler(
+def client_detail_handler(
     request: Request,
     group_id: str = QueryParam(""),
     service: GroupService = Depends(get_group_service),
@@ -391,7 +391,7 @@ async def client_leave_handler(
 
 @client_router.get("/messages")
 @CheckLogin(realm_id=RealmID.CONSUMER)
-async def client_messages_handler(
+def client_messages_handler(
     request: Request,
     group_id: str = QueryParam(""),
     cursor: str = QueryParam(""),
@@ -404,7 +404,7 @@ async def client_messages_handler(
 
 @client_router.get("/search")
 @CheckLogin(realm_id=RealmID.CONSUMER)
-async def client_search_messages_handler(
+def client_search_messages_handler(
     request: Request,
     group_id: str = QueryParam(""),
     keyword: str = QueryParam(""),
@@ -418,7 +418,7 @@ async def client_search_messages_handler(
 
 @client_router.get("/search-groups")
 @CheckLogin(realm_id=RealmID.CONSUMER)
-async def client_search_groups_handler(
+def client_search_groups_handler(
     request: Request,
     keyword: str = QueryParam(""),
     size: int = QueryParam(20),
@@ -465,7 +465,7 @@ async def client_mark_read_handler(
 
 @client_router.get("/members")
 @CheckLogin(realm_id=RealmID.CONSUMER)
-async def client_members_handler(
+def client_members_handler(
     request: Request,
     group_id: str = QueryParam(""),
     service: GroupService = Depends(get_group_service),

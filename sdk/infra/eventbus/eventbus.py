@@ -34,8 +34,23 @@ class _Bus:
         self._subscribers: dict[str, list[_SubscriberEntry]] = {}
         self._ids = count(1)
         self._semaphore = asyncio.Semaphore(MAX_CONCURRENT_SUBSCRIBERS)
+        self._tasks: set[asyncio.Task[None]] = set()
+        self._closed = False
 
-    async def publish(self, topic: str, data: Any = None) -> None:
+    def publish(self, topic: str, data: Any = None) -> None:
+        if self._closed:
+            return
+        subscribers = list(self._subscribers.get(topic, ()))
+        if not subscribers:
+            return
+
+        event = Event(topic=topic, data=data)
+        for entry in subscribers:
+            self._schedule(entry.fn, event)
+
+    async def publish_and_wait(self, topic: str, data: Any = None) -> None:
+        if self._closed:
+            return
         subscribers = list(self._subscribers.get(topic, ()))
         if not subscribers:
             return
@@ -44,6 +59,8 @@ class _Bus:
         await asyncio.gather(*(self._run(entry.fn, event) for entry in subscribers), return_exceptions=True)
 
     def subscribe(self, topic: str, sub: Callable[[Event], Any]) -> Callable[[], None]:
+        if self._closed:
+            return lambda: None
         entry = _SubscriberEntry(next(self._ids), sub)
         self._subscribers.setdefault(topic, []).append(entry)
 
@@ -55,6 +72,8 @@ class _Bus:
 
     async def _run(self, fn: Callable[[Event], Any], event: Event) -> None:
         async with self._semaphore:
+            if self._closed:
+                return
             try:
                 result = fn(event)
                 if inspect.isawaitable(result):
@@ -62,10 +81,32 @@ class _Bus:
             except Exception:
                 logger.exception("event subscriber failed: topic=%s subscriber=%s", event.topic, getattr(fn, "__name__", repr(fn)))
 
+    def _schedule(self, fn: Callable[[Event], Any], event: Event) -> None:
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(self._run(fn, event))
+            return
+
+        task = loop.create_task(self._run(fn, event))
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+
     def snapshot(self, topic: str | None = None) -> dict[str, list[Callable[[Event], Any]]]:
         if topic is not None:
             return {topic: [entry.fn for entry in self._subscribers.get(topic, [])]}
         return {name: [entry.fn for entry in entries] for name, entries in self._subscribers.items()}
+
+    async def close(self) -> None:
+        self._closed = True
+        if self._tasks:
+            await asyncio.gather(*list(self._tasks), return_exceptions=True)
+        self._subscribers.clear()
+
+    def reset(self) -> None:
+        self._subscribers.clear()
+        self._tasks.clear()
+        self._closed = False
 
 
 DefaultBus = _Bus()
@@ -84,7 +125,16 @@ def subscribe(topic: str, sub: Callable[[Event], Any] | None = None):
 
 async def publish(topic: str, data: Any = None, **kwargs: Any) -> None:
     payload = data if data is not None else kwargs
-    await DefaultBus.publish(topic, payload)
+    DefaultBus.publish(topic, payload)
+
+
+async def publish_and_wait(topic: str, data: Any = None, **kwargs: Any) -> None:
+    payload = data if data is not None else kwargs
+    await DefaultBus.publish_and_wait(topic, payload)
+
+
+async def close() -> None:
+    await DefaultBus.close()
 
 
 class EventBus:
@@ -93,9 +143,17 @@ class EventBus:
         return DefaultBus.publish(topic, data)
 
     @staticmethod
+    async def publish_and_wait(topic: str, data: Any = None) -> None:
+        await DefaultBus.publish_and_wait(topic, data)
+
+    @staticmethod
     def subscribe(topic: str, sub: Callable[[Event], Any]) -> Callable[[], None]:
         return DefaultBus.subscribe(topic, sub)
 
     @staticmethod
     def snapshot(topic: str | None = None) -> dict[str, list[Callable[[Event], Any]]]:
         return DefaultBus.snapshot(topic)
+
+    @staticmethod
+    async def close() -> None:
+        await DefaultBus.close()

@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from sdk.auth.enums import CheckMode, RealmID
 from sdk.auth.realm import check_permissions, realm_from_id
 
-from ._support import bind_guard_metadata, ensure_login, get_request, join_values, normalize_values, wrap_guard
+from ._support import call_maybe_awaitable, bind_guard_metadata, ensure_login, get_request, join_values, normalize_values, wrap_guard
 
 
 def CheckPermission(permission: str | list[str], mode: str = CheckMode.AND, realm_id: str = RealmID.BUSINESS):
@@ -29,7 +29,7 @@ def CheckPermission(permission: str | list[str], mode: str = CheckMode.AND, real
                     detail=f"缺少权限: {join_values(permissions)}",
                 )
 
-            return await fn(*args, **kwargs)
+            return await call_maybe_awaitable(fn, *args, **kwargs)
 
         wrapper = wrap_guard(target, handler)
         bind_guard_metadata(wrapper, "permission", permissions, mode, realm_id)

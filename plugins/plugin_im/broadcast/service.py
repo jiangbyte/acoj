@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime
 from typing import Optional
 
@@ -13,6 +12,7 @@ from sdk.infra.db import get_db
 from sdk.utils import generate_id
 from plugins.plugin_im import ws as im_ws
 from plugins.plugin_im.ws import Message as WSMessage
+from plugins.plugin_im.ws.tasks import schedule as schedule_ws_task
 
 from plugins.plugin_im.model.broadcast import Broadcast, BroadcastRead
 from .params import BroadcastToBroadcastVO, BroadcastVO, SendBroadcastParam
@@ -58,13 +58,13 @@ class BroadcastService:
 
         if scope == "ALL":
             if im_ws.GlobalCrossHub:
-                asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_all(ws_msg))
+                schedule_ws_task(im_ws.GlobalCrossHub.broadcast_all(ws_msg))
         elif scope == "BUSINESS":
             if im_ws.GlobalCrossHub:
-                asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_business(ws_msg))
+                schedule_ws_task(im_ws.GlobalCrossHub.broadcast_business(ws_msg))
         elif scope == "CONSUMER":
             if im_ws.GlobalCrossHub:
-                asyncio.ensure_future(im_ws.GlobalCrossHub.broadcast_consumers(ws_msg))
+                schedule_ws_task(im_ws.GlobalCrossHub.broadcast_consumers(ws_msg))
 
     def list(self, cursor: str = "", size: int = 20) -> tuple[list[BroadcastVO], bool]:
         if size < 1:

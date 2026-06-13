@@ -25,7 +25,7 @@ router = APIRouter()
 @router.get("/api/v1/client-user/page", summary="获取C端用户分页",
             response_model=Result[PageData[ClientUserVO]])
 @Perm("client:user:page", "C端用户分页")
-async def page(
+def page(
     param: ClientUserPageParam = Depends(),
     service: ClientUserService = Depends(get_client_user_service),
 ):
@@ -34,7 +34,7 @@ async def page(
 
 @router.post("/api/v1/client-user/create", summary="添加C端用户", response_model=Result)
 @Perm("client:user:create", "添加C端用户")
-async def create(
+def create(
     vo: ClientUserVO,
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
@@ -45,7 +45,7 @@ async def create(
 
 @router.post("/api/v1/client-user/modify", summary="编辑C端用户", response_model=Result)
 @Perm("client:user:modify", "编辑C端用户")
-async def modify(
+def modify(
     vo: ClientUserVO,
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
@@ -56,7 +56,7 @@ async def modify(
 
 @router.post("/api/v1/client-user/remove", summary="删除C端用户", response_model=Result)
 @Perm("client:user:remove", "删除C端用户")
-async def remove(param: IdsParam, service: ClientUserService = Depends(get_client_user_service)):
+def remove(param: IdsParam, service: ClientUserService = Depends(get_client_user_service)):
     service.remove(param.ids)
     return success()
 
@@ -64,7 +64,7 @@ async def remove(param: IdsParam, service: ClientUserService = Depends(get_clien
 @router.get("/api/v1/client-user/detail", summary="获取C端用户详情",
             response_model=Result[ClientUserVO])
 @Perm("client:user:detail", "C端用户详情")
-async def detail(id: str = Query(...), service: ClientUserService = Depends(get_client_user_service)):
+def detail(id: str = Query(...), service: ClientUserService = Depends(get_client_user_service)):
     data = service.detail(id)
     return success(data)
 
@@ -73,7 +73,7 @@ async def detail(id: str = Query(...), service: ClientUserService = Depends(get_
 
 @router.get("/api/v1/c/client-user/current", summary="获取当前C端用户信息")
 @CheckLogin(realm_id=RealmID.CONSUMER)
-async def get_current_user(
+def get_current_user(
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
 ):
@@ -86,7 +86,7 @@ async def get_current_user(
 @SysLog("C端用户更新个人信息")
 @CheckLogin(realm_id=RealmID.CONSUMER)
 @NoRepeat(interval=3000)
-async def update_profile(
+def update_profile(
     param: UpdateProfileParam,
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
@@ -99,7 +99,7 @@ async def update_profile(
              response_model=Result)
 @SysLog("C端用户更新头像")
 @CheckLogin(realm_id=RealmID.CONSUMER)
-async def update_avatar(
+def update_avatar(
     param: UpdateAvatarParam,
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
@@ -113,7 +113,7 @@ async def update_avatar(
 @SysLog("C端用户修改密码")
 @CheckLogin(realm_id=RealmID.CONSUMER)
 @NoRepeat(interval=3000)
-async def update_password(
+def update_password(
     param: UpdatePasswordParam,
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),

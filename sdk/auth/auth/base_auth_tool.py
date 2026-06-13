@@ -192,9 +192,9 @@ class BaseAuthTool:
         token_count = await redis_client.scard(session_key)
         expires_at = int(created_at.timestamp()) + ttl_seconds
         pipe = redis_client.pipeline()
-        pipe.zadd(cls._get_session_index_key(), {user_id: created_at.timestamp()})
-        pipe.zadd(cls._get_session_expiry_key(), {user_id: expires_at})
-        pipe.zadd(cls._get_session_count_key(), {user_id: max(1, int(token_count))})
+        pipe.zadd(cls._get_session_index_key(), {user_id: created_at.timestamp()}, gt=True)
+        pipe.zadd(cls._get_session_expiry_key(), {user_id: expires_at}, gt=True)
+        pipe.zadd(cls._get_session_count_key(), {user_id: max(1, int(token_count))}, gt=True)
         pipe.zadd(cls._get_token_created_index_key(), {token: created_at.timestamp()})
         pipe.zadd(cls._get_token_expiry_index_key(), {token: expires_at})
         pipe.hset(cls._get_token_owner_key(), token, user_id)

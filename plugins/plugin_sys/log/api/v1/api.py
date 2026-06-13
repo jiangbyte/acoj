@@ -20,7 +20,7 @@ router = APIRouter()
     response_model=Result[PageData[LogVO]]
 )
 @CheckPermission("sys:log:page")
-async def page(
+def page(
     param: LogPageParam = Depends(),
     service: LogService = Depends(get_log_service),
 ):
@@ -33,7 +33,7 @@ async def page(
     response_model=Result
 )
 @CheckPermission("sys:log:create")
-async def create(
+def create(
     vo: LogVO,
     service: LogService = Depends(get_log_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -48,7 +48,7 @@ async def create(
     response_model=Result
 )
 @CheckPermission("sys:log:modify")
-async def modify(
+def modify(
     vo: LogVO,
     service: LogService = Depends(get_log_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -64,7 +64,7 @@ async def modify(
 )
 @SysLog("删除操作日志")
 @CheckPermission("sys:log:remove")
-async def remove(
+def remove(
     param: IdsParam,
     service: LogService = Depends(get_log_service),
 ):
@@ -78,7 +78,7 @@ async def remove(
     response_model=Result[LogVO]
 )
 @CheckPermission("sys:log:detail")
-async def detail(
+def detail(
     id: str = Query(...),
     service: LogService = Depends(get_log_service),
 ):
@@ -94,7 +94,7 @@ async def detail(
 @SysLog("按分类清空日志")
 @CheckPermission("sys:log:remove")
 @NoRepeat(interval=5000)
-async def delete_by_category(
+def delete_by_category(
     param: LogDeleteByCategoryParam,
     service: LogService = Depends(get_log_service),
 ):
@@ -110,7 +110,7 @@ async def delete_by_category(
     response_model=Result[LogBarChartData],
 )
 @CheckPermission("sys:log:page")
-async def vis_line_chart_data(
+def vis_line_chart_data(
     service: LogService = Depends(get_log_service),
 ):
     return success(service.vis_log_line_chart_data())
@@ -122,7 +122,7 @@ async def vis_line_chart_data(
     response_model=Result[LogPieChartData],
 )
 @CheckPermission("sys:log:page")
-async def vis_pie_chart_data(
+def vis_pie_chart_data(
     service: LogService = Depends(get_log_service),
 ):
     return success(service.vis_log_pie_chart_data())
@@ -134,7 +134,7 @@ async def vis_pie_chart_data(
     response_model=Result[LogBarChartData],
 )
 @CheckPermission("sys:log:page")
-async def op_bar_chart_data(
+def op_bar_chart_data(
     service: LogService = Depends(get_log_service),
 ):
     return success(service.op_log_bar_chart_data())
@@ -146,7 +146,7 @@ async def op_bar_chart_data(
     response_model=Result[LogPieChartData],
 )
 @CheckPermission("sys:log:page")
-async def op_pie_chart_data(
+def op_pie_chart_data(
     service: LogService = Depends(get_log_service),
 ):
     return success(service.op_log_pie_chart_data())

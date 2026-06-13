@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sdk.auth.enums import RealmID
 
-from ._support import bind_guard_metadata, ensure_login, get_request, wrap_guard
+from ._support import call_maybe_awaitable, bind_guard_metadata, ensure_login, get_request, wrap_guard
 
 
 def CheckLogin(func=None, *, realm_id: str = RealmID.BUSINESS):
@@ -12,7 +12,7 @@ def CheckLogin(func=None, *, realm_id: str = RealmID.BUSINESS):
         async def handler(fn, *args, **kwargs):
             request = get_request(*args, **kwargs)
             await ensure_login(request, realm_id)
-            return await fn(*args, **kwargs)
+            return await call_maybe_awaitable(fn, *args, **kwargs)
 
         wrapper = wrap_guard(target, handler)
         bind_guard_metadata(wrapper, "login", [], None, realm_id)

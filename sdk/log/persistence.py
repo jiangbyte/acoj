@@ -17,8 +17,10 @@ Usage::
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Callable, Optional, Protocol
+import asyncio
+import logging
+from dataclasses import dataclass
+from typing import Callable, Optional, Protocol
 
 
 @dataclass
@@ -63,6 +65,8 @@ class LogPersistenceAPI(Protocol):
 
 _log_persister: Optional[LogPersistenceAPI] = None
 _op_user_resolver: Optional[Callable[[str], Optional[str]]] = None
+_background_persister: Optional["AsyncQueueLogPersister"] = None
+logger = logging.getLogger(__name__)
 
 
 def set_log_persister(persister: LogPersistenceAPI) -> None:
@@ -86,6 +90,101 @@ def set_op_user_resolver(resolver: Callable[[str], Optional[str]]) -> None:
 
 def get_op_user_resolver() -> Optional[Callable[[str], Optional[str]]]:
     return _op_user_resolver
+
+
+class AsyncQueueLogPersister:
+    def __init__(self, delegate: LogPersistenceAPI, *, max_queue_size: int = 10000, workers: int = 1) -> None:
+        self._delegate = delegate
+        self._max_queue_size = max(1, max_queue_size)
+        self._workers_count = max(1, workers)
+        self._queue: asyncio.Queue[LogEntry | None] | None = None
+        self._workers: list[asyncio.Task] = []
+        self._dropped = 0
+        self._started = False
+
+    @property
+    def dropped(self) -> int:
+        return self._dropped
+
+    def snapshot(self) -> dict[str, int | bool]:
+        queue_size = self._queue.qsize() if self._queue is not None else 0
+        return {
+            "started": self._started,
+            "queue_size": queue_size,
+            "max_queue_size": self._max_queue_size,
+            "workers": self._workers_count,
+            "dropped": self._dropped,
+        }
+
+    async def start(self) -> None:
+        if self._started:
+            return
+        self._queue = asyncio.Queue(maxsize=self._max_queue_size)
+        self._workers = [asyncio.create_task(self._worker()) for _ in range(self._workers_count)]
+        self._started = True
+
+    async def stop(self) -> None:
+        if not self._started or self._queue is None:
+            return
+        for _ in self._workers:
+            await self._queue.put(None)
+        await self._queue.join()
+        await asyncio.gather(*self._workers, return_exceptions=True)
+        self._workers.clear()
+        self._started = False
+
+    def save_log(self, entry: LogEntry) -> None:
+        if not self._started or self._queue is None:
+            self._delegate.save_log(entry)
+            return
+        try:
+            self._queue.put_nowait(entry)
+        except asyncio.QueueFull:
+            self._dropped += 1
+            logger.warning("log queue full, dropping log entry: category=%s name=%s dropped=%d", entry.category, entry.name, self._dropped)
+
+    async def _worker(self) -> None:
+        assert self._queue is not None
+        while True:
+            entry = await self._queue.get()
+            try:
+                if entry is None:
+                    return
+                await asyncio.to_thread(self._delegate.save_log, entry)
+            except Exception:
+                logger.exception("async log worker failed")
+            finally:
+                self._queue.task_done()
+
+
+def configure_async_log_persister(delegate: LogPersistenceAPI, *, max_queue_size: int = 10000, workers: int = 1) -> AsyncQueueLogPersister:
+    global _background_persister
+    persister = AsyncQueueLogPersister(delegate, max_queue_size=max_queue_size, workers=workers)
+    _background_persister = persister
+    set_log_persister(persister)
+    return persister
+
+
+async def start_log_persister() -> None:
+    if _background_persister is not None:
+        await _background_persister.start()
+
+
+async def stop_log_persister() -> None:
+    if _background_persister is not None:
+        await _background_persister.stop()
+
+
+def log_persister_snapshot() -> dict[str, int | bool]:
+    if _background_persister is None:
+        return {
+            "started": False,
+            "queue_size": 0,
+            "max_queue_size": 0,
+            "workers": 0,
+            "dropped": 0,
+        }
+    return _background_persister.snapshot()
 
 
 def save_log(entry: LogEntry) -> None:

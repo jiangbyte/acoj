@@ -1,15 +1,22 @@
 from contextlib import asynccontextmanager
+import logging
 
+import anyio.to_thread
 from fastapi import FastAPI
 
 from sdk.config.settings import settings
 from sdk.infra.db import dispose, redis_close, redis_init, verify_connection
 from sdk.kernel.runtime import runtime
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings.validate_runtime(redis_required=True)
+    _configure_threadpool()
+    for warning in settings.production_warnings():
+        logger.warning("[ProductionConfig] %s", warning)
     await verify_connection()
     await redis_init()
     await runtime.startup()
@@ -27,3 +34,12 @@ async def lifespan(app: FastAPI):
             dispose()
         if shutdown_error is not None:
             raise shutdown_error
+
+
+def _configure_threadpool() -> None:
+    tokens = settings.app.threadpool_tokens
+    if tokens <= 0:
+        return
+    limiter = anyio.to_thread.current_default_thread_limiter()
+    limiter.total_tokens = tokens
+    logger.info("[Runtime] AnyIO threadpool tokens set to %d", tokens)
