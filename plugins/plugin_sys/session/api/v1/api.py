@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, Query
 from sdk.web.result import Result, PageData, success
-from sdk.auth.decorator import HeiCheckPermission
+from sdk.auth.decorator import CheckPermission
 from ...params import SessionAnalysisResult, SessionPageResult, SessionPageParam, SessionExitParam, SessionExitTokenParam, SessionTokenResult, SessionChartData
 from ...service import SessionService, get_session_service
 
@@ -13,7 +13,7 @@ router = APIRouter()
     summary="获取会话分析统计",
     response_model=Result[SessionAnalysisResult],
 )
-@HeiCheckPermission("sys:session:page")
+@CheckPermission("sys:session:page")
 async def analysis(
     service: SessionService = Depends(get_session_service),
 ):
@@ -26,7 +26,7 @@ async def analysis(
     summary="获取B端在线用户分页",
     response_model=Result[PageData[SessionPageResult]],
 )
-@HeiCheckPermission("sys:session:page")
+@CheckPermission("sys:session:page")
 async def page(
     param: SessionPageParam = Depends(),
     service: SessionService = Depends(get_session_service),
@@ -45,7 +45,7 @@ async def page(
     summary="强退B端用户会话",
     response_model=Result,
 )
-@HeiCheckPermission("sys:session:exit")
+@CheckPermission("sys:session:exit")
 async def exit_session(
     param: SessionExitParam,
     service: SessionService = Depends(get_session_service),
@@ -59,7 +59,7 @@ async def exit_session(
     summary="获取B端用户令牌列表",
     response_model=Result[List[SessionTokenResult]],
 )
-@HeiCheckPermission("sys:session:page")
+@CheckPermission("sys:session:page")
 async def token_list(
     user_id: str = Query(..., description="用户ID"),
     service: SessionService = Depends(get_session_service),
@@ -73,7 +73,7 @@ async def token_list(
     summary="强退B端指定令牌",
     response_model=Result,
 )
-@HeiCheckPermission("sys:session:exit")
+@CheckPermission("sys:session:exit")
 async def exit_token(
     param: SessionExitTokenParam,
     service: SessionService = Depends(get_session_service),
@@ -87,7 +87,7 @@ async def exit_token(
     summary="获取会话图表数据",
     response_model=Result[SessionChartData],
 )
-@HeiCheckPermission("sys:session:page")
+@CheckPermission("sys:session:page")
 async def chart_data(
     service: SessionService = Depends(get_session_service),
 ):

@@ -6,7 +6,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .models import Broadcast, BroadcastRead
+from plugins.plugin_im.model.broadcast import Broadcast, BroadcastRead
 
 
 class BroadcastRepository:

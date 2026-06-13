@@ -1,5 +1,6 @@
 from typing import Set, Optional
-from sdk.constants.base_fields import BASE_SYSTEM_FIELDS
+
+BASE_SYSTEM_FIELDS = frozenset({"id", "created_at", "created_by", "updated_at", "updated_by"})
 
 
 def strip_system_fields(data: dict, extra_fields: Optional[Set[str]] = None) -> dict:

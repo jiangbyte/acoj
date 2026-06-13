@@ -15,7 +15,7 @@ from sdk.web.exception import BusinessException
 from plugins.plugin_im import ws as im_ws
 from plugins.plugin_im.ws import Message
 
-from .models import FriendBlock, FriendRequest, Friendship
+from plugins.plugin_im.model.friend import FriendBlock, FriendRequest, Friendship
 from .params import (
     BlockVO,
     FriendRequestToFriendRequestVO,

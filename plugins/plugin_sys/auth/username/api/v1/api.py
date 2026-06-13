@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from sdk.web.result import Result, success
-from sdk.auth.decorator import HeiCheckLogin
+from sdk.auth.decorator import CheckLogin
 from sdk.log import SysLog
 from sdk.auth.decorator import NoRepeat
 from ...logic import do_login, do_register, do_logout
@@ -36,7 +36,7 @@ async def register(request: Request, param: UsernameRegisterParam):
     summary="B端用户登出",
     response_model=Result[UsernameLogoutResult]
 )
-@HeiCheckLogin
+@CheckLogin
 async def logout(request: Request):
     result = await do_logout(request)
     return success(result.model_dump())

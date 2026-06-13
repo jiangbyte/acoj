@@ -11,12 +11,13 @@ from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, select, update as sa_update
 from sqlalchemy.orm import Session
 
-from sdk.enums import DataScopeEnum
+from sdk.auth import Business
+from sdk.auth.enums import DataScope
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
-from sdk.web.result import PageDataField, page_data
+from sdk.web.result import page_data
 
 from ..user.models import RelUserRole
 from .models import RelRolePermission, RelRoleResource, SysRole
@@ -25,6 +26,7 @@ from .params import (
     PermissionItem,
     GrantPermissionParam,
     GrantResourceParam,
+    RefreshRoleSessionACLParam,
     RolePageParam,
     RoleVO,
     SysRoleToRoleVO,
@@ -45,9 +47,13 @@ class RoleService:
         return cls(RoleRepository(db))
 
     def page(self, param: RolePageParam) -> dict:
+        param.current = max(1, param.current)
+        param.size = max(1, param.size)
+        if param.size > 100:
+            param.size = 100
         result = self.repository.find_page(param)
         records = [SysRoleToRoleVO(row) for row in result.get("records", [])]
-        return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
+        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
 
     def detail(self, id: str) -> Optional[dict]:
         if not id:
@@ -124,21 +130,26 @@ class RoleService:
             self.db.rollback()
             raise
 
-    def grant_permissions(
+    async def grant_permissions(
         self,
         role_id: str,
         permissions: list,
         actor: Optional[ActorContext] = None,
     ) -> None:
+        if not role_id:
+            raise BusinessException("角色ID不能为空", 400)
         self.repository.grant_permissions(role_id, permissions, actor.user_id if actor and actor.user_id else None)
+        await self.refresh_session_acl(RefreshRoleSessionACLParam(role_id=role_id))
 
-    def grant_resources(
+    async def grant_resources(
         self,
         role_id: str,
         resource_ids: list,
         permissions: list[ButtonPermissionScope],
         actor: Optional[ActorContext] = None,
     ) -> None:
+        if not role_id:
+            raise BusinessException("角色ID不能为空", 400)
         created_by = actor.user_id if actor and actor.user_id else None
         self.repository.grant_resources(role_id, resource_ids, created_by)
 
@@ -155,7 +166,7 @@ class RoleService:
                 permission_items.append(
                     PermissionItem(
                         permission_code=permission_code,
-                        scope=scope.scope if scope else DataScopeEnum.ALL.value,
+                        scope=scope.scope if scope else DataScope.ALL.value,
                         custom_scope_group_ids=scope.custom_scope_group_ids if scope else None,
                         custom_scope_org_ids=scope.custom_scope_org_ids if scope else None,
                     )
@@ -174,6 +185,7 @@ class RoleService:
             seen.add(item.permission_code)
             unique_items.append(item)
         self.repository.add_missing_permissions(role_id, unique_items)
+        await self.refresh_session_acl(RefreshRoleSessionACLParam(role_id=role_id))
 
     def get_role_permission_codes(self, role_id: str) -> List[str]:
         return self.repository.get_permission_codes_by_role_id(role_id)
@@ -183,6 +195,16 @@ class RoleService:
 
     def get_role_resource_ids(self, role_id: str) -> List[str]:
         return self.repository.get_resource_ids_by_role_id(role_id)
+
+    async def refresh_session_acl(self, param: RefreshRoleSessionACLParam) -> None:
+        if not param.role_id:
+            raise BusinessException("角色ID不能为空", 400)
+        user_ids = self.db.execute(
+            select(RelUserRole.user_id).where(RelUserRole.role_id == param.role_id)
+        ).scalars().all()
+        for user_id in user_ids:
+            if user_id:
+                await Business.refresh_user_sessions_acl(str(user_id))
 
 
 def get_role_service(db: Session = Depends(get_db)) -> RoleService:

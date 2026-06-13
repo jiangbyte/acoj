@@ -1,85 +1,143 @@
-"""
-Plugin discovery and lifecycle orchestration.
-
-Mirrors hei-gin's ``sdk/module/module.go``.
-
-The ``start_plugins(app)`` and ``stop_plugins(app)`` functions accept
-the FastAPI app instance so that plugins can access app routes etc.
-"""
-
 from __future__ import annotations
 
-import logging
-from typing import TYPE_CHECKING
+import importlib
+from dataclasses import asdict
+from typing import Any
 
-from .interface import (
-    HeiPlugin,
-    get_registered_plugins,
-    get_plugin_instances,
-    instantiate_plugins,
-)
+from .interface import HeiPlugin, PluginStatus
 
-if TYPE_CHECKING:
-    from fastapi import FastAPI
 
-logger = logging.getLogger(__name__)
+class PluginRegistry:
+    def __init__(self) -> None:
+        self._plugin_classes: list[type[HeiPlugin]] = []
+        self._plugin_class_index: set[str] = set()
+        self._instances: list[HeiPlugin] = []
+        self._status: dict[str, PluginStatus] = {}
+        self._frozen = False
+        self._initialized = False
+        self._discovered = False
+
+    def register_class(self, plugin_class: type[HeiPlugin]) -> None:
+        name = plugin_class.info().name
+        if self._frozen:
+            raise RuntimeError(f"plugin registry is frozen: {name}")
+        if name in self._plugin_class_index:
+            raise RuntimeError(f"duplicate plugin: {name}")
+        self._plugin_class_index.add(name)
+        self._plugin_classes.append(plugin_class)
+        self._status[name] = PluginStatus(name=name)
+
+    def discover(self) -> None:
+        if self._discovered:
+            return
+        assembly = importlib.import_module("sdk.kernel.assembly")
+        assembly.register_application()
+        self._discovered = True
+
+    def instantiate(self) -> None:
+        if self._instances:
+            return
+        for plugin_class in self._plugin_classes:
+            self._instances.append(plugin_class())
+
+    def freeze(self) -> None:
+        self._frozen = True
+
+    def snapshot(self) -> list[dict[str, Any]]:
+        return [asdict(self._status[plugin.name()]) for plugin in self._instances]
+
+    def ready(self) -> tuple[bool, list[dict[str, Any]]]:
+        snapshot = self.snapshot()
+        ok = all(item["init_ok"] and item["start_ok"] for item in snapshot)
+        return ok, snapshot
+
+    def init_all(self) -> None:
+        self.discover()
+        self.instantiate()
+        self.freeze()
+        for plugin in self._instances:
+            status = self._status[plugin.name()]
+            try:
+                plugin.on_init()
+                status.initialized = True
+                status.init_ok = True
+            except Exception as exc:
+                status.initialized = True
+                status.init_ok = False
+                status.last_error = str(exc)
+                raise
+        self._initialized = True
+
+    async def start_all(self) -> None:
+        if not self._initialized:
+            raise RuntimeError("plugins must be initialized before start")
+        first_error: Exception | None = None
+        for plugin in self._instances:
+            status = self._status[plugin.name()]
+            try:
+                await plugin.on_start()
+                status.started = True
+                status.start_ok = True
+            except Exception as exc:
+                status.started = True
+                status.start_ok = False
+                status.last_error = str(exc)
+                if first_error is None:
+                    first_error = RuntimeError(f"plugin {plugin.name()} start failed: {exc}")
+        if first_error is not None:
+            raise first_error
+
+    async def stop_all(self) -> None:
+        first_error: Exception | None = None
+        for plugin in reversed(self._instances):
+            status = self._status[plugin.name()]
+            try:
+                await plugin.on_stop()
+            except Exception as exc:
+                status.last_error = str(exc)
+                if first_error is None:
+                    first_error = RuntimeError(f"plugin {plugin.name()} stop failed: {exc}")
+        if first_error is not None:
+            raise first_error
+
+    def reset(self) -> None:
+        self.__init__()
+
+
+_plugins = PluginRegistry()
+
+
+def register_plugin_class(plugin_class: type[HeiPlugin]) -> None:
+    _plugins.register_class(plugin_class)
 
 
 def discover_and_load() -> None:
-    """Phase 1: Import the ``plugins`` package and ``core_plugins``
-    so that all ``__init_subclass__`` auto-registrations fire.
-
-    Mirrors hei-gin's blank imports.
-    """
-    import plugins  # noqa: F401
-
-    registered = get_registered_plugins()
-    logger.info("Discovered %d plugin(s): %s", len(registered),
-                [p.info().name for p in registered])
+    _plugins.discover()
 
 
 def init_plugins() -> None:
-    """Phase 2: Instantiate plugins and call ``on_init()`` on each.
-
-    Mirrors hei-gin's ``module.InitAll()``.
-    """
-    instantiate_plugins()
-    for instance in get_plugin_instances():
-        info = instance.info()
-        logger.info("[Plugin] init: %s v%s", info.name, info.version)
-        try:
-            instance.on_init()
-        except Exception:
-            logger.exception("Plugin %s on_init() failed", info.name)
-            raise
+    _plugins.init_all()
 
 
-async def start_plugins(app: FastAPI | None = None) -> None:
-    """Phase 3: Call ``on_start()`` on every plugin instance.
-
-    The FastAPI ``app`` is forwarded so plugins can inspect routes, etc.
-    Mirrors hei-gin's ``module.StartAll()``.
-    """
-    for instance in get_plugin_instances():
-        info = instance.info()
-        logger.info("[Plugin] start: %s v%s", info.name, info.version)
-        try:
-            await instance.on_start()
-        except Exception:
-            logger.exception("Plugin %s on_start() failed", info.name)
-            raise
+async def start_plugins(app: Any | None = None) -> None:
+    await _plugins.start_all()
 
 
-async def stop_plugins(app: FastAPI | None = None) -> None:
-    """Phase 4: Call ``on_stop()`` in reverse registration order.
+async def stop_plugins(app: Any | None = None) -> None:
+    await _plugins.stop_all()
 
-    Mirrors hei-gin's ``module.StopAll()``.
-    """
-    for instance in reversed(get_plugin_instances()):
-        info = instance.info()
-        logger.info("[Plugin] stop: %s v%s", info.name, info.version)
-        try:
-            await instance.on_stop()
-        except Exception:
-            logger.exception("Plugin %s on_stop() failed", info.name)
-            raise
+
+def freeze_plugins() -> None:
+    _plugins.freeze()
+
+
+def plugin_snapshot() -> list[dict[str, Any]]:
+    return _plugins.snapshot()
+
+
+def plugins_ready() -> tuple[bool, list[dict[str, Any]]]:
+    return _plugins.ready()
+
+
+def reset_for_test() -> None:
+    _plugins.reset()

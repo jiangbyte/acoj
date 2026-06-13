@@ -22,8 +22,9 @@ from plugins.plugin_im.group.params import (
     UpdateParam,
 )
 from plugins.plugin_im.group.service import GroupService, get_group_service
-from sdk.auth import HeiAuthTool, HeiClientAuthTool
-from sdk.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, NoRepeat
+from sdk.auth import Business, Consumer
+from sdk.auth.decorator import CheckLogin, NoRepeat
+from sdk.auth.enums import RealmID
 from sdk.log import SysLog
 from sdk.web.middleware import RateLimiter
 from sdk.web.result import success
@@ -33,18 +34,18 @@ client_router = APIRouter(prefix="/api/v1/c/im/group", tags=["IM Group (Client)"
 
 
 async def _sys_user(request: Request) -> tuple[str, str]:
-    uid = await HeiAuthTool.getLoginIdDefaultNull(request)
+    uid = await Business.get_login_id(request)
     return uid or "", "BUSINESS"
 
 
 async def _client_user(request: Request) -> tuple[str, str]:
-    uid = await HeiClientAuthTool.getLoginIdDefaultNull(request)
+    uid = await Consumer.get_login_id(request)
     return uid or "", "CONSUMER"
 
 
 @sys_router.post("/create")
 @NoRepeat(3000)
-@HeiCheckLogin
+@CheckLogin
 async def create_handler(
     request: Request,
     p: CreateParam,
@@ -55,7 +56,7 @@ async def create_handler(
 
 
 @sys_router.get("/my-groups")
-@HeiCheckLogin
+@CheckLogin
 async def my_groups_handler(
     request: Request,
     service: GroupService = Depends(get_group_service),
@@ -65,7 +66,7 @@ async def my_groups_handler(
 
 
 @sys_router.get("/detail")
-@HeiCheckLogin
+@CheckLogin
 async def detail_handler(
     request: Request,
     group_id: str = QueryParam(""),
@@ -76,7 +77,7 @@ async def detail_handler(
 
 
 @sys_router.post("/update")
-@HeiCheckLogin
+@CheckLogin
 async def update_handler(
     request: Request,
     p: UpdateParam,
@@ -89,7 +90,7 @@ async def update_handler(
 
 @sys_router.post("/dissolve")
 @SysLog("解散群")
-@HeiCheckLogin
+@CheckLogin
 async def dissolve_handler(
     request: Request,
     p: dict,
@@ -102,7 +103,7 @@ async def dissolve_handler(
 
 @sys_router.post("/invite")
 @NoRepeat(3000)
-@HeiCheckLogin
+@CheckLogin
 async def invite_handler(
     request: Request,
     p: InviteParam,
@@ -114,7 +115,7 @@ async def invite_handler(
 
 
 @sys_router.post("/join")
-@HeiCheckLogin
+@CheckLogin
 async def join_handler(
     request: Request,
     p: dict,
@@ -126,7 +127,7 @@ async def join_handler(
 
 
 @sys_router.get("/pending-join-requests")
-@HeiCheckLogin
+@CheckLogin
 async def pending_join_requests_handler(
     request: Request,
     group_id: str = QueryParam(""),
@@ -136,7 +137,7 @@ async def pending_join_requests_handler(
 
 
 @sys_router.post("/handle-join-request")
-@HeiCheckLogin
+@CheckLogin
 async def handle_join_request_handler(
     request: Request,
     p: HandleJoinRequestParam,
@@ -148,7 +149,7 @@ async def handle_join_request_handler(
 
 
 @sys_router.post("/leave")
-@HeiCheckLogin
+@CheckLogin
 async def leave_handler(
     request: Request,
     p: dict,
@@ -161,7 +162,7 @@ async def leave_handler(
 
 @sys_router.post("/kick")
 @SysLog("踢出成员")
-@HeiCheckLogin
+@CheckLogin
 async def kick_handler(
     request: Request,
     p: KickParam,
@@ -174,7 +175,7 @@ async def kick_handler(
 
 @sys_router.post("/set-role")
 @SysLog("设置角色")
-@HeiCheckLogin
+@CheckLogin
 async def set_role_handler(
     request: Request,
     p: SetRoleParam,
@@ -187,7 +188,7 @@ async def set_role_handler(
 
 @sys_router.post("/transfer-owner")
 @SysLog("转让群")
-@HeiCheckLogin
+@CheckLogin
 async def transfer_owner_handler(
     request: Request,
     p: TransferOwnerParam,
@@ -199,7 +200,7 @@ async def transfer_owner_handler(
 
 
 @sys_router.post("/set-nickname")
-@HeiCheckLogin
+@CheckLogin
 async def set_nickname_handler(
     request: Request,
     p: SetNicknameParam,
@@ -211,7 +212,7 @@ async def set_nickname_handler(
 
 
 @sys_router.get("/members")
-@HeiCheckLogin
+@CheckLogin
 async def members_handler(
     request: Request,
     group_id: str = QueryParam(""),
@@ -221,7 +222,7 @@ async def members_handler(
 
 
 @sys_router.get("/messages")
-@HeiCheckLogin
+@CheckLogin
 async def messages_handler(
     request: Request,
     group_id: str = QueryParam(""),
@@ -234,7 +235,7 @@ async def messages_handler(
 
 
 @sys_router.get("/search")
-@HeiCheckLogin
+@CheckLogin
 async def search_messages_handler(
     request: Request,
     group_id: str = QueryParam(""),
@@ -248,7 +249,7 @@ async def search_messages_handler(
 
 
 @sys_router.get("/search-groups")
-@HeiCheckLogin
+@CheckLogin
 async def search_groups_handler(
     request: Request,
     keyword: str = QueryParam(""),
@@ -261,7 +262,7 @@ async def search_groups_handler(
 @sys_router.post("/send")
 @RateLimiter("sys_group_send", 3, 20)
 @NoRepeat(3000)
-@HeiCheckLogin
+@CheckLogin
 async def send_handler(
     request: Request,
     p: SendMessageParam,
@@ -272,7 +273,7 @@ async def send_handler(
 
 
 @sys_router.post("/recall")
-@HeiCheckLogin
+@CheckLogin
 async def recall_handler(
     request: Request,
     p: dict,
@@ -284,7 +285,7 @@ async def recall_handler(
 
 
 @sys_router.post("/mark-read")
-@HeiCheckLogin
+@CheckLogin
 async def mark_read_handler(
     request: Request,
     p: dict,
@@ -297,7 +298,7 @@ async def mark_read_handler(
 
 @sys_router.post("/mute")
 @SysLog("禁言")
-@HeiCheckLogin
+@CheckLogin
 async def mute_handler(
     request: Request,
     p: dict,
@@ -316,7 +317,7 @@ async def mute_handler(
 
 @sys_router.post("/unmute")
 @SysLog("解禁")
-@HeiCheckLogin
+@CheckLogin
 async def unmute_handler(
     request: Request,
     p: dict,
@@ -333,7 +334,7 @@ async def unmute_handler(
 
 
 @client_router.post("/create")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_create_handler(
     request: Request,
     p: CreateParam,
@@ -344,7 +345,7 @@ async def client_create_handler(
 
 
 @client_router.get("/my-groups")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_my_groups_handler(
     request: Request,
     service: GroupService = Depends(get_group_service),
@@ -354,7 +355,7 @@ async def client_my_groups_handler(
 
 
 @client_router.get("/detail")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_detail_handler(
     request: Request,
     group_id: str = QueryParam(""),
@@ -365,7 +366,7 @@ async def client_detail_handler(
 
 
 @client_router.post("/join")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_join_handler(
     request: Request,
     p: dict,
@@ -377,7 +378,7 @@ async def client_join_handler(
 
 
 @client_router.post("/leave")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_leave_handler(
     request: Request,
     p: dict,
@@ -389,7 +390,7 @@ async def client_leave_handler(
 
 
 @client_router.get("/messages")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_messages_handler(
     request: Request,
     group_id: str = QueryParam(""),
@@ -402,7 +403,7 @@ async def client_messages_handler(
 
 
 @client_router.get("/search")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_search_messages_handler(
     request: Request,
     group_id: str = QueryParam(""),
@@ -416,7 +417,7 @@ async def client_search_messages_handler(
 
 
 @client_router.get("/search-groups")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_search_groups_handler(
     request: Request,
     keyword: str = QueryParam(""),
@@ -428,7 +429,7 @@ async def client_search_groups_handler(
 
 @client_router.post("/send")
 @RateLimiter("c_group_send", 3, 20)
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_send_handler(
     request: Request,
     p: SendMessageParam,
@@ -439,7 +440,7 @@ async def client_send_handler(
 
 
 @client_router.post("/recall")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_recall_handler(
     request: Request,
     p: dict,
@@ -451,7 +452,7 @@ async def client_recall_handler(
 
 
 @client_router.post("/mark-read")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_mark_read_handler(
     request: Request,
     p: dict,
@@ -463,7 +464,7 @@ async def client_mark_read_handler(
 
 
 @client_router.get("/members")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_members_handler(
     request: Request,
     group_id: str = QueryParam(""),

@@ -44,6 +44,7 @@ ALLOWED_EXTENSIONS = {
 }
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".ico", ".bmp", ".tiff"}
+CHUNK_SIZE = 5 << 20
 
 
 def _is_image_ext(ext: str) -> bool:
@@ -58,6 +59,17 @@ def _format_size(bytes_size: int) -> tuple[int, str]:
         return kb, f"{kb} KB"
     mb = kb / 1024
     return kb, f"{mb:.1f} MB"
+
+
+def _validate_upload_meta(file_name: str, file_size: int, max_upload_size: int) -> str:
+    if not file_name:
+        raise BusinessException("文件名为空", 400)
+    ext = os.path.splitext(file_name)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise BusinessException(f"不支持的文件类型: {ext}", 400)
+    if file_size > max_upload_size:
+        raise BusinessException(f"文件大小超过限制 ({max_upload_size // (1 << 20)} MB)", 400)
+    return ext
 
 
 class FileService:
@@ -79,15 +91,9 @@ class FileService:
         engine_type: str = "LOCAL",
         bucket: str = "DEFAULT",
     ) -> FileUploadResult:
-        if not file.filename:
-            raise BusinessException("文件名为空", 400)
-
-        ext = os.path.splitext(file.filename)[1].lower()
-        if ext not in ALLOWED_EXTENSIONS:
-            raise BusinessException(f"不支持的文件类型: {ext}", 400)
-
         content = await file.read()
         file_size = len(content)
+        ext = _validate_upload_meta(file.filename or "", file_size, self.max_upload_size())
         checksum = hashlib.sha256(content).hexdigest()
         file_key = generate_id() + ext
         size_kb, size_info = _format_size(file_size)
@@ -124,6 +130,8 @@ class FileService:
         return SysFileToFileUploadResult(self.repository.insert(entity))
 
     def page(self, param: FilePageParam) -> dict:
+        param.current = max(1, param.current)
+        param.size = max(1, min(param.size, 100))
         records, total = self.repository.page(param)
         return page_data([SysFileToFileVO(record) for record in records], total, param.current, param.size)
 
@@ -162,6 +170,12 @@ class FileService:
         self.repository.delete_by_ids(ids)
 
     def init_chunk_upload(self, param: ChunkUploadInitParam) -> dict:
+        _validate_upload_meta(param.file_name, param.file_size, self.max_upload_size())
+        if param.total_chunks <= 0:
+            raise BusinessException("total_chunks 必须大于0", 400)
+        expected_chunks = int((param.file_size + CHUNK_SIZE - 1) / CHUNK_SIZE)
+        if param.total_chunks != expected_chunks:
+            raise BusinessException("total_chunks 与文件大小不匹配", 400)
         engine = get_storage(param.engine)
         if not engine:
             raise BusinessException(f"不支持的存储类型: {param.engine}", 500)
@@ -183,6 +197,12 @@ class FileService:
             raise BusinessException(f"不支持的存储类型: {param.engine}", 500)
 
         content = await file.read()
+        if param.total_chunks <= 0:
+            raise BusinessException("total_chunks 与初始化信息不一致", 400)
+        if param.chunk_index < 0 or param.chunk_index >= param.total_chunks:
+            raise BusinessException("chunk_index 超出范围", 400)
+        if len(content) <= 0 or len(content) > CHUNK_SIZE:
+            raise BusinessException("分片大小不合法", 400)
         if isinstance(engine, ChunkedUploader):
             await engine.upload_chunk(
                 param.bucket,

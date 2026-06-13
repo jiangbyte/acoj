@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sdk.web.result import Result, PageData, success
 from sdk.shared.di import ActorContext, get_current_actor
 from sdk.shared.types import IdsParam
-from sdk.auth.decorator import HeiCheckPermission, NoRepeat
+from sdk.auth.decorator import CheckPermission, NoRepeat
 from sdk.log import SysLog
 from ...params import OrgVO, OrgPageParam, OrgTreeParam
 from ...service import OrgService, get_org_service
@@ -15,7 +15,7 @@ router = APIRouter()
     summary="获取组织分页",
     response_model=Result[PageData[OrgVO]]
 )
-@HeiCheckPermission("sys:org:page")
+@CheckPermission("sys:org:page")
 async def page(
     param: OrgPageParam = Depends(),
     service: OrgService = Depends(get_org_service),
@@ -28,7 +28,7 @@ async def page(
     summary="获取组织树",
     response_model=Result[list[dict]]
 )
-@HeiCheckPermission("sys:org:tree")
+@CheckPermission("sys:org:tree")
 async def tree(
     param: OrgTreeParam = Depends(),
     service: OrgService = Depends(get_org_service),
@@ -42,7 +42,7 @@ async def tree(
     response_model=Result
 )
 @SysLog("添加组织")
-@HeiCheckPermission("sys:org:create")
+@CheckPermission("sys:org:create")
 @NoRepeat(interval=3000)
 async def create(
     vo: OrgVO,
@@ -59,7 +59,7 @@ async def create(
     response_model=Result
 )
 @SysLog("编辑组织")
-@HeiCheckPermission("sys:org:modify")
+@CheckPermission("sys:org:modify")
 async def modify(
     vo: OrgVO,
     service: OrgService = Depends(get_org_service),
@@ -75,7 +75,7 @@ async def modify(
     response_model=Result
 )
 @SysLog("删除组织")
-@HeiCheckPermission("sys:org:remove")
+@CheckPermission("sys:org:remove")
 async def remove(
     param: IdsParam,
     service: OrgService = Depends(get_org_service),
@@ -89,7 +89,7 @@ async def remove(
     summary="获取组织详情",
     response_model=Result[OrgVO]
 )
-@HeiCheckPermission("sys:org:detail")
+@CheckPermission("sys:org:detail")
 async def detail(
     id: str = Query(...),
     service: OrgService = Depends(get_org_service),

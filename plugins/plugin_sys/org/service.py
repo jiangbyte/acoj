@@ -11,7 +11,7 @@ from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
-from sdk.web.result import PageDataField, page_data
+from sdk.web.result import page_data
 
 from ..group.models import SysGroup
 from ..position.models import SysPosition
@@ -71,7 +71,7 @@ class OrgService:
     def page(self, param: OrgPageParam) -> dict:
         result = self.repository.find_page_by_filters(param)
         records = [SysOrgToOrgVO(row) for row in result.get("records", [])]
-        return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
+        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
 
     def detail(self, id: str) -> Optional[dict]:
         if not id:

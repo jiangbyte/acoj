@@ -18,8 +18,9 @@ from plugins.plugin_im.message.params import (
     UnreadCountVO,
 )
 from plugins.plugin_im.message.service import MessageService, get_message_service
-from sdk.auth import HeiAuthTool, HeiClientAuthTool
-from sdk.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, NoRepeat
+from sdk.auth import Business, Consumer
+from sdk.auth.decorator import CheckLogin, NoRepeat
+from sdk.auth.enums import RealmID
 from sdk.web.exception import BusinessException
 from sdk.web.middleware import RateLimiter
 from sdk.web.result import failure, success
@@ -29,17 +30,17 @@ client_router = APIRouter(prefix="/api/v1/c/im", tags=["IM Message (Client)"])
 
 
 async def _sys_user(request: Request) -> tuple[str, str]:
-    uid = await HeiAuthTool.getLoginIdDefaultNull(request)
+    uid = await Business.get_login_id(request)
     return uid or "", "BUSINESS"
 
 
 async def _client_user(request: Request) -> tuple[str, str]:
-    uid = await HeiClientAuthTool.getLoginIdDefaultNull(request)
+    uid = await Consumer.get_login_id(request)
     return uid or "", "CONSUMER"
 
 
 @router.get("/message/page")
-@HeiCheckLogin
+@CheckLogin
 async def message_page_handler(
     request: Request,
     current: int = QueryParam(1),
@@ -49,34 +50,35 @@ async def message_page_handler(
 ):
     uid, _ = await _sys_user(request)
     param = MessagePageParam(current=current, size=size, status=status)
-    return service.page_messages(uid, param)
+    return service.page_messages(uid, "BUSINESS", param)
 
 
 @router.get("/message/detail")
-@HeiCheckLogin
+@CheckLogin
 async def message_detail_handler(
     request: Request,
     id: str = QueryParam(""),
     service: MessageService = Depends(get_message_service),
 ):
-    data = service.detail_message(id)
+    uid, ut = await _sys_user(request)
+    data = service.detail_message(id, uid, ut)
     return success(data.__dict__ if data else None)
 
 
 @router.get("/message/unread-count")
-@HeiCheckLogin
+@CheckLogin
 async def message_unread_count_handler(
     request: Request,
     service: MessageService = Depends(get_message_service),
 ):
     uid, _ = await _sys_user(request)
-    return success(UnreadCountVO(count=service.unread_count(uid)).__dict__)
+    return success(UnreadCountVO(count=service.unread_count(uid, "BUSINESS")).__dict__)
 
 
 @router.post("/message/send")
 @RateLimiter("sys_send", 5, 20)
 @NoRepeat(3000)
-@HeiCheckLogin
+@CheckLogin
 async def message_send_handler(
     request: Request,
     p: MessageSendParam,
@@ -91,7 +93,7 @@ async def message_send_handler(
 
 
 @router.post("/message/recall")
-@HeiCheckLogin
+@CheckLogin
 async def message_recall_handler(
     request: Request,
     p: RecallParam,
@@ -103,7 +105,7 @@ async def message_recall_handler(
 
 
 @router.post("/message/forward")
-@HeiCheckLogin
+@CheckLogin
 async def message_forward_handler(
     request: Request,
     p: ForwardParam,
@@ -115,7 +117,7 @@ async def message_forward_handler(
 
 
 @router.post("/message/delete")
-@HeiCheckLogin
+@CheckLogin
 async def message_delete_handler(
     request: Request,
     p: dict,
@@ -127,7 +129,7 @@ async def message_delete_handler(
 
 
 @router.get("/message/search")
-@HeiCheckLogin
+@CheckLogin
 async def message_search_handler(
     request: Request,
     keyword: str = QueryParam(""),
@@ -137,34 +139,35 @@ async def message_search_handler(
 ):
     uid, _ = await _sys_user(request)
     param = SearchParam(keyword=keyword, cursor=cursor, size=size)
-    msgs, has_more = service.search_messages(uid, param)
+    msgs, has_more = service.search_messages(uid, "BUSINESS", param)
     return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
 
 
 @router.post("/message/mark-read")
-@HeiCheckLogin
+@CheckLogin
 async def message_mark_read_handler(
     request: Request,
     p: dict,
     service: MessageService = Depends(get_message_service),
 ):
-    service.mark_read(p.get("id", ""))
+    uid, ut = await _sys_user(request)
+    service.mark_read(p.get("id", ""), uid, ut)
     return success()
 
 
 @router.post("/message/mark-all-read")
-@HeiCheckLogin
+@CheckLogin
 async def message_mark_all_read_handler(
     request: Request,
     service: MessageService = Depends(get_message_service),
 ):
     uid, _ = await _sys_user(request)
-    service.mark_all_read(uid)
+    service.mark_all_read(uid, "BUSINESS")
     return success()
 
 
 @router.post("/message/remove")
-@HeiCheckLogin
+@CheckLogin
 async def message_remove_handler(
     request: Request,
     p: dict,
@@ -176,7 +179,7 @@ async def message_remove_handler(
 
 
 @router.get("/conversation/list")
-@HeiCheckLogin
+@CheckLogin
 async def conversation_list_handler(
     request: Request,
     cursor: str = QueryParam(""),
@@ -190,7 +193,7 @@ async def conversation_list_handler(
 
 
 @router.get("/conversation/messages")
-@HeiCheckLogin
+@CheckLogin
 async def conversation_messages_handler(
     request: Request,
     conversation_id: str = QueryParam(""),
@@ -218,12 +221,12 @@ async def conversation_messages_handler(
             for m in msgs
         ]
         return success({"records": conv_msgs, "has_more": has_more})
-    msgs, has_more = service.conversation_messages(uid, conversation_id, cursor, size)
+        msgs, has_more = service.conversation_messages(uid, ut, conversation_id, cursor, size)
     return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
 
 
 @router.post("/conversation/read")
-@HeiCheckLogin
+@CheckLogin
 async def conversation_read_handler(
     request: Request,
     p: dict,
@@ -235,12 +238,12 @@ async def conversation_read_handler(
     if conversation_id.startswith("group:"):
         group_service.mark_conversation_read(conversation_id[6:], uid, ut)
     else:
-        service.mark_conversation_read(uid, conversation_id)
+        service.mark_conversation_read(uid, ut, conversation_id)
     return success()
 
 
 @router.post("/conversation/get-or-create")
-@HeiCheckLogin
+@CheckLogin
 async def conversation_get_or_create_handler(
     request: Request,
     p: GetOrCreateConversationParam,
@@ -252,7 +255,7 @@ async def conversation_get_or_create_handler(
 
 
 @router.post("/file/upload")
-@HeiCheckLogin
+@CheckLogin
 async def file_upload_handler(
     request: Request,
     file: UploadFile = File(...),
@@ -271,7 +274,7 @@ async def file_upload_handler(
 
 
 @client_router.get("/message/page")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_message_page_handler(
     request: Request,
     current: int = QueryParam(1),
@@ -281,33 +284,12 @@ async def client_message_page_handler(
 ):
     uid, _ = await _client_user(request)
     param = MessagePageParam(current=current, size=size, status=status)
-    return service.page_messages(uid, param)
-
-
-@client_router.get("/message/detail")
-@HeiClientCheckLogin
-async def client_message_detail_handler(
-    request: Request,
-    id: str = QueryParam(""),
-    service: MessageService = Depends(get_message_service),
-):
-    data = service.detail_message(id)
-    return success(data.__dict__ if data else None)
-
-
-@client_router.get("/message/unread-count")
-@HeiClientCheckLogin
-async def client_message_unread_count_handler(
-    request: Request,
-    service: MessageService = Depends(get_message_service),
-):
-    uid, _ = await _client_user(request)
-    return success(UnreadCountVO(count=service.unread_count(uid)).__dict__)
+    return service.page_messages(uid, "CONSUMER", param)
 
 
 @client_router.post("/message/send")
 @RateLimiter("c_send", 5, 20)
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_send_handler(
     request: Request,
     p: MessageSendParam,
@@ -322,7 +304,7 @@ async def client_send_handler(
 
 
 @client_router.post("/message/recall")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_recall_handler(
     request: Request,
     p: RecallParam,
@@ -334,7 +316,7 @@ async def client_recall_handler(
 
 
 @client_router.post("/message/forward")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_forward_handler(
     request: Request,
     p: ForwardParam,
@@ -346,7 +328,7 @@ async def client_forward_handler(
 
 
 @client_router.post("/message/delete")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_delete_handler(
     request: Request,
     p: dict,
@@ -358,7 +340,7 @@ async def client_delete_handler(
 
 
 @client_router.post("/message/remove")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_remove_handler(
     request: Request,
     p: dict,
@@ -370,7 +352,7 @@ async def client_remove_handler(
 
 
 @client_router.get("/message/search")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_search_handler(
     request: Request,
     keyword: str = QueryParam(""),
@@ -380,34 +362,35 @@ async def client_search_handler(
 ):
     uid, _ = await _client_user(request)
     param = SearchParam(keyword=keyword, cursor=cursor, size=size)
-    msgs, has_more = service.search_messages(uid, param)
+    msgs, has_more = service.search_messages(uid, "CONSUMER", param)
     return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
 
 
 @client_router.post("/message/mark-read")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_mark_read_handler(
     request: Request,
     p: dict,
     service: MessageService = Depends(get_message_service),
 ):
-    service.mark_read(p.get("id", ""))
+    uid, ut = await _client_user(request)
+    service.mark_read(p.get("id", ""), uid, ut)
     return success()
 
 
 @client_router.post("/message/mark-all-read")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_mark_all_read_handler(
     request: Request,
     service: MessageService = Depends(get_message_service),
 ):
     uid, _ = await _client_user(request)
-    service.mark_all_read(uid)
+    service.mark_all_read(uid, "CONSUMER")
     return success()
 
 
 @client_router.get("/conversation/list")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_conversation_list_handler(
     request: Request,
     cursor: str = QueryParam(""),
@@ -421,7 +404,7 @@ async def client_conversation_list_handler(
 
 
 @client_router.get("/conversation/messages")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_conversation_messages_handler(
     request: Request,
     conversation_id: str = QueryParam(""),
@@ -449,12 +432,12 @@ async def client_conversation_messages_handler(
             for m in msgs
         ]
         return success({"records": conv_msgs, "has_more": has_more})
-    msgs, has_more = service.conversation_messages(uid, conversation_id, cursor, size)
+        msgs, has_more = service.conversation_messages(uid, ut, conversation_id, cursor, size)
     return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
 
 
 @client_router.post("/conversation/read")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_conversation_read_handler(
     request: Request,
     p: dict,
@@ -466,12 +449,12 @@ async def client_conversation_read_handler(
     if conversation_id.startswith("group:"):
         group_service.mark_conversation_read(conversation_id[6:], uid, ut)
     else:
-        service.mark_conversation_read(uid, conversation_id)
+        service.mark_conversation_read(uid, ut, conversation_id)
     return success()
 
 
 @client_router.post("/conversation/get-or-create")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_get_or_create_conversation_handler(
     request: Request,
     p: GetOrCreateConversationParam,
@@ -483,7 +466,7 @@ async def client_get_or_create_conversation_handler(
 
 
 @client_router.post("/file/upload")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_file_upload_handler(
     request: Request,
     file: UploadFile = File(...),

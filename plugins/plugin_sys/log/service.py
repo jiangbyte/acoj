@@ -16,7 +16,7 @@ from .params import (
 )
 from .repository import LogRepository
 from sdk.shared.types import IdParam
-from sdk.web.result import page_data, PageDataField
+from sdk.web.result import page_data
 
 
 class LogService:

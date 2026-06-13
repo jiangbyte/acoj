@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sdk.web.result import Result, PageData, success
 from sdk.shared.di import ActorContext, get_current_actor
 from sdk.shared.types import IdParam, IdsParam
-from sdk.auth.decorator import HeiCheckPermission, NoRepeat
+from sdk.auth.decorator import CheckPermission, NoRepeat
 from sdk.log import SysLog
 from ...params import (
     LogVO, LogPageParam,
@@ -19,7 +19,7 @@ router = APIRouter()
     summary="获取操作日志分页",
     response_model=Result[PageData[LogVO]]
 )
-@HeiCheckPermission("sys:log:page")
+@CheckPermission("sys:log:page")
 async def page(
     param: LogPageParam = Depends(),
     service: LogService = Depends(get_log_service),
@@ -32,7 +32,7 @@ async def page(
     summary="添加操作日志",
     response_model=Result
 )
-@HeiCheckPermission("sys:log:create")
+@CheckPermission("sys:log:create")
 async def create(
     vo: LogVO,
     service: LogService = Depends(get_log_service),
@@ -47,7 +47,7 @@ async def create(
     summary="编辑操作日志",
     response_model=Result
 )
-@HeiCheckPermission("sys:log:modify")
+@CheckPermission("sys:log:modify")
 async def modify(
     vo: LogVO,
     service: LogService = Depends(get_log_service),
@@ -63,7 +63,7 @@ async def modify(
     response_model=Result
 )
 @SysLog("删除操作日志")
-@HeiCheckPermission("sys:log:remove")
+@CheckPermission("sys:log:remove")
 async def remove(
     param: IdsParam,
     service: LogService = Depends(get_log_service),
@@ -77,7 +77,7 @@ async def remove(
     summary="获取操作日志详情",
     response_model=Result[LogVO]
 )
-@HeiCheckPermission("sys:log:detail")
+@CheckPermission("sys:log:detail")
 async def detail(
     id: str = Query(...),
     service: LogService = Depends(get_log_service),
@@ -92,7 +92,7 @@ async def detail(
     response_model=Result
 )
 @SysLog("按分类清空日志")
-@HeiCheckPermission("sys:log:remove")
+@CheckPermission("sys:log:remove")
 @NoRepeat(interval=5000)
 async def delete_by_category(
     param: LogDeleteByCategoryParam,
@@ -109,7 +109,7 @@ async def delete_by_category(
     summary="登录登出趋势（近7天）",
     response_model=Result[LogBarChartData],
 )
-@HeiCheckPermission("sys:log:page")
+@CheckPermission("sys:log:page")
 async def vis_line_chart_data(
     service: LogService = Depends(get_log_service),
 ):
@@ -121,7 +121,7 @@ async def vis_line_chart_data(
     summary="登录登出总比例",
     response_model=Result[LogPieChartData],
 )
-@HeiCheckPermission("sys:log:page")
+@CheckPermission("sys:log:page")
 async def vis_pie_chart_data(
     service: LogService = Depends(get_log_service),
 ):
@@ -133,7 +133,7 @@ async def vis_pie_chart_data(
     summary="操作异常趋势（近7天）",
     response_model=Result[LogBarChartData],
 )
-@HeiCheckPermission("sys:log:page")
+@CheckPermission("sys:log:page")
 async def op_bar_chart_data(
     service: LogService = Depends(get_log_service),
 ):
@@ -145,7 +145,7 @@ async def op_bar_chart_data(
     summary="操作异常总比例",
     response_model=Result[LogPieChartData],
 )
-@HeiCheckPermission("sys:log:page")
+@CheckPermission("sys:log:page")
 async def op_pie_chart_data(
     service: LogService = Depends(get_log_service),
 ):

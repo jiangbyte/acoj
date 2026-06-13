@@ -12,9 +12,6 @@ from .params import (
 from .service import SessionService, get_session_service
 from .api import v1_router as router
 
-from sdk.kernel.registry import register_router
-register_router(router)
-
 __all__ = [
     "SessionAnalysisResult",
     "SessionPageResult",

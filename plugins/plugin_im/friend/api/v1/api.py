@@ -9,9 +9,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request
 from fastapi import Query as QueryParam
 
-from sdk.enums import LoginTypeEnum
-from sdk.auth import HeiAuthTool, HeiClientAuthTool
-from sdk.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, NoRepeat
+from sdk.auth.enums import RealmID
+from sdk.auth import Business, Consumer
+from sdk.auth.decorator import CheckLogin, NoRepeat
 from sdk.web.result import success, failure
 from plugins.plugin_im.friend.params import SendRequestParam, HandleRequestParam, BlockParam, RemarkParam
 from plugins.plugin_im.friend.service import FriendService, get_friend_service
@@ -23,12 +23,12 @@ client_router = APIRouter(prefix="/api/v1/c/im/friend", tags=["IM Friend (Client
 
 
 async def _sys_user(request: Request) -> tuple[str, str]:
-    user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
+    user_id = await Business.get_login_id(request)
     return user_id or "", "BUSINESS"
 
 
 async def _client_user(request: Request) -> tuple[str, str]:
-    user_id = await HeiClientAuthTool.getLoginIdDefaultNull(request)
+    user_id = await Consumer.get_login_id(request)
     return user_id or "", "CONSUMER"
 
 
@@ -38,7 +38,7 @@ async def _client_user(request: Request) -> tuple[str, str]:
 
 @sys_router.post("/send-request")
 @NoRepeat(3000)
-@HeiCheckLogin
+@CheckLogin
 async def send_request_handler(
     request: Request,
     p: SendRequestParam,
@@ -50,7 +50,7 @@ async def send_request_handler(
 
 
 @sys_router.post("/accept")
-@HeiCheckLogin
+@CheckLogin
 async def accept_handler(
     request: Request,
     p: HandleRequestParam,
@@ -62,7 +62,7 @@ async def accept_handler(
 
 
 @sys_router.post("/reject")
-@HeiCheckLogin
+@CheckLogin
 async def reject_handler(
     request: Request,
     p: HandleRequestParam,
@@ -74,14 +74,14 @@ async def reject_handler(
 
 
 @sys_router.get("/list")
-@HeiCheckLogin
+@CheckLogin
 async def list_handler(request: Request, service: FriendService = Depends(get_friend_service)):
     uid, ut = await _sys_user(request)
     return success(service.friend_list(uid, ut))
 
 
 @sys_router.get("/pending-requests")
-@HeiCheckLogin
+@CheckLogin
 async def pending_handler(request: Request, service: FriendService = Depends(get_friend_service)):
     uid, ut = await _sys_user(request)
     incoming, outgoing = service.pending_requests(uid, ut)
@@ -89,7 +89,7 @@ async def pending_handler(request: Request, service: FriendService = Depends(get
 
 
 @sys_router.post("/remove")
-@HeiCheckLogin
+@CheckLogin
 async def remove_handler(
     request: Request,
     p: dict,
@@ -101,7 +101,7 @@ async def remove_handler(
 
 
 @sys_router.post("/block")
-@HeiCheckLogin
+@CheckLogin
 async def block_handler(
     request: Request,
     p: BlockParam,
@@ -113,7 +113,7 @@ async def block_handler(
 
 
 @sys_router.post("/unblock")
-@HeiCheckLogin
+@CheckLogin
 async def unblock_handler(
     request: Request,
     p: BlockParam,
@@ -125,14 +125,14 @@ async def unblock_handler(
 
 
 @sys_router.get("/block-list")
-@HeiCheckLogin
+@CheckLogin
 async def block_list_handler(request: Request, service: FriendService = Depends(get_friend_service)):
     uid, ut = await _sys_user(request)
     return success(service.block_list(uid, ut))
 
 
 @sys_router.post("/remark")
-@HeiCheckLogin
+@CheckLogin
 async def remark_handler(
     request: Request,
     p: RemarkParam,
@@ -144,7 +144,7 @@ async def remark_handler(
 
 
 @sys_router.get("/search")
-@HeiCheckLogin
+@CheckLogin
 async def search_handler(
     keyword: str = QueryParam(""),
     size: int = QueryParam(20),
@@ -160,7 +160,7 @@ async def search_handler(
 
 @client_router.post("/send-request")
 @NoRepeat(3000)
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_send_request_handler(
     request: Request,
     p: SendRequestParam,
@@ -172,7 +172,7 @@ async def client_send_request_handler(
 
 
 @client_router.post("/accept")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_accept_handler(
     request: Request,
     p: HandleRequestParam,
@@ -184,7 +184,7 @@ async def client_accept_handler(
 
 
 @client_router.post("/reject")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_reject_handler(
     request: Request,
     p: HandleRequestParam,
@@ -196,14 +196,14 @@ async def client_reject_handler(
 
 
 @client_router.get("/list")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_list_handler(request: Request, service: FriendService = Depends(get_friend_service)):
     uid, ut = await _client_user(request)
     return success(service.friend_list(uid, ut))
 
 
 @client_router.get("/pending-requests")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_pending_handler(request: Request, service: FriendService = Depends(get_friend_service)):
     uid, ut = await _client_user(request)
     incoming, outgoing = service.pending_requests(uid, ut)
@@ -211,7 +211,7 @@ async def client_pending_handler(request: Request, service: FriendService = Depe
 
 
 @client_router.post("/remove")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_remove_handler(
     request: Request,
     p: dict,
@@ -223,7 +223,7 @@ async def client_remove_handler(
 
 
 @client_router.post("/block")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_block_handler(
     request: Request,
     p: BlockParam,
@@ -235,7 +235,7 @@ async def client_block_handler(
 
 
 @client_router.post("/unblock")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_unblock_handler(
     request: Request,
     p: BlockParam,
@@ -247,14 +247,14 @@ async def client_unblock_handler(
 
 
 @client_router.get("/block-list")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_block_list_handler(request: Request, service: FriendService = Depends(get_friend_service)):
     uid, ut = await _client_user(request)
     return success(service.block_list(uid, ut))
 
 
 @client_router.post("/remark")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_remark_handler(
     request: Request,
     p: RemarkParam,
@@ -266,7 +266,7 @@ async def client_remark_handler(
 
 
 @client_router.get("/search")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_search_handler(
     keyword: str = QueryParam(""),
     size: int = QueryParam(20),

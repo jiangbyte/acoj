@@ -12,9 +12,6 @@ from .repository import ConfigRepository
 from .service import ConfigService, get_config_service, get_value_by_key
 from .api.v1 import router
 
-from sdk.kernel.registry import register_router
-register_router(router)
-
 __all__ = [
     "SysConfig",
     "ConfigVO",

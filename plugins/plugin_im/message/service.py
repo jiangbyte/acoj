@@ -12,7 +12,7 @@ from typing import Optional
 from fastapi import Depends, UploadFile
 from sqlalchemy.orm import Session
 
-from sdk.enums import LoginTypeEnum as LTE
+from sdk.auth.enums import RealmID as LTE
 from sdk.infra.db import get_db
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
@@ -52,6 +52,18 @@ ALLOWED_EXTENSIONS = {
     ".json", ".xml", ".yaml", ".yml",
 }
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".ico", ".bmp", ".tiff"}
+
+
+def _normalize_receiver_ids(ids: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for raw in ids:
+        value = str(raw).strip()
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
 
 
 def _fmt_dt(dt: Optional[datetime]) -> str:
@@ -96,10 +108,17 @@ class MessageService:
 
         msg_type = param.msg_type or "TEXT"
         receiver_type = param.receiver_type or "BUSINESS"
+        receiver_ids = _normalize_receiver_ids(param.receiver_ids)
+        if not receiver_ids:
+            raise BusinessException("接收人不能为空", 400)
+        if len(receiver_ids) > 200:
+            raise BusinessException("单次最多发送给200个接收人", 400)
+        if len(param.content) > 5000:
+            raise BusinessException("消息内容不能超过5000个字符", 400)
         now = datetime.now()
 
         records = []
-        for receiver_id in param.receiver_ids:
+        for receiver_id in receiver_ids:
             conversation_id = generate_conversation_id(
                 sender_id, LTE(sender_type), receiver_id, LTE(receiver_type)
             )
@@ -139,7 +158,7 @@ class MessageService:
         )
         self.repository.commit()
 
-        for index, receiver_id in enumerate(param.receiver_ids):
+        for index, receiver_id in enumerate(receiver_ids):
             record = records[index]
             ws_payload = {
                 "message_id": record.id,
@@ -162,25 +181,27 @@ class MessageService:
 
         return [record.conversation_id for record in records]
 
-    def page_messages(self, user_id: str, param: MessagePageParam) -> dict:
-        records, total = self.repository.page_messages(user_id, param)
+    def page_messages(self, user_id: str, user_type: str, param: MessagePageParam) -> dict:
+        param.current = max(1, param.current)
+        param.size = max(1, min(param.size, 100))
+        records, total = self.repository.page_messages(user_id, user_type, param)
         return page_data([MessageToMessageVO(record) for record in records], total, param.current, param.size)
 
-    def unread_count(self, user_id: str) -> int:
-        return self.repository.count_unread(user_id)
+    def unread_count(self, user_id: str, user_type: str) -> int:
+        return self.repository.count_unread(user_id, user_type)
 
-    def detail_message(self, message_id: str) -> Optional[MessageVO]:
-        entity = self.repository.find_by_id(message_id)
+    def detail_message(self, message_id: str, user_id: str, user_type: str) -> Optional[MessageVO]:
+        entity = self.repository.find_owned_by_id(message_id, user_id, user_type)
         return MessageToMessageVO(entity) if entity else None
 
-    def mark_read(self, message_id: str) -> None:
-        self.repository.mark_read(message_id)
+    def mark_read(self, message_id: str, user_id: str, user_type: str) -> None:
+        self.repository.mark_read(message_id, user_id, user_type)
 
-    def mark_conversation_read(self, receiver_id: str, conversation_id: str) -> None:
-        self.repository.mark_conversation_read(receiver_id, conversation_id)
+    def mark_conversation_read(self, receiver_id: str, receiver_type: str, conversation_id: str) -> None:
+        self.repository.mark_conversation_read(receiver_id, receiver_type, conversation_id)
 
-    def mark_all_read(self, receiver_id: str) -> None:
-        self.repository.mark_all_read(receiver_id)
+    def mark_all_read(self, receiver_id: str, receiver_type: str) -> None:
+        self.repository.mark_all_read(receiver_id, receiver_type)
 
     def remove_messages(self, user_id: str, ids: list[str]) -> None:
         if not ids:
@@ -202,7 +223,7 @@ class MessageService:
         self.db.commit()
 
     async def forward_message(self, user_id: str, user_type: str, param: ForwardParam) -> None:
-        original = self.repository.find_by_id(param.message_id)
+        original = self.repository.find_owned_by_id(param.message_id, user_id, user_type)
         if not original:
             raise BusinessException("消息不存在", 400)
 
@@ -215,7 +236,7 @@ class MessageService:
         )
         await self.send_message(send_param, user_id, user_type)
 
-    def search_messages(self, user_id: str, param: SearchParam) -> tuple[list[MessageVO], bool]:
+    def search_messages(self, user_id: str, user_type: str, param: SearchParam) -> tuple[list[MessageVO], bool]:
         if param.size < 1:
             param.size = 20
         if param.size > 100:
@@ -227,7 +248,7 @@ class MessageService:
                 cursor_dt = datetime.strptime(param.cursor, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 cursor_dt = None
-        records = self.repository.search_messages(user_id, param.keyword, cursor_dt, param.size)
+        records = self.repository.search_messages(user_id, user_type, param.keyword, cursor_dt, param.size + 1)
         has_more = len(records) > param.size
         if has_more:
             records = records[:param.size]
@@ -283,7 +304,7 @@ class MessageService:
                 cursor_dt = datetime.strptime(cursor, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 cursor_dt = None
-        records = self.repository.list_conversation_messages(current_user_id, conversation_id, cursor_dt, size)
+        records = self.repository.list_conversation_messages(current_user_id, user_type, conversation_id, cursor_dt, size + 1)
         has_more = len(records) > size
         if has_more:
             records = records[:size]
@@ -416,12 +437,12 @@ class MessageService:
             return f"/uploads/im/{content}"
 
     def _build_single_conversations(self, current_user_id: str, user_type: str) -> dict[str, ConversationVO]:
-        rows = self.repository.list_latest_message_rows(current_user_id)
+        rows = self.repository.list_latest_message_rows(current_user_id, user_type)
         if not rows:
             return {}
 
         conversation_ids = [row.conversation_id for row in rows]
-        unread_map = self.repository.unread_counts_by_conversation(conversation_ids, current_user_id)
+        unread_map = self.repository.unread_counts_by_conversation(conversation_ids, current_user_id, user_type)
         business_ids: list[str] = []
         consumer_ids: list[str] = []
         result_map: dict[str, ConversationVO] = {}

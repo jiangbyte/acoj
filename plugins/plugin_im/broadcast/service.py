@@ -14,7 +14,7 @@ from sdk.utils import generate_id
 from plugins.plugin_im import ws as im_ws
 from plugins.plugin_im.ws import Message as WSMessage
 
-from .models import Broadcast, BroadcastRead
+from plugins.plugin_im.model.broadcast import Broadcast, BroadcastRead
 from .params import BroadcastToBroadcastVO, BroadcastVO, SendBroadcastParam
 from .repository import BroadcastRepository
 

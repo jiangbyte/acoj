@@ -7,7 +7,7 @@ from sdk.shared.types import IdsParam
 from sdk.kernel.plugin import Perm
 from sdk.auth.decorator import NoRepeat
 from sdk.log import SysLog
-from ...params import RoleVO, RolePageParam, GrantPermissionParam, GrantResourceParam
+from ...params import RoleVO, RolePageParam, GrantPermissionParam, GrantResourceParam, RefreshRoleSessionACLParam
 from ...service import RoleService, get_role_service
 
 router = APIRouter()
@@ -85,7 +85,7 @@ async def grant_permission(
     service: RoleService = Depends(get_role_service),
     actor: ActorContext = Depends(get_current_actor),
 ):
-    service.grant_permissions(param.role_id, param.permissions, actor)
+    await service.grant_permissions(param.role_id, param.permissions, actor)
     return success()
 
 
@@ -97,5 +97,17 @@ async def grant_resource(
     service: RoleService = Depends(get_role_service),
     actor: ActorContext = Depends(get_current_actor),
 ):
-    service.grant_resources(param.role_id, param.resource_ids, param.permissions, actor)
+    await service.grant_resources(param.role_id, param.resource_ids, param.permissions, actor)
+    return success()
+
+
+@router.post("/api/v1/sys/role/refresh-session-acl", summary="刷新角色会话权限")
+@SysLog("刷新角色会话权限")
+@Perm("sys:role:refresh-session-acl", "刷新角色会话权限")
+@NoRepeat(interval=3000)
+async def refresh_session_acl(
+    param: RefreshRoleSessionACLParam,
+    service: RoleService = Depends(get_role_service),
+):
+    await service.refresh_session_acl(param)
     return success()

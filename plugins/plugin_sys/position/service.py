@@ -12,7 +12,7 @@ from .params import PositionVO, PositionPageParam, SysPositionToPositionVO
 from .repository import PositionRepository
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
-from sdk.web.result import page_data, PageDataField
+from sdk.web.result import page_data
 from sdk.utils.resolve_utils import resolve_name_path
 import logging
 
@@ -40,7 +40,7 @@ class PositionService:
         result = self.repository.find_page_by_filters(param)
         records = [SysPositionToPositionVO(r) for r in result.get("records", [])]
         _batch_enrich(self.db, records)
-        return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
+        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
 
     def detail(self, id: str) -> Optional[PositionVO]:
         if not id:

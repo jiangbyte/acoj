@@ -1,24 +1,17 @@
-from .hei_check_login import HeiCheckLogin, hei_check_login
-from .hei_check_permission import HeiCheckPermission, hei_check_permission
-from .hei_check_role import HeiCheckRole, hei_check_role
-from .hei_client_check_login import HeiClientCheckLogin, hei_client_check_login
-from .hei_client_check_permission import HeiClientCheckPermission, hei_client_check_permission
-from .hei_client_check_role import HeiClientCheckRole, hei_client_check_role
+from .check_login import CheckLogin, check_login
+from .check_permission import CheckPermission, check_permission
+from .check_role import CheckRole, check_role
 from .norepeat import NoRepeat, no_repeat
+from ._support import attach_login_context
 
 __all__ = [
-    "HeiCheckLogin",
-    "hei_check_login",
-    "HeiCheckPermission",
-    "hei_check_permission",
-    "HeiCheckRole",
-    "hei_check_role",
-    "HeiClientCheckLogin",
-    "hei_client_check_login",
-    "HeiClientCheckPermission",
-    "hei_client_check_permission",
-    "HeiClientCheckRole",
-    "hei_client_check_role",
+    "CheckLogin",
+    "check_login",
+    "CheckPermission",
+    "check_permission",
+    "CheckRole",
+    "check_role",
     "NoRepeat",
     "no_repeat",
+    "attach_login_context",
 ]

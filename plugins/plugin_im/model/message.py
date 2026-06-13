@@ -9,7 +9,7 @@ from sqlalchemy import Index, text
 from sqlalchemy.dialects.mysql import DATETIME, INTEGER, TEXT, VARCHAR
 from sqlalchemy.orm import Mapped, mapped_column
 from sdk.kernel.registry import HeiBase
-from sdk.enums import LoginTypeEnum
+from sdk.auth.enums import RealmID
 
 
 # Message type constants
@@ -110,8 +110,8 @@ class MsgExtraSystem:
 
 
 def generate_conversation_id(
-    u1_id: str, u1_type: LoginTypeEnum,
-    u2_id: str, u2_type: LoginTypeEnum,
+    u1_id: str, u1_type: RealmID,
+    u2_id: str, u2_type: RealmID,
 ) -> str:
     """Generate a deterministic conversation ID from two user identifiers.
 

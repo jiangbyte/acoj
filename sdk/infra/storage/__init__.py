@@ -1,15 +1,8 @@
-"""
-Storage abstraction — mirrors hei-gin's ``sdk/storage/``.
-
-Provides:
-* ``FileStorageInterface`` — abstract base (mirrors ``Engine``)
-* ``get_storage(type_name)`` — factory (mirrors ``GetStorage()``)
-* ``get_default_storage()`` — reads from config (mirrors factory.go)
-* ``ChunkedUploader`` — chunked upload support (mirrors chunk.go)
-"""
+"""Storage abstraction aligned to hei-gin's factory semantics."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Optional
 from sdk.config.settings import settings
 
@@ -18,29 +11,42 @@ from .interface import ChunkedUploader  # re-export
 
 __all__ = [
     "FileStorageInterface", "ChunkedUploader",
-    "get_storage", "get_default_storage",
+    "StorageConfig", "get_config", "get_storage", "get_default_storage",
     "LocalStorage", "MinioStorage", "S3Storage",
+    "get_url",
 ]
 
 
+@dataclass(slots=True)
+class StorageConfig:
+    default: str
+    default_base_url: str
+    local: object
+    minio: object
+    s3: object
+
+
+def get_config() -> StorageConfig:
+    return StorageConfig(
+        default=settings.storage.default,
+        default_base_url=settings.storage.default_base_url,
+        local=settings.storage.local,
+        minio=settings.storage.minio,
+        s3=settings.storage.s3,
+    )
+
+
 def get_storage(storage_type: str) -> Optional[FileStorageInterface]:
-    """Factory: return a storage backend by type name.
-
-    Supported types: ``"LOCAL"``, ``"MINIO"``, ``"S3"``.
-    Falls back to ``LocalStorage`` for unknown types.
-
-    Mirrors hei-gin's ``storage.GetStorage(storageType string) Engine``.
-    """
-    cfg = settings.storage
+    cfg = get_config()
     if storage_type == "LOCAL":
         return LocalStorage(cfg.local.upload_folder, cfg.local.base_url)
-    elif storage_type == "MINIO":
+    if storage_type == "MINIO":
         m = cfg.minio
         if not m.endpoint:
             return None
         return MinioStorage(m.endpoint, m.access_key, m.secret_key,
                             m.bucket, m.secure, m.region, m.base_url)
-    elif storage_type == "S3":
+    if storage_type == "S3":
         s = cfg.s3
         if not s.endpoint:
             return None
@@ -50,15 +56,10 @@ def get_storage(storage_type: str) -> Optional[FileStorageInterface]:
 
 
 def get_default_storage() -> FileStorageInterface:
-    """Return the default storage backend as configured.
-
-    Mirrors hei-gin's pattern of using ``GetStorage(GetConfig().Default)``.
-    """
-    result = get_storage(settings.storage.default)
+    cfg = get_config()
+    result = get_storage(cfg.default)
     if result is None:
-        # Fallback to local
-        return LocalStorage(settings.storage.local.upload_folder,
-                           settings.storage.local.base_url)
+        return LocalStorage(cfg.local.upload_folder, cfg.local.base_url)
     return result
 
 
@@ -82,11 +83,11 @@ def S3Storage(endpoint: str, access_key: str, secret_key: str,
 
 
 def get_url(storage_type: str, bucket: str, file_key: str) -> str:
-    """Resolve a file URL from storage type, bucket, and key.
-
-    Mirrors hei-gin's ``storage.GetURL()``.
-    """
+    cfg = get_config()
     eng = get_storage(storage_type)
     if eng is None:
         return ""
-    return eng.get_url(bucket, file_key)
+    url = eng.get_url(bucket, file_key)
+    if url.startswith("/") and cfg.default_base_url:
+        return cfg.default_base_url + url
+    return url

@@ -2,7 +2,7 @@ from typing import List
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, and_, text
-from sdk.enums import UserStatusEnum
+from plugins.plugin_sys.shared import USER_STATUS_ACTIVE
 from plugins.plugin_sys.user.models import SysUser
 from plugins.plugin_sys.role.models import SysRole
 from plugins.plugin_sys.org.models import SysOrg
@@ -24,7 +24,7 @@ class AnalyzeRepository:
         stmt = (
             select(func.count())
             .select_from(SysUser)
-            .where(SysUser.status == UserStatusEnum.ACTIVE.value)
+            .where(SysUser.status == USER_STATUS_ACTIVE)
         )
         return self.db.execute(stmt).scalar() or 0
 
@@ -86,7 +86,7 @@ class AnalyzeRepository:
             select(func.count())
             .select_from(ClientUser)
             .where(
-                ClientUser.status == UserStatusEnum.ACTIVE.value,
+                ClientUser.status == USER_STATUS_ACTIVE,
             )
         )
         return self.db.execute(stmt).scalar() or 0

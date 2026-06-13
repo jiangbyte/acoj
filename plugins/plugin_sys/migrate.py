@@ -8,6 +8,7 @@ import logging
 import bcrypt
 from sqlalchemy import select
 
+from plugins.plugin_sys.shared import USER_STATUS_ACTIVE
 from plugins.plugin_sys.banner.models import SysBanner
 from plugins.plugin_sys.config.models import SysConfig
 from plugins.plugin_sys.dict.models import SysDict
@@ -23,7 +24,6 @@ from plugins.plugin_sys.role.models import SysRole, RelRolePermission, RelRoleRe
 from plugins.plugin_sys.user.models import SysUser, RelUserRole, RelUserPermission
 from sdk.infra.db import register_model
 from sdk.infra.db import SessionLocal, register_seed
-from sdk.enums import UserStatusEnum
 from sdk.utils import generate_id
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ def seed_admin_user() -> None:
             username="admin",
             password=hashed_password,
             nickname="超管",
-            status=UserStatusEnum.ACTIVE.value,
+            status=USER_STATUS_ACTIVE,
             created_by=user_id,
             updated_by=user_id,
         )

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime
 from typing import Optional
 
@@ -18,8 +17,8 @@ from plugins.plugin_sys.org.models import SysOrg
 from plugins.plugin_sys.position.models import SysPosition
 from plugins.plugin_sys.resource.models import SysResource
 from plugins.plugin_sys.role.models import RelRolePermission, RelRoleResource
-from sdk.auth import HeiAuthTool
-from sdk.auth.permission.hei_permission_interface import SUPER_ADMIN_CODE
+from plugins.plugin_sys.shared import SUPER_ADMIN_CODE
+from sdk.auth import Business
 from sdk.config.settings import settings
 from sdk.infra.db import get_db
 from sdk.shared.contracts import LoginUserInfo
@@ -28,13 +27,15 @@ from sdk.shared.types import IdParam, IdsParam
 from sdk.utils import decrypt, generate_id
 from sdk.utils.resolve_utils import resolve_path_from_map
 from sdk.web.exception import BusinessException
-from sdk.web.result import PageDataField, page_data
+from sdk.web.result import page_data
 
 from .models import RelUserPermission, RelUserRole, SysUser
 from .params import (
+    BatchRefreshSessionACLParam,
     BatchImportParam,
     GrantRoleParam,
     GrantUserPermissionParam,
+    RefreshSessionACLParam,
     UpdateAvatarParam,
     UpdatePasswordParam,
     UpdateProfileParam,
@@ -212,8 +213,12 @@ class UserService:
         self.repository.update(entity)
 
     def page(self, param: UserPageParam) -> dict:
+        param.current = max(1, param.current)
+        param.size = max(1, param.size)
+        if param.size > 100:
+            param.size = 100
         result = self.repository.find_page_by_filters(param)
-        records = result[PageDataField.RECORDS]
+        records = result["records"]
         role_map = _batch_role_ids(self.db, [record.id for record in records])
 
         vo_list = []
@@ -225,7 +230,7 @@ class UserService:
 
         return page_data(
             records=vo_list,
-            total=result[PageDataField.TOTAL],
+            total=result["total"],
             page=param.current,
             size=param.size,
         )
@@ -346,7 +351,7 @@ class UserService:
         _enrich_names(self.db, [data])
         return data
 
-    def grant_role(self, param: GrantRoleParam) -> None:
+    async def grant_role(self, param: GrantRoleParam) -> None:
         if not param.user_id:
             raise BusinessException("用户ID不能为空", 400)
         try:
@@ -358,11 +363,12 @@ class UserService:
                 seen.add(role_id)
                 self.db.add(RelUserRole(id=generate_id(), user_id=param.user_id, role_id=role_id))
             self.db.commit()
+            await Business.refresh_user_sessions_acl(param.user_id)
         except Exception:
             self.db.rollback()
             raise
 
-    def grant_permission(self, param: GrantUserPermissionParam) -> None:
+    async def grant_permission(self, param: GrantUserPermissionParam) -> None:
         if not param.user_id:
             raise BusinessException("用户ID不能为空", 400)
         try:
@@ -382,9 +388,26 @@ class UserService:
                     entity.custom_scope_org_ids = item.custom_scope_org_ids
                 self.db.add(entity)
             self.db.commit()
+            await Business.refresh_user_sessions_acl(param.user_id)
         except Exception:
             self.db.rollback()
             raise
+
+    async def refresh_session_acl(self, param: RefreshSessionACLParam) -> None:
+        if not param.user_id:
+            raise BusinessException("用户ID不能为空", 400)
+        await Business.refresh_user_sessions_acl(param.user_id)
+
+    async def batch_refresh_session_acl(self, param: BatchRefreshSessionACLParam) -> None:
+        if not param.user_ids:
+            raise BusinessException("用户ID不能为空", 400)
+        seen: set[str] = set()
+        for user_id in param.user_ids:
+            if user_id:
+                if user_id in seen:
+                    continue
+                seen.add(user_id)
+                await Business.refresh_user_sessions_acl(user_id)
 
     def get_user_permission_details(self, user_id: str) -> list[dict]:
         if not user_id:
@@ -597,15 +620,19 @@ class UserService:
             self.db.rollback()
             raise
 
-    def update_status(self, param: UpdateStatusParam) -> None:
+    async def update_status(self, param: UpdateStatusParam) -> None:
         if not param.ids:
-            return
+            raise BusinessException("ID不能为空", 400)
         self.db.execute(
             sa_update(SysUser).where(SysUser.id.in_(param.ids)).values(
                 status=param.status,
                 updated_at=datetime.now(),
             )
         )
+        self.db.commit()
+        if param.status != "ACTIVE":
+            for user_id in param.ids:
+                await Business.sessions().kickout_user(user_id)
         self.db.commit()
 
     def export(self, param: UserPageParam) -> list[dict]:
@@ -629,7 +656,7 @@ class LoginUserApiProvider:
         self._session_factory = session_factory
 
     async def get_current_login_user_info(self, request) -> Optional[LoginUserInfo]:
-        user_id = await HeiAuthTool.getLoginIdAsString(request)
+        user_id = await Business.get_login_id(request)
         if not user_id:
             return None
         return self.get_login_user_info_by_id(user_id)

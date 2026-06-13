@@ -2,8 +2,9 @@
 Core service plugins — mirrors hei-gin's ``sdk/auth/module.go``,
 ``sdk/captcha/module.go``, ``sdk/utils/module.go``, ``sdk/scheduler/module.go``.
 
-Each core service registers itself as an independent ``HeiPlugin`` via
-``__init_subclass__``, just like hei-gin's ``init() → module.Register()``.
+Each core service is registered explicitly by the kernel assembly layer,
+mirroring hei-gin's ``module.Register()`` flow without relying on Python
+import side effects.
 """
 
 from __future__ import annotations
@@ -53,13 +54,13 @@ class AuthPlugin(HeiPlugin):
         )
 
     def on_init(self):
-        from sdk.auth import HeiAuthTool, HeiClientAuthTool
+        from sdk.auth import Business, Consumer
 
-        HeiAuthTool.init(
+        Business.init(
             expire=settings.token.expire_seconds,
             token_name=settings.token.token_name,
         )
-        HeiClientAuthTool.init(
+        Consumer.init(
             expire=settings.token.expire_seconds,
             token_name=settings.token.token_name,
         )
@@ -158,3 +159,11 @@ class SchedulerPlugin(HeiPlugin):
         from sdk.infra.scheduler import stop as scheduler_stop
         scheduler_stop()
         logger.info("[SchedulerPlugin] Scheduler stopped")
+
+
+CORE_PLUGIN_CLASSES: tuple[type[HeiPlugin], ...] = (
+    AuthPlugin,
+    UtilsPlugin,
+    CaptchaPlugin,
+    SchedulerPlugin,
+)

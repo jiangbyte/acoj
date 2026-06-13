@@ -9,12 +9,11 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request
+from fastapi import APIRouter, WebSocket
 
+from sdk.auth import Business, Consumer
 from sdk.kernel.plugin import HeiPlugin, PluginInfo
-from sdk.kernel.registry import register_router
-from sdk.auth import HeiAuthTool, HeiClientAuthTool
-from plugins.plugin_im.ws import GlobalHub, GlobalCrossHub, CrossHub
+from plugins.plugin_im.ws import GlobalHub, CrossHub
 from plugins.plugin_im.migrate import register_all_models
 
 logger = logging.getLogger(__name__)
@@ -32,7 +31,7 @@ async def sys_ws_endpoint(websocket: WebSocket, token: str = ""):
         await websocket.close(code=1008)
         return
 
-    user_id = await HeiAuthTool.getLoginIdByToken(token)
+    user_id = await Business.get_login_id_by_token(token)
     if not user_id:
         await websocket.close(code=1008)
         return
@@ -48,7 +47,7 @@ async def client_ws_endpoint(websocket: WebSocket, token: str = ""):
         await websocket.close(code=1008)
         return
 
-    user_id = await HeiClientAuthTool.getLoginIdByToken(token)
+    user_id = await Consumer.get_login_id_by_token(token)
     if not user_id:
         await websocket.close(code=1008)
         return
@@ -70,13 +69,7 @@ class IMPlugin(HeiPlugin):
 
     def on_init(self):
         """Register models and initialize CrossHub."""
-        # Register all IM models for migration
         register_all_models()
-
-        # Register WebSocket routes
-        register_router(ws_router)
-
-        # Initialize CrossHub (Redis-backed cross-instance messaging)
         ch = CrossHub(GlobalHub)
         import plugins.plugin_im.ws as ws_mod
         ws_mod.GlobalCrossHub = ch

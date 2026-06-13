@@ -5,7 +5,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, or_, func, delete as sa_delete, update as sa_update
 from .models import SysUser, RelUserRole, RelUserPermission
 from .params import UserPageParam
-from sdk.enums import ResourceCategoryEnum, ResourceTypeEnum, StatusEnum, DataScopeEnum
+from plugins.plugin_sys.shared import (
+    RESOURCE_CATEGORY_BACKEND_MENU,
+    RESOURCE_TYPE_DIRECTORY,
+    RESOURCE_TYPE_MENU,
+    STATUS_ENABLED,
+)
+from sdk.auth.enums import DataScope
 from sdk.utils import generate_id
 from plugins.plugin_sys.role.params import PermissionItem
 
@@ -168,7 +174,7 @@ class UserRepository:
         return [
             {
                 "permission_code": r[0],
-                "scope": r[1] or DataScopeEnum.ALL.value,
+                "scope": r[1] or DataScope.ALL.value,
                 "custom_scope_group_ids": r[2],
                 "custom_scope_org_ids": r[3],
             }
@@ -222,9 +228,9 @@ class UserRepository:
             select(_SysResource)
             .where(
                 _SysResource.id.in_(resource_ids),
-                _SysResource.category == ResourceCategoryEnum.BACKEND_MENU,
-                _SysResource.type.in_([ResourceTypeEnum.DIRECTORY, ResourceTypeEnum.MENU]),
-                _SysResource.status == StatusEnum.ENABLED,
+                _SysResource.category == RESOURCE_CATEGORY_BACKEND_MENU,
+                _SysResource.type.in_([RESOURCE_TYPE_DIRECTORY, RESOURCE_TYPE_MENU]),
+                _SysResource.status == STATUS_ENABLED,
             )
             .order_by(_SysResource.sort_code.asc())
         )
@@ -244,9 +250,9 @@ class UserRepository:
         stmt = (
             select(_SysResource)
             .where(
-                _SysResource.category == ResourceCategoryEnum.BACKEND_MENU,
-                _SysResource.type.in_([ResourceTypeEnum.DIRECTORY, ResourceTypeEnum.MENU]),
-                _SysResource.status == StatusEnum.ENABLED,
+                _SysResource.category == RESOURCE_CATEGORY_BACKEND_MENU,
+                _SysResource.type.in_([RESOURCE_TYPE_DIRECTORY, RESOURCE_TYPE_MENU]),
+                _SysResource.status == STATUS_ENABLED,
             )
             .order_by(_SysResource.sort_code.asc())
         )

@@ -21,6 +21,7 @@ from typing import Optional
 
 from fastapi import Request, HTTPException, status
 
+from sdk.auth.realm import infer_realm_id_from_path, realm_from_id
 from sdk.infra.db.redis import get_client
 
 logger = logging.getLogger(__name__)
@@ -68,10 +69,11 @@ def RateLimiter(
             # User ID from auth context, fallback to client IP
             user_id = ""
             try:
-                from sdk.auth import HeiAuthTool
-                uid = await HeiAuthTool.getLoginIdDefaultNull(request)
-                if uid:
-                    user_id = str(uid)
+                realm_id = infer_realm_id_from_path(request.url.path)
+                if realm_id:
+                    uid = await realm_from_id(realm_id).get_login_id(request)
+                    if uid:
+                        user_id = str(uid)
             except Exception:
                 pass
 
