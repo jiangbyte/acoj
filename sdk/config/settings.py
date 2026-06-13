@@ -1,24 +1,13 @@
-"""
-Global application configuration — mirrors hei-gin's ``sdk/config/config.go``.
-
-Now includes:
-- ``UserConfig`` (reset_password)
-- ``WSConfig`` (WebSocket/IM settings)
-- ``StorageConfig`` (default_base_url)
-- All missing app fields (import_max_file_size_mb)
-"""
-
 from __future__ import annotations
 
-from typing import Any, Optional, List
+import json
+import os
+from pathlib import Path
+from typing import Any
 from urllib.parse import quote
+
 from pydantic import BaseModel, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
-# ═════════════════════════════════════════════════════════════════════
-# Database
-# ═════════════════════════════════════════════════════════════════════
 
 class DatabaseConfig(BaseModel):
     host: str = "localhost"
@@ -36,7 +25,10 @@ class DatabaseConfig(BaseModel):
 
     @property
     def url(self) -> str:
-        return f"mysql+pymysql://{self.user}:{quote(self.password)}@{self.host}:{self.port}/{self.database}"
+        return (
+            f"mysql+pymysql://{self.user}:{quote(self.password)}"
+            f"@{self.host}:{self.port}/{self.database}"
+        )
 
 
 class RedisConfig(BaseModel):
@@ -68,14 +60,13 @@ class SM2Config(BaseModel):
 
 
 class UserConfig(BaseModel):
-    """User-level settings (mirrors hei-gin sdk/config/config.go UserConfig)."""
     reset_password: str = "123456"
 
 
 class CORSConfig(BaseModel):
-    allow_origins: List[str] = ["*"]
-    allow_methods: List[str] = ["*"]
-    allow_headers: List[str] = ["*"]
+    allow_origins: list[str] = Field(default_factory=lambda: ["*"])
+    allow_methods: list[str] = Field(default_factory=lambda: ["*"])
+    allow_headers: list[str] = Field(default_factory=lambda: ["*"])
     allow_credentials: bool = False
 
 
@@ -83,42 +74,57 @@ class SnowflakeConfig(BaseModel):
     instance: int = 1
 
 
+class SwaggerConfig(BaseModel):
+    enabled: bool = True
+    username: str = ""
+    password: str = ""
+
+
+class AuthConfig(BaseModel):
+    public_paths: list[str] = Field(
+        default_factory=lambda: [
+            "/api/v1/public/",
+            "/favicon.ico",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+            "/v3/api-docs",
+            "/swagger",
+            "/swagger.json",
+            "/api/v1/swagger/",
+        ]
+    )
+    business_register_enabled: bool = True
+
+
 class AppConfig(BaseModel):
     name: str = "hei-fastapi"
     version: str = "1.0.0"
+    env: str = "dev"
     debug: bool = True
     host: str = "0.0.0.0"
-    port: int = 8081
-    upload_max_size: int = 52428800  # 50MB
+    port: int = 18886
+    upload_max_size: int = 52428800
     import_max_file_size_mb: int = 10
     timeout_keep_alive: int = 15
 
 
-# ═════════════════════════════════════════════════════════════════════
-# WebSocket / IM config
-# ═════════════════════════════════════════════════════════════════════
-
 class WSConfig(BaseModel):
-    """WebSocket configuration — mirrors hei-gin config.yaml ``ws:`` section."""
     read_buffer_size: int = 1024
     write_buffer_size: int = 1024
-    heartbeat_interval: int = 15          # seconds
-    instance_ttl: int = 60               # seconds
-    stale_clean_interval: int = 5        # minutes
-    rate_limit_window: int = 10          # seconds
-    rate_limit_max: int = 30             # messages per window
-    dedup_ttl: int = 30                  # seconds
-    poll_timeout: int = 2                # seconds
-    pong_timeout: int = 60               # seconds
-    write_timeout: int = 10              # seconds
-    online_broadcast_interval: int = 60  # seconds
+    heartbeat_interval: int = 15
+    instance_ttl: int = 60
+    stale_clean_interval: int = 5
+    rate_limit_window: int = 10
+    rate_limit_max: int = 30
+    dedup_ttl: int = 30
+    poll_timeout: int = 2
+    pong_timeout: int = 60
+    write_timeout: int = 10
+    online_broadcast_interval: int = 60
     max_clients_per_ip: int = 10
     max_clients_per_user: int = 3
 
-
-# ═════════════════════════════════════════════════════════════════════
-# Storage config  —  mirrors hei-gin sdk/storage/config.go
-# ═════════════════════════════════════════════════════════════════════
 
 class LocalStorageConfig(BaseModel):
     upload_folder: str = "./uploads"
@@ -148,36 +154,136 @@ class S3StorageConfig(BaseModel):
 class StorageConfig(BaseModel):
     default: str = "LOCAL"
     default_base_url: str = ""
-    local: LocalStorageConfig = LocalStorageConfig()
-    minio: MinioStorageConfig = MinioStorageConfig()
-    s3: S3StorageConfig = S3StorageConfig()
+    local: LocalStorageConfig = Field(default_factory=LocalStorageConfig)
+    minio: MinioStorageConfig = Field(default_factory=MinioStorageConfig)
+    s3: S3StorageConfig = Field(default_factory=S3StorageConfig)
 
 
-# ═════════════════════════════════════════════════════════════════════
-# Main Settings
-# ═════════════════════════════════════════════════════════════════════
+class Settings(BaseModel):
+    app: AppConfig = Field(default_factory=AppConfig)
+    db: DatabaseConfig = Field(default_factory=DatabaseConfig)
+    redis: RedisConfig = Field(default_factory=RedisConfig)
+    token: TokenConfig = Field(default_factory=TokenConfig)
+    sm2: SM2Config = Field(default_factory=SM2Config)
+    auth: AuthConfig = Field(default_factory=AuthConfig)
+    cors: CORSConfig = Field(default_factory=CORSConfig)
+    user: UserConfig = Field(default_factory=UserConfig)
+    snowflake: SnowflakeConfig = Field(default_factory=SnowflakeConfig)
+    swagger: SwaggerConfig = Field(default_factory=SwaggerConfig)
+    storage: StorageConfig = Field(default_factory=StorageConfig)
+    ws: WSConfig = Field(default_factory=WSConfig)
+    raw: dict[str, Any] = Field(default_factory=dict)
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        env_nested_delimiter="__",
-        extra="ignore",
-    )
+    @property
+    def user_config(self) -> UserConfig:
+        return self.user
 
-    app: AppConfig = AppConfig()
-    db: DatabaseConfig = DatabaseConfig()
-    redis: RedisConfig = RedisConfig()
-    token: TokenConfig = TokenConfig()
-    sm2: SM2Config = SM2Config()
-    user_config: UserConfig = UserConfig()
-    cors: CORSConfig = CORSConfig()
-    snowflake: SnowflakeConfig = SnowflakeConfig()
-    storage: StorageConfig = StorageConfig()
-    ws: WSConfig = WSConfig()
+    def validate_runtime(self, redis_required: bool = True) -> None:
+        missing: list[str] = []
+        _require_string(missing, "app.host", self.app.host)
+        _require_positive(missing, "app.port", self.app.port)
+        _require_string(missing, "db.host", self.db.host)
+        _require_positive(missing, "db.port", self.db.port)
+        _require_string(missing, "db.user", self.db.user)
+        _require_string(missing, "db.database", self.db.database)
+        _require_positive(missing, "token.expire_seconds", self.token.expire_seconds)
+        _require_string(missing, "token.token_name", self.token.token_name)
+        if redis_required:
+            _require_string(missing, "redis.host", self.redis.host)
+            _require_positive(missing, "redis.port", self.redis.port)
+        if missing:
+            raise ValueError(f"invalid runtime config: {', '.join(missing)}")
 
-    # Raw holds any extra/inline config fields for plugin-specific settings.
-    raw: dict[str, Any] = {}
+    def validate_migration(self) -> None:
+        missing: list[str] = []
+        _require_string(missing, "db.host", self.db.host)
+        _require_positive(missing, "db.port", self.db.port)
+        _require_string(missing, "db.user", self.db.user)
+        _require_string(missing, "db.database", self.db.database)
+        if missing:
+            raise ValueError(f"invalid migration config: {', '.join(missing)}")
 
 
-settings = Settings()
+def _require_string(missing: list[str], key: str, value: str) -> None:
+    if not str(value).strip():
+        missing.append(key)
+
+
+def _require_positive(missing: list[str], key: str, value: int) -> None:
+    if value <= 0:
+        missing.append(key)
+
+
+def _load_dotenv_values() -> dict[str, str]:
+    env_path = Path.cwd() / ".env"
+    if not env_path.is_file():
+        return {}
+    values: dict[str, str] = {}
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip()
+    return values
+
+
+def _parse_env_value(raw: str, key_path: list[str]) -> Any:
+    value = raw.strip()
+    leaf = key_path[-1] if key_path else ""
+    if leaf in {"password", "private_key", "public_key", "reset_password", "token_name"}:
+        return value
+    if value.lower() in {"true", "false"}:
+        return value.lower() == "true"
+    if value.lower() in {"null", "none"}:
+        return None
+    if value.startswith(("{", "[")):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+    try:
+        if value.startswith("0") and value not in {"0", "0.0"} and not value.startswith("0."):
+            return value
+        return int(value)
+    except ValueError:
+        try:
+            return float(value)
+        except ValueError:
+            return value
+
+
+def _set_nested(mapping: dict[str, Any], path: list[str], value: Any) -> None:
+    current = mapping
+    for part in path[:-1]:
+        node = current.get(part)
+        if not isinstance(node, dict):
+            node = {}
+            current[part] = node
+        current = node
+    current[path[-1]] = value
+
+
+def _deep_merge(target: dict[str, Any], source: dict[str, Any]) -> dict[str, Any]:
+    for key, value in source.items():
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
+            _deep_merge(target[key], value)
+        else:
+            target[key] = value
+    return target
+
+
+def _build_settings_data() -> dict[str, Any]:
+    values = _load_dotenv_values()
+    merged: dict[str, Any] = {}
+    for source in (values, os.environ):
+        for key, raw in source.items():
+            if "__" not in key:
+                continue
+            path = key.lower().split("__")
+            _set_nested(merged, path, _parse_env_value(str(raw), path))
+    merged.setdefault("raw", {})
+    return merged
+
+
+settings = Settings.model_validate(_build_settings_data())

@@ -6,8 +6,9 @@ from PIL import Image, ImageDraw, ImageFont
 from typing import Optional
 from pydantic import BaseModel
 from sdk.config.settings import settings
-from sdk.constants import CAPTCHA_BUSINESS_CACHE_KEY, CAPTCHA_CONSUMER_CACHE_KEY
-from sdk.enums import LoginTypeEnum
+
+CaptchaBusinessPrefix = "BUSINESS:captcha:"
+CaptchaConsumerPrefix = "CONSUMER:captcha:"
 
 
 class CaptchaResult(BaseModel):
@@ -84,5 +85,5 @@ class CaptchaService:
         return True
 
 
-b_captcha = CaptchaService(prefix=CAPTCHA_BUSINESS_CACHE_KEY)
-c_captcha = CaptchaService(prefix=CAPTCHA_CONSUMER_CACHE_KEY)
+b_captcha = CaptchaService(prefix=CaptchaBusinessPrefix)
+c_captcha = CaptchaService(prefix=CaptchaConsumerPrefix)

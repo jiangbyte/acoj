@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
 from sdk.web.exception import BusinessException
-from sdk.web.result import PageDataField, page_data
+from sdk.web.result import page_data
 from sdk.utils import generate_id
 from sdk.infra.db.redis import get_client
 from .models import SysConfig
@@ -72,7 +72,7 @@ class ConfigService:
     def page(self, param: ConfigPageParam) -> dict:
         result = self.repository.find_page_by_filters(param)
         records = [SysConfigToConfigVO(r) for r in result.get("records", [])]
-        return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
+        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
 
     def detail(self, id: str) -> Optional[ConfigVO]:
         if not id:

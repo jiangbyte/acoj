@@ -5,8 +5,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request, UploadFile, File, Form, Query as QueryParam
 from fastapi.responses import FileResponse, RedirectResponse
 
-from sdk.auth import HeiAuthTool, HeiClientAuthTool
-from sdk.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, HeiCheckPermission
+from sdk.auth import Business, Consumer
+from sdk.auth.decorator import CheckLogin, CheckPermission
+from sdk.auth.enums import RealmID
 from sdk.web.result import success, failure
 from sdk.shared.types import IdsParam
 from plugins.plugin_sys.file.params import (
@@ -19,12 +20,12 @@ router = APIRouter(prefix="/api/v1/sys/file", tags=["Sys File"])
 
 
 @router.post("/upload", summary="上传文件")
-@HeiCheckPermission("sys:file:upload")
-@HeiCheckLogin
+@CheckPermission("sys:file:upload")
+@CheckLogin
 async def upload_handler(request: Request, file: UploadFile = File(...),
                           engine: str = Form("LOCAL"), bucket: str = Form("DEFAULT"),
                           service: FileService = Depends(get_file_service)):
-    uid = await HeiAuthTool.getLoginIdDefaultNull(request)
+    uid = await Business.get_login_id(request)
     try:
         result = await service.upload(file, uid or "", engine, bucket)
         return success(result.__dict__)
@@ -33,7 +34,7 @@ async def upload_handler(request: Request, file: UploadFile = File(...),
 
 
 @router.get("/page", summary="文件分页")
-@HeiCheckPermission("sys:file:page")
+@CheckPermission("sys:file:page")
 async def page_handler(request: Request, current: int = QueryParam(1), size: int = QueryParam(10),
                         keyword: str = QueryParam(""), engine: str = QueryParam(""),
                         bucket: str = QueryParam(""), service: FileService = Depends(get_file_service)):
@@ -43,14 +44,14 @@ async def page_handler(request: Request, current: int = QueryParam(1), size: int
 
 
 @router.get("/detail", summary="文件详情")
-@HeiCheckPermission("sys:file:detail")
+@CheckPermission("sys:file:detail")
 async def detail_handler(request: Request, id: str = QueryParam(...), service: FileService = Depends(get_file_service)):
     data = service.detail(id)
     return success(data if data else None)
 
 
 @router.get("/download", summary="下载文件")
-@HeiCheckPermission("sys:file:download")
+@CheckPermission("sys:file:download")
 async def download_handler(request: Request, id: str = QueryParam(...), service: FileService = Depends(get_file_service)):
     try:
         entity = service.detail(id)
@@ -66,32 +67,32 @@ async def download_handler(request: Request, id: str = QueryParam(...), service:
 
 
 @router.post("/remove", summary="删除文件记录（保留存储文件）")
-@HeiCheckPermission("sys:file:remove")
-@HeiCheckLogin
+@CheckPermission("sys:file:remove")
+@CheckLogin
 async def remove_handler(request: Request, p: IdsParam, service: FileService = Depends(get_file_service)):
     service.remove(p.ids)
     return success()
 
 
 @router.post("/remove-absolute", summary="删除文件（含存储文件）")
-@HeiCheckPermission("sys:file:remove-absolute")
-@HeiCheckLogin
+@CheckPermission("sys:file:remove-absolute")
+@CheckLogin
 async def remove_absolute_handler(request: Request, p: IdsParam, service: FileService = Depends(get_file_service)):
     service.remove_absolute(p.ids)
     return success()
 
 
 @router.post("/upload/init", summary="初始化分片上传")
-@HeiCheckPermission("sys:file:upload")
-@HeiCheckLogin
+@CheckPermission("sys:file:upload")
+@CheckLogin
 async def chunk_init_handler(request: Request, p: ChunkUploadInitParam, service: FileService = Depends(get_file_service)):
     result = service.init_chunk_upload(p)
     return success(result)
 
 
 @router.post("/upload/chunk", summary="上传分片")
-@HeiCheckPermission("sys:file:upload")
-@HeiCheckLogin
+@CheckPermission("sys:file:upload")
+@CheckLogin
 async def chunk_upload_handler(
     request: Request,
     file: UploadFile = File(...),
@@ -118,16 +119,16 @@ async def chunk_upload_handler(
 
 
 @router.post("/upload/complete", summary="完成分片上传")
-@HeiCheckPermission("sys:file:upload")
-@HeiCheckLogin
+@CheckPermission("sys:file:upload")
+@CheckLogin
 async def chunk_complete_handler(request: Request, p: ChunkCompleteParam, service: FileService = Depends(get_file_service)):
     result = service.complete_chunk_upload(p)
     return success(result.__dict__)
 
 
 @router.post("/upload/abort", summary="中止分片上传")
-@HeiCheckPermission("sys:file:upload")
-@HeiCheckLogin
+@CheckPermission("sys:file:upload")
+@CheckLogin
 async def chunk_abort_handler(request: Request, p: ChunkAbortParam, service: FileService = Depends(get_file_service)):
     service.abort_chunk_upload(p)
     return success()
@@ -138,11 +139,11 @@ client_router = APIRouter(prefix="/api/v1/c/file", tags=["Client File"])
 
 
 @client_router.post("/upload", summary="客户端上传文件")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_upload_handler(request: Request, file: UploadFile = File(...),
                                   engine: str = Form("LOCAL"), bucket: str = Form("DEFAULT"),
                                   service: FileService = Depends(get_file_service)):
-    uid = await HeiClientAuthTool.getLoginIdDefaultNull(request)
+    uid = await Consumer.get_login_id(request)
     try:
         result = await service.upload(file, uid or "", engine, bucket)
         return success(result.__dict__)

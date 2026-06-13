@@ -12,7 +12,7 @@ from sdk.shared.di import ActorContext
 from sdk.utils import generate_id
 from sdk.utils.resolve_utils import resolve_name_path
 from sdk.web.exception import BusinessException
-from sdk.web.result import PageDataField, page_data
+from sdk.web.result import page_data
 
 from ..org.models import SysOrg
 from ..org.params import OrgVO
@@ -98,7 +98,7 @@ class GroupService:
         result = self.repository.find_page_by_filters(param)
         records = [SysGroupToGroupVO(row) for row in result.get("records", [])]
         _batch_enrich(self.db, records)
-        return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
+        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
 
     def detail(self, id: str) -> Optional[dict]:
         if not id:

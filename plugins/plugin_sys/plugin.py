@@ -7,7 +7,7 @@ Mirrors hei-gin's ``plugins/plugin-sys/plugin.go``.
 import logging
 
 from sdk.kernel.plugin import HeiPlugin, PluginInfo
-from sdk.auth import HeiPermissionInterface, HeiPermissionInterfaceManager
+from sdk.auth.provider import DatabasePermissionProvider, register_permission_provider
 from sdk.infra.db import SessionLocal
 from sdk.infra.db.redis import get_client as get_redis_client
 from sdk.log import set_log_persister, set_op_user_resolver
@@ -32,8 +32,8 @@ class SysPlugin(HeiPlugin):
         """Register permission interface + B-side auth providers + log persister."""
         register_all_models()
         register_all_seeds()
-        HeiPermissionInterfaceManager.registerInterface(
-            HeiPermissionInterface(session_factory=SessionLocal, redis_client_getter=get_redis_client)
+        register_permission_provider(
+            DatabasePermissionProvider(session_factory=SessionLocal, redis_client_getter=get_redis_client)
         )
 
         login_user_api = BLoginUserApiProvider(SessionLocal)

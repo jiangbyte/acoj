@@ -1,57 +1,30 @@
-"""
-Permission auto-discovery scanner.
+"""Permission registry scan and Redis cache sync."""
 
-At application startup, scans all registered routes for @HeiCheckPermission
-decorator metadata, groups by module, and caches in Redis.
-Only RELATIONSHIPS (grants) are persisted to MySQL — never the definitions.
-"""
+import json
 import logging
-from typing import Set, Tuple
+from datetime import timedelta
 
-from sdk.constants import PERMISSION_CACHE_KEY
+from sdk.auth.consts import PermissionCacheKey
+from sdk.config.settings import settings
+from sdk.kernel.registry import get_registered_perm_entries
 
 logger = logging.getLogger(__name__)
 
 
-def collect_permissions_from_routes(app) -> Set[Tuple[str, str, str]]:
-    """Collect all (permission_code, module, name) tuples from route endpoints.
-    The name is extracted from the route's summary (FastAPI route summary text).
-    """
-    permissions = set()
-    for route in app.routes:
-        if not hasattr(route, "endpoint"):
-            continue
-        endpoint = route.endpoint
-        permission = getattr(endpoint, "_hei_permission", None)
-        if not permission:
-            permission = getattr(endpoint, "_hei_client_permission", None)
-        if not permission:
-            continue
-
-        name = getattr(route, "summary", None) or ""
-
-        if isinstance(permission, str):
-            perm_list = [permission]
-        else:
-            perm_list = permission
-
-        for perm in perm_list:
-            module = _get_module_from_code(perm)
-            permissions.add((perm, module, name))
-
-    logger.info(f"Discovered {len(permissions)} permission codes from route decorators")
-    return permissions
+def permission_cache_ttl_seconds() -> int:
+    raw = settings.raw.get("permission_cache_ttl", 300)
+    try:
+        ttl = int(raw)
+    except (TypeError, ValueError):
+        ttl = 300
+    return max(ttl, 0)
 
 
-def _get_module_from_code(code: str) -> str:
-    parts = code.split(":")
-    return ":".join(parts[:-1]) if len(parts) > 1 else code
-
-
-def _build_module_tree(permissions: Set[Tuple[str, str, str]]) -> dict:
-    """Build a module-grouped dict from scanned permissions."""
+def _build_module_tree(permissions: dict[str, dict[str, str]]) -> dict[str, dict[str, dict[str, str]]]:
     tree: dict = {}
-    for code, module, name in permissions:
+    for code, entry in permissions.items():
+        module = entry.get("module") or ""
+        name = entry.get("name") or ""
         if module not in tree:
             tree[module] = {}
         tree[module][code] = {
@@ -62,8 +35,7 @@ def _build_module_tree(permissions: Set[Tuple[str, str, str]]) -> dict:
     return tree
 
 
-async def sync_to_redis(permissions: Set[Tuple[str, str, str]]):
-    """Store scanned permissions grouped by module into Redis."""
+async def sync_to_redis(permissions: dict[str, dict[str, str]]) -> None:
     from sdk.infra.db.redis import get_client
 
     redis_client = get_client()
@@ -72,21 +44,23 @@ async def sync_to_redis(permissions: Set[Tuple[str, str, str]]):
         return
 
     tree = _build_module_tree(permissions)
-    import json
-    await redis_client.set(PERMISSION_CACHE_KEY, json.dumps(tree, ensure_ascii=False))
+    ttl = permission_cache_ttl_seconds()
+    payload = json.dumps(tree, ensure_ascii=False)
+    if ttl == 0:
+        await redis_client.set(PermissionCacheKey, payload)
+    else:
+        await redis_client.set(PermissionCacheKey, payload, ex=timedelta(seconds=ttl))
     total = sum(len(v) for v in tree.values())
     logger.info(f"Cached {total} permissions in Redis across {len(tree)} modules")
 
 
 async def get_modules_from_redis() -> list:
-    """Get distinct permission module prefixes from Redis."""
     from sdk.infra.db.redis import get_client
-    import json
 
     redis_client = get_client()
     if not redis_client:
         return []
-    data = await redis_client.get(PERMISSION_CACHE_KEY)
+    data = await redis_client.get(PermissionCacheKey)
     if not data:
         return []
     tree = json.loads(data)
@@ -94,14 +68,12 @@ async def get_modules_from_redis() -> list:
 
 
 async def get_permissions_by_module_from_redis(module: str) -> list:
-    """Get all permissions under a specific module from Redis."""
     from sdk.infra.db.redis import get_client
-    import json
 
     redis_client = get_client()
     if not redis_client:
         return []
-    data = await redis_client.get(PERMISSION_CACHE_KEY)
+    data = await redis_client.get(PermissionCacheKey)
     if not data:
         return []
     tree = json.loads(data)
@@ -109,9 +81,10 @@ async def get_permissions_by_module_from_redis(module: str) -> list:
     return list(module_perms.values())
 
 
-async def run_permission_scan(app):
-    """Scan decorators, store grouped permissions in Redis."""
-    permissions = collect_permissions_from_routes(app)
-    if permissions:
-        await sync_to_redis(permissions)
+async def run_permission_scan(app=None):
+    permissions = get_registered_perm_entries()
+    if not permissions:
+        logger.info("No permissions registered, nothing to cache")
+        return permissions
+    await sync_to_redis(permissions)
     return permissions

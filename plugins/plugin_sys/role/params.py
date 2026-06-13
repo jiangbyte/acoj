@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
-from sdk.enums import DataScopeEnum
+from sdk.auth.enums import DataScope
 from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
 from .models import SysRole
 
@@ -32,7 +32,7 @@ class RolePageParam(BaseModel):
 
 class PermissionItem(BaseModel):
     permission_code: str
-    scope: str = DataScopeEnum.ALL.value
+    scope: str = DataScope.ALL.value
     custom_scope_group_ids: Optional[str] = None
     custom_scope_org_ids: Optional[str] = None
 
@@ -44,7 +44,7 @@ class GrantPermissionParam(BaseModel):
 
 class ButtonPermissionScope(BaseModel):
     permission_code: str
-    scope: str = DataScopeEnum.ALL.value
+    scope: str = DataScope.ALL.value
     custom_scope_group_ids: Optional[str] = None
     custom_scope_org_ids: Optional[str] = None
 
@@ -53,6 +53,10 @@ class GrantResourceParam(BaseModel):
     role_id: str
     resource_ids: List[str]
     permissions: List[ButtonPermissionScope] = []
+
+
+class RefreshRoleSessionACLParam(BaseModel):
+    role_id: str
 
 
 def SysRoleToRoleVO(src: Optional[SysRole]) -> Optional[RoleVO]:

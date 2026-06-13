@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
 from sdk.web.exception import BusinessException
-from sdk.web.result import PageDataField, page_data
+from sdk.web.result import page_data
 from sdk.utils import generate_id
 from .models import SysNotice
 from .params import NoticeVO, NoticePageParam, NoticeLatestParam, SysNoticeToNoticeVO
@@ -36,7 +36,7 @@ class NoticeService:
     def page(self, param: NoticePageParam) -> dict:
         result = self.repository.find_page(param)
         records = [SysNoticeToNoticeVO(r) for r in result.get("records", [])]
-        return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
+        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
 
     def detail(self, id: str) -> Optional[NoticeVO]:
         if not id:
@@ -127,7 +127,7 @@ class NoticeService:
     def public_page(self, param: NoticePageParam) -> dict:
         result = self.repository.find_public_page(param)
         records = [SysNoticeToNoticeVO(r) for r in result.get("records", [])]
-        return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
+        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
 
     def public_detail(self, id: str) -> Optional[NoticeVO]:
         if not id:

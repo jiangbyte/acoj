@@ -74,6 +74,14 @@ class GrantUserPermissionParam(BaseModel):
     permissions: Optional[List[PermissionItem]] = None
 
 
+class RefreshSessionACLParam(BaseModel):
+    user_id: str
+
+
+class BatchRefreshSessionACLParam(BaseModel):
+    user_ids: List[str]
+
+
 class UpdateProfileParam(BaseModel):
     username: Optional[str] = None
     nickname: Optional[str] = None

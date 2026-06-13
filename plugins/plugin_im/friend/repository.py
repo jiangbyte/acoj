@@ -6,7 +6,7 @@ from typing import Optional
 from sqlalchemy import and_, delete as sa_delete, func, or_, select, update as sa_update
 from sqlalchemy.orm import Session
 
-from .models import FriendBlock, FriendRequest, Friendship
+from plugins.plugin_im.model.friend import FriendBlock, FriendRequest, Friendship
 
 
 class FriendRepository:

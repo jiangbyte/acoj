@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, Query as QueryParam
 
-from sdk.auth import HeiAuthTool, HeiClientAuthTool
-from sdk.auth.decorator import HeiCheckLogin, HeiClientCheckLogin, NoRepeat
+from sdk.auth import Business, Consumer
+from sdk.auth.decorator import CheckLogin, NoRepeat
+from sdk.auth.enums import RealmID
 from sdk.log import SysLog
 from sdk.web.result import success
 from sdk.kernel.plugin import Perm
@@ -26,9 +27,9 @@ client_router = APIRouter(prefix="/api/v1/c/im/broadcast", tags=["IM Broadcast (
 @Perm("sys:im:broadcast:send", "发送通知")
 @SysLog("发送通知")
 @NoRepeat(5000)
-@HeiCheckLogin
+@CheckLogin
 async def send_handler(request: Request, p: SendBroadcastParam):
-    uid = await HeiAuthTool.getLoginIdDefaultNull(request)
+    uid = await Business.get_login_id(request)
     service = get_broadcast_service()
     service.send(uid or "", p)
     return success()
@@ -36,7 +37,7 @@ async def send_handler(request: Request, p: SendBroadcastParam):
 
 @sys_router.get("/list")
 @Perm("sys:im:broadcast:list", "通知列表")
-@HeiCheckLogin
+@CheckLogin
 async def list_handler(
     request: Request,
     cursor: str = QueryParam(""),
@@ -48,30 +49,30 @@ async def list_handler(
 
 
 @sys_router.get("/unread-list")
-@HeiCheckLogin
+@CheckLogin
 async def unread_list_handler(
     request: Request,
     service: BroadcastService = Depends(get_broadcast_service),
 ):
-    uid = await HeiAuthTool.getLoginIdDefaultNull(request)
+    uid = await Business.get_login_id(request)
     records, _ = service.unread_list(uid or "", "BUSINESS")
     return success(records)
 
 
 @sys_router.post("/read")
-@HeiCheckLogin
+@CheckLogin
 async def read_handler(
     request: Request,
     p: dict,
     service: BroadcastService = Depends(get_broadcast_service),
 ):
-    uid = await HeiAuthTool.getLoginIdDefaultNull(request)
+    uid = await Business.get_login_id(request)
     service.mark_read(uid or "", "BUSINESS", p.get("broadcast_id", ""))
     return success()
 
 
 @sys_router.get("/detail")
-@HeiCheckLogin
+@CheckLogin
 async def detail_handler(
     request: Request,
     id: str = QueryParam(""),
@@ -84,30 +85,30 @@ async def detail_handler(
 # ── Client (C-end) routes ──
 
 @client_router.get("/unread-list")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_unread_list_handler(
     request: Request,
     service: BroadcastService = Depends(get_broadcast_service),
 ):
-    uid = await HeiClientAuthTool.getLoginIdDefaultNull(request)
+    uid = await Consumer.get_login_id(request)
     records, _ = service.unread_list(uid or "", "CONSUMER")
     return success(records)
 
 
 @client_router.post("/read")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_read_handler(
     request: Request,
     p: dict,
     service: BroadcastService = Depends(get_broadcast_service),
 ):
-    uid = await HeiClientAuthTool.getLoginIdDefaultNull(request)
+    uid = await Consumer.get_login_id(request)
     service.mark_read(uid or "", "CONSUMER", p.get("broadcast_id", ""))
     return success()
 
 
 @client_router.get("/detail")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_detail_handler(
     request: Request,
     id: str = QueryParam(""),

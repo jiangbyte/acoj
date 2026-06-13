@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends
 from sdk.web.result import Result, success
-from sdk.auth.decorator import HeiCheckLogin
+from sdk.auth.decorator import CheckLogin
 from sdk.log import SysLog
 from sdk.shared.di import ActorContext, get_current_actor
 from ...params import AddQuickActionParam, RemoveQuickActionParam, SortQuickActionParam
@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.get("/api/v1/sys/home", summary="获取首页数据", response_model=Result)
-@HeiCheckLogin
+@CheckLogin
 async def get_home(
     service: HomeService = Depends(get_home_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -22,7 +22,7 @@ async def get_home(
 
 
 @router.post("/api/v1/sys/home/quick-actions/add", summary="添加快捷方式", response_model=Result)
-@HeiCheckLogin
+@CheckLogin
 @SysLog("添加快捷方式")
 async def add_quick_action(
     param: AddQuickActionParam,
@@ -34,7 +34,7 @@ async def add_quick_action(
 
 
 @router.post("/api/v1/sys/home/quick-actions/remove", summary="移除快捷方式", response_model=Result)
-@HeiCheckLogin
+@CheckLogin
 @SysLog("移除快捷方式")
 async def remove_quick_action(
     param: RemoveQuickActionParam,
@@ -46,7 +46,7 @@ async def remove_quick_action(
 
 
 @router.post("/api/v1/sys/home/quick-actions/sort", summary="排序快捷方式", response_model=Result)
-@HeiCheckLogin
+@CheckLogin
 @SysLog("排序快捷方式")
 async def sort_quick_actions(
     param: SortQuickActionParam,

@@ -8,10 +8,11 @@ from sdk.web.result import Result, PageData, success
 from sdk.shared.di import ActorContext, get_current_actor
 from sdk.shared.types import IdsParam
 from sdk.kernel.plugin import Perm
-from sdk.auth.decorator import HeiCheckLogin, NoRepeat
+from sdk.auth.decorator import CheckLogin, NoRepeat
 from sdk.log import SysLog
 from ...params import (
     UserVO, UserPageParam, GrantRoleParam, GrantUserPermissionParam,
+    RefreshSessionACLParam, BatchRefreshSessionACLParam,
     UpdateProfileParam, UpdateAvatarParam, UpdatePasswordParam,
 )
 from ...service import UserService, get_user_service
@@ -70,7 +71,7 @@ async def detail(id: str = Query(...), service: UserService = Depends(get_user_s
 @Perm("sys:user:grant-role", "分配用户角色")
 @NoRepeat(interval=3000)
 async def grant_role(param: GrantRoleParam, service: UserService = Depends(get_user_service)):
-    service.grant_role(param)
+    await service.grant_role(param)
     return success()
 
 
@@ -79,7 +80,31 @@ async def grant_role(param: GrantRoleParam, service: UserService = Depends(get_u
 @Perm("sys:user:grant-permission", "分配用户权限")
 @NoRepeat(interval=3000)
 async def grant_permission(param: GrantUserPermissionParam, service: UserService = Depends(get_user_service)):
-    service.grant_permission(param)
+    await service.grant_permission(param)
+    return success()
+
+
+@router.post("/api/v1/sys/user/refresh-session-acl", summary="刷新用户会话权限", response_model=Result)
+@SysLog("刷新用户会话权限")
+@Perm("sys:user:refresh-session-acl", "刷新用户会话权限")
+@NoRepeat(interval=3000)
+async def refresh_session_acl(
+    param: RefreshSessionACLParam,
+    service: UserService = Depends(get_user_service),
+):
+    await service.refresh_session_acl(param)
+    return success()
+
+
+@router.post("/api/v1/sys/user/batch-refresh-session-acl", summary="批量刷新用户会话权限", response_model=Result)
+@SysLog("批量刷新用户会话权限")
+@Perm("sys:user:batch-refresh-session-acl", "批量刷新用户会话权限")
+@NoRepeat(interval=3000)
+async def batch_refresh_session_acl(
+    param: BatchRefreshSessionACLParam,
+    service: UserService = Depends(get_user_service),
+):
+    await service.batch_refresh_session_acl(param)
     return success()
 
 
@@ -96,7 +121,7 @@ async def own_roles(user_id: str = Query(...), service: UserService = Depends(ge
 
 
 @router.get("/api/v1/sys/user/current", summary="获取当前用户信息")
-@HeiCheckLogin
+@CheckLogin
 async def get_current_user(
     service: UserService = Depends(get_user_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -106,7 +131,7 @@ async def get_current_user(
 
 
 @router.get("/api/v1/sys/user/menus", summary="获取当前用户菜单树")
-@HeiCheckLogin
+@CheckLogin
 async def get_current_user_menus(
     service: UserService = Depends(get_user_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -116,7 +141,7 @@ async def get_current_user_menus(
 
 
 @router.get("/api/v1/sys/user/permissions", summary="获取当前用户权限码列表")
-@HeiCheckLogin
+@CheckLogin
 async def get_current_user_permissions(
     service: UserService = Depends(get_user_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -127,7 +152,7 @@ async def get_current_user_permissions(
 
 @router.post("/api/v1/sys/user/update-profile", summary="更新当前用户个人信息", response_model=Result)
 @SysLog("更新个人信息")
-@HeiCheckLogin
+@CheckLogin
 @NoRepeat(interval=3000)
 async def update_profile(
     param: UpdateProfileParam,
@@ -140,7 +165,7 @@ async def update_profile(
 
 @router.post("/api/v1/sys/user/update-avatar", summary="更新当前用户头像（base64）", response_model=Result)
 @SysLog("更新头像")
-@HeiCheckLogin
+@CheckLogin
 async def update_avatar(
     param: UpdateAvatarParam,
     service: UserService = Depends(get_user_service),
@@ -152,7 +177,7 @@ async def update_avatar(
 
 @router.post("/api/v1/sys/user/update-password", summary="修改当前用户密码", response_model=Result)
 @SysLog("修改密码")
-@HeiCheckLogin
+@CheckLogin
 @NoRepeat(interval=3000)
 async def update_password(
     param: UpdatePasswordParam,

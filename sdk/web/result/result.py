@@ -1,6 +1,5 @@
 from typing import Generic, TypeVar, Optional, List, Any, Dict
 from pydantic import BaseModel, Field
-from sdk.enums import PageDataField
 from sdk.utils.trace_utils import get_trace_id
 
 
@@ -46,9 +45,9 @@ class PageData(BaseModel, Generic[T]):
 def page_data(records: List[T], total: int, page: int, size: int) -> Dict[str, Any]:
     pages = (total + size - 1) // size if size > 0 else 0
     return {
-        PageDataField.RECORDS: records,
-        PageDataField.TOTAL: total,
-        PageDataField.PAGE: page,
-        PageDataField.SIZE: size,
-        PageDataField.PAGES: pages
+        "records": records,
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages,
     }

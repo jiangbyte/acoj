@@ -4,7 +4,4 @@ from .repository import LogRepository
 from .service import LogService, get_log_service
 from .api import v1_router as router
 
-from sdk.kernel.registry import register_router
-register_router(router)
-
 __all__ = ["SysLog", "LogVO", "LogPageParam", "LogRepository", "LogService", "get_log_service", "router"]

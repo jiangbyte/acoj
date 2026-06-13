@@ -45,9 +45,12 @@ class MessageRepository:
     def rollback(self) -> None:
         self.db.rollback()
 
-    def page_messages(self, user_id: str, param: MessagePageParam) -> tuple[list[Message], int]:
+    def page_messages(self, user_id: str, user_type: str, param: MessagePageParam) -> tuple[list[Message], int]:
         stmt = select(Message).where(
-            or_(Message.sender_id == user_id, Message.receiver_id == user_id),
+            or_(
+                and_(Message.sender_id == user_id, Message.sender_type == user_type),
+                and_(Message.receiver_id == user_id, Message.receiver_type == user_type),
+            ),
             or_(Message.deleted_by != user_id, Message.deleted_by.is_(None)),
         )
         if param.status:
@@ -57,9 +60,10 @@ class MessageRepository:
         stmt = stmt.order_by(Message.created_at.desc()).offset((param.current - 1) * param.size).limit(param.size)
         return list(self.db.execute(stmt).scalars().all()), total
 
-    def count_unread(self, user_id: str) -> int:
+    def count_unread(self, user_id: str, user_type: str) -> int:
         stmt = select(func.count()).select_from(Message).where(
             Message.receiver_id == user_id,
+            Message.receiver_type == user_type,
             Message.status == "unread",
         )
         return int(self.db.execute(stmt).scalar() or 0)
@@ -68,23 +72,38 @@ class MessageRepository:
         stmt = select(Message).where(Message.id == message_id)
         return self.db.execute(stmt).scalar_one_or_none()
 
-    def mark_read(self, message_id: str) -> None:
+    def find_owned_by_id(self, message_id: str, user_id: str, user_type: str) -> Optional[Message]:
+        stmt = select(Message).where(
+            Message.id == message_id,
+            or_(
+                and_(Message.sender_id == user_id, Message.sender_type == user_type),
+                and_(Message.receiver_id == user_id, Message.receiver_type == user_type),
+            ),
+        )
+        return self.db.execute(stmt).scalar_one_or_none()
+
+    def mark_read(self, message_id: str, user_id: str, user_type: str) -> None:
         self.db.execute(sa_update(Message).where(Message.id == message_id).values(
             status="read", read_at=datetime.now(),
+        ).where(
+            Message.receiver_id == user_id,
+            Message.receiver_type == user_type,
         ))
         self.db.commit()
 
-    def mark_conversation_read(self, receiver_id: str, conversation_id: str) -> None:
+    def mark_conversation_read(self, receiver_id: str, receiver_type: str, conversation_id: str) -> None:
         self.db.execute(sa_update(Message).where(
             Message.conversation_id == conversation_id,
             Message.receiver_id == receiver_id,
+            Message.receiver_type == receiver_type,
             Message.status == "unread",
         ).values(status="read", read_at=datetime.now()))
         self.db.commit()
 
-    def mark_all_read(self, receiver_id: str) -> None:
+    def mark_all_read(self, receiver_id: str, receiver_type: str) -> None:
         self.db.execute(sa_update(Message).where(
             Message.receiver_id == receiver_id,
+            Message.receiver_type == receiver_type,
             Message.status == "unread",
         ).values(status="read", read_at=datetime.now()))
         self.db.commit()
@@ -96,9 +115,12 @@ class MessageRepository:
         ).values(deleted_by=user_id))
         self.db.commit()
 
-    def search_messages(self, user_id: str, keyword: str, cursor_dt: Optional[datetime], size: int) -> list[Message]:
+    def search_messages(self, user_id: str, user_type: str, keyword: str, cursor_dt: Optional[datetime], size: int) -> list[Message]:
         stmt = select(Message).where(
-            or_(Message.sender_id == user_id, Message.receiver_id == user_id),
+            or_(
+                and_(Message.sender_id == user_id, Message.sender_type == user_type),
+                and_(Message.receiver_id == user_id, Message.receiver_type == user_type),
+            ),
             Message.content.like(f"%{keyword}%"),
         )
         if cursor_dt is not None:
@@ -106,10 +128,13 @@ class MessageRepository:
         stmt = stmt.order_by(Message.created_at.desc()).limit(size + 1)
         return list(self.db.execute(stmt).scalars().all())
 
-    def list_conversation_messages(self, current_user_id: str, conversation_id: str, cursor_dt: Optional[datetime], size: int) -> list[Message]:
+    def list_conversation_messages(self, current_user_id: str, user_type: str, conversation_id: str, cursor_dt: Optional[datetime], size: int) -> list[Message]:
         stmt = select(Message).where(
             Message.conversation_id == conversation_id,
-            or_(Message.sender_id == current_user_id, Message.receiver_id == current_user_id),
+            or_(
+                and_(Message.sender_id == current_user_id, Message.sender_type == user_type),
+                and_(Message.receiver_id == current_user_id, Message.receiver_type == user_type),
+            ),
             or_(Message.deleted_by != current_user_id, Message.deleted_by.is_(None)),
         )
         if cursor_dt is not None:
@@ -118,12 +143,15 @@ class MessageRepository:
         stmt = stmt.order_by(order).limit(size + 1)
         return list(self.db.execute(stmt).scalars().all())
 
-    def list_latest_message_rows(self, current_user_id: str) -> list:
+    def list_latest_message_rows(self, current_user_id: str, user_type: str) -> list:
         subq = select(
             Message.conversation_id,
             func.max(Message.created_at).label("max_ct"),
         ).where(
-            or_(Message.sender_id == current_user_id, Message.receiver_id == current_user_id),
+            or_(
+                and_(Message.sender_id == current_user_id, Message.sender_type == user_type),
+                and_(Message.receiver_id == current_user_id, Message.receiver_type == user_type),
+            ),
             or_(Message.deleted_by != current_user_id, Message.deleted_by.is_(None)),
         ).group_by(Message.conversation_id).subquery()
 
@@ -145,7 +173,7 @@ class MessageRepository:
         ).order_by(Message.created_at.desc())
         return list(self.db.execute(stmt).all())
 
-    def unread_counts_by_conversation(self, conv_ids: list[str], current_user_id: str) -> dict[str, int]:
+    def unread_counts_by_conversation(self, conv_ids: list[str], current_user_id: str, user_type: str) -> dict[str, int]:
         if not conv_ids:
             return {}
         stmt = select(
@@ -154,6 +182,7 @@ class MessageRepository:
         ).where(
             Message.conversation_id.in_(conv_ids),
             Message.receiver_id == current_user_id,
+            Message.receiver_type == user_type,
             Message.status == "unread",
         ).group_by(Message.conversation_id)
         return {row.conversation_id: row.count for row in self.db.execute(stmt).all()}

@@ -6,11 +6,17 @@ from sdk.kernel.registry import (
     register_middleware, execute_middlewares,
     Perm, ClientPerm, get_registered_perm_entries,
 )
-from .loader import discover_and_load, init_plugins, start_plugins, stop_plugins
+from .loader import (
+    register_plugin_class,
+    discover_and_load,
+    init_plugins,
+    start_plugins,
+    stop_plugins,
+    plugin_snapshot,
+    plugins_ready,
+    freeze_plugins,
+)
 from sdk.infra.eventbus import EventBus, subscribe, publish
-
-# ── Core service plugins (auto-register via __init_subclass__) ──────
-from . import core_plugins
 
 __all__ = [
     "HeiPlugin", "NoopPlugin", "PluginInfo",
@@ -18,6 +24,8 @@ __all__ = [
     "register_route", "register_router", "execute_routes",
     "register_middleware", "execute_middlewares",
     "Perm", "ClientPerm", "get_registered_perm_entries",
+    "register_plugin_class",
     "discover_and_load", "init_plugins", "start_plugins", "stop_plugins",
+    "plugin_snapshot", "plugins_ready", "freeze_plugins",
     "EventBus", "subscribe", "publish",
 ]

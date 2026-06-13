@@ -1,7 +1,7 @@
-from .hei_auth_tool import HeiAuthTool
-from .hei_client_auth_tool import HeiClientAuthTool
+from .business_auth_tool import BusinessAuthTool
+from .consumer_auth_tool import ConsumerAuthTool
 
 __all__ = [
-    "HeiAuthTool",
-    "HeiClientAuthTool",
+    "BusinessAuthTool",
+    "ConsumerAuthTool",
 ]

@@ -1,10 +1,9 @@
 import asyncio
 import bcrypt
-from typing import Optional
 from fastapi import Request
-from sdk.auth import HeiAuthTool
+from plugins.plugin_sys.shared import USER_STATUS_ACTIVE, USER_STATUS_INACTIVE, USER_STATUS_LOCKED
+from sdk.auth import Business
 from sdk.web.exception import BusinessException
-from sdk.enums import UserStatusEnum
 from sdk.utils import decrypt
 from sdk.utils.user_agent_utils import get_browser
 from sdk.captcha import b_captcha
@@ -35,13 +34,13 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
             logger.warning(f"User not found: {param.username}")
             raise BusinessException("用户名或密码错误")
 
-        if user_info.status == UserStatusEnum.LOCKED.value:
+        if user_info.status == USER_STATUS_LOCKED:
             logger.warning(f"User account is locked: {param.username}")
             raise BusinessException("账号已被锁定")
-        if user_info.status == UserStatusEnum.INACTIVE.value:
+        if user_info.status == USER_STATUS_INACTIVE:
             logger.warning(f"User account is inactive: {param.username}")
             raise BusinessException("账号已停用")
-        if user_info.status != UserStatusEnum.ACTIVE.value:
+        if user_info.status != USER_STATUS_ACTIVE:
             logger.warning(f"User account status abnormal: {param.username}, status={user_info.status}")
             raise BusinessException("账号状态异常")
 
@@ -66,7 +65,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         extra["device_type"] = get_browser(user_agent)
         extra["device_id"] = param.device_id
 
-        token = await HeiAuthTool.login(user_info.id, request, extra)
+        token = await Business.login(request, user_info.id, extra)
 
         try:
             _login_user_api.record_login(user_info.id, request)
@@ -111,12 +110,12 @@ async def do_register(param: UsernameRegisterParam, request: Request = None) -> 
 async def do_logout(request: Request) -> UsernameLogoutResult:
     # 获取当前用户用于日志记录
     try:
-        user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
+        user_id = await Business.get_login_id(request)
         if user_id:
             op_user = _login_user_api.get_username_by_id(user_id)
             record_auth_log(request, "登出", "LOGOUT", op_user=op_user)
     except Exception as e:
         logger.warning(f"Failed to record logout log: {e}")
 
-    await HeiAuthTool.logout(request=request)
+    await Business.logout(request=request)
     return UsernameLogoutResult(message="登出成功")

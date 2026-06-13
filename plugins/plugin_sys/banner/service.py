@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
 from sdk.web.exception import BusinessException
-from sdk.web.result import PageDataField, page_data
+from sdk.web.result import page_data
 from sdk.utils import generate_id
 import logging
 
@@ -31,7 +31,7 @@ class BannerService:
     def page(self, param: BannerPageParam) -> dict:
         result = self.repository.find_page(param)
         records = [SysBannerToBannerVO(r) for r in result.get("records", [])]
-        return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
+        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
 
     def detail(self, id: str) -> Optional[BannerVO]:
         if not id:

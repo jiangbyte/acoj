@@ -4,11 +4,12 @@ Mirrors hei-gin plugins/plugin-client/user/api/v1/api.go
 """
 
 from fastapi import APIRouter, Depends, Query, Request
+from sdk.auth.enums import RealmID
 from sdk.web.result import Result, PageData, success
 from sdk.shared.di import ActorContext, get_current_client_actor
 from sdk.shared.types import IdsParam
 from sdk.kernel.plugin import Perm
-from sdk.auth.decorator import HeiClientCheckLogin, NoRepeat
+from sdk.auth.decorator import CheckLogin, NoRepeat
 from sdk.log import SysLog
 from ...params import (
     ClientUserVO, ClientUserPageParam,
@@ -71,7 +72,7 @@ async def detail(id: str = Query(...), service: ClientUserService = Depends(get_
 # ── Self-service routes (C端) ──
 
 @router.get("/api/v1/c/client-user/current", summary="获取当前C端用户信息")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def get_current_user(
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
@@ -83,7 +84,7 @@ async def get_current_user(
 @router.post("/api/v1/c/client-user/update-profile", summary="更新当前C端用户个人信息",
              response_model=Result)
 @SysLog("C端用户更新个人信息")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 @NoRepeat(interval=3000)
 async def update_profile(
     param: UpdateProfileParam,
@@ -97,7 +98,7 @@ async def update_profile(
 @router.post("/api/v1/c/client-user/update-avatar", summary="更新当前C端用户头像（base64）",
              response_model=Result)
 @SysLog("C端用户更新头像")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def update_avatar(
     param: UpdateAvatarParam,
     service: ClientUserService = Depends(get_client_user_service),
@@ -110,7 +111,7 @@ async def update_avatar(
 @router.post("/api/v1/c/client-user/update-password", summary="修改当前C端用户密码",
              response_model=Result)
 @SysLog("C端用户修改密码")
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 @NoRepeat(interval=3000)
 async def update_password(
     param: UpdatePasswordParam,

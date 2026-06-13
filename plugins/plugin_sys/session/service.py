@@ -5,7 +5,7 @@ from fastapi import Depends
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from sdk.auth import HeiAuthTool, HeiClientAuthTool
+from sdk.auth import Business, Consumer
 from sdk.infra.db import get_db
 from sdk.utils.ip_utils import get_city_info
 
@@ -61,8 +61,8 @@ class SessionService:
         return user_ids
 
     async def analysis(self) -> SessionAnalysisResult:
-        business_stats = await HeiAuthTool.get_session_stats()
-        consumer_stats = await HeiClientAuthTool.get_session_stats()
+        business_stats = await Business.sessions().stats()
+        consumer_stats = await Consumer.sessions().stats()
         return SessionAnalysisResult(
             total_count=business_stats["total_count"] + consumer_stats["total_count"],
             max_token_count=max(business_stats["max_token_count"], consumer_stats["max_token_count"]),
@@ -75,9 +75,9 @@ class SessionService:
         size = max(1, param.size)
         candidate_user_ids = await self._search_sys_user_ids(param.keyword)
         if candidate_user_ids is None:
-            infos, total = await HeiAuthTool.list_session_infos(current=current, size=size)
+            infos, total = await Business.sessions().page(current=current, size=size)
         else:
-            infos, total = await HeiAuthTool.list_session_infos_by_user_ids(candidate_user_ids, current=current, size=size)
+            infos, total = await Business.sessions().page_by_user_ids(candidate_user_ids, current=current, size=size)
         user_ids = [info["user_id"] for info in infos]
         user_map = {}
         if user_ids:
@@ -115,25 +115,25 @@ class SessionService:
         return {"records": records, "total": total}
 
     async def token_list(self, user_id: str) -> list[SessionTokenResult]:
-        token_infos = await HeiAuthTool.get_session_tokens(user_id)
+        token_infos = await Business.sessions().tokens(user_id)
         return [
             SessionTokenInfoToSessionTokenResult(token_info, _format_timeout(token_info.get("timeout_seconds", 0)))
             for token_info in token_infos
         ]
 
     async def exit_session(self, user_id: str) -> None:
-        await HeiAuthTool.kickout(user_id)
+        await Business.sessions().kickout_user(user_id)
 
     async def exit_token(self, user_id: str, token: str) -> None:
-        await HeiAuthTool.kickout_token(user_id, token)
+        await Business.sessions().kickout_token(user_id, token)
 
     async def chart_data(self) -> SessionChartData:
-        business_stats = await HeiAuthTool.get_session_stats()
-        consumer_stats = await HeiClientAuthTool.get_session_stats()
+        business_stats = await Business.sessions().stats()
+        consumer_stats = await Consumer.sessions().stats()
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         days = [(today - timedelta(days=index)).strftime("%Y-%m-%d") for index in range(6, -1, -1)]
-        business_daily_map = await HeiAuthTool.get_session_daily_counts(days)
-        consumer_daily_map = await HeiClientAuthTool.get_session_daily_counts(days)
+        business_daily_map = await Business.sessions().trend(days)
+        consumer_daily_map = await Consumer.sessions().trend(days)
         business_daily = [business_daily_map.get(day, 0) for day in days]
         consumer_daily = [consumer_daily_map.get(day, 0) for day in days]
         return SessionChartData(

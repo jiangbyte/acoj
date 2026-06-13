@@ -6,6 +6,8 @@ from typing import Any, Optional
 
 from fastapi import Request
 
+from sdk.auth.enums import RealmID
+from sdk.auth.realm import infer_realm_id_from_path, realm_from_id
 from sdk.utils import get_client_ip, get_city_info, generate_id
 from sdk.utils.trace_utils import get_trace_id
 from .persistence import LogEntry, get_op_user_resolver, save_log
@@ -27,8 +29,8 @@ def _get_request(*args, **kwargs) -> Optional[Request]:
 async def _get_op_user(request: Request) -> Optional[str]:
     """Get the current operator's username from the active user."""
     try:
-        from sdk.auth import HeiAuthTool
-        user_id = await HeiAuthTool.getLoginIdDefaultNull(request)
+        realm_id = infer_realm_id_from_path(request.url.path) or RealmID.BUSINESS
+        user_id = await realm_from_id(realm_id).get_login_id(request)
         if not user_id:
             return None
 
@@ -48,7 +50,7 @@ def sys_log(name: str = "未命名"):
     Usage:
         @router.get("/api/v1/sys/xxx")
         @SysLog("日志名称")
-        @HeiCheckPermission("sys:xxx:page")
+        @CheckPermission("sys:xxx:page")
         async def handler(request: Request, ...):
             ...
     """

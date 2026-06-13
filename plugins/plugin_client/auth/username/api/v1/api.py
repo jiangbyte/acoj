@@ -1,8 +1,9 @@
 """Client auth username API — mirrors hei-gin plugin-client/auth/username/api/v1/api.go."""
 
 from fastapi import APIRouter, Request
+from sdk.auth.enums import RealmID
 from sdk.web.result import Result, success
-from sdk.auth.decorator import HeiClientCheckLogin
+from sdk.auth.decorator import CheckLogin
 from sdk.log import SysLog
 from sdk.auth.decorator import NoRepeat
 from ...logic import do_login, do_register, do_logout
@@ -42,7 +43,7 @@ async def register(request: Request, param: UsernameRegisterParam):
     summary="C端用户登出",
     response_model=Result[UsernameLogoutResult],
 )
-@HeiClientCheckLogin
+@CheckLogin(realm_id=RealmID.CONSUMER)
 async def logout(request: Request):
     result = await do_logout(request)
     return success(result.model_dump())

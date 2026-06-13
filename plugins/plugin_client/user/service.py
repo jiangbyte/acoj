@@ -8,13 +8,13 @@ from fastapi import Depends, Request
 from sqlalchemy import update as sa_update
 from sqlalchemy.orm import Session
 
-from sdk.auth import HeiClientAuthTool
+from sdk.auth import Consumer
 from sdk.infra.db import get_db
 from sdk.shared.contracts import LoginUserInfo
 from sdk.shared.di import ActorContext, get_current_client_actor
 from sdk.utils import compress_base64_image, decrypt, generate_id
 from sdk.web.exception import BusinessException
-from sdk.web.result import PageDataField, page_data
+from sdk.web.result import page_data
 
 from .models import ClientUser
 from .params import (
@@ -54,7 +54,7 @@ class ClientUserService:
     def page(self, param: ClientUserPageParam) -> dict:
         result = self.repository.find_page_by_filters(param)
         records = [ClientUserToClientUserVO(row) for row in result.get("records", [])]
-        return page_data(records=records, total=result[PageDataField.TOTAL], page=param.current, size=param.size)
+        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
 
     def detail(self, id: str) -> Optional[dict]:
         if not id:
@@ -192,7 +192,7 @@ class LoginUserApiProvider:
         self._session_factory = session_factory
 
     async def get_current_login_user_info(self, request) -> Optional[LoginUserInfo]:
-        user_id = await HeiClientAuthTool.getLoginIdAsString(request)
+        user_id = await Consumer.get_login_id(request)
         if not user_id:
             return None
         return self.get_login_user_info_by_id(user_id)

@@ -4,9 +4,6 @@ from .repository import ModuleRepository, ResourceRepository
 from .service import ModuleService, ResourceService, get_module_service, get_resource_service
 from .api import v1_router as router
 
-from sdk.kernel.registry import register_router
-register_router(router)
-
 __all__ = [
     "SysModule", "SysResource",
     "ModuleVO", "ResourceVO", "ModulePageParam", "ResourcePageParam",

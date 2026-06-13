@@ -1,14 +1,9 @@
-from .models import Message, Conversation, ConversationUnread
+from plugins.plugin_im.model.message import Conversation, ConversationUnread, Message
 from ..model.im_file import ImFile
 from .params import *
 from .repository import MessageRepository
 from .service import MessageService, get_message_service
 from .api.v1.api import router, client_router
-
-from sdk.kernel.registry import register_router
-
-register_router(router)
-register_router(client_router)
 
 __all__ = [
     "Message", "Conversation", "ConversationUnread", "ImFile",

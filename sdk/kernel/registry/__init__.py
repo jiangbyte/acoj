@@ -4,12 +4,15 @@ from .registry import (
     Perm,
     execute_middlewares,
     execute_routes,
+    freeze,
     get_registered_models,
     get_registered_perm_entries,
     register_middleware,
     register_model,
     register_route,
     register_router,
+    reset_for_test,
+    snapshot_state,
 )
 
 __all__ = [
@@ -21,6 +24,9 @@ __all__ = [
     "execute_routes",
     "register_middleware",
     "execute_middlewares",
+    "freeze",
+    "snapshot_state",
+    "reset_for_test",
     "Perm",
     "ClientPerm",
     "get_registered_perm_entries",

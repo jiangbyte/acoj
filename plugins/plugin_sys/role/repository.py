@@ -3,10 +3,10 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from sqlalchemy import select, func, delete as sa_delete
 from sqlalchemy.orm import Session
+from plugins.plugin_sys.shared import SUPER_ADMIN_CODE
 from .models import SysRole, RelRolePermission, RelRoleResource
 from .params import PermissionItem, RolePageParam
 from sdk.utils import generate_id
-from sdk.constants import SUPER_ADMIN_CODE
 
 
 class RoleRepository:
