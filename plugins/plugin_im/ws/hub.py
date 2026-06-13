@@ -27,8 +27,10 @@ class Hub:
 
     def __init__(self) -> None:
         self._clients: dict[int, Client] = {}  # id(client) -> Client
+        self._user_clients: dict[tuple[str, str], set[int]] = {}
         self._ip_count: dict[str, int] = {}
         self._lock = asyncio.Lock()
+        self._running = True
 
         # Lifecycle hooks (set by CrossHub)
         self.on_client_registered: Optional[Callable[[Client], None]] = None
@@ -59,6 +61,7 @@ class Hub:
 
             cid = id(client)
             self._clients[cid] = client
+            self._user_clients.setdefault((client.user_type, client.user_id), set()).add(cid)
             if ip:
                 self._ip_count[ip] = self._ip_count.get(ip, 0) + 1
 
@@ -80,6 +83,12 @@ class Hub:
             if cid not in self._clients:
                 return
             del self._clients[cid]
+            user_key = (client.user_type, client.user_id)
+            client_ids = self._user_clients.get(user_key)
+            if client_ids is not None:
+                client_ids.discard(cid)
+                if not client_ids:
+                    del self._user_clients[user_key]
             ip = client.ip
             if ip:
                 self._ip_count[ip] = self._ip_count.get(ip, 0) - 1
@@ -102,55 +111,49 @@ class Hub:
         return len(self._clients)
 
     def is_user_connected(self, user_id: str, user_type: str) -> bool:
-        return any(
-            c.user_id == user_id and c.user_type == user_type
-            for c in self._clients.values()
-        )
+        return bool(self._user_clients.get((user_type, user_id)))
 
     # ── Send helpers ─────────────────────────────────────────────────
 
     async def send_to_user(self, user_id: str, msg: Message) -> None:
-        for c in self._clients.values():
-            if c.user_type == "BUSINESS" and c.user_id == user_id:
-                await c.send_json(msg)
+        await self._send_many(self._clients_for_user("BUSINESS", user_id), msg)
 
     async def send_to_users(self, user_ids: list[str], msg: Message) -> None:
         user_set = set(user_ids)
-        for c in self._clients.values():
-            if c.user_type == "BUSINESS" and c.user_id in user_set:
-                await c.send_json(msg)
+        await self._send_many([c for c in self._clients.values() if c.user_type == "BUSINESS" and c.user_id in user_set], msg)
 
     async def send_to_consumer(self, user_id: str, msg: Message) -> None:
-        for c in self._clients.values():
-            if c.user_type == "CONSUMER" and c.user_id == user_id:
-                await c.send_json(msg)
+        await self._send_many(self._clients_for_user("CONSUMER", user_id), msg)
 
     async def send_to_consumers(self, user_ids: list[str], msg: Message) -> None:
         user_set = set(user_ids)
-        for c in self._clients.values():
-            if c.user_type == "CONSUMER" and c.user_id in user_set:
-                await c.send_json(msg)
+        await self._send_many([c for c in self._clients.values() if c.user_type == "CONSUMER" and c.user_id in user_set], msg)
 
     async def broadcast_all(self, msg: Message) -> None:
-        for c in self._clients.values():
-            await c.send_json(msg)
+        await self._send_many(list(self._clients.values()), msg)
 
     async def broadcast_business(self, msg: Message) -> None:
-        for c in self._clients.values():
-            if c.user_type == "BUSINESS":
-                await c.send_json(msg)
+        await self._send_many([c for c in self._clients.values() if c.user_type == "BUSINESS"], msg)
 
     async def broadcast_consumers(self, msg: Message) -> None:
-        for c in self._clients.values():
-            if c.user_type == "CONSUMER":
-                await c.send_json(msg)
+        await self._send_many([c for c in self._clients.values() if c.user_type == "CONSUMER"], msg)
+
+    async def _send_many(self, clients: list[Client], msg: Message) -> None:
+        if not clients:
+            return
+        await asyncio.gather(*(client.send_json(msg) for client in clients), return_exceptions=True)
+
+    def _clients_for_user(self, user_type: str, user_id: str) -> list[Client]:
+        client_ids = self._user_clients.get((user_type, user_id), set())
+        return [client for cid in client_ids if (client := self._clients.get(cid)) is not None]
 
     # ── Online count broadcast ───────────────────────────────────────
 
     async def start_online_broadcast(self) -> None:
         """Periodically broadcast the online count to all clients."""
         interval = max(ws_cfg.online_broadcast_interval, 10)
-        while True:
+        self._running = True
+        while self._running:
             await asyncio.sleep(interval)
             try:
                 count = self.online_count()
@@ -159,7 +162,13 @@ class Hub:
                     payload=OnlineCountPayload(count=count).__dict__,
                 ))
             except Exception:
-                logger.exception("Online broadcast failed")
+                if self._running:
+                    logger.exception("Online broadcast failed")
+
+    async def close(self) -> None:
+        self._running = False
+        clients = list(self._clients.values())
+        await asyncio.gather(*(self.unregister(client) for client in clients), return_exceptions=True)
 
     # ── WebSocket handler ────────────────────────────────────────────
 

@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.get("/api/v1/sys/home", summary="获取首页数据", response_model=Result)
 @CheckLogin
-async def get_home(
+def get_home(
     service: HomeService = Depends(get_home_service),
     actor: ActorContext = Depends(get_current_actor),
 ):
@@ -24,7 +24,7 @@ async def get_home(
 @router.post("/api/v1/sys/home/quick-actions/add", summary="添加快捷方式", response_model=Result)
 @CheckLogin
 @SysLog("添加快捷方式")
-async def add_quick_action(
+def add_quick_action(
     param: AddQuickActionParam,
     service: HomeService = Depends(get_home_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -36,7 +36,7 @@ async def add_quick_action(
 @router.post("/api/v1/sys/home/quick-actions/remove", summary="移除快捷方式", response_model=Result)
 @CheckLogin
 @SysLog("移除快捷方式")
-async def remove_quick_action(
+def remove_quick_action(
     param: RemoveQuickActionParam,
     service: HomeService = Depends(get_home_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -48,7 +48,7 @@ async def remove_quick_action(
 @router.post("/api/v1/sys/home/quick-actions/sort", summary="排序快捷方式", response_model=Result)
 @CheckLogin
 @SysLog("排序快捷方式")
-async def sort_quick_actions(
+def sort_quick_actions(
     param: SortQuickActionParam,
     service: HomeService = Depends(get_home_service),
     actor: ActorContext = Depends(get_current_actor),

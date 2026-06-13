@@ -26,6 +26,18 @@ def failure(message: str = "请求参数格式错误", code: int = 400, data: Op
     }
 
 
+def http_status(code: int) -> int:
+    if code >= 600 or code <= 0:
+        return 200
+    if code >= 500:
+        return 500
+    if code >= 429:
+        return 429
+    if code >= 400:
+        return code
+    return 200
+
+
 class Result(BaseModel, Generic[T]):
     code: int = Field(default=200, description="状态码")
     message: str = Field(default="请求成功", description="消息")

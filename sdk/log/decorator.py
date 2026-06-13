@@ -1,4 +1,5 @@
 import functools
+import inspect
 import json
 import logging
 from datetime import datetime
@@ -65,7 +66,9 @@ def sys_log(name: str = "未命名"):
             params_json = extract_params_json(request, kwargs)
 
             try:
-                result = await func(*args, **kwargs)
+                result = func(*args, **kwargs)
+                if inspect.isawaitable(result):
+                    result = await result
                 await _save_log(
                     request=request,
                     func=func,

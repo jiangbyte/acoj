@@ -36,6 +36,7 @@ dependencies = [
     "user-agents>=2.2.0",
     "openpyxl>=3.1.5",
     "snowflake-id>=0.0.2",
+    "prometheus-client>=0.23.0",
 ]
 
 [project.optional-dependencies]
@@ -55,7 +56,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["config*", "core*", "modules*", "plugins*", "cli*"]
+include = ["sdk*", "plugins*", "cli*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
 
 [tool.black]
 line-length = 120

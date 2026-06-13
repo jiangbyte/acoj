@@ -12,7 +12,7 @@ router = APIRouter()
 
 @router.get("/api/v1/sys/notice/page", summary="获取通知分页")
 @CheckPermission("sys:notice:page")
-async def page(request: Request, param: NoticePageParam = Depends(), service: NoticeService = Depends(get_notice_service)):
+def page(request: Request, param: NoticePageParam = Depends(), service: NoticeService = Depends(get_notice_service)):
     return success(service.page(param))
 
 
@@ -20,7 +20,7 @@ async def page(request: Request, param: NoticePageParam = Depends(), service: No
 @SysLog("添加通知")
 @CheckPermission("sys:notice:create")
 @NoRepeat(interval=3000)
-async def create(
+def create(
     request: Request,
     vo: NoticeVO,
     actor: ActorContext = Depends(get_current_actor),
@@ -33,7 +33,7 @@ async def create(
 @router.post("/api/v1/sys/notice/modify", summary="编辑通知")
 @SysLog("编辑通知")
 @CheckPermission("sys:notice:modify")
-async def modify(
+def modify(
     request: Request,
     vo: NoticeVO,
     actor: ActorContext = Depends(get_current_actor),
@@ -46,29 +46,29 @@ async def modify(
 @router.post("/api/v1/sys/notice/remove", summary="删除通知")
 @SysLog("删除通知")
 @CheckPermission("sys:notice:remove")
-async def remove(request: Request, param: IdsParam, service: NoticeService = Depends(get_notice_service)):
+def remove(request: Request, param: IdsParam, service: NoticeService = Depends(get_notice_service)):
     service.remove(param.ids)
     return success()
 
 
 @router.get("/api/v1/sys/notice/detail", summary="获取通知详情")
 @CheckPermission("sys:notice:detail")
-async def detail(request: Request, id: str = Query(...), service: NoticeService = Depends(get_notice_service)):
+def detail(request: Request, id: str = Query(...), service: NoticeService = Depends(get_notice_service)):
     data = service.detail(id)
     return success(data if data else None)
 
 
 @router.get("/api/v1/public/c/notice/latest", summary="公开-最新通知列表")
-async def public_latest(request: Request, param: NoticeLatestParam = Depends(), service: NoticeService = Depends(get_notice_service)):
+def public_latest(request: Request, param: NoticeLatestParam = Depends(), service: NoticeService = Depends(get_notice_service)):
     return success(service.latest(param))
 
 
 @router.get("/api/v1/public/c/notice/page", summary="公开-通知分页")
-async def public_page(request: Request, param: NoticePageParam = Depends(), service: NoticeService = Depends(get_notice_service)):
+def public_page(request: Request, param: NoticePageParam = Depends(), service: NoticeService = Depends(get_notice_service)):
     return success(service.public_page(param))
 
 
 @router.get("/api/v1/public/c/notice/detail", summary="公开-通知详情")
-async def public_detail(request: Request, id: str = Query(...), service: NoticeService = Depends(get_notice_service)):
+def public_detail(request: Request, id: str = Query(...), service: NoticeService = Depends(get_notice_service)):
     data = service.public_detail(id)
     return success(data if data else None)

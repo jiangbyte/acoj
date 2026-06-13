@@ -50,7 +50,6 @@ class DbLogPersister:
                 sign_data=entry.sign_data,
             )
             LogService(db).repository.insert(model)
-            db.commit()
         except Exception:
             logger.exception("[LogPersister] Failed to save log")
             db.rollback()

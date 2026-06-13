@@ -9,12 +9,15 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, Depends, WebSocket
 
 from sdk.auth import Business, Consumer
+from sdk.web.result import failure
 from sdk.kernel.plugin import HeiPlugin, PluginInfo
 from plugins.plugin_im.ws import GlobalHub, CrossHub
 from plugins.plugin_im.migrate import register_all_models
+from plugins.plugin_im.message.service import MessageService, get_message_service
+from plugins.plugin_sys.file.service import FileService, get_file_service
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +25,24 @@ logger = logging.getLogger(__name__)
 # ── WebSocket routes ───────────────────────────────────────────────────
 
 ws_router = APIRouter()
+
+
+@ws_router.get("/uploads/{bucket}/{file_key}")
+async def upload_handler(
+    bucket: str,
+    file_key: str,
+    file_service: FileService = Depends(get_file_service),
+    message_service: MessageService = Depends(get_message_service),
+):
+    try:
+        return file_service.download_by_key(bucket, file_key)
+    except Exception as exc:
+        if str(exc) == "未授权/未登录":
+            return failure(str(exc), 401)
+    try:
+        return message_service.serve_uploaded_file(bucket, file_key)
+    except Exception as exc:
+        return failure(str(exc), 404)
 
 
 @ws_router.websocket("/api/v1/sys/im/ws")
@@ -78,17 +99,16 @@ class IMPlugin(HeiPlugin):
 
     async def on_start(self):
         """Start background tasks."""
-        # Start online count broadcast
-        asyncio.ensure_future(GlobalHub.start_online_broadcast())
-
-        # Start CrossHub background tasks if Redis is available
         import plugins.plugin_im.ws as ws_mod
         ch = ws_mod.GlobalCrossHub
-        if ch and ch._rdb:
-            asyncio.ensure_future(ch.start_poll_loop())
-            asyncio.ensure_future(ch.start_heartbeat())
-            asyncio.ensure_future(ch.start_stale_cleanup())
-            asyncio.ensure_future(ch.start_msg_list_cleanup())
+        if ch:
+            ch.refresh_redis()
+            ch.create_task(GlobalHub.start_online_broadcast())
+            if ch._rdb:
+                ch.create_task(ch.start_poll_loop())
+                ch.create_task(ch.start_heartbeat())
+                ch.create_task(ch.start_stale_cleanup())
+                ch.create_task(ch.start_msg_list_cleanup())
 
         logger.info("[IMPlugin] Background tasks started")
 

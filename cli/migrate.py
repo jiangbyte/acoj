@@ -6,9 +6,8 @@ Mirrors hei-gin's model + seed registration flow.
 Usage::
 
     python -m cli.migrate                  # dry-run
-    python -m cli.migrate --apply          # create missing tables
-    python -m cli.migrate --seed           # run seeds only
-    python -m cli.migrate --apply --seed   # migrate then seed
+    python -m cli.migrate --apply          # create missing tables and run seeds
+    python -m cli.migrate --apply --skip-seed
 """
 
 from __future__ import annotations
@@ -18,7 +17,7 @@ import logging
 
 from sqlalchemy import inspect
 
-from sdk.infra.db import engine, get_models, run_seeds
+from sdk.infra.db import engine, freeze, get_models, run_seeds
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger("migrate")
@@ -66,14 +65,15 @@ def run_migration(*, dry_run: bool) -> list[str]:
 def main() -> None:
     parser = argparse.ArgumentParser(description="hei-fastapi database migration tool")
     parser.add_argument("--apply", action="store_true", help="Apply pending migrations")
-    parser.add_argument("--seed", action="store_true", help="Run registered seed data")
+    parser.add_argument("--skip-seed", action="store_true", help="Skip registered seed data")
     args = parser.parse_args()
 
     ensure_plugins_loaded()
+    freeze()
 
     run_migration(dry_run=not args.apply)
 
-    if args.seed:
+    if args.apply and not args.skip_seed:
         run_seeds()
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import inspect
 from functools import wraps
 from typing import Any
 
@@ -59,6 +60,13 @@ def wrap_guard(target, handler):
         return await handler(target, *args, **kwargs)
 
     return wrapper
+
+
+async def call_maybe_awaitable(fn, *args, **kwargs):
+    result = fn(*args, **kwargs)
+    if inspect.isawaitable(result):
+        return await result
+    return result
 
 
 def join_values(values: list[str]) -> str:

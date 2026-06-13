@@ -11,13 +11,14 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
+import re
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger("codegen")
 
 PLUGINS_DIR = Path(__file__).resolve().parent.parent / "plugins"
+PLUGIN_NAME_RE = re.compile(r"^plugin_[a-z][a-z0-9_]*$")
 
 
 PLUGIN_SCAFFOLD = {
@@ -26,9 +27,9 @@ PLUGIN_SCAFFOLD = {
 {name} plugin.
 \"\"\"
 
-from . import plugin as _plugin
+from .assembly import register
 
-__all__ = []
+__all__ = ["register"]
 
 """,
     "plugin.py": """
@@ -37,11 +38,10 @@ __all__ = []
 \"\"\"
 
 import logging
-from sdk.kernel.plugin import HeiPlugin, PluginInfo, register_router
-from .api.v1 import api as v1_router
+from sdk.kernel.plugin import HeiPlugin, PluginInfo
+from .migrate import register_all_models
 
 logger = logging.getLogger(__name__)
-register_router(v1_router)
 
 
 class {PluginCls}(HeiPlugin):
@@ -50,7 +50,8 @@ class {PluginCls}(HeiPlugin):
         return PluginInfo(name="{name}", version="1.0.0", description="{name} plugin")
 
     def on_init(self):
-        logger.info("[{PluginCls}] Initialised")
+        register_all_models()
+        logger.info("[{PluginCls}] Models registered")
 
     async def on_start(self):
         logger.info("[{PluginCls}] Started")
@@ -59,19 +60,64 @@ class {PluginCls}(HeiPlugin):
         logger.info("[{PluginCls}] Stopped")
 
 """,
+    "assembly.py": """
+from __future__ import annotations
+
+from sdk.kernel.plugin.loader import register_plugin_class
+from sdk.kernel.registry import register_router
+
+from .api.v1.api import router
+from .plugin import {PluginCls}
+
+
+_registered = False
+
+
+def register() -> None:
+    global _registered
+    if _registered:
+        return
+
+    register_plugin_class({PluginCls})
+    register_router(router)
+    _registered = True
+
+""",
+    "migrate.py": """
+\"\"\"
+Centralized migration registration for {name}.
+\"\"\"
+
+from __future__ import annotations
+
+from sdk.infra.db import register_model
+
+from .models import SampleModel
+
+
+def register_all_models() -> None:
+    register_model(SampleModel)
+
+
+__all__ = ["register_all_models"]
+
+""",
     "models.py": """
 \"\"\"
 {PluginCls} — ORM models.
 \"\"\"
 
 from sdk.kernel.registry import HeiBase
-from sqlalchemy import String
+from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
 
 
 class SampleModel(HeiBase):
     __tablename__ = "{table_name}"
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    name: Mapped[str] = mapped_column(String(128), default="")
+    created_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 """,
     "params.py": """
@@ -93,11 +139,28 @@ class SampleVO(BaseModel):
 {PluginCls} — business logic.
 \"\"\"
 
-import logging
-from typing import Optional, List
+from typing import Optional
+
+from fastapi import Depends
 from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
+from sdk.infra.db import get_db
+
+from .repository import SampleRepository
+
+
+class SampleService:
+    def __init__(self, repository: SampleRepository):
+        self.repository = repository
+
+    @classmethod
+    def from_db(cls, db: Session) -> "SampleService":
+        return cls(SampleRepository(db))
+
+
+def get_sample_service(db: Session = Depends(get_db)) -> SampleService:
+    return SampleService.from_db(db)
+
 
 """,
     "repository.py": """
@@ -105,9 +168,20 @@ logger = logging.getLogger(__name__)
 {PluginCls} — repository layer.
 \"\"\"
 
-from typing import Optional, List
+from typing import Optional
+
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
+from sqlalchemy import select
+
+from .models import SampleModel
+
+
+class SampleRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def find_by_id(self, id: str) -> Optional[SampleModel]:
+        return self.db.execute(select(SampleModel).where(SampleModel.id == id)).scalar_one_or_none()
 
 """,
 }
@@ -134,6 +208,10 @@ def cmd_list():
 
 def cmd_scaffold(name: str):
     """Create a new plugin scaffold directory."""
+    if not PLUGIN_NAME_RE.match(name):
+        logger.error("Invalid plugin name \"%s\". Expected pattern: plugin_xxx using lowercase letters, digits, underscores.", name)
+        return
+
     target = PLUGINS_DIR / name
     if target.exists():
         logger.error("Plugin \"%s\" already exists at %s", name, target)
@@ -157,19 +235,23 @@ def cmd_scaffold(name: str):
         encoding="utf-8",
     )
     (target / "api" / "v1" / "api.py").write_text(
-        '"""\n{name} API routes.\n"""\n\nfrom fastapi import APIRouter\n\nrouter = APIRouter()\n'.format(**context),
+        '"""\n{name} API routes.\n"""\n\nfrom fastapi import APIRouter, Depends, Query\n\n'
+        'from sdk.web.result import Result, success\n'
+        'from ...service import SampleService, get_sample_service\n\n'
+        'router = APIRouter()\n\n\n'
+        '@router.get("/api/v1/{route_name}/sample/detail", summary="Sample detail", response_model=Result)\n'
+        'def detail(id: str = Query(...), service: SampleService = Depends(get_sample_service)):\n'
+        '    entity = service.repository.find_by_id(id)\n'
+        '    if entity is None:\n'
+        '        return success(None)\n'
+        '    return success({{"id": entity.id, "name": entity.name}})\n'.format(**context, route_name=table_name),
         encoding="utf-8",
     )
-
-    # Register in plugins/__init__.py
-    plugin_init = PLUGINS_DIR / "__init__.py"
-    existing = plugin_init.read_text(encoding="utf-8").rstrip()
-    if f"import plugins.{name}" not in existing:
-        plugin_init.write_text(existing + f"\nimport plugins.{name}\n", encoding="utf-8")
 
     logger.info("Created plugin scaffold: %s", name)
     for p in sorted(target.rglob("*.py")):
         logger.info("  %s", p.relative_to(PLUGINS_DIR))
+    logger.info("It will be auto-discovered on next app startup; no framework code changes required.")
 
 
 def main():

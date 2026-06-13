@@ -18,8 +18,9 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
 from sdk.web.exception import BusinessException
-from sdk.web.result import failure
+from sdk.web.result import failure, http_status
 from sdk.log import save_exception_log
+from sdk.observability import inc_http_panic
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ def setup_exception_handlers(app: FastAPI):
         if not getattr(request.state, '_exception_logged', False):
             await save_exception_log(request, exc, name=exc.message)
         return JSONResponse(
-            status_code=200,
+            status_code=http_status(exc.code),
             content=failure(message=exc.message, code=exc.code),
         )
 
@@ -63,19 +64,20 @@ def setup_exception_handlers(app: FastAPI):
             await save_exception_log(request, exc, name="请求参数校验失败")
         message = errors[0].get("msg", "请求参数格式错误") if errors else "请求参数格式错误"
         return JSONResponse(
-            status_code=200,
+            status_code=http_status(400),
             content=failure(message=message, code=400),
         )
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
+        inc_http_panic()
         logger.error("Global exception: %s\n%s", exc, "".join(
             traceback.format_exception(type(exc), exc, exc.__traceback__)
         ))
         if not getattr(request.state, '_exception_logged', False):
             await save_exception_log(request, exc)
         return JSONResponse(
-            status_code=200,
+            status_code=http_status(500),
             content=failure(message="服务器内部错误", code=500),
         )
 

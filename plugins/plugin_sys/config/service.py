@@ -15,6 +15,7 @@ from .models import SysConfig
 from .params import ConfigVO, ConfigPageParam, ConfigListParam, ConfigCategoryEditParam, SysConfigToConfigVO
 from .repository import ConfigRepository
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +45,12 @@ async def get_value_by_key(key: str) -> Optional[str]:
 def _del_cached_key(key: Optional[str]) -> None:
     if not key:
         return
-    import asyncio
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.ensure_future(_async_del_cached_key(key))
-        else:
-            loop.run_until_complete(_async_del_cached_key(key))
-    except Exception:
-        pass
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        asyncio.run(_async_del_cached_key(key))
+        return
+    loop.create_task(_async_del_cached_key(key))
 
 
 async def _async_del_cached_key(key: str) -> None:

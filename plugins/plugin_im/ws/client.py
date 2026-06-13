@@ -39,8 +39,12 @@ class Client:
         if self._closed:
             return
         try:
-            await self.websocket.send_json(msg.to_dict())
+            await asyncio.wait_for(self.websocket.send_json(msg.to_dict()), timeout=ws_cfg.write_timeout)
+        except TimeoutError:
+            self._closed = True
+            logger.warning("WebSocket send timeout for client %s/%s", self.user_type, self.user_id)
         except Exception:
+            self._closed = True
             logger.debug("Failed to send to client %s/%s", self.user_type, self.user_id)
 
     async def send_pong(self, online_count: int) -> None:

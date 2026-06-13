@@ -10,11 +10,12 @@ from sdk.kernel.plugin import HeiPlugin, PluginInfo
 from sdk.auth.provider import DatabasePermissionProvider, register_permission_provider
 from sdk.infra.db import SessionLocal
 from sdk.infra.db.redis import get_client as get_redis_client
-from sdk.log import set_log_persister, set_op_user_resolver
+from sdk.log import configure_async_log_persister, start_log_persister, stop_log_persister, set_op_user_resolver
 from plugins.plugin_sys.persistence import DbLogPersister
 from plugins.plugin_sys.migrate import register_all_models, register_all_seeds
 from plugins.plugin_sys.user import LoginUserApiProvider as BLoginUserApiProvider
 from plugins.plugin_sys.auth import init_auth as init_sys_auth
+from plugins.plugin_sys.file.service import cleanup_stale_chunk_uploads
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +42,17 @@ class SysPlugin(HeiPlugin):
         set_op_user_resolver(login_user_api.get_username_by_id)
 
         # Set up log persistence (mirrors hei-gin's LogPersistence assignment)
-        set_log_persister(DbLogPersister(SessionLocal))
+        configure_async_log_persister(DbLogPersister(SessionLocal))
 
         logger.info("[SysPlugin] Permission interface, auth providers, and log persister registered")
 
+    async def on_start(self):
+        await start_log_persister()
+        cleaned_chunks = cleanup_stale_chunk_uploads()
+        if cleaned_chunks:
+            logger.info("[SysPlugin] Cleaned stale chunk upload directories: %d", cleaned_chunks)
+        logger.info("[SysPlugin] Async log persister started")
+
     async def on_stop(self):
+        await stop_log_persister()
         logger.info("[SysPlugin] Stopped")

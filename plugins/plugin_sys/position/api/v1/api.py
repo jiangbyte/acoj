@@ -12,7 +12,7 @@ router = APIRouter()
 
 @router.get("/api/v1/sys/position/page", summary="获取岗位分页")
 @CheckPermission("sys:position:page")
-async def page(request: Request, param: PositionPageParam = Depends(), service: PositionService = Depends(get_position_service)):
+def page(request: Request, param: PositionPageParam = Depends(), service: PositionService = Depends(get_position_service)):
     return success(service.page(param))
 
 
@@ -20,7 +20,7 @@ async def page(request: Request, param: PositionPageParam = Depends(), service: 
 @SysLog("添加职位")
 @CheckPermission("sys:position:create")
 @NoRepeat(interval=3000)
-async def create(
+def create(
     request: Request,
     vo: PositionVO,
     actor: ActorContext = Depends(get_current_actor),
@@ -33,7 +33,7 @@ async def create(
 @router.post("/api/v1/sys/position/modify", summary="编辑岗位")
 @SysLog("编辑职位")
 @CheckPermission("sys:position:modify")
-async def modify(
+def modify(
     request: Request,
     vo: PositionVO,
     actor: ActorContext = Depends(get_current_actor),
@@ -46,13 +46,13 @@ async def modify(
 @router.post("/api/v1/sys/position/remove", summary="删除岗位")
 @SysLog("删除职位")
 @CheckPermission("sys:position:remove")
-async def remove(request: Request, param: IdsParam, service: PositionService = Depends(get_position_service)):
+def remove(request: Request, param: IdsParam, service: PositionService = Depends(get_position_service)):
     service.remove(param.ids)
     return success()
 
 
 @router.get("/api/v1/sys/position/detail", summary="获取岗位详情")
 @CheckPermission("sys:position:detail")
-async def detail(request: Request, id: str = Query(...), service: PositionService = Depends(get_position_service)):
+def detail(request: Request, id: str = Query(...), service: PositionService = Depends(get_position_service)):
     data = service.detail(id)
     return success(data if data else None)

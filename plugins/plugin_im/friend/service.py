@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime
 from typing import Optional
 
@@ -14,6 +13,7 @@ from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
 from plugins.plugin_im import ws as im_ws
 from plugins.plugin_im.ws import Message
+from plugins.plugin_im.ws.tasks import schedule as schedule_ws_task
 
 from plugins.plugin_im.model.friend import FriendBlock, FriendRequest, Friendship
 from .params import (
@@ -85,9 +85,9 @@ class FriendService:
         msg = Message(type="friend_request", payload=payload)
         if im_ws.GlobalCrossHub is not None:
             if param.receiver_type == "CONSUMER":
-                asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_consumer(param.receiver_id, msg))
+                schedule_ws_task(im_ws.GlobalCrossHub.send_to_consumer(param.receiver_id, msg))
             else:
-                asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_user(param.receiver_id, msg))
+                schedule_ws_task(im_ws.GlobalCrossHub.send_to_user(param.receiver_id, msg))
 
     def accept_request(self, user_id: str, user_type: str, param: HandleRequestParam) -> None:
         if not user_id or not param.request_id:
@@ -125,9 +125,9 @@ class FriendService:
         msg = Message(type="friend_request", payload=payload)
         if im_ws.GlobalCrossHub is not None:
             if request.sender_type == "CONSUMER":
-                asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_consumer(request.sender_id, msg))
+                schedule_ws_task(im_ws.GlobalCrossHub.send_to_consumer(request.sender_id, msg))
             else:
-                asyncio.ensure_future(im_ws.GlobalCrossHub.send_to_user(request.sender_id, msg))
+                schedule_ws_task(im_ws.GlobalCrossHub.send_to_user(request.sender_id, msg))
 
     def reject_request(self, user_id: str, user_type: str, param: HandleRequestParam) -> None:
         if not user_id or not param.request_id:

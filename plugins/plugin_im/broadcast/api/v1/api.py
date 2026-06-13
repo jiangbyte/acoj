@@ -38,7 +38,7 @@ async def send_handler(request: Request, p: SendBroadcastParam):
 @sys_router.get("/list")
 @Perm("sys:im:broadcast:list", "通知列表")
 @CheckLogin
-async def list_handler(
+def list_handler(
     request: Request,
     cursor: str = QueryParam(""),
     size: int = QueryParam(20),
@@ -73,7 +73,7 @@ async def read_handler(
 
 @sys_router.get("/detail")
 @CheckLogin
-async def detail_handler(
+def detail_handler(
     request: Request,
     id: str = QueryParam(""),
     service: BroadcastService = Depends(get_broadcast_service),
@@ -109,7 +109,7 @@ async def client_read_handler(
 
 @client_router.get("/detail")
 @CheckLogin(realm_id=RealmID.CONSUMER)
-async def client_detail_handler(
+def client_detail_handler(
     request: Request,
     id: str = QueryParam(""),
     service: BroadcastService = Depends(get_broadcast_service),

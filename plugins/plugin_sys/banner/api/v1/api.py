@@ -12,7 +12,7 @@ router = APIRouter()
 
 @router.get("/api/v1/sys/banner/page", summary="获取Banner分页", response_model=Result)
 @CheckPermission("sys:banner:page")
-async def page(request: Request, param: BannerPageParam = Depends(), service: BannerService = Depends(get_banner_service)):
+def page(request: Request, param: BannerPageParam = Depends(), service: BannerService = Depends(get_banner_service)):
     return success(service.page(param))
 
 
@@ -20,7 +20,7 @@ async def page(request: Request, param: BannerPageParam = Depends(), service: Ba
 @SysLog("添加Banner")
 @CheckPermission("sys:banner:create")
 @NoRepeat(interval=3000)
-async def create(
+def create(
     request: Request,
     vo: BannerVO,
     actor: ActorContext = Depends(get_current_actor),
@@ -33,7 +33,7 @@ async def create(
 @router.post("/api/v1/sys/banner/modify", summary="编辑Banner", response_model=Result)
 @SysLog("编辑Banner")
 @CheckPermission("sys:banner:modify")
-async def modify(
+def modify(
     request: Request,
     vo: BannerVO,
     actor: ActorContext = Depends(get_current_actor),
@@ -46,13 +46,13 @@ async def modify(
 @router.post("/api/v1/sys/banner/remove", summary="删除Banner", response_model=Result)
 @SysLog("删除Banner")
 @CheckPermission("sys:banner:remove")
-async def remove(request: Request, param: IdsParam, service: BannerService = Depends(get_banner_service)):
+def remove(request: Request, param: IdsParam, service: BannerService = Depends(get_banner_service)):
     service.remove(param.ids)
     return success()
 
 
 @router.get("/api/v1/sys/banner/detail", summary="获取Banner详情", response_model=Result)
 @CheckPermission("sys:banner:detail")
-async def detail(request: Request, id: str = Query(...), service: BannerService = Depends(get_banner_service)):
+def detail(request: Request, id: str = Query(...), service: BannerService = Depends(get_banner_service)):
     data = service.detail(id)
     return success(data if data else None)
