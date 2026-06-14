@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from copy import deepcopy
 from typing import Any
 from urllib.parse import quote
 from pydantic import BaseModel, Field
@@ -178,6 +179,24 @@ class Settings(BaseModel):
     @property
     def user_config(self) -> UserConfig:
         return self.user
+
+    def get_namespace(self, *path: str, default: Any = None) -> Any:
+        current: Any = self.raw
+        for part in path:
+            if not isinstance(current, dict):
+                return default
+            current = current.get(str(part))
+            if current is None:
+                return default
+        return current
+
+    def get_plugin_settings(self, plugin_name: str, settings_prefix: str | None = None) -> dict[str, Any]:
+        if settings_prefix:
+            normalized = [segment for segment in settings_prefix.replace(".", "__").split("__") if segment]
+            data = self.get_namespace(*[segment.lower() for segment in normalized], default={})
+            return dict(data) if isinstance(data, dict) else {}
+        data = self.get_namespace("plugins", str(plugin_name).lower(), default={})
+        return dict(data) if isinstance(data, dict) else {}
 
     def validate_runtime(self, redis_required: bool = True) -> None:
         missing: list[str] = []
@@ -370,7 +389,7 @@ def _build_settings_data() -> dict[str, Any]:
                 continue
             path = key.lower().split("__")
             _set_nested(merged, path, _parse_env_value(str(raw), path))
-    merged.setdefault("raw", {})
+    merged["raw"] = deepcopy(merged)
     merged["loaded_env_files"] = list(_LOADED_ENV_FILES)
     return merged
 

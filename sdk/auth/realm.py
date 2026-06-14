@@ -1,17 +1,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable, Iterable
 
 from fastapi import HTTPException, Request, status
 
 from sdk.auth.auth.business_auth_tool import BusinessAuthTool
 from sdk.auth.auth.consumer_auth_tool import ConsumerAuthTool
 from sdk.auth.matcher import match, match_permission, match_permissions_and, match_permissions_or
-from sdk.auth.enums import CheckMode, RealmID
+from sdk.auth.enums import CheckMode
+from sdk.auth.provider import EMPTY_PERMISSION_PROVIDER, PermissionProviderProtocol
 
-BusinessID = RealmID.BUSINESS.value
-ConsumerID = RealmID.CONSUMER.value
+BusinessID = "BUSINESS"
+ConsumerID = "CONSUMER"
+PathMatcher = Callable[[str], bool]
+
+
+_realm_registry: dict[str, "Realm"] = {}
 
 
 def _join_values(values: list[str]) -> str:
@@ -77,12 +82,28 @@ def _to_session_claims(claims: dict[str, Any] | None, fallback_realm_id: str) ->
 
 
 class Realm:
-    def __init__(self, realm_id: str, tool_cls: type):
+    def __init__(
+        self,
+        realm_id: str,
+        tool_cls: type,
+        *,
+        path_matchers: Iterable[PathMatcher] = (),
+    ):
         self.id = realm_id
         self.tool = tool_cls
+        self._path_matchers = tuple(path_matchers)
 
     def init(self, expire: int, token_name: str) -> None:
         self.tool.init(expire=expire, token_name=token_name)
+
+    def set_permission_provider(self, provider: PermissionProviderProtocol | None) -> None:
+        self.tool.set_permission_provider(provider)
+
+    def add_path_matcher(self, matcher: PathMatcher) -> None:
+        self._path_matchers = (*self._path_matchers, matcher)
+
+    def matches_path(self, path: str) -> bool:
+        return any(matcher(path) for matcher in self._path_matchers)
 
     async def login(self, request: Request | None, login_id: str | int, extra: dict[str, Any] | None = None) -> str:
         return await self.tool.login(login_id, request, extra or {})
@@ -275,13 +296,24 @@ class AggregateSessionService:
     def __init__(self, realms: list[Realm]):
         self.realms = realms
 
+    async def stats_by_realm(self) -> dict[str, dict[str, int]]:
+        result: dict[str, dict[str, int]] = {}
+        for realm in self.realms:
+            result[realm.id] = await realm.sessions().stats()
+        return result
+
     async def stats(self) -> dict[str, int]:
         result = {"total_count": 0, "one_hour_newly_added": 0, "max_token_count": 0}
-        for realm in self.realms:
-            stats = await realm.sessions().stats()
+        for stats in (await self.stats_by_realm()).values():
             result["total_count"] += stats.get("total_count", 0)
             result["one_hour_newly_added"] += stats.get("one_hour_newly_added", 0)
             result["max_token_count"] = max(result["max_token_count"], stats.get("max_token_count", 0))
+        return result
+
+    async def trend_by_realm(self, days: list[str]) -> dict[str, dict[str, int]]:
+        result: dict[str, dict[str, int]] = {}
+        for realm in self.realms:
+            result[realm.id] = await realm.sessions().trend(days)
         return result
 
 
@@ -289,18 +321,53 @@ def Sessions(*realms: Realm) -> AggregateSessionService:
     return AggregateSessionService([realm for realm in realms if realm is not None])
 
 
+def register_realm(realm: Realm) -> Realm:
+    if realm.id in _realm_registry:
+        raise ValueError(f"duplicate realm registration: {realm.id}")
+    realm.set_permission_provider(EMPTY_PERMISSION_PROVIDER)
+    _realm_registry[realm.id] = realm
+    return realm
+
+
+def all_realms() -> list[Realm]:
+    return list(_realm_registry.values())
+
+
 def realm_from_id(realm_id: str) -> Realm:
-    if realm_id == RealmID.CONSUMER:
-        return Consumer
-    return Business
+    realm = _realm_registry.get(str(realm_id or ""))
+    if realm is None:
+        raise ValueError(f"unknown realm: {realm_id}")
+    return realm
+
+
+def infer_realm(path: str) -> Realm | None:
+    for realm in all_realms():
+        if realm.matches_path(path):
+            return realm
+    return None
+
+
+def current_realm(request: Request | None) -> Realm | None:
+    if request is None:
+        return None
+    state_realm = getattr(request.state, "login_realm", None)
+    if state_realm is not None:
+        return state_realm
+    return infer_realm(request.url.path)
+
+
+def resolve_realm(realm_id: str | None, request: Request | None, *, guard_name: str) -> Realm:
+    if realm_id is not None:
+        return realm_from_id(realm_id)
+    realm = current_realm(request)
+    if not realm:
+        raise ValueError(f"cannot infer realm for {guard_name}")
+    return realm
 
 
 def infer_realm_id_from_path(path: str) -> str | None:
-    if path.startswith("/api/v") and "/c/" in path:
-        return RealmID.CONSUMER
-    if path.startswith("/api/v"):
-        return RealmID.BUSINESS
-    return None
+    realm = infer_realm(path)
+    return realm.id if realm else None
 
 
 def is_public_path(path: str, public_paths: list[str]) -> bool:
@@ -351,5 +418,17 @@ async def ensure_role(realm: Realm, role: str, request: Request | None) -> None:
     if not await check_roles(realm, [role], request):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"缺少角色: {_join_values([role])}")
 
-Business = Realm(BusinessID, BusinessAuthTool)
-Consumer = Realm(ConsumerID, ConsumerAuthTool)
+Business = register_realm(
+    Realm(
+        BusinessID,
+        BusinessAuthTool,
+        path_matchers=(lambda path: path.startswith("/api/v") and "/c/" not in path,),
+    )
+)
+Consumer = register_realm(
+    Realm(
+        ConsumerID,
+        ConsumerAuthTool,
+        path_matchers=(lambda path: path.startswith("/api/v") and "/c/" in path,),
+    )
+)

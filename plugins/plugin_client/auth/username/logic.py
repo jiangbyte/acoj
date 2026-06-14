@@ -1,25 +1,27 @@
 """Client auth username logic — mirrors hei-gin plugin-client/auth/username/logic.go."""
 
 import asyncio
+import logging
+
 import bcrypt
-from typing import Optional
 from fastapi import Request
-from sdk.infra.db import SessionLocal
-from plugins.plugin_sys.shared import USER_STATUS_ACTIVE, USER_STATUS_INACTIVE, USER_STATUS_LOCKED
+from typing import Optional
+
 from plugins.plugin_client.user.service import LoginUserService
-from sdk.auth import Consumer
+from sdk.auth import Consumer, get_current_login_id
+from sdk.captcha import c_captcha
 from sdk.infra.concurrency import run_blocking
+from sdk.infra.db import SessionLocal
+from sdk.log import record_auth_log
+from sdk.shared.contracts import USER_STATUS_ACTIVE, USER_STATUS_INACTIVE, USER_STATUS_LOCKED
 from sdk.web.exception import BusinessException
 from sdk.utils import decrypt
 from sdk.utils.user_agent_utils import get_browser
-from sdk.captcha import c_captcha
-from sdk.log import record_auth_log
 from .params import (
     UsernameLoginParam, UsernameLoginResult,
     UsernameRegisterParam, UsernameRegisterResult,
     UsernameLogoutResult,
 )
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +121,7 @@ async def do_register(param: UsernameRegisterParam, request: Optional[Request] =
 async def do_logout(request: Request) -> UsernameLogoutResult:
     """Mirrors hei-gin DoLogout — auth log, then logout."""
     try:
-        user_id = await Consumer.get_login_id(request)
+        user_id = await get_current_login_id(request)
         if user_id:
             op_user = await run_blocking(login_user_service.get_username, user_id)
             record_auth_log(request, "登出", "LOGOUT", op_user=op_user)

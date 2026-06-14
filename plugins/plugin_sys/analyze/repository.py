@@ -1,15 +1,24 @@
 from typing import List
+
+from sqlalchemy import MetaData, Table, and_, func, select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, and_, text
-from plugins.plugin_sys.shared import USER_STATUS_ACTIVE
+
 from plugins.plugin_sys.user.models import SysUser
 from plugins.plugin_sys.role.models import SysRole
 from plugins.plugin_sys.org.models import SysOrg
 from plugins.plugin_sys.config.models import SysConfig
 from plugins.plugin_sys.notice.models import SysNotice
-from plugins.plugin_client.user.models import ClientUser
 from plugins.plugin_sys.log.models import SysLog
+from sdk.shared.contracts import USER_STATUS_ACTIVE
+from sdk.web.exception import BusinessException
 from .params import CategoryDistribution, OrgUserDistribution
+
+
+CLIENT_USER_TABLE = "client_user"
+TREND_TABLES = {
+    SysUser.__tablename__: SysUser,
+    CLIENT_USER_TABLE: CLIENT_USER_TABLE,
+}
 
 
 class AnalyzeRepository:
@@ -78,40 +87,32 @@ class AnalyzeRepository:
         return [{"category": row[0], "count": row[1]} for row in result]
 
     def count_client_users(self) -> int:
-        stmt = select(func.count()).select_from(ClientUser)
-        return self.db.execute(stmt).scalar() or 0
+        return self._count_rows(CLIENT_USER_TABLE)
 
     def count_active_client_users(self) -> int:
-        stmt = (
-            select(func.count())
-            .select_from(ClientUser)
-            .where(
-                ClientUser.status == USER_STATUS_ACTIVE,
-            )
-        )
-        return self.db.execute(stmt).scalar() or 0
+        return self._count_rows(CLIENT_USER_TABLE, status=USER_STATUS_ACTIVE)
 
     def client_user_trend(self, months: int = 12) -> List[dict]:
-        month_col = func.date_format(ClientUser.created_at, '%Y-%m').label("month")
+        return self.monthly_trend(CLIENT_USER_TABLE, months)
+
+    def monthly_trend(self, table: str, months: int = 12) -> List[dict]:
+        model_or_table = TREND_TABLES.get(table)
+        if model_or_table is None:
+            raise BusinessException("不支持的统计表", 400)
+
+        if isinstance(model_or_table, str):
+            return self._raw_monthly_trend(model_or_table, months)
+
+        month_col = func.date_format(model_or_table.created_at, "%Y-%m").label("month")
         stmt = (
             select(month_col, func.count().label("count"))
-            .where(ClientUser.created_at.isnot(None))
+            .where(model_or_table.created_at.isnot(None))
             .group_by(month_col)
             .order_by(month_col.asc())
             .limit(months)
         )
         result = self.db.execute(stmt).all()
         return [{"month": row[0], "count": row[1]} for row in result]
-
-    def monthly_trend(self, table: str, months: int = 12) -> List[dict]:
-        rows = self.db.execute(
-            text(
-                f"SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count "
-                f"FROM {table} WHERE created_at IS NOT NULL "
-                f"GROUP BY month ORDER BY month ASC LIMIT {months}"
-            )
-        ).fetchall()
-        return [{"month": row[0], "count": row[1]} for row in rows]
 
     def org_user_distribution_with_names(self) -> List[OrgUserDistribution]:
         stmt = (
@@ -166,3 +167,28 @@ class AnalyzeRepository:
             "log_exception": exception_total,
             "exception_today": exception_today,
         }
+
+    def _count_rows(self, table_name: str, *, status: str | None = None) -> int:
+        table = self._get_table(table_name)
+        stmt = select(func.count()).select_from(table)
+        if status is not None and "status" in table.c:
+            stmt = stmt.where(table.c.status == status)
+        return self.db.execute(stmt).scalar() or 0
+
+    def _raw_monthly_trend(self, table_name: str, months: int) -> List[dict]:
+        table = self._get_table(table_name)
+        month_col = func.date_format(table.c.created_at, "%Y-%m").label("month")
+        stmt = (
+            select(month_col, func.count().label("count"))
+            .select_from(table)
+            .where(table.c.created_at.isnot(None))
+            .group_by(month_col)
+            .order_by(month_col.asc())
+            .limit(months)
+        )
+        result = self.db.execute(stmt).all()
+        return [{"month": row[0], "count": row[1]} for row in result]
+
+    def _get_table(self, table_name: str):
+        bind = self.db.get_bind()
+        return Table(table_name, MetaData(), autoload_with=bind)

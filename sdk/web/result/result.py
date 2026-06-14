@@ -4,42 +4,39 @@ from sdk.utils.trace_utils import get_trace_id
 
 
 T = TypeVar('T')
+SUCCESS_CODE = 200
+DEFAULT_BAD_REQUEST = 400
+DEFAULT_SERVER_ERROR = 500
 
 
 def success(data: Optional[T] = None) -> Dict[str, Any]:
     return {
-        "code": 200,
+        "code": SUCCESS_CODE,
         "message": "请求成功",
         "data": data,
         "success": True,
-        "trace_id": get_trace_id()
+        "trace_id": get_trace_id(),
     }
 
 
-def failure(message: str = "请求参数格式错误", code: int = 400, data: Optional[T] = None) -> Dict[str, Any]:
+def failure(message: str = "请求参数格式错误", code: int = DEFAULT_BAD_REQUEST, data: Optional[T] = None) -> Dict[str, Any]:
     return {
         "code": code,
         "message": message,
         "data": data,
         "success": False,
-        "trace_id": get_trace_id()
+        "trace_id": get_trace_id(),
     }
 
 
 def http_status(code: int) -> int:
-    if code >= 600 or code <= 0:
-        return 200
-    if code >= 500:
-        return 500
-    if code >= 429:
-        return 429
-    if code >= 400:
+    if 100 <= code <= 599:
         return code
-    return 200
+    return DEFAULT_SERVER_ERROR if code >= DEFAULT_SERVER_ERROR else DEFAULT_BAD_REQUEST
 
 
 class Result(BaseModel, Generic[T]):
-    code: int = Field(default=200, description="状态码")
+    code: int = Field(default=SUCCESS_CODE, description="状态码")
     message: str = Field(default="请求成功", description="消息")
     data: Optional[T] = Field(default=None, description="数据")
     success: bool = Field(default=True, description="是否成功")

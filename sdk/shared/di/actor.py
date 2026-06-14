@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import Request
 from pydantic import BaseModel
 
-from sdk.auth import Business, Consumer
+from sdk.auth import get_current_auth_context
 
 
 class ActorContext(BaseModel):
@@ -13,10 +13,12 @@ class ActorContext(BaseModel):
 
 
 async def get_current_actor(request: Request) -> ActorContext:
-    user_id = await Business.get_login_id(request) or ""
-    return ActorContext(user_id=user_id, realm_id="BUSINESS")
+    user_id, realm_id = await get_current_auth_context(request)
+    if not realm_id:
+        return ActorContext()
+    username = str(getattr(request.state, "loginUser", "") or "")
+    return ActorContext(user_id=user_id, realm_id=realm_id, username=username)
 
 
 async def get_current_client_actor(request: Request) -> ActorContext:
-    user_id = await Consumer.get_login_id(request) or ""
-    return ActorContext(user_id=user_id, realm_id="CONSUMER")
+    return await get_current_actor(request)

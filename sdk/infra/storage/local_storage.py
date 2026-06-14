@@ -1,7 +1,6 @@
-import os
 import shutil
 from pathlib import Path
-from typing import BinaryIO, Optional
+from typing import BinaryIO
 from .interface import FileStorageInterface
 
 

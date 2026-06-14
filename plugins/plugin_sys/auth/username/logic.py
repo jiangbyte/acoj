@@ -1,16 +1,19 @@
 import asyncio
+import logging
+
 import bcrypt
 from fastapi import Request
-from sdk.infra.db import SessionLocal
-from plugins.plugin_sys.shared import USER_STATUS_ACTIVE, USER_STATUS_INACTIVE, USER_STATUS_LOCKED
-from plugins.plugin_sys.user.service import LoginUserService
-from sdk.auth import Business
+
+from sdk.auth import Business, get_current_login_id
+from sdk.captcha import b_captcha
 from sdk.infra.concurrency import run_blocking
+from sdk.infra.db import SessionLocal
+from sdk.log import record_auth_log
+from sdk.shared.contracts import USER_STATUS_ACTIVE, USER_STATUS_INACTIVE, USER_STATUS_LOCKED
 from sdk.web.exception import BusinessException
 from sdk.utils import decrypt
 from sdk.utils.user_agent_utils import get_browser
-from sdk.captcha import b_captcha
-from sdk.log import record_auth_log
+from plugins.plugin_sys.user.service import LoginUserService
 from .params import (
     UsernameLoginParam,
     UsernameLoginResult,
@@ -18,7 +21,6 @@ from .params import (
     UsernameRegisterResult,
     UsernameLogoutResult,
 )
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +120,7 @@ async def do_register(param: UsernameRegisterParam, request: Request = None) -> 
 async def do_logout(request: Request) -> UsernameLogoutResult:
     # 获取当前用户用于日志记录
     try:
-        user_id = await Business.get_login_id(request)
+        user_id = await get_current_login_id(request)
         if user_id:
             op_user = await run_blocking(login_user_service.get_username, user_id)
             record_auth_log(request, "登出", "LOGOUT", op_user=op_user)

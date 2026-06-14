@@ -8,7 +8,13 @@ from fastapi import FastAPI
 from sdk.config.settings import settings
 from sdk.infra.db import freeze as freeze_migrations
 from sdk.infra.db import snapshot as migration_snapshot
-from sdk.kernel.plugin import discover_and_load, init_plugins, plugin_snapshot, start_plugins, stop_plugins
+from sdk.kernel.plugin import (
+    discover_and_load,
+    init_plugins,
+    plugin_snapshot,
+    start_plugins,
+    stop_plugins,
+)
 from sdk.kernel.plugin.core_plugins import set_current_app
 from sdk.kernel.registry import execute_middlewares, execute_routes, freeze, snapshot_state
 from sdk.web.middleware import AuthMiddleware, MetricsMiddleware, TraceMiddleware, setup_cors, setup_exception_handlers
@@ -75,6 +81,8 @@ class ApplicationRuntime:
         )
 
     async def startup(self) -> None:
+        if self._app is None:
+            raise RuntimeError("application must be built before startup")
         await start_plugins(self._app)
 
     async def shutdown(self) -> None:

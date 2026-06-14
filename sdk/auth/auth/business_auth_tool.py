@@ -2,7 +2,6 @@ from contextvars import ContextVar
 from typing import Optional
 from fastapi import Request
 
-from sdk.auth.enums import RealmID
 from .base_auth_tool import BaseAuthTool
 
 
@@ -12,7 +11,7 @@ DISABLE_KEY_PREFIX = "hei:auth:BUSINESS:disable:"
 
 
 class BusinessAuthTool(BaseAuthTool):
-    REALM_ID = RealmID.BUSINESS
+    REALM_ID = "BUSINESS"
     TOKEN_PREFIX = TOKEN_PREFIX
     SESSION_PREFIX = SESSION_PREFIX
     DISABLE_KEY_PREFIX = DISABLE_KEY_PREFIX

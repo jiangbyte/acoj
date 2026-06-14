@@ -1,96 +1,149 @@
-"""Storage abstraction aligned to hei-gin's factory semantics."""
+"""Storage registry and factory for sdk storage backends."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Callable
+
 from sdk.config.settings import settings
 
 from .interface import ChunkInfo, ChunkedUploader, FileStorageInterface
+from .local_storage import LocalStorage
+from .minio_storage import MinioStorage
+from .s3_storage import S3Storage
 
 __all__ = [
-    "FileStorageInterface", "ChunkInfo", "ChunkedUploader",
-    "StorageConfig", "get_config", "get_storage", "get_default_storage",
-    "LocalStorage", "MinioStorage", "S3Storage",
+    "FileStorageInterface",
+    "ChunkInfo",
+    "ChunkedUploader",
+    "StorageBackendDefinition",
+    "StorageRegistrySnapshot",
+    "register_storage_backend",
+    "get_storage",
+    "get_default_storage",
+    "get_storage_url",
     "get_url",
+    "storage_snapshot",
+    "LocalStorage",
+    "MinioStorage",
+    "S3Storage",
 ]
 
 
+StorageBuilder = Callable[[], FileStorageInterface | None]
+
+
 @dataclass(slots=True)
-class StorageConfig:
+class StorageBackendDefinition:
+    name: str
+    builder: StorageBuilder
+
+
+@dataclass(slots=True)
+class StorageRegistrySnapshot:
     default: str
-    default_base_url: str
-    local: object
-    minio: object
-    s3: object
+    registered: list[str]
 
 
-def get_config() -> StorageConfig:
-    return StorageConfig(
-        default=settings.storage.default,
-        default_base_url=settings.storage.default_base_url,
-        local=settings.storage.local,
-        minio=settings.storage.minio,
-        s3=settings.storage.s3,
+class StorageRegistry:
+    def __init__(self) -> None:
+        self._builders: dict[str, StorageBuilder] = {}
+
+    def register(self, name: str, builder: StorageBuilder) -> None:
+        key = str(name or "").upper()
+        if not key:
+            raise ValueError("storage backend name is required")
+        self._builders[key] = builder
+
+    def get(self, name: str) -> FileStorageInterface | None:
+        builder = self._builders.get(str(name or "").upper())
+        if builder is None:
+            return None
+        return builder()
+
+    def snapshot(self) -> StorageRegistrySnapshot:
+        return StorageRegistrySnapshot(
+            default=str(settings.storage.default or "").upper(),
+            registered=sorted(self._builders),
+        )
+
+
+_registry = StorageRegistry()
+
+
+def _build_local() -> FileStorageInterface:
+    cfg = settings.storage.local
+    return LocalStorage(cfg.upload_folder, cfg.base_url)
+
+
+def _build_minio() -> FileStorageInterface | None:
+    cfg = settings.storage.minio
+    if not cfg.endpoint:
+        return None
+    return MinioStorage(
+        endpoint=cfg.endpoint,
+        access_key=cfg.access_key,
+        secret_key=cfg.secret_key,
+        default_bucket=cfg.bucket,
+        secure=cfg.secure,
+        region=cfg.region,
+        base_url=cfg.base_url,
     )
 
 
-def get_storage(storage_type: str) -> Optional[FileStorageInterface]:
-    cfg = get_config()
-    if storage_type == "LOCAL":
-        return LocalStorage(cfg.local.upload_folder, cfg.local.base_url)
-    if storage_type == "MINIO":
-        m = cfg.minio
-        if not m.endpoint:
-            return None
-        endpoint = m.endpoint
-        if not endpoint.startswith(("http://", "https://")):
-            endpoint = ("https://" if m.secure else "http://") + endpoint
-        return S3Storage(endpoint, m.access_key, m.secret_key,
-                         m.bucket, m.region, True, m.base_url)
-    if storage_type == "S3":
-        s = cfg.s3
-        if not s.endpoint:
-            return None
-        return S3Storage(s.endpoint, s.access_key, s.secret_key,
-                         s.bucket, s.region, s.path_style, s.base_url)
-    return LocalStorage(cfg.local.upload_folder, cfg.local.base_url)
+def _build_s3() -> FileStorageInterface | None:
+    cfg = settings.storage.s3
+    if not cfg.endpoint:
+        return None
+    return S3Storage(
+        endpoint=cfg.endpoint,
+        access_key=cfg.access_key,
+        secret_key=cfg.secret_key,
+        default_bucket=cfg.bucket,
+        region=cfg.region,
+        path_style=cfg.path_style,
+        base_url=cfg.base_url,
+    )
+
+
+def register_storage_backend(name: str, builder: StorageBuilder) -> None:
+    _registry.register(name, builder)
+
+
+def get_storage(storage_type: str) -> FileStorageInterface | None:
+    resolved = _registry.get(storage_type)
+    if resolved is not None:
+        return resolved
+    if str(storage_type or "").upper() == "LOCAL":
+        return _build_local()
+    return None
 
 
 def get_default_storage() -> FileStorageInterface:
-    cfg = get_config()
-    result = get_storage(cfg.default)
-    if result is None:
-        return LocalStorage(cfg.local.upload_folder, cfg.local.base_url)
-    return result
+    resolved = get_storage(settings.storage.default)
+    if resolved is not None:
+        return resolved
+    return _build_local()
 
 
-def LocalStorage(upload_folder: str = "./uploads", base_url: str = ""):
-    from .local_storage import LocalStorage as _cls
-    return _cls(upload_folder, base_url)
-
-
-def MinioStorage(endpoint: str, access_key: str, secret_key: str,
-                 bucket: str = "hei", secure: bool = False,
-                 region: str = "us-east-1", base_url: str = ""):
-    if not endpoint.startswith(("http://", "https://")):
-        endpoint = ("https://" if secure else "http://") + endpoint
-    return S3Storage(endpoint, access_key, secret_key, bucket, region, True, base_url)
-
-
-def S3Storage(endpoint: str, access_key: str, secret_key: str,
-              bucket: str = "hei", region: str = "us-east-1",
-              path_style: bool = True, base_url: str = ""):
-    from .s3_storage import S3Storage as _cls
-    return _cls(endpoint, access_key, secret_key, bucket, region, path_style, base_url)
+def get_storage_url(storage_type: str, bucket: str, file_key: str) -> str:
+    engine = get_storage(storage_type)
+    if engine is None:
+        return ""
+    url = engine.get_url(bucket, file_key)
+    if url.startswith("/") and settings.storage.default_base_url:
+        return settings.storage.default_base_url.rstrip("/") + url
+    return url
 
 
 def get_url(storage_type: str, bucket: str, file_key: str) -> str:
-    cfg = get_config()
-    eng = get_storage(storage_type)
-    if eng is None:
-        return ""
-    url = eng.get_url(bucket, file_key)
-    if url.startswith("/") and cfg.default_base_url:
-        return cfg.default_base_url + url
-    return url
+    return get_storage_url(storage_type, bucket, file_key)
+
+
+def storage_snapshot() -> StorageRegistrySnapshot:
+    return _registry.snapshot()
+
+
+register_storage_backend("LOCAL", _build_local)
+register_storage_backend("MINIO", _build_minio)
+register_storage_backend("S3", _build_s3)

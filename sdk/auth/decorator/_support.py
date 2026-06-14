@@ -23,8 +23,15 @@ def get_request(*args, **kwargs) -> Request | None:
 async def attach_login_context(request: Request | None, realm_id: str) -> str:
     if request is None:
         return ""
+    current_login_id = str(getattr(request.state, "login_id", "") or "")
+    current_realm_id = str(getattr(request.state, "realm_id", "") or "")
+    if current_login_id and current_realm_id == realm_id:
+        return current_login_id
 
-    realm = realm_from_id(realm_id)
+    try:
+        realm = realm_from_id(realm_id)
+    except ValueError:
+        return ""
     login_id = await realm.get_login_id(request) or ""
     if not login_id:
         return ""

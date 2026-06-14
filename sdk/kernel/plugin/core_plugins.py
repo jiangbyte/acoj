@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 from sdk.kernel.plugin import HeiPlugin, PluginInfo
 from sdk.config.settings import settings
+from sdk.infra.db import get_redis
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -51,19 +52,18 @@ class AuthPlugin(HeiPlugin):
             name="auth",
             version="1.0.0",
             description="Authentication & permission system",
+            dependencies=["utils"],
+            settings_prefix="plugins.auth",
         )
 
     def on_init(self):
-        from sdk.auth import Business, Consumer
+        from sdk.auth.realm import all_realms
 
-        Business.init(
-            expire=settings.token.expire_seconds,
-            token_name=settings.token.token_name,
-        )
-        Consumer.init(
-            expire=settings.token.expire_seconds,
-            token_name=settings.token.token_name,
-        )
+        for realm in all_realms():
+            realm.init(
+                expire=settings.token.expire_seconds,
+                token_name=settings.token.token_name,
+            )
         logger.info("[AuthPlugin] AuthTool initialised")
 
     async def on_start(self):
@@ -95,6 +95,7 @@ class UtilsPlugin(HeiPlugin):
             name="utils",
             version="1.0.0",
             description="SM2 cryptography initialisation",
+            settings_prefix="plugins.utils",
         )
 
     def on_init(self):
@@ -119,14 +120,15 @@ class CaptchaPlugin(HeiPlugin):
             name="captcha",
             version="1.0.0",
             description="Captcha service initialisation",
+            dependencies=["auth"],
+            settings_prefix="plugins.captcha",
         )
 
     async def on_start(self):
         """Captcha needs Redis — initialise after Redis is ready."""
-        from sdk.infra.db.redis import get_client
         from sdk.captcha import b_captcha, c_captcha
 
-        redis = get_client()
+        redis = get_redis()
         b_captcha.init(redis)
         c_captcha.init(redis)
         logger.info("[CaptchaPlugin] Captcha initialised")
@@ -148,6 +150,7 @@ class SchedulerPlugin(HeiPlugin):
             name="scheduler",
             version="1.0.0",
             description="Cron-based background task scheduler",
+            settings_prefix="plugins.scheduler",
         )
 
     async def on_start(self):

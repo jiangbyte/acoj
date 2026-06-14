@@ -7,7 +7,7 @@ from fastapi import Depends
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from sdk.auth import Business, Consumer
+from sdk.auth import Consumer, Sessions
 from sdk.infra.db import get_db
 from sdk.web.result import page_data
 
@@ -42,6 +42,8 @@ def _format_timeout(seconds: int) -> str:
 class ClientSessionService:
     def __init__(self, db: Session):
         self.db = db
+        self._consumer_realm_sessions = Consumer.sessions()
+        self._consumer_sessions = Sessions(Consumer)
 
     async def _search_client_user_ids(self, keyword: Optional[str]) -> Optional[list[str]]:
         if not keyword:
@@ -61,13 +63,12 @@ class ClientSessionService:
         return user_ids
 
     async def analysis(self) -> SessionAnalysisResult:
-        business_stats = await Business.sessions().stats()
-        consumer_stats = await Consumer.sessions().stats()
+        consumer_stats = (await self._consumer_sessions.stats_by_realm()).get(Consumer.id, {})
         return SessionAnalysisResult(
-            total_count=business_stats["total_count"] + consumer_stats["total_count"],
-            max_token_count=max(business_stats["max_token_count"], consumer_stats["max_token_count"]),
-            one_hour_newly_added=business_stats["one_hour_newly_added"] + consumer_stats["one_hour_newly_added"],
-            proportion_of_b_and_c=f'{business_stats["total_count"]}/{consumer_stats["total_count"]}',
+            total_count=consumer_stats["total_count"],
+            max_token_count=consumer_stats["max_token_count"],
+            one_hour_newly_added=consumer_stats["one_hour_newly_added"],
+            proportion_of_b_and_c=f'0/{consumer_stats["total_count"]}',
         )
 
     async def page(self, param: SessionPageParam) -> dict:
@@ -75,9 +76,13 @@ class ClientSessionService:
         size = max(1, param.size)
         candidate_user_ids = await self._search_client_user_ids(param.keyword)
         if candidate_user_ids is None:
-            infos, total = await Consumer.sessions().page(current=current, size=size)
+            infos, total = await self._consumer_realm_sessions.page(current=current, size=size)
         else:
-            infos, total = await Consumer.sessions().page_by_user_ids(candidate_user_ids, current=current, size=size)
+            infos, total = await self._consumer_realm_sessions.page_by_user_ids(
+                candidate_user_ids,
+                current=current,
+                size=size,
+            )
         user_ids = [info["user_id"] for info in infos]
         user_map = {}
         if user_ids:
@@ -115,10 +120,10 @@ class ClientSessionService:
         return page_data(records, total, current, size)
 
     async def exit_session(self, user_id: str) -> None:
-        await Consumer.sessions().kickout_user(user_id)
+        await self._consumer_realm_sessions.kickout_user(user_id)
 
     async def token_list(self, user_id: str) -> list[SessionTokenResult]:
-        token_infos = await Consumer.sessions().tokens(user_id)
+        token_infos = await self._consumer_realm_sessions.tokens(user_id)
         return [
             SessionTokenResult.from_token_info(
                 token_info,
@@ -130,12 +135,12 @@ class ClientSessionService:
         ]
 
     async def exit_token(self, user_id: str, token: str) -> None:
-        await Consumer.sessions().kickout_token(user_id, token)
+        await self._consumer_realm_sessions.kickout_token(user_id, token)
 
     async def chart_data(self) -> SessionChartData:
-        consumer_stats = await Consumer.sessions().stats()
+        consumer_stats = (await self._consumer_sessions.stats_by_realm()).get(Consumer.id, {})
         days = [(datetime.now(timezone.utc) - timedelta(days=index)).strftime("%Y-%m-%d") for index in range(6, -1, -1)]
-        daily_map = await Consumer.sessions().trend(days)
+        daily_map = (await self._consumer_sessions.trend_by_realm(days)).get(Consumer.id, {})
         series_data = [daily_map.get(day, 0) for day in days]
         return SessionChartData(
             bar_chart=BarChartData(days=days, series=[CategorySeries(name="新增在线数", data=series_data)]),
