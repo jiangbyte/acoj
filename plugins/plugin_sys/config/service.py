@@ -1,26 +1,30 @@
 """Config service — class-based service with DI-friendly provider."""
 
-from typing import Optional
+import asyncio
 from datetime import datetime
+from typing import Optional
+
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from sdk.infra.db.redis import get_client
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
-from sdk.web.exception import BusinessException
-from sdk.web.result import page_data
 from sdk.utils import generate_id
-from sdk.infra.db.redis import get_client
-from .models import SysConfig
-from .params import ConfigVO, ConfigPageParam, ConfigListParam, ConfigCategoryEditParam, SysConfigToConfigVO
-from .repository import ConfigRepository
-import logging
-import asyncio
+from sdk.web.exception import BusinessException
+from sdk.web.result import map_page_data
 
-logger = logging.getLogger(__name__)
+from .models import SysConfig
+from .params import ConfigBatchEditParam, ConfigCategoryEditParam, ConfigPageParam, ConfigVO
+from .repository import ConfigRepository
 
 CONFIG_CACHE_PREFIX = "sys-config:"
 # ── Cache helpers (extra, not in Go) ──
+
+
+def _actor_user_id(actor: Optional[ActorContext]) -> Optional[str]:
+    return actor.user_id if actor else None
+
 
 async def get_value_by_key(key: str) -> Optional[str]:
     client = get_client()
@@ -63,14 +67,13 @@ class ConfigService:
     def __init__(self, repository: ConfigRepository):
         self.repository = repository
 
-    @classmethod
-    def from_db(cls, db: Session) -> "ConfigService":
-        return cls(ConfigRepository(db))
-
     def page(self, param: ConfigPageParam) -> dict:
-        result = self.repository.find_page_by_filters(param)
-        records = [SysConfigToConfigVO(r) for r in result.get("records", [])]
-        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
+        return map_page_data(
+            self.repository.find_page_by_filters(param),
+            ConfigVO.model_validate,
+            param.current,
+            param.size,
+        )
 
     def detail(self, id: str) -> Optional[ConfigVO]:
         if not id:
@@ -78,48 +81,43 @@ class ConfigService:
         entity = self.repository.find_by_id(id)
         if not entity:
             return None
-        return SysConfigToConfigVO(entity)
+        return ConfigVO.model_validate(entity)
 
     def create(self, vo: ConfigVO, actor: Optional[ActorContext] = None) -> None:
         now = datetime.now()
+        actor_user_id = _actor_user_id(actor)
         entity = SysConfig(
             id=generate_id(),
             sort_code=vo.sort_code or 0,
             created_at=now,
             updated_at=now,
+            config_key=vo.config_key,
+            config_value=vo.config_value,
+            remark=vo.remark,
+            category=vo.category,
+            extra=vo.extra,
         )
-        if vo.config_key is not None:
-            entity.config_key = vo.config_key
-        if vo.config_value is not None:
-            entity.config_value = vo.config_value
-        if vo.remark is not None:
-            entity.remark = vo.remark
-        if vo.category is not None:
-            entity.category = vo.category
-        if vo.extra is not None:
-            entity.extra = vo.extra
-        if actor and actor.user_id:
-            entity.created_by = actor.user_id
-            entity.updated_by = actor.user_id
+        if actor_user_id:
+            entity.created_by = actor_user_id
+            entity.updated_by = actor_user_id
         self.repository.insert(entity)
 
     def modify(self, vo: ConfigVO, actor: Optional[ActorContext] = None) -> None:
         entity = self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
-        up = {"sort_code": vo.sort_code, "updated_at": datetime.now()}
-        if vo.config_key is not None:
-            up["config_key"] = vo.config_key
-        if vo.config_value is not None:
-            up["config_value"] = vo.config_value
-        if vo.remark is not None:
-            up["remark"] = vo.remark
-        if vo.category is not None:
-            up["category"] = vo.category
-        if vo.extra is not None:
-            up["extra"] = vo.extra
-        if actor and actor.user_id:
-            up["updated_by"] = actor.user_id
+        actor_user_id = _actor_user_id(actor)
+        up = {
+            "sort_code": vo.sort_code,
+            "updated_at": datetime.now(),
+            "config_key": vo.config_key,
+            "config_value": vo.config_value,
+            "remark": vo.remark,
+            "category": vo.category,
+            "extra": vo.extra,
+        }
+        if actor_user_id:
+            up["updated_by"] = actor_user_id
         self.repository.update_by_id(vo.id, up)
         _del_cached_key(entity.config_key)
 
@@ -133,13 +131,14 @@ class ConfigService:
             _del_cached_key(key)
 
     def options(self) -> list:
-        return [SysConfigToConfigVO(r) for r in self.repository.list_all_ordered()]
+        return [ConfigVO.model_validate(r) for r in self.repository.list_all_ordered()]
 
     def list_by_category(self, category: str) -> list:
-        return [SysConfigToConfigVO(r) for r in self.repository.find_by_category(category)]
+        return [ConfigVO.model_validate(r) for r in self.repository.find_by_category(category)]
 
-    def edit_batch(self, param, actor: Optional[ActorContext] = None) -> None:
+    def edit_batch(self, param: ConfigBatchEditParam, actor: Optional[ActorContext] = None) -> None:
         now = datetime.now()
+        actor_user_id = _actor_user_id(actor)
         items: list[tuple[str, dict]] = []
         for item in param.configs:
             up = {"updated_at": now}
@@ -149,10 +148,10 @@ class ConfigService:
                 up["config_value"] = item.config_value
             if item.remark is not None:
                 up["remark"] = item.remark
-            if hasattr(item, "sort_code") and item.sort_code is not None and item.sort_code != 0:
+            if item.sort_code is not None and item.sort_code != 0:
                 up["sort_code"] = item.sort_code
-            if actor and actor.user_id:
-                up["updated_by"] = actor.user_id
+            if actor_user_id:
+                up["updated_by"] = actor_user_id
             items.append((item.id, up))
         self.repository.update_many_by_ids(items)
 
@@ -164,10 +163,11 @@ class ConfigService:
             up["config_value"] = param.config_value
         if param.remark is not None:
             up["remark"] = param.remark
-        if actor and actor.user_id:
-            up["updated_by"] = actor.user_id
+        actor_user_id = _actor_user_id(actor)
+        if actor_user_id:
+            up["updated_by"] = actor_user_id
         self.repository.update_by_category(param.category, up)
 
 
 def get_config_service(db: Session = Depends(get_db)) -> ConfigService:
-    return ConfigService.from_db(db)
+    return ConfigService(ConfigRepository(db))

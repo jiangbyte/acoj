@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from sdk.auth import Business, Consumer
 from sdk.infra.db import get_db
+from sdk.web.result import page_data
 from sdk.utils.ip_utils import get_city_info
 
 from plugins.plugin_sys.log.params import LogBarChartData, LogCategorySeries, LogCategoryTotal, LogPieChartData
@@ -14,9 +15,8 @@ from plugins.plugin_sys.user.models import SysUser
 from .params import (
     SessionAnalysisResult,
     SessionChartData,
-    SessionInfoToSessionPageResult,
     SessionPageParam,
-    SessionTokenInfoToSessionTokenResult,
+    SessionPageResult,
     SessionTokenResult,
 )
 
@@ -38,10 +38,6 @@ def _format_timeout(seconds: int) -> str:
 class SessionService:
     def __init__(self, db: Session):
         self.db = db
-
-    @classmethod
-    def from_db(cls, db: Session) -> "SessionService":
-        return cls(db)
 
     async def _search_sys_user_ids(self, keyword: Optional[str]) -> Optional[list[str]]:
         if not keyword:
@@ -101,7 +97,7 @@ class SessionService:
                 if last_login_ip:
                     last_login_address = get_city_info(last_login_ip)
             records.append(
-                SessionInfoToSessionPageResult(
+                SessionPageResult.from_session_info(
                     info,
                     _format_timeout(info.get("session_timeout_seconds", 0)),
                     nickname=nickname,
@@ -112,12 +108,15 @@ class SessionService:
                     last_login_time=last_login_time,
                 )
             )
-        return {"records": records, "total": total}
+        return page_data(records, total, current, size)
 
     async def token_list(self, user_id: str) -> list[SessionTokenResult]:
         token_infos = await Business.sessions().tokens(user_id)
         return [
-            SessionTokenInfoToSessionTokenResult(token_info, _format_timeout(token_info.get("timeout_seconds", 0)))
+            SessionTokenResult.from_token_info(
+                token_info,
+                _format_timeout(token_info.get("timeout_seconds", 0)),
+            )
             for token_info in token_infos
         ]
 
@@ -154,4 +153,4 @@ class SessionService:
 
 
 def get_session_service(db: Session = Depends(get_db)) -> SessionService:
-    return SessionService.from_db(db)
+    return SessionService(db)

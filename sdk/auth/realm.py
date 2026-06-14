@@ -5,6 +5,8 @@ from typing import Any
 
 from fastapi import HTTPException, Request, status
 
+from sdk.auth.auth.business_auth_tool import BusinessAuthTool
+from sdk.auth.auth.consumer_auth_tool import ConsumerAuthTool
 from sdk.auth.matcher import match, match_permission, match_permissions_and, match_permissions_or
 from sdk.auth.enums import CheckMode, RealmID
 
@@ -89,25 +91,25 @@ class Realm:
         await self.tool.logout(login_id=login_id, request=request)
 
     async def is_login(self, request: Request | None) -> bool:
-        return await self.tool.isLogin(request)
+        return await self.tool.is_login(request)
 
     async def check_login(self, request: Request | None) -> None:
-        await self.tool.checkLogin(request)
+        await self.tool.check_login(request)
 
     async def get_login_id(self, request: Request | None) -> str | None:
-        return await self.tool.getLoginIdDefaultNull(request)
+        return await self.tool.get_login_id_default_null(request)
 
     async def get_login_id_default_null(self, request: Request | None) -> str | None:
         return await self.get_login_id(request)
 
     async def get_login_id_by_token(self, token: str) -> str | None:
-        return await self.tool.getLoginIdByToken(token)
+        return await self.tool.get_login_id_by_token(token)
 
     async def get_token_value(self, request: Request | None) -> str | None:
-        return await self.tool.getTokenValue(request)
+        return await self.tool.get_token_value(request)
 
     def get_token_name(self) -> str:
-        return self.tool.getTokenName()
+        return self.tool.get_token_name()
 
     async def get_extra(self, key: str, request: Request | None) -> Any:
         claims = await self.claims(request)
@@ -152,28 +154,28 @@ class Realm:
         await self.kickout_token(login_id, token)
 
     async def renew_timeout(self, request: Request | None, timeout: int | None = None) -> None:
-        await self.tool.renewTimeout(timeout=timeout, request=request)
+        await self.tool.renew_timeout(timeout=timeout, request=request)
 
     async def get_token_timeout(self, request: Request | None) -> int:
-        return await self.tool.getTokenTimeout(request)
+        return await self.tool.get_token_timeout(request)
 
     async def get_session_timeout(self, request: Request | None) -> int:
-        return await self.tool.getSessionTimeout(request)
+        return await self.tool.get_session_timeout(request)
 
     async def disable(self, login_id: str, time_seconds: int) -> None:
         await self.tool.disable(login_id, time_seconds)
 
     async def is_disable(self, login_id: str) -> bool:
-        return await self.tool.isDisable(login_id)
+        return await self.tool.is_disable(login_id)
 
     async def check_disable(self, login_id: str) -> None:
-        await self.tool.checkDisable(login_id)
+        await self.tool.check_disable(login_id)
 
     async def get_disable_time(self, login_id: str) -> int:
-        return await self.tool.getDisableTime(login_id)
+        return await self.tool.get_disable_time(login_id)
 
     async def untie_disable(self, login_id: str) -> None:
-        await self.tool.untieDisable(login_id)
+        await self.tool.untie_disable(login_id)
 
     async def permission_list(self, request: Request | None) -> list[str]:
         claims = await self.claims(request)
@@ -217,17 +219,17 @@ class Realm:
         return (scope or ScopeInfo()), scope is not None
 
     async def claims(self, request: Request | None) -> SessionClaims | None:
-        claims, ok = await self.tool.getClaims(request)
+        claims, ok = await self.tool.get_claims(request)
         if not ok or not claims:
             return None
         return _to_session_claims(claims, self.id)
 
     async def get_claims(self, request: Request | None) -> tuple[SessionClaims | None, bool]:
-        claims, ok = await self.tool.getClaims(request)
+        claims, ok = await self.tool.get_claims(request)
         return _to_session_claims(claims, self.id), ok
 
     async def refresh_user_sessions_acl(self, user_id: str) -> None:
-        await self.tool.refreshUserSessionsACL(user_id)
+        await self.tool.refresh_user_sessions_acl(user_id)
 
     async def refresh_acl(self, user_id: str) -> ACLSnapshot:
         acl = await self.tool._load_acl(user_id)
@@ -348,10 +350,6 @@ async def ensure_permission(realm: Realm, permission: str, request: Request | No
 async def ensure_role(realm: Realm, role: str, request: Request | None) -> None:
     if not await check_roles(realm, [role], request):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"缺少角色: {_join_values([role])}")
-
-
-from sdk.auth.auth.business_auth_tool import BusinessAuthTool
-from sdk.auth.auth.consumer_auth_tool import ConsumerAuthTool
 
 Business = Realm(BusinessID, BusinessAuthTool)
 Consumer = Realm(ConsumerID, ConsumerAuthTool)

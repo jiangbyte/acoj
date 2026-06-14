@@ -11,14 +11,12 @@ from sqlalchemy.orm import Session
 from sdk.infra.db import get_db
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
-from plugins.plugin_im import ws as im_ws
-from plugins.plugin_im.ws import Message
+from plugins.plugin_im.ws import Message, get_global_cross_hub
 from plugins.plugin_im.ws.tasks import schedule as schedule_ws_task
 
 from plugins.plugin_im.model.friend import FriendBlock, FriendRequest, Friendship
 from .params import (
     BlockVO,
-    FriendRequestToFriendRequestVO,
     FriendRequestVO,
     FriendVO,
     HandleRequestParam,
@@ -40,10 +38,6 @@ class FriendService:
         self.repository = repository
         self.db = repository.db
         self.user_repository = IMUserRepository(self.db)
-
-    @classmethod
-    def from_db(cls, db: Session) -> "FriendService":
-        return cls(FriendRepository(db))
 
     def send_request(self, sender_id: str, sender_type: str, param: SendRequestParam) -> None:
         if not sender_id or not param.receiver_id or not param.receiver_type:
@@ -83,11 +77,12 @@ class FriendService:
             "action": "friend_request",
         }
         msg = Message(type="friend_request", payload=payload)
-        if im_ws.GlobalCrossHub is not None:
+        cross_hub = get_global_cross_hub()
+        if cross_hub is not None:
             if param.receiver_type == "CONSUMER":
-                schedule_ws_task(im_ws.GlobalCrossHub.send_to_consumer(param.receiver_id, msg))
+                schedule_ws_task(cross_hub.send_to_consumer(param.receiver_id, msg))
             else:
-                schedule_ws_task(im_ws.GlobalCrossHub.send_to_user(param.receiver_id, msg))
+                schedule_ws_task(cross_hub.send_to_user(param.receiver_id, msg))
 
     def accept_request(self, user_id: str, user_type: str, param: HandleRequestParam) -> None:
         if not user_id or not param.request_id:
@@ -123,11 +118,12 @@ class FriendService:
             "action": "friend_request_accepted",
         }
         msg = Message(type="friend_request", payload=payload)
-        if im_ws.GlobalCrossHub is not None:
+        cross_hub = get_global_cross_hub()
+        if cross_hub is not None:
             if request.sender_type == "CONSUMER":
-                schedule_ws_task(im_ws.GlobalCrossHub.send_to_consumer(request.sender_id, msg))
+                schedule_ws_task(cross_hub.send_to_consumer(request.sender_id, msg))
             else:
-                schedule_ws_task(im_ws.GlobalCrossHub.send_to_user(request.sender_id, msg))
+                schedule_ws_task(cross_hub.send_to_user(request.sender_id, msg))
 
     def reject_request(self, user_id: str, user_type: str, param: HandleRequestParam) -> None:
         if not user_id or not param.request_id:
@@ -174,8 +170,8 @@ class FriendService:
     def pending_requests(self, user_id: str, user_type: str) -> tuple[list[FriendRequestVO], list[FriendRequestVO]]:
         incoming_rows = self.repository.list_pending_incoming(user_id, user_type)
         outgoing_rows = self.repository.list_pending_outgoing(user_id, user_type)
-        incoming = [FriendRequestToFriendRequestVO(row) for row in incoming_rows]
-        outgoing = [FriendRequestToFriendRequestVO(row) for row in outgoing_rows]
+        incoming = [FriendRequestVO.model_validate(row) for row in incoming_rows]
+        outgoing = [FriendRequestVO.model_validate(row) for row in outgoing_rows]
         return incoming, outgoing
 
     def remove_friend(self, user_id: str, user_type: str, friend_id: str, friend_type: str) -> None:
@@ -261,4 +257,4 @@ class FriendService:
 
 
 def get_friend_service(db: Session = Depends(get_db)) -> FriendService:
-    return FriendService.from_db(db)
+    return FriendService(FriendRepository(db))

@@ -1,7 +1,11 @@
 """Home params — mirrors hei-gin plugin-sys/home/params.go."""
 
-from typing import Optional, List
-from pydantic import BaseModel, ConfigDict
+from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
 
 
 class QuickActionVO(BaseModel):
@@ -29,12 +33,12 @@ class SortQuickActionParam(BaseModel):
     ids: List[str]
 
 
-class HomeNotice(BaseModel):
+class HomeNotice(DateTimeValidatorMixin, BaseModel):
     """Mirrors Go HomeNotice — created_at is a formatted string."""
     id: str = ""
     title: str = ""
     level: str = "NORMAL"
-    created_at: str = ""
+    created_at: Optional[datetime] = None
 
 
 class HomeStats(BaseModel):
@@ -42,7 +46,7 @@ class HomeStats(BaseModel):
 
 
 class HomeVO(BaseModel):
-    quick_actions: List[QuickActionVO] = []
-    available_resources: List[QuickActionVO] = []
-    notices: List[HomeNotice] = []
-    stats: HomeStats = HomeStats()
+    quick_actions: List[QuickActionVO] = Field(default_factory=list)
+    available_resources: List[QuickActionVO] = Field(default_factory=list)
+    notices: List[HomeNotice] = Field(default_factory=list)
+    stats: HomeStats = Field(default_factory=HomeStats)

@@ -1,4 +1,3 @@
-from typing import List
 from fastapi import APIRouter, Depends, Query
 from sdk.web.result import Result, PageData, success
 from sdk.shared.di import ActorContext, get_current_actor
@@ -82,8 +81,7 @@ def detail(
     id: str = Query(...),
     service: LogService = Depends(get_log_service),
 ):
-    data = service.detail(IdParam(id=id))
-    return success(data if data else None)
+    return success(service.detail(IdParam(id=id)))
 
 
 @router.post(

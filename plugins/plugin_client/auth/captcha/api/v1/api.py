@@ -11,5 +11,4 @@ router = APIRouter()
     response_model=Result[CaptchaResult]
 )
 async def get_captcha():
-    captcha_result = await c_captcha.get_captcha()
-    return success(captcha_result.model_dump())
+    return success(await c_captcha.get_captcha())

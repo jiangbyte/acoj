@@ -24,11 +24,11 @@ class IMUserRepository:
         stmt = select(ClientUser).where(ClientUser.id.in_(user_ids))
         return list(self.db.execute(stmt).scalars().all())
 
-    def find_sys_user(self, user_id: str):
+    def get_sys_user_by_id(self, user_id: str):
         stmt = select(SysUser).where(SysUser.id == user_id)
         return self.db.execute(stmt).scalar_one_or_none()
 
-    def find_client_user(self, user_id: str):
+    def get_client_user_by_id(self, user_id: str):
         stmt = select(ClientUser).where(ClientUser.id == user_id)
         return self.db.execute(stmt).scalar_one_or_none()
 

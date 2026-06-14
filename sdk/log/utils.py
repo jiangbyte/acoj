@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Any, Optional, Tuple
 from fastapi import Request
+from pydantic import BaseModel
 from sdk.utils.sm2_crypto_util import hash_with_salt
 from sdk.utils.trace_utils import get_trace_id
 
@@ -58,8 +59,7 @@ def get_result_json(result: Any) -> Optional[str]:
     if result is None:
         return None
     try:
-        # FastAPI routes often return Result objects with model_dump
-        if hasattr(result, 'model_dump'):
+        if isinstance(result, BaseModel):
             return json.dumps(result.model_dump(), ensure_ascii=False, default=str)
         return json.dumps(result, ensure_ascii=False, default=str)
     except Exception:

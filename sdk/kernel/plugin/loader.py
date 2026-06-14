@@ -52,7 +52,8 @@ class PluginRegistry:
         return ok, snapshot
 
     def init_all(self) -> None:
-        self.discover()
+        if not self._plugin_classes:
+            self.discover()
         self.instantiate()
         self.freeze()
         for plugin in self._instances:

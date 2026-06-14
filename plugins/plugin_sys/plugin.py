@@ -7,14 +7,14 @@ Mirrors hei-gin's ``plugins/plugin-sys/plugin.go``.
 import logging
 
 from sdk.kernel.plugin import HeiPlugin, PluginInfo
-from sdk.auth.provider import DatabasePermissionProvider, register_permission_provider
+from sdk.auth.auth.base_auth_tool import BaseAuthTool
+from sdk.auth.provider import DatabasePermissionProvider
 from sdk.infra.db import SessionLocal
 from sdk.infra.db.redis import get_client as get_redis_client
 from sdk.log import configure_async_log_persister, start_log_persister, stop_log_persister, set_op_user_resolver
 from plugins.plugin_sys.persistence import DbLogPersister
 from plugins.plugin_sys.migrate import register_all_models, register_all_seeds
-from plugins.plugin_sys.user import LoginUserApiProvider as BLoginUserApiProvider
-from plugins.plugin_sys.auth import init_auth as init_sys_auth
+from plugins.plugin_sys.user.service import LoginUserService
 from plugins.plugin_sys.file.service import cleanup_stale_chunk_uploads
 
 logger = logging.getLogger(__name__)
@@ -30,21 +30,18 @@ class SysPlugin(HeiPlugin):
         )
 
     def on_init(self):
-        """Register permission interface + B-side auth providers + log persister."""
+        """Register permission interface + log persister."""
         register_all_models()
         register_all_seeds()
-        register_permission_provider(
+        BaseAuthTool.set_permission_provider(
             DatabasePermissionProvider(session_factory=SessionLocal, redis_client_getter=get_redis_client)
         )
-
-        login_user_api = BLoginUserApiProvider(SessionLocal)
-        init_sys_auth(login_user_api)
-        set_op_user_resolver(login_user_api.get_username_by_id)
+        set_op_user_resolver(LoginUserService(SessionLocal).get_username)
 
         # Set up log persistence (mirrors hei-gin's LogPersistence assignment)
         configure_async_log_persister(DbLogPersister(SessionLocal))
 
-        logger.info("[SysPlugin] Permission interface, auth providers, and log persister registered")
+        logger.info("[SysPlugin] Permission interface and log persister registered")
 
     async def on_start(self):
         await start_log_persister()

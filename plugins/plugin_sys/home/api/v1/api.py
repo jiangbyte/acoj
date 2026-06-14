@@ -17,8 +17,7 @@ def get_home(
     service: HomeService = Depends(get_home_service),
     actor: ActorContext = Depends(get_current_actor),
 ):
-    result = service.home(actor)
-    return success(result.model_dump())
+    return success(service.home(actor))
 
 
 @router.post("/api/v1/sys/home/quick-actions/add", summary="添加快捷方式", response_model=Result)

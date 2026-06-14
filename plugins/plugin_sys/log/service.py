@@ -1,22 +1,33 @@
 """Log service — mirrors hei-gin plugin-sys/log/service.go."""
 
-from typing import Optional, List, Dict
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from typing import Dict, List, Optional
+
 from fastapi import Depends
 from sqlalchemy import delete as sa_delete
 from sqlalchemy.orm import Session
+
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
+from sdk.web.exception import BusinessException
+from sdk.web.result import map_page_data
+
 from .models import SysLog
 from .params import (
     LogVO, LogPageParam,
     LogDeleteByCategoryParam,
     LogBarChartData, LogCategorySeries, LogPieChartData, LogCategoryTotal,
-    SysLogToLogVO,
 )
 from .repository import LogRepository
-from sdk.shared.types import IdParam
-from sdk.web.result import page_data
+from sdk.shared.types import IdParam, IdsParam
+
+
+def _format_day(value: date) -> str:
+    return value.strftime("%Y-%m-%d")
+
+
+def _actor_user_id(actor: Optional[ActorContext]) -> Optional[str]:
+    return actor.user_id if actor else None
 
 
 class LogService:
@@ -27,23 +38,16 @@ class LogService:
             self.repository = LogRepository(repository_or_db)
         self.db = self.repository.db
 
-    @classmethod
-    def from_db(cls, db: Session) -> "LogService":
-        return cls(LogRepository(db))
-
     def page(self, param: LogPageParam) -> dict:
         """Mirrors Go Page — keyword filters name/op_user/op_ip, order by created_at DESC."""
-        result = self.repository.find_page(param)
-        records = [SysLogToLogVO(r) for r in result.get("records", [])]
-        return page_data(records=records, total=result.get("total", 0),
-                         page=param.current, size=param.size)
+        return map_page_data(self.repository.find_page(param), LogVO.model_validate, param.current, param.size)
 
-    def detail(self, param: IdParam) -> Optional[dict]:
+    def detail(self, param: IdParam) -> Optional[LogVO]:
         """Mirrors Go Detail — returns VO dict or None."""
         entity = self.repository.find_by_id(param.id)
         if not entity:
             return None
-        return SysLogToLogVO(entity)
+        return LogVO.model_validate(entity)
 
     def delete_by_category(self, param: LogDeleteByCategoryParam) -> None:
         """Mirrors Go DeleteByCategory."""
@@ -68,7 +72,7 @@ class LogService:
 
         day_map: Dict[str, Dict[str, int]] = {}
         for r in rows:
-            day_str = r["day"].strftime("%Y-%m-%d") if hasattr(r["day"], "strftime") else str(r["day"])
+            day_str = _format_day(r["day"])
             day_map.setdefault(day_str, {})[r["category"]] = r["count"]
 
         return LogBarChartData(
@@ -96,7 +100,7 @@ class LogService:
 
         day_map: Dict[str, Dict[str, int]] = {}
         for r in rows:
-            day_str = r["day"].strftime("%Y-%m-%d") if hasattr(r["day"], "strftime") else str(r["day"])
+            day_str = _format_day(r["day"])
             day_map.setdefault(day_str, {})[r["category"]] = r["count"]
 
         return LogBarChartData(
@@ -118,58 +122,52 @@ class LogService:
     def create(self, vo: LogVO, actor: Optional[ActorContext] = None) -> None:
         """Mirrors Go Create()."""
         from sdk.utils import generate_id
+
         now = datetime.now()
+        actor_user_id = _actor_user_id(actor)
         entity = SysLog(
             id=generate_id(),
+            category=vo.category,
+            name=vo.name,
+            exe_status=vo.exe_status,
+            exe_message=vo.exe_message,
+            op_ip=vo.op_ip,
+            op_address=vo.op_address,
             created_at=now,
             updated_at=now,
+            created_by=actor_user_id,
+            updated_by=actor_user_id,
         )
-        if vo.category:
-            entity.category = vo.category
-        if vo.name:
-            entity.name = vo.name
-        if vo.exe_status:
-            entity.exe_status = vo.exe_status
-        if vo.exe_message:
-            entity.exe_message = vo.exe_message
-        if vo.op_ip:
-            entity.op_ip = vo.op_ip
-        if vo.op_address:
-            entity.op_address = vo.op_address
-        if actor and actor.user_id:
-            entity.created_by = actor.user_id
-            entity.updated_by = actor.user_id
         self.repository.insert(entity)
 
     def modify(self, vo: LogVO, actor: Optional[ActorContext] = None) -> None:
         """Mirrors Go Modify()."""
         entity = self.repository.find_by_id(vo.id)
         if not entity:
-            from sdk.web.exception import BusinessException
             raise BusinessException("数据不存在")
         now = datetime.now()
-        up = {"updated_at": now}
-        if vo.category:
-            up["category"] = vo.category
-        if vo.name:
-            up["name"] = vo.name
-        if vo.exe_status:
-            up["exe_status"] = vo.exe_status
-        if actor and actor.user_id:
-            up["updated_by"] = actor.user_id
+        actor_user_id = _actor_user_id(actor)
+        up = {
+            "updated_at": now,
+            "category": vo.category,
+            "name": vo.name,
+            "exe_status": vo.exe_status,
+        }
+        if actor_user_id:
+            up["updated_by"] = actor_user_id
         from sqlalchemy import update as sa_update
+
         self.db.execute(sa_update(SysLog).where(SysLog.id == vo.id).values(**up))
         self.db.commit()
 
-    def remove(self, param) -> None:
+    def remove(self, param: IdsParam) -> None:
         """Mirrors Go Remove()."""
-        ids = param.ids if hasattr(param, 'ids') else param
-        if not ids:
+        if not param.ids:
             return
         from sqlalchemy import delete as sa_delete
-        self.db.execute(sa_delete(SysLog).where(SysLog.id.in_(ids)))
+        self.db.execute(sa_delete(SysLog).where(SysLog.id.in_(param.ids)))
         self.db.commit()
 
 
 def get_log_service(db: Session = Depends(get_db)) -> LogService:
-    return LogService.from_db(db)
+    return LogService(LogRepository(db))

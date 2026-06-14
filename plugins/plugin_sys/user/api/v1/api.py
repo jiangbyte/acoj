@@ -3,15 +3,16 @@ User API — mirrors hei-gin's plugins/plugin-sys/user/api/v1/api.go 1:1.
 No extra routes beyond what Go registers.
 """
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from sdk.web.result import Result, PageData, success
 from sdk.shared.di import ActorContext, get_current_actor
 from sdk.shared.types import IdsParam
 from sdk.kernel.plugin import Perm
 from sdk.auth.decorator import CheckLogin, NoRepeat
 from sdk.log import SysLog
+from sdk.shared.types import IdParam
 from ...params import (
-    UserVO, UserPageParam, GrantRoleParam, GrantUserPermissionParam,
+    UserVO, UserMenuVO, UserPageParam, GrantRoleParam, GrantUserPermissionParam,
     RefreshSessionACLParam, BatchRefreshSessionACLParam,
     UpdateProfileParam, UpdateAvatarParam, UpdatePasswordParam,
 )
@@ -62,8 +63,7 @@ def remove(param: IdsParam, service: UserService = Depends(get_user_service)):
 @router.get("/api/v1/sys/user/detail", summary="获取用户详情", response_model=Result[UserVO])
 @Perm("sys:user:detail", "用户详情")
 def detail(id: str = Query(...), service: UserService = Depends(get_user_service)):
-    data = service.detail(type("P", (), {"id": id})())
-    return success(data if data else None)
+    return success(service.detail(IdParam(id=id)))
 
 
 @router.post("/api/v1/sys/user/grant-role", summary="分配用户角色", response_model=Result)
@@ -130,7 +130,7 @@ def get_current_user(
     return success(data)
 
 
-@router.get("/api/v1/sys/user/menus", summary="获取当前用户菜单树")
+@router.get("/api/v1/sys/user/menus", summary="获取当前用户菜单树", response_model=Result[list[UserMenuVO]])
 @CheckLogin
 async def get_current_user_menus(
     service: UserService = Depends(get_user_service),

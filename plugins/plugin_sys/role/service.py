@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import Depends
 from sqlalchemy import delete as sa_delete
@@ -17,21 +17,22 @@ from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
-from sdk.web.result import page_data
+from sdk.web.result import map_page_data
 
 from ..user.models import RelUserRole
 from .models import RelRolePermission, RelRoleResource, SysRole
 from .params import (
     ButtonPermissionScope,
     PermissionItem,
-    GrantPermissionParam,
-    GrantResourceParam,
     RefreshRoleSessionACLParam,
     RolePageParam,
     RoleVO,
-    SysRoleToRoleVO,
 )
 from .repository import RoleRepository
+
+
+def _actor_user_id(actor: Optional[ActorContext]) -> Optional[str]:
+    return actor.user_id if actor else None
 
 
 class RoleService:
@@ -42,32 +43,42 @@ class RoleService:
             self.repository = RoleRepository(repository_or_db)
         self.db = self.repository.db
 
-    @classmethod
-    def from_db(cls, db: Session) -> "RoleService":
-        return cls(RoleRepository(db))
-
     def page(self, param: RolePageParam) -> dict:
         param.current = max(1, param.current)
         param.size = max(1, param.size)
         if param.size > 100:
             param.size = 100
-        result = self.repository.find_page(param)
-        records = [SysRoleToRoleVO(row) for row in result.get("records", [])]
-        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
+        return map_page_data(self.repository.find_page(param), RoleVO.model_validate, param.current, param.size)
 
-    def detail(self, id: str) -> Optional[dict]:
+    def detail(self, id: str) -> Optional[RoleVO]:
         if not id:
             return None
         entity = self.repository.find_by_id(id)
         if not entity:
             return None
-        return SysRoleToRoleVO(entity)
+        return RoleVO.model_validate(entity)
+
+    def get_permission_codes(self, role_id: str) -> list[str]:
+        if not role_id:
+            return []
+        return self.repository.get_permission_codes_by_role_id(role_id)
+
+    def get_permission_details(self, role_id: str) -> list[PermissionItem]:
+        if not role_id:
+            return []
+        return self.repository.get_permission_details_by_role_id(role_id)
+
+    def get_resource_ids(self, role_id: str) -> list[str]:
+        if not role_id:
+            return []
+        return self.repository.get_resource_ids_by_role_id(role_id)
 
     def create(self, vo: RoleVO, actor: Optional[ActorContext] = None) -> None:
         if not vo.code or not vo.name or not vo.category:
             raise BusinessException("角色编码、名称、类别不能为空", 400)
 
         now = datetime.now()
+        actor_user_id = _actor_user_id(actor)
         entity = SysRole(
             id=generate_id(),
             code=vo.code,
@@ -77,14 +88,11 @@ class RoleService:
             status=vo.status or "ENABLED",
             created_at=now,
             updated_at=now,
+            description=vo.description,
+            extra=vo.extra,
+            created_by=actor_user_id,
+            updated_by=actor_user_id,
         )
-        if vo.description is not None:
-            entity.description = vo.description
-        if vo.extra is not None:
-            entity.extra = vo.extra
-        if actor and actor.user_id:
-            entity.created_by = actor.user_id
-            entity.updated_by = actor.user_id
         self.repository.insert(entity)
 
     def modify(self, vo: RoleVO, actor: Optional[ActorContext] = None) -> None:
@@ -94,21 +102,20 @@ class RoleService:
         if not entity:
             raise BusinessException("数据不存在")
 
+        actor_user_id = _actor_user_id(actor)
         updates = {
             "code": vo.code,
             "name": vo.name,
             "category": vo.category,
             "sort_code": vo.sort_code,
             "updated_at": datetime.now(),
+            "description": vo.description,
+            "extra": vo.extra,
         }
-        if vo.description is not None:
-            updates["description"] = vo.description
         if vo.status:
             updates["status"] = vo.status
-        if vo.extra is not None:
-            updates["extra"] = vo.extra
-        if actor and actor.user_id:
-            updates["updated_by"] = actor.user_id
+        if actor_user_id:
+            updates["updated_by"] = actor_user_id
         self.db.execute(sa_update(SysRole).where(SysRole.id == vo.id).values(**updates))
         self.db.commit()
 
@@ -138,7 +145,7 @@ class RoleService:
     ) -> None:
         if not role_id:
             raise BusinessException("角色ID不能为空", 400)
-        self.repository.grant_permissions(role_id, permissions, actor.user_id if actor and actor.user_id else None)
+        self.repository.grant_permissions(role_id, permissions, _actor_user_id(actor))
         await self.refresh_session_acl(RefreshRoleSessionACLParam(role_id=role_id))
 
     async def grant_resources(
@@ -150,8 +157,7 @@ class RoleService:
     ) -> None:
         if not role_id:
             raise BusinessException("角色ID不能为空", 400)
-        created_by = actor.user_id if actor and actor.user_id else None
-        self.repository.grant_resources(role_id, resource_ids, created_by)
+        self.repository.grant_resources(role_id, resource_ids, _actor_user_id(actor))
 
         resources = self.repository.find_resources_with_extra_by_ids(resource_ids)
         scope_map = {item.permission_code: item for item in permissions}
@@ -187,15 +193,6 @@ class RoleService:
         self.repository.add_missing_permissions(role_id, unique_items)
         await self.refresh_session_acl(RefreshRoleSessionACLParam(role_id=role_id))
 
-    def get_role_permission_codes(self, role_id: str) -> List[str]:
-        return self.repository.get_permission_codes_by_role_id(role_id)
-
-    def get_role_permission_details(self, role_id: str) -> list[dict]:
-        return self.repository.get_permission_details_by_role_id(role_id)
-
-    def get_role_resource_ids(self, role_id: str) -> List[str]:
-        return self.repository.get_resource_ids_by_role_id(role_id)
-
     async def refresh_session_acl(self, param: RefreshRoleSessionACLParam) -> None:
         if not param.role_id:
             raise BusinessException("角色ID不能为空", 400)
@@ -208,4 +205,4 @@ class RoleService:
 
 
 def get_role_service(db: Session = Depends(get_db)) -> RoleService:
-    return RoleService.from_db(db)
+    return RoleService(RoleRepository(db))

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from datetime import datetime
 from typing import Optional
-from plugins.plugin_im.model.group import GroupMessage
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
 
 
 class CreateParam(BaseModel):
@@ -19,6 +22,10 @@ class UpdateParam(BaseModel):
     name: Optional[str] = Field(None, description="群名称")
     avatar: Optional[str] = Field(None, description="群头像")
     notice: Optional[str] = Field(None, description="群公告")
+
+
+class GroupIdParam(BaseModel):
+    group_id: str = Field(..., description="群ID")
 
 
 class InviteParam(BaseModel):
@@ -46,6 +53,23 @@ class SendMessageParam(BaseModel):
     msg_type: str = Field("TEXT", description="消息类型")
     extra: str = Field("", description="扩展JSON")
     reply_to: str = Field("", description="回复消息ID")
+
+
+class RecallMessageParam(BaseModel):
+    group_id: str = Field(..., description="群ID")
+    message_id: str = Field(..., description="消息ID")
+
+
+class MarkReadParam(BaseModel):
+    group_id: str = Field(..., description="群ID")
+    message_id: str = Field("", description="消息ID")
+
+
+class MuteMemberParam(BaseModel):
+    group_id: str = Field(..., description="群ID")
+    user_id: str = Field(..., description="用户ID")
+    user_type: str = Field(..., description="用户类型")
+    duration: int = Field(60, description="禁言分钟数")
 
 
 class HandleJoinRequestParam(BaseModel):
@@ -89,7 +113,9 @@ class MemberVO(BaseModel):
     is_muted: bool = False
 
 
-class MessageVO(BaseModel):
+class MessageVO(DateTimeValidatorMixin, BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str = ""
     sender_id: str = ""
     sender_type: str = ""
@@ -98,7 +124,7 @@ class MessageVO(BaseModel):
     msg_type: str = ""
     reply_to: str = ""
     file_url: str = ""
-    created_at: str = ""
+    created_at: Optional[datetime] = None
 
 
 class ConversationVO(BaseModel):
@@ -117,16 +143,17 @@ class ConversationVO(BaseModel):
     unread_count: int = 0
 
 
-def GroupMessageToMessageVO(src: Optional[GroupMessage]) -> Optional[MessageVO]:
-    if src is None:
-        return None
-    return MessageVO(
-        id=src.id,
-        sender_id=src.sender_id,
-        sender_type=src.sender_type,
-        content=src.content or "",
-        extra=src.extra or "",
-        msg_type=src.msg_type,
-        reply_to=src.reply_to or "",
-        created_at=src.created_at.strftime("%Y-%m-%d %H:%M:%S") if src.created_at else "",
-    )
+class JoinRequestVO(BaseModel):
+    id: str = ""
+    group_id: str = ""
+    user_id: str = ""
+    user_type: str = ""
+    remark: str = ""
+    created_at: str = ""
+
+
+class GroupSearchVO(BaseModel):
+    id: str = ""
+    name: str = ""
+    avatar: str = ""
+    member_count: int = 0

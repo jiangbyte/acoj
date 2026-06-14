@@ -5,8 +5,6 @@ Mirrors hei-gin's ``plugins/plugin-im/plugin.go``.
 """
 
 from __future__ import annotations
-
-import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, WebSocket
@@ -14,7 +12,7 @@ from fastapi import APIRouter, Depends, WebSocket
 from sdk.auth import Business, Consumer
 from sdk.web.result import failure
 from sdk.kernel.plugin import HeiPlugin, PluginInfo
-from plugins.plugin_im.ws import GlobalHub, CrossHub
+from plugins.plugin_im.ws import CrossHub, GlobalHub, get_global_cross_hub, set_global_cross_hub
 from plugins.plugin_im.migrate import register_all_models
 from plugins.plugin_im.message.service import MessageService, get_message_service
 from plugins.plugin_sys.file.service import FileService, get_file_service
@@ -92,15 +90,13 @@ class IMPlugin(HeiPlugin):
         """Register models and initialize CrossHub."""
         register_all_models()
         ch = CrossHub(GlobalHub)
-        import plugins.plugin_im.ws as ws_mod
-        ws_mod.GlobalCrossHub = ch
+        set_global_cross_hub(ch)
 
         logger.info("[IMPlugin] Models registered, CrossHub initialized")
 
     async def on_start(self):
         """Start background tasks."""
-        import plugins.plugin_im.ws as ws_mod
-        ch = ws_mod.GlobalCrossHub
+        ch = get_global_cross_hub()
         if ch:
             ch.refresh_redis()
             ch.create_task(GlobalHub.start_online_broadcast())
@@ -114,8 +110,7 @@ class IMPlugin(HeiPlugin):
 
     async def on_stop(self):
         """Clean up resources."""
-        import plugins.plugin_im.ws as ws_mod
-        ch = ws_mod.GlobalCrossHub
+        ch = get_global_cross_hub()
         if ch:
             await ch.close()
         logger.info("[IMPlugin] Stopped")

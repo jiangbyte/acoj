@@ -1,7 +1,7 @@
 """Client session service — class-based service with DI-friendly provider."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import Depends
 from sqlalchemy import or_, select
@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from sdk.auth import Business, Consumer
 from sdk.infra.db import get_db
+from sdk.web.result import page_data
 
 from plugins.plugin_client.user.models import ClientUser
 from .params import (
@@ -18,9 +19,8 @@ from .params import (
     PieChartData,
     SessionAnalysisResult,
     SessionChartData,
-    SessionInfoToSessionPageResult,
     SessionPageParam,
-    SessionTokenInfoToSessionTokenResult,
+    SessionPageResult,
     SessionTokenResult,
 )
 
@@ -42,10 +42,6 @@ def _format_timeout(seconds: int) -> str:
 class ClientSessionService:
     def __init__(self, db: Session):
         self.db = db
-
-    @classmethod
-    def from_db(cls, db: Session) -> "ClientSessionService":
-        return cls(db)
 
     async def _search_client_user_ids(self, keyword: Optional[str]) -> Optional[list[str]]:
         if not keyword:
@@ -74,7 +70,7 @@ class ClientSessionService:
             proportion_of_b_and_c=f'{business_stats["total_count"]}/{consumer_stats["total_count"]}',
         )
 
-    async def page(self, param: SessionPageParam) -> dict[str, Any]:
+    async def page(self, param: SessionPageParam) -> dict:
         current = max(1, param.current)
         size = max(1, param.size)
         candidate_user_ids = await self._search_client_user_ids(param.keyword)
@@ -90,19 +86,33 @@ class ClientSessionService:
         records = []
         for info in infos:
             user = user_map.get(info["user_id"])
+            username = info.get("username")
+            nickname = None
+            avatar = None
+            status = None
+            last_login_ip = None
+            last_login_time = ""
+            if user:
+                username = user.username or username
+                nickname = user.nickname
+                avatar = user.avatar
+                status = user.status
+                last_login_ip = user.last_login_ip
+                if user.last_login_at:
+                    last_login_time = user.last_login_at.strftime("%Y-%m-%d %H:%M:%S")
             records.append(
-                SessionInfoToSessionPageResult(
+                SessionPageResult.from_session_info(
                     info,
                     _format_timeout(info.get("session_timeout_seconds", 0)),
-                    username=user.username if user and user.username else info.get("username"),
-                    nickname=user.nickname if user and user.nickname else None,
-                    avatar=user.avatar if user and user.avatar else None,
-                    status=user.status if user and user.status else None,
-                    last_login_ip=user.last_login_ip if user and user.last_login_ip else None,
-                    last_login_time=user.last_login_at.strftime("%Y-%m-%d %H:%M:%S") if user and user.last_login_at else "",
-                ).model_dump()
+                    username=username,
+                    nickname=nickname,
+                    avatar=avatar,
+                    status=status,
+                    last_login_ip=last_login_ip,
+                    last_login_time=last_login_time,
+                )
             )
-        return {"records": records, "total": total}
+        return page_data(records, total, current, size)
 
     async def exit_session(self, user_id: str) -> None:
         await Consumer.sessions().kickout_user(user_id)
@@ -110,7 +120,12 @@ class ClientSessionService:
     async def token_list(self, user_id: str) -> list[SessionTokenResult]:
         token_infos = await Consumer.sessions().tokens(user_id)
         return [
-            SessionTokenInfoToSessionTokenResult(token_info, _format_timeout(token_info.get("timeout_seconds", 0)))
+            SessionTokenResult.from_token_info(
+                token_info,
+                _format_timeout(
+                    token_info.get("timeout_seconds", 0),
+                ),
+            )
             for token_info in token_infos
         ]
 
@@ -129,4 +144,4 @@ class ClientSessionService:
 
 
 def get_client_session_service(db: Session = Depends(get_db)) -> ClientSessionService:
-    return ClientSessionService.from_db(db)
+    return ClientSessionService(db)

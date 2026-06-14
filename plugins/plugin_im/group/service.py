@@ -12,8 +12,7 @@ from sqlalchemy.orm import Session
 from sdk.infra.db import get_db
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
-from plugins.plugin_im import ws as im_ws
-from plugins.plugin_im.ws import Message as WSMessage
+from plugins.plugin_im.ws import Message as WSMessage, get_global_cross_hub
 from plugins.plugin_im.ws.tasks import schedule as schedule_ws_task
 
 from ..message.user_repository import IMUserRepository
@@ -36,10 +35,11 @@ from .constants import (
 from .params import (
     ConversationVO,
     CreateParam,
-    GroupMessageToMessageVO,
+    GroupSearchVO,
     GroupVO,
     HandleJoinRequestParam,
     InviteParam,
+    JoinRequestVO,
     KickParam,
     MemberVO,
     MessageVO,
@@ -63,10 +63,6 @@ class GroupService:
         self.repository = repository
         self.user_repository = user_repository
         self.db = repository.db
-
-    @classmethod
-    def from_db(cls, db: Session) -> "GroupService":
-        return cls(GroupRepository(db), IMUserRepository(db))
 
     def create(self, owner_id: str, owner_type: str, param: CreateParam) -> GroupVO:
         if not param.name:
@@ -139,7 +135,11 @@ class GroupService:
                         sender_type=owner_type,
                         content="欢迎加入群聊",
                         extra=json.dumps(
-                            MsgExtraSystem(action="join", user_id=user_id, user_type=param.member_type).__dict__,
+                            MsgExtraSystem(
+                                action="join",
+                                user_id=user_id,
+                                user_type=param.member_type,
+                            ).model_dump(),
                             ensure_ascii=False,
                         ),
                         msg_type=MsgTypeSystem,
@@ -291,16 +291,16 @@ class GroupService:
             )
         self.repository.commit()
 
-    def pending_join_requests(self, group_id: str) -> list[dict]:
+    def pending_join_requests(self, group_id: str) -> list[JoinRequestVO]:
         return [
-            {
-                "id": request.id,
-                "group_id": request.group_id,
-                "user_id": request.user_id,
-                "user_type": request.user_type,
-                "remark": getattr(request, "remark", "") or "",
-                "created_at": _fmt_dt(request.created_at),
-            }
+            JoinRequestVO(
+                id=request.id,
+                group_id=request.group_id,
+                user_id=request.user_id,
+                user_type=request.user_type,
+                remark=getattr(request, "remark", "") or "",
+                created_at=_fmt_dt(request.created_at),
+            )
             for request in self.repository.list_pending_join_requests(group_id)
         ]
 
@@ -439,14 +439,15 @@ class GroupService:
             "created_at": _fmt_dt(now),
         }
         ws_msg = WSMessage(type="group_message", payload=payload)
+        cross_hub = get_global_cross_hub()
         for member in self.repository.list_other_active_members(param.group_id, sender_id, sender_type):
             if member.user_type == UserTypeConsumer:
-                if im_ws.GlobalCrossHub:
-                    schedule_ws_task(im_ws.GlobalCrossHub.send_to_consumer(member.user_id, ws_msg))
+                if cross_hub:
+                    schedule_ws_task(cross_hub.send_to_consumer(member.user_id, ws_msg))
             else:
-                if im_ws.GlobalCrossHub:
-                    schedule_ws_task(im_ws.GlobalCrossHub.send_to_user(member.user_id, ws_msg))
-        return GroupMessageToMessageVO(message)
+                if cross_hub:
+                    schedule_ws_task(cross_hub.send_to_user(member.user_id, ws_msg))
+        return MessageVO.model_validate(message)
 
     def recall_message(self, group_id: str, message_id: str, user_id: str, user_type: str) -> None:
         message = self.repository.find_group_message(group_id, message_id)
@@ -489,7 +490,12 @@ class GroupService:
         duration: timedelta = timedelta(minutes=60),
     ) -> None:
         self._check_owner_or_admin(param.group_id, operator_id, operator_type)
-        self.repository.update_member_muted_until(param.group_id, param.user_id, param.user_type, datetime.now() + duration)
+        self.repository.update_member_muted_until(
+            param.group_id,
+            param.user_id,
+            param.user_type,
+            datetime.now() + duration,
+        )
         self.repository.commit()
 
     def unmute_member(self, operator_id: str, operator_type: str, param: KickParam) -> None:
@@ -497,7 +503,7 @@ class GroupService:
         self.repository.update_member_muted_until(param.group_id, param.user_id, param.user_type, None)
         self.repository.commit()
 
-    def search_groups(self, keyword: str, limit: int = 20) -> list[dict]:
+    def search_groups(self, keyword: str, limit: int = 20) -> list[GroupSearchVO]:
         if not keyword:
             return []
         if limit > 50:
@@ -505,12 +511,12 @@ class GroupService:
         groups = self.repository.search_groups(keyword, limit)
         count_map = self.repository.active_member_counts([group.id for group in groups])
         return [
-            {
-                "id": group.id,
-                "name": group.name,
-                "avatar": group.avatar or "",
-                "member_count": count_map.get(group.id, 0),
-            }
+            GroupSearchVO(
+                id=group.id,
+                name=group.name,
+                avatar=group.avatar or "",
+                member_count=count_map.get(group.id, 0),
+            )
             for group in groups
         ]
 
@@ -569,11 +575,11 @@ class GroupService:
         has_more = len(records) > size
         if has_more:
             records = records[:size]
-        return [GroupMessageToMessageVO(record) for record in records], has_more
+        return [MessageVO.model_validate(record) for record in records], has_more
 
 
 def get_group_service(db: Session = Depends(get_db)) -> GroupService:
-    return GroupService.from_db(db)
+    return GroupService(GroupRepository(db), IMUserRepository(db))
 
 
 __all__ = ["GroupService", "get_group_service"]

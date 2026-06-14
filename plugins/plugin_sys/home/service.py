@@ -7,29 +7,33 @@ from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
 
 from .models import SysQuickAction
-from .params import AddQuickActionParam, HomeNotice, HomeStats, HomeVO, QuickActionVO, RemoveQuickActionParam, SortQuickActionParam
+from .params import (
+    AddQuickActionParam,
+    HomeVO,
+    QuickActionVO,
+    RemoveQuickActionParam,
+    SortQuickActionParam,
+)
 from .repository import QuickActionRepository
+
+
+def _actor_user_id(actor: Optional[ActorContext]) -> str:
+    return actor.user_id if actor else ""
 
 
 class HomeService:
     def __init__(self, repository: QuickActionRepository):
         self.repository = repository
 
-    @classmethod
-    def from_db(cls, db: Session) -> "HomeService":
-        return cls(QuickActionRepository(db))
-
     def home(self, actor: Optional[ActorContext] = None) -> HomeVO:
-        user_id = actor.user_id if actor and actor.user_id else ""
+        user_id = _actor_user_id(actor)
         quick_actions: list[QuickActionVO] = []
         available_resources: list[QuickActionVO] = []
         if user_id:
-            quick_actions = [QuickActionVO(**item) for item in self.repository.find_by_user_id(user_id)]
-            available_resources = [
-                QuickActionVO(resource_id=item["id"], **item) for item in self.repository.get_available_resources(user_id)
-            ]
-        notices = [HomeNotice(**item) for item in self.repository.get_notices()]
-        stats = HomeStats(**self.repository.get_stats())
+            quick_actions = self.repository.find_by_user_id(user_id)
+            available_resources = self.repository.get_available_resources(user_id)
+        notices = self.repository.get_notices()
+        stats = self.repository.get_stats()
         return HomeVO(
             quick_actions=quick_actions,
             available_resources=available_resources,
@@ -38,7 +42,7 @@ class HomeService:
         )
 
     def add_quick_action(self, param: AddQuickActionParam, actor: Optional[ActorContext] = None) -> None:
-        user_id = actor.user_id if actor and actor.user_id else ""
+        user_id = _actor_user_id(actor)
         if not user_id:
             return
         existing = self.repository.find_by_user_and_resource(user_id, param.resource_id)
@@ -49,13 +53,13 @@ class HomeService:
         self.repository.insert(entity, user_id=user_id)
 
     def remove_quick_action(self, param: RemoveQuickActionParam, actor: Optional[ActorContext] = None) -> None:
-        user_id = actor.user_id if actor and actor.user_id else ""
+        user_id = _actor_user_id(actor)
         if not user_id:
             return
         self.repository.delete_by_id(param.id)
 
     def sort_quick_actions(self, param: SortQuickActionParam, actor: Optional[ActorContext] = None) -> None:
-        user_id = actor.user_id if actor and actor.user_id else ""
+        user_id = _actor_user_id(actor)
         if not user_id:
             return
         entities = self.repository.find_by_ids(param.ids)
@@ -68,4 +72,4 @@ class HomeService:
 
 
 def get_home_service(db: Session = Depends(get_db)) -> HomeService:
-    return HomeService.from_db(db)
+    return HomeService(QuickActionRepository(db))

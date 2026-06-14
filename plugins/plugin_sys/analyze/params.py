@@ -1,5 +1,5 @@
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TrendItem(BaseModel):
@@ -39,12 +39,12 @@ class ClientStats(BaseModel):
 
 class DashboardVO(BaseModel):
     stats: DashboardStats
-    client_stats: ClientStats = ClientStats()
-    user_trend: List[TrendItem] = []
-    client_trend: List[TrendItem] = []
-    org_user_distribution: List[OrgUserDistribution] = []
-    role_category_distribution: List[CategoryDistribution] = []
-    sys_info: SysInfo = SysInfo()
+    client_stats: ClientStats = Field(default_factory=ClientStats)
+    user_trend: List[TrendItem] = Field(default_factory=list)
+    client_trend: List[TrendItem] = Field(default_factory=list)
+    org_user_distribution: List[OrgUserDistribution] = Field(default_factory=list)
+    role_category_distribution: List[CategoryDistribution] = Field(default_factory=list)
+    sys_info: SysInfo = Field(default_factory=SysInfo)
 
 
 class LogAnalysisData(BaseModel):

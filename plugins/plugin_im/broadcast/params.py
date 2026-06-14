@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from datetime import datetime
 from typing import Optional
-from plugins.plugin_im.model.broadcast import Broadcast
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
 
 
 class SendBroadcastParam(BaseModel):
@@ -13,7 +16,13 @@ class SendBroadcastParam(BaseModel):
     scope: str = Field("ALL", description="范围: ALL | BUSINESS | CONSUMER")
 
 
-class BroadcastVO(BaseModel):
+class BroadcastReadParam(BaseModel):
+    broadcast_id: str = Field(..., description="通知ID")
+
+
+class BroadcastVO(DateTimeValidatorMixin, BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str = ""
     title: str = ""
     content: str = ""
@@ -21,17 +30,4 @@ class BroadcastVO(BaseModel):
     sender_id: str = ""
     read: bool = False
     read_at: str = ""
-    created_at: str = ""
-
-
-def BroadcastToBroadcastVO(src: Optional[Broadcast]) -> Optional[BroadcastVO]:
-    if src is None:
-        return None
-    return BroadcastVO(
-        id=src.id,
-        title=src.title,
-        content=src.content or "",
-        scope=src.scope,
-        sender_id=src.sender_id,
-        created_at=src.created_at.strftime("%Y-%m-%d %H:%M:%S") if src.created_at else "",
-    )
+    created_at: Optional[datetime] = None

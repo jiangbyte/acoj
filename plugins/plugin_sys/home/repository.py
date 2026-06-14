@@ -1,13 +1,14 @@
 """Home Repository — mirrors hei-gin plugin-sys/home/service.go queries."""
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from sqlalchemy import select, and_, func, delete as sa_delete
+from typing import List, Optional
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from plugins.plugin_sys.user.models import SysUser
 from plugins.plugin_sys.notice.models import SysNotice
 from plugins.plugin_sys.resource.models import SysResource
 from .models import SysQuickAction
+from .params import HomeNotice, HomeStats, QuickActionVO
 
 
 class QuickActionRepository:
@@ -50,7 +51,7 @@ class QuickActionRepository:
 
     # ---- custom ----
 
-    def find_by_user_id(self, user_id: str) -> List[Dict[str, Any]]:
+    def find_by_user_id(self, user_id: str) -> List[QuickActionVO]:
         """Quick actions for a user, enriched with resource info — mirrors Go findQuickActionsByUserID."""
         actions = list(self.db.execute(
             select(SysQuickAction).where(SysQuickAction.user_id == user_id)
@@ -66,28 +67,28 @@ class QuickActionRepository:
         ).scalars().all())
         resource_map = {r.id: r for r in resources}
 
-        result = []
+        result: List[QuickActionVO] = []
         for a in actions:
-            vo = {
-                "id": a.id,
-                "resource_id": a.resource_id,
-                "parent_id": "",
-                "type": "",
-                "name": "",
-                "icon": "",
-                "route_path": "",
-                "sort_code": a.sort_code or 0,
-            }
+            vo = QuickActionVO(
+                id=a.id,
+                resource_id=a.resource_id,
+                parent_id="",
+                type="",
+                name="",
+                icon="",
+                route_path="",
+                sort_code=a.sort_code or 0,
+            )
             r = resource_map.get(a.resource_id)
             if r:
-                vo["name"] = r.name
-                vo["type"] = r.type
+                vo.name = r.name
+                vo.type = r.type
                 if r.icon:
-                    vo["icon"] = r.icon
+                    vo.icon = r.icon
                 if r.route_path:
-                    vo["route_path"] = r.route_path
+                    vo.route_path = r.route_path
                 if r.parent_id:
-                    vo["parent_id"] = r.parent_id
+                    vo.parent_id = r.parent_id
             result.append(vo)
         return result
 
@@ -104,7 +105,7 @@ class QuickActionRepository:
         )
         return self.db.execute(stmt).scalar() or 0
 
-    def get_notices(self, limit: int = 5) -> List[Dict[str, Any]]:
+    def get_notices(self, limit: int = 5) -> List[HomeNotice]:
         """Get notices — mirrors Go getNotices: status=ENABLED, category=PLATFORM."""
         rows = self.db.execute(
             select(
@@ -121,20 +122,20 @@ class QuickActionRepository:
             .limit(limit)
         ).all()
         return [
-            {
-                "id": row[0],
-                "title": row[1],
-                "level": row[2] if row[2] else "NORMAL",
-                "created_at": row[3].strftime("%Y-%m-%d %H:%M:%S") if row[3] else "",
-            }
+            HomeNotice(
+                id=row[0],
+                title=row[1],
+                level=row[2] if row[2] else "NORMAL",
+                created_at=row[3],
+            )
             for row in rows
         ]
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> HomeStats:
         stmt = select(func.count()).select_from(SysUser)
-        return {"total_users": self.db.execute(stmt).scalar() or 0}
+        return HomeStats(total_users=self.db.execute(stmt).scalar() or 0)
 
-    def get_available_resources(self, user_id: str) -> List[Dict[str, Any]]:
+    def get_available_resources(self, user_id: str) -> List[QuickActionVO]:
         """Available resources for quick actions — mirrors Go getAvailableResources."""
         subq = (
             select(SysQuickAction.resource_id)
@@ -158,13 +159,13 @@ class QuickActionRepository:
             .order_by(SysResource.sort_code.asc())
         ).all()
         return [
-            {
-                "id": row[0],
-                "parent_id": row[1] if row[1] else "",
-                "type": row[2] if row[2] else "",
-                "name": row[3] if row[3] else "",
-                "icon": row[4] if row[4] else "",
-                "route_path": row[5] if row[5] else "",
-            }
+            QuickActionVO(
+                resource_id=row[0],
+                parent_id=row[1] if row[1] else "",
+                type=row[2] if row[2] else "",
+                name=row[3] if row[3] else "",
+                icon=row[4] if row[4] else "",
+                route_path=row[5] if row[5] else "",
+            )
             for row in rows
         ]

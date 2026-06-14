@@ -160,7 +160,7 @@ class UserRepository:
 
     # ---- RAL: User Permissions (direct) ----
 
-    def get_permission_details_by_user_id(self, user_id: str) -> list[dict]:
+    def get_permission_details_by_user_id(self, user_id: str) -> list[PermissionItem]:
         rows = self.db.execute(
             select(
                 RelUserPermission.permission_code,
@@ -172,12 +172,12 @@ class UserRepository:
             )
         ).all()
         return [
-            {
-                "permission_code": r[0],
-                "scope": r[1] or DataScope.ALL.value,
-                "custom_scope_group_ids": r[2],
-                "custom_scope_org_ids": r[3],
-            }
+            PermissionItem(
+                permission_code=r[0],
+                scope=r[1] or DataScope.ALL.value,
+                custom_scope_group_ids=r[2],
+                custom_scope_org_ids=r[3],
+            )
             for r in rows
         ]
 
@@ -187,7 +187,12 @@ class UserRepository:
         ).scalars().all()
         return list(rows)
 
-    def grant_permissions(self, user_id: str, permissions: Optional[List[PermissionItem]] = None, created_by: Optional[str] = None):
+    def grant_permissions(
+        self,
+        user_id: str,
+        permissions: Optional[List[PermissionItem]] = None,
+        created_by: Optional[str] = None,
+    ):
         try:
             self.db.execute(sa_delete(RelUserPermission).where(RelUserPermission.user_id == user_id))
             if permissions:
@@ -272,8 +277,14 @@ class UserRepository:
         filters = []
         if param.keyword:
             keyword = f"%{param.keyword}%"
-            filters.append(or_(SysUser.username.ilike(keyword), SysUser.nickname.ilike(keyword),
-                                SysUser.phone.ilike(keyword), SysUser.email.ilike(keyword)))
+            filters.append(
+                or_(
+                    SysUser.username.ilike(keyword),
+                    SysUser.nickname.ilike(keyword),
+                    SysUser.phone.ilike(keyword),
+                    SysUser.email.ilike(keyword),
+                )
+            )
         if param.status:
             filters.append(SysUser.status == param.status)
         stmt = select(SysUser).where(*filters).order_by(SysUser.created_at.desc())

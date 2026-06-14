@@ -7,11 +7,16 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, Query as QueryParam, Request, UploadFile
 
+from plugins.plugin_im.common_params import ConversationCreateResult, CursorResult, SendMessageResult
 from plugins.plugin_im.group.service import GroupService, get_group_service
 from plugins.plugin_im.message.params import (
+    ConversationMessageVO,
+    ConversationReadParam,
     ForwardParam,
     GetOrCreateConversationParam,
+    MessageIdsParam,
     MessagePageParam,
+    MessageReadParam,
     MessageSendParam,
     RecallParam,
     SearchParam,
@@ -29,14 +34,8 @@ router = APIRouter(prefix="/api/v1/sys/im", tags=["IM Message (Sys)"])
 client_router = APIRouter(prefix="/api/v1/c/im", tags=["IM Message (Client)"])
 
 
-async def _sys_user(request: Request) -> tuple[str, str]:
-    uid = await Business.get_login_id(request)
-    return uid or "", "BUSINESS"
-
-
-async def _client_user(request: Request) -> tuple[str, str]:
-    uid = await Consumer.get_login_id(request)
-    return uid or "", "CONSUMER"
+def _cursor_result(records, has_more: bool):
+    return CursorResult(records=records, has_more=has_more)
 
 
 @router.get("/message/page")
@@ -48,7 +47,7 @@ async def message_page_handler(
     status: str = QueryParam(""),
     service: MessageService = Depends(get_message_service),
 ):
-    uid, _ = await _sys_user(request)
+    uid = (await Business.get_login_id(request)) or ""
     param = MessagePageParam(current=current, size=size, status=status)
     return service.page_messages(uid, "BUSINESS", param)
 
@@ -60,9 +59,8 @@ async def message_detail_handler(
     id: str = QueryParam(""),
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _sys_user(request)
-    data = service.detail_message(id, uid, ut)
-    return success(data.__dict__ if data else None)
+    data = service.detail_message(id, (await Business.get_login_id(request)) or "", "BUSINESS")
+    return success(data)
 
 
 @router.get("/message/unread-count")
@@ -71,8 +69,8 @@ async def message_unread_count_handler(
     request: Request,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, _ = await _sys_user(request)
-    return success(UnreadCountVO(count=service.unread_count(uid, "BUSINESS")).__dict__)
+    uid = (await Business.get_login_id(request)) or ""
+    return success(UnreadCountVO(count=service.unread_count(uid, "BUSINESS")))
 
 
 @router.post("/message/send")
@@ -84,12 +82,8 @@ async def message_send_handler(
     p: MessageSendParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _sys_user(request)
-    conv_ids = await service.send_message(p, uid, ut)
-    data = {}
-    if conv_ids:
-        data["conversation_id"] = conv_ids[0]
-    return success(data)
+    conv_ids = await service.send_message(p, (await Business.get_login_id(request)) or "", "BUSINESS")
+    return success(SendMessageResult(conversation_id=conv_ids[0] if conv_ids else ""))
 
 
 @router.post("/message/recall")
@@ -99,8 +93,7 @@ async def message_recall_handler(
     p: RecallParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _sys_user(request)
-    service.recall_message(uid, ut, p)
+    service.recall_message((await Business.get_login_id(request)) or "", "BUSINESS", p)
     return success()
 
 
@@ -111,8 +104,7 @@ async def message_forward_handler(
     p: ForwardParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _sys_user(request)
-    await service.forward_message(uid, ut, p)
+    await service.forward_message((await Business.get_login_id(request)) or "", "BUSINESS", p)
     return success()
 
 
@@ -120,11 +112,11 @@ async def message_forward_handler(
 @CheckLogin
 async def message_delete_handler(
     request: Request,
-    p: dict,
+    p: MessageIdsParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, _ = await _sys_user(request)
-    service.remove_messages(uid, p.get("ids", []))
+    uid = (await Business.get_login_id(request)) or ""
+    service.remove_messages(uid, p.ids)
     return success()
 
 
@@ -137,21 +129,20 @@ async def message_search_handler(
     size: int = QueryParam(20),
     service: MessageService = Depends(get_message_service),
 ):
-    uid, _ = await _sys_user(request)
+    uid = (await Business.get_login_id(request)) or ""
     param = SearchParam(keyword=keyword, cursor=cursor, size=size)
     msgs, has_more = service.search_messages(uid, "BUSINESS", param)
-    return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
+    return success(_cursor_result(msgs, has_more))
 
 
 @router.post("/message/mark-read")
 @CheckLogin
 async def message_mark_read_handler(
     request: Request,
-    p: dict,
+    p: MessageReadParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _sys_user(request)
-    service.mark_read(p.get("id", ""), uid, ut)
+    service.mark_read(p.id, (await Business.get_login_id(request)) or "", "BUSINESS")
     return success()
 
 
@@ -161,7 +152,7 @@ async def message_mark_all_read_handler(
     request: Request,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, _ = await _sys_user(request)
+    uid = (await Business.get_login_id(request)) or ""
     service.mark_all_read(uid, "BUSINESS")
     return success()
 
@@ -170,11 +161,11 @@ async def message_mark_all_read_handler(
 @CheckLogin
 async def message_remove_handler(
     request: Request,
-    p: dict,
+    p: MessageIdsParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, _ = await _sys_user(request)
-    service.remove_messages(uid, p.get("ids", []))
+    uid = (await Business.get_login_id(request)) or ""
+    service.remove_messages(uid, p.ids)
     return success()
 
 
@@ -187,9 +178,14 @@ async def conversation_list_handler(
     service: MessageService = Depends(get_message_service),
     group_service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    convs, has_more = service.conversations(uid, ut, cursor, size, group_service)
-    return success({"records": [c.__dict__ for c in convs], "has_more": has_more})
+    convs, has_more = service.conversations(
+        (await Business.get_login_id(request)) or "",
+        "BUSINESS",
+        cursor,
+        size,
+        group_service,
+    )
+    return success(_cursor_result(convs, has_more))
 
 
 @router.get("/conversation/messages")
@@ -202,43 +198,36 @@ async def conversation_messages_handler(
     service: MessageService = Depends(get_message_service),
     group_service: GroupService = Depends(get_group_service),
 ):
-    uid, _ = await _sys_user(request)
+    uid = (await Business.get_login_id(request)) or ""
     if conversation_id.startswith("group:"):
         group_id = conversation_id[6:]
         msgs, has_more = group_service.messages(group_id, cursor, size)
-        conv_msgs = [
-            {
-                "id": m.id,
-                "sender_id": m.sender_id,
-                "sender_type": m.sender_type,
-                "content": m.content,
-                "msg_type": m.msg_type,
-                "extra": m.extra,
-                "status": "",
-                "file_url": "",
-                "created_at": m.created_at,
-            }
-            for m in msgs
-        ]
-        return success({"records": conv_msgs, "has_more": has_more})
-        msgs, has_more = service.conversation_messages(uid, ut, conversation_id, cursor, size)
-    return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
+        return success(_cursor_result([ConversationMessageVO.from_group_message(m) for m in msgs], has_more))
+    msgs, has_more = service.conversation_messages(uid, "BUSINESS", conversation_id, cursor, size)
+    return success(_cursor_result(msgs, has_more))
 
 
 @router.post("/conversation/read")
 @CheckLogin
 async def conversation_read_handler(
     request: Request,
-    p: dict,
+    p: ConversationReadParam,
     service: MessageService = Depends(get_message_service),
     group_service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    conversation_id = p.get("conversation_id", "")
+    conversation_id = p.conversation_id
     if conversation_id.startswith("group:"):
-        group_service.mark_conversation_read(conversation_id[6:], uid, ut)
+        group_service.mark_conversation_read(
+            conversation_id[6:],
+            (await Business.get_login_id(request)) or "",
+            "BUSINESS",
+        )
     else:
-        service.mark_conversation_read(uid, ut, conversation_id)
+        service.mark_conversation_read(
+            (await Business.get_login_id(request)) or "",
+            "BUSINESS",
+            conversation_id,
+        )
     return success()
 
 
@@ -249,9 +238,12 @@ async def conversation_get_or_create_handler(
     p: GetOrCreateConversationParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _sys_user(request)
-    conversation_id, display_name = service.get_or_create_conversation(uid, ut, p)
-    return success({"conversation_id": conversation_id, "display_name": display_name})
+    conversation_id, display_name = service.get_or_create_conversation(
+        (await Business.get_login_id(request)) or "",
+        "BUSINESS",
+        p,
+    )
+    return success(ConversationCreateResult(conversation_id=conversation_id, display_name=display_name))
 
 
 @router.post("/file/upload")
@@ -265,10 +257,17 @@ async def file_upload_handler(
     msg_type: str = Form(""),
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _sys_user(request)
     try:
-        result = await service.upload_file(file, uid, ut, engine, bucket, conversation_id, msg_type)
-        return success(result.__dict__)
+        result = await service.upload_file(
+            file,
+            (await Business.get_login_id(request)) or "",
+            "BUSINESS",
+            engine,
+            bucket,
+            conversation_id,
+            msg_type,
+        )
+        return success(result)
     except BusinessException as e:
         return failure(e.message, e.code)
 
@@ -282,7 +281,7 @@ async def client_message_page_handler(
     status: str = QueryParam(""),
     service: MessageService = Depends(get_message_service),
 ):
-    uid, _ = await _client_user(request)
+    uid = (await Consumer.get_login_id(request)) or ""
     param = MessagePageParam(current=current, size=size, status=status)
     return service.page_messages(uid, "CONSUMER", param)
 
@@ -295,12 +294,8 @@ async def client_send_handler(
     p: MessageSendParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _client_user(request)
-    conv_ids = await service.send_message(p, uid, ut)
-    data = {}
-    if conv_ids:
-        data["conversation_id"] = conv_ids[0]
-    return success(data)
+    conv_ids = await service.send_message(p, (await Consumer.get_login_id(request)) or "", "CONSUMER")
+    return success(SendMessageResult(conversation_id=conv_ids[0] if conv_ids else ""))
 
 
 @client_router.post("/message/recall")
@@ -310,8 +305,7 @@ async def client_recall_handler(
     p: RecallParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _client_user(request)
-    service.recall_message(uid, ut, p)
+    service.recall_message((await Consumer.get_login_id(request)) or "", "CONSUMER", p)
     return success()
 
 
@@ -322,8 +316,7 @@ async def client_forward_handler(
     p: ForwardParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _client_user(request)
-    await service.forward_message(uid, ut, p)
+    await service.forward_message((await Consumer.get_login_id(request)) or "", "CONSUMER", p)
     return success()
 
 
@@ -331,11 +324,11 @@ async def client_forward_handler(
 @CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_delete_handler(
     request: Request,
-    p: dict,
+    p: MessageIdsParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, _ = await _client_user(request)
-    service.remove_messages(uid, p.get("ids", []))
+    uid = (await Consumer.get_login_id(request)) or ""
+    service.remove_messages(uid, p.ids)
     return success()
 
 
@@ -343,11 +336,11 @@ async def client_delete_handler(
 @CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_remove_handler(
     request: Request,
-    p: dict,
+    p: MessageIdsParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, _ = await _client_user(request)
-    service.remove_messages(uid, p.get("ids", []))
+    uid = (await Consumer.get_login_id(request)) or ""
+    service.remove_messages(uid, p.ids)
     return success()
 
 
@@ -360,21 +353,20 @@ async def client_search_handler(
     size: int = QueryParam(20),
     service: MessageService = Depends(get_message_service),
 ):
-    uid, _ = await _client_user(request)
+    uid = (await Consumer.get_login_id(request)) or ""
     param = SearchParam(keyword=keyword, cursor=cursor, size=size)
     msgs, has_more = service.search_messages(uid, "CONSUMER", param)
-    return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
+    return success(_cursor_result(msgs, has_more))
 
 
 @client_router.post("/message/mark-read")
 @CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_mark_read_handler(
     request: Request,
-    p: dict,
+    p: MessageReadParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _client_user(request)
-    service.mark_read(p.get("id", ""), uid, ut)
+    service.mark_read(p.id, (await Consumer.get_login_id(request)) or "", "CONSUMER")
     return success()
 
 
@@ -384,7 +376,7 @@ async def client_mark_all_read_handler(
     request: Request,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, _ = await _client_user(request)
+    uid = (await Consumer.get_login_id(request)) or ""
     service.mark_all_read(uid, "CONSUMER")
     return success()
 
@@ -398,9 +390,14 @@ async def client_conversation_list_handler(
     service: MessageService = Depends(get_message_service),
     group_service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _client_user(request)
-    convs, has_more = service.conversations(uid, ut, cursor, size, group_service)
-    return success({"records": [c.__dict__ for c in convs], "has_more": has_more})
+    convs, has_more = service.conversations(
+        (await Consumer.get_login_id(request)) or "",
+        "CONSUMER",
+        cursor,
+        size,
+        group_service,
+    )
+    return success(_cursor_result(convs, has_more))
 
 
 @client_router.get("/conversation/messages")
@@ -413,43 +410,36 @@ async def client_conversation_messages_handler(
     service: MessageService = Depends(get_message_service),
     group_service: GroupService = Depends(get_group_service),
 ):
-    uid, _ = await _client_user(request)
+    uid = (await Consumer.get_login_id(request)) or ""
     if conversation_id.startswith("group:"):
         group_id = conversation_id[6:]
         msgs, has_more = group_service.messages(group_id, cursor, size)
-        conv_msgs = [
-            {
-                "id": m.id,
-                "sender_id": m.sender_id,
-                "sender_type": m.sender_type,
-                "content": m.content,
-                "msg_type": m.msg_type,
-                "extra": m.extra,
-                "status": "",
-                "file_url": "",
-                "created_at": m.created_at,
-            }
-            for m in msgs
-        ]
-        return success({"records": conv_msgs, "has_more": has_more})
-        msgs, has_more = service.conversation_messages(uid, ut, conversation_id, cursor, size)
-    return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
+        return success(_cursor_result([ConversationMessageVO.from_group_message(m) for m in msgs], has_more))
+    msgs, has_more = service.conversation_messages(uid, "CONSUMER", conversation_id, cursor, size)
+    return success(_cursor_result(msgs, has_more))
 
 
 @client_router.post("/conversation/read")
 @CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_conversation_read_handler(
     request: Request,
-    p: dict,
+    p: ConversationReadParam,
     service: MessageService = Depends(get_message_service),
     group_service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _client_user(request)
-    conversation_id = p.get("conversation_id", "")
+    conversation_id = p.conversation_id
     if conversation_id.startswith("group:"):
-        group_service.mark_conversation_read(conversation_id[6:], uid, ut)
+        group_service.mark_conversation_read(
+            conversation_id[6:],
+            (await Consumer.get_login_id(request)) or "",
+            "CONSUMER",
+        )
     else:
-        service.mark_conversation_read(uid, ut, conversation_id)
+        service.mark_conversation_read(
+            (await Consumer.get_login_id(request)) or "",
+            "CONSUMER",
+            conversation_id,
+        )
     return success()
 
 
@@ -460,9 +450,12 @@ async def client_get_or_create_conversation_handler(
     p: GetOrCreateConversationParam,
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _client_user(request)
-    conversation_id, display_name = service.get_or_create_conversation(uid, ut, p)
-    return success({"conversation_id": conversation_id, "display_name": display_name})
+    conversation_id, display_name = service.get_or_create_conversation(
+        (await Consumer.get_login_id(request)) or "",
+        "CONSUMER",
+        p,
+    )
+    return success(ConversationCreateResult(conversation_id=conversation_id, display_name=display_name))
 
 
 @client_router.post("/file/upload")
@@ -476,9 +469,16 @@ async def client_file_upload_handler(
     msg_type: str = Form(""),
     service: MessageService = Depends(get_message_service),
 ):
-    uid, ut = await _client_user(request)
     try:
-        result = await service.upload_file(file, uid, ut, engine, bucket, conversation_id, msg_type)
-        return success(result.__dict__)
+        result = await service.upload_file(
+            file,
+            (await Consumer.get_login_id(request)) or "",
+            "CONSUMER",
+            engine,
+            bucket,
+            conversation_id,
+            msg_type,
+        )
+        return success(result)
     except BusinessException as e:
         return failure(e.message, e.code)

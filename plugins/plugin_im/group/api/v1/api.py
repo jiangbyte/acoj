@@ -10,11 +10,16 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Query as QueryParam, Request
 
+from plugins.plugin_im.common_params import CursorResult
 from plugins.plugin_im.group.params import (
     CreateParam,
+    GroupIdParam,
     HandleJoinRequestParam,
     InviteParam,
     KickParam,
+    MarkReadParam,
+    MuteMemberParam,
+    RecallMessageParam,
     SendMessageParam,
     SetNicknameParam,
     SetRoleParam,
@@ -33,16 +38,6 @@ sys_router = APIRouter(prefix="/api/v1/sys/im/group", tags=["IM Group (Sys)"])
 client_router = APIRouter(prefix="/api/v1/c/im/group", tags=["IM Group (Client)"])
 
 
-async def _sys_user(request: Request) -> tuple[str, str]:
-    uid = await Business.get_login_id(request)
-    return uid or "", "BUSINESS"
-
-
-async def _client_user(request: Request) -> tuple[str, str]:
-    uid = await Consumer.get_login_id(request)
-    return uid or "", "CONSUMER"
-
-
 @sys_router.post("/create")
 @NoRepeat(3000)
 @CheckLogin
@@ -51,8 +46,7 @@ async def create_handler(
     p: CreateParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    return success(service.create(uid, ut, p).__dict__)
+    return success(service.create((await Business.get_login_id(request)) or "", "BUSINESS", p))
 
 
 @sys_router.get("/my-groups")
@@ -61,8 +55,7 @@ async def my_groups_handler(
     request: Request,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    return success([g.__dict__ for g in service.my_groups(uid, ut)])
+    return success(service.my_groups((await Business.get_login_id(request)) or "", "BUSINESS"))
 
 
 @sys_router.get("/detail")
@@ -73,7 +66,7 @@ def detail_handler(
     service: GroupService = Depends(get_group_service),
 ):
     data = service.detail(group_id)
-    return success(data.__dict__ if data else None)
+    return success(data)
 
 
 @sys_router.post("/update")
@@ -83,8 +76,7 @@ async def update_handler(
     p: UpdateParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    service.update(uid, ut, p)
+    service.update((await Business.get_login_id(request)) or "", "BUSINESS", p)
     return success()
 
 
@@ -93,11 +85,10 @@ async def update_handler(
 @CheckLogin
 async def dissolve_handler(
     request: Request,
-    p: dict,
+    p: GroupIdParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, _ = await _sys_user(request)
-    service.dissolve(uid, p.get("group_id", ""))
+    service.dissolve((await Business.get_login_id(request)) or "", p.group_id)
     return success()
 
 
@@ -109,8 +100,7 @@ async def invite_handler(
     p: InviteParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    service.invite(uid, ut, p)
+    service.invite((await Business.get_login_id(request)) or "", "BUSINESS", p)
     return success()
 
 
@@ -118,11 +108,10 @@ async def invite_handler(
 @CheckLogin
 async def join_handler(
     request: Request,
-    p: dict,
+    p: GroupIdParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    service.join_group(uid, ut, p.get("group_id", ""))
+    service.join_group((await Business.get_login_id(request)) or "", "BUSINESS", p.group_id)
     return success()
 
 
@@ -143,8 +132,7 @@ async def handle_join_request_handler(
     p: HandleJoinRequestParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    service.handle_join_request(uid, ut, p)
+    service.handle_join_request((await Business.get_login_id(request)) or "", "BUSINESS", p)
     return success()
 
 
@@ -152,11 +140,10 @@ async def handle_join_request_handler(
 @CheckLogin
 async def leave_handler(
     request: Request,
-    p: dict,
+    p: GroupIdParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    service.leave_group(uid, ut, p.get("group_id", ""))
+    service.leave_group((await Business.get_login_id(request)) or "", "BUSINESS", p.group_id)
     return success()
 
 
@@ -168,8 +155,7 @@ async def kick_handler(
     p: KickParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    service.kick(uid, ut, p)
+    service.kick((await Business.get_login_id(request)) or "", "BUSINESS", p)
     return success()
 
 
@@ -181,8 +167,7 @@ async def set_role_handler(
     p: SetRoleParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, _ = await _sys_user(request)
-    service.set_role(uid, p)
+    service.set_role((await Business.get_login_id(request)) or "", p)
     return success()
 
 
@@ -194,8 +179,7 @@ async def transfer_owner_handler(
     p: TransferOwnerParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, _ = await _sys_user(request)
-    service.transfer_owner(uid, p)
+    service.transfer_owner((await Business.get_login_id(request)) or "", p)
     return success()
 
 
@@ -206,8 +190,7 @@ async def set_nickname_handler(
     p: SetNicknameParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    service.set_member_nickname(uid, ut, p)
+    service.set_member_nickname((await Business.get_login_id(request)) or "", "BUSINESS", p)
     return success()
 
 
@@ -218,7 +201,7 @@ def members_handler(
     group_id: str = QueryParam(""),
     service: GroupService = Depends(get_group_service),
 ):
-    return success([m.__dict__ for m in service.members(group_id)])
+    return success(service.members(group_id))
 
 
 @sys_router.get("/messages")
@@ -231,7 +214,7 @@ def messages_handler(
     service: GroupService = Depends(get_group_service),
 ):
     msgs, has_more = service.messages(group_id, cursor, size)
-    return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
+    return success(CursorResult(records=msgs, has_more=has_more))
 
 
 @sys_router.get("/search")
@@ -245,7 +228,7 @@ def search_messages_handler(
     service: GroupService = Depends(get_group_service),
 ):
     msgs, has_more = service.search_messages(group_id, keyword, cursor, size)
-    return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
+    return success(CursorResult(records=msgs, has_more=has_more))
 
 
 @sys_router.get("/search-groups")
@@ -268,19 +251,22 @@ async def send_handler(
     p: SendMessageParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    return success(service.send_message(uid, ut, p).__dict__)
+    return success(service.send_message((await Business.get_login_id(request)) or "", "BUSINESS", p))
 
 
 @sys_router.post("/recall")
 @CheckLogin
 async def recall_handler(
     request: Request,
-    p: dict,
+    p: RecallMessageParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    service.recall_message(p.get("group_id", ""), p.get("message_id", ""), uid, ut)
+    service.recall_message(
+        p.group_id,
+        p.message_id,
+        (await Business.get_login_id(request)) or "",
+        "BUSINESS",
+    )
     return success()
 
 
@@ -288,11 +274,15 @@ async def recall_handler(
 @CheckLogin
 async def mark_read_handler(
     request: Request,
-    p: dict,
+    p: MarkReadParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    service.mark_read(p.get("group_id", ""), uid, ut, p.get("message_id", ""))
+    service.mark_read(
+        p.group_id,
+        (await Business.get_login_id(request)) or "",
+        "BUSINESS",
+        p.message_id,
+    )
     return success()
 
 
@@ -301,17 +291,16 @@ async def mark_read_handler(
 @CheckLogin
 async def mute_handler(
     request: Request,
-    p: dict,
+    p: MuteMemberParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    duration = timedelta(minutes=p.get("duration", 60))
+    duration = timedelta(minutes=p.duration)
     kp = KickParam(
-        group_id=p.get("group_id", ""),
-        user_id=p.get("user_id", ""),
-        user_type=p.get("user_type", ""),
+        group_id=p.group_id,
+        user_id=p.user_id,
+        user_type=p.user_type,
     )
-    service.mute_member(uid, ut, kp, duration)
+    service.mute_member((await Business.get_login_id(request)) or "", "BUSINESS", kp, duration)
     return success()
 
 
@@ -320,16 +309,10 @@ async def mute_handler(
 @CheckLogin
 async def unmute_handler(
     request: Request,
-    p: dict,
+    p: KickParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _sys_user(request)
-    kp = KickParam(
-        group_id=p.get("group_id", ""),
-        user_id=p.get("user_id", ""),
-        user_type=p.get("user_type", ""),
-    )
-    service.unmute_member(uid, ut, kp)
+    service.unmute_member((await Business.get_login_id(request)) or "", "BUSINESS", p)
     return success()
 
 
@@ -340,8 +323,7 @@ async def client_create_handler(
     p: CreateParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _client_user(request)
-    return success(service.create(uid, ut, p).__dict__)
+    return success(service.create((await Consumer.get_login_id(request)) or "", "CONSUMER", p))
 
 
 @client_router.get("/my-groups")
@@ -350,8 +332,7 @@ async def client_my_groups_handler(
     request: Request,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _client_user(request)
-    return success([g.__dict__ for g in service.my_groups(uid, ut)])
+    return success(service.my_groups((await Consumer.get_login_id(request)) or "", "CONSUMER"))
 
 
 @client_router.get("/detail")
@@ -362,18 +343,17 @@ def client_detail_handler(
     service: GroupService = Depends(get_group_service),
 ):
     data = service.detail(group_id)
-    return success(data.__dict__ if data else None)
+    return success(data)
 
 
 @client_router.post("/join")
 @CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_join_handler(
     request: Request,
-    p: dict,
+    p: GroupIdParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _client_user(request)
-    service.join_group(uid, ut, p.get("group_id", ""))
+    service.join_group((await Consumer.get_login_id(request)) or "", "CONSUMER", p.group_id)
     return success()
 
 
@@ -381,11 +361,10 @@ async def client_join_handler(
 @CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_leave_handler(
     request: Request,
-    p: dict,
+    p: GroupIdParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _client_user(request)
-    service.leave_group(uid, ut, p.get("group_id", ""))
+    service.leave_group((await Consumer.get_login_id(request)) or "", "CONSUMER", p.group_id)
     return success()
 
 
@@ -399,7 +378,7 @@ def client_messages_handler(
     service: GroupService = Depends(get_group_service),
 ):
     msgs, has_more = service.messages(group_id, cursor, size)
-    return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
+    return success(CursorResult(records=msgs, has_more=has_more))
 
 
 @client_router.get("/search")
@@ -413,7 +392,7 @@ def client_search_messages_handler(
     service: GroupService = Depends(get_group_service),
 ):
     msgs, has_more = service.search_messages(group_id, keyword, cursor, size)
-    return success({"records": [m.__dict__ for m in msgs], "has_more": has_more})
+    return success(CursorResult(records=msgs, has_more=has_more))
 
 
 @client_router.get("/search-groups")
@@ -435,19 +414,22 @@ async def client_send_handler(
     p: SendMessageParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _client_user(request)
-    return success(service.send_message(uid, ut, p).__dict__)
+    return success(service.send_message((await Consumer.get_login_id(request)) or "", "CONSUMER", p))
 
 
 @client_router.post("/recall")
 @CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_recall_handler(
     request: Request,
-    p: dict,
+    p: RecallMessageParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _client_user(request)
-    service.recall_message(p.get("group_id", ""), p.get("message_id", ""), uid, ut)
+    service.recall_message(
+        p.group_id,
+        p.message_id,
+        (await Consumer.get_login_id(request)) or "",
+        "CONSUMER",
+    )
     return success()
 
 
@@ -455,11 +437,15 @@ async def client_recall_handler(
 @CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_mark_read_handler(
     request: Request,
-    p: dict,
+    p: MarkReadParam,
     service: GroupService = Depends(get_group_service),
 ):
-    uid, ut = await _client_user(request)
-    service.mark_read(p.get("group_id", ""), uid, ut, p.get("message_id", ""))
+    service.mark_read(
+        p.group_id,
+        (await Consumer.get_login_id(request)) or "",
+        "CONSUMER",
+        p.message_id,
+    )
     return success()
 
 
@@ -470,4 +456,4 @@ def client_members_handler(
     group_id: str = QueryParam(""),
     service: GroupService = Depends(get_group_service),
 ):
-    return success([m.__dict__ for m in service.members(group_id)])
+    return success(service.members(group_id))

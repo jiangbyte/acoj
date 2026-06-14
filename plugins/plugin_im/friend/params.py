@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from datetime import datetime
 from typing import Optional
-from plugins.plugin_im.model.friend import FriendRequest
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
 
 
 class SendRequestParam(BaseModel):
@@ -17,6 +20,11 @@ class HandleRequestParam(BaseModel):
     request_id: str = Field(..., description="请求ID")
 
 
+class RemoveFriendParam(BaseModel):
+    friend_id: str = Field(..., description="好友ID")
+    friend_type: str = Field(..., description="好友类型")
+
+
 class FriendVO(BaseModel):
     user_id: str = ""
     user_type: str = ""
@@ -26,7 +34,9 @@ class FriendVO(BaseModel):
     added_at: str = ""
 
 
-class FriendRequestVO(BaseModel):
+class FriendRequestVO(DateTimeValidatorMixin, BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str = ""
     sender_id: str = ""
     sender_type: str = ""
@@ -34,7 +44,7 @@ class FriendRequestVO(BaseModel):
     receiver_type: str = ""
     remark: str = ""
     status: str = ""
-    created_at: str = ""
+    created_at: Optional[datetime] = None
 
 
 class BlockVO(BaseModel):
@@ -61,16 +71,6 @@ class SearchResult(BaseModel):
     avatar: str = ""
 
 
-def FriendRequestToFriendRequestVO(src: Optional[FriendRequest]) -> Optional[FriendRequestVO]:
-    if src is None:
-        return None
-    return FriendRequestVO(
-        id=src.id,
-        sender_id=src.sender_id,
-        sender_type=src.sender_type,
-        receiver_id=src.receiver_id,
-        receiver_type=src.receiver_type,
-        remark=src.remark or "",
-        status=src.status,
-        created_at=src.created_at.strftime("%Y-%m-%d %H:%M:%S") if src.created_at else "",
-    )
+class PendingRequestsResult(BaseModel):
+    incoming: list[FriendRequestVO] = Field(default_factory=list)
+    outgoing: list[FriendRequestVO] = Field(default_factory=list)

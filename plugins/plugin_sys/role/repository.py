@@ -88,7 +88,7 @@ class RoleRepository:
         ).scalars().all()
         return list(rows)
 
-    def get_permission_details_by_role_id(self, role_id: str) -> list[dict]:
+    def get_permission_details_by_role_id(self, role_id: str) -> List[PermissionItem]:
         rows = self.db.execute(
             select(
                 RelRolePermission.permission_code,
@@ -100,12 +100,12 @@ class RoleRepository:
             )
         ).all()
         return [
-            {
-                "permission_code": r[0],
-                "scope": r[1] or "ALL",
-                "custom_scope_group_ids": r[2],
-                "custom_scope_org_ids": r[3],
-            }
+            PermissionItem(
+                permission_code=r[0],
+                scope=r[1] or "ALL",
+                custom_scope_group_ids=r[2],
+                custom_scope_org_ids=r[3],
+            )
             for r in rows
         ]
 
@@ -160,7 +160,7 @@ class RoleRepository:
             select(_SR)
             .where(
                 _SR.id.in_(resource_ids),
-                _SR.extra != None,
+                _SR.extra.is_not(None),
                 _SR.extra != "",
             )
         )
