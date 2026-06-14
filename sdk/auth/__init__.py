@@ -1,63 +1,32 @@
-from .realm import (
-    ACLSnapshot,
-    Business,
-    BusinessID,
-    Consumer,
-    ConsumerID,
-    Realm,
-    ScopeInfo,
-    SessionClaims,
-    Sessions,
-    all_realms,
-    current_realm,
-    infer_realm,
-    infer_realm_id_from_path,
-    resolve_realm,
-    realm_from_id,
-    register_realm,
+from __future__ import annotations
+
+from .integration import (
+    BUSINESS_REALM_ID,
+    CONSUMER_REALM_ID,
+    build_micos_service,
+    get_auth_util,
+    get_current_auth_context,
+    get_current_login_id,
+    get_current_realm_id,
+    get_micos_service,
+    get_micos_session_util,
+    init_micosauth,
+    register_access_provider,
 )
-from .matcher import match, match_permission, match_permissions_and, match_permissions_or
 
-
-async def get_current_login_id(request):
-    realm = current_realm(request)
-    if not realm:
-        return ""
-    return await realm.get_login_id(request) or ""
-
-
-async def get_current_realm_id(request):
-    realm = current_realm(request)
-    return realm.id if realm else ""
-
-
-async def get_current_auth_context(request):
-    realm = current_realm(request)
-    if not realm:
-        return "", ""
-    return (await realm.get_login_id(request) or "", realm.id)
+BusinessID = BUSINESS_REALM_ID
+ConsumerID = CONSUMER_REALM_ID
 
 __all__ = [
-    "Realm",
-    "Business",
-    "Consumer",
     "BusinessID",
     "ConsumerID",
-    "Sessions",
-    "register_realm",
-    "all_realms",
-    "current_realm",
+    "build_micos_service",
+    "get_auth_util",
+    "get_current_auth_context",
     "get_current_login_id",
     "get_current_realm_id",
-    "realm_from_id",
-    "resolve_realm",
-    "infer_realm",
-    "infer_realm_id_from_path",
-    "ScopeInfo",
-    "ACLSnapshot",
-    "SessionClaims",
-    "match",
-    "match_permission",
-    "match_permissions_and",
-    "match_permissions_or",
+    "get_micos_service",
+    "get_micos_session_util",
+    "init_micosauth",
+    "register_access_provider",
 ]

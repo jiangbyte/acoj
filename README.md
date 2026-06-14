@@ -1,5 +1,7 @@
 # Hei FastAPI
 
+> 短时间内暂停维护中...
+
 <img width="120" src="vitepress/docs/public/logo.svg">
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -32,7 +34,6 @@
 | 认证授权 | Token / SM2 国密加解密 / bcrypt 密码哈希 |
 | 文件存储 | 本地文件系统 / MinIO / S3 兼容对象存储 |
 | 分布式 ID | Snowflake ID 算法 |
-| WebSocket | FastAPI WebSocket + Redis List/BRPOP 跨实例 IM |
 | 测试 | pytest + pytest-asyncio + httpx |
 
 ## 核心特性
@@ -58,7 +59,6 @@
 - **雪花 ID** — 分布式 Snowflake ID 生成器
 - **事件总线** — 异步 `@subscribe` / `await publish` 跨插件通信
 - **通用 CRUD** — `sdk/crud` 提供通用分页、详情、删除等标准操作函数
-- **跨实例 WebSocket IM** — Redis List + BRPOP 驱动的跨实例消息投递、在线状态感知、消息去重、限流、心跳检测
 
 ## 项目结构
 
@@ -105,7 +105,6 @@ hei-fastapi/
 ├── plugins/                         # 业务插件
 │   ├── plugin_sys/                  # 系统管理（用户/角色/权限/组织/字典/配置等）
 │   ├── plugin_client/               # 客户端（C 端用户/会话/认证）
-│   └── plugin_im/                   # 即时通讯（WebSocket/单聊/群聊/好友/广播）
 └── scripts/
     └── sqls/
         └── hei_ddl.sql              # 完整 DDL
@@ -246,58 +245,6 @@ python -m cli.migrate --apply
 | `/api/v{n}/c/*` | HeiClientAuthTool（C 端） |
 | `/api/v{n}/b/*` 及默认路径 | HeiAuthTool（B 端） |
 
-## WebSocket / 站内信 IM
-
-框架内置跨实例 WebSocket IM 系统，支持实时消息推送、在线状态感知、多实例水平扩展。
-
-### 架构
-
-```
-┌─ Instance A ─────────────┐    ┌─ Instance B ─────────────┐
-│  CrossHub                 │    │  CrossHub                 │
-│  ├─ Local Hub (in-mem)    │    │  ├─ Local Hub (in-mem)    │
-│  └─ Redis List BRPOP      │    │  └─ Redis List BRPOP      │
-└──────────┬────────────────┘    └──────────┬────────────────┘
-           │                                │
-           └────────── Redis ───────────────┘
-                      │
-        ┌─────────────┴─────────────┐
-        │  ws:user:{type}:{uid}     │ → 用户→实例映射（Set）
-        │  ws:messages:{instance}   │ → 实例消息队列（List）
-        │  ws:instance:{instance}   │ → 实例心跳（String + TTL）
-        └───────────────────────────┘
-```
-
-### WebSocket 端点
-
-| 路径 | 说明 |
-|------|------|
-| `ws://host:port/api/v1/sys/im/ws` | B 端（后台管理）WebSocket |
-| `ws://host:port/api/v1/c/im/ws`  | C 端（客户端）WebSocket |
-
-### 事件类型
-
-| 类型 | 方向 | 说明 |
-|------|------|------|
-| `heartbeat` | Client → Server | 客户端心跳，30s 间隔 |
-| `new_message` | Server → Client | 新消息推送 |
-| `unread_count` | Server → Client | 通知前端刷新未读数 |
-| `presence` | Server → Client | 用户在线/离线状态变更 |
-| `online_count` | Server → Client | 在线人数广播（60s） |
-
-### 配置
-
-```yaml
-ws:
-  read_buffer_size: 1024            # WS 读取缓冲区
-  write_buffer_size: 1024           # WS 写入缓冲区
-  heartbeat_interval: 30            # 心跳发送间隔（秒）
-  instance_ttl: 60                  # 实例心跳 TTL（秒）
-  stale_clean_interval: 5           # 过期实例清理间隔（分钟）
-  rate_limit_window: 10             # 限流时间窗口（秒）
-  rate_limit_max: 30                # 窗口内最大消息数
-```
-
 ## 装饰器参考
 
 ### 权限注册 + 校验
@@ -404,3 +351,4 @@ User ──→ RelUserPermission ──→ Permission (直授)
 ## 开源协议
 
 本项目采用 [MIT License](LICENSE) 开源协议
+

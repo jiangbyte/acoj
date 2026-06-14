@@ -41,10 +41,7 @@ def get_current_app() -> FastAPI | None:
 # ═════════════════════════════════════════════════════════════════════
 
 class AuthPlugin(HeiPlugin):
-    """Initialises auth tools and runs permission scan on start.
-
-    Mirrors hei-gin's ``sdk/auth/authModule``.
-    """
+    """初始化和关闭 micosauth。"""
 
     @classmethod
     def info(cls) -> PluginInfo:
@@ -57,26 +54,25 @@ class AuthPlugin(HeiPlugin):
         )
 
     def on_init(self):
-        from sdk.auth.realm import all_realms
+        from sdk.auth import init_micosauth
 
-        for realm in all_realms():
-            realm.init(
-                expire=settings.token.expire_seconds,
-                token_name=settings.token.token_name,
-            )
-        logger.info("[AuthPlugin] AuthTool initialised")
+        init_micosauth()
+        logger.info("[AuthPlugin] micosauth initialised")
 
     async def on_start(self):
-        """Run permission auto-discovery after all routes are mounted."""
+        """启动 micosauth。"""
         app = get_current_app()
         if app is None:
-            logger.warning("[AuthPlugin] No app reference — skipping permission scan")
-            return
-        try:
-            from sdk.auth.permission_scan import run_permission_scan
-            await run_permission_scan(app)
-        except Exception as e:
-            logger.warning("[AuthPlugin] Permission scan skipped: %s", e)
+            logger.warning("[AuthPlugin] No app reference")
+        from sdk.auth import get_micos_service
+
+        await get_micos_service().init()
+
+    async def on_stop(self):
+        from sdk.auth import get_micos_service
+
+        await get_micos_service().close()
+        logger.info("[AuthPlugin] micosauth stopped")
 
 
 # ═════════════════════════════════════════════════════════════════════
