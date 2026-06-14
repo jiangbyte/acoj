@@ -6,9 +6,8 @@ from fastapi import Request
 
 from sdk.auth.consts import NoRepeatPrefix
 from sdk.auth.decorator._support import call_maybe_awaitable, get_request, params_hash
-from sdk.auth.enums import RealmID
-from sdk.auth.realm import infer_realm_id_from_path, realm_from_id
-from sdk.infra.db.redis import get_client
+from sdk.auth.realm import current_realm
+from sdk.infra.db import get_redis
 from sdk.web.exception import BusinessException
 from sdk.utils import get_client_ip
 
@@ -18,8 +17,10 @@ logger = logging.getLogger(__name__)
 async def _get_current_user_id(request: Request) -> str:
     """Get the current authenticated user ID, if any."""
     try:
-        realm_id = infer_realm_id_from_path(request.url.path) or RealmID.BUSINESS
-        uid = await realm_from_id(realm_id).get_login_id(request)
+        realm = current_realm(request)
+        if not realm:
+            return ""
+        uid = await realm.get_login_id(request)
         return str(uid) if uid else ""
     except Exception:
         return ""
@@ -88,7 +89,7 @@ def no_repeat(interval: int = 5000):
             phash = await _build_request_hash(request, kwargs)
             cache_key = f"{NoRepeatPrefix}{ip}:{user_id}:{request.url.path}:{phash}"
 
-            redis = get_client()
+            redis = get_redis()
             if redis:
                 ttl_ms = interval if interval > 0 else 1000
                 ttl_seconds = max(1, (ttl_ms + 999) // 1000)

@@ -6,11 +6,12 @@ import json
 from fastapi import Request, HTTPException, status
 
 from sdk.config.settings import settings
-from sdk.infra.db.redis import get_client
+from sdk.infra.db import get_redis
 from sdk.auth.provider import PermissionProviderProtocol
 
 
 class BaseAuthTool:
+    _CLAIMS_CACHE_ATTR = "_auth_claims_cache"
     _expire: int = settings.token.expire_seconds
     _token_name: str = settings.token.token_name
     _request_var: ContextVar[Optional[Request]] = ContextVar('base_auth_request', default=None)
@@ -62,9 +63,10 @@ class BaseAuthTool:
         if provider is None:
             return cls._default_acl()
 
-        permissions = list(await provider.get_permission_list(user_id, str(cls.REALM_ID)))
-        roles = list(await provider.get_role_list(user_id, str(cls.REALM_ID)))
-        scope_map = dict(await provider.get_permission_scope_map(user_id, str(cls.REALM_ID)))
+        acl = dict(await provider.get_acl(user_id))
+        permissions = list(acl.get("permissions") or [])
+        roles = list(acl.get("roles") or [])
+        scope_map = dict(acl.get("scope_map") or {})
         permissions.sort()
         roles.sort()
         return {
@@ -106,20 +108,6 @@ class BaseAuthTool:
         if isinstance(value, bytes):
             return value.decode()
         return value or ""
-
-    @classmethod
-    async def _scan_keys(cls, pattern: str) -> List[str]:
-        redis_client = cls._get_redis()
-        if not redis_client:
-            return []
-        cursor = 0
-        keys = []
-        while True:
-            cursor, batch = await redis_client.scan(cursor=cursor, match=pattern, count=200)
-            keys.extend(batch)
-            if cursor == 0:
-                break
-        return [cls._decode_redis_value(key) for key in keys]
 
     @classmethod
     async def _smembers_by_keys(cls, keys: List[str]) -> Dict[str, List[str]]:
@@ -580,7 +568,7 @@ class BaseAuthTool:
 
     @classmethod
     def _get_redis(cls):
-        return get_client()
+        return get_redis()
 
     @classmethod
     def _get_token_key(cls, token: str) -> str:
@@ -589,6 +577,18 @@ class BaseAuthTool:
     @classmethod
     def _get_session_key(cls, user_id: str) -> str:
         return f"{cls.SESSION_PREFIX}{user_id}"
+
+    @classmethod
+    def _request_claim_cache_key(cls, token: str) -> str:
+        return f"{cls.get_realm_id()}:{token}"
+
+    @classmethod
+    def _get_request_claim_cache(cls, request: Request) -> dict[str, Tuple[Optional[Dict[str, Any]], bool]]:
+        cache = getattr(request.state, cls._CLAIMS_CACHE_ATTR, None)
+        if cache is None:
+            cache = {}
+            setattr(request.state, cls._CLAIMS_CACHE_ATTR, cache)
+        return cache
 
     @classmethod
     async def set_token_value(cls, token_value: str, request: Request = None):
@@ -718,10 +718,7 @@ class BaseAuthTool:
 
     @classmethod
     async def get_login_id_default_null(cls, request: Request = None) -> Optional[str]:
-        token = await cls.get_token_value(request)
-        if not token:
-            return None
-        claims, ok = await cls.decode_claims(request, token)
+        claims, ok = await cls._current_claims(request)
         if ok:
             return claims.get("user_id")
         return None
@@ -743,13 +740,13 @@ class BaseAuthTool:
     ) -> Tuple[Optional[Dict[str, Any]], bool]:
         if not token:
             return None, False
-        return await cls._get_claims_for_request(request, token)
+        return await cls._load_claims(token, request=request)
 
     @classmethod
     async def get_claims_by_token(cls, token: str) -> Tuple[Optional[Dict[str, Any]], bool]:
         if not token:
             return None, False
-        return await cls._get_claims_with_context(token)
+        return await cls._load_claims(token)
 
     @classmethod
     async def _get_token_data(cls, token: str) -> Optional[Dict]:
@@ -888,33 +885,28 @@ class BaseAuthTool:
         token = await cls.get_token_value(request)
         if not token:
             return None, False
-        return await cls.decode_claims(request, token)
+        return await cls._load_claims(token, request=request)
 
     @classmethod
-    async def _get_claims_for_request(
+    async def _load_claims(
         cls,
-        request: Request = None,
-        token: str = "",
+        token: str,
+        *,
+        request: Request | None = None,
     ) -> Tuple[Optional[Dict[str, Any]], bool]:
-        if request is None:
-            return await cls._get_claims_with_context(token)
-        cache_key = f"_auth_claims:{cls.REALM_ID}:{token}"
-        state_cache = getattr(request.state, "_state", {})
-        cached = state_cache.get(cache_key)
-        if cached is not None:
-            return cached, bool(cached)
-        claims, ok = await cls._get_claims_with_context(token)
-        state_cache[cache_key] = claims if ok else None
-        return claims, ok
-
-    @classmethod
-    async def _get_claims_with_context(cls, token: str) -> Tuple[Optional[Dict[str, Any]], bool]:
         if not token:
             return None, False
-        data = await cls._get_token_data(token)
-        if not data:
-            return None, False
-        return data, True
+        if request is not None:
+            cache = cls._get_request_claim_cache(request)
+            cache_key = cls._request_claim_cache_key(token)
+            cached = cache.get(cache_key)
+            if cached is not None:
+                return cached
+        claims = await cls._get_token_data(token)
+        result = (claims, claims is not None)
+        if request is not None:
+            cache[cache_key] = result
+        return result
 
     @classmethod
     async def refresh_user_sessions_acl(cls, user_id: str) -> None:
@@ -931,7 +923,7 @@ class BaseAuthTool:
         stale_tokens: list[str] = []
         pipe = redis_client.pipeline()
         for token in tokens:
-            claims, ok = await cls._get_claims_with_context(token)
+            claims, ok = await cls._load_claims(token)
             if not ok or not claims:
                 stale_tokens.append(token)
                 continue

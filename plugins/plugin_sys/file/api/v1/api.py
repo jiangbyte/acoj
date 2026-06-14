@@ -5,9 +5,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 
-from sdk.auth import Business, Consumer
+from sdk.auth import ConsumerID, get_current_login_id
 from sdk.auth.decorator import CheckLogin, CheckPermission
-from sdk.auth.enums import RealmID
 from sdk.web.result import success, failure
 from sdk.shared.types import IdsParam
 from plugins.plugin_sys.file.params import (
@@ -29,7 +28,7 @@ async def upload_handler(
     bucket: str = Form("DEFAULT"),
     service: FileService = Depends(get_file_service),
 ):
-    uid = await Business.get_login_id(request)
+    uid = await get_current_login_id(request)
     try:
         result = await service.upload(file, uid or "", engine, bucket)
         return success(result)
@@ -140,7 +139,7 @@ client_router = APIRouter(prefix="/api/v1/c/file", tags=["Client File"])
 
 
 @client_router.post("/upload", summary="客户端上传文件")
-@CheckLogin(realm_id=RealmID.CONSUMER)
+@CheckLogin(realm_id=ConsumerID)
 async def client_upload_handler(
     request: Request,
     file: UploadFile = File(...),
@@ -148,7 +147,7 @@ async def client_upload_handler(
     bucket: str = Form("DEFAULT"),
     service: FileService = Depends(get_file_service),
 ):
-    uid = await Consumer.get_login_id(request)
+    uid = await get_current_login_id(request)
     try:
         result = await service.upload(file, uid or "", engine, bucket)
         return success(result)

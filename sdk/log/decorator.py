@@ -1,14 +1,12 @@
 import functools
 import inspect
-import json
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import Request
 
-from sdk.auth.enums import RealmID
-from sdk.auth.realm import infer_realm_id_from_path, realm_from_id
+from sdk.auth.realm import current_realm
 from sdk.utils import get_client_ip, get_city_info, generate_id
 from sdk.utils.trace_utils import get_trace_id
 from .persistence import LogEntry, get_op_user_resolver, save_log
@@ -30,8 +28,10 @@ def _get_request(*args, **kwargs) -> Optional[Request]:
 async def _get_op_user(request: Request) -> Optional[str]:
     """Get the current operator's username from the active user."""
     try:
-        realm_id = infer_realm_id_from_path(request.url.path) or RealmID.BUSINESS
-        user_id = await realm_from_id(realm_id).get_login_id(request)
+        realm = current_realm(request)
+        if not realm:
+            return None
+        user_id = await realm.get_login_id(request)
         if not user_id:
             return None
 
@@ -100,9 +100,9 @@ def sys_log(name: str = "未命名"):
 
 
 async def _save_log(request: Request, func, name: str, category: str,
-              exe_status: str, exe_message: Optional[str],
-              params_json: str, result_json: Optional[str],
-              start_time: datetime) -> None:
+                    exe_status: str, exe_message: Optional[str],
+                    params_json: str, result_json: Optional[str],
+                    start_time: datetime) -> None:
     """Persist the log entry to database."""
     try:
         user_agent = request.headers.get("user-agent", "")

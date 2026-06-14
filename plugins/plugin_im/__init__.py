@@ -1,1 +1,0 @@
-"""Instant messaging plugin package."""

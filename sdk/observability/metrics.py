@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from starlette.responses import Response
 
-from sdk.infra.db.mysql import engine
-from sdk.infra.db.redis import get_client as get_redis
+from sdk.infra.db import db_runtime, get_redis
 
 try:
     from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
@@ -91,7 +90,10 @@ db_open_connections = Gauge("hei_db_open_connections", "Current number of open d
 db_in_use_connections = Gauge("hei_db_in_use_connections", "Current number of in-use database connections.")
 db_idle_connections = Gauge("hei_db_idle_connections", "Current number of idle database connections.")
 db_wait_count_total = Gauge("hei_db_wait_count_total", "Total database connection wait count.")
-db_wait_duration_seconds = Gauge("hei_db_wait_duration_seconds", "Total time blocked waiting for a new database connection.")
+db_wait_duration_seconds = Gauge(
+    "hei_db_wait_duration_seconds",
+    "Total time blocked waiting for a new database connection.",
+)
 
 redis_pool_hits = Gauge("hei_redis_pool_hits", "Redis connection pool hits.")
 redis_pool_misses = Gauge("hei_redis_pool_misses", "Redis connection pool misses.")
@@ -100,7 +102,10 @@ redis_total_connections = Gauge("hei_redis_total_connections", "Current total Re
 redis_idle_connections = Gauge("hei_redis_idle_connections", "Current idle Redis pool connections.")
 redis_stale_connections = Gauge("hei_redis_stale_connections", "Current stale Redis pool connections.")
 log_queue_size = Gauge("hei_log_queue_size", "Current async log queue size.")
-log_queue_dropped_total = Gauge("hei_log_queue_dropped_total", "Total dropped async log entries.")
+log_queue_dropped_total = Gauge(
+    "hei_log_queue_dropped_total",
+    "Total dropped async log entries.",
+)
 
 _ALL_METRICS = [
     http_requests_total,
@@ -195,7 +200,7 @@ def _update_log_metrics() -> None:
 
 
 def _update_db_metrics() -> None:
-    pool = engine.pool
+    pool = db_runtime.engine.pool
     checked_in = _safe_int(getattr(pool, "checkedin", lambda: 0)())
     checked_out = _safe_int(getattr(pool, "checkedout", lambda: 0)())
     overflow = _safe_int(getattr(pool, "overflow", lambda: 0)())

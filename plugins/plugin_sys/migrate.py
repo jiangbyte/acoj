@@ -8,7 +8,6 @@ import logging
 import bcrypt
 from sqlalchemy import select
 
-from plugins.plugin_sys.shared import USER_STATUS_ACTIVE
 from plugins.plugin_sys.banner.models import SysBanner
 from plugins.plugin_sys.config.models import SysConfig
 from plugins.plugin_sys.dict.models import SysDict
@@ -24,6 +23,7 @@ from plugins.plugin_sys.role.models import SysRole, RelRolePermission, RelRoleRe
 from plugins.plugin_sys.user.models import SysUser, RelUserRole, RelUserPermission
 from sdk.infra.db import register_model
 from sdk.infra.db import SessionLocal, register_seed
+from sdk.shared.contracts import USER_STATUS_ACTIVE
 from sdk.utils import generate_id
 
 logger = logging.getLogger(__name__)

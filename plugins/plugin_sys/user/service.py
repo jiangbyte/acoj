@@ -18,11 +18,10 @@ from plugins.plugin_sys.org.models import SysOrg
 from plugins.plugin_sys.position.models import SysPosition
 from plugins.plugin_sys.resource.models import SysResource
 from plugins.plugin_sys.role.models import RelRolePermission, RelRoleResource
-from plugins.plugin_sys.shared import SUPER_ADMIN_CODE
-from sdk.auth import Business
+from sdk.auth import Business, get_current_login_id
 from sdk.config.settings import settings
 from sdk.infra.db import get_db
-from sdk.shared.contracts import LoginUserInfo
+from sdk.shared.contracts import LoginUserInfo, SUPER_ADMIN_CODE
 from sdk.shared.di import ActorContext
 from sdk.shared.types import IdParam, IdsParam
 from sdk.utils import decrypt, generate_id
@@ -645,7 +644,7 @@ class LoginUserService:
         self._session_factory = session_factory
 
     async def get_current_user(self, request) -> Optional[LoginUserInfo]:
-        user_id = await Business.get_login_id(request)
+        user_id = await get_current_login_id(request)
         if not user_id:
             return None
         return self.get_user_by_id(user_id)

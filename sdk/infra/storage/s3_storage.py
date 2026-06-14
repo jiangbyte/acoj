@@ -1,5 +1,4 @@
-import io
-from typing import BinaryIO, Optional
+from typing import BinaryIO
 
 import boto3
 from botocore.exceptions import ClientError

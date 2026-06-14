@@ -176,9 +176,7 @@ def Perm(code: str, name: str = "", realm_id: str = "BUSINESS") -> Callable[...,
 
 
 def ClientPerm(code: str, name: str = "") -> Callable[..., Any]:
-    from sdk.auth.enums import RealmID
-
-    return Perm(code, name, realm_id=RealmID.CONSUMER)
+    return Perm(code, name, realm_id="CONSUMER")
 
 
 class HeiBase(DeclarativeBase):

@@ -5,11 +5,11 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Response, status
 
 from sdk.config.settings import settings
-from sdk.infra.db import get_redis
-from sdk.infra.db.mysql import engine
-from sdk.kernel.plugin import plugins_ready
+from sdk.infra.db import db_runtime, get_redis
+from sdk.kernel.plugin import extension_snapshot, plugins_ready
 from sdk.infra.db import snapshot as migration_snapshot
 from sdk.kernel.registry import snapshot_state
+from sdk.infra.storage import storage_snapshot
 from sdk.observability import handler as metrics_handler
 from sdk.log import log_persister_snapshot
 
@@ -61,6 +61,8 @@ async def registry_snapshot():
         "permissions": snapshot.permissions,
         "models": migrations.models,
         "seeds": migrations.seeds,
+        "storage": storage_snapshot().__dict__,
+        "extensions": extension_snapshot().__dict__,
         "log_persister": log_persister_snapshot(),
         "frozen": snapshot.frozen and migrations.frozen,
     }
@@ -84,7 +86,7 @@ async def _readiness_components() -> list[dict[str, object]]:
 
 async def _check_mysql() -> dict[str, object]:
     try:
-        with engine.connect() as conn:
+        with db_runtime.engine.connect() as conn:
             conn.exec_driver_sql("SELECT 1")
         return {"name": "mysql", "ok": True}
     except Exception as exc:

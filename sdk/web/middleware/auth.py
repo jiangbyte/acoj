@@ -2,9 +2,8 @@ from fastapi import Request
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Scope, Receive, Send
 
-from sdk.auth import Business, Consumer
 from sdk.auth.decorator import attach_login_context
-from sdk.auth.realm import infer_realm_id_from_path, is_public_path, realm_from_id
+from sdk.auth.realm import all_realms, infer_realm, is_public_path
 from sdk.config.settings import settings
 from sdk.web.result import failure
 
@@ -49,9 +48,8 @@ class AuthMiddleware:
             await self.app(scope, receive, send)
             return
 
-        realm_id = infer_realm_id_from_path(path)
-        if realm_id:
-            realm = realm_from_id(realm_id)
+        realm = infer_realm(path)
+        if realm:
             if not await realm.is_login(request):
                 resp = JSONResponse(
                     status_code=401,
@@ -72,7 +70,9 @@ class AuthMiddleware:
         return False
 
     async def _attach_optional_login(self, request: Request) -> None:
-        for realm in (Business, Consumer):
+        if getattr(request.state, "login_id", None):
+            return
+        for realm in all_realms():
             if await realm.is_login(request):
                 await attach_login_context(request, realm.id)
                 return

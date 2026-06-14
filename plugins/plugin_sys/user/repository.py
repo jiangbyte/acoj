@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, or_, func, delete as sa_delete, update as sa_update
 from .models import SysUser, RelUserRole, RelUserPermission
 from .params import UserPageParam
-from plugins.plugin_sys.shared import (
+from sdk.shared.contracts import (
     RESOURCE_CATEGORY_BACKEND_MENU,
     RESOURCE_TYPE_DIRECTORY,
     RESOURCE_TYPE_MENU,

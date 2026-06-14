@@ -5,7 +5,7 @@ from fastapi import Depends
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from sdk.auth import Business, Consumer
+from sdk.auth import Business, Consumer, Sessions
 from sdk.infra.db import get_db
 from sdk.web.result import page_data
 from sdk.utils.ip_utils import get_city_info
@@ -38,6 +38,8 @@ def _format_timeout(seconds: int) -> str:
 class SessionService:
     def __init__(self, db: Session):
         self.db = db
+        self._business_sessions = Business.sessions()
+        self._all_sessions = Sessions(Business, Consumer)
 
     async def _search_sys_user_ids(self, keyword: Optional[str]) -> Optional[list[str]]:
         if not keyword:
@@ -57,8 +59,9 @@ class SessionService:
         return user_ids
 
     async def analysis(self) -> SessionAnalysisResult:
-        business_stats = await Business.sessions().stats()
-        consumer_stats = await Consumer.sessions().stats()
+        stats_by_realm = await self._all_sessions.stats_by_realm()
+        business_stats = stats_by_realm.get(Business.id, {})
+        consumer_stats = stats_by_realm.get(Consumer.id, {})
         return SessionAnalysisResult(
             total_count=business_stats["total_count"] + consumer_stats["total_count"],
             max_token_count=max(business_stats["max_token_count"], consumer_stats["max_token_count"]),
@@ -71,9 +74,13 @@ class SessionService:
         size = max(1, param.size)
         candidate_user_ids = await self._search_sys_user_ids(param.keyword)
         if candidate_user_ids is None:
-            infos, total = await Business.sessions().page(current=current, size=size)
+            infos, total = await self._business_sessions.page(current=current, size=size)
         else:
-            infos, total = await Business.sessions().page_by_user_ids(candidate_user_ids, current=current, size=size)
+            infos, total = await self._business_sessions.page_by_user_ids(
+                candidate_user_ids,
+                current=current,
+                size=size,
+            )
         user_ids = [info["user_id"] for info in infos]
         user_map = {}
         if user_ids:
@@ -111,7 +118,7 @@ class SessionService:
         return page_data(records, total, current, size)
 
     async def token_list(self, user_id: str) -> list[SessionTokenResult]:
-        token_infos = await Business.sessions().tokens(user_id)
+        token_infos = await self._business_sessions.tokens(user_id)
         return [
             SessionTokenResult.from_token_info(
                 token_info,
@@ -121,18 +128,20 @@ class SessionService:
         ]
 
     async def exit_session(self, user_id: str) -> None:
-        await Business.sessions().kickout_user(user_id)
+        await self._business_sessions.kickout_user(user_id)
 
     async def exit_token(self, user_id: str, token: str) -> None:
-        await Business.sessions().kickout_token(user_id, token)
+        await self._business_sessions.kickout_token(user_id, token)
 
     async def chart_data(self) -> SessionChartData:
-        business_stats = await Business.sessions().stats()
-        consumer_stats = await Consumer.sessions().stats()
+        stats_by_realm = await self._all_sessions.stats_by_realm()
+        business_stats = stats_by_realm.get(Business.id, {})
+        consumer_stats = stats_by_realm.get(Consumer.id, {})
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         days = [(today - timedelta(days=index)).strftime("%Y-%m-%d") for index in range(6, -1, -1)]
-        business_daily_map = await Business.sessions().trend(days)
-        consumer_daily_map = await Consumer.sessions().trend(days)
+        trend_by_realm = await self._all_sessions.trend_by_realm(days)
+        business_daily_map = trend_by_realm.get(Business.id, {})
+        consumer_daily_map = trend_by_realm.get(Consumer.id, {})
         business_daily = [business_daily_map.get(day, 0) for day in days]
         consumer_daily = [consumer_daily_map.get(day, 0) for day in days]
         return SessionChartData(

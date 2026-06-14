@@ -21,8 +21,8 @@ from typing import Optional
 
 from fastapi import Request, HTTPException, status
 
-from sdk.auth.realm import infer_realm_id_from_path, realm_from_id
-from sdk.infra.db.redis import get_client
+from sdk.auth.realm import current_realm
+from sdk.infra.db import get_redis
 
 logger = logging.getLogger(__name__)
 
@@ -69,9 +69,9 @@ def RateLimiter(
             # User ID from auth context, fallback to client IP
             user_id = ""
             try:
-                realm_id = infer_realm_id_from_path(request.url.path)
-                if realm_id:
-                    uid = await realm_from_id(realm_id).get_login_id(request)
+                realm = current_realm(request)
+                if realm:
+                    uid = await realm.get_login_id(request)
                     if uid:
                         user_id = str(uid)
             except Exception:
@@ -81,7 +81,7 @@ def RateLimiter(
                 user_id = request.client.host if request.client else "unknown"
 
             key = f"ratelimit:api:{endpoint_key}:{user_id}"
-            redis = get_client()
+            redis = get_redis()
             if redis is None:
                 # Redis unavailable — allow through
                 return await func(*args, **kwargs)
