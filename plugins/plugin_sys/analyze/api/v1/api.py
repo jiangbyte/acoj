@@ -8,5 +8,5 @@ router = APIRouter()
 
 
 @router.get("/api/v1/sys/analyze/dashboard", summary="获取仪表盘数据")
-def dashboard(service: AnalyzeService = Depends(get_analyze_service)):
-    return success(service.dashboard())
+async def dashboard(service: AnalyzeService = Depends(get_analyze_service)):
+    return success(await service.dashboard())

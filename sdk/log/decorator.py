@@ -38,7 +38,10 @@ async def _get_op_user(request: Request) -> Optional[str]:
         resolver = get_op_user_resolver()
         if resolver is None:
             return None
-        return resolver(user_id)
+        result = resolver(user_id)
+        if inspect.isawaitable(result):
+            result = await result
+        return result
     except Exception:
         return None
 

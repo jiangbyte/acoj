@@ -14,7 +14,7 @@ from typing import Optional
 from fastapi import Depends, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.infra.db import get_db
 from sdk.infra.storage import ChunkInfo, ChunkedUploader, get_storage, get_url
@@ -214,29 +214,29 @@ class FileService:
             updated_at=now,
             updated_by=user_id,
         )
-        return FileUploadResult.from_entity(self.repository.insert(entity))
+        return FileUploadResult.from_entity(await self.repository.insert(entity))
 
-    def page(self, param: FilePageParam) -> dict:
+    async def page(self, param: FilePageParam) -> dict:
         param.current = max(1, param.current)
         param.size = max(1, min(param.size, 100))
-        return map_page_data(self.repository.page(param), FileVO.model_validate, param.current, param.size)
+        return map_page_data(await self.repository.page(param), FileVO.model_validate, param.current, param.size)
 
-    def detail(self, file_id: str) -> Optional[FileVO]:
+    async def detail(self, file_id: str) -> Optional[FileVO]:
         if not file_id:
             return None
-        entity = self.repository.find_by_id(file_id)
+        entity = await self.repository.find_by_id(file_id)
         if not entity:
             return None
         return FileVO.model_validate(entity)
 
-    def get_download_path(self, file_id: str) -> Optional[str]:
-        entity = self.repository.find_by_id(file_id)
+    async def get_download_path(self, file_id: str) -> Optional[str]:
+        entity = await self.repository.find_by_id(file_id)
         if not entity:
             raise BusinessException("文件不存在", 404)
         return entity.download_path or entity.storage_path
 
-    def download_by_key(self, bucket: str, file_key: str) -> Response:
-        entity = self.repository.find_by_key(bucket, file_key)
+    async def download_by_key(self, bucket: str, file_key: str) -> Response:
+        entity = await self.repository.find_by_key(bucket, file_key)
         if not entity:
             raise BusinessException("文件不存在", 404)
         if (entity.engine or "").upper() == "LOCAL" and entity.storage_path:
@@ -245,15 +245,15 @@ class FileService:
             return RedirectResponse(entity.download_path, status_code=302)
         raise BusinessException("文件路径为空", 404)
 
-    def remove(self, ids: list[str]) -> None:
+    async def remove(self, ids: list[str]) -> None:
         if not ids:
             return
-        self.repository.delete_by_ids(ids)
+        await self.repository.delete_by_ids(ids)
 
-    def remove_absolute(self, ids: list[str]) -> None:
+    async def remove_absolute(self, ids: list[str]) -> None:
         if not ids:
             return
-        files = self.repository.find_by_ids(ids)
+        files = await self.repository.find_by_ids(ids)
         for file_item in files:
             if file_item.engine:
                 engine = get_storage(file_item.engine)
@@ -263,7 +263,7 @@ class FileService:
                             engine.delete(file_item.bucket or "DEFAULT", file_item.file_key)
                     except Exception:
                         pass
-        self.repository.delete_by_ids(ids)
+        await self.repository.delete_by_ids(ids)
 
     def init_chunk_upload(self, param: ChunkUploadInitParam) -> dict:
         _validate_upload_meta(param.file_name, param.file_size, self.max_upload_size())
@@ -345,7 +345,7 @@ class FileService:
 
         return
 
-    def complete_chunk_upload(self, param: ChunkCompleteParam) -> FileUploadResult:
+    async def complete_chunk_upload(self, param: ChunkCompleteParam) -> FileUploadResult:
         engine = get_storage(param.engine)
         if not engine:
             raise BusinessException(f"不支持的存储类型: {param.engine}", 500)
@@ -393,7 +393,7 @@ class FileService:
             created_at=now,
             updated_at=now,
         )
-        return FileUploadResult.from_entity(self.repository.insert(entity))
+        return FileUploadResult.from_entity(await self.repository.insert(entity))
 
     def abort_chunk_upload(self, param: ChunkAbortParam) -> None:
         engine = get_storage(param.engine)
@@ -412,5 +412,5 @@ class FileService:
         return settings.app.upload_max_size or 50 << 20
 
 
-def get_file_service(db: Session = Depends(get_db)) -> FileService:
+def get_file_service(db: AsyncSession = Depends(get_db)) -> FileService:
     return FileService(FileRepository(db))

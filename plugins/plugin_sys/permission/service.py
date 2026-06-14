@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.infra.db import get_db
 
@@ -19,5 +19,5 @@ class PermissionService:
         return await get_permissions_by_module_from_redis(module)
 
 
-def get_permission_service(db: Session = Depends(get_db)) -> PermissionService:
+def get_permission_service(db: AsyncSession = Depends(get_db)) -> PermissionService:
     return PermissionService()

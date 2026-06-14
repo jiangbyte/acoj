@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import Depends
 from sqlalchemy import func, select, update as sa_update
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
@@ -30,10 +30,10 @@ def _actor_user_id(actor: Optional[ActorContext]) -> Optional[str]:
     return actor.user_id if actor else None
 
 
-def _check_circular_parent(db: Session, entity_id: str, new_parent_id: Optional[str]) -> None:
+async def _check_circular_parent(db: AsyncSession, entity_id: str, new_parent_id: Optional[str]) -> None:
     if not new_parent_id:
         return
-    all_rows = db.execute(select(SysOrg)).scalars().all()
+    all_rows = (await db.execute(select(SysOrg))).scalars().all()
     parent_map = {row.id: row.parent_id for row in all_rows}
     current = new_parent_id
     while current:
@@ -44,8 +44,8 @@ def _check_circular_parent(db: Session, entity_id: str, new_parent_id: Optional[
             break
 
 
-def _collect_descendant_ids(db: Session, ids: list[str]) -> list[str]:
-    all_rows = db.execute(select(SysOrg)).scalars().all()
+async def _collect_descendant_ids(db: AsyncSession, ids: list[str]) -> list[str]:
+    all_rows = (await db.execute(select(SysOrg))).scalars().all()
     return collect_descendant_ids(
         all_rows,
         ids,
@@ -59,24 +59,24 @@ class OrgService:
         self.repository = repository
         self.db = repository.db
 
-    def page(self, param: OrgPageParam) -> dict:
+    async def page(self, param: OrgPageParam) -> dict:
         return map_page_data(
-            self.repository.find_page_by_filters(param),
+            await self.repository.find_page_by_filters(param),
             OrgVO.model_validate,
             param.current,
             param.size,
         )
 
-    def detail(self, id: str) -> Optional[OrgVO]:
+    async def detail(self, id: str) -> Optional[OrgVO]:
         if not id:
             return None
-        entity = self.repository.find_by_id(id)
+        entity = await self.repository.find_by_id(id)
         if not entity:
             return None
         return OrgVO.model_validate(entity)
 
-    def tree(self, param: OrgTreeParam) -> list[OrgTreeVO]:
-        rows = self.db.execute(select(SysOrg).order_by(SysOrg.sort_code.asc())).scalars().all()
+    async def tree(self, param: OrgTreeParam) -> list[OrgTreeVO]:
+        rows = (await self.db.execute(select(SysOrg).order_by(SysOrg.sort_code.asc()))).scalars().all()
         if param.category:
             rows = [row for row in rows if row.category == param.category]
         nodes = [OrgTreeVO.model_validate(row) for row in rows]
@@ -88,7 +88,7 @@ class OrgService:
             get_sort_code=lambda node: node.sort_code,
         )
 
-    def create(self, vo: OrgVO, actor: Optional[ActorContext] = None) -> None:
+    async def create(self, vo: OrgVO, actor: Optional[ActorContext] = None) -> None:
         now = datetime.now()
         actor_user_id = _actor_user_id(actor)
         entity = SysOrg(
@@ -106,14 +106,14 @@ class OrgService:
             created_by=actor_user_id,
             updated_by=actor_user_id,
         )
-        self.repository.insert(entity)
+        await self.repository.insert(entity)
 
-    def modify(self, vo: OrgVO, actor: Optional[ActorContext] = None) -> None:
-        entity = self.repository.find_by_id(vo.id)
+    async def modify(self, vo: OrgVO, actor: Optional[ActorContext] = None) -> None:
+        entity = await self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
         if vo.parent_id is not None and vo.parent_id != entity.parent_id:
-            _check_circular_parent(self.db, vo.id, vo.parent_id)
+            await _check_circular_parent(self.db, vo.id, vo.parent_id)
         actor_user_id = _actor_user_id(actor)
         updates = {
             "code": vo.code,
@@ -127,43 +127,43 @@ class OrgService:
         }
         if actor_user_id:
             updates["updated_by"] = actor_user_id
-        self.db.execute(sa_update(SysOrg).where(SysOrg.id == vo.id).values(**updates))
-        self.db.commit()
+        await self.db.execute(sa_update(SysOrg).where(SysOrg.id == vo.id).values(**updates))
+        await self.db.commit()
 
-    def remove(self, ids: list[str]) -> None:
+    async def remove(self, ids: list[str]) -> None:
         if not ids:
             return
-        all_ids = _collect_descendant_ids(self.db, ids)
+        all_ids = await _collect_descendant_ids(self.db, ids)
         user_count = (
-            self.db.execute(
+            (await self.db.execute(
                 select(func.count()).select_from(SysUser).where(SysUser.org_id.in_(all_ids))
-            ).scalar()
+            )).scalar()
             or 0
         )
         if user_count > 0:
             raise BusinessException("组织存在关联用户，无法删除")
         group_count = (
-            self.db.execute(
+            (await self.db.execute(
                 select(func.count()).select_from(SysGroup).where(SysGroup.org_id.in_(all_ids))
-            ).scalar()
+            )).scalar()
             or 0
         )
         if group_count > 0:
             raise BusinessException("组织存在关联用户组，无法删除")
         position_count = (
-            self.db.execute(
+            (await self.db.execute(
                 select(func.count()).select_from(SysPosition).where(SysPosition.org_id.in_(all_ids))
-            ).scalar()
+            )).scalar()
             or 0
         )
         if position_count > 0:
             raise BusinessException("组织存在关联职位，无法删除")
-        self.repository.delete_by_ids(all_ids)
+        await self.repository.delete_by_ids(all_ids)
 
-    def options(self) -> list[OrgVO]:
-        rows = self.db.execute(select(SysOrg).order_by(SysOrg.sort_code.asc())).scalars().all()
+    async def options(self) -> list[OrgVO]:
+        rows = (await self.db.execute(select(SysOrg).order_by(SysOrg.sort_code.asc()))).scalars().all()
         return [OrgVO.model_validate(row) for row in rows]
 
 
-def get_org_service(db: Session = Depends(get_db)) -> OrgService:
+def get_org_service(db: AsyncSession = Depends(get_db)) -> OrgService:
     return OrgService(OrgRepository(db))

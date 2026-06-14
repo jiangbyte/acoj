@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def resolve_path_from_map(entity_id: Optional[str], node_map: Dict) -> List[str]:
@@ -17,10 +17,10 @@ def resolve_path_from_map(entity_id: Optional[str], node_map: Dict) -> List[str]
     return list(reversed(names))
 
 
-def resolve_name_path(entity_id: Optional[str], db: Session, model_class) -> List[str]:
+async def resolve_name_path(entity_id: Optional[str], db: AsyncSession, model_class) -> List[str]:
     """Resolve a hierarchical entity ID to a list of names from root to current."""
     if not entity_id:
         return []
-    rows = db.execute(select(model_class.id, model_class.name, model_class.parent_id)).all()
+    rows = (await db.execute(select(model_class.id, model_class.name, model_class.parent_id))).all()
     node_map = {r.id: {"name": r.name, "parent_id": r.parent_id} for r in rows}
     return resolve_path_from_map(entity_id, node_map)

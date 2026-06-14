@@ -69,16 +69,10 @@ class DatabasePermissionProvider(PermissionProviderProtocol):
         self._permission_cache_key = permission_cache_key
         self._permission_code_loader = permission_code_loader
 
-    def _open_session(self):
-        return self._session_factory()
-
     async def _all_permission_codes(self) -> list[str]:
         if self._permission_code_loader is not None:
-            db = self._open_session()
-            try:
+            async with self._session_factory() as db:
                 return [str(item) for item in self._permission_code_loader(db)]
-            finally:
-                db.close()
         redis_client = self._redis_client_getter() if self._redis_client_getter else None
         if redis_client is None:
             from sdk.infra.db.redis import get_client
@@ -96,57 +90,45 @@ class DatabasePermissionProvider(PermissionProviderProtocol):
         return result
 
     async def get_permission_list(self, login_id: str) -> list[str]:
-        db = self._open_session()
-        try:
+        async with self._session_factory() as db:
             acl = await self._build_acl(db, login_id, include_scope=False)
             return list(acl["permissions"])
-        finally:
-            db.close()
 
     async def get_role_list(self, login_id: str) -> list[str]:
-        db = self._open_session()
-        try:
-            _, roles = self._load_user_role_data(db, login_id)
+        async with self._session_factory() as db:
+            _, roles = await self._load_user_role_data(db, login_id)
             return roles
-        finally:
-            db.close()
 
     async def get_permission_scope_map(self, login_id: str) -> dict[str, Any]:
-        db = self._open_session()
-        try:
+        async with self._session_factory() as db:
             acl = await self._build_acl(db, login_id, include_scope=True)
             return dict(acl["scope_map"])
-        finally:
-            db.close()
 
     async def get_acl(self, login_id: str) -> dict[str, Any]:
-        db = self._open_session()
-        try:
+        async with self._session_factory() as db:
             return await self._build_acl(db, login_id, include_scope=True)
-        finally:
-            db.close()
 
-    def _load_user_role_data(self, db, login_id: str) -> tuple[list[Any], list[str]]:
+    async def _load_user_role_data(self, db, login_id: str) -> tuple[list[Any], list[str]]:
         from sqlalchemy import select
 
         role_ids = list(
-            db.scalars(
+            (await db.scalars(
                 select(self._user_role_model.role_id).where(self._user_role_model.user_id == login_id)
-            ).all()
+            )).all()
         )
         if not role_ids:
             return [], []
         role_codes = list(
-            db.scalars(
+            (await db.scalars(
                 select(self._role_model.code).where(self._role_model.id.in_(role_ids))
-            ).all()
+            )).all()
         )
         return role_ids, role_codes
 
     async def _build_acl(self, db, login_id: str, *, include_scope: bool) -> dict[str, Any]:
         from sqlalchemy import select
 
-        role_ids, role_codes = self._load_user_role_data(db, login_id)
+        role_ids, role_codes = await self._load_user_role_data(db, login_id)
         if self._super_admin_code in role_codes:
             permissions = await self._all_permission_codes()
             scope_map = self._super_admin_scope_map(permissions) if include_scope else {}
@@ -159,26 +141,26 @@ class DatabasePermissionProvider(PermissionProviderProtocol):
         permissions: set[str] = set()
         scope_map: dict[str, dict[str, Any]] = {}
         if role_ids:
-            role_permission_rows = db.execute(
+            role_permission_rows = (await db.execute(
                 select(
                     self._role_permission_model.permission_code,
                     self._role_permission_model.scope,
                     self._role_permission_model.custom_scope_group_ids,
                     self._role_permission_model.custom_scope_org_ids,
                 ).where(self._role_permission_model.role_id.in_(role_ids))
-            ).all()
+            )).all()
             permissions.update(row[0] for row in role_permission_rows)
             if include_scope:
                 self._merge_scope(scope_map, role_permission_rows)
 
-        user_permission_rows = db.execute(
+        user_permission_rows = (await db.execute(
             select(
                 self._user_permission_model.permission_code,
                 self._user_permission_model.scope,
                 self._user_permission_model.custom_scope_group_ids,
                 self._user_permission_model.custom_scope_org_ids,
             ).where(self._user_permission_model.user_id == login_id)
-        ).all()
+        )).all()
         permissions.update(row[0] for row in user_permission_rows)
         if include_scope:
             self._merge_scope(scope_map, user_permission_rows)

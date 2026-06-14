@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from sqlalchemy import select, func, delete as sa_delete
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sdk.shared.contracts import SUPER_ADMIN_CODE
 from .models import SysRole, RelRolePermission, RelRoleResource
 from .params import PermissionItem, RolePageParam
@@ -10,29 +10,29 @@ from sdk.utils import generate_id
 
 
 class RoleRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
     # ---- base CRUD ----
 
-    def find_by_id(self, id: str) -> Optional[SysRole]:
-        return self.db.execute(select(SysRole).where(SysRole.id == id)).scalar_one_or_none()
+    async def find_by_id(self, id: str) -> Optional[SysRole]:
+        return (await self.db.execute(select(SysRole).where(SysRole.id == id))).scalar_one_or_none()
 
-    def find_by_ids(self, ids: List[str]) -> List[SysRole]:
+    async def find_by_ids(self, ids: List[str]) -> List[SysRole]:
         if not ids:
             return []
-        return list(self.db.execute(select(SysRole).where(SysRole.id.in_(ids))).scalars().all())
+        return list((await self.db.execute(select(SysRole).where(SysRole.id.in_(ids)))).scalars().all())
 
-    def exists_super_admin(self, role_ids: List[str]) -> bool:
+    async def exists_super_admin(self, role_ids: List[str]) -> bool:
         if not role_ids:
             return False
         stmt = select(func.count()).select_from(SysRole).where(
             SysRole.id.in_(role_ids),
             SysRole.code == SUPER_ADMIN_CODE,
         )
-        return int(self.db.execute(stmt).scalar() or 0) > 0
+        return int((await self.db.execute(stmt)).scalar() or 0) > 0
 
-    def find_page(self, param: RolePageParam) -> Dict[str, Any]:
+    async def find_page(self, param: RolePageParam) -> Dict[str, Any]:
         current = max(1, param.current)
         size = max(1, param.size)
         offset = (current - 1) * size
@@ -43,11 +43,11 @@ class RoleRepository:
         if param.category:
             stmt = stmt.where(SysRole.category == param.category)
         count_stmt = select(func.count()).select_from(stmt.subquery())
-        total = self.db.execute(count_stmt).scalar() or 0
-        records = list(self.db.execute(stmt.offset(offset).limit(size)).scalars().all())
+        total = (await self.db.execute(count_stmt)).scalar() or 0
+        records = list((await self.db.execute(stmt.offset(offset).limit(size))).scalars().all())
         return {"records": records, "total": total}
 
-    def insert(self, entity: SysRole, user_id: Optional[str] = None) -> SysRole:
+    async def insert(self, entity: SysRole, user_id: Optional[str] = None) -> SysRole:
         from sdk.utils.snowflake_utils import generate_id as gen_snowflake
         now = datetime.now()
         if not entity.id:
@@ -58,38 +58,38 @@ class RoleRepository:
         if user_id is not None and entity.created_by is None:
             entity.created_by = user_id
         self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
+        await self.db.commit()
+        await self.db.refresh(entity)
         return entity
 
-    def update(self, entity: SysRole, user_id: Optional[str] = None) -> SysRole:
+    async def update(self, entity: SysRole, user_id: Optional[str] = None) -> SysRole:
         entity.updated_at = datetime.now()
         if user_id is not None:
             entity.updated_by = user_id
-        self.db.commit()
-        self.db.refresh(entity)
+        await self.db.commit()
+        await self.db.refresh(entity)
         return entity
 
-    def delete_by_ids(self, ids: List[str]) -> int:
+    async def delete_by_ids(self, ids: List[str]) -> int:
         if not ids:
             return 0
         stmt = sa_delete(SysRole).where(SysRole.id.in_(ids))
-        affected = self.db.execute(stmt).rowcount
-        self.db.commit()
+        affected = (await self.db.execute(stmt)).rowcount
+        await self.db.commit()
         return affected
 
     # ---- custom ----
 
-    def get_permission_codes_by_role_id(self, role_id: str) -> List[str]:
-        rows = self.db.execute(
+    async def get_permission_codes_by_role_id(self, role_id: str) -> List[str]:
+        rows = (await self.db.execute(
             select(RelRolePermission.permission_code).where(
                 RelRolePermission.role_id == role_id
             )
-        ).scalars().all()
+        )).scalars().all()
         return list(rows)
 
-    def get_permission_details_by_role_id(self, role_id: str) -> List[PermissionItem]:
-        rows = self.db.execute(
+    async def get_permission_details_by_role_id(self, role_id: str) -> List[PermissionItem]:
+        rows = (await self.db.execute(
             select(
                 RelRolePermission.permission_code,
                 RelRolePermission.scope,
@@ -98,7 +98,7 @@ class RoleRepository:
             ).where(
                 RelRolePermission.role_id == role_id,
             )
-        ).all()
+        )).all()
         return [
             PermissionItem(
                 permission_code=r[0],
@@ -109,8 +109,8 @@ class RoleRepository:
             for r in rows
         ]
 
-    def grant_permissions(self, role_id: str, permissions: List[PermissionItem], created_by: Optional[str] = None):
-        self.db.execute(sa_delete(RelRolePermission).where(RelRolePermission.role_id == role_id))
+    async def grant_permissions(self, role_id: str, permissions: List[PermissionItem], created_by: Optional[str] = None):
+        await self.db.execute(sa_delete(RelRolePermission).where(RelRolePermission.role_id == role_id))
 
         for p in permissions:
             rel = RelRolePermission(
@@ -119,10 +119,10 @@ class RoleRepository:
                 custom_scope_org_ids=p.custom_scope_org_ids,
             )
             self.db.add(rel)
-        self.db.commit()
+        await self.db.commit()
 
-    def add_missing_permissions(self, role_id: str, permissions: List[PermissionItem]):
-        existing = set(self.get_permission_codes_by_role_id(role_id))
+    async def add_missing_permissions(self, role_id: str, permissions: List[PermissionItem]):
+        existing = set(await self.get_permission_codes_by_role_id(role_id))
         for p in permissions:
             if p.permission_code in existing:
                 continue
@@ -132,29 +132,29 @@ class RoleRepository:
                 custom_scope_org_ids=p.custom_scope_org_ids,
             )
             self.db.add(rel)
-        self.db.commit()
+        await self.db.commit()
 
-    def get_resource_ids_by_role_id(self, role_id: str) -> List[str]:
-        rows = self.db.execute(
+    async def get_resource_ids_by_role_id(self, role_id: str) -> List[str]:
+        rows = (await self.db.execute(
             select(RelRoleResource.resource_id).where(
                 RelRoleResource.role_id == role_id
             )
-        ).scalars().all()
+        )).scalars().all()
         return list(rows)
 
-    def grant_resources(self, role_id: str, resource_ids: List[str], created_by: Optional[str] = None):
+    async def grant_resources(self, role_id: str, resource_ids: List[str], created_by: Optional[str] = None):
         resource_ids = list(dict.fromkeys(resource_ids))
 
-        self.db.execute(sa_delete(RelRoleResource).where(RelRoleResource.role_id == role_id))
+        await self.db.execute(sa_delete(RelRoleResource).where(RelRoleResource.role_id == role_id))
 
         for resid in resource_ids:
             rel = RelRoleResource(
                 id=generate_id(), role_id=role_id, resource_id=resid,
             )
             self.db.add(rel)
-        self.db.commit()
+        await self.db.commit()
 
-    def find_resources_with_extra_by_ids(self, resource_ids: List[str]):
+    async def find_resources_with_extra_by_ids(self, resource_ids: List[str]):
         from ..resource.models import SysResource as _SR
         stmt = (
             select(_SR)
@@ -164,4 +164,4 @@ class RoleRepository:
                 _SR.extra != "",
             )
         )
-        return list(self.db.execute(stmt).scalars().all())
+        return list((await self.db.execute(stmt)).scalars().all())

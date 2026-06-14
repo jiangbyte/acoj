@@ -3,7 +3,7 @@ from typing import Optional
 
 from fastapi import Depends
 from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.auth import Business, Consumer, Sessions
 from sdk.infra.db import get_db
@@ -36,7 +36,7 @@ def _format_timeout(seconds: int) -> str:
 
 
 class SessionService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self._business_sessions = Business.sessions()
         self._all_sessions = Sessions(Business, Consumer)
@@ -44,7 +44,7 @@ class SessionService:
     async def _search_sys_user_ids(self, keyword: Optional[str]) -> Optional[list[str]]:
         if not keyword:
             return None
-        rows = self.db.execute(
+        result = await self.db.execute(
             select(SysUser.id).where(
                 or_(
                     SysUser.id == keyword,
@@ -52,7 +52,8 @@ class SessionService:
                     SysUser.nickname.like(f"%{keyword}%"),
                 )
             )
-        ).all()
+        )
+        rows = result.all()
         user_ids = [str(row[0]) for row in rows if row and row[0]]
         if not user_ids and keyword:
             user_ids = [keyword]
@@ -84,7 +85,7 @@ class SessionService:
         user_ids = [info["user_id"] for info in infos]
         user_map = {}
         if user_ids:
-            rows = self.db.execute(select(SysUser).where(SysUser.id.in_(user_ids))).scalars().all()
+            rows = (await self.db.execute(select(SysUser).where(SysUser.id.in_(user_ids)))).scalars().all()
             user_map = {row.id: row for row in rows}
         records = []
         for info in infos:
@@ -161,5 +162,5 @@ class SessionService:
         )
 
 
-def get_session_service(db: Session = Depends(get_db)) -> SessionService:
+def get_session_service(db: AsyncSession = Depends(get_db)) -> SessionService:
     return SessionService(db)

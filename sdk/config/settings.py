@@ -30,6 +30,14 @@ class DatabaseConfig(BaseModel):
             f"@{self.host}:{self.port}/{self.database}"
         )
 
+    @property
+    def async_url(self) -> str:
+        """DSN for the async engine (request path), backed by asyncmy."""
+        return (
+            f"mysql+asyncmy://{self.user}:{quote(self.password)}"
+            f"@{self.host}:{self.port}/{self.database}"
+        )
+
 
 class RedisConfig(BaseModel):
     host: str = "localhost"

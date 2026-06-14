@@ -19,11 +19,11 @@ router = APIRouter()
     response_model=Result[PageData[LogVO]]
 )
 @CheckPermission("sys:log:page")
-def page(
+async def page(
     param: LogPageParam = Depends(),
     service: LogService = Depends(get_log_service),
 ):
-    return success(service.page(param))
+    return success(await service.page(param))
 
 
 @router.post(
@@ -32,12 +32,12 @@ def page(
     response_model=Result
 )
 @CheckPermission("sys:log:create")
-def create(
+async def create(
     vo: LogVO,
     service: LogService = Depends(get_log_service),
     actor: ActorContext = Depends(get_current_actor),
 ):
-    service.create(vo, actor)
+    await service.create(vo, actor)
     return success()
 
 
@@ -47,12 +47,12 @@ def create(
     response_model=Result
 )
 @CheckPermission("sys:log:modify")
-def modify(
+async def modify(
     vo: LogVO,
     service: LogService = Depends(get_log_service),
     actor: ActorContext = Depends(get_current_actor),
 ):
-    service.modify(vo, actor)
+    await service.modify(vo, actor)
     return success()
 
 
@@ -63,11 +63,11 @@ def modify(
 )
 @SysLog("删除操作日志")
 @CheckPermission("sys:log:remove")
-def remove(
+async def remove(
     param: IdsParam,
     service: LogService = Depends(get_log_service),
 ):
-    service.remove(param)
+    await service.remove(param)
     return success()
 
 
@@ -77,11 +77,11 @@ def remove(
     response_model=Result[LogVO]
 )
 @CheckPermission("sys:log:detail")
-def detail(
+async def detail(
     id: str = Query(...),
     service: LogService = Depends(get_log_service),
 ):
-    return success(service.detail(IdParam(id=id)))
+    return success(await service.detail(IdParam(id=id)))
 
 
 @router.post(
@@ -92,11 +92,11 @@ def detail(
 @SysLog("按分类清空日志")
 @CheckPermission("sys:log:remove")
 @NoRepeat(interval=5000)
-def delete_by_category(
+async def delete_by_category(
     param: LogDeleteByCategoryParam,
     service: LogService = Depends(get_log_service),
 ):
-    service.delete_by_category(param)
+    await service.delete_by_category(param)
     return success()
 
 
@@ -108,10 +108,10 @@ def delete_by_category(
     response_model=Result[LogBarChartData],
 )
 @CheckPermission("sys:log:page")
-def vis_line_chart_data(
+async def vis_line_chart_data(
     service: LogService = Depends(get_log_service),
 ):
-    return success(service.vis_log_line_chart_data())
+    return success(await service.vis_log_line_chart_data())
 
 
 @router.get(
@@ -120,10 +120,10 @@ def vis_line_chart_data(
     response_model=Result[LogPieChartData],
 )
 @CheckPermission("sys:log:page")
-def vis_pie_chart_data(
+async def vis_pie_chart_data(
     service: LogService = Depends(get_log_service),
 ):
-    return success(service.vis_log_pie_chart_data())
+    return success(await service.vis_log_pie_chart_data())
 
 
 @router.get(
@@ -132,10 +132,10 @@ def vis_pie_chart_data(
     response_model=Result[LogBarChartData],
 )
 @CheckPermission("sys:log:page")
-def op_bar_chart_data(
+async def op_bar_chart_data(
     service: LogService = Depends(get_log_service),
 ):
-    return success(service.op_log_bar_chart_data())
+    return success(await service.op_log_bar_chart_data())
 
 
 @router.get(
@@ -144,7 +144,7 @@ def op_bar_chart_data(
     response_model=Result[LogPieChartData],
 )
 @CheckPermission("sys:log:page")
-def op_pie_chart_data(
+async def op_pie_chart_data(
     service: LogService = Depends(get_log_service),
 ):
-    return success(service.op_log_pie_chart_data())
+    return success(await service.op_log_pie_chart_data())

@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy import select, func
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from plugins.plugin_sys.user.models import SysUser
 from plugins.plugin_sys.notice.models import SysNotice
 from plugins.plugin_sys.resource.models import SysResource
@@ -12,20 +12,20 @@ from .params import HomeNotice, HomeStats, QuickActionVO
 
 
 class QuickActionRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
     # ---- base CRUD ----
 
-    def find_by_id(self, id: str) -> Optional[SysQuickAction]:
-        return self.db.execute(select(SysQuickAction).where(SysQuickAction.id == id)).scalar_one_or_none()
+    async def find_by_id(self, id: str) -> Optional[SysQuickAction]:
+        return (await self.db.execute(select(SysQuickAction).where(SysQuickAction.id == id))).scalar_one_or_none()
 
-    def find_by_ids(self, ids: List[str]) -> List[SysQuickAction]:
-        return list(self.db.execute(
+    async def find_by_ids(self, ids: List[str]) -> List[SysQuickAction]:
+        return list((await self.db.execute(
             select(SysQuickAction).where(SysQuickAction.id.in_(ids))
-        ).scalars().all())
+        )).scalars().all())
 
-    def insert(self, entity: SysQuickAction, user_id: Optional[str] = None) -> SysQuickAction:
+    async def insert(self, entity: SysQuickAction, user_id: Optional[str] = None) -> SysQuickAction:
         from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
@@ -37,34 +37,34 @@ class QuickActionRepository:
             entity.created_by = user_id
             entity.updated_by = user_id
         self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
+        await self.db.commit()
+        await self.db.refresh(entity)
         return entity
 
-    def delete_by_id(self, id: str) -> bool:
-        entity = self.find_by_id(id)
+    async def delete_by_id(self, id: str) -> bool:
+        entity = await self.find_by_id(id)
         if not entity:
             return False
-        self.db.delete(entity)
-        self.db.commit()
+        await self.db.delete(entity)
+        await self.db.commit()
         return True
 
     # ---- custom ----
 
-    def find_by_user_id(self, user_id: str) -> List[QuickActionVO]:
+    async def find_by_user_id(self, user_id: str) -> List[QuickActionVO]:
         """Quick actions for a user, enriched with resource info — mirrors Go findQuickActionsByUserID."""
-        actions = list(self.db.execute(
+        actions = list((await self.db.execute(
             select(SysQuickAction).where(SysQuickAction.user_id == user_id)
             .order_by(SysQuickAction.sort_code.asc(), SysQuickAction.created_at.asc())
-        ).scalars().all())
+        )).scalars().all())
 
         if not actions:
             return []
 
         resource_ids = [a.resource_id for a in actions]
-        resources = list(self.db.execute(
+        resources = list((await self.db.execute(
             select(SysResource).where(SysResource.id.in_(resource_ids))
-        ).scalars().all())
+        )).scalars().all())
         resource_map = {r.id: r for r in resources}
 
         result: List[QuickActionVO] = []
@@ -92,22 +92,22 @@ class QuickActionRepository:
             result.append(vo)
         return result
 
-    def find_by_user_and_resource(self, user_id: str, resource_id: str) -> Optional[SysQuickAction]:
+    async def find_by_user_and_resource(self, user_id: str, resource_id: str) -> Optional[SysQuickAction]:
         stmt = select(SysQuickAction).where(
             SysQuickAction.user_id == user_id,
             SysQuickAction.resource_id == resource_id,
         )
-        return self.db.execute(stmt).scalar_one_or_none()
+        return (await self.db.execute(stmt)).scalar_one_or_none()
 
-    def count_quick_actions(self, user_id: str) -> int:
+    async def count_quick_actions(self, user_id: str) -> int:
         stmt = select(func.count()).select_from(SysQuickAction).where(
             SysQuickAction.user_id == user_id,
         )
-        return self.db.execute(stmt).scalar() or 0
+        return (await self.db.execute(stmt)).scalar() or 0
 
-    def get_notices(self, limit: int = 5) -> List[HomeNotice]:
+    async def get_notices(self, limit: int = 5) -> List[HomeNotice]:
         """Get notices — mirrors Go getNotices: status=ENABLED, category=PLATFORM."""
-        rows = self.db.execute(
+        result = await self.db.execute(
             select(
                 SysNotice.id,
                 SysNotice.title,
@@ -120,7 +120,8 @@ class QuickActionRepository:
             )
             .order_by(SysNotice.sort_code.asc(), SysNotice.is_top.desc())
             .limit(limit)
-        ).all()
+        )
+        rows = result.all()
         return [
             HomeNotice(
                 id=row[0],
@@ -131,18 +132,18 @@ class QuickActionRepository:
             for row in rows
         ]
 
-    def get_stats(self) -> HomeStats:
+    async def get_stats(self) -> HomeStats:
         stmt = select(func.count()).select_from(SysUser)
-        return HomeStats(total_users=self.db.execute(stmt).scalar() or 0)
+        return HomeStats(total_users=(await self.db.execute(stmt)).scalar() or 0)
 
-    def get_available_resources(self, user_id: str) -> List[QuickActionVO]:
+    async def get_available_resources(self, user_id: str) -> List[QuickActionVO]:
         """Available resources for quick actions — mirrors Go getAvailableResources."""
         subq = (
             select(SysQuickAction.resource_id)
             .where(SysQuickAction.user_id == user_id)
             .scalar_subquery()
         )
-        rows = self.db.execute(
+        result = await self.db.execute(
             select(
                 SysResource.id,
                 SysResource.parent_id,
@@ -157,7 +158,8 @@ class QuickActionRepository:
                 SysResource.id.notin_(subq),
             )
             .order_by(SysResource.sort_code.asc())
-        ).all()
+        )
+        rows = result.all()
         return [
             QuickActionVO(
                 resource_id=row[0],

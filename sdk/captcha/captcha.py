@@ -70,7 +70,10 @@ class CaptchaService:
             raise ValueError("验证码ID或验证码内容不能为空")
 
         if not self._redis:
-            return True
+            # Fail closed: a captcha control must never silently pass when its
+            # backing store is unavailable, otherwise it can be bypassed during
+            # a Redis outage.
+            raise ValueError("验证码服务暂不可用，请稍后重试")
 
         key = f"{self._prefix}{captcha_id}"
         stored_code = await self._redis.get(key)

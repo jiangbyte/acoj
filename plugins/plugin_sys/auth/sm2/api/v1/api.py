@@ -12,5 +12,3 @@ router = APIRouter()
 )
 def get_sm2_public_key_b():
     return success(get_public_key())
-
-

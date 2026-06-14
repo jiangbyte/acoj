@@ -5,7 +5,7 @@ import socket
 from datetime import datetime, timezone
 
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.infra.db import get_db
 
@@ -47,33 +47,33 @@ class AnalyzeService:
         self.repository = repository
         self.db = repository.db
 
-    def _get_monthly_trend(self, table: str) -> list[TrendItem]:
+    async def _get_monthly_trend(self, table: str) -> list[TrendItem]:
         try:
-            rows = self.repository.monthly_trend(table)
+            rows = await self.repository.monthly_trend(table)
             return [TrendItem(month=row[0], count=row[1]) for row in rows]
         except Exception:
             return []
 
-    def dashboard(self) -> DashboardVO:
+    async def dashboard(self) -> DashboardVO:
         stats = DashboardStats(
-            total_users=self.repository.count_users(),
-            active_users=self.repository.count_active_users(),
-            total_roles=self.repository.count_roles(),
-            total_orgs=self.repository.count_orgs(),
-            total_configs=self.repository.count_configs(),
-            total_notices=self.repository.count_notices(),
+            total_users=await self.repository.count_users(),
+            active_users=await self.repository.count_active_users(),
+            total_roles=await self.repository.count_roles(),
+            total_orgs=await self.repository.count_orgs(),
+            total_configs=await self.repository.count_configs(),
+            total_notices=await self.repository.count_notices(),
         )
         client_stats = ClientStats(
-            total_users=self.repository.count_client_users(),
-            active_users=self.repository.count_active_client_users(),
+            total_users=await self.repository.count_client_users(),
+            active_users=await self.repository.count_active_client_users(),
         )
         return DashboardVO(
             stats=stats,
             client_stats=client_stats,
-            user_trend=self._get_monthly_trend("sys_user"),
-            client_trend=self._get_monthly_trend("client_user"),
-            org_user_distribution=self.repository.org_user_distribution_with_names(),
-            role_category_distribution=self.repository.role_category_distribution_with_counts(),
+            user_trend=await self._get_monthly_trend("sys_user"),
+            client_trend=await self._get_monthly_trend("client_user"),
+            org_user_distribution=await self.repository.org_user_distribution_with_names(),
+            role_category_distribution=await self.repository.role_category_distribution_with_counts(),
             sys_info=SysInfo(
                 os_name=platform.system().lower(),
                 server_ip=get_server_ip(),
@@ -81,17 +81,17 @@ class AnalyzeService:
             ),
         )
 
-    def login_analysis(self) -> LogAnalysisData:
-        return LogAnalysisData(**self.repository.login_stats())
+    async def login_analysis(self) -> LogAnalysisData:
+        return LogAnalysisData(**await self.repository.login_stats())
 
-    def log_analysis(self) -> LogAnalysisData:
-        data = self.login_analysis()
-        stats = self.repository.log_stats()
+    async def log_analysis(self) -> LogAnalysisData:
+        data = await self.login_analysis()
+        stats = await self.repository.log_stats()
         data.log_total = stats["log_total"]
         data.log_exception = stats["log_exception"]
         data.exception_today = stats["exception_today"]
         return data
 
 
-def get_analyze_service(db: Session = Depends(get_db)) -> AnalyzeService:
+def get_analyze_service(db: AsyncSession = Depends(get_db)) -> AnalyzeService:
     return AnalyzeService(AnalyzeRepository(db))

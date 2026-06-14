@@ -7,7 +7,7 @@ from typing import List, Optional
 from fastapi import Depends
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import select, update as sa_update
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
@@ -47,18 +47,18 @@ class ModuleService:
             self.repository = ModuleRepository(repository_or_db)
         self.db = self.repository.db
 
-    def page(self, param: ModulePageParam) -> dict:
-        return map_page_data(self.repository.find_page(param), ModuleVO.model_validate, param.current, param.size)
+    async def page(self, param: ModulePageParam) -> dict:
+        return map_page_data(await self.repository.find_page(param), ModuleVO.model_validate, param.current, param.size)
 
-    def detail(self, id: str) -> Optional[ModuleVO]:
+    async def detail(self, id: str) -> Optional[ModuleVO]:
         if not id:
             return None
-        entity = self.repository.find_by_id(id)
+        entity = await self.repository.find_by_id(id)
         if not entity:
             return None
         return ModuleVO.model_validate(entity)
 
-    def create(self, vo: ModuleVO, actor: Optional[ActorContext] = None) -> None:
+    async def create(self, vo: ModuleVO, actor: Optional[ActorContext] = None) -> None:
         now = datetime.now()
         actor_user_id = _actor_user_id(actor)
         entity = SysModule(
@@ -80,10 +80,10 @@ class ModuleService:
             entity.status = vo.status
         if vo.sort_code is not None:
             entity.sort_code = vo.sort_code
-        self.repository.insert(entity)
+        await self.repository.insert(entity)
 
-    def modify(self, vo: ModuleVO, actor: Optional[ActorContext] = None) -> None:
-        entity = self.repository.find_by_id(vo.id)
+    async def modify(self, vo: ModuleVO, actor: Optional[ActorContext] = None) -> None:
+        entity = await self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
 
@@ -105,13 +105,13 @@ class ModuleService:
         if actor_user_id:
             updates["updated_by"] = actor_user_id
 
-        self.db.execute(sa_update(SysModule).where(SysModule.id == vo.id).values(**updates))
-        self.db.commit()
+        await self.db.execute(sa_update(SysModule).where(SysModule.id == vo.id).values(**updates))
+        await self.db.commit()
 
-    def remove(self, ids: list) -> None:
+    async def remove(self, ids: list) -> None:
         if not ids:
             return
-        self.repository.delete_by_ids(ids)
+        await self.repository.delete_by_ids(ids)
 
 
 class ResourceService:
@@ -122,8 +122,8 @@ class ResourceService:
             self.repository = ResourceRepository(repository_or_db)
         self.db = self.repository.db
 
-    def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
-        all_rows = self.db.execute(select(SysResource)).scalars().all()
+    async def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
+        all_rows = (await self.db.execute(select(SysResource))).scalars().all()
         return collect_descendant_ids(
             all_rows,
             ids,
@@ -131,22 +131,22 @@ class ResourceService:
             get_parent_id=lambda row: row.parent_id or "",
         )
 
-    def _sync_perm(self, resource_id: str, old_extra: Optional[str], new_extra: Optional[str]) -> None:
+    async def _sync_perm(self, resource_id: str, old_extra: Optional[str], new_extra: Optional[str]) -> None:
         old_code = _extract_perm_code(old_extra)
         new_code = _extract_perm_code(new_extra)
         if old_code == new_code:
             return
 
         role_ids = list(
-            self.db.execute(
+            (await self.db.execute(
                 select(RelRoleResource.role_id).where(RelRoleResource.resource_id == resource_id)
-            ).scalars().all()
+            )).scalars().all()
         )
         if not role_ids:
             return
 
         if old_code:
-            self.db.execute(
+            await self.db.execute(
                 sa_delete(RelRolePermission).where(
                     RelRolePermission.role_id.in_(role_ids),
                     RelRolePermission.permission_code == old_code,
@@ -155,12 +155,12 @@ class ResourceService:
 
         if new_code:
             existing_role_ids = set(
-                self.db.execute(
+                (await self.db.execute(
                     select(RelRolePermission.role_id).where(
                         RelRolePermission.role_id.in_(role_ids),
                         RelRolePermission.permission_code == new_code,
                     )
-                ).scalars().all()
+                )).scalars().all()
             )
             for role_id in role_ids:
                 if role_id in existing_role_ids:
@@ -173,20 +173,20 @@ class ResourceService:
                         scope="ALL",
                     )
                 )
-        self.db.commit()
+        await self.db.commit()
 
-    def page(self, param: ResourcePageParam) -> dict:
-        return map_page_data(self.repository.find_page(param), ResourceVO.model_validate, param.current, param.size)
+    async def page(self, param: ResourcePageParam) -> dict:
+        return map_page_data(await self.repository.find_page(param), ResourceVO.model_validate, param.current, param.size)
 
-    def detail(self, id: str) -> Optional[ResourceVO]:
+    async def detail(self, id: str) -> Optional[ResourceVO]:
         if not id:
             return None
-        entity = self.repository.find_by_id(id)
+        entity = await self.repository.find_by_id(id)
         if not entity:
             return None
         return ResourceVO.model_validate(entity)
 
-    def create(self, vo: ResourceVO, actor: Optional[ActorContext] = None) -> None:
+    async def create(self, vo: ResourceVO, actor: Optional[ActorContext] = None) -> None:
         now = datetime.now()
         actor_user_id = _actor_user_id(actor)
         entity = SysResource(
@@ -219,10 +219,10 @@ class ResourceService:
             entity.is_affix = vo.is_affix
         if vo.is_breadcrumb is not None:
             entity.is_breadcrumb = vo.is_breadcrumb
-        self.repository.insert(entity)
+        await self.repository.insert(entity)
 
-    def modify(self, vo: ResourceVO, actor: Optional[ActorContext] = None) -> None:
-        entity = self.repository.find_by_id(vo.id)
+    async def modify(self, vo: ResourceVO, actor: Optional[ActorContext] = None) -> None:
+        entity = await self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
 
@@ -258,29 +258,29 @@ class ResourceService:
         if actor_user_id:
             updates["updated_by"] = actor_user_id
 
-        self.db.execute(sa_update(SysResource).where(SysResource.id == vo.id).values(**updates))
-        self.db.commit()
+        await self.db.execute(sa_update(SysResource).where(SysResource.id == vo.id).values(**updates))
+        await self.db.commit()
 
         if vo.extra is not None or old_extra is not None:
-            self._sync_perm(vo.id, old_extra, vo.extra)
+            await self._sync_perm(vo.id, old_extra, vo.extra)
 
-    def remove(self, ids: list) -> None:
+    async def remove(self, ids: list) -> None:
         if not ids:
             return
 
-        all_ids = self._collect_descendant_ids(ids)
+        all_ids = await self._collect_descendant_ids(ids)
         role_ids = list(
-            self.db.execute(
+            (await self.db.execute(
                 select(RelRoleResource.role_id).where(RelRoleResource.resource_id.in_(all_ids))
-            ).scalars().all()
+            )).scalars().all()
         )
         if role_ids:
-            self.db.execute(sa_delete(RelRolePermission).where(RelRolePermission.role_id.in_(role_ids)))
-        self.db.execute(sa_delete(RelRoleResource).where(RelRoleResource.resource_id.in_(all_ids)))
-        self.repository.delete_by_ids(all_ids)
+            await self.db.execute(sa_delete(RelRolePermission).where(RelRolePermission.role_id.in_(role_ids)))
+        await self.db.execute(sa_delete(RelRoleResource).where(RelRoleResource.resource_id.in_(all_ids)))
+        await self.repository.delete_by_ids(all_ids)
 
-    def tree(self) -> list[ResourceVO]:
-        rows = self.db.execute(select(SysResource).order_by(SysResource.sort_code.asc())).scalars().all()
+    async def tree(self) -> list[ResourceVO]:
+        rows = (await self.db.execute(select(SysResource).order_by(SysResource.sort_code.asc()))).scalars().all()
         nodes = [ResourceVO.model_validate(row) for row in rows]
         return build_tree(
             nodes,
@@ -290,8 +290,8 @@ class ResourceService:
             get_sort_code=lambda node: node.sort_code,
         )
 
-    def menu(self) -> list[ResourceMenuVO]:
-        rows = self.db.execute(select(SysResource).order_by(SysResource.sort_code.asc())).scalars().all()
+    async def menu(self) -> list[ResourceMenuVO]:
+        rows = (await self.db.execute(select(SysResource).order_by(SysResource.sort_code.asc()))).scalars().all()
         nodes = [ResourceMenuVO.model_validate(row) for row in rows]
         return build_tree(
             nodes,
@@ -302,9 +302,9 @@ class ResourceService:
         )
 
 
-def get_module_service(db: Session = Depends(get_db)) -> ModuleService:
+def get_module_service(db: AsyncSession = Depends(get_db)) -> ModuleService:
     return ModuleService(ModuleRepository(db))
 
 
-def get_resource_service(db: Session = Depends(get_db)) -> ResourceService:
+def get_resource_service(db: AsyncSession = Depends(get_db)) -> ResourceService:
     return ResourceService(ResourceRepository(db))
