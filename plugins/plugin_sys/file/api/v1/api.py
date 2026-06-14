@@ -4,14 +4,17 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
+from micosauth.decorators import require_login, require_permissions
 
-from sdk.auth import BusinessID, ConsumerID, get_current_login_id
-from sdk.auth.decorator import CheckLogin, CheckPermission
-from sdk.web.result import success, failure
+from sdk.auth import BUSINESS_REALM_ID, CONSUMER_REALM_ID, get_current_login_id
 from sdk.shared.types import IdsParam
+from sdk.web.result import failure, success
 from plugins.plugin_sys.file.params import (
-    FilePageParam, ChunkUploadInitParam,
-    ChunkUploadPartParam, ChunkCompleteParam, ChunkAbortParam,
+    ChunkAbortParam,
+    ChunkCompleteParam,
+    ChunkUploadInitParam,
+    ChunkUploadPartParam,
+    FilePageParam,
 )
 from plugins.plugin_sys.file.service import FileService, get_file_service
 
@@ -19,8 +22,8 @@ router = APIRouter(prefix="/api/v1/sys/file", tags=["Sys File"])
 
 
 @router.post("/upload", summary="上传文件")
-@CheckPermission("sys:file:upload")
-@CheckLogin(realm_id=BusinessID)
+@require_permissions("sys:file:upload", realm=BUSINESS_REALM_ID)
+@require_login(realm=BUSINESS_REALM_ID)
 async def upload_handler(
     request: Request,
     file: UploadFile = File(...),
@@ -32,27 +35,24 @@ async def upload_handler(
     try:
         result = await service.upload(file, uid or "", engine, bucket)
         return success(result)
-    except Exception as e:
-        return failure(str(e), 400)
+    except Exception as exc:
+        return failure(str(exc), 400)
 
 
 @router.get("/page", summary="文件分页")
-@CheckPermission("sys:file:page")
-async def page_handler(
-    param: FilePageParam = Depends(),
-    service: FileService = Depends(get_file_service),
-):
+@require_permissions("sys:file:page", realm=BUSINESS_REALM_ID)
+async def page_handler(request: Request, param: FilePageParam = Depends(), service: FileService = Depends(get_file_service)):
     return success(await service.page(param))
 
 
 @router.get("/detail", summary="文件详情")
-@CheckPermission("sys:file:detail")
-async def detail_handler(id: str, service: FileService = Depends(get_file_service)):
+@require_permissions("sys:file:detail", realm=BUSINESS_REALM_ID)
+async def detail_handler(request: Request, id: str, service: FileService = Depends(get_file_service)):
     return success(await service.detail(id))
 
 
 @router.get("/download", summary="下载文件")
-@CheckPermission("sys:file:download")
+@require_permissions("sys:file:download", realm=BUSINESS_REALM_ID)
 async def download_handler(request: Request, id: str, service: FileService = Depends(get_file_service)):
     try:
         entity = await service.detail(id)
@@ -63,38 +63,39 @@ async def download_handler(request: Request, id: str, service: FileService = Dep
         if entity.get("storage_path"):
             return FileResponse(entity["storage_path"], filename=entity.get("name") or "download")
         return failure("文件路径为空", 404)
-    except Exception as e:
-        return failure(str(e), 400)
+    except Exception as exc:
+        return failure(str(exc), 400)
 
 
 @router.post("/remove", summary="删除文件记录（保留存储文件）")
-@CheckPermission("sys:file:remove")
-@CheckLogin(realm_id=BusinessID)
-async def remove_handler(p: IdsParam, service: FileService = Depends(get_file_service)):
+@require_permissions("sys:file:remove", realm=BUSINESS_REALM_ID)
+@require_login(realm=BUSINESS_REALM_ID)
+async def remove_handler(request: Request, p: IdsParam, service: FileService = Depends(get_file_service)):
     await service.remove(p.ids)
     return success()
 
 
 @router.post("/remove-absolute", summary="删除文件（含存储文件）")
-@CheckPermission("sys:file:remove-absolute")
-@CheckLogin(realm_id=BusinessID)
-async def remove_absolute_handler(p: IdsParam, service: FileService = Depends(get_file_service)):
+@require_permissions("sys:file:remove-absolute", realm=BUSINESS_REALM_ID)
+@require_login(realm=BUSINESS_REALM_ID)
+async def remove_absolute_handler(request: Request, p: IdsParam, service: FileService = Depends(get_file_service)):
     await service.remove_absolute(p.ids)
     return success()
 
 
 @router.post("/upload/init", summary="初始化分片上传")
-@CheckPermission("sys:file:upload")
-@CheckLogin(realm_id=BusinessID)
-def chunk_init_handler(p: ChunkUploadInitParam, service: FileService = Depends(get_file_service)):
+@require_permissions("sys:file:upload", realm=BUSINESS_REALM_ID)
+@require_login(realm=BUSINESS_REALM_ID)
+def chunk_init_handler(request: Request, p: ChunkUploadInitParam, service: FileService = Depends(get_file_service)):
     result = service.init_chunk_upload(p)
     return success(result)
 
 
 @router.post("/upload/chunk", summary="上传分片")
-@CheckPermission("sys:file:upload")
-@CheckLogin(realm_id=BusinessID)
+@require_permissions("sys:file:upload", realm=BUSINESS_REALM_ID)
+@require_login(realm=BUSINESS_REALM_ID)
 async def chunk_upload_handler(
+    request: Request,
     file: UploadFile = File(...),
     upload_id: str = Form(...),
     chunk_index: int = Form(...),
@@ -119,27 +120,26 @@ async def chunk_upload_handler(
 
 
 @router.post("/upload/complete", summary="完成分片上传")
-@CheckPermission("sys:file:upload")
-@CheckLogin(realm_id=BusinessID)
-async def chunk_complete_handler(p: ChunkCompleteParam, service: FileService = Depends(get_file_service)):
+@require_permissions("sys:file:upload", realm=BUSINESS_REALM_ID)
+@require_login(realm=BUSINESS_REALM_ID)
+async def chunk_complete_handler(request: Request, p: ChunkCompleteParam, service: FileService = Depends(get_file_service)):
     result = await service.complete_chunk_upload(p)
     return success(result)
 
 
 @router.post("/upload/abort", summary="中止分片上传")
-@CheckPermission("sys:file:upload")
-@CheckLogin(realm_id=BusinessID)
-def chunk_abort_handler(p: ChunkAbortParam, service: FileService = Depends(get_file_service)):
+@require_permissions("sys:file:upload", realm=BUSINESS_REALM_ID)
+@require_login(realm=BUSINESS_REALM_ID)
+def chunk_abort_handler(request: Request, p: ChunkAbortParam, service: FileService = Depends(get_file_service)):
     service.abort_chunk_upload(p)
     return success()
 
 
-# ── Client file upload (consumer) ───────────────────────────────────
 client_router = APIRouter(prefix="/api/v1/c/file", tags=["Client File"])
 
 
 @client_router.post("/upload", summary="客户端上传文件")
-@CheckLogin(realm_id=ConsumerID)
+@require_login(realm=CONSUMER_REALM_ID)
 async def client_upload_handler(
     request: Request,
     file: UploadFile = File(...),
@@ -151,5 +151,5 @@ async def client_upload_handler(
     try:
         result = await service.upload(file, uid or "", engine, bucket)
         return success(result)
-    except Exception as e:
-        return failure(str(e), 400)
+    except Exception as exc:
+        return failure(str(exc), 400)

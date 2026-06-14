@@ -1,10 +1,11 @@
 """Permission API — mirrors hei-gin plugin-sys/permission/api/v1/api.go."""
 
 from typing import List
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sdk.web.result import Result, success
-from sdk.kernel.plugin import Perm
 from ...service import PermissionService, get_permission_service
+from micosauth.decorators import require_permissions
+from sdk.auth import BUSINESS_REALM_ID
 
 router = APIRouter()
 
@@ -14,8 +15,9 @@ router = APIRouter()
     summary="获取权限模块列表",
     response_model=Result[List[str]],
 )
-@Perm("sys:permission:modules", "权限模块列表")
+@require_permissions("sys:permission:modules", realm=BUSINESS_REALM_ID)
 async def list_modules(
+    request: Request,
     service: PermissionService = Depends(get_permission_service),
 ):
     return success(await service.list_modules())
@@ -26,8 +28,9 @@ async def list_modules(
     summary="根据模块获取权限列表",
     response_model=Result,
 )
-@Perm("sys:permission:by-module", "按模块查询权限")
+@require_permissions("sys:permission:by-module", realm=BUSINESS_REALM_ID)
 async def by_module(
+    request: Request,
     module: str = Query(...),
     service: PermissionService = Depends(get_permission_service),
 ):

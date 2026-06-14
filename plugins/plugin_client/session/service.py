@@ -7,7 +7,7 @@ from fastapi import Depends
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sdk.auth import Consumer, Sessions
+from sdk.auth import CONSUMER_REALM_ID, get_auth_util, get_micos_session_util
 from sdk.infra.db import get_db
 from sdk.web.result import page_data
 
@@ -42,8 +42,6 @@ def _format_timeout(seconds: int) -> str:
 class ClientSessionService:
     def __init__(self, db: AsyncSession):
         self.db = db
-        self._consumer_realm_sessions = Consumer.sessions()
-        self._consumer_sessions = Sessions(Consumer)
 
     async def _search_client_user_ids(self, keyword: Optional[str]) -> Optional[list[str]]:
         if not keyword:
@@ -64,12 +62,12 @@ class ClientSessionService:
         return user_ids
 
     async def analysis(self) -> SessionAnalysisResult:
-        consumer_stats = (await self._consumer_sessions.stats_by_realm()).get(Consumer.id, {})
+        consumer_stats = await get_micos_session_util().get_analysis()
         return SessionAnalysisResult(
-            total_count=consumer_stats["total_count"],
-            max_token_count=consumer_stats["max_token_count"],
-            one_hour_newly_added=consumer_stats["one_hour_newly_added"],
-            proportion_of_b_and_c=f'0/{consumer_stats["total_count"]}',
+            total_count=consumer_stats.total_login_count,
+            max_token_count=consumer_stats.total_token_count,
+            one_hour_newly_added=consumer_stats.one_hour_new_token_count,
+            proportion_of_b_and_c=f'0/{consumer_stats.total_login_count}',
         )
 
     async def page(self, param: SessionPageParam) -> dict:
@@ -77,13 +75,18 @@ class ClientSessionService:
         size = max(1, param.size)
         candidate_user_ids = await self._search_client_user_ids(param.keyword)
         if candidate_user_ids is None:
-            infos, total = await self._consumer_realm_sessions.page(current=current, size=size)
+            page_result = await get_micos_session_util().page_sessions(CONSUMER_REALM_ID, current=current, size=size)
+            infos = [{"user_id": item.login_id, "session_create_time": item.last_login_at.isoformat(), "session_timeout_seconds": 0, "token_count": item.token_count} for item in page_result.items]
+            total = page_result.total
         else:
-            infos, total = await self._consumer_realm_sessions.page_by_user_ids(
-                candidate_user_ids,
-                current=current,
-                size=size,
-            )
+            sessions = []
+            for user_id in candidate_user_ids:
+                session = await get_micos_session_util().get_session(CONSUMER_REALM_ID, user_id)
+                if session is not None:
+                    sessions.append({"user_id": session.login_id, "session_create_time": session.last_login_at.isoformat(), "session_timeout_seconds": 0, "token_count": session.token_count})
+            total = len(sessions)
+            start = (current - 1) * size
+            infos = sessions[start:start + size]
         user_ids = [info["user_id"] for info in infos]
         user_map = {}
         if user_ids:
@@ -121,31 +124,39 @@ class ClientSessionService:
         return page_data(records, total, current, size)
 
     async def exit_session(self, user_id: str) -> None:
-        await self._consumer_realm_sessions.kickout_user(user_id)
+        await get_auth_util().kickout_login_id(CONSUMER_REALM_ID, user_id)
 
     async def token_list(self, user_id: str) -> list[SessionTokenResult]:
-        token_infos = await self._consumer_realm_sessions.tokens(user_id)
+        token_infos = await get_micos_session_util().list_tokens(CONSUMER_REALM_ID, user_id)
         return [
             SessionTokenResult.from_token_info(
-                token_info,
+                {
+                    "token": token_info.token,
+                    "created_at": token_info.issued_at.isoformat(),
+                    "timeout_seconds": int((token_info.expires_at - datetime.now(timezone.utc)).total_seconds()),
+                    "device_type": (token_info.extra or {}).get("device_type"),
+                    "device_id": token_info.device_id,
+                },
                 _format_timeout(
-                    token_info.get("timeout_seconds", 0),
+                    int((token_info.expires_at - datetime.now(timezone.utc)).total_seconds()),
                 ),
             )
             for token_info in token_infos
         ]
 
     async def exit_token(self, user_id: str, token: str) -> None:
-        await self._consumer_realm_sessions.kickout_token(user_id, token)
+        del user_id
+        await get_auth_util().revoke_token(CONSUMER_REALM_ID, token)
 
     async def chart_data(self) -> SessionChartData:
-        consumer_stats = (await self._consumer_sessions.stats_by_realm()).get(Consumer.id, {})
+        consumer_stats = await get_micos_session_util().get_analysis()
         days = [(datetime.now(timezone.utc) - timedelta(days=index)).strftime("%Y-%m-%d") for index in range(6, -1, -1)]
-        daily_map = (await self._consumer_sessions.trend_by_realm(days)).get(Consumer.id, {})
+        chart_data = await get_micos_session_util().get_chart_data(len(days))
+        daily_map = dict(zip(chart_data.days, chart_data.realm_series.get(CONSUMER_REALM_ID, [])))
         series_data = [daily_map.get(day, 0) for day in days]
         return SessionChartData(
             bar_chart=BarChartData(days=days, series=[CategorySeries(name="新增在线数", data=series_data)]),
-            pie_chart=PieChartData(data=[CategoryTotal(category="CONSUMER", total=consumer_stats["total_count"])]),
+            pie_chart=PieChartData(data=[CategoryTotal(category="CONSUMER", total=consumer_stats.total_login_count)]),
         )
 
 

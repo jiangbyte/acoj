@@ -4,7 +4,10 @@ import logging
 from dataclasses import dataclass
 
 from fastapi import FastAPI
+from micosauth.adapters.fastapi import install_fastapi_auth
+from micosauth.adapters.fastapi.context import set_default_realm
 
+from sdk.auth import BUSINESS_REALM_ID, get_micos_runtime
 from sdk.config.settings import settings
 from sdk.infra.db import freeze as freeze_migrations
 from sdk.infra.db import snapshot as migration_snapshot
@@ -17,7 +20,7 @@ from sdk.kernel.plugin import (
 )
 from sdk.kernel.plugin.core_plugins import set_current_app
 from sdk.kernel.registry import execute_middlewares, execute_routes, freeze, snapshot_state
-from sdk.web.middleware import AuthMiddleware, MetricsMiddleware, TraceMiddleware, setup_cors, setup_exception_handlers
+from sdk.web.middleware import MetricsMiddleware, RealmRoutingMiddleware, TraceMiddleware, setup_cors, setup_exception_handlers
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +51,11 @@ class ApplicationRuntime:
             openapi_url="/openapi.json" if settings.swagger.enabled else None,
         )
         set_current_app(app)
+        install_fastapi_auth(app, get_micos_runtime(), manage_lifespan=False)
+        set_default_realm(app.state, BUSINESS_REALM_ID)
         app.add_middleware(MetricsMiddleware)
+        app.add_middleware(RealmRoutingMiddleware)
         app.add_middleware(TraceMiddleware)
-        app.add_middleware(AuthMiddleware)
         setup_cors(app)
         setup_exception_handlers(app)
         execute_middlewares(app)

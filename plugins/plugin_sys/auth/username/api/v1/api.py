@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request
-from sdk.auth import BusinessID
+from sdk.auth import BUSINESS_REALM_ID
 from sdk.web.result import Result, success
-from sdk.auth.decorator import CheckLogin
+from micosauth.decorators import require_login
 from sdk.log import SysLog
-from sdk.auth.decorator import NoRepeat
+from sdk.web.middleware import RateLimiter
 from ...logic import do_login, do_register, do_logout
 from ...params import (
     UsernameLoginParam,
@@ -31,7 +31,7 @@ async def login(request: Request, param: UsernameLoginParam):
     response_model=Result[UsernameRegisterResult]
 )
 @SysLog("注册")
-@NoRepeat(interval=5000)
+@RateLimiter("norepeat:sys:register", window=5, max_requests=1)
 async def register(request: Request, param: UsernameRegisterParam):
     return success(await do_register(param, request=request))
 
@@ -41,6 +41,6 @@ async def register(request: Request, param: UsernameRegisterParam):
     summary="B端用户登出",
     response_model=Result[UsernameLogoutResult]
 )
-@CheckLogin(realm_id=BusinessID)
+@require_login(realm=BUSINESS_REALM_ID)
 async def logout(request: Request):
     return success(await do_logout(request))

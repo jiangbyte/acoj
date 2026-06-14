@@ -26,7 +26,6 @@ class AssemblyRegistry:
     def __init__(self) -> None:
         self._route_items: list[tuple[str, Callable[[FastAPI], None]]] = []
         self._middleware_items: list[tuple[str, Callable[[FastAPI], None]]] = []
-        self._permission_entries: dict[str, dict[str, str]] = {}
         self._models: dict[str, type] = {}
         self._route_index: set[str] = set()
         self._middleware_index: set[str] = set()
@@ -81,15 +80,6 @@ class AssemblyRegistry:
         for _, fn in self._middleware_items:
             fn(app)
 
-    def register_permission(self, code: str, name: str = "", module: str = "") -> None:
-        self.ensure_mutable()
-        if code not in self._permission_entries:
-            self._permission_entries[code] = {
-                "code": code,
-                "name": name,
-                "module": module or _module_from_code(code),
-            }
-
     def register_model(self, model_class: type) -> None:
         table_name = getattr(model_class, "__tablename__", "")
         if not table_name:
@@ -101,26 +91,16 @@ class AssemblyRegistry:
         return RegistrySnapshot(
             routes=[name for name, _ in self._route_items],
             middlewares=[name for name, _ in self._middleware_items],
-            permissions=sorted(self._permission_entries),
+            permissions=[],
             models=sorted(self._models),
             frozen=self._frozen,
         )
-
-    def get_permission_entries(self) -> dict[str, dict[str, str]]:
-        return dict(self._permission_entries)
 
     def get_models(self) -> dict[str, type]:
         return dict(self._models)
 
     def reset(self) -> None:
         self.__init__()
-
-
-def _module_from_code(code: str) -> str:
-    parts = code.split(":")
-    return ":".join(parts[:-1]) if len(parts) > 1 else code
-
-
 _registry = AssemblyRegistry()
 
 
@@ -158,26 +138,8 @@ def register_model(model_class: type) -> None:
 
 def get_registered_models() -> dict[str, type]:
     return _registry.get_models()
-
-
-def get_registered_perm_entries() -> dict[str, dict[str, str]]:
-    return _registry.get_permission_entries()
-
-
 def reset_for_test() -> None:
     _registry.reset()
-
-
-def Perm(code: str, name: str = "", realm_id: str = "BUSINESS") -> Callable[..., Any]:
-    _registry.register_permission(code, name=name, module=_module_from_code(code))
-    from micosauth.decorators import require_permissions
-    from sdk.auth import get_auth_util
-
-    return require_permissions(get_auth_util(), code, realm=realm_id)
-
-
-def ClientPerm(code: str, name: str = "") -> Callable[..., Any]:
-    return Perm(code, name, realm_id="CONSUMER")
 
 
 class HeiBase(DeclarativeBase):

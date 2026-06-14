@@ -1,14 +1,16 @@
 """Client session API — standalone, mirrors hei-gin plugin-client/session/api/v1/api.go."""
 
 from typing import List
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sdk.web.result import Result, PageData, success
-from sdk.kernel.plugin import Perm
 from ...params import (
     SessionAnalysisResult, SessionPageResult, SessionPageParam,
     SessionExitParam, SessionExitTokenParam, SessionTokenResult, SessionChartData,
 )
 from ...service import ClientSessionService, get_client_session_service
+from micosauth.decorators import require_permissions
+from sdk.auth import CONSUMER_REALM_ID
+from sdk.auth import BUSINESS_REALM_ID
 
 router = APIRouter()
 
@@ -18,8 +20,9 @@ router = APIRouter()
     summary="获取C端会话分析统计",
     response_model=Result[SessionAnalysisResult],
 )
-@Perm("sys:client-session:page", "C端会话查看")
+@require_permissions("sys:client-session:page", realm=BUSINESS_REALM_ID)
 async def analysis(
+    request: Request,
     service: ClientSessionService = Depends(get_client_session_service),
 ):
     result = await service.analysis()
@@ -31,8 +34,9 @@ async def analysis(
     summary="获取C端在线用户分页",
     response_model=Result[PageData[SessionPageResult]],
 )
-@Perm("sys:client-session:page", "C端会话查看")
+@require_permissions("sys:client-session:page", realm=BUSINESS_REALM_ID)
 async def page(
+    request: Request,
     param: SessionPageParam = Depends(),
     service: ClientSessionService = Depends(get_client_session_service),
 ):
@@ -44,8 +48,9 @@ async def page(
     summary="强退C端用户会话",
     response_model=Result,
 )
-@Perm("sys:client-session:exit", "C端会话强退")
+@require_permissions("sys:client-session:exit", realm=BUSINESS_REALM_ID)
 async def exit_session(
+    request: Request,
     param: SessionExitParam,
     service: ClientSessionService = Depends(get_client_session_service),
 ):
@@ -58,8 +63,9 @@ async def exit_session(
     summary="获取C端用户令牌列表",
     response_model=Result[List[SessionTokenResult]],
 )
-@Perm("sys:client-session:page", "C端会话查看")
+@require_permissions("sys:client-session:page", realm=BUSINESS_REALM_ID)
 async def token_list(
+    request: Request,
     user_id: str = Query(..., description="用户ID"),
     service: ClientSessionService = Depends(get_client_session_service),
 ):
@@ -72,8 +78,9 @@ async def token_list(
     summary="强退C端指定令牌",
     response_model=Result,
 )
-@Perm("sys:client-session:exit", "C端会话强退")
+@require_permissions("sys:client-session:exit", realm=BUSINESS_REALM_ID)
 async def exit_token(
+    request: Request,
     param: SessionExitTokenParam,
     service: ClientSessionService = Depends(get_client_session_service),
 ):
@@ -86,8 +93,9 @@ async def exit_token(
     summary="获取C端会话图表数据",
     response_model=Result[SessionChartData],
 )
-@Perm("sys:client-session:page", "C端会话查看")
+@require_permissions("sys:client-session:page", realm=BUSINESS_REALM_ID)
 async def chart_data(
+    request: Request,
     service: ClientSessionService = Depends(get_client_session_service),
 ):
     result = await service.chart_data()

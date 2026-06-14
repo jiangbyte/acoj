@@ -21,7 +21,6 @@ from typing import Optional
 
 from fastapi import Request, HTTPException, status
 
-from sdk.auth import get_current_login_id
 from sdk.infra.db import get_redis
 
 logger = logging.getLogger(__name__)
@@ -67,11 +66,7 @@ def RateLimiter(
                 return await func(*args, **kwargs)
 
             # User ID from auth context, fallback to client IP
-            user_id = ""
-            try:
-                user_id = await get_current_login_id(request)
-            except Exception:
-                user_id = ""
+            user_id = str(getattr(request.state, "micos_login_id", "") or "")
 
             if not user_id:
                 user_id = request.client.host if request.client else "unknown"

@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sdk.web.result import Result, PageData, success
 from sdk.shared.di import ActorContext, get_current_actor
 from sdk.shared.types import IdsParam
-from sdk.auth.decorator import CheckPermission, NoRepeat
+from sdk.web.middleware import RateLimiter
 from sdk.log import SysLog
 from ...params import OrgVO, OrgPageParam, OrgTreeParam
 from ...params import OrgTreeVO
 from ...service import OrgService, get_org_service
+from micosauth.decorators import require_permissions
+from sdk.auth import BUSINESS_REALM_ID
 
 router = APIRouter()
 
@@ -16,8 +18,9 @@ router = APIRouter()
     summary="获取组织分页",
     response_model=Result[PageData[OrgVO]]
 )
-@CheckPermission("sys:org:page")
+@require_permissions("sys:org:page", realm=BUSINESS_REALM_ID)
 async def page(
+    request: Request,
     param: OrgPageParam = Depends(),
     service: OrgService = Depends(get_org_service),
 ):
@@ -29,8 +32,9 @@ async def page(
     summary="获取组织树",
     response_model=Result[list[OrgTreeVO]]
 )
-@CheckPermission("sys:org:tree")
+@require_permissions("sys:org:tree", realm=BUSINESS_REALM_ID)
 async def tree(
+    request: Request,
     param: OrgTreeParam = Depends(),
     service: OrgService = Depends(get_org_service),
 ):
@@ -43,9 +47,10 @@ async def tree(
     response_model=Result
 )
 @SysLog("添加组织")
-@CheckPermission("sys:org:create")
-@NoRepeat(interval=3000)
+@require_permissions("sys:org:create", realm=BUSINESS_REALM_ID)
+@RateLimiter("norepeat", window=3, max_requests=1)
 async def create(
+    request: Request,
     vo: OrgVO,
     service: OrgService = Depends(get_org_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -60,8 +65,9 @@ async def create(
     response_model=Result
 )
 @SysLog("编辑组织")
-@CheckPermission("sys:org:modify")
+@require_permissions("sys:org:modify", realm=BUSINESS_REALM_ID)
 async def modify(
+    request: Request,
     vo: OrgVO,
     service: OrgService = Depends(get_org_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -76,8 +82,9 @@ async def modify(
     response_model=Result
 )
 @SysLog("删除组织")
-@CheckPermission("sys:org:remove")
+@require_permissions("sys:org:remove", realm=BUSINESS_REALM_ID)
 async def remove(
+    request: Request,
     param: IdsParam,
     service: OrgService = Depends(get_org_service),
 ):
@@ -90,8 +97,9 @@ async def remove(
     summary="获取组织详情",
     response_model=Result[OrgVO]
 )
-@CheckPermission("sys:org:detail")
+@require_permissions("sys:org:detail", realm=BUSINESS_REALM_ID)
 async def detail(
+    request: Request,
     id: str = Query(...),
     service: OrgService = Depends(get_org_service),
 ):
