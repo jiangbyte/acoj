@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from sdk.web.result import Result, success
 from sdk.captcha import c_captcha, CaptchaResult
 
@@ -10,5 +10,5 @@ router = APIRouter()
     summary="C端验证码",
     response_model=Result[CaptchaResult]
 )
-async def get_captcha():
+async def get_captcha(request: Request):
     return success(await c_captcha.get_captcha())

@@ -1,11 +1,5 @@
 from enum import StrEnum
 
-
-class RealmID(StrEnum):
-    BUSINESS = "BUSINESS"
-    CONSUMER = "CONSUMER"
-
-
 class DataScope(StrEnum):
     ALL = "ALL"
     SELF = "SELF"
@@ -29,8 +23,3 @@ class DataScope(StrEnum):
             "ALL": 7,
         }
         return min(scopes, key=lambda item: priority.get(item, 99))
-
-
-class CheckMode(StrEnum):
-    AND = "AND"
-    OR = "OR"

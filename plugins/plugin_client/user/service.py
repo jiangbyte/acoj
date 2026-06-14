@@ -9,7 +9,6 @@ from fastapi import Depends, Request
 from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sdk.auth import get_current_login_id
 from sdk.infra.db import get_db
 from sdk.shared.contracts import LoginUserInfo
 from sdk.shared.di import ActorContext
@@ -203,7 +202,7 @@ class LoginUserService:
         self._session_factory = session_factory
 
     async def get_current_user(self, request) -> Optional[LoginUserInfo]:
-        user_id = await get_current_login_id(request)
+        user_id = str(getattr(request.state, "micos_login_id", "") or "")
         if not user_id:
             return None
         return await self.get_user_by_id(user_id)

@@ -6,7 +6,6 @@ from typing import Optional
 
 from fastapi import Request
 
-from sdk.auth import get_current_login_id
 from sdk.utils import get_client_ip, get_city_info, generate_id
 from sdk.utils.trace_utils import get_trace_id
 from .persistence import LogEntry, get_op_user_resolver, save_log
@@ -28,7 +27,7 @@ def _get_request(*args, **kwargs) -> Optional[Request]:
 async def _get_op_user(request: Request) -> Optional[str]:
     """Get the current operator's username from the active user."""
     try:
-        user_id = await get_current_login_id(request)
+        user_id = str(getattr(request.state, "micos_login_id", "") or "")
         if not user_id:
             return None
         resolver = get_op_user_resolver()

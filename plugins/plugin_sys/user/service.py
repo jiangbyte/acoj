@@ -18,7 +18,7 @@ from plugins.plugin_sys.org.models import SysOrg
 from plugins.plugin_sys.position.models import SysPosition
 from plugins.plugin_sys.resource.models import SysResource
 from plugins.plugin_sys.role.models import RelRolePermission, RelRoleResource
-from sdk.auth import Business, get_current_login_id
+from sdk.auth import BUSINESS_REALM_ID, get_auth_util, get_micos_session_util, invalidate_acl_cache
 from sdk.config.settings import settings
 from sdk.infra.db import get_db
 from sdk.shared.contracts import LoginUserInfo, SUPER_ADMIN_CODE
@@ -343,7 +343,10 @@ class UserService:
                 seen.add(role_id)
                 self.db.add(RelUserRole(id=generate_id(), user_id=param.user_id, role_id=role_id))
             await self.db.commit()
-            await Business.refresh_user_sessions_acl(param.user_id)
+            invalidate_acl_cache(BUSINESS_REALM_ID, param.user_id)
+            tokens = await get_micos_session_util().list_tokens(BUSINESS_REALM_ID, param.user_id)
+            for token_record in tokens:
+                await get_auth_util().inspect_token(token_record.token, BUSINESS_REALM_ID)
         except Exception:
             await self.db.rollback()
             raise
@@ -368,7 +371,10 @@ class UserService:
                     entity.custom_scope_org_ids = item.custom_scope_org_ids
                 self.db.add(entity)
             await self.db.commit()
-            await Business.refresh_user_sessions_acl(param.user_id)
+            invalidate_acl_cache(BUSINESS_REALM_ID, param.user_id)
+            tokens = await get_micos_session_util().list_tokens(BUSINESS_REALM_ID, param.user_id)
+            for token_record in tokens:
+                await get_auth_util().inspect_token(token_record.token, BUSINESS_REALM_ID)
         except Exception:
             await self.db.rollback()
             raise
@@ -376,7 +382,10 @@ class UserService:
     async def refresh_session_acl(self, param: RefreshSessionACLParam) -> None:
         if not param.user_id:
             raise BusinessException("用户ID不能为空", 400)
-        await Business.refresh_user_sessions_acl(param.user_id)
+        invalidate_acl_cache(BUSINESS_REALM_ID, param.user_id)
+        tokens = await get_micos_session_util().list_tokens(BUSINESS_REALM_ID, param.user_id)
+        for token_record in tokens:
+            await get_auth_util().inspect_token(token_record.token, BUSINESS_REALM_ID)
 
     async def batch_refresh_session_acl(self, param: BatchRefreshSessionACLParam) -> None:
         if not param.user_ids:
@@ -387,7 +396,10 @@ class UserService:
                 if user_id in seen:
                     continue
                 seen.add(user_id)
-                await Business.refresh_user_sessions_acl(user_id)
+                invalidate_acl_cache(BUSINESS_REALM_ID, user_id)
+                tokens = await get_micos_session_util().list_tokens(BUSINESS_REALM_ID, user_id)
+                for token_record in tokens:
+                    await get_auth_util().inspect_token(token_record.token, BUSINESS_REALM_ID)
 
     async def get_user_permission_details(self, user_id: str) -> list[PermissionItem]:
         if not user_id:
@@ -625,7 +637,7 @@ class UserService:
         await self.db.commit()
         if param.status != "ACTIVE":
             for user_id in param.ids:
-                await Business.sessions().kickout_user(user_id)
+                await get_auth_util().kickout_login_id(BUSINESS_REALM_ID, user_id)
         await self.db.commit()
 
     async def export(self, param: UserPageParam) -> list[UserExportVO]:
@@ -649,7 +661,7 @@ class LoginUserService:
         self._session_factory = session_factory
 
     async def get_current_user(self, request) -> Optional[LoginUserInfo]:
-        user_id = await get_current_login_id(request)
+        user_id = str(getattr(request.state, "micos_login_id", "") or "")
         if not user_id:
             return None
         return await self.get_user_by_id(user_id)

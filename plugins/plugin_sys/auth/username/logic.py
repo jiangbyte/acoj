@@ -3,8 +3,9 @@ import logging
 
 import bcrypt
 from fastapi import Request
+from micosauth.adapters.fastapi.context import get_micos_context
 
-from sdk.auth import Business, get_current_login_id
+from sdk.auth import BUSINESS_REALM_ID
 from sdk.captcha import b_captcha
 from sdk.infra.db import AsyncSessionLocal
 from sdk.log import record_auth_log
@@ -74,7 +75,14 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         extra["device_type"] = get_browser(user_agent)
         extra["device_id"] = param.device_id
 
-        token = await Business.login(request, str(user_info.id), extra)
+        token = (
+            await get_micos_context(request).auth.login(
+                BUSINESS_REALM_ID,
+                str(user_info.id),
+                device_id=str(param.device_id or "default"),
+                extra=extra,
+            )
+        )["token"]
 
         try:
             await login_user_service.record_login(user_info.id, request)
@@ -119,12 +127,14 @@ async def do_register(param: UsernameRegisterParam, request: Request = None) -> 
 async def do_logout(request: Request) -> UsernameLogoutResult:
     # 获取当前用户用于日志记录
     try:
-        user_id = await get_current_login_id(request)
+        user_id = str(getattr(request.state, "micos_login_id", "") or "")
         if user_id:
             op_user = await login_user_service.get_username(user_id)
             record_auth_log(request, "登出", "LOGOUT", op_user=op_user)
     except Exception as e:
         logger.warning(f"Failed to record logout log: {e}")
 
-    await Business.logout(request=request)
+    token = str(getattr(request.state, "micos_token", "") or "")
+    if token:
+        await get_micos_context(request).auth.logout_current(BUSINESS_REALM_ID, token)
     return UsernameLogoutResult(message="登出成功")

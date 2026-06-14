@@ -102,6 +102,21 @@ class AuthConfig(BaseModel):
             "/api/v1/swagger/",
         ]
     )
+    consumer_realm_patterns: list[str] = Field(
+        default_factory=lambda: [
+            "/api/v1/c/*",
+            "/api/v1/public/c/*",
+        ]
+    )
+    business_realm_patterns: list[str] = Field(
+        default_factory=lambda: [
+            "/api/v1/b/*",
+            "/api/v1/public/b/*",
+            "/api/v1/sys/*",
+            "/api/v1/client/*",
+            "/api/v1/client-user/*",
+        ]
+    )
     business_register_enabled: bool = False
 
 

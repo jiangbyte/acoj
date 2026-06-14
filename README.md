@@ -39,14 +39,14 @@
 ## 核心特性
 
 - **插件化架构** — 业务模块以 `HeiPlugin` 子类自注册，自动发现路由、模型、权限，支持 `on_init` / `on_start` / `on_stop` 生命周期
-- **双端认证体系** — B 端（后台管理）和 C 端（客户端）独立的两套 Token 认证，通过路径前缀自动分流
+- **双端认证体系** — B 端（后台管理）和 C 端（客户端）独立 realm，基于 `micosauth` 显式声明
 - **SM2 国密加密** — 登录密码传输使用国密 SM2 C1C3C2 模式加密
 - **bcrypt 密码哈希** — 存储密码使用 bcrypt 加盐哈希
 - **RBAC 权限控制** — 用户→角色→权限 + 用户直授权限，双层模型
 - **数据权限（行级）** — 支持 ALL / ORG / ORG_AND_BELOW / SELF / CUSTOM_ORG / GROUP / GROUP_AND_BELOW / CUSTOM_GROUP 等 8 种数据范围控制，多角色多路径按最严策略合并
 - **权限自动发现** — `Perm("code", "name")` 双功能装饰器，自动注册权限并缓存到 Redis
 - **操作日志** — `@SysLog` 装饰器自动记录用户操作请求参数、响应结果、执行状态
-- **防重复提交** — `@NoRepeat` 装饰器（基于 Redis）
+- **防重复提交** — 基于 Redis 的 `RateLimiter(..., max_requests=1)` 约束
 - **接口速率限制** — `RateLimiter` 中间件（基于 Redis Lua 脚本）
 - **链路追踪** — 基于 `trace_id` 的全链路追踪
 - **统一验证码** — B 端/C 端独立的图形验证码服务
@@ -78,11 +78,7 @@ hei-fastapi/
 │   │   ├── setup.py                 # create_app() — 应用工厂
 │   │   ├── lifespan.py              # 生命周期（DB/Redis/插件启停）
 │   │   └── health.py                # 健康检查
-│   ├── auth/                        # 认证与权限系统
-│   │   ├── auth/                    # HeiAuthTool / HeiClientAuthTool
-│   │   ├── decorator/               # @HeiCheckLogin, @NoRepeat 等
-│   │   ├── permission/              # 权限匹配器、接口管理器
-│   │   └── permission_scan.py       # 权限自动发现
+│   ├── auth/                        # micosauth runtime 装配、realm 常量、权限 provider
 │   ├── captcha/                     # 图形验证码
 │   ├── constants/                   # Redis 缓存键、系统字段
 │   ├── crud/                        # 通用 CRUD 辅助函数
@@ -90,7 +86,7 @@ hei-fastapi/
 │   ├── enums/                       # 枚举：状态、权限、资源等
 │   ├── exception/                   # BusinessException
 │   ├── log/                         # @SysLog 操作日志
-│   ├── middleware/                  # Auth, CORS, Trace, Recovery, RateLimit
+│   ├── middleware/                  # CORS, Trace, Exception, Metrics, RateLimit
 │   ├── plugin/                      # 插件框架
 │   │   ├── interface.py             # HeiPlugin ABC + __init_subclass__ 自动注册
 │   │   ├── registry.py              # 路由、中间件、权限注册
@@ -235,15 +231,12 @@ python -m cli.migrate --apply
 
 ## 认证体系
 
-基于路径前缀分流，由 `AuthMiddleware` 自动识别认证上下文：
+项目统一使用 `micosauth`：
 
-| 路径模式 | 认证方式 |
-|---------|---------|
-| `/docs`, `/redoc`, `/openapi.json` | 无认证 |
-| `OPTIONS` | 无认证（CORS 预检） |
-| `/api/v{n}/public/b/*`, `/api/v{n}/public/c/*` | 无认证 |
-| `/api/v{n}/c/*` | HeiClientAuthTool（C 端） |
-| `/api/v{n}/b/*` 及默认路径 | HeiAuthTool（B 端） |
+- FastAPI 应用启动时通过 `install_fastapi_auth(...)` 安装运行时
+- B 端接口显式使用 `@require_login(realm=BUSINESS_REALM_ID)` 或 `Perm(..., realm_id=BUSINESS_REALM_ID)`
+- C 端接口显式使用 `@require_login(realm=CONSUMER_REALM_ID)` 或对应 C 端权限装饰器
+- 公共接口通过路由路径单独暴露，不再依赖路径前缀自动推断认证上下文
 
 ## 装饰器参考
 
@@ -275,10 +268,10 @@ async def create(...):
 ### 防重复提交
 
 ```python
-from sdk.auth.decorator import NoRepeat
+from sdk.web.middleware import RateLimiter
 
 @router.post("/api/v1/sys/xxx/create")
-@NoRepeat(interval=3000)  # 3 秒内禁止重复提交
+@RateLimiter("norepeat:sys:xxx:create", window=3, max_requests=1)
 async def create(...):
     ...
 ```

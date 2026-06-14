@@ -11,7 +11,7 @@ from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, select, update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from sdk.auth import Business
+from sdk.auth import BUSINESS_REALM_ID, get_auth_util, invalidate_acl_cache
 from sdk.auth.enums import DataScope
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
@@ -201,7 +201,10 @@ class RoleService:
         )).scalars().all()
         for user_id in user_ids:
             if user_id:
-                await Business.refresh_user_sessions_acl(str(user_id))
+                invalidate_acl_cache(BUSINESS_REALM_ID, str(user_id))
+                tokens = await get_auth_util().service.redis_store().list_tokens(BUSINESS_REALM_ID, str(user_id))
+                for token_record in tokens:
+                    await get_auth_util().inspect_token(token_record.token, BUSINESS_REALM_ID)
 
 
 def get_role_service(db: AsyncSession = Depends(get_db)) -> RoleService:

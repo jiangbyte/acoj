@@ -6,7 +6,7 @@ Core services (auth, captcha) are handled by core_plugins.
 
 import logging
 
-from sdk.auth import Consumer
+from sdk.auth import CONSUMER_REALM_ID, register_access_provider
 from sdk.auth.provider import EmptyPermissionProvider
 from sdk.kernel.plugin import HeiPlugin, PluginInfo
 from plugins.plugin_client.migrate import register_all_models
@@ -43,7 +43,7 @@ class ClientPlugin(HeiPlugin):
     def on_init(self):
         """注册 C 端模型和空权限提供器。"""
         register_all_models()
-        Consumer.set_permission_provider(EmptyPermissionProvider())
+        register_access_provider(CONSUMER_REALM_ID, EmptyPermissionProvider())
         logger.info("[ClientPlugin] Models registered")
 
     async def on_stop(self):

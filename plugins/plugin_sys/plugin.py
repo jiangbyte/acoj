@@ -6,7 +6,7 @@ Mirrors hei-gin's ``plugins/plugin-sys/plugin.go``.
 
 import logging
 
-from sdk.auth import Business
+from sdk.auth import BUSINESS_REALM_ID, register_access_provider
 from sdk.auth.provider import DatabasePermissionProvider
 from sdk.infra.db import AsyncSessionLocal, SessionLocal, get_redis
 from sdk.kernel.plugin import HeiPlugin, PluginInfo
@@ -82,7 +82,8 @@ class SysPlugin(HeiPlugin):
         """注册权限提供器和日志持久化器。"""
         register_all_models()
         register_all_seeds()
-        Business.set_permission_provider(
+        register_access_provider(
+            BUSINESS_REALM_ID,
             DatabasePermissionProvider(
                 session_factory=AsyncSessionLocal,
                 role_model=SysRole,
