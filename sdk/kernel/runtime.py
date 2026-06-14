@@ -55,6 +55,12 @@ class ApplicationRuntime:
         setup_exception_handlers(app)
         execute_middlewares(app)
         execute_routes(app)
+
+        # Health / liveness / readiness / metrics endpoints. Imported locally to
+        # avoid an import cycle (health pulls in db/plugin/registry snapshots).
+        from sdk.kernel.app.health import router as health_router
+
+        app.include_router(health_router)
         self._app = app
         return app
 

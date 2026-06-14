@@ -8,7 +8,7 @@ import logging
 
 from sdk.auth import Business
 from sdk.auth.provider import DatabasePermissionProvider
-from sdk.infra.db import SessionLocal, get_redis
+from sdk.infra.db import AsyncSessionLocal, SessionLocal, get_redis
 from sdk.kernel.plugin import HeiPlugin, PluginInfo
 from sdk.log import configure_async_log_persister, start_log_persister, stop_log_persister, set_op_user_resolver
 from sdk.shared.contracts import SUPER_ADMIN_CODE
@@ -84,7 +84,7 @@ class SysPlugin(HeiPlugin):
         register_all_seeds()
         Business.set_permission_provider(
             DatabasePermissionProvider(
-                session_factory=SessionLocal,
+                session_factory=AsyncSessionLocal,
                 role_model=SysRole,
                 role_permission_model=RelRolePermission,
                 user_role_model=RelUserRole,
@@ -93,9 +93,11 @@ class SysPlugin(HeiPlugin):
                 redis_client_getter=get_redis,
             )
         )
-        set_op_user_resolver(LoginUserService(SessionLocal).get_username)
+        # op_user resolver runs on the event loop → async LoginUserService.
+        set_op_user_resolver(LoginUserService(AsyncSessionLocal).get_username)
 
-        # Set up log persistence (mirrors hei-gin's LogPersistence assignment)
+        # Log persistence runs in a worker thread (off the event loop), so it
+        # keeps the SYNC session factory.
         configure_async_log_persister(DbLogPersister(SessionLocal))
 
         logger.info("[SysPlugin] Permission interface and log persister registered")

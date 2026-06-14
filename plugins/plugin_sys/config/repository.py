@@ -1,26 +1,26 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete as sa_delete, update as sa_update
 from .models import SysConfig
 from .params import ConfigPageParam
 
 
 class ConfigRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
     # ---- base CRUD ----
 
-    def find_by_id(self, id: str) -> Optional[SysConfig]:
-        return self.db.execute(select(SysConfig).where(SysConfig.id == id)).scalar_one_or_none()
+    async def find_by_id(self, id: str) -> Optional[SysConfig]:
+        return (await self.db.execute(select(SysConfig).where(SysConfig.id == id))).scalar_one_or_none()
 
-    def find_by_ids(self, ids: List[str]) -> List[SysConfig]:
-        return list(self.db.execute(
+    async def find_by_ids(self, ids: List[str]) -> List[SysConfig]:
+        return list((await self.db.execute(
             select(SysConfig).where(SysConfig.id.in_(ids))
-        ).scalars().all())
+        )).scalars().all())
 
-    def insert(self, entity: SysConfig, user_id: Optional[str] = None) -> SysConfig:
+    async def insert(self, entity: SysConfig, user_id: Optional[str] = None) -> SysConfig:
         from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
@@ -31,34 +31,34 @@ class ConfigRepository:
         if user_id is not None and entity.created_by is None:
             entity.created_by = user_id
         self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
+        await self.db.commit()
+        await self.db.refresh(entity)
         return entity
 
-    def update(self, entity: SysConfig, user_id: Optional[str] = None) -> SysConfig:
+    async def update(self, entity: SysConfig, user_id: Optional[str] = None) -> SysConfig:
         entity.updated_at = datetime.now()
         if user_id is not None:
             entity.updated_by = user_id
-        self.db.commit()
-        self.db.refresh(entity)
+        await self.db.commit()
+        await self.db.refresh(entity)
         return entity
 
-    def delete_by_ids(self, ids: List[str]) -> int:
+    async def delete_by_ids(self, ids: List[str]) -> int:
         if not ids:
             return 0
         stmt = sa_delete(SysConfig).where(SysConfig.id.in_(ids))
-        affected = self.db.execute(stmt).rowcount
-        self.db.commit()
+        affected = (await self.db.execute(stmt)).rowcount
+        await self.db.commit()
         return affected
 
     # ---- custom ----
 
-    def find_by_key(self, key: str) -> Optional[SysConfig]:
-        return self.db.execute(
+    async def find_by_key(self, key: str) -> Optional[SysConfig]:
+        return (await self.db.execute(
             select(SysConfig).where(SysConfig.config_key == key)
-        ).scalar_one_or_none()
+        )).scalar_one_or_none()
 
-    def find_page_by_filters(self, param: ConfigPageParam) -> Dict[str, Any]:
+    async def find_page_by_filters(self, param: ConfigPageParam) -> Dict[str, Any]:
         filters = []
         if param.category:
             filters.append(SysConfig.category == param.category)
@@ -70,55 +70,55 @@ class ConfigRepository:
         offset = (current - 1) * size
 
         count_stmt = select(func.count()).select_from(SysConfig).where(*filters)
-        total = self.db.execute(count_stmt).scalar() or 0
+        total = (await self.db.execute(count_stmt)).scalar() or 0
 
         stmt = select(SysConfig).where(*filters).offset(offset).limit(size)
-        records = list(self.db.execute(stmt).scalars().all())
+        records = list((await self.db.execute(stmt)).scalars().all())
 
         return {"records": records, "total": total}
 
-    def find_by_category(self, category: str) -> List[SysConfig]:
-        return list(self.db.execute(
+    async def find_by_category(self, category: str) -> List[SysConfig]:
+        return list((await self.db.execute(
             select(SysConfig).where(SysConfig.category == category).order_by(SysConfig.sort_code.asc())
-        ).scalars().all())
+        )).scalars().all())
 
-    def find_by_category_and_key(self, category: str, key: str) -> Optional[SysConfig]:
-        return self.db.execute(
+    async def find_by_category_and_key(self, category: str, key: str) -> Optional[SysConfig]:
+        return (await self.db.execute(
             select(SysConfig).where(
                 SysConfig.category == category,
                 SysConfig.config_key == key,
             )
-        ).scalar_one_or_none()
+        )).scalar_one_or_none()
 
-    def find_by_category_and_keys(self, category: str, keys: List[str]) -> Dict[str, SysConfig]:
-        rows = self.db.execute(
+    async def find_by_category_and_keys(self, category: str, keys: List[str]) -> Dict[str, SysConfig]:
+        rows = (await self.db.execute(
             select(SysConfig).where(
                 SysConfig.category == category,
                 SysConfig.config_key.in_(keys),
             )
-        ).scalars().all()
+        )).scalars().all()
         return {r.config_key: r for r in rows}
 
-    def find_by_keys(self, keys: List[str]) -> Dict[str, SysConfig]:
-        rows = self.db.execute(
+    async def find_by_keys(self, keys: List[str]) -> Dict[str, SysConfig]:
+        rows = (await self.db.execute(
             select(SysConfig).where(SysConfig.config_key.in_(keys))
-        ).scalars().all()
+        )).scalars().all()
         return {r.config_key: r for r in rows}
 
-    def list_all_ordered(self) -> List[SysConfig]:
-        return list(self.db.execute(
+    async def list_all_ordered(self) -> List[SysConfig]:
+        return list((await self.db.execute(
             select(SysConfig).order_by(SysConfig.sort_code.asc())
-        ).scalars().all())
+        )).scalars().all())
 
-    def update_by_id(self, config_id: str, updates: dict) -> None:
-        self.db.execute(sa_update(SysConfig).where(SysConfig.id == config_id).values(**updates))
-        self.db.commit()
+    async def update_by_id(self, config_id: str, updates: dict) -> None:
+        await self.db.execute(sa_update(SysConfig).where(SysConfig.id == config_id).values(**updates))
+        await self.db.commit()
 
-    def update_many_by_ids(self, items: list[tuple[str, dict]]) -> None:
+    async def update_many_by_ids(self, items: list[tuple[str, dict]]) -> None:
         for config_id, updates in items:
-            self.db.execute(sa_update(SysConfig).where(SysConfig.id == config_id).values(**updates))
-        self.db.commit()
+            await self.db.execute(sa_update(SysConfig).where(SysConfig.id == config_id).values(**updates))
+        await self.db.commit()
 
-    def update_by_category(self, category: str, updates: dict) -> None:
-        self.db.execute(sa_update(SysConfig).where(SysConfig.category == category).values(**updates))
-        self.db.commit()
+    async def update_by_category(self, category: str, updates: dict) -> None:
+        await self.db.execute(sa_update(SysConfig).where(SysConfig.category == category).values(**updates))
+        await self.db.commit()

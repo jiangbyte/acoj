@@ -3,23 +3,23 @@ from __future__ import annotations
 from typing import Optional
 
 from sqlalchemy import func, or_, select, delete as sa_delete
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from plugins.plugin_sys.file.models import SysFile
 from plugins.plugin_sys.file.params import FilePageParam
 
 
 class FileRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def insert(self, entity: SysFile) -> SysFile:
+    async def insert(self, entity: SysFile) -> SysFile:
         self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
+        await self.db.commit()
+        await self.db.refresh(entity)
         return entity
 
-    def page(self, param: FilePageParam) -> dict[str, object]:
+    async def page(self, param: FilePageParam) -> dict[str, object]:
         stmt = select(SysFile)
         if param.keyword:
             like = f"%{param.keyword}%"
@@ -29,29 +29,30 @@ class FileRepository:
         if param.bucket:
             stmt = stmt.where(SysFile.bucket == param.bucket)
         count_stmt = select(func.count()).select_from(stmt.subquery())
-        total = int(self.db.execute(count_stmt).scalar() or 0)
+        total = int((await self.db.execute(count_stmt)).scalar() or 0)
         stmt = stmt.order_by(SysFile.created_at.desc()).offset((param.current - 1) * param.size).limit(param.size)
+        result = await self.db.execute(stmt)
         return {
-            "records": list(self.db.execute(stmt).scalars().all()),
+            "records": list(result.scalars().all()),
             "total": total,
         }
 
-    def find_by_id(self, file_id: str) -> Optional[SysFile]:
+    async def find_by_id(self, file_id: str) -> Optional[SysFile]:
         stmt = select(SysFile).where(SysFile.id == file_id)
-        return self.db.execute(stmt).scalar_one_or_none()
+        return (await self.db.execute(stmt)).scalar_one_or_none()
 
-    def find_by_key(self, bucket: str, file_key: str) -> Optional[SysFile]:
+    async def find_by_key(self, bucket: str, file_key: str) -> Optional[SysFile]:
         stmt = select(SysFile).where(SysFile.bucket == bucket, SysFile.file_key == file_key)
-        return self.db.execute(stmt).scalar_one_or_none()
+        return (await self.db.execute(stmt)).scalar_one_or_none()
 
-    def find_by_ids(self, ids: list[str]) -> list[SysFile]:
+    async def find_by_ids(self, ids: list[str]) -> list[SysFile]:
         if not ids:
             return []
         stmt = select(SysFile).where(SysFile.id.in_(ids))
-        return list(self.db.execute(stmt).scalars().all())
+        return list((await self.db.execute(stmt)).scalars().all())
 
-    def delete_by_ids(self, ids: list[str]) -> None:
+    async def delete_by_ids(self, ids: list[str]) -> None:
         if not ids:
             return
-        self.db.execute(sa_delete(SysFile).where(SysFile.id.in_(ids)))
-        self.db.commit()
+        await self.db.execute(sa_delete(SysFile).where(SysFile.id.in_(ids)))
+        await self.db.commit()

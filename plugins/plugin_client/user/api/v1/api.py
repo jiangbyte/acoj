@@ -25,47 +25,47 @@ router = APIRouter()
 @router.get("/api/v1/client-user/page", summary="获取C端用户分页",
             response_model=Result[PageData[ClientUserVO]])
 @Perm("client:user:page", "C端用户分页")
-def page(
+async def page(
     param: ClientUserPageParam = Depends(),
     service: ClientUserService = Depends(get_client_user_service),
 ):
-    return success(service.page(param))
+    return success(await service.page(param))
 
 
 @router.post("/api/v1/client-user/create", summary="添加C端用户", response_model=Result)
 @Perm("client:user:create", "添加C端用户")
-def create(
+async def create(
     vo: ClientUserVO,
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
 ):
-    service.create(vo, actor)
+    await service.create(vo, actor)
     return success()
 
 
 @router.post("/api/v1/client-user/modify", summary="编辑C端用户", response_model=Result)
 @Perm("client:user:modify", "编辑C端用户")
-def modify(
+async def modify(
     vo: ClientUserVO,
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
 ):
-    service.modify(vo, actor)
+    await service.modify(vo, actor)
     return success()
 
 
 @router.post("/api/v1/client-user/remove", summary="删除C端用户", response_model=Result)
 @Perm("client:user:remove", "删除C端用户")
-def remove(param: IdsParam, service: ClientUserService = Depends(get_client_user_service)):
-    service.remove(param.ids)
+async def remove(param: IdsParam, service: ClientUserService = Depends(get_client_user_service)):
+    await service.remove(param.ids)
     return success()
 
 
 @router.get("/api/v1/client-user/detail", summary="获取C端用户详情",
             response_model=Result[ClientUserVO])
 @Perm("client:user:detail", "C端用户详情")
-def detail(id: str = Query(...), service: ClientUserService = Depends(get_client_user_service)):
-    data = service.detail(id)
+async def detail(id: str = Query(...), service: ClientUserService = Depends(get_client_user_service)):
+    data = await service.detail(id)
     return success(data)
 
 
@@ -73,11 +73,11 @@ def detail(id: str = Query(...), service: ClientUserService = Depends(get_client
 
 @router.get("/api/v1/c/client-user/current", summary="获取当前C端用户信息")
 @CheckLogin(realm_id=ConsumerID)
-def get_current_user(
+async def get_current_user(
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
 ):
-    data = service.get_current_user(actor)
+    data = await service.get_current_user(actor)
     return success(data)
 
 
@@ -86,12 +86,12 @@ def get_current_user(
 @SysLog("C端用户更新个人信息")
 @CheckLogin(realm_id=ConsumerID)
 @NoRepeat(interval=3000)
-def update_profile(
+async def update_profile(
     param: UpdateProfileParam,
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
 ):
-    service.update_profile(param, actor)
+    await service.update_profile(param, actor)
     return success()
 
 
@@ -99,12 +99,12 @@ def update_profile(
              response_model=Result)
 @SysLog("C端用户更新头像")
 @CheckLogin(realm_id=ConsumerID)
-def update_avatar(
+async def update_avatar(
     param: UpdateAvatarParam,
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
 ):
-    service.update_avatar(param, actor)
+    await service.update_avatar(param, actor)
     return success()
 
 

@@ -38,24 +38,24 @@ async def upload_handler(
 
 @router.get("/page", summary="文件分页")
 @CheckPermission("sys:file:page")
-def page_handler(
+async def page_handler(
     param: FilePageParam = Depends(),
     service: FileService = Depends(get_file_service),
 ):
-    return success(service.page(param))
+    return success(await service.page(param))
 
 
 @router.get("/detail", summary="文件详情")
 @CheckPermission("sys:file:detail")
-def detail_handler(id: str, service: FileService = Depends(get_file_service)):
-    return success(service.detail(id))
+async def detail_handler(id: str, service: FileService = Depends(get_file_service)):
+    return success(await service.detail(id))
 
 
 @router.get("/download", summary="下载文件")
 @CheckPermission("sys:file:download")
-def download_handler(request: Request, id: str, service: FileService = Depends(get_file_service)):
+async def download_handler(request: Request, id: str, service: FileService = Depends(get_file_service)):
     try:
-        entity = service.detail(id)
+        entity = await service.detail(id)
         if not entity:
             return failure("文件不存在", 404)
         if entity.get("download_path"):
@@ -70,16 +70,16 @@ def download_handler(request: Request, id: str, service: FileService = Depends(g
 @router.post("/remove", summary="删除文件记录（保留存储文件）")
 @CheckPermission("sys:file:remove")
 @CheckLogin
-def remove_handler(p: IdsParam, service: FileService = Depends(get_file_service)):
-    service.remove(p.ids)
+async def remove_handler(p: IdsParam, service: FileService = Depends(get_file_service)):
+    await service.remove(p.ids)
     return success()
 
 
 @router.post("/remove-absolute", summary="删除文件（含存储文件）")
 @CheckPermission("sys:file:remove-absolute")
 @CheckLogin
-def remove_absolute_handler(p: IdsParam, service: FileService = Depends(get_file_service)):
-    service.remove_absolute(p.ids)
+async def remove_absolute_handler(p: IdsParam, service: FileService = Depends(get_file_service)):
+    await service.remove_absolute(p.ids)
     return success()
 
 
@@ -121,8 +121,8 @@ async def chunk_upload_handler(
 @router.post("/upload/complete", summary="完成分片上传")
 @CheckPermission("sys:file:upload")
 @CheckLogin
-def chunk_complete_handler(p: ChunkCompleteParam, service: FileService = Depends(get_file_service)):
-    result = service.complete_chunk_upload(p)
+async def chunk_complete_handler(p: ChunkCompleteParam, service: FileService = Depends(get_file_service)):
+    result = await service.complete_chunk_upload(p)
     return success(result)
 
 

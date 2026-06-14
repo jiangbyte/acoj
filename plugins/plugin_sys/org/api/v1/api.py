@@ -17,11 +17,11 @@ router = APIRouter()
     response_model=Result[PageData[OrgVO]]
 )
 @CheckPermission("sys:org:page")
-def page(
+async def page(
     param: OrgPageParam = Depends(),
     service: OrgService = Depends(get_org_service),
 ):
-    return success(service.page(param))
+    return success(await service.page(param))
 
 
 @router.get(
@@ -30,11 +30,11 @@ def page(
     response_model=Result[list[OrgTreeVO]]
 )
 @CheckPermission("sys:org:tree")
-def tree(
+async def tree(
     param: OrgTreeParam = Depends(),
     service: OrgService = Depends(get_org_service),
 ):
-    return success(service.tree(param))
+    return success(await service.tree(param))
 
 
 @router.post(
@@ -45,12 +45,12 @@ def tree(
 @SysLog("添加组织")
 @CheckPermission("sys:org:create")
 @NoRepeat(interval=3000)
-def create(
+async def create(
     vo: OrgVO,
     service: OrgService = Depends(get_org_service),
     actor: ActorContext = Depends(get_current_actor),
 ):
-    service.create(vo, actor)
+    await service.create(vo, actor)
     return success()
 
 
@@ -61,12 +61,12 @@ def create(
 )
 @SysLog("编辑组织")
 @CheckPermission("sys:org:modify")
-def modify(
+async def modify(
     vo: OrgVO,
     service: OrgService = Depends(get_org_service),
     actor: ActorContext = Depends(get_current_actor),
 ):
-    service.modify(vo, actor)
+    await service.modify(vo, actor)
     return success()
 
 
@@ -77,11 +77,11 @@ def modify(
 )
 @SysLog("删除组织")
 @CheckPermission("sys:org:remove")
-def remove(
+async def remove(
     param: IdsParam,
     service: OrgService = Depends(get_org_service),
 ):
-    service.remove(param.ids)
+    await service.remove(param.ids)
     return success()
 
 
@@ -91,8 +91,8 @@ def remove(
     response_model=Result[OrgVO]
 )
 @CheckPermission("sys:org:detail")
-def detail(
+async def detail(
     id: str = Query(...),
     service: OrgService = Depends(get_org_service),
 ):
-    return success(service.detail(id))
+    return success(await service.detail(id))

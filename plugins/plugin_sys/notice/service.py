@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
@@ -38,18 +38,18 @@ class NoticeService:
     def __init__(self, repository: NoticeRepository):
         self.repository = repository
 
-    def page(self, param: NoticePageParam) -> dict:
-        return map_page_data(self.repository.find_page(param), NoticeVO.model_validate, param.current, param.size)
+    async def page(self, param: NoticePageParam) -> dict:
+        return map_page_data(await self.repository.find_page(param), NoticeVO.model_validate, param.current, param.size)
 
-    def detail(self, id: str) -> Optional[NoticeVO]:
+    async def detail(self, id: str) -> Optional[NoticeVO]:
         if not id:
             return None
-        entity = self.repository.find_by_id(id)
+        entity = await self.repository.find_by_id(id)
         if not entity:
             return None
         return NoticeVO.model_validate(entity)
 
-    def create(self, vo: NoticeVO, actor: Optional[ActorContext] = None) -> None:
+    async def create(self, vo: NoticeVO, actor: Optional[ActorContext] = None) -> None:
         now = datetime.now()
         actor_user_id = _actor_user_id(actor)
         publish_at, expire_at = _parse_notice_times(vo)
@@ -77,10 +77,10 @@ class NoticeService:
         if actor_user_id:
             entity.created_by = actor_user_id
             entity.updated_by = actor_user_id
-        self.repository.insert(entity)
+        await self.repository.insert(entity)
 
-    def modify(self, vo: NoticeVO, actor: Optional[ActorContext] = None) -> None:
-        entity = self.repository.find_by_id(vo.id)
+    async def modify(self, vo: NoticeVO, actor: Optional[ActorContext] = None) -> None:
+        entity = await self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
         actor_user_id = _actor_user_id(actor)
@@ -106,35 +106,35 @@ class NoticeService:
             up["is_top"] = vo.is_top
         if actor_user_id:
             up["updated_by"] = actor_user_id
-        self.repository.update_by_id(vo.id, up)
+        await self.repository.update_by_id(vo.id, up)
 
-    def remove(self, ids: list[str]) -> None:
+    async def remove(self, ids: list[str]) -> None:
         if not ids:
             return
-        self.repository.delete_by_ids(ids)
+        await self.repository.delete_by_ids(ids)
 
-    def options(self) -> list:
-        return [NoticeVO.model_validate(r) for r in self.repository.list_all_ordered()]
+    async def options(self) -> list:
+        return [NoticeVO.model_validate(r) for r in await self.repository.list_all_ordered()]
 
-    def latest(self, param: NoticeLatestParam) -> list:
-        return [NoticeVO.model_validate(r) for r in self.repository.find_latest(param.size)]
+    async def latest(self, param: NoticeLatestParam) -> list:
+        return [NoticeVO.model_validate(r) for r in await self.repository.find_latest(param.size)]
 
-    def public_page(self, param: NoticePageParam) -> dict:
+    async def public_page(self, param: NoticePageParam) -> dict:
         return map_page_data(
-            self.repository.find_public_page(param),
+            await self.repository.find_public_page(param),
             NoticeVO.model_validate,
             param.current,
             param.size,
         )
 
-    def public_detail(self, id: str) -> Optional[NoticeVO]:
+    async def public_detail(self, id: str) -> Optional[NoticeVO]:
         if not id:
             return None
-        entity = self.repository.find_public_by_id(id)
+        entity = await self.repository.find_public_by_id(id)
         if not entity:
             return None
         return NoticeVO.model_validate(entity)
 
 
-def get_notice_service(db: Session = Depends(get_db)) -> NoticeService:
+def get_notice_service(db: AsyncSession = Depends(get_db)) -> NoticeService:
     return NoticeService(NoticeRepository(db))

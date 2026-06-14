@@ -5,7 +5,7 @@ app = create_app()
 if __name__ == "__main__":
     import uvicorn
     from sdk.config.settings import settings
-    
+
     uvicorn.run(
         "main:app",
         host=settings.app.host,

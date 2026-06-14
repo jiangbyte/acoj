@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from fastapi import Depends
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
@@ -46,7 +46,7 @@ class DictService:
         self.repository = repository
         self.db = repository.db
 
-    def _check_duplicate(self, vo: DictVO, exclude_id: Optional[str] = None) -> None:
+    async def _check_duplicate(self, vo: DictVO, exclude_id: Optional[str] = None) -> None:
         if not vo.value:
             return
         query = select(func.count()).select_from(SysDict).where(
@@ -55,15 +55,15 @@ class DictService:
         )
         if exclude_id:
             query = query.where(SysDict.id != exclude_id)
-        count = self.db.execute(query).scalar() or 0
+        count = (await self.db.execute(query)).scalar() or 0
         if count > 0:
             raise BusinessException(f"同一父字典下已存在相同值 {vo.value}", 400)
 
-    def _check_circular_parent(self, entity_id: str, new_parent_id: str) -> None:
+    async def _check_circular_parent(self, entity_id: str, new_parent_id: str) -> None:
         normalized_parent_id = _normalize_parent_id(new_parent_id)
         if not normalized_parent_id or not entity_id:
             return
-        all_rows = self.db.execute(select(SysDict)).scalars().all()
+        all_rows = (await self.db.execute(select(SysDict))).scalars().all()
         parent_map = {row.id: row.parent_id for row in all_rows if row.parent_id}
         current = normalized_parent_id
         while current:
@@ -71,8 +71,8 @@ class DictService:
                 raise BusinessException("父级不能选择自身或子节点", 400)
             current = parent_map.get(current, "")
 
-    def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
-        all_rows = self.db.execute(select(SysDict)).scalars().all()
+    async def _collect_descendant_ids(self, ids: List[str]) -> List[str]:
+        all_rows = (await self.db.execute(select(SysDict))).scalars().all()
         return collect_descendant_ids(
             all_rows,
             ids,
@@ -80,19 +80,19 @@ class DictService:
             get_parent_id=lambda row: _parent_key(row.parent_id),
         )
 
-    def page(self, param: DictPageParam) -> dict:
+    async def page(self, param: DictPageParam) -> dict:
         return map_page_data(
-            self.repository.find_page_by_filters(param),
+            await self.repository.find_page_by_filters(param),
             DictVO.model_validate,
             param.current,
             param.size,
         )
 
-    def list(self, param: DictListParam) -> list:
-        rows = self.repository.find_list_by_filters(param)
+    async def list(self, param: DictListParam) -> list:
+        rows = await self.repository.find_list_by_filters(param)
         return [DictVO.model_validate(row) for row in rows]
 
-    def tree(self, param: DictTreeParam) -> List[DictTreeVO]:
+    async def tree(self, param: DictTreeParam) -> List[DictTreeVO]:
         query = select(SysDict).order_by(SysDict.sort_code.asc())
         if param.category:
             query = query.where(SysDict.category == param.category)
@@ -101,7 +101,7 @@ class DictService:
         if param.dict_group == "BIZ":
             query = query.where(SysDict.category == "BIZ")
 
-        rows = self.db.execute(query).scalars().all()
+        rows = (await self.db.execute(query)).scalars().all()
         if not rows:
             return []
         nodes = [_entity_to_node(row) for row in rows]
@@ -113,16 +113,16 @@ class DictService:
             get_sort_code=lambda node: node.sort_code,
         )
 
-    def detail(self, id: str) -> Optional[DictVO]:
+    async def detail(self, id: str) -> Optional[DictVO]:
         if not id:
             return None
-        entity = self.repository.find_by_id(id)
+        entity = await self.repository.find_by_id(id)
         if not entity:
             return None
         return DictVO.model_validate(entity)
 
-    def create(self, vo: DictVO, actor: Optional[ActorContext] = None) -> None:
-        self._check_duplicate(vo)
+    async def create(self, vo: DictVO, actor: Optional[ActorContext] = None) -> None:
+        await self._check_duplicate(vo)
         now = datetime.now()
         actor_user_id = _actor_user_id(actor)
         entity = SysDict(
@@ -140,19 +140,19 @@ class DictService:
             created_by=actor_user_id,
             updated_by=actor_user_id,
         )
-        self.repository.insert(entity)
+        await self.repository.insert(entity)
 
-    def modify(self, vo: DictVO, actor: Optional[ActorContext] = None) -> None:
-        entity = self.repository.find_by_id(vo.id)
+    async def modify(self, vo: DictVO, actor: Optional[ActorContext] = None) -> None:
+        entity = await self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在", 400)
 
-        self._check_duplicate(vo, vo.id)
+        await self._check_duplicate(vo, vo.id)
         if (
             vo.parent_id is not None
             and _normalize_parent_id(vo.parent_id) != _normalize_parent_id(entity.parent_id)
         ):
-            self._check_circular_parent(vo.id, vo.parent_id)
+            await self._check_circular_parent(vo.id, vo.parent_id)
 
         actor_user_id = _actor_user_id(actor)
         updates = {
@@ -167,30 +167,30 @@ class DictService:
         }
         if actor_user_id:
             updates["updated_by"] = actor_user_id
-        self.repository.update_by_id(vo.id, updates)
+        await self.repository.update_by_id(vo.id, updates)
 
-    def remove(self, ids: list) -> None:
+    async def remove(self, ids: list) -> None:
         if not ids:
             return
-        self.repository.delete_by_ids(self._collect_descendant_ids(ids))
+        await self.repository.delete_by_ids(await self._collect_descendant_ids(ids))
 
-    def get_dict_label(self, type_code: str, value: str) -> Optional[str]:
-        entity = self.db.execute(
+    async def get_dict_label(self, type_code: str, value: str) -> Optional[str]:
+        entity = (await self.db.execute(
             select(SysDict).where(
                 SysDict.parent_id.in_(select(SysDict.id).where(SysDict.code == type_code)),
                 SysDict.value == value,
             )
-        ).scalar_one_or_none()
+        )).scalar_one_or_none()
         if not entity:
             return None
         return entity.label
 
-    def get_dict_children(self, type_code: str) -> list:
-        root = self.repository.find_by_code(type_code)
+    async def get_dict_children(self, type_code: str) -> list:
+        root = await self.repository.find_by_code(type_code)
         if not root:
             return []
-        return [DictVO.model_validate(row) for row in self.repository.find_by_parent_id(root.id)]
+        return [DictVO.model_validate(row) for row in await self.repository.find_by_parent_id(root.id)]
 
 
-def get_dict_service(db: Session = Depends(get_db)) -> DictService:
+def get_dict_service(db: AsyncSession = Depends(get_db)) -> DictService:
     return DictService(DictRepository(db))

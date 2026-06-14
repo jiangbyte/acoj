@@ -22,12 +22,12 @@ def init(private_key: str, public_key: str):
         raise ValueError("Private key cannot be null or empty")
     if not public_key or not public_key.strip():
         raise ValueError("Public key cannot be null or empty")
-    
+
     global _private_key, _public_key, _sm2_crypt
     _private_key = private_key.strip().lower().replace('0x', '')
     public_key = public_key.strip().lower().replace('0x', '')
     _public_key = public_key
-    
+
     _sm2_crypt = sm2.CryptSM2(
         private_key=_private_key,
         public_key=_public_key
@@ -37,7 +37,7 @@ def init(private_key: str, public_key: str):
 def encrypt(plaintext: str) -> str:
     if _sm2_crypt is None:
         raise RuntimeError("SM2 has not been initialized. Please call init(private_key, public_key) first.")
-    
+
     encrypted = _sm2_crypt.encrypt(plaintext.encode('utf-8'))
     if not encrypted:
         raise RuntimeError("SM2 encryption failed")
@@ -47,15 +47,15 @@ def encrypt(plaintext: str) -> str:
 def encrypt_c1c3c2(plaintext: str) -> str:
     if _sm2_crypt is None:
         raise RuntimeError("SM2 has not been initialized. Please call init(private_key, public_key) first.")
-    
+
     encrypted = _sm2_crypt.encrypt(plaintext.encode('utf-8'))
     if not encrypted:
         raise RuntimeError("SM2 encryption failed")
-    
+
     c1 = encrypted[:64]
     c2 = encrypted[64:-32]
     c3 = encrypted[-32:]
-    
+
     c1c3c2 = c1 + c3 + c2
     return c1c3c2.hex()
 
@@ -70,15 +70,15 @@ def decrypt(ciphertext: str) -> str:
 def decrypt_raw(ciphertext: str) -> bytes:
     if _sm2_crypt is None:
         raise RuntimeError("SM2 has not been initialized. Please call init(private_key, public_key) first.")
-    
+
     if ciphertext.startswith('04'):
         ciphertext = ciphertext[2:]
-    
+
     ciphertext_bytes = bytes.fromhex(ciphertext)
-    
+
     if len(ciphertext_bytes) < 96:
         raise ValueError("密文长度不足，格式不正确")
-    
+
     # 先尝试直接解密（C1C2C3 格式）
     try:
         decrypted = _sm2_crypt.decrypt(ciphertext_bytes)
@@ -90,15 +90,15 @@ def decrypt_raw(ciphertext: str) -> bytes:
             return decrypted
         except UnicodeDecodeError:
             pass
-    
+
     # 如果失败，尝试将 C1C3C2 格式转换为 C1C2C3 格式
     c1 = ciphertext_bytes[:64]
     remaining = ciphertext_bytes[64:]
-    
+
     c3_from_c1c3c2 = remaining[:32]
     c2_from_c1c3c2 = remaining[32:]
     c1c2c3_from_c1c3c2 = c1 + c2_from_c1c3c2 + c3_from_c1c3c2
-    
+
     decrypted = _sm2_crypt.decrypt(c1c2c3_from_c1c3c2)
     if decrypted:
         try:
@@ -106,7 +106,7 @@ def decrypt_raw(ciphertext: str) -> bytes:
             return decrypted
         except UnicodeDecodeError:
             pass
-    
+
     raise RuntimeError("SM2 decryption failed, invalid ciphertext or wrong key")
 
 

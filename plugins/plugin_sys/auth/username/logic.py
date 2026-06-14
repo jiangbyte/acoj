@@ -6,8 +6,7 @@ from fastapi import Request
 
 from sdk.auth import Business, get_current_login_id
 from sdk.captcha import b_captcha
-from sdk.infra.concurrency import run_blocking
-from sdk.infra.db import SessionLocal
+from sdk.infra.db import AsyncSessionLocal
 from sdk.log import record_auth_log
 from sdk.shared.contracts import USER_STATUS_ACTIVE, USER_STATUS_INACTIVE, USER_STATUS_LOCKED
 from sdk.web.exception import BusinessException
@@ -24,7 +23,7 @@ from .params import (
 
 logger = logging.getLogger(__name__)
 
-login_user_service = LoginUserService(SessionLocal)
+login_user_service = LoginUserService(AsyncSessionLocal)
 
 
 async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLoginResult:
@@ -33,7 +32,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
     except Exception as e:
         raise BusinessException(str(e))
 
-    user_info = await run_blocking(login_user_service.get_user_by_username, param.username)
+    user_info = await login_user_service.get_user_by_username(param.username)
 
     try:
         if not user_info:
@@ -78,7 +77,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         token = await Business.login(request, user_info.id, extra)
 
         try:
-            await run_blocking(login_user_service.record_login, user_info.id, request)
+            await login_user_service.record_login(user_info.id, request)
         except Exception as e:
             logger.warning(f"Failed to record login info: {e}")
 
@@ -109,7 +108,7 @@ async def do_register(param: UsernameRegisterParam, request: Request = None) -> 
         await asyncio.to_thread(lambda: bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()))
     ).decode('utf-8')
 
-    await run_blocking(login_user_service.create_user, param.username, hashed_password)
+    await login_user_service.create_user(param.username, hashed_password)
 
     if request:
         record_auth_log(request, "注册", "REGISTER", op_user=param.username)
@@ -122,7 +121,7 @@ async def do_logout(request: Request) -> UsernameLogoutResult:
     try:
         user_id = await get_current_login_id(request)
         if user_id:
-            op_user = await run_blocking(login_user_service.get_username, user_id)
+            op_user = await login_user_service.get_username(user_id)
             record_auth_log(request, "登出", "LOGOUT", op_user=op_user)
     except Exception as e:
         logger.warning(f"Failed to record logout log: {e}")

@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import Depends
 from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.auth import Consumer, Sessions
 from sdk.infra.db import get_db
@@ -40,7 +40,7 @@ def _format_timeout(seconds: int) -> str:
 
 
 class ClientSessionService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self._consumer_realm_sessions = Consumer.sessions()
         self._consumer_sessions = Sessions(Consumer)
@@ -48,7 +48,7 @@ class ClientSessionService:
     async def _search_client_user_ids(self, keyword: Optional[str]) -> Optional[list[str]]:
         if not keyword:
             return None
-        rows = self.db.execute(
+        result = await self.db.execute(
             select(ClientUser.id).where(
                 or_(
                     ClientUser.id == keyword,
@@ -56,7 +56,8 @@ class ClientSessionService:
                     ClientUser.nickname.like(f"%{keyword}%"),
                 )
             )
-        ).all()
+        )
+        rows = result.all()
         user_ids = [str(row[0]) for row in rows if row and row[0]]
         if not user_ids and keyword:
             user_ids = [keyword]
@@ -86,7 +87,7 @@ class ClientSessionService:
         user_ids = [info["user_id"] for info in infos]
         user_map = {}
         if user_ids:
-            rows = self.db.execute(select(ClientUser).where(ClientUser.id.in_(user_ids))).scalars().all()
+            rows = (await self.db.execute(select(ClientUser).where(ClientUser.id.in_(user_ids)))).scalars().all()
             user_map = {row.id: row for row in rows}
         records = []
         for info in infos:
@@ -148,5 +149,5 @@ class ClientSessionService:
         )
 
 
-def get_client_session_service(db: Session = Depends(get_db)) -> ClientSessionService:
+def get_client_session_service(db: AsyncSession = Depends(get_db)) -> ClientSessionService:
     return ClientSessionService(db)

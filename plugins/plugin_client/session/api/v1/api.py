@@ -18,7 +18,7 @@ router = APIRouter()
     summary="获取C端会话分析统计",
     response_model=Result[SessionAnalysisResult],
 )
-@Perm("sys:session:page", "会话分页")
+@Perm("sys:client-session:page", "C端会话查看")
 async def analysis(
     service: ClientSessionService = Depends(get_client_session_service),
 ):
@@ -31,7 +31,7 @@ async def analysis(
     summary="获取C端在线用户分页",
     response_model=Result[PageData[SessionPageResult]],
 )
-@Perm("sys:session:page", "会话分页")
+@Perm("sys:client-session:page", "C端会话查看")
 async def page(
     param: SessionPageParam = Depends(),
     service: ClientSessionService = Depends(get_client_session_service),
@@ -44,7 +44,7 @@ async def page(
     summary="强退C端用户会话",
     response_model=Result,
 )
-@Perm("sys:session:exit", "强退会话")
+@Perm("sys:client-session:exit", "C端会话强退")
 async def exit_session(
     param: SessionExitParam,
     service: ClientSessionService = Depends(get_client_session_service),
@@ -58,7 +58,7 @@ async def exit_session(
     summary="获取C端用户令牌列表",
     response_model=Result[List[SessionTokenResult]],
 )
-@Perm("sys:session:page", "会话分页")
+@Perm("sys:client-session:page", "C端会话查看")
 async def token_list(
     user_id: str = Query(..., description="用户ID"),
     service: ClientSessionService = Depends(get_client_session_service),
@@ -72,7 +72,7 @@ async def token_list(
     summary="强退C端指定令牌",
     response_model=Result,
 )
-@Perm("sys:session:exit", "强退会话")
+@Perm("sys:client-session:exit", "C端会话强退")
 async def exit_token(
     param: SessionExitTokenParam,
     service: ClientSessionService = Depends(get_client_session_service),
@@ -86,7 +86,7 @@ async def exit_token(
     summary="获取C端会话图表数据",
     response_model=Result[SessionChartData],
 )
-@Perm("sys:session:page", "会话分页")
+@Perm("sys:client-session:page", "C端会话查看")
 async def chart_data(
     service: ClientSessionService = Depends(get_client_session_service),
 ):

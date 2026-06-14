@@ -1,19 +1,19 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete as sa_delete, update as sa_update
 from .models import SysNotice
 from .params import NoticePageParam
 
 
 class NoticeRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def find_by_id(self, id: str) -> Optional[SysNotice]:
-        return self.db.execute(select(SysNotice).where(SysNotice.id == id)).scalar_one_or_none()
+    async def find_by_id(self, id: str) -> Optional[SysNotice]:
+        return (await self.db.execute(select(SysNotice).where(SysNotice.id == id))).scalar_one_or_none()
 
-    def find_page(self, param: NoticePageParam) -> Dict[str, Any]:
+    async def find_page(self, param: NoticePageParam) -> Dict[str, Any]:
         filters = []
         if param.keyword:
             filters.append(SysNotice.title.like(f"%{param.keyword}%"))
@@ -29,13 +29,13 @@ class NoticeRepository:
         offset = (current - 1) * size
 
         count_stmt = select(func.count()).select_from(SysNotice).where(*filters)
-        total = self.db.execute(count_stmt).scalar() or 0
+        total = (await self.db.execute(count_stmt)).scalar() or 0
 
         stmt = select(SysNotice).where(*filters).order_by(SysNotice.created_at.desc()).offset(offset).limit(size)
-        records = list(self.db.execute(stmt).scalars().all())
+        records = list((await self.db.execute(stmt)).scalars().all())
         return {"records": records, "total": total}
 
-    def insert(self, entity: SysNotice, user_id: Optional[str] = None) -> SysNotice:
+    async def insert(self, entity: SysNotice, user_id: Optional[str] = None) -> SysNotice:
         from sdk.utils.snowflake_utils import generate_id
         now = datetime.now()
         if not entity.id:
@@ -46,31 +46,31 @@ class NoticeRepository:
         if user_id is not None and entity.created_by is None:
             entity.created_by = user_id
         self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
+        await self.db.commit()
+        await self.db.refresh(entity)
         return entity
 
-    def update(self, entity: SysNotice, user_id: Optional[str] = None) -> SysNotice:
+    async def update(self, entity: SysNotice, user_id: Optional[str] = None) -> SysNotice:
         entity.updated_at = datetime.now()
         if user_id is not None:
             entity.updated_by = user_id
-        self.db.commit()
-        self.db.refresh(entity)
+        await self.db.commit()
+        await self.db.refresh(entity)
         return entity
 
-    def update_by_id(self, notice_id: str, updates: dict) -> None:
-        self.db.execute(sa_update(SysNotice).where(SysNotice.id == notice_id).values(**updates))
-        self.db.commit()
+    async def update_by_id(self, notice_id: str, updates: dict) -> None:
+        await self.db.execute(sa_update(SysNotice).where(SysNotice.id == notice_id).values(**updates))
+        await self.db.commit()
 
-    def delete_by_ids(self, ids: List[str]) -> int:
+    async def delete_by_ids(self, ids: List[str]) -> int:
         if not ids:
             return 0
         stmt = sa_delete(SysNotice).where(SysNotice.id.in_(ids))
-        affected = self.db.execute(stmt).rowcount
-        self.db.commit()
+        affected = (await self.db.execute(stmt)).rowcount
+        await self.db.commit()
         return affected
 
-    def find_latest(self, size: int = 5) -> List[SysNotice]:
+    async def find_latest(self, size: int = 5) -> List[SysNotice]:
         """Return the latest published notices — mirrors hei-gin's Latest()."""
         from sqlalchemy import desc, nullslast
         stmt = (
@@ -83,9 +83,9 @@ class NoticeRepository:
             )
             .limit(size)
         )
-        return list(self.db.execute(stmt).scalars().all())
+        return list((await self.db.execute(stmt)).scalars().all())
 
-    def find_public_page(self, param):
+    async def find_public_page(self, param):
         """Paginate published notices — mirrors hei-gin."""
         filters = [SysNotice.status == "ENABLED"]
         if param.keyword:
@@ -110,19 +110,19 @@ class NoticeRepository:
             .offset(offset)
             .limit(size)
         )
-        records = list(self.db.execute(stmt).scalars().all())
+        records = list((await self.db.execute(stmt)).scalars().all())
         count_stmt = select(func.count()).select_from(SysNotice).where(*filters)
-        total = self.db.execute(count_stmt).scalar() or 0
+        total = (await self.db.execute(count_stmt)).scalar() or 0
         return {"records": records, "total": total}
 
-    def list_all_ordered(self) -> List[SysNotice]:
-        return list(self.db.execute(
+    async def list_all_ordered(self) -> List[SysNotice]:
+        return list((await self.db.execute(
             select(SysNotice).order_by(SysNotice.sort_code.asc())
-        ).scalars().all())
+        )).scalars().all())
 
-    def find_public_by_id(self, notice_id: str) -> Optional[SysNotice]:
+    async def find_public_by_id(self, notice_id: str) -> Optional[SysNotice]:
         stmt = select(SysNotice).where(
             SysNotice.id == notice_id,
             SysNotice.status == "ENABLED",
         )
-        return self.db.execute(stmt).scalar_one_or_none()
+        return (await self.db.execute(stmt)).scalar_one_or_none()

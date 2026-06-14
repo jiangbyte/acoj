@@ -10,7 +10,7 @@ import bcrypt
 from fastapi import Depends, Request
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import select, update as sa_update
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from plugins.plugin_sys.group.models import SysGroup
 from plugins.plugin_sys.home.models import SysQuickAction
@@ -53,33 +53,33 @@ def _actor_user_id(actor: Optional[ActorContext]) -> str:
     return actor.user_id if actor else ""
 
 
-def _batch_role_ids(db: Session, user_ids: list[str]) -> dict[str, list[str]]:
+async def _batch_role_ids(db: AsyncSession, user_ids: list[str]) -> dict[str, list[str]]:
     if not user_ids:
         return {}
-    rows = db.execute(
+    rows = (await db.execute(
         select(RelUserRole.user_id, RelUserRole.role_id).where(RelUserRole.user_id.in_(user_ids))
-    ).all()
+    )).all()
     role_map: dict[str, list[str]] = {}
     for row in rows:
         role_map.setdefault(row.user_id, []).append(row.role_id)
     return role_map
 
 
-def _enrich_user_like_names(db: Session, vo_list: list[UserVO | UserExportVO]) -> None:
+async def _enrich_user_like_names(db: AsyncSession, vo_list: list[UserVO | UserExportVO]) -> None:
     if not vo_list:
         return
 
     position_ids = {vo.position_id for vo in vo_list if vo.position_id}
     position_name_map: dict[str, str] = {}
     if position_ids:
-        rows = db.execute(
+        rows = (await db.execute(
             select(SysPosition.id, SysPosition.name).where(SysPosition.id.in_(position_ids))
-        ).all()
+        )).all()
         position_name_map = {row.id: row.name for row in rows}
 
-    org_rows = db.execute(select(SysOrg.id, SysOrg.name, SysOrg.parent_id)).all()
+    org_rows = (await db.execute(select(SysOrg.id, SysOrg.name, SysOrg.parent_id))).all()
     org_node_map = {row.id: {"name": row.name, "parent_id": row.parent_id} for row in org_rows}
-    group_rows = db.execute(select(SysGroup.id, SysGroup.name, SysGroup.parent_id)).all()
+    group_rows = (await db.execute(select(SysGroup.id, SysGroup.name, SysGroup.parent_id))).all()
     group_node_map = {row.id: {"name": row.name, "parent_id": row.parent_id} for row in group_rows}
 
     org_paths: dict[str, list[str]] = {}
@@ -181,30 +181,30 @@ class UserService:
             self.repository = UserRepository(repository_or_db)
         self.db = self.repository.db
 
-    def record_login(self, user_id: str, request: Request) -> None:
-        entity = self.repository.find_by_id(user_id)
+    async def record_login(self, user_id: str, request: Request) -> None:
+        entity = await self.repository.find_by_id(user_id)
         if not entity:
             return
         entity.last_login_at = datetime.now()
         entity.last_login_ip = request.client.host if request.client else None
         entity.login_count = (entity.login_count or 0) + 1
-        self.repository.update(entity)
+        await self.repository.update(entity)
 
-    def page(self, param: UserPageParam) -> dict:
+    async def page(self, param: UserPageParam) -> dict:
         param.current = max(1, param.current)
         param.size = max(1, param.size)
         if param.size > 100:
             param.size = 100
-        result = self.repository.find_page_by_filters(param)
+        result = await self.repository.find_page_by_filters(param)
         records = result["records"]
-        role_map = _batch_role_ids(self.db, [record.id for record in records])
+        role_map = await _batch_role_ids(self.db, [record.id for record in records])
 
         vo_list: list[UserVO] = []
         for record in records:
             data = UserVO.model_validate(record)
             data.role_ids = role_map.get(record.id, [])
             vo_list.append(data)
-        _enrich_user_like_names(self.db, vo_list)
+        await _enrich_user_like_names(self.db, vo_list)
 
         return page_data(
             records=vo_list,
@@ -223,9 +223,9 @@ class UserService:
         )
 
         if vo.username:
-            existing = self.db.execute(
+            existing = (await self.db.execute(
                 select(SysUser).where(SysUser.username == vo.username)
-            ).scalar_one_or_none()
+            )).scalar_one_or_none()
             if existing:
                 raise BusinessException("账号已存在", 400)
             entity.username = vo.username
@@ -250,28 +250,28 @@ class UserService:
             entity.updated_by = actor_user_id
 
         self.db.add(entity)
-        self.db.flush()
+        await self.db.flush()
 
         if vo.role_ids:
             for role_id in vo.role_ids:
                 self.db.add(RelUserRole(id=generate_id(), user_id=entity.id, role_id=role_id))
 
-        self.db.commit()
+        await self.db.commit()
 
     async def modify(self, vo: UserVO, actor: Optional[ActorContext] = None) -> None:
         if not vo.id:
             raise BusinessException("ID不能为空", 400)
 
-        entity = self.repository.find_by_id(vo.id)
+        entity = await self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在", 400)
 
         actor_user_id = _actor_user_id(actor)
         updates: dict = {}
         if vo.username:
-            existing = self.db.execute(
+            existing = (await self.db.execute(
                 select(SysUser).where(SysUser.username == vo.username, SysUser.id != vo.id)
-            ).scalar_one_or_none()
+            )).scalar_one_or_none()
             if existing:
                 raise BusinessException("账号已存在", 400)
             updates["username"] = vo.username
@@ -297,62 +297,62 @@ class UserService:
         if actor_user_id:
             updates["updated_by"] = actor_user_id
 
-        self.db.execute(sa_update(SysUser).where(SysUser.id == vo.id).values(**updates))
+        await self.db.execute(sa_update(SysUser).where(SysUser.id == vo.id).values(**updates))
 
         if vo.role_ids is not None:
-            self.db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id == vo.id))
+            await self.db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id == vo.id))
             for role_id in vo.role_ids:
                 self.db.add(RelUserRole(id=generate_id(), user_id=vo.id, role_id=role_id))
 
-        self.db.commit()
+        await self.db.commit()
 
-    def remove(self, param: IdsParam) -> None:
+    async def remove(self, param: IdsParam) -> None:
         if not param.ids:
             return
         try:
-            self.db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id.in_(param.ids)))
-            self.db.execute(sa_delete(RelUserPermission).where(RelUserPermission.user_id.in_(param.ids)))
-            self.db.execute(sa_delete(SysQuickAction).where(SysQuickAction.user_id.in_(param.ids)))
-            self.db.execute(sa_delete(SysUser).where(SysUser.id.in_(param.ids)))
-            self.db.commit()
+            await self.db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id.in_(param.ids)))
+            await self.db.execute(sa_delete(RelUserPermission).where(RelUserPermission.user_id.in_(param.ids)))
+            await self.db.execute(sa_delete(SysQuickAction).where(SysQuickAction.user_id.in_(param.ids)))
+            await self.db.execute(sa_delete(SysUser).where(SysUser.id.in_(param.ids)))
+            await self.db.commit()
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
-    def detail(self, param: IdParam) -> Optional[UserVO]:
+    async def detail(self, param: IdParam) -> Optional[UserVO]:
         if not param.id:
             return None
-        entity = self.repository.find_by_id(param.id)
+        entity = await self.repository.find_by_id(param.id)
         if not entity:
             return None
 
         data = UserVO.model_validate(entity)
-        data.role_ids = _batch_role_ids(self.db, [entity.id]).get(entity.id, [])
-        _enrich_user_like_names(self.db, [data])
+        data.role_ids = (await _batch_role_ids(self.db, [entity.id])).get(entity.id, [])
+        await _enrich_user_like_names(self.db, [data])
         return data
 
     async def grant_role(self, param: GrantRoleParam) -> None:
         if not param.user_id:
             raise BusinessException("用户ID不能为空", 400)
         try:
-            self.db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id == param.user_id))
+            await self.db.execute(sa_delete(RelUserRole).where(RelUserRole.user_id == param.user_id))
             seen: set[str] = set()
             for role_id in param.role_ids:
                 if role_id in seen:
                     continue
                 seen.add(role_id)
                 self.db.add(RelUserRole(id=generate_id(), user_id=param.user_id, role_id=role_id))
-            self.db.commit()
+            await self.db.commit()
             await Business.refresh_user_sessions_acl(param.user_id)
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
     async def grant_permission(self, param: GrantUserPermissionParam) -> None:
         if not param.user_id:
             raise BusinessException("用户ID不能为空", 400)
         try:
-            self.db.execute(
+            await self.db.execute(
                 sa_delete(RelUserPermission).where(RelUserPermission.user_id == param.user_id)
             )
             for item in param.permissions or []:
@@ -367,10 +367,10 @@ class UserService:
                 if item.custom_scope_org_ids:
                     entity.custom_scope_org_ids = item.custom_scope_org_ids
                 self.db.add(entity)
-            self.db.commit()
+            await self.db.commit()
             await Business.refresh_user_sessions_acl(param.user_id)
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
     async def refresh_session_acl(self, param: RefreshSessionACLParam) -> None:
@@ -389,12 +389,12 @@ class UserService:
                 seen.add(user_id)
                 await Business.refresh_user_sessions_acl(user_id)
 
-    def get_user_permission_details(self, user_id: str) -> list[PermissionItem]:
+    async def get_user_permission_details(self, user_id: str) -> list[PermissionItem]:
         if not user_id:
             return []
-        rows = self.db.execute(
+        rows = (await self.db.execute(
             select(RelUserPermission).where(RelUserPermission.user_id == user_id)
-        ).scalars().all()
+        )).scalars().all()
         return [
             PermissionItem(
                 permission_code=row.permission_code,
@@ -405,27 +405,27 @@ class UserService:
             for row in rows
         ]
 
-    def get_user_role_ids(self, user_id: str) -> list[str]:
+    async def get_user_role_ids(self, user_id: str) -> list[str]:
         if not user_id:
             return []
         return list(
-            self.db.execute(
+            (await self.db.execute(
                 select(RelUserRole.role_id).where(RelUserRole.user_id == user_id)
-            ).scalars().all()
+            )).scalars().all()
         )
 
-    def get_current_user(self, actor: Optional[ActorContext] = None) -> Optional[UserVO]:
+    async def get_current_user(self, actor: Optional[ActorContext] = None) -> Optional[UserVO]:
         user_id = _actor_user_id(actor)
         if not user_id:
             return None
-        return self.detail(IdParam(id=user_id))
+        return await self.detail(IdParam(id=user_id))
 
-    def _is_super_admin(self, role_ids: list[str]) -> bool:
+    async def _is_super_admin(self, role_ids: list[str]) -> bool:
         if not role_ids:
             return False
         from plugins.plugin_sys.role.models import SysRole
 
-        codes = self.db.execute(select(SysRole.code).where(SysRole.id.in_(role_ids))).scalars().all()
+        codes = (await self.db.execute(select(SysRole.code).where(SysRole.id.in_(role_ids)))).scalars().all()
         return SUPER_ADMIN_CODE in codes
 
     async def get_current_user_menus(self, actor: Optional[ActorContext] = None) -> list[UserMenuVO]:
@@ -433,13 +433,13 @@ class UserService:
         if not user_id:
             return []
 
-        role_ids = self.get_user_role_ids(user_id)
-        if self._is_super_admin(role_ids):
-            resources = self.db.execute(
+        role_ids = await self.get_user_role_ids(user_id)
+        if await self._is_super_admin(role_ids):
+            resources = (await self.db.execute(
                 select(SysResource)
                 .where(SysResource.status == "ENABLED")
                 .order_by(SysResource.sort_code.asc())
-            ).scalars().all()
+            )).scalars().all()
             return _build_menu_tree(resources)
 
         if not role_ids:
@@ -447,19 +447,19 @@ class UserService:
 
         resource_ids = list(
             set(
-                self.db.execute(
+                (await self.db.execute(
                     select(RelRoleResource.resource_id).where(RelRoleResource.role_id.in_(role_ids))
-                ).scalars().all()
+                )).scalars().all()
             )
         )
         if not resource_ids:
             return []
 
-        resources = self.db.execute(
+        resources = (await self.db.execute(
             select(SysResource)
             .where(SysResource.id.in_(resource_ids), SysResource.status == "ENABLED")
             .order_by(SysResource.sort_code.asc())
-        ).scalars().all()
+        )).scalars().all()
         return _build_menu_tree(resources)
 
     async def get_current_user_permissions(self, actor: Optional[ActorContext] = None) -> list[str]:
@@ -468,22 +468,22 @@ class UserService:
             return []
 
         permission_codes = set()
-        role_ids = self.get_user_role_ids(user_id)
+        role_ids = await self.get_user_role_ids(user_id)
         if role_ids:
             permission_codes.update(
-                self.db.execute(
+                (await self.db.execute(
                     select(RelRolePermission.permission_code)
                     .distinct()
                     .where(RelRolePermission.role_id.in_(role_ids))
-                ).scalars().all()
+                )).scalars().all()
             )
 
         permission_codes.update(
-            self.db.execute(
+            (await self.db.execute(
                 select(RelUserPermission.permission_code)
                 .distinct()
                 .where(RelUserPermission.user_id == user_id)
-            ).scalars().all()
+            )).scalars().all()
         )
         return sorted(permission_codes)
 
@@ -504,8 +504,8 @@ class UserService:
 
         if updates:
             updates["updated_at"] = datetime.now()
-            self.db.execute(sa_update(SysUser).where(SysUser.id == user_id).values(**updates))
-            self.db.commit()
+            await self.db.execute(sa_update(SysUser).where(SysUser.id == user_id).values(**updates))
+            await self.db.commit()
 
     async def update_avatar(
         self,
@@ -520,17 +520,18 @@ class UserService:
 
         from sdk.utils.image_utils import compress_base64_image
 
-        entity = self.repository.find_by_id(user_id)
+        entity = await self.repository.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在", 404)
 
-        entity.avatar = compress_base64_image(
+        entity.avatar = await asyncio.to_thread(
+            compress_base64_image,
             param.avatar,
             max_width=512,
             max_height=512,
             quality=80,
         )
-        self.db.commit()
+        await self.db.commit()
 
     async def update_password(
         self,
@@ -541,7 +542,7 @@ class UserService:
         if not user_id:
             raise BusinessException("用户未登录", 401)
 
-        entity = self.repository.find_by_id(user_id)
+        entity = await self.repository.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在", 404)
         if not entity.password:
@@ -564,25 +565,29 @@ class UserService:
             )
         ).decode("utf-8")
         entity.updated_at = datetime.now()
-        self.db.commit()
+        await self.db.commit()
 
-    def reset_password(self, user_id: str) -> None:
+    async def reset_password(self, user_id: str) -> None:
         if not user_id:
             raise BusinessException("ID不能为空", 400)
         raw_password = settings.user_config.reset_password or _generate_random_password()
-        hashed_password = bcrypt.hashpw(
-            raw_password.encode("utf-8"),
-            bcrypt.gensalt(),
+        hashed_password = (
+            await asyncio.to_thread(
+                lambda: bcrypt.hashpw(
+                    raw_password.encode("utf-8"),
+                    bcrypt.gensalt(),
+                )
+            )
         ).decode("utf-8")
-        self.db.execute(
+        await self.db.execute(
             sa_update(SysUser).where(SysUser.id == user_id).values(
                 password=hashed_password,
                 updated_at=datetime.now(),
             )
         )
-        self.db.commit()
+        await self.db.commit()
 
-    def batch_import(self, param: BatchImportParam) -> None:
+    async def batch_import(self, param: BatchImportParam) -> None:
         if not param.users:
             return
         now = datetime.now()
@@ -603,39 +608,39 @@ class UserService:
             )
         try:
             self.db.add_all(entities)
-            self.db.commit()
+            await self.db.commit()
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
     async def update_status(self, param: UpdateStatusParam) -> None:
         if not param.ids:
             raise BusinessException("ID不能为空", 400)
-        self.db.execute(
+        await self.db.execute(
             sa_update(SysUser).where(SysUser.id.in_(param.ids)).values(
                 status=param.status,
                 updated_at=datetime.now(),
             )
         )
-        self.db.commit()
+        await self.db.commit()
         if param.status != "ACTIVE":
             for user_id in param.ids:
                 await Business.sessions().kickout_user(user_id)
-        self.db.commit()
+        await self.db.commit()
 
-    def export(self, param: UserPageParam) -> list[UserExportVO]:
-        rows = self.repository.find_all_by_filters(param)
-        role_map = _batch_role_ids(self.db, [row.id for row in rows])
+    async def export(self, param: UserPageParam) -> list[UserExportVO]:
+        rows = await self.repository.find_all_by_filters(param)
+        role_map = await _batch_role_ids(self.db, [row.id for row in rows])
         data: list[UserExportVO] = []
         for row in rows:
             item = UserExportVO.model_validate(row)
             item.role_ids = role_map.get(row.id, [])
             data.append(item)
-        _enrich_user_like_names(self.db, data)
+        await _enrich_user_like_names(self.db, data)
         return data
 
 
-def get_user_service(db: Session = Depends(get_db)) -> UserService:
+def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
     return UserService(UserRepository(db))
 
 
@@ -647,71 +652,54 @@ class LoginUserService:
         user_id = await get_current_login_id(request)
         if not user_id:
             return None
-        return self.get_user_by_id(user_id)
+        return await self.get_user_by_id(user_id)
 
-    def get_user_by_id(self, user_id: str) -> Optional[LoginUserInfo]:
-        db = self._session_factory()
-        try:
-            return user_to_login_info(UserRepository(db).find_by_id(user_id))
-        finally:
-            db.close()
+    async def get_user_by_id(self, user_id: str) -> Optional[LoginUserInfo]:
+        async with self._session_factory() as db:
+            return user_to_login_info(await UserRepository(db).find_by_id(user_id))
 
-    def get_user_by_username(self, username: str) -> Optional[LoginUserInfo]:
-        db = self._session_factory()
-        try:
-            return user_to_login_info(UserRepository(db).find_by_username(username))
-        finally:
-            db.close()
+    async def get_user_by_username(self, username: str) -> Optional[LoginUserInfo]:
+        async with self._session_factory() as db:
+            return user_to_login_info(await UserRepository(db).find_by_username(username))
 
-    def get_user_by_email(self, email: str) -> Optional[LoginUserInfo]:
-        db = self._session_factory()
-        try:
-            return user_to_login_info(UserRepository(db).find_by_email(email))
-        finally:
-            db.close()
+    async def get_user_by_email(self, email: str) -> Optional[LoginUserInfo]:
+        async with self._session_factory() as db:
+            return user_to_login_info(await UserRepository(db).find_by_email(email))
 
-    def record_login(self, user_id: str, request: Request) -> None:
-        db = self._session_factory()
-        try:
-            UserService(UserRepository(db)).record_login(user_id, request)
-        finally:
-            db.close()
+    async def record_login(self, user_id: str, request: Request) -> None:
+        async with self._session_factory() as db:
+            await UserService(UserRepository(db)).record_login(user_id, request)
 
-    def get_username(self, user_id: str) -> Optional[str]:
-        db = self._session_factory()
-        try:
-            entity = UserRepository(db).find_by_id(user_id)
+    async def get_username(self, user_id: str) -> Optional[str]:
+        async with self._session_factory() as db:
+            entity = await UserRepository(db).find_by_id(user_id)
             if not entity:
                 return None
             return entity.username
-        finally:
-            db.close()
 
-    def create_user(self, username: str, hashed_password: str) -> str:
-        db = self._session_factory()
-        try:
-            existing = UserRepository(db).find_by_username(username)
-            if existing:
-                raise BusinessException("用户名已存在")
+    async def create_user(self, username: str, hashed_password: str) -> str:
+        async with self._session_factory() as db:
+            try:
+                existing = await UserRepository(db).find_by_username(username)
+                if existing:
+                    raise BusinessException("用户名已存在")
 
-            user_id = str(generate_id())
-            now = datetime.now()
-            user = SysUser(
-                id=user_id,
-                username=username,
-                password=hashed_password,
-                nickname=username,
-                status="ACTIVE",
-                created_at=now,
-                updated_at=now,
-                created_by=user_id,
-                updated_by=user_id,
-            )
-            db.add(user)
-            db.commit()
-            return user_id
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
+                user_id = str(generate_id())
+                now = datetime.now()
+                user = SysUser(
+                    id=user_id,
+                    username=username,
+                    password=hashed_password,
+                    nickname=username,
+                    status="ACTIVE",
+                    created_at=now,
+                    updated_at=now,
+                    created_by=user_id,
+                    updated_by=user_id,
+                )
+                db.add(user)
+                await db.commit()
+                return user_id
+            except Exception:
+                await db.rollback()
+                raise

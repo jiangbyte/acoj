@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import Depends
 from sqlalchemy import select, update as sa_update
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
@@ -34,19 +34,19 @@ def _tree_node(entity: SysGroup) -> GroupTreeVO:
     return GroupTreeVO.model_validate(entity)
 
 
-def _enrich_vo(db: Session, vo: GroupVO) -> None:
-    vo.org_names = resolve_name_path(vo.org_id, db, SysOrg)
+async def _enrich_vo(db: AsyncSession, vo: GroupVO) -> None:
+    vo.org_names = await resolve_name_path(vo.org_id, db, SysOrg)
 
 
-def _batch_enrich(db: Session, vo_list: list[GroupVO]) -> None:
+async def _batch_enrich(db: AsyncSession, vo_list: list[GroupVO]) -> None:
     for vo in vo_list:
-        _enrich_vo(db, vo)
+        await _enrich_vo(db, vo)
 
 
-def _check_circular_parent(db: Session, entity_id: str, new_parent_id: Optional[str]) -> None:
+async def _check_circular_parent(db: AsyncSession, entity_id: str, new_parent_id: Optional[str]) -> None:
     if not new_parent_id:
         return
-    all_rows = db.execute(select(SysGroup)).scalars().all()
+    all_rows = (await db.execute(select(SysGroup))).scalars().all()
     parent_map = {row.id: row.parent_id for row in all_rows}
     current = new_parent_id
     while current:
@@ -57,8 +57,8 @@ def _check_circular_parent(db: Session, entity_id: str, new_parent_id: Optional[
             break
 
 
-def _collect_descendant_ids(db: Session, ids: list[str]) -> list[str]:
-    all_rows = db.execute(select(SysGroup)).scalars().all()
+async def _collect_descendant_ids(db: AsyncSession, ids: list[str]) -> list[str]:
+    all_rows = (await db.execute(select(SysGroup))).scalars().all()
     return collect_descendant_ids(
         all_rows,
         ids,
@@ -72,28 +72,28 @@ class GroupService:
         self.repository = repository
         self.db = repository.db
 
-    def page(self, param: GroupPageParam) -> dict:
+    async def page(self, param: GroupPageParam) -> dict:
         page = map_page_data(
-            self.repository.find_page_by_filters(param),
+            await self.repository.find_page_by_filters(param),
             GroupVO.model_validate,
             param.current,
             param.size,
         )
-        _batch_enrich(self.db, page["records"])
+        await _batch_enrich(self.db, page["records"])
         return page
 
-    def detail(self, id: str) -> Optional[GroupVO]:
+    async def detail(self, id: str) -> Optional[GroupVO]:
         if not id:
             return None
-        entity = self.repository.find_by_id(id)
+        entity = await self.repository.find_by_id(id)
         if not entity:
             return None
         vo = GroupVO.model_validate(entity)
-        _enrich_vo(self.db, vo)
+        await _enrich_vo(self.db, vo)
         return vo
 
-    def tree(self, param: GroupTreeParam) -> list[GroupTreeVO]:
-        all_rows = self.db.execute(select(SysGroup).order_by(SysGroup.sort_code.asc())).scalars().all()
+    async def tree(self, param: GroupTreeParam) -> list[GroupTreeVO]:
+        all_rows = (await self.db.execute(select(SysGroup).order_by(SysGroup.sort_code.asc()))).scalars().all()
         filtered = all_rows
         if param.category:
             filtered = [row for row in filtered if row.category == param.category]
@@ -106,9 +106,9 @@ class GroupService:
             get_sort_code=lambda node: node.sort_code,
         )
 
-    def union_tree(self) -> list[UnionTreeNode]:
-        org_rows = self.db.execute(select(SysOrg).order_by(SysOrg.sort_code.asc())).scalars().all()
-        group_rows = self.db.execute(select(SysGroup).order_by(SysGroup.sort_code.asc())).scalars().all()
+    async def union_tree(self) -> list[UnionTreeNode]:
+        org_rows = (await self.db.execute(select(SysOrg).order_by(SysOrg.sort_code.asc()))).scalars().all()
+        group_rows = (await self.db.execute(select(SysGroup).order_by(SysGroup.sort_code.asc()))).scalars().all()
         org_nodes: dict[str, UnionTreeNode] = {}
         for row in org_rows:
             node = UnionTreeNode(
@@ -158,7 +158,7 @@ class GroupService:
         roots.sort(key=lambda item: item.sort_code or 0)
         return roots
 
-    def create(self, vo: GroupVO, actor: Optional[ActorContext] = None) -> None:
+    async def create(self, vo: GroupVO, actor: Optional[ActorContext] = None) -> None:
         now = datetime.now()
         actor_user_id = _actor_user_id(actor)
         entity = SysGroup(
@@ -176,14 +176,14 @@ class GroupService:
             created_by=actor_user_id,
             updated_by=actor_user_id,
         )
-        self.repository.insert(entity)
+        await self.repository.insert(entity)
 
-    def modify(self, vo: GroupVO, actor: Optional[ActorContext] = None) -> None:
-        entity = self.repository.find_by_id(vo.id)
+    async def modify(self, vo: GroupVO, actor: Optional[ActorContext] = None) -> None:
+        entity = await self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
         if vo.parent_id is not None and vo.parent_id != entity.parent_id:
-            _check_circular_parent(self.db, vo.id, vo.parent_id)
+            await _check_circular_parent(self.db, vo.id, vo.parent_id)
         actor_user_id = _actor_user_id(actor)
         updates = {
             "code": vo.code,
@@ -199,21 +199,21 @@ class GroupService:
         }
         if actor_user_id:
             updates["updated_by"] = actor_user_id
-        self.db.execute(sa_update(SysGroup).where(SysGroup.id == vo.id).values(**updates))
-        self.db.commit()
+        await self.db.execute(sa_update(SysGroup).where(SysGroup.id == vo.id).values(**updates))
+        await self.db.commit()
 
-    def remove(self, ids: list[str]) -> None:
+    async def remove(self, ids: list[str]) -> None:
         if not ids:
             return
-        all_ids = _collect_descendant_ids(self.db, ids)
-        self.db.execute(sa_update(SysUser).where(SysUser.group_id.in_(all_ids)).values(group_id=None))
-        self.db.commit()
-        self.repository.delete_by_ids(all_ids)
+        all_ids = await _collect_descendant_ids(self.db, ids)
+        await self.db.execute(sa_update(SysUser).where(SysUser.group_id.in_(all_ids)).values(group_id=None))
+        await self.db.commit()
+        await self.repository.delete_by_ids(all_ids)
 
-    def options(self) -> list[GroupVO]:
-        rows = self.db.execute(select(SysGroup).order_by(SysGroup.sort_code.asc())).scalars().all()
+    async def options(self) -> list[GroupVO]:
+        rows = (await self.db.execute(select(SysGroup).order_by(SysGroup.sort_code.asc()))).scalars().all()
         return [GroupVO.model_validate(row) for row in rows]
 
 
-def get_group_service(db: Session = Depends(get_db)) -> GroupService:
+def get_group_service(db: AsyncSession = Depends(get_db)) -> GroupService:
     return GroupService(GroupRepository(db))

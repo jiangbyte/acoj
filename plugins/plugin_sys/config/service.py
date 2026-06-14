@@ -5,10 +5,10 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.infra.db.redis import get_client
-from sdk.infra.db import get_db
+from sdk.infra.db import get_db, AsyncSessionLocal
 from sdk.shared.di import ActorContext
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
@@ -32,18 +32,14 @@ async def get_value_by_key(key: str) -> Optional[str]:
         cached = await client.get(f"{CONFIG_CACHE_PREFIX}{key}")
         if cached is not None:
             return cached
-    from sdk.infra.db.mysql import get_db
-    db = next(get_db())
-    try:
+    async with AsyncSessionLocal() as db:
         from .repository import ConfigRepository
-        entity = ConfigRepository(db).find_by_key(key)
+        entity = await ConfigRepository(db).find_by_key(key)
         if entity:
             if client:
                 await client.set(f"{CONFIG_CACHE_PREFIX}{key}", entity.config_value or "")
             return entity.config_value
         return None
-    finally:
-        db.close()
 
 
 def _del_cached_key(key: Optional[str]) -> None:
@@ -67,23 +63,23 @@ class ConfigService:
     def __init__(self, repository: ConfigRepository):
         self.repository = repository
 
-    def page(self, param: ConfigPageParam) -> dict:
+    async def page(self, param: ConfigPageParam) -> dict:
         return map_page_data(
-            self.repository.find_page_by_filters(param),
+            await self.repository.find_page_by_filters(param),
             ConfigVO.model_validate,
             param.current,
             param.size,
         )
 
-    def detail(self, id: str) -> Optional[ConfigVO]:
+    async def detail(self, id: str) -> Optional[ConfigVO]:
         if not id:
             return None
-        entity = self.repository.find_by_id(id)
+        entity = await self.repository.find_by_id(id)
         if not entity:
             return None
         return ConfigVO.model_validate(entity)
 
-    def create(self, vo: ConfigVO, actor: Optional[ActorContext] = None) -> None:
+    async def create(self, vo: ConfigVO, actor: Optional[ActorContext] = None) -> None:
         now = datetime.now()
         actor_user_id = _actor_user_id(actor)
         entity = SysConfig(
@@ -100,10 +96,10 @@ class ConfigService:
         if actor_user_id:
             entity.created_by = actor_user_id
             entity.updated_by = actor_user_id
-        self.repository.insert(entity)
+        await self.repository.insert(entity)
 
-    def modify(self, vo: ConfigVO, actor: Optional[ActorContext] = None) -> None:
-        entity = self.repository.find_by_id(vo.id)
+    async def modify(self, vo: ConfigVO, actor: Optional[ActorContext] = None) -> None:
+        entity = await self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
         actor_user_id = _actor_user_id(actor)
@@ -118,25 +114,25 @@ class ConfigService:
         }
         if actor_user_id:
             up["updated_by"] = actor_user_id
-        self.repository.update_by_id(vo.id, up)
+        await self.repository.update_by_id(vo.id, up)
         _del_cached_key(entity.config_key)
 
-    def remove(self, ids: list[str]) -> None:
+    async def remove(self, ids: list[str]) -> None:
         if not ids:
             return
-        entities = self.repository.find_by_ids(ids)
+        entities = await self.repository.find_by_ids(ids)
         keys = [e.config_key for e in entities if e.config_key is not None]
-        self.repository.delete_by_ids(ids)
+        await self.repository.delete_by_ids(ids)
         for key in keys:
             _del_cached_key(key)
 
-    def options(self) -> list:
-        return [ConfigVO.model_validate(r) for r in self.repository.list_all_ordered()]
+    async def options(self) -> list:
+        return [ConfigVO.model_validate(r) for r in await self.repository.list_all_ordered()]
 
-    def list_by_category(self, category: str) -> list:
-        return [ConfigVO.model_validate(r) for r in self.repository.find_by_category(category)]
+    async def list_by_category(self, category: str) -> list:
+        return [ConfigVO.model_validate(r) for r in await self.repository.find_by_category(category)]
 
-    def edit_batch(self, param: ConfigBatchEditParam, actor: Optional[ActorContext] = None) -> None:
+    async def edit_batch(self, param: ConfigBatchEditParam, actor: Optional[ActorContext] = None) -> None:
         now = datetime.now()
         actor_user_id = _actor_user_id(actor)
         items: list[tuple[str, dict]] = []
@@ -153,9 +149,9 @@ class ConfigService:
             if actor_user_id:
                 up["updated_by"] = actor_user_id
             items.append((item.id, up))
-        self.repository.update_many_by_ids(items)
+        await self.repository.update_many_by_ids(items)
 
-    def edit_by_category(self, param: ConfigCategoryEditParam, actor: Optional[ActorContext] = None) -> None:
+    async def edit_by_category(self, param: ConfigCategoryEditParam, actor: Optional[ActorContext] = None) -> None:
         up = {"updated_at": datetime.now()}
         if param.config_key is not None:
             up["config_key"] = param.config_key
@@ -166,8 +162,8 @@ class ConfigService:
         actor_user_id = _actor_user_id(actor)
         if actor_user_id:
             up["updated_by"] = actor_user_id
-        self.repository.update_by_category(param.category, up)
+        await self.repository.update_by_category(param.category, up)
 
 
-def get_config_service(db: Session = Depends(get_db)) -> ConfigService:
+def get_config_service(db: AsyncSession = Depends(get_db)) -> ConfigService:
     return ConfigService(ConfigRepository(db))

@@ -4,8 +4,10 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Response, status
 
+from sqlalchemy import text
+
 from sdk.config.settings import settings
-from sdk.infra.db import db_runtime, get_redis
+from sdk.infra.db import async_runtime, get_redis
 from sdk.kernel.plugin import extension_snapshot, plugins_ready
 from sdk.infra.db import snapshot as migration_snapshot
 from sdk.kernel.registry import snapshot_state
@@ -86,8 +88,8 @@ async def _readiness_components() -> list[dict[str, object]]:
 
 async def _check_mysql() -> dict[str, object]:
     try:
-        with db_runtime.engine.connect() as conn:
-            conn.exec_driver_sql("SELECT 1")
+        async with async_runtime.engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
         return {"name": "mysql", "ok": True}
     except Exception as exc:
         return {"name": "mysql", "ok": False, "detail": str(exc)}

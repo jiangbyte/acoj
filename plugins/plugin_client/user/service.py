@@ -7,7 +7,7 @@ from typing import Optional
 import bcrypt
 from fastapi import Depends, Request
 from sqlalchemy import update as sa_update
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.auth import get_current_login_id
 from sdk.infra.db import get_db
@@ -62,34 +62,36 @@ class ClientUserService:
             self.repository = ClientUserRepository(repository_or_db)
         self.db = self.repository.db
 
-    def page(self, param: ClientUserPageParam) -> dict:
+    async def page(self, param: ClientUserPageParam) -> dict:
         return map_page_data(
-            self.repository.find_page_by_filters(param),
+            await self.repository.find_page_by_filters(param),
             ClientUserVO.model_validate,
             param.current,
             param.size,
         )
 
-    def detail(self, id: str) -> Optional[ClientUserVO]:
+    async def detail(self, id: str) -> Optional[ClientUserVO]:
         if not id:
             return None
-        entity = self.repository.find_by_id(id)
+        entity = await self.repository.find_by_id(id)
         if not entity:
             return None
         return ClientUserVO.model_validate(entity)
 
-    def create(self, vo: ClientUserVO, actor: Optional[ActorContext] = None) -> None:
-        if vo.username and self.repository.find_by_username(vo.username):
+    async def create(self, vo: ClientUserVO, actor: Optional[ActorContext] = None) -> None:
+        if vo.username and await self.repository.find_by_username(vo.username):
             raise BusinessException("帐号已存在")
         now = datetime.now()
         actor_user_id = _actor_user_id(actor)
         entity = _build_client_user(vo, now, actor_user_id)
         if vo.password:
-            entity.password = bcrypt.hashpw(vo.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-        self.repository.insert(entity)
+            entity.password = await asyncio.to_thread(
+                lambda: bcrypt.hashpw(vo.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+            )
+        await self.repository.insert(entity)
 
-    def modify(self, vo: ClientUserVO, actor: Optional[ActorContext] = None) -> None:
-        entity = self.repository.find_by_id(vo.id)
+    async def modify(self, vo: ClientUserVO, actor: Optional[ActorContext] = None) -> None:
+        entity = await self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
         actor_user_id = _actor_user_id(actor)
@@ -106,41 +108,41 @@ class ClientUserService:
             updates["status"] = vo.status
         if actor_user_id:
             updates["updated_by"] = actor_user_id
-        self.db.execute(sa_update(ClientUser).where(ClientUser.id == vo.id).values(**updates))
-        self.db.commit()
+        await self.db.execute(sa_update(ClientUser).where(ClientUser.id == vo.id).values(**updates))
+        await self.db.commit()
 
-    def remove(self, ids: list[str]) -> None:
+    async def remove(self, ids: list[str]) -> None:
         if not ids:
             return
-        self.repository.delete_by_ids(ids)
+        await self.repository.delete_by_ids(ids)
 
-    def record_login(self, user_id: str, request: Request) -> None:
-        entity = self.repository.find_by_id(user_id)
+    async def record_login(self, user_id: str, request: Request) -> None:
+        entity = await self.repository.find_by_id(user_id)
         if not entity:
             return
         entity.last_login_at = datetime.now()
         entity.last_login_ip = request.client.host if request.client else None
         entity.login_count = (entity.login_count or 0) + 1
-        self.repository.update(entity)
+        await self.repository.update(entity)
 
-    def get_current_user(self, actor: Optional[ActorContext] = None) -> Optional[ClientUserVO]:
+    async def get_current_user(self, actor: Optional[ActorContext] = None) -> Optional[ClientUserVO]:
         user_id = _actor_user_id(actor)
         if not user_id:
             return None
-        entity = self.repository.find_by_id(user_id)
+        entity = await self.repository.find_by_id(user_id)
         if not entity:
             return None
         return ClientUserVO.model_validate(entity)
 
-    def update_profile(self, param: UpdateProfileParam, actor: Optional[ActorContext] = None) -> None:
+    async def update_profile(self, param: UpdateProfileParam, actor: Optional[ActorContext] = None) -> None:
         user_id = _actor_user_id(actor)
         if not user_id:
             raise BusinessException("用户未登录")
-        entity = self.repository.find_by_id(user_id)
+        entity = await self.repository.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在")
         if param.username:
-            existing = self.repository.find_by_username(param.username)
+            existing = await self.repository.find_by_username(param.username)
             if existing and existing.id != user_id:
                 raise BusinessException("用户名已存在")
         updates: dict = {"updated_at": datetime.now(), "updated_by": user_id}
@@ -154,26 +156,26 @@ class ClientUserService:
             updates["email"] = param.email
         if param.phone is not None:
             updates["phone"] = param.phone
-        self.db.execute(sa_update(ClientUser).where(ClientUser.id == user_id).values(**updates))
-        self.db.commit()
+        await self.db.execute(sa_update(ClientUser).where(ClientUser.id == user_id).values(**updates))
+        await self.db.commit()
 
-    def update_avatar(self, param: UpdateAvatarParam, actor: Optional[ActorContext] = None) -> None:
+    async def update_avatar(self, param: UpdateAvatarParam, actor: Optional[ActorContext] = None) -> None:
         user_id = _actor_user_id(actor)
         if not user_id:
             raise BusinessException("用户未登录")
         if not param.avatar:
             raise BusinessException("头像不能为空")
-        entity = self.repository.find_by_id(user_id)
+        entity = await self.repository.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在")
-        entity.avatar = compress_base64_image(param.avatar, 512, 512, 80)
-        self.repository.update(entity, user_id=user_id)
+        entity.avatar = await asyncio.to_thread(compress_base64_image, param.avatar, 512, 512, 80)
+        await self.repository.update(entity, user_id=user_id)
 
     async def update_password(self, param: UpdatePasswordParam, actor: Optional[ActorContext] = None) -> None:
         user_id = _actor_user_id(actor)
         if not user_id:
             raise BusinessException("用户未登录")
-        entity = self.repository.find_by_id(user_id)
+        entity = await self.repository.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在")
         if not entity.password:
@@ -189,10 +191,10 @@ class ClientUserService:
         entity.password = await asyncio.to_thread(
             lambda: bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
         )
-        self.repository.update(entity, user_id=user_id)
+        await self.repository.update(entity, user_id=user_id)
 
 
-def get_client_user_service(db: Session = Depends(get_db)) -> ClientUserService:
+def get_client_user_service(db: AsyncSession = Depends(get_db)) -> ClientUserService:
     return ClientUserService(ClientUserRepository(db))
 
 
@@ -204,74 +206,57 @@ class LoginUserService:
         user_id = await get_current_login_id(request)
         if not user_id:
             return None
-        return self.get_user_by_id(user_id)
+        return await self.get_user_by_id(user_id)
 
-    def get_user_by_id(self, user_id: str) -> Optional[LoginUserInfo]:
-        db = self._session_factory()
-        try:
-            entity = ClientUserRepository(db).find_by_id(user_id)
+    async def get_user_by_id(self, user_id: str) -> Optional[LoginUserInfo]:
+        async with self._session_factory() as db:
+            entity = await ClientUserRepository(db).find_by_id(user_id)
             return LoginUserInfoVO.from_entity(entity)
-        finally:
-            db.close()
 
-    def get_user_by_username(self, username: str) -> Optional[LoginUserInfo]:
-        db = self._session_factory()
-        try:
-            entity = ClientUserRepository(db).find_by_username(username)
+    async def get_user_by_username(self, username: str) -> Optional[LoginUserInfo]:
+        async with self._session_factory() as db:
+            entity = await ClientUserRepository(db).find_by_username(username)
             return LoginUserInfoVO.from_entity(entity)
-        finally:
-            db.close()
 
-    def get_user_by_email(self, email: str) -> Optional[LoginUserInfo]:
-        db = self._session_factory()
-        try:
-            entity = ClientUserRepository(db).find_by_email(email)
+    async def get_user_by_email(self, email: str) -> Optional[LoginUserInfo]:
+        async with self._session_factory() as db:
+            entity = await ClientUserRepository(db).find_by_email(email)
             return LoginUserInfoVO.from_entity(entity)
-        finally:
-            db.close()
 
-    def record_login(self, user_id: str, request: Request) -> None:
-        db = self._session_factory()
-        try:
-            ClientUserService(ClientUserRepository(db)).record_login(user_id, request)
-        finally:
-            db.close()
+    async def record_login(self, user_id: str, request: Request) -> None:
+        async with self._session_factory() as db:
+            await ClientUserService(ClientUserRepository(db)).record_login(user_id, request)
 
-    def get_username(self, user_id: str) -> Optional[str]:
-        db = self._session_factory()
-        try:
-            entity = ClientUserRepository(db).find_by_id(user_id)
+    async def get_username(self, user_id: str) -> Optional[str]:
+        async with self._session_factory() as db:
+            entity = await ClientUserRepository(db).find_by_id(user_id)
             if not entity:
                 return None
             return entity.username
-        finally:
-            db.close()
 
-    def create_user(self, username: str, hashed_password: str) -> str:
-        db = self._session_factory()
-        try:
-            existing = ClientUserRepository(db).find_by_username(username)
-            if existing:
-                raise BusinessException("用户名已存在")
+    async def create_user(self, username: str, hashed_password: str) -> str:
+        async with self._session_factory() as db:
+            try:
+                existing = await ClientUserRepository(db).find_by_username(username)
+                if existing:
+                    raise BusinessException("用户名已存在")
 
-            user_id = str(generate_id())
-            now = datetime.now()
-            user = ClientUser(
-                id=user_id,
-                username=username,
-                password=hashed_password,
-                nickname=username,
-                status="ACTIVE",
-                created_at=now,
-                updated_at=now,
-                created_by=user_id,
-                updated_by=user_id,
-            )
-            db.add(user)
-            db.commit()
-            return user_id
-        except Exception:
-            db.rollback()
-            raise
-        finally:
-            db.close()
+                user_id = str(generate_id())
+                now = datetime.now()
+                user = ClientUser(
+                    id=user_id,
+                    username=username,
+                    password=hashed_password,
+                    nickname=username,
+                    status="ACTIVE",
+                    created_at=now,
+                    updated_at=now,
+                    created_by=user_id,
+                    updated_by=user_id,
+                )
+                db.add(user)
+                await db.commit()
+                return user_id
+            except Exception:
+                await db.rollback()
+                raise

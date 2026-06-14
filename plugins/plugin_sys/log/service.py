@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 
 from fastapi import Depends
 from sqlalchemy import delete as sa_delete
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
@@ -38,23 +38,23 @@ class LogService:
             self.repository = LogRepository(repository_or_db)
         self.db = self.repository.db
 
-    def page(self, param: LogPageParam) -> dict:
+    async def page(self, param: LogPageParam) -> dict:
         """Mirrors Go Page — keyword filters name/op_user/op_ip, order by created_at DESC."""
-        return map_page_data(self.repository.find_page(param), LogVO.model_validate, param.current, param.size)
+        return map_page_data(await self.repository.find_page(param), LogVO.model_validate, param.current, param.size)
 
-    def detail(self, param: IdParam) -> Optional[LogVO]:
+    async def detail(self, param: IdParam) -> Optional[LogVO]:
         """Mirrors Go Detail — returns VO dict or None."""
-        entity = self.repository.find_by_id(param.id)
+        entity = await self.repository.find_by_id(param.id)
         if not entity:
             return None
         return LogVO.model_validate(entity)
 
-    def delete_by_category(self, param: LogDeleteByCategoryParam) -> None:
+    async def delete_by_category(self, param: LogDeleteByCategoryParam) -> None:
         """Mirrors Go DeleteByCategory."""
         db = self.repository.db
         stmt = sa_delete(SysLog).where(SysLog.category == param.category)
-        db.execute(stmt)
-        db.commit()
+        await db.execute(stmt)
+        await db.commit()
 
     # ---- Chart / Statistics ----
     # Mirrors Go's LoginBarChart, LoginPieChart, OpBarChart, OpPieChart
@@ -63,11 +63,11 @@ class LogService:
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         return [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(n - 1, -1, -1)]
 
-    def vis_log_line_chart_data(self) -> LogBarChartData:
+    async def vis_log_line_chart_data(self) -> LogBarChartData:
         """Mirrors Go LoginBarChart — LOGIN/LOGOUT daily trend last 7 days."""
         since = datetime.now() - timedelta(days=6)
         since = since.replace(hour=0, minute=0, second=0, microsecond=0)
-        rows = self.repository.daily_counts_since(["LOGIN", "LOGOUT"], since)
+        rows = await self.repository.daily_counts_since(["LOGIN", "LOGOUT"], since)
         days = self._last_n_days(7)
 
         day_map: Dict[str, Dict[str, int]] = {}
@@ -83,19 +83,19 @@ class LogService:
             ],
         )
 
-    def vis_log_pie_chart_data(self) -> LogPieChartData:
+    async def vis_log_pie_chart_data(self) -> LogPieChartData:
         """Mirrors Go LoginPieChart — LOGIN/LOGOUT total proportion."""
-        totals = self.repository.count_total_by_category(["LOGIN", "LOGOUT"])
+        totals = await self.repository.count_total_by_category(["LOGIN", "LOGOUT"])
         return LogPieChartData(data=[
             LogCategoryTotal(category="登录", total=totals.get("LOGIN", 0)),
             LogCategoryTotal(category="登出", total=totals.get("LOGOUT", 0)),
         ])
 
-    def op_log_bar_chart_data(self) -> LogBarChartData:
+    async def op_log_bar_chart_data(self) -> LogBarChartData:
         """Mirrors Go OpBarChart — OPERATE/EXCEPTION daily trend last 7 days."""
         since = datetime.now() - timedelta(days=6)
         since = since.replace(hour=0, minute=0, second=0, microsecond=0)
-        rows = self.repository.daily_counts_since(["OPERATE", "EXCEPTION"], since)
+        rows = await self.repository.daily_counts_since(["OPERATE", "EXCEPTION"], since)
         days = self._last_n_days(7)
 
         day_map: Dict[str, Dict[str, int]] = {}
@@ -111,15 +111,15 @@ class LogService:
             ],
         )
 
-    def op_log_pie_chart_data(self) -> LogPieChartData:
+    async def op_log_pie_chart_data(self) -> LogPieChartData:
         """Mirrors Go OpPieChart — OPERATE/EXCEPTION total proportion."""
-        totals = self.repository.count_total_by_category(["OPERATE", "EXCEPTION"])
+        totals = await self.repository.count_total_by_category(["OPERATE", "EXCEPTION"])
         return LogPieChartData(data=[
             LogCategoryTotal(category="操作", total=totals.get("OPERATE", 0)),
             LogCategoryTotal(category="异常", total=totals.get("EXCEPTION", 0)),
         ])
 
-    def create(self, vo: LogVO, actor: Optional[ActorContext] = None) -> None:
+    async def create(self, vo: LogVO, actor: Optional[ActorContext] = None) -> None:
         """Mirrors Go Create()."""
         from sdk.utils import generate_id
 
@@ -138,11 +138,11 @@ class LogService:
             created_by=actor_user_id,
             updated_by=actor_user_id,
         )
-        self.repository.insert(entity)
+        await self.repository.insert(entity)
 
-    def modify(self, vo: LogVO, actor: Optional[ActorContext] = None) -> None:
+    async def modify(self, vo: LogVO, actor: Optional[ActorContext] = None) -> None:
         """Mirrors Go Modify()."""
-        entity = self.repository.find_by_id(vo.id)
+        entity = await self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
         now = datetime.now()
@@ -157,17 +157,17 @@ class LogService:
             up["updated_by"] = actor_user_id
         from sqlalchemy import update as sa_update
 
-        self.db.execute(sa_update(SysLog).where(SysLog.id == vo.id).values(**up))
-        self.db.commit()
+        await self.db.execute(sa_update(SysLog).where(SysLog.id == vo.id).values(**up))
+        await self.db.commit()
 
-    def remove(self, param: IdsParam) -> None:
+    async def remove(self, param: IdsParam) -> None:
         """Mirrors Go Remove()."""
         if not param.ids:
             return
         from sqlalchemy import delete as sa_delete
-        self.db.execute(sa_delete(SysLog).where(SysLog.id.in_(param.ids)))
-        self.db.commit()
+        await self.db.execute(sa_delete(SysLog).where(SysLog.id.in_(param.ids)))
+        await self.db.commit()
 
 
-def get_log_service(db: Session = Depends(get_db)) -> LogService:
+def get_log_service(db: AsyncSession = Depends(get_db)) -> LogService:
     return LogService(LogRepository(db))
