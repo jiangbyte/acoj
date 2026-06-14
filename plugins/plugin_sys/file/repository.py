@@ -19,7 +19,7 @@ class FileRepository:
         self.db.refresh(entity)
         return entity
 
-    def page(self, param: FilePageParam) -> tuple[list[SysFile], int]:
+    def page(self, param: FilePageParam) -> dict[str, object]:
         stmt = select(SysFile)
         if param.keyword:
             like = f"%{param.keyword}%"
@@ -31,7 +31,10 @@ class FileRepository:
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = int(self.db.execute(count_stmt).scalar() or 0)
         stmt = stmt.order_by(SysFile.created_at.desc()).offset((param.current - 1) * param.size).limit(param.size)
-        return list(self.db.execute(stmt).scalars().all()), total
+        return {
+            "records": list(self.db.execute(stmt).scalars().all()),
+            "total": total,
+        }
 
     def find_by_id(self, file_id: str) -> Optional[SysFile]:
         stmt = select(SysFile).where(SysFile.id == file_id)

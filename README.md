@@ -147,29 +147,41 @@ pip install -r requirements.txt
 ```env
 # 应用
 APP__NAME=hei-fastapi
+APP__ENV=dev
 APP__HOST=127.0.0.1
 APP__PORT=18885
 
 # 数据库
 DB__HOST=localhost
 DB__PORT=3306
-DB__USER=root
-DB__PASSWORD=123456
+DB__USER=hei
+DB__PASSWORD=replace-with-strong-db-password
 DB__DATABASE=hei_data
 
 # Redis
 REDIS__HOST=localhost
 REDIS__PORT=6379
-REDIS__PASSWORD=123456
+REDIS__PASSWORD=replace-with-strong-redis-password
 
 # Token
 TOKEN__EXPIRE_SECONDS=2592000
 TOKEN__TOKEN_NAME=Authorization
 
 # SM2 密钥
-SM2__PRIVATE_KEY=your-private-key
-SM2__PUBLIC_KEY=your-public-key
+SM2__PRIVATE_KEY=replace-with-private-key
+SM2__PUBLIC_KEY=replace-with-public-key
+
+# 跨域
+CORS__ALLOW_ORIGINS=["http://localhost:3000"]
+
+# 重置密码默认值
+USER__RESET_PASSWORD=replace-with-temporary-reset-password
 ```
+
+生产环境注意：
+
+- 设置 `APP__ENV=prod` 或 `APP_ENV=prod` 后，服务会对弱密码、空 SM2 密钥、`swagger` 暴露、`CORS=*` 等配置执行启动前校验。
+- 不要直接使用 `.env.example` 中的占位值，生产环境必须替换为真实安全配置。
 
 ### 初始化数据库
 

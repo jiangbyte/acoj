@@ -1,7 +1,7 @@
 from typing import Optional, List
 from plugins.plugin_sys.role.params import PermissionItem
 from datetime import datetime, date
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
 
 
@@ -55,6 +55,33 @@ class UserVO(DateTimeValidatorMixin, BaseModel):
     updated_by: Optional[str] = None
     password: Optional[str] = None
     role_ids: Optional[List[str]] = None
+
+
+class UserMenuVO(BaseModel):
+    id: str
+    code: Optional[str] = None
+    name: Optional[str] = None
+    category: Optional[str] = None
+    type: Optional[str] = None
+    parent_id: Optional[str] = None
+    route_path: Optional[str] = None
+    component_path: Optional[str] = None
+    redirect_path: Optional[str] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
+    is_visible: Optional[bool] = None
+    is_cache: Optional[bool] = None
+    is_affix: Optional[bool] = None
+    is_breadcrumb: Optional[bool] = None
+    external_url: Optional[str] = None
+    description: Optional[str] = None
+    sort_code: Optional[int] = None
+    status: Optional[str] = None
+    children: List["UserMenuVO"] = Field(default_factory=list)
+
+
+class UserExportVO(UserVO):
+    pass
 
 
 class UserPageParam(BaseModel):

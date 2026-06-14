@@ -20,7 +20,7 @@ from sdk.infra.db import get_db
 from sdk.infra.storage import ChunkInfo, ChunkedUploader, get_storage, get_url
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
-from sdk.web.result import page_data
+from sdk.web.result import map_page_data
 
 from .models import SysFile
 from .params import (
@@ -29,9 +29,8 @@ from .params import (
     ChunkUploadInitParam,
     ChunkUploadPartParam,
     FilePageParam,
+    FileVO,
     FileUploadResult,
-    SysFileToFileUploadResult,
-    SysFileToFileVO,
 )
 from .repository import FileRepository
 
@@ -166,10 +165,6 @@ class FileService:
             self.repository = FileRepository(repository_or_db)
         self.db = self.repository.db
 
-    @classmethod
-    def from_db(cls, db: Session) -> "FileService":
-        return cls(FileRepository(db))
-
     async def upload(
         self,
         file: UploadFile,
@@ -219,21 +214,20 @@ class FileService:
             updated_at=now,
             updated_by=user_id,
         )
-        return SysFileToFileUploadResult(self.repository.insert(entity))
+        return FileUploadResult.from_entity(self.repository.insert(entity))
 
     def page(self, param: FilePageParam) -> dict:
         param.current = max(1, param.current)
         param.size = max(1, min(param.size, 100))
-        records, total = self.repository.page(param)
-        return page_data([SysFileToFileVO(record) for record in records], total, param.current, param.size)
+        return map_page_data(self.repository.page(param), FileVO.model_validate, param.current, param.size)
 
-    def detail(self, file_id: str) -> Optional[dict]:
+    def detail(self, file_id: str) -> Optional[FileVO]:
         if not file_id:
             return None
         entity = self.repository.find_by_id(file_id)
         if not entity:
             return None
-        return SysFileToFileVO(entity).model_dump()
+        return FileVO.model_validate(entity)
 
     def get_download_path(self, file_id: str) -> Optional[str]:
         entity = self.repository.find_by_id(file_id)
@@ -399,7 +393,7 @@ class FileService:
             created_at=now,
             updated_at=now,
         )
-        return SysFileToFileUploadResult(self.repository.insert(entity))
+        return FileUploadResult.from_entity(self.repository.insert(entity))
 
     def abort_chunk_upload(self, param: ChunkAbortParam) -> None:
         engine = get_storage(param.engine)
@@ -419,4 +413,4 @@ class FileService:
 
 
 def get_file_service(db: Session = Depends(get_db)) -> FileService:
-    return FileService.from_db(db)
+    return FileService(FileRepository(db))

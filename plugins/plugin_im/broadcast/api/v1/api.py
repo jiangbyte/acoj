@@ -8,13 +8,14 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, Query as QueryParam
 
+from plugins.plugin_im.common_params import CursorResult
 from sdk.auth import Business, Consumer
 from sdk.auth.decorator import CheckLogin, NoRepeat
 from sdk.auth.enums import RealmID
 from sdk.log import SysLog
 from sdk.web.result import success
 from sdk.kernel.plugin import Perm
-from plugins.plugin_im.broadcast.params import SendBroadcastParam
+from plugins.plugin_im.broadcast.params import BroadcastReadParam, SendBroadcastParam
 from plugins.plugin_im.broadcast.service import BroadcastService, get_broadcast_service
 
 sys_router = APIRouter(prefix="/api/v1/sys/im/broadcast", tags=["IM Broadcast (Sys)"])
@@ -28,9 +29,12 @@ client_router = APIRouter(prefix="/api/v1/c/im/broadcast", tags=["IM Broadcast (
 @SysLog("发送通知")
 @NoRepeat(5000)
 @CheckLogin
-async def send_handler(request: Request, p: SendBroadcastParam):
+async def send_handler(
+    request: Request,
+    p: SendBroadcastParam,
+    service: BroadcastService = Depends(get_broadcast_service),
+):
     uid = await Business.get_login_id(request)
-    service = get_broadcast_service()
     service.send(uid or "", p)
     return success()
 
@@ -45,7 +49,7 @@ def list_handler(
     service: BroadcastService = Depends(get_broadcast_service),
 ):
     records, has_more = service.list(cursor, size)
-    return success({"records": [r.__dict__ for r in records], "has_more": has_more})
+    return success(CursorResult(records=records, has_more=has_more))
 
 
 @sys_router.get("/unread-list")
@@ -63,11 +67,11 @@ async def unread_list_handler(
 @CheckLogin
 async def read_handler(
     request: Request,
-    p: dict,
+    p: BroadcastReadParam,
     service: BroadcastService = Depends(get_broadcast_service),
 ):
     uid = await Business.get_login_id(request)
-    service.mark_read(uid or "", "BUSINESS", p.get("broadcast_id", ""))
+    service.mark_read(uid or "", "BUSINESS", p.broadcast_id)
     return success()
 
 
@@ -79,7 +83,7 @@ def detail_handler(
     service: BroadcastService = Depends(get_broadcast_service),
 ):
     vo = service.detail(id)
-    return success(vo.__dict__ if vo else None)
+    return success(vo)
 
 
 # ── Client (C-end) routes ──
@@ -99,11 +103,11 @@ async def client_unread_list_handler(
 @CheckLogin(realm_id=RealmID.CONSUMER)
 async def client_read_handler(
     request: Request,
-    p: dict,
+    p: BroadcastReadParam,
     service: BroadcastService = Depends(get_broadcast_service),
 ):
     uid = await Consumer.get_login_id(request)
-    service.mark_read(uid or "", "CONSUMER", p.get("broadcast_id", ""))
+    service.mark_read(uid or "", "CONSUMER", p.broadcast_id)
     return success()
 
 
@@ -115,4 +119,4 @@ def client_detail_handler(
     service: BroadcastService = Depends(get_broadcast_service),
 ):
     vo = service.detail(id)
-    return success(vo.__dict__ if vo else None)
+    return success(vo)

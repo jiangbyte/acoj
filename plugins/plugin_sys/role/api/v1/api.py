@@ -55,26 +55,25 @@ def remove(param: IdsParam, service: RoleService = Depends(get_role_service)):
 @router.get("/api/v1/sys/role/detail", summary="获取角色详情")
 @Perm("sys:role:detail", "角色详情")
 def detail(id: str = Query(...), service: RoleService = Depends(get_role_service)):
-    data = service.detail(id)
-    return success(data if data else None)
+    return success(service.detail(id))
 
 
 @router.get("/api/v1/sys/role/own-permission", summary="角色拥有的权限码列表")
 @Perm("sys:role:detail", "角色详情")
 def own_permission(id: str = Query(...), service: RoleService = Depends(get_role_service)):
-    return success(service.get_role_permission_codes(id))
+    return success(service.get_permission_codes(id))
 
 
 @router.get("/api/v1/sys/role/own-permission-detail", summary="角色拥有的权限详情")
 @Perm("sys:role:detail", "角色详情")
 def own_permission_detail(id: str = Query(...), service: RoleService = Depends(get_role_service)):
-    return success(service.get_role_permission_details(id))
+    return success(service.get_permission_details(id))
 
 
 @router.get("/api/v1/sys/role/own-resource", summary="角色拥有的资源ID列表")
 @Perm("sys:role:detail", "角色详情")
 def own_resource(id: str = Query(...), service: RoleService = Depends(get_role_service)):
-    return success(service.get_role_resource_ids(id))
+    return success(service.get_resource_ids(id))
 
 
 @router.post("/api/v1/sys/role/grant-permission", summary="分配角色权限")

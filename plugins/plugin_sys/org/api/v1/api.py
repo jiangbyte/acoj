@@ -5,6 +5,7 @@ from sdk.shared.types import IdsParam
 from sdk.auth.decorator import CheckPermission, NoRepeat
 from sdk.log import SysLog
 from ...params import OrgVO, OrgPageParam, OrgTreeParam
+from ...params import OrgTreeVO
 from ...service import OrgService, get_org_service
 
 router = APIRouter()
@@ -26,7 +27,7 @@ def page(
 @router.get(
     "/api/v1/sys/org/tree",
     summary="获取组织树",
-    response_model=Result[list[dict]]
+    response_model=Result[list[OrgTreeVO]]
 )
 @CheckPermission("sys:org:tree")
 def tree(
@@ -94,5 +95,4 @@ def detail(
     id: str = Query(...),
     service: OrgService = Depends(get_org_service),
 ):
-    data = service.detail(id)
-    return success(data if data else None)
+    return success(service.detail(id))

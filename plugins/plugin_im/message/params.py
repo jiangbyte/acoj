@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from datetime import datetime
 from typing import Optional
-from plugins.plugin_im.model.message import Message
-from plugins.plugin_im.model.im_file import ImFile
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
+
+from plugins.plugin_im.model.group import GroupMessage
 
 
-class MessageVO(BaseModel):
+class MessageVO(DateTimeValidatorMixin, BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     conversation_id: str = ""
     id: str = ""
     content: str = ""
@@ -19,9 +25,9 @@ class MessageVO(BaseModel):
     receiver_id: str = ""
     receiver_type: str = ""
     status: str = ""
-    read_at: Optional[str] = None
-    created_at: str = ""
-    updated_at: str = ""
+    read_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class MessagePageParam(BaseModel):
@@ -40,6 +46,14 @@ class MessageSendParam(BaseModel):
 
 class RecallParam(BaseModel):
     message_id: str = Field(...)
+
+
+class MessageIdsParam(BaseModel):
+    ids: list[str] = Field(default_factory=list)
+
+
+class MessageReadParam(BaseModel):
+    id: str = Field(...)
 
 
 class ForwardParam(BaseModel):
@@ -85,10 +99,54 @@ class ConversationMessageVO(BaseModel):
     file_url: str = ""
     created_at: str = ""
 
+    @classmethod
+    def from_message(
+        cls,
+        *,
+        id: str,
+        sender_id: str,
+        sender_type: str,
+        content: str,
+        msg_type: str,
+        extra: str,
+        status: str,
+        file_url: str,
+        created_at: Optional[datetime],
+    ) -> "ConversationMessageVO":
+        return cls(
+            id=id,
+            sender_id=sender_id,
+            sender_type=sender_type,
+            content=content,
+            msg_type=msg_type,
+            extra=extra,
+            status=status,
+            file_url=file_url,
+            created_at=created_at.strftime("%Y-%m-%d %H:%M:%S") if created_at else "",
+        )
+
+    @classmethod
+    def from_group_message(cls, src: GroupMessage) -> "ConversationMessageVO":
+        return cls.from_message(
+            id=src.id,
+            sender_id=src.sender_id,
+            sender_type=src.sender_type,
+            content=src.content or "",
+            msg_type=src.msg_type,
+            extra=src.extra or "",
+            status="",
+            file_url="",
+            created_at=src.created_at,
+        )
+
 
 class GetOrCreateConversationParam(BaseModel):
     user_id: str = Field(..., description="对方用户ID")
     user_type: str = Field(..., description="对方用户类型")
+
+
+class ConversationReadParam(BaseModel):
+    conversation_id: str = Field(..., description="会话ID")
 
 
 class UploadFileResult(BaseModel):
@@ -101,7 +159,9 @@ class UploadFileResult(BaseModel):
     file_type: str = ""
 
 
-class ImFileVO(BaseModel):
+class ImFileVO(DateTimeValidatorMixin, BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str = ""
     engine: str = ""
     bucket: str = ""
@@ -116,51 +176,9 @@ class ImFileVO(BaseModel):
     sender_id: str = ""
     sender_type: str = ""
     msg_type: str = ""
-    created_at: str = ""
+    created_at: Optional[datetime] = None
 
 
 # Conversation type constants
 ConvTypeSingle = "single"
 ConvTypeGroup = "group"
-
-
-def MessageToMessageVO(src: Optional[Message]) -> Optional[MessageVO]:
-    if src is None:
-        return None
-    return MessageVO(
-        id=src.id,
-        conversation_id=src.conversation_id,
-        content=src.content or "",
-        msg_type=src.msg_type,
-        extra=src.extra or "",
-        sender_id=src.sender_id or "",
-        sender_type=src.sender_type or "",
-        receiver_id=src.receiver_id or "",
-        receiver_type=src.receiver_type or "",
-        status=src.status,
-        read_at=src.read_at.strftime("%Y-%m-%d %H:%M:%S") if src.read_at else None,
-        created_at=src.created_at.strftime("%Y-%m-%d %H:%M:%S") if src.created_at else "",
-        updated_at=src.updated_at.strftime("%Y-%m-%d %H:%M:%S") if src.updated_at else "",
-    )
-
-
-def ImFileToImFileVO(src: Optional[ImFile]) -> Optional[ImFileVO]:
-    if src is None:
-        return None
-    return ImFileVO(
-        id=src.id or "",
-        engine=src.engine or "",
-        bucket=src.bucket or "",
-        file_key=src.file_key or "",
-        name=src.name or "",
-        suffix=src.suffix or "",
-        size_kb=src.size_kb or 0,
-        size_info=src.size_info or "",
-        download_path=src.download_path or "",
-        thumbnail=src.thumbnail or "",
-        conversation_id=src.conversation_id or "",
-        sender_id=src.sender_id or "",
-        sender_type=src.sender_type or "",
-        msg_type=src.msg_type or "",
-        created_at=src.created_at.strftime("%Y-%m-%d %H:%M:%S") if src.created_at else "",
-    )

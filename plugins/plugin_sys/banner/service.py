@@ -9,14 +9,16 @@ from sqlalchemy.orm import Session
 from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
 from sdk.web.exception import BusinessException
-from sdk.web.result import page_data
+from sdk.web.result import map_page_data
 from sdk.utils import generate_id
-import logging
 
-from .params import BannerPageParam, BannerVO, BannerVOToSysBanner, SysBannerToBannerVO
+from .models import SysBanner
+from .params import BannerPageParam, BannerVO
 from .repository import BannerRepository
 
-logger = logging.getLogger(__name__)
+
+def _actor_user_id(actor: Optional[ActorContext]) -> Optional[str]:
+    return actor.user_id if actor else None
 
 
 class BannerService:
@@ -24,14 +26,8 @@ class BannerService:
         self.repository = repository
         self.db = repository.db
 
-    @classmethod
-    def from_db(cls, db: Session) -> "BannerService":
-        return cls(BannerRepository(db))
-
     def page(self, param: BannerPageParam) -> dict:
-        result = self.repository.find_page(param)
-        records = [SysBannerToBannerVO(r) for r in result.get("records", [])]
-        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
+        return map_page_data(self.repository.find_page(param), BannerVO.model_validate, param.current, param.size)
 
     def detail(self, id: str) -> Optional[BannerVO]:
         if not id:
@@ -39,23 +35,37 @@ class BannerService:
         entity = self.repository.find_by_id(id)
         if not entity:
             return None
-        return SysBannerToBannerVO(entity)
+        return BannerVO.model_validate(entity)
 
     def create(self, vo: BannerVO, actor: Optional[ActorContext] = None) -> None:
         now = datetime.now()
-        entity = BannerVOToSysBanner(vo)
-        entity.id = generate_id()
-        entity.created_at = now
-        entity.updated_at = now
-        if actor and actor.user_id:
-            entity.created_by = actor.user_id
-            entity.updated_by = actor.user_id
+        actor_user_id = _actor_user_id(actor)
+        entity = SysBanner(
+            id=generate_id(),
+            title=vo.title,
+            image=vo.image,
+            category=vo.category,
+            type=vo.type,
+            position=vo.position,
+            url=vo.url,
+            link_type=vo.link_type or "URL",
+            summary=vo.summary,
+            description=vo.description,
+            sort_code=vo.sort_code or 0,
+            view_count=vo.view_count or 0,
+            click_count=vo.click_count or 0,
+            created_at=now,
+            updated_at=now,
+            created_by=actor_user_id,
+            updated_by=actor_user_id,
+        )
         self.repository.insert(entity)
 
     def modify(self, vo: BannerVO, actor: Optional[ActorContext] = None) -> None:
         entity = self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在")
+        actor_user_id = _actor_user_id(actor)
         up = {
             "title": vo.title,
             "image": vo.image,
@@ -63,19 +73,16 @@ class BannerService:
             "category": vo.category,
             "type": vo.type,
             "position": vo.position,
+            "url": vo.url,
+            "summary": vo.summary,
+            "description": vo.description,
             "sort_code": vo.sort_code,
             "view_count": vo.view_count,
             "click_count": vo.click_count,
             "updated_at": datetime.now(),
         }
-        if vo.url is not None:
-            up["url"] = vo.url
-        if vo.summary is not None:
-            up["summary"] = vo.summary
-        if vo.description is not None:
-            up["description"] = vo.description
-        if actor and actor.user_id:
-            up["updated_by"] = actor.user_id
+        if actor_user_id:
+            up["updated_by"] = actor_user_id
         self.repository.update_by_id(vo.id, up)
 
     def remove(self, ids: list[str]) -> None:
@@ -85,8 +92,8 @@ class BannerService:
 
     def options(self) -> list[BannerVO]:
         rows = self.repository.list_all_ordered()
-        return [SysBannerToBannerVO(r) for r in rows]
+        return [BannerVO.model_validate(row) for row in rows]
 
 
 def get_banner_service(db: Session = Depends(get_db)) -> BannerService:
-    return BannerService.from_db(db)
+    return BannerService(BannerRepository(db))

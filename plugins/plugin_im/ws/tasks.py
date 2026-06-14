@@ -4,13 +4,13 @@ import asyncio
 import logging
 from collections.abc import Awaitable
 
+from .hub import get_global_cross_hub
+
 logger = logging.getLogger(__name__)
 
 
 def schedule(coro: Awaitable) -> None:
-    from plugins.plugin_im import ws as im_ws
-
-    hub = im_ws.GlobalCrossHub
+    hub = get_global_cross_hub()
     if hub is not None:
         hub.create_task(coro)
         return

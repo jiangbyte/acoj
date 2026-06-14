@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar, Optional, List, Any, Dict
+from typing import Callable, Generic, TypeVar, Optional, List, Any, Dict
 from pydantic import BaseModel, Field
 from sdk.utils.trace_utils import get_trace_id
 
@@ -63,3 +63,13 @@ def page_data(records: List[T], total: int, page: int, size: int) -> Dict[str, A
         "size": size,
         "pages": pages,
     }
+
+
+def map_page_data(
+    result: Dict[str, Any],
+    mapper: Callable[[Any], T],
+    page: int,
+    size: int,
+) -> Dict[str, Any]:
+    records = [mapper(record) for record in result.get("records", [])]
+    return page_data(records=records, total=result["total"], page=page, size=size)

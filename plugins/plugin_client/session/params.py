@@ -18,6 +18,33 @@ class SessionPageResult(BaseModel):
     session_timeout: str = ""
     session_timeout_seconds: int = 0
 
+    @classmethod
+    def from_session_info(
+        cls,
+        info: dict[str, Any],
+        session_timeout: str,
+        *,
+        username: Optional[str] = None,
+        nickname: Optional[str] = None,
+        avatar: Optional[str] = None,
+        status: Optional[str] = None,
+        last_login_ip: Optional[str] = None,
+        last_login_time: str = "",
+    ) -> "SessionPageResult":
+        return cls(
+            user_id=info.get("user_id", ""),
+            username=username or info.get("username"),
+            nickname=nickname,
+            avatar=avatar,
+            status=status,
+            last_login_ip=last_login_ip,
+            last_login_time=last_login_time,
+            token_count=info.get("token_count", 0),
+            session_create_time=info.get("session_create_time", ""),
+            session_timeout=session_timeout,
+            session_timeout_seconds=info.get("session_timeout_seconds", 0),
+        )
+
 
 class SessionAnalysisResult(BaseModel):
     """Session analysis statistics — mirrors Go SessionAnalysisResult."""
@@ -51,6 +78,21 @@ class SessionTokenResult(BaseModel):
     device_type: Optional[str] = None
     device_id: Optional[str] = None
 
+    @classmethod
+    def from_token_info(
+        cls,
+        token_info: dict[str, Any],
+        timeout: str,
+    ) -> "SessionTokenResult":
+        return cls(
+            token=token_info["token"],
+            created_at=token_info.get("created_at", ""),
+            timeout=timeout,
+            timeout_seconds=token_info.get("timeout_seconds", 0),
+            device_type=token_info.get("device_type"),
+            device_id=token_info.get("device_id"),
+        )
+
 
 class CategoryTotal(BaseModel):
     category: str = ""
@@ -75,43 +117,3 @@ class SessionChartData(BaseModel):
     """Session chart data — mirrors Go SessionChartData."""
     bar_chart: BarChartData = Field(default_factory=BarChartData)
     pie_chart: PieChartData = Field(default_factory=PieChartData)
-
-
-def SessionInfoToSessionPageResult(
-    info: dict[str, Any],
-    session_timeout: str,
-    *,
-    username: Optional[str] = None,
-    nickname: Optional[str] = None,
-    avatar: Optional[str] = None,
-    status: Optional[str] = None,
-    last_login_ip: Optional[str] = None,
-    last_login_time: str = "",
-) -> SessionPageResult:
-    return SessionPageResult(
-        user_id=info.get("user_id", ""),
-        username=username or info.get("username"),
-        nickname=nickname,
-        avatar=avatar,
-        status=status,
-        last_login_ip=last_login_ip,
-        last_login_time=last_login_time,
-        token_count=info.get("token_count", 0),
-        session_create_time=info.get("session_create_time", ""),
-        session_timeout=session_timeout,
-        session_timeout_seconds=info.get("session_timeout_seconds", 0),
-    )
-
-
-def SessionTokenInfoToSessionTokenResult(
-    token_info: dict[str, Any],
-    timeout: str,
-) -> SessionTokenResult:
-    return SessionTokenResult(
-        token=token_info["token"],
-        created_at=token_info.get("created_at", ""),
-        timeout=timeout,
-        timeout_seconds=token_info.get("timeout_seconds", 0),
-        device_type=token_info.get("device_type"),
-        device_id=token_info.get("device_id"),
-    )

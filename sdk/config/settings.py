@@ -196,6 +196,7 @@ class Settings(BaseModel):
             _require_positive(missing, "redis.port", self.redis.port)
         if missing:
             raise ValueError(f"invalid runtime config: {', '.join(missing)}")
+        self.validate_production()
 
     def validate_migration(self) -> None:
         missing: list[str] = []
@@ -223,6 +224,33 @@ class Settings(BaseModel):
             warnings.append("storage.default is LOCAL; use shared/object storage for multi-instance production")
         return warnings
 
+    def validate_production(self) -> None:
+        if self.app.env.lower() not in {"prod", "production"}:
+            return
+
+        invalid: list[str] = []
+        if self.app.debug:
+            invalid.append("app.debug must be false")
+        if self.swagger.enabled:
+            invalid.append("swagger.enabled must be false")
+        if "*" in self.cors.allow_origins:
+            invalid.append("cors.allow_origins must not contain '*'")
+        if self.auth.business_register_enabled:
+            invalid.append("auth.business_register_enabled must be false")
+        if _is_weak_secret(self.db.password):
+            invalid.append("db.password must not use a default/weak value")
+        if _is_weak_secret(self.redis.password):
+            invalid.append("redis.password must not use a default/weak value")
+        if _is_weak_secret(self.user.reset_password):
+            invalid.append("user.reset_password must not use a default/weak value")
+        if not self.sm2.private_key.strip():
+            invalid.append("sm2.private_key is required")
+        if not self.sm2.public_key.strip():
+            invalid.append("sm2.public_key is required")
+
+        if invalid:
+            raise ValueError(f"invalid production config: {', '.join(invalid)}")
+
 
 def _require_string(missing: list[str], key: str, value: str) -> None:
     if not str(value).strip():
@@ -232,6 +260,11 @@ def _require_string(missing: list[str], key: str, value: str) -> None:
 def _require_positive(missing: list[str], key: str, value: int) -> None:
     if value <= 0:
         missing.append(key)
+
+
+def _is_weak_secret(value: str) -> bool:
+    normalized = str(value or "").strip().lower()
+    return normalized in {"", "123456", "change-me", "changeme", "password", "admin", "root"}
 
 
 def _load_dotenv_file(env_path: Path) -> dict[str, str]:

@@ -7,9 +7,7 @@ Mirrors hei-gin's ``plugins/plugin-im/ws/client.go``.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
-from typing import Optional
 
 from fastapi import WebSocket
 from .message import Message, OnlineCountPayload, MsgOnlineCount
@@ -51,7 +49,7 @@ class Client:
         """Reply to a heartbeat with online count."""
         await self.send_json(Message(
             type=MsgOnlineCount,
-            payload=OnlineCountPayload(count=online_count).__dict__,
+            payload=OnlineCountPayload(count=online_count).model_dump(),
         ))
 
     async def close(self) -> None:

@@ -11,46 +11,34 @@ from sdk.infra.db import get_db
 from sdk.shared.di import ActorContext
 from sdk.utils import generate_id
 from sdk.utils.resolve_utils import resolve_name_path
+from sdk.utils.tree_utils import build_tree, collect_descendant_ids
 from sdk.web.exception import BusinessException
-from sdk.web.result import page_data
+from sdk.web.result import map_page_data
 
 from ..org.models import SysOrg
-from ..org.params import OrgVO
 from ..user.models import SysUser
-from . import SysGroup
-from .params import GroupPageParam, GroupTreeParam, GroupVO, SysGroupToGroupTreeVO, SysGroupToGroupVO
+from .models import SysGroup
+from .params import GroupPageParam, GroupTreeParam, GroupTreeVO, GroupVO, UnionTreeNode
 from .repository import GroupRepository
 
 
-def _tree_node(entity: SysGroup) -> dict:
-    return SysGroupToGroupTreeVO(entity).model_dump()
+def _normalize_parent_id(parent_id: Optional[str]) -> Optional[str]:
+    return parent_id if parent_id not in (None, "", "0") else None
 
 
-def _build_tree(node: dict, parent: SysGroup, children_map: dict) -> None:
-    children = children_map.get(parent.id, [])
-    if not children:
-        return
-    child_nodes = []
-    for child in children:
-        child_node = _tree_node(child)
-        _build_tree(child_node, child, children_map)
-        child_nodes.append(child_node)
-    node["children"] = child_nodes
+def _actor_user_id(actor: Optional[ActorContext]) -> Optional[str]:
+    return actor.user_id if actor else None
 
 
-def _sort_tree(nodes: list[dict]) -> None:
-    nodes.sort(key=lambda item: item.get("sort_code", 0) or 0)
-    for node in nodes:
-        children = node.get("children")
-        if children:
-            _sort_tree(children)
+def _tree_node(entity: SysGroup) -> GroupTreeVO:
+    return GroupTreeVO.model_validate(entity)
 
 
-def _enrich_vo(db: Session, vo: dict) -> None:
-    vo["org_names"] = resolve_name_path(vo.get("org_id"), db, SysOrg)
+def _enrich_vo(db: Session, vo: GroupVO) -> None:
+    vo.org_names = resolve_name_path(vo.org_id, db, SysOrg)
 
 
-def _batch_enrich(db: Session, vo_list: list[dict]) -> None:
+def _batch_enrich(db: Session, vo_list: list[GroupVO]) -> None:
     for vo in vo_list:
         _enrich_vo(db, vo)
 
@@ -71,18 +59,12 @@ def _check_circular_parent(db: Session, entity_id: str, new_parent_id: Optional[
 
 def _collect_descendant_ids(db: Session, ids: list[str]) -> list[str]:
     all_rows = db.execute(select(SysGroup)).scalars().all()
-    children_map: dict[str, list[str]] = {}
-    for row in all_rows:
-        children_map.setdefault(row.parent_id or "", []).append(row.id)
-    all_ids = set(ids)
-    stack = list(ids)
-    while stack:
-        parent_id = stack.pop()
-        for child_id in children_map.get(parent_id, []):
-            if child_id not in all_ids:
-                all_ids.add(child_id)
-                stack.append(child_id)
-    return list(all_ids)
+    return collect_descendant_ids(
+        all_rows,
+        ids,
+        get_id=lambda row: row.id,
+        get_parent_id=lambda row: row.parent_id or "",
+    )
 
 
 class GroupService:
@@ -90,99 +72,110 @@ class GroupService:
         self.repository = repository
         self.db = repository.db
 
-    @classmethod
-    def from_db(cls, db: Session) -> "GroupService":
-        return cls(GroupRepository(db))
-
     def page(self, param: GroupPageParam) -> dict:
-        result = self.repository.find_page_by_filters(param)
-        records = [SysGroupToGroupVO(row) for row in result.get("records", [])]
-        _batch_enrich(self.db, records)
-        return page_data(records=records, total=result["total"], page=param.current, size=param.size)
+        page = map_page_data(
+            self.repository.find_page_by_filters(param),
+            GroupVO.model_validate,
+            param.current,
+            param.size,
+        )
+        _batch_enrich(self.db, page["records"])
+        return page
 
-    def detail(self, id: str) -> Optional[dict]:
+    def detail(self, id: str) -> Optional[GroupVO]:
         if not id:
             return None
         entity = self.repository.find_by_id(id)
         if not entity:
             return None
-        vo = SysGroupToGroupVO(entity)
+        vo = GroupVO.model_validate(entity)
         _enrich_vo(self.db, vo)
         return vo
 
-    def tree(self, param: GroupTreeParam) -> list[dict]:
+    def tree(self, param: GroupTreeParam) -> list[GroupTreeVO]:
         all_rows = self.db.execute(select(SysGroup).order_by(SysGroup.sort_code.asc())).scalars().all()
         filtered = all_rows
         if param.category:
             filtered = [row for row in filtered if row.category == param.category]
-        children_map: dict[str, list[SysGroup]] = {}
-        for row in filtered:
-            children_map.setdefault(row.parent_id or "", []).append(row)
-        roots = children_map.get("", [])
-        result = []
-        for row in roots:
-            node = _tree_node(row)
-            _build_tree(node, row, children_map)
-            result.append(node)
-        _sort_tree(result)
-        return result
+        nodes = [_tree_node(row) for row in filtered]
+        return build_tree(
+            nodes,
+            get_id=lambda node: node.id or "",
+            get_parent_id=lambda node: node.parent_id or "",
+            get_children=lambda node: node.children,
+            get_sort_code=lambda node: node.sort_code,
+        )
 
-    def union_tree(self) -> list[dict]:
+    def union_tree(self) -> list[UnionTreeNode]:
         org_rows = self.db.execute(select(SysOrg).order_by(SysOrg.sort_code.asc())).scalars().all()
         group_rows = self.db.execute(select(SysGroup).order_by(SysGroup.sort_code.asc())).scalars().all()
-        org_nodes: dict[str, dict] = {}
+        org_nodes: dict[str, UnionTreeNode] = {}
         for row in org_rows:
-            node = OrgVO.model_validate(row).model_dump()
-            node["_type"] = "org"
-            node["children"] = []
+            node = UnionTreeNode(
+                id=row.id,
+                code=row.code,
+                name=row.name,
+                category=row.category,
+                parent_id=row.parent_id,
+                status=row.status,
+                sort_code=row.sort_code,
+                type="org",
+            )
             org_nodes[row.id] = node
-        group_nodes: dict[str, dict] = {}
+        group_nodes: dict[str, UnionTreeNode] = {}
         for row in group_rows:
-            node = SysGroupToGroupVO(row)
-            node["_type"] = "group"
-            node["children"] = []
+            node = UnionTreeNode(
+                id=row.id,
+                code=row.code,
+                name=row.name,
+                category=row.category,
+                parent_id=row.parent_id,
+                org_id=row.org_id,
+                status=row.status,
+                sort_code=row.sort_code,
+                type="group",
+            )
             group_nodes[row.id] = node
         for node in group_nodes.values():
-            parent_id = node.get("parent_id") or ""
+            parent_id = node.parent_id or ""
             if parent_id and parent_id in group_nodes:
-                group_nodes[parent_id]["children"].append(node)
-        orphan_groups: dict[str, list[dict]] = {}
+                group_nodes[parent_id].children.append(node)
+        orphan_groups: dict[str, list[UnionTreeNode]] = {}
         for node in group_nodes.values():
-            parent_id = node.get("parent_id") or ""
+            parent_id = node.parent_id or ""
             if not parent_id or parent_id not in group_nodes:
-                orphan_groups.setdefault(node.get("org_id") or "", []).append(node)
+                orphan_groups.setdefault(node.org_id or "", []).append(node)
         for org_id, node in org_nodes.items():
             if org_id in orphan_groups:
-                node["children"] = orphan_groups[org_id] + node["children"]
-        roots = []
+                node.children = orphan_groups[org_id] + node.children
+        roots: list[UnionTreeNode] = []
         for node in org_nodes.values():
-            parent_id = node.get("parent_id") or ""
+            parent_id = node.parent_id or ""
             if parent_id and parent_id in org_nodes:
-                org_nodes[parent_id]["children"].append(node)
+                org_nodes[parent_id].children.append(node)
             else:
                 roots.append(node)
-        _sort_tree(roots)
+        roots.sort(key=lambda item: item.sort_code or 0)
         return roots
 
     def create(self, vo: GroupVO, actor: Optional[ActorContext] = None) -> None:
         now = datetime.now()
+        actor_user_id = _actor_user_id(actor)
         entity = SysGroup(
             id=generate_id(),
             code=vo.code,
             name=vo.name,
             category=vo.category,
             org_id=vo.org_id or "",
-            parent_id=vo.parent_id,
+            parent_id=_normalize_parent_id(vo.parent_id),
             status=vo.status or "ENABLED",
             sort_code=vo.sort_code or 0,
             created_at=now,
             updated_at=now,
+            description=vo.description,
+            created_by=actor_user_id,
+            updated_by=actor_user_id,
         )
-        if vo.description is not None:
-            entity.description = vo.description
-        if actor and actor.user_id:
-            entity.created_by = actor.user_id
-            entity.updated_by = actor.user_id
         self.repository.insert(entity)
 
     def modify(self, vo: GroupVO, actor: Optional[ActorContext] = None) -> None:
@@ -191,20 +184,21 @@ class GroupService:
             raise BusinessException("数据不存在")
         if vo.parent_id is not None and vo.parent_id != entity.parent_id:
             _check_circular_parent(self.db, vo.id, vo.parent_id)
+        actor_user_id = _actor_user_id(actor)
         updates = {
             "code": vo.code,
             "name": vo.name,
             "category": vo.category,
             "org_id": vo.org_id or "",
-            "parent_id": vo.parent_id,
+            "parent_id": _normalize_parent_id(vo.parent_id),
             "status": vo.status,
             "sort_code": vo.sort_code,
             "updated_at": datetime.now(),
-            "description": vo.description if vo.description is not None else None,
-            "extra": vo.extra if vo.extra is not None else None,
+            "description": vo.description,
+            "extra": vo.extra,
         }
-        if actor and actor.user_id:
-            updates["updated_by"] = actor.user_id
+        if actor_user_id:
+            updates["updated_by"] = actor_user_id
         self.db.execute(sa_update(SysGroup).where(SysGroup.id == vo.id).values(**updates))
         self.db.commit()
 
@@ -216,10 +210,10 @@ class GroupService:
         self.db.commit()
         self.repository.delete_by_ids(all_ids)
 
-    def options(self) -> list[dict]:
+    def options(self) -> list[GroupVO]:
         rows = self.db.execute(select(SysGroup).order_by(SysGroup.sort_code.asc())).scalars().all()
-        return [SysGroupToGroupVO(row) for row in rows]
+        return [GroupVO.model_validate(row) for row in rows]
 
 
 def get_group_service(db: Session = Depends(get_db)) -> GroupService:
-    return GroupService.from_db(db)
+    return GroupService(GroupRepository(db))

@@ -36,13 +36,7 @@ async def page(
     param: SessionPageParam = Depends(),
     service: ClientSessionService = Depends(get_client_session_service),
 ):
-    result = await service.page(param)
-    return success({
-        "records": result["records"],
-        "total": result["total"],
-        "page": param.current,
-        "size": param.size,
-    })
+    return success(await service.page(param))
 
 
 @router.post(

@@ -155,7 +155,7 @@ class CrossHub:
             type=MsgPresence,
             payload=PresencePayload(
                 user_id=user_id, user_type=user_type, online=online,
-            ).__dict__,
+            ).model_dump(),
         )
         await self.local.broadcast_business(msg)
         await self.local.broadcast_consumers(msg)

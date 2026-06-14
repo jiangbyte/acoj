@@ -5,11 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 from datetime import datetime
 from typing import Optional
 
 from fastapi import Depends, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse, Response
+from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
 from sdk.auth.enums import RealmID as LTE
@@ -18,11 +20,10 @@ from sdk.infra.db import get_db
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
 from sdk.web.result import page_data
-from plugins.plugin_im import ws as im_ws
-from plugins.plugin_im.ws import Message as WSMessage
+from plugins.plugin_im.ws import Message as WSMessage, get_global_cross_hub
 from plugins.plugin_im.ws.tasks import schedule as schedule_ws_task
 
-from ..group import GroupService, get_group_service
+from ..group.service import GroupService
 from ..model.im_file import ImFile
 from ..model.message import Conversation, Message, MsgTypeSystem, generate_conversation_id
 from .im_file_repository import ImFileRepository
@@ -33,7 +34,6 @@ from .params import (
     GetOrCreateConversationParam,
     MessagePageParam,
     MessageSendParam,
-    MessageToMessageVO,
     MessageVO,
     RecallParam,
     SearchParam,
@@ -54,6 +54,7 @@ ALLOWED_EXTENSIONS = {
     ".json", ".xml", ".yaml", ".yml",
 }
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".ico", ".bmp", ".tiff"}
+READ_BLOCK_SIZE = 1 << 20
 
 
 def _normalize_receiver_ids(ids: list[str]) -> list[str]:
@@ -88,6 +89,36 @@ def _format_file_size(bytes_size: int) -> tuple[int, str]:
     return kb, f"{mb:.1f} MB"
 
 
+async def _read_upload_chunk(file: UploadFile) -> bytes:
+    try:
+        return await file.read(READ_BLOCK_SIZE)
+    except TypeError:
+        return await file.read()
+
+
+async def _spool_upload(file: UploadFile) -> tuple[str, int, str]:
+    checksum = hashlib.sha256()
+    size = 0
+    fd, path = tempfile.mkstemp(prefix="hei_im_upload_")
+    os.close(fd)
+    try:
+        with open(path, "wb") as target:
+            while True:
+                chunk = await _read_upload_chunk(file)
+                if not chunk:
+                    break
+                size += len(chunk)
+                checksum.update(chunk)
+                await run_in_threadpool(target.write, chunk)
+        return path, size, checksum.hexdigest()
+    except Exception:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+        raise
+
+
 class MessageService:
     def __init__(
         self,
@@ -100,12 +131,9 @@ class MessageService:
         self.file_repository = file_repository
         self.db = repository.db
 
-    @classmethod
-    def from_db(cls, db: Session) -> "MessageService":
-        return cls(MessageRepository(db), IMUserRepository(db), ImFileRepository(db))
-
     async def send_message(self, param: MessageSendParam, sender_id: str, sender_type: str) -> list[str]:
-        if im_ws.GlobalCrossHub and not await im_ws.GlobalCrossHub.allow_message(sender_id, sender_type):
+        cross_hub = get_global_cross_hub()
+        if cross_hub and not await cross_hub.allow_message(sender_id, sender_type):
             raise BusinessException("发送消息过于频繁，请稍后重试", 429)
 
         msg_type = param.msg_type or "TEXT"
@@ -175,11 +203,11 @@ class MessageService:
             }
             ws_msg = WSMessage(type="new_message", payload=ws_payload)
             if receiver_type == "CONSUMER":
-                if im_ws.GlobalCrossHub:
-                    schedule_ws_task(im_ws.GlobalCrossHub.send_to_consumer(receiver_id, ws_msg, record.id))
+                if cross_hub:
+                    schedule_ws_task(cross_hub.send_to_consumer(receiver_id, ws_msg, record.id))
             else:
-                if im_ws.GlobalCrossHub:
-                    schedule_ws_task(im_ws.GlobalCrossHub.send_to_user(receiver_id, ws_msg, record.id))
+                if cross_hub:
+                    schedule_ws_task(cross_hub.send_to_user(receiver_id, ws_msg, record.id))
 
         return [record.conversation_id for record in records]
 
@@ -187,14 +215,14 @@ class MessageService:
         param.current = max(1, param.current)
         param.size = max(1, min(param.size, 100))
         records, total = self.repository.page_messages(user_id, user_type, param)
-        return page_data([MessageToMessageVO(record) for record in records], total, param.current, param.size)
+        return page_data([MessageVO.model_validate(record) for record in records], total, param.current, param.size)
 
     def unread_count(self, user_id: str, user_type: str) -> int:
         return self.repository.count_unread(user_id, user_type)
 
     def detail_message(self, message_id: str, user_id: str, user_type: str) -> Optional[MessageVO]:
         entity = self.repository.find_owned_by_id(message_id, user_id, user_type)
-        return MessageToMessageVO(entity) if entity else None
+        return MessageVO.model_validate(entity) if entity else None
 
     def mark_read(self, message_id: str, user_id: str, user_type: str) -> None:
         self.repository.mark_read(message_id, user_id, user_type)
@@ -254,7 +282,7 @@ class MessageService:
         has_more = len(records) > param.size
         if has_more:
             records = records[:param.size]
-        return [MessageToMessageVO(record) for record in records], has_more
+        return [MessageVO.model_validate(record) for record in records], has_more
 
     def conversations(
         self,
@@ -306,13 +334,19 @@ class MessageService:
                 cursor_dt = datetime.strptime(cursor, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 cursor_dt = None
-        records = self.repository.list_conversation_messages(current_user_id, user_type, conversation_id, cursor_dt, size + 1)
+        records = self.repository.list_conversation_messages(
+            current_user_id,
+            user_type,
+            conversation_id,
+            cursor_dt,
+            size + 1,
+        )
         has_more = len(records) > size
         if has_more:
             records = records[:size]
 
         return [
-            ConversationMessageVO(
+            ConversationMessageVO.from_message(
                 id=record.id,
                 sender_id=record.sender_id or "",
                 sender_type=record.sender_type or "",
@@ -320,10 +354,12 @@ class MessageService:
                 msg_type=record.msg_type,
                 extra=record.extra or "",
                 status=record.status,
-                file_url=self.resolve_file_url(record.content or "", record.extra or "")
-                if record.msg_type in ("IMAGE", "FILE")
-                else "",
-                created_at=_fmt_dt(record.created_at),
+                file_url=(
+                    self.resolve_file_url(record.content or "", record.extra or "")
+                    if record.msg_type in ("IMAGE", "FILE")
+                    else ""
+                ),
+                created_at=record.created_at,
             )
             for record in records
         ], has_more
@@ -339,11 +375,11 @@ class MessageService:
         )
         display_name = param.user_id
         if param.user_type == "BUSINESS":
-            user = self.user_repository.find_sys_user(param.user_id)
+            user = self.user_repository.get_sys_user_by_id(param.user_id)
             if user:
                 display_name = user.nickname or user.username or param.user_id
         else:
-            user = self.user_repository.find_client_user(param.user_id)
+            user = self.user_repository.get_client_user_by_id(param.user_id)
             if user:
                 display_name = user.nickname or user.username or param.user_id
         return conversation_id, display_name
@@ -369,18 +405,23 @@ class MessageService:
         if _is_image_ext(ext):
             effective_msg_type = "IMAGE"
 
-        content = await file.read()
-        file_size = len(content)
-        checksum = hashlib.sha256(content).hexdigest()
-
         file_key = generate_id() + ext
-        storage_path = f"uploads/im/{file_key}"
-        os.makedirs(os.path.dirname(storage_path), exist_ok=True)
-        with open(storage_path, "wb") as fp:
-            fp.write(content)
+        engine = get_storage(engine_type)
+        if not engine:
+            raise BusinessException(f"不支持的存储类型: {engine_type}", 500)
+        tmp_path, file_size, checksum = await _spool_upload(file)
+        try:
+            with open(tmp_path, "rb") as stream:
+                storage_path = await run_in_threadpool(engine.store_stream, bucket, file_key, stream)
+        finally:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
 
         file_size_kb, size_info = _format_file_size(file_size)
-        thumbnail = file_key if _is_image_ext(ext) else ""
+        download_path = get_url(engine_type, bucket, file_key)
+        thumbnail = download_path if _is_image_ext(ext) else ""
         record = ImFile(
             id=generate_id(),
             engine=engine_type,
@@ -391,7 +432,7 @@ class MessageService:
             size_kb=file_size_kb,
             size_info=size_info,
             storage_path=storage_path,
-            download_path="",
+            download_path=download_path,
             thumbnail=thumbnail,
             checksum=checksum,
             checksum_algo="sha256",
@@ -404,7 +445,7 @@ class MessageService:
         self.file_repository.insert(record)
 
         return UploadFileResult(
-            url=f"/{storage_path}",
+            url=download_path,
             file_key=file_key,
             bucket=bucket,
             engine=engine_type,
@@ -507,7 +548,7 @@ class MessageService:
 
 
 def get_message_service(db: Session = Depends(get_db)) -> MessageService:
-    return MessageService.from_db(db)
+    return MessageService(MessageRepository(db), IMUserRepository(db), ImFileRepository(db))
 
 
 __all__ = ["MessageService", "get_message_service"]

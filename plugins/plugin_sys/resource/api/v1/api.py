@@ -28,8 +28,7 @@ def module_page(param: ModulePageParam = Depends(), service: ModuleService = Dep
 @router.get("/api/v1/sys/module/detail", summary="获取模块详情")
 @CheckPermission("sys:module:detail")
 def module_detail(id: str = Query(...), service: ModuleService = Depends(get_module_service)):
-    data = service.detail(id)
-    return success(data if data else None)
+    return success(service.detail(id))
 
 
 @router.post("/api/v1/sys/module/create", summary="添加模块")
@@ -78,8 +77,7 @@ def resource_page(param: ResourcePageParam = Depends(), service: ResourceService
 @router.get("/api/v1/sys/resource/detail", summary="获取资源详情")
 @CheckPermission("sys:resource:detail")
 def resource_detail(id: str = Query(...), service: ResourceService = Depends(get_resource_service)):
-    data = service.detail(id)
-    return success(data if data else None)
+    return success(service.detail(id))
 
 
 @router.post("/api/v1/sys/resource/create", summary="添加资源")
@@ -119,4 +117,3 @@ def resource_remove(param: IdsParam, service: ResourceService = Depends(get_reso
 @CheckPermission("sys:resource:tree")
 def resource_tree(service: ResourceService = Depends(get_resource_service)):
     return success(service.tree())
-

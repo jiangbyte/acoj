@@ -1,8 +1,9 @@
-from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
 from sdk.shared.types.datetime_mixin import DateTimeValidatorMixin
-from .models import SysDict
 
 
 class DictVO(DateTimeValidatorMixin, BaseModel):
@@ -23,8 +24,10 @@ class DictVO(DateTimeValidatorMixin, BaseModel):
     updated_by: Optional[str] = None
 
 
-class DictTreeVO(BaseModel):
+class DictTreeVO(DateTimeValidatorMixin, BaseModel):
     """Dict tree node with children"""
+    model_config = ConfigDict(from_attributes=True)
+
     id: Optional[str] = None
     code: Optional[str] = None
     label: Optional[str] = None
@@ -34,7 +37,7 @@ class DictTreeVO(BaseModel):
     parent_id: Optional[str] = None
     status: Optional[str] = None
     sort_code: Optional[int] = 0
-    children: List["DictTreeVO"] = []
+    children: List["DictTreeVO"] = Field(default_factory=list)
 
 
 class DictPageParam(BaseModel):
@@ -54,40 +57,3 @@ class DictListParam(BaseModel):
 class DictTreeParam(BaseModel):
     category: Optional[str] = None
     dict_group: Optional[str] = None
-
-
-def SysDictToDictVO(src: Optional[SysDict]) -> Optional[DictVO]:
-    if src is None:
-        return None
-    return DictVO(
-        id=src.id,
-        code=src.code,
-        label=src.label,
-        value=src.value,
-        color=src.color,
-        category=src.category,
-        parent_id=src.parent_id,
-        status=src.status,
-        sort_code=src.sort_code,
-        created_at=src.created_at,
-        created_by=src.created_by,
-        updated_at=src.updated_at,
-        updated_by=src.updated_by,
-    )
-
-
-def SysDictToDictTreeVO(src: Optional[SysDict]) -> Optional[DictTreeVO]:
-    if src is None:
-        return None
-    return DictTreeVO(
-        id=src.id,
-        code=src.code,
-        label=src.label,
-        value=src.value,
-        color=src.color,
-        category=src.category,
-        parent_id=src.parent_id,
-        status=src.status,
-        sort_code=src.sort_code,
-        children=[],
-    )

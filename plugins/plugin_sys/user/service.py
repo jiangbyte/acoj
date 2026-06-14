@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 from typing import Optional
 
@@ -35,8 +36,11 @@ from .params import (
     BatchImportParam,
     GrantRoleParam,
     GrantUserPermissionParam,
+    PermissionItem,
     RefreshSessionACLParam,
     UpdateAvatarParam,
+    UserExportVO,
+    UserMenuVO,
     UpdatePasswordParam,
     UpdateProfileParam,
     UpdateStatusParam,
@@ -44,6 +48,10 @@ from .params import (
     UserVO,
 )
 from .repository import UserRepository
+
+
+def _actor_user_id(actor: Optional[ActorContext]) -> str:
+    return actor.user_id if actor else ""
 
 
 def _batch_role_ids(db: Session, user_ids: list[str]) -> dict[str, list[str]]:
@@ -58,11 +66,11 @@ def _batch_role_ids(db: Session, user_ids: list[str]) -> dict[str, list[str]]:
     return role_map
 
 
-def _enrich_names(db: Session, vo_list: list[dict]) -> None:
+def _enrich_user_like_names(db: Session, vo_list: list[UserVO | UserExportVO]) -> None:
     if not vo_list:
         return
 
-    position_ids = {vo.get("position_id") for vo in vo_list if vo.get("position_id")}
+    position_ids = {vo.position_id for vo in vo_list if vo.position_id}
     position_name_map: dict[str, str] = {}
     if position_ids:
         rows = db.execute(
@@ -78,59 +86,58 @@ def _enrich_names(db: Session, vo_list: list[dict]) -> None:
     org_paths: dict[str, list[str]] = {}
     group_paths: dict[str, list[str]] = {}
     for vo in vo_list:
-        org_id = vo.get("org_id")
+        org_id = vo.org_id
         if org_id:
             if org_id not in org_paths:
                 org_paths[org_id] = resolve_path_from_map(org_id, org_node_map)
-            vo["org_names"] = org_paths[org_id]
+            vo.org_names = org_paths[org_id]
 
-        group_id = vo.get("group_id")
+        group_id = vo.group_id
         if group_id:
             if group_id not in group_paths:
                 group_paths[group_id] = resolve_path_from_map(group_id, group_node_map)
-            vo["group_names"] = group_paths[group_id]
+            vo.group_names = group_paths[group_id]
 
-        position_id = vo.get("position_id")
+        position_id = vo.position_id
         if position_id:
-            vo["position_name"] = position_name_map.get(position_id)
+            vo.position_name = position_name_map.get(position_id)
 
 
-def _build_menu_tree(resources: list[SysResource]) -> list[dict]:
-    node_map: dict[str, dict] = {}
-    roots: list[dict] = []
+def _build_menu_tree(resources: list[SysResource]) -> list[UserMenuVO]:
+    node_map: dict[str, UserMenuVO] = {}
+    roots: list[UserMenuVO] = []
 
     for resource in resources:
-        node_map[resource.id] = {
-            "id": resource.id,
-            "code": resource.code,
-            "name": resource.name,
-            "category": resource.category,
-            "type": resource.type,
-            "parent_id": resource.parent_id,
-            "route_path": resource.route_path,
-            "component_path": resource.component_path,
-            "redirect_path": resource.redirect_path,
-            "icon": resource.icon,
-            "color": resource.color,
-            "is_visible": resource.is_visible,
-            "is_cache": resource.is_cache,
-            "is_affix": resource.is_affix,
-            "is_breadcrumb": resource.is_breadcrumb,
-            "external_url": resource.external_url,
-            "description": resource.description,
-            "sort_code": resource.sort_code,
-            "status": resource.status,
-            "children": [],
-        }
+        node_map[resource.id] = UserMenuVO(
+            id=resource.id,
+            code=resource.code,
+            name=resource.name,
+            category=resource.category,
+            type=resource.type,
+            parent_id=resource.parent_id,
+            route_path=resource.route_path,
+            component_path=resource.component_path,
+            redirect_path=resource.redirect_path,
+            icon=resource.icon,
+            color=resource.color,
+            is_visible=resource.is_visible,
+            is_cache=resource.is_cache,
+            is_affix=resource.is_affix,
+            is_breadcrumb=resource.is_breadcrumb,
+            external_url=resource.external_url,
+            description=resource.description,
+            sort_code=resource.sort_code,
+            status=resource.status,
+        )
 
     for node in node_map.values():
-        parent_id = node.get("parent_id")
+        parent_id = node.parent_id
         if parent_id and parent_id in node_map:
-            node_map[parent_id]["children"].append(node)
+            node_map[parent_id].children.append(node)
         else:
             roots.append(node)
 
-    roots.sort(key=lambda item: item.get("sort_code", 0) or 0)
+    roots.sort(key=lambda item: item.sort_code or 0)
     return roots
 
 
@@ -144,18 +151,6 @@ async def _hash_password(password: str) -> str:
 def _generate_random_password() -> str:
     value = generate_id()
     return value[:16] if len(value) > 16 else value
-
-
-def user_find_by_id(db: Session, user_id: str) -> Optional[SysUser]:
-    return UserRepository(db).find_by_id(user_id)
-
-
-def user_find_by_username(db: Session, username: str) -> Optional[SysUser]:
-    return UserRepository(db).find_by_username(username)
-
-
-def user_find_by_email(db: Session, email: str) -> Optional[SysUser]:
-    return UserRepository(db).find_by_email(email)
 
 
 def user_to_login_info(entity: Optional[SysUser]) -> Optional[LoginUserInfo]:
@@ -187,24 +182,8 @@ class UserService:
             self.repository = UserRepository(repository_or_db)
         self.db = self.repository.db
 
-    @classmethod
-    def from_db(cls, db: Session) -> "UserService":
-        return cls(UserRepository(db))
-
-    def find_by_id(self, user_id: str) -> Optional[SysUser]:
-        return self.repository.find_by_id(user_id)
-
-    def find_by_username(self, username: str) -> Optional[SysUser]:
-        return self.repository.find_by_username(username)
-
-    def find_by_email(self, email: str) -> Optional[SysUser]:
-        return self.repository.find_by_email(email)
-
-    def to_login_user_info(self, entity: Optional[SysUser]) -> Optional[LoginUserInfo]:
-        return user_to_login_info(entity)
-
     def record_login(self, user_id: str, request: Request) -> None:
-        entity = self.find_by_id(user_id)
+        entity = self.repository.find_by_id(user_id)
         if not entity:
             return
         entity.last_login_at = datetime.now()
@@ -221,12 +200,12 @@ class UserService:
         records = result["records"]
         role_map = _batch_role_ids(self.db, [record.id for record in records])
 
-        vo_list = []
+        vo_list: list[UserVO] = []
         for record in records:
-            data = UserVO.model_validate(record).model_dump()
-            data["role_ids"] = role_map.get(record.id, [])
+            data = UserVO.model_validate(record)
+            data.role_ids = role_map.get(record.id, [])
             vo_list.append(data)
-        _enrich_names(self.db, vo_list)
+        _enrich_user_like_names(self.db, vo_list)
 
         return page_data(
             records=vo_list,
@@ -236,6 +215,7 @@ class UserService:
         )
 
     async def create(self, vo: UserVO, actor: Optional[ActorContext] = None) -> None:
+        actor_user_id = _actor_user_id(actor)
         entity = SysUser(
             id=generate_id(),
             status="ACTIVE",
@@ -266,9 +246,9 @@ class UserService:
         entity.position_id = vo.position_id
         entity.group_id = vo.group_id
 
-        if actor and actor.user_id:
-            entity.created_by = actor.user_id
-            entity.updated_by = actor.user_id
+        if actor_user_id:
+            entity.created_by = actor_user_id
+            entity.updated_by = actor_user_id
 
         self.db.add(entity)
         self.db.flush()
@@ -283,10 +263,11 @@ class UserService:
         if not vo.id:
             raise BusinessException("ID不能为空", 400)
 
-        entity = self.find_by_id(vo.id)
+        entity = self.repository.find_by_id(vo.id)
         if not entity:
             raise BusinessException("数据不存在", 400)
 
+        actor_user_id = _actor_user_id(actor)
         updates: dict = {}
         if vo.username:
             existing = self.db.execute(
@@ -314,8 +295,8 @@ class UserService:
             updates["password"] = await _hash_password(vo.password)
 
         updates["updated_at"] = datetime.now()
-        if actor and actor.user_id:
-            updates["updated_by"] = actor.user_id
+        if actor_user_id:
+            updates["updated_by"] = actor_user_id
 
         self.db.execute(sa_update(SysUser).where(SysUser.id == vo.id).values(**updates))
 
@@ -339,16 +320,16 @@ class UserService:
             self.db.rollback()
             raise
 
-    def detail(self, param: IdParam) -> Optional[dict]:
+    def detail(self, param: IdParam) -> Optional[UserVO]:
         if not param.id:
             return None
-        entity = self.find_by_id(param.id)
+        entity = self.repository.find_by_id(param.id)
         if not entity:
             return None
 
-        data = UserVO.model_validate(entity).model_dump()
-        data["role_ids"] = _batch_role_ids(self.db, [entity.id]).get(entity.id, [])
-        _enrich_names(self.db, [data])
+        data = UserVO.model_validate(entity)
+        data.role_ids = _batch_role_ids(self.db, [entity.id]).get(entity.id, [])
+        _enrich_user_like_names(self.db, [data])
         return data
 
     async def grant_role(self, param: GrantRoleParam) -> None:
@@ -409,19 +390,19 @@ class UserService:
                 seen.add(user_id)
                 await Business.refresh_user_sessions_acl(user_id)
 
-    def get_user_permission_details(self, user_id: str) -> list[dict]:
+    def get_user_permission_details(self, user_id: str) -> list[PermissionItem]:
         if not user_id:
             return []
         rows = self.db.execute(
             select(RelUserPermission).where(RelUserPermission.user_id == user_id)
         ).scalars().all()
         return [
-            {
-                "permission_code": row.permission_code,
-                "scope": row.scope,
-                "custom_scope_group_ids": row.custom_scope_group_ids,
-                "custom_scope_org_ids": row.custom_scope_org_ids,
-            }
+            PermissionItem(
+                permission_code=row.permission_code,
+                scope=row.scope,
+                custom_scope_group_ids=row.custom_scope_group_ids,
+                custom_scope_org_ids=row.custom_scope_org_ids,
+            )
             for row in rows
         ]
 
@@ -434,8 +415,8 @@ class UserService:
             ).scalars().all()
         )
 
-    def get_current_user(self, actor: Optional[ActorContext] = None) -> Optional[dict]:
-        user_id = actor.user_id if actor and actor.user_id else ""
+    def get_current_user(self, actor: Optional[ActorContext] = None) -> Optional[UserVO]:
+        user_id = _actor_user_id(actor)
         if not user_id:
             return None
         return self.detail(IdParam(id=user_id))
@@ -448,8 +429,8 @@ class UserService:
         codes = self.db.execute(select(SysRole.code).where(SysRole.id.in_(role_ids))).scalars().all()
         return SUPER_ADMIN_CODE in codes
 
-    async def get_current_user_menus(self, actor: Optional[ActorContext] = None) -> list[dict]:
-        user_id = actor.user_id if actor and actor.user_id else ""
+    async def get_current_user_menus(self, actor: Optional[ActorContext] = None) -> list[UserMenuVO]:
+        user_id = _actor_user_id(actor)
         if not user_id:
             return []
 
@@ -483,7 +464,7 @@ class UserService:
         return _build_menu_tree(resources)
 
     async def get_current_user_permissions(self, actor: Optional[ActorContext] = None) -> list[str]:
-        user_id = actor.user_id if actor and actor.user_id else ""
+        user_id = _actor_user_id(actor)
         if not user_id:
             return []
 
@@ -512,7 +493,7 @@ class UserService:
         param: UpdateProfileParam,
         actor: Optional[ActorContext] = None,
     ) -> None:
-        user_id = actor.user_id if actor and actor.user_id else ""
+        user_id = _actor_user_id(actor)
         if not user_id:
             raise BusinessException("用户未登录", 401)
 
@@ -532,7 +513,7 @@ class UserService:
         param: UpdateAvatarParam,
         actor: Optional[ActorContext] = None,
     ) -> None:
-        user_id = actor.user_id if actor and actor.user_id else ""
+        user_id = _actor_user_id(actor)
         if not user_id:
             raise BusinessException("用户未登录", 401)
         if not param.avatar:
@@ -540,7 +521,7 @@ class UserService:
 
         from sdk.utils.image_utils import compress_base64_image
 
-        entity = self.find_by_id(user_id)
+        entity = self.repository.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在", 404)
 
@@ -557,23 +538,31 @@ class UserService:
         param: UpdatePasswordParam,
         actor: Optional[ActorContext] = None,
     ) -> None:
-        user_id = actor.user_id if actor and actor.user_id else ""
+        user_id = _actor_user_id(actor)
         if not user_id:
             raise BusinessException("用户未登录", 401)
 
-        entity = self.find_by_id(user_id)
+        entity = self.repository.find_by_id(user_id)
         if not entity:
             raise BusinessException("用户不存在", 404)
         if not entity.password:
             raise BusinessException("未设置密码，无法修改", 400)
 
         current_password = decrypt(param.current_password).encode("utf-8")
-        if not bcrypt.checkpw(current_password, entity.password.encode("utf-8")):
+        if not await asyncio.to_thread(
+            bcrypt.checkpw,
+            current_password,
+            entity.password.encode("utf-8"),
+        ):
             raise BusinessException("当前密码不正确", 400)
 
-        entity.password = bcrypt.hashpw(
-            decrypt(param.new_password).encode("utf-8"),
-            bcrypt.gensalt(),
+        entity.password = (
+            await asyncio.to_thread(
+                lambda: bcrypt.hashpw(
+                    decrypt(param.new_password).encode("utf-8"),
+                    bcrypt.gensalt(),
+                )
+            )
         ).decode("utf-8")
         entity.updated_at = datetime.now()
         self.db.commit()
@@ -635,75 +624,74 @@ class UserService:
                 await Business.sessions().kickout_user(user_id)
         self.db.commit()
 
-    def export(self, param: UserPageParam) -> list[dict]:
+    def export(self, param: UserPageParam) -> list[UserExportVO]:
         rows = self.repository.find_all_by_filters(param)
         role_map = _batch_role_ids(self.db, [row.id for row in rows])
-        data = []
+        data: list[UserExportVO] = []
         for row in rows:
-            item = UserVO.model_validate(row).model_dump()
-            item["role_ids"] = role_map.get(row.id, [])
+            item = UserExportVO.model_validate(row)
+            item.role_ids = role_map.get(row.id, [])
             data.append(item)
-        _enrich_names(self.db, data)
+        _enrich_user_like_names(self.db, data)
         return data
 
 
 def get_user_service(db: Session = Depends(get_db)) -> UserService:
-    return UserService.from_db(db)
+    return UserService(UserRepository(db))
 
 
-class LoginUserApiProvider:
+class LoginUserService:
     def __init__(self, session_factory):
         self._session_factory = session_factory
 
-    async def get_current_login_user_info(self, request) -> Optional[LoginUserInfo]:
+    async def get_current_user(self, request) -> Optional[LoginUserInfo]:
         user_id = await Business.get_login_id(request)
         if not user_id:
             return None
-        return self.get_login_user_info_by_id(user_id)
+        return self.get_user_by_id(user_id)
 
-    def get_login_user_info_by_id(self, user_id: str) -> Optional[LoginUserInfo]:
+    def get_user_by_id(self, user_id: str) -> Optional[LoginUserInfo]:
         db = self._session_factory()
         try:
-            service = UserService.from_db(db)
-            return service.to_login_user_info(service.find_by_id(user_id))
+            return user_to_login_info(UserRepository(db).find_by_id(user_id))
         finally:
             db.close()
 
-    def get_login_user_info_by_username(self, username: str) -> Optional[LoginUserInfo]:
+    def get_user_by_username(self, username: str) -> Optional[LoginUserInfo]:
         db = self._session_factory()
         try:
-            service = UserService.from_db(db)
-            return service.to_login_user_info(service.find_by_username(username))
+            return user_to_login_info(UserRepository(db).find_by_username(username))
         finally:
             db.close()
 
-    def get_login_user_info_by_email(self, email: str) -> Optional[LoginUserInfo]:
+    def get_user_by_email(self, email: str) -> Optional[LoginUserInfo]:
         db = self._session_factory()
         try:
-            service = UserService.from_db(db)
-            return service.to_login_user_info(service.find_by_email(email))
+            return user_to_login_info(UserRepository(db).find_by_email(email))
         finally:
             db.close()
 
     def record_login(self, user_id: str, request: Request) -> None:
         db = self._session_factory()
         try:
-            UserService.from_db(db).record_login(user_id, request)
+            UserService(UserRepository(db)).record_login(user_id, request)
         finally:
             db.close()
 
-    def get_username_by_id(self, user_id: str) -> Optional[str]:
+    def get_username(self, user_id: str) -> Optional[str]:
         db = self._session_factory()
         try:
-            entity = UserService.from_db(db).find_by_id(user_id)
-            return entity.username if entity else None
+            entity = UserRepository(db).find_by_id(user_id)
+            if not entity:
+                return None
+            return entity.username
         finally:
             db.close()
 
     def create_user(self, username: str, hashed_password: str) -> str:
         db = self._session_factory()
         try:
-            existing = UserService.from_db(db).find_by_username(username)
+            existing = UserRepository(db).find_by_username(username)
             if existing:
                 raise BusinessException("用户名已存在")
 

@@ -22,26 +22,10 @@ class PermissionProviderProtocol:
         raise NotImplementedError
 
 
-_permission_provider: PermissionProviderProtocol | None = None
-
-
-def register_permission_provider(provider: PermissionProviderProtocol) -> None:
-    global _permission_provider
-    _permission_provider = provider
-    logger.info("[auth] PermissionProvider registered")
-
-
-def get_permission_provider() -> PermissionProviderProtocol | None:
-    return _permission_provider
-
-
 class DatabasePermissionProvider:
     def __init__(self, session_factory, redis_client_getter=None):
         self._session_factory = session_factory
         self._redis_client_getter = redis_client_getter
-
-    def _open_db(self):
-        return self._session_factory()
 
     async def _all_permission_codes(self) -> list[str]:
         redis_client = self._redis_client_getter() if self._redis_client_getter else None
@@ -65,7 +49,7 @@ class DatabasePermissionProvider:
         from plugins.plugin_sys.role.models import RelRolePermission
         from plugins.plugin_sys.user.models import RelUserPermission, RelUserRole
 
-        db = self._open_db()
+        db = self._session_factory()
         try:
             role_rows = db.scalars(select(RelUserRole.role_id).where(RelUserRole.user_id == login_id)).all()
             roles = await self.get_role_list(login_id, realm_id)
@@ -93,7 +77,7 @@ class DatabasePermissionProvider:
         from plugins.plugin_sys.role.models import SysRole
         from plugins.plugin_sys.user.models import RelUserRole
 
-        db = self._open_db()
+        db = self._session_factory()
         try:
             query = (
                 select(SysRole.code)
@@ -124,7 +108,7 @@ class DatabasePermissionProvider:
                 for code in await self._all_permission_codes()
             }
 
-        db = self._open_db()
+        db = self._session_factory()
         try:
             role_ids = db.scalars(select(RelUserRole.role_id).where(RelUserRole.user_id == login_id)).all()
             result: dict[str, dict[str, Any]] = {}

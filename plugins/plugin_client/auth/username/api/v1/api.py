@@ -22,8 +22,7 @@ router = APIRouter()
     response_model=Result[UsernameLoginResult],
 )
 async def login(request: Request, param: UsernameLoginParam):
-    result = await do_login(param, request)
-    return success(result.model_dump())
+    return success(await do_login(param, request))
 
 
 @router.post(
@@ -34,8 +33,7 @@ async def login(request: Request, param: UsernameLoginParam):
 @SysLog("注册")
 @NoRepeat(interval=5000)
 async def register(request: Request, param: UsernameRegisterParam):
-    result = await do_register(param, request=request)
-    return success(result.model_dump())
+    return success(await do_register(param, request=request))
 
 
 @router.post(
@@ -45,5 +43,4 @@ async def register(request: Request, param: UsernameRegisterParam):
 )
 @CheckLogin(realm_id=RealmID.CONSUMER)
 async def logout(request: Request):
-    result = await do_logout(request)
-    return success(result.model_dump())
+    return success(await do_logout(request))

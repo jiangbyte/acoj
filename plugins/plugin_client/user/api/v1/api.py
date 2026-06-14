@@ -3,7 +3,7 @@ Client user API — uses Perm() and standalone service functions.
 Mirrors hei-gin plugins/plugin-client/user/api/v1/api.go
 """
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from sdk.auth.enums import RealmID
 from sdk.web.result import Result, PageData, success
 from sdk.shared.di import ActorContext, get_current_client_actor
@@ -113,10 +113,10 @@ def update_avatar(
 @SysLog("C端用户修改密码")
 @CheckLogin(realm_id=RealmID.CONSUMER)
 @NoRepeat(interval=3000)
-def update_password(
+async def update_password(
     param: UpdatePasswordParam,
     service: ClientUserService = Depends(get_client_user_service),
     actor: ActorContext = Depends(get_current_client_actor),
 ):
-    service.update_password(param, actor)
+    await service.update_password(param, actor)
     return success()

@@ -7,12 +7,14 @@ from fastapi import Request, HTTPException, status
 
 from sdk.config.settings import settings
 from sdk.infra.db.redis import get_client
+from sdk.auth.provider import PermissionProviderProtocol
 
 
 class BaseAuthTool:
     _expire: int = settings.token.expire_seconds
     _token_name: str = settings.token.token_name
     _request_var: ContextVar[Optional[Request]] = ContextVar('base_auth_request', default=None)
+    _permission_provider: PermissionProviderProtocol | None = None
 
     # Subclasses must override these
     REALM_ID = None
@@ -56,9 +58,7 @@ class BaseAuthTool:
     async def _load_acl(cls, user_id: str) -> Dict[str, Any]:
         if not user_id:
             return cls._default_acl()
-        from sdk.auth.provider import get_permission_provider
-
-        provider = get_permission_provider()
+        provider = cls._permission_provider
         if provider is None:
             return cls._default_acl()
 
@@ -72,6 +72,10 @@ class BaseAuthTool:
             "roles": roles,
             "scope_map": scope_map or {},
         }
+
+    @classmethod
+    def set_permission_provider(cls, provider: PermissionProviderProtocol | None) -> None:
+        cls._permission_provider = provider
 
     @classmethod
     def _get_session_index_key(cls) -> str:
@@ -408,7 +412,13 @@ class BaseAuthTool:
 
             token_count = len(live_tokens)
             ttl = session_ttls.get(key, -1)
-            if not token_count or not first_payload or earliest_created_at is None or latest_created_at is None or ttl <= 0:
+            if (
+                not token_count
+                or not first_payload
+                or earliest_created_at is None
+                or latest_created_at is None
+                or ttl <= 0
+            ):
                 await cls._remove_session_indexes(user_id)
                 continue
 
@@ -561,11 +571,11 @@ class BaseAuthTool:
             cls._token_name = token_name
 
     @classmethod
-    def getRealmID(cls) -> str:
+    def get_realm_id(cls) -> str:
         return str(cls.REALM_ID)
 
     @classmethod
-    def getTokenName(cls) -> str:
+    def get_token_name(cls) -> str:
         return cls._token_name
 
     @classmethod
@@ -581,13 +591,13 @@ class BaseAuthTool:
         return f"{cls.SESSION_PREFIX}{user_id}"
 
     @classmethod
-    async def setTokenValue(cls, token_value: str, request: Request = None):
+    async def set_token_value(cls, token_value: str, request: Request = None):
         req = request or cls._request_var.get()
         if req:
             req.state.token_value = token_value
 
     @classmethod
-    async def getTokenValue(cls, request: Request = None) -> Optional[str]:
+    async def get_token_value(cls, request: Request = None) -> Optional[str]:
         req = request or cls._request_var.get()
         if not req:
             return None
@@ -621,7 +631,7 @@ class BaseAuthTool:
         existing_tokens = [cls._decode_redis_value(v) for v in await redis_client.smembers(session_key)]
         stale_tokens: list[str] = []
         for existing_token in existing_tokens:
-            claims, ok = await cls.getClaimsByToken(existing_token)
+            claims, ok = await cls.get_claims_by_token(existing_token)
             if not ok or not claims:
                 stale_tokens.append(existing_token)
         if stale_tokens:
@@ -638,11 +648,11 @@ class BaseAuthTool:
             await cls.kickout(login_id)
             return
 
-        token = await cls.getTokenValue(request)
+        token = await cls.get_token_value(request)
         if not token:
             return
 
-        claims, ok = await cls.getClaimsByToken(token)
+        claims, ok = await cls.get_claims_by_token(token)
         user_id = ""
         if ok and claims:
             user_id = str(claims.get("user_id") or "")
@@ -694,45 +704,49 @@ class BaseAuthTool:
         await cls._refresh_session_indexes(user_id)
 
     @classmethod
-    async def isLogin(cls, request: Request = None) -> bool:
+    async def is_login(cls, request: Request = None) -> bool:
         try:
-            login_id = await cls.getLoginIdDefaultNull(request)
+            login_id = await cls.get_login_id_default_null(request)
             return bool(login_id)
         except Exception:
             return False
 
     @classmethod
-    async def checkLogin(cls, request: Request = None):
-        if not await cls.isLogin(request):
+    async def check_login(cls, request: Request = None):
+        if not await cls.is_login(request):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未授权/未登录")
 
     @classmethod
-    async def getLoginIdDefaultNull(cls, request: Request = None) -> Optional[str]:
-        token = await cls.getTokenValue(request)
+    async def get_login_id_default_null(cls, request: Request = None) -> Optional[str]:
+        token = await cls.get_token_value(request)
         if not token:
             return None
-        claims, ok = await cls.decodeClaims(request, token)
+        claims, ok = await cls.decode_claims(request, token)
         if ok:
             return claims.get("user_id")
         return None
 
     @classmethod
-    async def getLoginIdByToken(cls, token_value: str) -> Optional[str]:
+    async def get_login_id_by_token(cls, token_value: str) -> Optional[str]:
         if not token_value:
             return None
-        claims, ok = await cls.getClaimsByToken(token_value)
+        claims, ok = await cls.get_claims_by_token(token_value)
         if ok:
             return claims.get("user_id")
         return None
 
     @classmethod
-    async def decodeClaims(cls, request: Request = None, token: str = "") -> Tuple[Optional[Dict[str, Any]], bool]:
+    async def decode_claims(
+        cls,
+        request: Request = None,
+        token: str = "",
+    ) -> Tuple[Optional[Dict[str, Any]], bool]:
         if not token:
             return None, False
         return await cls._get_claims_for_request(request, token)
 
     @classmethod
-    async def getClaimsByToken(cls, token: str) -> Tuple[Optional[Dict[str, Any]], bool]:
+    async def get_claims_by_token(cls, token: str) -> Tuple[Optional[Dict[str, Any]], bool]:
         if not token:
             return None, False
         return await cls._get_claims_with_context(token)
@@ -749,57 +763,55 @@ class BaseAuthTool:
         if token_data:
             try:
                 return cls._normalize_claims(json.loads(token_data))
-            except:
+            except Exception:
                 return None
         return None
 
     @classmethod
-    async def getExtra(cls, key: str, request: Request = None) -> Optional[Any]:
+    async def get_extra(cls, key: str, request: Request = None) -> Optional[Any]:
         claims, ok = await cls._current_claims(request)
         if ok:
             return claims.get("extra", {}).get(key)
         return None
 
     @classmethod
-    async def getSession(cls, request: Request = None) -> Optional[Dict]:
+    async def get_session(cls, request: Request = None) -> Optional[Dict]:
         claims, ok = await cls._current_claims(request)
         if not ok:
             return None
         return cls._claims_to_map(claims)
 
     @classmethod
-    async def getTokenTimeout(cls, request: Request = None) -> int:
-        token = await cls.getTokenValue(request)
+    async def get_token_timeout(cls, request: Request = None) -> int:
+        token = await cls.get_token_value(request)
         if not token:
             return -1
-
         redis_client = cls._get_redis()
         token_key = cls._get_token_key(token)
         ttl = await redis_client.ttl(token_key)
         return ttl if ttl > 0 else -1
 
     @classmethod
-    async def getSessionTimeout(cls, request: Request = None) -> int:
-        login_id = await cls.getLoginIdDefaultNull(request)
+    async def get_session_timeout(cls, request: Request = None) -> int:
+        login_id = await cls.get_login_id_default_null(request)
         if not login_id:
             return -1
-
         redis_client = cls._get_redis()
         session_key = cls._get_session_key(login_id)
         ttl = await redis_client.ttl(session_key)
         return ttl if ttl > 0 else -1
 
     @classmethod
-    async def getLoginId(cls, request: Request = None) -> Optional[str]:
-        return await cls.getLoginIdDefaultNull(request)
+    async def get_login_id(cls, request: Request = None) -> Optional[str]:
+        return await cls.get_login_id_default_null(request)
 
     @classmethod
-    async def getTokenValueByLoginID(cls, login_id: Union[str, int]) -> str:
-        tokens = await cls.getTokenValuesByLoginID(login_id)
+    async def get_token_value_by_login_id(cls, login_id: Union[str, int]) -> str:
+        tokens = await cls.get_token_values_by_login_id(login_id)
         return tokens[0] if tokens else ""
 
     @classmethod
-    async def getTokenValuesByLoginID(cls, login_id: Union[str, int]) -> List[str]:
+    async def get_token_values_by_login_id(cls, login_id: Union[str, int]) -> List[str]:
         redis_client = cls._get_redis()
         if not redis_client:
             return []
@@ -807,22 +819,21 @@ class BaseAuthTool:
         return [cls._decode_redis_value(v) for v in await redis_client.smembers(session_key)]
 
     @classmethod
-    async def renewTimeout(cls, timeout: int = None, request: Request = None):
-        token = await cls.getTokenValue(request)
+    async def renew_timeout(cls, timeout: int = None, request: Request = None):
+        token = await cls.get_token_value(request)
         if not token:
             return
 
         new_timeout = timeout or cls._expire
         redis_client = cls._get_redis()
         token_key = cls._get_token_key(token)
-
         await redis_client.expire(token_key, new_timeout)
 
-        login_id = await cls.getLoginIdByToken(token)
+        login_id = await cls.get_login_id_by_token(token)
         if login_id:
             session_key = cls._get_session_key(login_id)
             await redis_client.expire(session_key, new_timeout)
-            token_data, _ = await cls.getClaimsByToken(token)
+            token_data, _ = await cls.get_claims_by_token(token)
             created_at = datetime.now(timezone.utc)
             if token_data and token_data.get("created_at"):
                 try:
@@ -845,50 +856,55 @@ class BaseAuthTool:
         await redis_client.setex(disable_key, time, "1")
 
     @classmethod
-    async def isDisable(cls, login_id: Union[str, int]) -> bool:
+    async def is_disable(cls, login_id: Union[str, int]) -> bool:
         redis_client = cls._get_redis()
         disable_key = f"{cls.DISABLE_KEY_PREFIX}{login_id}"
         return await redis_client.exists(disable_key) > 0
 
     @classmethod
-    async def checkDisable(cls, login_id: Union[str, int]):
-        if await cls.isDisable(login_id):
+    async def check_disable(cls, login_id: Union[str, int]):
+        if await cls.is_disable(login_id):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="账号已被禁用")
 
     @classmethod
-    async def getDisableTime(cls, login_id: Union[str, int]) -> int:
+    async def get_disable_time(cls, login_id: Union[str, int]) -> int:
         redis_client = cls._get_redis()
         disable_key = f"{cls.DISABLE_KEY_PREFIX}{login_id}"
         ttl = await redis_client.ttl(disable_key)
         return ttl if ttl > 0 else -1
 
     @classmethod
-    async def untieDisable(cls, login_id: Union[str, int]):
+    async def untie_disable(cls, login_id: Union[str, int]):
         redis_client = cls._get_redis()
         disable_key = f"{cls.DISABLE_KEY_PREFIX}{login_id}"
         await redis_client.delete(disable_key)
 
     @classmethod
-    async def getClaims(cls, request: Request = None) -> Tuple[Optional[Dict[str, Any]], bool]:
+    async def get_claims(cls, request: Request = None) -> Tuple[Optional[Dict[str, Any]], bool]:
         return await cls._current_claims(request)
 
     @classmethod
     async def _current_claims(cls, request: Request = None) -> Tuple[Optional[Dict[str, Any]], bool]:
-        token = await cls.getTokenValue(request)
+        token = await cls.get_token_value(request)
         if not token:
             return None, False
-        return await cls.decodeClaims(request, token)
+        return await cls.decode_claims(request, token)
 
     @classmethod
-    async def _get_claims_for_request(cls, request: Request = None, token: str = "") -> Tuple[Optional[Dict[str, Any]], bool]:
+    async def _get_claims_for_request(
+        cls,
+        request: Request = None,
+        token: str = "",
+    ) -> Tuple[Optional[Dict[str, Any]], bool]:
         if request is None:
             return await cls._get_claims_with_context(token)
         cache_key = f"_auth_claims:{cls.REALM_ID}:{token}"
-        cached = request.state.__dict__.get(cache_key)
+        state_cache = getattr(request.state, "_state", {})
+        cached = state_cache.get(cache_key)
         if cached is not None:
             return cached, bool(cached)
         claims, ok = await cls._get_claims_with_context(token)
-        request.state.__dict__[cache_key] = claims if ok else None
+        state_cache[cache_key] = claims if ok else None
         return claims, ok
 
     @classmethod
@@ -901,7 +917,7 @@ class BaseAuthTool:
         return data, True
 
     @classmethod
-    async def refreshUserSessionsACL(cls, user_id: str) -> None:
+    async def refresh_user_sessions_acl(cls, user_id: str) -> None:
         if not user_id:
             return
         redis_client = cls._get_redis()

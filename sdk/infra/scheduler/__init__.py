@@ -4,9 +4,6 @@ Scheduler module — mirrors hei-gin's ``sdk/scheduler/``.
 Provides cron-based background task scheduling that integrates with
 the plugin lifecycle (auto-starts on ``on_start()``, auto-stops on ``on_stop()``).
 
-Uses ``SafeCall`` for panic-safe task execution (mirrors hei-gin's
-``taskWrapper`` with panic recovery).
-
 Usage::
 
     from sdk.infra.scheduler import register_task, register_interval
@@ -21,9 +18,9 @@ import asyncio
 import logging
 import threading
 import time
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
-from sdk.web.middleware import SafeCall
+from sdk.web.exception import BusinessException
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +104,7 @@ def start() -> None:
 
     Mirrors hei-gin's ``scheduler.Start()``.
     """
-    global _running, _thread, _stop_event
+    global _running, _thread
 
     if _running:
         return
@@ -138,7 +135,7 @@ def stop() -> None:
 
 
 def _run_loop() -> None:
-    """Main scheduler loop — runs each task at its interval with SafeCall."""
+    """Main scheduler loop — runs each task at its interval with local error handling."""
     if not _tasks:
         return
 
@@ -151,11 +148,16 @@ def _run_loop() -> None:
             if now - last_run[task_id] >= task.interval_seconds:
                 last_run[task_id] = now
 
-                # SafeCall wraps the task with panic recovery
-                err = SafeCall(task.fn)
-                if err:
-                    logger.error("[Scheduler] Task %s failed: %s", task.name, err)
-                elif asyncio.iscoroutine(err):
+                try:
+                    result = task.fn()
+                except BusinessException as exc:
+                    logger.error("[Scheduler] Task %s failed: %s", task.name, exc.message)
+                    continue
+                except Exception:
+                    logger.exception("[Scheduler] Task %s crashed", task.name)
+                    continue
+
+                if asyncio.iscoroutine(result):
                     logger.warning(
                         "[Scheduler] Task %s returned coroutine — "
                         "scheduled tasks must be sync functions", task.name,

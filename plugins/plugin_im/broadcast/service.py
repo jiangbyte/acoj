@@ -10,12 +10,11 @@ from sqlalchemy.orm import Session
 
 from sdk.infra.db import get_db
 from sdk.utils import generate_id
-from plugins.plugin_im import ws as im_ws
-from plugins.plugin_im.ws import Message as WSMessage
+from plugins.plugin_im.ws import Message as WSMessage, get_global_cross_hub
 from plugins.plugin_im.ws.tasks import schedule as schedule_ws_task
 
 from plugins.plugin_im.model.broadcast import Broadcast, BroadcastRead
-from .params import BroadcastToBroadcastVO, BroadcastVO, SendBroadcastParam
+from .params import BroadcastVO, SendBroadcastParam
 from .repository import BroadcastRepository
 
 
@@ -28,10 +27,6 @@ def _fmt_dt(dt: Optional[datetime]) -> str:
 class BroadcastService:
     def __init__(self, repository: BroadcastRepository):
         self.repository = repository
-
-    @classmethod
-    def from_db(cls, db: Session) -> "BroadcastService":
-        return cls(BroadcastRepository(db))
 
     def send(self, sender_id: str, param: SendBroadcastParam) -> None:
         scope = param.scope or "ALL"
@@ -55,16 +50,17 @@ class BroadcastService:
             "action": "broadcast",
         }
         ws_msg = WSMessage(type="broadcast", payload=payload)
+        cross_hub = get_global_cross_hub()
 
         if scope == "ALL":
-            if im_ws.GlobalCrossHub:
-                schedule_ws_task(im_ws.GlobalCrossHub.broadcast_all(ws_msg))
+            if cross_hub:
+                schedule_ws_task(cross_hub.broadcast_all(ws_msg))
         elif scope == "BUSINESS":
-            if im_ws.GlobalCrossHub:
-                schedule_ws_task(im_ws.GlobalCrossHub.broadcast_business(ws_msg))
+            if cross_hub:
+                schedule_ws_task(cross_hub.broadcast_business(ws_msg))
         elif scope == "CONSUMER":
-            if im_ws.GlobalCrossHub:
-                schedule_ws_task(im_ws.GlobalCrossHub.broadcast_consumers(ws_msg))
+            if cross_hub:
+                schedule_ws_task(cross_hub.broadcast_consumers(ws_msg))
 
     def list(self, cursor: str = "", size: int = 20) -> tuple[list[BroadcastVO], bool]:
         if size < 1:
@@ -83,7 +79,7 @@ class BroadcastService:
         has_more = len(records) > size
         if has_more:
             records = records[:size]
-        return [BroadcastToBroadcastVO(record) for record in records], has_more
+        return [BroadcastVO.model_validate(record) for record in records], has_more
 
     def unread_list(self, user_id: str, user_type: str) -> tuple[list[BroadcastVO], bool]:
         records = self.repository.latest(50)
@@ -92,7 +88,7 @@ class BroadcastService:
 
         results = []
         for record in records:
-            vo = BroadcastToBroadcastVO(record)
+            vo = BroadcastVO.model_validate(record)
             is_read = record.id in read_map
             vo.read = is_read
             read_at = read_map.get(record.id)
@@ -121,8 +117,8 @@ class BroadcastService:
         entity = self.repository.find_by_id(broadcast_id)
         if not entity:
             return None
-        return BroadcastToBroadcastVO(entity)
+        return BroadcastVO.model_validate(entity)
 
 
 def get_broadcast_service(db: Session = Depends(get_db)) -> BroadcastService:
-    return BroadcastService.from_db(db)
+    return BroadcastService(BroadcastRepository(db))

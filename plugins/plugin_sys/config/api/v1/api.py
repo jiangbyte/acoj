@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 from sdk.shared.di import ActorContext, get_current_actor
 from sdk.web.result import success
 from sdk.shared.types import IdsParam
@@ -12,13 +12,13 @@ router = APIRouter()
 
 @router.get("/api/v1/sys/config/page", summary="获取配置分页")
 @CheckPermission("sys:config:page")
-def page(request: Request, param: ConfigPageParam = Depends(), service: ConfigService = Depends(get_config_service)):
+def page(param: ConfigPageParam = Depends(), service: ConfigService = Depends(get_config_service)):
     return success(service.page(param))
 
 
 @router.get("/api/v1/sys/config/list-by-category", summary="根据分类获取配置列表")
 @CheckPermission("sys:config:list")
-def list_by_category(request: Request, param: ConfigListParam = Depends(), service: ConfigService = Depends(get_config_service)):
+def list_by_category(param: ConfigListParam = Depends(), service: ConfigService = Depends(get_config_service)):
     return success(service.list_by_category(param.category))
 
 
@@ -27,7 +27,6 @@ def list_by_category(request: Request, param: ConfigListParam = Depends(), servi
 @CheckPermission("sys:config:create")
 @NoRepeat(interval=3000)
 def create(
-    request: Request,
     vo: ConfigVO,
     actor: ActorContext = Depends(get_current_actor),
     service: ConfigService = Depends(get_config_service),
@@ -40,7 +39,6 @@ def create(
 @SysLog("编辑配置")
 @CheckPermission("sys:config:modify")
 def modify(
-    request: Request,
     vo: ConfigVO,
     actor: ActorContext = Depends(get_current_actor),
     service: ConfigService = Depends(get_config_service),
@@ -52,16 +50,15 @@ def modify(
 @router.post("/api/v1/sys/config/remove", summary="删除配置")
 @SysLog("删除配置")
 @CheckPermission("sys:config:remove")
-def remove(request: Request, param: IdsParam, service: ConfigService = Depends(get_config_service)):
+def remove(param: IdsParam, service: ConfigService = Depends(get_config_service)):
     service.remove(param.ids)
     return success()
 
 
 @router.get("/api/v1/sys/config/detail", summary="获取配置详情")
 @CheckPermission("sys:config:detail")
-def detail(request: Request, id: str = Query(...), service: ConfigService = Depends(get_config_service)):
-    data = service.detail(id)
-    return success(data if data else None)
+def detail(id: str = Query(...), service: ConfigService = Depends(get_config_service)):
+    return success(service.detail(id))
 
 
 @router.post("/api/v1/sys/config/edit-batch", summary="批量编辑配置")
@@ -69,7 +66,6 @@ def detail(request: Request, id: str = Query(...), service: ConfigService = Depe
 @CheckPermission("sys:config:edit")
 @NoRepeat(interval=3000)
 def edit_batch(
-    request: Request,
     param: ConfigBatchEditParam,
     actor: ActorContext = Depends(get_current_actor),
     service: ConfigService = Depends(get_config_service),
@@ -83,7 +79,6 @@ def edit_batch(
 @CheckPermission("sys:config:edit")
 @NoRepeat(interval=3000)
 def edit_by_category(
-    request: Request,
     param: ConfigCategoryEditParam,
     actor: ActorContext = Depends(get_current_actor),
     service: ConfigService = Depends(get_config_service),

@@ -1,5 +1,4 @@
 from typing import List
-from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, and_, text
 from plugins.plugin_sys.shared import USER_STATUS_ACTIVE
@@ -10,6 +9,7 @@ from plugins.plugin_sys.config.models import SysConfig
 from plugins.plugin_sys.notice.models import SysNotice
 from plugins.plugin_client.user.models import ClientUser
 from plugins.plugin_sys.log.models import SysLog
+from .params import CategoryDistribution, OrgUserDistribution
 
 
 class AnalyzeRepository:
@@ -113,18 +113,24 @@ class AnalyzeRepository:
         ).fetchall()
         return [{"month": row[0], "count": row[1]} for row in rows]
 
-    def org_user_distribution_with_names(self) -> List[dict]:
+    def org_user_distribution_with_names(self) -> List[OrgUserDistribution]:
         stmt = (
             select(SysOrg.name, func.count(SysUser.id).label("count"))
             .outerjoin(SysUser, and_(SysUser.org_id == SysOrg.id))
             .group_by(SysOrg.id, SysOrg.name)
             .order_by(func.count(SysUser.id).desc())
         )
-        return [{"name": row[0] or "未分配", "count": row[1]} for row in self.db.execute(stmt).all()]
+        return [
+            OrgUserDistribution(name=row[0] or "未分配", count=row[1])
+            for row in self.db.execute(stmt).all()
+        ]
 
-    def role_category_distribution_with_counts(self) -> List[dict]:
+    def role_category_distribution_with_counts(self) -> List[CategoryDistribution]:
         stmt = select(SysRole.category, func.count(SysRole.id).label("count")).group_by(SysRole.category)
-        return [{"category": row[0], "count": row[1]} for row in self.db.execute(stmt).all()]
+        return [
+            CategoryDistribution(category=row[0], count=row[1])
+            for row in self.db.execute(stmt).all()
+        ]
 
     def login_stats(self) -> dict:
         total = self.db.execute(

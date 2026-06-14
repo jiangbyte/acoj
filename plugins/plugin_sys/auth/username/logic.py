@@ -1,24 +1,28 @@
 import asyncio
 import bcrypt
 from fastapi import Request
+from sdk.infra.db import SessionLocal
 from plugins.plugin_sys.shared import USER_STATUS_ACTIVE, USER_STATUS_INACTIVE, USER_STATUS_LOCKED
+from plugins.plugin_sys.user.service import LoginUserService
 from sdk.auth import Business
+from sdk.infra.concurrency import run_blocking
 from sdk.web.exception import BusinessException
 from sdk.utils import decrypt
 from sdk.utils.user_agent_utils import get_browser
 from sdk.captcha import b_captcha
 from sdk.log import record_auth_log
-from .params import UsernameLoginParam, UsernameLoginResult, UsernameRegisterParam, UsernameRegisterResult, UsernameLogoutResult
+from .params import (
+    UsernameLoginParam,
+    UsernameLoginResult,
+    UsernameRegisterParam,
+    UsernameRegisterResult,
+    UsernameLogoutResult,
+)
 import logging
 
 logger = logging.getLogger(__name__)
 
-_login_user_api = None
-
-
-def init_auth(login_user_api):
-    global _login_user_api
-    _login_user_api = login_user_api
+login_user_service = LoginUserService(SessionLocal)
 
 
 async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLoginResult:
@@ -27,7 +31,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
     except Exception as e:
         raise BusinessException(str(e))
 
-    user_info = _login_user_api.get_login_user_info_by_username(param.username)
+    user_info = await run_blocking(login_user_service.get_user_by_username, param.username)
 
     try:
         if not user_info:
@@ -46,7 +50,11 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
 
         try:
             raw_password = decrypt(param.password)
-            if not await asyncio.to_thread(bcrypt.checkpw, raw_password.encode('utf-8'), user_info.password.encode('utf-8')):
+            if not await asyncio.to_thread(
+                bcrypt.checkpw,
+                raw_password.encode("utf-8"),
+                user_info.password.encode("utf-8"),
+            ):
                 logger.warning("Password verification failed")
                 raise BusinessException("用户名或密码错误")
         except BusinessException:
@@ -68,7 +76,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         token = await Business.login(request, user_info.id, extra)
 
         try:
-            _login_user_api.record_login(user_info.id, request)
+            await run_blocking(login_user_service.record_login, user_info.id, request)
         except Exception as e:
             logger.warning(f"Failed to record login info: {e}")
 
@@ -99,7 +107,7 @@ async def do_register(param: UsernameRegisterParam, request: Request = None) -> 
         await asyncio.to_thread(lambda: bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()))
     ).decode('utf-8')
 
-    _login_user_api.create_user(param.username, hashed_password)
+    await run_blocking(login_user_service.create_user, param.username, hashed_password)
 
     if request:
         record_auth_log(request, "注册", "REGISTER", op_user=param.username)
@@ -112,7 +120,7 @@ async def do_logout(request: Request) -> UsernameLogoutResult:
     try:
         user_id = await Business.get_login_id(request)
         if user_id:
-            op_user = _login_user_api.get_username_by_id(user_id)
+            op_user = await run_blocking(login_user_service.get_username, user_id)
             record_auth_log(request, "登出", "LOGOUT", op_user=op_user)
     except Exception as e:
         logger.warning(f"Failed to record logout log: {e}")

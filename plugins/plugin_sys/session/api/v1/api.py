@@ -2,7 +2,15 @@ from typing import List
 from fastapi import APIRouter, Depends, Query
 from sdk.web.result import Result, PageData, success
 from sdk.auth.decorator import CheckPermission
-from ...params import SessionAnalysisResult, SessionPageResult, SessionPageParam, SessionExitParam, SessionExitTokenParam, SessionTokenResult, SessionChartData
+from ...params import (
+    SessionAnalysisResult,
+    SessionChartData,
+    SessionExitParam,
+    SessionExitTokenParam,
+    SessionPageParam,
+    SessionPageResult,
+    SessionTokenResult,
+)
 from ...service import SessionService, get_session_service
 
 router = APIRouter()
@@ -31,13 +39,7 @@ async def page(
     param: SessionPageParam = Depends(),
     service: SessionService = Depends(get_session_service),
 ):
-    result = await service.page(param)
-    return success({
-        "records": result["records"],
-        "total": result["total"],
-        "page": param.current,
-        "size": param.size,
-    })
+    return success(await service.page(param))
 
 
 @router.post(

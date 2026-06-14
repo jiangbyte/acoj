@@ -120,14 +120,20 @@ class Hub:
 
     async def send_to_users(self, user_ids: list[str], msg: Message) -> None:
         user_set = set(user_ids)
-        await self._send_many([c for c in self._clients.values() if c.user_type == "BUSINESS" and c.user_id in user_set], msg)
+        await self._send_many(
+            [c for c in self._clients.values() if c.user_type == "BUSINESS" and c.user_id in user_set],
+            msg,
+        )
 
     async def send_to_consumer(self, user_id: str, msg: Message) -> None:
         await self._send_many(self._clients_for_user("CONSUMER", user_id), msg)
 
     async def send_to_consumers(self, user_ids: list[str], msg: Message) -> None:
         user_set = set(user_ids)
-        await self._send_many([c for c in self._clients.values() if c.user_type == "CONSUMER" and c.user_id in user_set], msg)
+        await self._send_many(
+            [c for c in self._clients.values() if c.user_type == "CONSUMER" and c.user_id in user_set],
+            msg,
+        )
 
     async def broadcast_all(self, msg: Message) -> None:
         await self._send_many(list(self._clients.values()), msg)
@@ -159,7 +165,7 @@ class Hub:
                 count = self.online_count()
                 await self.broadcast_all(Message(
                     type=MsgOnlineCount,
-                    payload=OnlineCountPayload(count=count).__dict__,
+                    payload=OnlineCountPayload(count=count).model_dump(),
                 ))
             except Exception:
                 if self._running:
@@ -206,3 +212,12 @@ class Hub:
 
 GlobalHub = Hub()
 GlobalCrossHub = None
+
+
+def get_global_cross_hub():
+    return GlobalCrossHub
+
+
+def set_global_cross_hub(hub) -> None:
+    global GlobalCrossHub
+    GlobalCrossHub = hub
