@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 
-from sdk.auth import ConsumerID, get_current_login_id
+from sdk.auth import BusinessID, ConsumerID, get_current_login_id
 from sdk.auth.decorator import CheckLogin, CheckPermission
 from sdk.web.result import success, failure
 from sdk.shared.types import IdsParam
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/v1/sys/file", tags=["Sys File"])
 
 @router.post("/upload", summary="上传文件")
 @CheckPermission("sys:file:upload")
-@CheckLogin
+@CheckLogin(realm_id=BusinessID)
 async def upload_handler(
     request: Request,
     file: UploadFile = File(...),
@@ -69,7 +69,7 @@ async def download_handler(request: Request, id: str, service: FileService = Dep
 
 @router.post("/remove", summary="删除文件记录（保留存储文件）")
 @CheckPermission("sys:file:remove")
-@CheckLogin
+@CheckLogin(realm_id=BusinessID)
 async def remove_handler(p: IdsParam, service: FileService = Depends(get_file_service)):
     await service.remove(p.ids)
     return success()
@@ -77,7 +77,7 @@ async def remove_handler(p: IdsParam, service: FileService = Depends(get_file_se
 
 @router.post("/remove-absolute", summary="删除文件（含存储文件）")
 @CheckPermission("sys:file:remove-absolute")
-@CheckLogin
+@CheckLogin(realm_id=BusinessID)
 async def remove_absolute_handler(p: IdsParam, service: FileService = Depends(get_file_service)):
     await service.remove_absolute(p.ids)
     return success()
@@ -85,7 +85,7 @@ async def remove_absolute_handler(p: IdsParam, service: FileService = Depends(ge
 
 @router.post("/upload/init", summary="初始化分片上传")
 @CheckPermission("sys:file:upload")
-@CheckLogin
+@CheckLogin(realm_id=BusinessID)
 def chunk_init_handler(p: ChunkUploadInitParam, service: FileService = Depends(get_file_service)):
     result = service.init_chunk_upload(p)
     return success(result)
@@ -93,7 +93,7 @@ def chunk_init_handler(p: ChunkUploadInitParam, service: FileService = Depends(g
 
 @router.post("/upload/chunk", summary="上传分片")
 @CheckPermission("sys:file:upload")
-@CheckLogin
+@CheckLogin(realm_id=BusinessID)
 async def chunk_upload_handler(
     file: UploadFile = File(...),
     upload_id: str = Form(...),
@@ -120,7 +120,7 @@ async def chunk_upload_handler(
 
 @router.post("/upload/complete", summary="完成分片上传")
 @CheckPermission("sys:file:upload")
-@CheckLogin
+@CheckLogin(realm_id=BusinessID)
 async def chunk_complete_handler(p: ChunkCompleteParam, service: FileService = Depends(get_file_service)):
     result = await service.complete_chunk_upload(p)
     return success(result)
@@ -128,7 +128,7 @@ async def chunk_complete_handler(p: ChunkCompleteParam, service: FileService = D
 
 @router.post("/upload/abort", summary="中止分片上传")
 @CheckPermission("sys:file:upload")
-@CheckLogin
+@CheckLogin(realm_id=BusinessID)
 def chunk_abort_handler(p: ChunkAbortParam, service: FileService = Depends(get_file_service)):
     service.abort_chunk_upload(p)
     return success()

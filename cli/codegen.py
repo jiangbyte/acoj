@@ -176,7 +176,7 @@ def cmd_add_module(plugin_name: str, module_name: str) -> None:
 def create_plugin_files(target: Path, plugin: PluginNames, module_info: ModuleNames) -> list[Path]:
     files = {
         "__init__.py": plugin_init_template(plugin),
-        "plugin.py": plugin_py_template(plugin),
+        "plugin.py": plugin_py_template(plugin, module_info),
         "assembly.py": assembly_template(plugin, module_info),
         "migrate.py": migrate_template(plugin, module_info),
     }
@@ -219,11 +219,26 @@ def update_plugin_assembly(plugin_dir: Path, plugin: PluginNames, module_info: M
 
     module_alias = f"{module_info.snake}_router"
     import_line = f"from .{module_info.name} import router as {module_alias}"
+    routers_entry = f"    {module_alias},"
     content = path.read_text(encoding="utf-8")
+
     if import_line not in content:
         content = add_import_after_last_from(content, import_line)
-    if f"register_router({module_alias})" not in content:
-        content = insert_register_router_call(content, module_alias)
+
+    if routers_entry not in content:
+        lines = content.splitlines()
+        idx = len(lines) - 1
+        for i in range(len(lines) - 1, -1, -1):
+            if lines[i].strip().startswith("#") or lines[i].strip() == "":
+                continue
+            if lines[i].strip() == ")":
+                idx = i
+                break
+        else:
+            idx = len(lines)
+        lines.insert(idx, routers_entry)
+        content = "\n".join(lines) + "\n"
+
     path.write_text(content, encoding="utf-8")
 
 
@@ -253,35 +268,6 @@ def add_import_after_last_from(content: str, import_line: str) -> str:
     return "\n".join(lines) + "\n"
 
 
-def insert_register_router_call(content: str, module_alias: str) -> str:
-    lines = content.splitlines()
-    try:
-        tree = ast.parse(content)
-    except SyntaxError as exc:
-        raise RuntimeError(f"cannot parse assembly.py: {exc}") from exc
-
-    register_fn = next((node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "register"), None)
-    if register_fn is None:
-        raise RuntimeError("cannot find register() in assembly.py")
-
-    for node in ast.walk(register_fn):
-        if (
-            isinstance(node, ast.For)
-            and isinstance(node.target, ast.Name)
-            and node.target.id == "router"
-            and isinstance(node.iter, ast.Tuple)
-        ):
-            insert_line = node.iter.end_lineno or node.iter.lineno
-            lines.insert(insert_line - 1, f"        {module_alias},")
-            return "\n".join(lines) + "\n"
-
-    insert_line = register_fn.end_lineno or len(lines)
-    for idx in range(register_fn.lineno, len(lines)):
-        if "_registered = True" in lines[idx]:
-            insert_line = idx
-            break
-    lines.insert(insert_line, f"    register_router({module_alias})")
-    return "\n".join(lines) + "\n"
 
 
 def insert_function_line(content: str, function_name: str, line_to_insert: str) -> str:
@@ -311,51 +297,50 @@ __all__ = ["register"]
 '''
 
 
-def plugin_py_template(plugin: PluginNames) -> str:
-    return f'''
-from __future__ import annotations
+_PLUGIN_PY_BOILERPLATE = """from __future__ import annotations
 
 import logging
 
 from sdk.kernel.plugin import HeiPlugin, PluginInfo
 
 from .migrate import register_all_models
+from .assembly import ROUTERS
 
 logger = logging.getLogger(__name__)
 
 
-class {plugin.pascal}(HeiPlugin):
+class {pascal}(HeiPlugin):
     @classmethod
     def info(cls) -> PluginInfo:
-        return PluginInfo(name="{plugin.name}", version="1.0.0", description="{plugin.short} plugin")
+        return PluginInfo(name="{name}", version="1.0.0", description="{short} plugin")
+
+    @classmethod
+    def routers(cls) -> tuple:
+        return ROUTERS
 
     def on_init(self) -> None:
         register_all_models()
-        logger.info("[{plugin.pascal}] Models registered")
-'''
+        logger.info("[{pascal}] Models registered")
+"""
+
+
+def plugin_py_template(plugin: PluginNames, module_info: ModuleNames) -> str:
+    return _PLUGIN_PY_BOILERPLATE.format(
+        pascal=plugin.pascal,
+        name=plugin.name,
+        short=plugin.short,
+    )
 
 
 def assembly_template(plugin: PluginNames, module_info: ModuleNames) -> str:
     return f'''
 from __future__ import annotations
 
-from sdk.kernel.plugin.loader import register_plugin_class
-from sdk.kernel.registry import register_router
-
 from .{module_info.name} import router as {module_info.snake}_router
-from .plugin import {plugin.pascal}
 
-_registered = False
-
-
-def register() -> None:
-    global _registered
-    if _registered:
-        return
-
-    register_plugin_class({plugin.pascal})
-    register_router({module_info.snake}_router)
-    _registered = True
+ROUTERS = (
+    {module_info.snake}_router,
+)
 '''
 
 
@@ -472,20 +457,22 @@ from typing import Any, Optional
 
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import {module_info.model_cls}
 from .params import {module_info.page_param_cls}
 
 
 class {module_info.repository_cls}:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def find_by_id(self, id: str) -> Optional[{module_info.model_cls}]:
-        return self.db.execute(select({module_info.model_cls}).where({module_info.model_cls}.id == id)).scalar_one_or_none()
+    async def find_by_id(self, id: str) -> Optional[{module_info.model_cls}]:
+        return (await self.db.execute(
+            select({module_info.model_cls}).where({module_info.model_cls}.id == id)
+        )).scalar_one_or_none()
 
-    def find_page(self, param: {module_info.page_param_cls}) -> dict[str, Any]:
+    async def find_page(self, param: {module_info.page_param_cls}) -> dict[str, Any]:
         filters = []
         if param.keyword:
             keyword = f"%{{param.keyword}}%"
@@ -493,42 +480,45 @@ class {module_info.repository_cls}:
         if param.status:
             filters.append({module_info.model_cls}.status == param.status)
 
-        current = max(1, param.current)
+        offset = (max(1, param.current) - 1) * min(max(1, param.size), 100)
         size = min(max(1, param.size), 100)
-        total = self.db.execute(select(func.count()).select_from({module_info.model_cls}).where(*filters)).scalar() or 0
-        records = list(
-            self.db.execute(
-                select({module_info.model_cls})
-                .where(*filters)
-                .order_by({module_info.model_cls}.created_at.desc())
-                .offset((current - 1) * size)
-                .limit(size)
-            )
-            .scalars()
-            .all()
-        )
-        return {{"records": records, "total": total, "current": current, "size": size}}
 
-    def insert(self, entity: {module_info.model_cls}) -> {module_info.model_cls}:
+        stmt = (
+            select({module_info.model_cls})
+            .where(*filters)
+            .order_by({module_info.model_cls}.created_at.desc())
+            .offset(offset)
+            .limit(size)
+        )
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = (await self.db.execute(count_stmt)).scalar() or 0
+        records = list(
+            (await self.db.execute(stmt)).scalars().all()
+        )
+        return {{"records": records, "total": total}}
+
+    async def insert(self, entity: {module_info.model_cls}) -> {module_info.model_cls}:
         now = datetime.now()
         entity.created_at = entity.created_at or now
         entity.updated_at = now
         self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
+        await self.db.commit()
+        await self.db.refresh(entity)
         return entity
 
-    def update(self, entity: {module_info.model_cls}) -> {module_info.model_cls}:
+    async def update(self, entity: {module_info.model_cls}) -> {module_info.model_cls}:
         entity.updated_at = datetime.now()
-        self.db.commit()
-        self.db.refresh(entity)
+        await self.db.commit()
+        await self.db.refresh(entity)
         return entity
 
-    def delete_by_ids(self, ids: list[str]) -> int:
+    async def delete_by_ids(self, ids: list[str]) -> int:
         if not ids:
             return 0
-        affected = self.db.execute(sa_delete({module_info.model_cls}).where({module_info.model_cls}.id.in_(ids))).rowcount
-        self.db.commit()
+        affected = (await self.db.execute(
+            sa_delete({module_info.model_cls}).where({module_info.model_cls}.id.in_(ids))
+        )).rowcount
+        await self.db.commit()
         return affected
 '''
 
@@ -537,24 +527,22 @@ def service_template(module_info: ModuleNames) -> str:
     return f'''
 from __future__ import annotations
 
+from datetime import datetime
+
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import update as sa_update
 
 from sdk.infra.db import get_db
+from sdk.shared.di import ActorContext
 from sdk.shared.types import IdsParam
 from sdk.utils import generate_id
 from sdk.web.exception import BusinessException
-from sdk.web.result import page_data
+from sdk.web.result import map_page_data
 
 from .models import {module_info.model_cls}
 from .params import {module_info.create_param_cls}, {module_info.modify_param_cls}, {module_info.page_param_cls}, {module_info.vo_cls}
 from .repository import {module_info.repository_cls}
-
-
-def to_vo(entity: {module_info.model_cls} | None) -> dict | None:
-    if entity is None:
-        return None
-    return {module_info.vo_cls}.model_validate(entity).model_dump()
 
 
 class {module_info.service_cls}:
@@ -564,43 +552,52 @@ class {module_info.service_cls}:
             if isinstance(repository_or_db, {module_info.repository_cls})
             else {module_info.repository_cls}(repository_or_db)
         )
+        self.db = self.repository.db
 
-    def page(self, param: {module_info.page_param_cls}) -> dict:
-        result = self.repository.find_page(param)
-        return page_data(
-            records=[to_vo(record) for record in result["records"]],
-            total=result["total"],
-            page=result["current"],
-            size=result["size"],
-        )
+    async def page(self, param: {module_info.page_param_cls}) -> dict:
+        result = await self.repository.find_page(param)
+        return map_page_data(result, {module_info.vo_cls}.model_validate, param.current, param.size)
 
-    def detail(self, id: str) -> dict | None:
-        return to_vo(self.repository.find_by_id(id))
+    async def detail(self, id: str) -> {module_info.vo_cls} | None:
+        if not id:
+            return None
+        entity = await self.repository.find_by_id(id)
+        if not entity:
+            return None
+        return {module_info.vo_cls}.model_validate(entity)
 
-    def create(self, param: {module_info.create_param_cls}) -> dict:
+    async def create(self, param: {module_info.create_param_cls}, actor: ActorContext | None = None) -> None:
         entity = {module_info.model_cls}(
             id=generate_id(),
             name=param.name,
             status=param.status,
             sort_code=param.sort_code,
         )
-        return to_vo(self.repository.insert(entity))
+        await self.repository.insert(entity)
 
-    def modify(self, param: {module_info.modify_param_cls}) -> dict:
-        entity = self.repository.find_by_id(param.id)
+    async def modify(self, param: {module_info.modify_param_cls}, actor: ActorContext | None = None) -> None:
+        entity = await self.repository.find_by_id(param.id)
         if entity is None:
-            raise BusinessException("数据不存在", 404)
+            raise BusinessException("数据不存在")
+        updates = {{}}
         for field in ("name", "status", "sort_code"):
-            value = getattr(param, field)
+            value = getattr(param, field, None)
             if value is not None:
-                setattr(entity, field, value)
-        return to_vo(self.repository.update(entity))
+                updates[field] = value
+        if updates:
+            updates["updated_at"] = datetime.now()
+            await self.db.execute(
+                sa_update({module_info.model_cls}).where({module_info.model_cls}.id == param.id).values(**updates)
+            )
+            await self.db.commit()
 
-    def remove(self, param: IdsParam) -> int:
-        return self.repository.delete_by_ids(param.ids)
+    async def remove(self, param: IdsParam) -> None:
+        if not param.ids:
+            return
+        await self.repository.delete_by_ids(param.ids)
 
 
-def {module_info.service_getter}(db: Session = Depends(get_db)) -> {module_info.service_cls}:
+def {module_info.service_getter}(db: AsyncSession = Depends(get_db)) -> {module_info.service_cls}:
     return {module_info.service_cls}(db)
 '''
 
@@ -615,9 +612,10 @@ def api_v1_init_template() -> str:
 
 def api_template(plugin: PluginNames, module_info: ModuleNames) -> str:
     return f'''
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query
 
 from sdk.auth.decorator import CheckLogin
+from sdk.shared.di import ActorContext, get_current_actor
 from sdk.shared.types import IdsParam
 from sdk.web.result import PageData, Result, success
 
@@ -629,33 +627,43 @@ router = APIRouter()
 
 @router.get("/api/v1/{module_info.route}/page", summary="{module_info.pascal}分页", response_model=Result[PageData[{module_info.vo_cls}]])
 @CheckLogin
-def page(request: Request, param: {module_info.page_param_cls} = Depends(), service: {module_info.service_cls} = Depends({module_info.service_getter})):
-    return success(service.page(param))
+async def page(param: {module_info.page_param_cls} = Depends(), service: {module_info.service_cls} = Depends({module_info.service_getter})):
+    return success(await service.page(param))
 
 
 @router.post("/api/v1/{module_info.route}/create", summary="创建{module_info.pascal}", response_model=Result[{module_info.vo_cls}])
 @CheckLogin
-def create(request: Request, param: {module_info.create_param_cls}, service: {module_info.service_cls} = Depends({module_info.service_getter})):
-    return success(service.create(param))
+async def create(
+    param: {module_info.create_param_cls},
+    service: {module_info.service_cls} = Depends({module_info.service_getter}),
+    actor: ActorContext = Depends(get_current_actor),
+):
+    await service.create(param, actor)
+    return success()
 
 
 @router.post("/api/v1/{module_info.route}/modify", summary="修改{module_info.pascal}", response_model=Result[{module_info.vo_cls}])
 @CheckLogin
-def modify(request: Request, param: {module_info.modify_param_cls}, service: {module_info.service_cls} = Depends({module_info.service_getter})):
-    return success(service.modify(param))
+async def modify(
+    param: {module_info.modify_param_cls},
+    service: {module_info.service_cls} = Depends({module_info.service_getter}),
+    actor: ActorContext = Depends(get_current_actor),
+):
+    await service.modify(param, actor)
+    return success()
 
 
 @router.post("/api/v1/{module_info.route}/remove", summary="删除{module_info.pascal}", response_model=Result)
 @CheckLogin
-def remove(request: Request, param: IdsParam, service: {module_info.service_cls} = Depends({module_info.service_getter})):
-    service.remove(param)
+async def remove(param: IdsParam, service: {module_info.service_cls} = Depends({module_info.service_getter})):
+    await service.remove(param)
     return success()
 
 
 @router.get("/api/v1/{module_info.route}/detail", summary="{module_info.pascal}详情", response_model=Result[{module_info.vo_cls}])
 @CheckLogin
-def detail(request: Request, id: str = Query(...), service: {module_info.service_cls} = Depends({module_info.service_getter})):
-    return success(service.detail(id))
+async def detail(id: str = Query(...), service: {module_info.service_cls} = Depends({module_info.service_getter})):
+    return success(await service.detail(id))
 '''
 
 
@@ -672,11 +680,21 @@ def run_self_test() -> None:
             cmd_add_module("plugin_codegen_demo", "article")
             generated = fake_plugins / "plugin_codegen_demo"
             py_files = [str(path) for path in generated.rglob("*.py")]
-            subprocess.run([sys.executable, "-m", "py_compile", *py_files], cwd=REPO_ROOT, check=True)
+            for py_file in py_files:
+                result = subprocess.run(
+                    [sys.executable, "-m", "py_compile", py_file],
+                    capture_output=True, text=True, cwd=REPO_ROOT,
+                )
+                if result.returncode != 0:
+                    raise RuntimeError(
+                        f"compile failed: {py_file}: {result.stderr.strip()}"
+                    )
             assembly = (generated / "assembly.py").read_text(encoding="utf-8")
+            plugin_py = (generated / "plugin.py").read_text(encoding="utf-8")
             migrate = (generated / "migrate.py").read_text(encoding="utf-8")
-            assert "demo_router" in assembly and "article_router" in assembly
-            assert "Demo" in migrate and "Article" in migrate
+            assert "from .assembly import ROUTERS" in plugin_py, "Missing ROUTERS import in plugin.py"
+            assert "demo_router" in assembly and "article_router" in assembly, "Missing routers in assembly.py"
+            assert "Demo" in migrate and "Article" in migrate, "Missing models in migrate.py"
         finally:
             PLUGINS_DIR = old_plugins_dir
     logger.info("self-test passed")

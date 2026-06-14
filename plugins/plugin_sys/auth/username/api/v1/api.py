@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request
+from sdk.auth import BusinessID
 from sdk.web.result import Result, success
 from sdk.auth.decorator import CheckLogin
 from sdk.log import SysLog
@@ -40,6 +41,6 @@ async def register(request: Request, param: UsernameRegisterParam):
     summary="B端用户登出",
     response_model=Result[UsernameLogoutResult]
 )
-@CheckLogin
+@CheckLogin(realm_id=BusinessID)
 async def logout(request: Request):
     return success(await do_logout(request))

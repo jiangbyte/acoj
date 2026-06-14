@@ -4,13 +4,15 @@ No extra routes beyond what Go registers.
 """
 
 from fastapi import APIRouter, Depends, Query
+from micosauth.decorators import require_login
 from sdk.web.result import Result, PageData, success
 from sdk.shared.di import ActorContext, get_current_actor
 from sdk.shared.types import IdsParam
 from sdk.kernel.plugin import Perm
-from sdk.auth.decorator import CheckLogin, NoRepeat
+from sdk.auth import BusinessID, get_auth_util
 from sdk.log import SysLog
 from sdk.shared.types import IdParam
+from sdk.web.middleware import RateLimiter
 from ...params import (
     UserVO, UserMenuVO, UserPageParam, GrantRoleParam, GrantUserPermissionParam,
     RefreshSessionACLParam, BatchRefreshSessionACLParam,
@@ -30,7 +32,7 @@ async def page(param: UserPageParam = Depends(), service: UserService = Depends(
 @router.post("/api/v1/sys/user/create", summary="添加用户", response_model=Result)
 @SysLog("添加用户")
 @Perm("sys:user:create", "添加用户")
-@NoRepeat(interval=3000)
+@RateLimiter("sys:user:create", window=3, max_requests=1)
 async def create(
     vo: UserVO,
     service: UserService = Depends(get_user_service),
@@ -69,7 +71,7 @@ async def detail(id: str = Query(...), service: UserService = Depends(get_user_s
 @router.post("/api/v1/sys/user/grant-role", summary="分配用户角色", response_model=Result)
 @SysLog("分配用户角色")
 @Perm("sys:user:grant-role", "分配用户角色")
-@NoRepeat(interval=3000)
+@RateLimiter("sys:user:grant-role", window=3, max_requests=1)
 async def grant_role(param: GrantRoleParam, service: UserService = Depends(get_user_service)):
     await service.grant_role(param)
     return success()
@@ -78,7 +80,7 @@ async def grant_role(param: GrantRoleParam, service: UserService = Depends(get_u
 @router.post("/api/v1/sys/user/grant-permission", summary="分配用户权限", response_model=Result)
 @SysLog("分配用户权限")
 @Perm("sys:user:grant-permission", "分配用户权限")
-@NoRepeat(interval=3000)
+@RateLimiter("sys:user:grant-permission", window=3, max_requests=1)
 async def grant_permission(param: GrantUserPermissionParam, service: UserService = Depends(get_user_service)):
     await service.grant_permission(param)
     return success()
@@ -87,7 +89,7 @@ async def grant_permission(param: GrantUserPermissionParam, service: UserService
 @router.post("/api/v1/sys/user/refresh-session-acl", summary="刷新用户会话权限", response_model=Result)
 @SysLog("刷新用户会话权限")
 @Perm("sys:user:refresh-session-acl", "刷新用户会话权限")
-@NoRepeat(interval=3000)
+@RateLimiter("sys:user:refresh-session-acl", window=3, max_requests=1)
 async def refresh_session_acl(
     param: RefreshSessionACLParam,
     service: UserService = Depends(get_user_service),
@@ -99,7 +101,7 @@ async def refresh_session_acl(
 @router.post("/api/v1/sys/user/batch-refresh-session-acl", summary="批量刷新用户会话权限", response_model=Result)
 @SysLog("批量刷新用户会话权限")
 @Perm("sys:user:batch-refresh-session-acl", "批量刷新用户会话权限")
-@NoRepeat(interval=3000)
+@RateLimiter("sys:user:batch-refresh-session-acl", window=3, max_requests=1)
 async def batch_refresh_session_acl(
     param: BatchRefreshSessionACLParam,
     service: UserService = Depends(get_user_service),
@@ -121,7 +123,7 @@ async def own_roles(user_id: str = Query(...), service: UserService = Depends(ge
 
 
 @router.get("/api/v1/sys/user/current", summary="获取当前用户信息")
-@CheckLogin
+@require_login(get_auth_util(), realm=BusinessID)
 async def get_current_user(
     service: UserService = Depends(get_user_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -131,7 +133,7 @@ async def get_current_user(
 
 
 @router.get("/api/v1/sys/user/menus", summary="获取当前用户菜单树", response_model=Result[list[UserMenuVO]])
-@CheckLogin
+@require_login(get_auth_util(), realm=BusinessID)
 async def get_current_user_menus(
     service: UserService = Depends(get_user_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -141,7 +143,7 @@ async def get_current_user_menus(
 
 
 @router.get("/api/v1/sys/user/permissions", summary="获取当前用户权限码列表")
-@CheckLogin
+@require_login(get_auth_util(), realm=BusinessID)
 async def get_current_user_permissions(
     service: UserService = Depends(get_user_service),
     actor: ActorContext = Depends(get_current_actor),
@@ -152,8 +154,8 @@ async def get_current_user_permissions(
 
 @router.post("/api/v1/sys/user/update-profile", summary="更新当前用户个人信息", response_model=Result)
 @SysLog("更新个人信息")
-@CheckLogin
-@NoRepeat(interval=3000)
+@require_login(get_auth_util(), realm=BusinessID)
+@RateLimiter("sys:user:update-profile", window=3, max_requests=1)
 async def update_profile(
     param: UpdateProfileParam,
     service: UserService = Depends(get_user_service),
@@ -165,7 +167,7 @@ async def update_profile(
 
 @router.post("/api/v1/sys/user/update-avatar", summary="更新当前用户头像（base64）", response_model=Result)
 @SysLog("更新头像")
-@CheckLogin
+@require_login(get_auth_util(), realm=BusinessID)
 async def update_avatar(
     param: UpdateAvatarParam,
     service: UserService = Depends(get_user_service),
@@ -177,8 +179,8 @@ async def update_avatar(
 
 @router.post("/api/v1/sys/user/update-password", summary="修改当前用户密码", response_model=Result)
 @SysLog("修改密码")
-@CheckLogin
-@NoRepeat(interval=3000)
+@require_login(get_auth_util(), realm=BusinessID)
+@RateLimiter("sys:user:update-password", window=3, max_requests=1)
 async def update_password(
     param: UpdatePasswordParam,
     service: UserService = Depends(get_user_service),

@@ -41,7 +41,7 @@ class ClientPlugin(HeiPlugin):
         )
 
     def on_init(self):
-        """Register C-side models."""
+        """注册 C 端模型和空权限提供器。"""
         register_all_models()
         Consumer.set_permission_provider(EmptyPermissionProvider())
         logger.info("[ClientPlugin] Models registered")

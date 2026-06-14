@@ -1,17 +1,14 @@
 from fastapi import Request
-from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Scope, Receive, Send
 
-from sdk.auth.decorator import attach_login_context
-from sdk.auth.realm import all_realms, infer_realm, is_public_path
 from sdk.config.settings import settings
-from sdk.web.result import failure
 
 
 class AuthMiddleware:
-    """
-    Raw ASGI middleware for auth checking.
-    Does NOT use BaseHTTPMiddleware to avoid body streaming issues with multipart file uploads.
+    """项目级鉴权中间件。
+
+    这里只负责放行公共路径和静态路径，不再做 realm 猜测和自动登录态绑定。
+    认证与鉴权统一交给显式 realm 的装饰器或业务代码处理。
     """
 
     STATIC_PATHS = [
@@ -40,26 +37,10 @@ class AuthMiddleware:
             await self.app(scope, receive, send)
             return
 
-        # Create request for auth check (only reads headers, does NOT consume body)
         request = Request(scope, receive)
-
-        if is_public_path(path, settings.auth.public_paths):
-            await self._attach_optional_login(request)
+        if self._is_public_path(path):
             await self.app(scope, receive, send)
             return
-
-        realm = infer_realm(path)
-        if realm:
-            if not await realm.is_login(request):
-                resp = JSONResponse(
-                    status_code=401,
-                    content=failure(message="未授权/未登录", code=401),
-                )
-                await resp(scope, receive, send)
-                return
-            await attach_login_context(request, realm.id)
-        else:
-            await self._attach_optional_login(request)
 
         await self.app(scope, receive, send)
 
@@ -69,10 +50,8 @@ class AuthMiddleware:
                 return True
         return False
 
-    async def _attach_optional_login(self, request: Request) -> None:
-        if getattr(request.state, "login_id", None):
-            return
-        for realm in all_realms():
-            if await realm.is_login(request):
-                await attach_login_context(request, realm.id)
-                return
+    def _is_public_path(self, path: str) -> bool:
+        for public_path in settings.auth.public_paths:
+            if path == public_path or path.startswith(public_path):
+                return True
+        return False

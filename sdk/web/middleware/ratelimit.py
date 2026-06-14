@@ -21,7 +21,7 @@ from typing import Optional
 
 from fastapi import Request, HTTPException, status
 
-from sdk.auth.realm import current_realm
+from sdk.auth import get_current_login_id
 from sdk.infra.db import get_redis
 
 logger = logging.getLogger(__name__)
@@ -69,13 +69,9 @@ def RateLimiter(
             # User ID from auth context, fallback to client IP
             user_id = ""
             try:
-                realm = current_realm(request)
-                if realm:
-                    uid = await realm.get_login_id(request)
-                    if uid:
-                        user_id = str(uid)
+                user_id = await get_current_login_id(request)
             except Exception:
-                pass
+                user_id = ""
 
             if not user_id:
                 user_id = request.client.host if request.client else "unknown"

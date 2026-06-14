@@ -79,7 +79,7 @@ class SysPlugin(HeiPlugin):
         )
 
     def on_init(self):
-        """Register permission interface + log persister."""
+        """注册权限提供器和日志持久化器。"""
         register_all_models()
         register_all_seeds()
         Business.set_permission_provider(
@@ -93,11 +93,7 @@ class SysPlugin(HeiPlugin):
                 redis_client_getter=get_redis,
             )
         )
-        # op_user resolver runs on the event loop → async LoginUserService.
         set_op_user_resolver(LoginUserService(AsyncSessionLocal).get_username)
-
-        # Log persistence runs in a worker thread (off the event loop), so it
-        # keeps the SYNC session factory.
         configure_async_log_persister(DbLogPersister(SessionLocal))
 
         logger.info("[SysPlugin] Permission interface and log persister registered")

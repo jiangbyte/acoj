@@ -170,9 +170,10 @@ def reset_for_test() -> None:
 
 def Perm(code: str, name: str = "", realm_id: str = "BUSINESS") -> Callable[..., Any]:
     _registry.register_permission(code, name=name, module=_module_from_code(code))
-    from sdk.auth.decorator import CheckPermission
+    from micosauth.decorators import require_permissions
+    from sdk.auth import get_auth_util
 
-    return CheckPermission(code, realm_id=realm_id)
+    return require_permissions(get_auth_util(), code, realm=realm_id)
 
 
 def ClientPerm(code: str, name: str = "") -> Callable[..., Any]:

@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import Request
 
-from sdk.auth.realm import current_realm
+from sdk.auth import get_current_login_id
 from sdk.utils import get_client_ip, get_city_info, generate_id
 from sdk.utils.trace_utils import get_trace_id
 from .persistence import LogEntry, get_op_user_resolver, save_log
@@ -28,13 +28,9 @@ def _get_request(*args, **kwargs) -> Optional[Request]:
 async def _get_op_user(request: Request) -> Optional[str]:
     """Get the current operator's username from the active user."""
     try:
-        realm = current_realm(request)
-        if not realm:
-            return None
-        user_id = await realm.get_login_id(request)
+        user_id = await get_current_login_id(request)
         if not user_id:
             return None
-
         resolver = get_op_user_resolver()
         if resolver is None:
             return None

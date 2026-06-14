@@ -74,7 +74,7 @@ async def do_login(param: UsernameLoginParam, request: Request) -> UsernameLogin
         extra["device_type"] = get_browser(user_agent)
         extra["device_id"] = param.device_id
 
-        token = await Consumer.login(request, user_info.id, extra)
+        token = await Consumer.login(request, str(user_info.id), extra)
 
         try:
             await login_user_service.record_login(user_info.id, request)
