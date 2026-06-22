@@ -13,7 +13,8 @@ export function getRouteTitleKey(code?: string | number | null) {
   if (!code) {
     return undefined
   }
-  return routeTitleKeys[String(code)] || `routes.${String(code)}`
+  const routeCode = String(code)
+  return routeTitleKeys[routeCode] || `routes.${routeCode.toUpperCase()}`
 }
 
 export function translateWithFallback(key?: string, fallback = '') {
