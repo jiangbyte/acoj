@@ -8,6 +8,8 @@ import { useUserStore } from '@/stores/user'
 import { t } from '@/i18n'
 import { translateWithFallback } from '@/utils/i18n'
 
+const publicPaths = ['/auth/login', '/403', '/500']
+
 export function setupRouterGuards(router: Router) {
   router.beforeEach(async (to) => {
     const auth = useAuthStore()
@@ -15,8 +17,19 @@ export function setupRouterGuards(router: Router) {
     const routeStore = useRouteStore()
 
     if (to.path === '/auth/login' && auth.isAuthenticated) {
+      try {
+        await user.ensureMe()
+        await routeStore.refreshMenu()
+      } catch (error) {
+        console.error('[router] 初始化认证路由失败', error)
+        return {
+          path: '/500',
+          query: { redirect: to.fullPath },
+          replace: true,
+        }
+      }
       return {
-        path: DEFAULT_HOME_PATH,
+        path: routeStore.get_accessible_path(DEFAULT_HOME_PATH),
         replace: true,
       }
     }
@@ -26,7 +39,7 @@ export function setupRouterGuards(router: Router) {
       return false
     }
 
-    const needsAuth = to.meta.requiresAuth || to.path === '/' || to.name === 'NotFound'
+    const needsAuth = !publicPaths.includes(to.path)
 
     if (needsAuth && !auth.isAuthenticated) {
       return {
@@ -38,14 +51,11 @@ export function setupRouterGuards(router: Router) {
     if (
       auth.isAuthenticated &&
       !routeStore.is_init_auth_route &&
-      to.path !== '/auth/login' &&
-      to.path !== '/403' &&
-      to.path !== '/500'
+      needsAuth
     ) {
       try {
-        // 首次进入受保护页面时拉取用户与资源，避免刷新后动态路由丢失。
         await user.ensureMe()
-        await routeStore.init_auth_route()
+        await routeStore.refreshMenu()
       } catch (error) {
         console.error('[router] 初始化认证路由失败', error)
         return {
@@ -55,34 +65,22 @@ export function setupRouterGuards(router: Router) {
         }
       }
 
-      const fallbackPath = routeStore.has_auth_route(DEFAULT_HOME_PATH)
-        ? DEFAULT_HOME_PATH
-        : routeStore.firstAvailablePath
-      const isAuthorizedTarget = routeStore.has_auth_route(to.path)
-
-      if (to.path === '/') {
-        return {
-          path: fallbackPath || '/403',
-          query: to.query,
-          hash: to.hash,
-          replace: true,
-        }
+      if (!routeStore.firstAvailablePath) {
+        return { path: '/403', replace: true }
       }
 
-      if (to.name === 'NotFound' && isAuthorizedTarget) {
-        return {
-          path: to.path,
-          query: to.query,
-          hash: to.hash,
-          replace: true,
-        }
+      return {
+        path: to.path,
+        query: to.query,
+        hash: to.hash,
+        replace: true,
       }
+    }
 
-      if (to.name === 'NotFound' || !isAuthorizedTarget) {
-        return {
-          path: fallbackPath || '/403',
-          replace: true,
-        }
+    if (auth.isAuthenticated && to.path === '/') {
+      return {
+        path: routeStore.get_accessible_path(DEFAULT_HOME_PATH),
+        replace: true,
       }
     }
 

@@ -6,7 +6,6 @@ import type {
   HttpInstanceHooks,
   RequestCode,
   RequestErrorResult,
-  ResponseResult,
 } from './types'
 
 export function parseApiResponse(response: AxiosResponse) {
@@ -55,27 +54,6 @@ export function handleNetworkError(hooks?: HttpInstanceHooks): RequestErrorResul
 
   hooks?.onNetworkError?.(result)
   return result
-}
-
-export function handleServiceResult<T>(data: T, isSuccess = true): ResponseResult<T | null> {
-  if (!isSuccess) {
-    const error = data as RequestErrorResult
-    return {
-      isSuccess,
-      errorType: error.errorType,
-      code: error.code,
-      message: error.message,
-      data: null,
-    }
-  }
-
-  return {
-    isSuccess,
-    errorType: null,
-    code: 200,
-    message: 'success',
-    data,
-  }
 }
 
 export function showError(error: RequestErrorResult, hooks?: HttpInstanceHooks) {

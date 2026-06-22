@@ -1,5 +1,4 @@
 export type RecordStatus = 'enabled' | 'disabled' | 'locked' | 'ENABLED' | 'DISABLED' | 'LOCKED'
-export type SysStatus = 'ENABLED' | 'DISABLED' | 'enabled' | 'disabled'
 
 export interface PageQuery {
   page?: number
@@ -13,57 +12,6 @@ export interface PageData<T> {
   total: number
   page: number
   page_size: number
-}
-
-export interface SysBannerItem {
-  id: string
-  title: string
-  image: string
-  url?: string | null
-  link_type: 'URL' | 'ROUTE' | 'NONE'
-  summary?: string | null
-  description?: string | null
-  category: 'HOME' | 'LOGIN' | 'WORKPLACE' | 'NOTICE' | 'ADMIN_DASHBOARD' | 'SYSTEM_UPGRADE'
-  type: 'CAROUSEL' | 'HERO' | 'NOTICE' | 'CARD' | 'POPUP' | 'SIDEBAR'
-  position:
-    | 'HOME_TOP'
-    | 'HOME_MIDDLE'
-    | 'HOME_BOTTOM'
-    | 'LOGIN_SIDE'
-    | 'WORKPLACE_TOP'
-    | 'NOTICE_AREA'
-    | 'ADMIN_TOP'
-    | 'ADMIN_SIDEBAR'
-  display_scope: 'PORTAL' | 'ADMIN' | 'APP'
-  sort: number
-  interaction_count: number
-  status: SysStatus | string
-  start_at?: string | null
-  end_at?: string | null
-  created_at: string
-  created_by?: string | null
-  updated_at: string
-  updated_by?: string | null
-}
-
-export interface SysDictItem {
-  id: string
-  code: string
-  label?: string | null
-  value?: string | null
-  color?: string | null
-  category?: 'SYS' | 'BIZ' | null
-  parent_id?: string | null
-  status: SysStatus | string
-  sort: number
-  created_at: string
-  created_by?: string | null
-  updated_at: string
-  updated_by?: string | null
-}
-
-export interface SysDictTreeNode extends SysDictItem {
-  children: SysDictTreeNode[]
 }
 
 export interface AccountItem {

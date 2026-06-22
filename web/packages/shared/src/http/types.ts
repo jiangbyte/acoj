@@ -16,11 +16,6 @@ export interface RequestErrorResult {
   data: unknown
 }
 
-export interface ResponseResult<T = unknown> extends RequestErrorResult {
-  isSuccess: boolean
-  data: T
-}
-
 export interface HttpInstanceHooks {
   getToken?: () => string | null | undefined
   onAuthExpired?: () => void | Promise<void>

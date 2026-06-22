@@ -3,7 +3,6 @@ export {
   handleBusinessError,
   handleNetworkError,
   handleResponseError,
-  handleServiceResult,
   parseApiResponse,
 } from './handle'
 export type {
@@ -17,5 +16,4 @@ export type {
   RequestErrorResult,
   RequestErrorType,
   RequestMeta,
-  ResponseResult,
 } from './types'
