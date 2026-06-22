@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 export const DEFAULT_HTTP_OPTIONS = {
   timeout: 15 * 1000,
 } as const
@@ -24,3 +26,8 @@ export const ERROR_STATUS: Record<number | 'default', string> = {
 }
 
 export const ERROR_NO_TIP_STATUS: Array<number | string> = []
+
+export function getErrorStatusMessage(status?: number | string) {
+  const key = status && status in ERROR_STATUS ? status : 'default'
+  return t(`http.${key}`)
+}

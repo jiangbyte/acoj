@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import RouteBreadcrumb from './RouteBreadcrumb.vue'
+import { translateWithFallback } from '@/utils/i18n'
 
 const route = useRoute()
+const { t } = useI18n()
 
-const title = computed(() => String(route.meta.title || '页面'))
+const title = computed(() => translateWithFallback(route.meta.titleKey, String(route.meta.title || t('app.console'))))
 const description = computed(() => String(route.meta.description || ''))
 const hideHeader = computed(() => Boolean(route.meta.hideHeader))
 </script>

@@ -6,7 +6,8 @@ import {
   ClockCircleOutlined,
   RightOutlined,
 } from '@ant-design/icons-vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import type {
@@ -24,6 +25,7 @@ import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const user = useUserStore()
+const { t, locale } = useI18n()
 
 const overview = ref<WorkplaceOverviewItem[]>([])
 const todos = ref<WorkplaceTodoItem[]>([])
@@ -33,8 +35,8 @@ const schedules = ref<WorkplaceSchedule[]>([])
 const activities = ref<WorkplaceActivity[]>([])
 const teams = ref<WorkplaceTeam[]>([])
 
-const profileName = computed(() => user.profile?.real_name || '系统管理员')
-const profileTitle = computed(() => user.profile?.title || '平台管理员')
+const profileName = computed(() => user.profile?.real_name || t('profile.fallbackName'))
+const profileTitle = computed(() => user.profile?.title || t('profile.fallbackTitle'))
 const avatarText = computed(() => profileName.value.slice(0, 1))
 const pendingTodoCount = computed(() => todos.value.filter((item) => item.status !== 'processing').length)
 
@@ -52,9 +54,9 @@ const priorityColor: Record<WorkplaceTodoItem['priority'], string> = {
 }
 
 const priorityText: Record<WorkplaceTodoItem['priority'], string> = {
-  high: '高优先级',
-  medium: '中优先级',
-  low: '低优先级',
+  high: 'workplace.highPriority',
+  medium: 'workplace.mediumPriority',
+  low: 'workplace.lowPriority',
 }
 
 const statusColor: Record<WorkplaceTodoItem['status'], string> = {
@@ -64,9 +66,9 @@ const statusColor: Record<WorkplaceTodoItem['status'], string> = {
 }
 
 const statusText: Record<WorkplaceTodoItem['status'], string> = {
-  pending: '待处理',
-  processing: '处理中',
-  overdue: '已逾期',
+  pending: 'workplace.pending',
+  processing: 'workplace.processing',
+  overdue: 'workplace.overdue',
 }
 
 const noticeColor: Record<WorkplaceNotice['level'], string> = {
@@ -100,8 +102,7 @@ function asActivityItem(item: unknown) {
   return item as WorkplaceActivity
 }
 
-onMounted(async () => {
-  await user.ensureMe()
+async function loadData() {
   const data = await getWorkplaceData()
   overview.value = data.overview
   todos.value = data.todos
@@ -110,7 +111,14 @@ onMounted(async () => {
   schedules.value = data.schedules
   activities.value = data.activities
   teams.value = data.teams
+}
+
+onMounted(async () => {
+  await user.ensureMe()
+  await loadData()
 })
+
+watch(locale, loadData)
 </script>
 
 <template>
@@ -124,12 +132,12 @@ onMounted(async () => {
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <h2 class="m-0 truncate text-20px text-slate-900 font-600 leading-8 dark:text-zinc-100">
-                早安，{{ profileName }}
+                {{ t('workplace.greeting', { name: profileName }) }}
               </h2>
               <ATag color="processing" class="m-0">{{ profileTitle }}</ATag>
             </div>
             <p class="m-0 mt-1 text-14px text-slate-500 leading-6 dark:text-zinc-400">
-              今天有 {{ pendingTodoCount }} 项待办需要关注，优先处理账号审批、权限复核和审计确认。
+              {{ t('workplace.todoSummary', { count: pendingTodoCount }) }}
             </p>
           </div>
         </div>
@@ -156,9 +164,9 @@ onMounted(async () => {
 
     <ARow :gutter="[24, 24]">
       <ACol :xs="24" :xl="14" class="flex">
-        <ACard title="我的待办" :bordered="false" class="w-full" :body-style="{ padding: 0 }">
+        <ACard :title="t('workplace.myTodos')" :bordered="false" class="w-full" :body-style="{ padding: 0 }">
           <template #extra>
-            <AButton type="link" size="small" @click="go('/dashboard/analysis')">查看效率</AButton>
+            <AButton type="link" size="small" @click="go('/dashboard/analysis')">{{ t('workplace.viewEfficiency') }}</AButton>
           </template>
           <AList :data-source="todos">
             <template #renderItem="{ item }">
@@ -184,10 +192,10 @@ onMounted(async () => {
                       </AButton>
                       <div class="flex shrink-0 flex-wrap items-center gap-1.5">
                         <ATag :color="priorityColor[asTodoItem(item).priority]" class="m-0">
-                          {{ priorityText[asTodoItem(item).priority] }}
+                          {{ t(priorityText[asTodoItem(item).priority]) }}
                         </ATag>
                         <ATag :color="statusColor[asTodoItem(item).status]" class="m-0">
-                          {{ statusText[asTodoItem(item).status] }}
+                          {{ t(statusText[asTodoItem(item).status]) }}
                         </ATag>
                       </div>
                     </div>
@@ -195,13 +203,13 @@ onMounted(async () => {
                   <template #description>
                     <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-13px text-slate-500 dark:text-zinc-400">
                       <span>{{ asTodoItem(item).module }}</span>
-                      <span>负责人：{{ asTodoItem(item).owner }}</span>
-                      <span>截止：{{ asTodoItem(item).due_time }}</span>
+                      <span>{{ t('workplace.owner', { owner: asTodoItem(item).owner }) }}</span>
+                      <span>{{ t('workplace.due', { time: asTodoItem(item).due_time }) }}</span>
                     </div>
                   </template>
                 </AListItemMeta>
                 <template #actions>
-                  <AButton size="small" type="link" @click="go(asTodoItem(item).path)">处理</AButton>
+                  <AButton size="small" type="link" @click="go(asTodoItem(item).path)">{{ t('workplace.handle') }}</AButton>
                 </template>
               </AListItem>
             </template>
@@ -210,7 +218,7 @@ onMounted(async () => {
       </ACol>
 
       <ACol :xs="24" :xl="10" class="flex">
-        <ACard title="快捷入口" :bordered="false" class="w-full" :body-style="{ padding: '16px' }">
+        <ACard :title="t('workplace.shortcuts')" :bordered="false" class="w-full" :body-style="{ padding: '16px' }">
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <AButton
               v-for="item in shortcuts"
@@ -239,7 +247,7 @@ onMounted(async () => {
 
     <ARow :gutter="[24, 24]" class="mt-6">
       <ACol :xs="24" :xl="14" class="flex">
-        <ACard title="近期动态" :bordered="false" class="w-full" :body-style="{ minHeight: '238px' }">
+        <ACard :title="t('workplace.activities')" :bordered="false" class="w-full" :body-style="{ minHeight: '238px' }">
           <AList :data-source="activities">
             <template #renderItem="{ item }">
               <AListItem class="px-0!">
@@ -263,7 +271,7 @@ onMounted(async () => {
       </ACol>
 
       <ACol :xs="24" :xl="10" class="flex">
-        <ACard title="通知公告" :bordered="false" class="w-full" :body-style="{ minHeight: '238px' }">
+        <ACard :title="t('workplace.notices')" :bordered="false" class="w-full" :body-style="{ minHeight: '238px' }">
           <div class="space-y-4">
             <div v-for="item in notices" :key="item.id" class="flex gap-3">
               <BellOutlined class="mt-1 shrink-0 text-15px text-brand-500" />
@@ -282,7 +290,7 @@ onMounted(async () => {
 
     <ARow :gutter="[24, 24]" class="mt-6">
       <ACol :xs="24" :xl="12" class="flex">
-        <ACard title="今日安排" :bordered="false" class="w-full" :body-style="{ minHeight: '210px' }">
+        <ACard :title="t('workplace.todaySchedule')" :bordered="false" class="w-full" :body-style="{ minHeight: '210px' }">
           <div class="space-y-3">
             <div
               v-for="item in schedules"
@@ -294,7 +302,7 @@ onMounted(async () => {
                 <div class="flex items-center justify-between gap-2">
                   <span class="truncate text-14px text-slate-900 font-600 dark:text-zinc-100">{{ item.title }}</span>
                   <ATag :color="item.status === 'done' ? 'success' : 'processing'" class="m-0 shrink-0">
-                    {{ item.status === 'done' ? '已完成' : '待开始' }}
+                    {{ item.status === 'done' ? t('workplace.done') : t('workplace.todo') }}
                   </ATag>
                 </div>
                 <div class="mt-1 text-13px text-slate-500 dark:text-zinc-400">{{ item.time }} · {{ item.participant }}</div>
@@ -305,7 +313,7 @@ onMounted(async () => {
       </ACol>
 
       <ACol :xs="24" :xl="12" class="flex">
-        <ACard title="协作团队" :bordered="false" class="w-full" :body-style="{ minHeight: '210px' }">
+        <ACard :title="t('workplace.teams')" :bordered="false" class="w-full" :body-style="{ minHeight: '210px' }">
           <ARow :gutter="[12, 12]">
             <ACol v-for="item in teams" :key="item.name" :span="12">
               <div class="flex min-w-0 items-center rounded-2 border border-slate-100 p-2 dark:border-zinc-800">

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   status: string
 }>()
+
+const { t } = useI18n()
 
 const meta = computed(() => {
   const map: Record<string, { color: string; label: string }> = {
@@ -19,8 +22,13 @@ const meta = computed(() => {
   }
   return map[props.status] || { color: 'default', label: props.status }
 })
+
+const label = computed(() => {
+  const translated = t(`status.${props.status}`)
+  return translated === `status.${props.status}` ? meta.value.label : translated
+})
 </script>
 
 <template>
-  <ATag :color="meta.color">{{ meta.label }}</ATag>
+  <ATag :color="meta.color">{{ label }}</ATag>
 </template>

@@ -10,11 +10,14 @@ import {
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { DEFAULT_HOME_PATH, APP_TITLE } from '@/config/app'
+import LocaleSwitch from '@/components/pro/LocaleSwitch.vue'
 import { useAuthStore } from '@/stores/auth'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
@@ -31,10 +34,10 @@ async function handleSubmit() {
   loading.value = true
   try {
     await auth.login(form)
-    message.success('登录成功')
+    message.success(t('login.success'))
     await router.replace(String(route.query.redirect || DEFAULT_HOME_PATH))
   } catch (error) {
-    console.error('[login] 登录失败', error)
+    console.error(t('login.failedLog'), error)
   } finally {
     loading.value = false
   }
@@ -60,14 +63,15 @@ async function handleSubmit() {
             </span>
             <div>
               <div class="text-22px text-slate-950 font-700 leading-7 dark:text-white">{{ APP_TITLE }}</div>
-              <div class="mt-1 text-13px text-slate-500 dark:text-zinc-400">FastAPI 企业级管理控制台</div>
+              <div class="mt-1 text-13px text-slate-500 dark:text-zinc-400">{{ t('login.subtitle') }}</div>
             </div>
           </div>
+          <LocaleSwitch />
           <div
             class="inline-flex items-center gap-2 rounded-2 border border-emerald-200 bg-emerald-50 px-3 py-2 text-13px text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300"
           >
             <CheckCircleOutlined />
-            <span>安全连接已启用</span>
+            <span>{{ t('login.secureConnection') }}</span>
           </div>
         </div>
 
@@ -77,34 +81,34 @@ async function handleSubmit() {
               class="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-14px text-slate-700 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/70 dark:text-zinc-300 dark:shadow-black/20"
             >
               <SafetyCertificateOutlined class="text-brand-600 dark:text-brand-400" />
-              <span>统一认证 · 权限治理 · 审计闭环</span>
+              <span>{{ t('login.badge') }}</span>
             </div>
             <h1 class="m-0 max-w-4xl text-48px text-slate-950 font-700 leading-[1.08] dark:text-white xl:text-56px">
-              面向企业运营的安全管理入口
+              {{ t('login.heroTitle') }}
             </h1>
             <p class="mt-6 max-w-3xl text-17px text-slate-600 leading-8 dark:text-zinc-400">
-              汇聚身份权限、资源目录、文件资产与运行态势，让组织后台管理保持稳定、清晰、可追踪。
+              {{ t('login.heroDescription') }}
             </p>
 
             <div class="mt-10 grid grid-cols-3 gap-4">
               <div class="rounded-2 border border-white/80 bg-white/78 p-5 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/68 dark:shadow-black/20">
                 <div class="flex items-center gap-3 text-slate-500 dark:text-zinc-400">
                   <CloudServerOutlined class="text-20px text-brand-600 dark:text-brand-400" />
-                  <span class="text-13px">服务可用性</span>
+                  <span class="text-13px">{{ t('login.availability') }}</span>
                 </div>
                 <div class="mt-4 text-30px text-slate-950 font-700 dark:text-white">99.9%</div>
               </div>
               <div class="rounded-2 border border-white/80 bg-white/78 p-5 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/68 dark:shadow-black/20">
                 <div class="flex items-center gap-3 text-slate-500 dark:text-zinc-400">
                   <TeamOutlined class="text-20px text-brand-600 dark:text-brand-400" />
-                  <span class="text-13px">权限模型</span>
+                  <span class="text-13px">{{ t('login.permissionModel') }}</span>
                 </div>
                 <div class="mt-4 text-30px text-slate-950 font-700 dark:text-white">RBAC</div>
               </div>
               <div class="rounded-2 border border-white/80 bg-white/78 p-5 shadow-sm shadow-slate-200/70 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/68 dark:shadow-black/20">
                 <div class="flex items-center gap-3 text-slate-500 dark:text-zinc-400">
                   <ApiOutlined class="text-20px text-brand-600 dark:text-brand-400" />
-                  <span class="text-13px">服务集成</span>
+                  <span class="text-13px">{{ t('login.integration') }}</span>
                 </div>
                 <div class="mt-4 text-30px text-slate-950 font-700 dark:text-white">API</div>
               </div>
@@ -113,22 +117,25 @@ async function handleSubmit() {
         </div>
 
         <div class="relative z-1 flex items-center gap-6 text-13px text-slate-500 dark:text-zinc-400">
-          <span>Copyright © 2026 {{ appTitle }}</span>
-          <a href="#" class="text-slate-500 transition hover:text-brand-600 dark:text-zinc-400 dark:hover:text-brand-400">帮助中心</a>
-          <a href="#" class="text-slate-500 transition hover:text-brand-600 dark:text-zinc-400 dark:hover:text-brand-400">隐私政策</a>
-          <a href="#" class="text-slate-500 transition hover:text-brand-600 dark:text-zinc-400 dark:hover:text-brand-400">服务条款</a>
+          <span>{{ t('login.copyright', { appTitle }) }}</span>
+          <a href="#" class="text-slate-500 transition hover:text-brand-600 dark:text-zinc-400 dark:hover:text-brand-400">{{ t('login.helpCenter') }}</a>
+          <a href="#" class="text-slate-500 transition hover:text-brand-600 dark:text-zinc-400 dark:hover:text-brand-400">{{ t('login.privacy') }}</a>
+          <a href="#" class="text-slate-500 transition hover:text-brand-600 dark:text-zinc-400 dark:hover:text-brand-400">{{ t('login.terms') }}</a>
         </div>
       </section>
 
       <section class="flex min-h-screen flex-col border-l border-slate-200 bg-white px-5 py-6 shadow-[-20px_0_60px_rgb(15_23_42/0.08)] dark:border-zinc-800 dark:bg-zinc-950 sm:px-8 lg:px-10">
-        <div class="flex items-center gap-3 lg:hidden">
-          <span class="inline-flex h-10 w-10 items-center justify-center rounded-2 bg-slate-950 text-18px text-white font-700 dark:bg-white dark:text-zinc-950">
-            {{ appTitleFirstChar }}
-          </span>
-          <div>
-            <div class="text-18px text-slate-950 font-700 leading-6 dark:text-white">{{ appTitle }}</div>
-            <div class="text-12px text-slate-500 dark:text-zinc-400">FastAPI 企业级管理控制台</div>
+        <div class="flex items-center justify-between gap-3 lg:hidden">
+          <div class="flex min-w-0 items-center gap-3">
+            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2 bg-slate-950 text-18px text-white font-700 dark:bg-white dark:text-zinc-950">
+              {{ appTitleFirstChar }}
+            </span>
+            <div class="min-w-0">
+              <div class="truncate text-18px text-slate-950 font-700 leading-6 dark:text-white">{{ appTitle }}</div>
+              <div class="truncate text-12px text-slate-500 dark:text-zinc-400">{{ t('login.subtitle') }}</div>
+            </div>
           </div>
+          <LocaleSwitch />
         </div>
 
         <div class="flex flex-1 items-center justify-center py-10">
@@ -137,60 +144,60 @@ async function handleSubmit() {
               <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2 bg-brand-50 text-22px text-brand-600 dark:bg-brand-500/10 dark:text-brand-300">
                 <SafetyCertificateOutlined />
               </div>
-              <h2 class="m-0 text-30px text-slate-950 font-700 leading-9 dark:text-white">登录控制台</h2>
+              <h2 class="m-0 text-30px text-slate-950 font-700 leading-9 dark:text-white">{{ t('login.consoleLogin') }}</h2>
               <p class="m-0 mt-3 text-14px text-slate-500 leading-6 dark:text-zinc-400">
-                使用管理账号访问企业工作台，进入身份权限、文件资产与系统态势管理。
+                {{ t('login.formDescription') }}
               </p>
             </div>
 
             <div class="mb-6 grid grid-cols-2 gap-3">
               <div class="rounded-2 border border-slate-200 bg-slate-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-                <div class="text-12px text-slate-500 dark:text-zinc-400">认证方式</div>
-                <div class="mt-1 text-14px text-slate-950 font-600 dark:text-white">账号密码</div>
+                <div class="text-12px text-slate-500 dark:text-zinc-400">{{ t('login.authMethod') }}</div>
+                <div class="mt-1 text-14px text-slate-950 font-600 dark:text-white">{{ t('login.accountPassword') }}</div>
               </div>
               <div class="rounded-2 border border-slate-200 bg-slate-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-                <div class="text-12px text-slate-500 dark:text-zinc-400">环境</div>
+                <div class="text-12px text-slate-500 dark:text-zinc-400">{{ t('login.environment') }}</div>
                 <div class="mt-1 text-14px text-slate-950 font-600 dark:text-white">Local Mock</div>
               </div>
             </div>
 
             <AForm layout="vertical" :model="form" @finish="handleSubmit">
-              <AFormItem name="account" :rules="[{ required: true, message: '请输入账号' }]">
-                <AInput v-model:value="form.account" size="large" placeholder="账号：admin">
+              <AFormItem name="account" :rules="[{ required: true, message: t('login.accountRequired') }]">
+                <AInput v-model:value="form.account" size="large" :placeholder="t('login.accountPlaceholder')">
                   <template #prefix>
                     <UserOutlined class="text-slate-400" />
                   </template>
                 </AInput>
               </AFormItem>
-              <AFormItem name="password" :rules="[{ required: true, message: '请输入密码' }]">
-                <AInputPassword v-model:value="form.password" size="large" placeholder="密码：admin123">
+              <AFormItem name="password" :rules="[{ required: true, message: t('login.passwordRequired') }]">
+                <AInputPassword v-model:value="form.password" size="large" :placeholder="t('login.passwordPlaceholder')">
                   <template #prefix>
                     <LockOutlined class="text-slate-400" />
                   </template>
                 </AInputPassword>
               </AFormItem>
               <div class="mb-6 flex items-center justify-between gap-4 text-14px">
-                <ACheckbox v-model:checked="form.remember">记住账号</ACheckbox>
+                <ACheckbox v-model:checked="form.remember">{{ t('login.rememberAccount') }}</ACheckbox>
                 <a class="shrink-0 text-brand-600 transition hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300">
-                  忘记密码
+                  {{ t('login.forgotPassword') }}
                 </a>
               </div>
               <AButton :loading="loading" block html-type="submit" size="large" type="primary">
-                登录
+                {{ t('login.loginButton') }}
               </AButton>
             </AForm>
 
             <div class="mt-6 rounded-2 border border-amber-200 bg-amber-50 px-4 py-3 text-12px text-amber-800 leading-5 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200">
-              默认演示账号仅用于本地体验，生产环境请接入统一身份认证并启用强密码策略。
+              {{ t('login.demoWarning') }}
             </div>
           </div>
         </div>
 
         <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-12px text-slate-500 dark:text-zinc-400 lg:hidden">
-          <a href="#" class="text-slate-500 hover:text-brand-600 dark:text-zinc-400">帮助</a>
-          <a href="#" class="text-slate-500 hover:text-brand-600 dark:text-zinc-400">隐私</a>
-          <a href="#" class="text-slate-500 hover:text-brand-600 dark:text-zinc-400">条款</a>
-          <span class="w-full text-center">Copyright © 2026 {{ appTitle }}</span>
+          <a href="#" class="text-slate-500 hover:text-brand-600 dark:text-zinc-400">{{ t('login.help') }}</a>
+          <a href="#" class="text-slate-500 hover:text-brand-600 dark:text-zinc-400">{{ t('login.privacy') }}</a>
+          <a href="#" class="text-slate-500 hover:text-brand-600 dark:text-zinc-400">{{ t('login.terms') }}</a>
+          <span class="w-full text-center">{{ t('login.copyright', { appTitle }) }}</span>
         </div>
       </section>
     </div>

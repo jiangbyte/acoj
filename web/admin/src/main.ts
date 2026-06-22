@@ -6,6 +6,7 @@ import './style.css'
 import App from './App.vue'
 import { router } from '@/router'
 import { setupRouterGuards } from '@/router/guards'
+import { i18n } from '@/i18n'
 
 async function setup() {
   const app = createApp(App)
@@ -13,6 +14,7 @@ async function setup() {
 
   pinia.use(piniaPluginPersistedstate)
   app.use(pinia)
+  app.use(i18n)
   setupRouterGuards(router)
   app.use(router)
   await router.isReady()

@@ -61,6 +61,7 @@ declare module 'vue' {
     ATree: typeof import('ant-design-vue/es')['Tree']
     ATreeSelect: typeof import('ant-design-vue/es')['TreeSelect']
     HeaderRightContent: typeof import('./../components/pro/HeaderRightContent.vue')['default']
+    LocaleSwitch: typeof import('./../components/pro/LocaleSwitch.vue')['default']
     MultiTabBar: typeof import('./../components/pro/MultiTabBar.vue')['default']
     PageContainer: typeof import('./../components/pro/PageContainer.vue')['default']
     QueryTable: typeof import('./../components/pro/QueryTable.vue')['default']

@@ -13,28 +13,31 @@ import {
 import type { MenuProps } from 'ant-design-vue'
 import { Modal, message } from 'ant-design-vue'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import type { ThemeMode } from '@/stores/app'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
+import LocaleSwitch from '@/components/pro/LocaleSwitch.vue'
 
 interface InboxItem {
   id: string
-  title: string
-  description: string
-  time: string
+  titleKey: string
+  descriptionKey: string
+  timeKey: string
   type: 'notice' | 'message' | 'todo'
   read?: boolean
 }
 
 const themeOptions = [
-  { key: 'light', label: '明亮模式' },
-  { key: 'dark', label: '暗黑模式' },
-  { key: 'auto', label: '跟随系统' },
+  { key: 'light', labelKey: 'layout.themeLightMode' },
+  { key: 'dark', labelKey: 'layout.themeDarkMode' },
+  { key: 'auto', labelKey: 'layout.themeAutoMode' },
 ] as const
 
+const { t } = useI18n()
 const app = useAppStore()
 const auth = useAuthStore()
 const user = useUserStore()
@@ -44,37 +47,37 @@ const activeInboxTab = ref<'notice' | 'message' | 'todo'>('notice')
 const inboxItems = ref<InboxItem[]>([
   {
     id: 'notice-1',
-    title: '权限资源同步完成',
-    description: '系统菜单与接口权限已完成最新一次同步。',
-    time: '10 分钟前',
+    titleKey: 'layout.inbox.noticeSyncTitle',
+    descriptionKey: 'layout.inbox.noticeSyncDesc',
+    timeKey: 'layout.inbox.minutes10',
     type: 'notice',
   },
   {
     id: 'notice-2',
-    title: '文件存储巡检通过',
-    description: '本地与对象存储连接状态正常。',
-    time: '32 分钟前',
+    titleKey: 'layout.inbox.storageTitle',
+    descriptionKey: 'layout.inbox.storageDesc',
+    timeKey: 'layout.inbox.minutes32',
     type: 'notice',
   },
   {
     id: 'message-1',
-    title: '运营部门提交账号申请',
-    description: '请审核 3 个新成员的管理端访问权限。',
-    time: '1 小时前',
+    titleKey: 'layout.inbox.accountApplyTitle',
+    descriptionKey: 'layout.inbox.accountApplyDesc',
+    timeKey: 'layout.inbox.hour1',
     type: 'message',
   },
   {
     id: 'message-2',
-    title: '审计员请求导出记录',
-    description: '请求导出最近 7 天文件访问明细。',
-    time: '昨天',
+    titleKey: 'layout.inbox.exportTitle',
+    descriptionKey: 'layout.inbox.exportDesc',
+    timeKey: 'layout.inbox.yesterday',
     type: 'message',
   },
   {
     id: 'todo-1',
-    title: '处理锁定账号',
-    description: '2 个账号因连续登录失败进入锁定状态。',
-    time: '今天',
+    titleKey: 'layout.inbox.lockedTitle',
+    descriptionKey: 'layout.inbox.lockedDesc',
+    timeKey: 'layout.inbox.today',
     type: 'todo',
   },
 ])
@@ -87,15 +90,15 @@ const totalUnreadCount = computed(() => unreadNoticeCount.value + unreadMessageC
 
 const themeLabel = computed(() => {
   if (app.themeMode === 'light') {
-    return '明亮'
+    return t('layout.themeLight')
   }
   if (app.themeMode === 'dark') {
-    return '暗黑'
+    return t('layout.themeDark')
   }
-  return '自动'
+  return t('layout.themeAuto')
 })
-const profileName = computed(() => user.profile?.real_name || '管理员')
-const profileTitle = computed(() => user.profile?.title || '系统管理员')
+const profileName = computed(() => user.profile?.real_name || t('layout.profileFallback'))
+const profileTitle = computed(() => user.profile?.title || t('layout.profileTitleFallback'))
 const avatarText = computed(() => profileName.value.slice(0, 1))
 
 const actionButtonClass =
@@ -121,13 +124,13 @@ function markAllRead() {
 }
 
 function openSearch() {
-  message.info('站内搜索功能已就绪，可在后续接入全局检索数据源。')
+  message.info(t('layout.searchReady'))
 }
 
 function handleLogout() {
   Modal.confirm({
-    title: '退出登录',
-    content: '确认退出当前管理端会话？',
+    title: t('layout.logout'),
+    content: t('layout.logoutConfirm'),
     async onOk() {
       await auth.logout()
       router.push('/auth/login')
@@ -142,7 +145,7 @@ const handleThemeMenuClick: MenuProps['onClick'] = ({ key }) => {
 
 <template>
   <div class="ml-auto flex h-14 shrink-0 items-center gap-1 overflow-hidden">
-    <ATooltip title="站内搜索">
+    <ATooltip :title="t('layout.siteSearch')">
       <button :class="`${actionButtonClass} hidden md:inline-flex`" type="button" @click="openSearch">
         <SearchOutlined />
       </button>
@@ -154,11 +157,11 @@ const handleThemeMenuClick: MenuProps['onClick'] = ({ key }) => {
       </button>
       <template #content>
         <div class="w-72">
-          <div class="mb-3 text-15px text-slate-900 font-600 dark:text-zinc-100">帮助中心</div>
+          <div class="mb-3 text-15px text-slate-900 font-600 dark:text-zinc-100">{{ t('layout.helpCenter') }}</div>
           <div class="grid gap-2">
-            <AButton block class="justify-start" type="text">使用文档</AButton>
-            <AButton block class="justify-start" type="text">权限配置指南</AButton>
-            <AButton block class="justify-start" type="text">问题反馈</AButton>
+            <AButton block class="justify-start" type="text">{{ t('layout.docs') }}</AButton>
+            <AButton block class="justify-start" type="text">{{ t('layout.permissionGuide') }}</AButton>
+            <AButton block class="justify-start" type="text">{{ t('layout.feedback') }}</AButton>
           </div>
           <ADivider class="my-3" />
           <div class="text-12px text-slate-500 dark:text-zinc-400">Hei Admin · Enterprise Console</div>
@@ -166,15 +169,17 @@ const handleThemeMenuClick: MenuProps['onClick'] = ({ key }) => {
       </template>
     </APopover>
 
-    <ATooltip title="GitHub">
+    <ATooltip :title="t('layout.github')">
       <button :class="`${actionButtonClass} hidden sm:inline-flex`" type="button" @click="openGithub">
         <GithubOutlined />
       </button>
     </ATooltip>
 
-    <ATooltip :title="`主题：${themeLabel}`">
+    <LocaleSwitch :button-class="actionButtonClass" />
+
+    <ATooltip :title="t('layout.theme', { theme: themeLabel })">
       <ADropdown placement="bottomRight" :trigger="['click']">
-        <button :aria-label="`主题：${themeLabel}`" :class="themeButtonClass" type="button">
+        <button :aria-label="t('layout.theme', { theme: themeLabel })" :class="themeButtonClass" type="button">
           <BgColorsOutlined />
         </button>
         <template #overlay>
@@ -182,7 +187,7 @@ const handleThemeMenuClick: MenuProps['onClick'] = ({ key }) => {
             <AMenuItem v-for="option in themeOptions" :key="option.key">
               <span class="inline-flex items-center">
                 <BgColorsOutlined class="mr-2 text-15px" />
-                <span>{{ option.label }}</span>
+                <span>{{ t(option.labelKey) }}</span>
               </span>
             </AMenuItem>
           </AMenu>
@@ -200,21 +205,21 @@ const handleThemeMenuClick: MenuProps['onClick'] = ({ key }) => {
         <div class="w-82 max-w-[calc(100vw-32px)]">
           <ATabs v-model:active-key="activeInboxTab" size="small" centered>
             <ATabPane key="notice">
-              <template #tab>通知 {{ unreadNoticeCount }}</template>
+              <template #tab>{{ t('layout.notice') }} {{ unreadNoticeCount }}</template>
             </ATabPane>
             <ATabPane key="message">
-              <template #tab>消息 {{ unreadMessageCount }}</template>
+              <template #tab>{{ t('layout.message') }} {{ unreadMessageCount }}</template>
             </ATabPane>
             <ATabPane key="todo">
-              <template #tab>待办 {{ todoCount }}</template>
+              <template #tab>{{ t('layout.todo') }} {{ todoCount }}</template>
             </ATabPane>
           </ATabs>
 
-          <AEmpty v-if="visibleInboxItems.length === 0" class="py-6" description="暂无内容" />
+          <AEmpty v-if="visibleInboxItems.length === 0" class="py-6" :description="t('common.empty')" />
           <AList v-else item-layout="horizontal" :data-source="visibleInboxItems">
             <template #renderItem="{ item }">
               <AListItem class="cursor-pointer rounded-2 px-2 transition hover:bg-slate-50 dark:hover:bg-zinc-800">
-                <AListItemMeta :description="item.description">
+                <AListItemMeta :description="t(item.descriptionKey)">
                   <template #avatar>
                     <AAvatar :size="32" :class="item.read ? 'bg-slate-300' : 'bg-brand-500'">
                       <BellOutlined v-if="item.type === 'notice'" />
@@ -224,8 +229,8 @@ const handleThemeMenuClick: MenuProps['onClick'] = ({ key }) => {
                   </template>
                   <template #title>
                     <div class="flex items-center justify-between gap-3">
-                      <span class="truncate">{{ item.title }}</span>
-                      <span class="shrink-0 text-12px text-slate-400">{{ item.time }}</span>
+                      <span class="truncate">{{ t(item.titleKey) }}</span>
+                      <span class="shrink-0 text-12px text-slate-400">{{ t(item.timeKey) }}</span>
                     </div>
                   </template>
                 </AListItemMeta>
@@ -234,8 +239,8 @@ const handleThemeMenuClick: MenuProps['onClick'] = ({ key }) => {
           </AList>
 
           <div class="mt-3 flex border-t border-slate-100 pt-3 dark:border-zinc-800">
-            <AButton block type="link" @click="markVisibleRead">当前已读</AButton>
-            <AButton block type="link" @click="markAllRead">全部已读</AButton>
+            <AButton block type="link" @click="markVisibleRead">{{ t('layout.markCurrentRead') }}</AButton>
+            <AButton block type="link" @click="markAllRead">{{ t('layout.markAllRead') }}</AButton>
           </div>
         </div>
       </template>
@@ -265,12 +270,12 @@ const handleThemeMenuClick: MenuProps['onClick'] = ({ key }) => {
           <AMenuDivider />
           <AMenuItem key="center" @click="router.push('/profile')">
             <UserOutlined />
-            个人中心
+            {{ t('layout.profileCenter') }}
           </AMenuItem>
           <AMenuDivider />
           <AMenuItem key="logout" @click="handleLogout">
             <LogoutOutlined />
-            退出登录
+            {{ t('layout.logout') }}
           </AMenuItem>
         </AMenu>
       </template>

@@ -5,6 +5,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { useRouteStore } from '@/stores/route'
 import { useUserStore } from '@/stores/user'
+import { t } from '@/i18n'
+import { translateWithFallback } from '@/utils/i18n'
 
 export function setupRouterGuards(router: Router) {
   router.beforeEach(async (to) => {
@@ -96,6 +98,6 @@ export function setupRouterGuards(router: Router) {
   })
 
   router.afterEach((to) => {
-    document.title = `${to.meta.title || '管理端'} - ${import.meta.env.VITE_APP_TITLE}`
+    document.title = `${translateWithFallback(to.meta.titleKey, String(to.meta.title || t('app.admin')))} - ${import.meta.env.VITE_APP_TITLE}`
   })
 }

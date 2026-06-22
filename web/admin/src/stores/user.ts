@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 
 import { getMe } from '@/apis/auth'
 import type { AdminMe } from '@/apis/auth'
+import { t } from '@/i18n'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -23,7 +24,7 @@ export const useUserStore = defineStore('user', {
         const result = await getMe()
         const me = result?.data
         if (!result?.isSuccess || !me) {
-          throw new Error(result?.message || '获取用户信息失败')
+          throw new Error(result?.message || t('http.401'))
         }
         this.me = {
           ...me,

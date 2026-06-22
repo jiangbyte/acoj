@@ -2,10 +2,12 @@
 import { PlusOutlined } from '@ant-design/icons-vue'
 import type { DataNode } from 'ant-design-vue/es/tree'
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { DeptNode } from '@/types/api'
 import { listDeptTree } from '@/apis/iam'
 
+const { t } = useI18n()
 const treeData = ref<DeptNode[]>([])
 const selected = ref<DeptNode | null>(null)
 const drawerOpen = ref(false)
@@ -48,7 +50,7 @@ onMounted(async () => {
   <div class="grid grid-cols-1 gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
     <div class="page-card p-6">
       <div class="toolbar-row mb-4">
-        <div class="text-slate-900 font-700 dark:text-zinc-100">组织架构</div>
+        <div class="text-slate-900 font-700 dark:text-zinc-100">{{ t('table.orgTree') }}</div>
         <AButton size="small" type="primary" @click="drawerOpen = true">
           <template #icon><PlusOutlined /></template>
         </AButton>
@@ -62,31 +64,31 @@ onMounted(async () => {
 
     <div class="page-card p-6">
       <div class="toolbar-row mb-6">
-        <h2 class="m-0 text-18px text-slate-900 font-700 dark:text-zinc-100">{{ selected?.name || '部门详情' }}</h2>
+        <h2 class="m-0 text-18px text-slate-900 font-700 dark:text-zinc-100">{{ selected?.name || t('table.departmentDetail') }}</h2>
         <ASpace>
-          <AButton>编辑</AButton>
-          <AButton type="primary" @click="drawerOpen = true">新增下级</AButton>
+          <AButton>{{ t('common.edit') }}</AButton>
+          <AButton type="primary" @click="drawerOpen = true">{{ t('table.addChild') }}</AButton>
         </ASpace>
       </div>
       <ADescriptions bordered :column="{ xs: 1, md: 2 }">
-        <ADescriptionsItem label="部门编码">{{ selected?.code || '-' }}</ADescriptionsItem>
-        <ADescriptionsItem label="类型">{{ selected?.category || '-' }}</ADescriptionsItem>
-        <ADescriptionsItem label="负责人">{{ selected?.manager || '-' }}</ADescriptionsItem>
-        <ADescriptionsItem label="上级ID">{{ selected?.parent_id || '-' }}</ADescriptionsItem>
+        <ADescriptionsItem :label="t('table.deptCode')">{{ selected?.code || '-' }}</ADescriptionsItem>
+        <ADescriptionsItem :label="t('common.type')">{{ selected?.category || '-' }}</ADescriptionsItem>
+        <ADescriptionsItem :label="t('common.owner')">{{ selected?.manager || '-' }}</ADescriptionsItem>
+        <ADescriptionsItem :label="t('table.parentId')">{{ selected?.parent_id || '-' }}</ADescriptionsItem>
       </ADescriptions>
     </div>
 
-    <ADrawer v-model:open="drawerOpen" title="维护部门" width="480">
+    <ADrawer v-model:open="drawerOpen" :title="t('table.maintainDept')" width="480">
       <AForm layout="vertical">
-        <AFormItem label="部门名称"><AInput placeholder="请输入部门名称" /></AFormItem>
-        <AFormItem label="部门编码"><AInput placeholder="请输入部门编码" /></AFormItem>
-        <AFormItem label="类型"><ASelect placeholder="请选择类型" /></AFormItem>
-        <AFormItem label="负责人"><AInput placeholder="请输入负责人" /></AFormItem>
+        <AFormItem :label="t('table.deptName')"><AInput :placeholder="t('table.deptNamePlaceholder')" /></AFormItem>
+        <AFormItem :label="t('table.deptCode')"><AInput :placeholder="t('table.deptCodePlaceholder')" /></AFormItem>
+        <AFormItem :label="t('common.type')"><ASelect :placeholder="t('table.deptTypePlaceholder')" /></AFormItem>
+        <AFormItem :label="t('common.owner')"><AInput :placeholder="t('table.managerPlaceholder')" /></AFormItem>
       </AForm>
       <template #footer>
         <ASpace>
-          <AButton @click="drawerOpen = false">取消</AButton>
-          <AButton type="primary" @click="drawerOpen = false">保存</AButton>
+          <AButton @click="drawerOpen = false">{{ t('common.cancel') }}</AButton>
+          <AButton type="primary" @click="drawerOpen = false">{{ t('common.save') }}</AButton>
         </ASpace>
       </template>
     </ADrawer>

@@ -2,15 +2,18 @@
 import { DownOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import type { MenuProps } from 'ant-design-vue'
 import { watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import type { VisitedTab } from '@/stores/app'
 import { useAppStore } from '@/stores/app'
 import { getIconComponent } from '@/utils/icons'
+import { translateWithFallback } from '@/utils/i18n'
 
 const app = useAppStore()
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 watch(
   () => route.fullPath,
@@ -81,6 +84,10 @@ function openTab(tab: VisitedTab) {
   }
 }
 
+function getTabTitle(tab: VisitedTab) {
+  return translateWithFallback(tab.title_key, tab.title)
+}
+
 function handleTagClose(event: MouseEvent, tab: VisitedTab) {
   event.preventDefault()
   event.stopPropagation()
@@ -149,26 +156,26 @@ const handleActionMenuClick: MenuProps['onClick'] = ({ key }) => {
               />
               <span class="inline-flex min-w-0 items-center gap-1.5">
                 <component :is="getTabIcon(tab)" v-if="getTabIcon(tab)" class="shrink-0 text-13px" />
-                <span class="min-w-0 truncate">{{ tab.title }}</span>
+                <span class="min-w-0 truncate">{{ getTabTitle(tab) }}</span>
               </span>
             </ATag>
             <template #overlay>
               <AMenu @click="handleTagMenuClick(tab)">
-                <AMenuItem key="close" :disabled="!tab.closable">关闭当前标签</AMenuItem>
-                <AMenuItem key="closeRight">关闭右侧</AMenuItem>
-                <AMenuItem key="closeLeft">关闭左侧</AMenuItem>
-                <AMenuItem key="closeOther">关闭其他</AMenuItem>
+                <AMenuItem key="close" :disabled="!tab.closable">{{ t('tabs.closeCurrentTab') }}</AMenuItem>
+                <AMenuItem key="closeRight">{{ t('tabs.closeRight') }}</AMenuItem>
+                <AMenuItem key="closeLeft">{{ t('tabs.closeLeft') }}</AMenuItem>
+                <AMenuItem key="closeOther">{{ t('tabs.closeOther') }}</AMenuItem>
                 <AMenuDivider />
-                <AMenuItem key="closeAll">关闭全部</AMenuItem>
+                <AMenuItem key="closeAll">{{ t('tabs.closeAll') }}</AMenuItem>
               </AMenu>
             </template>
           </ADropdown>
         </div>
       </div>
       <div class="flex h-10 shrink-0 items-center gap-0.5 border-l border-slate-100 px-1 sm:gap-1 sm:px-2 dark:border-zinc-800">
-        <ATooltip title="刷新当前页签">
+        <ATooltip :title="t('tabs.refreshCurrent')">
           <AButton
-            aria-label="刷新当前页签"
+            :aria-label="t('tabs.refreshCurrent')"
             class="inline-flex! h-8! w-8! items-center! justify-center! rounded-2! p-0! text-slate-600! hover:bg-slate-100! dark:text-zinc-300! dark:hover:bg-zinc-800!"
             type="text"
             @click="reloadCurrentTab"
@@ -178,22 +185,22 @@ const handleActionMenuClick: MenuProps['onClick'] = ({ key }) => {
         </ATooltip>
         <ADropdown placement="bottomRight" :trigger="['click']">
           <AButton
-            aria-label="页签操作"
+            :aria-label="t('tabs.tabActions')"
             class="inline-flex! h-8! items-center! gap-1! rounded-2! px-1.5! text-13px! text-slate-600! hover:bg-slate-100! sm:px-2! dark:text-zinc-300! dark:hover:bg-zinc-800!"
             type="text"
           >
-            <span class="hidden sm:inline">操作</span>
+            <span class="hidden sm:inline">{{ t('tabs.operations') }}</span>
             <DownOutlined class="text-10px" />
           </AButton>
           <template #overlay>
             <AMenu @click="handleActionMenuClick">
-              <AMenuItem key="refresh">刷新当前</AMenuItem>
-              <AMenuItem key="close">关闭当前</AMenuItem>
-              <AMenuItem key="closeRight">关闭右侧</AMenuItem>
-              <AMenuItem key="closeLeft">关闭左侧</AMenuItem>
-              <AMenuItem key="closeOther">关闭其他</AMenuItem>
+              <AMenuItem key="refresh">{{ t('tabs.refresh') }}</AMenuItem>
+              <AMenuItem key="close">{{ t('tabs.closeCurrent') }}</AMenuItem>
+              <AMenuItem key="closeRight">{{ t('tabs.closeRight') }}</AMenuItem>
+              <AMenuItem key="closeLeft">{{ t('tabs.closeLeft') }}</AMenuItem>
+              <AMenuItem key="closeOther">{{ t('tabs.closeOther') }}</AMenuItem>
               <AMenuDivider />
-              <AMenuItem key="closeAll">关闭全部</AMenuItem>
+              <AMenuItem key="closeAll">{{ t('tabs.closeAll') }}</AMenuItem>
             </AMenu>
           </template>
         </ADropdown>
