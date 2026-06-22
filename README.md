@@ -1,347 +1,134 @@
-# Hei FastAPI
+# hei-fastapi
 
-> 短时间内暂停维护中...
+FastAPI 后端工程模板，提供常用的项目组织、认证、权限、存储、任务和测试基础：
 
-<img width="120" src="vitepress/docs/public/logo.svg">
+- 全链路异步：FastAPI + SQLAlchemy Async + Redis Async
+- 模块化单体目录
+- 随机字符串 Token + Redis 会话
+- 多用户体系：单用户主表 + 管理端/用户端各自扩展表
+- RBAC、部门树、用户组、数据权限
+- 所有数据模型禁止数据库级外键，关联关系统一在业务代码中显式维护
+- 可选开启的可观测性：JSON 日志、Prometheus 指标、OpenTelemetry tracing
+- RabbitMQ + Celery 异步任务骨架
+- S3(MinIO) 默认文件存储，支持本地存储回退
+- 雪花字符串 ID，不使用数据库自增主键
+- 时间输入输出统一采用 ISO 8601，响应序列化统一输出 UTC `Z` 后缀
+- Alembic 迁移、pytest 测试基础
 
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Python](https://img.shields.io/badge/Python-3.10+-orange.svg)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.136+-brightgreen.svg)
-
-## 简介
-
-**Hei FastAPI** —— Python + FastAPI + SQLAlchemy 构建的快速开发框架，开箱即用。采用**插件化架构**，业务模块自包含于 `plugins/` 目录，自动注册路由、模型和权限，对标 hei-gin (Go) 的设计。
-
-**在线文档**: [https://jiangbyte.github.io/hei-fastapi/](https://jiangbyte.github.io/hei-fastapi/)
-
-## 预览
-
-![](./docs/readme/login.png)
-
-![](./docs/readme/dashboard.png)
-
-![](./docs/readme/home.png)
-
-## 技术栈
-
-| 类型 | 技术 |
-| --- | --- |
-| 核心框架 | Python 3.10+ / FastAPI 0.136+ / Uvicorn |
-| 数据验证 | Pydantic v2 + Pydantic-Settings |
-| ORM | SQLAlchemy 2.0 (Mapped + mapped_column) |
-| 数据库 | MySQL 8.0+ (PyMySQL) |
-| 缓存 | Redis 6.0+ (redis-py async) |
-| 认证授权 | Token / SM2 国密加解密 / bcrypt 密码哈希 |
-| 文件存储 | 本地文件系统 / MinIO / S3 兼容对象存储 |
-| 分布式 ID | Snowflake ID 算法 |
-| 测试 | pytest + pytest-asyncio + httpx |
-
-## 核心特性
-
-- **插件化架构** — 业务模块以 `HeiPlugin` 子类自注册，自动发现路由、模型、权限，支持 `on_init` / `on_start` / `on_stop` 生命周期
-- **双端认证体系** — B 端（后台管理）和 C 端（客户端）独立 realm，基于 `micosauth` 显式声明
-- **SM2 国密加密** — 登录密码传输使用国密 SM2 C1C3C2 模式加密
-- **bcrypt 密码哈希** — 存储密码使用 bcrypt 加盐哈希
-- **RBAC 权限控制** — 用户→角色→权限 + 用户直授权限，双层模型
-- **数据权限（行级）** — 支持 ALL / ORG / ORG_AND_BELOW / SELF / CUSTOM_ORG / GROUP / GROUP_AND_BELOW / CUSTOM_GROUP 等 8 种数据范围控制，多角色多路径按最严策略合并
-- **权限自动发现** — `Perm("code", "name")` 双功能装饰器，自动注册权限并缓存到 Redis
-- **操作日志** — `@SysLog` 装饰器自动记录用户操作请求参数、响应结果、执行状态
-- **防重复提交** — 基于 Redis 的 `RateLimiter(..., max_requests=1)` 约束
-- **接口速率限制** — `RateLimiter` 中间件（基于 Redis Lua 脚本）
-- **链路追踪** — 基于 `trace_id` 的全链路追踪
-- **统一验证码** — B 端/C 端独立的图形验证码服务
-- **统一响应格式** — `{code, message, data, success, trace_id}` 标准结构
-- **抽象文件存储** — 统一的 `FileStorageInterface` 接口，三种后端（Local / MinIO / S3），支持配置切换
-- **定时调度** — 支持 `@every 5m`、`@daily` 等规格的同步任务调度器，集成插件生命周期
-- **DB 自动迁移** — `cli/migrate` 命令行工具自动发现所有已注册的 Model
-- **模块生命周期** — `HeiPlugin` 统一管理插件的 Init / Start / Stop
-- **在线会话管理** — B 端和 C 端独立的会话管理，支持在线用户查看和强制下线
-- **雪花 ID** — 分布式 Snowflake ID 生成器
-- **事件总线** — 异步 `@subscribe` / `await publish` 跨插件通信
-- **通用 CRUD** — `sdk/crud` 提供通用分页、详情、删除等标准操作函数
-
-## 项目结构
-
-```
-hei-fastapi/
-├── main.py                          # 应用入口：create_app() → uvicorn.run()
-├── .env                             # 环境配置（pydantic-settings 加载）
-├── pyproject.toml                   # 项目元数据与依赖
-├── requirements.txt                 # 锁定依赖版本
-├── cli/                             # CLI 工具
-│   ├── codegen.py                   # 插件脚手架生成
-│   └── migrate.py                   # 数据库迁移
-├── sdk/config/
-│   └── settings.py                  # Pydantic-Settings 模型定义
-├── sdk/                            # 框架核心
-│   ├── app/
-│   │   ├── setup.py                 # create_app() — 应用工厂
-│   │   ├── lifespan.py              # 生命周期（DB/Redis/插件启停）
-│   │   └── health.py                # 健康检查
-│   ├── auth/                        # micosauth runtime 装配、realm 常量、权限 provider
-│   ├── captcha/                     # 图形验证码
-│   ├── constants/                   # Redis 缓存键、系统字段
-│   ├── crud/                        # 通用 CRUD 辅助函数
-│   ├── db/                          # MySQL + Redis 连接管理
-│   ├── enums/                       # 枚举：状态、权限、资源等
-│   ├── exception/                   # BusinessException
-│   ├── log/                         # @SysLog 操作日志
-│   ├── middleware/                  # CORS, Trace, Exception, Metrics, RateLimit
-│   ├── plugin/                      # 插件框架
-│   │   ├── interface.py             # HeiPlugin ABC + __init_subclass__ 自动注册
-│   │   ├── registry.py              # 路由、中间件、权限注册
-│   │   ├── loader.py                # 插件发现、加载、生命周期
-│   │   ├── core_plugins.py          # 内置核心插件（auth, captcha, scheduler, utils）
-│   │   └── event_bus.py             # 异步事件总线
-│   ├── pojo/                        # 公共 POJO（IdParam, DateTimeMixin）
-│   ├── result/                      # 统一响应格式
-│   ├── scheduler/                   # Cron 定时任务调度器
-│   ├── storage/                     # 文件存储抽象（Local / MinIO / S3）
-│   └── utils/                       # 工具函数
-├── plugins/                         # 业务插件
-│   ├── plugin_sys/                  # 系统管理（用户/角色/权限/组织/字典/配置等）
-│   ├── plugin_client/               # 客户端（C 端用户/会话/认证）
-└── scripts/
-    └── sqls/
-        └── hei_ddl.sql              # 完整 DDL
-```
-
-### 插件内部结构
-
-```
-plugins/plugin_xxx/
-├── __init__.py       # 导出门面
-├── plugin.py         # HeiPlugin 子类（生命周期钩子）
-├── models.py         # ORM 模型
-├── params.py         # Pydantic 请求/响应模型
-├── repository.py     # Repository 层
-├── service.py        # 业务逻辑层
-└── api/
-    └── v1/
-        └── api.py    # 路由定义（register_router(router)）
-```
-
-## 快速开始
-
-### 环境要求
-
-- Python 3.10+
-- MySQL 8.0+
-- Redis 6.0+
-
-### 安装依赖
+## Quick Start
 
 ```bash
-pip install -r requirements.txt
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev,postgres]
+cp .env.example .env
+alembic upgrade head
+uvicorn app.main:app --reload
 ```
 
-### 配置
+默认数据库为 PostgreSQL 异步驱动 `asyncpg`。测试环境仍使用内存 SQLite，避免本地校验依赖外部数据库服务。
 
-编辑 `.env` 文件，主要配置项：
+建议启动依赖：
+
+- PostgreSQL
+- RabbitMQ
+- MinIO 或其他 S3 兼容对象存储
+- Redis（可选，轻量部署可关闭）
+
+## Infrastructure Defaults
+
+- 消息队列：RabbitMQ 作为 Celery broker
+- 文件存储：S3(MinIO) 默认实现，可切本地存储
+- 主键：Snowflake 字符串 ID
+
+## Configuration Profiles
+
+项目没有单独的额外模式配置项。轻量部署与扩展依赖通过现有配置组合表达，避免配置项和运行时代码脱节。
+
+轻量部署模式：
 
 ```env
-# 应用
-APP__NAME=hei-fastapi
-APP__ENV=dev
-APP__HOST=127.0.0.1
-APP__PORT=18885
-
-# 数据库
-DB__HOST=localhost
-DB__PORT=3306
-DB__USER=hei
-DB__PASSWORD=replace-with-strong-db-password
-DB__DATABASE=hei_data
-
-# Redis
-REDIS__HOST=localhost
-REDIS__PORT=6379
-REDIS__PASSWORD=replace-with-strong-redis-password
-
-# Token
-TOKEN__EXPIRE_SECONDS=2592000
-TOKEN__TOKEN_NAME=Authorization
-
-# SM2 密钥
-SM2__PRIVATE_KEY=replace-with-private-key
-SM2__PUBLIC_KEY=replace-with-public-key
-
-# 跨域
-CORS__ALLOW_ORIGINS=["http://localhost:3000"]
-
-# 重置密码默认值
-USER__RESET_PASSWORD=replace-with-temporary-reset-password
+REDIS__ENABLED=false
+AUTH__ENABLE_MEMORY_SESSION_FALLBACK=true
+STORAGE__PROVIDER=local
+OBSERVABILITY__ENABLED=false
 ```
 
-生产环境注意：
+适用场景：
 
-- 设置 `APP__ENV=prod` 或 `APP_ENV=prod` 后，服务会对弱密码、空 SM2 密钥、`swagger` 暴露、`CORS=*` 等配置执行启动前校验。
-- 不要直接使用 `.env.example` 中的占位值，生产环境必须替换为真实安全配置。
+- 本地快速验证
+- 单机开发环境
+- 不希望额外依赖 Redis、Prometheus、OTel Collector、MinIO
 
-### 初始化数据库
-
-```bash
-# 方式一：直接执行 DDL
-mysql -u root -p hei_data < scripts/sqls/hei_ddl.sql
-
-# 方式二：使用迁移工具（自动建表）
-python -m cli.migrate --apply
-```
-
-### 启动服务
-
-```bash
-python main.py
-```
-
-或使用 uvicorn 热重载模式：
-
-```bash
-uvicorn main:app --reload
-```
-
-启动后访问：
-
-- API 文档：<http://localhost:18885/docs>
-- 健康检查：<http://localhost:18885/>
-
-## CLI 工具
-
-### 插件脚手架
-
-```bash
-# 列出所有插件
-python -m cli.codegen list
-
-# 创建新插件（生成 9 个文件，自动注册）
-python -m cli.codegen scaffold plugin_xxx
-```
-
-生成的插件立即可以加载使用，只需填充业务逻辑即可。
-
-### 数据库迁移
-
-```bash
-# 预览（dry-run）
-python -m cli.migrate
-
-# 执行
-python -m cli.migrate --apply
-```
-
-## 认证体系
-
-项目统一使用 `micosauth`：
-
-- FastAPI 应用启动时通过 `install_fastapi_auth(...)` 安装运行时
-- B 端接口显式使用 `@require_login(realm=BUSINESS_REALM_ID)` 或 `Perm(..., realm_id=BUSINESS_REALM_ID)`
-- C 端接口显式使用 `@require_login(realm=CONSUMER_REALM_ID)` 或对应 C 端权限装饰器
-- 公共接口通过路由路径单独暴露，不再依赖路径前缀自动推断认证上下文
-
-## 装饰器参考
-
-### 权限注册 + 校验
-
-```python
-from sdk.plugin import Perm
-
-@router.get("/api/v1/sys/banner/page")
-@Perm("sys:banner:page", "横幅分页")
-async def page(...):
-    ...
-```
-
-`Perm()` 同时完成两件事：注册权限到 `_perm_entries`，启动时自动缓存到 Redis；返回权限校验装饰器，运行时检查。
-
-### 操作日志
-
-```python
-from sdk.log import SysLog
-
-@router.post("/api/v1/sys/config/create")
-@SysLog("新增系统配置")
-@Perm("sys:config:create", "新增系统配置")
-async def create(...):
-    ...
-```
-
-### 防重复提交
-
-```python
-from sdk.web.middleware import RateLimiter
-
-@router.post("/api/v1/sys/xxx/create")
-@RateLimiter("norepeat:sys:xxx:create", window=3, max_requests=1)
-async def create(...):
-    ...
-```
-
-## API 规范
-
-### 统一响应格式
-
-```json
-{
-  "code": 200,
-  "message": "请求成功",
-  "data": {},
-  "success": true,
-  "trace_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-}
-```
-
-### 分页响应
-
-```json
-{
-  "code": 200,
-  "message": "请求成功",
-  "data": {
-    "records": [],
-    "total": 100,
-    "current": 1,
-    "size": 20
-  },
-  "success": true,
-  "trace_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-}
-```
-
-## 文件存储配置
-
-框架支持三种存储后端，通过 `STORAGE__DEFAULT` 切换：
+扩展依赖模式：
 
 ```env
-# 默认（本地文件）
-STORAGE__DEFAULT=LOCAL
-
-# MinIO
-STORAGE__DEFAULT=MINIO
-STORAGE__MINIO__ENDPOINT=http://localhost:9000
-STORAGE__MINIO__ACCESS_KEY=minioadmin
-STORAGE__MINIO__SECRET_KEY=minioadmin
-
-# S3 兼容
-STORAGE__DEFAULT=S3
-STORAGE__S3__BUCKET=my-bucket
+REDIS__ENABLED=true
+STORAGE__PROVIDER=s3
+OBSERVABILITY__ENABLED=true
+OBSERVABILITY__METRICS_ENABLED=true
+OBSERVABILITY__TRACING_ENABLED=true
+OBSERVABILITY__OTLP_ENABLED=true
+OBSERVABILITY__OTLP_ENDPOINT=http://127.0.0.1:4318
+OBSERVABILITY__DB_OBSERVABILITY_ENABLED=true
+OBSERVABILITY__HTTP_CLIENT_OBSERVABILITY_ENABLED=true
+OBSERVABILITY__CELERY_OBSERVABILITY_ENABLED=true
 ```
 
-## 权限数据链路
+适用场景：
 
+- 多环境部署
+- 需要统一会话存储
+- 需要按需启用对象存储、指标、链路追踪或任务观测
+
+## Observability
+
+可观测性默认关闭，只保留基础日志和 `request_id`。
+
+开启示例：
+
+```env
+OBSERVABILITY__ENABLED=true
+OBSERVABILITY__LOG_JSON=true
+OBSERVABILITY__METRICS_ENABLED=true
+OBSERVABILITY__TRACING_ENABLED=true
+OBSERVABILITY__OTLP_ENABLED=true
+OBSERVABILITY__OTLP_ENDPOINT=http://127.0.0.1:4318
 ```
-User ──→ RelUserRole ──→ Role ──→ RelRolePermission ──→ Permission
-User ──→ RelUserPermission ──→ Permission (直授)
-```
 
-多角色多路径下按最严策略合并（本人 < 自定义 < 本级及以下 < 本级 < 全部）。
+说明：
 
-## 相关项目
+- `OBSERVABILITY__METRICS_ENABLED=true` 后应用暴露 `/metrics`
+- `OBSERVABILITY__TRACING_ENABLED=true` 后启用本地 tracing
+- `OBSERVABILITY__OTLP_ENABLED=true` 且配置 endpoint 后才导出到 collector
+- `OBSERVABILITY__DB_OBSERVABILITY_ENABLED=true` 后为数据库访问接入 tracing
+- `OBSERVABILITY__HTTP_CLIENT_OBSERVABILITY_ENABLED=true` 后采集出站 HTTP 指标与 tracing
+- `OBSERVABILITY__CELERY_OBSERVABILITY_ENABLED=true` 后采集 Celery 任务指标
+- 轻量部署可保持全部关闭，不依赖 Prometheus 或 OTel Collector
 
-- **[Hei Gin](https://github.com/jiangbyte/hei-gin)** — Go 单体版本（设计对标的姊妹项目）
-- **[Hei Boot](https://github.com/jiangbyte/hei-boot)** — Java Spring Boot 单体版本
-- **[Hei Admin Vue](https://github.com/jiangbyte/hei-admin-vue)** — Vue3 前端管理后台
+## Architecture Constraints
 
-## 开源协议
+- 用户采用单主表 `sys_user` 区分不同用户体系
+- 管理端扩展资料与门户端扩展资料分别落在 `user/admin`、`user/portal` 模块
+- 所有关联关系只保留业务意义上的 ID 字段，不建立数据库外键
+- 创建人、更新人等审计字段采用显式字段存储，不依赖 ORM relationship
+- 服务层、仓储层优先使用命令对象或结构化 DTO 传参，减少平铺形参
 
-本项目采用 [MIT License](LICENSE) 开源协议
+## API Versioning
 
+项目采用“路径版本 + 目录版本”维护 API：
+
+- 运行时路径版本：当前统一暴露在 `/api/v1/*`
+- 代码目录版本：`app/api/v1` 负责 `v1` 的路由聚合与装配
+- 业务模块路由保持不带版本号，版本差异只在 API 装配层处理
+
+后续新增版本时，直接新增 `app/api/v2` 并注册到 `/api/v2`，不要在 `v1` 目录内做破坏性变更。
+
+## Layout
+
+- `app/api`: API 版本装配入口
+- `app/core`: 配置、安全、日志、异常、统一响应
+- `app/platform`: DB/Redis/HTTP/Celery 等基础设施
+- `app/modules`: 业务模块
+- `migrations`: Alembic
+- `tests`: 单元、集成、接口测试
