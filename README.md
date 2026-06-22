@@ -143,6 +143,19 @@ OBSERVABILITY__CELERY_OBSERVABILITY_ENABLED=true
 ./scripts/makemigration.sh "message"
 ```
 
+数据库迁移只管理结构，不写入业务种子数据。新增或修改表结构时，先修改
+SQLAlchemy model，再执行自动生成：
+
+```bash
+./scripts/makemigration.sh "add xxx table"
+./scripts/check_migration.sh
+./scripts/migrate.sh
+```
+
+生成的 `migrations/versions/*.py` 应只包含 `create_table`、`add_column`、
+`create_index` 等结构变更，不应包含业务 `insert/update/delete`。本地开发库如
+需重建，删除并重新创建 PostgreSQL 数据库后执行 `./scripts/migrate.sh`。
+
 前端：
 
 ```bash

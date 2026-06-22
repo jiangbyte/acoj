@@ -902,7 +902,29 @@ export const routeResources: RouteResource[] = [
   },
 ]
 
-export const resources: ResourceTreeNode[] = routeResources
+function toResourceTree(items: RouteResource[]) {
+  const nodeMap = new Map<string, ResourceTreeNode>()
+  const roots: ResourceTreeNode[] = []
+
+  items
+    .slice()
+    .sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id))
+    .forEach((item) => {
+      nodeMap.set(item.id, { ...item, children: [] })
+    })
+
+  nodeMap.forEach((node) => {
+    if (node.parent_id && nodeMap.has(node.parent_id)) {
+      nodeMap.get(node.parent_id)?.children?.push(node)
+      return
+    }
+    roots.push(node)
+  })
+
+  return roots
+}
+
+export const resources: ResourceTreeNode[] = toResourceTree(routeResources)
 
 export const files: FileItem[] = [
   {

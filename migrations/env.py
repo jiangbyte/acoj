@@ -7,6 +7,8 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.config.settings import settings
+from app.modules.banner import model as _banner_model  # noqa: F401
+from app.modules.dict import model as _dict_model  # noqa: F401
 from app.modules.file import model as _file_model  # noqa: F401
 from app.modules.iam import model as _iam_model  # noqa: F401
 from app.modules.user.admin import model as _admin_profile_model  # noqa: F401
@@ -22,11 +24,22 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def include_name(name: str | None, type_: str, parent_names: dict[str, str | None]) -> bool:
+    """Keep autogenerate scoped to tables declared in project metadata."""
+
+    if type_ == "schema":
+        return name in (None, target_metadata.schema)
+    if type_ == "table":
+        return name in target_metadata.tables
+    return True
+
+
 def run_migrations_offline() -> None:
     context.configure(
         url=settings.db.url,
         target_metadata=target_metadata,
         compare_type=True,
+        include_name=include_name,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
@@ -40,6 +53,7 @@ def do_run_migrations(connection: Connection) -> None:
         connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
+        include_name=include_name,
     )
 
     with context.begin_transaction():

@@ -1,1 +1,1 @@
-export { getRouteResources } from '../route'
+export { getLoginMenu } from '../route'

@@ -9,4 +9,4 @@ fi
 alembic revision --autogenerate -m "$*"
 
 echo
-echo "Migration generated. Review migrations/versions/*.py before running scripts/migrate.sh."
+echo "Structure migration generated. Review migrations/versions/*.py before running scripts/migrate.sh."

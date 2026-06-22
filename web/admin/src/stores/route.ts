@@ -2,14 +2,14 @@ import { defineStore } from 'pinia'
 
 import { router } from '@/router'
 import { INNER_ROUTE_NAMES } from '@/router/inner-routes'
-import { buildRoutes } from '@/router/routes'
-import { getRouteResources } from '@/apis/route'
-import type { RouteMenuItem, RouteResource } from '@/types/route'
+import { buildLoginRoutes } from '@/router/routes'
+import { getLoginMenu } from '@/apis/route'
+import type { ResourceTreeNode, RouteMenuItem } from '@/types/route'
 
 export const useRouteStore = defineStore('route', {
   state: () => ({
     is_init_auth_route: false,
-    resources: [] as RouteResource[],
+    menuData: [] as ResourceTreeNode[],
     menus: [] as RouteMenuItem[],
     button_permissions: [] as string[],
     cache_routes: [] as string[],
@@ -41,12 +41,12 @@ export const useRouteStore = defineStore('route', {
   },
   actions: {
     async fetchMenu() {
-      return getRouteResources()
+      return getLoginMenu()
     },
     async loadMenu() {
-      const resources = await this.fetchMenu()
-      const result = buildRoutes(resources)
-      this.resources = resources
+      const menuData = await this.fetchMenu()
+      const result = buildLoginRoutes(menuData)
+      this.menuData = menuData
       this.menus = result.menus
       this.button_permissions = result.button_permissions
       this.cache_routes = result.cache_routes
@@ -64,9 +64,6 @@ export const useRouteStore = defineStore('route', {
       })
       this.is_init_auth_route = true
     },
-    async init_auth_route() {
-      await this.refreshMenu()
-    },
     reset_routes() {
       this.dynamic_route_names.forEach((name) => {
         if (router.hasRoute(name)) {
@@ -78,7 +75,7 @@ export const useRouteStore = defineStore('route', {
     reset_route_store() {
       this.reset_routes()
       this.is_init_auth_route = false
-      this.resources = []
+      this.menuData = []
       this.menus = []
       this.button_permissions = []
       this.cache_routes = []

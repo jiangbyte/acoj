@@ -52,6 +52,7 @@ declare module 'vue-router' {
     href?: string
     sort?: number
     extra?: Record<string, unknown>
+    breadcrumb?: RouteMenuItem[]
   }
 }
 

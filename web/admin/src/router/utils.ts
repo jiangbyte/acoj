@@ -1,9 +1,5 @@
 import type { RouteResource } from '@/types/route'
 
-export interface RouteResourceTreeNode extends RouteResource {
-  children: RouteResourceTreeNode[]
-}
-
 export function normalizePath(path?: string | null) {
   if (!path) {
     return ''
@@ -30,27 +26,4 @@ export function isPageResource(resource: RouteResource) {
 
 export function sortRouteResources<T extends Pick<RouteResource, 'sort' | 'id'>>(items: T[]) {
   return [...items].sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id))
-}
-
-export function buildRouteResourceTree(resources: RouteResource[]) {
-  const nodeMap = new Map<string, RouteResourceTreeNode>()
-  const roots: RouteResourceTreeNode[] = []
-
-  sortRouteResources(resources).forEach((resource) => {
-    nodeMap.set(resource.id, { ...resource, children: [] })
-  })
-
-  nodeMap.forEach((node) => {
-    if (node.parent_id && nodeMap.has(node.parent_id)) {
-      nodeMap.get(node.parent_id)?.children.push(node)
-      return
-    }
-    roots.push(node)
-  })
-
-  nodeMap.forEach((node) => {
-    node.children = sortRouteResources(node.children)
-  })
-
-  return sortRouteResources(roots)
 }
