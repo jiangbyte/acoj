@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { DownOutlined, PlusOutlined, ReloadOutlined, UpOutlined } from '@ant-design/icons-vue'
 import type { TableColumnsType } from 'ant-design-vue'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { ResourceTreeNode } from '@/types/route'
 import QueryTable from '@/components/pro/QueryTable.vue'
 import { listResourceTree } from '@/apis/iam'
 
+const { t } = useI18n()
 const query = reactive<{
   keyword: string
   resource_type?: string
@@ -19,15 +21,15 @@ const query = reactive<{
 const data = ref<ResourceTreeNode[]>([])
 const drawerOpen = ref(false)
 
-const columns: TableColumnsType<ResourceTreeNode> = [
-  { title: '资源名称', dataIndex: 'name', key: 'name' },
-  { title: '编码', dataIndex: 'code', key: 'code' },
-  { title: '类型', dataIndex: 'resource_type', key: 'resource_type' },
-  { title: '模块', dataIndex: 'module', key: 'module' },
-  { title: '路径', dataIndex: 'path', key: 'path' },
-  { title: '组件', dataIndex: 'component', key: 'component' },
-  { title: '操作', key: 'actions', width: 160 },
-]
+const columns = computed<TableColumnsType<ResourceTreeNode>>(() => [
+  { title: t('table.resourceName'), dataIndex: 'name', key: 'name' },
+  { title: t('common.code'), dataIndex: 'code', key: 'code' },
+  { title: t('common.type'), dataIndex: 'resource_type', key: 'resource_type' },
+  { title: t('common.module'), dataIndex: 'module', key: 'module' },
+  { title: t('common.path'), dataIndex: 'path', key: 'path' },
+  { title: t('common.component'), dataIndex: 'component', key: 'component' },
+  { title: t('common.actions'), key: 'actions', width: 160 },
+])
 
 async function fetchData() {
   data.value = await listResourceTree()
@@ -49,24 +51,24 @@ onMounted(fetchData)
       <AForm layout="inline" :model="query">
         <ARow :gutter="[48, 16]" class="w-full">
           <ACol :md="8" :sm="24">
-            <AFormItem label="关键词">
-              <AInput v-model:value="query.keyword" allow-clear placeholder="资源名称、编码、路径" @press-enter="fetchData" />
+            <AFormItem :label="t('common.keyword')">
+              <AInput v-model:value="query.keyword" allow-clear :placeholder="t('table.resourceKeyword')" @press-enter="fetchData" />
             </AFormItem>
           </ACol>
           <ACol :md="8" :sm="24">
-            <AFormItem label="资源类型">
-              <ASelect v-model:value="query.resource_type" allow-clear placeholder="请选择">
-                <ASelectOption value="CATALOG">目录</ASelectOption>
-                <ASelectOption value="MENU">菜单</ASelectOption>
-                <ASelectOption value="PAGE">页面</ASelectOption>
-                <ASelectOption value="BUTTON">按钮</ASelectOption>
-                <ASelectOption value="API_GROUP">接口分组</ASelectOption>
+            <AFormItem :label="t('table.resourceType')">
+              <ASelect v-model:value="query.resource_type" allow-clear :placeholder="t('common.pleaseSelect')">
+                <ASelectOption value="CATALOG">{{ t('table.catalog') }}</ASelectOption>
+                <ASelectOption value="MENU">{{ t('table.menu') }}</ASelectOption>
+                <ASelectOption value="PAGE">{{ t('table.page') }}</ASelectOption>
+                <ASelectOption value="BUTTON">{{ t('table.button') }}</ASelectOption>
+                <ASelectOption value="API_GROUP">{{ t('table.apiGroup') }}</ASelectOption>
               </ASelect>
             </AFormItem>
           </ACol>
           <ACol v-show="expanded" :md="8" :sm="24">
-            <AFormItem label="模块">
-              <ASelect v-model:value="query.module" allow-clear placeholder="请选择">
+            <AFormItem :label="t('common.module')">
+              <ASelect v-model:value="query.module" allow-clear :placeholder="t('common.pleaseSelect')">
                 <ASelectOption value="dashboard">dashboard</ASelectOption>
                 <ASelectOption value="iam">iam</ASelectOption>
                 <ASelectOption value="file">file</ASelectOption>
@@ -76,12 +78,12 @@ onMounted(fetchData)
           <ACol :md="expanded ? 24 : 8" :sm="24">
             <span class="inline-flex flex-wrap gap-2" :class="{ 'is-expanded': expanded }">
               <AButton type="link" @click="toggle">
-                {{ expanded ? '收起' : '展开' }}
+                {{ expanded ? t('common.collapse') : t('common.expand') }}
                 <UpOutlined v-if="expanded" />
                 <DownOutlined v-else />
               </AButton>
-              <AButton type="primary" @click="fetchData">查询</AButton>
-              <AButton class="ml-2" @click="resetQuery">重置</AButton>
+              <AButton type="primary" @click="fetchData">{{ t('common.search') }}</AButton>
+              <AButton class="ml-2" @click="resetQuery">{{ t('common.reset') }}</AButton>
             </span>
           </ACol>
         </ARow>
@@ -89,15 +91,15 @@ onMounted(fetchData)
     </template>
 
     <template #toolbar>
-      <div class="text-16px text-slate-900 font-600 dark:text-zinc-100">资源树</div>
+      <div class="text-16px text-slate-900 font-600 dark:text-zinc-100">{{ t('table.resourceTree') }}</div>
       <ASpace>
         <AButton @click="fetchData">
           <template #icon><ReloadOutlined /></template>
-          刷新
+          {{ t('common.refresh') }}
         </AButton>
         <AButton type="primary" @click="drawerOpen = true">
           <template #icon><PlusOutlined /></template>
-          新建资源
+          {{ t('table.createResource') }}
         </AButton>
       </ASpace>
     </template>
@@ -119,20 +121,20 @@ onMounted(fetchData)
         </template>
         <template v-if="column.key === 'actions'">
           <span class="inline-flex flex-wrap gap-2">
-            <AButton size="small" type="link">编辑</AButton>
-            <AButton size="small" type="link">绑定权限</AButton>
+            <AButton size="small" type="link">{{ t('common.edit') }}</AButton>
+            <AButton size="small" type="link">{{ t('table.bindPermission') }}</AButton>
           </span>
         </template>
       </template>
     </ATable>
 
-    <ADrawer v-model:open="drawerOpen" title="新建资源" width="520">
+    <ADrawer v-model:open="drawerOpen" :title="t('table.createResource')" width="520">
       <AForm layout="vertical">
-        <AFormItem label="资源名称"><AInput /></AFormItem>
-        <AFormItem label="资源编码"><AInput /></AFormItem>
-        <AFormItem label="资源类型"><ASelect /></AFormItem>
-        <AFormItem label="访问路径"><AInput /></AFormItem>
-        <AFormItem label="权限点"><AInput placeholder="iam:resource:list" /></AFormItem>
+        <AFormItem :label="t('table.resourceName')"><AInput /></AFormItem>
+        <AFormItem :label="t('table.resourceCode')"><AInput /></AFormItem>
+        <AFormItem :label="t('table.resourceType')"><ASelect /></AFormItem>
+        <AFormItem :label="t('table.accessPath')"><AInput /></AFormItem>
+        <AFormItem :label="t('table.permissionPoint')"><AInput placeholder="iam:resource:list" /></AFormItem>
       </AForm>
     </ADrawer>
   </QueryTable>

@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import { getIconComponent } from '@/utils/icons'
+import { translateWithFallback } from '@/utils/i18n'
 
 const route = useRoute()
+const { t } = useI18n()
 
 const breadcrumbItems = computed(() =>
   route.matched
     .filter((item) => item.meta?.title && item.path !== '/')
     .map((item) => ({
-      title: String(item.meta.title),
+      title: translateWithFallback(item.meta.titleKey, String(item.meta.title)),
       icon: getIconComponent(item.meta.icon),
     })),
 )
@@ -18,7 +21,7 @@ const breadcrumbItems = computed(() =>
 const visibleItems = computed(() =>
   breadcrumbItems.value.length
     ? breadcrumbItems.value
-    : [{ title: String(route.meta.title || '控制台'), icon: getIconComponent(route.meta.icon) }],
+    : [{ title: translateWithFallback(route.meta.titleKey, String(route.meta.title || t('app.console'))), icon: getIconComponent(route.meta.icon) }],
 )
 </script>
 

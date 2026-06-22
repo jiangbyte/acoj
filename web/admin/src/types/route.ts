@@ -36,6 +36,7 @@ export interface ResourceTreeNode extends RouteResource {
 declare module 'vue-router' {
   interface RouteMeta {
     title?: string
+    titleKey?: string
     description?: string
     icon?: string
     requiresAuth?: boolean
@@ -57,6 +58,7 @@ declare module 'vue-router' {
 export interface RouteMenuItem {
   key: string
   label: string
+  labelKey?: string
   icon?: string | null
   href?: string | null
   children?: RouteMenuItem[]

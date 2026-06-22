@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { DownOutlined, UpOutlined } from '@ant-design/icons-vue'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const expanded = ref(false)
+const { t } = useI18n()
 </script>
 
 <template>
@@ -14,7 +16,7 @@ const expanded = ref(false)
       <slot name="search" :expanded="expanded" :toggle="() => (expanded = !expanded)">
         <div class="mt-3 text-right">
           <AButton type="link" size="small" @click="expanded = !expanded">
-            {{ expanded ? '收起' : '展开' }}
+            {{ expanded ? t('common.collapse') : t('common.expand') }}
             <template #icon>
               <UpOutlined v-if="expanded" />
               <DownOutlined v-else />

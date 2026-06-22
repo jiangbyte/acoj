@@ -14,6 +14,7 @@ import {
   type RouteResourceTreeNode,
 } from '@/router/utils'
 import type { RouteBuildResult, RouteMenuItem, RouteResource } from '@/types/route'
+import { getRouteTitleKey } from '@/utils/i18n'
 
 const viewModules = import.meta.glob<Component>('@/views/**/*.vue')
 
@@ -61,6 +62,7 @@ function createRoute(node: RouteResourceTreeNode): RouteRecordRaw | null {
 
   const routeMeta = {
     title: node.name,
+    titleKey: getRouteTitleKey(node.code),
     description: node.description || undefined,
     icon: node.icon || undefined,
     requiresAuth: true,
@@ -106,6 +108,7 @@ function createMenu(node: RouteResourceTreeNode): RouteMenuItem | null {
   return {
     key,
     label: node.name,
+    labelKey: getRouteTitleKey(node.code),
     icon: node.icon,
     href: node.href,
     children: children.length ? children : undefined,
@@ -126,7 +129,7 @@ export function buildRoutes(resources: RouteResource[]): RouteBuildResult {
         name: INNER_ROUTE_NAMES.AdminRoot,
         component: BasicLayout,
         redirect: DEFAULT_HOME_PATH,
-        meta: { title: '管理端', requiresAuth: true, withoutTab: true, icon: "HomeOutlined" },
+        meta: { title: '管理端', titleKey: 'routes.AdminRoot', requiresAuth: true, withoutTab: true, icon: "HomeOutlined" },
         children: childRoutes,
       },
     ],

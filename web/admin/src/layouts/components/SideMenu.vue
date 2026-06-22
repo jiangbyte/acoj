@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { MenuProps } from 'ant-design-vue'
 import { computed, h } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { getIconComponent } from '@/utils/icons'
 import { useRouteStore } from '@/stores/route'
 import type { RouteMenuItem } from '@/types/route'
+import { translateWithFallback } from '@/utils/i18n'
 
 defineProps<{
   collapsed?: boolean
@@ -15,20 +17,24 @@ defineProps<{
 const route = useRoute()
 const router = useRouter()
 const routeStore = useRouteStore()
+const { locale } = useI18n()
 
 function buildMenuItems(items: RouteMenuItem[]): MenuProps['items'] {
   return items.map((item) => {
     const icon = getIconComponent(item.icon)
     return {
       key: item.key,
-      label: item.label,
+      label: translateWithFallback(item.labelKey, item.label),
       icon: icon ? () => h(icon) : undefined,
       children: item.children ? buildMenuItems(item.children) : undefined,
     }
   })
 }
 
-const menuItems = computed(() => buildMenuItems(routeStore.menus))
+const menuItems = computed(() => {
+  locale.value
+  return buildMenuItems(routeStore.menus)
+})
 const selectedKeys = computed(() => [String(route.meta.activeMenu || route.path)])
 const openKeys = computed(() =>
   route.matched.map((item) => item.path).filter((item) => item !== '/'),

@@ -6,6 +6,7 @@ import type { Key } from 'ant-design-vue/es/_util/type'
 import type { TableRowSelection } from 'ant-design-vue/es/table/interface'
 import type { DefaultOptionType } from 'ant-design-vue/es/vc-tree-select/TreeSelect'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { createDict, deleteDicts, getDictDetail, listDicts, listDictTree, updateDict, type DictPayload } from '@/apis/sys'
 import StatusTag from '@/components/common/StatusTag.vue'
@@ -14,7 +15,7 @@ import type { SysDictItem, SysDictTreeNode } from '@/types/api'
 import { formatDateTime } from '@hei/shared'
 
 interface OptionItem {
-  label: string
+  labelKey: string
   value: string
 }
 
@@ -30,15 +31,17 @@ interface DictFormModel {
   sort: number
 }
 
+const { t } = useI18n()
+
 const statusOptions: OptionItem[] = [
-  { label: '启用', value: 'ENABLED' },
-  { label: '停用', value: 'DISABLED' },
+  { labelKey: 'sys.options.enabled', value: 'ENABLED' },
+  { labelKey: 'sys.options.disabled', value: 'DISABLED' },
 ]
 const categoryOptions: OptionItem[] = [
-  { label: '系统', value: 'SYS' },
-  { label: '业务', value: 'BIZ' },
+  { labelKey: 'sys.options.system', value: 'SYS' },
+  { labelKey: 'sys.options.business', value: 'BIZ' },
 ]
-const categoryLabelMap = Object.fromEntries(categoryOptions.map((item) => [item.value, item.label]))
+const categoryLabelMap = computed(() => Object.fromEntries(categoryOptions.map((item) => [item.value, t(item.labelKey)])))
 
 const loading = ref(false)
 const treeLoading = ref(false)
@@ -57,19 +60,19 @@ const data = ref<SysDictItem[]>([])
 const total = ref(0)
 const form = reactive<DictFormModel>(createEmptyForm())
 
-const columns: TableColumnsType<SysDictItem> = [
+const columns = computed<TableColumnsType<SysDictItem>>(() => [
   { title: '#', key: 'serial', fixed: 'left', width: 70 },
-  { title: '编码', dataIndex: 'code', key: 'code', fixed: 'left', width: 190 },
-  { title: '名称', dataIndex: 'label', key: 'label', width: 150 },
-  { title: '值', dataIndex: 'value', key: 'value', width: 140 },
-  { title: '颜色', dataIndex: 'color', key: 'color', width: 110 },
-  { title: '分类', dataIndex: 'category', key: 'category', width: 100 },
-  { title: '父级', dataIndex: 'parent_id', key: 'parent_id', width: 190 },
-  { title: '排序', dataIndex: 'sort', key: 'sort', width: 90 },
-  { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
-  { title: '更新时间', dataIndex: 'updated_at', key: 'updated_at', width: 160 },
-  { title: '操作', key: 'actions', fixed: 'right', width: 150 },
-]
+  { title: t('common.code'), dataIndex: 'code', key: 'code', fixed: 'left', width: 190 },
+  { title: t('sys.dictName'), dataIndex: 'label', key: 'label', width: 150 },
+  { title: t('sys.dictValue'), dataIndex: 'value', key: 'value', width: 140 },
+  { title: t('sys.color'), dataIndex: 'color', key: 'color', width: 110 },
+  { title: t('sys.category'), dataIndex: 'category', key: 'category', width: 100 },
+  { title: t('sys.parent'), dataIndex: 'parent_id', key: 'parent_id', width: 190 },
+  { title: t('sys.sort'), dataIndex: 'sort', key: 'sort', width: 90 },
+  { title: t('common.status'), dataIndex: 'status', key: 'status', width: 100 },
+  { title: t('common.updatedAt'), dataIndex: 'updated_at', key: 'updated_at', width: 160 },
+  { title: t('common.actions'), key: 'actions', fixed: 'right', width: 150 },
+])
 
 function createEmptyForm(): DictFormModel {
   return {
@@ -184,7 +187,7 @@ async function openEdit(record: SysDictItem) {
 
 async function save() {
   if (!form.code.trim()) {
-    message.warning('请填写字典编码')
+    message.warning(t('sys.dictCodeRequired'))
     return
   }
 
@@ -193,10 +196,10 @@ async function save() {
     const payload = toPayload()
     if (payload.id) {
       await updateDict(payload as DictPayload & { id: string })
-      message.success('字典已更新')
+      message.success(t('sys.dictUpdated'))
     } else {
       await createDict(payload)
-      message.success('字典已创建')
+      message.success(t('sys.dictCreated'))
     }
     drawerOpen.value = false
     await fetchData()
@@ -207,15 +210,15 @@ async function save() {
 
 function confirmDelete(ids: string[]) {
   Modal.confirm({
-    title: '确认删除字典？',
-    content: `将删除 ${ids.length} 条字典，删除后不可恢复。`,
-    okText: '删除',
+    title: t('sys.confirmDeleteDict'),
+    content: t('sys.deleteDictContent', { count: ids.length }),
+    okText: t('common.delete'),
     okType: 'danger',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     async onOk() {
       await deleteDicts(ids)
       selectedRowKeys.value = selectedRowKeys.value.filter((key) => !ids.includes(String(key)))
-      message.success('删除成功')
+      message.success(t('sys.deleteSuccess'))
       await fetchData()
     },
   })
@@ -263,24 +266,24 @@ onMounted(async () => {
       <AForm layout="inline" :model="query">
         <ARow :gutter="[48, 16]" class="w-full">
           <ACol :md="8" :sm="24">
-            <AFormItem label="编码">
-              <AInput v-model:value="query.code" allow-clear placeholder="请输入字典编码" @press-enter="fetchData" />
+            <AFormItem :label="t('common.code')">
+              <AInput v-model:value="query.code" allow-clear :placeholder="t('sys.dictCodeRequired')" @press-enter="fetchData" />
             </AFormItem>
           </ACol>
           <ACol :md="8" :sm="24">
-            <AFormItem label="分类">
-              <ASelect v-model:value="query.category" allow-clear placeholder="请选择">
+            <AFormItem :label="t('sys.category')">
+              <ASelect v-model:value="query.category" allow-clear :placeholder="t('common.pleaseSelect')">
                 <ASelectOption v-for="item in categoryOptions" :key="item.value" :value="item.value">
-                  {{ item.label }}
+                  {{ t(item.labelKey) }}
                 </ASelectOption>
               </ASelect>
             </AFormItem>
           </ACol>
           <ACol v-show="expanded" :md="8" :sm="24">
-            <AFormItem label="状态">
-              <ASelect v-model:value="query.status" allow-clear placeholder="请选择">
+            <AFormItem :label="t('common.status')">
+              <ASelect v-model:value="query.status" allow-clear :placeholder="t('common.pleaseSelect')">
                 <ASelectOption v-for="item in statusOptions" :key="item.value" :value="item.value">
-                  {{ item.label }}
+                  {{ t(item.labelKey) }}
                 </ASelectOption>
               </ASelect>
             </AFormItem>
@@ -288,12 +291,12 @@ onMounted(async () => {
           <ACol :md="expanded ? 24 : 8" :sm="24">
             <span class="inline-flex flex-wrap gap-2" :class="{ 'is-expanded': expanded }">
               <AButton type="link" @click="toggle">
-                {{ expanded ? '收起' : '展开' }}
+                {{ expanded ? t('common.collapse') : t('common.expand') }}
                 <UpOutlined v-if="expanded" />
                 <DownOutlined v-else />
               </AButton>
-              <AButton type="primary" @click="fetchData">查询</AButton>
-              <AButton class="ml-2" @click="resetQuery">重置</AButton>
+              <AButton type="primary" @click="fetchData">{{ t('common.search') }}</AButton>
+              <AButton class="ml-2" @click="resetQuery">{{ t('common.reset') }}</AButton>
             </span>
           </ACol>
         </ARow>
@@ -301,19 +304,19 @@ onMounted(async () => {
     </template>
 
     <template #toolbar>
-      <div class="text-16px text-slate-900 font-600 dark:text-zinc-100">字典列表</div>
+      <div class="text-16px text-slate-900 font-600 dark:text-zinc-100">{{ t('sys.dictList') }}</div>
       <ASpace>
         <AButton @click="fetchData">
           <template #icon><ReloadOutlined /></template>
-          刷新
+          {{ t('common.refresh') }}
         </AButton>
         <AButton type="primary" @click="openCreate">
           <template #icon><PlusOutlined /></template>
-          新建字典
+          {{ t('sys.createDict') }}
         </AButton>
         <AButton v-if="selectedRowKeys.length > 0" danger @click="confirmDelete(selectedRowKeys.map(String))">
           <template #icon><DeleteOutlined /></template>
-          批量删除
+          {{ t('table.batchDelete') }}
         </AButton>
       </ASpace>
     </template>
@@ -321,8 +324,8 @@ onMounted(async () => {
     <template #alert>
       <AAlert v-if="selectedRowKeys.length > 0" show-icon type="info">
         <template #message>
-          已选择 <a>{{ selectedRowKeys.length }}</a> 项
-          <a class="ml-3" @click="selectedRowKeys = []">清空</a>
+          {{ t('common.selectedCount', { count: selectedRowKeys.length }) }}
+          <a class="ml-3" @click="selectedRowKeys = []">{{ t('common.clear') }}</a>
         </template>
       </AAlert>
     </template>
@@ -362,30 +365,30 @@ onMounted(async () => {
         </template>
         <template v-if="column.key === 'actions'">
           <span class="inline-flex flex-wrap gap-2">
-            <AButton size="small" type="link" @click="openEdit(asDictRecord(record))">编辑</AButton>
-            <AButton danger size="small" type="link" @click="confirmDelete([asDictRecord(record).id])">删除</AButton>
+            <AButton size="small" type="link" @click="openEdit(asDictRecord(record))">{{ t('common.edit') }}</AButton>
+            <AButton danger size="small" type="link" @click="confirmDelete([asDictRecord(record).id])">{{ t('common.delete') }}</AButton>
           </span>
         </template>
       </template>
     </ATable>
 
-    <ADrawer v-model:open="drawerOpen" :title="form.id ? '编辑字典' : '新建字典'" width="560">
+    <ADrawer v-model:open="drawerOpen" :title="form.id ? t('sys.editDict') : t('sys.createDict')" width="560">
       <AForm layout="vertical" :model="form">
-        <AFormItem label="编码" required>
-          <AInput v-model:value="form.code" placeholder="大写字母、数字、下划线" />
+        <AFormItem :label="t('common.code')" required>
+          <AInput v-model:value="form.code" :placeholder="t('sys.dictCodePlaceholder')" />
         </AFormItem>
-        <AFormItem label="名称"><AInput v-model:value="form.label" placeholder="请输入展示名称" /></AFormItem>
-        <AFormItem label="值"><AInput v-model:value="form.value" placeholder="请输入字典值" /></AFormItem>
+        <AFormItem :label="t('sys.dictName')"><AInput v-model:value="form.label" :placeholder="t('sys.dictNamePlaceholder')" /></AFormItem>
+        <AFormItem :label="t('sys.dictValue')"><AInput v-model:value="form.value" :placeholder="t('sys.dictValuePlaceholder')" /></AFormItem>
         <ARow :gutter="16">
           <ACol :span="12">
-            <AFormItem label="分类">
-              <ASelect v-model:value="form.category" allow-clear placeholder="请选择分类">
-                <ASelectOption v-for="item in categoryOptions" :key="item.value" :value="item.value">{{ item.label }}</ASelectOption>
+            <AFormItem :label="t('sys.category')">
+              <ASelect v-model:value="form.category" allow-clear :placeholder="t('common.pleaseSelect')">
+                <ASelectOption v-for="item in categoryOptions" :key="item.value" :value="item.value">{{ t(item.labelKey) }}</ASelectOption>
               </ASelect>
             </AFormItem>
           </ACol>
           <ACol :span="12">
-            <AFormItem label="父级字典">
+            <AFormItem :label="t('sys.parentDict')">
               <ATreeSelect
                 v-model:value="form.parent_id"
                 allow-clear
@@ -394,29 +397,29 @@ onMounted(async () => {
                 :tree-data="parentOptions"
                 tree-default-expand-all
                 tree-node-filter-prop="label"
-                placeholder="请选择父级字典"
+                :placeholder="t('sys.parentDictPlaceholder')"
               />
             </AFormItem>
           </ACol>
         </ARow>
         <ARow :gutter="16">
           <ACol :span="12">
-            <AFormItem label="颜色"><AInput v-model:value="form.color" placeholder="#1677ff" /></AFormItem>
+            <AFormItem :label="t('sys.color')"><AInput v-model:value="form.color" placeholder="#1677ff" /></AFormItem>
           </ACol>
           <ACol :span="12">
-            <AFormItem label="排序"><AInputNumber v-model:value="form.sort" class="w-full" :min="0" /></AFormItem>
+            <AFormItem :label="t('sys.sort')"><AInputNumber v-model:value="form.sort" class="w-full" :min="0" /></AFormItem>
           </ACol>
         </ARow>
-        <AFormItem label="状态">
+        <AFormItem :label="t('common.status')">
           <ASelect v-model:value="form.status">
-            <ASelectOption v-for="item in statusOptions" :key="item.value" :value="item.value">{{ item.label }}</ASelectOption>
+            <ASelectOption v-for="item in statusOptions" :key="item.value" :value="item.value">{{ t(item.labelKey) }}</ASelectOption>
           </ASelect>
         </AFormItem>
       </AForm>
       <template #footer>
         <ASpace>
-          <AButton @click="drawerOpen = false">取消</AButton>
-          <AButton type="primary" :loading="saving" @click="save">保存</AButton>
+          <AButton @click="drawerOpen = false">{{ t('common.cancel') }}</AButton>
+          <AButton type="primary" :loading="saving" @click="save">{{ t('common.save') }}</AButton>
         </ASpace>
       </template>
     </ADrawer>

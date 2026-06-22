@@ -6,6 +6,7 @@ import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { useRouteStore } from '@/stores/route'
 import { useUserStore } from '@/stores/user'
+import { t } from '@/i18n'
 
 export type { BackendOptions, HttpInstanceOptions }
 
@@ -19,7 +20,7 @@ function handleAuthExpired() {
   useUserStore().clear()
   useRouteStore().reset_route_store()
   useAppStore().clearAllTabs()
-  message.warning('登录状态已失效，请重新登录')
+  message.warning(t('http.unauthorizedRelogin'))
 }
 
 function showError(error: RequestErrorResult) {

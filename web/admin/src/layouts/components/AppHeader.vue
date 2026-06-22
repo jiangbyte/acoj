@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons-vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import { useAppStore } from '@/stores/app'
 import HeaderRightContent from '@/components/pro/HeaderRightContent.vue'
 import { getIconComponent } from '@/utils/icons'
+import { translateWithFallback } from '@/utils/i18n'
 
+const { t } = useI18n()
 const app = useAppStore()
 const route = useRoute()
 const isMobile = ref(false)
 let mediaQuery: MediaQueryList | null = null
 
-const title = computed(() => String(route.meta.title || '控制台'))
+const title = computed(() => translateWithFallback(route.meta.titleKey, String(route.meta.title || t('app.console'))))
 const titleIcon = computed(() => getIconComponent(route.meta.icon))
 const triggerIcon = computed(() => {
   if (isMobile.value) {
@@ -22,9 +25,9 @@ const triggerIcon = computed(() => {
 })
 const triggerLabel = computed(() => {
   if (isMobile.value) {
-    return '打开侧边菜单'
+    return t('layout.openSideMenu')
   }
-  return app.collapsed ? '展开侧边栏' : '折叠侧边栏'
+  return app.collapsed ? t('layout.expandSidebar') : t('layout.collapseSidebar')
 })
 
 function updateIsMobile(event?: MediaQueryListEvent) {

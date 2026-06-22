@@ -2,11 +2,14 @@ import { defineStore } from 'pinia'
 import type { LocationQuery, RouteLocationNormalizedLoaded } from 'vue-router'
 
 import { DEFAULT_HOME_PATH } from '@/config/app'
+import { DEFAULT_LOCALE, normalizeLocale, setI18nLocale, type SupportedLocale } from '@/i18n'
+import { getRouteTitleKey } from '@/utils/i18n'
 
 export type ThemeMode = 'light' | 'dark' | 'auto'
 
 export interface VisitedTab {
   title: string
+  title_key?: string
   full_path: string
   path: string
   query: LocationQuery
@@ -29,6 +32,7 @@ export const useAppStore = defineStore('app', {
     mobileMenuOpen: false,
     systemDark: getSystemDark(),
     themeMode: 'auto' as ThemeMode,
+    locale: DEFAULT_LOCALE as SupportedLocale,
     pin_tabs: [] as VisitedTab[],
     tabs: [] as VisitedTab[],
     current_tab_path: '',
@@ -55,12 +59,17 @@ export const useAppStore = defineStore('app', {
     setThemeMode(mode: ThemeMode) {
       this.themeMode = mode
     },
+    setLocale(locale: SupportedLocale) {
+      this.locale = normalizeLocale(locale)
+      setI18nLocale(this.locale)
+    },
     setSystemDark(dark: boolean) {
       this.systemDark = dark
     },
     createVisitedTab(route: RouteLocationNormalizedLoaded): VisitedTab {
       return {
         title: String(route.meta.title || route.name || route.path),
+        title_key: route.meta.titleKey ? String(route.meta.titleKey) : getRouteTitleKey(String(route.name || '')),
         full_path: route.fullPath,
         path: route.path,
         query: route.query,
@@ -150,6 +159,9 @@ export const useAppStore = defineStore('app', {
   },
   persist: {
     key: 'hei-admin-app',
-    pick: ['collapsed', 'themeMode'],
+    pick: ['collapsed', 'themeMode', 'locale'],
+    afterHydrate: ({ store }) => {
+      store.setLocale(normalizeLocale(store.locale))
+    },
   },
 })

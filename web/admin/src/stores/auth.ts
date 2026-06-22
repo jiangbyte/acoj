@@ -6,6 +6,7 @@ import type { LoginPayload } from '@/apis/auth'
 import { useAppStore } from '@/stores/app'
 import { useRouteStore } from '@/stores/route'
 import { useUserStore } from '@/stores/user'
+import { t } from '@/i18n'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -20,7 +21,7 @@ export const useAuthStore = defineStore('auth', {
       const loginResult = await login(payload)
       const loginData = loginResult?.data
       if (!loginResult?.isSuccess || !loginData) {
-        throw new Error(loginResult?.message || '登录失败')
+        throw new Error(loginResult?.message || t('login.failedLog'))
       }
 
       this.token = loginData.token
@@ -29,7 +30,7 @@ export const useAuthStore = defineStore('auth', {
       const me = meResult?.data
       if (!meResult?.isSuccess || !me) {
         this.clearSession()
-        throw new Error(meResult?.message || '获取用户信息失败')
+        throw new Error(meResult?.message || t('http.401'))
       }
 
       const user = useUserStore()
@@ -41,7 +42,7 @@ export const useAuthStore = defineStore('auth', {
     async logout() {
       const result = await logout()
       if (!result?.isSuccess) {
-        message.warning(result?.message || '退出登录请求失败，已清理本地登录状态')
+        message.warning(result?.message || t('http.default'))
       }
       this.clearSession()
       useUserStore().clear()

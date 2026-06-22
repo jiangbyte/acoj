@@ -1,6 +1,19 @@
-import type { RecordStatus, SysStatus } from '@hei/shared'
+export type RecordStatus = 'enabled' | 'disabled' | 'locked' | 'ENABLED' | 'DISABLED' | 'LOCKED'
+export type SysStatus = 'ENABLED' | 'DISABLED' | 'enabled' | 'disabled'
 
-export type { PageData, PageQuery, RecordStatus, SysStatus } from '@hei/shared'
+export interface PageQuery {
+  page?: number
+  page_size?: number
+  keyword?: string
+  [key: string]: unknown
+}
+
+export interface PageData<T> {
+  items: T[]
+  total: number
+  page: number
+  page_size: number
+}
 
 export interface SysBannerItem {
   id: string

@@ -4,12 +4,14 @@ import type { TableColumnsType } from 'ant-design-vue'
 import type { Key } from 'ant-design-vue/es/_util/type'
 import type { TableRowSelection } from 'ant-design-vue/es/table/interface'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { RoleItem } from '@/types/api'
 import QueryTable from '@/components/pro/QueryTable.vue'
 import { listRoles } from '@/apis/iam'
 import { formatDateTime } from '@hei/shared'
 
+const { t } = useI18n()
 const query = reactive<{
   keyword: string
   category?: string
@@ -28,16 +30,16 @@ const total = ref(0)
 const drawerOpen = ref(false)
 const selectedRowKeys = ref<Key[]>([])
 
-const columns: TableColumnsType<RoleItem> = [
+const columns = computed<TableColumnsType<RoleItem>>(() => [
   { title: '#', key: 'serial', width: 70 },
-  { title: '角色名称', dataIndex: 'name', key: 'name' },
-  { title: '编码', dataIndex: 'code', key: 'code' },
-  { title: '类型', dataIndex: 'category', key: 'category' },
-  { title: '数据范围', dataIndex: 'scope_type', key: 'scope_type' },
-  { title: '用户数', dataIndex: 'user_count', key: 'user_count' },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
-  { title: '操作', key: 'actions', width: 180 },
-]
+  { title: t('table.roleName'), dataIndex: 'name', key: 'name' },
+  { title: t('common.code'), dataIndex: 'code', key: 'code' },
+  { title: t('common.type'), dataIndex: 'category', key: 'category' },
+  { title: t('table.dataScope'), dataIndex: 'scope_type', key: 'scope_type' },
+  { title: t('table.userCount'), dataIndex: 'user_count', key: 'user_count' },
+  { title: t('common.createdAt'), dataIndex: 'created_at', key: 'created_at' },
+  { title: t('common.actions'), key: 'actions', width: 180 },
+])
 
 async function fetchData() {
   const result = await listRoles(query)
@@ -69,37 +71,37 @@ const rowSelection = computed<TableRowSelection<RoleItem>>(() => ({
       <AForm layout="inline" :model="query">
         <ARow :gutter="[48, 16]" class="w-full">
           <ACol :md="8" :sm="24">
-            <AFormItem label="关键词">
-              <AInput v-model:value="query.keyword" allow-clear placeholder="角色名称、编码" @press-enter="fetchData" />
+            <AFormItem :label="t('common.keyword')">
+              <AInput v-model:value="query.keyword" allow-clear :placeholder="t('table.roleKeyword')" @press-enter="fetchData" />
             </AFormItem>
           </ACol>
           <ACol :md="8" :sm="24">
-            <AFormItem label="角色类型">
-              <ASelect v-model:value="query.category" allow-clear placeholder="请选择">
-                <ASelectOption value="system">系统</ASelectOption>
-                <ASelectOption value="business">业务</ASelectOption>
-                <ASelectOption value="audit">审计</ASelectOption>
+            <AFormItem :label="t('table.roleType')">
+              <ASelect v-model:value="query.category" allow-clear :placeholder="t('common.pleaseSelect')">
+                <ASelectOption value="system">{{ t('table.systemRole') }}</ASelectOption>
+                <ASelectOption value="business">{{ t('table.businessRole') }}</ASelectOption>
+                <ASelectOption value="audit">{{ t('table.auditRole') }}</ASelectOption>
               </ASelect>
             </AFormItem>
           </ACol>
           <ACol v-show="expanded" :md="8" :sm="24">
-            <AFormItem label="数据范围">
-              <ASelect v-model:value="query.scope_type" allow-clear placeholder="请选择">
-                <ASelectOption value="all">全部</ASelectOption>
-                <ASelectOption value="dept">本部门</ASelectOption>
-                <ASelectOption value="custom">自定义</ASelectOption>
+            <AFormItem :label="t('table.dataScope')">
+              <ASelect v-model:value="query.scope_type" allow-clear :placeholder="t('common.pleaseSelect')">
+                <ASelectOption value="all">{{ t('table.all') }}</ASelectOption>
+                <ASelectOption value="dept">{{ t('table.currentDept') }}</ASelectOption>
+                <ASelectOption value="custom">{{ t('table.custom') }}</ASelectOption>
               </ASelect>
             </AFormItem>
           </ACol>
           <ACol :md="expanded ? 24 : 8" :sm="24">
             <span class="inline-flex flex-wrap gap-2" :class="{ 'is-expanded': expanded }">
               <AButton type="link" @click="toggle">
-                {{ expanded ? '收起' : '展开' }}
+                {{ expanded ? t('common.collapse') : t('common.expand') }}
                 <UpOutlined v-if="expanded" />
                 <DownOutlined v-else />
               </AButton>
-              <AButton type="primary" @click="fetchData">查询</AButton>
-              <AButton class="ml-2" @click="resetQuery">重置</AButton>
+              <AButton type="primary" @click="fetchData">{{ t('common.search') }}</AButton>
+              <AButton class="ml-2" @click="resetQuery">{{ t('common.reset') }}</AButton>
             </span>
           </ACol>
         </ARow>
@@ -107,18 +109,18 @@ const rowSelection = computed<TableRowSelection<RoleItem>>(() => ({
     </template>
 
     <template #toolbar>
-      <div class="text-16px text-slate-900 font-600 dark:text-zinc-100">角色列表</div>
+      <div class="text-16px text-slate-900 font-600 dark:text-zinc-100">{{ t('table.roleList') }}</div>
       <ASpace>
         <AButton type="primary" @click="drawerOpen = true">
           <template #icon><PlusOutlined /></template>
-          新建角色
+          {{ t('table.createRole') }}
         </AButton>
         <ADropdown v-if="selectedRowKeys.length > 0">
-          <AButton>批量操作 <DownOutlined /></AButton>
+          <AButton>{{ t('common.batchActions') }} <DownOutlined /></AButton>
           <template #overlay>
             <AMenu>
-              <AMenuItem key="delete">删除</AMenuItem>
-              <AMenuItem key="disable">停用</AMenuItem>
+              <AMenuItem key="delete">{{ t('common.delete') }}</AMenuItem>
+              <AMenuItem key="disable">{{ t('common.disabled') }}</AMenuItem>
             </AMenu>
           </template>
         </ADropdown>
@@ -128,8 +130,8 @@ const rowSelection = computed<TableRowSelection<RoleItem>>(() => ({
     <template #alert>
       <AAlert show-icon type="info">
         <template #message>
-          已选择 <a>{{ selectedRowKeys.length }}</a> 项
-          <a class="ml-3" @click="selectedRowKeys = []">清空</a>
+          {{ t('common.selectedCount', { count: selectedRowKeys.length }) }}
+          <a class="ml-3" @click="selectedRowKeys = []">{{ t('common.clear') }}</a>
         </template>
       </AAlert>
     </template>
@@ -150,19 +152,19 @@ const rowSelection = computed<TableRowSelection<RoleItem>>(() => ({
         }}</template>
         <template v-if="column.key === 'actions'">
           <span class="inline-flex flex-wrap gap-2">
-            <AButton size="small" type="link">编辑</AButton>
-            <AButton size="small" type="link">分配权限</AButton>
+            <AButton size="small" type="link">{{ t('common.edit') }}</AButton>
+            <AButton size="small" type="link">{{ t('table.assignPermission') }}</AButton>
           </span>
         </template>
       </template>
     </ATable>
 
-    <ADrawer v-model:open="drawerOpen" title="新建角色" width="560">
+    <ADrawer v-model:open="drawerOpen" :title="t('table.createRole')" width="560">
       <AForm layout="vertical">
-        <AFormItem label="角色名称"><AInput /></AFormItem>
-        <AFormItem label="角色编码"><AInput /></AFormItem>
-        <AFormItem label="数据范围"><ASelect placeholder="请选择数据范围" /></AFormItem>
-        <AFormItem label="资源权限">
+        <AFormItem :label="t('table.roleName')"><AInput /></AFormItem>
+        <AFormItem :label="t('table.roleCode')"><AInput /></AFormItem>
+        <AFormItem :label="t('table.dataScope')"><ASelect :placeholder="t('table.dataScope')" /></AFormItem>
+        <AFormItem :label="t('table.resourcePermission')">
           <ATree checkable default-expand-all />
         </AFormItem>
       </AForm>

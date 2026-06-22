@@ -17,6 +17,7 @@ import type {
   WorkplaceTodoItem,
 } from '@/types/api'
 import { getAnalysisData as getMockAnalysisData, getWorkplaceData as getMockWorkplaceData } from '@mock/modules/dashboard'
+import { localizeMockData } from '@/i18n/mock'
 
 export interface WorkplaceData {
   overview: WorkplaceOverviewItem[]
@@ -41,9 +42,9 @@ export interface AnalysisData {
 }
 
 export async function getWorkplaceData(): Promise<WorkplaceData> {
-  return getMockWorkplaceData()
+  return localizeMockData(await getMockWorkplaceData())
 }
 
 export async function getAnalysisData(): Promise<AnalysisData> {
-  return getMockAnalysisData()
+  return localizeMockData(await getMockAnalysisData())
 }
