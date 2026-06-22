@@ -3,14 +3,13 @@ import type { RouteRecordRaw } from 'vue-router'
 import { RouterView } from 'vue-router'
 
 import {
-  buildRouteResourceTree,
   isPageResource,
   isRouteResource,
   normalizeComponentPath,
   normalizePath,
-  type RouteResourceTreeNode,
+  sortRouteResources,
 } from '@/router/utils'
-import type { RouteBuildResult, RouteMenuItem, RouteResource } from '@/types/route'
+import type { ResourceTreeNode, RouteBuildResult, RouteMenuItem } from '@/types/route'
 import { getRouteTitleKey } from '@/utils/i18n'
 
 const viewModules = import.meta.glob<Component>('@/views/**/*.vue')
@@ -25,36 +24,12 @@ function loadViewComponent(component?: string | null) {
   return viewModules[`/src/views${componentPath}`] || viewModules[`/src/views${directoryPath}/index.vue`]
 }
 
-function createRoute(node: RouteResourceTreeNode, parentPath = ''): RouteRecordRaw | null {
-  if (!isRouteResource(node)) {
-    return null
-  }
+function getRoutePath(node: ResourceTreeNode) {
+  return normalizePath(node.path) || node.code
+}
 
-  const normalizedPath = normalizePath(node.path)
-  const path = parentPath && normalizedPath.startsWith(`${parentPath}/`)
-    ? normalizedPath.slice(parentPath.length + 1)
-    : normalizedPath
-  if (!path) {
-    console.warn(`[route] resource ${node.code} has no path`)
-    return null
-  }
-
-  const children = node.children.map((child) => createRoute(child, normalizedPath)).filter((item): item is RouteRecordRaw => Boolean(item))
-  const component = loadViewComponent(node.component)
-
-  if (isPageResource(node) && !node.href && !component) {
-    console.warn(`[route] component not found for ${node.code}: ${node.component}`)
-    return null
-  }
-
-  const routeComponent = component && !node.href ? component : RouterView
-  const redirect = children.length ? node.redirect || children[0]?.path : undefined
-
-  if (node.redirect && !children.length) {
-    console.warn(`[route] resource ${node.code} has redirect but no children`)
-  }
-
-  const routeMeta = {
+function getRouteMeta(node: ResourceTreeNode, path: string) {
+  return {
     title: node.name,
     titleKey: getRouteTitleKey(node.code),
     description: node.description || undefined,
@@ -69,60 +44,118 @@ function createRoute(node: RouteResourceTreeNode, parentPath = ''): RouteRecordR
     href: node.href || undefined,
     sort: node.sort,
     extra: node.extra,
-    activeMenu: node.href ? undefined : normalizedPath,
-  }
-
-  if (children.length) {
-    return {
-      path,
-      name: node.code,
-      component: routeComponent,
-      redirect,
-      children,
-      meta: routeMeta,
-    }
-  }
-
-  return {
-    path,
-    name: node.code,
-    component: routeComponent,
-    meta: routeMeta,
+    activeMenu: node.href ? undefined : path,
   }
 }
 
-function createMenu(node: RouteResourceTreeNode): RouteMenuItem | null {
-  if (!isRouteResource(node) || !node.is_visible) {
+function filterAsyncRouter(nodes: ResourceTreeNode[]): RouteRecordRaw[] {
+  return sortRouteResources(nodes)
+    .map((node): RouteRecordRaw | null => {
+      if (!isRouteResource(node)) {
+        return null
+      }
+
+      const path = getRoutePath(node)
+      const children = filterAsyncRouter(node.children || [])
+      const component = loadViewComponent(node.component)
+
+      if (isPageResource(node) && !node.href && !component) {
+        console.warn(`[route] component not found for ${node.code}: ${node.component}`)
+        return null
+      }
+
+      const route = {
+        path,
+        name: node.code,
+        component: component && !node.href ? component : RouterView,
+        redirect: children.length ? node.redirect || children[0]?.path : node.redirect || undefined,
+        ...(children.length ? { children } : {}),
+        meta: getRouteMeta(node, path),
+      }
+      return route as RouteRecordRaw
+    })
+    .filter((item): item is RouteRecordRaw => Boolean(item))
+}
+
+function toMenu(route: RouteRecordRaw): RouteMenuItem | null {
+  if (route.meta?.hideInMenu) {
     return null
   }
 
-  const children = node.children.map(createMenu).filter((item): item is RouteMenuItem => Boolean(item))
-  const path = normalizePath(node.path)
-  const key = node.href || node.redirect || path || node.code
+  const children = (route.children || []).map(toMenu).filter((item): item is RouteMenuItem => Boolean(item))
+  const href = route.meta?.href ? String(route.meta.href) : undefined
+  const key = href || String(route.path || route.name || '')
 
   return {
     key,
-    label: node.name,
-    labelKey: getRouteTitleKey(node.code),
-    icon: node.icon,
-    href: node.href,
+    label: String(route.meta?.title || route.name || route.path),
+    labelKey: route.meta?.titleKey ? String(route.meta.titleKey) : undefined,
+    icon: route.meta?.icon ? String(route.meta.icon) : undefined,
+    href,
     children: children.length ? children : undefined,
   }
 }
 
-export function buildRoutes(resources: RouteResource[]): RouteBuildResult {
-  const enabledResources = resources.filter((item) => item.status === 'ENABLED')
-  const tree = buildRouteResourceTree(enabledResources)
-  const childRoutes = tree.map((node) => createRoute(node)).filter((item): item is RouteRecordRaw => Boolean(item))
-  const menus = tree.map(createMenu).filter((item): item is RouteMenuItem => Boolean(item))
+function flatAsyncRoutes(routes: RouteRecordRaw[], breadcrumb: RouteMenuItem[] = []) {
+  const result: RouteRecordRaw[] = []
+
+  routes.forEach((route) => {
+    const routeMenu = toMenu(route)
+    const nextBreadcrumb = routeMenu ? [...breadcrumb, { ...routeMenu, children: undefined }] : breadcrumb
+    const children = route.children || []
+    const flatRoute = {
+      ...route,
+      meta: {
+        ...route.meta,
+        breadcrumb: nextBreadcrumb,
+      },
+    }
+
+    delete flatRoute.children
+    result.push(flatRoute)
+
+    if (children.length) {
+      result.push(...flatAsyncRoutes(children, nextBreadcrumb))
+    }
+  })
+
+  return result
+}
+
+function collectButtonPermissions(nodes: ResourceTreeNode[], result = new Set<string>()) {
+  nodes.forEach((node) => {
+    if (node.status !== 'ENABLED') {
+      return
+    }
+    if (node.resource_type === 'BUTTON') {
+      result.add(node.code)
+    }
+    collectButtonPermissions(node.children || [], result)
+  })
+  return [...result].sort()
+}
+
+function collectCacheRoutes(nodes: ResourceTreeNode[], result = new Set<string>()) {
+  nodes.forEach((node) => {
+    if (node.status !== 'ENABLED') {
+      return
+    }
+    if (node.is_cache) {
+      result.add(node.code)
+    }
+    collectCacheRoutes(node.children || [], result)
+  })
+  return [...result]
+}
+
+export function buildLoginRoutes(menu: ResourceTreeNode[]): RouteBuildResult {
+  const routeTree = filterAsyncRouter(menu)
+  const menus = routeTree.map(toMenu).filter((item): item is RouteMenuItem => Boolean(item))
 
   return {
-    routes: childRoutes,
+    routes: flatAsyncRoutes(routeTree),
     menus,
-    button_permissions: enabledResources
-      .filter((item) => item.resource_type === 'BUTTON')
-      .map((item) => item.code)
-      .sort(),
-    cache_routes: enabledResources.filter((item) => item.is_cache).map((item) => item.code),
+    button_permissions: collectButtonPermissions(menu),
+    cache_routes: collectCacheRoutes(menu),
   }
 }

@@ -9,12 +9,18 @@ import { translateWithFallback } from '@/utils/i18n'
 const route = useRoute()
 const { t } = useI18n()
 
+function isMenuItem(item: unknown): item is { label: string; labelKey?: string; icon?: string | null } {
+  return Boolean(item && typeof item === 'object' && 'label' in item)
+}
+
 const breadcrumbItems = computed(() =>
-  route.matched
-    .filter((item) => item.meta?.title && item.path !== '/')
+  (route.meta.breadcrumb?.length ? route.meta.breadcrumb : route.matched)
+    .filter((item) => isMenuItem(item) || item.meta?.title)
     .map((item) => ({
-      title: translateWithFallback(item.meta.titleKey, String(item.meta.title)),
-      icon: getIconComponent(item.meta.icon),
+      title: isMenuItem(item)
+        ? translateWithFallback(item.labelKey, item.label)
+        : translateWithFallback(item.meta.titleKey, String(item.meta.title)),
+      icon: getIconComponent(isMenuItem(item) ? item.icon : item.meta.icon),
     })),
 )
 

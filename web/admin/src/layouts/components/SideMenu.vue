@@ -37,7 +37,7 @@ const menuItems = computed(() => {
 })
 const selectedKeys = computed(() => [String(route.meta.activeMenu || route.path)])
 const openKeys = computed(() =>
-  route.matched.map((item) => item.path).filter((item) => item !== '/'),
+  route.meta.breadcrumb?.map((item) => item.key).filter((item) => item !== route.path) || [],
 )
 const handleClick: MenuProps['onClick'] = ({ key }) => {
   const nextPath = String(key)

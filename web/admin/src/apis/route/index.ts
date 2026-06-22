@@ -1,6 +1,6 @@
-import type { RouteResource } from '@/types/route'
-import { getRouteResources as getMockRouteResources } from '@mock/modules/route'
+import type { ResourceTreeNode } from '@/types/route'
+import { getLoginMenu as getMockLoginMenu } from '@mock/modules/route'
 
-export async function getRouteResources(): Promise<RouteResource[]> {
-  return getMockRouteResources()
+export async function getLoginMenu(): Promise<ResourceTreeNode[]> {
+  return getMockLoginMenu()
 }
