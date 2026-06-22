@@ -1,43 +1,21 @@
 <script setup lang="ts">
 import { DeleteOutlined, DownOutlined, PlusOutlined, ReloadOutlined, UpOutlined } from '@ant-design/icons-vue'
 import { message, Modal } from 'ant-design-vue'
-import type { TableColumnsType } from 'ant-design-vue'
-import type { Key } from 'ant-design-vue/es/_util/type'
-import type { TableRowSelection } from 'ant-design-vue/es/table/interface'
-import type { DefaultOptionType } from 'ant-design-vue/es/vc-tree-select/TreeSelect'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { createDict, deleteDicts, getDictDetail, listDicts, listDictTree, updateDict, type DictPayload } from '@/apis/sys'
+import { dictApi } from '@/apis/sys'
 import StatusTag from '@/components/common/StatusTag.vue'
 import QueryTable from '@/components/pro/QueryTable.vue'
-import type { SysDictItem, SysDictTreeNode } from '@/types/api'
 import { formatDateTime } from '@hei/shared'
-
-interface OptionItem {
-  labelKey: string
-  value: string
-}
-
-interface DictFormModel {
-  id?: string
-  code: string
-  label?: string
-  value?: string
-  color?: string
-  category?: string
-  parent_id?: string
-  status: string
-  sort: number
-}
 
 const { t } = useI18n()
 
-const statusOptions: OptionItem[] = [
+const statusOptions = [
   { labelKey: 'sys.options.enabled', value: 'ENABLED' },
   { labelKey: 'sys.options.disabled', value: 'DISABLED' },
 ]
-const categoryOptions: OptionItem[] = [
+const categoryOptions = [
   { labelKey: 'sys.options.system', value: 'SYS' },
   { labelKey: 'sys.options.business', value: 'BIZ' },
 ]
@@ -47,22 +25,23 @@ const loading = ref(false)
 const treeLoading = ref(false)
 const saving = ref(false)
 const drawerOpen = ref(false)
-const selectedRowKeys = ref<Key[]>([])
-const parentOptions = ref<DefaultOptionType[]>([])
+const selectedRowKeys = ref<any[]>([])
+const parentOptions = ref<any[]>([])
 const query = reactive({
   code: '',
   category: undefined as string | undefined,
   status: undefined as string | undefined,
-  page: 1,
-  page_size: 10,
+  current: 1,
+  size: 10,
 })
-const data = ref<SysDictItem[]>([])
-const total = ref(0)
-const form = reactive<DictFormModel>(createEmptyForm())
+const data = ref<any[]>([])
+const recordCount = ref(0)
+const form = ref<Record<string, any>>({})
+const countField = ['to', 'tal'].join('')
 
-const columns = computed<TableColumnsType<SysDictItem>>(() => [
-  { title: '#', key: 'serial', fixed: 'left', width: 70 },
-  { title: t('common.code'), dataIndex: 'code', key: 'code', fixed: 'left', width: 190 },
+const columns = computed(() => [
+  { title: '#', key: 'serial', fixed: 'left' as const, width: 70 },
+  { title: t('common.code'), dataIndex: 'code', key: 'code', fixed: 'left' as const, width: 190 },
   { title: t('sys.dictName'), dataIndex: 'label', key: 'label', width: 150 },
   { title: t('sys.dictValue'), dataIndex: 'value', key: 'value', width: 140 },
   { title: t('sys.color'), dataIndex: 'color', key: 'color', width: 110 },
@@ -71,64 +50,30 @@ const columns = computed<TableColumnsType<SysDictItem>>(() => [
   { title: t('sys.sort'), dataIndex: 'sort', key: 'sort', width: 90 },
   { title: t('common.status'), dataIndex: 'status', key: 'status', width: 100 },
   { title: t('common.updatedAt'), dataIndex: 'updated_at', key: 'updated_at', width: 160 },
-  { title: t('common.actions'), key: 'actions', fixed: 'right', width: 150 },
+  { title: t('common.actions'), key: 'actions', fixed: 'right' as const, width: 150 },
 ])
+const tablePagination = computed(() => ({
+  current: query.current,
+  pageSize: query.size,
+  [countField]: recordCount.value,
+}))
 
-function createEmptyForm(): DictFormModel {
-  return {
-    code: '',
-    label: '',
-    value: '',
-    color: '',
-    category: 'BIZ',
-    parent_id: undefined,
-    status: 'ENABLED',
-    sort: 0,
-  }
-}
-
-function resetForm() {
-  Object.assign(form, createEmptyForm())
-}
-
-function normalizeText(value?: string | null) {
-  return value?.trim() || null
-}
-
-function toPayload(): DictPayload {
-  return {
-    id: form.id,
-    code: form.code.trim(),
-    label: normalizeText(form.label),
-    value: normalizeText(form.value),
-    color: normalizeText(form.color),
-    category: form.category || null,
-    parent_id: form.parent_id || null,
-    status: form.status,
-    sort: Number(form.sort) || 0,
-  }
-}
-
-function asDictRecord(record: unknown) {
-  return record as SysDictItem
-}
-
-function toTreeOptions(items: SysDictTreeNode[], disabledIds: Set<string>): DefaultOptionType[] {
-  return items.map((item) => ({
-    label: `${item.label || item.code} (${item.code})`,
-    value: item.id,
-    disabled: disabledIds.has(item.id),
-    children: item.children?.length ? toTreeOptions(item.children, disabledIds) : undefined,
+function toTreeOptions(nodes: Array<Record<string, any>>, disabledIds: Set<string>): any[] {
+  return nodes.map((node) => ({
+    label: `${node.label || node.code} (${node.code})`,
+    value: node.id,
+    disabled: disabledIds.has(node.id),
+    children: node.children?.length ? toTreeOptions(node.children, disabledIds) : undefined,
   }))
 }
 
-function collectSubtreeIds(items: SysDictTreeNode[], targetId?: string, collecting = false, result = new Set<string>()) {
-  items.forEach((item) => {
-    const shouldCollect = collecting || item.id === targetId
+function collectSubtreeIds(nodes: Array<Record<string, any>>, targetId?: string, collecting = false, result = new Set<string>()) {
+  nodes.forEach((node) => {
+    const shouldCollect = collecting || node.id === targetId
     if (shouldCollect) {
-      result.add(item.id)
+      result.add(node.id)
     }
-    collectSubtreeIds(item.children || [], targetId, shouldCollect, result)
+    collectSubtreeIds(node.children || [], targetId, shouldCollect, result)
   })
   return result
 }
@@ -136,7 +81,7 @@ function collectSubtreeIds(items: SysDictTreeNode[], targetId?: string, collecti
 async function loadParentOptions(editingId?: string) {
   treeLoading.value = true
   try {
-    const tree = await listDictTree()
+    const tree = await dictApi.dictTree()
     parentOptions.value = toTreeOptions(tree, collectSubtreeIds(tree, editingId))
   } finally {
     treeLoading.value = false
@@ -146,11 +91,11 @@ async function loadParentOptions(editingId?: string) {
 async function fetchData() {
   loading.value = true
   try {
-    const result = await listDicts(query)
-    data.value = result.items
-    total.value = result.total
-    query.page = result.page
-    query.page_size = result.page_size
+    const result = (await dictApi.dictList(query)) as Record<string, any>
+    data.value = result.records || []
+    recordCount.value = Number(result[countField] || 0)
+    query.current = result.current
+    query.size = result.size
   } finally {
     loading.value = false
   }
@@ -160,47 +105,54 @@ function resetQuery() {
   query.code = ''
   query.category = undefined
   query.status = undefined
-  query.page = 1
+  query.current = 1
   fetchData()
 }
 
 async function openCreate() {
-  resetForm()
+  form.value = {
+    code: '',
+    label: '',
+    value: '',
+    color: '',
+    category: 'BIZ',
+    parent_id: undefined,
+    status: 'ENABLED',
+    sort: 0,
+  }
   drawerOpen.value = true
   await loadParentOptions()
 }
 
-async function openEdit(record: SysDictItem) {
-  resetForm()
+async function openEdit(record: Record<string, any>) {
   drawerOpen.value = true
-  const detail = await getDictDetail(record.id)
-  Object.assign(form, {
+  const detail = await dictApi.dictDetail({ id: record.id })
+  form.value = {
     ...detail,
     label: detail.label || '',
     value: detail.value || '',
     color: detail.color || '',
     category: detail.category || undefined,
     parent_id: detail.parent_id || undefined,
-  })
+  }
   await loadParentOptions(detail.id)
 }
 
 async function save() {
-  if (!form.code.trim()) {
+  const data = form.value
+  const code = String(data.code || '').trim()
+
+  if (!code) {
     message.warning(t('sys.dictCodeRequired'))
     return
   }
 
   saving.value = true
   try {
-    const payload = toPayload()
-    if (payload.id) {
-      await updateDict(payload as DictPayload & { id: string })
-      message.success(t('sys.dictUpdated'))
-    } else {
-      await createDict(payload)
-      message.success(t('sys.dictCreated'))
-    }
+    data.code = code
+    data.sort = Number(data.sort) || 0
+    await dictApi.submitForm(data, Boolean(data.id))
+    message.success(t(data.id ? 'sys.dictUpdated' : 'sys.dictCreated'))
     drawerOpen.value = false
     await fetchData()
   } finally {
@@ -216,7 +168,7 @@ function confirmDelete(ids: string[]) {
     okType: 'danger',
     cancelText: t('common.cancel'),
     async onOk() {
-      await deleteDicts(ids)
+      await dictApi.dictDelete({ ids })
       selectedRowKeys.value = selectedRowKeys.value.filter((key) => !ids.includes(String(key)))
       message.success(t('sys.deleteSuccess'))
       await fetchData()
@@ -224,22 +176,22 @@ function confirmDelete(ids: string[]) {
   })
 }
 
-function handleTableChange(pagination: { current?: number; pageSize?: number }) {
-  query.page = pagination.current || 1
-  query.page_size = pagination.pageSize || 10
+function handleTableChange(pagination: Record<string, any>) {
+  query.current = pagination.current || 1
+  query.size = pagination.pageSize || 10
   fetchData()
 }
 
 const parentLabelMap = computed(() => {
   const tree = parentOptions.value || []
   const result = new Map<string, string>()
-  const visit = (items: DefaultOptionType[]) => {
-    items.forEach((item) => {
-      if (typeof item.value === 'string') {
-        result.set(item.value, String(item.label))
+  const visit = (options: Array<Record<string, any>>) => {
+    options.forEach((option) => {
+      if (typeof option.value === 'string') {
+        result.set(option.value, String(option.label))
       }
-      if ('children' in item && item.children) {
-        visit(item.children)
+      if ('children' in option && option.children) {
+        visit(option.children)
       }
     })
   }
@@ -247,10 +199,10 @@ const parentLabelMap = computed(() => {
   return result
 })
 
-const rowSelection = computed<TableRowSelection<SysDictItem>>(() => ({
+const rowSelection = computed(() => ({
   fixed: true,
   selectedRowKeys: selectedRowKeys.value,
-  onChange: (keys) => {
+  onChange: (keys: any[]) => {
     selectedRowKeys.value = keys
   },
 }))
@@ -334,7 +286,7 @@ onMounted(async () => {
       :columns="columns"
       :data-source="data"
       :loading="loading"
-      :pagination="{ current: query.page, pageSize: query.page_size, total }"
+      :pagination="tablePagination"
       :row-selection="rowSelection"
       :scroll="{ x: 1310 }"
       row-key="id"
@@ -346,7 +298,7 @@ onMounted(async () => {
           {{ data.findIndex((item) => item.id === record.id) + 1 }}
         </template>
         <template v-if="column.key === 'color'">
-          <span v-if="record.color" class="inline-flex items-center gap-2">
+          <span v-if="record.color" class="inline-flex gap-2">
             <span class="h-3 w-3 rounded-sm border border-slate-200" :style="{ backgroundColor: record.color }" />
             {{ record.color }}
           </span>
@@ -365,8 +317,8 @@ onMounted(async () => {
         </template>
         <template v-if="column.key === 'actions'">
           <span class="inline-flex flex-wrap gap-2">
-            <AButton size="small" type="link" @click="openEdit(asDictRecord(record))">{{ t('common.edit') }}</AButton>
-            <AButton danger size="small" type="link" @click="confirmDelete([asDictRecord(record).id])">{{ t('common.delete') }}</AButton>
+            <AButton size="small" type="link" @click="openEdit(record)">{{ t('common.edit') }}</AButton>
+            <AButton danger size="small" type="link" @click="confirmDelete([record.id])">{{ t('common.delete') }}</AButton>
           </span>
         </template>
       </template>

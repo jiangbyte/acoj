@@ -2,9 +2,6 @@ import type { Component } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
 import { RouterView } from 'vue-router'
 
-import BasicLayout from '@/layouts/BasicLayout.vue'
-import { DEFAULT_HOME_PATH } from '@/config/app'
-import { INNER_ROUTE_NAMES } from '@/router/inner-routes'
 import {
   buildRouteResourceTree,
   isPageResource,
@@ -18,43 +15,40 @@ import { getRouteTitleKey } from '@/utils/i18n'
 
 const viewModules = import.meta.glob<Component>('@/views/**/*.vue')
 
-function firstVisibleRoutePath(route: RouteRecordRaw): string | undefined {
-  if (!route.meta?.hideInMenu && route.path) {
-    return route.path
+function loadViewComponent(component?: string | null) {
+  const componentPath = normalizeComponentPath(component)
+  if (!componentPath) {
+    return undefined
   }
 
-  for (const child of route.children ?? []) {
-    const childPath = firstVisibleRoutePath(child)
-    if (childPath) {
-      return childPath
-    }
-  }
-
-  return undefined
+  const directoryPath = componentPath.endsWith('.vue') ? componentPath.slice(0, -4) : componentPath
+  return viewModules[`/src/views${componentPath}`] || viewModules[`/src/views${directoryPath}/index.vue`]
 }
 
-function createRoute(node: RouteResourceTreeNode): RouteRecordRaw | null {
+function createRoute(node: RouteResourceTreeNode, parentPath = ''): RouteRecordRaw | null {
   if (!isRouteResource(node)) {
     return null
   }
 
-  const path = normalizePath(node.path)
+  const normalizedPath = normalizePath(node.path)
+  const path = parentPath && normalizedPath.startsWith(`${parentPath}/`)
+    ? normalizedPath.slice(parentPath.length + 1)
+    : normalizedPath
   if (!path) {
     console.warn(`[route] resource ${node.code} has no path`)
     return null
   }
 
-  const children = node.children.map(createRoute).filter((item): item is RouteRecordRaw => Boolean(item))
-  const componentPath = normalizeComponentPath(node.component)
-  const component = componentPath ? viewModules[`/src/views${componentPath}`] : undefined
+  const children = node.children.map((child) => createRoute(child, normalizedPath)).filter((item): item is RouteRecordRaw => Boolean(item))
+  const component = loadViewComponent(node.component)
 
   if (isPageResource(node) && !node.href && !component) {
-    console.warn(`[route] component not found for ${node.code}: ${componentPath}`)
+    console.warn(`[route] component not found for ${node.code}: ${node.component}`)
     return null
   }
 
   const routeComponent = component && !node.href ? component : RouterView
-  const redirect = children.length ? node.redirect || firstVisibleRoutePath(children[0]) : undefined
+  const redirect = children.length ? node.redirect || children[0]?.path : undefined
 
   if (node.redirect && !children.length) {
     console.warn(`[route] resource ${node.code} has redirect but no children`)
@@ -75,6 +69,7 @@ function createRoute(node: RouteResourceTreeNode): RouteRecordRaw | null {
     href: node.href || undefined,
     sort: node.sort,
     extra: node.extra,
+    activeMenu: node.href ? undefined : normalizedPath,
   }
 
   if (children.length) {
@@ -117,22 +112,12 @@ function createMenu(node: RouteResourceTreeNode): RouteMenuItem | null {
 
 export function buildRoutes(resources: RouteResource[]): RouteBuildResult {
   const enabledResources = resources.filter((item) => item.status === 'ENABLED')
-  // 后端资源是扁平权限数据，前端在这里一次性转换为路由树、菜单树和按钮权限。
   const tree = buildRouteResourceTree(enabledResources)
-  const childRoutes = tree.map(createRoute).filter((item): item is RouteRecordRaw => Boolean(item))
+  const childRoutes = tree.map((node) => createRoute(node)).filter((item): item is RouteRecordRaw => Boolean(item))
   const menus = tree.map(createMenu).filter((item): item is RouteMenuItem => Boolean(item))
 
   return {
-    routes: [
-      {
-        path: '/_admin',
-        name: INNER_ROUTE_NAMES.AdminRoot,
-        component: BasicLayout,
-        redirect: DEFAULT_HOME_PATH,
-        meta: { title: '管理端', titleKey: 'routes.AdminRoot', requiresAuth: true, withoutTab: true, icon: "HomeOutlined" },
-        children: childRoutes,
-      },
-    ],
+    routes: childRoutes,
     menus,
     button_permissions: enabledResources
       .filter((item) => item.resource_type === 'BUTTON')

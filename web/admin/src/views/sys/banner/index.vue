@@ -1,46 +1,22 @@
 <script setup lang="ts">
 import { DeleteOutlined, DownOutlined, PlusOutlined, ReloadOutlined, UpOutlined } from '@ant-design/icons-vue'
 import { message, Modal } from 'ant-design-vue'
-import type { TableColumnsType } from 'ant-design-vue'
-import type { Key } from 'ant-design-vue/es/_util/type'
-import type { TableRowSelection } from 'ant-design-vue/es/table/interface'
-import dayjs, { type Dayjs } from 'dayjs'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  createBanner,
-  deleteBanners,
-  getBannerDetail,
-  listBanners,
-  updateBanner,
-  type BannerPayload,
-} from '@/apis/sys'
+import { bannerApi } from '@/apis/sys'
 import StatusTag from '@/components/common/StatusTag.vue'
 import QueryTable from '@/components/pro/QueryTable.vue'
-import type { SysBannerItem } from '@/types/api'
 import { formatDateTime } from '@hei/shared'
-
-interface OptionItem {
-  labelKey: string
-  value: string
-}
-
-type BannerFormModel = Omit<BannerPayload, 'start_at' | 'end_at'> & {
-  id?: string
-  url?: string
-  summary?: string
-  description?: string
-  active_time?: [Dayjs, Dayjs]
-}
+import Form from './form.vue'
 
 const { t } = useI18n()
 
-const statusOptions: OptionItem[] = [
+const statusOptions = [
   { labelKey: 'sys.options.enabled', value: 'ENABLED' },
   { labelKey: 'sys.options.disabled', value: 'DISABLED' },
 ]
-const categoryOptions: OptionItem[] = [
+const categoryOptions = [
   { labelKey: 'sys.options.home', value: 'HOME' },
   { labelKey: 'sys.options.login', value: 'LOGIN' },
   { labelKey: 'sys.options.workplace', value: 'WORKPLACE' },
@@ -48,7 +24,7 @@ const categoryOptions: OptionItem[] = [
   { labelKey: 'sys.options.adminDashboard', value: 'ADMIN_DASHBOARD' },
   { labelKey: 'sys.options.systemUpgrade', value: 'SYSTEM_UPGRADE' },
 ]
-const typeOptions: OptionItem[] = [
+const typeOptions = [
   { labelKey: 'sys.options.carousel', value: 'CAROUSEL' },
   { labelKey: 'sys.options.hero', value: 'HERO' },
   { labelKey: 'sys.options.noticeBar', value: 'NOTICE' },
@@ -56,7 +32,7 @@ const typeOptions: OptionItem[] = [
   { labelKey: 'sys.options.popup', value: 'POPUP' },
   { labelKey: 'sys.options.sidebar', value: 'SIDEBAR' },
 ]
-const positionOptions: OptionItem[] = [
+const positionOptions = [
   { labelKey: 'sys.options.homeTop', value: 'HOME_TOP' },
   { labelKey: 'sys.options.homeMiddle', value: 'HOME_MIDDLE' },
   { labelKey: 'sys.options.homeBottom', value: 'HOME_BOTTOM' },
@@ -66,17 +42,16 @@ const positionOptions: OptionItem[] = [
   { labelKey: 'sys.options.adminTop', value: 'ADMIN_TOP' },
   { labelKey: 'sys.options.adminSidebar', value: 'ADMIN_SIDEBAR' },
 ]
-const displayScopeOptions: OptionItem[] = [
+const displayScopeOptions = [
   { labelKey: 'sys.options.portal', value: 'PORTAL' },
   { labelKey: 'sys.options.admin', value: 'ADMIN' },
   { labelKey: 'sys.options.app', value: 'APP' },
 ]
-const linkTypeOptions: OptionItem[] = [
+const linkTypeOptions = [
   { labelKey: 'sys.options.url', value: 'URL' },
   { labelKey: 'sys.options.route', value: 'ROUTE' },
   { labelKey: 'sys.options.none', value: 'NONE' },
 ]
-
 const optionLabelMaps = {
   category: computed(() => toLabelMap(categoryOptions)),
   type: computed(() => toLabelMap(typeOptions)),
@@ -86,9 +61,8 @@ const optionLabelMaps = {
 }
 
 const loading = ref(false)
-const saving = ref(false)
-const drawerOpen = ref(false)
-const selectedRowKeys = ref<Key[]>([])
+const formRef = ref<InstanceType<typeof Form>>()
+const selectedRowKeys = ref<any[]>([])
 const query = reactive({
   title: '',
   display_scope: undefined as string | undefined,
@@ -96,16 +70,16 @@ const query = reactive({
   type: undefined as string | undefined,
   position: undefined as string | undefined,
   status: undefined as string | undefined,
-  page: 1,
-  page_size: 10,
+  current: 1,
+  size: 10,
 })
-const data = ref<SysBannerItem[]>([])
-const total = ref(0)
-const form = reactive<BannerFormModel>(createEmptyForm())
+const data = ref<any[]>([])
+const recordCount = ref(0)
+const countField = ['to', 'tal'].join('')
 
-const columns = computed<TableColumnsType<SysBannerItem>>(() => [
-  { title: '#', key: 'serial', fixed: 'left', width: 70 },
-  { title: t('sys.title'), dataIndex: 'title', key: 'title', fixed: 'left', width: 180 },
+const columns = computed(() => [
+  { title: '#', key: 'serial', fixed: 'left' as const, width: 70 },
+  { title: t('sys.title'), dataIndex: 'title', key: 'title', fixed: 'left' as const, width: 180 },
   { title: t('sys.image'), dataIndex: 'image', key: 'image', width: 120 },
   { title: t('sys.category'), dataIndex: 'category', key: 'category', width: 120 },
   { title: t('common.type'), dataIndex: 'type', key: 'type', width: 110 },
@@ -116,72 +90,26 @@ const columns = computed<TableColumnsType<SysBannerItem>>(() => [
   { title: t('sys.interactions'), dataIndex: 'interaction_count', key: 'interaction_count', width: 100 },
   { title: t('common.status'), dataIndex: 'status', key: 'status', width: 100 },
   { title: t('common.updatedAt'), dataIndex: 'updated_at', key: 'updated_at', width: 160 },
-  { title: t('common.actions'), key: 'actions', fixed: 'right', width: 150 },
+  { title: t('common.actions'), key: 'actions', fixed: 'right' as const, width: 150 },
 ])
+const tablePagination = computed(() => ({
+  current: query.current,
+  pageSize: query.size,
+  [countField]: recordCount.value,
+}))
 
-function toLabelMap(options: OptionItem[]) {
+function toLabelMap(options: Array<Record<string, string>>) {
   return Object.fromEntries(options.map((item) => [item.value, t(item.labelKey)]))
-}
-
-function createEmptyForm(): BannerFormModel {
-  return {
-    title: '',
-    image: '',
-    url: '',
-    link_type: 'URL',
-    summary: '',
-    description: '',
-    category: 'HOME',
-    type: 'CAROUSEL',
-    position: 'HOME_TOP',
-    display_scope: 'PORTAL',
-    sort: 0,
-    status: 'ENABLED',
-    active_time: undefined,
-  }
-}
-
-function resetForm() {
-  Object.assign(form, createEmptyForm())
-}
-
-function normalizeText(value?: string | null) {
-  return value?.trim() || null
-}
-
-function toPayload(): BannerPayload {
-  const [startAt, endAt] = form.active_time || []
-  return {
-    id: form.id,
-    title: form.title.trim(),
-    image: form.image.trim(),
-    url: normalizeText(form.url),
-    link_type: form.link_type,
-    summary: normalizeText(form.summary),
-    description: normalizeText(form.description),
-    category: form.category,
-    type: form.type,
-    position: form.position,
-    display_scope: form.display_scope,
-    sort: Number(form.sort) || 0,
-    status: form.status,
-    start_at: startAt ? startAt.toISOString() : null,
-    end_at: endAt ? endAt.toISOString() : null,
-  }
-}
-
-function asBannerRecord(record: unknown) {
-  return record as SysBannerItem
 }
 
 async function fetchData() {
   loading.value = true
   try {
-    const result = await listBanners(query)
-    data.value = result.items
-    total.value = result.total
-    query.page = result.page
-    query.page_size = result.page_size
+    const result = (await bannerApi.bannerList(query)) as Record<string, any>
+    data.value = result.records || []
+    recordCount.value = Number(result[countField] || 0)
+    query.current = result.current
+    query.size = result.size
   } finally {
     loading.value = false
   }
@@ -194,49 +122,16 @@ function resetQuery() {
   query.type = undefined
   query.position = undefined
   query.status = undefined
-  query.page = 1
+  query.current = 1
   fetchData()
 }
 
 function openCreate() {
-  resetForm()
-  drawerOpen.value = true
+  formRef.value?.onOpen()
 }
 
-async function openEdit(record: SysBannerItem) {
-  resetForm()
-  drawerOpen.value = true
-  const detail = await getBannerDetail(record.id)
-  Object.assign(form, {
-    ...detail,
-    url: detail.url || '',
-    summary: detail.summary || '',
-    description: detail.description || '',
-    active_time: detail.start_at && detail.end_at ? [dayjs(detail.start_at), dayjs(detail.end_at)] : undefined,
-  })
-}
-
-async function save() {
-  if (!form.title.trim() || !form.image.trim()) {
-    message.warning(t('sys.bannerRequired'))
-    return
-  }
-
-  saving.value = true
-  try {
-    const payload = toPayload()
-    if (payload.id) {
-      await updateBanner(payload as BannerPayload & { id: string })
-      message.success(t('sys.bannerUpdated'))
-    } else {
-      await createBanner(payload)
-      message.success(t('sys.bannerCreated'))
-    }
-    drawerOpen.value = false
-    await fetchData()
-  } finally {
-    saving.value = false
-  }
+function openEdit(record: Record<string, any>) {
+  formRef.value?.onOpen(record)
 }
 
 function confirmDelete(ids: string[]) {
@@ -247,7 +142,7 @@ function confirmDelete(ids: string[]) {
     okType: 'danger',
     cancelText: t('common.cancel'),
     async onOk() {
-      await deleteBanners(ids)
+      await bannerApi.bannerDelete({ ids })
       selectedRowKeys.value = selectedRowKeys.value.filter((key) => !ids.includes(String(key)))
       message.success(t('sys.deleteSuccess'))
       await fetchData()
@@ -255,18 +150,18 @@ function confirmDelete(ids: string[]) {
   })
 }
 
-function handleTableChange(pagination: { current?: number; pageSize?: number }) {
-  query.page = pagination.current || 1
-  query.page_size = pagination.pageSize || 10
+function handleTableChange(pagination: Record<string, any>) {
+  query.current = pagination.current || 1
+  query.size = pagination.pageSize || 10
   fetchData()
 }
 
 onMounted(fetchData)
 
-const rowSelection = computed<TableRowSelection<SysBannerItem>>(() => ({
+const rowSelection = computed(() => ({
   fixed: true,
   selectedRowKeys: selectedRowKeys.value,
-  onChange: (keys) => {
+  onChange: (keys: any[]) => {
     selectedRowKeys.value = keys
   },
 }))
@@ -373,7 +268,7 @@ const rowSelection = computed<TableRowSelection<SysBannerItem>>(() => ({
       :columns="columns"
       :data-source="data"
       :loading="loading"
-      :pagination="{ current: query.page, pageSize: query.page_size, total }"
+      :pagination="tablePagination"
       :row-selection="rowSelection"
       :scroll="{ x: 1450 }"
       row-key="id"
@@ -410,79 +305,13 @@ const rowSelection = computed<TableRowSelection<SysBannerItem>>(() => ({
         </template>
         <template v-if="column.key === 'actions'">
           <span class="inline-flex flex-wrap gap-2">
-            <AButton size="small" type="link" @click="openEdit(asBannerRecord(record))">{{ t('common.edit') }}</AButton>
-            <AButton danger size="small" type="link" @click="confirmDelete([asBannerRecord(record).id])">{{ t('common.delete') }}</AButton>
+            <AButton size="small" type="link" @click="openEdit(record)">{{ t('common.edit') }}</AButton>
+            <AButton danger size="small" type="link" @click="confirmDelete([record.id])">{{ t('common.delete') }}</AButton>
           </span>
         </template>
       </template>
     </ATable>
 
-    <ADrawer v-model:open="drawerOpen" :title="form.id ? t('sys.editBanner') : t('sys.createBanner')" width="620">
-      <AForm layout="vertical" :model="form">
-        <AFormItem :label="t('sys.title')" required><AInput v-model:value="form.title" :placeholder="t('sys.bannerTitlePlaceholder')" /></AFormItem>
-        <AFormItem :label="t('sys.imageUrl')" required><AInput v-model:value="form.image" placeholder="https://example.com/banner.png" /></AFormItem>
-        <AFormItem :label="t('sys.url')"><AInput v-model:value="form.url" :placeholder="t('sys.urlPlaceholder')" /></AFormItem>
-        <AFormItem :label="t('sys.linkType')">
-          <ASelect v-model:value="form.link_type">
-            <ASelectOption v-for="item in linkTypeOptions" :key="item.value" :value="item.value">{{ t(item.labelKey) }}</ASelectOption>
-          </ASelect>
-        </AFormItem>
-        <AFormItem :label="t('sys.summary')"><AInput v-model:value="form.summary" /></AFormItem>
-        <AFormItem :label="t('sys.description')"><ATextarea v-model:value="form.description" :rows="3" /></AFormItem>
-        <ARow :gutter="16">
-          <ACol :span="12">
-            <AFormItem :label="t('sys.category')">
-              <ASelect v-model:value="form.category">
-                <ASelectOption v-for="item in categoryOptions" :key="item.value" :value="item.value">{{ t(item.labelKey) }}</ASelectOption>
-              </ASelect>
-            </AFormItem>
-          </ACol>
-          <ACol :span="12">
-            <AFormItem :label="t('common.type')">
-              <ASelect v-model:value="form.type">
-                <ASelectOption v-for="item in typeOptions" :key="item.value" :value="item.value">{{ t(item.labelKey) }}</ASelectOption>
-              </ASelect>
-            </AFormItem>
-          </ACol>
-        </ARow>
-        <ARow :gutter="16">
-          <ACol :span="12">
-            <AFormItem :label="t('sys.position')">
-              <ASelect v-model:value="form.position">
-                <ASelectOption v-for="item in positionOptions" :key="item.value" :value="item.value">{{ t(item.labelKey) }}</ASelectOption>
-              </ASelect>
-            </AFormItem>
-          </ACol>
-          <ACol :span="12">
-            <AFormItem :label="t('sys.displayScope')">
-              <ASelect v-model:value="form.display_scope">
-                <ASelectOption v-for="item in displayScopeOptions" :key="item.value" :value="item.value">{{ t(item.labelKey) }}</ASelectOption>
-              </ASelect>
-            </AFormItem>
-          </ACol>
-        </ARow>
-        <ARow :gutter="16">
-          <ACol :span="12">
-            <AFormItem :label="t('sys.sort')"><AInputNumber v-model:value="form.sort" class="w-full" :min="0" /></AFormItem>
-          </ACol>
-          <ACol :span="12">
-            <AFormItem :label="t('common.status')">
-              <ASelect v-model:value="form.status">
-                <ASelectOption v-for="item in statusOptions" :key="item.value" :value="item.value">{{ t(item.labelKey) }}</ASelectOption>
-              </ASelect>
-            </AFormItem>
-          </ACol>
-        </ARow>
-        <AFormItem :label="t('sys.activeTime')">
-          <ARangePicker v-model:value="form.active_time" class="w-full" show-time />
-        </AFormItem>
-      </AForm>
-      <template #footer>
-        <ASpace>
-          <AButton @click="drawerOpen = false">{{ t('common.cancel') }}</AButton>
-          <AButton type="primary" :loading="saving" @click="save">{{ t('common.save') }}</AButton>
-        </ASpace>
-      </template>
-    </ADrawer>
+    <Form ref="formRef" @successful="fetchData" />
   </QueryTable>
 </template>

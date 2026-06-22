@@ -1,7 +1,9 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import BasicLayout from '@/layouts/BasicLayout.vue'
+import { DEFAULT_HOME_PATH } from '@/config/app'
+
 export const INNER_ROUTE_NAMES = {
-  Root: 'Root',
   AdminRoot: 'AdminRoot',
   Login: 'Login',
   Forbidden: 'Forbidden',
@@ -12,9 +14,11 @@ export const INNER_ROUTE_NAMES = {
 export const innerRoutes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: INNER_ROUTE_NAMES.Root,
-    component: () => import('@/layouts/BlankLayout.vue'),
-    meta: { title: '首页', titleKey: 'routes.Root', requiresAuth: true, withoutTab: true },
+    name: INNER_ROUTE_NAMES.AdminRoot,
+    component: BasicLayout,
+    redirect: DEFAULT_HOME_PATH,
+    meta: { title: '管理端', titleKey: 'routes.AdminRoot', requiresAuth: true, withoutTab: true },
+    children: [],
   },
   {
     path: '/auth',

@@ -1,5 +1,3 @@
-import type { ResponseResult } from '@hei/shared'
-
 import { request } from '@/utils/http'
 
 export interface LoginPayload {
@@ -32,29 +30,14 @@ export interface PortalMe {
   profile?: PortalProfile | null
 }
 
-async function send<T>(method: Promise<ResponseResult<T | null>> | Promise<T>) {
-  const result = await method
-  if (isResponseResult<T>(result)) {
-    if (!result.isSuccess || result.data === null) {
-      throw new Error(result.message)
-    }
-    return result.data
-  }
-  return result
-}
-
-function isResponseResult<T>(result: ResponseResult<T | null> | T): result is ResponseResult<T | null> {
-  return Boolean(result && typeof result === 'object' && 'isSuccess' in result)
-}
-
 export function login(data: LoginPayload) {
-  return send(request.post<ResponseResult<LoginResult | null>>('/api/v1/portal/auth/login', data))
+  return request.post<LoginResult>('/api/v1/portal/auth/login', data)
 }
 
 export function logout() {
-  return send(request.post<ResponseResult<{ success: boolean } | null>>('/api/v1/portal/auth/logout'))
+  return request.post<{ success: boolean }>('/api/v1/portal/auth/logout')
 }
 
 export function getMe() {
-  return send(request.get<ResponseResult<PortalMe | null>>('/api/v1/portal/profile/me'))
+  return request.get<PortalMe>('/api/v1/portal/profile/me')
 }

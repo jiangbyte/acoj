@@ -1,5 +1,12 @@
-import type { ResponseResult } from '@hei/shared'
 import { getMe as getMockMe, login as mockLogin, logout as mockLogout } from '@mock/modules/auth'
+
+interface MockResponse<T> {
+  isSuccess: boolean
+  errorType: null
+  code: number
+  message: string
+  data: T
+}
 
 export interface LoginPayload {
   account: string
@@ -32,7 +39,7 @@ export interface AdminMe {
   profile?: AdminProfile | null
 }
 
-function mockSuccess<T>(data: T): ResponseResult<T> {
+function mockSuccess<T>(data: T): MockResponse<T> {
   return {
     isSuccess: true,
     errorType: null,

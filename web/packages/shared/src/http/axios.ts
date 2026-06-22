@@ -6,7 +6,6 @@ import {
   handleBusinessError,
   handleNetworkError,
   handleResponseError,
-  handleServiceResult,
   parseApiResponse,
 } from './handle'
 import type {
@@ -15,7 +14,6 @@ import type {
   HttpClient,
   HttpInstanceOptions,
   InternalHttpRequestConfig,
-  RequestErrorResult,
 } from './types'
 
 export type { BackendOptions, HttpInstanceOptions }
@@ -71,8 +69,7 @@ async function handleAuthExpired(response: AxiosResponse, hooks: HttpInstanceOpt
 }
 
 function recoverNetworkError(hooks: HttpInstanceOptions['hooks']) {
-  const errorResult = handleNetworkError(hooks)
-  return handleServiceResult(errorResult, false)
+  return Promise.reject(handleNetworkError(hooks))
 }
 
 export function createAxiosInstance(options: HttpInstanceOptions, backendOptions?: BackendOptions): HttpClient {
@@ -124,24 +121,24 @@ export function createAxiosInstance(options: HttpInstanceOptions, backendOptions
 
         const apiData = parseApiResponse(response)
         if (!apiData) {
-          return handleServiceResult(null)
+          return null
         }
 
         const result = apiData as unknown as Record<string, unknown>
         if (result[backendConfig.codeKey] === backendConfig.successCode) {
-          return handleServiceResult(result[backendConfig.dataKey])
+          return result[backendConfig.dataKey]
         }
 
         const errorResult = handleBusinessError(result, backendConfig, hooks)
-        return handleServiceResult(errorResult, false)
+        return Promise.reject(errorResult)
       }
 
       const errorResult = handleResponseError(response, hooks)
-      return handleServiceResult(errorResult, false)
+      return Promise.reject(errorResult)
     },
-    (error: AxiosError): RequestErrorResult => {
+    (error: AxiosError): Promise<never> => {
       if (error.response) {
-        return handleResponseError(error.response, hooks)
+        return Promise.reject(handleResponseError(error.response, hooks))
       }
       return recoverNetworkError(hooks)
     },

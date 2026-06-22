@@ -14,6 +14,7 @@ export const useRouteStore = defineStore('route', {
     button_permissions: [] as string[],
     cache_routes: [] as string[],
     active_menu: '',
+    dynamic_route_names: [] as string[],
   }),
   getters: {
     firstAvailablePath: (state) => {
@@ -39,27 +40,40 @@ export const useRouteStore = defineStore('route', {
     },
   },
   actions: {
-    async init_route_info() {
+    async fetchMenu() {
       return getRouteResources()
     },
-    async init_auth_route() {
-      this.is_init_auth_route = false
-      const resources = await this.init_route_info()
+    async loadMenu() {
+      const resources = await this.fetchMenu()
       const result = buildRoutes(resources)
-
-      this.reset_routes()
-      result.routes.forEach((route) => router.addRoute(route))
-
       this.resources = resources
       this.menus = result.menus
       this.button_permissions = result.button_permissions
       this.cache_routes = result.cache_routes
+      return result.routes
+    },
+    async refreshMenu() {
+      this.is_init_auth_route = false
+      const routes = await this.loadMenu()
+      this.reset_routes()
+      routes.forEach((route) => {
+        router.addRoute(INNER_ROUTE_NAMES.AdminRoot, route)
+        if (route.name) {
+          this.dynamic_route_names.push(String(route.name))
+        }
+      })
       this.is_init_auth_route = true
     },
+    async init_auth_route() {
+      await this.refreshMenu()
+    },
     reset_routes() {
-      if (router.hasRoute(INNER_ROUTE_NAMES.AdminRoot)) {
-        router.removeRoute(INNER_ROUTE_NAMES.AdminRoot)
-      }
+      this.dynamic_route_names.forEach((name) => {
+        if (router.hasRoute(name)) {
+          router.removeRoute(name)
+        }
+      })
+      this.dynamic_route_names = []
     },
     reset_route_store() {
       this.reset_routes()
@@ -69,6 +83,7 @@ export const useRouteStore = defineStore('route', {
       this.button_permissions = []
       this.cache_routes = []
       this.active_menu = ''
+      this.dynamic_route_names = []
     },
     set_active_menu(key: string) {
       this.active_menu = key
@@ -76,8 +91,13 @@ export const useRouteStore = defineStore('route', {
     has_button_permission(key: string) {
       return this.button_permissions.includes(key)
     },
+    get_accessible_path(path: string) {
+      return this.has_auth_route(path) ? path : this.firstAvailablePath || '/403'
+    },
     has_auth_route(path: string) {
-      return router.resolve(path).matched.some((route) => route.name === INNER_ROUTE_NAMES.AdminRoot)
+      const resolved = router.resolve(path)
+      return resolved.matched.some((route) => route.name === INNER_ROUTE_NAMES.AdminRoot) &&
+        resolved.name !== INNER_ROUTE_NAMES.NotFound
     },
   },
 })
