@@ -1,0 +1,186 @@
+from app.core.config.enums import AccountStatusEnum, LoginScope, UserType
+from app.core.security.session import SessionPayload, session_store
+from app.deps.db import get_db_session
+from app.modules.iam.model import SysAccount
+
+
+async def _seed_admin(client, token: str, permissions: list[str]) -> None:
+    override = client._transport.app.dependency_overrides[get_db_session]
+    async for session in override():
+        account = SysAccount(
+            account=f"{token}_account",
+            password_hash="hashed",
+            account_type=UserType.ADMIN.value,
+            account_status=AccountStatusEnum.ENABLED.value,
+            name="Dict Admin",
+            nickname="Dict Admin",
+        )
+        session.add(account)
+        await session.flush()
+        await session_store.set(
+            SessionPayload(
+                token=token,
+                account_id=account.id,
+                account_type=UserType.ADMIN.value,
+                login_scope=LoginScope.ADMIN.value,
+                role_ids=[],
+                dept_ids=[],
+                group_ids=[],
+                permission_keys=permissions,
+                permission_grants=[],
+            ),
+            ttl_seconds=3600,
+        )
+        await session.commit()
+        break
+
+
+def _payload(**overrides):
+    data = {
+        "code": "PROFILE_GENDER",
+        "label": "Gender",
+        "value": "gender",
+        "color": "#1677ff",
+        "category": "BIZ",
+        "sort": 1,
+        "status": "ENABLED",
+    }
+    data.update(overrides)
+    return data
+
+
+async def test_admin_dict_create_list_detail_update_delete(client):
+    token = "admin-dict-token"
+    await _seed_admin(
+        client,
+        token,
+        [
+            "sys:dict:create",
+            "sys:dict:list",
+            "sys:dict:detail",
+            "sys:dict:update",
+            "sys:dict:delete",
+        ],
+    )
+    headers = {"Authorization": token}
+
+    create_response = await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers=headers,
+        json=_payload(),
+    )
+    assert create_response.status_code == 200
+    dict_id = create_response.json()["data"]["id"]
+
+    list_response = await client.get(
+        "/api/v1/admin/dict/sys/dicts/list?current=1&size=20&category=BIZ&status=ENABLED",
+        headers=headers,
+    )
+    assert list_response.status_code == 200
+    assert list_response.json()["data"]["total"] == 1
+
+    detail_response = await client.get(
+        f"/api/v1/admin/dict/sys/dicts/detail?id={dict_id}",
+        headers=headers,
+    )
+    assert detail_response.status_code == 200
+    assert detail_response.json()["data"]["code"] == "PROFILE_GENDER"
+
+    update_response = await client.post(
+        "/api/v1/admin/dict/sys/dicts/update",
+        headers=headers,
+        json=_payload(id=dict_id, label="Gender Updated", status="DISABLED"),
+    )
+    assert update_response.status_code == 200
+    assert update_response.json()["data"]["label"] == "Gender Updated"
+
+    delete_response = await client.post(
+        "/api/v1/admin/dict/sys/dicts/delete",
+        headers=headers,
+        json={"ids": [dict_id]},
+    )
+    assert delete_response.status_code == 200
+    assert delete_response.json()["data"] == [dict_id]
+
+
+async def test_admin_dict_tree_supports_optional_category(client):
+    token = "admin-dict-tree-token"
+    await _seed_admin(client, token, ["sys:dict:create", "sys:dict:tree"])
+    headers = {"Authorization": token}
+
+    root_response = await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers=headers,
+        json=_payload(code="PROFILE_GENDER", label="Gender", sort=1),
+    )
+    root_id = root_response.json()["data"]["id"]
+    await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers=headers,
+        json=_payload(
+            code="PROFILE_GENDER_MALE",
+            label="Male",
+            value="M",
+            parent_id=root_id,
+            sort=2,
+        ),
+    )
+    await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers=headers,
+        json=_payload(code="ORDER_STATUS", label="Order Status", category="SYS", sort=3),
+    )
+
+    profile_response = await client.get(
+        "/api/v1/admin/dict/sys/dicts/tree?category=BIZ",
+        headers=headers,
+    )
+    all_response = await client.get("/api/v1/admin/dict/sys/dicts/tree", headers=headers)
+
+    assert profile_response.status_code == 200
+    assert [node["code"] for node in profile_response.json()["data"]] == ["PROFILE_GENDER"]
+    assert profile_response.json()["data"][0]["children"][0]["code"] == "PROFILE_GENDER_MALE"
+    assert all_response.status_code == 200
+    assert [node["code"] for node in all_response.json()["data"]] == [
+        "PROFILE_GENDER",
+        "ORDER_STATUS",
+    ]
+
+
+async def test_admin_dict_list_requires_permission(client):
+    token = "admin-dict-no-permission-token"
+    await _seed_admin(client, token, [])
+
+    response = await client.get(
+        "/api/v1/admin/dict/sys/dicts/list",
+        headers={"Authorization": token},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["message"] == "Permission denied: sys:dict:list"
+
+
+async def test_admin_dict_rejects_invalid_code(client):
+    token = "admin-dict-invalid-code-token"
+    await _seed_admin(client, token, ["sys:dict:create"])
+
+    response = await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers={"Authorization": token},
+        json=_payload(code="COMMON-STATUS"),
+    )
+
+    assert response.status_code == 422
+
+
+async def test_admin_dict_rejects_non_standard_category(client):
+    token = "admin-dict-invalid-category-token"
+    await _seed_admin(client, token, ["sys:dict:create"])
+
+    response = await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers={"Authorization": token},
+        json=_payload(category="OTHER"),
+    )
+
+    assert response.status_code == 422

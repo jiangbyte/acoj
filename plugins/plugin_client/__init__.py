@@ -1,1 +1,0 @@
-"""Consumer-facing plugin package."""

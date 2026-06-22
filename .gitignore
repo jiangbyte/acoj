@@ -3,6 +3,8 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+.backup
+
 # vitepress
 vitepress/node_modules/
 vitepress/docs/.vitepress/dist
@@ -82,7 +84,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+.backup/docs/_build/
 
 # PyBuilder
 .pybuilder/
@@ -231,3 +233,13 @@ __marimo__/
 
 
 uploads
+
+# Web local/reference files
+web1/ant-design-vue-pro/
+web1/**/.env
+web1/**/.env.*
+!web1/**/.env.example
+!web1/**/.env.template
+web1/**/dist/
+web1/**/.vite/
+web1/**/coverage/

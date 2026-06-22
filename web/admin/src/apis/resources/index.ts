@@ -1,0 +1,1 @@
+export { getRouteResources } from '../route'
