@@ -1,14 +1,21 @@
 from fastapi import APIRouter
 from sqlalchemy import text
 
+from app.api.schema import (
+    HealthCheckItem,
+    LiveHealthResponse,
+    ReadyChecksResponse,
+    ReadyHealthResponse,
+)
 from app.core.config.settings import settings
+from app.modules.judge.router import router as judge_router
 from app.platform.cache.redis import get_redis
 from app.platform.db.session import get_session_factory
-from app.platform.tasks.celery_app import celery_app
 from app.platform.storage.manager import get_storage
-from app.api.schema import HealthCheckItem, LiveHealthResponse, ReadyChecksResponse, ReadyHealthResponse
+from app.platform.tasks.celery_app import celery_app
 
 router = APIRouter(prefix="/internal", tags=["internal"])
+router.include_router(judge_router)
 
 
 @router.get("/health/live", response_model=LiveHealthResponse)
@@ -23,7 +30,11 @@ async def ready() -> ReadyHealthResponse:
     checks = ReadyChecksResponse(
         database=HealthCheckItem(enabled=True, ok=False, detail=None),
         redis=HealthCheckItem(enabled=settings.redis.enabled, ok=False, detail=None),
-        celery_broker=HealthCheckItem(enabled=bool(settings.celery.broker_url), ok=False, detail=None),
+        celery_broker=HealthCheckItem(
+            enabled=bool(settings.celery.broker_url),
+            ok=False,
+            detail=None,
+        ),
         storage=HealthCheckItem(enabled=True, ok=False, detail=None),
     )
     try:
