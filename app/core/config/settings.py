@@ -49,12 +49,6 @@ class CelerySettings(BaseSettings):
     broker_url: str = "amqp://guest:guest@127.0.0.1:5672//"
 
 
-class JudgeSettings(BaseSettings):
-    node_token: str = "change-me"
-    heartbeat_timeout_seconds: int = 10
-    max_task_attempts: int = 3
-
-
 class StorageSettings(BaseSettings):
     provider: str = "s3"
     bucket: str = "hei-fastapi"
@@ -109,7 +103,6 @@ class Settings(BaseSettings):
     auth: AuthSettings = Field(default_factory=AuthSettings)
     cors: CorsSettings = Field(default_factory=CorsSettings)
     celery: CelerySettings = Field(default_factory=CelerySettings)
-    judge: JudgeSettings = Field(default_factory=JudgeSettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
     id_generator: IdGeneratorSettings = Field(default_factory=IdGeneratorSettings)
     swagger: SwaggerSettings = Field(default_factory=SwaggerSettings)

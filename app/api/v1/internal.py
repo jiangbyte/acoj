@@ -8,14 +8,12 @@ from app.api.schema import (
     ReadyHealthResponse,
 )
 from app.core.config.settings import settings
-from app.modules.judge.router import router as judge_router
 from app.platform.cache.redis import get_redis
 from app.platform.db.session import get_session_factory
 from app.platform.storage.manager import get_storage
 from app.platform.tasks.celery_app import celery_app
 
 router = APIRouter(prefix="/internal", tags=["internal"])
-router.include_router(judge_router)
 
 
 @router.get("/health/live", response_model=LiveHealthResponse)
