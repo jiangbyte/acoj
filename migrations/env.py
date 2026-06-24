@@ -11,7 +11,6 @@ from app.modules.banner import model as _banner_model  # noqa: F401
 from app.modules.dict import model as _dict_model  # noqa: F401
 from app.modules.file import model as _file_model  # noqa: F401
 from app.modules.iam import model as _iam_model  # noqa: F401
-from app.modules.judge import model as _judge_model  # noqa: F401
 from app.modules.user.admin import model as _admin_profile_model  # noqa: F401
 from app.modules.user.portal import model as _portal_profile_model  # noqa: F401
 from app.platform.db.base import Base
