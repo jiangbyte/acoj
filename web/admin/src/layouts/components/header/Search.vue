@@ -2,12 +2,15 @@
 import { computed, nextTick, ref, watchEffect } from 'vue'
 import { useMagicKeys } from '@vueuse/core'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useBoolean } from '@/hooks'
 import { useAppStore, useRouteStore } from '@/stores'
+import { routeI18nKey } from '@/utils/i18n'
 
 const appStore = useAppStore()
 const routeStore = useRouteStore()
 const router = useRouter()
+const { t } = useI18n()
 
 // 搜索弹窗中的可跳转项，value 固定使用路由 path，code 用于辅助识别权限/菜单编码。
 interface SearchOption {
@@ -59,16 +62,26 @@ const options = computed<SearchOption[]>(() => {
   }
 
   return routeStore.rowRoutes
-    .filter(
-      (item) =>
-        item.status === 'ENABLED' &&
-        item.is_visible &&
-        (item.resource_type === 'MENU' || item.resource_type === 'PAGE') &&
-        item.path &&
-        [item.name, item.path, item.code].some((value) => value.toLowerCase().includes(keyword)),
-    )
     .map((item) => ({
-      label: item.name,
+      item,
+      label: t(routeI18nKey(item.code), item.name),
+    }))
+    .filter(({ item, label }) => {
+      if (
+        item.status !== 'ENABLED' ||
+        !item.is_visible ||
+        (item.resource_type !== 'MENU' && item.resource_type !== 'PAGE') ||
+        !item.path
+      ) {
+        return false
+      }
+
+      return [item.name, label, item.path, item.code].some((value) =>
+        value.toLowerCase().includes(keyword),
+      )
+    })
+    .map(({ item, label }) => ({
+      label,
       value: item.path!,
       code: item.code,
       icon: item.icon ?? undefined,
@@ -186,7 +199,7 @@ function handleMouseEnter(index: number) {
     <template #header>
       <n-input
         v-model:value="searchValue"
-        placeholder="搜索菜单 / 路径 / 编码"
+        :placeholder="t('app.searchPlaceholder')"
         clearable
         size="large"
         @input="handleInputChange"
@@ -223,23 +236,23 @@ function handleMouseEnter(index: number) {
         </n-el>
       </ul>
 
-      <n-empty v-else size="large" class="h-450px flex-center" description="暂无结果" />
+      <n-empty v-else size="large" class="h-450px flex-center" :description="t('app.searchEmpty')" />
     </n-scrollbar>
 
     <template #footer>
       <n-flex class="items-center">
         <span class="flex-y-center gap-1">
           <n-tag size="small" round>Enter</n-tag>
-          <span>选择</span>
+          <span>{{ t('common.choose') }}</span>
         </span>
         <span class="flex-y-center gap-1">
           <n-tag size="small" round>↑</n-tag>
           <n-tag size="small" round>↓</n-tag>
-          <span>导航</span>
+          <span>{{ t('common.navigate') }}</span>
         </span>
         <span class="flex-y-center gap-1">
           <n-tag size="small" round>Esc</n-tag>
-          <span>关闭</span>
+          <span>{{ t('common.close') }}</span>
         </span>
       </n-flex>
     </template>

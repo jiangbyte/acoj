@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, nextTick, ref } from 'vue'
 import { useColorMode, useFullscreen, useMediaQuery } from '@vueuse/core'
+import { setLocale } from '@/utils/i18n'
 
 // 全局页面级能力使用 documentElement 作为作用对象，例如全屏。
 const docEle = ref(document.documentElement)
@@ -13,6 +14,14 @@ const colorMode = useColorMode({ emitAuto: true })
 
 // 布局在小屏幕下会切换为移动端交互，例如隐藏桌面侧边栏控制。
 const isMobile = useMediaQuery('(max-width: 700px)')
+
+const langs: App.Lang[] = ['zhCN', 'enUS']
+const defaultLang = (import.meta.env.VITE_DEFAULT_LANG || 'zhCN') as App.Lang
+
+function getInitialLang(): App.Lang {
+  const storedLang = localStorage.getItem('lang') as App.Lang | null
+  return storedLang && langs.includes(storedLang) ? storedLang : defaultLang
+}
 
 /**
  * 应用全局状态。
@@ -30,6 +39,9 @@ export const useAppStore = defineStore('app-store', {
 
     // 页面内容渲染开关。reloadPage 会短暂关闭再打开，用于触发当前路由视图重载。
     loadFlag: true,
+
+    // 当前界面语言，和 vue-i18n、Naive UI locale 保持同步。
+    lang: getInitialLang(),
   }),
   getters: {
     // 用户选择的主题模式，可能是 light、dark 或 auto。
@@ -52,6 +64,15 @@ export const useAppStore = defineStore('app-store', {
      */
     setColorMode(mode: 'light' | 'dark' | 'auto') {
       colorMode.value = mode
+    },
+
+    /**
+     * 切换界面语言。
+     */
+    setAppLang(lang: App.Lang) {
+      this.lang = lang
+      localStorage.setItem('lang', lang)
+      setLocale(lang)
     },
 
     /**

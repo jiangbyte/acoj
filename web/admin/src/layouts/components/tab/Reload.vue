@@ -22,6 +22,6 @@ function handleReload() {
         <NovaIcon icon="icon-park-outline:refresh" :class="{ 'animate-spin': loading }" />
       </CommonWrapper>
     </template>
-    刷新
+    {{ $t('common.reload') }}
   </n-tooltip>
 </template>

@@ -6,7 +6,7 @@
           <NovaIcon icon="icon-park-outline:to-top" />
         </div>
       </template>
-      回到顶部
+      {{ $t('app.backTop') }}
     </n-tooltip>
   </n-back-top>
 </template>

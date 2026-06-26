@@ -1,0 +1,13 @@
+{
+  "appRoot": "Home",
+  "dashboard": "Workbench",
+  "demo": "Demo Pages",
+  "demo_overview": "Demo Overview",
+  "demo_list": "List Demo",
+  "demo_form": "Form Demo",
+  "demo_chart": "Chart Demo",
+  "demo_detail": "Detail Demo",
+  "root": "Entry",
+  "not_found": "Not Found",
+  "not_found_catch": "Not Found"
+}

@@ -3,6 +3,7 @@ import type { DropdownOption } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDraggable } from 'vue-draggable-plus'
+import { useI18n } from 'vue-i18n'
 import { useTabScroll } from '@/hooks/useTabScroll'
 import { useAppStore, useTabStore } from '@/stores'
 import { getRouteTitle } from '@/stores/route'
@@ -14,6 +15,7 @@ import Reload from './Reload.vue'
 const tabStore = useTabStore()
 const appStore = useAppStore()
 const router = useRouter()
+const { t } = useI18n()
 // useTabScroll 将鼠标滚轮转换成横向滚动，并在当前页签变化时滚动到可视区域。
 const { scrollbar, onWheel } = useTabScroll(computed(() => tabStore.currentTabPath))
 void scrollbar
@@ -51,36 +53,36 @@ const options = computed<DropdownOption[]>(() => {
 
   return [
     {
-      label: '刷新',
+      label: t('common.reload'),
       key: 'reload',
       icon: renderIcon('icon-park-outline:redo'),
     },
     {
-      label: '关闭当前',
+      label: t('app.closeCurrent'),
       key: 'closeCurrent',
       icon: renderIcon('icon-park-outline:close'),
       disabled: disabledCurrent,
     },
     {
-      label: '关闭其他',
+      label: t('app.closeOther'),
       key: 'closeOther',
       icon: renderIcon('icon-park-outline:delete-four'),
       disabled: disabledCurrent || disabledNormal,
     },
     {
-      label: '关闭左侧',
+      label: t('app.closeLeft'),
       key: 'closeLeft',
       icon: renderIcon('icon-park-outline:to-left'),
       disabled: disabledCurrent || disabledNormal,
     },
     {
-      label: '关闭右侧',
+      label: t('app.closeRight'),
       key: 'closeRight',
       icon: renderIcon('icon-park-outline:to-right'),
       disabled: disabledCurrent || disabledNormal,
     },
     {
-      label: '关闭全部',
+      label: t('app.closeAll'),
       key: 'closeAll',
       icon: renderIcon('icon-park-outline:fullwidth'),
       disabled: disabledNormal,
@@ -139,7 +141,7 @@ function handleSelect(key: string | number) {
             <template #icon>
               <NovaIcon v-if="item.meta.icon" :icon="item.meta.icon" />
             </template>
-            {{ getRouteTitle(item) }}
+            {{ getRouteTitle(item, t) }}
           </n-tag>
         </div>
         <div ref="el" class="flex items-center gap-1 flex-1">
@@ -156,7 +158,7 @@ function handleSelect(key: string | number) {
             <template #icon>
               <NovaIcon v-if="item.meta.icon" :icon="item.meta.icon" />
             </template>
-            {{ getRouteTitle(item) }}
+            {{ getRouteTitle(item, t) }}
           </n-tag>
         </div>
       </div>

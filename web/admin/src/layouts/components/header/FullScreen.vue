@@ -27,6 +27,6 @@ useMagicKeys({
         />
       </CommonWrapper>
     </template>
-    全屏
+    {{ $t('app.toggleFullScreen') }}
   </n-tooltip>
 </template>

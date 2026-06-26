@@ -1,0 +1,13 @@
+{
+  "appRoot": "首页",
+  "dashboard": "工作台",
+  "demo": "示例页面",
+  "demo_overview": "示例总览",
+  "demo_list": "列表示例",
+  "demo_form": "表单示例",
+  "demo_chart": "图表示例",
+  "demo_detail": "详情示例",
+  "root": "入口",
+  "not_found": "页面不存在",
+  "not_found_catch": "页面不存在"
+}

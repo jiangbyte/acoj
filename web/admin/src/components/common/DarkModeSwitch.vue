@@ -2,23 +2,25 @@
 import { Icon } from '@iconify/vue'
 import { NFlex } from 'naive-ui'
 import { computed, h } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores'
 
 const appStore = useAppStore()
+const { t } = useI18n()
 
 const options = computed(() => [
   {
-    label: '浅色',
+    label: t('app.light'),
     value: 'light',
     icon: 'icon-park-outline:sun-one',
   },
   {
-    label: '深色',
+    label: t('app.dark'),
     value: 'dark',
     icon: 'icon-park-outline:moon',
   },
   {
-    label: '跟随系统',
+    label: t('app.system'),
     value: 'auto',
     icon: 'icon-park-outline:laptop-computer',
   },

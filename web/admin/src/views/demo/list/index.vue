@@ -1,6 +1,6 @@
 <template>
   <n-space vertical size="large">
-    <n-page-header title="列表示例" subtitle="简单表格和隐藏详情页跳转" />
+    <n-page-header :title="t('demo.listTitle')" :subtitle="t('demo.listSubtitle')" />
 
     <n-card :bordered="false">
       <n-data-table :columns="columns" :data="data" :pagination="{ pageSize: 5 }" />
@@ -9,31 +9,35 @@
 </template>
 
 <script setup lang="ts">
-import { h } from 'vue'
+import { computed, h } from 'vue'
 import { NButton, NTag } from 'naive-ui'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 
-const columns = [
+type Level = 'easy' | 'medium' | 'hard'
+
+const columns = computed(() => [
   {
-    title: '题目',
+    title: t('demo.problem'),
     key: 'title',
   },
   {
-    title: '难度',
+    title: t('demo.difficulty'),
     key: 'level',
-    render(row: { level: string }) {
-      const type = row.level === '简单' ? 'success' : row.level === '中等' ? 'warning' : 'error'
-      return h(NTag, { type, bordered: false }, { default: () => row.level })
+    render(row: { level: Level }) {
+      const type = row.level === 'easy' ? 'success' : row.level === 'medium' ? 'warning' : 'error'
+      return h(NTag, { type, bordered: false }, { default: () => t(`demo.${row.level}`) })
     },
   },
   {
-    title: '提交',
+    title: t('demo.submissions'),
     key: 'submissions',
   },
   {
-    title: '操作',
+    title: t('demo.actions'),
     key: 'actions',
     render(row: { id: number }) {
       return h(
@@ -44,17 +48,17 @@ const columns = [
           type: 'primary',
           onClick: () => router.push({ path: '/demo/detail', query: { id: row.id } }),
         },
-        { default: () => '查看' },
+        { default: () => t('common.view') },
       )
     },
   },
-]
+])
 
-const data = [
-  { id: 1001, title: '两数之和', level: '简单', submissions: 248 },
-  { id: 1002, title: '区间合并', level: '中等', submissions: 136 },
-  { id: 1003, title: '最短路径', level: '困难', submissions: 78 },
-  { id: 1004, title: '括号匹配', level: '简单', submissions: 302 },
-  { id: 1005, title: '动态规划入门', level: '中等', submissions: 119 },
-]
+const data = computed(() => [
+  { id: 1001, title: t('demo.twoSum'), level: 'easy' as Level, submissions: 248 },
+  { id: 1002, title: t('demo.mergeIntervals'), level: 'medium' as Level, submissions: 136 },
+  { id: 1003, title: t('demo.shortestPath'), level: 'hard' as Level, submissions: 78 },
+  { id: 1004, title: t('demo.validParentheses'), level: 'easy' as Level, submissions: 302 },
+  { id: 1005, title: t('demo.dynamicProgrammingIntro'), level: 'medium' as Level, submissions: 119 },
+])
 </script>
