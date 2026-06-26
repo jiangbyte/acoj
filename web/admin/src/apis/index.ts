@@ -1,7 +1,0 @@
-export * from './auth'
-export * from './dashboard'
-export * from './file'
-export * from './iam'
-export * from './sys'
-export * from './resources'
-export * from './route'

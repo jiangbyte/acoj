@@ -1,24 +1,14 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+import '@unocss/reset/tailwind.css'
 import 'virtual:uno.css'
 import './style.css'
 import App from './App.vue'
-import { router } from '@/router'
-import { setupRouterGuards } from '@/router/guards'
-import { i18n } from '@/i18n'
 
-async function setup() {
-  const app = createApp(App)
-  const pinia = createPinia()
+const app = createApp(App)
+const pinia = createPinia()
 
-  pinia.use(piniaPluginPersistedstate)
-  app.use(pinia)
-  app.use(i18n)
-  setupRouterGuards(router)
-  app.use(router)
-  await router.isReady()
-  app.mount('#app')
-}
-
-setup()
+pinia.use(piniaPluginPersistedstate)
+app.use(pinia)
+app.mount('#app')
