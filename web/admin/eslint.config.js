@@ -33,7 +33,9 @@ export default tseslint.config(
       globals: {
         console: 'readonly',
         document: 'readonly',
+        HTMLElement: 'readonly',
         localStorage: 'readonly',
+        MouseEvent: 'readonly',
         window: 'readonly',
       },
     },
