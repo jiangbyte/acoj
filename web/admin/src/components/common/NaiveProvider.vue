@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useDialog, useLoadingBar, useMessage, useNotification } from 'naive-ui'
+import { defineComponent, h } from 'vue'
 
 const NaiveProviderContent = defineComponent({
   name: 'NaiveProviderContent',

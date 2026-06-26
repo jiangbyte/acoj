@@ -6,6 +6,11 @@
     "types": ["vite/client", "node"],
     "skipLibCheck": true,
     "composite": true,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
 
     /* Bundler mode */
     "module": "ESNext",
@@ -21,11 +26,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue",
-    "vite.config.ts",
-    "uno.config.ts"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "vite.config.ts", "uno.config.ts"]
 }
