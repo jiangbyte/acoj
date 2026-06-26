@@ -4,10 +4,11 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { renderIcon } from '@/utils/icon'
-import { useAppStore } from '@/stores'
+import { useAppStore, useAuthStore } from '@/stores'
 
 const router = useRouter()
 const appStore = useAppStore()
+const authStore = useAuthStore()
 const { t } = useI18n()
 const homePath = import.meta.env.VITE_HOME_PATH
 
@@ -58,7 +59,10 @@ function handleSelect(key: string | number) {
       content: t('app.loginOutContent'),
       positiveText: t('common.confirm'),
       negativeText: t('common.cancel'),
-      onPositiveClick: () => window.$message.success(t('app.loginOutSuccess')),
+      onPositiveClick: async () => {
+        await authStore.logout()
+        window.$message.success(t('app.loginOutSuccess'))
+      },
     })
   }
 }

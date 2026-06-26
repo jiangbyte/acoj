@@ -20,6 +20,36 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/error/NotFound.vue'),
   },
   {
+    // 认证页面是公开静态路由，不进入后台 Layout、菜单和标签栏。
+    path: '/auth',
+    name: 'auth',
+    redirect: '/auth/login',
+  },
+  {
+    path: '/auth/login',
+    name: 'auth-login',
+    component: () => import('@/views/auth/Login.vue'),
+    meta: { name: 'Login' },
+  },
+  {
+    path: '/auth/register',
+    name: 'auth-register',
+    component: () => import('@/views/auth/Register.vue'),
+    meta: { name: 'Register' },
+  },
+  {
+    path: '/auth/forgot-password',
+    name: 'auth-forgot-password',
+    component: () => import('@/views/auth/ForgotPassword.vue'),
+    meta: { name: 'Forgot Password' },
+  },
+  {
+    path: '/auth/reset-password',
+    name: 'auth-reset-password',
+    component: () => import('@/views/auth/ResetPassword.vue'),
+    meta: { name: 'Reset Password' },
+  },
+  {
     // 兜底路由必须放在最后。动态路由注册完成后，守卫会重新匹配原始目标地址。
     path: '/:pathMatch(.*)*',
     name: 'not-found-catch',
