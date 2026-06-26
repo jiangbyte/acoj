@@ -9,14 +9,17 @@ const router = useRouter()
 const appStore = useAppStore()
 const homePath = import.meta.env.VITE_HOME_PATH
 
+// 移动端抽屉头部需要展示用户名，桌面端下拉入口默认直接显示用户名。
 const { showName = false } = defineProps<{
   showName?: boolean
 }>()
 
+// 移动端点击用户信息时不展开桌面下拉菜单，而是通知父组件打开右侧抽屉。
 const emit = defineEmits<{
   openMobileDrawer: []
 }>()
 
+// 桌面端用户菜单项。当前用户中心和退出登录仍是占位行为，项目首页使用环境配置路径。
 const options = computed<DropdownOption[]>(() => [
   {
     label: '用户中心',
@@ -39,6 +42,7 @@ const options = computed<DropdownOption[]>(() => [
   },
 ])
 
+// 根据下拉菜单 key 分发行为；保留弹窗确认可以避免后续接入真实登出时误触。
 function handleSelect(key: string | number) {
   if (key === 'userCenter') {
     window.$message.info('用户中心待接入')

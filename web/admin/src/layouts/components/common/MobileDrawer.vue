@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import UserCenter from '../header/UserCenter.vue'
 
+// 与父组件通过 v-model:show 双向绑定抽屉显隐状态，移动端点击用户入口后由父组件打开。
 const showDrawer = defineModel<boolean>('show', { default: false })
 </script>
 

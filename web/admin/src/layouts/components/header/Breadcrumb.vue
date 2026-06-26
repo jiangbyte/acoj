@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 
+// 只展示配置了 meta.name 的匹配路由，过滤掉纯布局层或无标题的中间路由。
 const routes = computed(() => route.matched.filter((item) => item.meta.name))
 </script>
 

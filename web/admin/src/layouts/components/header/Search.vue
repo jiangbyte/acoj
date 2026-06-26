@@ -9,6 +9,7 @@ const appStore = useAppStore()
 const routeStore = useRouteStore()
 const router = useRouter()
 
+// 搜索弹窗中的可跳转项，value 固定使用路由 path，code 用于辅助识别权限/菜单编码。
 interface SearchOption {
   label: string
   value: string
@@ -19,12 +20,14 @@ interface SearchOption {
 const searchValue = ref('')
 const selectedIndex = ref(0)
 const scrollbarRef = ref()
+// 控制全局搜索弹窗显隐，统一通过 useBoolean 暴露语义化操作，减少模板中的状态细节。
 const {
   bool: showModal,
   setTrue: openModal,
   setFalse: closeModal,
   toggle: toggleModal,
 } = useBoolean(false)
+// 标记当前高亮是否由键盘触发：键盘导航时忽略 mouseenter，避免鼠标停留位置抢回高亮。
 const {
   bool: keyboardFlag,
   setTrue: setKeyboardTrue,
@@ -40,12 +43,15 @@ const { ctrl_k, arrowup, arrowdown, enter, escape } = useMagicKeys({
   },
 })
 
+// Ctrl + K 是全局搜索入口；使用 watchEffect 监听组合键状态，保证键盘按下时立即切换弹窗。
 watchEffect(() => {
   if (ctrl_k.value) {
     toggleModal()
   }
 })
 
+// 根据输入实时从动态路由表中过滤菜单/页面。
+// 仅允许启用、可见、可导航的 MENU/PAGE 进入搜索结果，避免跳转到按钮权限或隐藏资源。
 const options = computed<SearchOption[]>(() => {
   const keyword = searchValue.value.trim().toLowerCase()
   if (!keyword) {
@@ -69,16 +75,19 @@ const options = computed<SearchOption[]>(() => {
     }))
 })
 
+// 关闭弹窗时重置输入和选中项，确保下次打开不会继承上一次搜索上下文。
 function handleClose() {
   searchValue.value = ''
   selectedIndex.value = 0
   closeModal()
 }
 
+// 输入变化后把高亮归位到第一项，避免旧索引超出新结果列表长度。
 function handleInputChange() {
   selectedIndex.value = 0
 }
 
+// 选择结果后立即关闭弹窗并跳转；nextTick 后再次清空输入，兼容关闭动画期间的输入回显。
 function handleSelect(value: string) {
   handleClose()
   router.push(value)
@@ -87,6 +96,8 @@ function handleSelect(value: string) {
   })
 }
 
+// 弹窗打开后统一处理 Esc、上下方向键、Enter。
+// options 为空时不处理导航键，避免对空列表产生无意义索引变更。
 watchEffect(() => {
   if (!showModal.value) {
     return
@@ -113,18 +124,22 @@ watchEffect(() => {
   }
 })
 
+// 向上导航支持首尾循环，便于用户连续按键快速浏览结果。
 function handleArrowup() {
   selectedIndex.value =
     selectedIndex.value === 0 ? options.value.length - 1 : selectedIndex.value - 1
   handleScroll(selectedIndex.value)
 }
 
+// 向下导航支持末尾回到第一项，与常见命令面板交互保持一致。
 function handleArrowdown() {
   selectedIndex.value =
     selectedIndex.value === options.value.length - 1 ? 0 : selectedIndex.value + 1
   handleScroll(selectedIndex.value)
 }
 
+// 键盘移动高亮时同步滚动容器，使当前项保持在可视区域内。
+// keepIndex 表示允许高亮项位于列表前 5 项范围内，超过后再滚动，减少频繁滚动造成的抖动。
 function handleScroll(currentIndex: number) {
   const keepIndex = 5
   const optionHeight = 70
@@ -135,6 +150,7 @@ function handleScroll(currentIndex: number) {
   scrollbarRef.value?.scrollTo({ top: distance })
 }
 
+// Enter 只在当前索引命中结果时触发跳转，防止快速输入导致结果变化后访问空项。
 function handleEnter() {
   const target = options.value[selectedIndex.value]
   if (target) {
@@ -142,6 +158,7 @@ function handleEnter() {
   }
 }
 
+// 非键盘导航状态下才允许鼠标悬停更新高亮，兼顾鼠标浏览和键盘连续操作两种场景。
 function handleMouseEnter(index: number) {
   if (!keyboardFlag.value) {
     selectedIndex.value = index

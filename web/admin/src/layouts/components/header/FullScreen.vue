@@ -4,6 +4,7 @@ import { useAppStore } from '@/stores'
 
 const appStore = useAppStore()
 
+// 接管浏览器默认 F11 行为，统一走 appStore.toggleFullScreen，保证按钮和快捷键状态来源一致。
 useMagicKeys({
   passive: false,
   onEventFired(e) {

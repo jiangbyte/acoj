@@ -8,6 +8,7 @@ const appStore = useAppStore()
 const name = import.meta.env.VITE_APP_TITLE
 const homePath = import.meta.env.VITE_HOME_PATH
 
+// 侧边栏折叠时只保留图标，隐藏系统名称，避免窄宽度下文字挤压菜单区域。
 const hiddenLogoText = computed(() => appStore.collapsed)
 </script>
 

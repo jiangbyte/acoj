@@ -14,14 +14,17 @@ import Reload from './Reload.vue'
 const tabStore = useTabStore()
 const appStore = useAppStore()
 const router = useRouter()
+// useTabScroll 将鼠标滚轮转换成横向滚动，并在当前页签变化时滚动到可视区域。
 const { scrollbar, onWheel } = useTabScroll(computed(() => tabStore.currentTabPath))
 void scrollbar
 
 const el = ref<HTMLElement>()
 
+// 普通页签支持拖拽排序。固定页签单独渲染，不参与拖拽，避免用户改变固定入口位置。
 useDraggable(
   el,
   computed({
+    // draggable-plus 会直接修改数组顺序，这里通过 computed setter 回写 Pinia，保持 store 为唯一数据源。
     get: () => tabStore.tabs,
     set: (value) => {
       tabStore.tabs = value
@@ -33,12 +36,15 @@ useDraggable(
   },
 )
 
+// 当前激活页签可能来自固定页签或普通页签，因此需要从 allTabs 中查找。
 const currentTab = computed(() =>
   tabStore.allTabs.find((item) => item.fullPath === tabStore.currentTabPath),
 )
 
+// 固定页签不可关闭，也不能作为“关闭其他/左侧/右侧”的操作基准。
 const isCurrentAffixTab = computed(() => Boolean(currentTab.value?.meta.is_affix))
 
+// 页签右侧操作菜单。disabled 规则集中在这里，模板只负责展示，避免交互规则散落在视图层。
 const options = computed<DropdownOption[]>(() => {
   const disabledCurrent = !currentTab.value || isCurrentAffixTab.value
   const disabledNormal = !tabStore.tabs.length
@@ -82,15 +88,18 @@ const options = computed<DropdownOption[]>(() => {
   ]
 })
 
+// 点击页签时按 fullPath 跳转，保留 query/hash，保证页签切换后回到打开时的完整地址。
 function handleTab(route: AppTab) {
   router.push(route.fullPath)
 }
 
+// 关闭按钮位于页签内部，需要阻止冒泡，否则关闭时会先触发页签点击导致路由跳转。
 function handleCloseTab(e: MouseEvent, fullPath: string) {
   e.stopPropagation()
   tabStore.closeTab(fullPath)
 }
 
+// 操作菜单基于当前激活页签执行。具体关闭策略由 tabStore 统一处理，组件只做命令分发。
 function handleSelect(key: string | number) {
   const path = currentTab.value?.fullPath
   if (!path) {
