@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import NoticeList, { type NoticeItem } from '../common/NoticeList.vue'
 
+// 当前为布局占位通知数据，后续接入接口时可替换为异步拉取结果，NoticeList 的展示结构无需变化。
 const notices = ref<NoticeItem[]>([
   {
     id: 1,
@@ -36,14 +37,17 @@ const notices = ref<NoticeItem[]>([
 
 const currentTab = ref(0)
 
+// 按 type 将通知拆分到三个页签，页签徽标和列表都复用该分组结果，避免模板中重复过滤主列表。
 const groups = computed(() => ({
   0: notices.value.filter((item) => item.type === 0),
   1: notices.value.filter((item) => item.type === 1),
   2: notices.value.filter((item) => item.type === 2),
 }))
 
+// 顶部铃铛展示所有分组的未读总数，单个页签内再分别展示各自未读数。
 const unreadCount = computed(() => notices.value.filter((item) => !item.isRead).length)
 
+// 点击某条通知后只标记该条为已读，保持 ref 数组内对象响应式更新。
 function handleRead(id: number) {
   const item = notices.value.find((item) => item.id === id)
   if (item) {

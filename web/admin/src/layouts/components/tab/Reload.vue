@@ -5,6 +5,7 @@ import { useAppStore } from '@/stores'
 const appStore = useAppStore()
 const loading = ref(false)
 
+// 刷新当前路由视图时给图标一个最短 800ms 的旋转反馈，避免页面很快重载时用户感知不到点击结果。
 function handleReload() {
   loading.value = true
   appStore.reloadPage()
