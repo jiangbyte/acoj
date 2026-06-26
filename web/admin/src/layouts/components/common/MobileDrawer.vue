@@ -22,7 +22,7 @@ const showDrawer = defineModel<boolean>('show', { default: false })
 
       <slot />
 
-      <template #footer> 操作 </template>
+      <template #footer> {{ $t('app.operation') }} </template>
     </n-drawer-content>
   </n-drawer>
 </template>

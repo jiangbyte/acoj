@@ -17,3 +17,7 @@ interface Window {
   // 全局通知 API。
   $notification: import('naive-ui').NotificationApi
 }
+
+declare namespace App {
+  type Lang = 'zhCN' | 'enUS'
+}

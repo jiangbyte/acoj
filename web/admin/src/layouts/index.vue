@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ProLayout, useLayoutMenu } from 'pro-naive-ui'
+import { useI18n } from 'vue-i18n'
 import { useAppStore, useRouteStore } from '@/stores'
 import {
   BackTop,
   Breadcrumb,
   CollapaseButton,
   FullScreen,
+  LanguageSwitch,
   Logo,
   MobileDrawer,
   Notices,
@@ -18,6 +20,7 @@ import Content from './Content.vue'
 
 const appStore = useAppStore()
 const routeStore = useRouteStore()
+const { locale } = useI18n()
 
 const { layout, activeKey } = useLayoutMenu({
   mode: 'vertical',
@@ -74,6 +77,7 @@ const showMobileDrawer = ref(false)
         <template v-if="appStore.isMobile">
           <Search />
           <Notices />
+          <LanguageSwitch />
           <DarkModeSwitch />
           <UserCenter @open-mobile-drawer="showMobileDrawer = true" />
         </template>
@@ -81,6 +85,7 @@ const showMobileDrawer = ref(false)
           <Search />
           <Notices />
           <FullScreen />
+          <LanguageSwitch />
           <DarkModeSwitch />
           <UserCenter />
         </template>
@@ -88,12 +93,12 @@ const showMobileDrawer = ref(false)
     </template>
 
     <template #sidebar>
-      <n-menu v-bind="layout.verticalMenuProps" :collapsed-width="64" />
+      <n-menu :key="locale" v-bind="layout.verticalMenuProps" :collapsed-width="64" />
     </template>
 
     <template #sidebar-extra>
       <n-scrollbar class="flex-[1_0_0]">
-        <n-menu v-bind="layout.verticalExtraMenuProps" :collapsed-width="64" />
+        <n-menu :key="locale" v-bind="layout.verticalExtraMenuProps" :collapsed-width="64" />
       </n-scrollbar>
     </template>
 

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { routeI18nKey } from '@/utils/i18n'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 
 // 只展示配置了 meta.name 的匹配路由，过滤掉纯布局层或无标题的中间路由。
 const routes = computed(() => route.matched.filter((item) => item.meta.name))
@@ -19,7 +22,9 @@ const routes = computed(() => route.matched.filter((item) => item.meta.name))
         @click="router.push(item.path || '/')"
       >
         <NovaIcon :icon="item.meta.icon ?? undefined" />
-        <span class="whitespace-nowrap">{{ item.meta.name }}</span>
+        <span class="whitespace-nowrap">
+          {{ t(routeI18nKey(item.name), String(item.meta.name ?? item.name ?? item.path)) }}
+        </span>
       </n-el>
     </template>
   </TransitionGroup>

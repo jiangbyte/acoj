@@ -3,6 +3,7 @@ import { RouterLink } from 'vue-router'
 import { h } from 'vue'
 import Layout from '@/layouts/index.vue'
 import { renderIcon } from '@/utils/icon'
+import { $t, routeI18nKey } from '@/utils/i18n'
 
 // 能参与前端路由体系的资源类型。按钮、动作、接口分组只用于权限控制，不生成页面路由。
 const routeResourceTypes: AppRoute.ResourceType[] = ['CATALOG', 'MENU', 'PAGE']
@@ -165,7 +166,7 @@ function transformRoutesToMenus(routes: AppRoute.Route[]): AppRoute.MenuOption[]
   return routes
     .sort((a, b) => (a.meta.sort ?? 99) - (b.meta.sort ?? 99))
     .map((item) => {
-      const label = item.meta.name ?? item.name
+      const label = () => $t(routeI18nKey(item.name), item.meta.name ?? String(item.name))
       const menu: AppRoute.MenuOption = {
         key: item.path,
         label: isClickableResource(item.meta.resource_type)
@@ -177,9 +178,9 @@ function transformRoutesToMenus(routes: AppRoute.Route[]): AppRoute.MenuOption[]
                     path: item.path,
                   },
                 },
-                { default: () => label },
+                { default: label },
               )
-          : () => label,
+          : label,
         icon: item.meta.icon ? renderIcon(item.meta.icon) : undefined,
       }
 

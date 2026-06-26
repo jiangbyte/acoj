@@ -1,25 +1,25 @@
 <template>
   <n-el class="dashboard-page">
-    <n-h2>工作台</n-h2>
+    <n-h2>{{ $t('dashboard.title') }}</n-h2>
     <n-grid cols="1 s:2 l:4" responsive="screen" :x-gap="16" :y-gap="16">
       <n-grid-item>
-        <n-card title="待处理题目" :bordered="false">
-          <n-statistic label="今日新增" value="12" />
+        <n-card :title="$t('dashboard.pendingProblems')" :bordered="false">
+          <n-statistic :label="$t('dashboard.todayNew')" value="12" />
         </n-card>
       </n-grid-item>
       <n-grid-item>
-        <n-card title="提交记录" :bordered="false">
-          <n-statistic label="近 24 小时" value="248" />
+        <n-card :title="$t('dashboard.submissions')" :bordered="false">
+          <n-statistic :label="$t('dashboard.last24Hours')" value="248" />
         </n-card>
       </n-grid-item>
       <n-grid-item>
-        <n-card title="活跃用户" :bordered="false">
-          <n-statistic label="在线" value="36" />
+        <n-card :title="$t('dashboard.activeUsers')" :bordered="false">
+          <n-statistic :label="$t('dashboard.online')" value="36" />
         </n-card>
       </n-grid-item>
       <n-grid-item>
-        <n-card title="系统状态" :bordered="false">
-          <n-statistic label="服务" value="正常" />
+        <n-card :title="$t('dashboard.systemStatus')" :bordered="false">
+          <n-statistic :label="$t('dashboard.service')" :value="$t('dashboard.normal')" />
         </n-card>
       </n-grid-item>
     </n-grid>

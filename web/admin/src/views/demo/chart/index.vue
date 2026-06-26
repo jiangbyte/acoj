@@ -1,8 +1,8 @@
 <template>
   <n-space vertical size="large">
-    <n-page-header title="图表示例" subtitle="纯 CSS 的轻量数据展示" />
+    <n-page-header :title="t('demo.chartTitle')" :subtitle="t('demo.chartSubtitle')" />
 
-    <n-card title="近七日提交趋势" :bordered="false">
+    <n-card :title="t('demo.weeklySubmissions')" :bordered="false">
       <div class="chart-bars">
         <div v-for="item in chartData" :key="item.day" class="chart-item">
           <div class="chart-track">
@@ -24,21 +24,26 @@
 </template>
 
 <script setup lang="ts">
-const chartData = [
-  { day: '周一', percent: 42 },
-  { day: '周二', percent: 56 },
-  { day: '周三', percent: 38 },
-  { day: '周四', percent: 72 },
-  { day: '周五', percent: 64 },
-  { day: '周六', percent: 84 },
-  { day: '周日', percent: 60 },
-]
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-const cards = [
-  { title: '通过率', value: 68 },
-  { title: '活跃度', value: 74 },
-  { title: '完成度', value: 82 },
-]
+const { t } = useI18n()
+
+const chartData = computed(() => [
+  { day: t('demo.monday'), percent: 42 },
+  { day: t('demo.tuesday'), percent: 56 },
+  { day: t('demo.wednesday'), percent: 38 },
+  { day: t('demo.thursday'), percent: 72 },
+  { day: t('demo.friday'), percent: 64 },
+  { day: t('demo.saturday'), percent: 84 },
+  { day: t('demo.sunday'), percent: 60 },
+])
+
+const cards = computed(() => [
+  { title: t('demo.passRate'), value: 68 },
+  { title: t('demo.activity'), value: 74 },
+  { title: t('demo.completion'), value: 82 },
+])
 </script>
 
 <style scoped>

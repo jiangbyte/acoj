@@ -15,6 +15,6 @@ const appStore = useAppStore()
         />
       </CommonWrapper>
     </template>
-    折叠菜单
+    {{ $t('app.toggleSider') }}
   </n-tooltip>
 </template>

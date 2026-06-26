@@ -1,14 +1,22 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 const homePath = import.meta.env.VITE_HOME_PATH
 </script>
 
 <template>
-  <n-result status="404" title="页面不存在" description="请检查访问地址是否正确">
+  <n-result
+    status="404"
+    :title="t('error.notFoundTitle')"
+    :description="t('error.notFoundDescription')"
+  >
     <template #footer>
-      <n-button type="primary" @click="router.push(homePath)"> 返回工作台 </n-button>
+      <n-button type="primary" @click="router.push(homePath)">
+        {{ t('error.backWorkbench') }}
+      </n-button>
     </template>
   </n-result>
 </template>

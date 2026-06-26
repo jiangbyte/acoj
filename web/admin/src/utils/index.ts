@@ -1,6 +1,7 @@
 // 工具模块统一导出入口，业务代码优先从 '@/utils' 引入通用能力。
 export * from './icon'
 export * from './axios'
+export * from './i18n'
 
 import { createHttp } from './axios'
 
