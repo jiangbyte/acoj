@@ -1,1 +1,0 @@
-export { getLoginMenu } from '../route'

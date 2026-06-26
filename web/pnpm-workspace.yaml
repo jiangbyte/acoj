@@ -1,6 +1,0 @@
-packages:
-  - admin
-  - portal
-  - packages/*
-allowBuilds:
-  core-js: true
