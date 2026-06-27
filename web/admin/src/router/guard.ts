@@ -1,5 +1,5 @@
 import type { RouteLocationNormalized, Router } from 'vue-router'
-import { useAuthStore, useRouteStore, useTabStore } from '@/stores'
+import { useAuthStore, useDictStore, useRouteStore, useTabStore } from '@/stores'
 
 // 浏览器标题后缀，来自应用环境配置。
 const appTitle = import.meta.env.VITE_APP_TITLE
@@ -16,6 +16,7 @@ const loginPath = '/auth/login'
 export function setupRouterGuard(router: Router) {
   router.beforeEach(async (to, _from, next) => {
     const authStore = useAuthStore()
+    const dictStore = useDictStore()
     const routeStore = useRouteStore()
 
     // 资源配置了 href 时视为外链。打开新窗口后阻止当前路由继续跳转。
@@ -61,7 +62,7 @@ export function setupRouterGuard(router: Router) {
     // 登录后首次进入系统时注册授权路由。注册完成后，如果当前命中的是 404 兜底路由，需要重新匹配一次目标路径。
     if (!routeStore.isInitAuthRoute) {
       try {
-        await routeStore.initAuthRoute()
+        await Promise.all([routeStore.initAuthRoute(), dictStore.refreshDict()])
         if (isFallbackRoute(to)) {
           next({
             path: to.fullPath,

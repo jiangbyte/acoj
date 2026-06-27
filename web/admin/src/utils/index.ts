@@ -2,6 +2,8 @@
 export * from './icon'
 export * from './axios'
 export * from './i18n'
+export * from './color'
+export * from './normalize'
 
 import { createHttp } from './axios'
 
@@ -9,3 +11,5 @@ import { createHttp } from './axios'
 export const http = createHttp({
   baseURL: import.meta.env.VITE_API_URL || '',
 })
+
+export * from './dict'

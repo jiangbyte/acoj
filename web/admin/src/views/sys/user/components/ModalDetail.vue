@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { User } from '../types'
+import { displayValue } from '@/utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -28,10 +29,6 @@ const roleLabels = computed(() => {
     return labelKey ? t(labelKey) : roleId
   })
 })
-
-function displayValue(value?: string) {
-  return value || '-'
-}
 </script>
 
 <template>
@@ -75,7 +72,7 @@ function displayValue(value?: string) {
     <NDescriptionsItem :label="t('pages.system.user.createTime')">
       {{ user.createTime }}
     </NDescriptionsItem>
-    <NDescriptionsItem :label="t('common.often.updateTime')">
+    <NDescriptionsItem :label="t('common.often.updatedAt')">
       {{ user.updateTime }}
     </NDescriptionsItem>
   </NDescriptions>

@@ -3,6 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import type { User, UserFormModel, UserSearchParams } from './types'
 import { Icon } from '@iconify/vue'
+import { normalizeSearchValues } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import {
   createProModalForm,
@@ -185,7 +186,7 @@ const tableColumns = computed<ProDataTableColumns<User>>(() => [
     },
   },
   {
-    title: t('common.often.updateTime'),
+    title: t('common.often.updatedAt'),
     path: 'updateTime',
     width: 180,
   },
@@ -211,12 +212,6 @@ const tableColumns = computed<ProDataTableColumns<User>>(() => [
 ])
 
 const hasCheckedRows = computed(() => checkedRowKeys.value.length > 0)
-
-function normalizeSearchValues(values: UserSearchParams) {
-  return Object.fromEntries(
-    Object.entries(values).filter(([, value]) => value !== undefined && value !== ''),
-  ) as UserSearchParams
-}
 
 function translateOptions<T extends string>(options: Array<{ labelKey: string; value: T }>) {
   return options.map((item) => ({

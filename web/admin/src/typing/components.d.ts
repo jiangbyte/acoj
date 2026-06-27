@@ -13,8 +13,10 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppLoading: typeof import('./../components/common/AppLoading.vue')['default']
+    CommonColorPicker: typeof import('./../components/common/CommonColorPicker.vue')['default']
     CommonWrapper: typeof import('./../components/common/CommonWrapper.vue')['default']
     DarkModeSwitch: typeof import('./../components/common/DarkModeSwitch.vue')['default']
+    DictSelect: typeof import('./../components/common/DictSelect.vue')['default']
     NaiveProvider: typeof import('./../components/common/NaiveProvider.vue')['default']
     NAlert: typeof import('naive-ui')['NAlert']
     NAvatar: typeof import('naive-ui')['NAvatar']
@@ -44,6 +46,7 @@ declare module 'vue' {
     NGridItem: typeof import('naive-ui')['NGridItem']
     NH2: typeof import('naive-ui')['NH2']
     NIcon: typeof import('naive-ui')['NIcon']
+    NImage: typeof import('naive-ui')['NImage']
     NInput: typeof import('naive-ui')['NInput']
     NInputNumber: typeof import('naive-ui')['NInputNumber']
     NList: typeof import('naive-ui')['NList']
@@ -86,8 +89,10 @@ declare module 'vue' {
 // For TSX support
 declare global {
   const AppLoading: typeof import('./../components/common/AppLoading.vue')['default']
+  const CommonColorPicker: typeof import('./../components/common/CommonColorPicker.vue')['default']
   const CommonWrapper: typeof import('./../components/common/CommonWrapper.vue')['default']
   const DarkModeSwitch: typeof import('./../components/common/DarkModeSwitch.vue')['default']
+  const DictSelect: typeof import('./../components/common/DictSelect.vue')['default']
   const NaiveProvider: typeof import('./../components/common/NaiveProvider.vue')['default']
   const NAlert: typeof import('naive-ui')['NAlert']
   const NAvatar: typeof import('naive-ui')['NAvatar']
@@ -117,6 +122,7 @@ declare global {
   const NGridItem: typeof import('naive-ui')['NGridItem']
   const NH2: typeof import('naive-ui')['NH2']
   const NIcon: typeof import('naive-ui')['NIcon']
+  const NImage: typeof import('naive-ui')['NImage']
   const NInput: typeof import('naive-ui')['NInput']
   const NInputNumber: typeof import('naive-ui')['NInputNumber']
   const NList: typeof import('naive-ui')['NList']

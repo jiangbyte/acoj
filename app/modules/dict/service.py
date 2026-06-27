@@ -6,7 +6,7 @@ from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import to_schema, to_schema_list
 from app.modules.dict.repository import DictRepository, DictTreeRecord
 from app.modules.dict.schema import (
-    DictAdminListQuery,
+    DictAdminPageQuery,
     DictCreateRequest,
     DictIdQuery,
     DictIdsRequest,
@@ -27,25 +27,37 @@ class DictService:
 
     async def create(self, payload: DictCreateRequest) -> SysDictSchema:
         async with transactional(self.db):
-            return to_schema(SysDictSchema, await self.repo.create(payload))
+            return await self._to_schema_with_parent_name(await self.repo.create(payload))
 
     async def update(self, payload: DictUpdateRequest) -> SysDictSchema:
         async with transactional(self.db):
-            return to_schema(SysDictSchema, await self.repo.update(payload))
+            return await self._to_schema_with_parent_name(await self.repo.update(payload))
 
     async def delete(self, payload: DictIdsRequest) -> list[str]:
         async with transactional(self.db):
             return await self.repo.delete_many(payload.ids)
 
     async def get(self, query: DictIdQuery) -> SysDictSchema:
-        return to_schema(SysDictSchema, await self.repo.get_required(query.id))
+        return await self._to_schema_with_parent_name(await self.repo.get_required(query.id))
 
-    async def list_admin(self, query: DictAdminListQuery) -> PageData[SysDictSchema]:
-        items, total = await self.repo.list_admin(query)
-        return build_page(query.pagination, total, to_schema_list(SysDictSchema, items))
+    async def page_admin(self, query: DictAdminPageQuery) -> PageData[SysDictSchema]:
+        items, total = await self.repo.page_admin(query)
+        records = await self._attach_parent_names(to_schema_list(SysDictSchema, items))
+        return build_page(query.pagination, total, records)
 
     async def list_tree(self, query: DictTreeQuery) -> list[SysDictTreeNode]:
         return _build_tree_nodes(await self.repo.list_tree(query))
+
+    async def _to_schema_with_parent_name(self, item: object) -> SysDictSchema:
+        schemas = await self._attach_parent_names([to_schema(SysDictSchema, item)])
+        return schemas[0]
+
+    async def _attach_parent_names(self, items: list[SysDictSchema]) -> list[SysDictSchema]:
+        parent_ids = {item.parent_id for item in items if item.parent_id}
+        parent_name_map = await self.repo.get_parent_name_map(parent_ids)
+        for item in items:
+            item.parent_id_name = parent_name_map.get(item.parent_id or "")
+        return items
 
 
 def _build_tree_nodes(
@@ -65,6 +77,7 @@ def _build_tree_nodes(
                 color=raw_item.get("color"),  # type: ignore[arg-type]
                 category=raw_item.get("category"),  # type: ignore[arg-type]
                 parent_id=raw_item.get("parent_id"),  # type: ignore[arg-type]
+                parent_id_name=raw_item.get("parent_id_name"),  # type: ignore[arg-type]
                 status=str(raw_item["status"]),
                 sort=int(raw_item["sort"]),
                 children=_build_tree_nodes(raw_item.get("children", [])),  # type: ignore[arg-type]

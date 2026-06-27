@@ -4,53 +4,38 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
 import { NButton, NFlex, NIcon, NImage, NTag } from 'naive-ui'
 import { bannerApi } from '@/api'
-import {
-  createProSearchForm,
-  ProCard,
-  ProDataTable,
-  ProSearchForm,
-} from 'pro-naive-ui'
-import { computed, onMounted, ref } from 'vue'
+import { createTagColor, normalizeSearchValues } from '@/utils'
+import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
+import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  categoryLabelKeyMap,
-  categoryOptions,
-  displayScopeLabelKeyMap,
-  displayScopeOptions,
-  displayScopeTagTypeMap,
-  linkTypeLabelKeyMap,
-  positionLabelKeyMap,
-  positionOptions,
-  statusLabelKeyMap,
-  statusOptions,
-  statusTagTypeMap,
-  typeLabelKeyMap,
-  typeOptions,
-} from './constants'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 
 const { t } = useI18n()
-const banners = ref<any[]>([])
-const total = ref(0)
-const loading = ref(false)
-const searchValues = ref<any>({})
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
-const checkedRowKeys = ref<string[]>([])
-const page = ref(1)
-const pageSize = ref(20)
+const state = reactive({
+  banners: [] as any[],
+  total: 0,
+  loading: false,
+  searchValues: {} as any,
+  checkedRowKeys: [] as string[],
+  page: 1,
+  pageSize: 20,
+})
 
 const searchForm = createProSearchForm<any>({
+  defaultCollapsed: true,
   onSubmit(values) {
-    searchValues.value = normalizeSearchValues(values)
-    page.value = 1
-    fetchBannerPage()
+    state.searchValues = normalizeSearchValues(values)
+    state.page = 1
+    fetchPage()
   },
   onReset() {
-    searchValues.value = {}
-    page.value = 1
-    fetchBannerPage()
+    state.searchValues = {}
+    state.page = 1
+    fetchPage()
   },
 })
 
@@ -60,7 +45,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     path: 'display_scope',
     field: 'select',
     fieldProps: {
-      options: translateOptions(displayScopeOptions),
+      options: dictList('BANNER_DISPLAY_SCOPE'),
     },
   },
   {
@@ -68,7 +53,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     path: 'category',
     field: 'select',
     fieldProps: {
-      options: translateOptions(categoryOptions),
+      options: dictList('BANNER_CATEGORY'),
     },
   },
   {
@@ -76,7 +61,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     path: 'type',
     field: 'select',
     fieldProps: {
-      options: translateOptions(typeOptions),
+      options: dictList('BANNER_TYPE'),
     },
   },
   {
@@ -84,7 +69,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     path: 'position',
     field: 'select',
     fieldProps: {
-      options: translateOptions(positionOptions),
+      options: dictList('BANNER_POSITION'),
     },
   },
   {
@@ -92,26 +77,26 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     path: 'status',
     field: 'select',
     fieldProps: {
-      options: translateOptions(statusOptions),
+      options: dictList('COMMON_STATUS'),
     },
   },
 ])
 
 const pagination = computed<PaginationProps>(() => ({
-  page: page.value,
-  pageSize: pageSize.value,
-  itemCount: total.value,
+  page: state.page,
+  pageSize: state.pageSize,
+  itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
   prefix: ({ itemCount }) => t('common.often.total', { count: itemCount }),
   onUpdatePage: (value) => {
-    page.value = value
-    fetchBannerPage()
+    state.page = value
+    fetchPage()
   },
   onUpdatePageSize: (value) => {
-    pageSize.value = value
-    page.value = 1
-    fetchBannerPage()
+    state.pageSize = value
+    state.page = 1
+    fetchPage()
   },
 }))
 
@@ -155,8 +140,11 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     path: 'display_scope',
     width: 120,
     render: (row) => (
-      <NTag type={displayScopeTagTypeMap[row.display_scope] ?? 'default'} bordered={false}>
-        {displayLabel(displayScopeLabelKeyMap, row.display_scope)}
+      <NTag
+        color={createTagColor(dictTypeColor('BANNER_DISPLAY_SCOPE', row.display_scope))}
+        bordered={false}
+      >
+        {dictTypeData('BANNER_DISPLAY_SCOPE', row.display_scope)}
       </NTag>
     ),
   },
@@ -164,25 +152,25 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: t('pages.sys.banner.category'),
     path: 'category',
     width: 150,
-    render: (row) => displayLabel(categoryLabelKeyMap, row.category),
+    render: (row) => dictTypeData('BANNER_CATEGORY', row.category),
   },
   {
     title: t('pages.sys.banner.type'),
     path: 'type',
     width: 120,
-    render: (row) => displayLabel(typeLabelKeyMap, row.type),
+    render: (row) => dictTypeData('BANNER_TYPE', row.type),
   },
   {
     title: t('pages.sys.banner.position'),
     path: 'position',
     width: 160,
-    render: (row) => displayLabel(positionLabelKeyMap, row.position),
+    render: (row) => dictTypeData('BANNER_POSITION', row.position),
   },
   {
     title: t('pages.sys.banner.linkType'),
     path: 'link_type',
     width: 110,
-    render: (row) => displayLabel(linkTypeLabelKeyMap, row.link_type),
+    render: (row) => dictTypeData('BANNER_LINK_TYPE', row.link_type),
   },
   {
     title: t('pages.sys.banner.sort'),
@@ -199,13 +187,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     path: 'status',
     width: 110,
     render: (row) => (
-      <NTag type={statusTagTypeMap[row.status] ?? 'default'} bordered={false}>
-        {displayLabel(statusLabelKeyMap, row.status)}
+      <NTag color={createTagColor(dictTypeColor('COMMON_STATUS', row.status))} bordered={false}>
+        {dictTypeData('COMMON_STATUS', row.status)}
       </NTag>
     ),
   },
   {
-    title: t('common.often.updateTime'),
+    title: t('common.often.updatedAt'),
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -225,7 +213,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
         <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
           {t('common.often.edit')}
         </NButton>
-        <NButton type="error" size="small" text={true} onClick={() => confirmDeleteBanners(row.id)}>
+        <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
           {t('common.often.delete')}
         </NButton>
       </NFlex>
@@ -233,49 +221,28 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   },
 ])
 
-const hasCheckedRows = computed(() => checkedRowKeys.value.length > 0)
+const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
 
 onMounted(() => {
-  fetchBannerPage()
+  fetchPage()
 })
 
-async function fetchBannerPage() {
-  loading.value = true
+async function fetchPage() {
+  state.loading = true
   try {
     const response = await bannerApi.page({
-      current: page.value,
-      size: pageSize.value,
-      ...searchValues.value,
+      current: state.page,
+      size: state.pageSize,
+      ...state.searchValues,
     })
     const data = response.data ?? {}
-    banners.value = data.records ?? []
-    total.value = data.total ?? 0
-    page.value = data.current ?? page.value
-    pageSize.value = data.size ?? pageSize.value
+    state.banners = data.records ?? []
+    state.total = data.total ?? 0
+    state.page = data.current ?? state.page
+    state.pageSize = data.size ?? state.pageSize
   } finally {
-    loading.value = false
+    state.loading = false
   }
-}
-
-function normalizeSearchValues(values: any) {
-  return Object.fromEntries(
-    Object.entries(values).filter(([, value]) => value !== undefined && value !== ''),
-  )
-}
-
-function translateOptions(options: Array<{ labelKey: string; value: string }>) {
-  return options.map((item) => ({
-    label: t(item.labelKey),
-    value: item.value,
-  }))
-}
-
-function displayLabel(map: Record<string, string>, value?: string | null) {
-  if (!value) {
-    return '-'
-  }
-  const labelKey = map[value]
-  return labelKey ? t(labelKey) : value
 }
 
 function openDetailModal(id: string) {
@@ -291,10 +258,10 @@ function openEditModal(id: string) {
 }
 
 function handleCheckedRowKeys(keys: Array<string | number>) {
-  checkedRowKeys.value = keys.map(String)
+  state.checkedRowKeys = keys.map(String)
 }
 
-function confirmDeleteBanners(value: string | string[]) {
+function confirmDelete(value: string | string[]) {
   const ids = Array.isArray(value) ? value : [value]
   if (!ids.length) {
     return
@@ -310,19 +277,19 @@ function confirmDeleteBanners(value: string | string[]) {
       : t('pages.sys.banner.deleteConfirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
-    onPositiveClick: () => deleteBanners(ids),
+    onPositiveClick: () => deleteData(ids),
   })
 }
 
-async function deleteBanners(ids: string[]) {
+async function deleteData(ids: string[]) {
   await bannerApi.remove({ ids })
-  checkedRowKeys.value = checkedRowKeys.value.filter((key) => !ids.includes(key))
+  state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
   window.$message.success(t('common.often.deleteSuccess'))
-  await fetchBannerPage()
-  if (!banners.value.length && total.value > 0 && page.value > 1) {
-    page.value -= 1
-    await fetchBannerPage()
+  await fetchPage()
+  if (!state.banners.length && state.total > 0 && state.page > 1) {
+    state.page -= 1
+    await fetchPage()
   }
 }
 </script>
@@ -335,14 +302,15 @@ async function deleteBanners(ids: string[]) {
 
     <ProDataTable
       class="min-h-0 flex-1"
+      remote
       :title="t('pages.sys.banner.title')"
       row-key="id"
       :scroll-x="1780"
       :columns="tableColumns"
-      :data="banners"
-      :loading="loading"
+      :data="state.banners"
+      :loading="state.loading"
       :pagination="pagination"
-      :checked-row-keys="checkedRowKeys"
+      :checked-row-keys="state.checkedRowKeys"
       :on-update-checked-row-keys="handleCheckedRowKeys"
     >
       <template #toolbar>
@@ -355,7 +323,7 @@ async function deleteBanners(ids: string[]) {
             </template>
             {{ t('common.often.add') }}
           </NButton>
-          <NButton ghost :loading="loading" @click="fetchBannerPage">
+          <NButton ghost :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="ant-design:reload-outlined" />
@@ -367,16 +335,16 @@ async function deleteBanners(ids: string[]) {
             type="error"
             ghost
             :disabled="!hasCheckedRows"
-            @click="confirmDeleteBanners(checkedRowKeys)"
+            @click="confirmDelete(state.checkedRowKeys)"
           >
             {{ t('common.often.batchDelete') }}
-            {{ t('common.often.total', { count: checkedRowKeys.length }) }}
+            {{ t('common.often.total', { count: state.checkedRowKeys.length }) }}
           </NButton>
         </NFlex>
       </template>
     </ProDataTable>
 
-    <ModalForm ref="formModalRef" @saved="fetchBannerPage" />
+    <ModalForm ref="formModalRef" @saved="fetchPage" />
     <ModalDetail ref="detailModalRef" />
   </NFlex>
 </template>

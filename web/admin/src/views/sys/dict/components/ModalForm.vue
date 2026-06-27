@@ -1,159 +1,149 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui'
-import type { DictCategory, DictFormModel, SysDict } from '../types'
-import { computed, ref } from 'vue'
+import { dictApi } from '@/api'
+import CommonColorPicker from '@/components/common/CommonColorPicker.vue'
+import { createRequiredRule, isHexColor, toNullableString } from '@/utils'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  categoryOptions,
-  colorOptions,
-  createEmptyDictForm,
-  statusOptions,
-} from '../constants'
 
 const props = defineProps<{
-  dicts: SysDict[]
+  dicts: any[]
 }>()
 
 const emit = defineEmits<{
-  saved: [values: DictFormModel]
+  saved: []
 }>()
 
 const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
-const showModal = ref(false)
-const submitLoading = ref(false)
-const dictId = ref<string | null>(null)
-const formModel = ref<DictFormModel>(createEmptyDictForm('SYS'))
+const defaultFormData = {
+  code: '',
+  label: '',
+  value: '',
+  color: '',
+  category: 'SYS',
+  parent_id: null as string | null,
+  status: 'ENABLED',
+  sort: 0,
+}
+const state = reactive({
+  showModal: false,
+  loading: false,
+  submitLoading: false,
+  dataId: null as string | null,
+  formModel: { ...defaultFormData },
+})
 
-const isEdit = computed(() => Boolean(dictId.value))
 const modalTitle = computed(() =>
-  isEdit.value ? t('pages.sys.dict.editDict') : t('pages.sys.dict.addDict'),
-)
-const categorySelectOptions = computed(() => translateOptions(categoryOptions))
-const statusSelectOptions = computed(() => translateOptions(statusOptions))
-const colorSelectOptions = computed(() =>
-  colorOptions.map((value) => ({
-    label: value,
-    value,
-  })),
+  state.dataId ? t('pages.sys.dict.editDict') : t('pages.sys.dict.addDict'),
 )
 const parentTreeOptions = computed(() =>
   buildTreeOptions(
-    props.dicts.filter((item) => item.category === formModel.value.category),
-    dictId.value,
+    props.dicts.filter((item) => item.category === state.formModel.category),
+    state.dataId,
   ),
 )
 
 const rules = computed<FormRules>(() => ({
   code: [
-    createRequiredRule(t('pages.sys.dict.code'), 'input'),
+    createRequiredRule(t, t('pages.sys.dict.code'), 'input'),
     {
       pattern: /^[A-Z0-9_]+$/,
       message: t('pages.sys.dict.codePattern'),
       trigger: ['input', 'blur'],
     },
   ],
-  label: createRequiredRule(t('pages.sys.dict.label'), 'input'),
-  category: createRequiredRule(t('pages.sys.dict.category'), 'change'),
-  status: createRequiredRule(t('common.often.status'), 'change'),
+  label: createRequiredRule(t, t('pages.sys.dict.label'), 'input'),
+  color: [
+    {
+      validator: (_rule, value) => isHexColor(value),
+      message: t('pages.sys.dict.colorPattern'),
+      trigger: ['change', 'blur'],
+    },
+  ],
+  category: createRequiredRule(t, t('pages.sys.dict.category'), 'change'),
+  status: createRequiredRule(t, t('common.often.status'), 'change'),
 }))
 
-function openModal(id?: string, options?: { category?: DictCategory; parentId?: string | null }) {
-  dictId.value = id ?? null
+async function openModal(id?: string, options?: { category?: string; parentId?: string | null }) {
+  state.dataId = id ?? null
+  state.formModel = {
+    ...defaultFormData,
+    category: options?.category ?? 'SYS',
+    parent_id: options?.parentId ?? null,
+  }
+  state.showModal = true
 
   if (id) {
-    const current = props.dicts.find((item) => item.id === id)
-    formModel.value = current ? toFormModel(current) : createEmptyDictForm(options?.category ?? 'SYS')
-  } else {
-    formModel.value = createEmptyDictForm(options?.category ?? 'SYS', options?.parentId)
+    await fetchDetail(id)
   }
+}
 
-  showModal.value = true
+async function fetchDetail(id: string) {
+  state.loading = true
+  try {
+    const response = await dictApi.detail({ id })
+    const data = response.data ?? {}
+    state.formModel = Object.assign({}, defaultFormData, data, {
+      value: data.value ?? '',
+      color: data.color ?? '',
+      category: data.category ?? 'SYS',
+      parent_id: data.parent_id ?? null,
+      status: data.status ?? 'ENABLED',
+      sort: data.sort ?? 0,
+    })
+  } finally {
+    state.loading = false
+  }
 }
 
 function closeModal() {
-  showModal.value = false
-  submitLoading.value = false
+  state.showModal = false
+  state.submitLoading = false
 }
 
 async function submitForm() {
   await formRef.value?.validate()
-  const payload = normalizePayload(formModel.value)
-  if (isDuplicateCode(payload)) {
-    window.$message.error(t('pages.sys.dict.codeExists'))
-    return
+  const payload = {
+    ...state.formModel,
+    code: state.formModel.code.trim().toUpperCase(),
+    label: String(state.formModel.label ?? '').trim(),
+    value: toNullableString(state.formModel.value),
+    color: toNullableString(state.formModel.color),
+    parent_id: state.formModel.parent_id ?? null,
+    sort: Number(state.formModel.sort ?? 0),
   }
 
-  submitLoading.value = true
+  state.submitLoading = true
   try {
-    emit('saved', payload)
+    if (state.dataId) {
+      await dictApi.update({
+        ...payload,
+        id: state.dataId,
+      })
+      window.$message.success(t('common.often.updateSuccess'))
+    } else {
+      await dictApi.create(payload)
+      window.$message.success(t('common.often.createSuccess'))
+    }
+
+    emit('saved')
     closeModal()
   } finally {
-    submitLoading.value = false
+    state.submitLoading = false
   }
 }
 
 function updateCode(value: string) {
-  formModel.value.code = value.toUpperCase()
+  state.formModel.code = value.toUpperCase()
 }
 
-function updateCategory(value: DictCategory) {
-  formModel.value.category = value
-  formModel.value.parent_id = null
+function updateCategory(value: string) {
+  state.formModel.category = value
+  state.formModel.parent_id = null
 }
 
-function toFormModel(data: SysDict): DictFormModel {
-  return {
-    id: data.id,
-    code: data.code,
-    label: data.label ?? '',
-    value: data.value ?? '',
-    color: data.color ?? 'default',
-    category: data.category ?? 'SYS',
-    parent_id: data.parent_id ?? null,
-    status: data.status,
-    sort: data.sort ?? 0,
-  }
-}
-
-function normalizePayload(values: DictFormModel): DictFormModel {
-  return {
-    id: values.id,
-    code: values.code.trim().toUpperCase(),
-    label: toText(values.label),
-    value: toText(values.value),
-    color: values.color,
-    category: values.category,
-    parent_id: values.parent_id ?? null,
-    status: values.status,
-    sort: Number(values.sort ?? 0),
-  }
-}
-
-function isDuplicateCode(values: DictFormModel) {
-  return props.dicts.some((item) => item.code === values.code && item.id !== values.id)
-}
-
-function toText(value: unknown) {
-  return String(value ?? '').trim()
-}
-
-function translateOptions(options: Array<{ labelKey: string; value: string }>) {
-  return options.map((item) => ({
-    label: t(item.labelKey),
-    value: item.value,
-  }))
-}
-
-function createRequiredRule(field: string, trigger: 'input' | 'change') {
-  return {
-    required: true,
-    message: t('pages.sys.dict.required', { field }),
-    trigger,
-  }
-}
-
-function buildTreeOptions(items: SysDict[], excludeId?: string | null) {
+function buildTreeOptions(items: any[], excludeId?: string | null) {
   const excludeIds = excludeId ? collectChildIds(items, excludeId) : new Set<string>()
   if (excludeId) {
     excludeIds.add(excludeId)
@@ -184,16 +174,10 @@ function buildTreeOptions(items: SysDict[], excludeId?: string | null) {
     }
   })
 
-  return roots
-    .sort(sortTreeOptions)
-    .map((node) => ({
-      ...node,
-      children: node.children.sort(sortTreeOptions),
-      raw: undefined,
-    }))
+  return normalizeTreeOptions(roots)
 }
 
-function collectChildIds(items: SysDict[], parentId: string) {
+function collectChildIds(items: any[], parentId: string) {
   const result = new Set<string>()
   const walk = (id: string) => {
     items
@@ -211,6 +195,14 @@ function sortTreeOptions(a: any, b: any) {
   return (a.raw?.sort ?? 0) - (b.raw?.sort ?? 0)
 }
 
+function normalizeTreeOptions(nodes: any[]): any[] {
+  return nodes.sort(sortTreeOptions).map((node) => ({
+    key: node.key,
+    label: node.label,
+    children: normalizeTreeOptions(node.children),
+  }))
+}
+
 defineExpose({
   openModal,
 })
@@ -218,7 +210,7 @@ defineExpose({
 
 <template>
   <NModal
-    v-model:show="showModal"
+    v-model:show="state.showModal"
     preset="card"
     draggable
     :mask-closable="false"
@@ -226,58 +218,64 @@ defineExpose({
     style="width: 640px"
     :segmented="{ content: true, action: true }"
   >
-    <NForm
-      ref="formRef"
-      :model="formModel"
-      :rules="rules"
-      label-placement="left"
-      label-width="100"
-      :disabled="submitLoading"
-    >
-      <NFormItem :label="t('pages.sys.dict.category')" path="category">
-        <NRadioGroup
-          :value="formModel.category"
-          :options="categorySelectOptions"
-          @update:value="updateCategory"
-        />
-      </NFormItem>
-      <NFormItem :label="t('pages.sys.dict.parent')" path="parent_id">
-        <NTreeSelect
-          v-model:value="formModel.parent_id"
-          clearable
-          filterable
-          :options="parentTreeOptions"
-          :placeholder="t('pages.sys.dict.topLevel')"
-          key-field="key"
-          label-field="label"
-        />
-      </NFormItem>
-      <NFormItem :label="t('pages.sys.dict.code')" path="code">
-        <NInput :value="formModel.code" @update:value="updateCode" />
-      </NFormItem>
-      <NFormItem :label="t('pages.sys.dict.label')" path="label">
-        <NInput v-model:value="formModel.label" />
-      </NFormItem>
-      <NFormItem :label="t('pages.sys.dict.value')" path="value">
-        <NInput v-model:value="formModel.value" />
-      </NFormItem>
-      <NFormItem :label="t('pages.sys.dict.color')" path="color">
-        <NSelect v-model:value="formModel.color" clearable :options="colorSelectOptions" />
-      </NFormItem>
-      <NFormItem :label="t('pages.sys.dict.sort')" path="sort">
-        <NInputNumber v-model:value="formModel.sort" class="w-full" :min="0" />
-      </NFormItem>
-      <NFormItem :label="t('common.often.status')" path="status">
-        <NRadioGroup v-model:value="formModel.status" :options="statusSelectOptions" />
-      </NFormItem>
-    </NForm>
+    <NSpin :show="state.loading">
+      <NForm
+        ref="formRef"
+        :model="state.formModel"
+        :rules="rules"
+        label-placement="left"
+        label-width="100"
+        :disabled="state.loading || state.submitLoading"
+      >
+        <NFormItem :label="t('pages.sys.dict.category')" path="category">
+          <DictSelect
+            v-model="state.formModel.category"
+            dict-code="DICT_CATEGORY"
+            type="radio"
+            @change="updateCategory"
+          />
+        </NFormItem>
+        <NFormItem :label="t('pages.sys.dict.parent')" path="parent_id">
+          <NTreeSelect
+            v-model:value="state.formModel.parent_id"
+            clearable
+            filterable
+            :options="parentTreeOptions"
+            :placeholder="t('pages.sys.dict.topLevel')"
+            key-field="key"
+            label-field="label"
+          />
+        </NFormItem>
+        <NFormItem :label="t('pages.sys.dict.code')" path="code">
+          <NInput :value="state.formModel.code" @update:value="updateCode" />
+        </NFormItem>
+        <NFormItem :label="t('pages.sys.dict.label')" path="label">
+          <NInput v-model:value="state.formModel.label" />
+        </NFormItem>
+        <NFormItem :label="t('pages.sys.dict.value')" path="value">
+          <NInput v-model:value="state.formModel.value" />
+        </NFormItem>
+        <NFormItem :label="t('pages.sys.dict.color')" path="color">
+          <CommonColorPicker
+            v-model="state.formModel.color"
+            :disabled="state.loading || state.submitLoading"
+          />
+        </NFormItem>
+        <NFormItem :label="t('pages.sys.dict.sort')" path="sort">
+          <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
+        </NFormItem>
+        <NFormItem :label="t('common.often.status')" path="status">
+          <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
+        </NFormItem>
+      </NForm>
+    </NSpin>
 
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
           {{ t('common.cancel') }}
         </NButton>
-        <NButton type="primary" :loading="submitLoading" @click="submitForm">
+        <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
           {{ t('common.confirm') }}
         </NButton>
       </NSpace>

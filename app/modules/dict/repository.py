@@ -1,12 +1,12 @@
 from typing import TypedDict
 
-from sqlalchemy import Select, delete, func, select
+from sqlalchemy import Select, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import NotFoundError
 from app.modules.dict.model import SysDict
 from app.modules.dict.schema import (
-    DictAdminListQuery,
+    DictAdminPageQuery,
     DictCreateRequest,
     DictTreeQuery,
     DictUpdateRequest,
@@ -21,6 +21,7 @@ class DictTreeRecord(TypedDict):
     color: str | None
     category: str | None
     parent_id: str | None
+    parent_id_name: str | None
     status: str
     sort: int
     children: list["DictTreeRecord"]
@@ -65,7 +66,7 @@ class DictRepository:
         await self.db.execute(delete(SysDict).where(SysDict.id.in_(unique_ids)))
         return unique_ids
 
-    async def list_admin(self, query: DictAdminListQuery) -> tuple[list[SysDict], int]:
+    async def page_admin(self, query: DictAdminPageQuery) -> tuple[list[SysDict], int]:
         stmt: Select[tuple[SysDict]] = select(SysDict)
         count_stmt = select(func.count(SysDict.id))
         filters = []
@@ -74,7 +75,7 @@ class DictRepository:
         if query.category:
             filters.append(SysDict.category == query.category)
         if query.parent_id:
-            filters.append(SysDict.parent_id == query.parent_id)
+            filters.append(or_(SysDict.id == query.parent_id, SysDict.parent_id == query.parent_id))
         if query.status:
             filters.append(SysDict.status == str(query.status))
         if filters:
@@ -88,6 +89,13 @@ class DictRepository:
         items = list((await self.db.execute(stmt)).scalars().all())
         total = (await self.db.execute(count_stmt)).scalar_one()
         return items, total
+
+    async def get_parent_name_map(self, parent_ids: set[str]) -> dict[str, str]:
+        if not parent_ids:
+            return {}
+        stmt = select(SysDict.id, SysDict.code, SysDict.label).where(SysDict.id.in_(parent_ids))
+        rows = (await self.db.execute(stmt)).all()
+        return {id_: label or code for id_, code, label in rows}
 
     async def list_tree(self, query: DictTreeQuery) -> list[DictTreeRecord]:
         stmt = select(SysDict)
@@ -108,6 +116,7 @@ def _build_tree(items: list[SysDict]) -> list[DictTreeRecord]:
             "color": item.color,
             "category": item.category,
             "parent_id": item.parent_id,
+            "parent_id_name": None,
             "status": item.status,
             "sort": item.sort,
             "children": [],
@@ -117,6 +126,8 @@ def _build_tree(items: list[SysDict]) -> list[DictTreeRecord]:
     roots: list[DictTreeRecord] = []
     for item in items:
         if item.parent_id and item.parent_id in node_map:
+            parent = node_map[item.parent_id]
+            node_map[item.id]["parent_id_name"] = parent["label"] or parent["code"]
             node_map[item.parent_id]["children"].append(node_map[item.id])
         else:
             roots.append(node_map[item.id])
