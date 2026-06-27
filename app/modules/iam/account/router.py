@@ -29,8 +29,8 @@ router = APIRouter()
 @router.post(
     "/sys/accounts/create",
     dependencies=[
-        Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("iam:account:create")),
+        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_permission("iam:account:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -45,8 +45,8 @@ async def create(
 @router.post(
     "/sys/accounts/update",
     dependencies=[
-        Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("iam:account:update")),
+        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_permission("iam:account:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -61,8 +61,8 @@ async def update(
 @router.post(
     "/sys/accounts/delete",
     dependencies=[
-        Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("iam:account:delete")),
+        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_permission("iam:account:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -77,8 +77,8 @@ async def delete(
 @router.get(
     "/sys/accounts/detail",
     dependencies=[
-        Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("iam:account:detail")),
+        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_permission("iam:account:detail")),
     ],
     response_model=ApiResponse[SysAccountSchema],
 )
@@ -92,8 +92,8 @@ async def detail(
 @router.get(
     "/sys/accounts/page",
     dependencies=[
-        Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("iam:account:page")),
+        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_permission("iam:account:page")),
     ],
     response_model=ApiResponse[PageData[SysAccountSchema]],
 )
@@ -123,8 +123,8 @@ async def page(
 @router.post(
     "/account-roles",
     dependencies=[
-        Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("iam:account:grant-role")),
+        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_permission("iam:account:grant-role")),
     ],
     response_model=ApiResponse[SysAccountRoleRelSchema],
 )
@@ -138,8 +138,8 @@ async def assign_account_role(
 @router.post(
     "/account-groups",
     dependencies=[
-        Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("iam:account:grant-group")),
+        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_permission("iam:account:grant-group")),
     ],
     response_model=ApiResponse[SysAccountGroupRelSchema],
 )
@@ -153,8 +153,8 @@ async def assign_account_group(
 @router.post(
     "/account-depts",
     dependencies=[
-        Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("iam:account:grant-dept")),
+        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_permission("iam:account:grant-dept")),
     ],
     response_model=ApiResponse[SysAccountDeptRelSchema],
 )
