@@ -15,7 +15,7 @@ def format_utc_iso8601(value: datetime) -> str:
         value = value.replace(tzinfo=UTC)
     else:
         value = value.astimezone(UTC)
-    return value.isoformat().replace("+00:00", "Z")
+    return value.isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def normalize_orm_datetimes(item: object) -> None:

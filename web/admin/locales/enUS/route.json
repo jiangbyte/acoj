@@ -3,6 +3,7 @@
   "dashboard": "Workbench",
   "sys": "System",
   "sys_user": "User Management",
+  "sys_dict": "Dict Management",
   "sys_banner": "Banner Management",
   "demo": "Demo Pages",
   "demo_overview": "Demo Overview",
