@@ -54,14 +54,14 @@ def _payload(**overrides):
     return data
 
 
-async def test_admin_banner_create_list_detail_update_delete(client):
+async def test_admin_banner_create_page_detail_update_delete(client):
     token = "admin-banner-token"
     await _seed_admin(
         client,
         token,
         [
             "sys:banner:create",
-            "sys:banner:list",
+            "sys:banner:page",
             "sys:banner:detail",
             "sys:banner:update",
             "sys:banner:delete",
@@ -77,12 +77,12 @@ async def test_admin_banner_create_list_detail_update_delete(client):
     assert create_response.status_code == 200
     banner_id = create_response.json()["data"]["id"]
 
-    list_response = await client.get(
-        "/api/v1/admin/banner/sys/banners/list?current=1&size=20&display_scope=PORTAL&position=home_top",
+    page_response = await client.get(
+        "/api/v1/admin/banner/sys/banners/page?current=1&size=20&display_scope=PORTAL&position=home_top",
         headers=headers,
     )
-    assert list_response.status_code == 200
-    assert list_response.json()["data"]["total"] == 1
+    assert page_response.status_code == 200
+    assert page_response.json()["data"]["total"] == 1
 
     detail_response = await client.get(
         f"/api/v1/admin/banner/sys/banners/detail?id={banner_id}",
@@ -110,7 +110,7 @@ async def test_admin_banner_create_list_detail_update_delete(client):
 
 async def test_admin_banner_delete_accepts_id_array(client):
     token = "admin-banner-batch-delete-token"
-    await _seed_admin(client, token, ["sys:banner:create", "sys:banner:list", "sys:banner:delete"])
+    await _seed_admin(client, token, ["sys:banner:create", "sys:banner:page", "sys:banner:delete"])
     headers = {"Authorization": token}
     first = await client.post(
         "/api/v1/admin/banner/sys/banners/create",
@@ -134,11 +134,11 @@ async def test_admin_banner_delete_accepts_id_array(client):
     assert response.status_code == 200
     assert response.json()["data"] == [first_id, second_id]
 
-    list_response = await client.get(
-        "/api/v1/admin/banner/sys/banners/list?current=1&size=20&display_scope=PORTAL&position=home_top",
+    page_response = await client.get(
+        "/api/v1/admin/banner/sys/banners/page?current=1&size=20&display_scope=PORTAL&position=home_top",
         headers=headers,
     )
-    assert list_response.json()["data"]["total"] == 0
+    assert page_response.json()["data"]["total"] == 0
 
 
 async def test_public_banner_list_does_not_require_admin_session(client):
@@ -158,14 +158,14 @@ async def test_public_banner_list_does_not_require_admin_session(client):
     assert [item["title"] for item in payload["data"]] == ["Public Banner"]
 
 
-async def test_admin_banner_list_requires_permission(client):
+async def test_admin_banner_page_requires_permission(client):
     token = "admin-banner-no-permission-token"
     await _seed_admin(client, token, [])
 
     response = await client.get(
-        "/api/v1/admin/banner/sys/banners/list",
+        "/api/v1/admin/banner/sys/banners/page",
         headers={"Authorization": token},
     )
 
     assert response.status_code == 403
-    assert response.json()["message"] == "Permission denied: sys:banner:list"
+    assert response.json()["message"] == "Permission denied: sys:banner:page"
