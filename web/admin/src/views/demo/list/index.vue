@@ -59,6 +59,11 @@ const data = computed(() => [
   { id: 1002, title: t('demo.mergeIntervals'), level: 'medium' as Level, submissions: 136 },
   { id: 1003, title: t('demo.shortestPath'), level: 'hard' as Level, submissions: 78 },
   { id: 1004, title: t('demo.validParentheses'), level: 'easy' as Level, submissions: 302 },
-  { id: 1005, title: t('demo.dynamicProgrammingIntro'), level: 'medium' as Level, submissions: 119 },
+  {
+    id: 1005,
+    title: t('demo.dynamicProgrammingIntro'),
+    level: 'medium' as Level,
+    submissions: 119,
+  },
 ])
 </script>

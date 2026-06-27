@@ -18,9 +18,7 @@ const options = computed<DropdownOption[]>(() => [
   },
 ])
 
-const currentLabel = computed(() =>
-  appStore.lang === 'zhCN' ? t('app.langZh') : t('app.langEn'),
-)
+const currentLabel = computed(() => (appStore.lang === 'zhCN' ? t('app.langZh') : t('app.langEn')))
 
 function handleSelect(key: string | number) {
   appStore.setAppLang(key as App.Lang)
@@ -28,11 +26,7 @@ function handleSelect(key: string | number) {
 </script>
 
 <template>
-  <n-dropdown
-    :options="options"
-    trigger="click"
-    @select="handleSelect"
-  >
+  <n-dropdown :options="options" trigger="click" @select="handleSelect">
     <n-tooltip placement="bottom" trigger="hover">
       <template #trigger>
         <CommonWrapper>

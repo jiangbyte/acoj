@@ -47,11 +47,7 @@ async function handleSubmit() {
 
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
       <n-form-item path="account" :label="t('auth.account')">
-        <n-input
-          v-model:value="form.account"
-          :placeholder="t('auth.accountPlaceholder')"
-          clearable
-        >
+        <n-input v-model:value="form.account" :placeholder="t('auth.accountPlaceholder')" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>

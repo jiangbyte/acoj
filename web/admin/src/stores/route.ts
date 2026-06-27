@@ -2,12 +2,7 @@ import { defineStore } from 'pinia'
 import { router } from '@/router'
 import { staticRoutes } from '@/router/routes.static'
 import { $t, routeI18nKey } from '@/utils/i18n'
-import {
-  createMenus,
-  createRoutes,
-  generateCacheRoutes,
-  getActiveMenuPath,
-} from './route/helper'
+import { createMenus, createRoutes, generateCacheRoutes, getActiveMenuPath } from './route/helper'
 
 type TranslateFn = (key: string, fallback: string) => string
 

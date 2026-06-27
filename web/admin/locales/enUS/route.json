@@ -1,6 +1,8 @@
 {
   "appRoot": "Home",
   "dashboard": "Workbench",
+  "sys": "System",
+  "sys_user": "User Management",
   "demo": "Demo Pages",
   "demo_overview": "Demo Overview",
   "demo_list": "List Demo",

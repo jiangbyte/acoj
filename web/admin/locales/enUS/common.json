@@ -7,5 +7,31 @@
   "navigate": "Navigate",
   "save": "Save",
   "reset": "Reset",
-  "view": "View"
+  "view": "View",
+  "often": {
+    "index": "No.",
+    "status": "Status",
+    "remark": "Remark",
+    "updateTime": "Updated At",
+    "operation": "Operation",
+    "add": "Add",
+    "detail": "Detail",
+    "edit": "Edit",
+    "delete": "Delete",
+    "batchDelete": "Batch Delete",
+    "enable": "Enabled",
+    "disable": "Disabled",
+    "total": "{count} total",
+    "deleteConfirm": "Delete ",
+    "deleteQuestion": "?",
+    "batchDeleteConfirm": "Delete {count} selected users?",
+    "createSuccess": "Created successfully",
+    "updateSuccess": "Updated successfully",
+    "deleteSuccess": "Deleted successfully"
+  },
+  "status": {
+    "male": "Male",
+    "female": "Female",
+    "other": "Other"
+  }
 }

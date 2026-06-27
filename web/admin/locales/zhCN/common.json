@@ -7,5 +7,31 @@
   "navigate": "导航",
   "save": "保存",
   "reset": "重置",
-  "view": "查看"
+  "view": "查看",
+  "often": {
+    "index": "序号",
+    "status": "状态",
+    "remark": "备注",
+    "updateTime": "更新时间",
+    "operation": "操作",
+    "add": "新增",
+    "detail": "详细",
+    "edit": "编辑",
+    "delete": "删除",
+    "batchDelete": "批量删除",
+    "enable": "启用",
+    "disable": "禁用",
+    "total": "共 {count} 条",
+    "deleteConfirm": "确认删除",
+    "deleteQuestion": "？",
+    "batchDeleteConfirm": "确认删除选中的 {count} 个用户？",
+    "createSuccess": "新增成功",
+    "updateSuccess": "更新成功",
+    "deleteSuccess": "删除成功"
+  },
+  "status": {
+    "male": "男",
+    "female": "女",
+    "other": "其他"
+  }
 }

@@ -15,7 +15,10 @@ const hiddenLogoText = computed(() => !appStore.isMobile && appStore.collapsed)
 <template>
   <button class="logo-button" type="button" @click="router.push(homePath)">
     <NovaIcon class="logo-icon" icon="icon-park-outline:code-computer" :size="24" />
-    <span v-show="!hiddenLogoText" class="logo-text text-ellipsis overflow-hidden whitespace-nowrap">
+    <span
+      v-show="!hiddenLogoText"
+      class="logo-text text-ellipsis overflow-hidden whitespace-nowrap"
+    >
       {{ name }}
     </span>
   </button>

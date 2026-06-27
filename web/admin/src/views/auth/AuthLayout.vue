@@ -20,8 +20,7 @@ const isHeaderElevated = ref(false)
 
 const isDarkTheme = computed(
   () =>
-    appStore.storeColorMode === 'dark' ||
-    (appStore.storeColorMode === 'auto' && prefersDark.value),
+    appStore.storeColorMode === 'dark' || (appStore.storeColorMode === 'auto' && prefersDark.value),
 )
 
 const highlights = computed(() => [

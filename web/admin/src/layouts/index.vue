@@ -45,14 +45,13 @@ const showMobileDrawer = ref(false)
     mode="vertical"
     :is-mobile="appStore.isMobile"
     :show-logo="!appStore.isMobile"
-    show-footer
+    :show-footer="false"
     show-tabbar
     nav-fixed
     show-nav
     show-sidebar
     :nav-height="60"
     :tabbar-height="45"
-    :footer-height="40"
     :sidebar-width="240"
     :sidebar-collapsed-width="64"
   >
@@ -106,14 +105,8 @@ const showMobileDrawer = ref(false)
       <TabBar />
     </template>
 
-    <template #footer>
-      <div class="flex-center h-full">
-        {{ appStore.footerText }}
-      </div>
-    </template>
-
     <Content />
-    <BackTop />
+    <BackTop class="z-999" />
 
     <MobileDrawer v-model:show="showMobileDrawer">
       <n-menu v-bind="layout.verticalMenuProps" :collapsed="false" />
