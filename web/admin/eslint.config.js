@@ -20,13 +20,16 @@ export default tseslint.config(
     files: ['**/*.vue'],
     languageOptions: {
       parserOptions: {
-        parser: tseslint.parser,
+        parser: {
+          ts: tseslint.parser,
+          tsx: tseslint.parser,
+        },
         extraFileExtensions: ['.vue'],
       },
     },
   },
   {
-    files: ['**/*.{js,ts,vue}'],
+    files: ['**/*.{js,ts,tsx,vue}'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
