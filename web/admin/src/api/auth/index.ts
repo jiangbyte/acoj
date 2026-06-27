@@ -1,6 +1,6 @@
 import { http } from '@/utils'
 
-const authPrefix = '/api/v1/admin/auth'
+const authPrefix = '/api/v1/admin'
 
 export function login(data: any) {
   return http.post<any>(`${authPrefix}/login`, data, {

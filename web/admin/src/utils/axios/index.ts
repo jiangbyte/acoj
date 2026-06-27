@@ -3,6 +3,9 @@ import { $t } from '@/utils/i18n'
 import { setupTokenInterceptor } from './request-interceptors'
 import { setupResponseInterceptors } from './response-interceptors'
 
+const loginPath = '/auth/login'
+let isHandlingUnauthorized = false
+
 /**
  * 后端统一响应结构。
  *
@@ -73,6 +76,11 @@ export function createHttp(config?: CreateAxiosDefaults) {
     },
 
     handleError(error) {
+      if (isUnauthorizedError(error) && error.config?.addToken !== false) {
+        handleUnauthorizedError(error)
+        return Promise.reject(error)
+      }
+
       showErrorMessage(error)
       return Promise.reject(error)
     },
@@ -89,6 +97,76 @@ function isApiResponse(data: unknown): data is ApiResponse {
 // unknown 到普通对象的基础类型保护，避免直接访问空值或原始类型属性。
 function isRecord(data: unknown): data is Record<string, unknown> {
   return typeof data === 'object' && data !== null
+}
+
+function isUnauthorizedError(error: AxiosError) {
+  return error.response?.status === 401 || getApiCode(error) === 401
+}
+
+function getApiCode(error: AxiosError) {
+  const apiCode = (error as any).apiCode
+  if (typeof apiCode === 'number') {
+    return apiCode
+  }
+
+  const responseData = error.response?.data
+  if (isRecord(responseData) && typeof responseData.code === 'number') {
+    return responseData.code
+  }
+
+  const rawData = error.response?.rawData
+  if (isRecord(rawData) && typeof rawData.code === 'number') {
+    return rawData.code
+  }
+
+  return undefined
+}
+
+function handleUnauthorizedError(error: AxiosError) {
+  if (isHandlingUnauthorized) {
+    return
+  }
+
+  isHandlingUnauthorized = true
+  showUnauthorizedMessage(error)
+
+  void redirectToLogin().finally(() => {
+    window.setTimeout(() => {
+      isHandlingUnauthorized = false
+    }, 1000)
+  })
+}
+
+function showUnauthorizedMessage(error: AxiosError) {
+  const message = getErrorMessage(error)
+  if (message) {
+    window.$message?.error(message)
+  }
+}
+
+async function redirectToLogin() {
+  const [{ useAuthStore }, { router }] = await Promise.all([import('@/stores'), import('@/router')])
+  const authStore = useAuthStore()
+  const currentRoute = router.currentRoute.value
+  const redirect = currentRoute.fullPath
+
+  authStore.resetSession()
+
+  if (currentRoute.path.startsWith('/auth')) {
+    if (currentRoute.path !== loginPath) {
+      await router.replace(loginPath)
+    }
+    return
+  }
+
+  await router.replace(
+    redirect
+      ? {
+          path: loginPath,
+          query: { redirect },
+        }
+      : loginPath,
+  )
 }
 
 function showErrorMessage(error: AxiosError) {
