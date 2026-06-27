@@ -1,49 +1,54 @@
 <script setup lang="tsx">
 import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
-import type { DictCategory, DictFormModel, SysDict } from './types'
 import { Icon } from '@iconify/vue'
+import { dictApi } from '@/api'
+import { useDictStore } from '@/stores'
+import { createTagColor, normalizeSearchValues } from '@/utils'
+import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
-import {
-  createProSearchForm,
-  ProCard,
-  ProDataTable,
-  ProSearchForm,
-} from 'pro-naive-ui'
-import { computed, ref } from 'vue'
+import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  categoryLabelKeyMap,
-  statusLabelKeyMap,
-  statusOptions,
-  statusTagTypeMap,
-} from './constants'
-import { createMockDicts } from './mock'
+import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 
 const { t } = useI18n()
-const dicts = ref<SysDict[]>(createMockDicts())
-const loading = ref(false)
-const category = ref<DictCategory>('SYS')
-const treeSearchKey = ref('')
-const selectedTreeKeys = ref<string[]>([])
-const checkedRowKeys = ref<string[]>([])
-const searchValues = ref<any>({})
+const dictStore = useDictStore()
+const detailModalRef = ref<any>(null)
 const formModalRef = ref<any>(null)
-const page = ref(1)
-const pageSize = ref(20)
+const state = reactive({
+  dicts: [] as any[],
+  dictTree: [] as any[],
+  total: 0,
+  loading: false,
+  treeLoading: false,
+  category: 'SYS',
+  treeSearchKey: '',
+  selectedTreeKeys: [] as string[],
+  checkedRowKeys: [] as string[],
+  searchValues: {} as any,
+  page: 1,
+  pageSize: 20,
+})
 
-const selectedParentId = computed(() => selectedTreeKeys.value[0] ?? null)
-const hasCheckedRows = computed(() => checkedRowKeys.value.length > 0)
+const selectedParentId = computed(() => state.selectedTreeKeys[0] ?? null)
+const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
+const flatTreeDicts = computed(() => flattenDictTree(state.dictTree))
 
 const searchForm = createProSearchForm<any>({
+  defaultCollapsed: true,
   onSubmit(values) {
-    searchValues.value = normalizeSearchValues(values)
-    page.value = 1
+    state.searchValues = normalizeSearchValues(values, {
+      code: (value) => String(value).trim().toUpperCase(),
+    })
+    state.page = 1
+    fetchPage()
   },
   onReset() {
-    searchValues.value = {}
-    page.value = 1
+    state.searchValues = {}
+    state.page = 1
+    fetchPage()
   },
 })
 
@@ -58,60 +63,31 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     path: 'status',
     field: 'select',
     fieldProps: {
-      options: translateOptions(statusOptions),
+      options: dictList('COMMON_STATUS'),
     },
   },
 ])
 
-const categoryDicts = computed(() =>
-  dicts.value
-    .filter((item) => item.category === category.value)
-    .sort(sortDicts),
-)
-
 const treeData = computed(() => {
-  const keyword = treeSearchKey.value.trim().toLowerCase()
-  return buildTreeNodes(categoryDicts.value, keyword)
-})
-
-const tableData = computed(() => {
-  const rows = categoryDicts.value.filter((item) => {
-    if (selectedParentId.value && item.parent_id !== selectedParentId.value) {
-      return false
-    }
-
-    if (searchValues.value.code && !item.code.includes(String(searchValues.value.code).toUpperCase())) {
-      return false
-    }
-
-    if (searchValues.value.status && item.status !== searchValues.value.status) {
-      return false
-    }
-
-    return true
-  })
-
-  return rows
-})
-
-const pagedTableData = computed(() => {
-  const start = (page.value - 1) * pageSize.value
-  return tableData.value.slice(start, start + pageSize.value)
+  const keyword = state.treeSearchKey.trim().toLowerCase()
+  return buildTreeNodes(state.dictTree, keyword)
 })
 
 const pagination = computed<PaginationProps>(() => ({
-  page: page.value,
-  pageSize: pageSize.value,
-  itemCount: tableData.value.length,
+  page: state.page,
+  pageSize: state.pageSize,
+  itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
   prefix: ({ itemCount }) => t('common.often.total', { count: itemCount }),
   onUpdatePage: (value) => {
-    page.value = value
+    state.page = value
+    fetchPage()
   },
   onUpdatePageSize: (value) => {
-    pageSize.value = value
-    page.value = 1
+    state.pageSize = value
+    state.page = 1
+    fetchPage()
   },
 }))
 
@@ -123,8 +99,10 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: t('common.often.index'),
     width: 80,
-    key: 'index',
-    render: (_row, index) => (page.value - 1) * pageSize.value + index + 1,
+    path: 'id',
+    ellipsis: {
+      tooltip: true,
+    },
   },
   {
     title: t('pages.sys.dict.code'),
@@ -156,7 +134,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     width: 120,
     render: (row) =>
       row.color ? (
-        <NTag type={normalizeTagType(row.color)} bordered={false}>
+        <NTag color={createTagColor(row.color)} bordered={false}>
           {row.color}
         </NTag>
       ) : (
@@ -167,16 +145,15 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: t('pages.sys.dict.category'),
     path: 'category',
     width: 120,
-    render: (row) => displayLabel(categoryLabelKeyMap, row.category),
+    render: (row) => dictTypeData('DICT_CATEGORY', row.category),
   },
   {
     title: t('pages.sys.dict.parent'),
-    path: 'parent_id',
+    path: 'parent_id_name',
     width: 180,
     ellipsis: {
       tooltip: true,
     },
-    render: (row) => displayParent(row.parent_id),
   },
   {
     title: t('pages.sys.dict.sort'),
@@ -188,13 +165,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     path: 'status',
     width: 110,
     render: (row) => (
-      <NTag type={statusTagTypeMap[row.status] ?? 'default'} bordered={false}>
-        {displayLabel(statusLabelKeyMap, row.status)}
+      <NTag color={createTagColor(dictTypeColor('COMMON_STATUS', row.status))} bordered={false}>
+        {dictTypeData('COMMON_STATUS', row.status)}
       </NTag>
     ),
   },
   {
-    title: t('common.often.updateTime'),
+    title: t('common.often.updatedAt'),
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -204,14 +181,17 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: t('common.often.operation'),
     key: 'actions',
-    width: 120,
+    width: 170,
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
+        <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
+          {t('common.often.detail')}
+        </NButton>
         <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
           {t('common.often.edit')}
         </NButton>
-        <NButton type="error" size="small" text={true} onClick={() => confirmDeleteDicts(row.id)}>
+        <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
           {t('common.often.delete')}
         </NButton>
       </NFlex>
@@ -219,71 +199,33 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   },
 ])
 
-function normalizeSearchValues(values: any) {
-  const result = Object.fromEntries(
-    Object.entries(values).filter(([, value]) => value !== undefined && value !== ''),
-  )
-  if (result.code) {
-    result.code = String(result.code).trim().toUpperCase()
-  }
-  return result
-}
+onMounted(() => {
+  refreshData()
+})
 
-function translateOptions(options: Array<{ labelKey: string; value: string }>) {
-  return options.map((item) => ({
-    label: t(item.labelKey),
-    value: item.value,
-  }))
-}
-
-function displayLabel(map: Record<string, string>, value?: string | null) {
-  if (!value) {
-    return '-'
-  }
-  const labelKey = map[value]
-  return labelKey ? t(labelKey) : value
-}
-
-function displayParent(parentId?: string | null) {
-  if (!parentId) {
-    return t('pages.sys.dict.topLevel')
-  }
-  const parent = dicts.value.find((item) => item.id === parentId)
-  return parent ? `${parent.label || parent.code}` : '-'
-}
-
-function normalizeTagType(value: string) {
-  const types: Record<string, 'success' | 'info' | 'warning' | 'error' | 'default'> = {
-    success: 'success',
-    info: 'info',
-    warning: 'warning',
-    error: 'error',
-    primary: 'info',
-  }
-  return types[value] ?? 'default'
-}
-
-function handleCategoryUpdate(value: DictCategory) {
-  category.value = value
-  treeSearchKey.value = ''
-  selectedTreeKeys.value = []
-  checkedRowKeys.value = []
-  page.value = 1
+function handleCategoryUpdate(value: string) {
+  state.category = value
+  state.treeSearchKey = ''
+  state.selectedTreeKeys = []
+  state.checkedRowKeys = []
+  state.page = 1
+  refreshData()
 }
 
 function handleTreeSelect(keys: Array<string | number>) {
-  selectedTreeKeys.value = keys.map(String)
-  checkedRowKeys.value = []
-  page.value = 1
+  state.selectedTreeKeys = keys.map(String)
+  state.checkedRowKeys = []
+  state.page = 1
+  fetchPage()
 }
 
 function handleCheckedRowKeys(keys: Array<string | number>) {
-  checkedRowKeys.value = keys.map(String)
+  state.checkedRowKeys = keys.map(String)
 }
 
 function openCreateModal() {
   formModalRef.value?.openModal(undefined, {
-    category: category.value,
+    category: state.category,
     parentId: selectedParentId.value,
   })
 }
@@ -292,66 +234,65 @@ function openEditModal(id: string) {
   formModalRef.value?.openModal(id)
 }
 
-function handleSaveDict(values: DictFormModel) {
-  if (isDuplicateCode(values)) {
-    window.$message.error(t('pages.sys.dict.codeExists'))
-    return
-  }
-
-  if (values.id) {
-    updateDict(values)
-    window.$message.success(t('common.often.updateSuccess'))
-  } else {
-    createDict(values)
-    window.$message.success(t('common.often.createSuccess'))
-  }
-
-  page.value = 1
+function openDetailModal(id: string) {
+  detailModalRef.value?.openModal(id)
 }
 
-function createDict(values: DictFormModel) {
-  const now = currentTime()
-  dicts.value.unshift({
-    ...values,
-    id: createId(),
-    created_at: now,
-    updated_at: now,
-  })
+async function handleSaved() {
+  state.page = 1
+  await refreshData()
+  await dictStore.refreshDict()
 }
 
-function updateDict(values: DictFormModel) {
-  const index = dicts.value.findIndex((item) => item.id === values.id)
-  if (index < 0) {
-    return
-  }
-
-  dicts.value[index] = {
-    ...dicts.value[index],
-    ...values,
-    id: values.id!,
-    updated_at: currentTime(),
-  }
+async function refreshData() {
+  await fetchTree()
+  await fetchPage()
 }
 
-function isDuplicateCode(values: DictFormModel) {
-  return dicts.value.some((item) => item.code === values.code && item.id !== values.id)
-}
-
-function refreshDicts() {
-  loading.value = true
+async function fetchTree() {
+  state.treeLoading = true
   try {
-    dicts.value = createMockDicts()
-    checkedRowKeys.value = []
-    if (selectedParentId.value && !dicts.value.some((item) => item.id === selectedParentId.value)) {
-      selectedTreeKeys.value = []
+    const response = await dictApi.tree({ category: state.category })
+    state.dictTree = response.data ?? []
+    if (
+      selectedParentId.value &&
+      !flatTreeDicts.value.some((item) => item.id === selectedParentId.value)
+    ) {
+      state.selectedTreeKeys = []
     }
-    page.value = 1
   } finally {
-    loading.value = false
+    state.treeLoading = false
   }
 }
 
-function confirmDeleteDicts(value: string | string[]) {
+async function fetchPage() {
+  state.loading = true
+  try {
+    const params: any = {
+      current: state.page,
+      size: state.pageSize,
+      category: state.category,
+      ...state.searchValues,
+    }
+    if (selectedParentId.value) {
+      params.parent_id = selectedParentId.value
+    }
+
+    const response = await dictApi.page(params)
+    const data = response.data ?? {}
+    state.dicts = data.records ?? []
+    state.total = data.total ?? 0
+    state.page = data.current ?? state.page
+    state.pageSize = data.size ?? state.pageSize
+    state.checkedRowKeys = state.checkedRowKeys.filter((key) =>
+      state.dicts.some((item) => item.id === key),
+    )
+  } finally {
+    state.loading = false
+  }
+}
+
+function confirmDelete(value: string | string[]) {
   const ids = Array.isArray(value) ? value : [value]
   if (!ids.length) {
     return
@@ -368,28 +309,30 @@ function confirmDeleteDicts(value: string | string[]) {
       : t('pages.sys.dict.deleteConfirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
-    onPositiveClick: () => deleteDicts(deleteIds),
+    onPositiveClick: () => deleteData(deleteIds),
   })
 }
 
-function deleteDicts(ids: string[]) {
-  dicts.value = dicts.value.filter((item) => !ids.includes(item.id))
-  checkedRowKeys.value = checkedRowKeys.value.filter((key) => !ids.includes(key))
+async function deleteData(ids: string[]) {
+  await dictApi.remove({ ids })
+  state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
   if (selectedParentId.value && ids.includes(selectedParentId.value)) {
-    selectedTreeKeys.value = []
+    state.selectedTreeKeys = []
   }
   window.$message.success(t('common.often.deleteSuccess'))
 
-  const maxPage = Math.max(1, Math.ceil(tableData.value.length / pageSize.value))
-  if (page.value > maxPage) {
-    page.value = maxPage
+  await refreshData()
+  await dictStore.refreshDict()
+  if (!state.dicts.length && state.total > 0 && state.page > 1) {
+    state.page -= 1
+    await fetchPage()
   }
 }
 
 function collectDeleteIds(ids: string[]) {
   const result = new Set(ids)
   const walk = (parentId: string) => {
-    dicts.value
+    flatTreeDicts.value
       .filter((item) => item.parent_id === parentId)
       .forEach((item) => {
         result.add(item.id)
@@ -400,36 +343,22 @@ function collectDeleteIds(ids: string[]) {
   return Array.from(result)
 }
 
-function buildTreeNodes(items: SysDict[], keyword: string) {
-  const nodeMap = new Map(
-    items.map((item) => [
-      item.id,
-      {
-        key: item.id,
-        label: item.label || item.code,
-        children: [] as any[],
-        raw: item,
-      },
-    ]),
-  )
-  const roots: any[] = []
+function buildTreeNodes(items: any[], keyword: string): any[] {
+  const nodes = items.map((item) => ({
+    key: item.id,
+    label: item.label || item.code,
+    children: buildTreeNodes(item.children ?? [], keyword),
+    sort: item.sort ?? 0,
+    id: item.id,
+    raw: item,
+  }))
 
-  nodeMap.forEach((node) => {
-    const parentId = node.raw.parent_id
-    const parent = parentId ? nodeMap.get(parentId) : null
-    if (parent) {
-      parent.children.push(node)
-    } else {
-      roots.push(node)
-    }
-  })
-
-  return sortAndFilterTree(roots, keyword)
+  return sortAndFilterTree(nodes, keyword)
 }
 
 function sortAndFilterTree(nodes: any[], keyword: string): any[] {
   return nodes
-    .sort((a, b) => sortDicts(a.raw, b.raw))
+    .sort(sortTreeNodes)
     .map((node) => ({
       ...node,
       children: sortAndFilterTree(node.children, keyword),
@@ -438,10 +367,12 @@ function sortAndFilterTree(nodes: any[], keyword: string): any[] {
       if (!keyword) {
         return true
       }
-      const raw = node.raw as SysDict
+      const raw = node.raw
       return (
         raw.code.toLowerCase().includes(keyword) ||
-        String(raw.label ?? '').toLowerCase().includes(keyword) ||
+        String(raw.label ?? '')
+          .toLowerCase()
+          .includes(keyword) ||
         node.children.length > 0
       )
     })
@@ -449,28 +380,34 @@ function sortAndFilterTree(nodes: any[], keyword: string): any[] {
       key: node.key,
       label: node.label,
       children: node.children,
+      sort: node.sort,
+      id: node.id,
     }))
 }
 
-function sortDicts(a: SysDict, b: SysDict) {
-  return a.sort === b.sort ? b.id.localeCompare(a.id) : a.sort - b.sort
+function sortTreeNodes(a: any, b: any) {
+  return a.sort === b.sort ? String(b.id).localeCompare(String(a.id)) : a.sort - b.sort
 }
 
-function createId() {
-  return String(Date.now())
-}
-
-function currentTime() {
-  return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
+function flattenDictTree(items: any[]) {
+  const result: any[] = []
+  const walk = (nodes: any[]) => {
+    nodes.forEach((node) => {
+      result.push(node)
+      walk(node.children ?? [])
+    })
+  }
+  walk(items)
+  return result
 }
 </script>
 
 <template>
   <div class="dict-page">
-    <ProCard class="dict-tree-card" content-class="h-full min-h-0">
-      <NFlex class="h-full min-h-0" vertical :size="12">
+    <ProCard class="dict-tree-card" content-class="h-full min-h-0 overflow-hidden">
+      <NFlex class="dict-tree-layout" vertical :size="12">
         <NInput
-          v-model:value="treeSearchKey"
+          v-model:value="state.treeSearchKey"
           clearable
           :placeholder="t('pages.sys.dict.searchTree')"
         >
@@ -481,7 +418,7 @@ function currentTime() {
           </template>
         </NInput>
         <NTabs
-          :value="category"
+          :value="state.category"
           type="line"
           animated
           justify-content="space-evenly"
@@ -490,20 +427,27 @@ function currentTime() {
           <NTabPane name="SYS" :tab="t('pages.sys.dict.categories.sys')" />
           <NTabPane name="BIZ" :tab="t('pages.sys.dict.categories.biz')" />
         </NTabs>
-        <NScrollbar class="min-h-0 flex-1">
-          <NTree
-            block-line
-            block-node
-            show-line
-            default-expand-all
-            :data="treeData"
-            :selected-keys="selectedTreeKeys"
-            key-field="key"
-            label-field="label"
-            children-field="children"
-            @update:selected-keys="handleTreeSelect"
-          />
-        </NScrollbar>
+        <div class="dict-tree-body">
+          <NSpin
+            :show="state.treeLoading"
+            class="dict-tree-spin"
+            content-class="dict-tree-spin-content"
+          >
+            <NScrollbar class="dict-tree-scroll" content-class="dict-tree-scroll-content">
+              <NTree
+                block-line
+                block-node
+                show-line
+                :data="treeData"
+                :selected-keys="state.selectedTreeKeys"
+                key-field="key"
+                label-field="label"
+                children-field="children"
+                @update:selected-keys="handleTreeSelect"
+              />
+            </NScrollbar>
+          </NSpin>
+        </div>
       </NFlex>
     </ProCard>
 
@@ -514,14 +458,15 @@ function currentTime() {
 
       <ProDataTable
         class="min-h-0 flex-1"
+        remote
         :title="t('pages.sys.dict.title')"
         row-key="id"
-        :scroll-x="1540"
+        :scroll-x="1590"
         :columns="tableColumns"
-        :data="pagedTableData"
-        :loading="loading"
+        :data="state.dicts"
+        :loading="state.loading"
         :pagination="pagination"
-        :checked-row-keys="checkedRowKeys"
+        :checked-row-keys="state.checkedRowKeys"
         :on-update-checked-row-keys="handleCheckedRowKeys"
       >
         <template #toolbar>
@@ -534,7 +479,7 @@ function currentTime() {
               </template>
               {{ t('pages.sys.dict.addDict') }}
             </NButton>
-            <NButton ghost :loading="loading" @click="refreshDicts">
+            <NButton ghost :loading="state.loading || state.treeLoading" @click="refreshData">
               <template #icon>
                 <NIcon>
                   <Icon icon="ant-design:reload-outlined" />
@@ -546,17 +491,18 @@ function currentTime() {
               type="error"
               ghost
               :disabled="!hasCheckedRows"
-              @click="confirmDeleteDicts(checkedRowKeys)"
+              @click="confirmDelete(state.checkedRowKeys)"
             >
               {{ t('common.often.batchDelete') }}
-              {{ t('common.often.total', { count: checkedRowKeys.length }) }}
+              {{ t('common.often.total', { count: state.checkedRowKeys.length }) }}
             </NButton>
           </NFlex>
         </template>
       </ProDataTable>
     </NFlex>
 
-    <ModalForm ref="formModalRef" :dicts="dicts" @saved="handleSaveDict" />
+    <ModalForm ref="formModalRef" :dicts="flatTreeDicts" @saved="handleSaved" />
+    <ModalDetail ref="detailModalRef" />
   </div>
 </template>
 
@@ -564,12 +510,77 @@ function currentTime() {
 .dict-page {
   display: grid;
   grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 16px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dict-page > * {
+  min-height: 0;
+  min-width: 0;
+}
+
+.dict-tree-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dict-tree-card :deep(.n-card__content),
+.dict-tree-card :deep(.n-card-content) {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dict-tree-card :deep(.n-pro-collapse-transition) {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dict-tree-layout {
+  flex: 1 1 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dict-tree-layout > :not(.dict-tree-body) {
+  flex-shrink: 0;
+}
+
+.dict-tree-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dict-tree-spin,
+.dict-tree-body :deep(.dict-tree-spin-content),
+.dict-tree-body :deep(.n-spin-container),
+.dict-tree-body :deep(.n-spin-content) {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dict-tree-scroll {
+  flex: 1 1 0;
   height: 100%;
   min-height: 0;
 }
 
-.dict-tree-card {
+.dict-tree-scroll :deep(.n-scrollbar-container),
+.dict-tree-scroll :deep(.dict-tree-scroll-content) {
   min-height: 0;
 }
 

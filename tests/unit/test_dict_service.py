@@ -4,7 +4,7 @@ from app.core.config.enums import StatusEnum
 from app.core.exceptions.business import NotFoundError
 from app.core.response.pagination import PageQuery
 from app.modules.dict.schema import (
-    DictAdminListQuery,
+    DictAdminPageQuery,
     DictCreateRequest,
     DictIdQuery,
     DictIdsRequest,
@@ -28,12 +28,12 @@ def _dict_create_request(**overrides) -> DictCreateRequest:
     return DictCreateRequest(**data)
 
 
-async def test_dict_service_create_list_detail_update_delete(db_session):
+async def test_dict_service_create_page_detail_update_delete(db_session):
     service = DictService(db_session)
 
     created = await service.create(_dict_create_request())
-    page = await service.list_admin(
-        DictAdminListQuery(
+    page = await service.page_admin(
+        DictAdminPageQuery(
             pagination=PageQuery(current=1, size=20),
             category="BIZ",
             status=StatusEnum.ENABLED.value,
@@ -111,3 +111,88 @@ async def test_dict_service_tree_supports_category_filter_and_orphan_roots(db_se
         "ORDER_STATUS",
         "PROFILE_ORPHAN",
     ]
+
+
+async def test_dict_service_fills_parent_id_name_in_batch(db_session):
+    service = DictService(db_session)
+    label_parent = await service.create(
+        _dict_create_request(code="PARENT_LABEL", label="Parent Label", sort=1)
+    )
+    label_child = await service.create(
+        _dict_create_request(
+            code="PARENT_LABEL_CHILD",
+            label="Label Child",
+            parent_id=label_parent.id,
+            sort=2,
+        )
+    )
+    code_parent = await service.create(
+        _dict_create_request(code="PARENT_CODE", label=None, sort=3)
+    )
+    code_child = await service.create(
+        _dict_create_request(
+            code="PARENT_CODE_CHILD",
+            label="Code Child",
+            parent_id=code_parent.id,
+            sort=4,
+        )
+    )
+
+    page = await service.page_admin(
+        DictAdminPageQuery(
+            pagination=PageQuery(current=1, size=20),
+            category="BIZ",
+            status=StatusEnum.ENABLED.value,
+        )
+    )
+    detail = await service.get(DictIdQuery(id=label_child.id))
+    tree = await service.list_tree(DictTreeQuery(category="BIZ"))
+
+    page_records = {item.id: item for item in page.records}
+    assert page_records[label_parent.id].parent_id_name is None
+    assert page_records[label_child.id].parent_id_name == "Parent Label"
+    assert page_records[code_child.id].parent_id_name == "PARENT_CODE"
+    assert detail.parent_id_name == "Parent Label"
+    assert tree[0].children[0].parent_id_name == "Parent Label"
+
+
+async def test_dict_service_parent_filter_includes_parent_and_direct_children(db_session):
+    service = DictService(db_session)
+    parent = await service.create(
+        _dict_create_request(code="COMMON_STATUS", label="Common Status", sort=1)
+    )
+    enabled = await service.create(
+        _dict_create_request(
+            code="COMMON_STATUS_ENABLED",
+            label="Enabled",
+            parent_id=parent.id,
+            sort=2,
+        )
+    )
+    disabled = await service.create(
+        _dict_create_request(
+            code="COMMON_STATUS_DISABLED",
+            label="Disabled",
+            parent_id=parent.id,
+            sort=3,
+        )
+    )
+    await service.create(
+        _dict_create_request(
+            code="COMMON_STATUS_ENABLED_CHILD",
+            label="Enabled Child",
+            parent_id=enabled.id,
+            sort=4,
+        )
+    )
+
+    page = await service.page_admin(
+        DictAdminPageQuery(
+            pagination=PageQuery(current=1, size=20),
+            category="BIZ",
+            parent_id=parent.id,
+        )
+    )
+
+    assert page.total == 3
+    assert {item.id for item in page.records} == {parent.id, enabled.id, disabled.id}

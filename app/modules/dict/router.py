@@ -9,7 +9,7 @@ from app.core.response.schema import ApiResponse, success
 from app.deps.auth import require_permission, require_scope
 from app.deps.db import get_db_session
 from app.modules.dict.schema import (
-    DictAdminListQuery,
+    DictAdminPageQuery,
     DictCreateRequest,
     DictId,
     DictIdQuery,
@@ -86,14 +86,14 @@ async def get(
 
 
 @router.get(
-    "/sys/dicts/list",
+    "/sys/dicts/page",
     dependencies=[
         # Depends(require_scope(LoginScope.ADMIN)),
-        # Depends(require_permission("sys:dict:list")),
+        # Depends(require_permission("sys:dict:page")),
     ],
     response_model=ApiResponse[PageData[SysDictSchema]],
 )
-async def lists(
+async def page(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     current: Current = 1,
     size: Size = 20,
@@ -102,14 +102,14 @@ async def lists(
     parent_id: str | None = Query(default=None, max_length=32),
     status: str | None = Query(default=None, max_length=16),
 ) -> ApiResponse[PageData[SysDictSchema]]:
-    query = DictAdminListQuery(
+    query = DictAdminPageQuery(
         pagination=PageQuery(current=current, size=size),
         code=code,
         category=category,
         parent_id=parent_id,
         status=status,
     )
-    return success(await DictService(db).list_admin(query))
+    return success(await DictService(db).page_admin(query))
 
 
 @router.get(

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { router } from '@/router'
 import { authApi } from '@/api'
+import { useDictStore } from './dict'
 import { useRouteStore } from './route'
 import { useTabStore } from './tab'
 
@@ -69,6 +70,7 @@ export const useAuthStore = defineStore('auth-store', {
 
       const routeStore = useRouteStore()
       await routeStore.initAuthRoute()
+      await useDictStore().refreshDict()
       await router.push(getSafeRedirect(redirect))
     },
 
@@ -87,6 +89,9 @@ export const useAuthStore = defineStore('auth-store', {
 
       const tabStore = useTabStore()
       tabStore.clearAllTabs()
+
+      const dictStore = useDictStore()
+      dictStore.clearDict()
     },
 
     async logout(redirect?: string) {

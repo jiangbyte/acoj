@@ -36,7 +36,7 @@ class DictIdsRequest(ApiSchema):
     ids: list[DictId] = Field(min_length=1)
 
 
-class DictAdminListQuery(ApiSchema):
+class DictAdminPageQuery(ApiSchema):
     pagination: PageQuery
     code: str | None = Field(default=None, max_length=50, pattern=r"^[A-Z0-9_]+$")
     category: DictGroupCategory | None = None
@@ -56,6 +56,7 @@ class SysDictSchema(ApiSchema):
     color: str | None = None
     category: DictGroupCategory | None = None
     parent_id: str | None = None
+    parent_id_name: str | None = None
     status: StatusEnum | str
     sort: int
     created_at: datetime
@@ -72,6 +73,7 @@ class SysDictTreeNode(ApiSchema):
     color: str | None = None
     category: DictGroupCategory | None = None
     parent_id: str | None = None
+    parent_id_name: str | None = None
     status: StatusEnum | str
     sort: int
     children: list["SysDictTreeNode"] = Field(default_factory=list)

@@ -15,47 +15,10 @@
   "interactionCount": "Interactions",
   "startAt": "Start At",
   "endAt": "End At",
-  "createdAt": "Created At",
   "addBanner": "Add Banner",
   "editBanner": "Edit Banner",
   "detailBanner": "Banner Detail",
   "deleteConfirm": "Delete this banner?",
   "batchDeleteConfirm": "Delete {count} selected banners?",
-  "required": "Please enter {field}",
-  "categories": {
-    "home": "Home",
-    "login": "Login",
-    "workplace": "Workplace",
-    "notice": "Notice",
-    "adminDashboard": "Admin Dashboard",
-    "systemUpgrade": "System Upgrade"
-  },
-  "types": {
-    "carousel": "Carousel",
-    "hero": "Hero",
-    "notice": "Notice",
-    "card": "Card",
-    "popup": "Popup",
-    "sidebar": "Sidebar"
-  },
-  "positions": {
-    "homeTop": "Home Top",
-    "homeMiddle": "Home Middle",
-    "homeBottom": "Home Bottom",
-    "loginSide": "Login Side",
-    "workplaceTop": "Workplace Top",
-    "noticeArea": "Notice Area",
-    "adminTop": "Admin Top",
-    "adminSidebar": "Admin Sidebar"
-  },
-  "displayScopes": {
-    "portal": "Portal",
-    "admin": "Admin",
-    "app": "Mobile App"
-  },
-  "linkTypes": {
-    "url": "URL",
-    "route": "Route",
-    "none": "None"
-  }
+  "required": "Please enter {field}"
 }

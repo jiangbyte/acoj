@@ -1,0 +1,110 @@
+/*
+ Navicat Premium Dump SQL
+
+ Source Server         : 8.130.8.80
+ Source Server Type    : PostgreSQL
+ Source Server Version : 170010 (170010)
+ Source Host           : 8.130.8.80:5432
+ Source Catalog        : hei_fastapi
+ Source Schema         : public
+
+ Target Server Type    : PostgreSQL
+ Target Server Version : 170010 (170010)
+ File Encoding         : 65001
+
+ Date: 27/06/2026 19:59:05
+*/
+
+
+-- ----------------------------
+-- Table structure for sys_dict
+-- ----------------------------
+DROP TABLE IF EXISTS "public"."sys_dict";
+CREATE TABLE "public"."sys_dict" (
+  "id" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "code" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
+  "label" varchar(255) COLLATE "pg_catalog"."default",
+  "value" varchar(255) COLLATE "pg_catalog"."default",
+  "color" varchar(32) COLLATE "pg_catalog"."default",
+  "category" varchar(64) COLLATE "pg_catalog"."default",
+  "parent_id" varchar(32) COLLATE "pg_catalog"."default",
+  "status" varchar(16) COLLATE "pg_catalog"."default" NOT NULL,
+  "sort" int4 NOT NULL,
+  "created_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "created_by" varchar(64) COLLATE "pg_catalog"."default",
+  "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
+  "updated_by" varchar(64) COLLATE "pg_catalog"."default"
+)
+;
+COMMENT ON COLUMN "public"."sys_dict"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_dict"."code" IS '编码';
+COMMENT ON COLUMN "public"."sys_dict"."label" IS '标签';
+COMMENT ON COLUMN "public"."sys_dict"."value" IS '值';
+COMMENT ON COLUMN "public"."sys_dict"."color" IS '颜色';
+COMMENT ON COLUMN "public"."sys_dict"."category" IS '字典组分类：字典组分类，对应 sys_dict.category 字段的取值。';
+COMMENT ON COLUMN "public"."sys_dict"."parent_id" IS '父级ID';
+COMMENT ON COLUMN "public"."sys_dict"."status" IS '状态';
+COMMENT ON COLUMN "public"."sys_dict"."sort" IS '排序';
+COMMENT ON COLUMN "public"."sys_dict"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."sys_dict"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."sys_dict"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."sys_dict"."updated_by" IS '更新人';
+
+-- ----------------------------
+-- Records of sys_dict
+-- ----------------------------
+INSERT INTO "public"."sys_dict" VALUES ('7476572700585103360', 'COMMON_STATUS', '通用状态', 'COMMON_STATUS', 'info', 'SYS', NULL, 'ENABLED', 1, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572700585103361', 'DICT_CATEGORY', '字典分类', 'DICT_CATEGORY', 'info', 'SYS', NULL, 'ENABLED', 2, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572700585103362', 'BANNER_DISPLAY_SCOPE', 'Banner 展示端', 'BANNER_DISPLAY_SCOPE', 'info', 'SYS', NULL, 'ENABLED', 10, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572700585103363', 'BANNER_CATEGORY', 'Banner 分类', 'BANNER_CATEGORY', 'info', 'SYS', NULL, 'ENABLED', 11, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572700585103364', 'BANNER_TYPE', 'Banner 类型', 'BANNER_TYPE', 'info', 'SYS', NULL, 'ENABLED', 12, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572700585103365', 'BANNER_POSITION', 'Banner 位置', 'BANNER_POSITION', 'info', 'SYS', NULL, 'ENABLED', 13, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572700585103366', 'BANNER_LINK_TYPE', 'Banner 链接类型', 'BANNER_LINK_TYPE', 'info', 'SYS', NULL, 'ENABLED', 14, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552128', 'COMMON_STATUS_ENABLED', '启用', 'ENABLED', 'success', 'SYS', '7476572700585103360', 'ENABLED', 1, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552129', 'COMMON_STATUS_DISABLED', '禁用', 'DISABLED', 'error', 'SYS', '7476572700585103360', 'ENABLED', 2, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552130', 'DICT_CATEGORY_SYS', '系统字典', 'SYS', 'success', 'SYS', '7476572700585103361', 'ENABLED', 1, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552131', 'DICT_CATEGORY_BIZ', '业务字典', 'BIZ', 'warning', 'SYS', '7476572700585103361', 'ENABLED', 2, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552132', 'BANNER_DISPLAY_SCOPE_PORTAL', '门户端', 'PORTAL', 'success', 'SYS', '7476572700585103362', 'ENABLED', 1, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552133', 'BANNER_DISPLAY_SCOPE_ADMIN', '管理端', 'ADMIN', 'info', 'SYS', '7476572700585103362', 'ENABLED', 2, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552134', 'BANNER_DISPLAY_SCOPE_APP', '移动端', 'APP', 'warning', 'SYS', '7476572700585103362', 'ENABLED', 3, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552135', 'BANNER_CATEGORY_HOME', '首页', 'HOME', 'success', 'SYS', '7476572700585103363', 'ENABLED', 1, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552136', 'BANNER_CATEGORY_LOGIN', '登录页', 'LOGIN', 'info', 'SYS', '7476572700585103363', 'ENABLED', 2, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552137', 'BANNER_CATEGORY_WORKPLACE', '工作台', 'WORKPLACE', 'primary', 'SYS', '7476572700585103363', 'ENABLED', 3, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552138', 'BANNER_CATEGORY_NOTICE', '公告', 'NOTICE', 'warning', 'SYS', '7476572700585103363', 'ENABLED', 4, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552139', 'BANNER_CATEGORY_ADMIN_DASHBOARD', '管理端工作台', 'ADMIN_DASHBOARD', 'info', 'SYS', '7476572700585103363', 'ENABLED', 5, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552140', 'BANNER_CATEGORY_SYSTEM_UPGRADE', '系统升级', 'SYSTEM_UPGRADE', 'error', 'SYS', '7476572700585103363', 'ENABLED', 6, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552141', 'BANNER_TYPE_CAROUSEL', '轮播', 'CAROUSEL', 'success', 'SYS', '7476572700585103364', 'ENABLED', 1, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552142', 'BANNER_TYPE_HERO', '首屏主图', 'HERO', 'info', 'SYS', '7476572700585103364', 'ENABLED', 2, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552143', 'BANNER_TYPE_NOTICE', '通知', 'NOTICE', 'warning', 'SYS', '7476572700585103364', 'ENABLED', 3, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552144', 'BANNER_TYPE_CARD', '卡片', 'CARD', 'primary', 'SYS', '7476572700585103364', 'ENABLED', 4, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552145', 'BANNER_TYPE_POPUP', '弹窗', 'POPUP', 'error', 'SYS', '7476572700585103364', 'ENABLED', 5, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552146', 'BANNER_TYPE_SIDEBAR', '侧栏', 'SIDEBAR', 'info', 'SYS', '7476572700585103364', 'ENABLED', 6, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552147', 'BANNER_POSITION_HOME_TOP', '首页顶部', 'HOME_TOP', 'success', 'SYS', '7476572700585103365', 'ENABLED', 1, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552148', 'BANNER_POSITION_HOME_MIDDLE', '首页中部', 'HOME_MIDDLE', 'success', 'SYS', '7476572700585103365', 'ENABLED', 2, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552149', 'BANNER_POSITION_HOME_BOTTOM', '首页底部', 'HOME_BOTTOM', 'success', 'SYS', '7476572700585103365', 'ENABLED', 3, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552150', 'BANNER_POSITION_LOGIN_SIDE', '登录页侧栏', 'LOGIN_SIDE', 'info', 'SYS', '7476572700585103365', 'ENABLED', 4, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552151', 'BANNER_POSITION_WORKPLACE_TOP', '工作台顶部', 'WORKPLACE_TOP', 'primary', 'SYS', '7476572700585103365', 'ENABLED', 5, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552152', 'BANNER_POSITION_NOTICE_AREA', '公告区域', 'NOTICE_AREA', 'warning', 'SYS', '7476572700585103365', 'ENABLED', 6, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552153', 'BANNER_POSITION_ADMIN_TOP', '管理端顶部', 'ADMIN_TOP', 'info', 'SYS', '7476572700585103365', 'ENABLED', 7, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552154', 'BANNER_POSITION_ADMIN_SIDEBAR', '管理端侧栏', 'ADMIN_SIDEBAR', 'info', 'SYS', '7476572700585103365', 'ENABLED', 8, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552155', 'BANNER_LINK_TYPE_URL', '外链', 'URL', 'success', 'SYS', '7476572700585103366', 'ENABLED', 1, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552156', 'BANNER_LINK_TYPE_ROUTE', '路由', 'ROUTE', 'info', 'SYS', '7476572700585103366', 'ENABLED', 2, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+INSERT INTO "public"."sys_dict" VALUES ('7476572701285552157', 'BANNER_LINK_TYPE_NONE', '无链接', 'NONE', 'default', 'SYS', '7476572700585103366', 'ENABLED', 3, '2026-06-27 09:50:41.104507+00', NULL, '2026-06-27 09:50:41.104507+00', NULL);
+
+-- ----------------------------
+-- Indexes structure for table sys_dict
+-- ----------------------------
+CREATE INDEX "idx_sys_dict_category" ON "public"."sys_dict" USING btree (
+  "category" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+);
+CREATE UNIQUE INDEX "idx_sys_dict_code" ON "public"."sys_dict" USING btree (
+  "code" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+);
+CREATE INDEX "idx_sys_dict_parent_id" ON "public"."sys_dict" USING btree (
+  "parent_id" COLLATE "pg_catalog"."default" "pg_catalog"."text_ops" ASC NULLS LAST
+);
+
+-- ----------------------------
+-- Primary Key structure for table sys_dict
+-- ----------------------------
+ALTER TABLE "public"."sys_dict" ADD CONSTRAINT "pk_sys_dict" PRIMARY KEY ("id");

@@ -49,14 +49,14 @@ def _payload(**overrides):
     return data
 
 
-async def test_admin_dict_create_list_detail_update_delete(client):
+async def test_admin_dict_create_page_detail_update_delete(client):
     token = "admin-dict-token"
     await _seed_admin(
         client,
         token,
         [
             "sys:dict:create",
-            "sys:dict:list",
+            "sys:dict:page",
             "sys:dict:detail",
             "sys:dict:update",
             "sys:dict:delete",
@@ -72,12 +72,12 @@ async def test_admin_dict_create_list_detail_update_delete(client):
     assert create_response.status_code == 200
     dict_id = create_response.json()["data"]["id"]
 
-    list_response = await client.get(
-        "/api/v1/admin/dict/sys/dicts/list?current=1&size=20&category=BIZ&status=ENABLED",
+    page_response = await client.get(
+        "/api/v1/admin/dict/sys/dicts/page?current=1&size=20&category=BIZ&status=ENABLED",
         headers=headers,
     )
-    assert list_response.status_code == 200
-    assert list_response.json()["data"]["total"] == 1
+    assert page_response.status_code == 200
+    assert page_response.json()["data"]["total"] == 1
 
     detail_response = await client.get(
         f"/api/v1/admin/dict/sys/dicts/detail?id={dict_id}",
@@ -147,17 +147,116 @@ async def test_admin_dict_tree_supports_optional_category(client):
     ]
 
 
-async def test_admin_dict_list_requires_permission(client):
+async def test_admin_dict_page_detail_tree_include_parent_id_name(client):
+    token = "admin-dict-parent-name-token"
+    await _seed_admin(
+        client,
+        token,
+        ["sys:dict:create", "sys:dict:page", "sys:dict:detail", "sys:dict:tree"],
+    )
+    headers = {"Authorization": token}
+
+    parent_response = await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers=headers,
+        json=_payload(code="REGION", label="Region", sort=1),
+    )
+    parent_id = parent_response.json()["data"]["id"]
+    child_response = await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers=headers,
+        json=_payload(code="REGION_CN", label="China", parent_id=parent_id, sort=2),
+    )
+    child_id = child_response.json()["data"]["id"]
+
+    page_response = await client.get(
+        "/api/v1/admin/dict/sys/dicts/page?current=1&size=20&category=BIZ",
+        headers=headers,
+    )
+    detail_response = await client.get(
+        f"/api/v1/admin/dict/sys/dicts/detail?id={child_id}",
+        headers=headers,
+    )
+    tree_response = await client.get(
+        "/api/v1/admin/dict/sys/dicts/tree?category=BIZ",
+        headers=headers,
+    )
+
+    assert page_response.status_code == 200
+    page_records = {item["id"]: item for item in page_response.json()["data"]["records"]}
+    assert page_records[parent_id]["parent_id_name"] is None
+    assert page_records[child_id]["parent_id_name"] == "Region"
+    assert detail_response.status_code == 200
+    assert detail_response.json()["data"]["parent_id_name"] == "Region"
+    assert tree_response.status_code == 200
+    assert tree_response.json()["data"][0]["children"][0]["parent_id_name"] == "Region"
+
+
+async def test_admin_dict_page_parent_filter_includes_parent_and_direct_children(client):
+    token = "admin-dict-parent-filter-token"
+    await _seed_admin(client, token, ["sys:dict:create", "sys:dict:page"])
+    headers = {"Authorization": token}
+
+    parent_response = await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers=headers,
+        json=_payload(code="COMMON_STATUS", label="Common Status", sort=1),
+    )
+    parent_id = parent_response.json()["data"]["id"]
+    enabled_response = await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers=headers,
+        json=_payload(
+            code="COMMON_STATUS_ENABLED",
+            label="Enabled",
+            parent_id=parent_id,
+            sort=2,
+        ),
+    )
+    enabled_id = enabled_response.json()["data"]["id"]
+    disabled_response = await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers=headers,
+        json=_payload(
+            code="COMMON_STATUS_DISABLED",
+            label="Disabled",
+            parent_id=parent_id,
+            sort=3,
+        ),
+    )
+    disabled_id = disabled_response.json()["data"]["id"]
+    await client.post(
+        "/api/v1/admin/dict/sys/dicts/create",
+        headers=headers,
+        json=_payload(
+            code="COMMON_STATUS_ENABLED_CHILD",
+            label="Enabled Child",
+            parent_id=enabled_id,
+            sort=4,
+        ),
+    )
+
+    page_response = await client.get(
+        f"/api/v1/admin/dict/sys/dicts/page?current=1&size=20&category=BIZ&parent_id={parent_id}",
+        headers=headers,
+    )
+
+    assert page_response.status_code == 200
+    data = page_response.json()["data"]
+    assert data["total"] == 3
+    assert {item["id"] for item in data["records"]} == {parent_id, enabled_id, disabled_id}
+
+
+async def test_admin_dict_page_without_permission_when_dependency_disabled(client):
     token = "admin-dict-no-permission-token"
     await _seed_admin(client, token, [])
 
     response = await client.get(
-        "/api/v1/admin/dict/sys/dicts/list",
+        "/api/v1/admin/dict/sys/dicts/page",
         headers={"Authorization": token},
     )
 
-    assert response.status_code == 403
-    assert response.json()["message"] == "Permission denied: sys:dict:list"
+    assert response.status_code == 200
 
 
 async def test_admin_dict_rejects_invalid_code(client):
