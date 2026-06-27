@@ -31,9 +31,6 @@ function getInitialLang(): App.Lang {
  */
 export const useAppStore = defineStore('app-store', {
   state: () => ({
-    // 页脚展示文本，来源于 .env 的 VITE_COPYRIGHT_INFO。
-    footerText: import.meta.env.VITE_COPYRIGHT_INFO,
-
     // 侧边栏是否折叠。
     collapsed: false,
 

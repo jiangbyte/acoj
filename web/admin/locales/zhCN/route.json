@@ -1,6 +1,8 @@
 {
   "appRoot": "首页",
   "dashboard": "工作台",
+  "sys": "系统管理",
+  "sys_user": "用户管理",
   "demo": "示例页面",
   "demo_overview": "示例总览",
   "demo_list": "列表示例",

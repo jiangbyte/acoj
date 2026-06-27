@@ -1,0 +1,23 @@
+{
+  "title": "User List",
+  "id": "User ID",
+  "username": "Username",
+  "nickname": "User Nickname",
+  "nicknameShort": "Nickname",
+  "gender": "Gender",
+  "email": "Email",
+  "phone": "Phone Number",
+  "password": "Password",
+  "role": "Role",
+  "addUser": "Add User",
+  "editUser": "Edit User",
+  "detailUser": "User Detail",
+  "createTime": "Created At",
+  "usernameTooltip": "Username",
+  "roles": {
+    "superAdmin": "Super Admin",
+    "admin": "System Admin",
+    "problemAdmin": "Problem Admin",
+    "user": "Regular User"
+  }
+}

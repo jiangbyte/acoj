@@ -93,11 +93,7 @@ async function handleSubmit() {
   <AuthLayout :title="t('auth.registerTitle')" :subtitle="t('auth.registerSubtitle')">
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
       <n-form-item path="account" :label="t('auth.account')">
-        <n-input
-          v-model:value="form.account"
-          :placeholder="t('auth.accountPlaceholder')"
-          clearable
-        >
+        <n-input v-model:value="form.account" :placeholder="t('auth.accountPlaceholder')" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>
@@ -149,7 +145,14 @@ async function handleSubmit() {
         </n-checkbox>
       </n-form-item>
 
-      <n-button class="auth-submit" type="primary" size="large" block attr-type="submit" :loading="loading">
+      <n-button
+        class="auth-submit"
+        type="primary"
+        size="large"
+        block
+        attr-type="submit"
+        :loading="loading"
+      >
         {{ t('auth.register') }}
       </n-button>
 

@@ -236,7 +236,12 @@ function handleMouseEnter(index: number) {
         </n-el>
       </ul>
 
-      <n-empty v-else size="large" class="h-450px flex-center" :description="t('app.searchEmpty')" />
+      <n-empty
+        v-else
+        size="large"
+        class="h-450px flex-center"
+        :description="t('app.searchEmpty')"
+      />
     </n-scrollbar>
 
     <template #footer>

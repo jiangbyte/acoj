@@ -33,6 +33,7 @@
     "@types/node": "^26.0.1",
     "@unocss/reset": "^66.7.2",
     "@vitejs/plugin-vue": "^6.0.7",
+    "@vitejs/plugin-vue-jsx": "^5.1.6",
     "@vue/tsconfig": "^0.9.1",
     "eslint": "^10.5.0",
     "eslint-plugin-vue": "^10.9.2",
