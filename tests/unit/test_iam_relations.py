@@ -5,21 +5,51 @@ from app.core.config.enums import (
     RoleScopeType,
     UserType,
 )
-from app.modules.iam.model import SysAccount
-from app.modules.iam.schema import (
-    AccountRoleAssignRequest,
-    GroupCreateRequest,
-    GroupRoleAssignRequest,
-    ResourceCreateRequest,
-    ResourcePermissionBindRequest,
-    RoleCreateRequest,
-    SubjectResourceGrantRequest,
-)
-from app.modules.iam.service import IAMService
+from sqlalchemy import select
+
+from app.modules.iam.account.model import SysAccount
+from app.modules.iam.account.schema import AccountRoleAssignRequest
+from app.modules.iam.account.service import AccountService
+from app.modules.iam.grant.schema import SubjectResourceGrantRequest
+from app.modules.iam.grant.service import GrantService
+from app.modules.iam.group.schema import GroupCreateRequest, GroupRoleAssignRequest
+from app.modules.iam.group.service import GroupService
+from app.modules.iam.group.model import SysGroup
+from app.modules.iam.resource.model import SysResource
+from app.modules.iam.resource.schema import ResourceCreateRequest, ResourcePermissionBindRequest
+from app.modules.iam.resource.service import ResourceService
+from app.modules.iam.role.model import SysRole
+from app.modules.iam.role.schema import RoleCreateRequest
+from app.modules.iam.role.service import RoleService
+
+
+async def _create_role(db_session, payload: RoleCreateRequest) -> str:
+    await RoleService(db_session).create(payload)
+    stmt = select(SysRole.id).where(SysRole.code == payload.code)
+    role_id = (await db_session.execute(stmt)).scalar_one()
+    await db_session.rollback()
+    return role_id
+
+
+async def _create_resource(db_session, payload: ResourceCreateRequest) -> str:
+    await ResourceService(db_session).create(payload)
+    stmt = select(SysResource.id).where(SysResource.code == payload.code)
+    resource_id = (await db_session.execute(stmt)).scalar_one()
+    await db_session.rollback()
+    return resource_id
+
+
+async def _create_group(db_session, payload: GroupCreateRequest) -> str:
+    await GroupService(db_session).create(payload)
+    stmt = select(SysGroup.id).where(SysGroup.name == payload.name)
+    group_id = (await db_session.execute(stmt)).scalar_one()
+    await db_session.rollback()
+    return group_id
 
 
 async def test_assign_account_role_success(db_session):
-    role = await IAMService(db_session).create_role(
+    role_id = await _create_role(
+        db_session,
         RoleCreateRequest(
             code="r1",
             name="Role1",
@@ -38,12 +68,12 @@ async def test_assign_account_role_success(db_session):
     db_session.add(account)
     await db_session.flush()
     await db_session.commit()
-    relation = await IAMService(db_session).assign_account_role(
-        AccountRoleAssignRequest(account_id=account.id, role_id=role.id)
+    relation = await AccountService(db_session).assign_account_role(
+        AccountRoleAssignRequest(account_id=account.id, role_id=role_id)
     )
     await db_session.commit()
     assert relation.account_id == account.id
-    assert relation.role_id == role.id
+    assert relation.role_id == role_id
 
 
 async def test_bind_resource_permission_success(db_session, monkeypatch):
@@ -58,11 +88,12 @@ async def test_bind_resource_permission_success(db_session, monkeypatch):
         }
 
     monkeypatch.setattr(
-        "app.modules.iam.service.get_permission_definition",
+        "app.modules.iam.permission.service.get_permission_definition",
         fake_get_permission_definition,
     )
 
-    resource = await IAMService(db_session).create_resource(
+    resource_id = await _create_resource(
+        db_session,
         ResourceCreateRequest(
             code="iam:button:create",
             name="Create Button",
@@ -70,19 +101,21 @@ async def test_bind_resource_permission_success(db_session, monkeypatch):
             module="iam",
         )
     )
-    relation = await IAMService(db_session).bind_resource_permission(
-        ResourcePermissionBindRequest(resource_id=resource.id, permission_key="iam:account:create")
+    relation = await ResourceService(db_session).bind_resource_permission(
+        ResourcePermissionBindRequest(resource_id=resource_id, permission_key="iam:account:create")
     )
     await db_session.commit()
-    assert relation.resource_id == resource.id
+    assert relation.resource_id == resource_id
     assert relation.permission_key == "iam:account:create"
 
 
 async def test_assign_group_role_success(db_session):
-    group = await IAMService(db_session).create_group(
+    group_id = await _create_group(
+        db_session,
         GroupCreateRequest(name="Group1", description="Test group")
     )
-    role = await IAMService(db_session).create_role(
+    role_id = await _create_role(
+        db_session,
         RoleCreateRequest(
             code="r3",
             name="Role3",
@@ -90,16 +123,17 @@ async def test_assign_group_role_success(db_session):
             scope_type=RoleScopeType.PLATFORM.value,
         )
     )
-    relation = await IAMService(db_session).assign_group_role(
-        GroupRoleAssignRequest(group_id=group.id, role_id=role.id)
+    relation = await GroupService(db_session).assign_group_role(
+        GroupRoleAssignRequest(group_id=group_id, role_id=role_id)
     )
     await db_session.commit()
-    assert relation.group_id == group.id
-    assert relation.role_id == role.id
+    assert relation.group_id == group_id
+    assert relation.role_id == role_id
 
 
 async def test_grant_subject_resource_success(db_session):
-    role = await IAMService(db_session).create_role(
+    role_id = await _create_role(
+        db_session,
         RoleCreateRequest(
             code="r4",
             name="Role4",
@@ -107,7 +141,8 @@ async def test_grant_subject_resource_success(db_session):
             scope_type=RoleScopeType.PLATFORM.value,
         )
     )
-    resource = await IAMService(db_session).create_resource(
+    resource_id = await _create_resource(
+        db_session,
         ResourceCreateRequest(
             code="iam:resource:grant",
             name="Grant Resource",
@@ -115,13 +150,13 @@ async def test_grant_subject_resource_success(db_session):
             module="iam",
         )
     )
-    relation = await IAMService(db_session).grant_subject_resource(
+    relation = await GrantService(db_session).grant_subject_resource(
         SubjectResourceGrantRequest(
             subject_type=GrantSubjectType.ROLE.value,
-            subject_id=role.id,
-            resource_id=resource.id,
+            subject_id=role_id,
+            resource_id=resource_id,
         )
     )
     await db_session.commit()
-    assert relation.subject_id == role.id
-    assert relation.resource_id == resource.id
+    assert relation.subject_id == role_id
+    assert relation.resource_id == resource_id

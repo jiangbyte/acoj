@@ -26,13 +26,14 @@ router = APIRouter()
         # Depends(require_scope(LoginScope.ADMIN)),
         # Depends(require_permission("sys:banner:create")),
     ],
-    response_model=ApiResponse[SysBannerSchema],
+    response_model=ApiResponse[None],
 )
 async def create(
     payload: BannerCreateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-) -> ApiResponse[SysBannerSchema]:
-    return success(await BannerService(db).create(payload))
+) -> ApiResponse[None]:
+    await BannerService(db).create(payload)
+    return success()
 
 
 @router.post(
@@ -41,13 +42,14 @@ async def create(
         # Depends(require_scope(LoginScope.ADMIN)),
         # Depends(require_permission("sys:banner:update")),
     ],
-    response_model=ApiResponse[SysBannerSchema],
+    response_model=ApiResponse[None],
 )
 async def update(
     payload: BannerUpdateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-) -> ApiResponse[SysBannerSchema]:
-    return success(await BannerService(db).update(payload))
+) -> ApiResponse[None]:
+    await BannerService(db).update(payload)
+    return success()
 
 
 @router.post(
@@ -56,14 +58,14 @@ async def update(
         # Depends(require_scope(LoginScope.ADMIN)),
         # Depends(require_permission("sys:banner:delete")),
     ],
-    response_model=ApiResponse[list[str]],
+    response_model=ApiResponse[None],
 )
 async def delete(
     payload: IdsRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-) -> ApiResponse[list[str]]:
-    deleted_ids = await BannerService(db).delete(payload)
-    return success(deleted_ids)
+) -> ApiResponse[None]:
+    await BannerService(db).delete(payload)
+    return success()
 
 
 @router.get(
@@ -74,11 +76,11 @@ async def delete(
     ],
     response_model=ApiResponse[SysBannerSchema],
 )
-async def get(
+async def detail(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     id: Annotated[Id, Query()],
 ) -> ApiResponse[SysBannerSchema]:
-    return success(await BannerService(db).get(IdQuery(id=id)))
+    return success(await BannerService(db).detail(IdQuery(id=id)))
 
 
 @router.get(

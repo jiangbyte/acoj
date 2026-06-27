@@ -1,6 +1,7 @@
 import json
 
 from fastapi import FastAPI
+from sqlalchemy import select
 
 from app.core.config.enums import ResourceType
 from app.core.exceptions.business import BusinessError
@@ -13,8 +14,9 @@ from app.core.security.permission_registry import (
 )
 from app.deps.auth import require_permission, require_scope
 from app.factory import create_app
-from app.modules.iam.schema import ResourceCreateRequest, ResourcePermissionBindRequest
-from app.modules.iam.service import IAMService
+from app.modules.iam.resource.model import SysResource
+from app.modules.iam.resource.schema import ResourceCreateRequest, ResourcePermissionBindRequest
+from app.modules.iam.resource.service import ResourceService
 from app.platform.cache.keys import (
     permission_registry_module_resources_key,
     permission_registry_modules_key,
@@ -114,10 +116,10 @@ def test_scan_permission_registry_collects_routes():
 
     items = scan_permission_registry(app)
 
-    assert any(item.permission_key == "iam:account:list" for item in items)
+    assert any(item.permission_key == "iam:account:page" for item in items)
     file_list = next(item for item in items if item.permission_key == "file:list")
     assert file_list.module == "file"
-    assert "/api/v1/admin/file/list" in [route_ref.path for route_ref in file_list.routes]
+    assert "/api/v1/admin/list" in [route_ref.path for route_ref in file_list.routes]
     assert "admin" in file_list.login_scopes
 
 
@@ -137,7 +139,7 @@ async def test_sync_and_resolve_permission_registry(monkeypatch):
     assert definition is not None
     assert definition.permission_key == "iam:permission:list"
     assert any(
-        route_ref.path == "/api/v1/admin/iam/permissions/registry"
+        route_ref.path == "/api/v1/admin/permissions/registry"
         for route_ref in definition.routes
     )
 
@@ -154,23 +156,29 @@ async def test_bind_resource_permission_requires_registered_permission(db_sessio
         return None
 
     monkeypatch.setattr(
-        "app.modules.iam.service.get_permission_definition",
+        "app.modules.iam.permission.service.get_permission_definition",
         fake_get_permission_definition,
     )
 
-    service = IAMService(db_session)
-    resource = await service.create_resource(
+    service = ResourceService(db_session)
+    await service.create(
         ResourceCreateRequest(
             code="iam:resource:test",
             name="test",
             resource_type=ResourceType.BUTTON,
         )
     )
+    resource_id = (
+        await db_session.execute(
+            select(SysResource.id).where(SysResource.code == "iam:resource:test")
+        )
+    ).scalar_one()
+    await db_session.rollback()
 
     try:
         await service.bind_resource_permission(
             ResourcePermissionBindRequest(
-                resource_id=resource.id,
+                resource_id=resource_id,
                 permission_key="missing:permission",
             )
         )

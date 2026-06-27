@@ -1,7 +1,7 @@
 from app.core.config.enums import AccountStatusEnum, LoginScope, UserType
 from app.core.security.session import SessionPayload, session_store
 from app.modules.file.model import SysFile
-from app.modules.iam.model import SysAccount
+from app.modules.iam.account.model import SysAccount
 
 
 async def test_admin_file_list_uses_current_size_total_pages_records(client):
@@ -46,7 +46,7 @@ async def test_admin_file_list_uses_current_size_total_pages_records(client):
         break
 
     response = await client.get(
-        "/api/v1/admin/file/list?current=1&size=20",
+        "/api/v1/admin/list?current=1&size=20",
         headers={"Authorization": "admin-pagination-token"},
     )
 

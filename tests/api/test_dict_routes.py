@@ -1,7 +1,7 @@
 from app.core.config.enums import AccountStatusEnum, LoginScope, UserType
 from app.core.security.session import SessionPayload, session_store
 from app.deps.db import get_db_session
-from app.modules.iam.model import SysAccount
+from app.modules.iam.account.model import SysAccount
 
 
 async def _seed_admin(client, token: str, permissions: list[str]) -> None:
@@ -49,6 +49,17 @@ def _payload(**overrides):
     return data
 
 
+async def _dict_record_by_code(client, headers: dict[str, str], code: str):
+    response = await client.get(
+        f"/api/v1/admin/sys/dicts/page?current=1&size=20&code={code}",
+        headers=headers,
+    )
+    assert response.status_code == 200
+    records = response.json()["data"]["records"]
+    assert records
+    return records[0]
+
+
 async def test_admin_dict_create_page_detail_update_delete(client):
     token = "admin-dict-token"
     await _seed_admin(
@@ -65,57 +76,64 @@ async def test_admin_dict_create_page_detail_update_delete(client):
     headers = {"Authorization": token}
 
     create_response = await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers=headers,
         json=_payload(),
     )
     assert create_response.status_code == 200
-    dict_id = create_response.json()["data"]["id"]
+    assert create_response.json()["data"] is None
 
     page_response = await client.get(
-        "/api/v1/admin/dict/sys/dicts/page?current=1&size=20&category=BIZ&status=ENABLED",
+        "/api/v1/admin/sys/dicts/page?current=1&size=20&category=BIZ&status=ENABLED",
         headers=headers,
     )
     assert page_response.status_code == 200
     assert page_response.json()["data"]["total"] == 1
+    dict_id = page_response.json()["data"]["records"][0]["id"]
 
     detail_response = await client.get(
-        f"/api/v1/admin/dict/sys/dicts/detail?id={dict_id}",
+        f"/api/v1/admin/sys/dicts/detail?id={dict_id}",
         headers=headers,
     )
     assert detail_response.status_code == 200
     assert detail_response.json()["data"]["code"] == "PROFILE_GENDER"
 
     update_response = await client.post(
-        "/api/v1/admin/dict/sys/dicts/update",
+        "/api/v1/admin/sys/dicts/update",
         headers=headers,
         json=_payload(id=dict_id, label="Gender Updated", status="DISABLED"),
     )
     assert update_response.status_code == 200
-    assert update_response.json()["data"]["label"] == "Gender Updated"
+    assert update_response.json()["data"] is None
+    updated_detail_response = await client.get(
+        f"/api/v1/admin/sys/dicts/detail?id={dict_id}",
+        headers=headers,
+    )
+    assert updated_detail_response.json()["data"]["label"] == "Gender Updated"
 
     delete_response = await client.post(
-        "/api/v1/admin/dict/sys/dicts/delete",
+        "/api/v1/admin/sys/dicts/delete",
         headers=headers,
         json={"ids": [dict_id]},
     )
     assert delete_response.status_code == 200
-    assert delete_response.json()["data"] == [dict_id]
+    assert delete_response.json()["data"] is None
 
 
 async def test_admin_dict_tree_supports_optional_category(client):
     token = "admin-dict-tree-token"
-    await _seed_admin(client, token, ["sys:dict:create", "sys:dict:tree"])
+    await _seed_admin(client, token, ["sys:dict:create", "sys:dict:page", "sys:dict:tree"])
     headers = {"Authorization": token}
 
     root_response = await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers=headers,
         json=_payload(code="PROFILE_GENDER", label="Gender", sort=1),
     )
-    root_id = root_response.json()["data"]["id"]
+    assert root_response.json()["data"] is None
+    root_id = (await _dict_record_by_code(client, headers, "PROFILE_GENDER"))["id"]
     await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers=headers,
         json=_payload(
             code="PROFILE_GENDER_MALE",
@@ -126,16 +144,16 @@ async def test_admin_dict_tree_supports_optional_category(client):
         ),
     )
     await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers=headers,
         json=_payload(code="ORDER_STATUS", label="Order Status", category="SYS", sort=3),
     )
 
     profile_response = await client.get(
-        "/api/v1/admin/dict/sys/dicts/tree?category=BIZ",
+        "/api/v1/admin/sys/dicts/tree?category=BIZ",
         headers=headers,
     )
-    all_response = await client.get("/api/v1/admin/dict/sys/dicts/tree", headers=headers)
+    all_response = await client.get("/api/v1/admin/sys/dicts/tree", headers=headers)
 
     assert profile_response.status_code == 200
     assert [node["code"] for node in profile_response.json()["data"]] == ["PROFILE_GENDER"]
@@ -157,28 +175,30 @@ async def test_admin_dict_page_detail_tree_include_parent_id_name(client):
     headers = {"Authorization": token}
 
     parent_response = await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers=headers,
         json=_payload(code="REGION", label="Region", sort=1),
     )
-    parent_id = parent_response.json()["data"]["id"]
+    assert parent_response.json()["data"] is None
+    parent_id = (await _dict_record_by_code(client, headers, "REGION"))["id"]
     child_response = await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers=headers,
         json=_payload(code="REGION_CN", label="China", parent_id=parent_id, sort=2),
     )
-    child_id = child_response.json()["data"]["id"]
+    assert child_response.json()["data"] is None
+    child_id = (await _dict_record_by_code(client, headers, "REGION_CN"))["id"]
 
     page_response = await client.get(
-        "/api/v1/admin/dict/sys/dicts/page?current=1&size=20&category=BIZ",
+        "/api/v1/admin/sys/dicts/page?current=1&size=20&category=BIZ",
         headers=headers,
     )
     detail_response = await client.get(
-        f"/api/v1/admin/dict/sys/dicts/detail?id={child_id}",
+        f"/api/v1/admin/sys/dicts/detail?id={child_id}",
         headers=headers,
     )
     tree_response = await client.get(
-        "/api/v1/admin/dict/sys/dicts/tree?category=BIZ",
+        "/api/v1/admin/sys/dicts/tree?category=BIZ",
         headers=headers,
     )
 
@@ -198,13 +218,14 @@ async def test_admin_dict_page_parent_filter_includes_parent_and_direct_children
     headers = {"Authorization": token}
 
     parent_response = await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers=headers,
         json=_payload(code="COMMON_STATUS", label="Common Status", sort=1),
     )
-    parent_id = parent_response.json()["data"]["id"]
+    assert parent_response.json()["data"] is None
+    parent_id = (await _dict_record_by_code(client, headers, "COMMON_STATUS"))["id"]
     enabled_response = await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers=headers,
         json=_payload(
             code="COMMON_STATUS_ENABLED",
@@ -213,9 +234,10 @@ async def test_admin_dict_page_parent_filter_includes_parent_and_direct_children
             sort=2,
         ),
     )
-    enabled_id = enabled_response.json()["data"]["id"]
+    assert enabled_response.json()["data"] is None
+    enabled_id = (await _dict_record_by_code(client, headers, "COMMON_STATUS_ENABLED"))["id"]
     disabled_response = await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers=headers,
         json=_payload(
             code="COMMON_STATUS_DISABLED",
@@ -224,9 +246,10 @@ async def test_admin_dict_page_parent_filter_includes_parent_and_direct_children
             sort=3,
         ),
     )
-    disabled_id = disabled_response.json()["data"]["id"]
+    assert disabled_response.json()["data"] is None
+    disabled_id = (await _dict_record_by_code(client, headers, "COMMON_STATUS_DISABLED"))["id"]
     await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers=headers,
         json=_payload(
             code="COMMON_STATUS_ENABLED_CHILD",
@@ -237,7 +260,7 @@ async def test_admin_dict_page_parent_filter_includes_parent_and_direct_children
     )
 
     page_response = await client.get(
-        f"/api/v1/admin/dict/sys/dicts/page?current=1&size=20&category=BIZ&parent_id={parent_id}",
+        f"/api/v1/admin/sys/dicts/page?current=1&size=20&category=BIZ&parent_id={parent_id}",
         headers=headers,
     )
 
@@ -252,7 +275,7 @@ async def test_admin_dict_page_without_permission_when_dependency_disabled(clien
     await _seed_admin(client, token, [])
 
     response = await client.get(
-        "/api/v1/admin/dict/sys/dicts/page",
+        "/api/v1/admin/sys/dicts/page",
         headers={"Authorization": token},
     )
 
@@ -264,7 +287,7 @@ async def test_admin_dict_rejects_invalid_code(client):
     await _seed_admin(client, token, ["sys:dict:create"])
 
     response = await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers={"Authorization": token},
         json=_payload(code="COMMON-STATUS"),
     )
@@ -277,7 +300,7 @@ async def test_admin_dict_rejects_non_standard_category(client):
     await _seed_admin(client, token, ["sys:dict:create"])
 
     response = await client.post(
-        "/api/v1/admin/dict/sys/dicts/create",
+        "/api/v1/admin/sys/dicts/create",
         headers={"Authorization": token},
         json=_payload(category="OTHER"),
     )

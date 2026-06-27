@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import event
+from sqlalchemy import event, select
 
 from app.core.config.enums import StatusEnum
 from app.core.schema.base import IdQuery
@@ -40,9 +40,9 @@ def _banner_create_request(**overrides) -> BannerCreateRequest:
         "title": "Home Banner",
         "image": "https://example.com/banner.png",
         "url": "https://example.com",
-        "category": "home",
-        "type": "carousel",
-        "position": "home_top",
+        "category": "HOME",
+        "type": "CAROUSEL",
+        "position": "HOME_TOP",
         "display_scope": "PORTAL",
         "sort": 10,
         "status": StatusEnum.ENABLED,
@@ -51,29 +51,39 @@ def _banner_create_request(**overrides) -> BannerCreateRequest:
     return BannerCreateRequest(**data)
 
 
+async def _create_banner(db_session, service: BannerService, **overrides) -> str:
+    await service.create(_banner_create_request(**overrides))
+    title = overrides.get("title", "Home Banner")
+    stmt = select(SysBanner.id).where(SysBanner.title == title)
+    banner_id = (await db_session.execute(stmt)).scalar_one()
+    await db_session.rollback()
+    return banner_id
+
+
 async def test_public_banner_filters_time_status_scope_and_sorts(db_session):
     service = BannerService(db_session)
     now = datetime.now(UTC)
-    visible_late = await service.create(_banner_create_request(title="B", sort=20))
-    visible_first = await service.create(_banner_create_request(title="A", sort=1))
+    visible_late_id = await _create_banner(db_session, service, title="B", sort=20)
+    visible_first_id = await _create_banner(db_session, service, title="A", sort=1)
     await service.create(_banner_create_request(title="Admin", display_scope="ADMIN"))
     await service.create(_banner_create_request(title="Disabled", status=StatusEnum.DISABLED))
     await service.create(_banner_create_request(title="Future", start_at=now + timedelta(days=1)))
     await service.create(_banner_create_request(title="Expired", end_at=now - timedelta(days=1)))
 
-    items = await service.list_public(BannerPublicListQuery(position="home_top"))
+    items = await service.list_public(BannerPublicListQuery(position="HOME_TOP"))
 
-    assert [item.id for item in items] == [visible_first.id, visible_late.id]
+    assert [item.id for item in items] == [visible_first_id, visible_late_id]
 
 
 async def test_record_interaction_writes_redis_delta(db_session, monkeypatch):
     fake_redis = FakeRedis()
     monkeypatch.setattr("app.modules.banner.service.get_redis", lambda: fake_redis)
 
-    banner = await BannerService(db_session).create(_banner_create_request())
-    await BannerService(db_session).record_interaction(IdQuery(id=banner.id))
+    service = BannerService(db_session)
+    banner_id = await _create_banner(db_session, service)
+    await service.record_interaction(IdQuery(id=banner_id))
 
-    assert fake_redis.hashes[banner_interaction_delta_key()][banner.id] == "1"
+    assert fake_redis.hashes[banner_interaction_delta_key()][banner_id] == "1"
 
 
 async def test_flush_interaction_deltas_accumulates_and_clears(db_session):

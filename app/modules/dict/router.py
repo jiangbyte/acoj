@@ -30,13 +30,14 @@ router = APIRouter()
         # Depends(require_scope(LoginScope.ADMIN)),
         # Depends(require_permission("sys:dict:create")),
     ],
-    response_model=ApiResponse[SysDictSchema],
+    response_model=ApiResponse[None],
 )
 async def create(
     payload: DictCreateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-) -> ApiResponse[SysDictSchema]:
-    return success(await DictService(db).create(payload))
+) -> ApiResponse[None]:
+    await DictService(db).create(payload)
+    return success()
 
 
 @router.post(
@@ -45,13 +46,14 @@ async def create(
         # Depends(require_scope(LoginScope.ADMIN)),
         # Depends(require_permission("sys:dict:update")),
     ],
-    response_model=ApiResponse[SysDictSchema],
+    response_model=ApiResponse[None],
 )
 async def update(
     payload: DictUpdateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-) -> ApiResponse[SysDictSchema]:
-    return success(await DictService(db).update(payload))
+) -> ApiResponse[None]:
+    await DictService(db).update(payload)
+    return success()
 
 
 @router.post(
@@ -60,14 +62,14 @@ async def update(
         # Depends(require_scope(LoginScope.ADMIN)),
         # Depends(require_permission("sys:dict:delete")),
     ],
-    response_model=ApiResponse[list[str]],
+    response_model=ApiResponse[None],
 )
 async def delete(
     payload: DictIdsRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-) -> ApiResponse[list[str]]:
-    deleted_ids = await DictService(db).delete(payload)
-    return success(deleted_ids)
+) -> ApiResponse[None]:
+    await DictService(db).delete(payload)
+    return success()
 
 
 @router.get(

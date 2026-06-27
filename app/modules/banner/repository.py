@@ -21,11 +21,10 @@ class BannerRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create(self, payload: BannerCreateRequest) -> SysBanner:
+    async def create(self, payload: BannerCreateRequest) -> None:
         entity = SysBanner(**payload.model_dump())
         self.db.add(entity)
         await self.db.flush()
-        return entity
 
     async def get_by_id(self, banner_id: str) -> SysBanner | None:
         return await self.db.get(SysBanner, banner_id)
@@ -36,23 +35,20 @@ class BannerRepository:
             raise NotFoundError("Banner not found")
         return entity
 
-    async def update(self, payload: BannerUpdateRequest) -> SysBanner:
+    async def update(self, payload: BannerUpdateRequest) -> None:
         entity = await self.get_required(payload.id)
         data = payload.model_dump(exclude={"id"})
         for key, value in data.items():
             setattr(entity, key, value)
         await self.db.flush()
-        await self.db.refresh(entity)
-        return entity
 
-    async def delete_many(self, banner_ids: list[str]) -> list[str]:
+    async def delete_many(self, banner_ids: list[str]) -> None:
         unique_ids = list(dict.fromkeys(banner_ids))
         stmt = select(SysBanner.id).where(SysBanner.id.in_(unique_ids))
         existing_ids = set((await self.db.execute(stmt)).scalars().all())
         if len(existing_ids) != len(unique_ids):
             raise NotFoundError("Banner not found")
         await self.db.execute(delete(SysBanner).where(SysBanner.id.in_(unique_ids)))
-        return unique_ids
 
     async def page_admin(self, query: BannerAdminPageQuery) -> tuple[list[SysBanner], int]:
         stmt: Select[tuple[SysBanner]] = select(SysBanner)
