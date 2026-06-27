@@ -1,6 +1,6 @@
 import { http } from '@/utils'
 
-const bannerPrefix = '/api/v1/admin/banner/sys/banners'
+const bannerPrefix = '/api/v1/admin/sys/banners'
 
 export function page(params: any) {
   return http.get<any>(`${bannerPrefix}/page`, {

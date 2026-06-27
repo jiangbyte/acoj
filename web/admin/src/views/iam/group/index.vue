@@ -2,7 +2,7 @@
 import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
-import { accountApi } from '@/api'
+import { groupApi } from '@/api'
 import { createTagColor, normalizeSearchValues } from '@/utils'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
@@ -16,7 +16,7 @@ const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
 const state = reactive({
-  accounts: [] as any[],
+  groups: [] as any[],
   total: 0,
   loading: false,
   searchValues: {} as any,
@@ -29,10 +29,7 @@ const searchForm = createProSearchForm<any>({
   defaultCollapsed: true,
   onSubmit(values) {
     state.searchValues = normalizeSearchValues(values, {
-      account: (value) => String(value).trim(),
       name: (value) => String(value).trim(),
-      phone: (value) => String(value).trim(),
-      email: (value) => String(value).trim(),
     })
     state.page = 1
     fetchPage()
@@ -46,39 +43,16 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('pages.sys.account.account'),
-    path: 'account',
-    field: 'input',
-  },
-  {
-    title: t('pages.sys.account.name'),
+    title: t('pages.iam.group.name'),
     path: 'name',
     field: 'input',
   },
   {
-    title: t('pages.sys.account.phone'),
-    path: 'phone',
-    field: 'input',
-  },
-  {
-    title: t('pages.sys.account.email'),
-    path: 'email',
-    field: 'input',
-  },
-  {
-    title: t('pages.sys.account.accountType'),
-    path: 'account_type',
+    title: t('common.often.status'),
+    path: 'status',
     field: 'select',
     fieldProps: {
-      options: dictList('ACCOUNT_TYPE'),
-    },
-  },
-  {
-    title: t('pages.sys.account.accountStatus'),
-    path: 'account_status',
-    field: 'select',
-    fieldProps: {
-      options: dictList('ACCOUNT_STATUS'),
+      options: dictList('COMMON_STATUS'),
     },
   },
 ])
@@ -115,78 +89,30 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.sys.account.account'),
-    path: 'account',
-    width: 140,
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
-    title: t('pages.sys.account.name'),
+    title: t('pages.iam.group.name'),
     path: 'name',
-    width: 130,
+    width: 180,
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('pages.sys.account.nickname'),
-    path: 'nickname',
-    width: 130,
+    title: t('pages.iam.group.description'),
+    path: 'description',
+    width: 260,
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('pages.sys.account.accountType'),
-    path: 'account_type',
-    width: 120,
+    title: t('common.often.status'),
+    path: 'status',
+    width: 110,
     render: (row) => (
-      <NTag color={createTagColor(dictTypeColor('ACCOUNT_TYPE', row.account_type))} bordered={false}>
-        {dictTypeData('ACCOUNT_TYPE', row.account_type)}
+      <NTag color={createTagColor(dictTypeColor('COMMON_STATUS', row.status))} bordered={false}>
+        {dictTypeData('COMMON_STATUS', row.status) || row.status}
       </NTag>
     ),
-  },
-  {
-    title: t('pages.sys.account.accountStatus'),
-    path: 'account_status',
-    width: 120,
-    render: (row) => (
-      <NTag
-        color={createTagColor(dictTypeColor('ACCOUNT_STATUS', row.account_status))}
-        bordered={false}
-      >
-        {dictTypeData('ACCOUNT_STATUS', row.account_status)}
-      </NTag>
-    ),
-  },
-  {
-    title: t('pages.sys.account.phone'),
-    path: 'phone',
-    width: 150,
-  },
-  {
-    title: t('pages.sys.account.email'),
-    path: 'email',
-    width: 220,
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
-    title: t('pages.sys.account.isSuperuser'),
-    path: 'is_superuser',
-    width: 120,
-    render: (row) => (row.is_superuser ? t('pages.sys.account.yes') : t('pages.sys.account.no')),
-  },
-  {
-    title: t('pages.sys.account.latestLoginTime'),
-    path: 'latest_login_time',
-    width: 190,
-    ellipsis: {
-      tooltip: true,
-    },
   },
   {
     title: t('common.often.updatedAt'),
@@ -226,18 +152,18 @@ onMounted(() => {
 async function fetchPage() {
   state.loading = true
   try {
-    const response = await accountApi.page({
+    const response = await groupApi.page({
       current: state.page,
       size: state.pageSize,
       ...state.searchValues,
     })
     const data = response.data ?? {}
-    state.accounts = data.records ?? []
+    state.groups = data.records ?? []
     state.total = data.total ?? 0
     state.page = data.current ?? state.page
     state.pageSize = data.size ?? state.pageSize
     state.checkedRowKeys = state.checkedRowKeys.filter((key) =>
-      state.accounts.some((item) => item.id === key),
+      state.groups.some((item) => item.id === key),
     )
   } finally {
     state.loading = false
@@ -272,8 +198,8 @@ function confirmDelete(value: string | string[]) {
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('pages.sys.account.batchDeleteConfirm', { count: ids.length })
-      : t('pages.sys.account.deleteConfirm'),
+      ? t('pages.iam.group.batchDeleteConfirm', { count: ids.length })
+      : t('pages.iam.group.deleteConfirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: () => deleteData(ids),
@@ -281,12 +207,12 @@ function confirmDelete(value: string | string[]) {
 }
 
 async function deleteData(ids: string[]) {
-  await accountApi.remove({ ids })
+  await groupApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
   window.$message.success(t('common.often.deleteSuccess'))
   await fetchPage()
-  if (!state.accounts.length && state.total > 0 && state.page > 1) {
+  if (!state.groups.length && state.total > 0 && state.page > 1) {
     state.page -= 1
     await fetchPage()
   }
@@ -302,11 +228,11 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('pages.sys.account.title')"
+      :title="t('pages.iam.group.title')"
       row-key="id"
-      :scroll-x="1960"
+      :scroll-x="1100"
       :columns="tableColumns"
-      :data="state.accounts"
+      :data="state.groups"
       :loading="state.loading"
       :pagination="pagination"
       :checked-row-keys="state.checkedRowKeys"

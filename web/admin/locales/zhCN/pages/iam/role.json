@@ -1,0 +1,21 @@
+{
+  "title": "角色管理",
+  "id": "角色 ID",
+  "code": "角色编码",
+  "name": "角色名称",
+  "category": "角色分类",
+  "scopeType": "数据范围",
+  "ownerDeptId": "所属部门 ID",
+  "sort": "排序",
+  "status": "状态",
+  "isBuiltin": "内置角色",
+  "description": "描述",
+  "extra": "扩展信息",
+  "addRole": "新增角色",
+  "editRole": "编辑角色",
+  "detailRole": "角色详情",
+  "deleteConfirm": "确认删除该角色？",
+  "batchDeleteConfirm": "确认删除选中的 {count} 个角色？",
+  "yes": "是",
+  "no": "否"
+}

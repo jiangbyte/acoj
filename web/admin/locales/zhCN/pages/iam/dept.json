@@ -1,0 +1,21 @@
+{
+  "title": "部门管理",
+  "id": "部门 ID",
+  "name": "部门名称",
+  "code": "部门编码",
+  "category": "部门分类",
+  "parentId": "上级部门 ID",
+  "masterId": "负责人 ID",
+  "deputyMasterId": "副负责人 ID",
+  "sort": "排序",
+  "isVirtual": "虚拟部门",
+  "status": "状态",
+  "extra": "扩展信息",
+  "addDept": "新增部门",
+  "editDept": "编辑部门",
+  "detailDept": "部门详情",
+  "deleteConfirm": "确认删除该部门？",
+  "batchDeleteConfirm": "确认删除选中的 {count} 个部门？",
+  "yes": "是",
+  "no": "否"
+}

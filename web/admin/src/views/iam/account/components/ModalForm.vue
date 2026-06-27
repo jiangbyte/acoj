@@ -33,25 +33,25 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('pages.sys.account.editAccount') : t('pages.sys.account.addAccount'),
+  state.dataId ? t('pages.iam.account.editAccount') : t('pages.iam.account.addAccount'),
 )
 
 const rules = computed<FormRules>(() => ({
-  account: createRequiredRule(t, t('pages.sys.account.account'), 'input'),
+  account: createRequiredRule(t, t('pages.iam.account.account'), 'input'),
   password: [
     {
       validator: (_rule, value) => {
         if (!state.dataId && !String(value ?? '').trim()) {
-          return new Error(t('common.required', { field: t('pages.sys.account.password') }))
+          return new Error(t('common.required', { field: t('pages.iam.account.password') }))
         }
         return true
       },
       trigger: ['input', 'blur'],
     },
   ],
-  account_type: createRequiredRule(t, t('pages.sys.account.accountType'), 'change'),
-  account_status: createRequiredRule(t, t('pages.sys.account.accountStatus'), 'change'),
-  name: createRequiredRule(t, t('pages.sys.account.name'), 'input'),
+  account_type: createRequiredRule(t, t('pages.iam.account.accountType'), 'change'),
+  account_status: createRequiredRule(t, t('pages.iam.account.accountStatus'), 'change'),
+  name: createRequiredRule(t, t('pages.iam.account.name'), 'input'),
 }))
 
 async function openModal(id?: string) {
@@ -146,52 +146,52 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('pages.sys.account.account')" path="account">
+          <NFormItem :label="t('pages.iam.account.account')" path="account">
             <NInput v-model:value="state.formModel.account" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.account.password')" path="password">
+          <NFormItem :label="t('pages.iam.account.password')" path="password">
             <NInput
               v-model:value="state.formModel.password"
               type="password"
               show-password-on="click"
               :placeholder="
-                state.dataId ? t('pages.sys.account.passwordEditPlaceholder') : undefined
+                state.dataId ? t('pages.iam.account.passwordEditPlaceholder') : undefined
               "
             />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.account.accountType')" path="account_type">
+          <NFormItem :label="t('pages.iam.account.accountType')" path="account_type">
             <DictSelect v-model="state.formModel.account_type" dict-code="ACCOUNT_TYPE" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.account.accountStatus')" path="account_status">
+          <NFormItem :label="t('pages.iam.account.accountStatus')" path="account_status">
             <DictSelect
               v-model="state.formModel.account_status"
               dict-code="ACCOUNT_STATUS"
               type="radio"
             />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.account.name')" path="name">
+          <NFormItem :label="t('pages.iam.account.name')" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.account.nickname')" path="nickname">
+          <NFormItem :label="t('pages.iam.account.nickname')" path="nickname">
             <NInput v-model:value="state.formModel.nickname" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.account.avatar')" path="avatar">
+          <NFormItem :label="t('pages.iam.account.avatar')" path="avatar">
             <NInput v-model:value="state.formModel.avatar" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.account.signature')" path="signature">
+          <NFormItem :label="t('pages.iam.account.signature')" path="signature">
             <NInput
               v-model:value="state.formModel.signature"
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 5 }"
             />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.account.phone')" path="phone">
+          <NFormItem :label="t('pages.iam.account.phone')" path="phone">
             <NInput v-model:value="state.formModel.phone" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.account.email')" path="email">
+          <NFormItem :label="t('pages.iam.account.email')" path="email">
             <NInput v-model:value="state.formModel.email" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.account.isSuperuser')" path="is_superuser">
+          <NFormItem :label="t('pages.iam.account.isSuperuser')" path="is_superuser">
             <NSwitch v-model:value="state.formModel.is_superuser" />
           </NFormItem>
         </NForm>
