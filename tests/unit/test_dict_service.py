@@ -28,10 +28,24 @@ def _dict_create_request(**overrides) -> DictCreateRequest:
     return DictCreateRequest(**data)
 
 
+async def _create_dict(db_session, service: DictService, **overrides):
+    await service.create(_dict_create_request(**overrides))
+    page = await service.page_admin(
+        DictAdminPageQuery(
+            pagination=PageQuery(current=1, size=1),
+            code=overrides.get("code", "GENDER"),
+        )
+    )
+    assert page.records
+    item = page.records[0]
+    await db_session.rollback()
+    return item
+
+
 async def test_dict_service_create_page_detail_update_delete(db_session):
     service = DictService(db_session)
 
-    created = await service.create(_dict_create_request())
+    created = await _create_dict(db_session, service)
     page = await service.page_admin(
         DictAdminPageQuery(
             pagination=PageQuery(current=1, size=20),
@@ -41,7 +55,7 @@ async def test_dict_service_create_page_detail_update_delete(db_session):
     )
     detail = await service.get(DictIdQuery(id=created.id))
     await db_session.rollback()
-    updated = await service.update(
+    updated_result = await service.update(
         DictUpdateRequest(
             id=created.id,
             code="GENDER",
@@ -52,19 +66,22 @@ async def test_dict_service_create_page_detail_update_delete(db_session):
             status=StatusEnum.DISABLED,
         )
     )
-    deleted = await service.delete(DictIdsRequest(ids=[created.id]))
+    updated = await service.get(DictIdQuery(id=created.id))
+    await db_session.rollback()
+    deleted_result = await service.delete(DictIdsRequest(ids=[created.id]))
 
     assert page.total == 1
     assert page.records[0].id == created.id
     assert detail.label == "Gender"
+    assert updated_result is None
     assert updated.label == "Gender Updated"
     assert updated.status == StatusEnum.DISABLED
-    assert deleted == [created.id]
+    assert deleted_result is None
 
 
 async def test_dict_service_delete_requires_all_ids_exist(db_session):
     service = DictService(db_session)
-    created = await service.create(_dict_create_request(code="VISIBLE"))
+    created = await _create_dict(db_session, service, code="VISIBLE")
 
     with pytest.raises(NotFoundError):
         await service.delete(DictIdsRequest(ids=[created.id, "missing"]))
@@ -72,8 +89,12 @@ async def test_dict_service_delete_requires_all_ids_exist(db_session):
 
 async def test_dict_service_tree_supports_category_filter_and_orphan_roots(db_session):
     service = DictService(db_session)
-    profile_root = await service.create(
-        _dict_create_request(code="PROFILE_GENDER", label="Gender", sort=1)
+    profile_root = await _create_dict(
+        db_session,
+        service,
+        code="PROFILE_GENDER",
+        label="Gender",
+        sort=1,
     )
     await service.create(
         _dict_create_request(
@@ -115,27 +136,29 @@ async def test_dict_service_tree_supports_category_filter_and_orphan_roots(db_se
 
 async def test_dict_service_fills_parent_id_name_in_batch(db_session):
     service = DictService(db_session)
-    label_parent = await service.create(
-        _dict_create_request(code="PARENT_LABEL", label="Parent Label", sort=1)
+    label_parent = await _create_dict(
+        db_session,
+        service,
+        code="PARENT_LABEL",
+        label="Parent Label",
+        sort=1,
     )
-    label_child = await service.create(
-        _dict_create_request(
-            code="PARENT_LABEL_CHILD",
-            label="Label Child",
-            parent_id=label_parent.id,
-            sort=2,
-        )
+    label_child = await _create_dict(
+        db_session,
+        service,
+        code="PARENT_LABEL_CHILD",
+        label="Label Child",
+        parent_id=label_parent.id,
+        sort=2,
     )
-    code_parent = await service.create(
-        _dict_create_request(code="PARENT_CODE", label=None, sort=3)
-    )
-    code_child = await service.create(
-        _dict_create_request(
-            code="PARENT_CODE_CHILD",
-            label="Code Child",
-            parent_id=code_parent.id,
-            sort=4,
-        )
+    code_parent = await _create_dict(db_session, service, code="PARENT_CODE", label=None, sort=3)
+    code_child = await _create_dict(
+        db_session,
+        service,
+        code="PARENT_CODE_CHILD",
+        label="Code Child",
+        parent_id=code_parent.id,
+        sort=4,
     )
 
     page = await service.page_admin(
@@ -158,24 +181,28 @@ async def test_dict_service_fills_parent_id_name_in_batch(db_session):
 
 async def test_dict_service_parent_filter_includes_parent_and_direct_children(db_session):
     service = DictService(db_session)
-    parent = await service.create(
-        _dict_create_request(code="COMMON_STATUS", label="Common Status", sort=1)
+    parent = await _create_dict(
+        db_session,
+        service,
+        code="COMMON_STATUS",
+        label="Common Status",
+        sort=1,
     )
-    enabled = await service.create(
-        _dict_create_request(
-            code="COMMON_STATUS_ENABLED",
-            label="Enabled",
-            parent_id=parent.id,
-            sort=2,
-        )
+    enabled = await _create_dict(
+        db_session,
+        service,
+        code="COMMON_STATUS_ENABLED",
+        label="Enabled",
+        parent_id=parent.id,
+        sort=2,
     )
-    disabled = await service.create(
-        _dict_create_request(
-            code="COMMON_STATUS_DISABLED",
-            label="Disabled",
-            parent_id=parent.id,
-            sort=3,
-        )
+    disabled = await _create_dict(
+        db_session,
+        service,
+        code="COMMON_STATUS_DISABLED",
+        label="Disabled",
+        parent_id=parent.id,
+        sort=3,
     )
     await service.create(
         _dict_create_request(

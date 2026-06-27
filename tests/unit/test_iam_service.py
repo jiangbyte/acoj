@@ -1,11 +1,11 @@
 from app.core.config.enums import UserType
-from app.modules.iam.schema import AccountCreateRequest
-from app.modules.iam.service import IAMService
+from app.modules.iam.account.schema import AccountCreateRequest
+from app.modules.iam.account.service import AccountService
 from app.modules.user.admin.service import AdminUserProfileService
 
 
 async def test_create_admin_account_creates_profile(db_session):
-    account = await IAMService(db_session).create_account(
+    account = await AccountService(db_session).create_account(
         AccountCreateRequest(
             account="admin2",
             password="Admin@123456",

@@ -33,11 +33,10 @@ class DictRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create(self, payload: DictCreateRequest) -> SysDict:
+    async def create(self, payload: DictCreateRequest) -> None:
         entity = SysDict(**payload.model_dump())
         self.db.add(entity)
         await self.db.flush()
-        return entity
 
     async def get_by_id(self, dict_id: str) -> SysDict | None:
         return await self.db.get(SysDict, dict_id)
@@ -48,23 +47,20 @@ class DictRepository:
             raise NotFoundError("Dict not found")
         return entity
 
-    async def update(self, payload: DictUpdateRequest) -> SysDict:
+    async def update(self, payload: DictUpdateRequest) -> None:
         entity = await self.get_required(payload.id)
         data = payload.model_dump(exclude={"id"})
         for key, value in data.items():
             setattr(entity, key, value)
         await self.db.flush()
-        await self.db.refresh(entity)
-        return entity
 
-    async def delete_many(self, dict_ids: list[str]) -> list[str]:
+    async def delete_many(self, dict_ids: list[str]) -> None:
         unique_ids = list(dict.fromkeys(dict_ids))
         stmt = select(SysDict.id).where(SysDict.id.in_(unique_ids))
         existing_ids = set((await self.db.execute(stmt)).scalars().all())
         if len(existing_ids) != len(unique_ids):
             raise NotFoundError("Dict not found")
         await self.db.execute(delete(SysDict).where(SysDict.id.in_(unique_ids)))
-        return unique_ids
 
     async def page_admin(self, query: DictAdminPageQuery) -> tuple[list[SysDict], int]:
         stmt: Select[tuple[SysDict]] = select(SysDict)

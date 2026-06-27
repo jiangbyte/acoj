@@ -12,14 +12,10 @@ from app.core.exceptions.business import AuthenticationError
 from app.core.security.password import hash_password
 from app.modules.auth.schema import LoginPayload
 from app.modules.auth.service import AuthService
-from app.modules.iam.model import (
-    SysAccount,
-    SysAccountRoleRel,
-    SysResource,
-    SysResourcePermissionRel,
-    SysRole,
-    SysSubjectResourceGrantRel,
-)
+from app.modules.iam.account.model import SysAccount, SysAccountRoleRel
+from app.modules.iam.grant.model import SysSubjectResourceGrantRel
+from app.modules.iam.resource.model import SysResource, SysResourcePermissionRel
+from app.modules.iam.role.model import SysRole
 
 
 async def test_admin_login_success(db_session):

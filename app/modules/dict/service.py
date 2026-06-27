@@ -25,17 +25,17 @@ class DictService:
         self.db = db
         self.repo = DictRepository(db)
 
-    async def create(self, payload: DictCreateRequest) -> SysDictSchema:
+    async def create(self, payload: DictCreateRequest) -> None:
         async with transactional(self.db):
-            return await self._to_schema_with_parent_name(await self.repo.create(payload))
+            await self.repo.create(payload)
 
-    async def update(self, payload: DictUpdateRequest) -> SysDictSchema:
+    async def update(self, payload: DictUpdateRequest) -> None:
         async with transactional(self.db):
-            return await self._to_schema_with_parent_name(await self.repo.update(payload))
+            await self.repo.update(payload)
 
-    async def delete(self, payload: DictIdsRequest) -> list[str]:
+    async def delete(self, payload: DictIdsRequest) -> None:
         async with transactional(self.db):
-            return await self.repo.delete_many(payload.ids)
+            await self.repo.delete_many(payload.ids)
 
     async def get(self, query: DictIdQuery) -> SysDictSchema:
         return await self._to_schema_with_parent_name(await self.repo.get_required(query.id))

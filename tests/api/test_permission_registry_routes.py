@@ -4,7 +4,7 @@ from app.core.config.enums import AccountStatusEnum, LoginScope, UserType
 from app.core.security.password import hash_password
 from app.core.security.session import SessionPayload, session_store
 from app.deps.db import get_db_session
-from app.modules.iam.model import SysAccount
+from app.modules.iam.account.model import SysAccount
 
 
 async def test_permission_registry_route_lists_registry(client, monkeypatch):
@@ -13,12 +13,12 @@ async def test_permission_registry_route_lists_registry(client, monkeypatch):
             {
                 "permission_key": "iam:permission:list",
                 "module": "iam",
-                "source": "app.modules.iam.router",
+                "source": "app.modules.iam.permission.router",
                 "methods": ["GET"],
                 "login_scopes": ["admin"],
                 "routes": [
                     {
-                        "path": "/api/v1/admin/iam/permissions/registry",
+                        "path": "/api/v1/admin/permissions/registry",
                         "methods": ["GET"],
                         "login_scopes": ["admin"],
                     }
@@ -27,7 +27,7 @@ async def test_permission_registry_route_lists_registry(client, monkeypatch):
         ]
 
     monkeypatch.setattr(
-        "app.modules.iam.service.IAMService.list_permission_registry",
+        "app.modules.iam.permission.service.PermissionService.list_permission_registry",
         fake_list_permission_registry,
     )
 
@@ -62,7 +62,7 @@ async def test_permission_registry_route_lists_registry(client, monkeypatch):
         break
 
     response = await client.get(
-        "/api/v1/admin/iam/permissions/registry",
+        "/api/v1/admin/permissions/registry",
         headers={"Authorization": "admin-registry-token"},
     )
 

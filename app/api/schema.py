@@ -36,3 +36,4 @@ class ReadyHealthResponse(ApiSchema):
 
     status: str
     checks: ReadyChecksResponse
+

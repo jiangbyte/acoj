@@ -7,8 +7,9 @@ from app.core.security.password import verify_password
 from app.core.security.session import SessionPayload, session_store
 from app.core.security.token import generate_token
 from app.modules.auth.schema import LoginPayload
-from app.modules.iam.model import SysAccount
-from app.modules.iam.repository import IAMRepository
+from app.modules.iam.account.model import SysAccount
+from app.modules.iam.account.repository import AccountRepository
+from app.modules.iam.grant.repository import GrantRepository
 
 
 class AuthService:
@@ -16,17 +17,18 @@ class AuthService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.iam_repo = IAMRepository(db)
+        self.account_repo = AccountRepository(db)
+        self.grant_repo = GrantRepository(db)
 
     async def login(self, payload: LoginPayload) -> SessionPayload:
         """执行登录流程，使用对象承载参数以避免接口层平铺传参。"""
-        account = await self.iam_repo.get_account_by_account(payload.account)
+        account = await self.account_repo.get_account_by_account(payload.account)
         self._validate_account(account, payload.password, payload.login_scope)
         assert account is not None
-        permission_grants = await self.iam_repo.get_account_effective_permissions(account.id)
-        role_ids = await self.iam_repo.get_account_role_ids(account.id)
-        dept_ids = await self.iam_repo.get_account_dept_ids(account.id)
-        group_ids = await self.iam_repo.get_account_group_ids(account.id)
+        permission_grants = await self.grant_repo.get_account_effective_permissions(account.id)
+        role_ids = await self.account_repo.get_account_role_ids(account.id)
+        dept_ids = await self.account_repo.get_account_dept_ids(account.id)
+        group_ids = await self.account_repo.get_account_group_ids(account.id)
         session_payload = SessionPayload(
             token=generate_token(),
             account_id=account.id,

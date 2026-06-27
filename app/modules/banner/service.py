@@ -26,19 +26,19 @@ class BannerService:
         self.db = db
         self.repo = BannerRepository(db)
 
-    async def create(self, payload: BannerCreateRequest) -> SysBannerSchema:
+    async def create(self, payload: BannerCreateRequest) -> None:
         async with transactional(self.db):
-            return to_schema(SysBannerSchema, await self.repo.create(payload))
+            await self.repo.create(payload)
 
-    async def update(self, payload: BannerUpdateRequest) -> SysBannerSchema:
+    async def update(self, payload: BannerUpdateRequest) -> None:
         async with transactional(self.db):
-            return to_schema(SysBannerSchema, await self.repo.update(payload))
+            await self.repo.update(payload)
 
-    async def delete(self, payload: IdsRequest) -> list[str]:
+    async def delete(self, payload: IdsRequest) -> None:
         async with transactional(self.db):
-            return await self.repo.delete_many(payload.ids)
+            await self.repo.delete_many(payload.ids)
 
-    async def get(self, query: IdQuery) -> SysBannerSchema:
+    async def detail(self, query: IdQuery) -> SysBannerSchema:
         return to_schema(SysBannerSchema, await self.repo.get_required(query.id))
 
     async def page_admin(self, query: BannerAdminPageQuery) -> PageData[SysBannerSchema]:

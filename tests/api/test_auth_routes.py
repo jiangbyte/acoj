@@ -4,7 +4,7 @@ from app.core.config.enums import AccountStatusEnum, LoginScope, UserType
 from app.core.security.password import hash_password
 from app.core.security.session import SessionPayload, session_store
 from app.deps.db import get_db_session
-from app.modules.iam.model import SysAccount
+from app.modules.iam.account.model import SysAccount
 
 
 async def test_public_auth_login_route_not_found(client):

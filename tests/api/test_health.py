@@ -43,7 +43,7 @@ async def test_openapi_protected_route_declares_401_403_500_error_schema(client)
 
     assert response.status_code == 200
     data = response.json()
-    responses = data["paths"]["/api/v1/admin/file/list"]["get"]["responses"]
+    responses = data["paths"]["/api/v1/admin/list"]["get"]["responses"]
     assert responses["401"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/ApiErrorResponse"
     }

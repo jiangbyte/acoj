@@ -66,15 +66,15 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     description: null,
   },
   {
-    // 用户管理：复刻 naive-ui-pro system/user 布局，当前使用本地模拟数据。
+    // 账号管理：当前使用本地模拟数据，页面结构对齐 banner 管理。
     id: '301',
     parent_id: '3',
-    code: 'sys-user',
-    name: '用户管理',
+    code: 'sys-account',
+    name: '账号管理',
     resource_type: 'MENU',
     module: 'system',
-    path: '/sys/user',
-    component: '/sys/user/index.vue',
+    path: '/sys/account',
+    component: '/sys/account/index.vue',
     redirect: null,
     icon: 'icon-park-outline:people',
     href: null,

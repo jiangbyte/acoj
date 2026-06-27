@@ -11,7 +11,7 @@ from app.core.security.user_scope import assert_scope_allowed
 from app.deps.context import account_id_ctx, account_type_ctx, login_scope_ctx
 from app.deps.db import get_db_session
 from app.core.security.permission_registry import PERMISSION_META_ATTR, SCOPE_META_ATTR
-from app.modules.iam.repository import AccountRepository
+from app.modules.iam.account.repository import AccountRepository
 
 
 async def get_current_session(
