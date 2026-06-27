@@ -1,0 +1,23 @@
+{
+  "title": "Dict Management",
+  "code": "Code",
+  "label": "Label",
+  "value": "Value",
+  "color": "Color",
+  "category": "Category",
+  "parent": "Parent Dict",
+  "sort": "Sort",
+  "addDict": "Add Dict",
+  "editDict": "Edit Dict",
+  "topLevel": "Top Level",
+  "searchTree": "Search dict",
+  "deleteConfirm": "Delete this dict and its children?",
+  "batchDeleteConfirm": "Delete {count} selected dicts?",
+  "required": "Please enter {field}",
+  "codePattern": "Code can only contain uppercase letters, numbers, and underscores",
+  "codeExists": "Code already exists",
+  "categories": {
+    "sys": "System Dict",
+    "biz": "Business Dict"
+  }
+}

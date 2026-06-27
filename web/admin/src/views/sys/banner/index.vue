@@ -2,7 +2,7 @@
 import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
-import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
+import { NButton, NFlex, NIcon, NImage, NTag } from 'naive-ui'
 import { bannerApi } from '@/api'
 import {
   createProSearchForm,
@@ -141,10 +141,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     key: 'image',
     width: 130,
     render: (row) => (
-      <img
-        class="banner-table-image"
+      <NImage
         src={row.image}
         alt={row.title || t('pages.sys.banner.image')}
+        width={96}
+        height={42}
+        objectFit="cover"
       />
     ),
   },
@@ -353,6 +355,14 @@ async function deleteBanners(ids: string[]) {
             </template>
             {{ t('common.often.add') }}
           </NButton>
+          <NButton ghost :loading="loading" @click="fetchBannerPage">
+            <template #icon>
+              <NIcon>
+                <Icon icon="ant-design:reload-outlined" />
+              </NIcon>
+            </template>
+            {{ t('common.reload') }}
+          </NButton>
           <NButton
             type="error"
             ghost
@@ -371,12 +381,4 @@ async function deleteBanners(ids: string[]) {
   </NFlex>
 </template>
 
-<style scoped>
-.banner-table-image {
-  width: 96px;
-  height: 42px;
-  object-fit: cover;
-  border-radius: 6px;
-  background: var(--n-color-embedded);
-}
-</style>
+<style scoped></style>

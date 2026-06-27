@@ -86,8 +86,28 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     description: null,
   },
   {
-    // Banner 管理：使用后端 banner 管理接口的 CRUD 示例。
+    // 字典管理：左树右表的本地模拟 CRUD 示例。
     id: '302',
+    parent_id: '3',
+    code: 'sys-dict',
+    name: '字典管理',
+    resource_type: 'MENU',
+    module: 'system',
+    path: '/sys/dict',
+    component: '/sys/dict/index.vue',
+    redirect: null,
+    icon: 'icon-park-outline:file-search',
+    href: null,
+    sort: 2,
+    is_visible: true,
+    is_cache: false,
+    is_affix: false,
+    status: 'ENABLED',
+    description: null,
+  },
+  {
+    // Banner 管理：使用后端 banner 管理接口的 CRUD 示例。
+    id: '303',
     parent_id: '3',
     code: 'sys-banner',
     name: 'Banner 管理',
@@ -98,7 +118,7 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     redirect: null,
     icon: 'icon-park-outline:ad-product',
     href: null,
-    sort: 2,
+    sort: 3,
     is_visible: true,
     is_cache: false,
     is_affix: false,
