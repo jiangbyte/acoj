@@ -8,7 +8,7 @@ from app.core.exceptions.business import NotFoundError
 from app.modules.banner.enums import BannerDisplayScope
 from app.modules.banner.model import SysBanner
 from app.modules.banner.schema import (
-    BannerAdminListQuery,
+    BannerAdminPageQuery,
     BannerCreateRequest,
     BannerPublicListQuery,
     BannerUpdateRequest,
@@ -54,7 +54,7 @@ class BannerRepository:
         await self.db.execute(delete(SysBanner).where(SysBanner.id.in_(unique_ids)))
         return unique_ids
 
-    async def list_admin(self, query: BannerAdminListQuery) -> tuple[list[SysBanner], int]:
+    async def page_admin(self, query: BannerAdminPageQuery) -> tuple[list[SysBanner], int]:
         stmt: Select[tuple[SysBanner]] = select(SysBanner)
         count_stmt = select(func.count(SysBanner.id))
         filters = []

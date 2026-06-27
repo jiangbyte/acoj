@@ -8,7 +8,7 @@ from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.modules.banner.repository import BannerRepository
 from app.modules.banner.schema import (
-    BannerAdminListQuery,
+    BannerAdminPageQuery,
     BannerCreateRequest,
     BannerPublicListQuery,
     BannerUpdateRequest,
@@ -41,8 +41,8 @@ class BannerService:
     async def get(self, query: IdQuery) -> SysBannerSchema:
         return to_schema(SysBannerSchema, await self.repo.get_required(query.id))
 
-    async def list_admin(self, query: BannerAdminListQuery) -> PageData[SysBannerSchema]:
-        items, total = await self.repo.list_admin(query)
+    async def page_admin(self, query: BannerAdminPageQuery) -> PageData[SysBannerSchema]:
+        items, total = await self.repo.page_admin(query)
         return build_page(query.pagination, total, to_schema_list(SysBannerSchema, items))
 
     async def list_public(self, query: BannerPublicListQuery) -> list[SysBannerSchema]:

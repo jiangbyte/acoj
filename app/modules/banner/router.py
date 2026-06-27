@@ -10,7 +10,7 @@ from app.core.schema.base import Id, IdQuery, IdsRequest
 from app.deps.auth import require_permission, require_scope
 from app.deps.db import get_db_session
 from app.modules.banner.schema import (
-    BannerAdminListQuery,
+    BannerAdminPageQuery,
     BannerCreateRequest,
     BannerUpdateRequest,
     SysBannerSchema,
@@ -82,14 +82,14 @@ async def get(
 
 
 @router.get(
-    "/sys/banners/list",
+    "/sys/banners/page",
     dependencies=[
         # Depends(require_scope(LoginScope.ADMIN)),
-        # Depends(require_permission("sys:banner:list")),
+        # Depends(require_permission("sys:banner:page")),
     ],
     response_model=ApiResponse[PageData[SysBannerSchema]],
 )
-async def lists(
+async def page(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     current: Current = 1,
     size: Size = 20,
@@ -99,7 +99,7 @@ async def lists(
     position: str | None = Query(default=None, max_length=32),
     status: str | None = Query(default=None, max_length=32),
 ) -> ApiResponse[PageData[SysBannerSchema]]:
-    query = BannerAdminListQuery(
+    query = BannerAdminPageQuery(
         pagination=PageQuery(current=current, size=size),
         display_scope=display_scope,
         category=category,
@@ -107,4 +107,4 @@ async def lists(
         position=position,
         status=status,
     )
-    return success(await BannerService(db).list_admin(query))
+    return success(await BannerService(db).page_admin(query))

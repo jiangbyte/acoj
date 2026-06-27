@@ -1,0 +1,61 @@
+{
+  "title": "Banner 分页",
+  "id": "Banner ID",
+  "titleField": "标题",
+  "image": "图片",
+  "url": "跳转地址",
+  "linkType": "链接类型",
+  "summary": "摘要",
+  "description": "描述",
+  "category": "分类",
+  "type": "类型",
+  "position": "位置",
+  "displayScope": "展示端",
+  "sort": "排序",
+  "interactionCount": "交互次数",
+  "startAt": "开始时间",
+  "endAt": "结束时间",
+  "createdAt": "创建时间",
+  "addBanner": "新增 Banner",
+  "editBanner": "编辑 Banner",
+  "detailBanner": "Banner 详情",
+  "deleteConfirm": "确认删除该 Banner？",
+  "batchDeleteConfirm": "确认删除选中的 {count} 个 Banner？",
+  "required": "请输入{field}",
+  "categories": {
+    "home": "首页",
+    "login": "登录页",
+    "workplace": "工作台",
+    "notice": "公告",
+    "adminDashboard": "管理端工作台",
+    "systemUpgrade": "系统升级"
+  },
+  "types": {
+    "carousel": "轮播",
+    "hero": "首屏主图",
+    "notice": "通知",
+    "card": "卡片",
+    "popup": "弹窗",
+    "sidebar": "侧栏"
+  },
+  "positions": {
+    "homeTop": "首页顶部",
+    "homeMiddle": "首页中部",
+    "homeBottom": "首页底部",
+    "loginSide": "登录页侧栏",
+    "workplaceTop": "工作台顶部",
+    "noticeArea": "公告区域",
+    "adminTop": "管理端顶部",
+    "adminSidebar": "管理端侧栏"
+  },
+  "displayScopes": {
+    "portal": "门户端",
+    "admin": "管理端",
+    "app": "移动端"
+  },
+  "linkTypes": {
+    "url": "外链",
+    "route": "路由",
+    "none": "无链接"
+  }
+}

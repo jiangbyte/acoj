@@ -86,6 +86,26 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     description: null,
   },
   {
+    // Banner 管理：使用后端 banner 管理接口的 CRUD 示例。
+    id: '302',
+    parent_id: '3',
+    code: 'sys-banner',
+    name: 'Banner 管理',
+    resource_type: 'MENU',
+    module: 'system',
+    path: '/sys/banner',
+    component: '/sys/banner/index.vue',
+    redirect: null,
+    icon: 'icon-park-outline:ad-product',
+    href: null,
+    sort: 2,
+    is_visible: true,
+    is_cache: false,
+    is_affix: false,
+    status: 'ENABLED',
+    description: null,
+  },
+  {
     // 示例总览：普通菜单页面，并开启页面缓存。
     id: '201',
     parent_id: '2',
