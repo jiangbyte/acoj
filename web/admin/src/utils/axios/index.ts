@@ -1,4 +1,5 @@
-import axios, { type CreateAxiosDefaults } from 'axios'
+import axios, { type AxiosError, type CreateAxiosDefaults } from 'axios'
+import { $t } from '@/utils/i18n'
 import { setupTokenInterceptor } from './request-interceptors'
 import { setupResponseInterceptors } from './response-interceptors'
 
@@ -11,6 +12,18 @@ interface ApiResponse<T = unknown> {
   code: number
   message?: string
   data: T
+}
+
+const httpStatusMessageKeyMap: Record<number, string> = {
+  400: 'error.request.status.400',
+  401: 'error.request.status.401',
+  403: 'error.request.status.403',
+  404: 'error.request.status.404',
+  422: 'error.request.status.422',
+  500: 'error.request.status.500',
+  502: 'error.request.status.502',
+  503: 'error.request.status.503',
+  504: 'error.request.status.504',
 }
 
 /**
@@ -59,8 +72,8 @@ export function createHttp(config?: CreateAxiosDefaults) {
       return response.data
     },
 
-    // 当前只做错误标准化，不在工具层吞掉异常。
     handleError(error) {
+      showErrorMessage(error)
       return Promise.reject(error)
     },
   })
@@ -76,4 +89,41 @@ function isApiResponse(data: unknown): data is ApiResponse {
 // unknown 到普通对象的基础类型保护，避免直接访问空值或原始类型属性。
 function isRecord(data: unknown): data is Record<string, unknown> {
   return typeof data === 'object' && data !== null
+}
+
+function showErrorMessage(error: AxiosError) {
+  if (error.config?.skipErrorMessage) {
+    return
+  }
+
+  const message = getErrorMessage(error)
+  if (message) {
+    window.$message?.error(message)
+  }
+}
+
+function getErrorMessage(error: AxiosError) {
+  const customErrorMessage = error.config?.customErrorMessage
+  if (customErrorMessage) {
+    return customErrorMessage
+  }
+
+  const responseMessage = getResponseMessage(error.response?.data)
+  if (responseMessage) {
+    return responseMessage
+  }
+
+  const status = error.response?.status
+  if (status) {
+    return $t(httpStatusMessageKeyMap[status] ?? 'error.request.statusDefault', { status })
+  }
+
+  return $t('error.request.network')
+}
+
+function getResponseMessage(data: unknown) {
+  if (isRecord(data) && typeof data.message === 'string') {
+    return data.message
+  }
+  return undefined
 }
