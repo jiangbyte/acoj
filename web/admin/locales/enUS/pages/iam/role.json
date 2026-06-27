@@ -1,0 +1,21 @@
+{
+  "title": "Role Management",
+  "id": "Role ID",
+  "code": "Role Code",
+  "name": "Role Name",
+  "category": "Role Category",
+  "scopeType": "Scope Type",
+  "ownerDeptId": "Owner Department ID",
+  "sort": "Sort",
+  "status": "Status",
+  "isBuiltin": "Builtin Role",
+  "description": "Description",
+  "extra": "Extra",
+  "addRole": "Add Role",
+  "editRole": "Edit Role",
+  "detailRole": "Role Detail",
+  "deleteConfirm": "Delete this role?",
+  "batchDeleteConfirm": "Delete {count} selected roles?",
+  "yes": "Yes",
+  "no": "No"
+}

@@ -1,6 +1,6 @@
 import { http } from '@/utils'
 
-const dictPrefix = '/api/v1/admin/dict/sys/dicts'
+const dictPrefix = '/api/v1/admin/sys/dicts'
 
 export function page(params: any) {
   return http.get<any>(`${dictPrefix}/page`, {

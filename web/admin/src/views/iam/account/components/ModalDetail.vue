@@ -12,7 +12,9 @@ const state = reactive({
   account: {} as any,
 })
 
-const avatarAlt = computed(() => state.account?.nickname || state.account?.name || state.account?.account)
+const avatarAlt = computed(
+  () => state.account?.nickname || state.account?.name || state.account?.account,
+)
 
 async function openModal(id: string) {
   state.account = {}
@@ -41,19 +43,19 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('pages.sys.account.detailAccount')"
+    :title="t('pages.iam.account.detailAccount')"
     style="width: 680px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('pages.sys.account.id')">
+          <NDescriptionsItem :label="t('pages.iam.account.id')">
             {{ displayValue(state.account.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.account')">
+          <NDescriptionsItem :label="t('pages.iam.account.account')">
             {{ displayValue(state.account.account) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.accountType')">
+          <NDescriptionsItem :label="t('pages.iam.account.accountType')">
             <NTag
               :color="createTagColor(dictTypeColor('ACCOUNT_TYPE', state.account.account_type))"
               :bordered="false"
@@ -61,69 +63,69 @@ defineExpose({
               {{ dictTypeData('ACCOUNT_TYPE', state.account.account_type) }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.accountStatus')">
+          <NDescriptionsItem :label="t('pages.iam.account.accountStatus')">
             <NTag
-              :color="
-                createTagColor(dictTypeColor('ACCOUNT_STATUS', state.account.account_status))
-              "
+              :color="createTagColor(dictTypeColor('ACCOUNT_STATUS', state.account.account_status))"
               :bordered="false"
             >
               {{ dictTypeData('ACCOUNT_STATUS', state.account.account_status) }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.name')">
+          <NDescriptionsItem :label="t('pages.iam.account.name')">
             {{ displayValue(state.account.name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.nickname')">
+          <NDescriptionsItem :label="t('pages.iam.account.nickname')">
             {{ displayValue(state.account.nickname) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.avatar')">
+          <NDescriptionsItem :label="t('pages.iam.account.avatar')">
             <NAvatar v-if="state.account.avatar" :src="state.account.avatar" :alt="avatarAlt" />
             <template v-else> - </template>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.signature')">
+          <NDescriptionsItem :label="t('pages.iam.account.signature')">
             {{ displayValue(state.account.signature) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.phone')">
+          <NDescriptionsItem :label="t('pages.iam.account.phone')">
             {{ displayValue(state.account.phone) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.email')">
+          <NDescriptionsItem :label="t('pages.iam.account.email')">
             {{ displayValue(state.account.email) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.isSuperuser')">
-            {{ state.account.is_superuser ? t('pages.sys.account.yes') : t('pages.sys.account.no') }}
+          <NDescriptionsItem :label="t('pages.iam.account.isSuperuser')">
+            {{
+              state.account.is_superuser ? t('pages.iam.account.yes') : t('pages.iam.account.no')
+            }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.cancelledAt')">
+          <NDescriptionsItem :label="t('pages.iam.account.cancelledAt')">
             {{ displayValue(state.account.cancelled_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.cancelledBy')">
+          <NDescriptionsItem :label="t('pages.iam.account.cancelledBy')">
             {{ displayValue(state.account.cancelled_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.cancelReason')">
+          <NDescriptionsItem :label="t('pages.iam.account.cancelReason')">
             {{ displayValue(state.account.cancel_reason) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.lastLoginIp')">
+          <NDescriptionsItem :label="t('pages.iam.account.lastLoginIp')">
             {{ displayValue(state.account.last_login_ip) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.lastLoginAddress')">
+          <NDescriptionsItem :label="t('pages.iam.account.lastLoginAddress')">
             {{ displayValue(state.account.last_login_address) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.lastLoginTime')">
+          <NDescriptionsItem :label="t('pages.iam.account.lastLoginTime')">
             {{ displayValue(state.account.last_login_time) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.lastLoginDevice')">
+          <NDescriptionsItem :label="t('pages.iam.account.lastLoginDevice')">
             {{ displayValue(state.account.last_login_device) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.latestLoginIp')">
+          <NDescriptionsItem :label="t('pages.iam.account.latestLoginIp')">
             {{ displayValue(state.account.latest_login_ip) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.latestLoginAddress')">
+          <NDescriptionsItem :label="t('pages.iam.account.latestLoginAddress')">
             {{ displayValue(state.account.latest_login_address) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.latestLoginTime')">
+          <NDescriptionsItem :label="t('pages.iam.account.latestLoginTime')">
             {{ displayValue(state.account.latest_login_time) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.account.latestLoginDevice')">
+          <NDescriptionsItem :label="t('pages.iam.account.latestLoginDevice')">
             {{ displayValue(state.account.latest_login_device) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('common.often.createdAt')">

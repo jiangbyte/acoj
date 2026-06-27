@@ -1,0 +1,19 @@
+{
+  "title": "Position Management",
+  "id": "Position ID",
+  "name": "Position Name",
+  "code": "Position Code",
+  "category": "Position Category",
+  "sort": "Sort",
+  "isVirtual": "Virtual Position",
+  "status": "Status",
+  "description": "Description",
+  "extra": "Extra",
+  "addPosition": "Add Position",
+  "editPosition": "Edit Position",
+  "detailPosition": "Position Detail",
+  "deleteConfirm": "Delete this position?",
+  "batchDeleteConfirm": "Delete {count} selected positions?",
+  "yes": "Yes",
+  "no": "No"
+}
