@@ -18,6 +18,8 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
     "noEmit": true,
 
     /* Linting */
