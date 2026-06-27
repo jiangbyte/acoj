@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { router } from '@/router'
+import { authApi } from '@/api'
 import { useRouteStore } from './route'
 import { useTabStore } from './tab'
 
@@ -48,14 +49,18 @@ export const useAuthStore = defineStore('auth-store', {
     isLogin: (state) => Boolean(state.token),
   },
   actions: {
-    async mockLogin(account: string, _password: string, redirect?: string) {
+    async login(account: string, password: string, redirect?: string) {
+      const response = await authApi.login({
+        account,
+        password,
+      })
+      const token = response.data.token
       const now = Date.now()
       const userInfo: AuthUserInfo = {
         account,
         nickname: account,
         loginAt: now,
       }
-      const token = `mock-token-${now}`
 
       localStorage.setItem(tokenKey, token)
       localStorage.setItem(userInfoKey, JSON.stringify(userInfo))
@@ -88,7 +93,13 @@ export const useAuthStore = defineStore('auth-store', {
       const currentRoute = router.currentRoute.value
       const finalRedirect = redirect ?? currentRoute.fullPath
 
-      this.resetSession()
+      try {
+        await authApi.logout()
+      } catch {
+        // 后端登出失败不阻塞本地会话清理。
+      } finally {
+        this.resetSession()
+      }
 
       await router.push({
         path: loginPath,

@@ -42,15 +42,13 @@ async function handleSubmit() {
   }
 
   loading.value = true
-  window.setTimeout(async () => {
-    try {
-      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : undefined
-      await authStore.mockLogin(form.account, form.password, redirect)
-      window.$message.success(t('auth.loginSuccess'))
-    } finally {
-      loading.value = false
-    }
-  }, 500)
+  try {
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : undefined
+    await authStore.login(form.account, form.password, redirect)
+    window.$message.success(t('auth.loginSuccess'))
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
