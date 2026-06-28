@@ -112,7 +112,7 @@ async def page(
     "/group-roles",
     dependencies=[
         # Depends(require_scope(LoginScope.ADMIN)),
-        # Depends(require_permission("iam:group:grant-role")),
+        # Depends(require_permission("iam:group:grantrole")),
     ],
     response_model=ApiResponse[SysGroupRoleRelSchema],
 )

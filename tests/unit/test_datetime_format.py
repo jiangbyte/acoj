@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from app.core.datetime import format_utc_iso8601
+from app.core.schema.datetime import format_utc_iso8601
 
 
 def test_format_utc_iso8601_uses_z_suffix():

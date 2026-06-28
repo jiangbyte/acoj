@@ -66,7 +66,7 @@ class FileService:
         """获取对象的签名访问地址。"""
         return str(self.storage.get_presigned_url(object_name))
 
-    async def list_files(self, pagination: PageQuery) -> PageData[SysFileSchema]:
+    async def page(self, pagination: PageQuery) -> PageData[SysFileSchema]:
         """分页列出文件元数据记录。"""
         items = await self.repo.list_files(pagination.offset, pagination.size)
         return build_page(pagination, len(items), to_schema_list(SysFileSchema, items))

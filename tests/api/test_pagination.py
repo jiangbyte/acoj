@@ -37,7 +37,7 @@ async def test_admin_file_list_uses_current_size_total_pages_records(client):
                 role_ids=[],
                 dept_ids=[],
                 group_ids=[],
-                permission_keys=["file:list"],
+                permission_keys=["file:file:page"],
                 permission_grants=[],
             ),
             ttl_seconds=3600,
@@ -46,7 +46,7 @@ async def test_admin_file_list_uses_current_size_total_pages_records(client):
         break
 
     response = await client.get(
-        "/api/v1/admin/list?current=1&size=20",
+        "/api/v1/admin/file/page?current=1&size=20",
         headers={"Authorization": "admin-pagination-token"},
     )
 

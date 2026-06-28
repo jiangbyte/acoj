@@ -124,7 +124,7 @@ async def page(
     "/account-roles",
     dependencies=[
         # Depends(require_scope(LoginScope.ADMIN)),
-        # Depends(require_permission("iam:account:grant-role")),
+        # Depends(require_permission("iam:account:grantrole")),
     ],
     response_model=ApiResponse[SysAccountRoleRelSchema],
 )
@@ -139,7 +139,7 @@ async def assign_account_role(
     "/account-groups",
     dependencies=[
         # Depends(require_scope(LoginScope.ADMIN)),
-        # Depends(require_permission("iam:account:grant-group")),
+        # Depends(require_permission("iam:account:grantgroup")),
     ],
     response_model=ApiResponse[SysAccountGroupRelSchema],
 )
@@ -154,7 +154,7 @@ async def assign_account_group(
     "/account-depts",
     dependencies=[
         # Depends(require_scope(LoginScope.ADMIN)),
-        # Depends(require_permission("iam:account:grant-dept")),
+        # Depends(require_permission("iam:account:grantdept")),
     ],
     response_model=ApiResponse[SysAccountDeptRelSchema],
 )
