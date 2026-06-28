@@ -1,0 +1,60 @@
+<script setup lang="ts">
+import { Icon } from '@iconify/vue'
+import { NFlex } from 'naive-ui'
+import { computed, h } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useAppStore } from '@/stores'
+
+const appStore = useAppStore()
+const { t } = useI18n()
+
+const options = computed(() => [
+  {
+    label: t('app.light'),
+    value: 'light',
+    icon: 'icon-park-outline:sun-one',
+  },
+  {
+    label: t('app.dark'),
+    value: 'dark',
+    icon: 'icon-park-outline:moon',
+  },
+  {
+    label: t('app.system'),
+    value: 'auto',
+    icon: 'icon-park-outline:laptop-computer',
+  },
+])
+
+function renderLabel(option: { label: string; icon: string }) {
+  return h(
+    NFlex,
+    { align: 'center', wrap: false },
+    {
+      default: () => [h(Icon, { icon: option.icon }), option.label],
+    },
+  )
+}
+</script>
+
+<template>
+  <n-popselect
+    :value="appStore.storeColorMode"
+    :render-label="renderLabel"
+    :options="options"
+    trigger="click"
+    @update:value="appStore.setColorMode"
+  >
+    <CommonWrapper>
+      <NovaIcon
+        :icon="
+          appStore.storeColorMode === 'dark'
+            ? 'icon-park-outline:moon'
+            : appStore.storeColorMode === 'light'
+              ? 'icon-park-outline:sun-one'
+              : 'icon-park-outline:laptop-computer'
+        "
+      />
+    </CommonWrapper>
+  </n-popselect>
+</template>

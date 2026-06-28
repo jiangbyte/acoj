@@ -1,0 +1,19 @@
+{
+  "title": "岗位管理",
+  "id": "岗位 ID",
+  "name": "岗位名称",
+  "code": "岗位编码",
+  "category": "岗位分类",
+  "sort": "排序",
+  "isVirtual": "虚拟岗位",
+  "status": "状态",
+  "description": "描述",
+  "extra": "扩展信息",
+  "addPosition": "新增岗位",
+  "editPosition": "编辑岗位",
+  "detailPosition": "岗位详情",
+  "deleteConfirm": "确认删除该岗位？",
+  "batchDeleteConfirm": "确认删除选中的 {count} 个岗位？",
+  "yes": "是",
+  "no": "否"
+}

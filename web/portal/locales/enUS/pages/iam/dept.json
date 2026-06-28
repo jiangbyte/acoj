@@ -1,0 +1,21 @@
+{
+  "title": "Department Management",
+  "id": "Department ID",
+  "name": "Department Name",
+  "code": "Department Code",
+  "category": "Department Category",
+  "parentId": "Parent Department ID",
+  "masterId": "Master ID",
+  "deputyMasterId": "Deputy Master ID",
+  "sort": "Sort",
+  "isVirtual": "Virtual Department",
+  "status": "Status",
+  "extra": "Extra",
+  "addDept": "Add Department",
+  "editDept": "Edit Department",
+  "detailDept": "Department Detail",
+  "deleteConfirm": "Delete this department?",
+  "batchDeleteConfirm": "Delete {count} selected departments?",
+  "yes": "Yes",
+  "no": "No"
+}

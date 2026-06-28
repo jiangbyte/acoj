@@ -1,0 +1,42 @@
+{
+  "confirm": "确认",
+  "cancel": "取消",
+  "reload": "刷新",
+  "close": "关闭",
+  "choose": "选择",
+  "navigate": "导航",
+  "save": "保存",
+  "reset": "重置",
+  "view": "查看",
+  "required": "请输入{field}",
+  "often": {
+    "index": "ID",
+    "status": "状态",
+    "remark": "备注",
+    "createdAt": "创建时间",
+    "createdBy": "创建人",
+    "updatedAt": "更新时间",
+    "updatedBy": "更新人",
+    "updateTime": "更新时间",
+    "operation": "操作",
+    "add": "新增",
+    "detail": "详细",
+    "edit": "编辑",
+    "delete": "删除",
+    "batchDelete": "批量删除",
+    "enable": "启用",
+    "disable": "禁用",
+    "total": "共 {count} 条",
+    "deleteConfirm": "确认删除",
+    "deleteQuestion": "？",
+    "batchDeleteConfirm": "确认删除选中的 {count} 个用户？",
+    "createSuccess": "新增成功",
+    "updateSuccess": "更新成功",
+    "deleteSuccess": "删除成功"
+  },
+  "status": {
+    "male": "男",
+    "female": "女",
+    "other": "其他"
+  }
+}
