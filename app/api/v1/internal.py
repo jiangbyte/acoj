@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from sqlalchemy import text
 
-from app.api.schema import (
+from app.core.schema.health import (
     HealthCheckItem,
     LiveHealthResponse,
     ReadyChecksResponse,

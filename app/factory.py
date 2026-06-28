@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api.schema import RootHealthResponse
+from app.core.schema.health import RootHealthResponse
 from app.core.config.settings import settings
 from app.core.exceptions.handlers import customize_openapi_error_responses, register_exception_handlers
 from app.core.logger.setup import setup_logging
