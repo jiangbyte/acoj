@@ -4,10 +4,10 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
 import { roleApi } from '@/api'
 import { createTagColor, normalizeSearchValues } from '@/utils'
-import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
@@ -58,7 +58,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     path: 'category',
     field: 'select',
     fieldProps: {
-      options: dictList('ROLE_CATEGORY'),
+      options: dictList('COMMON_SYS_BIZ_CATEGORY'),
     },
   },
   {
@@ -130,7 +130,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: t('pages.iam.role.category'),
     path: 'category',
     width: 130,
-    render: (row) => dictTypeData('ROLE_CATEGORY', row.category) || row.category,
+    render: (row) => dictTypeData('COMMON_SYS_BIZ_CATEGORY', row.category) || row.category,
   },
   {
     title: t('pages.iam.role.scopeType'),

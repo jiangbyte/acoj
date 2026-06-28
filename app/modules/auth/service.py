@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config.constants import SUPER_ADMIN_ROLE_CODE
 from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.config.settings import settings
 from app.core.exceptions.business import AuthenticationError
@@ -27,8 +28,12 @@ class AuthService:
         assert account is not None
         permission_grants = await self.grant_repo.get_account_effective_permissions(account.id)
         role_ids = await self.account_repo.get_account_role_ids(account.id)
+        role_codes = await self.account_repo.get_account_role_codes(account.id)
         dept_ids = await self.account_repo.get_account_dept_ids(account.id)
         group_ids = await self.account_repo.get_account_group_ids(account.id)
+        permission_keys = {grant["permission_key"] for grant in permission_grants}
+        if SUPER_ADMIN_ROLE_CODE in role_codes:
+            permission_keys.add("*:*:*")
         session_payload = SessionPayload(
             token=generate_token(),
             account_id=account.id,
@@ -36,7 +41,7 @@ class AuthService:
             role_ids=role_ids,
             dept_ids=dept_ids,
             group_ids=group_ids,
-            permission_keys=sorted({grant["permission_key"] for grant in permission_grants}),
+            permission_keys=sorted(permission_keys),
             permission_grants=permission_grants,
         )
         await session_store.set(session_payload, ttl_seconds=settings.auth.token_ttl_seconds)

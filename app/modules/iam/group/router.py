@@ -25,8 +25,8 @@ router = APIRouter()
 @router.post(
     "/sys/groups/create",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:group:create")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:group:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -41,8 +41,8 @@ async def create(
 @router.post(
     "/sys/groups/update",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:group:update")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:group:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -57,8 +57,8 @@ async def update(
 @router.post(
     "/sys/groups/delete",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:group:delete")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:group:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -73,8 +73,8 @@ async def delete(
 @router.get(
     "/sys/groups/detail",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:group:detail")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:group:detail")),
     ],
     response_model=ApiResponse[SysGroupSchema],
 )
@@ -88,8 +88,8 @@ async def detail(
 @router.get(
     "/sys/groups/page",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:group:page")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:group:page")),
     ],
     response_model=ApiResponse[PageData[SysGroupSchema]],
 )
@@ -111,8 +111,8 @@ async def page(
 @router.post(
     "/group-roles",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:group:grantrole")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:group:grantrole")),
     ],
     response_model=ApiResponse[SysGroupRoleRelSchema],
 )

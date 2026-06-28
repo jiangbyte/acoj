@@ -18,6 +18,7 @@ export function setupRouterGuard(router: Router) {
     const authStore = useAuthStore()
     const dictStore = useDictStore()
     const routeStore = useRouteStore()
+    dictStore.syncDictTree()
 
     // 资源配置了 href 时视为外链。打开新窗口后阻止当前路由继续跳转。
     if (to.meta.href) {

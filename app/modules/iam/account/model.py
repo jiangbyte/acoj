@@ -31,7 +31,6 @@ class SysAccount(Base, TimestampMixin):
     signature: Mapped[str | None] = mapped_column(Text, comment="个性签名")
     phone: Mapped[str | None] = mapped_column(String(32), comment="手机号")
     email: Mapped[str | None] = mapped_column(String(128), comment="邮箱")
-    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="是否超级管理员")
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="注销时间")
     cancelled_by: Mapped[str | None] = mapped_column(String(64), comment="注销人")
     cancel_reason: Mapped[str | None] = mapped_column(Text, comment="注销原因")

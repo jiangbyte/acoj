@@ -23,8 +23,8 @@ router = APIRouter()
 @router.post(
     "/sys/banners/create",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("sys:banner:create")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:banner:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -39,8 +39,8 @@ async def create(
 @router.post(
     "/sys/banners/update",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("sys:banner:update")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:banner:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -55,8 +55,8 @@ async def update(
 @router.post(
     "/sys/banners/delete",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("sys:banner:delete")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:banner:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -71,8 +71,8 @@ async def delete(
 @router.get(
     "/sys/banners/detail",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("sys:banner:detail")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:banner:detail")),
     ],
     response_model=ApiResponse[SysBannerSchema],
 )
@@ -86,8 +86,8 @@ async def detail(
 @router.get(
     "/sys/banners/page",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("sys:banner:page")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:banner:page")),
     ],
     response_model=ApiResponse[PageData[SysBannerSchema]],
 )

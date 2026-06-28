@@ -27,8 +27,8 @@ router = APIRouter()
 @router.post(
     "/sys/dicts/create",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("sys:dict:create")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:dict:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -43,8 +43,8 @@ async def create(
 @router.post(
     "/sys/dicts/update",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("sys:dict:update")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:dict:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -59,8 +59,8 @@ async def update(
 @router.post(
     "/sys/dicts/delete",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("sys:dict:delete")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:dict:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -75,8 +75,8 @@ async def delete(
 @router.get(
     "/sys/dicts/detail",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("sys:dict:detail")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:dict:detail")),
     ],
     response_model=ApiResponse[SysDictSchema],
 )
@@ -90,8 +90,8 @@ async def get(
 @router.get(
     "/sys/dicts/page",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("sys:dict:page")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:dict:page")),
     ],
     response_model=ApiResponse[PageData[SysDictSchema]],
 )
@@ -117,7 +117,7 @@ async def page(
 @router.get(
     "/sys/dicts/tree",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_account_type(AccountType.ADMIN, AccountType.PORTAL)),
         # Depends(require_permission("sys:dict:tree")),
     ],
     response_model=ApiResponse[list[SysDictTreeNode]],

@@ -22,7 +22,6 @@ const defaultFormData = {
   signature: '',
   phone: '',
   email: '',
-  is_superuser: false,
 }
 const state = reactive({
   showModal: false,
@@ -100,7 +99,6 @@ async function submitForm() {
       signature: toNullableString(state.formModel.signature),
       phone: toNullableString(state.formModel.phone),
       email: toNullableString(state.formModel.email),
-      is_superuser: Boolean(state.formModel.is_superuser),
     }
 
     if (state.dataId) {
@@ -190,9 +188,6 @@ defineExpose({
           </NFormItem>
           <NFormItem :label="t('pages.iam.account.email')" path="email">
             <NInput v-model:value="state.formModel.email" />
-          </NFormItem>
-          <NFormItem :label="t('pages.iam.account.isSuperuser')" path="is_superuser">
-            <NSwitch v-model:value="state.formModel.is_superuser" />
           </NFormItem>
         </NForm>
       </NScrollbar>

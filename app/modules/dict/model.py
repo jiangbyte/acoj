@@ -3,12 +3,10 @@
 from sqlalchemy import Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.config.enums import StatusEnum
-from app.modules.dict.enums import DictGroupCategory
+from app.core.config.enums import StatusEnum, SysBizCategory
 from app.platform.db.base import Base
 from app.platform.db.mixins import TimestampMixin
 from app.platform.id_generator.snowflake import generate_snowflake_id
-
 
 class SysDict(Base, TimestampMixin):
     """系统字典表，支持分类、选项值和父子树结构。"""
@@ -32,7 +30,7 @@ class SysDict(Base, TimestampMixin):
     color: Mapped[str | None] = mapped_column(String(32), comment="颜色")
     category: Mapped[str | None] = mapped_column(
         String(64),
-        comment=f"字典组分类：{DictGroupCategory.__doc__}",
+        comment=f"字典组分类：{SysBizCategory.__doc__}",
     )
     parent_id: Mapped[str | None] = mapped_column(String(32), comment="父级ID")
     status: Mapped[str] = mapped_column(

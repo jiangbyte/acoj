@@ -1,12 +1,8 @@
 import { defineStore } from 'pinia'
-import {
-  clearStoredDictTree,
-  dictList,
-  dictTypeColor,
-  dictTypeData,
-  refreshDict,
-  translateDictTree,
-} from '@/utils/dict'
+import { shallowRef } from 'vue'
+import { dictApi } from '@/api'
+
+export const dictTreeState = shallowRef<any[]>([])
 
 export const useDictStore = defineStore('dict-store', {
   state: () => ({
@@ -15,13 +11,11 @@ export const useDictStore = defineStore('dict-store', {
     loading: false,
     lastLoadedAt: null as any,
   }),
-  getters: {
-    dictList: () => dictList,
-    dictTypeData: () => dictTypeData,
-    dictTypeColor: () => dictTypeColor,
-    translateDictTree: () => translateDictTree,
-  },
   actions: {
+    syncDictTree() {
+      dictTreeState.value = this.tree
+    },
+
     async refreshDict() {
       if (this.loading) {
         return
@@ -29,8 +23,9 @@ export const useDictStore = defineStore('dict-store', {
 
       this.loading = true
       try {
-        const tree = await refreshDict()
-        this.tree = tree
+        const response = await dictApi.tree()
+        this.tree = response.data ?? []
+        dictTreeState.value = this.tree
         this.loaded = true
         this.lastLoadedAt = Date.now()
       } finally {
@@ -40,10 +35,10 @@ export const useDictStore = defineStore('dict-store', {
 
     clearDict() {
       this.tree = []
+      dictTreeState.value = []
       this.loaded = false
       this.loading = false
       this.lastLoadedAt = null
-      clearStoredDictTree()
     },
   },
   persist: {

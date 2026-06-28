@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { accountApi } from '@/api'
 import { createTagColor, displayValue } from '@/utils'
-import { dictTypeColor, dictTypeData } from '@/utils/dict'
 import { computed, reactive } from 'vue'
+import { dictTypeData, dictTypeColor } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -89,11 +89,6 @@ defineExpose({
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('pages.iam.account.email')">
             {{ displayValue(state.account.email) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.isSuperuser')">
-            {{
-              state.account.is_superuser ? t('pages.iam.account.yes') : t('pages.iam.account.no')
-            }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('pages.iam.account.cancelledAt')">
             {{ displayValue(state.account.cancelled_at) }}

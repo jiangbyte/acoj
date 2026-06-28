@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { roleApi } from '@/api'
 import { createTagColor, displayValue } from '@/utils'
-import { dictTypeColor, dictTypeData } from '@/utils/dict'
 import { reactive } from 'vue'
+import { dictTypeData, dictTypeColor } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -56,7 +56,7 @@ defineExpose({
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('pages.iam.role.category')">
             {{
-              dictTypeData('ROLE_CATEGORY', state.role.category) ||
+              dictTypeData('COMMON_SYS_BIZ_CATEGORY', state.role.category) ||
               displayValue(state.role.category)
             }}
           </NDescriptionsItem>

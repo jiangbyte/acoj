@@ -269,7 +269,7 @@ async def test_admin_dict_page_parent_filter_includes_parent_and_direct_children
     assert {item["id"] for item in data["records"]} == {parent_id, enabled_id, disabled_id}
 
 
-async def test_admin_dict_page_without_permission_when_dependency_disabled(client):
+async def test_admin_dict_page_without_permission_returns_403(client):
     token = "admin-dict-no-permission-token"
     await _seed_admin(client, token, [])
 
@@ -278,7 +278,9 @@ async def test_admin_dict_page_without_permission_when_dependency_disabled(clien
         headers={"Authorization": token},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 403
+    assert response.json()["code"] == 403
+    assert response.json()["message"] == "Permission denied: sys:dict:page"
 
 
 async def test_admin_dict_rejects_invalid_code(client):

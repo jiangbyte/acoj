@@ -18,7 +18,6 @@ class AccountCreateRequest(ApiSchema):
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
-    is_superuser: bool = False
 
 
 class AccountUpdateRequest(ApiSchema):
@@ -33,7 +32,6 @@ class AccountUpdateRequest(ApiSchema):
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
-    is_superuser: bool = False
 
 
 class AccountAdminPageQuery(ApiSchema):
@@ -57,7 +55,6 @@ class SysAccountSchema(ApiSchema):
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
-    is_superuser: bool
     cancelled_at: datetime | None = Field(default=None, examples=["2026-06-18T12:00:00Z"])
     cancelled_by: str | None = None
     cancel_reason: str | None = None

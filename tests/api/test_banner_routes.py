@@ -176,7 +176,7 @@ async def test_public_banner_list_does_not_require_admin_session(client):
     assert [item["title"] for item in payload["data"]] == ["Public Banner"]
 
 
-async def test_admin_banner_page_without_permission_when_dependency_disabled(client):
+async def test_admin_banner_page_without_permission_returns_403(client):
     token = "admin-banner-no-permission-token"
     await _seed_admin(client, token, [])
 
@@ -185,4 +185,6 @@ async def test_admin_banner_page_without_permission_when_dependency_disabled(cli
         headers={"Authorization": token},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 403
+    assert response.json()["code"] == 403
+    assert response.json()["message"] == "Permission denied: sys:banner:page"
