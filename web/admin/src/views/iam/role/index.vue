@@ -4,17 +4,23 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
 import { roleApi } from '@/api'
 import { createTagColor, normalizeSearchValues } from '@/utils'
-import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
+import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
+import ModalGrantPermission from './components/ModalGrantPermission.vue'
+import ModalGrantResource from './components/ModalGrantResource.vue'
+import ModalGrantUser from './components/ModalGrantUser.vue'
 
 const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
+const grantResourceModalRef = ref<any>(null)
+const grantPermissionModalRef = ref<any>(null)
+const grantUserModalRef = ref<any>(null)
 const state = reactive({
   roles: [] as any[],
   total: 0,
@@ -178,7 +184,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: t('common.often.operation'),
     key: 'actions',
-    width: 170,
+    width: 230,
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
@@ -188,6 +194,15 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
         <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
           {t('common.often.edit')}
         </NButton>
+        <NDropdown
+          trigger="click"
+          options={grantOptions.value}
+          onSelect={(key) => openGrantModal(String(key), row)}
+        >
+          <NButton type="warning" size="small" text={true}>
+            {t('pages.iam.role.grant')}
+          </NButton>
+        </NDropdown>
         <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
           {t('common.often.delete')}
         </NButton>
@@ -196,6 +211,20 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   },
 ])
 
+const grantOptions = computed(() => [
+  {
+    label: t('pages.iam.role.grantResource'),
+    key: 'resource',
+  },
+  {
+    label: t('pages.iam.role.grantPermission'),
+    key: 'permission',
+  },
+  {
+    label: t('pages.iam.role.grantUser'),
+    key: 'user',
+  },
+])
 const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
 
 onMounted(() => {
@@ -233,6 +262,21 @@ function openCreateModal() {
 
 function openEditModal(id: string) {
   formModalRef.value?.openModal(id)
+}
+
+function openGrantModal(type: string, row: any) {
+  const role = {
+    id: row.id,
+    code: row.code,
+    name: row.name,
+  }
+  if (type === 'resource') {
+    grantResourceModalRef.value?.openModal(role)
+  } else if (type === 'permission') {
+    grantPermissionModalRef.value?.openModal(role)
+  } else if (type === 'user') {
+    grantUserModalRef.value?.openModal(role)
+  }
 }
 
 function handleCheckedRowKeys(keys: Array<string | number>) {
@@ -324,6 +368,9 @@ async function deleteData(ids: string[]) {
 
     <ModalForm ref="formModalRef" @saved="fetchPage" />
     <ModalDetail ref="detailModalRef" />
+    <ModalGrantResource ref="grantResourceModalRef" @saved="fetchPage" />
+    <ModalGrantPermission ref="grantPermissionModalRef" @saved="fetchPage" />
+    <ModalGrantUser ref="grantUserModalRef" @saved="fetchPage" />
   </NFlex>
 </template>
 
