@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
 from app.core.config.settings import settings
-from app.core.datetime import format_utc_iso8601
+from app.core.schema.datetime import format_utc_iso8601
 from app.modules.file.model import SysFile
 from app.modules.file.schema import FileUploadRequest
 from app.modules.file.service import FileService

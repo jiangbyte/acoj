@@ -21,14 +21,14 @@ router = APIRouter()
 
 
 @router.post(
-    "/upload",
+    "/file/upload",
     dependencies=[
         Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("file:upload")),
+        Depends(require_permission("file:file:upload")),
     ],
     response_model=ApiResponse[SysFileSchema],
 )
-async def upload_file(
+async def upload(
     file: Annotated[UploadFile, File(...)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[SysFileSchema]:
@@ -45,14 +45,14 @@ async def upload_file(
 
 
 @router.post(
-    "/delete",
+    "/file/delete",
     dependencies=[
         Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("file:delete")),
+        Depends(require_permission("file:file:delete")),
     ],
     response_model=ApiResponse[FileDeleteResponse],
 )
-async def delete_file(
+async def delete(
     payload: FileUrlRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[FileDeleteResponse]:
@@ -61,14 +61,14 @@ async def delete_file(
 
 
 @router.post(
-    "/url",
+    "/file/url",
     dependencies=[
         Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("file:url")),
+        Depends(require_permission("file:file:url")),
     ],
     response_model=ApiResponse[FileUrlResponse],
 )
-async def get_file_url(
+async def url(
     payload: FileUrlRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[FileUrlResponse]:
@@ -81,14 +81,14 @@ async def get_file_url(
 
 
 @router.post(
-    "/presigned-url",
+    "/file/presigned_url",
     dependencies=[
         Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("file:url")),
+        Depends(require_permission("file:file:presignedurl")),
     ],
     response_model=ApiResponse[FileUrlResponse],
 )
-async def get_file_presigned_url(payload: FileUrlRequest) -> ApiResponse[FileUrlResponse]:
+async def presigned_url(payload: FileUrlRequest) -> ApiResponse[FileUrlResponse]:
     return success(
         FileUrlResponse(
             object_name=payload.object_name,
@@ -98,17 +98,17 @@ async def get_file_presigned_url(payload: FileUrlRequest) -> ApiResponse[FileUrl
 
 
 @router.get(
-    "/list",
+    "/file/page",
     dependencies=[
         Depends(require_scope(LoginScope.ADMIN)),
-        Depends(require_permission("file:list")),
+        Depends(require_permission("file:file:page")),
     ],
     response_model=ApiResponse[PageData[SysFileSchema]],
 )
-async def list_files(
+async def page(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     current: Current = 1,
     size: Size = 20,
 ) -> ApiResponse[PageData[SysFileSchema]]:
     pagination = PageQuery(current=current, size=size)
-    return success(await FileService(db).list_files(pagination))
+    return success(await FileService(db).page(pagination))

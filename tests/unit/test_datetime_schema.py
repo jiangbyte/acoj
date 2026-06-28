@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from app.core.datetime import format_utc_iso8601
+from app.core.schema.datetime import format_utc_iso8601
 from app.core.schema.base import ApiSchema, to_schema
 
 

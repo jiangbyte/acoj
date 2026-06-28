@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, UTC
 
 from app.core.config.settings import settings
-from app.core.datetime import format_utc_iso8601
+from app.core.schema.datetime import format_utc_iso8601
 from app.core.logger.formatter import RequestFormatter
 from app.platform.observability.context import get_log_context
 

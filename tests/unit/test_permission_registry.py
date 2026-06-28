@@ -116,11 +116,11 @@ def test_scan_permission_registry_collects_routes():
 
     items = scan_permission_registry(app)
 
-    assert any(item.permission_key == "iam:account:page" for item in items)
-    file_list = next(item for item in items if item.permission_key == "file:list")
-    assert file_list.module == "file"
-    assert "/api/v1/admin/list" in [route_ref.path for route_ref in file_list.routes]
-    assert "admin" in file_list.login_scopes
+    assert any(item.permission_key == "file:file:upload" for item in items)
+    file_page = next(item for item in items if item.permission_key == "file:file:page")
+    assert file_page.module == "file"
+    assert "/api/v1/admin/file/page" in [route_ref.path for route_ref in file_page.routes]
+    assert "admin" in file_page.login_scopes
 
 
 async def test_sync_and_resolve_permission_registry(monkeypatch):
@@ -135,20 +135,18 @@ async def test_sync_and_resolve_permission_registry(monkeypatch):
     assert permission_registry_resources_key() in fake_redis.hashes
     assert permission_registry_permissions_key() in fake_redis.hashes
 
-    definition = await get_permission_definition("iam:permission:list")
+    definition = await get_permission_definition("file:file:page")
     assert definition is not None
-    assert definition.permission_key == "iam:permission:list"
-    assert any(
-        route_ref.path == "/api/v1/admin/permissions/registry"
-        for route_ref in definition.routes
-    )
+    assert definition.permission_key == "file:file:page"
+    assert any(route_ref.path == "/api/v1/admin/file/page" for route_ref in definition.routes)
 
-    raw_permission = fake_redis.hashes[permission_registry_permissions_key()]["iam:permission:list"]
+    raw_permission = fake_redis.hashes[permission_registry_permissions_key()]["file:file:page"]
     resource_code = json.loads(raw_permission)["resource_code"]
-    assert resource_code in fake_redis.sets[permission_registry_module_resources_key("iam")]
-    assert "iam:permission:list" in fake_redis.sets[
-        permission_registry_resource_permissions_key(resource_code)
-    ]
+    assert resource_code in fake_redis.sets[permission_registry_module_resources_key("file")]
+    assert (
+        "file:file:page"
+        in fake_redis.sets[permission_registry_resource_permissions_key(resource_code)]
+    )
 
 
 async def test_bind_resource_permission_requires_registered_permission(db_session, monkeypatch):

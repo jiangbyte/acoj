@@ -4,7 +4,7 @@ from typing import Annotated, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_validator
 
-from app.core.datetime import (
+from app.core.schema.datetime import (
     ensure_utc_datetime,
     format_utc_iso8601,
     is_datetime_annotation,
