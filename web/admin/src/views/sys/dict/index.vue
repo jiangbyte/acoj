@@ -3,18 +3,16 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
 import { dictApi } from '@/api'
-import { useDictStore } from '@/stores'
 import { createTagColor, normalizeSearchValues } from '@/utils'
-import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 
 const { t } = useI18n()
-const dictStore = useDictStore()
 const detailModalRef = ref<any>(null)
 const formModalRef = ref<any>(null)
 const state = reactive({

@@ -5,8 +5,7 @@ from typing import Annotated
 
 from pydantic import Field
 
-from app.core.config.enums import StatusEnum
-from app.modules.dict.enums import DictGroupCategory
+from app.core.config.enums import StatusEnum, SysBizCategory
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
 
@@ -18,7 +17,7 @@ class DictCreateRequest(ApiSchema):
     label: str | None = Field(default=None, max_length=255)
     value: str | None = Field(default=None, max_length=255)
     color: str | None = Field(default=None, max_length=32)
-    category: DictGroupCategory | None = None
+    category: SysBizCategory | None = None
     parent_id: DictId | None = None
     status: StatusEnum = StatusEnum.ENABLED
     sort: int = 0
@@ -39,13 +38,13 @@ class DictIdsRequest(ApiSchema):
 class DictAdminPageQuery(ApiSchema):
     pagination: PageQuery
     code: str | None = Field(default=None, max_length=50, pattern=r"^[A-Z0-9_]+$")
-    category: DictGroupCategory | None = None
+    category: SysBizCategory | None = None
     parent_id: str | None = Field(default=None, max_length=32)
     status: str | None = Field(default=None, max_length=16)
 
 
 class DictTreeQuery(ApiSchema):
-    category: DictGroupCategory | None = None
+    category: SysBizCategory | None = None
 
 
 class SysDictSchema(ApiSchema):
@@ -54,7 +53,7 @@ class SysDictSchema(ApiSchema):
     label: str | None = None
     value: str | None = None
     color: str | None = None
-    category: DictGroupCategory | None = None
+    category: SysBizCategory | None = None
     parent_id: str | None = None
     parent_id_name: str | None = None
     status: StatusEnum | str
@@ -71,7 +70,7 @@ class SysDictTreeNode(ApiSchema):
     label: str | None = None
     value: str | None = None
     color: str | None = None
-    category: DictGroupCategory | None = None
+    category: SysBizCategory | None = None
     parent_id: str | None = None
     parent_id_name: str | None = None
     status: StatusEnum | str

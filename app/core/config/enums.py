@@ -43,3 +43,8 @@ class AccountStatusEnum(StrEnum):
     ENABLED = "ENABLED"  # 启用
     DISABLED = "DISABLED"  # 禁用
     CANCELLED = "CANCELLED"  # 注销
+
+
+class SysBizCategory(StrEnum):
+    SYS = "SYS"
+    BIZ = "BIZ"

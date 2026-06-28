@@ -1,10 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config.constants import SUPER_ADMIN_ROLE_CODE
 from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.security.password import hash_password
 from app.core.security.session import SessionPayload, session_store
 from app.deps.db import get_db_session
-from app.modules.iam.account.model import SysAccount
+from app.modules.iam.account.model import SysAccount, SysAccountRoleRel
+from app.modules.iam.enums import RoleScopeType
+from app.modules.iam.role.model import SysRole
 
 
 async def test_public_auth_login_route_not_found(client):
@@ -216,6 +219,47 @@ async def test_admin_route_allows_valid_account_type_and_permission(client):
     response = await client.get(
         "/api/v1/admin/file/page",
         headers={"Authorization": "admin-with-permission-token"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["code"] == 200
+
+
+async def test_admin_route_allows_super_admin_role_without_explicit_permission(client):
+    override = client._transport.app.dependency_overrides[get_db_session]
+    async for session in override():
+        db_session: AsyncSession = session
+        account = SysAccount(
+            account="admin_super_role",
+            password_hash=hash_password("Admin@123456"),
+            account_type=AccountType.ADMIN.value,
+            account_status=AccountStatusEnum.ENABLED.value,
+            name="Admin Super Role",
+            nickname="Admin Super Role",
+        )
+        role = SysRole(
+            code=SUPER_ADMIN_ROLE_CODE,
+            name="Super Admin",
+            category="SYSTEM",
+            scope_type=RoleScopeType.PLATFORM.value,
+            is_builtin=True,
+        )
+        db_session.add_all([account, role])
+        await db_session.flush()
+        db_session.add(SysAccountRoleRel(account_id=account.id, role_id=role.id))
+        await db_session.commit()
+        break
+
+    login_response = await client.post(
+        "/api/v1/admin/login",
+        json={"account": "admin_super_role", "password": "Admin@123456"},
+    )
+    assert login_response.status_code == 200
+    token = login_response.json()["data"]["token"]
+
+    response = await client.get(
+        "/api/v1/admin/file/page",
+        headers={"Authorization": token},
     )
 
     assert response.status_code == 200

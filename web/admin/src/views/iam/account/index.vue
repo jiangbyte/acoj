@@ -4,10 +4,10 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
 import { accountApi } from '@/api'
 import { createTagColor, normalizeSearchValues } from '@/utils'
-import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
@@ -176,12 +176,6 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ellipsis: {
       tooltip: true,
     },
-  },
-  {
-    title: t('pages.iam.account.isSuperuser'),
-    path: 'is_superuser',
-    width: 120,
-    render: (row) => (row.is_superuser ? t('pages.iam.account.yes') : t('pages.iam.account.no')),
   },
   {
     title: t('pages.iam.account.latestLoginTime'),

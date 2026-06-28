@@ -70,7 +70,9 @@ export const useAuthStore = defineStore('auth-store', {
 
       const routeStore = useRouteStore()
       await routeStore.initAuthRoute()
-      await useDictStore().refreshDict()
+      const dictStore = useDictStore()
+      dictStore.syncDictTree()
+      await dictStore.refreshDict()
       await router.push(getSafeRedirect(redirect))
     },
 

@@ -23,8 +23,8 @@ router = APIRouter()
 @router.post(
     "/sys/roles/create",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:role:create")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:role:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -39,8 +39,8 @@ async def create(
 @router.post(
     "/sys/roles/update",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:role:update")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:role:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -55,8 +55,8 @@ async def update(
 @router.post(
     "/sys/roles/delete",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:role:delete")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:role:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -71,8 +71,8 @@ async def delete(
 @router.get(
     "/sys/roles/detail",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:role:detail")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:role:detail")),
     ],
     response_model=ApiResponse[SysRoleSchema],
 )
@@ -86,8 +86,8 @@ async def detail(
 @router.get(
     "/sys/roles/page",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:role:page")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:role:page")),
     ],
     response_model=ApiResponse[PageData[SysRoleSchema]],
 )

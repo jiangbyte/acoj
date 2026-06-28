@@ -26,8 +26,8 @@ router = APIRouter()
 @router.post(
     "/sys/resources/create",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:resource:create")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -42,8 +42,8 @@ async def create(
 @router.post(
     "/sys/resources/update",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:resource:update")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -58,8 +58,8 @@ async def update(
 @router.post(
     "/sys/resources/delete",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:resource:delete")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -74,8 +74,8 @@ async def delete(
 @router.get(
     "/sys/resources/detail",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:resource:detail")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:detail")),
     ],
     response_model=ApiResponse[SysResourceSchema],
 )
@@ -89,8 +89,8 @@ async def detail(
 @router.get(
     "/sys/resources/page",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:resource:page")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:page")),
     ],
     response_model=ApiResponse[PageData[SysResourceSchema]],
 )
@@ -120,8 +120,8 @@ async def page(
 @router.get(
     "/sys/resources/tree",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:resource:list")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:list")),
     ],
     response_model=ApiResponse[list[ResourceTreeNode]],
 )
@@ -134,8 +134,8 @@ async def list_resource_tree(
 @router.post(
     "/resource-permissions",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:resource:grant")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:grant")),
     ],
     response_model=ApiResponse[SysResourcePermissionRelSchema],
 )

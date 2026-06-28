@@ -24,8 +24,8 @@ router = APIRouter()
 @router.post(
     "/sys/depts/create",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:dept:create")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:dept:create")),
     ],
     response_model=ApiResponse[None],
 )
@@ -40,8 +40,8 @@ async def create(
 @router.post(
     "/sys/depts/update",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:dept:update")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:dept:update")),
     ],
     response_model=ApiResponse[None],
 )
@@ -56,8 +56,8 @@ async def update(
 @router.post(
     "/sys/depts/delete",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:dept:delete")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:dept:delete")),
     ],
     response_model=ApiResponse[None],
 )
@@ -72,8 +72,8 @@ async def delete(
 @router.get(
     "/sys/depts/detail",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:dept:detail")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:dept:detail")),
     ],
     response_model=ApiResponse[SysDeptSchema],
 )
@@ -87,8 +87,8 @@ async def detail(
 @router.get(
     "/sys/depts/page",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:dept:page")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:dept:page")),
     ],
     response_model=ApiResponse[PageData[SysDeptSchema]],
 )
@@ -116,8 +116,8 @@ async def page(
 @router.get(
     "/sys/depts/tree",
     dependencies=[
-        # Depends(require_account_type(AccountType.ADMIN)),
-        # Depends(require_permission("iam:dept:list")),
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:dept:list")),
     ],
     response_model=ApiResponse[list[DeptTreeNode]],
 )

@@ -24,7 +24,7 @@ const defaultFormData = {
   category: 'SYS',
   parent_id: null as string | null,
   status: 'ENABLED',
-  sort: 0,
+  sort: 99,
 }
 const state = reactive({
   showModal: false,

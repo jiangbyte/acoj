@@ -1,5 +1,6 @@
 import pytest
 
+from app.core.config.constants import SUPER_ADMIN_ROLE_CODE
 from app.core.config.enums import (
     AccountStatusEnum,
     AccountType,
@@ -28,7 +29,7 @@ async def test_admin_login_success(db_session):
     await db_session.flush()
 
     role = SysRole(
-        code="super_admin",
+        code=SUPER_ADMIN_ROLE_CODE,
         name="Super Admin",
         category="SYSTEM",
         scope_type=RoleScopeType.PLATFORM.value,
@@ -60,6 +61,7 @@ async def test_admin_login_success(db_session):
     assert payload.account_id == account.id
     assert payload.account_type == AccountType.ADMIN.value
     assert "iam:account:list" in payload.permission_keys
+    assert "*:*:*" in payload.permission_keys
 
 
 async def test_portal_account_cannot_login_admin_account_type(db_session):

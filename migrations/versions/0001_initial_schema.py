@@ -50,7 +50,6 @@ def upgrade() -> None:
     sa.Column('signature', sa.Text(), nullable=True, comment='个性签名'),
     sa.Column('phone', sa.String(length=32), nullable=True, comment='手机号'),
     sa.Column('email', sa.String(length=128), nullable=True, comment='邮箱'),
-    sa.Column('is_superuser', sa.Boolean(), nullable=False, comment='是否超级管理员'),
     sa.Column('cancelled_at', sa.DateTime(timezone=True), nullable=True, comment='注销时间'),
     sa.Column('cancelled_by', sa.String(length=64), nullable=True, comment='注销人'),
     sa.Column('cancel_reason', sa.Text(), nullable=True, comment='注销原因'),

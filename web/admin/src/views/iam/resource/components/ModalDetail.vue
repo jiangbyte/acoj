@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { resourceApi } from '@/api'
 import { createTagColor, displayValue } from '@/utils'
-import { dictTypeColor, dictTypeData } from '@/utils/dict'
 import { reactive } from 'vue'
+import { dictTypeData, dictTypeColor } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()

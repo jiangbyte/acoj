@@ -12,7 +12,6 @@
   "signature": "个性签名",
   "phone": "手机号",
   "email": "邮箱",
-  "isSuperuser": "超级管理员",
   "cancelledAt": "注销时间",
   "cancelledBy": "注销人",
   "cancelReason": "注销原因",

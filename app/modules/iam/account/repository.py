@@ -150,6 +150,22 @@ class AccountRepository:
         group = [str(value) for value in (await self.db.execute(group_stmt)).scalars().all()]
         return sorted(set(direct + group))
 
+    async def get_account_role_codes(self, account_id: str) -> list[str]:
+        direct_stmt = (
+            select(SysRole.code)
+            .join(SysAccountRoleRel, SysAccountRoleRel.role_id == SysRole.id)
+            .where(SysAccountRoleRel.account_id == account_id)
+        )
+        group_stmt = (
+            select(SysRole.code)
+            .join(SysGroupRoleRel, SysGroupRoleRel.role_id == SysRole.id)
+            .join(SysAccountGroupRel, SysAccountGroupRel.group_id == SysGroupRoleRel.group_id)
+            .where(SysAccountGroupRel.account_id == account_id)
+        )
+        direct = [str(value) for value in (await self.db.execute(direct_stmt)).scalars().all()]
+        group = [str(value) for value in (await self.db.execute(group_stmt)).scalars().all()]
+        return sorted(set(direct + group))
+
     async def get_account_group_ids(self, account_id: str) -> list[str]:
         stmt = select(SysAccountGroupRel.group_id).where(
             SysAccountGroupRel.account_id == account_id
