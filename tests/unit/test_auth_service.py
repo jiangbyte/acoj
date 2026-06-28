@@ -42,9 +42,7 @@ async def test_admin_login_success(db_session):
     )
     db_session.add_all([role, resource])
     await db_session.flush()
-    db_session.add(
-        SysResourcePermissionRel(resource_id=resource.id, permission_key="iam:account:list")
-    )
+    db_session.add(SysResourcePermissionRel(resource_id=resource.id, permission_key="iam:account:list"))
     db_session.add(
         SysSubjectResourceGrantRel(
             subject_type=GrantSubjectType.ROLE.value,

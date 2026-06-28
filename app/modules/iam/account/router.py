@@ -13,7 +13,9 @@ from app.modules.iam.account.schema import (
     AccountCreateRequest,
     AccountAdminPageQuery,
     AccountDeptAssignRequest,
+    AccountGrantPermissionRequest,
     AccountGroupAssignRequest,
+    AccountOwnPermissionResponse,
     AccountRoleAssignRequest,
     AccountUpdateRequest,
     SysAccountDeptRelSchema,
@@ -163,3 +165,36 @@ async def assign_account_dept(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[SysAccountDeptRelSchema]:
     return success(await AccountService(db).assign_account_dept(payload))
+
+
+@router.get(
+    "/sys/accounts/own-permission",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:account:ownpermission")),
+    ],
+    response_model=ApiResponse[AccountOwnPermissionResponse],
+    summary="获取用户拥有权限",
+)
+async def own_permission(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    id: Annotated[Id, Query()],
+) -> ApiResponse[AccountOwnPermissionResponse]:
+    return success(await AccountService(db).own_permission(IdQuery(id=id)))
+
+
+@router.post(
+    "/sys/accounts/grant-permission",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:account:grantpermission")),
+    ],
+    response_model=ApiResponse[None],
+    summary="给用户授权权限",
+)
+async def grant_permission(
+    payload: AccountGrantPermissionRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[None]:
+    await AccountService(db).grant_permission(payload)
+    return success()

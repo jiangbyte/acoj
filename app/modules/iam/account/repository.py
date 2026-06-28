@@ -2,17 +2,21 @@ from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import ConflictError, NotFoundError
+from app.modules.iam.enums import GrantSubjectType
 from app.modules.iam.account.model import (
     SysAccount,
     SysAccountDeptRel,
     SysAccountGroupRel,
     SysAccountRoleRel,
 )
+from app.modules.iam.grant.model import SysSubjectPermissionGrantRel
 from app.modules.iam.account.schema import (
     AccountCreateRequest,
     AccountAdminPageQuery,
     AccountDeptAssignRequest,
     AccountGroupAssignRequest,
+    AccountGrantPermissionRequest,
+    AccountPermissionGrantInfo,
     AccountRoleAssignRequest,
     AccountUpdateRequest,
 )
@@ -175,3 +179,43 @@ class AccountRepository:
     async def get_account_dept_ids(self, account_id: str) -> list[str]:
         stmt = select(SysAccountDeptRel.dept_id).where(SysAccountDeptRel.account_id == account_id)
         return [str(value) for value in (await self.db.execute(stmt)).scalars().all()]
+
+    async def list_permission_grants(self, account_id: str) -> list[AccountPermissionGrantInfo]:
+        await self.get_required(account_id)
+        stmt = (
+            select(SysSubjectPermissionGrantRel)
+            .where(
+                SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.ACCOUNT.value,
+                SysSubjectPermissionGrantRel.subject_id == account_id,
+            )
+            .order_by(SysSubjectPermissionGrantRel.id.asc())
+        )
+        grants = list((await self.db.execute(stmt)).scalars().all())
+        return [
+            AccountPermissionGrantInfo(
+                permission_key=grant.permission_key,
+                data_scope=grant.data_scope,
+                custom_scope_dept_ids=list(grant.custom_scope_dept_ids),
+            )
+            for grant in grants
+        ]
+
+    async def replace_permission_grants(self, payload: AccountGrantPermissionRequest) -> None:
+        await self.get_required(payload.id)
+        await self.db.execute(
+            delete(SysSubjectPermissionGrantRel).where(
+                SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.ACCOUNT.value,
+                SysSubjectPermissionGrantRel.subject_id == payload.id,
+            )
+        )
+        for grant in payload.grant_info_list:
+            self.db.add(
+                SysSubjectPermissionGrantRel(
+                    subject_type=GrantSubjectType.ACCOUNT.value,
+                    subject_id=payload.id,
+                    permission_key=grant.permission_key,
+                    data_scope=grant.data_scope.value,
+                    custom_scope_dept_ids=list(grant.custom_scope_dept_ids),
+                )
+            )
+        await self.db.flush()
