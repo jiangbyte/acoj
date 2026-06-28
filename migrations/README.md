@@ -7,7 +7,7 @@
 本地或部署时执行：
 
 ```bash
-./scripts/migrate.sh
+python scripts/migrate.py
 ```
 
 等价命令：
@@ -31,7 +31,7 @@ alembic upgrade head
 修改数据库结构时，先改 SQLAlchemy model，再生成迁移：
 
 ```bash
-./scripts/makemigration.sh "describe schema change"
+python scripts/makemigration.py "describe schema change"
 ```
 
 生成后必须检查 `migrations/versions/*.py`，确认只包含结构操作，例如：
@@ -55,24 +55,24 @@ alembic upgrade head
 检查无误后执行：
 
 ```bash
-./scripts/migrate.sh
-./scripts/check_migration.sh
+python scripts/migrate.py
+python scripts/check_migration.py
 ```
 
-`check_migration.sh` 用于确认当前数据库结构和 SQLAlchemy model 没有未生成的结构差异。
+`check_migration.py` 用于确认当前数据库结构和 SQLAlchemy model 没有未生成的结构差异。
 
 ## 新开发库初始化
 
 如果是空库，直接执行：
 
 ```bash
-./scripts/migrate.sh
+python scripts/migrate.py
 ```
 
 如果需要重建本地开发库，先删除并重新创建 PostgreSQL 数据库，再执行：
 
 ```bash
-./scripts/migrate.sh
+python scripts/migrate.py
 ```
 
 示例：
@@ -80,7 +80,7 @@ alembic upgrade head
 ```bash
 dropdb hei_fastapi
 createdb hei_fastapi
-./scripts/migrate.sh
+python scripts/migrate.py
 ```
 
 如果本地没有 `dropdb/createdb` 命令，也可以用数据库管理工具删除并重建 `DB__URL` 指向的数据库。
@@ -92,7 +92,7 @@ createdb hei_fastapi
 当前数据库没有升级到最新 migration。先执行：
 
 ```bash
-./scripts/migrate.sh
+python scripts/migrate.py
 ```
 
 然后再生成新的迁移。
@@ -102,7 +102,7 @@ createdb hei_fastapi
 说明当前 model 和数据库结构没有检测到差异。可以运行：
 
 ```bash
-./scripts/check_migration.sh
+python scripts/check_migration.py
 ```
 
 确认是否已经一致。

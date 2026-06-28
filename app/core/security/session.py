@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass
 import json
 from typing import Any, TypedDict
 
-from app.core.config.enums import DataScope, GrantEffect, GrantSubjectType, LoginScope, UserType
+from app.core.config.enums import AccountType, DataScope
 
 from app.core.config.settings import settings
 from app.platform.cache.keys import login_account_tokens_key, login_token_key
@@ -15,8 +15,8 @@ class PermissionGrantPayload(TypedDict):
     permission_key: str
     data_scope: DataScope | str
     custom_scope_dept_ids: list[str]
-    effect: GrantEffect | str
-    source_type: GrantSubjectType | str
+    effect: str
+    source_type: str
     source_id: str
 
 
@@ -26,8 +26,7 @@ class SessionPayload:
 
     token: str
     account_id: str
-    account_type: UserType | str
-    login_scope: LoginScope | str
+    account_type: AccountType | str
     role_ids: list[str]
     dept_ids: list[str]
     group_ids: list[str]
@@ -47,7 +46,10 @@ class SessionStore:
         redis = get_redis()
         if redis:
             await redis.setex(login_token_key(payload.token), ttl_seconds, json.dumps(data))
-            await redis.sadd(login_account_tokens_key(str(payload.account_type), payload.account_id), payload.token)
+            await redis.sadd(
+                login_account_tokens_key(str(payload.account_type), payload.account_id),
+                payload.token,
+            )
             return
         if not settings.auth.enable_memory_session_fallback:
             raise RuntimeError("Redis is disabled and memory fallback is not allowed")
@@ -73,7 +75,9 @@ class SessionStore:
             payload = await self.get(token)
             await redis.delete(login_token_key(token))
             if payload:
-                await redis.srem(login_account_tokens_key(str(payload.account_type), payload.account_id), token)
+                await redis.srem(
+                    login_account_tokens_key(str(payload.account_type), payload.account_id), token
+                )
             return
         self._memory.pop(token, None)
 

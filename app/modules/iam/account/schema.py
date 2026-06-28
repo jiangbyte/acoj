@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import Field
 
-from app.core.config.enums import AccountStatusEnum, UserType
+from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
 
@@ -10,7 +10,7 @@ from app.core.schema.base import ApiSchema
 class AccountCreateRequest(ApiSchema):
     account: str = Field(min_length=3, max_length=64)
     password: str = Field(min_length=6, max_length=128)
-    account_type: UserType
+    account_type: AccountType
     account_status: AccountStatusEnum = AccountStatusEnum.ENABLED
     name: str = Field(min_length=1, max_length=64)
     nickname: str | None = Field(default=None, max_length=64)
@@ -25,7 +25,7 @@ class AccountUpdateRequest(ApiSchema):
     id: str = Field(min_length=1, max_length=64)
     account: str = Field(min_length=3, max_length=64)
     password: str | None = Field(default=None, min_length=6, max_length=128)
-    account_type: UserType
+    account_type: AccountType
     account_status: AccountStatusEnum = AccountStatusEnum.ENABLED
     name: str = Field(min_length=1, max_length=64)
     nickname: str | None = Field(default=None, max_length=64)
@@ -42,14 +42,14 @@ class AccountAdminPageQuery(ApiSchema):
     name: str | None = Field(default=None, max_length=64)
     phone: str | None = Field(default=None, max_length=32)
     email: str | None = Field(default=None, max_length=128)
-    account_type: UserType | None = None
+    account_type: AccountType | None = None
     account_status: AccountStatusEnum | None = None
 
 
 class SysAccountSchema(ApiSchema):
     id: str
     account: str
-    account_type: UserType
+    account_type: AccountType
     account_status: AccountStatusEnum
     name: str
     nickname: str | None = None

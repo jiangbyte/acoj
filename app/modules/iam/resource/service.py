@@ -2,9 +2,9 @@ from collections.abc import Mapping, Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import ResourceType
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
+from app.modules.iam.enums import ResourceType
 from app.modules.iam.permission.service import ensure_registered_permission
 from app.modules.iam.resource.repository import ResourceRepository, ResourceTreeRecord
 from app.modules.iam.resource.schema import (

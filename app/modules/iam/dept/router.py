@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import LoginScope
+from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
-from app.deps.auth import require_permission, require_scope
+from app.deps.auth import require_permission, require_account_type
 from app.deps.db import get_db_session
 from app.modules.iam.dept.schema import (
     DeptAdminPageQuery,
@@ -24,7 +24,7 @@ router = APIRouter()
 @router.post(
     "/sys/depts/create",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:dept:create")),
     ],
     response_model=ApiResponse[None],
@@ -40,7 +40,7 @@ async def create(
 @router.post(
     "/sys/depts/update",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:dept:update")),
     ],
     response_model=ApiResponse[None],
@@ -56,7 +56,7 @@ async def update(
 @router.post(
     "/sys/depts/delete",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:dept:delete")),
     ],
     response_model=ApiResponse[None],
@@ -72,7 +72,7 @@ async def delete(
 @router.get(
     "/sys/depts/detail",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:dept:detail")),
     ],
     response_model=ApiResponse[SysDeptSchema],
@@ -87,7 +87,7 @@ async def detail(
 @router.get(
     "/sys/depts/page",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:dept:page")),
     ],
     response_model=ApiResponse[PageData[SysDeptSchema]],
@@ -116,7 +116,7 @@ async def page(
 @router.get(
     "/sys/depts/tree",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:dept:list")),
     ],
     response_model=ApiResponse[list[DeptTreeNode]],

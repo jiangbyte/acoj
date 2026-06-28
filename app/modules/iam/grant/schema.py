@@ -2,8 +2,9 @@ from datetime import datetime
 
 from pydantic import Field
 
-from app.core.config.enums import DataScope, GrantEffect, GrantMode, GrantSubjectType
+from app.core.config.enums import DataScope
 from app.core.schema.base import ApiSchema
+from app.modules.iam.enums import GrantEffect, GrantMode, GrantSubjectType
 
 
 class SubjectResourceGrantRequest(ApiSchema):

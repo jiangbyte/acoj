@@ -21,7 +21,7 @@ from app.platform.cache.redis import get_redis
 logger = logging.getLogger(__name__)
 PERMISSION_KEY_PATTERN = re.compile(r"^[a-z0-9*]+(?::[a-z0-9*]+)+$")
 PERMISSION_META_ATTR = "__permission_meta__"
-SCOPE_META_ATTR = "__scope_meta__"
+ACCOUNT_TYPE_META_ATTR = "__account_type_meta__"
 RESOURCE_CATEGORY = "resource"
 MODULE_CATEGORY = "module"
 PERMISSION_CATEGORY = "permission"
@@ -31,7 +31,7 @@ PERMISSION_CATEGORY = "permission"
 class PermissionRouteRef:
     path: str
     methods: list[str]
-    login_scopes: list[str]
+    account_types: list[str]
 
 
 @dataclass(slots=True)
@@ -41,7 +41,7 @@ class PermissionRegistryItem:
     source: str
     routes: list[PermissionRouteRef] = field(default_factory=list)
     methods: list[str] = field(default_factory=list)
-    login_scopes: list[str] = field(default_factory=list)
+    account_types: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -57,7 +57,7 @@ class PermissionResourceItem:
     module: str
     path: str
     methods: list[str]
-    login_scopes: list[str]
+    account_types: list[str]
     source: str
     category: str = RESOURCE_CATEGORY
 
@@ -92,7 +92,7 @@ class ScanArtifacts:
     snapshot: PermissionRegistrySnapshot
     permission_routes: dict[str, dict[str, PermissionRouteRef]]
     permission_methods: dict[str, set[str]]
-    permission_scopes: dict[str, set[str]]
+    permission_account_types: dict[str, set[str]]
     resource_map: dict[str, PermissionResourceItem]
 
 
@@ -116,7 +116,9 @@ def _detect_module(route: APIRoute) -> str:
 
 
 def _normalize_methods(route: APIRoute) -> list[str]:
-    return sorted(method for method in (route.methods or set()) if method not in {"HEAD", "OPTIONS"})
+    return sorted(
+        method for method in (route.methods or set()) if method not in {"HEAD", "OPTIONS"}
+    )
 
 
 def _build_resource_code(module_name: str, path: str, methods: list[str]) -> str:
@@ -131,7 +133,7 @@ def _build_registry_snapshot(app: FastAPI) -> ScanArtifacts:
     permission_items: dict[str, PermissionPointItem] = {}
     permission_routes: dict[str, dict[str, PermissionRouteRef]] = defaultdict(dict)
     permission_methods: dict[str, set[str]] = defaultdict(set)
-    permission_scopes: dict[str, set[str]] = defaultdict(set)
+    permission_account_types: dict[str, set[str]] = defaultdict(set)
     conflicts: list[PermissionRegistryConflict] = []
 
     for route in app.routes:
@@ -139,7 +141,7 @@ def _build_registry_snapshot(app: FastAPI) -> ScanArtifacts:
             continue
 
         route_methods = _normalize_methods(route)
-        route_scopes: set[str] = set()
+        route_account_types: set[str] = set()
         route_permissions: set[str] = set()
 
         for call in _iter_dependant_calls(route.dependant):
@@ -154,9 +156,11 @@ def _build_registry_snapshot(app: FastAPI) -> ScanArtifacts:
                     continue
                 route_permissions.add(permission_key)
 
-            scope_meta = getattr(call, SCOPE_META_ATTR, None)
-            if scope_meta:
-                route_scopes.update(str(scope) for scope in scope_meta.get("login_scopes", []))
+            account_type_meta = getattr(call, ACCOUNT_TYPE_META_ATTR, None)
+            if account_type_meta:
+                route_account_types.update(
+                    str(account_type) for account_type in account_type_meta.get("account_types", [])
+                )
 
         if not route_permissions:
             continue
@@ -165,13 +169,15 @@ def _build_registry_snapshot(app: FastAPI) -> ScanArtifacts:
         source = getattr(route.endpoint, "__module__", "unknown")
         resource_code = _build_resource_code(module_name, route.path, route_methods)
 
-        module_items.setdefault(module_name, PermissionModuleItem(module=module_name, name=module_name))
+        module_items.setdefault(
+            module_name, PermissionModuleItem(module=module_name, name=module_name)
+        )
         resource_items[resource_code] = PermissionResourceItem(
             resource_code=resource_code,
             module=module_name,
             path=route.path,
             methods=route_methods,
-            login_scopes=sorted(route_scopes),
+            account_types=sorted(route_account_types),
             source=source,
         )
 
@@ -212,10 +218,10 @@ def _build_registry_snapshot(app: FastAPI) -> ScanArtifacts:
             permission_routes[permission_key][route.path] = PermissionRouteRef(
                 path=route.path,
                 methods=route_methods,
-                login_scopes=sorted(route_scopes),
+                account_types=sorted(route_account_types),
             )
             permission_methods[permission_key].update(route_methods)
-            permission_scopes[permission_key].update(route_scopes)
+            permission_account_types[permission_key].update(route_account_types)
 
     return ScanArtifacts(
         snapshot=PermissionRegistrySnapshot(
@@ -226,7 +232,7 @@ def _build_registry_snapshot(app: FastAPI) -> ScanArtifacts:
         ),
         permission_routes=permission_routes,
         permission_methods=permission_methods,
-        permission_scopes=permission_scopes,
+        permission_account_types=permission_account_types,
         resource_map=resource_items,
     )
 
@@ -248,7 +254,7 @@ def scan_permission_registry(app: FastAPI) -> list[PermissionRegistryItem]:
                     key=lambda route_ref: route_ref.path,
                 ),
                 methods=sorted(artifacts.permission_methods[permission.permission_key]),
-                login_scopes=sorted(artifacts.permission_scopes[permission.permission_key]),
+                account_types=sorted(artifacts.permission_account_types[permission.permission_key]),
             )
         )
     return items
@@ -284,7 +290,7 @@ async def sync_permission_registry(app: FastAPI) -> list[PermissionRegistryItem]
                     key=lambda route_ref: route_ref.path,
                 ),
                 methods=sorted(artifacts.permission_methods[permission.permission_key]),
-                login_scopes=sorted(artifacts.permission_scopes[permission.permission_key]),
+                account_types=sorted(artifacts.permission_account_types[permission.permission_key]),
             )
         )
     redis = get_redis()
@@ -304,9 +310,14 @@ async def sync_permission_registry(app: FastAPI) -> list[PermissionRegistryItem]
         pipe.hset(modules_key, module_item.module, _serialize_dataclass(module_item))
     for resource_item in snapshot.resources:
         pipe.hset(resources_key, resource_item.resource_code, _serialize_dataclass(resource_item))
-        pipe.sadd(permission_registry_module_resources_key(resource_item.module), resource_item.resource_code)
+        pipe.sadd(
+            permission_registry_module_resources_key(resource_item.module),
+            resource_item.resource_code,
+        )
     for permission_item in snapshot.permissions:
-        pipe.hset(permissions_key, permission_item.permission_key, _serialize_dataclass(permission_item))
+        pipe.hset(
+            permissions_key, permission_item.permission_key, _serialize_dataclass(permission_item)
+        )
         pipe.sadd(
             permission_registry_resource_permissions_key(permission_item.resource_code),
             permission_item.permission_key,
@@ -344,11 +355,11 @@ async def get_permission_definition(permission_key: str) -> PermissionRegistryIt
             PermissionRouteRef(
                 path=resource.path,
                 methods=list(resource.methods),
-                login_scopes=list(resource.login_scopes),
+                account_types=list(resource.account_types),
             )
         ],
         methods=list(resource.methods),
-        login_scopes=list(resource.login_scopes),
+        account_types=list(resource.account_types),
     )
 
 
@@ -375,7 +386,10 @@ async def list_permission_definitions() -> list[PermissionRegistryItem]:
         if not resource:
             logger.warning(
                 "Permission registry resource missing during list",
-                extra={"permission_key": permission.permission_key, "resource_code": permission.resource_code},
+                extra={
+                    "permission_key": permission.permission_key,
+                    "resource_code": permission.resource_code,
+                },
             )
             continue
         items.append(
@@ -387,11 +401,11 @@ async def list_permission_definitions() -> list[PermissionRegistryItem]:
                     PermissionRouteRef(
                         path=resource.path,
                         methods=list(resource.methods),
-                        login_scopes=list(resource.login_scopes),
+                        account_types=list(resource.account_types),
                     )
                 ],
                 methods=list(resource.methods),
-                login_scopes=list(resource.login_scopes),
+                account_types=list(resource.account_types),
             )
         )
     return sorted(items, key=lambda item: item.permission_key)

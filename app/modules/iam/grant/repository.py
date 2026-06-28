@@ -4,8 +4,9 @@ from typing import Literal, TypedDict
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import DataScope, GrantEffect, GrantMode, GrantSubjectType, StatusEnum
+from app.core.config.enums import DataScope, StatusEnum
 from app.core.exceptions.business import NotFoundError
+from app.modules.iam.enums import GrantEffect, GrantMode, GrantSubjectType
 from app.modules.iam.account.model import SysAccount, SysAccountGroupRel
 from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.grant.model import SysSubjectPermissionGrantRel, SysSubjectResourceGrantRel
@@ -70,17 +71,11 @@ class GrantRepository:
         stmt = select(SysSubjectResourceGrantRel).where(
             SysSubjectResourceGrantRel.status == StatusEnum.ENABLED.value,
             or_(
-                (
-                    SysSubjectResourceGrantRel.subject_type == GrantSubjectType.ACCOUNT.value
-                )
+                (SysSubjectResourceGrantRel.subject_type == GrantSubjectType.ACCOUNT.value)
                 & (SysSubjectResourceGrantRel.subject_id == account_id),
-                (
-                    SysSubjectResourceGrantRel.subject_type == GrantSubjectType.GROUP.value
-                )
+                (SysSubjectResourceGrantRel.subject_type == GrantSubjectType.GROUP.value)
                 & group_filter,
-                (
-                    SysSubjectResourceGrantRel.subject_type == GrantSubjectType.ROLE.value
-                )
+                (SysSubjectResourceGrantRel.subject_type == GrantSubjectType.ROLE.value)
                 & role_filter,
             ),
         )
@@ -102,20 +97,14 @@ class GrantRepository:
     ) -> list[PermissionGrantRecord]:
         group_ids = await self.account_repo.get_account_group_ids(account_id)
         group_filter = (
-            SysSubjectPermissionGrantRel.subject_id.in_(group_ids)
-            if group_ids
-            else False
+            SysSubjectPermissionGrantRel.subject_id.in_(group_ids) if group_ids else False
         )
         stmt = select(SysSubjectPermissionGrantRel).where(
             SysSubjectPermissionGrantRel.status == StatusEnum.ENABLED.value,
             or_(
-                (
-                    SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.ACCOUNT.value
-                )
+                (SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.ACCOUNT.value)
                 & (SysSubjectPermissionGrantRel.subject_id == account_id),
-                (
-                    SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.GROUP.value
-                )
+                (SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.GROUP.value)
                 & group_filter,
             ),
         )

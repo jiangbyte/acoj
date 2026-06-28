@@ -137,24 +137,24 @@ OBSERVABILITY__CELERY_OBSERVABILITY_ENABLED=true
 后端：
 
 ```bash
-./scripts/test.sh
-./scripts/lint.sh
-./scripts/migrate.sh
-./scripts/makemigration.sh "message"
+python scripts/test.py
+python scripts/lint.py
+python scripts/migrate.py
+python scripts/makemigration.py "message"
 ```
 
 数据库迁移只管理结构，不写入业务种子数据。新增或修改表结构时，先修改
 SQLAlchemy model，再执行自动生成：
 
 ```bash
-./scripts/makemigration.sh "add xxx table"
-./scripts/check_migration.sh
-./scripts/migrate.sh
+python scripts/makemigration.py "add xxx table"
+python scripts/check_migration.py
+python scripts/migrate.py
 ```
 
 生成的 `migrations/versions/*.py` 应只包含 `create_table`、`add_column`、
 `create_index` 等结构变更，不应包含业务 `insert/update/delete`。本地开发库如
-需重建，删除并重新创建 PostgreSQL 数据库后执行 `./scripts/migrate.sh`。
+需重建，删除并重新创建 PostgreSQL 数据库后执行 `python scripts/migrate.py`。
 
 前端：
 
@@ -234,7 +234,7 @@ web/
 后端测试入口：
 
 ```bash
-./scripts/test.sh
+python scripts/test.py
 ```
 
 当前测试覆盖认证、权限、分页、字典、Banner、文件、时间格式、健康检查和可观测性等平台能力。OJ 核心业务模块落地后，应补充题库、提交、评测队列和比赛流程相关测试。

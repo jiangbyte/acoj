@@ -2,9 +2,10 @@ from datetime import datetime
 
 from pydantic import Field
 
-from app.core.config.enums import RoleScopeType, StatusEnum
+from app.core.config.enums import StatusEnum
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
+from app.modules.iam.enums import RoleScopeType
 
 
 class RoleCreateRequest(ApiSchema):

@@ -3,10 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import LoginScope
+from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
-from app.deps.auth import require_permission, require_scope
+from app.deps.auth import require_permission, require_account_type
 from app.deps.db import get_db_session
 from app.modules.dict.schema import (
     DictAdminPageQuery,
@@ -27,7 +27,7 @@ router = APIRouter()
 @router.post(
     "/sys/dicts/create",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("sys:dict:create")),
     ],
     response_model=ApiResponse[None],
@@ -43,7 +43,7 @@ async def create(
 @router.post(
     "/sys/dicts/update",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("sys:dict:update")),
     ],
     response_model=ApiResponse[None],
@@ -59,7 +59,7 @@ async def update(
 @router.post(
     "/sys/dicts/delete",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("sys:dict:delete")),
     ],
     response_model=ApiResponse[None],
@@ -75,7 +75,7 @@ async def delete(
 @router.get(
     "/sys/dicts/detail",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("sys:dict:detail")),
     ],
     response_model=ApiResponse[SysDictSchema],
@@ -90,7 +90,7 @@ async def get(
 @router.get(
     "/sys/dicts/page",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("sys:dict:page")),
     ],
     response_model=ApiResponse[PageData[SysDictSchema]],
@@ -117,7 +117,7 @@ async def page(
 @router.get(
     "/sys/dicts/tree",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("sys:dict:tree")),
     ],
     response_model=ApiResponse[list[SysDictTreeNode]],

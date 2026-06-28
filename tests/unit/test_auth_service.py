@@ -2,16 +2,13 @@ import pytest
 
 from app.core.config.enums import (
     AccountStatusEnum,
-    GrantSubjectType,
-    LoginScope,
-    ResourceType,
-    RoleScopeType,
-    UserType,
+    AccountType,
 )
 from app.core.exceptions.business import AuthenticationError
 from app.core.security.password import hash_password
 from app.modules.auth.schema import LoginPayload
 from app.modules.auth.service import AuthService
+from app.modules.iam.enums import GrantSubjectType, ResourceType, RoleScopeType
 from app.modules.iam.account.model import SysAccount, SysAccountRoleRel
 from app.modules.iam.grant.model import SysSubjectResourceGrantRel
 from app.modules.iam.resource.model import SysResource, SysResourcePermissionRel
@@ -22,7 +19,7 @@ async def test_admin_login_success(db_session):
     account = SysAccount(
         account="admin",
         password_hash=hash_password("Admin@123456"),
-        account_type=UserType.ADMIN.value,
+        account_type=AccountType.ADMIN.value,
         account_status=AccountStatusEnum.ENABLED.value,
         name="Admin",
         nickname="Admin",
@@ -58,18 +55,18 @@ async def test_admin_login_success(db_session):
     await db_session.commit()
 
     payload = await AuthService(db_session).login(
-        LoginPayload(account="admin", password="Admin@123456", login_scope=LoginScope.ADMIN)
+        LoginPayload(account="admin", password="Admin@123456", account_type=AccountType.ADMIN)
     )
     assert payload.account_id == account.id
-    assert payload.login_scope == LoginScope.ADMIN.value
+    assert payload.account_type == AccountType.ADMIN.value
     assert "iam:account:list" in payload.permission_keys
 
 
-async def test_portal_account_cannot_login_admin_scope(db_session):
+async def test_portal_account_cannot_login_admin_account_type(db_session):
     account = SysAccount(
         account="portal_account",
         password_hash=hash_password("Portal@123456"),
-        account_type=UserType.PORTAL.value,
+        account_type=AccountType.PORTAL.value,
         account_status=AccountStatusEnum.ENABLED.value,
         name="Portal Account",
         nickname="Portal Account",
@@ -82,6 +79,6 @@ async def test_portal_account_cannot_login_admin_scope(db_session):
             LoginPayload(
                 account="portal_account",
                 password="Portal@123456",
-                login_scope=LoginScope.ADMIN,
+                account_type=AccountType.ADMIN,
             )
         )

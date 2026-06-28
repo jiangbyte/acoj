@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import UserType
+from app.core.config.enums import AccountType
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest
 from app.core.schema.base import to_schema, to_schema_list
@@ -36,9 +36,9 @@ class AccountService:
             )
             account = await self.repo.get_account_by_account(payload.account)
             assert account is not None
-            if payload.account_type == UserType.ADMIN:
+            if payload.account_type == AccountType.ADMIN:
                 await AdminUserProfileService(self.db).create_default_profile(account.id)
-            elif payload.account_type == UserType.PORTAL:
+            elif payload.account_type == AccountType.PORTAL:
                 await PortalUserProfileService(self.db).create_default_profile(account.id)
 
     async def update(self, payload: AccountUpdateRequest) -> None:

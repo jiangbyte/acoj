@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import AccountStatusEnum, LoginScope, UserType
+from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.config.settings import settings
 from app.core.exceptions.business import AuthenticationError
 from app.core.security.password import verify_password
@@ -13,7 +13,7 @@ from app.modules.iam.grant.repository import GrantRepository
 
 
 class AuthService:
-    """认证服务，负责登录态签发、登录域校验与会话数据组装。"""
+    """认证服务，负责登录态签发、账户类型校验与会话数据组装。"""
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -23,7 +23,7 @@ class AuthService:
     async def login(self, payload: LoginPayload) -> SessionPayload:
         """执行登录流程，使用对象承载参数以避免接口层平铺传参。"""
         account = await self.account_repo.get_account_by_account(payload.account)
-        self._validate_account(account, payload.password, payload.login_scope)
+        self._validate_account(account, payload.password, payload.account_type)
         assert account is not None
         permission_grants = await self.grant_repo.get_account_effective_permissions(account.id)
         role_ids = await self.account_repo.get_account_role_ids(account.id)
@@ -33,7 +33,6 @@ class AuthService:
             token=generate_token(),
             account_id=account.id,
             account_type=account.account_type,
-            login_scope=payload.login_scope.value,
             role_ids=role_ids,
             dept_ids=dept_ids,
             group_ids=group_ids,
@@ -51,9 +50,9 @@ class AuthService:
         self,
         account: SysAccount | None,
         password: str,
-        login_scope: LoginScope,
+        account_type: AccountType,
     ) -> None:
-        """校验账号密码、账号状态以及当前登录域是否允许访问。"""
+        """校验账号密码、账号状态以及目标账户类型是否允许访问。"""
         if not account or not verify_password(password, account.password_hash):
             raise AuthenticationError("Invalid account or password")
         if (
@@ -63,7 +62,7 @@ class AuthService:
             raise AuthenticationError("Account is cancelled")
         if account.account_status != AccountStatusEnum.ENABLED.value:
             raise AuthenticationError("Account is inactive")
-        if login_scope == LoginScope.ADMIN and account.account_type != UserType.ADMIN.value:
-            raise AuthenticationError("Account is not allowed to access admin scope")
-        if login_scope == LoginScope.PORTAL and account.account_type != UserType.PORTAL.value:
-            raise AuthenticationError("Account is not allowed to access portal scope")
+        if account_type == AccountType.ADMIN and account.account_type != AccountType.ADMIN.value:
+            raise AuthenticationError("Account is not allowed to access admin account type")
+        if account_type == AccountType.PORTAL and account.account_type != AccountType.PORTAL.value:
+            raise AuthenticationError("Account is not allowed to access portal account type")

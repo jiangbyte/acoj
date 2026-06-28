@@ -1,6 +1,6 @@
 from pydantic import Field
 
-from app.core.config.enums import LoginScope, UserType
+from app.core.config.enums import AccountType
 from app.core.response.schema import ApiResponse
 from app.core.schema.base import ApiSchema
 
@@ -11,18 +11,17 @@ class LoginRequest(ApiSchema):
 
 
 class LoginPayload(ApiSchema):
-    """登录服务载荷，包含登录域。"""
+    """登录服务载荷，包含目标账户类型。"""
 
     account: str
     password: str
-    login_scope: LoginScope
+    account_type: AccountType
 
 
 class LoginResponse(ApiSchema):
     token: str
     account_id: str
-    account_type: UserType
-    login_scope: LoginScope
+    account_type: AccountType
 
 
 class LogoutResponse(ApiSchema):
