@@ -1,0 +1,26 @@
+{
+  "title": "字典管理",
+  "code": "编码",
+  "label": "标签",
+  "value": "值",
+  "color": "颜色",
+  "category": "分类",
+  "parent": "父级字典",
+  "sort": "排序",
+  "addDict": "新增字典",
+  "editDict": "编辑字典",
+  "detailDict": "字典详情",
+  "id": "ID",
+  "topLevel": "顶级",
+  "searchTree": "搜索字典",
+  "deleteConfirm": "确认删除该字典及其子级字典？",
+  "batchDeleteConfirm": "确认删除选中的 {count} 个字典？",
+  "required": "请输入{field}",
+  "codePattern": "编码只能包含大写字母、数字和下划线",
+  "colorPattern": "请选择有效的十六进制颜色",
+  "codeExists": "编码已存在",
+  "categories": {
+    "sys": "系统字典",
+    "biz": "业务字典"
+  }
+}
