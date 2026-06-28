@@ -2,8 +2,16 @@ from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.business import NotFoundError
+from app.modules.iam.enums import GrantSubjectType
+from app.modules.iam.grant.model import SysSubjectPermissionGrantRel
 from app.modules.iam.role.model import SysRole
-from app.modules.iam.role.schema import RoleAdminPageQuery, RoleCreateRequest, RoleUpdateRequest
+from app.modules.iam.role.schema import (
+    RoleAdminPageQuery,
+    RoleGrantPermissionRequest,
+    RolePermissionGrantInfo,
+    RoleCreateRequest,
+    RoleUpdateRequest,
+)
 
 
 class RoleRepository:
@@ -64,3 +72,43 @@ class RoleRepository:
         roles = list((await self.db.execute(stmt)).scalars().all())
         total = (await self.db.execute(count_stmt)).scalar_one()
         return roles, total
+
+    async def list_permission_grants(self, role_id: str) -> list[RolePermissionGrantInfo]:
+        await self.get_required(role_id)
+        stmt = (
+            select(SysSubjectPermissionGrantRel)
+            .where(
+                SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.ROLE.value,
+                SysSubjectPermissionGrantRel.subject_id == role_id,
+            )
+            .order_by(SysSubjectPermissionGrantRel.id.asc())
+        )
+        grants = list((await self.db.execute(stmt)).scalars().all())
+        return [
+            RolePermissionGrantInfo(
+                permission_key=grant.permission_key,
+                data_scope=grant.data_scope,
+                custom_scope_dept_ids=list(grant.custom_scope_dept_ids),
+            )
+            for grant in grants
+        ]
+
+    async def replace_permission_grants(self, payload: RoleGrantPermissionRequest) -> None:
+        await self.get_required(payload.id)
+        await self.db.execute(
+            delete(SysSubjectPermissionGrantRel).where(
+                SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.ROLE.value,
+                SysSubjectPermissionGrantRel.subject_id == payload.id,
+            )
+        )
+        for grant in payload.grant_info_list:
+            self.db.add(
+                SysSubjectPermissionGrantRel(
+                    subject_type=GrantSubjectType.ROLE.value,
+                    subject_id=payload.id,
+                    permission_key=grant.permission_key,
+                    data_scope=grant.data_scope.value,
+                    custom_scope_dept_ids=list(grant.custom_scope_dept_ids),
+                )
+            )
+        await self.db.flush()

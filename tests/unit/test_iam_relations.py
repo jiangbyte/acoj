@@ -75,19 +75,12 @@ async def test_assign_account_role_success(db_session):
 
 
 async def test_bind_resource_permission_success(db_session, monkeypatch):
-    async def fake_get_permission_definition(permission_key: str):
-        return {
-            "permission_key": permission_key,
-            "module": "iam",
-            "source": "tests.unit.test_iam_relations",
-            "methods": ["POST"],
-            "account_types": [AccountType.ADMIN.value],
-            "routes": [],
-        }
+    async def fake_ensure_registered_permission(permission_key: str) -> None:
+        assert permission_key == "iam:account:create"
 
     monkeypatch.setattr(
-        "app.modules.iam.permission.service.get_permission_definition",
-        fake_get_permission_definition,
+        "app.modules.iam.resource.service.ensure_registered_permission",
+        fake_ensure_registered_permission,
     )
 
     resource_id = await _create_resource(

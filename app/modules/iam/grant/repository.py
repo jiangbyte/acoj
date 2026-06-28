@@ -95,7 +95,11 @@ class GrantRepository:
         self,
         account_id: str,
     ) -> list[PermissionGrantRecord]:
+        role_ids = await self.account_repo.get_account_role_ids(account_id)
         group_ids = await self.account_repo.get_account_group_ids(account_id)
+        role_filter = (
+            SysSubjectPermissionGrantRel.subject_id.in_(role_ids) if role_ids else False
+        )
         group_filter = (
             SysSubjectPermissionGrantRel.subject_id.in_(group_ids) if group_ids else False
         )
@@ -104,6 +108,8 @@ class GrantRepository:
             or_(
                 (SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.ACCOUNT.value)
                 & (SysSubjectPermissionGrantRel.subject_id == account_id),
+                (SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.ROLE.value)
+                & role_filter,
                 (SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.GROUP.value)
                 & group_filter,
             ),

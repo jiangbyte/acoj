@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.schema.base import to_schema
-from app.modules.iam.enums import GrantSubjectType
 from app.modules.iam.grant.repository import GrantRepository
 from app.modules.iam.grant.schema import (
     SubjectPermissionGrantRequest,
@@ -32,8 +31,6 @@ class GrantService:
         self,
         payload: SubjectPermissionGrantRequest,
     ) -> SysSubjectPermissionGrantRelSchema:
-        if payload.subject_type == GrantSubjectType.ROLE:
-            raise ValueError("Role should grant resources instead of direct permission exceptions")
         await ensure_registered_permission(payload.permission_key)
         async with transactional(self.db):
             return to_schema(

@@ -5,12 +5,15 @@ from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest
 from app.core.schema.base import to_schema, to_schema_list
 from app.core.security.password import hash_password
+from app.modules.iam.permission.service import ensure_registered_permission
 from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.account.schema import (
     AccountCreateRequest,
     AccountAdminPageQuery,
     AccountDeptAssignRequest,
+    AccountGrantPermissionRequest,
     AccountGroupAssignRequest,
+    AccountOwnPermissionResponse,
     AccountRoleAssignRequest,
     AccountUpdateRequest,
     SysAccountDeptRelSchema,
@@ -86,3 +89,15 @@ class AccountService:
                 SysAccountDeptRelSchema,
                 await self.repo.assign_account_to_dept(payload),
             )
+
+    async def own_permission(self, query: IdQuery) -> AccountOwnPermissionResponse:
+        return AccountOwnPermissionResponse(
+            id=query.id,
+            grant_info_list=await self.repo.list_permission_grants(query.id),
+        )
+
+    async def grant_permission(self, payload: AccountGrantPermissionRequest) -> None:
+        for grant in payload.grant_info_list:
+            await ensure_registered_permission(grant.permission_key)
+        async with transactional(self.db):
+            await self.repo.replace_permission_grants(payload)

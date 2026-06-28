@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import Field
 
 from app.core.config.enums import StatusEnum
+from app.core.config.enums import DataScope
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
 from app.modules.iam.enums import RoleScopeType
@@ -50,3 +51,19 @@ class SysRoleSchema(ApiSchema):
     created_by: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+
+
+class RolePermissionGrantInfo(ApiSchema):
+    permission_key: str = Field(min_length=1, max_length=128)
+    data_scope: DataScope = DataScope.SELF
+    custom_scope_dept_ids: list[str] = Field(default_factory=list)
+
+
+class RoleOwnPermissionResponse(ApiSchema):
+    id: str
+    grant_info_list: list[RolePermissionGrantInfo] = Field(default_factory=list)
+
+
+class RoleGrantPermissionRequest(ApiSchema):
+    id: str = Field(min_length=1, max_length=64)
+    grant_info_list: list[RolePermissionGrantInfo] = Field(default_factory=list)
