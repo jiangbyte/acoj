@@ -1,4 +1,4 @@
-from app.core.config.enums import AccountStatusEnum, LoginScope, UserType
+from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.security.session import SessionPayload, session_store
 from app.modules.file.model import SysFile
 from app.modules.iam.account.model import SysAccount
@@ -12,7 +12,7 @@ async def test_admin_file_list_uses_current_size_total_pages_records(client):
         account = SysAccount(
             account="admin_pager",
             password_hash="hashed",
-            account_type=UserType.ADMIN.value,
+            account_type=AccountType.ADMIN.value,
             account_status=AccountStatusEnum.ENABLED.value,
             name="Admin Pager",
             nickname="Admin Pager",
@@ -32,8 +32,7 @@ async def test_admin_file_list_uses_current_size_total_pages_records(client):
             SessionPayload(
                 token="admin-pagination-token",
                 account_id=account.id,
-                account_type=UserType.ADMIN.value,
-                login_scope=LoginScope.ADMIN.value,
+                account_type=AccountType.ADMIN.value,
                 role_ids=[],
                 dept_ids=[],
                 group_ids=[],

@@ -3,20 +3,21 @@ import json
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from app.core.config.enums import ResourceType
+from app.core.config.enums import AccountType
 from app.core.exceptions.business import BusinessError
 from app.core.security.permission_registry import (
     PERMISSION_META_ATTR,
-    SCOPE_META_ATTR,
+    ACCOUNT_TYPE_META_ATTR,
     get_permission_definition,
     scan_permission_registry,
     sync_permission_registry,
 )
-from app.deps.auth import require_permission, require_scope
+from app.deps.auth import require_permission, require_account_type
 from app.factory import create_app
 from app.modules.iam.resource.model import SysResource
 from app.modules.iam.resource.schema import ResourceCreateRequest, ResourcePermissionBindRequest
 from app.modules.iam.resource.service import ResourceService
+from app.modules.iam.enums import ResourceType
 from app.platform.cache.keys import (
     permission_registry_module_resources_key,
     permission_registry_modules_key,
@@ -103,12 +104,12 @@ class FakePipeline:
 
 async def test_permission_dependency_carries_scan_metadata():
     permission_dependency = require_permission("iam:account:list")
-    scope_dependency = require_scope(*[])
+    account_type_dependency = require_account_type(*[])
 
     assert getattr(permission_dependency, PERMISSION_META_ATTR) == {
         "permission_key": "iam:account:list"
     }
-    assert getattr(scope_dependency, SCOPE_META_ATTR) == {"login_scopes": []}
+    assert getattr(account_type_dependency, ACCOUNT_TYPE_META_ATTR) == {"account_types": []}
 
 
 def test_scan_permission_registry_collects_routes():
@@ -120,7 +121,7 @@ def test_scan_permission_registry_collects_routes():
     file_page = next(item for item in items if item.permission_key == "file:file:page")
     assert file_page.module == "file"
     assert "/api/v1/admin/file/page" in [route_ref.path for route_ref in file_page.routes]
-    assert "admin" in file_page.login_scopes
+    assert AccountType.ADMIN.value in file_page.account_types
 
 
 async def test_sync_and_resolve_permission_registry(monkeypatch):

@@ -3,7 +3,8 @@ from datetime import datetime
 from sqlalchemy import DateTime, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.config.enums import DataScope, GrantEffect, GrantMode, StatusEnum
+from app.core.config.enums import DataScope, StatusEnum
+from app.modules.iam.enums import GrantEffect, GrantMode
 from app.platform.db.base import Base
 from app.platform.db.mixins import TimestampMixin
 from app.platform.id_generator.snowflake import generate_snowflake_id
@@ -14,10 +15,17 @@ class SysSubjectResourceGrantRel(Base, TimestampMixin):
 
     __tablename__ = "sys_subject_resource_grant_rel"
     __table_args__ = (
-        UniqueConstraint("subject_type", "subject_id", "resource_id", name="uq_sys_subject_resource_grant_rel_subject_resource"),
+        UniqueConstraint(
+            "subject_type",
+            "subject_id",
+            "resource_id",
+            name="uq_sys_subject_resource_grant_rel_subject_resource",
+        ),
     )
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, default=generate_snowflake_id, comment="主键"
+    )
     subject_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="授权主体类型")
     subject_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="授权主体ID")
     resource_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="资源ID")
@@ -48,10 +56,17 @@ class SysSubjectPermissionGrantRel(Base, TimestampMixin):
 
     __tablename__ = "sys_subject_permission_grant_rel"
     __table_args__ = (
-        UniqueConstraint("subject_type", "subject_id", "permission_key", name="uq_sys_subject_permission_grant_rel_subject_permission"),
+        UniqueConstraint(
+            "subject_type",
+            "subject_id",
+            "permission_key",
+            name="uq_sys_subject_permission_grant_rel_subject_permission",
+        ),
     )
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, default=generate_snowflake_id, comment="主键"
+    )
     subject_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="授权主体类型")
     subject_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="授权主体ID")
     permission_key: Mapped[str] = mapped_column(String(128), nullable=False, comment="权限标识")

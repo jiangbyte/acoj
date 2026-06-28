@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import LoginScope
+from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
-from app.deps.auth import require_permission, require_scope
+from app.deps.auth import require_permission, require_account_type
 from app.deps.db import get_db_session
 from app.modules.iam.group.schema import (
     GroupAdminPageQuery,
@@ -25,7 +25,7 @@ router = APIRouter()
 @router.post(
     "/sys/groups/create",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:group:create")),
     ],
     response_model=ApiResponse[None],
@@ -41,7 +41,7 @@ async def create(
 @router.post(
     "/sys/groups/update",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:group:update")),
     ],
     response_model=ApiResponse[None],
@@ -57,7 +57,7 @@ async def update(
 @router.post(
     "/sys/groups/delete",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:group:delete")),
     ],
     response_model=ApiResponse[None],
@@ -73,7 +73,7 @@ async def delete(
 @router.get(
     "/sys/groups/detail",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:group:detail")),
     ],
     response_model=ApiResponse[SysGroupSchema],
@@ -88,7 +88,7 @@ async def detail(
 @router.get(
     "/sys/groups/page",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:group:page")),
     ],
     response_model=ApiResponse[PageData[SysGroupSchema]],
@@ -111,7 +111,7 @@ async def page(
 @router.post(
     "/group-roles",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:group:grantrole")),
     ],
     response_model=ApiResponse[SysGroupRoleRelSchema],

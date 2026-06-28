@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import LoginScope
+from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
-from app.deps.auth import require_permission, require_scope
+from app.deps.auth import require_permission, require_account_type
 from app.deps.db import get_db_session
 from app.modules.banner.schema import (
     BannerAdminPageQuery,
@@ -23,7 +23,7 @@ router = APIRouter()
 @router.post(
     "/sys/banners/create",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("sys:banner:create")),
     ],
     response_model=ApiResponse[None],
@@ -39,7 +39,7 @@ async def create(
 @router.post(
     "/sys/banners/update",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("sys:banner:update")),
     ],
     response_model=ApiResponse[None],
@@ -55,7 +55,7 @@ async def update(
 @router.post(
     "/sys/banners/delete",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("sys:banner:delete")),
     ],
     response_model=ApiResponse[None],
@@ -71,7 +71,7 @@ async def delete(
 @router.get(
     "/sys/banners/detail",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("sys:banner:detail")),
     ],
     response_model=ApiResponse[SysBannerSchema],
@@ -86,7 +86,7 @@ async def detail(
 @router.get(
     "/sys/banners/page",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("sys:banner:page")),
     ],
     response_model=ApiResponse[PageData[SysBannerSchema]],

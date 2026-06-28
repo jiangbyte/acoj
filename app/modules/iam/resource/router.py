@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import LoginScope
+from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
-from app.deps.auth import require_permission, require_scope
+from app.deps.auth import require_permission, require_account_type
 from app.deps.db import get_db_session
 from app.modules.iam.resource.schema import (
     ResourceAdminPageQuery,
@@ -26,7 +26,7 @@ router = APIRouter()
 @router.post(
     "/sys/resources/create",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:resource:create")),
     ],
     response_model=ApiResponse[None],
@@ -42,7 +42,7 @@ async def create(
 @router.post(
     "/sys/resources/update",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:resource:update")),
     ],
     response_model=ApiResponse[None],
@@ -58,7 +58,7 @@ async def update(
 @router.post(
     "/sys/resources/delete",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:resource:delete")),
     ],
     response_model=ApiResponse[None],
@@ -74,7 +74,7 @@ async def delete(
 @router.get(
     "/sys/resources/detail",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:resource:detail")),
     ],
     response_model=ApiResponse[SysResourceSchema],
@@ -89,7 +89,7 @@ async def detail(
 @router.get(
     "/sys/resources/page",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:resource:page")),
     ],
     response_model=ApiResponse[PageData[SysResourceSchema]],
@@ -120,7 +120,7 @@ async def page(
 @router.get(
     "/sys/resources/tree",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:resource:list")),
     ],
     response_model=ApiResponse[list[ResourceTreeNode]],
@@ -134,7 +134,7 @@ async def list_resource_tree(
 @router.post(
     "/resource-permissions",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:resource:grant")),
     ],
     response_model=ApiResponse[SysResourcePermissionRelSchema],

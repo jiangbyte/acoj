@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import GrantSubjectType
 from app.core.schema.base import to_schema
+from app.modules.iam.enums import GrantSubjectType
 from app.modules.iam.grant.repository import GrantRepository
 from app.modules.iam.grant.schema import (
     SubjectPermissionGrantRequest,

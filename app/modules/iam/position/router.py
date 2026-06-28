@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import LoginScope
+from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
-from app.deps.auth import require_permission, require_scope
+from app.deps.auth import require_permission, require_account_type
 from app.deps.db import get_db_session
 from app.modules.iam.position.schema import (
     PositionAdminPageQuery,
@@ -23,7 +23,7 @@ router = APIRouter()
 @router.post(
     "/sys/positions/create",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:position:create")),
     ],
     response_model=ApiResponse[None],
@@ -39,7 +39,7 @@ async def create(
 @router.post(
     "/sys/positions/update",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:position:update")),
     ],
     response_model=ApiResponse[None],
@@ -55,7 +55,7 @@ async def update(
 @router.post(
     "/sys/positions/delete",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:position:delete")),
     ],
     response_model=ApiResponse[None],
@@ -71,7 +71,7 @@ async def delete(
 @router.get(
     "/sys/positions/detail",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:position:detail")),
     ],
     response_model=ApiResponse[SysPositionSchema],
@@ -86,7 +86,7 @@ async def detail(
 @router.get(
     "/sys/positions/page",
     dependencies=[
-        # Depends(require_scope(LoginScope.ADMIN)),
+        # Depends(require_account_type(AccountType.ADMIN)),
         # Depends(require_permission("iam:position:page")),
     ],
     response_model=ApiResponse[PageData[SysPositionSchema]],

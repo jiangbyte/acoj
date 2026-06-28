@@ -2,9 +2,10 @@ from datetime import datetime
 
 from pydantic import Field
 
-from app.core.config.enums import DataScope, ResourceType, StatusEnum
+from app.core.config.enums import DataScope, StatusEnum
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
+from app.modules.iam.enums import ResourceType
 
 
 class ResourceCreateRequest(ApiSchema):

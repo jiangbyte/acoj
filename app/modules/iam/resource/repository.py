@@ -3,8 +3,9 @@ from typing import TypedDict
 from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import ResourceType, StatusEnum
+from app.core.config.enums import StatusEnum
 from app.core.exceptions.business import NotFoundError
+from app.modules.iam.enums import ResourceType
 from app.modules.iam.resource.model import SysResource, SysResourcePermissionRel
 from app.modules.iam.resource.schema import (
     ResourceAdminPageQuery,
@@ -84,9 +85,13 @@ class ResourceRepository:
         return resources, total
 
     async def list_resources(self) -> list[SysResource]:
-        stmt = select(SysResource).where(SysResource.status == StatusEnum.ENABLED.value).order_by(
-            SysResource.sort.asc(),
-            SysResource.id.asc(),
+        stmt = (
+            select(SysResource)
+            .where(SysResource.status == StatusEnum.ENABLED.value)
+            .order_by(
+                SysResource.sort.asc(),
+                SysResource.id.asc(),
+            )
         )
         return list((await self.db.execute(stmt)).scalars().all())
 
@@ -102,9 +107,11 @@ class ResourceRepository:
         return relation
 
     async def list_resource_permissions(self) -> list[SysResourcePermissionRel]:
-        stmt = select(SysResourcePermissionRel).where(
-            SysResourcePermissionRel.status == StatusEnum.ENABLED.value
-        ).order_by(SysResourcePermissionRel.sort.asc(), SysResourcePermissionRel.id.asc())
+        stmt = (
+            select(SysResourcePermissionRel)
+            .where(SysResourcePermissionRel.status == StatusEnum.ENABLED.value)
+            .order_by(SysResourcePermissionRel.sort.asc(), SysResourcePermissionRel.id.asc())
+        )
         return list((await self.db.execute(stmt)).scalars().all())
 
     async def get_resource_tree(self) -> list[ResourceTreeRecord]:

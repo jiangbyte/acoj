@@ -3,14 +3,14 @@ from typing import Annotated
 from fastapi import Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import AccountStatusEnum, LoginScope
+from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.exceptions.business import AuthenticationError, AuthorizationError
 from app.core.security.permission import PermissionChecker
 from app.core.security.session import SessionPayload, session_store
-from app.core.security.user_scope import assert_scope_allowed
-from app.deps.context import account_id_ctx, account_type_ctx, login_scope_ctx
+from app.core.security.permission_registry import ACCOUNT_TYPE_META_ATTR, PERMISSION_META_ATTR
+from app.core.security.account_type import assert_account_type_allowed
+from app.deps.context import account_id_ctx, account_type_ctx
 from app.deps.db import get_db_session
-from app.core.security.permission_registry import PERMISSION_META_ATTR, SCOPE_META_ATTR
 from app.modules.iam.account.repository import AccountRepository
 
 
@@ -33,7 +33,6 @@ async def get_current_account(
 ):
     account_id_ctx.set(session.account_id)
     account_type_ctx.set(session.account_type)
-    login_scope_ctx.set(session.login_scope)
     account = await AccountRepository(db).get_account_by_id(session.account_id)
     if (
         not account
@@ -44,15 +43,20 @@ async def get_current_account(
     return account
 
 
-def require_scope(*scopes: LoginScope):
-    """基于登录域枚举生成依赖校验函数。"""
+def require_account_type(*account_types: AccountType):
+    """基于账户类型枚举生成依赖校验函数。"""
+
     async def dependency(
         session: Annotated[SessionPayload, Depends(get_current_session)],
     ) -> SessionPayload:
-        assert_scope_allowed(session.login_scope, set(scopes))
+        assert_account_type_allowed(session.account_type, set(account_types))
         return session
 
-    setattr(dependency, SCOPE_META_ATTR, {"login_scopes": [scope.value for scope in scopes]})
+    setattr(
+        dependency,
+        ACCOUNT_TYPE_META_ATTR,
+        {"account_types": [account_type.value for account_type in account_types]},
+    )
     return dependency
 
 

@@ -1,7 +1,8 @@
 from sqlalchemy import Boolean, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.config.enums import RoleScopeType, StatusEnum
+from app.core.config.enums import StatusEnum
+from app.modules.iam.enums import RoleScopeType
 from app.platform.db.base import Base
 from app.platform.db.mixins import TimestampMixin
 from app.platform.id_generator.snowflake import generate_snowflake_id
@@ -13,7 +14,9 @@ class SysRole(Base, TimestampMixin):
     __tablename__ = "sys_role"
     __table_args__ = (UniqueConstraint("code", name="uq_sys_role_code"),)
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, default=generate_snowflake_id, comment="主键"
+    )
     code: Mapped[str] = mapped_column(String(64), nullable=False, comment="角色编码")
     name: Mapped[str] = mapped_column(String(64), nullable=False, comment="角色名称")
     category: Mapped[str] = mapped_column(String(64), nullable=False, comment="角色分类")
@@ -31,6 +34,8 @@ class SysRole(Base, TimestampMixin):
         default=StatusEnum.ENABLED.value,
         comment="状态",
     )
-    is_builtin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="是否内置角色")
+    is_builtin: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False, comment="是否内置角色"
+    )
     description: Mapped[str | None] = mapped_column(Text, comment="描述")
     extra: Mapped[dict] = mapped_column(JSON, default=dict, comment="扩展信息")

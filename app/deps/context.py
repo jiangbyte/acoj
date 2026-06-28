@@ -3,7 +3,6 @@ from contextvars import ContextVar
 request_id_ctx: ContextVar[str | None] = ContextVar("request_id", default=None)
 account_id_ctx: ContextVar[str | None] = ContextVar("account_id", default=None)
 account_type_ctx: ContextVar[str | None] = ContextVar("account_type", default=None)
-login_scope_ctx: ContextVar[str | None] = ContextVar("login_scope", default=None)
 trace_id_ctx: ContextVar[str | None] = ContextVar("trace_id", default=None)
 span_id_ctx: ContextVar[str | None] = ContextVar("span_id", default=None)
 request_path_ctx: ContextVar[str | None] = ContextVar("request_path", default=None)

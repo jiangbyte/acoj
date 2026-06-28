@@ -1,4 +1,4 @@
-from app.core.config.enums import AccountStatusEnum, LoginScope, UserType
+from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.security.session import SessionPayload, session_store
 from app.deps.db import get_db_session
 from app.modules.iam.account.model import SysAccount
@@ -10,7 +10,7 @@ async def _seed_admin(client, token: str, permissions: list[str]) -> None:
         account = SysAccount(
             account=f"{token}_account",
             password_hash="hashed",
-            account_type=UserType.ADMIN.value,
+            account_type=AccountType.ADMIN.value,
             account_status=AccountStatusEnum.ENABLED.value,
             name="Dict Admin",
             nickname="Dict Admin",
@@ -21,8 +21,7 @@ async def _seed_admin(client, token: str, permissions: list[str]) -> None:
             SessionPayload(
                 token=token,
                 account_id=account.id,
-                account_type=UserType.ADMIN.value,
-                login_scope=LoginScope.ADMIN.value,
+                account_type=AccountType.ADMIN.value,
                 role_ids=[],
                 dept_ids=[],
                 group_ids=[],

@@ -15,7 +15,7 @@ class PermissionDefinition(TypedDict):
     module: str
     source: str
     methods: list[str]
-    login_scopes: list[str]
+    account_types: list[str]
     routes: list[dict[str, object]]
 
 
@@ -38,12 +38,12 @@ class PermissionService:
                 "module": item.module,
                 "source": item.source,
                 "methods": list(item.methods),
-                "login_scopes": list(item.login_scopes),
+                "account_types": list(item.account_types),
                 "routes": [
                     {
                         "path": route_ref.path,
                         "methods": list(route_ref.methods),
-                        "login_scopes": list(route_ref.login_scopes),
+                        "account_types": list(route_ref.account_types),
                     }
                     for route_ref in item.routes
                 ],
@@ -58,12 +58,12 @@ class PermissionService:
                 "module": item.module,
                 "source": item.source,
                 "methods": list(item.methods),
-                "login_scopes": list(item.login_scopes),
+                "account_types": list(item.account_types),
                 "routes": [
                     {
                         "path": route_ref.path,
                         "methods": list(route_ref.methods),
-                        "login_scopes": list(route_ref.login_scopes),
+                        "account_types": list(route_ref.account_types),
                     }
                     for route_ref in item.routes
                 ],

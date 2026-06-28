@@ -1,63 +1,45 @@
 from enum import StrEnum
 
 
-class UserType(StrEnum):
-    ADMIN = "ADMIN"
-    PORTAL = "PORTAL"
-    APP = "APP"
-    MERCHANT = "MERCHANT"
-    PARTNER = "PARTNER"
+class AccountType(StrEnum):
+    """
+    账户类型
+    """
 
-
-class LoginScope(StrEnum):
-    ADMIN = "admin"
-    PORTAL = "portal"
+    ADMIN = "ADMIN"  # 管理后台
+    PORTAL = "PORTAL"  # 前台
+    # 下面的账户类型待定
+    # APP = "APP"
+    # MERCHANT = "MERCHANT"
+    # PARTNER = "PARTNER"
 
 
 class DataScope(StrEnum):
-    ALL = "ALL"
-    DEPT_AND_CHILD = "DEPT_AND_CHILD"
-    DEPT = "DEPT"
-    SELF = "SELF"
-    CUSTOM = "CUSTOM"
+    """
+    数据范围
+    """
 
-
-class RoleScopeType(StrEnum):
-    PLATFORM = "PLATFORM"
-    DEPT = "DEPT"
-
-
-class ResourceType(StrEnum):
-    CATALOG = "CATALOG"
-    MENU = "MENU"
-    PAGE = "PAGE"
-    BUTTON = "BUTTON"
-    ACTION = "ACTION"
-    API_GROUP = "API_GROUP"
-
-
-class GrantSubjectType(StrEnum):
-    ROLE = "ROLE"
-    ACCOUNT = "ACCOUNT"
-    GROUP = "GROUP"
-
-
-class GrantMode(StrEnum):
-    DIRECT = "DIRECT"
-    CASCADE = "CASCADE"
-
-
-class GrantEffect(StrEnum):
-    ALLOW = "ALLOW"
-    DENY = "DENY"
+    ALL = "ALL"  # 全部
+    DEPT_AND_CHILD = "DEPT_AND_CHILD"  # 部门及子部门
+    DEPT = "DEPT"  # 部门
+    SELF = "SELF"  # 本人
+    CUSTOM = "CUSTOM"  # 自定义
 
 
 class StatusEnum(StrEnum):
-    ENABLED = "ENABLED"
-    DISABLED = "DISABLED"
+    """
+    状态
+    """
+
+    ENABLED = "ENABLED"  # 启用
+    DISABLED = "DISABLED"  # 禁用
 
 
 class AccountStatusEnum(StrEnum):
-    ENABLED = "ENABLED"
-    DISABLED = "DISABLED"
-    CANCELLED = "CANCELLED"
+    """
+    账户状态
+    """
+
+    ENABLED = "ENABLED"  # 启用
+    DISABLED = "DISABLED"  # 禁用
+    CANCELLED = "CANCELLED"  # 注销

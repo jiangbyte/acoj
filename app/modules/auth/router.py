@@ -3,10 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import LoginScope, UserType
+from app.core.config.enums import AccountType
 from app.core.response.schema import success
 from app.core.security.session import SessionPayload, session_store
-from app.deps.auth import get_current_session, require_scope
+from app.deps.auth import get_current_session, require_account_type
 from app.deps.db import get_db_session
 from app.modules.auth.schema import (
     LoginApiResponse,
@@ -32,15 +32,14 @@ async def admin_login(
         LoginPayload(
             account=payload.account,
             password=payload.password,
-            login_scope=LoginScope.ADMIN,
+            account_type=AccountType.ADMIN,
         )
     )
     return success(
         LoginResponse(
             token=session.token,
             account_id=session.account_id,
-            account_type=UserType(str(session.account_type)),
-            login_scope=LoginScope(str(session.login_scope)),
+            account_type=AccountType(str(session.account_type)),
         )
     )
 
@@ -55,15 +54,14 @@ async def portal_login(
         LoginPayload(
             account=payload.account,
             password=payload.password,
-            login_scope=LoginScope.PORTAL,
+            account_type=AccountType.PORTAL,
         )
     )
     return success(
         LoginResponse(
             token=session.token,
             account_id=session.account_id,
-            account_type=UserType(str(session.account_type)),
-            login_scope=LoginScope(str(session.login_scope)),
+            account_type=AccountType(str(session.account_type)),
         )
     )
 
@@ -71,12 +69,12 @@ async def portal_login(
 @portal_router.post(
     "/logout",
     response_model=LogoutApiResponse,
-    dependencies=[Depends(require_scope(LoginScope.PORTAL))],
+    dependencies=[Depends(require_account_type(AccountType.PORTAL))],
 )
 @admin_router.post(
     "/logout",
     response_model=LogoutApiResponse,
-    dependencies=[Depends(require_scope(LoginScope.ADMIN))],
+    dependencies=[Depends(require_account_type(AccountType.ADMIN))],
 )
 async def logout(
     session: Annotated[SessionPayload, Depends(get_current_session)],

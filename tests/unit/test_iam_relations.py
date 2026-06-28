@@ -1,12 +1,10 @@
 from app.core.config.enums import (
     AccountStatusEnum,
-    GrantSubjectType,
-    ResourceType,
-    RoleScopeType,
-    UserType,
+    AccountType,
 )
 from sqlalchemy import select
 
+from app.modules.iam.enums import GrantSubjectType, ResourceType, RoleScopeType
 from app.modules.iam.account.model import SysAccount
 from app.modules.iam.account.schema import AccountRoleAssignRequest
 from app.modules.iam.account.service import AccountService
@@ -55,12 +53,12 @@ async def test_assign_account_role_success(db_session):
             name="Role1",
             category="SYSTEM",
             scope_type=RoleScopeType.PLATFORM.value,
-        )
+        ),
     )
     account = SysAccount(
         account="a1",
         password_hash="x",
-        account_type=UserType.ADMIN.value,
+        account_type=AccountType.ADMIN.value,
         account_status=AccountStatusEnum.ENABLED.value,
         name="A1",
         nickname="A1",
@@ -83,7 +81,7 @@ async def test_bind_resource_permission_success(db_session, monkeypatch):
             "module": "iam",
             "source": "tests.unit.test_iam_relations",
             "methods": ["POST"],
-            "login_scopes": ["admin"],
+            "account_types": [AccountType.ADMIN.value],
             "routes": [],
         }
 
@@ -99,7 +97,7 @@ async def test_bind_resource_permission_success(db_session, monkeypatch):
             name="Create Button",
             resource_type=ResourceType.BUTTON.value,
             module="iam",
-        )
+        ),
     )
     relation = await ResourceService(db_session).bind_resource_permission(
         ResourcePermissionBindRequest(resource_id=resource_id, permission_key="iam:account:create")
@@ -111,8 +109,7 @@ async def test_bind_resource_permission_success(db_session, monkeypatch):
 
 async def test_assign_group_role_success(db_session):
     group_id = await _create_group(
-        db_session,
-        GroupCreateRequest(name="Group1", description="Test group")
+        db_session, GroupCreateRequest(name="Group1", description="Test group")
     )
     role_id = await _create_role(
         db_session,
@@ -121,7 +118,7 @@ async def test_assign_group_role_success(db_session):
             name="Role3",
             category="SYSTEM",
             scope_type=RoleScopeType.PLATFORM.value,
-        )
+        ),
     )
     relation = await GroupService(db_session).assign_group_role(
         GroupRoleAssignRequest(group_id=group_id, role_id=role_id)
@@ -139,7 +136,7 @@ async def test_grant_subject_resource_success(db_session):
             name="Role4",
             category="SYSTEM",
             scope_type=RoleScopeType.PLATFORM.value,
-        )
+        ),
     )
     resource_id = await _create_resource(
         db_session,
@@ -148,7 +145,7 @@ async def test_grant_subject_resource_success(db_session):
             name="Grant Resource",
             resource_type=ResourceType.BUTTON.value,
             module="iam",
-        )
+        ),
     )
     relation = await GrantService(db_session).grant_subject_resource(
         SubjectResourceGrantRequest(

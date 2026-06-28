@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import AccountStatusEnum, LoginScope, UserType
+from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.security.password import hash_password
 from app.core.security.session import SessionPayload, session_store
 from app.deps.db import get_db_session
@@ -15,12 +15,12 @@ async def test_permission_registry_route_lists_registry(client, monkeypatch):
                 "module": "iam",
                 "source": "app.modules.iam.permission.router",
                 "methods": ["GET"],
-                "login_scopes": ["admin"],
+                "account_types": [AccountType.ADMIN.value],
                 "routes": [
                     {
                         "path": "/api/v1/admin/permissions/registry",
                         "methods": ["GET"],
-                        "login_scopes": ["admin"],
+                        "account_types": [AccountType.ADMIN.value],
                     }
                 ],
             }
@@ -37,7 +37,7 @@ async def test_permission_registry_route_lists_registry(client, monkeypatch):
         account = SysAccount(
             account="admin_registry_user",
             password_hash=hash_password("Admin@123456"),
-            account_type=UserType.ADMIN.value,
+            account_type=AccountType.ADMIN.value,
             account_status=AccountStatusEnum.ENABLED.value,
             name="Admin Registry User",
             nickname="Admin Registry User",
@@ -48,8 +48,7 @@ async def test_permission_registry_route_lists_registry(client, monkeypatch):
             SessionPayload(
                 token="admin-registry-token",
                 account_id=account.id,
-                account_type=UserType.ADMIN.value,
-                login_scope=LoginScope.ADMIN.value,
+                account_type=AccountType.ADMIN.value,
                 role_ids=[],
                 dept_ids=[],
                 group_ids=[],
