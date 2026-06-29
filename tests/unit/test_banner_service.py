@@ -4,12 +4,12 @@ from sqlalchemy import event, select
 
 from app.core.config.enums import StatusEnum
 from app.core.schema.base import IdQuery
-from app.modules.banner.model import SysBanner
-from app.modules.banner.schema import (
+from app.modules.sys.banner.model import SysBanner
+from app.modules.sys.banner.schema import (
     BannerCreateRequest,
     BannerPublicListQuery,
 )
-from app.modules.banner.service import BannerService, flush_interaction_deltas
+from app.modules.sys.banner.service import BannerService, flush_interaction_deltas
 from app.platform.cache.keys import banner_interaction_delta_key
 
 
@@ -77,7 +77,7 @@ async def test_public_banner_filters_time_status_scope_and_sorts(db_session):
 
 async def test_record_interaction_writes_redis_delta(db_session, monkeypatch):
     fake_redis = FakeRedis()
-    monkeypatch.setattr("app.modules.banner.service.get_redis", lambda: fake_redis)
+    monkeypatch.setattr("app.modules.sys.banner.service.get_redis", lambda: fake_redis)
 
     service = BannerService(db_session)
     banner_id = await _create_banner(db_session, service)

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
+import { authApi } from '@/api'
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AuthLayout from './AuthLayout.vue'
@@ -11,7 +12,10 @@ const loading = ref(false)
 
 const form = reactive({
   account: '',
+  name: '',
   nickname: '',
+  phone: '',
+  email: '',
   password: '',
   confirmPassword: '',
   agreement: false,
@@ -43,6 +47,13 @@ const rules = computed<FormRules>(() => ({
     {
       required: true,
       message: t('auth.nicknameRequired'),
+      trigger: ['input', 'blur'],
+    },
+  ],
+  name: [
+    {
+      required: true,
+      message: t('auth.nameRequired'),
       trigger: ['input', 'blur'],
     },
   ],
@@ -81,11 +92,21 @@ async function handleSubmit() {
   }
 
   loading.value = true
-  window.setTimeout(() => {
+  try {
+    await authApi.register({
+      account: form.account.trim(),
+      name: form.name.trim(),
+      nickname: form.nickname.trim() || null,
+      phone: form.phone.trim() || null,
+      email: form.email.trim() || null,
+      password: form.password,
+    })
     loading.value = false
     window.$message.success(t('auth.registerSuccess'))
     router.push('/auth/login')
-  }, 500)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -108,6 +129,30 @@ async function handleSubmit() {
         >
           <template #prefix>
             <NovaIcon icon="icon-park-outline:people" />
+          </template>
+        </n-input>
+      </n-form-item>
+
+      <n-form-item path="name" :label="t('auth.name')">
+        <n-input v-model:value="form.name" :placeholder="t('auth.namePlaceholder')" clearable>
+          <template #prefix>
+            <NovaIcon icon="icon-park-outline:id-card" />
+          </template>
+        </n-input>
+      </n-form-item>
+
+      <n-form-item path="phone" :label="t('auth.phone')">
+        <n-input v-model:value="form.phone" :placeholder="t('auth.phonePlaceholder')" clearable>
+          <template #prefix>
+            <NovaIcon icon="icon-park-outline:phone" />
+          </template>
+        </n-input>
+      </n-form-item>
+
+      <n-form-item path="email" :label="t('auth.email')">
+        <n-input v-model:value="form.email" :placeholder="t('auth.emailPlaceholder')" clearable>
+          <template #prefix>
+            <NovaIcon icon="icon-park-outline:mail" />
           </template>
         </n-input>
       </n-form-item>

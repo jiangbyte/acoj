@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.user.admin.model import AdminUserProfile
+from app.modules.user.admin.schema import AdminProfileUpsertPayload
 
 
 class AdminUserProfileRepository:
@@ -17,7 +18,33 @@ class AdminUserProfileRepository:
         await self.db.flush()
         return profile
 
+    async def upsert(self, payload: AdminProfileUpsertPayload) -> AdminUserProfile:
+        """创建或更新管理端扩展资料。"""
+        profile = await self.get_by_account_id(payload.account_id)
+        if profile is None:
+            profile = AdminUserProfile(account_id=payload.account_id)
+            self.db.add(profile)
+        profile.name = payload.name
+        profile.nickname = payload.nickname
+        profile.avatar = payload.avatar
+        profile.signature = payload.signature
+        profile.phone = payload.phone
+        profile.email = payload.email
+        profile.title = payload.title
+        profile.employee_no = payload.employee_no
+        profile.remark = payload.remark
+        await self.db.flush()
+        return profile
+
     async def get_by_account_id(self, account_id: str) -> AdminUserProfile | None:
         """按账户 ID 查询管理端扩展资料。"""
         stmt = select(AdminUserProfile).where(AdminUserProfile.account_id == account_id)
         return (await self.db.execute(stmt)).scalar_one_or_none()
+
+    async def list_by_account_ids(self, account_ids: list[str]) -> list[AdminUserProfile]:
+        """批量查询管理端扩展资料。"""
+        unique_ids = list(dict.fromkeys(account_ids))
+        if not unique_ids:
+            return []
+        stmt = select(AdminUserProfile).where(AdminUserProfile.account_id.in_(unique_ids))
+        return list((await self.db.execute(stmt)).scalars().all())

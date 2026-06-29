@@ -20,7 +20,7 @@
   "colorPattern": "请选择有效的十六进制颜色",
   "codeExists": "编码已存在",
   "categories": {
-    "sys": "系统字典",
-    "biz": "业务字典"
+    "sys": "系统",
+    "biz": "业务"
   }
 }

@@ -2,9 +2,9 @@ from sqlalchemy import select
 
 from app.core.config.settings import settings
 from app.core.schema.datetime import format_utc_iso8601
-from app.modules.file.model import SysFile
-from app.modules.file.schema import FileUploadRequest
-from app.modules.file.service import FileService
+from app.modules.sys.file.model import SysFile
+from app.modules.sys.file.schema import FileUploadRequest
+from app.modules.sys.file.service import FileService
 
 
 async def test_file_service_upload_and_url(tmp_path, db_session):

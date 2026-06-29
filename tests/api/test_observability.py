@@ -29,9 +29,9 @@ async def test_ready_endpoint_shape(client):
     assert "detail" in data["checks"]["database"]
 
 
-async def test_ready_endpoint_marks_disabled_components(client):
+async def test_ready_endpoint_checks_required_redis(client):
     response = await client.get("/api/v1/internal/health/ready")
     data = response.json()
-    if data["checks"]["redis"]["enabled"] is False:
-        assert data["checks"]["redis"]["ok"] is False
-        assert data["checks"]["redis"]["detail"] == "redis disabled by configuration"
+    assert data["checks"]["redis"]["enabled"] is True
+    assert data["checks"]["redis"]["ok"] is True
+    assert data["checks"]["redis"]["detail"] == "connection ok"

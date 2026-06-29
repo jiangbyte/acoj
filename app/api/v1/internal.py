@@ -7,8 +7,8 @@ from app.core.schema.health import (
     ReadyChecksResponse,
     ReadyHealthResponse,
 )
-from app.core.config.settings import settings
 from app.platform.cache.redis import get_redis
+from app.core.config.settings import settings
 from app.platform.db.session import get_session_factory
 from app.platform.storage.manager import get_storage
 from app.platform.tasks.celery_app import celery_app
@@ -27,7 +27,7 @@ async def ready() -> ReadyHealthResponse:
     """就绪探针，聚合数据库、Redis、消息队列和存储配置的可用性检查。"""
     checks = ReadyChecksResponse(
         database=HealthCheckItem(enabled=True, ok=False, detail=None),
-        redis=HealthCheckItem(enabled=settings.redis.enabled, ok=False, detail=None),
+        redis=HealthCheckItem(enabled=True, ok=False, detail=None),
         celery_broker=HealthCheckItem(
             enabled=bool(settings.celery.broker_url),
             ok=False,
@@ -43,10 +43,8 @@ async def ready() -> ReadyHealthResponse:
     except Exception as exc:
         checks.database.detail = str(exc)
     redis = get_redis()
-    if not checks.redis.enabled:
-        checks.redis.detail = "redis disabled by configuration"
-    elif redis is None:
-        checks.redis.detail = "redis enabled but not initialized"
+    if redis is None:
+        checks.redis.detail = "redis not initialized"
     else:
         try:
             await redis.ping()

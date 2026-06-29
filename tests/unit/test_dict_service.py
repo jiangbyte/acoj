@@ -3,7 +3,7 @@ import pytest
 from app.core.config.enums import StatusEnum
 from app.core.exceptions.business import NotFoundError
 from app.core.response.pagination import PageQuery
-from app.modules.dict.schema import (
+from app.modules.sys.dict.schema import (
     DictAdminPageQuery,
     DictCreateRequest,
     DictIdQuery,
@@ -11,7 +11,7 @@ from app.modules.dict.schema import (
     DictTreeQuery,
     DictUpdateRequest,
 )
-from app.modules.dict.service import DictService
+from app.modules.sys.dict.service import DictService
 
 
 def _dict_create_request(**overrides) -> DictCreateRequest:

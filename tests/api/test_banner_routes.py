@@ -8,12 +8,9 @@ async def _seed_admin(client, token: str, permissions: list[str]) -> None:
     override = client._transport.app.dependency_overrides[get_db_session]
     async for session in override():
         account = SysAccount(
-            account=f"{token}_account",
             password_hash="hashed",
             account_type=AccountType.ADMIN.value,
             account_status=AccountStatusEnum.ENABLED.value,
-            name="Banner Admin",
-            nickname="Banner Admin",
         )
         session.add(account)
         await session.flush()

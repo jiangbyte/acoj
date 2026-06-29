@@ -49,3 +49,22 @@ class GrantEffect(StrEnum):
 
     ALLOW = "ALLOW"  # 允许
     DENY = "DENY"  # 拒绝
+
+
+class AccountIdentityType(StrEnum):
+    """
+    账户登录标识类型
+    """
+
+    ACCOUNT = "ACCOUNT"  # 登录账号
+    EMAIL = "EMAIL"  # 邮箱登录标识
+    PHONE = "PHONE"  # 手机号登录标识
+
+
+class AccountIdentityBindStatus(StrEnum):
+    """
+    账户登录标识绑定状态
+    """
+
+    BOUND = "BOUND"  # 已绑定
+    UNBOUND = "UNBOUND"  # 未绑定

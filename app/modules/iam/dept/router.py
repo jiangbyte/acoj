@@ -7,7 +7,8 @@ from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
-from app.deps.auth import require_permission, require_account_type
+from app.core.security.session import SessionPayload
+from app.deps.auth import get_current_session, require_permission, require_account_type
 from app.deps.db import get_db_session
 from app.modules.iam.dept.schema import (
     DeptAdminPageQuery,
@@ -32,8 +33,9 @@ router = APIRouter()
 async def create(
     payload: DeptCreateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[None]:
-    await DeptService(db).create(payload)
+    await DeptService(db).create(payload, session)
     return success()
 
 
@@ -48,8 +50,9 @@ async def create(
 async def update(
     payload: DeptUpdateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[None]:
-    await DeptService(db).update(payload)
+    await DeptService(db).update(payload, session)
     return success()
 
 
@@ -64,8 +67,9 @@ async def update(
 async def delete(
     payload: IdsRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[None]:
-    await DeptService(db).delete(payload)
+    await DeptService(db).delete(payload, session)
     return success()
 
 
@@ -79,9 +83,10 @@ async def delete(
 )
 async def detail(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
     id: Annotated[Id, Query()],
 ) -> ApiResponse[SysDeptSchema]:
-    return success(await DeptService(db).detail(IdQuery(id=id)))
+    return success(await DeptService(db).detail(IdQuery(id=id), session))
 
 
 @router.get(
@@ -94,6 +99,7 @@ async def detail(
 )
 async def page(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
     current: Current = 1,
     size: Size = 20,
     name: str | None = Query(default=None, max_length=64),
@@ -110,7 +116,7 @@ async def page(
         parent_id=parent_id,
         status=status,
     )
-    return success(await DeptService(db).page_admin(query))
+    return success(await DeptService(db).page_admin(query, session))
 
 
 @router.get(
@@ -123,5 +129,6 @@ async def page(
 )
 async def list_dept_tree(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[list[DeptTreeNode]]:
-    return success(await DeptService(db).list_dept_tree())
+    return success(await DeptService(db).list_dept_tree(session))

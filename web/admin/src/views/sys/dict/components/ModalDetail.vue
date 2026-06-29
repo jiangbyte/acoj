@@ -68,7 +68,7 @@ defineExpose({
             <template v-else> - </template>
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('pages.sys.dict.category')">
-            {{ dictTypeData('DICT_CATEGORY', state.data.category) }}
+            {{ dictTypeData('SYS_BIZ_CATEGORY', state.data.category) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('pages.sys.dict.parent')">
             {{ displayValue(state.data.parent_id_name) }}

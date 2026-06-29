@@ -1,1 +1,0 @@
-"""System dictionary module."""

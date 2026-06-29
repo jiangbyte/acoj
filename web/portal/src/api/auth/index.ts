@@ -1,6 +1,6 @@
 import { http } from '@/utils'
 
-const authPrefix = '/api/v1/admin'
+const authPrefix = '/api/v1/portal'
 
 export function login(data: any) {
   return http.post<any>(`${authPrefix}/login`, data, {
@@ -10,4 +10,8 @@ export function login(data: any) {
 
 export function logout() {
   return http.post<any>(`${authPrefix}/logout`)
+}
+
+export function cancel(data: any) {
+  return http.post<any>(`${authPrefix}/cancel`, data)
 }

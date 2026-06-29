@@ -3,18 +3,27 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
 import { accountApi } from '@/api'
-import { createTagColor, normalizeSearchValues } from '@/utils'
-import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
+import { createTagColor, hasPermission, normalizeSearchValues } from '@/utils'
+import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
+import ModalGrantDept from './components/ModalGrantDept.vue'
+import ModalGrantPermission from '../role/components/ModalGrantPermission.vue'
+import ModalGrantResource from '../role/components/ModalGrantResource.vue'
+import ModalGrantUser from '../role/components/ModalGrantUser.vue'
 
 const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
+const grantRoleModalRef = ref<any>(null)
+const grantGroupModalRef = ref<any>(null)
+const grantDeptModalRef = ref<any>(null)
+const grantResourceModalRef = ref<any>(null)
+const grantPermissionModalRef = ref<any>(null)
 const state = reactive({
   accounts: [] as any[],
   total: 0,
@@ -196,24 +205,67 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: t('common.often.operation'),
     key: 'actions',
-    width: 170,
+    width: 230,
     fixed: 'right',
-    render: (row) => (
-      <NFlex size={12}>
-        <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
-          {t('common.often.detail')}
-        </NButton>
-        <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
-          {t('common.often.edit')}
-        </NButton>
-        <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
-          {t('common.often.delete')}
-        </NButton>
-      </NFlex>
-    ),
+    render: (row) => {
+      const options = grantOptions.value
+      return (
+        <NFlex size={12}>
+          <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
+            {t('common.often.detail')}
+          </NButton>
+          <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
+            {t('common.often.edit')}
+          </NButton>
+          {options.length ? (
+            <NDropdown
+              trigger="click"
+              options={options}
+              onSelect={(key) => openGrantModal(String(key), row)}
+            >
+              <NButton type="warning" size="small" text={true}>
+                {t('pages.iam.account.grant')}
+              </NButton>
+            </NDropdown>
+          ) : null}
+          <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
+            {t('common.often.delete')}
+          </NButton>
+        </NFlex>
+      )
+    },
   },
 ])
 
+const grantOptions = computed(() =>
+  [
+    {
+      label: t('pages.iam.account.grantRole'),
+      key: 'role',
+      permission: 'iam:account:grantrole',
+    },
+    {
+      label: t('pages.iam.account.grantGroup'),
+      key: 'group',
+      permission: 'iam:account:grantgroup',
+    },
+    {
+      label: t('pages.iam.account.grantDept'),
+      key: 'dept',
+      permission: 'iam:account:grantdept',
+    },
+    {
+      label: t('pages.iam.account.grantResource'),
+      key: 'resource',
+      permission: 'iam:account:grantresource',
+    },
+    {
+      label: t('pages.iam.account.grantPermission'),
+      key: 'permission',
+      permission: 'iam:account:grantpermission',
+    },
+  ].filter((item) => hasPermission(item.permission)),
+)
 const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
 
 onMounted(() => {
@@ -251,6 +303,43 @@ function openCreateModal() {
 
 function openEditModal(id: string) {
   formModalRef.value?.openModal(id)
+}
+
+function openGrantModal(type: string, row: any) {
+  const account = {
+    id: row.id,
+    code: row.account,
+    name: row.name || row.account,
+  }
+  if (type === 'role') {
+    grantRoleModalRef.value?.openModal(account, accountApi, t('pages.iam.account.grantRole'), {
+      ownMethod: 'ownRoles',
+      grantMethod: 'grantRoles',
+      listKey: 'roles',
+      selectedKey: 'role_ids',
+      submitKey: 'role_ids',
+      searchFields: ['code', 'name'],
+    })
+  } else if (type === 'group') {
+    grantGroupModalRef.value?.openModal(account, accountApi, t('pages.iam.account.grantGroup'), {
+      ownMethod: 'ownGroups',
+      grantMethod: 'grantGroups',
+      listKey: 'groups',
+      selectedKey: 'group_ids',
+      submitKey: 'group_ids',
+      searchFields: ['name'],
+    })
+  } else if (type === 'dept') {
+    grantDeptModalRef.value?.openModal(account)
+  } else if (type === 'resource') {
+    grantResourceModalRef.value?.openModal(account, accountApi, t('pages.iam.account.grantResource'))
+  } else if (type === 'permission') {
+    grantPermissionModalRef.value?.openModal(
+      account,
+      accountApi,
+      t('pages.iam.account.grantPermission'),
+    )
+  }
 }
 
 function handleCheckedRowKeys(keys: Array<string | number>) {
@@ -342,6 +431,11 @@ async function deleteData(ids: string[]) {
 
     <ModalForm ref="formModalRef" @saved="fetchPage" />
     <ModalDetail ref="detailModalRef" />
+    <ModalGrantUser ref="grantRoleModalRef" @saved="fetchPage" />
+    <ModalGrantUser ref="grantGroupModalRef" @saved="fetchPage" />
+    <ModalGrantDept ref="grantDeptModalRef" @saved="fetchPage" />
+    <ModalGrantResource ref="grantResourceModalRef" @saved="fetchPage" />
+    <ModalGrantPermission ref="grantPermissionModalRef" @saved="fetchPage" />
   </NFlex>
 </template>
 

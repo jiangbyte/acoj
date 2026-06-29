@@ -4,20 +4,19 @@ from app.core.config.enums import (
 )
 from sqlalchemy import select
 
-from app.modules.iam.enums import GrantSubjectType, ResourceType, RoleScopeType
+from app.modules.iam.enums import ResourceType, RoleScopeType
 from app.modules.iam.account.model import SysAccount
 from app.modules.iam.account.schema import AccountRoleAssignRequest
 from app.modules.iam.account.service import AccountService
-from app.modules.iam.grant.schema import SubjectResourceGrantRequest
-from app.modules.iam.grant.service import GrantService
 from app.modules.iam.group.schema import GroupCreateRequest, GroupRoleAssignRequest
 from app.modules.iam.group.service import GroupService
 from app.modules.iam.group.model import SysGroup
+from app.modules.iam.grant.model import SysSubjectResourceGrantRel
 from app.modules.iam.resource.model import SysResource
 from app.modules.iam.resource.schema import ResourceCreateRequest, ResourcePermissionBindRequest
 from app.modules.iam.resource.service import ResourceService
 from app.modules.iam.role.model import SysRole
-from app.modules.iam.role.schema import RoleCreateRequest
+from app.modules.iam.role.schema import RoleCreateRequest, RoleGrantResourceRequest, RoleResourceGrantInfo
 from app.modules.iam.role.service import RoleService
 
 
@@ -56,12 +55,9 @@ async def test_assign_account_role_success(db_session):
         ),
     )
     account = SysAccount(
-        account="a1",
         password_hash="x",
         account_type=AccountType.ADMIN.value,
         account_status=AccountStatusEnum.ENABLED.value,
-        name="A1",
-        nickname="A1",
     )
     db_session.add(account)
     await db_session.flush()
@@ -121,7 +117,7 @@ async def test_assign_group_role_success(db_session):
     assert relation.role_id == role_id
 
 
-async def test_grant_subject_resource_success(db_session):
+async def test_grant_role_resource_success(db_session):
     role_id = await _create_role(
         db_session,
         RoleCreateRequest(
@@ -140,13 +136,20 @@ async def test_grant_subject_resource_success(db_session):
             module="iam",
         ),
     )
-    relation = await GrantService(db_session).grant_subject_resource(
-        SubjectResourceGrantRequest(
-            subject_type=GrantSubjectType.ROLE.value,
-            subject_id=role_id,
-            resource_id=resource_id,
+    await RoleService(db_session).grant_resource(
+        RoleGrantResourceRequest(
+            id=role_id,
+            grant_info_list=[RoleResourceGrantInfo(resource_id=resource_id, permission_keys=[])],
         )
     )
     await db_session.commit()
+    relation = (
+        await db_session.execute(
+            select(SysSubjectResourceGrantRel).where(
+                SysSubjectResourceGrantRel.subject_id == role_id,
+                SysSubjectResourceGrantRel.resource_id == resource_id,
+            )
+        )
+    ).scalar_one()
     assert relation.subject_id == role_id
     assert relation.resource_id == resource_id

@@ -5,6 +5,31 @@ from pydantic import Field
 from app.core.config.enums import AccountStatusEnum, AccountType, DataScope
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
+from app.modules.iam.enums import AccountIdentityBindStatus, AccountIdentityType
+from app.modules.iam.resource.schema import PermissionRegistryItem, ResourceGrantModuleOption
+
+
+class AccountIdentitySchema(ApiSchema):
+    id: str | None = None
+    account_id: str | None = None
+    identity_type: AccountIdentityType
+    identifier: str = Field(min_length=1, max_length=128)
+    verified: bool = False
+    is_primary: bool = False
+    bind_status: AccountIdentityBindStatus = AccountIdentityBindStatus.BOUND
+    created_at: datetime | None = None
+    created_by: str | None = None
+    updated_at: datetime | None = None
+    updated_by: str | None = None
+
+
+class AccountIdentityUpsertPayload(ApiSchema):
+    account_id: str
+    identity_type: AccountIdentityType
+    identifier: str = Field(min_length=1, max_length=128)
+    verified: bool = False
+    is_primary: bool = False
+    bind_status: AccountIdentityBindStatus = AccountIdentityBindStatus.BOUND
 
 
 class AccountCreateRequest(ApiSchema):
@@ -18,6 +43,15 @@ class AccountCreateRequest(ApiSchema):
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
+    email_identity: str | None = Field(default=None, max_length=128)
+    phone_identity: str | None = Field(default=None, max_length=32)
+    email_identity_verified: bool = False
+    phone_identity_verified: bool = False
+    email_identity_bind_status: AccountIdentityBindStatus = AccountIdentityBindStatus.BOUND
+    phone_identity_bind_status: AccountIdentityBindStatus = AccountIdentityBindStatus.BOUND
+    employee_no: str | None = Field(default=None, max_length=64)
+    title: str | None = Field(default=None, max_length=64)
+    remark: str | None = None
 
 
 class AccountUpdateRequest(ApiSchema):
@@ -32,6 +66,20 @@ class AccountUpdateRequest(ApiSchema):
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
+    email_identity: str | None = Field(default=None, max_length=128)
+    phone_identity: str | None = Field(default=None, max_length=32)
+    email_identity_verified: bool = False
+    phone_identity_verified: bool = False
+    email_identity_bind_status: AccountIdentityBindStatus = AccountIdentityBindStatus.BOUND
+    phone_identity_bind_status: AccountIdentityBindStatus = AccountIdentityBindStatus.BOUND
+    employee_no: str | None = Field(default=None, max_length=64)
+    title: str | None = Field(default=None, max_length=64)
+    remark: str | None = None
+
+
+class AccountCancelPayload(ApiSchema):
+    id: str = Field(min_length=1, max_length=64)
+    cancel_reason: str | None = None
 
 
 class AccountAdminPageQuery(ApiSchema):
@@ -55,6 +103,16 @@ class SysAccountSchema(ApiSchema):
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
+    email_identity: str | None = None
+    phone_identity: str | None = None
+    email_identity_verified: bool = False
+    phone_identity_verified: bool = False
+    email_identity_bind_status: AccountIdentityBindStatus | None = None
+    phone_identity_bind_status: AccountIdentityBindStatus | None = None
+    identities: list[AccountIdentitySchema] = Field(default_factory=list)
+    employee_no: str | None = None
+    title: str | None = None
+    remark: str | None = None
     cancelled_at: datetime | None = Field(default=None, examples=["2026-06-18T12:00:00Z"])
     cancelled_by: str | None = None
     cancel_reason: str | None = None
@@ -86,6 +144,29 @@ class AccountDeptAssignRequest(ApiSchema):
     account_id: str
     dept_id: str
     is_primary: bool = False
+
+
+class AccountRoleOption(ApiSchema):
+    id: str
+    code: str
+    name: str
+    status: str
+
+
+class AccountGroupOption(ApiSchema):
+    id: str
+    name: str
+    status: str
+
+
+class AccountDeptGrantInfo(ApiSchema):
+    dept_id: str
+    is_primary: bool = False
+
+
+class AccountResourceGrantInfo(ApiSchema):
+    resource_id: str = Field(min_length=1, max_length=64)
+    permission_keys: list[str] = Field(default_factory=list)
 
 
 class SysAccountRoleRelSchema(ApiSchema):
@@ -133,3 +214,52 @@ class AccountOwnPermissionResponse(ApiSchema):
 class AccountGrantPermissionRequest(ApiSchema):
     id: str = Field(min_length=1, max_length=64)
     grant_info_list: list[AccountPermissionGrantInfo] = Field(default_factory=list)
+
+
+class AccountOwnPermissionDetailResponse(ApiSchema):
+    id: str
+    permissions: list[PermissionRegistryItem] = Field(default_factory=list)
+    grant_info_list: list[AccountPermissionGrantInfo] = Field(default_factory=list)
+
+
+class AccountOwnResourceResponse(ApiSchema):
+    id: str
+    modules: list[ResourceGrantModuleOption] = Field(default_factory=list)
+    grant_info_list: list[AccountResourceGrantInfo] = Field(default_factory=list)
+
+
+class AccountGrantResourceRequest(ApiSchema):
+    id: str = Field(min_length=1, max_length=64)
+    grant_info_list: list[AccountResourceGrantInfo] = Field(default_factory=list)
+
+
+class AccountOwnRoleResponse(ApiSchema):
+    id: str
+    roles: list[AccountRoleOption] = Field(default_factory=list)
+    role_ids: list[str] = Field(default_factory=list)
+
+
+class AccountGrantRoleRequest(ApiSchema):
+    id: str = Field(min_length=1, max_length=64)
+    role_ids: list[str] = Field(default_factory=list)
+
+
+class AccountOwnGroupResponse(ApiSchema):
+    id: str
+    groups: list[AccountGroupOption] = Field(default_factory=list)
+    group_ids: list[str] = Field(default_factory=list)
+
+
+class AccountGrantGroupRequest(ApiSchema):
+    id: str = Field(min_length=1, max_length=64)
+    group_ids: list[str] = Field(default_factory=list)
+
+
+class AccountOwnDeptResponse(ApiSchema):
+    id: str
+    grant_info_list: list[AccountDeptGrantInfo] = Field(default_factory=list)
+
+
+class AccountGrantDeptRequest(ApiSchema):
+    id: str = Field(min_length=1, max_length=64)
+    grant_info_list: list[AccountDeptGrantInfo] = Field(default_factory=list)

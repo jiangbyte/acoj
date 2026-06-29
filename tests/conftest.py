@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 from collections.abc import AsyncIterator
 
@@ -10,6 +12,72 @@ from app.core.config.settings import settings
 from app.deps.db import get_db_session
 from app.factory import create_app
 from app.platform.db.base import Base
+
+
+class FakeRedis:
+    def __init__(self) -> None:
+        self.values: dict[str, object] = {}
+        self.sets: dict[str, set[object]] = {}
+        self.hashes: dict[str, dict[object, str]] = {}
+
+    async def setex(self, key: object, ttl: int, value: object) -> None:
+        self.values[str(key)] = value
+
+    async def set(self, key: object, value: object) -> None:
+        self.values[str(key)] = value
+
+    async def get(self, key: object) -> object | None:
+        return self.values.get(str(key))
+
+    async def delete(self, key: object) -> None:
+        self.values.pop(str(key), None)
+
+    async def sadd(self, key: object, *values: object) -> None:
+        self.sets.setdefault(str(key), set()).update(values)
+
+    async def smembers(self, key: object) -> set[object]:
+        return set(self.sets.get(str(key), set()))
+
+    async def srem(self, key: object, *values: object) -> None:
+        existing = self.sets.get(str(key))
+        if existing is None:
+            return
+        for value in values:
+            existing.discard(value)
+
+    async def hincrby(self, key: object, field: object, amount: int) -> int:
+        hash_key = str(key)
+        current = int(self.hashes.setdefault(hash_key, {}).get(field, "0"))
+        next_value = current + amount
+        self.hashes[hash_key][field] = str(next_value)
+        return next_value
+
+    async def hgetall(self, key: object) -> dict[object, str]:
+        return dict(self.hashes.get(str(key), {}))
+
+    async def hdel(self, key: object, *fields: object) -> int:
+        existing = self.hashes.get(str(key), {})
+        removed = 0
+        for field in fields:
+            if field in existing:
+                removed += 1
+                del existing[field]
+        return removed
+
+    async def ping(self) -> bool:
+        return True
+
+    async def aclose(self) -> None:
+        return None
+
+
+@pytest.fixture(autouse=True)
+def fake_redis(monkeypatch) -> FakeRedis:
+    from app.platform.cache import redis as redis_module
+
+    fake = FakeRedis()
+    monkeypatch.setattr(redis_module, "redis_client", fake)
+    yield fake
 
 
 @pytest.fixture(scope="session")

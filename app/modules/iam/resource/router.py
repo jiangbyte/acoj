@@ -7,7 +7,8 @@ from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
-from app.deps.auth import require_permission, require_account_type
+from app.core.security.session import SessionPayload
+from app.deps.auth import get_current_session, require_permission, require_account_type
 from app.deps.db import get_db_session
 from app.modules.iam.resource.schema import (
     ResourceAdminPageQuery,
@@ -118,6 +119,20 @@ async def page(
 
 
 @router.get(
+    "/sys/resources/current",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+    ],
+    response_model=ApiResponse[list[SysResourceSchema]],
+)
+async def current_resources(
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[list[SysResourceSchema]]:
+    return success(await ResourceService(db).list_current_resources(session))
+
+
+@router.get(
     "/sys/resources/tree",
     dependencies=[
         Depends(require_account_type(AccountType.ADMIN)),
@@ -126,9 +141,10 @@ async def page(
     response_model=ApiResponse[list[ResourceTreeNode]],
 )
 async def list_resource_tree(
+    session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[list[ResourceTreeNode]]:
-    return success(await ResourceService(db).list_resource_tree())
+    return success(await ResourceService(db).list_resource_tree(session))
 
 
 @router.post(
@@ -142,5 +158,6 @@ async def list_resource_tree(
 async def bind_resource_permission(
     payload: ResourcePermissionBindRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[SysResourcePermissionRelSchema]:
-    return success(await ResourceService(db).bind_resource_permission(payload))
+    return success(await ResourceService(db).bind_resource_permission(payload, session))

@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
 import { roleApi } from '@/api'
-import { createTagColor, normalizeSearchValues } from '@/utils'
+import { createTagColor, hasPermission, normalizeSearchValues } from '@/utils'
 import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -64,7 +64,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     path: 'category',
     field: 'select',
     fieldProps: {
-      options: dictList('COMMON_SYS_BIZ_CATEGORY'),
+      options: dictList('SYS_BIZ_CATEGORY'),
     },
   },
   {
@@ -136,7 +136,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: t('pages.iam.role.category'),
     path: 'category',
     width: 130,
-    render: (row) => dictTypeData('COMMON_SYS_BIZ_CATEGORY', row.category) || row.category,
+    render: (row) => dictTypeData('SYS_BIZ_CATEGORY', row.category) || row.category,
   },
   {
     title: t('pages.iam.role.scopeType'),
@@ -186,45 +186,61 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     key: 'actions',
     width: 230,
     fixed: 'right',
-    render: (row) => (
-      <NFlex size={12}>
-        <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
-          {t('common.often.detail')}
-        </NButton>
-        <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
-          {t('common.often.edit')}
-        </NButton>
-        <NDropdown
-          trigger="click"
-          options={grantOptions.value}
-          onSelect={(key) => openGrantModal(String(key), row)}
-        >
-          <NButton type="warning" size="small" text={true}>
-            {t('pages.iam.role.grant')}
-          </NButton>
-        </NDropdown>
-        <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
-          {t('common.often.delete')}
-        </NButton>
-      </NFlex>
-    ),
+    render: (row) => {
+      const options = grantOptions.value
+      return (
+        <NFlex size={12}>
+          {hasPermission('iam:role:detail') ? (
+            <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
+              {t('common.often.detail')}
+            </NButton>
+          ) : null}
+          {hasPermission('iam:role:update') ? (
+            <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
+              {t('common.often.edit')}
+            </NButton>
+          ) : null}
+          {options.length ? (
+            <NDropdown
+              trigger="click"
+              options={options}
+              onSelect={(key) => openGrantModal(String(key), row)}
+            >
+              <NButton type="warning" size="small" text={true}>
+                {t('pages.iam.role.grant')}
+              </NButton>
+            </NDropdown>
+          ) : null}
+          {hasPermission('iam:role:delete') ? (
+            <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
+              {t('common.often.delete')}
+            </NButton>
+          ) : null}
+        </NFlex>
+      )
+    },
   },
 ])
 
-const grantOptions = computed(() => [
-  {
-    label: t('pages.iam.role.grantResource'),
-    key: 'resource',
-  },
-  {
-    label: t('pages.iam.role.grantPermission'),
-    key: 'permission',
-  },
-  {
-    label: t('pages.iam.role.grantUser'),
-    key: 'user',
-  },
-])
+const grantOptions = computed(() =>
+  [
+    {
+      label: t('pages.iam.role.grantResource'),
+      key: 'resource',
+      permission: 'iam:role:grantresource',
+    },
+    {
+      label: t('pages.iam.role.grantPermission'),
+      key: 'permission',
+      permission: 'iam:role:grantpermission',
+    },
+    {
+      label: t('pages.iam.role.grantUser'),
+      key: 'user',
+      permission: 'iam:role:grantuser',
+    },
+  ].filter((item) => hasPermission(item.permission)),
+)
 const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
 
 onMounted(() => {

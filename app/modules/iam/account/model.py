@@ -4,19 +4,18 @@ from sqlalchemy import Boolean, DateTime, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config.enums import AccountStatusEnum
+from app.modules.iam.enums import AccountIdentityBindStatus
 from app.platform.db.base import Base
 from app.platform.db.mixins import TimestampMixin
 from app.platform.id_generator.snowflake import generate_snowflake_id
 
 
 class SysAccount(Base, TimestampMixin):
-    """系统账户主表，只负责账户身份、登录信息、状态和审计信息。"""
+    """系统账户主表，只负责账户主体、安全状态和审计信息。"""
 
     __tablename__ = "sys_account"
-    __table_args__ = (UniqueConstraint("account", name="uq_sys_account_account"),)
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    account: Mapped[str] = mapped_column(String(64), nullable=False, comment="账号")
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False, comment="密码哈希")
     account_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="账户类型")
     account_status: Mapped[str] = mapped_column(
@@ -25,12 +24,6 @@ class SysAccount(Base, TimestampMixin):
         default=AccountStatusEnum.ENABLED.value,
         comment="账户状态",
     )
-    name: Mapped[str] = mapped_column(String(64), nullable=False, comment="姓名")
-    nickname: Mapped[str | None] = mapped_column(String(64), comment="昵称")
-    avatar: Mapped[str | None] = mapped_column(Text, comment="头像")
-    signature: Mapped[str | None] = mapped_column(Text, comment="个性签名")
-    phone: Mapped[str | None] = mapped_column(String(32), comment="手机号")
-    email: Mapped[str | None] = mapped_column(String(128), comment="邮箱")
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="注销时间")
     cancelled_by: Mapped[str | None] = mapped_column(String(64), comment="注销人")
     cancel_reason: Mapped[str | None] = mapped_column(Text, comment="注销原因")
@@ -42,6 +35,28 @@ class SysAccount(Base, TimestampMixin):
     latest_login_address: Mapped[str | None] = mapped_column(String(255), comment="最新登录地点")
     latest_login_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="最新登录时间")
     latest_login_device: Mapped[str | None] = mapped_column(Text, comment="最新登录设备")
+
+
+class SysAccountIdentity(Base, TimestampMixin):
+    """账户登录标识表，承载账号名、邮箱、手机号等可认证入口。"""
+
+    __tablename__ = "sys_account_identity"
+    __table_args__ = (
+        UniqueConstraint("identity_type", "identifier", name="uq_sys_account_identity_type_identifier"),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
+    account_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户ID")
+    identity_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="登录标识类型")
+    identifier: Mapped[str] = mapped_column(String(128), nullable=False, comment="登录标识")
+    verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="是否已验证")
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="是否主标识")
+    bind_status: Mapped[str] = mapped_column(
+        String(32),
+        default=AccountIdentityBindStatus.BOUND.value,
+        nullable=False,
+        comment="绑定状态",
+    )
 
 
 class SysAccountRoleRel(Base, TimestampMixin):

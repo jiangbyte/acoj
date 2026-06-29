@@ -14,12 +14,9 @@ async def _seed_admin(client, token: str, permissions: list[str]) -> SysAccount:
     async for session in override():
         db_session: AsyncSession = session
         account = SysAccount(
-            account=f"{token}_account",
             password_hash=hash_password("Admin@123456"),
             account_type=AccountType.ADMIN.value,
             account_status=AccountStatusEnum.ENABLED.value,
-            name=f"{token} Account",
-            nickname=f"{token} Account",
         )
         db_session.add(account)
         await db_session.flush()
@@ -32,7 +29,17 @@ async def _seed_admin(client, token: str, permissions: list[str]) -> SysAccount:
                 dept_ids=[],
                 group_ids=[],
                 permission_keys=permissions,
-                permission_grants=[],
+                permission_grants=[
+                    {
+                        "permission_key": permission,
+                        "data_scope": DataScope.ALL.value,
+                        "custom_scope_dept_ids": [],
+                        "effect": "ALLOW",
+                        "source_type": "ACCOUNT",
+                        "source_id": account.id,
+                    }
+                    for permission in permissions
+                ],
             ),
             ttl_seconds=3600,
         )
@@ -43,7 +50,7 @@ async def _seed_admin(client, token: str, permissions: list[str]) -> SysAccount:
 
 async def test_permission_tree_selector_route_lists_resources(client, monkeypatch):
     async def fake_permission_tree_selector(self):
-        return ["file:file:page[page]", "iam:role:grantpermission[给角色授权权限]"]
+        return ["sys:file:page[page]", "iam:role:grantpermission[给角色授权权限]"]
 
     monkeypatch.setattr(
         "app.modules.iam.role.service.RoleService.permission_tree_selector",
@@ -59,14 +66,14 @@ async def test_permission_tree_selector_route_lists_resources(client, monkeypatc
 
     assert response.status_code == 200
     assert response.json()["data"] == [
-        "file:file:page[page]",
+        "sys:file:page[page]",
         "iam:role:grantpermission[给角色授权权限]",
     ]
 
 
 async def test_role_permission_grant_overwrites_existing_grants(client, monkeypatch):
     async def fake_ensure_registered_permission(permission_key: str) -> None:
-        assert permission_key in {"file:file:page", "iam:role:page"}
+        assert permission_key in {"sys:file:page", "iam:role:page"}
 
     monkeypatch.setattr(
         "app.modules.iam.role.service.ensure_registered_permission",
@@ -99,7 +106,7 @@ async def test_role_permission_grant_overwrites_existing_grants(client, monkeypa
             "id": role_id,
             "grant_info_list": [
                 {
-                    "permission_key": "file:file:page",
+                    "permission_key": "sys:file:page",
                     "data_scope": DataScope.ALL.value,
                     "custom_scope_dept_ids": [],
                 }
@@ -118,7 +125,7 @@ async def test_role_permission_grant_overwrites_existing_grants(client, monkeypa
         "id": role_id,
         "grant_info_list": [
             {
-                "permission_key": "file:file:page",
+                "permission_key": "sys:file:page",
                 "data_scope": DataScope.ALL.value,
                 "custom_scope_dept_ids": [],
             }
@@ -127,28 +134,40 @@ async def test_role_permission_grant_overwrites_existing_grants(client, monkeypa
 
 
 async def test_account_permission_grant_overwrites_existing_grants(client, monkeypatch):
-    async def fake_ensure_registered_permission(permission_key: str) -> None:
-        assert permission_key == "file:file:page"
+    async def fake_list_registered_permission_keys() -> set[str]:
+        return {"sys:file:page"}
 
     monkeypatch.setattr(
-        "app.modules.iam.account.service.ensure_registered_permission",
-        fake_ensure_registered_permission,
+        "app.modules.iam.account.service.list_registered_permission_keys",
+        fake_list_registered_permission_keys,
     )
     token = "admin-account-grant-token"
-    account = await _seed_admin(
+    await _seed_admin(
         client,
         token,
         ["iam:account:grantpermission", "iam:account:ownpermission"],
     )
+    override = client._transport.app.dependency_overrides[get_db_session]
+    async for session in override():
+        db_session: AsyncSession = session
+        target_account = SysAccount(
+            password_hash=hash_password("Admin@123456"),
+            account_type=AccountType.ADMIN.value,
+            account_status=AccountStatusEnum.ENABLED.value,
+        )
+        db_session.add(target_account)
+        await db_session.commit()
+        target_account_id = target_account.id
+        break
 
     grant_response = await client.post(
         "/api/v1/admin/sys/accounts/grant-permission",
         headers={"Authorization": token},
         json={
-            "id": account.id,
+            "id": target_account_id,
             "grant_info_list": [
                 {
-                    "permission_key": "file:file:page",
+                    "permission_key": "sys:file:page",
                     "data_scope": DataScope.SELF.value,
                     "custom_scope_dept_ids": [],
                 }
@@ -160,13 +179,22 @@ async def test_account_permission_grant_overwrites_existing_grants(client, monke
     own_response = await client.get(
         "/api/v1/admin/sys/accounts/own-permission",
         headers={"Authorization": token},
-        params={"id": account.id},
+        params={"id": target_account_id},
     )
     assert own_response.status_code == 200
     assert own_response.json()["data"]["grant_info_list"] == [
         {
-            "permission_key": "file:file:page",
+            "permission_key": "sys:file:page",
             "data_scope": DataScope.SELF.value,
             "custom_scope_dept_ids": [],
         }
     ]
+
+
+async def test_generic_grant_routes_are_not_registered(client):
+    response = await client.post(
+        "/api/v1/admin/resource-grants",
+        json={},
+    )
+
+    assert response.status_code == 404

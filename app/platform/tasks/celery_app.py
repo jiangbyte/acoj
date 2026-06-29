@@ -8,3 +8,5 @@ celery_app = Celery(
     include=["app.worker.tasks"],
 )
 celery_app.conf.task_default_queue = "default"
+
+from app.platform.tasks import scheduler  # noqa: E402,F401

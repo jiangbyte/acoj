@@ -28,14 +28,12 @@ class RedisSettings(BaseSettings):
     """Redis 配置，支持通过标准 URL 传递账号、密码、库编号等连接信息。"""
 
     url: str = "redis://localhost:6379/0"
-    enabled: bool = False
 
 
 class AuthSettings(BaseSettings):
     token_name: str = "Authorization"
     token_ttl_seconds: int = 60 * 60 * 24 * 30
     refresh_ttl_seconds: int = 60 * 60 * 24 * 30
-    enable_memory_session_fallback: bool = True
 
 
 class CorsSettings(BaseSettings):

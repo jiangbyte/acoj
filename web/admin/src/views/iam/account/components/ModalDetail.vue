@@ -48,94 +48,141 @@ defineExpose({
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
-        <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('pages.iam.account.id')">
-            {{ displayValue(state.account.id) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.account')">
-            {{ displayValue(state.account.account) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.accountType')">
-            <NTag
-              :color="createTagColor(dictTypeColor('ACCOUNT_TYPE', state.account.account_type))"
-              :bordered="false"
-            >
-              {{ dictTypeData('ACCOUNT_TYPE', state.account.account_type) }}
-            </NTag>
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.accountStatus')">
-            <NTag
-              :color="createTagColor(dictTypeColor('ACCOUNT_STATUS', state.account.account_status))"
-              :bordered="false"
-            >
-              {{ dictTypeData('ACCOUNT_STATUS', state.account.account_status) }}
-            </NTag>
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.name')">
-            {{ displayValue(state.account.name) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.nickname')">
-            {{ displayValue(state.account.nickname) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.avatar')">
-            <NAvatar v-if="state.account.avatar" :src="state.account.avatar" :alt="avatarAlt" />
-            <template v-else> - </template>
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.signature')">
-            {{ displayValue(state.account.signature) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.phone')">
-            {{ displayValue(state.account.phone) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.email')">
-            {{ displayValue(state.account.email) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.cancelledAt')">
-            {{ displayValue(state.account.cancelled_at) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.cancelledBy')">
-            {{ displayValue(state.account.cancelled_by) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.cancelReason')">
-            {{ displayValue(state.account.cancel_reason) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.lastLoginIp')">
-            {{ displayValue(state.account.last_login_ip) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.lastLoginAddress')">
-            {{ displayValue(state.account.last_login_address) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.lastLoginTime')">
-            {{ displayValue(state.account.last_login_time) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.lastLoginDevice')">
-            {{ displayValue(state.account.last_login_device) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.latestLoginIp')">
-            {{ displayValue(state.account.latest_login_ip) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.latestLoginAddress')">
-            {{ displayValue(state.account.latest_login_address) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.latestLoginTime')">
-            {{ displayValue(state.account.latest_login_time) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.account.latestLoginDevice')">
-            {{ displayValue(state.account.latest_login_device) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdAt')">
-            {{ displayValue(state.account.created_at) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdBy')">
-            {{ displayValue(state.account.created_by) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedAt')">
-            {{ displayValue(state.account.updated_at) }}
-          </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedBy')">
-            {{ displayValue(state.account.updated_by) }}
-          </NDescriptionsItem>
-        </NDescriptions>
+        <NTabs type="line" animated>
+          <NTabPane name="account" :tab="t('pages.iam.account.accountInfo')">
+            <NDescriptions label-placement="left" bordered :column="1">
+              <NDescriptionsItem :label="t('pages.iam.account.id')">
+                {{ displayValue(state.account.id) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.accountType')">
+                <NTag
+                  :color="createTagColor(dictTypeColor('ACCOUNT_TYPE', state.account.account_type))"
+                  :bordered="false"
+                >
+                  {{ dictTypeData('ACCOUNT_TYPE', state.account.account_type) }}
+                </NTag>
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.accountStatus')">
+                <NTag
+                  :color="
+                    createTagColor(dictTypeColor('ACCOUNT_STATUS', state.account.account_status))
+                  "
+                  :bordered="false"
+                >
+                  {{ dictTypeData('ACCOUNT_STATUS', state.account.account_status) }}
+                </NTag>
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.cancelledAt')">
+                {{ displayValue(state.account.cancelled_at) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.cancelledBy')">
+                {{ displayValue(state.account.cancelled_by) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.cancelReason')">
+                {{ displayValue(state.account.cancel_reason) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.lastLoginIp')">
+                {{ displayValue(state.account.last_login_ip) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.lastLoginAddress')">
+                {{ displayValue(state.account.last_login_address) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.lastLoginTime')">
+                {{ displayValue(state.account.last_login_time) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.lastLoginDevice')">
+                {{ displayValue(state.account.last_login_device) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.latestLoginIp')">
+                {{ displayValue(state.account.latest_login_ip) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.latestLoginAddress')">
+                {{ displayValue(state.account.latest_login_address) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.latestLoginTime')">
+                {{ displayValue(state.account.latest_login_time) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.latestLoginDevice')">
+                {{ displayValue(state.account.latest_login_device) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('common.often.createdAt')">
+                {{ displayValue(state.account.created_at) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('common.often.updatedAt')">
+                {{ displayValue(state.account.updated_at) }}
+              </NDescriptionsItem>
+            </NDescriptions>
+          </NTabPane>
+
+          <NTabPane name="identity" :tab="t('pages.iam.account.loginIdentity')">
+            <NDescriptions label-placement="left" bordered :column="1">
+              <NDescriptionsItem :label="t('pages.iam.account.account')">
+                {{ displayValue(state.account.account) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.emailIdentity')">
+                {{ displayValue(state.account.email_identity) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.emailIdentityVerified')">
+                {{ state.account.email_identity_verified ? t('pages.iam.account.yes') : t('pages.iam.account.no') }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.emailIdentityBindStatus')">
+                {{
+                  dictTypeData(
+                    'ACCOUNT_IDENTITY_BIND_STATUS',
+                    state.account.email_identity_bind_status,
+                  ) || displayValue(state.account.email_identity_bind_status)
+                }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.phoneIdentity')">
+                {{ displayValue(state.account.phone_identity) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.phoneIdentityVerified')">
+                {{ state.account.phone_identity_verified ? t('pages.iam.account.yes') : t('pages.iam.account.no') }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.phoneIdentityBindStatus')">
+                {{
+                  dictTypeData(
+                    'ACCOUNT_IDENTITY_BIND_STATUS',
+                    state.account.phone_identity_bind_status,
+                  ) || displayValue(state.account.phone_identity_bind_status)
+                }}
+              </NDescriptionsItem>
+            </NDescriptions>
+          </NTabPane>
+
+          <NTabPane name="profile" :tab="t('pages.iam.account.profileInfo')">
+            <NDescriptions label-placement="left" bordered :column="1">
+              <NDescriptionsItem :label="t('pages.iam.account.name')">
+                {{ displayValue(state.account.name) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.nickname')">
+                {{ displayValue(state.account.nickname) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.avatar')">
+                <NAvatar v-if="state.account.avatar" :src="state.account.avatar" :alt="avatarAlt" />
+                <template v-else> - </template>
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.signature')">
+                {{ displayValue(state.account.signature) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.phone')">
+                {{ displayValue(state.account.phone) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.email')">
+                {{ displayValue(state.account.email) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.employeeNo')">
+                {{ displayValue(state.account.employee_no) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.titleName')">
+                {{ displayValue(state.account.title) }}
+              </NDescriptionsItem>
+              <NDescriptionsItem :label="t('pages.iam.account.remark')">
+                {{ displayValue(state.account.remark) }}
+              </NDescriptionsItem>
+            </NDescriptions>
+          </NTabPane>
+        </NTabs>
       </NSpin>
     </NScrollbar>
   </NModal>

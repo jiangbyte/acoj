@@ -1,12 +1,11 @@
 from fastapi import APIRouter
 
 from app.modules.auth.router import admin_router as auth_admin_router
-from app.modules.banner.router import router as banner_router
-from app.modules.dict.router import router as dict_router
-from app.modules.file.router import router as file_router
+from app.modules.sys.banner.router import router as banner_router
+from app.modules.sys.dict.router import router as dict_router
+from app.modules.sys.file.router import router as file_router
 from app.modules.iam.account.router import router as account_router
 from app.modules.iam.dept.router import router as dept_router
-from app.modules.iam.grant.router import router as grant_router
 from app.modules.iam.group.router import router as group_router
 from app.modules.iam.permission.router import router as permission_router
 from app.modules.iam.position.router import router as position_router
@@ -22,7 +21,6 @@ router.include_router(group_router)
 router.include_router(role_router)
 router.include_router(resource_router)
 router.include_router(position_router)
-router.include_router(grant_router)
 router.include_router(permission_router)
 router.include_router(file_router)
 router.include_router(admin_profile_router)

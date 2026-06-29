@@ -7,7 +7,8 @@ from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
-from app.deps.auth import require_permission, require_account_type
+from app.core.security.session import SessionPayload
+from app.deps.auth import get_current_session, require_permission, require_account_type
 from app.deps.db import get_db_session
 from app.modules.iam.position.schema import (
     PositionAdminPageQuery,
@@ -31,8 +32,9 @@ router = APIRouter()
 async def create(
     payload: PositionCreateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[None]:
-    await PositionService(db).create(payload)
+    await PositionService(db).create(payload, session)
     return success()
 
 
@@ -47,8 +49,9 @@ async def create(
 async def update(
     payload: PositionUpdateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[None]:
-    await PositionService(db).update(payload)
+    await PositionService(db).update(payload, session)
     return success()
 
 
@@ -63,8 +66,9 @@ async def update(
 async def delete(
     payload: IdsRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[None]:
-    await PositionService(db).delete(payload)
+    await PositionService(db).delete(payload, session)
     return success()
 
 
@@ -78,9 +82,10 @@ async def delete(
 )
 async def detail(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
     id: Annotated[Id, Query()],
 ) -> ApiResponse[SysPositionSchema]:
-    return success(await PositionService(db).detail(IdQuery(id=id)))
+    return success(await PositionService(db).detail(IdQuery(id=id), session))
 
 
 @router.get(
@@ -93,6 +98,7 @@ async def detail(
 )
 async def page(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
     current: Current = 1,
     size: Size = 20,
     name: str | None = Query(default=None, max_length=64),
@@ -107,4 +113,4 @@ async def page(
         category=category,
         status=status,
     )
-    return success(await PositionService(db).page_admin(query))
+    return success(await PositionService(db).page_admin(query, session))

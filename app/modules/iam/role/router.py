@@ -7,12 +7,18 @@ from app.core.config.enums import AccountType
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
-from app.deps.auth import require_permission, require_account_type
+from app.core.security.session import SessionPayload
+from app.deps.auth import get_current_session, require_permission, require_account_type
 from app.deps.db import get_db_session
 from app.modules.iam.role.schema import (
     RoleAdminPageQuery,
+    RoleGrantResourceRequest,
+    RoleGrantUserRequest,
+    RoleOwnPermissionDetailResponse,
     RoleGrantPermissionRequest,
     RoleOwnPermissionResponse,
+    RoleOwnResourceResponse,
+    RoleOwnUserResponse,
     RoleCreateRequest,
     RoleUpdateRequest,
     SysRoleSchema,
@@ -33,8 +39,9 @@ router = APIRouter()
 async def create(
     payload: RoleCreateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[None]:
-    await RoleService(db).create(payload)
+    await RoleService(db).create(payload, session)
     return success()
 
 
@@ -49,8 +56,9 @@ async def create(
 async def update(
     payload: RoleUpdateRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[None]:
-    await RoleService(db).update(payload)
+    await RoleService(db).update(payload, session)
     return success()
 
 
@@ -65,8 +73,9 @@ async def update(
 async def delete(
     payload: IdsRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[None]:
-    await RoleService(db).delete(payload)
+    await RoleService(db).delete(payload, session)
     return success()
 
 
@@ -80,9 +89,10 @@ async def delete(
 )
 async def detail(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
     id: Annotated[Id, Query()],
 ) -> ApiResponse[SysRoleSchema]:
-    return success(await RoleService(db).detail(IdQuery(id=id)))
+    return success(await RoleService(db).detail(IdQuery(id=id), session))
 
 
 @router.get(
@@ -95,6 +105,7 @@ async def detail(
 )
 async def page(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
     current: Current = 1,
     size: Size = 20,
     code: str | None = Query(default=None, max_length=64),
@@ -111,7 +122,7 @@ async def page(
         scope_type=scope_type,
         status=status,
     )
-    return success(await RoleService(db).page_admin(query))
+    return success(await RoleService(db).page_admin(query, session))
 
 
 @router.get(
@@ -140,9 +151,27 @@ async def permission_tree_selector(
 )
 async def own_permission(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
     id: Annotated[Id, Query()],
 ) -> ApiResponse[RoleOwnPermissionResponse]:
-    return success(await RoleService(db).own_permission(IdQuery(id=id)))
+    return success(await RoleService(db).own_permission(IdQuery(id=id), session))
+
+
+@router.get(
+    "/sys/roles/own-permission-detail",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:role:ownpermission")),
+    ],
+    response_model=ApiResponse[RoleOwnPermissionDetailResponse],
+    summary="获取角色拥有权限和可授权权限列表",
+)
+async def own_permission_detail(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+    id: Annotated[Id, Query()],
+) -> ApiResponse[RoleOwnPermissionDetailResponse]:
+    return success(await RoleService(db).own_permission_detail(IdQuery(id=id), session))
 
 
 @router.post(
@@ -157,6 +186,77 @@ async def own_permission(
 async def grant_permission(
     payload: RoleGrantPermissionRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[None]:
-    await RoleService(db).grant_permission(payload)
+    await RoleService(db).grant_permission(payload, session)
+    return success()
+
+
+@router.get(
+    "/sys/roles/own-resource",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:role:ownresource")),
+    ],
+    response_model=ApiResponse[RoleOwnResourceResponse],
+    summary="获取角色拥有资源",
+)
+async def own_resource(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+    id: Annotated[Id, Query()],
+) -> ApiResponse[RoleOwnResourceResponse]:
+    return success(await RoleService(db).own_resource(IdQuery(id=id), session))
+
+
+@router.post(
+    "/sys/roles/grant-resource",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:role:grantresource")),
+    ],
+    response_model=ApiResponse[None],
+    summary="给角色授权资源",
+)
+async def grant_resource(
+    payload: RoleGrantResourceRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+) -> ApiResponse[None]:
+    await RoleService(db).grant_resource(payload, session)
+    return success()
+
+
+@router.get(
+    "/sys/roles/own-user",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:role:ownuser")),
+    ],
+    response_model=ApiResponse[RoleOwnUserResponse],
+    summary="获取角色拥有用户",
+)
+async def own_user(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+    id: Annotated[Id, Query()],
+) -> ApiResponse[RoleOwnUserResponse]:
+    return success(await RoleService(db).own_user(IdQuery(id=id), session))
+
+
+@router.post(
+    "/sys/roles/grant-user",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:role:grantuser")),
+    ],
+    response_model=ApiResponse[None],
+    summary="给角色授权用户",
+)
+async def grant_user(
+    payload: RoleGrantUserRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+) -> ApiResponse[None]:
+    await RoleService(db).grant_user(payload, session)
     return success()

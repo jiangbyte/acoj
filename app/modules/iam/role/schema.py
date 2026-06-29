@@ -6,7 +6,9 @@ from app.core.config.enums import StatusEnum
 from app.core.config.enums import DataScope
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
+from app.modules.iam.resource.schema import ResourceGrantModuleOption, PermissionRegistryItem
 from app.modules.iam.enums import RoleScopeType
+from app.modules.iam.account.schema import SysAccountSchema
 
 
 class RoleCreateRequest(ApiSchema):
@@ -67,3 +69,36 @@ class RoleOwnPermissionResponse(ApiSchema):
 class RoleGrantPermissionRequest(ApiSchema):
     id: str = Field(min_length=1, max_length=64)
     grant_info_list: list[RolePermissionGrantInfo] = Field(default_factory=list)
+
+
+class RoleResourceGrantInfo(ApiSchema):
+    resource_id: str = Field(min_length=1, max_length=64)
+    permission_keys: list[str] = Field(default_factory=list)
+
+
+class RoleOwnResourceResponse(ApiSchema):
+    id: str
+    modules: list[ResourceGrantModuleOption] = Field(default_factory=list)
+    grant_info_list: list[RoleResourceGrantInfo] = Field(default_factory=list)
+
+
+class RoleGrantResourceRequest(ApiSchema):
+    id: str = Field(min_length=1, max_length=64)
+    grant_info_list: list[RoleResourceGrantInfo] = Field(default_factory=list)
+
+
+class RoleOwnPermissionDetailResponse(ApiSchema):
+    id: str
+    permissions: list[PermissionRegistryItem] = Field(default_factory=list)
+    grant_info_list: list[RolePermissionGrantInfo] = Field(default_factory=list)
+
+
+class RoleOwnUserResponse(ApiSchema):
+    id: str
+    users: list[SysAccountSchema] = Field(default_factory=list)
+    account_ids: list[str] = Field(default_factory=list)
+
+
+class RoleGrantUserRequest(ApiSchema):
+    id: str = Field(min_length=1, max_length=64)
+    account_ids: list[str] = Field(default_factory=list)

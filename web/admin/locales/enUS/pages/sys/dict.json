@@ -20,7 +20,7 @@
   "colorPattern": "Please select a valid hex color",
   "codeExists": "Code already exists",
   "categories": {
-    "sys": "System Dict",
-    "biz": "Business Dict"
+    "sys": "System",
+    "biz": "Business"
   }
 }

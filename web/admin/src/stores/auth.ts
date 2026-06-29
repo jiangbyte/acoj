@@ -6,8 +6,17 @@ import { useRouteStore } from './route'
 import { useTabStore } from './tab'
 
 interface AuthUserInfo {
+  accountId: string
   account: string
-  nickname: string
+  accountType: string
+  name: string
+  nickname?: string | null
+  avatar?: string | null
+  roleIds: string[]
+  deptIds: string[]
+  groupIds: string[]
+  permissionKeys: string[]
+  buttonCodes: string[]
   loginAt: number
 }
 
@@ -56,16 +65,27 @@ export const useAuthStore = defineStore('auth-store', {
         password,
       })
       const token = response.data.token
+      localStorage.setItem(tokenKey, token)
+      this.token = token
+
+      const meResponse = await authApi.me()
       const now = Date.now()
       const userInfo: AuthUserInfo = {
-        account,
-        nickname: account,
+        accountId: meResponse.data.account_id,
+        account: meResponse.data.account,
+        accountType: meResponse.data.account_type,
+        name: meResponse.data.name,
+        nickname: meResponse.data.nickname,
+        avatar: meResponse.data.avatar,
+        roleIds: meResponse.data.role_ids ?? [],
+        deptIds: meResponse.data.dept_ids ?? [],
+        groupIds: meResponse.data.group_ids ?? [],
+        permissionKeys: meResponse.data.permission_keys ?? [],
+        buttonCodes: meResponse.data.button_codes ?? [],
         loginAt: now,
       }
 
-      localStorage.setItem(tokenKey, token)
       localStorage.setItem(userInfoKey, JSON.stringify(userInfo))
-      this.token = token
       this.userInfo = userInfo
 
       const routeStore = useRouteStore()
@@ -74,6 +94,12 @@ export const useAuthStore = defineStore('auth-store', {
       dictStore.syncDictTree()
       await dictStore.refreshDict()
       await router.push(getSafeRedirect(redirect))
+    },
+
+    hasPermission(permissionKey: string) {
+      const keys = this.userInfo?.permissionKeys ?? []
+      const buttonCodes = this.userInfo?.buttonCodes ?? []
+      return keys.includes('*:*:*') || keys.includes(permissionKey) || buttonCodes.includes(permissionKey)
     },
 
     clearAuthStorage() {

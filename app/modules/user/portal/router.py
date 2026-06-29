@@ -8,8 +8,9 @@ from app.core.response.schema import ApiResponse, success
 from app.core.security.session import SessionPayload
 from app.deps.auth import get_current_session, require_account_type
 from app.deps.db import get_db_session
+from app.core.schema.base import IdQuery
+from app.modules.iam.account.service import AccountService
 from app.modules.user.portal.schema import PortalProfileResponse
-from app.modules.user.portal.service import PortalUserProfileService
 from app.modules.user.schema import PortalMeResponse
 
 router = APIRouter()
@@ -25,19 +26,22 @@ async def get_me(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[PortalMeResponse]:
     """查询当前门户用户的扩展资料信息。"""
-    profile = await PortalUserProfileService(db).get_profile(session.account_id)
+    account = await AccountService(db).detail(IdQuery(id=session.account_id))
     return success(
         PortalMeResponse(
             account_id=session.account_id,
+            account=account.account,
             account_type=AccountType(str(session.account_type)),
             profile=PortalProfileResponse(
                 account_id=session.account_id,
-                nickname=getattr(profile, "nickname", None),
-                avatar_url=getattr(profile, "avatar_url", None),
-                bio=getattr(profile, "bio", None),
-                level=getattr(profile, "level", None),
-                created_at=getattr(profile, "created_at", None),
-                updated_at=getattr(profile, "updated_at", None),
+                name=account.name,
+                nickname=account.nickname,
+                avatar=account.avatar,
+                signature=account.signature,
+                phone=account.phone,
+                email=account.email,
+                created_at=account.created_at,
+                updated_at=account.updated_at,
             ),
         )
     )

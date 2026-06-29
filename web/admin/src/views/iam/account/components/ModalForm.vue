@@ -22,6 +22,15 @@ const defaultFormData = {
   signature: '',
   phone: '',
   email: '',
+  email_identity: '',
+  phone_identity: '',
+  email_identity_verified: false,
+  phone_identity_verified: false,
+  email_identity_bind_status: 'BOUND',
+  phone_identity_bind_status: 'BOUND',
+  employee_no: '',
+  title: '',
+  remark: '',
 }
 const state = reactive({
   showModal: false,
@@ -74,6 +83,15 @@ async function fetchDetail(id: string) {
       signature: response.data?.signature ?? '',
       phone: response.data?.phone ?? '',
       email: response.data?.email ?? '',
+      email_identity: response.data?.email_identity ?? '',
+      phone_identity: response.data?.phone_identity ?? '',
+      email_identity_verified: Boolean(response.data?.email_identity_verified),
+      phone_identity_verified: Boolean(response.data?.phone_identity_verified),
+      email_identity_bind_status: response.data?.email_identity_bind_status ?? 'BOUND',
+      phone_identity_bind_status: response.data?.phone_identity_bind_status ?? 'BOUND',
+      employee_no: response.data?.employee_no ?? '',
+      title: response.data?.title ?? '',
+      remark: response.data?.remark ?? '',
     })
   } finally {
     state.loading = false
@@ -99,6 +117,15 @@ async function submitForm() {
       signature: toNullableString(state.formModel.signature),
       phone: toNullableString(state.formModel.phone),
       email: toNullableString(state.formModel.email),
+      email_identity: toNullableString(state.formModel.email_identity),
+      phone_identity: toNullableString(state.formModel.phone_identity),
+      email_identity_verified: Boolean(state.formModel.email_identity_verified),
+      phone_identity_verified: Boolean(state.formModel.phone_identity_verified),
+      email_identity_bind_status: state.formModel.email_identity_bind_status,
+      phone_identity_bind_status: state.formModel.phone_identity_bind_status,
+      employee_no: toNullableString(state.formModel.employee_no),
+      title: toNullableString(state.formModel.title),
+      remark: toNullableString(state.formModel.remark),
     }
 
     if (state.dataId) {
@@ -144,51 +171,98 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('pages.iam.account.account')" path="account">
-            <NInput v-model:value="state.formModel.account" />
-          </NFormItem>
-          <NFormItem :label="t('pages.iam.account.password')" path="password">
-            <NInput
-              v-model:value="state.formModel.password"
-              type="password"
-              show-password-on="click"
-              :placeholder="
-                state.dataId ? t('pages.iam.account.passwordEditPlaceholder') : undefined
-              "
-            />
-          </NFormItem>
-          <NFormItem :label="t('pages.iam.account.accountType')" path="account_type">
-            <DictSelect v-model="state.formModel.account_type" dict-code="ACCOUNT_TYPE" />
-          </NFormItem>
-          <NFormItem :label="t('pages.iam.account.accountStatus')" path="account_status">
-            <DictSelect
-              v-model="state.formModel.account_status"
-              dict-code="ACCOUNT_STATUS"
-              type="radio"
-            />
-          </NFormItem>
-          <NFormItem :label="t('pages.iam.account.name')" path="name">
-            <NInput v-model:value="state.formModel.name" />
-          </NFormItem>
-          <NFormItem :label="t('pages.iam.account.nickname')" path="nickname">
-            <NInput v-model:value="state.formModel.nickname" />
-          </NFormItem>
-          <NFormItem :label="t('pages.iam.account.avatar')" path="avatar">
-            <NInput v-model:value="state.formModel.avatar" />
-          </NFormItem>
-          <NFormItem :label="t('pages.iam.account.signature')" path="signature">
-            <NInput
-              v-model:value="state.formModel.signature"
-              type="textarea"
-              :autosize="{ minRows: 3, maxRows: 5 }"
-            />
-          </NFormItem>
-          <NFormItem :label="t('pages.iam.account.phone')" path="phone">
-            <NInput v-model:value="state.formModel.phone" />
-          </NFormItem>
-          <NFormItem :label="t('pages.iam.account.email')" path="email">
-            <NInput v-model:value="state.formModel.email" />
-          </NFormItem>
+          <NTabs type="line" animated>
+            <NTabPane name="account" :tab="t('pages.iam.account.accountInfo')">
+              <NFormItem :label="t('pages.iam.account.password')" path="password">
+                <NInput
+                  v-model:value="state.formModel.password"
+                  type="password"
+                  show-password-on="click"
+                  :placeholder="
+                    state.dataId ? t('pages.iam.account.passwordEditPlaceholder') : undefined
+                  "
+                />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.accountType')" path="account_type">
+                <DictSelect v-model="state.formModel.account_type" dict-code="ACCOUNT_TYPE" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.accountStatus')" path="account_status">
+                <DictSelect
+                  v-model="state.formModel.account_status"
+                  dict-code="ACCOUNT_STATUS"
+                  type="radio"
+                />
+              </NFormItem>
+            </NTabPane>
+
+            <NTabPane name="identity" :tab="t('pages.iam.account.loginIdentity')">
+              <NFormItem :label="t('pages.iam.account.account')" path="account">
+                <NInput v-model:value="state.formModel.account" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.emailIdentity')" path="email_identity">
+                <NInput v-model:value="state.formModel.email_identity" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.emailIdentityVerified')">
+                <NSwitch v-model:value="state.formModel.email_identity_verified" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.emailIdentityBindStatus')">
+                <DictSelect
+                  v-model="state.formModel.email_identity_bind_status"
+                  dict-code="ACCOUNT_IDENTITY_BIND_STATUS"
+                />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.phoneIdentity')" path="phone_identity">
+                <NInput v-model:value="state.formModel.phone_identity" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.phoneIdentityVerified')">
+                <NSwitch v-model:value="state.formModel.phone_identity_verified" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.phoneIdentityBindStatus')">
+                <DictSelect
+                  v-model="state.formModel.phone_identity_bind_status"
+                  dict-code="ACCOUNT_IDENTITY_BIND_STATUS"
+                />
+              </NFormItem>
+            </NTabPane>
+
+            <NTabPane name="profile" :tab="t('pages.iam.account.profileInfo')">
+              <NFormItem :label="t('pages.iam.account.name')" path="name">
+                <NInput v-model:value="state.formModel.name" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.nickname')" path="nickname">
+                <NInput v-model:value="state.formModel.nickname" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.avatar')" path="avatar">
+                <NInput v-model:value="state.formModel.avatar" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.signature')" path="signature">
+                <NInput
+                  v-model:value="state.formModel.signature"
+                  type="textarea"
+                  :autosize="{ minRows: 3, maxRows: 5 }"
+                />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.phone')" path="phone">
+                <NInput v-model:value="state.formModel.phone" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.email')" path="email">
+                <NInput v-model:value="state.formModel.email" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.employeeNo')" path="employee_no">
+                <NInput v-model:value="state.formModel.employee_no" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.titleName')" path="title">
+                <NInput v-model:value="state.formModel.title" />
+              </NFormItem>
+              <NFormItem :label="t('pages.iam.account.remark')" path="remark">
+                <NInput
+                  v-model:value="state.formModel.remark"
+                  type="textarea"
+                  :autosize="{ minRows: 3, maxRows: 5 }"
+                />
+              </NFormItem>
+            </NTabPane>
+          </NTabs>
         </NForm>
       </NScrollbar>
     </NSpin>

@@ -24,6 +24,8 @@ async def get_current_session(
     session = await session_store.get(token)
     if not session:
         raise AuthenticationError("Invalid or expired token")
+    account_id_ctx.set(session.account_id)
+    account_type_ctx.set(session.account_type)
     return session
 
 
@@ -48,6 +50,7 @@ def require_account_type(*account_types: AccountType):
 
     async def dependency(
         session: Annotated[SessionPayload, Depends(get_current_session)],
+        account=Depends(get_current_account),
     ) -> SessionPayload:
         assert_account_type_allowed(session.account_type, set(account_types))
         return session
@@ -63,6 +66,7 @@ def require_account_type(*account_types: AccountType):
 def require_permission(permission_code: str):
     async def dependency(
         session: Annotated[SessionPayload, Depends(get_current_session)],
+        account=Depends(get_current_account),
     ) -> SessionPayload:
         if not PermissionChecker.has_permission(session.permission_keys, permission_code):
             raise AuthorizationError(f"Permission denied: {permission_code}")

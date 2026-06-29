@@ -7,9 +7,6 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.config.settings import settings
-from app.modules.banner import model as _banner_model  # noqa: F401
-from app.modules.dict import model as _dict_model  # noqa: F401
-from app.modules.file import model as _file_model  # noqa: F401
 from app.modules.iam.account import model as _iam_account_model  # noqa: F401
 from app.modules.iam.dept import model as _iam_dept_model  # noqa: F401
 from app.modules.iam.grant import model as _iam_grant_model  # noqa: F401
@@ -17,6 +14,9 @@ from app.modules.iam.group import model as _iam_group_model  # noqa: F401
 from app.modules.iam.position import model as _iam_position_model  # noqa: F401
 from app.modules.iam.resource import model as _iam_resource_model  # noqa: F401
 from app.modules.iam.role import model as _iam_role_model  # noqa: F401
+from app.modules.sys.banner import model as _banner_model  # noqa: F401
+from app.modules.sys.dict import model as _dict_model  # noqa: F401
+from app.modules.sys.file import model as _file_model  # noqa: F401
 from app.modules.user.admin import model as _admin_profile_model  # noqa: F401
 from app.modules.user.portal import model as _portal_profile_model  # noqa: F401
 from app.platform.db.base import Base
