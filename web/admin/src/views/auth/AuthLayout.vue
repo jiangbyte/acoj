@@ -31,8 +31,8 @@ const highlights = computed(() => [
   },
   {
     icon: 'icon-park-outline:code-computer',
-    title: t('auth.highlightJudgeTitle'),
-    text: t('auth.highlightJudgeText'),
+    title: t('auth.highlightWorkspaceTitle'),
+    text: t('auth.highlightWorkspaceText'),
   },
   {
     icon: 'icon-park-outline:chart-line',

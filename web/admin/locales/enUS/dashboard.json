@@ -1,8 +1,8 @@
 {
   "title": "Workbench",
-  "pendingProblems": "Pending Problems",
+  "pendingTasks": "Pending Tasks",
   "todayNew": "New Today",
-  "submissions": "Submissions",
+  "activityRecords": "Activity Records",
   "last24Hours": "Last 24 Hours",
   "activeUsers": "Active Users",
   "online": "Online",

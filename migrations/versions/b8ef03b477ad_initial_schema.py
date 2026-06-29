@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = 'd6bc178b8d16'
+revision: str = 'b8ef03b477ad'
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -245,7 +245,7 @@ def upgrade() -> None:
     sa.Column('code', sa.String(length=64), nullable=False, comment='资源编码'),
     sa.Column('name', sa.String(length=64), nullable=False, comment='资源名称'),
     sa.Column('resource_type', sa.String(length=32), nullable=False, comment='资源类型'),
-    sa.Column('module', sa.String(length=64), nullable=True, comment='所属模块'),
+    sa.Column('module_id', sa.String(length=64), nullable=True, comment='所属资源模块ID'),
     sa.Column('path', sa.String(length=255), nullable=True, comment='路由路径'),
     sa.Column('component', sa.String(length=255), nullable=True, comment='前端组件'),
     sa.Column('redirect', sa.String(length=255), nullable=True, comment='重定向地址'),
@@ -264,6 +264,23 @@ def upgrade() -> None:
     sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_resource')),
     sa.UniqueConstraint('code', name='uq_sys_resource_code')
+    )
+    op.create_table('sys_resource_module',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('name', sa.String(length=64), nullable=False, comment='模块名称'),
+    sa.Column('code', sa.String(length=64), nullable=False, comment='模块编码'),
+    sa.Column('icon', sa.String(length=255), nullable=True, comment='图标'),
+    sa.Column('color', sa.String(length=32), nullable=True, comment='颜色'),
+    sa.Column('sort', sa.Integer(), nullable=False, comment='排序'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('description', sa.Text(), nullable=True, comment='描述'),
+    sa.Column('extra', sa.JSON(), nullable=False, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_resource_module')),
+    sa.UniqueConstraint('code', name='uq_sys_resource_module_code')
     )
     op.create_table('sys_resource_permission_rel',
     sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
@@ -345,6 +362,7 @@ def downgrade() -> None:
     op.drop_table('sys_subject_permission_grant_rel')
     op.drop_table('sys_role')
     op.drop_table('sys_resource_permission_rel')
+    op.drop_table('sys_resource_module')
     op.drop_table('sys_resource')
     op.drop_table('sys_position')
     op.drop_table('sys_group_role_rel')

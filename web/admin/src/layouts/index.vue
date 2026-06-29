@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ProLayout, useLayoutMenu } from 'pro-naive-ui'
-import { useI18n } from 'vue-i18n'
 import { useAppStore, useRouteStore } from '@/stores'
 import {
   BackTop,
@@ -20,7 +19,6 @@ import Content from './Content.vue'
 
 const appStore = useAppStore()
 const routeStore = useRouteStore()
-const { locale } = useI18n()
 
 const { layout, activeKey } = useLayoutMenu({
   mode: 'vertical',
@@ -92,12 +90,14 @@ const showMobileDrawer = ref(false)
     </template>
 
     <template #sidebar>
-      <n-menu :key="locale" v-bind="layout.verticalMenuProps" :collapsed-width="64" />
+      <n-scrollbar class="sidebar-menu-scrollbar">
+        <n-menu v-bind="layout.verticalMenuProps" :collapsed-width="64" />
+      </n-scrollbar>
     </template>
 
     <template #sidebar-extra>
       <n-scrollbar class="flex-[1_0_0]">
-        <n-menu :key="locale" v-bind="layout.verticalExtraMenuProps" :collapsed-width="64" />
+        <n-menu v-bind="layout.verticalExtraMenuProps" :collapsed-width="64" />
       </n-scrollbar>
     </template>
 
@@ -113,3 +113,15 @@ const showMobileDrawer = ref(false)
     </MobileDrawer>
   </ProLayout>
 </template>
+
+<style scoped>
+:deep(.n-pro-layout__sidebar) {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebar-menu-scrollbar {
+  min-height: 0;
+  flex: 1 1 0;
+}
+</style>

@@ -33,10 +33,10 @@ const rows = computed(() => activeModule.value?.menu ?? [])
 const firstShowMap = computed<Record<string, number[]>>(() => {
   const map: Record<string, number[]> = {}
   rows.value.forEach((item: any, index: number) => {
-    if (map[item.parentName]) {
-      map[item.parentName].push(index)
+    if (map[item.parent_id_name]) {
+      map[item.parent_id_name].push(index)
     } else {
-      map[item.parentName] = [index]
+      map[item.parent_id_name] = [index]
     }
   })
   return map
@@ -44,11 +44,11 @@ const firstShowMap = computed<Record<string, number[]>>(() => {
 const columns = computed<DataTableColumns<any>>(() => [
   {
     title: t('pages.iam.role.parentResource'),
-    key: 'parentName',
+    key: 'parent_id_name',
     fixed: 'left',
     width: 180,
     rowSpan: (row, rowIndex) => {
-      const indexArr = firstShowMap.value[row.parentName] ?? []
+      const indexArr = firstShowMap.value[row.parent_id_name] ?? []
       return rowIndex === indexArr[0] ? indexArr.length : 0
     },
     render: (row) => (
@@ -56,7 +56,7 @@ const columns = computed<DataTableColumns<any>>(() => [
         checked={row.parentCheck}
         onUpdateChecked={(checked) => changeParent(row, Boolean(checked))}
       >
-        {row.parentName}
+        {row.parent_id_name}
       </NCheckbox>
     ),
   },
@@ -168,17 +168,17 @@ function echoModuleData(modules: any[], grant_info_list: any[]) {
         }
       })
       .sort((a: any, b: any) => {
-        const nameComparison = String(b.parentName).localeCompare(String(a.parentName))
-        return nameComparison !== 0 ? nameComparison : Number(a.parentId) - Number(b.parentId)
+        const nameComparison = String(b.parent_id_name).localeCompare(String(a.parent_id_name))
+        return nameComparison !== 0 ? nameComparison : Number(a.parent_id) - Number(b.parent_id)
       }),
   }))
 }
 
 function changeParent(record: any, checked: boolean) {
   record.parentCheck = checked
-  const moduleMenu = state.modules.find((item) => item.id === record.module)?.menu ?? []
+  const moduleMenu = state.modules.find((item) => item.id === record.module_id)?.menu ?? []
   moduleMenu
-    .filter((item: any) => item.parentName === record.parentName)
+    .filter((item: any) => item.parent_id_name === record.parent_id_name)
     .forEach((item: any) => changeSub(item, checked))
 }
 
