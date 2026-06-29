@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
+from app.api.constants import API_V1_PREFIX
 from app.platform.cache.keys import (
     permission_resource_cache_key,
     permission_resource_method_cache_key,
@@ -19,7 +20,6 @@ PERMISSION_KEY_PATTERN = re.compile(r"^[a-z0-9*]+(?::[a-z0-9*]+)+$")
 PERMISSION_META_ATTR = "__permission_meta__"
 ACCOUNT_TYPE_META_ATTR = "__account_type_meta__"
 
-API_PREFIXES = ("/api/v1/admin", "/api/v1/portal", "/api/v1")
 RESOURCE_NAME_FALLBACK = "未定义接口名称"
 
 
@@ -53,7 +53,19 @@ def _normalize_methods(route: APIRoute) -> list[str]:
 
 def normalize_route_path(path: str) -> str:
     normalized = path.strip() or "/"
-    for prefix in API_PREFIXES:
+    api_prefix = API_V1_PREFIX.rstrip("/")
+    if api_prefix and normalized == api_prefix:
+        return "/"
+    if api_prefix and normalized.startswith(api_prefix + "/"):
+        normalized = normalized.removeprefix(api_prefix)
+    return normalized
+
+
+def normalize_permission_route_path(route: APIRoute) -> str:
+    normalized = normalize_route_path(route.path)
+    route_tags = [str(tag).strip("/") for tag in getattr(route, "tags", []) if str(tag).strip("/")]
+    for tag in route_tags:
+        prefix = f"/{tag}"
         if normalized == prefix:
             return "/"
         if normalized.startswith(prefix + "/"):
@@ -99,7 +111,7 @@ def scan_permission_registry(app: FastAPI) -> list[PermissionResource]:
         methods = _normalize_methods(route)
         if not methods:
             continue
-        route_path = normalize_route_path(route.path)
+        route_path = normalize_permission_route_path(route)
         if permission_key in seen_permission_keys:
             continue
         seen_permission_keys.add(permission_key)
@@ -118,8 +130,7 @@ async def sync_permission_registry(app: FastAPI) -> list[PermissionResource]:
     resources = scan_permission_registry(app)
     redis = get_redis()
     if not redis:
-        logger.info("Skip permission registry sync because Redis is unavailable")
-        return resources
+        raise RuntimeError("Redis is required to sync permission registry")
 
     resource_key = permission_resource_cache_key()
     method_key = permission_resource_method_cache_key()
@@ -133,10 +144,10 @@ async def sync_permission_registry(app: FastAPI) -> list[PermissionResource]:
 async def list_permission_resources() -> list[str]:
     redis = get_redis()
     if not redis:
-        return []
+        raise RuntimeError("Redis is required to read permission registry")
     raw = await redis.get(permission_resource_cache_key())
     if not raw:
-        return []
+        raise RuntimeError("Permission registry is not synced in Redis")
     raw_text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
     return [str(item) for item in json.loads(raw_text)]
 

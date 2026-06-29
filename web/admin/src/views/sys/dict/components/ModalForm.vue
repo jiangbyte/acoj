@@ -230,7 +230,7 @@ defineExpose({
         <NFormItem :label="t('pages.sys.dict.category')" path="category">
           <DictSelect
             v-model="state.formModel.category"
-            dict-code="DICT_CATEGORY"
+            dict-code="SYS_BIZ_CATEGORY"
             type="radio"
             @change="updateCategory"
           />

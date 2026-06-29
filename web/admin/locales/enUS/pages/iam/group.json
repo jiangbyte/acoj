@@ -8,6 +8,11 @@
   "addGroup": "Add Group",
   "editGroup": "Edit Group",
   "detailGroup": "Group Detail",
+  "grant": "Grant",
+  "grantUser": "Grant Users",
+  "grantRole": "Grant Roles",
+  "grantResource": "Grant Resources",
+  "grantPermission": "Grant Permissions",
   "deleteConfirm": "Delete this group?",
   "batchDeleteConfirm": "Delete {count} selected groups?"
 }

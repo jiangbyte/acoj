@@ -86,11 +86,11 @@ export const staticRoutes: AppRoute.RowRoute[] = [
     description: null,
   },
   {
-    // Banner 管理：使用后端 banner 管理接口的 CRUD 示例。
+    // 展示图管理：使用后端展示图管理接口的 CRUD 示例。
     id: '303',
     parent_id: '3',
     code: 'sys-banner',
-    name: 'Banner 管理',
+    name: '展示图管理',
     resource_type: 'MENU',
     module: 'system',
     path: '/sys/banner',

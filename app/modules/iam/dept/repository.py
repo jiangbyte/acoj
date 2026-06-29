@@ -2,10 +2,17 @@ from typing import TypedDict
 
 from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.modules.iam.dept.model import SysDept
 from app.core.exceptions.business import NotFoundError
 from app.modules.iam.dept.schema import DeptAdminPageQuery, DeptCreateRequest, DeptUpdateRequest
+from app.modules.iam.reference_guard import (
+    count_dept_references,
+    ensure_not_self_or_descendant,
+    ensure_parent_exists,
+    raise_if_referenced,
+)
 
 
 class DeptTreeRecord(TypedDict):
@@ -21,6 +28,7 @@ class DeptRepository:
         self.db = db
 
     async def create(self, payload: DeptCreateRequest) -> None:
+        await ensure_parent_exists(self.db, SysDept, payload.parent_id, "Dept")
         dept = SysDept(**payload.model_dump())
         self.db.add(dept)
         await self.db.flush()
@@ -36,6 +44,8 @@ class DeptRepository:
 
     async def update(self, payload: DeptUpdateRequest) -> None:
         entity = await self.get_required(payload.id)
+        await ensure_parent_exists(self.db, SysDept, payload.parent_id, "Dept")
+        await ensure_not_self_or_descendant(self.db, SysDept, payload.id, payload.parent_id, "Dept")
         data = payload.model_dump(exclude={"id"})
         for key, value in data.items():
             setattr(entity, key, value)
@@ -43,13 +53,31 @@ class DeptRepository:
 
     async def delete_many(self, dept_ids: list[str]) -> None:
         unique_ids = list(dict.fromkeys(dept_ids))
+        if not unique_ids:
+            return
         stmt = select(SysDept.id).where(SysDept.id.in_(unique_ids))
         existing_ids = set((await self.db.execute(stmt)).scalars().all())
         if len(existing_ids) != len(unique_ids):
             raise NotFoundError("Dept not found")
+        raise_if_referenced("Dept", await count_dept_references(self.db, unique_ids))
         await self.db.execute(delete(SysDept).where(SysDept.id.in_(unique_ids)))
 
-    async def page_admin(self, query: DeptAdminPageQuery) -> tuple[list[SysDept], int]:
+    async def count_depts_in_scope(
+        self,
+        dept_ids: list[str],
+        data_scope_filter: ColumnElement[bool],
+    ) -> int:
+        unique_ids = list(dict.fromkeys(dept_ids))
+        if not unique_ids:
+            return 0
+        stmt = select(func.count(SysDept.id)).where(SysDept.id.in_(unique_ids), data_scope_filter)
+        return int((await self.db.execute(stmt)).scalar_one())
+
+    async def page_admin(
+        self,
+        query: DeptAdminPageQuery,
+        data_scope_filter: ColumnElement[bool] | None = None,
+    ) -> tuple[list[SysDept], int]:
         stmt: Select[tuple[SysDept]] = select(SysDept)
         count_stmt = select(func.count(SysDept.id))
         filters = []
@@ -63,6 +91,8 @@ class DeptRepository:
             filters.append(SysDept.parent_id == query.parent_id)
         if query.status:
             filters.append(SysDept.status == query.status)
+        if data_scope_filter is not None:
+            filters.append(data_scope_filter)
         if filters:
             stmt = stmt.where(*filters)
             count_stmt = count_stmt.where(*filters)
@@ -75,12 +105,20 @@ class DeptRepository:
         total = (await self.db.execute(count_stmt)).scalar_one()
         return items, total
 
-    async def list_depts(self) -> list[SysDept]:
+    async def list_depts(
+        self,
+        data_scope_filter: ColumnElement[bool] | None = None,
+    ) -> list[SysDept]:
         stmt = select(SysDept).order_by(SysDept.sort.asc(), SysDept.id.asc())
+        if data_scope_filter is not None:
+            stmt = stmt.where(data_scope_filter)
         return list((await self.db.execute(stmt)).scalars().all())
 
-    async def get_dept_tree(self) -> list[DeptTreeRecord]:
-        depts = await self.list_depts()
+    async def get_dept_tree(
+        self,
+        data_scope_filter: ColumnElement[bool] | None = None,
+    ) -> list[DeptTreeRecord]:
+        depts = await self.list_depts(data_scope_filter)
         node_map: dict[str, DeptTreeRecord] = {
             dept.id: {
                 "id": dept.id,

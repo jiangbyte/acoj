@@ -4,23 +4,21 @@ from app.deps.db import get_db_session
 from app.modules.iam.account.model import SysAccount
 
 
-async def _seed_admin(client, token: str, permissions: list[str]) -> None:
+async def _seed_admin(client, token: str, permissions: list[str]) -> str:
     override = client._transport.app.dependency_overrides[get_db_session]
     async for session in override():
         account = SysAccount(
-            account=f"{token}_account",
             password_hash="hashed",
             account_type=AccountType.ADMIN.value,
             account_status=AccountStatusEnum.ENABLED.value,
-            name="Dict Admin",
-            nickname="Dict Admin",
         )
         session.add(account)
         await session.flush()
+        account_id = account.id
         await session_store.set(
             SessionPayload(
                 token=token,
-                account_id=account.id,
+                account_id=account_id,
                 account_type=AccountType.ADMIN.value,
                 role_ids=[],
                 dept_ids=[],
@@ -31,7 +29,8 @@ async def _seed_admin(client, token: str, permissions: list[str]) -> None:
             ttl_seconds=3600,
         )
         await session.commit()
-        break
+        return account_id
+    raise RuntimeError("Database session override is unavailable")
 
 
 def _payload(**overrides):
@@ -61,7 +60,7 @@ async def _dict_record_by_code(client, headers: dict[str, str], code: str):
 
 async def test_admin_dict_create_page_detail_update_delete(client):
     token = "admin-dict-token"
-    await _seed_admin(
+    admin_id = await _seed_admin(
         client,
         token,
         [
@@ -96,6 +95,8 @@ async def test_admin_dict_create_page_detail_update_delete(client):
     )
     assert detail_response.status_code == 200
     assert detail_response.json()["data"]["code"] == "PROFILE_GENDER"
+    assert detail_response.json()["data"]["created_by"] == admin_id
+    assert detail_response.json()["data"]["updated_by"] == admin_id
 
     update_response = await client.post(
         "/api/v1/admin/sys/dicts/update",
@@ -109,6 +110,8 @@ async def test_admin_dict_create_page_detail_update_delete(client):
         headers=headers,
     )
     assert updated_detail_response.json()["data"]["label"] == "Gender Updated"
+    assert updated_detail_response.json()["data"]["created_by"] == admin_id
+    assert updated_detail_response.json()["data"]["updated_by"] == admin_id
 
     delete_response = await client.post(
         "/api/v1/admin/sys/dicts/delete",

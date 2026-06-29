@@ -48,11 +48,11 @@ def test_scan_permission_registry_collects_api_resources():
 
     items = scan_permission_registry(app)
 
-    assert any(item.permission_key == "file:file:upload" for item in items)
-    file_page = next(item for item in items if item.permission_key == "file:file:page")
-    assert file_page.route_path == "/file/page"
+    assert any(item.permission_key == "sys:file:upload" for item in items)
+    file_page = next(item for item in items if item.permission_key == "sys:file:page")
+    assert file_page.route_path == "/sys/file/page"
     assert file_page.method == "GET"
-    assert file_page.resource_text == "file:file:page[page]"
+    assert file_page.resource_text == "sys:file:page[page]"
 
 
 async def test_sync_permission_registry_writes_cache_structure(monkeypatch):
@@ -66,8 +66,8 @@ async def test_sync_permission_registry_writes_cache_structure(monkeypatch):
     resource_values = json.loads(fake_redis.values[permission_resource_cache_key()])
     method_map = json.loads(fake_redis.values[permission_resource_method_cache_key()])
 
-    assert "file:file:page[page]" in resource_values
-    assert method_map["file:file:page[page]"] == "GET"
+    assert "sys:file:page[page]" in resource_values
+    assert method_map["sys:file:page[page]"] == "GET"
 
 
 async def test_bind_resource_permission_requires_registered_permission_key(db_session, monkeypatch):

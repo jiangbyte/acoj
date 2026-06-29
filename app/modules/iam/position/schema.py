@@ -11,6 +11,7 @@ class PositionCreateRequest(ApiSchema):
     name: str = Field(min_length=1, max_length=64)
     code: str = Field(min_length=1, max_length=64)
     category: str = Field(min_length=1, max_length=32)
+    owner_dept_id: str | None = Field(default=None, max_length=64)
     sort: int = 99
     is_virtual: bool = False
     status: StatusEnum = StatusEnum.ENABLED
@@ -35,6 +36,7 @@ class SysPositionSchema(ApiSchema):
     name: str
     code: str
     category: str
+    owner_dept_id: str | None = None
     sort: int
     is_virtual: bool
     status: str

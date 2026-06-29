@@ -143,7 +143,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     title: t('pages.sys.dict.category'),
     path: 'category',
     width: 120,
-    render: (row) => dictTypeData('DICT_CATEGORY', row.category),
+    render: (row) => dictTypeData('SYS_BIZ_CATEGORY', row.category),
   },
   {
     title: t('pages.sys.dict.parent'),

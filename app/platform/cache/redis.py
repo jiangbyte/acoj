@@ -7,7 +7,7 @@ redis_client: Redis | None = None
 
 async def init_redis() -> None:
     global redis_client
-    if not settings.redis.enabled or redis_client is not None:
+    if redis_client is not None:
         return
     redis_client = Redis.from_url(settings.redis.url, decode_responses=False)
     await redis_client.ping()

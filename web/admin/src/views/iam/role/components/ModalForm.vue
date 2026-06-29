@@ -137,7 +137,7 @@ defineExpose({
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
           <NFormItem :label="t('pages.iam.role.category')" path="category">
-            <DictSelect v-model="state.formModel.category" dict-code="COMMON_SYS_BIZ_CATEGORY" />
+            <DictSelect v-model="state.formModel.category" dict-code="SYS_BIZ_CATEGORY" />
           </NFormItem>
           <NFormItem :label="t('pages.iam.role.scopeType')" path="scope_type">
             <DictSelect v-model="state.formModel.scope_type" dict-code="ROLE_SCOPE_TYPE" />

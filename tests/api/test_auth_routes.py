@@ -5,9 +5,35 @@ from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.security.password import hash_password
 from app.core.security.session import SessionPayload, session_store
 from app.deps.db import get_db_session
-from app.modules.iam.account.model import SysAccount, SysAccountRoleRel
-from app.modules.iam.enums import RoleScopeType
+from app.modules.iam.account.model import SysAccount, SysAccountIdentity, SysAccountRoleRel
+from app.modules.iam.enums import AccountIdentityType, RoleScopeType
 from app.modules.iam.role.model import SysRole
+
+
+async def _seed_account(
+    db_session: AsyncSession,
+    *,
+    identifier: str,
+    password: str,
+    account_type: AccountType,
+) -> SysAccount:
+    account = SysAccount(
+        password_hash=hash_password(password),
+        account_type=account_type.value,
+        account_status=AccountStatusEnum.ENABLED.value,
+    )
+    db_session.add(account)
+    await db_session.flush()
+    db_session.add(
+        SysAccountIdentity(
+            account_id=account.id,
+            identity_type=AccountIdentityType.ACCOUNT.value,
+            identifier=identifier,
+            verified=True,
+            is_primary=True,
+        )
+    )
+    return account
 
 
 async def test_public_auth_login_route_not_found(client):
@@ -23,15 +49,12 @@ async def test_portal_auth_login_success(client):
     override = client._transport.app.dependency_overrides[get_db_session]
     async for session in override():
         db_session: AsyncSession = session
-        account = SysAccount(
-            account="portal_login_user",
-            password_hash=hash_password("Portal@123456"),
-            account_type=AccountType.PORTAL.value,
-            account_status=AccountStatusEnum.ENABLED.value,
-            name="Portal Login User",
-            nickname="Portal Login User",
+        await _seed_account(
+            db_session,
+            identifier="portal_login_user",
+            password="Portal@123456",
+            account_type=AccountType.PORTAL,
         )
-        db_session.add(account)
         await db_session.commit()
         break
 
@@ -51,16 +74,12 @@ async def test_logout_rejects_bearer_prefixed_token(client):
     override = client._transport.app.dependency_overrides[get_db_session]
     async for session in override():
         db_session: AsyncSession = session
-        account = SysAccount(
-            account="portal_logout_user",
-            password_hash=hash_password("Portal@123456"),
-            account_type=AccountType.PORTAL.value,
-            account_status=AccountStatusEnum.ENABLED.value,
-            name="Portal Logout User",
-            nickname="Portal Logout User",
+        account = await _seed_account(
+            db_session,
+            identifier="portal_logout_user",
+            password="Portal@123456",
+            account_type=AccountType.PORTAL,
         )
-        db_session.add(account)
-        await db_session.flush()
         await session_store.set(
             SessionPayload(
                 token="portal-raw-token",
@@ -88,7 +107,7 @@ async def test_logout_rejects_bearer_prefixed_token(client):
 
 
 async def test_protected_admin_route_without_token_returns_401(client):
-    response = await client.get("/api/v1/admin/file/page")
+    response = await client.get("/api/v1/admin/sys/file/page")
 
     assert response.status_code == 401
     assert response.json()["code"] == 401
@@ -97,7 +116,7 @@ async def test_protected_admin_route_without_token_returns_401(client):
 
 async def test_protected_admin_route_with_invalid_token_returns_401(client):
     response = await client.get(
-        "/api/v1/admin/file/page",
+        "/api/v1/admin/sys/file/page",
         headers={"Authorization": "invalid-admin-token"},
     )
 
@@ -110,16 +129,12 @@ async def test_admin_route_rejects_wrong_account_type_with_403(client):
     override = client._transport.app.dependency_overrides[get_db_session]
     async for session in override():
         db_session: AsyncSession = session
-        account = SysAccount(
-            account="portal_account_type_user",
-            password_hash=hash_password("Portal@123456"),
-            account_type=AccountType.PORTAL.value,
-            account_status=AccountStatusEnum.ENABLED.value,
-            name="Portal Account Type User",
-            nickname="Portal Account Type User",
+        account = await _seed_account(
+            db_session,
+            identifier="portal_account_type_user",
+            password="Portal@123456",
+            account_type=AccountType.PORTAL,
         )
-        db_session.add(account)
-        await db_session.flush()
         await session_store.set(
             SessionPayload(
                 token="portal-account-type-token",
@@ -128,7 +143,7 @@ async def test_admin_route_rejects_wrong_account_type_with_403(client):
                 role_ids=[],
                 dept_ids=[],
                 group_ids=[],
-                permission_keys=["file:file:page"],
+                permission_keys=["sys:file:page"],
                 permission_grants=[],
             ),
             ttl_seconds=3600,
@@ -137,7 +152,7 @@ async def test_admin_route_rejects_wrong_account_type_with_403(client):
         break
 
     response = await client.get(
-        "/api/v1/admin/file/page",
+        "/api/v1/admin/sys/file/page",
         headers={"Authorization": "portal-account-type-token"},
     )
 
@@ -151,12 +166,9 @@ async def test_admin_route_rejects_missing_permission_with_403(client):
     async for session in override():
         db_session: AsyncSession = session
         account = SysAccount(
-            account="admin_without_permission",
             password_hash=hash_password("Admin@123456"),
             account_type=AccountType.ADMIN.value,
             account_status=AccountStatusEnum.ENABLED.value,
-            name="Admin Without Permission",
-            nickname="Admin Without Permission",
         )
         db_session.add(account)
         await db_session.flush()
@@ -177,13 +189,13 @@ async def test_admin_route_rejects_missing_permission_with_403(client):
         break
 
     response = await client.get(
-        "/api/v1/admin/file/page",
+        "/api/v1/admin/sys/file/page",
         headers={"Authorization": "admin-without-permission-token"},
     )
 
     assert response.status_code == 403
     assert response.json()["code"] == 403
-    assert response.json()["message"] == "Permission denied: file:file:page"
+    assert response.json()["message"] == "Permission denied: sys:file:page"
 
 
 async def test_admin_route_allows_valid_account_type_and_permission(client):
@@ -191,12 +203,9 @@ async def test_admin_route_allows_valid_account_type_and_permission(client):
     async for session in override():
         db_session: AsyncSession = session
         account = SysAccount(
-            account="admin_with_permission",
             password_hash=hash_password("Admin@123456"),
             account_type=AccountType.ADMIN.value,
             account_status=AccountStatusEnum.ENABLED.value,
-            name="Admin With Permission",
-            nickname="Admin With Permission",
         )
         db_session.add(account)
         await db_session.flush()
@@ -208,7 +217,7 @@ async def test_admin_route_allows_valid_account_type_and_permission(client):
                 role_ids=[],
                 dept_ids=[],
                 group_ids=[],
-                permission_keys=["file:file:page"],
+                permission_keys=["sys:file:page"],
                 permission_grants=[],
             ),
             ttl_seconds=3600,
@@ -217,7 +226,7 @@ async def test_admin_route_allows_valid_account_type_and_permission(client):
         break
 
     response = await client.get(
-        "/api/v1/admin/file/page",
+        "/api/v1/admin/sys/file/page",
         headers={"Authorization": "admin-with-permission-token"},
     )
 
@@ -229,13 +238,11 @@ async def test_admin_route_allows_super_admin_role_without_explicit_permission(c
     override = client._transport.app.dependency_overrides[get_db_session]
     async for session in override():
         db_session: AsyncSession = session
-        account = SysAccount(
-            account="admin_super_role",
-            password_hash=hash_password("Admin@123456"),
-            account_type=AccountType.ADMIN.value,
-            account_status=AccountStatusEnum.ENABLED.value,
-            name="Admin Super Role",
-            nickname="Admin Super Role",
+        account = await _seed_account(
+            db_session,
+            identifier="admin_super_role",
+            password="Admin@123456",
+            account_type=AccountType.ADMIN,
         )
         role = SysRole(
             code=SUPER_ADMIN_ROLE_CODE,
@@ -258,7 +265,7 @@ async def test_admin_route_allows_super_admin_role_without_explicit_permission(c
     token = login_response.json()["data"]["token"]
 
     response = await client.get(
-        "/api/v1/admin/file/page",
+        "/api/v1/admin/sys/file/page",
         headers={"Authorization": token},
     )
 

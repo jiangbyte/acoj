@@ -1,15 +1,20 @@
-from collections.abc import Mapping, Sequence
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions.business import AuthorizationError
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
-from app.modules.iam.enums import ResourceType
+from app.core.security.data_scope import resolve_data_scope_dept_ids
+from app.core.security.permission_registry import list_permission_resources
+from app.core.security.session import SessionPayload
+from app.modules.iam.grant.repository import GrantRepository
 from app.modules.iam.permission.service import ensure_registered_permission
-from app.modules.iam.resource.repository import ResourceRepository, ResourceTreeRecord
+from app.modules.iam.resource.model import SysResource
+from app.modules.iam.resource.repository import ResourceRepository
 from app.modules.iam.resource.schema import (
+    PermissionRegistryItem,
     ResourceAdminPageQuery,
     ResourceCreateRequest,
+    ResourceGrantModuleOption,
     ResourcePermissionBindRequest,
     ResourceTreeNode,
     ResourceUpdateRequest,
@@ -46,7 +51,10 @@ class ResourceService:
     async def bind_resource_permission(
         self,
         payload: ResourcePermissionBindRequest,
+        session: SessionPayload | None = None,
     ) -> SysResourcePermissionRelSchema:
+        if session is not None:
+            await self._ensure_depts_visible(session, "iam:resource:grant", payload.custom_scope_dept_ids)
         await ensure_registered_permission(payload.permission_key)
         async with transactional(self.db):
             return to_schema(
@@ -54,25 +62,60 @@ class ResourceService:
                 await self.repo.bind_resource_permission(payload),
             )
 
-    async def list_resource_tree(self) -> list[ResourceTreeNode]:
-        return _build_resource_tree_nodes(await self.repo.get_resource_tree())
+    async def list_resource_tree(self, session: SessionPayload) -> list[ResourceTreeNode]:
+        resources = await self._list_visible_resources(session)
+        return _build_resource_tree_nodes(resources)
+
+    async def list_current_resources(self, session: SessionPayload) -> list[SysResourceSchema]:
+        resources = await self._list_visible_resources(session)
+        return to_schema_list(SysResourceSchema, resources)
+
+    async def _list_visible_resources(self, session: SessionPayload) -> list[SysResource]:
+        if "*:*:*" in session.permission_keys:
+            return await self.repo.list_resources()
+        resource_ids = await GrantRepository(self.db).get_account_resource_ids(session.account_id)
+        return await self.repo.list_resources_by_ids_with_parents(resource_ids)
+
+    async def list_grant_modules(self) -> list[ResourceGrantModuleOption]:
+        return await self.repo.list_all_resource_grant_modules()
+
+    async def list_permission_registry_items(self) -> list[PermissionRegistryItem]:
+        resources = await list_permission_resources()
+        items: list[PermissionRegistryItem] = []
+        for resource in resources:
+            index = resource.find("[")
+            permission_key = resource[:index] if index > -1 else resource
+            name = resource[index + 1 : -1] if index > -1 and resource.endswith("]") else permission_key
+            items.append(PermissionRegistryItem(permission_key=permission_key, name=name))
+        return sorted(items, key=lambda item: item.permission_key)
+
+    async def _ensure_depts_visible(
+        self,
+        session: SessionPayload,
+        permission_key: str,
+        dept_ids: list[str],
+    ) -> None:
+        unique_ids = list(dict.fromkeys(dept_ids))
+        if not unique_ids:
+            return
+        visible_dept_ids = await resolve_data_scope_dept_ids(self.db, session, permission_key)
+        if visible_dept_ids is None:
+            return
+        allowed_ids = set(visible_dept_ids)
+        if any(dept_id not in allowed_ids for dept_id in unique_ids):
+            raise AuthorizationError("Dept is outside current data scope")
 
 
-def _build_resource_tree_nodes(
-    items: Sequence[ResourceTreeRecord | ResourceTreeNode | Mapping[str, object]],
-) -> list[ResourceTreeNode]:
-    nodes: list[ResourceTreeNode] = []
-    for item in items:
-        raw_item: Mapping[str, object] = (
-            item.model_dump() if isinstance(item, ResourceTreeNode) else item
-        )
-        nodes.append(
-            ResourceTreeNode(
-                id=str(raw_item["id"]),
-                code=str(raw_item["code"]),
-                name=str(raw_item["name"]),
-                resource_type=ResourceType(str(raw_item["resource_type"])),
-                children=_build_resource_tree_nodes(raw_item.get("children", [])),  # type: ignore[arg-type]
-            )
-        )
-    return nodes
+def _build_resource_tree_nodes(resources: list[SysResource]) -> list[ResourceTreeNode]:
+    node_map = {
+        resource.id: to_schema(ResourceTreeNode, resource)
+        for resource in resources
+    }
+    roots: list[ResourceTreeNode] = []
+    for resource in resources:
+        node = node_map[resource.id]
+        if resource.parent_id and resource.parent_id in node_map:
+            node_map[resource.parent_id].children.append(node)
+        else:
+            roots.append(node)
+    return roots

@@ -136,12 +136,12 @@ docker run -p 8082:80 acoj-portal
 
 ## 运行依赖
 
-本地轻量开发至少需要 PostgreSQL。其他依赖可以按需关闭或使用回退配置。
+本地开发至少需要 PostgreSQL 和 Redis。Redis 用于会话存储与权限注册，是后端必需依赖。
 
-建议完整环境：
+建议环境：
 
 - PostgreSQL
-- Redis，用于会话存储
+- Redis，用于会话存储和权限注册
 - RabbitMQ，用于 Celery broker
 - MinIO 或其他 S3 兼容对象存储
 - Prometheus / OpenTelemetry Collector，可选
@@ -154,11 +154,10 @@ docker run -p 8082:80 acoj-portal
 cp .env.example .env
 ```
 
-轻量本地开发推荐配置：
+本地开发推荐配置：
 
 ```env
-REDIS__ENABLED=false
-AUTH__ENABLE_MEMORY_SESSION_FALLBACK=true
+REDIS__URL=redis://127.0.0.1:6379/0
 STORAGE__PROVIDER=local
 OBSERVABILITY__ENABLED=false
 ```
@@ -166,7 +165,7 @@ OBSERVABILITY__ENABLED=false
 完整依赖环境示例：
 
 ```env
-REDIS__ENABLED=true
+REDIS__URL=redis://127.0.0.1:6379/0
 STORAGE__PROVIDER=s3
 OBSERVABILITY__ENABLED=true
 OBSERVABILITY__LOG_JSON=true
@@ -183,8 +182,7 @@ OBSERVABILITY__CELERY_OBSERVABILITY_ENABLED=true
 
 - `APP__HOST` / `APP__PORT`：后端监听地址和端口。
 - `DB__URL`：数据库连接地址，默认使用 PostgreSQL asyncpg。
-- `REDIS__ENABLED` / `REDIS__URL`：是否启用 Redis 以及 Redis 连接地址。
-- `AUTH__ENABLE_MEMORY_SESSION_FALLBACK`：Redis 关闭时是否允许内存会话回退。
+- `REDIS__URL`：Redis 连接地址，Redis 是会话存储和权限注册的必需依赖。
 - `STORAGE__PROVIDER`：文件存储提供方，可选 `s3` 或 `local`。
 - `SWAGGER__ENABLED`：是否开启接口文档。
 - `OBSERVABILITY__ENABLED`：是否启用可观测性总开关。
@@ -267,6 +265,8 @@ web/
 - `banner`：管理端 Banner 管理和门户端 Banner 展示。
 - `file`：文件上传和存储。
 - `oj`：OJ 领域模型骨架，完整业务流程仍待实现。
+
+IAM 的认证、授权、资源权限、数据权限和 Redis 权限注册设计见 [docs/iam.md](docs/iam.md)。
 
 ## OJ 业务路线图
 

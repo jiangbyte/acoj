@@ -14,15 +14,17 @@ const state = reactive({
   showModal: false,
   loading: false,
   submitLoading: false,
-  role: {} as any,
+  subject: {} as any,
+  grantApi: roleApi as any,
+  title: '',
   activeModuleId: '',
   modules: [] as any[],
 })
 
 const modalTitle = computed(() =>
-  state.role?.name
-    ? `${t('pages.iam.role.grantResource')} - ${state.role.name}`
-    : t('pages.iam.role.grantResource'),
+  state.subject?.name
+    ? `${state.title || t('pages.iam.role.grantResource')} - ${state.subject.name}`
+    : state.title || t('pages.iam.role.grantResource'),
 )
 const activeModule = computed(
   () => state.modules.find((item) => item.id === state.activeModuleId) ?? state.modules[0],
@@ -96,8 +98,10 @@ const columns = computed<DataTableColumns<any>>(() => [
   },
 ])
 
-async function openModal(role: any) {
-  state.role = role ?? {}
+async function openModal(subject: any, grantApi: any = roleApi, title = '') {
+  state.subject = subject ?? {}
+  state.grantApi = grantApi
+  state.title = title
   state.modules = []
   state.activeModuleId = ''
   state.showModal = true
@@ -105,13 +109,16 @@ async function openModal(role: any) {
 }
 
 async function fetchGrant() {
-  if (!state.role?.id) {
+  if (!state.subject?.id) {
     return
   }
   state.loading = true
   try {
-    const response = await roleApi.ownResources(state.role.id)
-    const modules = echoModuleData(response.data?.modules ?? [], response.data?.grantInfoList ?? [])
+    const response = await state.grantApi.ownResources(state.subject.id)
+    const modules = echoModuleData(
+      response.data?.modules ?? [],
+      response.data?.grant_info_list ?? [],
+    )
     state.modules = modules
     state.activeModuleId = modules[0]?.id ?? ''
   } finally {
@@ -122,9 +129,9 @@ async function fetchGrant() {
 async function submitGrant() {
   state.submitLoading = true
   try {
-    await roleApi.grantResources({
-      roleId: state.role.id,
-      grantInfoList: convertData(),
+    await state.grantApi.grantResources({
+      id: state.subject.id,
+      grant_info_list: convertData(),
     })
     window.$message.success(t('pages.iam.role.grantSuccess'))
     closeModal()
@@ -141,9 +148,9 @@ function closeModal() {
   state.submitLoading = false
 }
 
-function echoModuleData(modules: any[], grantInfoList: any[]) {
+function echoModuleData(modules: any[], grant_info_list: any[]) {
   const grantMap = new Map(
-    grantInfoList.map((item: any) => [item.menuId, new Set(item.buttonInfo ?? [])]),
+    grant_info_list.map((item: any) => [item.resource_id, new Set(item.permission_keys ?? [])]),
   )
   return JSON.parse(JSON.stringify(modules)).map((module: any) => ({
     ...module,
@@ -156,7 +163,7 @@ function echoModuleData(modules: any[], grantInfoList: any[]) {
           nameCheck: Boolean(buttonSet),
           button: (menu.button ?? []).map((button: any) => ({
             ...button,
-            check: Boolean(buttonSet?.has(button.id)),
+            check: Boolean(buttonSet?.has(button.permission_key ?? button.id)),
           })),
         }
       })
@@ -195,10 +202,10 @@ function convertData() {
     (module.menu ?? [])
       .filter((menu: any) => menu.nameCheck)
       .map((menu: any) => ({
-        menuId: menu.id,
-        buttonInfo: (menu.button ?? [])
+        resource_id: menu.id,
+        permission_keys: (menu.button ?? [])
           .filter((button: any) => button.check)
-          .map((button: any) => button.id),
+          .map((button: any) => button.permission_key ?? button.id),
       })),
   )
 }

@@ -15,6 +15,7 @@ class SysGroup(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
     name: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户组名称")
+    owner_dept_id: Mapped[str | None] = mapped_column(String(64), comment="所属部门ID")
     description: Mapped[str | None] = mapped_column(Text, comment="描述")
     status: Mapped[str] = mapped_column(
         String(32),

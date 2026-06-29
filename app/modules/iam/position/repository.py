@@ -1,5 +1,6 @@
 from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.exceptions.business import NotFoundError
 from app.modules.iam.position.model import SysPosition
@@ -37,13 +38,30 @@ class PositionRepository:
 
     async def delete_many(self, position_ids: list[str]) -> None:
         unique_ids = list(dict.fromkeys(position_ids))
+        if not unique_ids:
+            return
         stmt = select(SysPosition.id).where(SysPosition.id.in_(unique_ids))
         existing_ids = set((await self.db.execute(stmt)).scalars().all())
         if len(existing_ids) != len(unique_ids):
             raise NotFoundError("Position not found")
         await self.db.execute(delete(SysPosition).where(SysPosition.id.in_(unique_ids)))
 
-    async def page_admin(self, query: PositionAdminPageQuery) -> tuple[list[SysPosition], int]:
+    async def count_positions_in_scope(
+        self,
+        position_ids: list[str],
+        data_scope_filter: ColumnElement[bool],
+    ) -> int:
+        unique_ids = list(dict.fromkeys(position_ids))
+        if not unique_ids:
+            return 0
+        stmt = select(func.count(SysPosition.id)).where(SysPosition.id.in_(unique_ids), data_scope_filter)
+        return int((await self.db.execute(stmt)).scalar_one())
+
+    async def page_admin(
+        self,
+        query: PositionAdminPageQuery,
+        data_scope_filter: ColumnElement[bool] | None = None,
+    ) -> tuple[list[SysPosition], int]:
         stmt: Select[tuple[SysPosition]] = select(SysPosition)
         count_stmt = select(func.count(SysPosition.id))
         filters = []
@@ -55,6 +73,8 @@ class PositionRepository:
             filters.append(SysPosition.category == query.category)
         if query.status:
             filters.append(SysPosition.status == query.status)
+        if data_scope_filter is not None:
+            filters.append(data_scope_filter)
         if filters:
             stmt = stmt.where(*filters)
             count_stmt = count_stmt.where(*filters)

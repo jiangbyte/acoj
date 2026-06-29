@@ -24,7 +24,7 @@ async def test_openapi_422_uses_unified_error_schema(client):
 
     assert response.status_code == 200
     data = response.json()
-    login_422 = data["paths"]["/api/v1/portal/auth/login"]["post"]["responses"]["422"]
+    login_422 = data["paths"]["/api/v1/portal/login"]["post"]["responses"]["422"]
     assert login_422["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/ApiErrorResponse"
     }
@@ -43,7 +43,7 @@ async def test_openapi_protected_route_declares_401_403_500_error_schema(client)
 
     assert response.status_code == 200
     data = response.json()
-    responses = data["paths"]["/api/v1/admin/list"]["get"]["responses"]
+    responses = data["paths"]["/api/v1/admin/sys/accounts/page"]["get"]["responses"]
     assert responses["401"]["content"]["application/json"]["schema"] == {
         "$ref": "#/components/schemas/ApiErrorResponse"
     }

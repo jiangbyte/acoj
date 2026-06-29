@@ -1,7 +1,16 @@
 <script setup lang="tsx">
 import type { DataTableColumns } from 'naive-ui'
-import { roleApi } from '@/api'
-import { NBadge, NButton, NCheckbox, NInput, NInputGroup, NRadio, NRadioGroup } from 'naive-ui'
+import { deptApi, roleApi } from '@/api'
+import {
+  NBadge,
+  NButton,
+  NCheckbox,
+  NInput,
+  NInputGroup,
+  NRadio,
+  NRadioGroup,
+  NTreeSelect,
+} from 'naive-ui'
 import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -10,23 +19,26 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const customValue = 'SCOPE_ORG_DEFINE'
+const customValue = 'CUSTOM'
 const state = reactive({
   showModal: false,
   loading: false,
   submitLoading: false,
   searchText: '',
-  role: {} as any,
+  subject: {} as any,
+  grantApi: roleApi as any,
+  title: '',
   rows: [] as any[],
+  deptTree: [] as any[],
   page: 1,
   pageSize: 10,
   scopeRadioValue: '',
 })
 
 const modalTitle = computed(() =>
-  state.role?.name
-    ? `${t('pages.iam.role.grantPermission')} - ${state.role.name}`
-    : t('pages.iam.role.grantPermission'),
+  state.subject?.name
+    ? `${state.title || t('pages.iam.role.grantPermission')} - ${state.subject.name}`
+    : state.title || t('pages.iam.role.grantPermission'),
 )
 const filteredRows = computed(() => {
   const keyword = state.searchText.trim().toUpperCase()
@@ -173,8 +185,8 @@ const columns = computed<DataTableColumns<any>>(() => [
               }
             }}
           >
-            {item.value === customValue && item.check && item.scopeDefineOrgIdList?.length ? (
-              <NBadge value={item.scopeDefineOrgIdList.length} type="success">
+            {item.value === customValue && item.check && item.custom_scope_dept_ids?.length ? (
+              <NBadge value={item.custom_scope_dept_ids.length} type="success">
                 <span>{item.title}</span>
               </NBadge>
             ) : (
@@ -183,17 +195,33 @@ const columns = computed<DataTableColumns<any>>(() => [
           </NRadio>
         ))}
         {row.dataScope[4]?.check ? (
-          <NButton text type="primary" size="small" onClick={() => handleDefineOrg(row)}>
-            {t('pages.iam.role.chooseOrg')}
-          </NButton>
+          <NTreeSelect
+            value={row.dataScope[4].custom_scope_dept_ids}
+            multiple
+            cascade
+            checkable
+            clearable
+            filterable
+            size="small"
+            options={state.deptTree}
+            keyField="id"
+            labelField="name"
+            childrenField="children"
+            style="min-width: 240px"
+            onUpdateValue={(value) => {
+              row.dataScope[4].custom_scope_dept_ids = (value ?? []).map(String)
+            }}
+          />
         ) : null}
       </div>
     ),
   },
 ])
 
-async function openModal(role: any) {
-  state.role = role ?? {}
+async function openModal(subject: any, grantApi: any = roleApi, title = '') {
+  state.subject = subject ?? {}
+  state.grantApi = grantApi
+  state.title = title
   state.rows = []
   state.searchText = ''
   state.page = 1
@@ -204,13 +232,20 @@ async function openModal(role: any) {
 }
 
 async function fetchGrant() {
-  if (!state.role?.id) {
+  if (!state.subject?.id) {
     return
   }
   state.loading = true
   try {
-    const response = await roleApi.ownPermissions(state.role.id)
-    state.rows = echoModuleData(response.data?.apis ?? [], response.data?.grantInfoList ?? [])
+    const [permissionResponse, deptResponse] = await Promise.all([
+      state.grantApi.ownPermissions(state.subject.id),
+      deptApi.tree().catch(() => ({ data: [] })),
+    ])
+    state.deptTree = deptResponse.data ?? []
+    state.rows = echoModuleData(
+      permissionResponse.data?.permissions ?? [],
+      permissionResponse.data?.grant_info_list ?? [],
+    )
   } finally {
     state.loading = false
   }
@@ -219,9 +254,9 @@ async function fetchGrant() {
 async function submitGrant() {
   state.submitLoading = true
   try {
-    await roleApi.grantPermissions({
-      roleId: state.role.id,
-      grantInfoList: convertData(),
+    await state.grantApi.grantPermissions({
+      id: state.subject.id,
+      grant_info_list: convertData(),
     })
     window.$message.success(t('pages.iam.role.grantSuccess'))
     closeModal()
@@ -233,30 +268,35 @@ async function submitGrant() {
 
 function closeModal() {
   state.rows = []
+  state.deptTree = []
   state.scopeRadioValue = ''
   state.showModal = false
   state.submitLoading = false
 }
 
-function echoModuleData(apis: string[], grantInfoList: any[]) {
-  const grantMap = new Map(grantInfoList.map((item: any) => [item.apiUrl, item]))
+function echoModuleData(apis: any[], grant_info_list: any[]) {
+  const grantMap = new Map(grant_info_list.map((item: any) => [item.permission_key, item]))
   return setParentDataCheckedStatus(
     apis.map((api) => {
-      const grant = grantMap.get(subStrApi(api))
+      const permissionKey = typeof api === 'string' ? subStrApi(api) : api.permission_key
+      const apiText =
+        typeof api === 'string' ? api : `${api.permission_key}[${api.name ?? api.permission_key}]`
+      const grant = grantMap.get(permissionKey)
       const row = {
-        api,
-        prefix: splitByThirdSlash(api)[0],
-        suffix: splitByThirdSlash(api)[1],
-        dataScope: dataScopeOptions(api),
+        api: apiText,
+        permissionKey,
+        prefix: splitByPermissionKey(permissionKey)[0],
+        suffix: splitByPermissionKey(permissionKey)[1],
+        dataScope: dataScopeOptions(permissionKey),
         check: Boolean(grant),
         parentCheck: false,
       }
       if (grant) {
         row.dataScope.forEach((item: any) => {
-          if (item.value === grant.scopeCategory) {
+          if (item.value === grant.data_scope) {
             item.check = true
             if (item.value === customValue) {
-              item.scopeDefineOrgIdList = grant.scopeDefineOrgIdList ?? []
+              item.custom_scope_dept_ids = grant.custom_scope_dept_ids ?? []
             }
           }
         })
@@ -271,25 +311,25 @@ function dataScopeOptions(id: string) {
     {
       id: `SCOPE_ALL_${id}`,
       title: t('pages.iam.role.dataScopeAll'),
-      value: 'SCOPE_ALL',
+      value: 'ALL',
       check: false,
     },
     {
       id: `SCOPE_SELF_${id}`,
       title: t('pages.iam.role.dataScopeSelf'),
-      value: 'SCOPE_SELF',
+      value: 'SELF',
       check: false,
     },
     {
       id: `SCOPE_ORG_${id}`,
       title: t('pages.iam.role.dataScopeOrg'),
-      value: 'SCOPE_ORG',
+      value: 'DEPT',
       check: false,
     },
     {
       id: `SCOPE_ORG_CHILD_${id}`,
       title: t('pages.iam.role.dataScopeOrgChild'),
-      value: 'SCOPE_ORG_CHILD',
+      value: 'DEPT_AND_CHILD',
       check: false,
     },
     {
@@ -297,7 +337,7 @@ function dataScopeOptions(id: string) {
       title: t('pages.iam.role.dataScopeCustom'),
       value: customValue,
       check: false,
-      scopeDefineOrgIdList: [],
+      custom_scope_dept_ids: [],
     },
   ]
 }
@@ -330,7 +370,7 @@ function changeApi(record: any, checked: boolean, refreshParent = true) {
     record.dataScope.forEach((item: any) => {
       item.check = false
       if (item.value === customValue) {
-        item.scopeDefineOrgIdList = []
+        item.custom_scope_dept_ids = []
       }
     })
   }
@@ -353,20 +393,10 @@ function radioChange(value: string) {
     row.dataScope.forEach((scope: any) => {
       scope.check = scope.value === value
       if (scope.value === customValue) {
-        scope.scopeDefineOrgIdList = []
+        scope.custom_scope_dept_ids = []
       }
     })
   })
-}
-
-function handleDefineOrg(record: any) {
-  const customScope = record.dataScope.find((item: any) => item.value === customValue)
-  if (!customScope) {
-    return
-  }
-  customScope.scopeDefineOrgIdList = customScope.scopeDefineOrgIdList?.length
-    ? []
-    : ['mock-org-1', 'mock-org-2']
 }
 
 function convertData() {
@@ -377,9 +407,9 @@ function convertData() {
     return row.dataScope
       .filter((scope: any) => scope.check)
       .map((scope: any) => ({
-        apiUrl: subStrApi(row.api),
-        scopeCategory: scope.value,
-        scopeDefineOrgIdList: scope.scopeDefineOrgIdList ?? [],
+        permission_key: row.permissionKey,
+        data_scope: scope.value,
+        custom_scope_dept_ids: scope.custom_scope_dept_ids ?? [],
       }))
   })
 }
@@ -389,11 +419,12 @@ function subStrApi(api: string) {
   return index > -1 ? api.substring(0, index) : api
 }
 
-function splitByThirdSlash(api: string) {
-  const arr = api.split('/').filter(Boolean)
-  const leftPart = `/${arr.slice(0, 2).join('/')}`
-  const rightPart = `/${arr.slice(2).join('/')}`
-  return [leftPart, rightPart]
+function splitByPermissionKey(permissionKey: string) {
+  const parts = permissionKey.split(':')
+  return [
+    parts.slice(0, 2).join(':') || permissionKey,
+    parts.slice(2).join(':') || permissionKey,
+  ]
 }
 
 function setParentDataCheckedStatus(records: any[]) {

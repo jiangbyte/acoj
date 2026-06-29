@@ -10,46 +10,41 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const mockOrgTree = [
-  {
-    id: 'root',
-    name: '全部组织',
-    children: [
-      { id: 'platform', name: '平台中心' },
-      { id: 'portal', name: '门户中心' },
-    ],
-  },
-]
-
 const state = reactive({
   showModal: false,
   loading: false,
   submitLoading: false,
   searchKey: '',
-  orgId: '',
-  role: {} as any,
-  users: [] as any[],
+  subject: {} as any,
+  grantApi: roleApi as any,
+  title: '',
+  ownMethod: 'ownUsers',
+  grantMethod: 'grantUsers',
+  listKey: 'users',
+  selectedKey: 'account_ids',
+  submitKey: 'account_ids',
+  searchFields: ['account', 'name'] as string[],
+  items: [] as any[],
   selectedData: [] as any[],
   page: 1,
   pageSize: 10,
-  expandedKeys: ['root'] as Array<string | number>,
 })
 
 const modalTitle = computed(() =>
-  state.role?.name
-    ? `${t('pages.iam.role.grantUser')} - ${state.role.name}`
-    : t('pages.iam.role.grantUser'),
+  state.subject?.name
+    ? `${state.title || t('pages.iam.role.grantUser')} - ${state.subject.name}`
+    : state.title || t('pages.iam.role.grantUser'),
 )
 const filteredUsers = computed(() => {
   const keyword = state.searchKey.trim().toLowerCase()
-  return state.users.filter((item) => {
+  return state.items.filter((item) => {
     const matchKeyword =
       !keyword ||
-      [item.account, item.name]
+      state.searchFields
+        .map((field) => item[field])
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(keyword))
-    const matchOrg = !state.orgId || state.orgId === 'root' || item.org_id === state.orgId
-    return matchKeyword && matchOrg
+    return matchKeyword
   })
 })
 const tableUsers = computed(() => {
@@ -57,6 +52,11 @@ const tableUsers = computed(() => {
   return filteredUsers.value.slice(start, start + state.pageSize)
 })
 const selectedIds = computed(() => new Set(state.selectedData.map((item) => String(item.id))))
+const secondaryTitle = computed(() =>
+  state.searchFields.includes('code')
+    ? t('pages.iam.role.code')
+    : t('pages.iam.account.account'),
+)
 
 const userColumns = computed<DataTableColumns<any>>(() => [
   {
@@ -79,11 +79,12 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     title: t('pages.iam.account.avatar'),
     key: 'avatar',
     width: 70,
-    render: (row) => (
-      <NAvatar size="small" src={row.avatar}>
-        {row.name?.slice(0, 1)}
-      </NAvatar>
-    ),
+    render: (row) =>
+      row.avatar || row.name ? (
+        <NAvatar size="small" src={row.avatar}>
+          {row.name?.slice(0, 1)}
+        </NAvatar>
+      ) : null,
   },
   {
     title: t('pages.iam.account.name'),
@@ -94,12 +95,13 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.account.account'),
+    title: secondaryTitle.value,
     key: 'account',
     minWidth: 120,
     ellipsis: {
       tooltip: true,
     },
+    render: (row) => row.account ?? row.code ?? row.status ?? '',
   },
 ])
 const selectedColumns = computed<DataTableColumns<any>>(() => [
@@ -124,11 +126,18 @@ const selectedColumns = computed<DataTableColumns<any>>(() => [
   },
 ])
 
-async function openModal(role: any) {
-  state.role = role ?? {}
+async function openModal(subject: any, grantApi: any = roleApi, title = '', config: any = {}) {
+  state.subject = subject ?? {}
+  state.grantApi = grantApi
+  state.title = title
+  state.ownMethod = config.ownMethod ?? 'ownUsers'
+  state.grantMethod = config.grantMethod ?? 'grantUsers'
+  state.listKey = config.listKey ?? 'users'
+  state.selectedKey = config.selectedKey ?? 'account_ids'
+  state.submitKey = config.submitKey ?? state.selectedKey
+  state.searchFields = config.searchFields ?? ['account', 'name']
   state.searchKey = ''
-  state.orgId = ''
-  state.users = []
+  state.items = []
   state.selectedData = []
   state.page = 1
   state.pageSize = 10
@@ -137,15 +146,15 @@ async function openModal(role: any) {
 }
 
 async function fetchGrant() {
-  if (!state.role?.id) {
+  if (!state.subject?.id) {
     return
   }
   state.loading = true
   try {
-    const response = await roleApi.ownUsers(state.role.id)
-    state.users = response.data?.users ?? []
-    const accountIds = new Set((response.data?.accountIds ?? []).map(String))
-    state.selectedData = state.users.filter((item) => accountIds.has(String(item.id)))
+    const response = await state.grantApi[state.ownMethod](state.subject.id)
+    state.items = response.data?.[state.listKey] ?? []
+    const selectedIds = new Set((response.data?.[state.selectedKey] ?? []).map(String))
+    state.selectedData = state.items.filter((item) => selectedIds.has(String(item.id)))
   } finally {
     state.loading = false
   }
@@ -154,10 +163,9 @@ async function fetchGrant() {
 async function submitGrant() {
   state.submitLoading = true
   try {
-    await roleApi.grantUsers({
-      roleId: state.role.id,
-      grantInfoList: state.selectedData.map((item) => item.id),
-      accountIds: state.selectedData.map((item) => item.id),
+    await state.grantApi[state.grantMethod]({
+      id: state.subject.id,
+      [state.submitKey]: state.selectedData.map((item) => item.id),
     })
     window.$message.success(t('pages.iam.role.grantSuccess'))
     closeModal()
@@ -168,7 +176,7 @@ async function submitGrant() {
 }
 
 function closeModal() {
-  state.users = []
+  state.items = []
   state.selectedData = []
   state.showModal = false
   state.submitLoading = false
@@ -197,11 +205,6 @@ function resetSearch() {
   state.page = 1
 }
 
-function treeSelect(keys: Array<string | number>) {
-  state.orgId = String(keys[0] ?? '')
-  state.page = 1
-}
-
 defineExpose({
   openModal,
 })
@@ -217,22 +220,7 @@ defineExpose({
   >
     <NDrawerContent :title="modalTitle" closable :native-scrollbar="false">
       <NGrid :cols="24" :x-gap="10">
-        <NGi :span="7">
-          <NCard size="small" class="selector-panel">
-            <NSpin :show="state.loading">
-              <NTree
-                v-model:expanded-keys="state.expandedKeys"
-                block-line
-                key-field="id"
-                label-field="name"
-                :data="mockOrgTree"
-                :selected-keys="state.orgId ? [state.orgId] : []"
-                @update:selected-keys="treeSelect"
-              />
-            </NSpin>
-          </NCard>
-        </NGi>
-        <NGi :span="11">
+        <NGi :span="16">
           <NSpace vertical>
             <NInputGroup>
               <NInput
@@ -277,7 +265,7 @@ defineExpose({
             />
           </NSpace>
         </NGi>
-        <NGi :span="6">
+        <NGi :span="8">
           <NSpace vertical>
             <NFlex justify="space-between" align="center">
               <NText>{{
@@ -313,9 +301,3 @@ defineExpose({
     </NDrawerContent>
   </NDrawer>
 </template>
-
-<style scoped>
-.selector-panel {
-  min-height: calc(100vh - 180px);
-}
-</style>

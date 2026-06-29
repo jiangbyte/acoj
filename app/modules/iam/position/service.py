@@ -1,7 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions.business import AuthorizationError
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
+from app.core.security.data_scope import build_data_scope_filter, resolve_data_scope_dept_ids
+from app.core.security.session import SessionPayload
+from app.modules.iam.position.model import SysPosition
 from app.modules.iam.position.repository import PositionRepository
 from app.modules.iam.position.schema import (
     PositionAdminPageQuery,
@@ -17,21 +21,78 @@ class PositionService:
         self.db = db
         self.repo = PositionRepository(db)
 
-    async def create(self, payload: PositionCreateRequest) -> None:
+    async def create(self, payload: PositionCreateRequest, session: SessionPayload | None = None) -> None:
+        if session is not None and payload.owner_dept_id:
+            await self._ensure_depts_visible(session, "iam:position:create", [payload.owner_dept_id])
         async with transactional(self.db):
             await self.repo.create(payload)
 
-    async def update(self, payload: PositionUpdateRequest) -> None:
+    async def update(self, payload: PositionUpdateRequest, session: SessionPayload | None = None) -> None:
+        if session is not None:
+            await self._ensure_positions_visible(session, "iam:position:update", [payload.id])
+            if payload.owner_dept_id:
+                await self._ensure_depts_visible(session, "iam:position:update", [payload.owner_dept_id])
         async with transactional(self.db):
             await self.repo.update(payload)
 
-    async def delete(self, payload: IdsRequest) -> None:
+    async def delete(self, payload: IdsRequest, session: SessionPayload | None = None) -> None:
+        if session is not None:
+            await self._ensure_positions_visible(session, "iam:position:delete", payload.ids)
         async with transactional(self.db):
             await self.repo.delete_many(payload.ids)
 
-    async def detail(self, query: IdQuery) -> SysPositionSchema:
+    async def detail(self, query: IdQuery, session: SessionPayload | None = None) -> SysPositionSchema:
+        if session is not None:
+            await self._ensure_positions_visible(session, "iam:position:detail", [query.id])
         return to_schema(SysPositionSchema, await self.repo.get_required(query.id))
 
-    async def page_admin(self, query: PositionAdminPageQuery) -> PageData[SysPositionSchema]:
-        items, total = await self.repo.page_admin(query)
+    async def page_admin(
+        self,
+        query: PositionAdminPageQuery,
+        session: SessionPayload | None = None,
+    ) -> PageData[SysPositionSchema]:
+        data_scope_filter = (
+            await self._position_scope_filter(session, "iam:position:page")
+            if session is not None
+            else None
+        )
+        items, total = await self.repo.page_admin(query, data_scope_filter)
         return build_page(query.pagination, total, to_schema_list(SysPositionSchema, items))
+
+    async def _position_scope_filter(self, session: SessionPayload, permission_key: str):
+        return await build_data_scope_filter(
+            self.db,
+            session,
+            permission_key,
+            owner_column=SysPosition.created_by,
+            dept_column=SysPosition.owner_dept_id,
+        )
+
+    async def _ensure_positions_visible(
+        self,
+        session: SessionPayload,
+        permission_key: str,
+        position_ids: list[str],
+    ) -> None:
+        unique_ids = list(dict.fromkeys(position_ids))
+        if not unique_ids:
+            return
+        data_scope_filter = await self._position_scope_filter(session, permission_key)
+        if await self.repo.count_positions_in_scope(unique_ids, data_scope_filter) != len(unique_ids):
+            raise AuthorizationError("Position is outside current data scope")
+
+    async def _ensure_depts_visible(
+        self,
+        session: SessionPayload,
+        permission_key: str,
+        dept_ids: list[str],
+    ) -> None:
+        unique_ids = list(dict.fromkeys(dept_ids))
+        if not unique_ids:
+            return
+        visible_dept_ids = await resolve_data_scope_dept_ids(self.db, session, permission_key)
+        if visible_dept_ids is None:
+            return
+        allowed_ids = set(visible_dept_ids)
+        if any(dept_id not in allowed_ids for dept_id in unique_ids):
+            raise AuthorizationError("Dept is outside current data scope")

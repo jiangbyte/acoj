@@ -56,7 +56,7 @@ defineExpose({
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('pages.iam.role.category')">
             {{
-              dictTypeData('COMMON_SYS_BIZ_CATEGORY', state.role.category) ||
+              dictTypeData('SYS_BIZ_CATEGORY', state.role.category) ||
               displayValue(state.role.category)
             }}
           </NDescriptionsItem>

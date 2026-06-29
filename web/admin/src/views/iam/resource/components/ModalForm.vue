@@ -33,9 +33,11 @@ const defaultFormData = {
 const state = reactive({
   showModal: false,
   loading: false,
+  treeLoading: false,
   submitLoading: false,
   dataId: null as string | null,
   formModel: { ...defaultFormData },
+  resourceTree: [] as any[],
 })
 
 const modalTitle = computed(() =>
@@ -50,13 +52,31 @@ const rules = computed<FormRules>(() => ({
   status: createRequiredRule(t, t('common.often.status'), 'change'),
 }))
 
-async function openModal(id?: string) {
+const parentTreeOptions = computed(() => {
+  const excludedIds = new Set(
+    state.dataId ? collectDescendantIds(state.resourceTree, state.dataId) : [],
+  )
+  return buildParentTreeOptions(state.resourceTree, excludedIds)
+})
+
+async function openModal(id?: string, parentId?: string) {
   state.dataId = id ?? null
-  state.formModel = { ...defaultFormData }
+  state.formModel = { ...defaultFormData, parent_id: parentId ?? '' }
   state.showModal = true
+  await fetchResourceTree()
 
   if (id) {
     await fetchDetail(id)
+  }
+}
+
+async function fetchResourceTree() {
+  state.treeLoading = true
+  try {
+    const response = await resourceApi.tree()
+    state.resourceTree = response.data ?? []
+  } finally {
+    state.treeLoading = false
   }
 }
 
@@ -128,6 +148,44 @@ async function submitForm() {
 defineExpose({
   openModal,
 })
+
+function buildParentTreeOptions(items: any[], excludedIds: Set<string>): any[] {
+  return items
+    .filter((item) => !excludedIds.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      name: `${item.name} (${item.code})`,
+      children: buildParentTreeOptions(item.children ?? [], excludedIds),
+    }))
+}
+
+function collectDescendantIds(items: any[], targetId: string) {
+  const result = new Set<string>([targetId])
+  const target = findResourceNode(items, targetId)
+  const walk = (nodes: any[]) => {
+    nodes.forEach((node) => {
+      result.add(node.id)
+      walk(node.children ?? [])
+    })
+  }
+  if (target) {
+    walk(target.children ?? [])
+  }
+  return Array.from(result)
+}
+
+function findResourceNode(items: any[], id: string): any | null {
+  for (const item of items) {
+    if (item.id === id) {
+      return item
+    }
+    const child = findResourceNode(item.children ?? [], id)
+    if (child) {
+      return child
+    }
+  }
+  return null
+}
 </script>
 
 <template>
@@ -140,7 +198,7 @@ defineExpose({
     style="width: 760px"
     :segmented="{ content: true, action: true }"
   >
-    <NSpin :show="state.loading">
+    <NSpin :show="state.loading || state.treeLoading">
       <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
         <NForm
           ref="formRef"
@@ -148,7 +206,7 @@ defineExpose({
           :rules="rules"
           label-placement="left"
           label-width="110"
-          :disabled="state.loading || state.submitLoading"
+          :disabled="state.loading || state.treeLoading || state.submitLoading"
         >
           <NFormItem :label="t('pages.iam.resource.name')" path="name">
             <NInput v-model:value="state.formModel.name" />
@@ -160,7 +218,16 @@ defineExpose({
             <DictSelect v-model="state.formModel.resource_type" dict-code="RESOURCE_TYPE" />
           </NFormItem>
           <NFormItem :label="t('pages.iam.resource.parentId')" path="parent_id">
-            <NInput v-model:value="state.formModel.parent_id" />
+            <NTreeSelect
+              v-model:value="state.formModel.parent_id"
+              clearable
+              filterable
+              :options="parentTreeOptions"
+              :placeholder="t('pages.iam.resource.parentId')"
+              key-field="id"
+              label-field="name"
+              children-field="children"
+            />
           </NFormItem>
           <NFormItem :label="t('pages.iam.resource.module')" path="module">
             <NInput v-model:value="state.formModel.module" />

@@ -1,13 +1,23 @@
+from collections import defaultdict
+
 from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.exceptions.business import NotFoundError
-from app.modules.iam.enums import GrantSubjectType
-from app.modules.iam.grant.model import SysSubjectPermissionGrantRel
+from app.modules.iam.reference_guard import count_role_references, raise_if_referenced
+from app.modules.iam.enums import GrantMode, GrantSubjectType
+from app.modules.iam.account.model import SysAccount, SysAccountDeptRel, SysAccountRoleRel
+from app.modules.iam.grant.model import SysSubjectPermissionGrantRel, SysSubjectResourceGrantRel
+from app.modules.iam.resource.model import SysResource, SysResourcePermissionRel
+from app.modules.iam.enums import ResourceType
 from app.modules.iam.role.model import SysRole
 from app.modules.iam.role.schema import (
     RoleAdminPageQuery,
+    RoleGrantResourceRequest,
+    RoleGrantUserRequest,
     RoleGrantPermissionRequest,
+    RoleResourceGrantInfo,
     RolePermissionGrantInfo,
     RoleCreateRequest,
     RoleUpdateRequest,
@@ -41,13 +51,31 @@ class RoleRepository:
 
     async def delete_many(self, role_ids: list[str]) -> None:
         unique_ids = list(dict.fromkeys(role_ids))
+        if not unique_ids:
+            return
         stmt = select(SysRole.id).where(SysRole.id.in_(unique_ids))
         existing_ids = set((await self.db.execute(stmt)).scalars().all())
         if len(existing_ids) != len(unique_ids):
             raise NotFoundError("Role not found")
+        raise_if_referenced("Role", await count_role_references(self.db, unique_ids))
         await self.db.execute(delete(SysRole).where(SysRole.id.in_(unique_ids)))
 
-    async def page_admin(self, query: RoleAdminPageQuery) -> tuple[list[SysRole], int]:
+    async def count_roles_in_scope(
+        self,
+        role_ids: list[str],
+        data_scope_filter: ColumnElement[bool],
+    ) -> int:
+        unique_ids = list(dict.fromkeys(role_ids))
+        if not unique_ids:
+            return 0
+        stmt = select(func.count(SysRole.id)).where(SysRole.id.in_(unique_ids), data_scope_filter)
+        return int((await self.db.execute(stmt)).scalar_one())
+
+    async def page_admin(
+        self,
+        query: RoleAdminPageQuery,
+        data_scope_filter: ColumnElement[bool] | None = None,
+    ) -> tuple[list[SysRole], int]:
         stmt: Select[tuple[SysRole]] = select(SysRole)
         count_stmt = select(func.count(SysRole.id))
         filters = []
@@ -61,6 +89,8 @@ class RoleRepository:
             filters.append(SysRole.scope_type == query.scope_type.value)
         if query.status:
             filters.append(SysRole.status == query.status)
+        if data_scope_filter is not None:
+            filters.append(data_scope_filter)
         if filters:
             stmt = stmt.where(*filters)
             count_stmt = count_stmt.where(*filters)
@@ -92,6 +122,174 @@ class RoleRepository:
             )
             for grant in grants
         ]
+
+    async def list_resource_grants(self, role_id: str) -> list[RoleResourceGrantInfo]:
+        await self.get_required(role_id)
+        stmt = (
+            select(SysSubjectResourceGrantRel)
+            .where(
+                SysSubjectResourceGrantRel.subject_type == GrantSubjectType.ROLE.value,
+                SysSubjectResourceGrantRel.subject_id == role_id,
+            )
+            .order_by(SysSubjectResourceGrantRel.id.asc())
+        )
+        grants = list((await self.db.execute(stmt)).scalars().all())
+        resource_ids = [grant.resource_id for grant in grants]
+        if not resource_ids:
+            return []
+
+        resource_stmt = select(SysResource).where(SysResource.id.in_(resource_ids))
+        resources = list((await self.db.execute(resource_stmt)).scalars().all())
+        resource_map = {resource.id: resource for resource in resources}
+
+        permission_stmt = select(SysResourcePermissionRel).where(
+            SysResourcePermissionRel.resource_id.in_(resource_ids)
+        )
+        permissions = list((await self.db.execute(permission_stmt)).scalars().all())
+        permission_map: dict[str, list[str]] = defaultdict(list)
+        for permission in permissions:
+            permission_map[permission.resource_id].append(permission.permission_key)
+
+        menu_resource_ids = set()
+        for resource_id in resource_ids:
+            resource = resource_map.get(resource_id)
+            if not resource:
+                continue
+            if resource.resource_type in {ResourceType.BUTTON.value, ResourceType.ACTION.value}:
+                menu_resource_ids.add(resource.parent_id or resource.id)
+            else:
+                menu_resource_ids.add(resource.id)
+
+        grant_map: dict[str, set[str]] = defaultdict(set)
+        for resource_id in menu_resource_ids:
+            grant_map[resource_id]
+        for resource_id in resource_ids:
+            resource = resource_map.get(resource_id)
+            if not resource:
+                continue
+            permission_keys = permission_map.get(resource.id) or [resource.code]
+            if resource.resource_type in {ResourceType.BUTTON.value, ResourceType.ACTION.value}:
+                parent_id = resource.parent_id or resource.id
+                grant_map[parent_id].update(permission_keys)
+
+        return [
+            RoleResourceGrantInfo(
+                resource_id=resource_id,
+                permission_keys=sorted(permission_keys),
+            )
+            for resource_id, permission_keys in sorted(grant_map.items())
+        ]
+
+    async def replace_resource_grants(self, payload: RoleGrantResourceRequest) -> None:
+        await self.get_required(payload.id)
+        resource_ids = list(dict.fromkeys(item.resource_id for item in payload.grant_info_list))
+        original_resource_ids = set(resource_ids)
+        permission_keys = list(
+            dict.fromkeys(
+                permission_key
+                for item in payload.grant_info_list
+                for permission_key in item.permission_keys
+            )
+        )
+        if resource_ids:
+            stmt = select(SysResource.id).where(SysResource.id.in_(resource_ids))
+            existing_ids = set((await self.db.execute(stmt)).scalars().all())
+            if len(existing_ids) != len(resource_ids):
+                raise NotFoundError("Resource not found")
+        if permission_keys:
+            permission_resource_stmt = select(
+                SysResourcePermissionRel.permission_key,
+                SysResourcePermissionRel.resource_id,
+            ).where(SysResourcePermissionRel.permission_key.in_(permission_keys))
+            permission_resource_rows = list((await self.db.execute(permission_resource_stmt)).all())
+            code_resource_stmt = select(SysResource.code, SysResource.id).where(
+                SysResource.code.in_(permission_keys),
+                SysResource.resource_type.in_(
+                    [ResourceType.BUTTON.value, ResourceType.ACTION.value]
+                ),
+            )
+            code_resource_rows = list((await self.db.execute(code_resource_stmt)).all())
+            permission_resource_map: dict[str, set[str]] = defaultdict(set)
+            for permission_key, resource_id in permission_resource_rows:
+                permission_resource_map[str(permission_key)].add(str(resource_id))
+            for permission_key, resource_id in code_resource_rows:
+                permission_resource_map[str(permission_key)].add(str(resource_id))
+            missing_permission_keys = [
+                permission_key
+                for permission_key in permission_keys
+                if permission_key not in permission_resource_map
+            ]
+            if missing_permission_keys:
+                raise NotFoundError("Permission resource not found")
+            for permission_key in permission_keys:
+                resource_ids.extend(permission_resource_map[permission_key])
+        resource_ids = list(dict.fromkeys(resource_ids))
+        await self.db.execute(
+            delete(SysSubjectResourceGrantRel).where(
+                SysSubjectResourceGrantRel.subject_type == GrantSubjectType.ROLE.value,
+                SysSubjectResourceGrantRel.subject_id == payload.id,
+            )
+        )
+        for resource_id in resource_ids:
+            grant_mode = (
+                GrantMode.CASCADE.value
+                if resource_id not in original_resource_ids
+                else GrantMode.DIRECT.value
+            )
+            self.db.add(
+                SysSubjectResourceGrantRel(
+                    subject_type=GrantSubjectType.ROLE.value,
+                    subject_id=payload.id,
+                    resource_id=resource_id,
+                    grant_mode=grant_mode,
+                )
+            )
+        await self.db.flush()
+
+    async def list_role_accounts(
+        self,
+        role_id: str,
+        data_scope_filter: ColumnElement[bool] | None = None,
+    ) -> list[SysAccount]:
+        await self.get_required(role_id)
+        stmt = (
+            select(SysAccount)
+            .join(SysAccountRoleRel, SysAccountRoleRel.account_id == SysAccount.id)
+            .where(SysAccountRoleRel.role_id == role_id)
+            .order_by(SysAccount.id.desc())
+        )
+        if data_scope_filter is not None:
+            stmt = stmt.outerjoin(SysAccountDeptRel, SysAccountDeptRel.account_id == SysAccount.id).where(data_scope_filter)
+        return list((await self.db.execute(stmt)).unique().scalars().all())
+
+    async def list_accounts(
+        self,
+        data_scope_filter: ColumnElement[bool] | None = None,
+    ) -> list[SysAccount]:
+        stmt = select(SysAccount).order_by(SysAccount.id.desc())
+        if data_scope_filter is not None:
+            stmt = (
+                stmt.outerjoin(SysAccountDeptRel, SysAccountDeptRel.account_id == SysAccount.id)
+                .where(data_scope_filter)
+            )
+        return list((await self.db.execute(stmt)).unique().scalars().all())
+
+    async def replace_role_accounts(self, payload: RoleGrantUserRequest) -> None:
+        await self.get_required(payload.id)
+        account_ids = list(dict.fromkeys(payload.account_ids))
+        if account_ids:
+            stmt = select(SysAccount.id).where(SysAccount.id.in_(account_ids))
+            existing_ids = set((await self.db.execute(stmt)).scalars().all())
+            if len(existing_ids) != len(account_ids):
+                raise NotFoundError("Account not found")
+        await self.db.execute(delete(SysAccountRoleRel).where(SysAccountRoleRel.role_id == payload.id))
+        for account_id in account_ids:
+            self.db.add(SysAccountRoleRel(account_id=account_id, role_id=payload.id))
+        await self.db.flush()
+
+    async def list_account_ids_by_role(self, role_id: str) -> list[str]:
+        stmt = select(SysAccountRoleRel.account_id).where(SysAccountRoleRel.role_id == role_id)
+        return [str(value) for value in (await self.db.execute(stmt)).scalars().all()]
 
     async def replace_permission_grants(self, payload: RoleGrantPermissionRequest) -> None:
         await self.get_required(payload.id)

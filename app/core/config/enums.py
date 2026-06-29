@@ -46,5 +46,9 @@ class AccountStatusEnum(StrEnum):
 
 
 class SysBizCategory(StrEnum):
-    SYS = "SYS"
-    BIZ = "BIZ"
+    """
+    系统/业务分类
+    """
+
+    SYS = "SYS"  # 系统
+    BIZ = "BIZ"  # 业务

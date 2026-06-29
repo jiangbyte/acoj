@@ -91,9 +91,34 @@ class SysResourcePermissionRelSchema(ApiSchema):
     updated_by: str | None = None
 
 
-class ResourceTreeNode(ApiSchema):
-    id: str
-    code: str
-    name: str
-    resource_type: ResourceType
+class ResourceTreeNode(SysResourceSchema):
     children: list["ResourceTreeNode"] = Field(default_factory=list)
+
+
+class ResourcePermissionOption(ApiSchema):
+    id: str
+    permission_key: str
+    title: str
+    data_scope: DataScope = DataScope.SELF
+
+
+class ResourceGrantMenuOption(ApiSchema):
+    id: str
+    module: str
+    parent_id: str | None = None
+    parent_name: str
+    title: str
+    button: list[ResourcePermissionOption] = Field(default_factory=list)
+
+
+class ResourceGrantModuleOption(ApiSchema):
+    id: str
+    title: str
+    menu: list[ResourceGrantMenuOption] = Field(default_factory=list)
+
+
+class PermissionRegistryItem(ApiSchema):
+    permission_key: str
+    name: str
+    method: str | None = None
+    path: str | None = None

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.modules.auth.router import portal_router as auth_portal_router
-from app.modules.banner.portal.router import router as banner_router
+from app.modules.sys.banner.portal.router import router as banner_router
 from app.modules.user.portal.router import router as profile_router
 
 router = APIRouter(prefix="/portal", tags=["portal"])

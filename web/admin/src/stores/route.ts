@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { router } from '@/router'
+import { resourceApi } from '@/api'
 import { staticRoutes } from '@/router/routes.static'
 import { $t, routeI18nKey } from '@/utils/i18n'
 import { createMenus, createRoutes, generateCacheRoutes, getActiveMenuPath } from './route/helper'
@@ -158,5 +159,6 @@ export function getRouteTitle(
 
 // 动态路由接口占位。当前没有接入后端资源接口，所以仍返回静态资源数据。
 async function fetchUserRoutes(): Promise<AppRoute.RowRoute[]> {
-  return staticRoutes
+  const response = await resourceApi.current()
+  return response.data ?? []
 }

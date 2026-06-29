@@ -2,12 +2,12 @@ import { http } from '@/utils'
 
 const resourcePrefix = '/api/v1/admin/sys/resources'
 
-export function page(params: any) {
-  return http.get<any>(`${resourcePrefix}/page`, { params })
-}
-
 export function tree(params?: any) {
   return http.get<any>(`${resourcePrefix}/tree`, { params })
+}
+
+export function current() {
+  return http.get<any>(`${resourcePrefix}/current`)
 }
 
 export function detail(params: any) {

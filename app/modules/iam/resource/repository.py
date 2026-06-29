@@ -1,26 +1,26 @@
-from typing import TypedDict
-
 from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import StatusEnum
 from app.core.exceptions.business import NotFoundError
 from app.modules.iam.enums import ResourceType
+from app.modules.iam.reference_guard import (
+    count_resource_references,
+    ensure_not_self_or_descendant,
+    ensure_parent_exists,
+    raise_if_referenced,
+)
 from app.modules.iam.resource.model import SysResource, SysResourcePermissionRel
 from app.modules.iam.resource.schema import (
+    PermissionRegistryItem,
     ResourceAdminPageQuery,
     ResourceCreateRequest,
+    ResourceGrantMenuOption,
+    ResourceGrantModuleOption,
+    ResourcePermissionOption,
     ResourcePermissionBindRequest,
     ResourceUpdateRequest,
 )
-
-
-class ResourceTreeRecord(TypedDict):
-    id: str
-    code: str
-    name: str
-    resource_type: ResourceType | str
-    children: list["ResourceTreeRecord"]
 
 
 class ResourceRepository:
@@ -28,6 +28,7 @@ class ResourceRepository:
         self.db = db
 
     async def create(self, payload: ResourceCreateRequest) -> None:
+        await ensure_parent_exists(self.db, SysResource, payload.parent_id, "Resource")
         resource = SysResource(**payload.model_dump())
         self.db.add(resource)
         await self.db.flush()
@@ -43,6 +44,14 @@ class ResourceRepository:
 
     async def update(self, payload: ResourceUpdateRequest) -> None:
         entity = await self.get_required(payload.id)
+        await ensure_parent_exists(self.db, SysResource, payload.parent_id, "Resource")
+        await ensure_not_self_or_descendant(
+            self.db,
+            SysResource,
+            payload.id,
+            payload.parent_id,
+            "Resource",
+        )
         data = payload.model_dump(exclude={"id"})
         for key, value in data.items():
             setattr(entity, key, value)
@@ -50,10 +59,13 @@ class ResourceRepository:
 
     async def delete_many(self, resource_ids: list[str]) -> None:
         unique_ids = list(dict.fromkeys(resource_ids))
+        if not unique_ids:
+            return
         stmt = select(SysResource.id).where(SysResource.id.in_(unique_ids))
         existing_ids = set((await self.db.execute(stmt)).scalars().all())
         if len(existing_ids) != len(unique_ids):
             raise NotFoundError("Resource not found")
+        raise_if_referenced("Resource", await count_resource_references(self.db, unique_ids))
         await self.db.execute(delete(SysResource).where(SysResource.id.in_(unique_ids)))
 
     async def page_admin(self, query: ResourceAdminPageQuery) -> tuple[list[SysResource], int]:
@@ -114,22 +126,68 @@ class ResourceRepository:
         )
         return list((await self.db.execute(stmt)).scalars().all())
 
-    async def get_resource_tree(self) -> list[ResourceTreeRecord]:
+    async def list_resources_by_ids_with_parents(self, resource_ids: list[str]) -> list[SysResource]:
+        unique_ids = set(resource_ids)
+        if not unique_ids:
+            return []
+        all_resources = await self.list_resources()
+        resource_map = {resource.id: resource for resource in all_resources}
+        result_ids: set[str] = set()
+        for resource_id in unique_ids:
+            current = resource_map.get(resource_id)
+            while current:
+                result_ids.add(current.id)
+                current = resource_map.get(current.parent_id or "")
+        return [resource for resource in all_resources if resource.id in result_ids]
+
+    async def list_all_resource_grant_modules(self) -> list[ResourceGrantModuleOption]:
         resources = await self.list_resources()
-        node_map: dict[str, ResourceTreeRecord] = {
-            resource.id: {
-                "id": resource.id,
-                "code": resource.code,
-                "name": resource.name,
-                "resource_type": resource.resource_type,
-                "children": [],
-            }
-            for resource in resources
-        }
-        roots: list[ResourceTreeRecord] = []
+        permissions = await self.list_resource_permissions()
+        permission_map: dict[str, list[ResourcePermissionOption]] = {}
+        for permission in permissions:
+            permission_map.setdefault(permission.resource_id, []).append(
+                ResourcePermissionOption(
+                    id=permission.id,
+                    permission_key=permission.permission_key,
+                    title=permission.description or permission.permission_key,
+                    data_scope=permission.data_scope,
+                )
+            )
+        resource_map = {resource.id: resource for resource in resources}
+        child_permission_map: dict[str, list[ResourcePermissionOption]] = {}
         for resource in resources:
-            if resource.parent_id and resource.parent_id in node_map:
-                node_map[resource.parent_id]["children"].append(node_map[resource.id])
-            else:
-                roots.append(node_map[resource.id])
-        return roots
+            if resource.resource_type not in {ResourceType.BUTTON.value, ResourceType.ACTION.value}:
+                continue
+            if not resource.parent_id:
+                continue
+            options = permission_map.get(resource.id)
+            if not options:
+                options = [
+                    ResourcePermissionOption(
+                        id=resource.id,
+                        permission_key=resource.code,
+                        title=resource.name,
+                    )
+                ]
+            child_permission_map.setdefault(resource.parent_id, []).extend(options)
+        module_map: dict[str, ResourceGrantModuleOption] = {}
+        for resource in resources:
+            if resource.resource_type in {ResourceType.BUTTON.value, ResourceType.ACTION.value}:
+                continue
+            module_id = resource.module or "default"
+            module = module_map.setdefault(
+                module_id,
+                ResourceGrantModuleOption(id=module_id, title=module_id, menu=[]),
+            )
+            parent = resource_map.get(resource.parent_id or "")
+            module.menu.append(
+                ResourceGrantMenuOption(
+                    id=resource.id,
+                    module=module_id,
+                    parent_id=resource.parent_id,
+                    parent_name=parent.name if parent else "ROOT",
+                    title=resource.name,
+                    button=permission_map.get(resource.id, []) + child_permission_map.get(resource.id, []),
+                )
+            )
+        return sorted(module_map.values(), key=lambda item: item.id)
