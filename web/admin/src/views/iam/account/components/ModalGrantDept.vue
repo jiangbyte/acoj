@@ -49,8 +49,9 @@ async function fetchGrant() {
     const grant_info_list = grantResponse.data?.grant_info_list ?? []
     state.deptTree = deptResponse.data ?? []
     state.deptIds = grant_info_list.map((item: any) => String(item.dept_id))
-    state.primaryDeptId =
-      String(grant_info_list.find((item: any) => item.is_primary)?.dept_id ?? state.deptIds[0] ?? '')
+    state.primaryDeptId = String(
+      grant_info_list.find((item: any) => item.is_primary)?.dept_id ?? state.deptIds[0] ?? '',
+    )
   } finally {
     state.loading = false
   }

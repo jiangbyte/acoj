@@ -99,7 +99,11 @@ export const useAuthStore = defineStore('auth-store', {
     hasPermission(permissionKey: string) {
       const keys = this.userInfo?.permissionKeys ?? []
       const buttonCodes = this.userInfo?.buttonCodes ?? []
-      return keys.includes('*:*:*') || keys.includes(permissionKey) || buttonCodes.includes(permissionKey)
+      return (
+        keys.includes('*:*:*') ||
+        keys.includes(permissionKey) ||
+        buttonCodes.includes(permissionKey)
+      )
     },
 
     clearAuthStorage() {

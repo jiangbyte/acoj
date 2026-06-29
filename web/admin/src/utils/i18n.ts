@@ -6,10 +6,6 @@ export function setLocale(locale: App.Lang) {
   i18n.global.locale.value = locale
 }
 
-export function routeI18nKey(name?: string | symbol | null) {
-  return `route.${String(name ?? '').replaceAll('-', '_')}`
-}
-
 export const $t = i18n.global.t
 
 export const naiveI18nOptions: Record<

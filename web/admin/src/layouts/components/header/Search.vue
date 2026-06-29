@@ -5,7 +5,6 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useBoolean } from '@/hooks'
 import { useAppStore, useRouteStore } from '@/stores'
-import { routeI18nKey } from '@/utils/i18n'
 
 const appStore = useAppStore()
 const routeStore = useRouteStore()
@@ -64,7 +63,7 @@ const options = computed<SearchOption[]>(() => {
   return routeStore.rowRoutes
     .map((item) => ({
       item,
-      label: t(routeI18nKey(item.code), item.name),
+      label: item.name,
     }))
     .filter(({ item, label }) => {
       if (

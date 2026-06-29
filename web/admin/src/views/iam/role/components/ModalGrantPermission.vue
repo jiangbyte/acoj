@@ -421,10 +421,7 @@ function subStrApi(api: string) {
 
 function splitByPermissionKey(permissionKey: string) {
   const parts = permissionKey.split(':')
-  return [
-    parts.slice(0, 2).join(':') || permissionKey,
-    parts.slice(2).join(':') || permissionKey,
-  ]
+  return [parts.slice(0, 2).join(':') || permissionKey, parts.slice(2).join(':') || permissionKey]
 }
 
 function setParentDataCheckedStatus(records: any[]) {

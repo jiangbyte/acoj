@@ -247,11 +247,7 @@ function openGrantModal(type: string, row: any) {
   } else if (type === 'resource') {
     grantResourceModalRef.value?.openModal(group, groupApi, t('pages.iam.group.grantResource'))
   } else if (type === 'permission') {
-    grantPermissionModalRef.value?.openModal(
-      group,
-      groupApi,
-      t('pages.iam.group.grantPermission'),
-    )
+    grantPermissionModalRef.value?.openModal(group, groupApi, t('pages.iam.group.grantPermission'))
   }
 }
 

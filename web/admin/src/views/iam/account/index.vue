@@ -332,7 +332,11 @@ function openGrantModal(type: string, row: any) {
   } else if (type === 'dept') {
     grantDeptModalRef.value?.openModal(account)
   } else if (type === 'resource') {
-    grantResourceModalRef.value?.openModal(account, accountApi, t('pages.iam.account.grantResource'))
+    grantResourceModalRef.value?.openModal(
+      account,
+      accountApi,
+      t('pages.iam.account.grantResource'),
+    )
   } else if (type === 'permission') {
     grantPermissionModalRef.value?.openModal(
       account,
