@@ -123,7 +123,11 @@ defineExpose({
                 {{ displayValue(state.account.email_identity) }}
               </NDescriptionsItem>
               <NDescriptionsItem :label="t('pages.iam.account.emailIdentityVerified')">
-                {{ state.account.email_identity_verified ? t('pages.iam.account.yes') : t('pages.iam.account.no') }}
+                {{
+                  state.account.email_identity_verified
+                    ? t('pages.iam.account.yes')
+                    : t('pages.iam.account.no')
+                }}
               </NDescriptionsItem>
               <NDescriptionsItem :label="t('pages.iam.account.emailIdentityBindStatus')">
                 {{
@@ -137,7 +141,11 @@ defineExpose({
                 {{ displayValue(state.account.phone_identity) }}
               </NDescriptionsItem>
               <NDescriptionsItem :label="t('pages.iam.account.phoneIdentityVerified')">
-                {{ state.account.phone_identity_verified ? t('pages.iam.account.yes') : t('pages.iam.account.no') }}
+                {{
+                  state.account.phone_identity_verified
+                    ? t('pages.iam.account.yes')
+                    : t('pages.iam.account.no')
+                }}
               </NDescriptionsItem>
               <NDescriptionsItem :label="t('pages.iam.account.phoneIdentityBindStatus')">
                 {{

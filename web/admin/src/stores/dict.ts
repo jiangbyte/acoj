@@ -4,6 +4,12 @@ import { dictApi } from '@/api'
 
 export const dictTreeState = shallowRef<any[]>([])
 
+let refreshDictPromise: Promise<void> | null = null
+
+function syncDictTreeState(tree: any[]) {
+  dictTreeState.value = Array.isArray(tree) ? tree : []
+}
+
 export const useDictStore = defineStore('dict-store', {
   state: () => ({
     tree: [] as any[],
@@ -13,29 +19,34 @@ export const useDictStore = defineStore('dict-store', {
   }),
   actions: {
     syncDictTree() {
-      dictTreeState.value = this.tree
+      syncDictTreeState(this.tree)
     },
 
     async refreshDict() {
-      if (this.loading) {
-        return
+      if (refreshDictPromise) {
+        return refreshDictPromise
       }
 
-      this.loading = true
-      try {
-        const response = await dictApi.tree()
-        this.tree = response.data ?? []
-        dictTreeState.value = this.tree
-        this.loaded = true
-        this.lastLoadedAt = Date.now()
-      } finally {
-        this.loading = false
-      }
+      refreshDictPromise = (async () => {
+        this.loading = true
+        try {
+          const response = await dictApi.tree()
+          this.tree = response.data ?? []
+          syncDictTreeState(this.tree)
+          this.loaded = true
+          this.lastLoadedAt = Date.now()
+        } finally {
+          this.loading = false
+          refreshDictPromise = null
+        }
+      })()
+
+      return refreshDictPromise
     },
 
     clearDict() {
       this.tree = []
-      dictTreeState.value = []
+      syncDictTreeState([])
       this.loaded = false
       this.loading = false
       this.lastLoadedAt = null
@@ -43,5 +54,10 @@ export const useDictStore = defineStore('dict-store', {
   },
   persist: {
     storage: localStorage,
+    pick: ['tree', 'loaded', 'lastLoadedAt'],
+    afterHydrate: ({ store }) => {
+      store.loading = false
+      syncDictTreeState(store.tree)
+    },
   },
 })

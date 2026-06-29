@@ -53,9 +53,7 @@ const tableUsers = computed(() => {
 })
 const selectedIds = computed(() => new Set(state.selectedData.map((item) => String(item.id))))
 const secondaryTitle = computed(() =>
-  state.searchFields.includes('code')
-    ? t('pages.iam.role.code')
-    : t('pages.iam.account.account'),
+  state.searchFields.includes('code') ? t('pages.iam.role.code') : t('pages.iam.account.account'),
 )
 
 const userColumns = computed<DataTableColumns<any>>(() => [

@@ -2,10 +2,7 @@ import { defineStore } from 'pinia'
 import { router } from '@/router'
 import { resourceApi } from '@/api'
 import { staticRoutes } from '@/router/routes.static'
-import { $t, routeI18nKey } from '@/utils/i18n'
 import { createMenus, createRoutes, generateCacheRoutes, getActiveMenuPath } from './route/helper'
-
-type TranslateFn = (key: string, fallback: string) => string
 
 /**
  * 路由 store 状态。
@@ -143,18 +140,14 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
  *
  * 资源路由展示后端资源 name；非资源内部路由则回退到 route.name 或 path。
  */
-export function getRouteTitle(
-  route: {
-    name?: string | symbol | null
-    path?: string
-    meta: {
-      name?: string
-    }
-  },
-  translate: TranslateFn = (key, fallback) => $t(key, fallback),
-) {
-  const fallback = route.meta.name ?? String(route.name ?? route.path)
-  return translate(routeI18nKey(route.name), fallback)
+export function getRouteTitle(route: {
+  name?: string | symbol | null
+  path?: string
+  meta: {
+    name?: string
+  }
+}) {
+  return route.meta.name ?? String(route.name ?? route.path)
 }
 
 // 动态路由接口占位。当前没有接入后端资源接口，所以仍返回静态资源数据。

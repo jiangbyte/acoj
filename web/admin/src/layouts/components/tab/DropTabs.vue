@@ -2,19 +2,17 @@
 import type { DropdownOption } from 'naive-ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import { useTabStore } from '@/stores'
 import { getRouteTitle } from '@/stores/route'
 import { renderIcon } from '@/utils/icon'
 
 const tabStore = useTabStore()
 const router = useRouter()
-const { t } = useI18n()
 
 // 下拉菜单展示所有可访问页签，包括固定页签和普通页签，作为横向页签溢出时的快速入口。
 const options = computed<DropdownOption[]>(() =>
   tabStore.allTabs.map((route) => ({
-    label: getRouteTitle(route, t),
+    label: getRouteTitle(route),
     key: route.fullPath,
     icon: renderIcon(route.meta.icon ?? undefined),
   })),

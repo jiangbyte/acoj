@@ -17,17 +17,29 @@ export function dictList(dictCode: any, tree = dictDataAll()) {
     }))
 }
 
-export function dictTypeData(dictCode: string, value?: string | number | null, tree = dictDataAll()) {
+export function dictTypeData(
+  dictCode: string,
+  value?: string | number | null,
+  tree = dictDataAll(),
+) {
   const dict = findDictItem(dictCode, value, tree)
   return dict ? getDictLabel(dict) : ''
 }
 
-export function dictTypeColor(dictCode: string, value?: string | number | null, tree = dictDataAll()) {
+export function dictTypeColor(
+  dictCode: string,
+  value?: string | number | null,
+  tree = dictDataAll(),
+) {
   const dict = findDictItem(dictCode, value, tree)
   return dict?.color || ''
 }
 
-export function translateDictTree(dictCode: string, value?: string | number | null, tree = dictDataAll()) {
+export function translateDictTree(
+  dictCode: string,
+  value?: string | number | null,
+  tree = dictDataAll(),
+) {
   const root = findDictRoot(tree, dictCode)
   const dict = findNodeByValue(root, value)
   return dict ? getDictLabel(dict) : ''
