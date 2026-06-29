@@ -1,12 +1,13 @@
 <script setup lang="tsx">
+import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
-import { resourceApi, resourceModuleApi } from '@/api'
+import { resourceModuleApi } from '@/api'
 import { createTagColor, normalizeSearchValues } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
+import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
@@ -15,61 +16,41 @@ const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
 const state = reactive({
-  resources: [] as any[],
-  moduleOptions: [] as any[],
+  modules: [] as any[],
+  total: 0,
   loading: false,
   searchValues: {} as any,
   checkedRowKeys: [] as string[],
+  page: 1,
+  pageSize: 20,
 })
-
-const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
-const filteredResources = computed(() => filterResourceTree(state.resources, state.searchValues))
 
 const searchForm = createProSearchForm<any>({
   defaultCollapsed: true,
   onSubmit(values) {
     state.searchValues = normalizeSearchValues(values, {
-      code: (value) => String(value).trim(),
       name: (value) => String(value).trim(),
-      module_id: (value) => String(value).trim(),
-      parent_id: (value) => String(value).trim(),
+      code: (value) => String(value).trim(),
     })
+    state.page = 1
+    fetchPage()
   },
   onReset() {
     state.searchValues = {}
+    state.page = 1
+    fetchPage()
   },
 })
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('pages.iam.resource.code'),
-    path: 'code',
-    field: 'input',
-  },
-  {
-    title: t('pages.iam.resource.name'),
+    title: t('pages.iam.resource_module.name'),
     path: 'name',
     field: 'input',
   },
   {
-    title: t('pages.iam.resource.resourceType'),
-    path: 'resource_type',
-    field: 'select',
-    fieldProps: {
-      options: dictList('RESOURCE_TYPE'),
-    },
-  },
-  {
-    title: t('pages.iam.resource.module'),
-    path: 'module_id',
-    field: 'select',
-    fieldProps: {
-      options: state.moduleOptions,
-    },
-  },
-  {
-    title: t('pages.iam.resource.parentId'),
-    path: 'parent_id',
+    title: t('pages.iam.resource_module.code'),
+    path: 'code',
     field: 'input',
   },
   {
@@ -82,68 +63,78 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   },
 ])
 
+const pagination = computed<PaginationProps>(() => ({
+  page: state.page,
+  pageSize: state.pageSize,
+  itemCount: state.total,
+  showSizePicker: true,
+  pageSizes: [10, 20, 30, 50],
+  prefix: ({ itemCount }) => t('common.often.total', { count: itemCount }),
+  onUpdatePage: (value) => {
+    state.page = value
+    fetchPage()
+  },
+  onUpdatePageSize: (value) => {
+    state.pageSize = value
+    state.page = 1
+    fetchPage()
+  },
+}))
+
 const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     type: 'selection',
     fixed: 'left',
   },
   {
-    title: t('pages.iam.resource.name'),
+    title: t('common.often.index'),
+    width: 80,
+    path: 'id',
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: t('pages.iam.resource_module.name'),
     path: 'name',
-    width: 220,
+    width: 160,
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('pages.iam.resource.code'),
+    title: t('pages.iam.resource_module.code'),
     path: 'code',
-    width: 180,
+    width: 160,
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('pages.iam.resource.resourceType'),
-    path: 'resource_type',
-    width: 130,
-    render: (row) => dictTypeData('RESOURCE_TYPE', row.resource_type) || row.resource_type,
-  },
-  {
-    title: t('pages.iam.resource.module'),
-    path: 'module_id_name',
-    width: 130,
-    ellipsis: {
-      tooltip: true,
-    },
-    render: (row) => row.module_id_name || row.module_id || '-',
-  },
-  {
-    title: t('pages.iam.resource.path'),
-    path: 'path',
-    width: 210,
+    title: t('pages.iam.resource_module.icon'),
+    path: 'icon',
+    width: 190,
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('pages.iam.resource.component'),
-    path: 'component',
-    width: 230,
-    ellipsis: {
-      tooltip: true,
-    },
+    title: t('pages.iam.resource_module.color'),
+    path: 'color',
+    width: 110,
+    render: (row) =>
+      row.color ? (
+        <NTag color={createTagColor(row.color)} bordered={false}>
+          {row.color}
+        </NTag>
+      ) : (
+        '-'
+      ),
   },
   {
-    title: t('pages.iam.resource.sort'),
+    title: t('pages.iam.resource_module.sort'),
     path: 'sort',
     width: 90,
-  },
-  {
-    title: t('pages.iam.resource.isVisible'),
-    path: 'is_visible',
-    width: 90,
-    render: (row) => (row.is_visible ? t('pages.iam.resource.yes') : t('pages.iam.resource.no')),
   },
   {
     title: t('common.often.status'),
@@ -166,7 +157,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: t('common.often.operation'),
     key: 'actions',
-    width: 230,
+    width: 170,
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
@@ -176,9 +167,6 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
         <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
           {t('common.often.edit')}
         </NButton>
-        <NButton type="primary" size="small" text={true} onClick={() => openCreateModal(row.id)}>
-          {t('common.often.add')}
-        </NButton>
         <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
           {t('common.often.delete')}
         </NButton>
@@ -187,37 +175,39 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   },
 ])
 
+const hasCheckedRows = computed(() => state.checkedRowKeys.length > 0)
+
 onMounted(() => {
-  fetchModules()
-  fetchTree()
+  fetchPage()
 })
 
-async function fetchTree() {
+async function fetchPage() {
   state.loading = true
   try {
-    const response = await resourceApi.tree()
-    state.resources = response.data ?? []
-    const existingIds = new Set(flattenResourceTree(state.resources).map((item) => item.id))
-    state.checkedRowKeys = state.checkedRowKeys.filter((key) => existingIds.has(key))
+    const response = await resourceModuleApi.page({
+      current: state.page,
+      size: state.pageSize,
+      ...state.searchValues,
+    })
+    const data = response.data ?? {}
+    state.modules = data.records ?? []
+    state.total = data.total ?? 0
+    state.page = data.current ?? state.page
+    state.pageSize = data.size ?? state.pageSize
+    state.checkedRowKeys = state.checkedRowKeys.filter((key) =>
+      state.modules.some((item) => item.id === key),
+    )
   } finally {
     state.loading = false
   }
-}
-
-async function fetchModules() {
-  const response = await resourceModuleApi.selector()
-  state.moduleOptions = (response.data ?? []).map((item: any) => ({
-    label: item.name,
-    value: item.id,
-  }))
 }
 
 function openDetailModal(id: string) {
   detailModalRef.value?.openModal(id)
 }
 
-function openCreateModal(parentId?: string) {
-  formModalRef.value?.openModal(undefined, parentId)
+function openCreateModal() {
+  formModalRef.value?.openModal()
 }
 
 function openEditModal(id: string) {
@@ -240,8 +230,8 @@ function confirmDelete(value: string | string[]) {
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('pages.iam.resource.batchDeleteConfirm', { count: ids.length })
-      : t('pages.iam.resource.deleteConfirm'),
+      ? t('pages.iam.resource_module.batchDeleteConfirm', { count: ids.length })
+      : t('pages.iam.resource_module.deleteConfirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: () => deleteData(ids),
@@ -249,64 +239,15 @@ function confirmDelete(value: string | string[]) {
 }
 
 async function deleteData(ids: string[]) {
-  await resourceApi.remove({ ids })
+  await resourceModuleApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
+
   window.$message.success(t('common.often.deleteSuccess'))
-  await fetchTree()
-}
-
-function filterResourceTree(items: any[], searchValues: any): any[] {
-  return items
-    .map((item) => {
-      const children = filterResourceTree(item.children ?? [], searchValues)
-      if (matchesResource(item, searchValues) || children.length) {
-        return {
-          ...item,
-          children,
-        }
-      }
-      return null
-    })
-    .filter(Boolean)
-}
-
-function matchesResource(item: any, searchValues: any) {
-  return (
-    containsValue(item.code, searchValues.code) &&
-    containsValue(item.name, searchValues.name) &&
-    equalsValue(item.module_id, searchValues.module_id) &&
-    containsValue(item.parent_id, searchValues.parent_id) &&
-    equalsValue(item.resource_type, searchValues.resource_type) &&
-    equalsValue(item.status, searchValues.status)
-  )
-}
-
-function containsValue(source: unknown, target: unknown) {
-  if (target === undefined || target === null || target === '') {
-    return true
+  await fetchPage()
+  if (!state.modules.length && state.total > 0 && state.page > 1) {
+    state.page -= 1
+    await fetchPage()
   }
-  return String(source ?? '')
-    .toLowerCase()
-    .includes(String(target).toLowerCase())
-}
-
-function equalsValue(source: unknown, target: unknown) {
-  if (target === undefined || target === null || target === '') {
-    return true
-  }
-  return String(source ?? '') === String(target)
-}
-
-function flattenResourceTree(items: any[]) {
-  const result: any[] = []
-  const walk = (nodes: any[]) => {
-    nodes.forEach((node) => {
-      result.push(node)
-      walk(node.children ?? [])
-    })
-  }
-  walk(items)
-  return result
 }
 </script>
 
@@ -318,20 +259,20 @@ function flattenResourceTree(items: any[]) {
 
     <ProDataTable
       class="min-h-0 flex-1"
-      :title="t('pages.iam.resource.title')"
+      remote
+      :title="t('pages.iam.resource_module.title')"
       row-key="id"
-      :scroll-x="1800"
+      :scroll-x="1380"
       :columns="tableColumns"
-      :data="filteredResources"
+      :data="state.modules"
       :loading="state.loading"
-      :pagination="false"
+      :pagination="pagination"
       :checked-row-keys="state.checkedRowKeys"
       :on-update-checked-row-keys="handleCheckedRowKeys"
-      default-expand-all
     >
       <template #toolbar>
         <NFlex>
-          <NButton type="primary" ghost @click="openCreateModal()">
+          <NButton type="primary" ghost @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="ant-design:plus-outlined" />
@@ -339,7 +280,7 @@ function flattenResourceTree(items: any[]) {
             </template>
             {{ t('common.often.add') }}
           </NButton>
-          <NButton ghost :loading="state.loading" @click="fetchTree">
+          <NButton ghost :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="ant-design:reload-outlined" />
@@ -360,7 +301,7 @@ function flattenResourceTree(items: any[]) {
       </template>
     </ProDataTable>
 
-    <ModalForm ref="formModalRef" @saved="fetchTree" />
+    <ModalForm ref="formModalRef" @saved="fetchPage" />
     <ModalDetail ref="detailModalRef" />
   </NFlex>
 </template>

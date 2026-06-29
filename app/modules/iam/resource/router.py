@@ -13,13 +13,18 @@ from app.deps.db import get_db_session
 from app.modules.iam.resource.schema import (
     ResourceAdminPageQuery,
     ResourceCreateRequest,
+    ResourceModuleAdminPageQuery,
+    ResourceModuleCreateRequest,
+    ResourceModuleSelectorOption,
+    ResourceModuleUpdateRequest,
     ResourcePermissionBindRequest,
     ResourceTreeNode,
     ResourceUpdateRequest,
     SysResourcePermissionRelSchema,
+    SysResourceModuleSchema,
     SysResourceSchema,
 )
-from app.modules.iam.resource.service import ResourceService
+from app.modules.iam.resource.service import ResourceModuleService, ResourceService
 
 router = APIRouter()
 
@@ -102,7 +107,7 @@ async def page(
     code: str | None = Query(default=None, max_length=64),
     name: str | None = Query(default=None, max_length=64),
     resource_type: str | None = Query(default=None, max_length=32),
-    module: str | None = Query(default=None, max_length=64),
+    module_id: str | None = Query(default=None, max_length=64),
     parent_id: str | None = Query(default=None, max_length=64),
     status: str | None = Query(default=None, max_length=32),
 ) -> ApiResponse[PageData[SysResourceSchema]]:
@@ -111,7 +116,7 @@ async def page(
         code=code,
         name=name,
         resource_type=resource_type,
-        module=module,
+        module_id=module_id,
         parent_id=parent_id,
         status=status,
     )
@@ -161,3 +166,104 @@ async def bind_resource_permission(
     session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[SysResourcePermissionRelSchema]:
     return success(await ResourceService(db).bind_resource_permission(payload, session))
+
+
+@router.post(
+    "/sys/resource-modules/create",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resourcemodule:create")),
+    ],
+    response_model=ApiResponse[None],
+)
+async def create_resource_module(
+    payload: ResourceModuleCreateRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[None]:
+    await ResourceModuleService(db).create(payload)
+    return success()
+
+
+@router.post(
+    "/sys/resource-modules/update",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resourcemodule:update")),
+    ],
+    response_model=ApiResponse[None],
+)
+async def update_resource_module(
+    payload: ResourceModuleUpdateRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[None]:
+    await ResourceModuleService(db).update(payload)
+    return success()
+
+
+@router.post(
+    "/sys/resource-modules/delete",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resourcemodule:delete")),
+    ],
+    response_model=ApiResponse[None],
+)
+async def delete_resource_module(
+    payload: IdsRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[None]:
+    await ResourceModuleService(db).delete(payload)
+    return success()
+
+
+@router.get(
+    "/sys/resource-modules/detail",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resourcemodule:detail")),
+    ],
+    response_model=ApiResponse[SysResourceModuleSchema],
+)
+async def resource_module_detail(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    id: Annotated[Id, Query()],
+) -> ApiResponse[SysResourceModuleSchema]:
+    return success(await ResourceModuleService(db).detail(IdQuery(id=id)))
+
+
+@router.get(
+    "/sys/resource-modules/page",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resourcemodule:page")),
+    ],
+    response_model=ApiResponse[PageData[SysResourceModuleSchema]],
+)
+async def resource_module_page(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current: Current = 1,
+    size: Size = 20,
+    name: str | None = Query(default=None, max_length=64),
+    code: str | None = Query(default=None, max_length=64),
+    status: str | None = Query(default=None, max_length=32),
+) -> ApiResponse[PageData[SysResourceModuleSchema]]:
+    query = ResourceModuleAdminPageQuery(
+        pagination=PageQuery(current=current, size=size),
+        name=name,
+        code=code,
+        status=status,
+    )
+    return success(await ResourceModuleService(db).page_admin(query))
+
+
+@router.get(
+    "/sys/resource-modules/selector",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+    ],
+    response_model=ApiResponse[list[ResourceModuleSelectorOption]],
+)
+async def resource_module_selector(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[list[ResourceModuleSelectorOption]]:
+    return success(await ResourceModuleService(db).selector())

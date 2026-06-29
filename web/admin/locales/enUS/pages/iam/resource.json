@@ -5,7 +5,7 @@
   "name": "Resource Name",
   "resourceType": "Resource Type",
   "parentId": "Parent Resource ID",
-  "module": "Module",
+  "module": "Resource Module",
   "path": "Path",
   "component": "Component",
   "redirect": "Redirect",

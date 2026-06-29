@@ -64,7 +64,7 @@ defineExpose({
             {{ displayValue(state.resource.parent_id) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('pages.iam.resource.module')">
-            {{ displayValue(state.resource.module) }}
+            {{ displayValue(state.resource.module_id_name || state.resource.module_id) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('pages.iam.resource.path')">
             {{ displayValue(state.resource.path) }}

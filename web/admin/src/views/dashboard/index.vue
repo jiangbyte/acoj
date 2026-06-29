@@ -3,12 +3,12 @@
     <n-h2>{{ $t('dashboard.title') }}</n-h2>
     <n-grid cols="1 s:2 l:4" responsive="screen" :x-gap="16" :y-gap="16">
       <n-grid-item>
-        <n-card :title="$t('dashboard.pendingProblems')" :bordered="false">
+        <n-card :title="$t('dashboard.pendingTasks')" :bordered="false">
           <n-statistic :label="$t('dashboard.todayNew')" value="12" />
         </n-card>
       </n-grid-item>
       <n-grid-item>
-        <n-card :title="$t('dashboard.submissions')" :bordered="false">
+        <n-card :title="$t('dashboard.activityRecords')" :bordered="false">
           <n-statistic :label="$t('dashboard.last24Hours')" value="248" />
         </n-card>
       </n-grid-item>

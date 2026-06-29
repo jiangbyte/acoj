@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui'
-import { resourceApi } from '@/api'
+import { resourceApi, resourceModuleApi } from '@/api'
 import { createRequiredRule, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -16,7 +16,7 @@ const defaultFormData = {
   name: '',
   resource_type: '',
   parent_id: '',
-  module: '',
+  module_id: '',
   path: '',
   component: '',
   redirect: '',
@@ -38,6 +38,7 @@ const state = reactive({
   dataId: null as string | null,
   formModel: { ...defaultFormData },
   resourceTree: [] as any[],
+  moduleOptions: [] as any[],
 })
 
 const modalTitle = computed(() =>
@@ -48,7 +49,7 @@ const rules = computed<FormRules>(() => ({
   code: createRequiredRule(t, t('pages.iam.resource.code'), 'input'),
   name: createRequiredRule(t, t('pages.iam.resource.name'), 'input'),
   resource_type: createRequiredRule(t, t('pages.iam.resource.resourceType'), 'change'),
-  module: createRequiredRule(t, t('pages.iam.resource.module'), 'input'),
+  module_id: createRequiredRule(t, t('pages.iam.resource.module'), 'change'),
   status: createRequiredRule(t, t('common.often.status'), 'change'),
 }))
 
@@ -63,10 +64,13 @@ async function openModal(id?: string, parentId?: string) {
   state.dataId = id ?? null
   state.formModel = { ...defaultFormData, parent_id: parentId ?? '' }
   state.showModal = true
-  await fetchResourceTree()
+  await Promise.all([fetchResourceTree(), fetchModules()])
 
   if (id) {
     await fetchDetail(id)
+  } else if (parentId) {
+    const parent = findResourceNode(state.resourceTree, parentId)
+    state.formModel.module_id = parent?.module_id ?? ''
   }
 }
 
@@ -80,12 +84,21 @@ async function fetchResourceTree() {
   }
 }
 
+async function fetchModules() {
+  const response = await resourceModuleApi.selector()
+  state.moduleOptions = (response.data ?? []).map((item: any) => ({
+    label: item.name,
+    value: item.id,
+  }))
+}
+
 async function fetchDetail(id: string) {
   state.loading = true
   try {
     const response = await resourceApi.detail({ id })
     state.formModel = Object.assign({}, defaultFormData, response.data, {
       parent_id: response.data?.parent_id ?? '',
+      module_id: response.data?.module_id ?? '',
       path: response.data?.path ?? '',
       component: response.data?.component ?? '',
       redirect: response.data?.redirect ?? '',
@@ -113,7 +126,7 @@ async function submitForm() {
       code: state.formModel.code.trim(),
       name: state.formModel.name.trim(),
       parent_id: toNullableString(state.formModel.parent_id),
-      module: state.formModel.module.trim(),
+      module_id: toNullableString(state.formModel.module_id),
       path: toNullableString(state.formModel.path),
       component: toNullableString(state.formModel.component),
       redirect: toNullableString(state.formModel.redirect),
@@ -229,8 +242,13 @@ function findResourceNode(items: any[], id: string): any | null {
               children-field="children"
             />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.resource.module')" path="module">
-            <NInput v-model:value="state.formModel.module" />
+          <NFormItem :label="t('pages.iam.resource.module')" path="module_id">
+            <NSelect
+              v-model:value="state.formModel.module_id"
+              filterable
+              clearable
+              :options="state.moduleOptions"
+            />
           </NFormItem>
           <NFormItem :label="t('pages.iam.resource.path')" path="path">
             <NInput v-model:value="state.formModel.path" />

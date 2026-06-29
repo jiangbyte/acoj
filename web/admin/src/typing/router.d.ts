@@ -23,8 +23,11 @@ declare module 'vue-router' {
     // 资源类型，决定该资源是否生成路由、菜单或仅作为权限节点。
     resource_type?: AppRoute.ResourceType
 
-    // 所属模块，保留给后续按模块分组、筛选或权限隔离使用。
-    module?: string | null
+    // 所属资源模块 ID，保留给后续按模块分组、筛选或权限隔离使用。
+    module_id?: string | null
+
+    // 所属资源模块名称，用于回显。
+    module_id_name?: string | null
 
     // 前端路由路径，例如 /dashboard。
     path?: string | null
@@ -86,7 +89,8 @@ declare global {
       code: string
       name: string
       resource_type: ResourceType
-      module?: string | null
+      module_id?: string | null
+      module_id_name?: string | null
       path?: string | null
       component?: string | null
       redirect?: string | null
