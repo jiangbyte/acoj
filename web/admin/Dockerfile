@@ -13,10 +13,14 @@ RUN pnpm build
 FROM nginx:1.27-alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
+COPY docker-entrypoint.d/40-runtime-env.sh /docker-entrypoint.d/40-runtime-env.sh
+
+RUN chmod +x /docker-entrypoint.d/40-runtime-env.sh
 
 RUN printf '%s\n' \
     'server {' \
-    '    listen 80;' \
+    '    listen 81;' \
+    '    listen [::]:81;' \
     '    server_name _;' \
     '    root /usr/share/nginx/html;' \
     '    index index.html;' \
@@ -34,4 +38,4 @@ RUN printf '%s\n' \
     '}' \
     > /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+EXPOSE 81
