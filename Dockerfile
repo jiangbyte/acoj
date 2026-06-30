@@ -1,5 +1,5 @@
-FROM python:3.11
 #FROM python:3.11-slim
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/python:3.11-slim
 #FROM docker.xuanyuan.run/library/python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
