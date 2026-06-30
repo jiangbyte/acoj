@@ -15,8 +15,12 @@ interface AuthUserInfo {
   roleIds: string[]
   deptIds: string[]
   groupIds: string[]
+  roleIdNames?: { id: string; name: string }[]
+  deptIdNames?: { id: string; name: string }[]
+  groupIdNames?: { id: string; name: string }[]
   permissionKeys: string[]
   buttonCodes: string[]
+  profile?: Record<string, unknown> | null
   loginAt: number
 }
 
@@ -80,8 +84,12 @@ export const useAuthStore = defineStore('auth-store', {
         roleIds: meResponse.data.role_ids ?? [],
         deptIds: meResponse.data.dept_ids ?? [],
         groupIds: meResponse.data.group_ids ?? [],
+        roleIdNames: meResponse.data.role_id_names ?? [],
+        deptIdNames: meResponse.data.dept_id_names ?? [],
+        groupIdNames: meResponse.data.group_id_names ?? [],
         permissionKeys: meResponse.data.permission_keys ?? [],
         buttonCodes: meResponse.data.button_codes ?? [],
+        profile: meResponse.data.profile ?? null,
         loginAt: now,
       }
 
@@ -94,6 +102,32 @@ export const useAuthStore = defineStore('auth-store', {
       dictStore.syncDictTree()
       await dictStore.refreshDict()
       await router.push(getSafeRedirect(redirect))
+    },
+
+    async refreshUserInfo() {
+      const meResponse = await authApi.me()
+      const userInfo: AuthUserInfo = {
+        ...(this.userInfo ?? { loginAt: Date.now() }),
+        accountId: meResponse.data.account_id,
+        account: meResponse.data.account,
+        accountType: meResponse.data.account_type,
+        name: meResponse.data.name,
+        nickname: meResponse.data.nickname,
+        avatar: meResponse.data.avatar,
+        roleIds: meResponse.data.role_ids ?? [],
+        deptIds: meResponse.data.dept_ids ?? [],
+        groupIds: meResponse.data.group_ids ?? [],
+        roleIdNames: meResponse.data.role_id_names ?? [],
+        deptIdNames: meResponse.data.dept_id_names ?? [],
+        groupIdNames: meResponse.data.group_id_names ?? [],
+        permissionKeys: meResponse.data.permission_keys ?? [],
+        buttonCodes: meResponse.data.button_codes ?? [],
+        profile: meResponse.data.profile ?? null,
+      }
+
+      localStorage.setItem(userInfoKey, JSON.stringify(userInfo))
+      this.userInfo = userInfo
+      return meResponse.data
     },
 
     hasPermission(permissionKey: string) {

@@ -1,11 +1,9 @@
 {
-  "user_center": "User Center",
   "project_home": "Project Home",
   "login_out": "Log Out",
   "login_out_title": "Log Out",
   "login_out_content": "Log out of the current account?",
   "login_out_success": "Logged out",
-  "user_center_todo": "User center is not connected yet",
   "light": "Light",
   "dark": "Dark",
   "system": "System",

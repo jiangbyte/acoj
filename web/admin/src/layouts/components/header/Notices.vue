@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { messageApi } from '@/api'
 import { translateLocale } from '@/utils'
+import MessageDetailModal from '@/components/message/MessageDetailModal.vue'
 import NoticeList, { type NoticeItem } from '../common/NoticeList.vue'
 
 const { t } = useI18n()
@@ -58,8 +59,7 @@ const summary = ref({
   total: 0,
 })
 const currentTab = ref<NoticeType>(0)
-const showDetailModal = ref(false)
-const selectedNotice = ref<NoticeSource | null>(null)
+const detailModalRef = ref<InstanceType<typeof MessageDetailModal> | null>(null)
 let eventSource: EventSource | null = null
 let pollTimer: number | null = null
 
@@ -76,12 +76,6 @@ const hasMore = computed(() => ({
 }))
 
 const unreadCount = computed(() => summary.value.total)
-const detailModalTitle = computed(() => {
-  if (selectedNotice.value?.sourceType === 'todo') {
-    return t('resource.message.todo.detail_todo')
-  }
-  return selectedNotice.value?.title || t('common.often.detail')
-})
 
 onMounted(() => {
   refresh()
@@ -194,21 +188,13 @@ async function handleOpen(id: string) {
   if (!item) {
     return
   }
-  selectedNotice.value = item
-  showDetailModal.value = true
-  if (item.isRead) {
-    return
-  }
-  item.isRead = true
-  applyLocalReadCount(item)
-  if (item.sourceType === 'notification') {
-    await messageApi.readNotifications({ ids: [item.sourceId] })
-  } else if (item.sourceType === 'message') {
-    await messageApi.readThread({ thread_id: item.sourceId })
-  } else if (item.sourceType === 'todo') {
-    await messageApi.startTodo({ todo_id: item.sourceId })
-  }
-  await refreshSummary()
+  await detailModalRef.value?.open(item.sourceType as any, {
+    ...item,
+    id: item.sourceId,
+    is_read: item.isRead,
+    assignee_status: item.isRead ? 'IN_PROGRESS' : null,
+    unread_count: item.isRead ? 0 : 1,
+  })
 }
 
 function findNotice(id: string) {
@@ -230,6 +216,15 @@ function applyLocalReadCount(item: NoticeSource) {
     summary.value.todo_pending -= 1
   }
   summary.value.total = Math.max(0, summary.value.total - 1)
+}
+
+async function handleDetailChanged(payload: { type: string; id: string }) {
+  const item = findNotice(`${payload.type}:${payload.id}`)
+  if (item && !item.isRead) {
+    item.isRead = true
+    applyLocalReadCount(item)
+  }
+  await refreshSummary()
 }
 
 function mergeNoticeRecords(
@@ -444,37 +439,5 @@ function formatDate(value?: string | null) {
     </n-tabs>
   </n-popover>
 
-  <n-modal
-    v-model:show="showDetailModal"
-    preset="card"
-    draggable
-    :mask-closable="false"
-    :title="detailModalTitle"
-    style="width: 560px"
-  >
-    <n-descriptions label-placement="left" bordered :column="1">
-      <n-descriptions-item :label="t('common.often.status')">
-        <n-tag :type="selectedNotice?.isRead ? 'success' : 'warning'" :bordered="false">
-          {{
-            selectedNotice?.isRead
-              ? t('app.notice.read')
-              : t('app.notice.unread')
-          }}
-        </n-tag>
-      </n-descriptions-item>
-      <n-descriptions-item v-if="selectedNotice?.tagTitle" :label="t('app.notice.category')">
-        <n-tag :type="selectedNotice?.tagType" :bordered="false">
-          {{ selectedNotice?.tagTitle }}
-        </n-tag>
-      </n-descriptions-item>
-      <n-descriptions-item :label="t('app.notice.time')">
-        {{ selectedNotice?.date || '-' }}
-      </n-descriptions-item>
-      <n-descriptions-item :label="t('app.notice.content')">
-        <n-ellipsis :line-clamp="8">
-          {{ selectedNotice?.description || selectedNotice?.title || '-' }}
-        </n-ellipsis>
-      </n-descriptions-item>
-    </n-descriptions>
-  </n-modal>
+  <MessageDetailModal ref="detailModalRef" @changed="handleDetailChanged" />
 </template>

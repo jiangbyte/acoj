@@ -46,6 +46,18 @@ def register_current_user_routes(router: APIRouter, account_type: AccountType) -
         )
         return success(await TodoService(db).page_my_todos(query, session))
 
+    @router.get(
+        "/message/todos/my-detail",
+        dependencies=dependencies,
+        response_model=ApiResponse[TodoSchema],
+    )
+    async def my_todo_detail(
+        db: Annotated[AsyncSession, Depends(get_db_session)],
+        session: Annotated[SessionPayload, Depends(get_current_session)],
+        id: Annotated[Id, Query()],
+    ) -> ApiResponse[TodoSchema]:
+        return success(await TodoService(db).my_todo_detail(IdQuery(id=id), session))
+
     @router.post(
         "/message/todos/start",
         dependencies=dependencies,

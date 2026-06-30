@@ -1,11 +1,9 @@
 {
-  "user_center": "用户中心",
   "project_home": "项目首页",
   "login_out": "退出登录",
   "login_out_title": "退出登录",
   "login_out_content": "确认退出当前账号？",
   "login_out_success": "已退出",
-  "user_center_todo": "用户中心待接入",
   "light": "浅色",
   "dark": "深色",
   "system": "跟随系统",

@@ -11,6 +11,24 @@ const routeResourceTypes: AppRoute.ResourceType[] = ['CATALOG', 'MENU', 'PAGE']
 // 能点击跳转的资源类型。目录只承担分组作用，不直接渲染 RouterLink。
 const clickableResourceTypes: AppRoute.ResourceType[] = ['MENU', 'PAGE']
 
+const innerAppRoutes: RouteRecordRaw[] = [
+  {
+    path: '/usercenter',
+    name: 'usercenter',
+    component: () => import('@/views/usercenter/index.vue'),
+    meta: {
+      code: 'usercenter',
+      name: 'User Center',
+      locale_key: 'app.user_center.title',
+      resource_type: 'PAGE',
+      is_visible: false,
+      is_cache: false,
+      is_affix: false,
+      status: 'ENABLED',
+    },
+  },
+]
+
 /**
  * 根据资源列表生成 Vue Router 动态路由。
  *
@@ -43,7 +61,10 @@ export function createRoutes(resources: AppRoute.RowRoute[]): RouteRecordRaw {
   }
 
   setRedirect(resultRoutes)
-  appRootRoute.children = resultRoutes as unknown as RouteRecordRaw[]
+  appRootRoute.children = [
+    ...innerAppRoutes,
+    ...(resultRoutes as unknown as RouteRecordRaw[]),
+  ]
 
   return appRootRoute
 }
