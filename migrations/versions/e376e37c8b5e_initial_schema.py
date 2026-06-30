@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = 'ccf96bd60ab3'
+revision: str = 'e376e37c8b5e'
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -31,6 +31,194 @@ def upgrade() -> None:
     sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
     sa.PrimaryKeyConstraint('account_id', name=op.f('pk_admin_user_profile'))
     )
+    op.create_table('msg_group',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('name', sa.String(length=128), nullable=False, comment='群组名称'),
+    sa.Column('owner_account_type', sa.String(length=32), nullable=True, comment='群主账户类型'),
+    sa.Column('owner_account_id', sa.String(length=64), nullable=True, comment='群主账户ID'),
+    sa.Column('avatar', sa.String(length=500), nullable=True, comment='群头像'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('description', sa.Text(), nullable=True, comment='描述'),
+    sa.Column('extra', sa.JSON(), nullable=False, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_group'))
+    )
+    op.create_table('msg_group_member',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('group_id', sa.String(length=64), nullable=False, comment='群组ID'),
+    sa.Column('account_type', sa.String(length=32), nullable=False, comment='账户类型'),
+    sa.Column('account_id', sa.String(length=64), nullable=False, comment='账户ID'),
+    sa.Column('nickname', sa.String(length=64), nullable=True, comment='群昵称'),
+    sa.Column('is_muted', sa.Boolean(), nullable=False, comment='是否免打扰'),
+    sa.Column('joined_at', sa.DateTime(timezone=True), nullable=False, comment='加入时间'),
+    sa.Column('left_at', sa.DateTime(timezone=True), nullable=True, comment='退出时间'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_group_member')),
+    sa.UniqueConstraint('group_id', 'account_type', 'account_id', name='uq_msg_group_member_account')
+    )
+    op.create_index('ix_msg_group_member_account', 'msg_group_member', ['account_type', 'account_id'], unique=False)
+    op.create_table('msg_message',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('thread_id', sa.String(length=64), nullable=False, comment='会话ID'),
+    sa.Column('parent_id', sa.String(length=64), nullable=True, comment='回复消息ID'),
+    sa.Column('sender_type', sa.String(length=32), nullable=False, comment='发送方类型'),
+    sa.Column('sender_account_type', sa.String(length=32), nullable=True, comment='发送账户类型'),
+    sa.Column('sender_account_id', sa.String(length=64), nullable=True, comment='发送账户ID'),
+    sa.Column('sender_name', sa.String(length=128), nullable=True, comment='发送方快照名称'),
+    sa.Column('content', sa.Text(), nullable=False, comment='内容'),
+    sa.Column('content_type', sa.String(length=32), nullable=False, comment='内容格式'),
+    sa.Column('reply_count', sa.Integer(), nullable=False, comment='回复数'),
+    sa.Column('is_revoked', sa.Boolean(), nullable=False, comment='是否撤回'),
+    sa.Column('extra', sa.JSON(), nullable=False, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_message'))
+    )
+    op.create_index('ix_msg_message_parent', 'msg_message', ['parent_id'], unique=False)
+    op.create_index('ix_msg_message_thread_created', 'msg_message', ['thread_id', 'created_at'], unique=False)
+    op.create_table('msg_message_attachment',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('message_id', sa.String(length=64), nullable=False, comment='消息ID'),
+    sa.Column('name', sa.String(length=255), nullable=False, comment='文件名'),
+    sa.Column('url', sa.String(length=1024), nullable=False, comment='文件地址'),
+    sa.Column('content_type', sa.String(length=128), nullable=True, comment='文件类型'),
+    sa.Column('size', sa.BigInteger(), nullable=True, comment='文件大小'),
+    sa.Column('sort', sa.Integer(), nullable=False, comment='排序'),
+    sa.Column('extra', sa.JSON(), nullable=False, comment='扩展信息'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_message_attachment'))
+    )
+    op.create_index('ix_msg_message_attachment_message', 'msg_message_attachment', ['message_id', 'sort'], unique=False)
+    op.create_table('msg_message_reaction',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('message_id', sa.String(length=64), nullable=False, comment='消息ID'),
+    sa.Column('account_type', sa.String(length=32), nullable=False, comment='账户类型'),
+    sa.Column('account_id', sa.String(length=64), nullable=False, comment='账户ID'),
+    sa.Column('reaction', sa.String(length=64), nullable=False, comment='反应'),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, comment='创建时间'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_message_reaction')),
+    sa.UniqueConstraint('message_id', 'account_type', 'account_id', 'reaction', name='uq_msg_message_reaction_account')
+    )
+    op.create_index('ix_msg_message_reaction_message', 'msg_message_reaction', ['message_id'], unique=False)
+    op.create_table('msg_message_receipt',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('message_id', sa.String(length=64), nullable=False, comment='消息ID'),
+    sa.Column('thread_id', sa.String(length=64), nullable=False, comment='会话ID'),
+    sa.Column('account_type', sa.String(length=32), nullable=False, comment='账户类型'),
+    sa.Column('account_id', sa.String(length=64), nullable=False, comment='账户ID'),
+    sa.Column('read_at', sa.DateTime(timezone=True), nullable=True, comment='阅读时间'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_message_receipt')),
+    sa.UniqueConstraint('message_id', 'account_type', 'account_id', name='uq_msg_message_receipt_account')
+    )
+    op.create_index('ix_msg_message_receipt_account', 'msg_message_receipt', ['account_type', 'account_id'], unique=False)
+    op.create_table('msg_notification',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('title', sa.String(length=255), nullable=False, comment='标题'),
+    sa.Column('content', sa.Text(), nullable=False, comment='内容'),
+    sa.Column('content_type', sa.String(length=32), nullable=False, comment='内容格式'),
+    sa.Column('severity', sa.String(length=32), nullable=False, comment='等级'),
+    sa.Column('target_scope', sa.String(length=32), nullable=False, comment='目标范围'),
+    sa.Column('target_account_type', sa.String(length=32), nullable=True, comment='目标账户类型'),
+    sa.Column('target_account_id', sa.String(length=64), nullable=True, comment='目标账户ID'),
+    sa.Column('sender_account_type', sa.String(length=32), nullable=True, comment='发送账户类型'),
+    sa.Column('sender_account_id', sa.String(length=64), nullable=True, comment='发送账户ID'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('publish_at', sa.DateTime(timezone=True), nullable=True, comment='发布时间'),
+    sa.Column('revoked_at', sa.DateTime(timezone=True), nullable=True, comment='撤回时间'),
+    sa.Column('extra', sa.JSON(), nullable=False, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_notification'))
+    )
+    op.create_index('ix_msg_notification_status_scope_publish', 'msg_notification', ['status', 'target_scope', 'publish_at'], unique=False)
+    op.create_index('ix_msg_notification_target_account', 'msg_notification', ['target_account_type', 'target_account_id'], unique=False)
+    op.create_table('msg_notification_read',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('notification_id', sa.String(length=64), nullable=False, comment='通知ID'),
+    sa.Column('account_type', sa.String(length=32), nullable=False, comment='账户类型'),
+    sa.Column('account_id', sa.String(length=64), nullable=False, comment='账户ID'),
+    sa.Column('read_at', sa.DateTime(timezone=True), nullable=False, comment='阅读时间'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_notification_read')),
+    sa.UniqueConstraint('notification_id', 'account_type', 'account_id', name='uq_msg_notification_read_account')
+    )
+    op.create_index('ix_msg_notification_read_account', 'msg_notification_read', ['account_type', 'account_id'], unique=False)
+    op.create_table('msg_thread',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('thread_type', sa.String(length=32), nullable=False, comment='会话类型'),
+    sa.Column('title', sa.String(length=255), nullable=True, comment='会话标题'),
+    sa.Column('group_id', sa.String(length=64), nullable=True, comment='消息群组ID'),
+    sa.Column('created_account_type', sa.String(length=32), nullable=True, comment='创建账户类型'),
+    sa.Column('created_account_id', sa.String(length=64), nullable=True, comment='创建账户ID'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('last_message_id', sa.String(length=64), nullable=True, comment='最后消息ID'),
+    sa.Column('last_message_at', sa.DateTime(timezone=True), nullable=True, comment='最后消息时间'),
+    sa.Column('extra', sa.JSON(), nullable=False, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_thread'))
+    )
+    op.create_index('ix_msg_thread_group', 'msg_thread', ['group_id'], unique=False)
+    op.create_index('ix_msg_thread_type_status_last', 'msg_thread', ['thread_type', 'status', 'last_message_at'], unique=False)
+    op.create_table('msg_thread_participant',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('thread_id', sa.String(length=64), nullable=False, comment='会话ID'),
+    sa.Column('account_type', sa.String(length=32), nullable=False, comment='账户类型'),
+    sa.Column('account_id', sa.String(length=64), nullable=False, comment='账户ID'),
+    sa.Column('unread_count', sa.Integer(), nullable=False, comment='未读数'),
+    sa.Column('last_read_message_id', sa.String(length=64), nullable=True, comment='最后已读消息ID'),
+    sa.Column('last_read_at', sa.DateTime(timezone=True), nullable=True, comment='最后阅读时间'),
+    sa.Column('is_muted', sa.Boolean(), nullable=False, comment='是否免打扰'),
+    sa.Column('joined_at', sa.DateTime(timezone=True), nullable=False, comment='加入时间'),
+    sa.Column('left_at', sa.DateTime(timezone=True), nullable=True, comment='退出时间'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_thread_participant')),
+    sa.UniqueConstraint('thread_id', 'account_type', 'account_id', name='uq_msg_thread_participant_account')
+    )
+    op.create_index('ix_msg_thread_participant_account', 'msg_thread_participant', ['account_type', 'account_id'], unique=False)
+    op.create_table('msg_todo',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('title', sa.String(length=255), nullable=False, comment='标题'),
+    sa.Column('content', sa.Text(), nullable=True, comment='内容'),
+    sa.Column('content_type', sa.String(length=32), nullable=False, comment='内容格式'),
+    sa.Column('priority', sa.String(length=32), nullable=False, comment='优先级'),
+    sa.Column('target_scope', sa.String(length=32), nullable=False, comment='目标范围'),
+    sa.Column('target_account_type', sa.String(length=32), nullable=True, comment='目标账户类型'),
+    sa.Column('target_account_id', sa.String(length=64), nullable=True, comment='目标账户ID'),
+    sa.Column('creator_account_type', sa.String(length=32), nullable=True, comment='创建账户类型'),
+    sa.Column('creator_account_id', sa.String(length=64), nullable=True, comment='创建账户ID'),
+    sa.Column('source_type', sa.String(length=64), nullable=True, comment='来源类型'),
+    sa.Column('source_id', sa.String(length=64), nullable=True, comment='来源ID'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('due_at', sa.DateTime(timezone=True), nullable=True, comment='截止时间'),
+    sa.Column('extra', sa.JSON(), nullable=False, comment='扩展信息'),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
+    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
+    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_todo'))
+    )
+    op.create_index('ix_msg_todo_status_scope_due', 'msg_todo', ['status', 'target_scope', 'due_at'], unique=False)
+    op.create_index('ix_msg_todo_target_account', 'msg_todo', ['target_account_type', 'target_account_id'], unique=False)
+    op.create_table('msg_todo_assignee',
+    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
+    sa.Column('todo_id', sa.String(length=64), nullable=False, comment='待办ID'),
+    sa.Column('account_type', sa.String(length=32), nullable=False, comment='账户类型'),
+    sa.Column('account_id', sa.String(length=64), nullable=False, comment='账户ID'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='处理状态'),
+    sa.Column('read_at', sa.DateTime(timezone=True), nullable=True, comment='阅读时间'),
+    sa.Column('started_at', sa.DateTime(timezone=True), nullable=True, comment='开始时间'),
+    sa.Column('completed_at', sa.DateTime(timezone=True), nullable=True, comment='完成时间'),
+    sa.Column('cancelled_at', sa.DateTime(timezone=True), nullable=True, comment='取消时间'),
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_msg_todo_assignee')),
+    sa.UniqueConstraint('todo_id', 'account_type', 'account_id', name='uq_msg_todo_assignee_account')
+    )
+    op.create_index('ix_msg_todo_assignee_account', 'msg_todo_assignee', ['account_type', 'account_id', 'status'], unique=False)
     op.create_table('portal_user_profile',
     sa.Column('account_id', sa.String(length=64), nullable=False, comment='账户ID'),
     sa.Column('name', sa.String(length=64), nullable=True, comment='姓名'),
@@ -384,5 +572,32 @@ def downgrade() -> None:
     op.drop_table('sys_account_dept_rel')
     op.drop_table('sys_account')
     op.drop_table('portal_user_profile')
+    op.drop_index('ix_msg_todo_assignee_account', table_name='msg_todo_assignee')
+    op.drop_table('msg_todo_assignee')
+    op.drop_index('ix_msg_todo_target_account', table_name='msg_todo')
+    op.drop_index('ix_msg_todo_status_scope_due', table_name='msg_todo')
+    op.drop_table('msg_todo')
+    op.drop_index('ix_msg_thread_participant_account', table_name='msg_thread_participant')
+    op.drop_table('msg_thread_participant')
+    op.drop_index('ix_msg_thread_type_status_last', table_name='msg_thread')
+    op.drop_index('ix_msg_thread_group', table_name='msg_thread')
+    op.drop_table('msg_thread')
+    op.drop_index('ix_msg_notification_read_account', table_name='msg_notification_read')
+    op.drop_table('msg_notification_read')
+    op.drop_index('ix_msg_notification_target_account', table_name='msg_notification')
+    op.drop_index('ix_msg_notification_status_scope_publish', table_name='msg_notification')
+    op.drop_table('msg_notification')
+    op.drop_index('ix_msg_message_receipt_account', table_name='msg_message_receipt')
+    op.drop_table('msg_message_receipt')
+    op.drop_index('ix_msg_message_reaction_message', table_name='msg_message_reaction')
+    op.drop_table('msg_message_reaction')
+    op.drop_index('ix_msg_message_attachment_message', table_name='msg_message_attachment')
+    op.drop_table('msg_message_attachment')
+    op.drop_index('ix_msg_message_thread_created', table_name='msg_message')
+    op.drop_index('ix_msg_message_parent', table_name='msg_message')
+    op.drop_table('msg_message')
+    op.drop_index('ix_msg_group_member_account', table_name='msg_group_member')
+    op.drop_table('msg_group_member')
+    op.drop_table('msg_group')
     op.drop_table('admin_user_profile')
     # ### end Alembic commands ###

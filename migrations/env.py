@@ -14,6 +14,9 @@ from app.modules.iam.group import model as _iam_group_model  # noqa: F401
 from app.modules.iam.position import model as _iam_position_model  # noqa: F401
 from app.modules.iam.resource import model as _iam_resource_model  # noqa: F401
 from app.modules.iam.role import model as _iam_role_model  # noqa: F401
+from app.modules.message.message import model as _message_model  # noqa: F401
+from app.modules.message.notification import model as _notification_model  # noqa: F401
+from app.modules.message.todo import model as _todo_model  # noqa: F401
 from app.modules.sys.banner import model as _banner_model  # noqa: F401
 from app.modules.sys.dict import model as _dict_model  # noqa: F401
 from app.modules.sys.file import model as _file_model  # noqa: F401

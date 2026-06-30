@@ -207,6 +207,8 @@ python scripts/check_migration.py
 python scripts/migrate.py
 ```
 
+清空 `migrations/versions` 后重新生成完整迁移的步骤见 [docs/migration.md](docs/migration.md)。
+
 管理端：
 
 ```bash

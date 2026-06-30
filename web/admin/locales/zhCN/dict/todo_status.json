@@ -1,0 +1,7 @@
+{
+  "title": "待办状态",
+  "pending": "待处理",
+  "in_progress": "处理中",
+  "completed": "已完成",
+  "cancelled": "已取消"
+}
