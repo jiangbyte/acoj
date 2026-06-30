@@ -2,6 +2,9 @@
 #FROM docker.xuanyuan.run/library/node:22-alpine AS build
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/node:22-alpine AS build
 
+# Docker build 环境通常没有 IPv6，强制 Node.js 优先解析 IPv4（AAAA → A）
+ENV NODE_OPTIONS="--dns-result-order=ipv4first"
+
 WORKDIR /app
 
 RUN corepack enable
