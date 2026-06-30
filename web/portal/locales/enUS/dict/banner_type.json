@@ -1,0 +1,9 @@
+{
+  "title": "Banner Type",
+  "carousel": "Carousel",
+  "hero": "Hero",
+  "notice": "Notice",
+  "card": "Card",
+  "popup": "Popup",
+  "sidebar": "Sidebar"
+}

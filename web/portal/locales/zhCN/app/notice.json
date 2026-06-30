@@ -1,0 +1,20 @@
+{
+  "system_ready_title": "系统初始化完成",
+  "system_tag": "系统",
+  "system_ready_description": "管理端基础布局已经准备就绪。",
+  "just_now": "刚刚",
+  "placeholder_title": "待接入真实通知",
+  "placeholder_tag": "占位",
+  "placeholder_description": "后续可以替换为后端消息接口。",
+  "today": "今天",
+  "todo_title": "完善业务菜单",
+  "todo_tag": "待办",
+  "recently": "近期",
+  "empty": "暂无数据",
+  "read": "已读",
+  "unread": "未读",
+  "category": "分类",
+  "time": "时间",
+  "content": "内容",
+  "load_more": "加载更多"
+}

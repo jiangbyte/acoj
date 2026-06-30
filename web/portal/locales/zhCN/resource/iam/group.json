@@ -1,0 +1,18 @@
+{
+  "title": "用户组管理",
+  "id": "用户组 ID",
+  "name": "用户组名称",
+  "description": "描述",
+  "status": "状态",
+  "extra": "扩展信息",
+  "add_group": "新增用户组",
+  "edit_group": "编辑用户组",
+  "detail_group": "用户组详情",
+  "grant": "授权",
+  "grant_user": "授权用户",
+  "grant_role": "授权角色",
+  "grant_resource": "授权资源",
+  "grant_permission": "授权权限",
+  "delete_confirm": "确认删除该用户组？",
+  "batch_delete_confirm": "确认删除选中的 {count} 个用户组？"
+}

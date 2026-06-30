@@ -1,0 +1,21 @@
+{
+  "title": "Messages",
+  "threads": "Threads",
+  "groups": "Groups",
+  "thread_id": "Thread ID",
+  "thread_title": "Thread Title",
+  "thread_type": "Thread Type",
+  "group_id": "Group ID",
+  "group_name": "Group Name",
+  "member_count": "Members",
+  "last_message_at": "Last Message At",
+  "content": "Content",
+  "send_system": "Send System Message",
+  "send_success": "Sent successfully",
+  "detail_message": "Message Detail",
+  "system_sender": "System",
+  "no_messages": "No messages",
+  "reply": "Reply",
+  "reply_required": "Please enter a reply",
+  "reply_placeholder": "Enter a reply"
+}

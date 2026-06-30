@@ -1,0 +1,20 @@
+{
+  "not_found_title": "Page not found",
+  "not_found_description": "Please check whether the URL is correct.",
+  "back_workbench": "Back to workbench",
+  "request": {
+    "network": "Network error. Please try again later.",
+    "status_default": "Request failed ({status})",
+    "status": {
+      "bad_request": "Invalid request parameters.",
+      "unauthorized": "Your session has expired. Please sign in again.",
+      "forbidden": "You do not have permission to access this resource.",
+      "not_found": "The requested resource does not exist.",
+      "validation_error": "Request validation failed.",
+      "server_error": "Server error. Please try again later.",
+      "bad_gateway": "Bad gateway.",
+      "service_unavailable": "Service unavailable. Please try again later.",
+      "gateway_timeout": "Gateway timeout. Please try again later."
+    }
+  }
+}
