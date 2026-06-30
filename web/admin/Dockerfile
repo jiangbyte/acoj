@@ -1,4 +1,5 @@
-FROM node:22-alpine AS build
+#FROM node:22-alpine AS build
+FROM docker.xuanyuan.run/library/node:22-alpine AS build
 
 WORKDIR /app
 
@@ -10,32 +11,16 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
-FROM nginx:1.27-alpine
+#FROM nginx:1.27-alpine
+FROM docker.xuanyuan.run/library/nginx:1.27-alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY docker-entrypoint.d/40-runtime-env.sh /docker-entrypoint.d/40-runtime-env.sh
 
-RUN chmod +x /docker-entrypoint.d/40-runtime-env.sh
+# nginx 镜像启动时自动用 envsubst 渲染 templates/*.template（替换 ${BACKEND_URL}）
+# 到 /etc/nginx/conf.d/，实现容器启动时指定后端地址，无需重新构建。
+COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 
-RUN printf '%s\n' \
-    'server {' \
-    '    listen 81;' \
-    '    listen [::]:81;' \
-    '    server_name _;' \
-    '    root /usr/share/nginx/html;' \
-    '    index index.html;' \
-    '' \
-    '    location / {' \
-    '        try_files $uri $uri/ /index.html;' \
-    '    }' \
-    '' \
-    '    location /assets/ {' \
-    '        try_files $uri =404;' \
-    '        access_log off;' \
-    '        expires 1y;' \
-    '        add_header Cache-Control "public, immutable";' \
-    '    }' \
-    '}' \
-    > /etc/nginx/conf.d/default.conf
+# 后端地址默认值，可在启动时用 -e BACKEND_URL=... 覆盖。
+ENV BACKEND_URL="http://127.0.0.1:8000"
 
 EXPOSE 81
