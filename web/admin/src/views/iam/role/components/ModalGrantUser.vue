@@ -10,7 +10,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const avatarImgProps = { referrerPolicy: 'no-referrer' }
+const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 const state = reactive({
   showModal: false,
   loading: false,

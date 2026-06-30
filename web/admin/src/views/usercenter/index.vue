@@ -8,7 +8,7 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const authStore = useAuthStore()
 const detailModalRef = ref<InstanceType<typeof MessageDetailModal> | null>(null)
-const avatarImgProps = { referrerPolicy: 'no-referrer' }
+const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
 const state = reactive({
   loading: false,

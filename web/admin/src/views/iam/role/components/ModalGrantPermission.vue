@@ -208,7 +208,7 @@ const columns = computed<DataTableColumns<any>>(() => [
             labelField="name"
             childrenField="children"
             style="min-width: 240px"
-            onUpdateValue={(value) => {
+            onUpdateValue={(value: any) => {
               row.dataScope[4].custom_scope_dept_ids = (value ?? []).map(String)
             }}
           />
