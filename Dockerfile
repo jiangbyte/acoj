@@ -1,4 +1,5 @@
-FROM python:3.11-slim
+FROM python:3.11
+#FROM python:3.11-slim
 #FROM docker.xuanyuan.run/library/python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
