@@ -9,5 +9,12 @@
   "today": "今天",
   "todo_title": "完善业务菜单",
   "todo_tag": "待办",
-  "recently": "近期"
+  "recently": "近期",
+  "empty": "暂无数据",
+  "read": "已读",
+  "unread": "未读",
+  "category": "分类",
+  "time": "时间",
+  "content": "内容",
+  "load_more": "加载更多"
 }

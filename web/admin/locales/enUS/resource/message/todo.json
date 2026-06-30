@@ -1,0 +1,16 @@
+{
+  "title": "Todos",
+  "form_title": "Todo",
+  "add_todo": "Add Todo",
+  "edit_todo": "Edit Todo",
+  "detail_todo": "Todo Detail",
+  "title_field": "Title",
+  "content": "Content",
+  "priority": "Priority",
+  "target_scope": "Target Scope",
+  "target_account_type": "Target Account Type",
+  "target_account_id": "Target Account ID",
+  "due_at": "Due At",
+  "cancel_task": "Cancel Task",
+  "cancel_success": "Cancelled successfully"
+}

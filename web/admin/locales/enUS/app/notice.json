@@ -9,5 +9,12 @@
   "today": "Today",
   "todo_title": "Complete business menus",
   "todo_tag": "Todo",
-  "recently": "Recently"
+  "recently": "Recently",
+  "empty": "No data",
+  "read": "Read",
+  "unread": "Unread",
+  "category": "Category",
+  "time": "Time",
+  "content": "Content",
+  "load_more": "Load more"
 }

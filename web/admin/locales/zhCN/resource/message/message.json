@@ -1,0 +1,17 @@
+{
+  "title": "站内信管理",
+  "threads": "会话",
+  "groups": "群组",
+  "thread_id": "会话ID",
+  "thread_title": "会话标题",
+  "thread_type": "会话类型",
+  "group_id": "群组ID",
+  "group_name": "群组名称",
+  "member_count": "成员数",
+  "last_message_at": "最后消息时间",
+  "content": "内容",
+  "send_system": "发送系统消息",
+  "send_success": "发送成功",
+  "detail_message": "消息详情",
+  "no_messages": "暂无消息"
+}
