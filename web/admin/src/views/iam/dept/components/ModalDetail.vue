@@ -39,41 +39,41 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('pages.iam.dept.detailDept')"
+    :title="t('resource.iam.dept.detail_dept')"
     style="width: 680px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('pages.iam.dept.id')">
+          <NDescriptionsItem :label="t('resource.iam.dept.id')">
             {{ displayValue(state.dept.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.dept.name')">
+          <NDescriptionsItem :label="t('resource.iam.dept.name')">
             {{ displayValue(state.dept.name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.dept.code')">
+          <NDescriptionsItem :label="t('resource.iam.dept.code')">
             {{ displayValue(state.dept.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.dept.category')">
+          <NDescriptionsItem :label="t('resource.iam.dept.category')">
             {{
               dictTypeData('DEPT_CATEGORY', state.dept.category) ||
               displayValue(state.dept.category)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.dept.parentId')">
+          <NDescriptionsItem :label="t('resource.iam.dept.parent_id')">
             {{ displayValue(state.dept.parent_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.dept.masterId')">
+          <NDescriptionsItem :label="t('resource.iam.dept.master_id')">
             {{ displayValue(state.dept.master_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.dept.deputyMasterId')">
+          <NDescriptionsItem :label="t('resource.iam.dept.deputy_master_id')">
             {{ displayValue(state.dept.deputy_master_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.dept.sort')">
+          <NDescriptionsItem :label="t('resource.iam.dept.sort')">
             {{ displayValue(state.dept.sort) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.dept.isVirtual')">
-            {{ state.dept.is_virtual ? t('pages.iam.dept.yes') : t('pages.iam.dept.no') }}
+          <NDescriptionsItem :label="t('resource.iam.dept.is_virtual')">
+            {{ state.dept.is_virtual ? t('resource.iam.dept.yes') : t('resource.iam.dept.no') }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('common.often.status')">
             <NTag
@@ -85,16 +85,16 @@ defineExpose({
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdAt')">
+          <NDescriptionsItem :label="t('common.often.created_at')">
             {{ displayValue(state.dept.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdBy')">
+          <NDescriptionsItem :label="t('common.often.created_by')">
             {{ displayValue(state.dept.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedAt')">
+          <NDescriptionsItem :label="t('common.often.updated_at')">
             {{ displayValue(state.dept.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedBy')">
+          <NDescriptionsItem :label="t('common.often.updated_by')">
             {{ displayValue(state.dept.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

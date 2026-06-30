@@ -15,13 +15,13 @@ const state = reactive({
   account: {} as any,
   deptTree: [] as any[],
   deptIds: [] as string[],
-  primaryDeptId: '',
+  primaryDeptId: null as string | null,
 })
 
 const modalTitle = computed(() =>
   state.account?.name
-    ? `${t('pages.iam.account.grantDept')} - ${state.account.name}`
-    : t('pages.iam.account.grantDept'),
+    ? `${t('resource.iam.account.grant_dept')} - ${state.account.name}`
+    : t('resource.iam.account.grant_dept'),
 )
 const primaryOptions = computed(() =>
   buildDeptOptions(state.deptTree).filter((item) => state.deptIds.includes(item.value)),
@@ -31,7 +31,7 @@ async function openModal(account: any) {
   state.account = account ?? {}
   state.deptTree = []
   state.deptIds = []
-  state.primaryDeptId = ''
+  state.primaryDeptId = null
   state.showModal = true
   await fetchGrant()
 }
@@ -49,9 +49,8 @@ async function fetchGrant() {
     const grant_info_list = grantResponse.data?.grant_info_list ?? []
     state.deptTree = deptResponse.data ?? []
     state.deptIds = grant_info_list.map((item: any) => String(item.dept_id))
-    state.primaryDeptId = String(
-      grant_info_list.find((item: any) => item.is_primary)?.dept_id ?? state.deptIds[0] ?? '',
-    )
+    const primaryDeptId = grant_info_list.find((item: any) => item.is_primary)?.dept_id
+    state.primaryDeptId = primaryDeptId ? String(primaryDeptId) : (state.deptIds[0] ?? null)
   } finally {
     state.loading = false
   }
@@ -71,7 +70,7 @@ async function submitGrant() {
         is_primary: deptId === primaryDeptId,
       })),
     })
-    window.$message.success(t('pages.iam.role.grantSuccess'))
+    window.$message.success(t('resource.iam.role.grant_success'))
     closeModal()
     emit('saved')
   } finally {
@@ -82,7 +81,7 @@ async function submitGrant() {
 function closeModal() {
   state.deptTree = []
   state.deptIds = []
-  state.primaryDeptId = ''
+  state.primaryDeptId = null
   state.showModal = false
   state.submitLoading = false
 }
@@ -113,7 +112,7 @@ defineExpose({
     <NDrawerContent :title="modalTitle" closable :native-scrollbar="false">
       <NSpin :show="state.loading">
         <NSpace vertical>
-          <NFormItem :label="t('pages.iam.account.grantDept')">
+          <NFormItem :label="t('resource.iam.account.grant_dept')">
             <NTreeSelect
               v-model:value="state.deptIds"
               multiple
@@ -127,7 +126,7 @@ defineExpose({
               children-field="children"
             />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.account.primaryDept')">
+          <NFormItem :label="t('resource.iam.account.primary_dept')">
             <NSelect
               v-model:value="state.primaryDeptId"
               clearable

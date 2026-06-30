@@ -37,8 +37,8 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.subject?.name
-    ? `${state.title || t('pages.iam.role.grantPermission')} - ${state.subject.name}`
-    : state.title || t('pages.iam.role.grantPermission'),
+    ? `${state.title || t('resource.iam.role.grant_permission')} - ${state.subject.name}`
+    : state.title || t('resource.iam.role.grant_permission'),
 )
 const filteredRows = computed(() => {
   const keyword = state.searchText.trim().toUpperCase()
@@ -73,7 +73,7 @@ const columns = computed<DataTableColumns<any>>(() => [
         checked={allChecked.value}
         onUpdateChecked={(checked) => onCheckAllChange(Boolean(checked))}
       >
-        {t('pages.iam.role.apiPrefix')}
+        {t('resource.iam.role.api_prefix')}
       </NCheckbox>
     ),
     key: 'prefix',
@@ -98,7 +98,7 @@ const columns = computed<DataTableColumns<any>>(() => [
         checked={allChecked.value}
         onUpdateChecked={(checked) => onCheckAllChange(Boolean(checked))}
       >
-        {t('pages.iam.role.apiResource')}
+        {t('resource.iam.role.api_resource')}
       </NCheckbox>
     ),
     key: 'suffix',
@@ -108,7 +108,7 @@ const columns = computed<DataTableColumns<any>>(() => [
       <div class="grant-permission-filter">
         <NInput
           value={state.searchText}
-          placeholder={t('pages.iam.role.permissionSearchPlaceholder')}
+          placeholder={t('resource.iam.role.placeholder.permission_search')}
           onUpdateValue={(value) => {
             state.searchText = value
           }}
@@ -128,7 +128,7 @@ const columns = computed<DataTableColumns<any>>(() => [
               hide()
             }}
           >
-            {t('pages.iam.role.search')}
+            {t('resource.iam.role.search')}
           </NButton>
           <NButton
             size="small"
@@ -154,7 +154,7 @@ const columns = computed<DataTableColumns<any>>(() => [
   {
     title: () => (
       <div class="grant-permission-scope-header">
-        <span>{t('pages.iam.role.dataScope')}</span>
+        <span>{t('resource.iam.role.data_scope')}</span>
         <NRadioGroup
           value={state.scopeRadioValue}
           size="small"
@@ -258,7 +258,7 @@ async function submitGrant() {
       id: state.subject.id,
       grant_info_list: convertData(),
     })
-    window.$message.success(t('pages.iam.role.grantSuccess'))
+    window.$message.success(t('resource.iam.role.grant_success'))
     closeModal()
     emit('saved')
   } finally {
@@ -310,31 +310,31 @@ function dataScopeOptions(id: string) {
   return [
     {
       id: `SCOPE_ALL_${id}`,
-      title: t('pages.iam.role.dataScopeAll'),
+      title: t('resource.iam.role.data_scope_all'),
       value: 'ALL',
       check: false,
     },
     {
       id: `SCOPE_SELF_${id}`,
-      title: t('pages.iam.role.dataScopeSelf'),
+      title: t('resource.iam.role.data_scope_self'),
       value: 'SELF',
       check: false,
     },
     {
       id: `SCOPE_ORG_${id}`,
-      title: t('pages.iam.role.dataScopeOrg'),
+      title: t('resource.iam.role.data_scope_org'),
       value: 'DEPT',
       check: false,
     },
     {
       id: `SCOPE_ORG_CHILD_${id}`,
-      title: t('pages.iam.role.dataScopeOrgChild'),
+      title: t('resource.iam.role.data_scope_org_child'),
       value: 'DEPT_AND_CHILD',
       check: false,
     },
     {
       id: `SCOPE_ORG_DEFINE_${id}`,
-      title: t('pages.iam.role.dataScopeCustom'),
+      title: t('resource.iam.role.data_scope_custom'),
       value: customValue,
       check: false,
       custom_scope_dept_ids: [],
@@ -458,7 +458,7 @@ defineExpose({
   >
     <NDrawerContent :title="modalTitle" closable :native-scrollbar="false">
       <NAlert type="warning" closable>
-        {{ t('pages.iam.role.grantPermissionTip') }}
+        {{ t('resource.iam.role.grant_permission_tip') }}
       </NAlert>
       <NSpin :show="state.loading">
         <div class="mt-16px">

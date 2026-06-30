@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ProLayout, useLayoutMenu } from 'pro-naive-ui'
 import { useAppStore, useRouteStore } from '@/stores'
+import { createMenus } from '@/stores/route/helper'
 import {
   BackTop,
   Breadcrumb,
@@ -20,10 +21,15 @@ import Content from './Content.vue'
 const appStore = useAppStore()
 const routeStore = useRouteStore()
 
+const menus = computed(() => {
+  appStore.lang
+  return createMenus(routeStore.rowRoutes)
+})
+
 const { layout, activeKey } = useLayoutMenu({
   mode: 'vertical',
   accordion: true,
-  menus: routeStore.menus,
+  menus,
 } as never)
 
 watch(

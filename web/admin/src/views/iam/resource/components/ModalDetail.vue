@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { resourceApi } from '@/api'
-import { createTagColor, displayValue } from '@/utils'
+import { createTagColor, displayValue, translateLocale } from '@/utils'
 import { reactive } from 'vue'
 import { dictTypeData, dictTypeColor } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
@@ -39,61 +39,64 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('pages.iam.resource.detailResource')"
+    :title="t('resource.iam.resource.detail_resource')"
     style="width: 720px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('pages.iam.resource.id')">
+          <NDescriptionsItem :label="t('resource.iam.resource.id')">
             {{ displayValue(state.resource.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.name')">
-            {{ displayValue(state.resource.name) }}
+          <NDescriptionsItem :label="t('resource.iam.resource.name')">
+            {{ displayValue(translateLocale(state.resource.locale_key, state.resource.name)) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.code')">
+          <NDescriptionsItem :label="t('common.often.locale_key')">
+            {{ displayValue(state.resource.locale_key) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="t('resource.iam.resource.code')">
             {{ displayValue(state.resource.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.resourceType')">
+          <NDescriptionsItem :label="t('resource.iam.resource.resource_type')">
             {{
               dictTypeData('RESOURCE_TYPE', state.resource.resource_type) ||
               displayValue(state.resource.resource_type)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.parentId')">
+          <NDescriptionsItem :label="t('resource.iam.resource.parent_id')">
             {{ displayValue(state.resource.parent_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.module')">
+          <NDescriptionsItem :label="t('resource.iam.resource.module')">
             {{ displayValue(state.resource.module_id_name || state.resource.module_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.path')">
+          <NDescriptionsItem :label="t('resource.iam.resource.path')">
             {{ displayValue(state.resource.path) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.component')">
+          <NDescriptionsItem :label="t('resource.iam.resource.component')">
             {{ displayValue(state.resource.component) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.redirect')">
+          <NDescriptionsItem :label="t('resource.iam.resource.redirect')">
             {{ displayValue(state.resource.redirect) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.icon')">
+          <NDescriptionsItem :label="t('resource.iam.resource.icon')">
             {{ displayValue(state.resource.icon) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.href')">
+          <NDescriptionsItem :label="t('resource.iam.resource.href')">
             {{ displayValue(state.resource.href) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.sort')">
+          <NDescriptionsItem :label="t('resource.iam.resource.sort')">
             {{ displayValue(state.resource.sort) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.isVisible')">
+          <NDescriptionsItem :label="t('resource.iam.resource.is_visible')">
             {{
-              state.resource.is_visible ? t('pages.iam.resource.yes') : t('pages.iam.resource.no')
+              state.resource.is_visible ? t('resource.iam.resource.yes') : t('resource.iam.resource.no')
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.isCache')">
-            {{ state.resource.is_cache ? t('pages.iam.resource.yes') : t('pages.iam.resource.no') }}
+          <NDescriptionsItem :label="t('resource.iam.resource.is_cache')">
+            {{ state.resource.is_cache ? t('resource.iam.resource.yes') : t('resource.iam.resource.no') }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.isAffix')">
-            {{ state.resource.is_affix ? t('pages.iam.resource.yes') : t('pages.iam.resource.no') }}
+          <NDescriptionsItem :label="t('resource.iam.resource.is_affix')">
+            {{ state.resource.is_affix ? t('resource.iam.resource.yes') : t('resource.iam.resource.no') }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('common.often.status')">
             <NTag
@@ -106,19 +109,19 @@ defineExpose({
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource.description')">
+          <NDescriptionsItem :label="t('resource.iam.resource.description')">
             {{ displayValue(state.resource.description) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdAt')">
+          <NDescriptionsItem :label="t('common.often.created_at')">
             {{ displayValue(state.resource.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdBy')">
+          <NDescriptionsItem :label="t('common.often.created_by')">
             {{ displayValue(state.resource.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedAt')">
+          <NDescriptionsItem :label="t('common.often.updated_at')">
             {{ displayValue(state.resource.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedBy')">
+          <NDescriptionsItem :label="t('common.often.updated_by')">
             {{ displayValue(state.resource.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

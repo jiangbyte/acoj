@@ -39,25 +39,28 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('pages.sys.dict.detailDict')"
+    :title="t('resource.sys.dict.detail_dict')"
     style="width: 620px"
   >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('pages.sys.dict.id')">
+          <NDescriptionsItem :label="t('resource.sys.dict.id')">
             {{ displayValue(state.data.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.dict.code')">
+          <NDescriptionsItem :label="t('resource.sys.dict.code')">
             {{ displayValue(state.data.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.dict.label')">
+          <NDescriptionsItem :label="t('resource.sys.dict.label')">
             {{ displayValue(state.data.label) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.dict.value')">
+          <NDescriptionsItem :label="t('common.often.locale_key')">
+            {{ displayValue(state.data.locale_key) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="t('resource.sys.dict.value')">
             {{ displayValue(state.data.value) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.dict.color')">
+          <NDescriptionsItem :label="t('resource.sys.dict.color')">
             <NTag
               v-if="state.data.color"
               :color="createTagColor(state.data.color)"
@@ -67,13 +70,13 @@ defineExpose({
             </NTag>
             <template v-else> - </template>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.dict.category')">
+          <NDescriptionsItem :label="t('resource.sys.dict.category')">
             {{ dictTypeData('SYS_BIZ_CATEGORY', state.data.category) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.dict.parent')">
+          <NDescriptionsItem :label="t('resource.sys.dict.parent')">
             {{ displayValue(state.data.parent_id_name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.dict.sort')">
+          <NDescriptionsItem :label="t('resource.sys.dict.sort')">
             {{ displayValue(state.data.sort) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('common.often.status')">
@@ -84,16 +87,16 @@ defineExpose({
               {{ dictTypeData('COMMON_STATUS', state.data.status) }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdAt')">
+          <NDescriptionsItem :label="t('common.often.created_at')">
             {{ displayValue(state.data.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdBy')">
+          <NDescriptionsItem :label="t('common.often.created_by')">
             {{ displayValue(state.data.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedAt')">
+          <NDescriptionsItem :label="t('common.often.updated_at')">
             {{ displayValue(state.data.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedBy')">
+          <NDescriptionsItem :label="t('common.often.updated_by')">
             {{ displayValue(state.data.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

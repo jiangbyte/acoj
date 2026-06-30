@@ -14,7 +14,7 @@ const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   name: '',
   code: '',
-  category: '',
+  category: null as string | null,
   sort: 0,
   is_virtual: false,
   status: 'ENABLED',
@@ -30,13 +30,13 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('pages.iam.position.editPosition') : t('pages.iam.position.addPosition'),
+  state.dataId ? t('resource.iam.position.edit_position') : t('resource.iam.position.add_position'),
 )
 
 const rules = computed<FormRules>(() => ({
-  name: createRequiredRule(t, t('pages.iam.position.name'), 'input'),
-  code: createRequiredRule(t, t('pages.iam.position.code'), 'input'),
-  category: createRequiredRule(t, t('pages.iam.position.category'), 'change'),
+  name: createRequiredRule(t, t('resource.iam.position.name'), 'input'),
+  code: createRequiredRule(t, t('resource.iam.position.code'), 'input'),
+  category: createRequiredRule(t, t('resource.iam.position.category'), 'change'),
   status: createRequiredRule(t, t('common.often.status'), 'change'),
 }))
 
@@ -87,10 +87,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.updateSuccess'))
+      window.$message.success(t('common.often.update_success'))
     } else {
       await positionApi.create(payload)
-      window.$message.success(t('common.often.createSuccess'))
+      window.$message.success(t('common.often.create_success'))
     }
 
     closeModal()
@@ -125,25 +125,25 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('pages.iam.position.name')" path="name">
+          <NFormItem :label="t('resource.iam.position.name')" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.position.code')" path="code">
+          <NFormItem :label="t('resource.iam.position.code')" path="code">
             <NInput v-model:value="state.formModel.code" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.position.category')" path="category">
+          <NFormItem :label="t('resource.iam.position.category')" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="POSITION_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.position.sort')" path="sort">
+          <NFormItem :label="t('resource.iam.position.sort')" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.position.isVirtual')" path="is_virtual">
+          <NFormItem :label="t('resource.iam.position.is_virtual')" path="is_virtual">
             <NSwitch v-model:value="state.formModel.is_virtual" />
           </NFormItem>
           <NFormItem :label="t('common.often.status')" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.position.description')" path="description">
+          <NFormItem :label="t('resource.iam.position.description')" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"

@@ -21,31 +21,31 @@ const noticeSources: NoticeSource[] = [
   {
     id: 1,
     type: 0,
-    title: 'notice.systemReadyTitle',
+    title: 'app.notice.system_ready_title',
     icon: 'icon-park-outline:tips-one',
-    tagTitle: 'notice.systemTag',
+    tagTitle: 'app.notice.system_tag',
     tagType: 'success',
-    description: 'notice.systemReadyDescription',
-    date: 'notice.justNow',
+    description: 'app.notice.system_ready_description',
+    date: 'app.notice.just_now',
   },
   {
     id: 2,
     type: 1,
-    title: 'notice.placeholderTitle',
+    title: 'app.notice.placeholder_title',
     icon: 'icon-park-outline:message',
-    tagTitle: 'notice.placeholderTag',
+    tagTitle: 'app.notice.placeholder_tag',
     tagType: 'info',
-    description: 'notice.placeholderDescription',
-    date: 'notice.today',
+    description: 'app.notice.placeholder_description',
+    date: 'app.notice.today',
   },
   {
     id: 3,
     type: 2,
-    title: 'notice.todoTitle',
+    title: 'app.notice.todo_title',
     icon: 'icon-park-outline:checklist',
-    tagTitle: 'notice.todoTag',
+    tagTitle: 'app.notice.todo_tag',
     tagType: 'warning',
-    date: 'notice.recently',
+    date: 'app.notice.recently',
   },
 ]
 
@@ -93,7 +93,7 @@ function handleRead(id: number) {
             </n-badge>
           </CommonWrapper>
         </template>
-        {{ t('app.notificationsTips') }}
+        {{ t('app.notifications_tips') }}
       </n-tooltip>
     </template>
     <n-tabs

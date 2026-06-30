@@ -1,8 +1,8 @@
 <template>
   <n-space vertical size="large">
-    <n-page-header :title="t('demo.chartTitle')" :subtitle="t('demo.chartSubtitle')" />
+    <n-page-header :title="t('resource.demo.chart')" :subtitle="t('resource.demo.chart_subtitle')" />
 
-    <n-card :title="t('demo.weeklySubmissions')" :bordered="false">
+    <n-card :title="t('resource.demo.weekly_submissions')" :bordered="false">
       <div class="chart-bars">
         <div v-for="item in chartData" :key="item.day" class="chart-item">
           <div class="chart-track">
@@ -30,19 +30,19 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 const chartData = computed(() => [
-  { day: t('demo.monday'), percent: 42 },
-  { day: t('demo.tuesday'), percent: 56 },
-  { day: t('demo.wednesday'), percent: 38 },
-  { day: t('demo.thursday'), percent: 72 },
-  { day: t('demo.friday'), percent: 64 },
-  { day: t('demo.saturday'), percent: 84 },
-  { day: t('demo.sunday'), percent: 60 },
+  { day: t('resource.demo.monday'), percent: 42 },
+  { day: t('resource.demo.tuesday'), percent: 56 },
+  { day: t('resource.demo.wednesday'), percent: 38 },
+  { day: t('resource.demo.thursday'), percent: 72 },
+  { day: t('resource.demo.friday'), percent: 64 },
+  { day: t('resource.demo.saturday'), percent: 84 },
+  { day: t('resource.demo.sunday'), percent: 60 },
 ])
 
 const cards = computed(() => [
-  { title: t('demo.passRate'), value: 68 },
-  { title: t('demo.activity'), value: 74 },
-  { title: t('demo.completion'), value: 82 },
+  { title: t('resource.demo.pass_rate'), value: 68 },
+  { title: t('resource.demo.activity'), value: 74 },
+  { title: t('resource.demo.completion'), value: 82 },
 ])
 </script>
 

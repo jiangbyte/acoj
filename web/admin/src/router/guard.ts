@@ -1,5 +1,6 @@
 import type { RouteLocationNormalized, Router } from 'vue-router'
 import { useAuthStore, useDictStore, useRouteStore, useTabStore } from '@/stores'
+import { getRouteTitle } from '@/stores/route'
 
 // 浏览器标题后缀，来自应用环境配置。
 const appTitle = import.meta.env.VITE_APP_TITLE
@@ -101,7 +102,7 @@ export function setupRouterGuard(router: Router) {
 
   // 路由完成后更新浏览器标题并结束顶部加载条。
   router.afterEach((to) => {
-    document.title = to.meta.name ? `${to.meta.name} - ${appTitle}` : appTitle
+    document.title = to.meta.name ? `${getRouteTitle(to)} - ${appTitle}` : appTitle
     window.$loadingBar?.finish()
   })
 

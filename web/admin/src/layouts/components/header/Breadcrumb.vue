@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { getRouteTitle } from '@/stores/route'
 
 const router = useRouter()
 const route = useRoute()
@@ -20,7 +21,7 @@ const routes = computed(() => route.matched.filter((item) => item.meta.name))
       >
         <NovaIcon :icon="item.meta.icon ?? undefined" />
         <span class="whitespace-nowrap">
-          {{ String(item.meta.name ?? item.name ?? item.path) }}
+          {{ getRouteTitle(item) }}
         </span>
       </n-el>
     </template>

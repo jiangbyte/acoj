@@ -26,11 +26,11 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('pages.iam.group.editGroup') : t('pages.iam.group.addGroup'),
+  state.dataId ? t('resource.iam.group.edit_group') : t('resource.iam.group.add_group'),
 )
 
 const rules = computed<FormRules>(() => ({
-  name: createRequiredRule(t, t('pages.iam.group.name'), 'input'),
+  name: createRequiredRule(t, t('resource.iam.group.name'), 'input'),
   status: createRequiredRule(t, t('common.often.status'), 'change'),
 }))
 
@@ -78,10 +78,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.updateSuccess'))
+      window.$message.success(t('common.often.update_success'))
     } else {
       await groupApi.create(payload)
-      window.$message.success(t('common.often.createSuccess'))
+      window.$message.success(t('common.often.create_success'))
     }
 
     closeModal()
@@ -116,13 +116,13 @@ defineExpose({
           label-width="100"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('pages.iam.group.name')" path="name">
+          <NFormItem :label="t('resource.iam.group.name')" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
           <NFormItem :label="t('common.often.status')" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.group.description')" path="description">
+          <NFormItem :label="t('resource.iam.group.description')" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"

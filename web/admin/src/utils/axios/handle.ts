@@ -16,15 +16,15 @@ interface ApiResponse<T = unknown> {
 }
 
 const httpStatusMessageKeyMap: Record<number, string> = {
-  400: 'error.request.status.400',
-  401: 'error.request.status.401',
-  403: 'error.request.status.403',
-  404: 'error.request.status.404',
-  422: 'error.request.status.422',
-  500: 'error.request.status.500',
-  502: 'error.request.status.502',
-  503: 'error.request.status.503',
-  504: 'error.request.status.504',
+  400: 'error.request.status.bad_request',
+  401: 'error.request.status.unauthorized',
+  403: 'error.request.status.forbidden',
+  404: 'error.request.status.not_found',
+  422: 'error.request.status.validation_error',
+  500: 'error.request.status.server_error',
+  502: 'error.request.status.bad_gateway',
+  503: 'error.request.status.service_unavailable',
+  504: 'error.request.status.gateway_timeout',
 }
 
 /**
@@ -176,7 +176,7 @@ function getErrorMessage(error: AxiosError) {
 
   const status = error.response?.status
   if (status) {
-    return $t(httpStatusMessageKeyMap[status] ?? 'error.request.statusDefault', { status })
+    return $t(httpStatusMessageKeyMap[status] ?? 'error.request.status_default', { status })
   }
 
   return $t('error.request.network')

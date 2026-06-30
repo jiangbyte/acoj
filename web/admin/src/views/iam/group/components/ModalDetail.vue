@@ -39,16 +39,16 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('pages.iam.group.detailGroup')"
+    :title="t('resource.iam.group.detail_group')"
     style="width: 680px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('pages.iam.group.id')">
+          <NDescriptionsItem :label="t('resource.iam.group.id')">
             {{ displayValue(state.group.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.group.name')">
+          <NDescriptionsItem :label="t('resource.iam.group.name')">
             {{ displayValue(state.group.name) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('common.often.status')">
@@ -62,19 +62,19 @@ defineExpose({
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.group.description')">
+          <NDescriptionsItem :label="t('resource.iam.group.description')">
             {{ displayValue(state.group.description) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdAt')">
+          <NDescriptionsItem :label="t('common.often.created_at')">
             {{ displayValue(state.group.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdBy')">
+          <NDescriptionsItem :label="t('common.often.created_by')">
             {{ displayValue(state.group.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedAt')">
+          <NDescriptionsItem :label="t('common.often.updated_at')">
             {{ displayValue(state.group.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedBy')">
+          <NDescriptionsItem :label="t('common.often.updated_by')">
             {{ displayValue(state.group.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

@@ -17,6 +17,7 @@ class DictTreeRecord(TypedDict):
     id: str
     code: str
     label: str | None
+    locale_key: str | None
     value: str | None
     color: str | None
     category: str | None
@@ -108,6 +109,7 @@ def _build_tree(items: list[SysDict]) -> list[DictTreeRecord]:
             "id": item.id,
             "code": item.code,
             "label": item.label,
+            "locale_key": item.locale_key,
             "value": item.value,
             "color": item.color,
             "category": item.category,

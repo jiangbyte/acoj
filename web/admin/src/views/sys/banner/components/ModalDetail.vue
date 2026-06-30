@@ -12,7 +12,7 @@ const state = reactive({
   banner: {} as any,
 })
 
-const imageAlt = computed(() => state.banner?.title ?? t('pages.sys.banner.image'))
+const imageAlt = computed(() => state.banner?.title ?? t('resource.sys.banner.image'))
 
 async function openModal(id: string) {
   state.banner = {}
@@ -41,19 +41,19 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('pages.sys.banner.detailBanner')"
+    :title="t('resource.sys.banner.detail_banner')"
     style="width: 620px"
   >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('pages.sys.banner.id')">
+          <NDescriptionsItem :label="t('resource.sys.banner.id')">
             {{ displayValue(state.banner.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.titleField')">
+          <NDescriptionsItem :label="t('resource.sys.banner.title_field')">
             {{ displayValue(state.banner.title) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.image')">
+          <NDescriptionsItem :label="t('resource.sys.banner.image')">
             <NImage
               v-if="state.banner.image"
               class="banner-detail-image"
@@ -65,22 +65,22 @@ defineExpose({
             />
             <template v-else> - </template>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.url')">
+          <NDescriptionsItem :label="t('resource.sys.banner.url')">
             {{ displayValue(state.banner.url) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.linkType')">
+          <NDescriptionsItem :label="t('resource.sys.banner.link_type')">
             {{ dictTypeData('BANNER_LINK_TYPE', state.banner.link_type) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.category')">
+          <NDescriptionsItem :label="t('resource.sys.banner.category')">
             {{ dictTypeData('BANNER_CATEGORY', state.banner.category) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.type')">
+          <NDescriptionsItem :label="t('resource.sys.banner.type')">
             {{ dictTypeData('BANNER_TYPE', state.banner.type) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.position')">
+          <NDescriptionsItem :label="t('resource.sys.banner.position')">
             {{ dictTypeData('BANNER_POSITION', state.banner.position) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.displayScope')">
+          <NDescriptionsItem :label="t('resource.sys.banner.display_scope')">
             <NTag
               :color="
                 createTagColor(dictTypeColor('BANNER_DISPLAY_SCOPE', state.banner.display_scope))
@@ -90,10 +90,10 @@ defineExpose({
               {{ dictTypeData('BANNER_DISPLAY_SCOPE', state.banner.display_scope) }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.sort')">
+          <NDescriptionsItem :label="t('resource.sys.banner.sort')">
             {{ displayValue(state.banner.sort) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.interactionCount')">
+          <NDescriptionsItem :label="t('resource.sys.banner.interaction_count')">
             {{ displayValue(state.banner.interaction_count) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('common.often.status')">
@@ -104,28 +104,28 @@ defineExpose({
               {{ dictTypeData('COMMON_STATUS', state.banner.status) }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.startAt')">
+          <NDescriptionsItem :label="t('resource.sys.banner.start_at')">
             {{ displayValue(state.banner.start_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.endAt')">
+          <NDescriptionsItem :label="t('resource.sys.banner.end_at')">
             {{ displayValue(state.banner.end_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.summary')">
+          <NDescriptionsItem :label="t('resource.sys.banner.summary')">
             {{ displayValue(state.banner.summary) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.sys.banner.description')">
+          <NDescriptionsItem :label="t('resource.sys.banner.description')">
             {{ displayValue(state.banner.description) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdAt')">
+          <NDescriptionsItem :label="t('common.often.created_at')">
             {{ displayValue(state.banner.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdBy')">
+          <NDescriptionsItem :label="t('common.often.created_by')">
             {{ displayValue(state.banner.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedAt')">
+          <NDescriptionsItem :label="t('common.often.updated_at')">
             {{ displayValue(state.banner.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedBy')">
+          <NDescriptionsItem :label="t('common.often.updated_by')">
             {{ displayValue(state.banner.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

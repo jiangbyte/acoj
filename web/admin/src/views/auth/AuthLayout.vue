@@ -26,18 +26,18 @@ const isDarkTheme = computed(
 const highlights = computed(() => [
   {
     icon: 'icon-park-outline:shield',
-    title: t('auth.highlightSecurityTitle'),
-    text: t('auth.highlightSecurityText'),
+    title: t('auth.highlight_security_title'),
+    text: t('auth.highlight_security_text'),
   },
   {
     icon: 'icon-park-outline:code-computer',
-    title: t('auth.highlightWorkspaceTitle'),
-    text: t('auth.highlightWorkspaceText'),
+    title: t('auth.highlight_workspace_title'),
+    text: t('auth.highlight_workspace_text'),
   },
   {
     icon: 'icon-park-outline:chart-line',
-    title: t('auth.highlightAnalyticsTitle'),
-    text: t('auth.highlightAnalyticsText'),
+    title: t('auth.highlight_analytics_title'),
+    text: t('auth.highlight_analytics_text'),
   },
 ])
 
@@ -66,8 +66,8 @@ function handleShellScroll(event: Event) {
       <aside class="auth-visual" aria-hidden="true">
         <div class="auth-visual-inner">
           <p class="auth-kicker">{{ t('auth.kicker') }}</p>
-          <h1>{{ t('auth.heroTitle') }}</h1>
-          <p class="auth-hero-text">{{ t('auth.heroSubtitle') }}</p>
+          <h1>{{ t('auth.hero_title') }}</h1>
+          <p class="auth-hero-text">{{ t('auth.hero_subtitle') }}</p>
 
           <div class="auth-highlights">
             <div v-for="item in highlights" :key="item.title" class="auth-highlight">

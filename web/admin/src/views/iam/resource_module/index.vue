@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
 import { resourceModuleApi } from '@/api'
-import { createTagColor, normalizeSearchValues } from '@/utils'
+import { createTagColor, normalizeSearchValues, translateLocale } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -44,12 +44,12 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('pages.iam.resource_module.name'),
+    title: t('resource.iam.resource_module.name'),
     path: 'name',
     field: 'input',
   },
   {
-    title: t('pages.iam.resource_module.code'),
+    title: t('resource.iam.resource_module.code'),
     path: 'code',
     field: 'input',
   },
@@ -95,15 +95,24 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.resource_module.name'),
+    title: t('resource.iam.resource_module.name'),
     path: 'name',
     width: 160,
+    render: (row) => translateLocale(row.locale_key, row.name),
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('pages.iam.resource_module.code'),
+    title: t('common.often.locale_key'),
+    path: 'locale_key',
+    width: 220,
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: t('resource.iam.resource_module.code'),
     path: 'code',
     width: 160,
     ellipsis: {
@@ -111,7 +120,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.resource_module.icon'),
+    title: t('resource.iam.resource_module.icon'),
     path: 'icon',
     width: 190,
     ellipsis: {
@@ -119,7 +128,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.resource_module.color'),
+    title: t('resource.iam.resource_module.color'),
     path: 'color',
     width: 110,
     render: (row) =>
@@ -132,7 +141,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
       ),
   },
   {
-    title: t('pages.iam.resource_module.sort'),
+    title: t('resource.iam.resource_module.sort'),
     path: 'sort',
     width: 90,
   },
@@ -147,7 +156,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updatedAt'),
+    title: t('common.often.updated_at'),
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -226,12 +235,12 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batchDelete') : t('common.often.delete'),
+    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('pages.iam.resource_module.batchDeleteConfirm', { count: ids.length })
-      : t('pages.iam.resource_module.deleteConfirm'),
+      ? t('resource.iam.resource_module.batch_delete_confirm', { count: ids.length })
+      : t('resource.iam.resource_module.delete_confirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: () => deleteData(ids),
@@ -242,7 +251,7 @@ async function deleteData(ids: string[]) {
   await resourceModuleApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success(t('common.often.deleteSuccess'))
+  window.$message.success(t('common.often.delete_success'))
   await fetchPage()
   if (!state.modules.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -260,7 +269,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('pages.iam.resource_module.title')"
+      :title="t('resource.iam.resource_module.title')"
       row-key="id"
       :scroll-x="1380"
       :columns="tableColumns"
@@ -294,7 +303,7 @@ async function deleteData(ids: string[]) {
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >
-            {{ t('common.often.batchDelete') }}
+            {{ t('common.often.batch_delete') }}
             {{ t('common.often.total', { count: state.checkedRowKeys.length }) }}
           </NButton>
         </NFlex>

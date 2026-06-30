@@ -55,27 +55,27 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('pages.iam.account.account'),
+    title: t('resource.iam.account.account'),
     path: 'account',
     field: 'input',
   },
   {
-    title: t('pages.iam.account.name'),
+    title: t('resource.iam.account.name'),
     path: 'name',
     field: 'input',
   },
   {
-    title: t('pages.iam.account.phone'),
+    title: t('resource.iam.account.phone'),
     path: 'phone',
     field: 'input',
   },
   {
-    title: t('pages.iam.account.email'),
+    title: t('resource.iam.account.email'),
     path: 'email',
     field: 'input',
   },
   {
-    title: t('pages.iam.account.accountType'),
+    title: t('resource.iam.account.account_type'),
     path: 'account_type',
     field: 'select',
     fieldProps: {
@@ -83,7 +83,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.account.accountStatus'),
+    title: t('resource.iam.account.account_status'),
     path: 'account_status',
     field: 'select',
     fieldProps: {
@@ -124,7 +124,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.account.account'),
+    title: t('resource.iam.account.account'),
     path: 'account',
     width: 140,
     ellipsis: {
@@ -132,7 +132,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.account.name'),
+    title: t('resource.iam.account.name'),
     path: 'name',
     width: 130,
     ellipsis: {
@@ -140,7 +140,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.account.nickname'),
+    title: t('resource.iam.account.nickname'),
     path: 'nickname',
     width: 130,
     ellipsis: {
@@ -148,7 +148,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.account.accountType'),
+    title: t('resource.iam.account.account_type'),
     path: 'account_type',
     width: 120,
     render: (row) => (
@@ -161,7 +161,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('pages.iam.account.accountStatus'),
+    title: t('resource.iam.account.account_status'),
     path: 'account_status',
     width: 120,
     render: (row) => (
@@ -174,12 +174,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('pages.iam.account.phone'),
+    title: t('resource.iam.account.phone'),
     path: 'phone',
     width: 150,
   },
   {
-    title: t('pages.iam.account.email'),
+    title: t('resource.iam.account.email'),
     path: 'email',
     width: 220,
     ellipsis: {
@@ -187,7 +187,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.account.latestLoginTime'),
+    title: t('resource.iam.account.latest_login_time'),
     path: 'latest_login_time',
     width: 190,
     ellipsis: {
@@ -195,7 +195,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.updatedAt'),
+    title: t('common.often.updated_at'),
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -224,7 +224,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
               onSelect={(key) => openGrantModal(String(key), row)}
             >
               <NButton type="warning" size="small" text={true}>
-                {t('pages.iam.account.grant')}
+                {t('resource.iam.account.grant')}
               </NButton>
             </NDropdown>
           ) : null}
@@ -240,27 +240,27 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
 const grantOptions = computed(() =>
   [
     {
-      label: t('pages.iam.account.grantRole'),
+      label: t('resource.iam.account.grant_role'),
       key: 'role',
       permission: 'iam:account:grantrole',
     },
     {
-      label: t('pages.iam.account.grantGroup'),
+      label: t('resource.iam.account.grant_group'),
       key: 'group',
       permission: 'iam:account:grantgroup',
     },
     {
-      label: t('pages.iam.account.grantDept'),
+      label: t('resource.iam.account.grant_dept'),
       key: 'dept',
       permission: 'iam:account:grantdept',
     },
     {
-      label: t('pages.iam.account.grantResource'),
+      label: t('resource.iam.account.grant_resource'),
       key: 'resource',
       permission: 'iam:account:grantresource',
     },
     {
-      label: t('pages.iam.account.grantPermission'),
+      label: t('resource.iam.account.grant_permission'),
       key: 'permission',
       permission: 'iam:account:grantpermission',
     },
@@ -312,7 +312,7 @@ function openGrantModal(type: string, row: any) {
     name: row.name || row.account,
   }
   if (type === 'role') {
-    grantRoleModalRef.value?.openModal(account, accountApi, t('pages.iam.account.grantRole'), {
+    grantRoleModalRef.value?.openModal(account, accountApi, t('resource.iam.account.grant_role'), {
       ownMethod: 'ownRoles',
       grantMethod: 'grantRoles',
       listKey: 'roles',
@@ -321,7 +321,7 @@ function openGrantModal(type: string, row: any) {
       searchFields: ['code', 'name'],
     })
   } else if (type === 'group') {
-    grantGroupModalRef.value?.openModal(account, accountApi, t('pages.iam.account.grantGroup'), {
+    grantGroupModalRef.value?.openModal(account, accountApi, t('resource.iam.account.grant_group'), {
       ownMethod: 'ownGroups',
       grantMethod: 'grantGroups',
       listKey: 'groups',
@@ -335,13 +335,13 @@ function openGrantModal(type: string, row: any) {
     grantResourceModalRef.value?.openModal(
       account,
       accountApi,
-      t('pages.iam.account.grantResource'),
+      t('resource.iam.account.grant_resource'),
     )
   } else if (type === 'permission') {
     grantPermissionModalRef.value?.openModal(
       account,
       accountApi,
-      t('pages.iam.account.grantPermission'),
+      t('resource.iam.account.grant_permission'),
     )
   }
 }
@@ -358,12 +358,12 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batchDelete') : t('common.often.delete'),
+    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('pages.iam.account.batchDeleteConfirm', { count: ids.length })
-      : t('pages.iam.account.deleteConfirm'),
+      ? t('resource.iam.account.batch_delete_confirm', { count: ids.length })
+      : t('resource.iam.account.delete_confirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: () => deleteData(ids),
@@ -374,7 +374,7 @@ async function deleteData(ids: string[]) {
   await accountApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success(t('common.often.deleteSuccess'))
+  window.$message.success(t('common.often.delete_success'))
   await fetchPage()
   if (!state.accounts.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -392,7 +392,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('pages.iam.account.title')"
+      :title="t('resource.iam.account.title')"
       row-key="id"
       :scroll-x="1960"
       :columns="tableColumns"
@@ -426,7 +426,7 @@ async function deleteData(ids: string[]) {
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >
-            {{ t('common.often.batchDelete') }}
+            {{ t('common.often.batch_delete') }}
             {{ t('common.often.total', { count: state.checkedRowKeys.length }) }}
           </NButton>
         </NFlex>

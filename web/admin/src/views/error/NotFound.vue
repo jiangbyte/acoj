@@ -10,12 +10,12 @@ const homePath = import.meta.env.VITE_HOME_PATH
 <template>
   <n-result
     status="404"
-    :title="t('error.notFoundTitle')"
-    :description="t('error.notFoundDescription')"
+    :title="t('error.not_found_title')"
+    :description="t('error.not_found_description')"
   >
     <template #footer>
       <n-button type="primary" @click="router.push(homePath)">
-        {{ t('error.backWorkbench') }}
+        {{ t('error.back_workbench') }}
       </n-button>
     </template>
   </n-result>

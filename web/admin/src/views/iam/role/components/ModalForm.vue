@@ -14,8 +14,8 @@ const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   code: '',
   name: '',
-  category: '',
-  scope_type: '',
+  category: null as string | null,
+  scope_type: null as string | null,
   owner_dept_id: '',
   sort: 0,
   status: 'ENABLED',
@@ -32,14 +32,14 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('pages.iam.role.editRole') : t('pages.iam.role.addRole'),
+  state.dataId ? t('resource.iam.role.edit_role') : t('resource.iam.role.add_role'),
 )
 
 const rules = computed<FormRules>(() => ({
-  code: createRequiredRule(t, t('pages.iam.role.code'), 'input'),
-  name: createRequiredRule(t, t('pages.iam.role.name'), 'input'),
-  category: createRequiredRule(t, t('pages.iam.role.category'), 'change'),
-  scope_type: createRequiredRule(t, t('pages.iam.role.scopeType'), 'change'),
+  code: createRequiredRule(t, t('resource.iam.role.code'), 'input'),
+  name: createRequiredRule(t, t('resource.iam.role.name'), 'input'),
+  category: createRequiredRule(t, t('resource.iam.role.category'), 'change'),
+  scope_type: createRequiredRule(t, t('resource.iam.role.scope_type'), 'change'),
   status: createRequiredRule(t, t('common.often.status'), 'change'),
 }))
 
@@ -92,10 +92,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.updateSuccess'))
+      window.$message.success(t('common.often.update_success'))
     } else {
       await roleApi.create(payload)
-      window.$message.success(t('common.often.createSuccess'))
+      window.$message.success(t('common.often.create_success'))
     }
 
     closeModal()
@@ -130,31 +130,31 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('pages.iam.role.code')" path="code">
+          <NFormItem :label="t('resource.iam.role.code')" path="code">
             <NInput v-model:value="state.formModel.code" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.role.name')" path="name">
+          <NFormItem :label="t('resource.iam.role.name')" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.role.category')" path="category">
+          <NFormItem :label="t('resource.iam.role.category')" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="SYS_BIZ_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.role.scopeType')" path="scope_type">
+          <NFormItem :label="t('resource.iam.role.scope_type')" path="scope_type">
             <DictSelect v-model="state.formModel.scope_type" dict-code="ROLE_SCOPE_TYPE" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.role.ownerDeptId')" path="owner_dept_id">
+          <NFormItem :label="t('resource.iam.role.owner_dept_id')" path="owner_dept_id">
             <NInput v-model:value="state.formModel.owner_dept_id" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.role.sort')" path="sort">
+          <NFormItem :label="t('resource.iam.role.sort')" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.role.isBuiltin')" path="is_builtin">
+          <NFormItem :label="t('resource.iam.role.is_builtin')" path="is_builtin">
             <NSwitch v-model:value="state.formModel.is_builtin" />
           </NFormItem>
           <NFormItem :label="t('common.often.status')" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.role.description')" path="description">
+          <NFormItem :label="t('resource.iam.role.description')" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"

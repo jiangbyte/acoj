@@ -21,14 +21,14 @@ const rules = computed<FormRules>(() => ({
   account: [
     {
       required: true,
-      message: t('auth.accountRequired'),
+      message: t('auth.account_required'),
       trigger: ['input', 'blur'],
     },
   ],
   password: [
     {
       required: true,
-      message: t('auth.passwordRequired'),
+      message: t('auth.password_required'),
       trigger: ['input', 'blur'],
     },
   ],
@@ -45,7 +45,7 @@ async function handleSubmit() {
   try {
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : undefined
     await authStore.login(form.account, form.password, redirect)
-    window.$message.success(t('auth.loginSuccess'))
+    window.$message.success(t('auth.login_success'))
   } finally {
     loading.value = false
   }
@@ -53,10 +53,10 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <AuthLayout :title="t('auth.loginTitle')" :subtitle="t('auth.loginSubtitle')">
+  <AuthLayout :title="t('auth.login_title')" :subtitle="t('auth.login_subtitle')">
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
       <n-form-item path="account" :label="t('auth.account')">
-        <n-input v-model:value="form.account" :placeholder="t('auth.accountPlaceholder')" clearable>
+        <n-input v-model:value="form.account" :placeholder="t('auth.placeholder.account')" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:user" />
           </template>
@@ -68,7 +68,7 @@ async function handleSubmit() {
           v-model:value="form.password"
           type="password"
           show-password-on="click"
-          :placeholder="t('auth.passwordPlaceholder')"
+          :placeholder="t('auth.placeholder.password')"
         >
           <template #prefix>
             <NovaIcon icon="icon-park-outline:lock" />
@@ -78,9 +78,9 @@ async function handleSubmit() {
 
       <div class="auth-form-row">
         <n-checkbox v-model:checked="form.remember">
-          {{ t('auth.rememberMe') }}
+          {{ t('auth.remember_me') }}
         </n-checkbox>
-        <RouterLink to="/auth/forgot-password">{{ t('auth.forgotPassword') }}</RouterLink>
+        <RouterLink to="/auth/forgot-password">{{ t('auth.forgot_password') }}</RouterLink>
       </div>
 
       <n-button
@@ -95,8 +95,8 @@ async function handleSubmit() {
       </n-button>
 
       <p class="auth-switch">
-        {{ t('auth.noAccount') }}
-        <RouterLink to="/auth/register">{{ t('auth.createAccount') }}</RouterLink>
+        {{ t('auth.no_account') }}
+        <RouterLink to="/auth/register">{{ t('auth.create_account') }}</RouterLink>
       </p>
     </n-form>
   </AuthLayout>
