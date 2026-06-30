@@ -1,0 +1,18 @@
+{
+  "title": "Resource Module Management",
+  "id": "Resource Module ID",
+  "name": "Module Name",
+  "code": "Module Code",
+  "icon": "Icon",
+  "color": "Color",
+  "sort": "Sort",
+  "status": "Status",
+  "description": "Description",
+  "extra": "Extra",
+  "add_module": "Add Resource Module",
+  "edit_module": "Edit Resource Module",
+  "detail_module": "Resource Module Detail",
+  "delete_confirm": "Delete this resource module?",
+  "batch_delete_confirm": "Delete {count} selected resource modules?",
+  "color_pattern": "Enter a hex color, for example #1677ff"
+}

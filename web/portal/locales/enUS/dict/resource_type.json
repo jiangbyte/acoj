@@ -1,0 +1,9 @@
+{
+  "title": "Resource Type",
+  "catalog": "Catalog",
+  "menu": "Menu",
+  "page": "Page",
+  "button": "Button",
+  "action": "Action",
+  "api_group": "API Group"
+}

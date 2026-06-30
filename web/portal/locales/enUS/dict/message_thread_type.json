@@ -1,0 +1,6 @@
+{
+  "title": "Message Thread Type",
+  "direct": "Direct",
+  "group": "Group",
+  "system": "System"
+}
