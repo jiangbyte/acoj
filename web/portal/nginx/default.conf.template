@@ -2,8 +2,8 @@
 # 输出到 /etc/nginx/conf.d/default.conf。nginx 自身变量（$host 等）不在环境变量中，保持原样。
 # 启动示例：docker run -e BACKEND_URL="http://172.20.42.133:8000" ...
 server {
-    listen 81;
-    listen [::]:81;
+    listen 80;
+    listen [::]:80;
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
