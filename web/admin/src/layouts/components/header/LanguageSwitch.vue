@@ -9,16 +9,16 @@ const { t } = useI18n()
 
 const options = computed<DropdownOption[]>(() => [
   {
-    label: t('app.langZh'),
+    label: t('app.lang_zh'),
     key: 'zhCN',
   },
   {
-    label: t('app.langEn'),
+    label: t('app.lang_en'),
     key: 'enUS',
   },
 ])
 
-const currentLabel = computed(() => (appStore.lang === 'zhCN' ? t('app.langZh') : t('app.langEn')))
+const currentLabel = computed(() => (appStore.lang === 'zhCN' ? t('app.lang_zh') : t('app.lang_en')))
 
 function handleSelect(key: string | number) {
   appStore.setAppLang(key as App.Lang)

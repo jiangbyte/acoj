@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useBoolean } from '@/hooks'
 import { useAppStore, useRouteStore } from '@/stores'
+import { translateLocale } from '@/utils/i18n'
 
 const appStore = useAppStore()
 const routeStore = useRouteStore()
@@ -63,7 +64,7 @@ const options = computed<SearchOption[]>(() => {
   return routeStore.rowRoutes
     .map((item) => ({
       item,
-      label: item.name,
+      label: translateLocale(item.locale_key, item.name),
     }))
     .filter(({ item, label }) => {
       if (
@@ -198,7 +199,7 @@ function handleMouseEnter(index: number) {
     <template #header>
       <n-input
         v-model:value="searchValue"
-        :placeholder="t('app.searchPlaceholder')"
+        :placeholder="t('app.placeholder.search')"
         clearable
         size="large"
         @input="handleInputChange"
@@ -239,7 +240,7 @@ function handleMouseEnter(index: number) {
         v-else
         size="large"
         class="h-450px flex-center"
-        :description="t('app.searchEmpty')"
+        :description="t('app.search_empty')"
       />
     </n-scrollbar>
 

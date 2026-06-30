@@ -1,6 +1,7 @@
 <script setup lang="tsx">
 import type { DataTableColumns } from 'naive-ui'
 import { roleApi } from '@/api'
+import { translateLocale } from '@/utils'
 import { NCheckbox } from 'naive-ui'
 import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -17,14 +18,14 @@ const state = reactive({
   subject: {} as any,
   grantApi: roleApi as any,
   title: '',
-  activeModuleId: '',
+  activeModuleId: null as string | null,
   modules: [] as any[],
 })
 
 const modalTitle = computed(() =>
   state.subject?.name
-    ? `${state.title || t('pages.iam.role.grantResource')} - ${state.subject.name}`
-    : state.title || t('pages.iam.role.grantResource'),
+    ? `${state.title || t('resource.iam.role.grant_resource')} - ${state.subject.name}`
+    : state.title || t('resource.iam.role.grant_resource'),
 )
 const activeModule = computed(
   () => state.modules.find((item) => item.id === state.activeModuleId) ?? state.modules[0],
@@ -33,22 +34,22 @@ const rows = computed(() => activeModule.value?.menu ?? [])
 const firstShowMap = computed<Record<string, number[]>>(() => {
   const map: Record<string, number[]> = {}
   rows.value.forEach((item: any, index: number) => {
-    if (map[item.parent_id_name]) {
-      map[item.parent_id_name].push(index)
+    if (map[item.parent_id_name_display]) {
+      map[item.parent_id_name_display].push(index)
     } else {
-      map[item.parent_id_name] = [index]
+      map[item.parent_id_name_display] = [index]
     }
   })
   return map
 })
 const columns = computed<DataTableColumns<any>>(() => [
   {
-    title: t('pages.iam.role.parentResource'),
+    title: t('resource.iam.role.parent_resource'),
     key: 'parent_id_name',
     fixed: 'left',
     width: 180,
     rowSpan: (row, rowIndex) => {
-      const indexArr = firstShowMap.value[row.parent_id_name] ?? []
+      const indexArr = firstShowMap.value[row.parent_id_name_display] ?? []
       return rowIndex === indexArr[0] ? indexArr.length : 0
     },
     render: (row) => (
@@ -56,12 +57,12 @@ const columns = computed<DataTableColumns<any>>(() => [
         checked={row.parentCheck}
         onUpdateChecked={(checked) => changeParent(row, Boolean(checked))}
       >
-        {row.parent_id_name}
+        {row.parent_id_name_display}
       </NCheckbox>
     ),
   },
   {
-    title: t('pages.iam.role.menuResource'),
+    title: t('resource.iam.role.menu_resource'),
     key: 'title',
     width: 220,
     render: (row) => (
@@ -69,12 +70,12 @@ const columns = computed<DataTableColumns<any>>(() => [
         checked={row.nameCheck}
         onUpdateChecked={(checked) => changeSub(row, Boolean(checked))}
       >
-        {row.title}
+        {row.title_display}
       </NCheckbox>
     ),
   },
   {
-    title: t('pages.iam.role.buttonGrant'),
+    title: t('resource.iam.role.button_grant'),
     key: 'button',
     minWidth: 520,
     render: (row) => {
@@ -89,7 +90,7 @@ const columns = computed<DataTableColumns<any>>(() => [
               checked={button.check}
               onUpdateChecked={(checked) => changeChildCheckBox(row, button, Boolean(checked))}
             >
-              {button.title}
+              {button.title_display}
             </NCheckbox>
           ))}
         </div>
@@ -103,7 +104,7 @@ async function openModal(subject: any, grantApi: any = roleApi, title = '') {
   state.grantApi = grantApi
   state.title = title
   state.modules = []
-  state.activeModuleId = ''
+  state.activeModuleId = null
   state.showModal = true
   await fetchGrant()
 }
@@ -120,7 +121,7 @@ async function fetchGrant() {
       response.data?.grant_info_list ?? [],
     )
     state.modules = modules
-    state.activeModuleId = modules[0]?.id ?? ''
+    state.activeModuleId = modules[0]?.id ?? null
   } finally {
     state.loading = false
   }
@@ -133,7 +134,7 @@ async function submitGrant() {
       id: state.subject.id,
       grant_info_list: convertData(),
     })
-    window.$message.success(t('pages.iam.role.grantSuccess'))
+    window.$message.success(t('resource.iam.role.grant_success'))
     closeModal()
     emit('saved')
   } finally {
@@ -143,7 +144,7 @@ async function submitGrant() {
 
 function closeModal() {
   state.modules = []
-  state.activeModuleId = ''
+  state.activeModuleId = null
   state.showModal = false
   state.submitLoading = false
 }
@@ -154,21 +155,27 @@ function echoModuleData(modules: any[], grant_info_list: any[]) {
   )
   return JSON.parse(JSON.stringify(modules)).map((module: any) => ({
     ...module,
+    title_display: translateLocale(module.locale_key, module.title),
     menu: (module.menu ?? [])
       .map((menu: any) => {
         const buttonSet = grantMap.get(menu.id)
         return {
           ...menu,
+          parent_id_name_display: translateLocale(menu.parent_locale_key, menu.parent_id_name),
+          title_display: translateLocale(menu.locale_key, menu.title),
           parentCheck: Boolean(buttonSet),
           nameCheck: Boolean(buttonSet),
           button: (menu.button ?? []).map((button: any) => ({
             ...button,
+            title_display: translateLocale(button.locale_key, button.title),
             check: Boolean(buttonSet?.has(button.permission_key ?? button.id)),
           })),
         }
       })
       .sort((a: any, b: any) => {
-        const nameComparison = String(b.parent_id_name).localeCompare(String(a.parent_id_name))
+        const nameComparison = String(b.parent_id_name_display).localeCompare(
+          String(a.parent_id_name_display),
+        )
         return nameComparison !== 0 ? nameComparison : Number(a.parent_id) - Number(b.parent_id)
       }),
   }))
@@ -178,7 +185,7 @@ function changeParent(record: any, checked: boolean) {
   record.parentCheck = checked
   const moduleMenu = state.modules.find((item) => item.id === record.module_id)?.menu ?? []
   moduleMenu
-    .filter((item: any) => item.parent_id_name === record.parent_id_name)
+    .filter((item: any) => item.parent_id_name_display === record.parent_id_name_display)
     .forEach((item: any) => changeSub(item, checked))
 }
 
@@ -225,7 +232,7 @@ defineExpose({
   >
     <NDrawerContent :title="modalTitle" closable :native-scrollbar="false">
       <NAlert type="warning" :bordered="false" class="mb-10px">
-        {{ t('pages.iam.role.grantResourceTip') }}
+        {{ t('resource.iam.role.grant_resource_tip') }}
       </NAlert>
       <NSpin :show="state.loading">
         <NRadioGroup v-model:value="state.activeModuleId" size="small" class="mb-10px">
@@ -233,7 +240,7 @@ defineExpose({
             v-for="module in state.modules"
             :key="module.id"
             :value="module.id"
-            :label="module.title"
+            :label="module.title_display"
           />
         </NRadioGroup>
 

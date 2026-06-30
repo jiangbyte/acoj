@@ -23,49 +23,49 @@ const form = reactive({
 
 function validateConfirmPassword(_rule: FormItemRule, value: string) {
   if (!value) {
-    return new Error(t('auth.confirmPasswordRequired'))
+    return new Error(t('auth.confirm_password_required'))
   }
   if (value !== form.password) {
-    return new Error(t('auth.passwordMismatch'))
+    return new Error(t('auth.password_mismatch'))
   }
   return true
 }
 
 function validateAgreement(_rule: FormItemRule, value: boolean) {
-  return value || new Error(t('auth.agreementRequired'))
+  return value || new Error(t('auth.agreement_required'))
 }
 
 const rules = computed<FormRules>(() => ({
   account: [
     {
       required: true,
-      message: t('auth.accountRequired'),
+      message: t('auth.account_required'),
       trigger: ['input', 'blur'],
     },
   ],
   nickname: [
     {
       required: true,
-      message: t('auth.nicknameRequired'),
+      message: t('auth.nickname_required'),
       trigger: ['input', 'blur'],
     },
   ],
   name: [
     {
       required: true,
-      message: t('auth.nameRequired'),
+      message: t('auth.name_required'),
       trigger: ['input', 'blur'],
     },
   ],
   password: [
     {
       required: true,
-      message: t('auth.passwordRequired'),
+      message: t('auth.password_required'),
       trigger: ['input', 'blur'],
     },
     {
       min: 8,
-      message: t('auth.passwordMin'),
+      message: t('auth.password_min'),
       trigger: ['input', 'blur'],
     },
   ],
@@ -102,7 +102,7 @@ async function handleSubmit() {
       password: form.password,
     })
     loading.value = false
-    window.$message.success(t('auth.registerSuccess'))
+    window.$message.success(t('auth.register_success'))
     router.push('/auth/login')
   } finally {
     loading.value = false
@@ -111,10 +111,10 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <AuthLayout :title="t('auth.registerTitle')" :subtitle="t('auth.registerSubtitle')">
+  <AuthLayout :title="t('auth.register_title')" :subtitle="t('auth.register_subtitle')">
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
       <n-form-item path="account" :label="t('auth.account')">
-        <n-input v-model:value="form.account" :placeholder="t('auth.accountPlaceholder')" clearable>
+        <n-input v-model:value="form.account" :placeholder="t('auth.placeholder.account')" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>
@@ -124,7 +124,7 @@ async function handleSubmit() {
       <n-form-item path="nickname" :label="t('auth.nickname')">
         <n-input
           v-model:value="form.nickname"
-          :placeholder="t('auth.nicknamePlaceholder')"
+          :placeholder="t('auth.placeholder.nickname')"
           clearable
         >
           <template #prefix>
@@ -134,7 +134,7 @@ async function handleSubmit() {
       </n-form-item>
 
       <n-form-item path="name" :label="t('auth.name')">
-        <n-input v-model:value="form.name" :placeholder="t('auth.namePlaceholder')" clearable>
+        <n-input v-model:value="form.name" :placeholder="t('auth.placeholder.name')" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:id-card" />
           </template>
@@ -142,7 +142,7 @@ async function handleSubmit() {
       </n-form-item>
 
       <n-form-item path="phone" :label="t('auth.phone')">
-        <n-input v-model:value="form.phone" :placeholder="t('auth.phonePlaceholder')" clearable>
+        <n-input v-model:value="form.phone" :placeholder="t('auth.placeholder.phone')" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:phone" />
           </template>
@@ -150,7 +150,7 @@ async function handleSubmit() {
       </n-form-item>
 
       <n-form-item path="email" :label="t('auth.email')">
-        <n-input v-model:value="form.email" :placeholder="t('auth.emailPlaceholder')" clearable>
+        <n-input v-model:value="form.email" :placeholder="t('auth.placeholder.email')" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>
@@ -162,7 +162,7 @@ async function handleSubmit() {
           v-model:value="form.password"
           type="password"
           show-password-on="click"
-          :placeholder="t('auth.passwordCreatePlaceholder')"
+          :placeholder="t('auth.placeholder.password_create')"
         >
           <template #prefix>
             <NovaIcon icon="icon-park-outline:lock" />
@@ -170,12 +170,12 @@ async function handleSubmit() {
         </n-input>
       </n-form-item>
 
-      <n-form-item path="confirmPassword" :label="t('auth.confirmPassword')">
+      <n-form-item path="confirmPassword" :label="t('auth.confirm_password')">
         <n-input
           v-model:value="form.confirmPassword"
           type="password"
           show-password-on="click"
-          :placeholder="t('auth.confirmPasswordPlaceholder')"
+          :placeholder="t('auth.placeholder.confirm_password')"
         >
           <template #prefix>
             <NovaIcon icon="icon-park-outline:check-correct" />
@@ -185,7 +185,7 @@ async function handleSubmit() {
 
       <n-form-item path="agreement" :show-label="false">
         <n-checkbox v-model:checked="form.agreement">
-          {{ t('auth.agreePrefix') }}
+          {{ t('auth.agree_prefix') }}
           <a href="#" @click.prevent>{{ t('auth.terms') }}</a>
         </n-checkbox>
       </n-form-item>
@@ -202,8 +202,8 @@ async function handleSubmit() {
       </n-button>
 
       <p class="auth-switch">
-        {{ t('auth.hasAccount') }}
-        <RouterLink to="/auth/login">{{ t('auth.backToLogin') }}</RouterLink>
+        {{ t('auth.has_account') }}
+        <RouterLink to="/auth/login">{{ t('auth.back_to_login') }}</RouterLink>
       </p>
     </n-form>
   </AuthLayout>

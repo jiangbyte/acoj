@@ -50,17 +50,17 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('pages.iam.role.code'),
+    title: t('resource.iam.role.code'),
     path: 'code',
     field: 'input',
   },
   {
-    title: t('pages.iam.role.name'),
+    title: t('resource.iam.role.name'),
     path: 'name',
     field: 'input',
   },
   {
-    title: t('pages.iam.role.category'),
+    title: t('resource.iam.role.category'),
     path: 'category',
     field: 'select',
     fieldProps: {
@@ -68,7 +68,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.role.scopeType'),
+    title: t('resource.iam.role.scope_type'),
     path: 'scope_type',
     field: 'select',
     fieldProps: {
@@ -117,7 +117,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.role.code'),
+    title: t('resource.iam.role.code'),
     path: 'code',
     width: 150,
     ellipsis: {
@@ -125,7 +125,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.role.name'),
+    title: t('resource.iam.role.name'),
     path: 'name',
     width: 160,
     ellipsis: {
@@ -133,19 +133,19 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.role.category'),
+    title: t('resource.iam.role.category'),
     path: 'category',
     width: 130,
     render: (row) => dictTypeData('SYS_BIZ_CATEGORY', row.category) || row.category,
   },
   {
-    title: t('pages.iam.role.scopeType'),
+    title: t('resource.iam.role.scope_type'),
     path: 'scope_type',
     width: 130,
     render: (row) => dictTypeData('ROLE_SCOPE_TYPE', row.scope_type) || row.scope_type,
   },
   {
-    title: t('pages.iam.role.ownerDeptId'),
+    title: t('resource.iam.role.owner_dept_id'),
     path: 'owner_dept_id',
     width: 150,
     ellipsis: {
@@ -153,15 +153,15 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.role.sort'),
+    title: t('resource.iam.role.sort'),
     path: 'sort',
     width: 90,
   },
   {
-    title: t('pages.iam.role.isBuiltin'),
+    title: t('resource.iam.role.is_builtin'),
     path: 'is_builtin',
     width: 110,
-    render: (row) => (row.is_builtin ? t('pages.iam.role.yes') : t('pages.iam.role.no')),
+    render: (row) => (row.is_builtin ? t('resource.iam.role.yes') : t('resource.iam.role.no')),
   },
   {
     title: t('common.often.status'),
@@ -174,7 +174,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updatedAt'),
+    title: t('common.often.updated_at'),
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -207,7 +207,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
               onSelect={(key) => openGrantModal(String(key), row)}
             >
               <NButton type="warning" size="small" text={true}>
-                {t('pages.iam.role.grant')}
+                {t('resource.iam.role.grant')}
               </NButton>
             </NDropdown>
           ) : null}
@@ -225,17 +225,17 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
 const grantOptions = computed(() =>
   [
     {
-      label: t('pages.iam.role.grantResource'),
+      label: t('resource.iam.role.grant_resource'),
       key: 'resource',
       permission: 'iam:role:grantresource',
     },
     {
-      label: t('pages.iam.role.grantPermission'),
+      label: t('resource.iam.role.grant_permission'),
       key: 'permission',
       permission: 'iam:role:grantpermission',
     },
     {
-      label: t('pages.iam.role.grantUser'),
+      label: t('resource.iam.role.grant_user'),
       key: 'user',
       permission: 'iam:role:grantuser',
     },
@@ -307,12 +307,12 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batchDelete') : t('common.often.delete'),
+    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('pages.iam.role.batchDeleteConfirm', { count: ids.length })
-      : t('pages.iam.role.deleteConfirm'),
+      ? t('resource.iam.role.batch_delete_confirm', { count: ids.length })
+      : t('resource.iam.role.delete_confirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: () => deleteData(ids),
@@ -323,7 +323,7 @@ async function deleteData(ids: string[]) {
   await roleApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success(t('common.often.deleteSuccess'))
+  window.$message.success(t('common.often.delete_success'))
   await fetchPage()
   if (!state.roles.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -341,7 +341,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('pages.iam.role.title')"
+      :title="t('resource.iam.role.title')"
       row-key="id"
       :scroll-x="1600"
       :columns="tableColumns"
@@ -375,7 +375,7 @@ async function deleteData(ids: string[]) {
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >
-            {{ t('common.often.batchDelete') }}
+            {{ t('common.often.batch_delete') }}
             {{ t('common.often.total', { count: state.checkedRowKeys.length }) }}
           </NButton>
         </NFlex>

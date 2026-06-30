@@ -36,17 +36,17 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('pages.sys.banner.editBanner') : t('pages.sys.banner.addBanner'),
+  state.dataId ? t('resource.sys.banner.edit_banner') : t('resource.sys.banner.add_banner'),
 )
 
 const rules = computed<FormRules>(() => ({
-  title: createRequiredRule(t, t('pages.sys.banner.titleField'), 'input'),
-  image: createRequiredRule(t, t('pages.sys.banner.image'), 'input'),
-  link_type: createRequiredRule(t, t('pages.sys.banner.linkType'), 'change'),
-  category: createRequiredRule(t, t('pages.sys.banner.category'), 'change'),
-  type: createRequiredRule(t, t('pages.sys.banner.type'), 'change'),
-  position: createRequiredRule(t, t('pages.sys.banner.position'), 'change'),
-  display_scope: createRequiredRule(t, t('pages.sys.banner.displayScope'), 'change'),
+  title: createRequiredRule(t, t('resource.sys.banner.title_field'), 'input'),
+  image: createRequiredRule(t, t('resource.sys.banner.image'), 'input'),
+  link_type: createRequiredRule(t, t('resource.sys.banner.link_type'), 'change'),
+  category: createRequiredRule(t, t('resource.sys.banner.category'), 'change'),
+  type: createRequiredRule(t, t('resource.sys.banner.type'), 'change'),
+  position: createRequiredRule(t, t('resource.sys.banner.position'), 'change'),
+  display_scope: createRequiredRule(t, t('resource.sys.banner.display_scope'), 'change'),
   status: createRequiredRule(t, t('common.often.status'), 'change'),
 }))
 
@@ -94,10 +94,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.updateSuccess'))
+      window.$message.success(t('common.often.update_success'))
     } else {
       await bannerApi.create(payload)
-      window.$message.success(t('common.often.createSuccess'))
+      window.$message.success(t('common.often.create_success'))
     }
 
     closeModal()
@@ -132,50 +132,50 @@ defineExpose({
           label-width="100"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('pages.sys.banner.titleField')" path="title">
+          <NFormItem :label="t('resource.sys.banner.title_field')" path="title">
             <NInput v-model:value="state.formModel.title" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.image')" path="image">
+          <NFormItem :label="t('resource.sys.banner.image')" path="image">
             <NInput v-model:value="state.formModel.image" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.url')" path="url">
+          <NFormItem :label="t('resource.sys.banner.url')" path="url">
             <NInput v-model:value="state.formModel.url" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.linkType')" path="link_type">
+          <NFormItem :label="t('resource.sys.banner.link_type')" path="link_type">
             <DictSelect
               v-model="state.formModel.link_type"
               dict-code="BANNER_LINK_TYPE"
               type="radio"
             />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.category')" path="category">
+          <NFormItem :label="t('resource.sys.banner.category')" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="BANNER_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.type')" path="type">
+          <NFormItem :label="t('resource.sys.banner.type')" path="type">
             <DictSelect v-model="state.formModel.type" dict-code="BANNER_TYPE" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.position')" path="position">
+          <NFormItem :label="t('resource.sys.banner.position')" path="position">
             <DictSelect v-model="state.formModel.position" dict-code="BANNER_POSITION" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.displayScope')" path="display_scope">
+          <NFormItem :label="t('resource.sys.banner.display_scope')" path="display_scope">
             <DictSelect v-model="state.formModel.display_scope" dict-code="BANNER_DISPLAY_SCOPE" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.sort')" path="sort">
+          <NFormItem :label="t('resource.sys.banner.sort')" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
           <NFormItem :label="t('common.often.status')" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.startAt')" path="start_at">
+          <NFormItem :label="t('resource.sys.banner.start_at')" path="start_at">
             <NInput v-model:value="state.formModel.start_at" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.endAt')" path="end_at">
+          <NFormItem :label="t('resource.sys.banner.end_at')" path="end_at">
             <NInput v-model:value="state.formModel.end_at" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.summary')" path="summary">
+          <NFormItem :label="t('resource.sys.banner.summary')" path="summary">
             <NInput v-model:value="state.formModel.summary" />
           </NFormItem>
-          <NFormItem :label="t('pages.sys.banner.description')" path="description">
+          <NFormItem :label="t('resource.sys.banner.description')" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"

@@ -39,41 +39,41 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('pages.iam.role.detailRole')"
+    :title="t('resource.iam.role.detail_role')"
     style="width: 680px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('pages.iam.role.id')">
+          <NDescriptionsItem :label="t('resource.iam.role.id')">
             {{ displayValue(state.role.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.role.code')">
+          <NDescriptionsItem :label="t('resource.iam.role.code')">
             {{ displayValue(state.role.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.role.name')">
+          <NDescriptionsItem :label="t('resource.iam.role.name')">
             {{ displayValue(state.role.name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.role.category')">
+          <NDescriptionsItem :label="t('resource.iam.role.category')">
             {{
               dictTypeData('SYS_BIZ_CATEGORY', state.role.category) ||
               displayValue(state.role.category)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.role.scopeType')">
+          <NDescriptionsItem :label="t('resource.iam.role.scope_type')">
             {{
               dictTypeData('ROLE_SCOPE_TYPE', state.role.scope_type) ||
               displayValue(state.role.scope_type)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.role.ownerDeptId')">
+          <NDescriptionsItem :label="t('resource.iam.role.owner_dept_id')">
             {{ displayValue(state.role.owner_dept_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.role.sort')">
+          <NDescriptionsItem :label="t('resource.iam.role.sort')">
             {{ displayValue(state.role.sort) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.role.isBuiltin')">
-            {{ state.role.is_builtin ? t('pages.iam.role.yes') : t('pages.iam.role.no') }}
+          <NDescriptionsItem :label="t('resource.iam.role.is_builtin')">
+            {{ state.role.is_builtin ? t('resource.iam.role.yes') : t('resource.iam.role.no') }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('common.often.status')">
             <NTag
@@ -85,19 +85,19 @@ defineExpose({
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.role.description')">
+          <NDescriptionsItem :label="t('resource.iam.role.description')">
             {{ displayValue(state.role.description) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdAt')">
+          <NDescriptionsItem :label="t('common.often.created_at')">
             {{ displayValue(state.role.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdBy')">
+          <NDescriptionsItem :label="t('common.often.created_by')">
             {{ displayValue(state.role.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedAt')">
+          <NDescriptionsItem :label="t('common.often.updated_at')">
             {{ displayValue(state.role.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedBy')">
+          <NDescriptionsItem :label="t('common.often.updated_by')">
             {{ displayValue(state.role.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

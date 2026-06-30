@@ -41,25 +41,25 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('pages.iam.account.editAccount') : t('pages.iam.account.addAccount'),
+  state.dataId ? t('resource.iam.account.edit_account') : t('resource.iam.account.add_account'),
 )
 
 const rules = computed<FormRules>(() => ({
-  account: createRequiredRule(t, t('pages.iam.account.account'), 'input'),
+  account: createRequiredRule(t, t('resource.iam.account.account'), 'input'),
   password: [
     {
       validator: (_rule, value) => {
         if (!state.dataId && !String(value ?? '').trim()) {
-          return new Error(t('common.required', { field: t('pages.iam.account.password') }))
+          return new Error(t('common.required', { field: t('resource.iam.account.password') }))
         }
         return true
       },
       trigger: ['input', 'blur'],
     },
   ],
-  account_type: createRequiredRule(t, t('pages.iam.account.accountType'), 'change'),
-  account_status: createRequiredRule(t, t('pages.iam.account.accountStatus'), 'change'),
-  name: createRequiredRule(t, t('pages.iam.account.name'), 'input'),
+  account_type: createRequiredRule(t, t('resource.iam.account.account_type'), 'change'),
+  account_status: createRequiredRule(t, t('resource.iam.account.account_status'), 'change'),
+  name: createRequiredRule(t, t('resource.iam.account.name'), 'input'),
 }))
 
 async function openModal(id?: string) {
@@ -133,10 +133,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.updateSuccess'))
+      window.$message.success(t('common.often.update_success'))
     } else {
       await accountApi.create(payload)
-      window.$message.success(t('common.often.createSuccess'))
+      window.$message.success(t('common.often.create_success'))
     }
 
     closeModal()
@@ -172,21 +172,21 @@ defineExpose({
           :disabled="state.loading || state.submitLoading"
         >
           <NTabs type="line" animated>
-            <NTabPane name="account" :tab="t('pages.iam.account.accountInfo')">
-              <NFormItem :label="t('pages.iam.account.password')" path="password">
+            <NTabPane name="account" :tab="t('resource.iam.account.account_info')">
+              <NFormItem :label="t('resource.iam.account.password')" path="password">
                 <NInput
                   v-model:value="state.formModel.password"
                   type="password"
                   show-password-on="click"
                   :placeholder="
-                    state.dataId ? t('pages.iam.account.passwordEditPlaceholder') : undefined
+                    state.dataId ? t('resource.iam.account.placeholder.password_edit') : undefined
                   "
                 />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.accountType')" path="account_type">
+              <NFormItem :label="t('resource.iam.account.account_type')" path="account_type">
                 <DictSelect v-model="state.formModel.account_type" dict-code="ACCOUNT_TYPE" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.accountStatus')" path="account_status">
+              <NFormItem :label="t('resource.iam.account.account_status')" path="account_status">
                 <DictSelect
                   v-model="state.formModel.account_status"
                   dict-code="ACCOUNT_STATUS"
@@ -195,29 +195,29 @@ defineExpose({
               </NFormItem>
             </NTabPane>
 
-            <NTabPane name="identity" :tab="t('pages.iam.account.loginIdentity')">
-              <NFormItem :label="t('pages.iam.account.account')" path="account">
+            <NTabPane name="identity" :tab="t('resource.iam.account.login_identity')">
+              <NFormItem :label="t('resource.iam.account.account')" path="account">
                 <NInput v-model:value="state.formModel.account" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.emailIdentity')" path="email_identity">
+              <NFormItem :label="t('resource.iam.account.email_identity')" path="email_identity">
                 <NInput v-model:value="state.formModel.email_identity" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.emailIdentityVerified')">
+              <NFormItem :label="t('resource.iam.account.email_identity_verified')">
                 <NSwitch v-model:value="state.formModel.email_identity_verified" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.emailIdentityBindStatus')">
+              <NFormItem :label="t('resource.iam.account.email_identity_bind_status')">
                 <DictSelect
                   v-model="state.formModel.email_identity_bind_status"
                   dict-code="ACCOUNT_IDENTITY_BIND_STATUS"
                 />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.phoneIdentity')" path="phone_identity">
+              <NFormItem :label="t('resource.iam.account.phone_identity')" path="phone_identity">
                 <NInput v-model:value="state.formModel.phone_identity" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.phoneIdentityVerified')">
+              <NFormItem :label="t('resource.iam.account.phone_identity_verified')">
                 <NSwitch v-model:value="state.formModel.phone_identity_verified" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.phoneIdentityBindStatus')">
+              <NFormItem :label="t('resource.iam.account.phone_identity_bind_status')">
                 <DictSelect
                   v-model="state.formModel.phone_identity_bind_status"
                   dict-code="ACCOUNT_IDENTITY_BIND_STATUS"
@@ -225,36 +225,36 @@ defineExpose({
               </NFormItem>
             </NTabPane>
 
-            <NTabPane name="profile" :tab="t('pages.iam.account.profileInfo')">
-              <NFormItem :label="t('pages.iam.account.name')" path="name">
+            <NTabPane name="profile" :tab="t('resource.iam.account.profile_info')">
+              <NFormItem :label="t('resource.iam.account.name')" path="name">
                 <NInput v-model:value="state.formModel.name" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.nickname')" path="nickname">
+              <NFormItem :label="t('resource.iam.account.nickname')" path="nickname">
                 <NInput v-model:value="state.formModel.nickname" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.avatar')" path="avatar">
+              <NFormItem :label="t('resource.iam.account.avatar')" path="avatar">
                 <NInput v-model:value="state.formModel.avatar" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.signature')" path="signature">
+              <NFormItem :label="t('resource.iam.account.signature')" path="signature">
                 <NInput
                   v-model:value="state.formModel.signature"
                   type="textarea"
                   :autosize="{ minRows: 3, maxRows: 5 }"
                 />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.phone')" path="phone">
+              <NFormItem :label="t('resource.iam.account.phone')" path="phone">
                 <NInput v-model:value="state.formModel.phone" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.email')" path="email">
+              <NFormItem :label="t('resource.iam.account.email')" path="email">
                 <NInput v-model:value="state.formModel.email" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.employeeNo')" path="employee_no">
+              <NFormItem :label="t('resource.iam.account.employee_no')" path="employee_no">
                 <NInput v-model:value="state.formModel.employee_no" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.titleName')" path="title">
+              <NFormItem :label="t('resource.iam.account.title_name')" path="title">
                 <NInput v-model:value="state.formModel.title" />
               </NFormItem>
-              <NFormItem :label="t('pages.iam.account.remark')" path="remark">
+              <NFormItem :label="t('resource.iam.account.remark')" path="remark">
                 <NInput
                   v-model:value="state.formModel.remark"
                   type="textarea"

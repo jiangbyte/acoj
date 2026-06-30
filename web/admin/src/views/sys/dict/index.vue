@@ -7,7 +7,7 @@ import { createTagColor, normalizeSearchValues } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
+import { dictList, dictTypeData, dictTypeColor, getDictLabel } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
@@ -52,7 +52,7 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('pages.sys.dict.code'),
+    title: t('resource.sys.dict.code'),
     path: 'code',
     field: 'input',
   },
@@ -103,7 +103,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.sys.dict.code'),
+    title: t('resource.sys.dict.code'),
     path: 'code',
     width: 190,
     ellipsis: {
@@ -111,15 +111,24 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.sys.dict.label'),
+    title: t('resource.sys.dict.label'),
     path: 'label',
     width: 150,
+    render: (row) => getDictLabel(row),
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('pages.sys.dict.value'),
+    title: t('common.often.locale_key'),
+    path: 'locale_key',
+    width: 220,
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: t('resource.sys.dict.value'),
     path: 'value',
     width: 150,
     ellipsis: {
@@ -127,7 +136,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.sys.dict.color'),
+    title: t('resource.sys.dict.color'),
     path: 'color',
     width: 120,
     render: (row) =>
@@ -140,13 +149,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
       ),
   },
   {
-    title: t('pages.sys.dict.category'),
+    title: t('resource.sys.dict.category'),
     path: 'category',
     width: 120,
     render: (row) => dictTypeData('SYS_BIZ_CATEGORY', row.category),
   },
   {
-    title: t('pages.sys.dict.parent'),
+    title: t('resource.sys.dict.parent'),
     path: 'parent_id_name',
     width: 180,
     ellipsis: {
@@ -154,7 +163,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.sys.dict.sort'),
+    title: t('resource.sys.dict.sort'),
     path: 'sort',
     width: 90,
   },
@@ -169,7 +178,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updatedAt'),
+    title: t('common.often.updated_at'),
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -299,12 +308,12 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batchDelete') : t('common.often.delete'),
+    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('pages.sys.dict.batchDeleteConfirm', { count: deleteIds.length })
-      : t('pages.sys.dict.deleteConfirm'),
+      ? t('resource.sys.dict.batch_delete_confirm', { count: deleteIds.length })
+      : t('resource.sys.dict.delete_confirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: () => deleteData(deleteIds),
@@ -317,7 +326,7 @@ async function deleteData(ids: string[]) {
   if (selectedParentId.value && ids.includes(selectedParentId.value)) {
     state.selectedTreeKeys = []
   }
-  window.$message.success(t('common.often.deleteSuccess'))
+  window.$message.success(t('common.often.delete_success'))
 
   await refreshData()
   await dictStore.refreshDict()
@@ -344,7 +353,7 @@ function collectDeleteIds(ids: string[]) {
 function buildTreeNodes(items: any[], keyword: string): any[] {
   const nodes = items.map((item) => ({
     key: item.id,
-    label: item.label || item.code,
+    label: getDictLabel(item),
     children: buildTreeNodes(item.children ?? [], keyword),
     sort: item.sort ?? 0,
     id: item.id,
@@ -369,6 +378,9 @@ function sortAndFilterTree(nodes: any[], keyword: string): any[] {
       return (
         raw.code.toLowerCase().includes(keyword) ||
         String(raw.label ?? '')
+          .toLowerCase()
+          .includes(keyword) ||
+        String(raw.locale_key ?? '')
           .toLowerCase()
           .includes(keyword) ||
         node.children.length > 0
@@ -407,7 +419,7 @@ function flattenDictTree(items: any[]) {
         <NInput
           v-model:value="state.treeSearchKey"
           clearable
-          :placeholder="t('pages.sys.dict.searchTree')"
+          :placeholder="t('resource.sys.dict.placeholder.search_tree')"
         >
           <template #prefix>
             <NIcon>
@@ -422,8 +434,8 @@ function flattenDictTree(items: any[]) {
           justify-content="space-evenly"
           @update:value="handleCategoryUpdate"
         >
-          <NTabPane name="SYS" :tab="t('pages.sys.dict.categories.sys')" />
-          <NTabPane name="BIZ" :tab="t('pages.sys.dict.categories.biz')" />
+          <NTabPane name="SYS" :tab="t('resource.sys.dict.categories.sys')" />
+          <NTabPane name="BIZ" :tab="t('resource.sys.dict.categories.biz')" />
         </NTabs>
         <div class="dict-tree-body">
           <NSpin
@@ -457,7 +469,7 @@ function flattenDictTree(items: any[]) {
       <ProDataTable
         class="min-h-0 flex-1"
         remote
-        :title="t('pages.sys.dict.title')"
+        :title="t('resource.sys.dict.title')"
         row-key="id"
         :scroll-x="1590"
         :columns="tableColumns"
@@ -475,7 +487,7 @@ function flattenDictTree(items: any[]) {
                   <Icon icon="ant-design:plus-outlined" />
                 </NIcon>
               </template>
-              {{ t('pages.sys.dict.addDict') }}
+              {{ t('resource.sys.dict.add_dict') }}
             </NButton>
             <NButton ghost :loading="state.loading || state.treeLoading" @click="refreshData">
               <template #icon>
@@ -491,7 +503,7 @@ function flattenDictTree(items: any[]) {
               :disabled="!hasCheckedRows"
               @click="confirmDelete(state.checkedRowKeys)"
             >
-              {{ t('common.often.batchDelete') }}
+              {{ t('common.often.batch_delete') }}
               {{ t('common.often.total', { count: state.checkedRowKeys.length }) }}
             </NButton>
           </NFlex>

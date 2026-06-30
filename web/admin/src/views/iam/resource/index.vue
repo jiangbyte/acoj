@@ -2,7 +2,7 @@
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue'
 import { resourceApi, resourceModuleApi } from '@/api'
-import { createTagColor, normalizeSearchValues } from '@/utils'
+import { createTagColor, normalizeSearchValues, translateLocale } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -42,17 +42,17 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('pages.iam.resource.code'),
+    title: t('resource.iam.resource.code'),
     path: 'code',
     field: 'input',
   },
   {
-    title: t('pages.iam.resource.name'),
+    title: t('resource.iam.resource.name'),
     path: 'name',
     field: 'input',
   },
   {
-    title: t('pages.iam.resource.resourceType'),
+    title: t('resource.iam.resource.resource_type'),
     path: 'resource_type',
     field: 'select',
     fieldProps: {
@@ -60,7 +60,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.resource.module'),
+    title: t('resource.iam.resource.module'),
     path: 'module_id',
     field: 'select',
     fieldProps: {
@@ -68,7 +68,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.resource.parentId'),
+    title: t('resource.iam.resource.parent_id'),
     path: 'parent_id',
     field: 'input',
   },
@@ -88,15 +88,24 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: t('pages.iam.resource.name'),
+    title: t('resource.iam.resource.name'),
     path: 'name',
+    width: 220,
+    render: (row) => translateLocale(row.locale_key, row.name),
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: t('common.often.locale_key'),
+    path: 'locale_key',
     width: 220,
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('pages.iam.resource.code'),
+    title: t('resource.iam.resource.code'),
     path: 'code',
     width: 180,
     ellipsis: {
@@ -104,13 +113,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.resource.resourceType'),
+    title: t('resource.iam.resource.resource_type'),
     path: 'resource_type',
     width: 130,
     render: (row) => dictTypeData('RESOURCE_TYPE', row.resource_type) || row.resource_type,
   },
   {
-    title: t('pages.iam.resource.module'),
+    title: t('resource.iam.resource.module'),
     path: 'module_id_name',
     width: 130,
     ellipsis: {
@@ -119,7 +128,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     render: (row) => row.module_id_name || row.module_id || '-',
   },
   {
-    title: t('pages.iam.resource.path'),
+    title: t('resource.iam.resource.path'),
     path: 'path',
     width: 210,
     ellipsis: {
@@ -127,7 +136,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.resource.component'),
+    title: t('resource.iam.resource.component'),
     path: 'component',
     width: 230,
     ellipsis: {
@@ -135,15 +144,15 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.resource.sort'),
+    title: t('resource.iam.resource.sort'),
     path: 'sort',
     width: 90,
   },
   {
-    title: t('pages.iam.resource.isVisible'),
+    title: t('resource.iam.resource.is_visible'),
     path: 'is_visible',
     width: 90,
-    render: (row) => (row.is_visible ? t('pages.iam.resource.yes') : t('pages.iam.resource.no')),
+    render: (row) => (row.is_visible ? t('resource.iam.resource.yes') : t('resource.iam.resource.no')),
   },
   {
     title: t('common.often.status'),
@@ -156,7 +165,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updatedAt'),
+    title: t('common.often.updated_at'),
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -207,7 +216,7 @@ async function fetchTree() {
 async function fetchModules() {
   const response = await resourceModuleApi.selector()
   state.moduleOptions = (response.data ?? []).map((item: any) => ({
-    label: item.name,
+    label: translateLocale(item.locale_key, item.name),
     value: item.id,
   }))
 }
@@ -236,12 +245,12 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batchDelete') : t('common.often.delete'),
+    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('pages.iam.resource.batchDeleteConfirm', { count: ids.length })
-      : t('pages.iam.resource.deleteConfirm'),
+      ? t('resource.iam.resource.batch_delete_confirm', { count: ids.length })
+      : t('resource.iam.resource.delete_confirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: () => deleteData(ids),
@@ -251,7 +260,7 @@ function confirmDelete(value: string | string[]) {
 async function deleteData(ids: string[]) {
   await resourceApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
-  window.$message.success(t('common.often.deleteSuccess'))
+  window.$message.success(t('common.often.delete_success'))
   await fetchTree()
 }
 
@@ -318,7 +327,7 @@ function flattenResourceTree(items: any[]) {
 
     <ProDataTable
       class="min-h-0 flex-1"
-      :title="t('pages.iam.resource.title')"
+      :title="t('resource.iam.resource.title')"
       row-key="id"
       :scroll-x="1800"
       :columns="tableColumns"
@@ -353,7 +362,7 @@ function flattenResourceTree(items: any[]) {
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >
-            {{ t('common.often.batchDelete') }}
+            {{ t('common.often.batch_delete') }}
             {{ t('common.often.total', { count: state.checkedRowKeys.length }) }}
           </NButton>
         </NFlex>

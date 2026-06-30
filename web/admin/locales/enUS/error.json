@@ -1,20 +1,20 @@
 {
-  "notFoundTitle": "Page not found",
-  "notFoundDescription": "Please check whether the URL is correct.",
-  "backWorkbench": "Back to workbench",
+  "not_found_title": "Page not found",
+  "not_found_description": "Please check whether the URL is correct.",
+  "back_workbench": "Back to workbench",
   "request": {
     "network": "Network error. Please try again later.",
-    "statusDefault": "Request failed ({status})",
+    "status_default": "Request failed ({status})",
     "status": {
-      "400": "Invalid request parameters.",
-      "401": "Your session has expired. Please sign in again.",
-      "403": "You do not have permission to access this resource.",
-      "404": "The requested resource does not exist.",
-      "422": "Request validation failed.",
-      "500": "Server error. Please try again later.",
-      "502": "Bad gateway.",
-      "503": "Service unavailable. Please try again later.",
-      "504": "Gateway timeout. Please try again later."
+      "bad_request": "Invalid request parameters.",
+      "unauthorized": "Your session has expired. Please sign in again.",
+      "forbidden": "You do not have permission to access this resource.",
+      "not_found": "The requested resource does not exist.",
+      "validation_error": "Request validation failed.",
+      "server_error": "Server error. Please try again later.",
+      "bad_gateway": "Bad gateway.",
+      "service_unavailable": "Service unavailable. Please try again later.",
+      "gateway_timeout": "Gateway timeout. Please try again later."
     }
   }
 }

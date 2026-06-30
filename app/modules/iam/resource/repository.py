@@ -207,11 +207,17 @@ class ResourceRepository:
                         id=resource.id,
                         permission_key=resource.code,
                         title=resource.name,
+                        locale_key=resource.locale_key,
                     )
                 ]
             child_permission_map.setdefault(resource.parent_id, []).extend(options)
         module_map: dict[str, ResourceGrantModuleOption] = {
-            module.id: ResourceGrantModuleOption(id=module.id, title=module.name, menu=[])
+            module.id: ResourceGrantModuleOption(
+                id=module.id,
+                title=module.name,
+                locale_key=module.locale_key,
+                menu=[],
+            )
             for module in modules
         }
         module_sort_map = {module.id: module.sort for module in modules}
@@ -233,6 +239,8 @@ class ResourceRepository:
                     parent_id=resource.parent_id,
                     parent_id_name=parent.name if parent else "ROOT",
                     title=resource.name,
+                    locale_key=resource.locale_key,
+                    parent_locale_key=parent.locale_key if parent else None,
                     button=permission_map.get(resource.id, []) + child_permission_map.get(resource.id, []),
                 )
             )

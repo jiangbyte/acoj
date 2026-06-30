@@ -44,17 +44,17 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('pages.iam.position.name'),
+    title: t('resource.iam.position.name'),
     path: 'name',
     field: 'input',
   },
   {
-    title: t('pages.iam.position.code'),
+    title: t('resource.iam.position.code'),
     path: 'code',
     field: 'input',
   },
   {
-    title: t('pages.iam.position.category'),
+    title: t('resource.iam.position.category'),
     path: 'category',
     field: 'select',
     fieldProps: {
@@ -103,7 +103,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.position.name'),
+    title: t('resource.iam.position.name'),
     path: 'name',
     width: 160,
     ellipsis: {
@@ -111,7 +111,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.position.code'),
+    title: t('resource.iam.position.code'),
     path: 'code',
     width: 150,
     ellipsis: {
@@ -119,21 +119,21 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.iam.position.category'),
+    title: t('resource.iam.position.category'),
     path: 'category',
     width: 130,
     render: (row) => dictTypeData('POSITION_CATEGORY', row.category) || row.category,
   },
   {
-    title: t('pages.iam.position.sort'),
+    title: t('resource.iam.position.sort'),
     path: 'sort',
     width: 90,
   },
   {
-    title: t('pages.iam.position.isVirtual'),
+    title: t('resource.iam.position.is_virtual'),
     path: 'is_virtual',
     width: 110,
-    render: (row) => (row.is_virtual ? t('pages.iam.position.yes') : t('pages.iam.position.no')),
+    render: (row) => (row.is_virtual ? t('resource.iam.position.yes') : t('resource.iam.position.no')),
   },
   {
     title: t('common.often.status'),
@@ -146,7 +146,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updatedAt'),
+    title: t('common.often.updated_at'),
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -225,12 +225,12 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batchDelete') : t('common.often.delete'),
+    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('pages.iam.position.batchDeleteConfirm', { count: ids.length })
-      : t('pages.iam.position.deleteConfirm'),
+      ? t('resource.iam.position.batch_delete_confirm', { count: ids.length })
+      : t('resource.iam.position.delete_confirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: () => deleteData(ids),
@@ -241,7 +241,7 @@ async function deleteData(ids: string[]) {
   await positionApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success(t('common.often.deleteSuccess'))
+  window.$message.success(t('common.often.delete_success'))
   await fetchPage()
   if (!state.positions.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -259,7 +259,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('pages.iam.position.title')"
+      :title="t('resource.iam.position.title')"
       row-key="id"
       :scroll-x="1320"
       :columns="tableColumns"
@@ -293,7 +293,7 @@ async function deleteData(ids: string[]) {
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >
-            {{ t('common.often.batchDelete') }}
+            {{ t('common.often.batch_delete') }}
             {{ t('common.often.total', { count: state.checkedRowKeys.length }) }}
           </NButton>
         </NFlex>

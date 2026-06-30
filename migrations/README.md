@@ -61,6 +61,42 @@ python scripts/check_migration.py
 
 `check_migration.py` 用于确认当前数据库结构和 SQLAlchemy model 没有未生成的结构差异。
 
+## 重建初始迁移
+
+如果项目早期还没有稳定发布，想清空 `migrations/versions` 并重新生成一份全新的初始迁移，不要直接拿已有开发库生成。已有库里已经有业务表，Alembic 会把它当作“当前结构”，生成结果会不正确。
+
+推荐用临时空库生成：
+
+```bash
+rm -rf migrations/versions/*
+createdb acoj_migration_tmp
+DB__URL=postgresql+asyncpg://postgres:123456@127.0.0.1:5432/acoj_migration_tmp \
+  python scripts/makemigration.py "initial schema"
+```
+
+生成后先在临时空库验证：
+
+```bash
+DB__URL=postgresql+asyncpg://postgres:123456@127.0.0.1:5432/acoj_migration_tmp \
+  python scripts/migrate.py
+DB__URL=postgresql+asyncpg://postgres:123456@127.0.0.1:5432/acoj_migration_tmp \
+  python scripts/check_migration.py
+```
+
+确认无误后删除临时库：
+
+```bash
+dropdb acoj_migration_tmp
+```
+
+重建初始迁移后，旧开发库里的 `alembic_version` 会指向已经删除的旧 revision。要迁移旧开发库，最干净的方式是删除并重建数据库，再执行：
+
+```bash
+python scripts/migrate.py
+```
+
+如果旧库里有需要保留的数据，不要直接重建初始迁移；应走上一节的增量迁移流程。
+
 ## 新开发库初始化
 
 如果是空库，直接执行：

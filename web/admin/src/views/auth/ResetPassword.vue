@@ -18,10 +18,10 @@ const form = reactive({
 
 function validateConfirmPassword(_rule: FormItemRule, value: string) {
   if (!value) {
-    return new Error(t('auth.confirmPasswordRequired'))
+    return new Error(t('auth.confirm_password_required'))
   }
   if (value !== form.password) {
-    return new Error(t('auth.passwordMismatch'))
+    return new Error(t('auth.password_mismatch'))
   }
   return true
 }
@@ -30,26 +30,26 @@ const rules = computed<FormRules>(() => ({
   account: [
     {
       required: true,
-      message: t('auth.accountRequired'),
+      message: t('auth.account_required'),
       trigger: ['input', 'blur'],
     },
   ],
   code: [
     {
       required: true,
-      message: t('auth.resetCodeRequired'),
+      message: t('auth.reset_code_required'),
       trigger: ['input', 'blur'],
     },
   ],
   password: [
     {
       required: true,
-      message: t('auth.passwordRequired'),
+      message: t('auth.password_required'),
       trigger: ['input', 'blur'],
     },
     {
       min: 8,
-      message: t('auth.passwordMin'),
+      message: t('auth.password_min'),
       trigger: ['input', 'blur'],
     },
   ],
@@ -72,37 +72,37 @@ async function handleSubmit() {
   loading.value = true
   window.setTimeout(() => {
     loading.value = false
-    window.$message.success(t('auth.resetSuccess'))
+    window.$message.success(t('auth.reset_success'))
     router.push('/auth/login')
   }, 500)
 }
 </script>
 
 <template>
-  <AuthLayout :title="t('auth.resetTitle')" :subtitle="t('auth.resetSubtitle')">
+  <AuthLayout :title="t('auth.reset_title')" :subtitle="t('auth.reset_subtitle')">
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
       <n-form-item path="account" :label="t('auth.account')">
-        <n-input v-model:value="form.account" :placeholder="t('auth.accountPlaceholder')" clearable>
+        <n-input v-model:value="form.account" :placeholder="t('auth.placeholder.account')" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>
         </n-input>
       </n-form-item>
 
-      <n-form-item path="code" :label="t('auth.resetCode')">
-        <n-input v-model:value="form.code" :placeholder="t('auth.resetCodePlaceholder')" clearable>
+      <n-form-item path="code" :label="t('auth.reset_code')">
+        <n-input v-model:value="form.code" :placeholder="t('auth.placeholder.reset_code')" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:key" />
           </template>
         </n-input>
       </n-form-item>
 
-      <n-form-item path="password" :label="t('auth.newPassword')">
+      <n-form-item path="password" :label="t('auth.new_password')">
         <n-input
           v-model:value="form.password"
           type="password"
           show-password-on="click"
-          :placeholder="t('auth.passwordCreatePlaceholder')"
+          :placeholder="t('auth.placeholder.password_create')"
         >
           <template #prefix>
             <NovaIcon icon="icon-park-outline:lock" />
@@ -110,12 +110,12 @@ async function handleSubmit() {
         </n-input>
       </n-form-item>
 
-      <n-form-item path="confirmPassword" :label="t('auth.confirmPassword')">
+      <n-form-item path="confirmPassword" :label="t('auth.confirm_password')">
         <n-input
           v-model:value="form.confirmPassword"
           type="password"
           show-password-on="click"
-          :placeholder="t('auth.confirmPasswordPlaceholder')"
+          :placeholder="t('auth.placeholder.confirm_password')"
         >
           <template #prefix>
             <NovaIcon icon="icon-park-outline:check-correct" />
@@ -124,11 +124,11 @@ async function handleSubmit() {
       </n-form-item>
 
       <n-button type="primary" size="large" block attr-type="submit" :loading="loading">
-        {{ t('auth.resetPassword') }}
+        {{ t('auth.reset_password') }}
       </n-button>
 
       <p class="auth-switch">
-        <RouterLink to="/auth/login">{{ t('auth.backToLogin') }}</RouterLink>
+        <RouterLink to="/auth/login">{{ t('auth.back_to_login') }}</RouterLink>
       </p>
     </n-form>
   </AuthLayout>

@@ -17,7 +17,7 @@ const rules = computed<FormRules>(() => ({
   account: [
     {
       required: true,
-      message: t('auth.accountRequired'),
+      message: t('auth.account_required'),
       trigger: ['input', 'blur'],
     },
   ],
@@ -33,21 +33,21 @@ async function handleSubmit() {
   loading.value = true
   window.setTimeout(() => {
     loading.value = false
-    window.$message.success(t('auth.resetGuideSent'))
+    window.$message.success(t('auth.reset_guide_sent'))
     router.push('/auth/reset-password')
   }, 500)
 }
 </script>
 
 <template>
-  <AuthLayout :title="t('auth.forgotTitle')" :subtitle="t('auth.forgotSubtitle')">
+  <AuthLayout :title="t('auth.forgot_title')" :subtitle="t('auth.forgot_subtitle')">
     <n-alert class="auth-alert" type="info" :bordered="false">
-      {{ t('auth.forgotHint') }}
+      {{ t('auth.forgot_hint') }}
     </n-alert>
 
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
       <n-form-item path="account" :label="t('auth.account')">
-        <n-input v-model:value="form.account" :placeholder="t('auth.accountPlaceholder')" clearable>
+        <n-input v-model:value="form.account" :placeholder="t('auth.placeholder.account')" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>
@@ -55,12 +55,12 @@ async function handleSubmit() {
       </n-form-item>
 
       <n-button type="primary" size="large" block attr-type="submit" :loading="loading">
-        {{ t('auth.sendResetGuide') }}
+        {{ t('auth.send_reset_guide') }}
       </n-button>
 
       <div class="auth-links">
-        <RouterLink to="/auth/login">{{ t('auth.backToLogin') }}</RouterLink>
-        <RouterLink to="/auth/reset-password">{{ t('auth.haveResetCode') }}</RouterLink>
+        <RouterLink to="/auth/login">{{ t('auth.back_to_login') }}</RouterLink>
+        <RouterLink to="/auth/reset-password">{{ t('auth.have_reset_code') }}</RouterLink>
       </div>
     </n-form>
   </AuthLayout>

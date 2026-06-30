@@ -15,6 +15,7 @@ const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   name: '',
   code: '',
+  locale_key: '',
   icon: '',
   color: '',
   sort: 0,
@@ -32,17 +33,17 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.dataId
-    ? t('pages.iam.resource_module.editModule')
-    : t('pages.iam.resource_module.addModule'),
+    ? t('resource.iam.resource_module.edit_module')
+    : t('resource.iam.resource_module.add_module'),
 )
 
 const rules = computed<FormRules>(() => ({
-  name: createRequiredRule(t, t('pages.iam.resource_module.name'), 'input'),
-  code: createRequiredRule(t, t('pages.iam.resource_module.code'), 'input'),
+  name: createRequiredRule(t, t('resource.iam.resource_module.name'), 'input'),
+  code: createRequiredRule(t, t('resource.iam.resource_module.code'), 'input'),
   color: [
     {
       validator: (_rule, value) => isHexColor(value),
-      message: t('pages.iam.resource_module.colorPattern'),
+      message: t('resource.iam.resource_module.color_pattern'),
       trigger: ['change', 'blur'],
     },
   ],
@@ -64,6 +65,7 @@ async function fetchDetail(id: string) {
   try {
     const response = await resourceModuleApi.detail({ id })
     state.formModel = Object.assign({}, defaultFormData, response.data, {
+      locale_key: response.data?.locale_key ?? '',
       icon: response.data?.icon ?? '',
       color: response.data?.color ?? '',
       description: response.data?.description ?? '',
@@ -87,6 +89,7 @@ async function submitForm() {
       ...state.formModel,
       name: state.formModel.name.trim(),
       code: state.formModel.code.trim(),
+      locale_key: toNullableString(state.formModel.locale_key),
       icon: toNullableString(state.formModel.icon),
       color: toNullableString(state.formModel.color),
       sort: Number(state.formModel.sort ?? 0),
@@ -99,10 +102,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.updateSuccess'))
+      window.$message.success(t('common.often.update_success'))
     } else {
       await resourceModuleApi.create(payload)
-      window.$message.success(t('common.often.createSuccess'))
+      window.$message.success(t('common.often.create_success'))
     }
 
     closeModal()
@@ -137,25 +140,28 @@ defineExpose({
           label-width="100"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('pages.iam.resource_module.name')" path="name">
+          <NFormItem :label="t('resource.iam.resource_module.name')" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.resource_module.code')" path="code">
+          <NFormItem :label="t('common.often.locale_key')" path="locale_key">
+            <NInput v-model:value="state.formModel.locale_key" />
+          </NFormItem>
+          <NFormItem :label="t('resource.iam.resource_module.code')" path="code">
             <NInput v-model:value="state.formModel.code" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.resource_module.icon')" path="icon">
+          <NFormItem :label="t('resource.iam.resource_module.icon')" path="icon">
             <NInput v-model:value="state.formModel.icon" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.resource_module.color')" path="color">
+          <NFormItem :label="t('resource.iam.resource_module.color')" path="color">
             <CommonColorPicker v-model="state.formModel.color" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.resource_module.sort')" path="sort">
+          <NFormItem :label="t('resource.iam.resource_module.sort')" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
           <NFormItem :label="t('common.often.status')" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.resource_module.description')" path="description">
+          <NFormItem :label="t('resource.iam.resource_module.description')" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"

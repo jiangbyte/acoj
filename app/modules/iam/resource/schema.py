@@ -11,6 +11,7 @@ from app.modules.iam.enums import ResourceType
 class ResourceCreateRequest(ApiSchema):
     code: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=64)
+    locale_key: str | None = Field(default=None, max_length=255)
     resource_type: ResourceType
     parent_id: str | None = Field(default=None, max_length=64)
     module_id: str | None = Field(default=None, max_length=64)
@@ -47,6 +48,7 @@ class SysResourceSchema(ApiSchema):
     parent_id: str | None = None
     code: str
     name: str
+    locale_key: str | None = None
     resource_type: ResourceType
     module_id: str | None = None
     module_id_name: str | None = None
@@ -99,6 +101,7 @@ class ResourceTreeNode(SysResourceSchema):
 class ResourceModuleCreateRequest(ApiSchema):
     name: str = Field(min_length=1, max_length=64)
     code: str = Field(min_length=1, max_length=64)
+    locale_key: str | None = Field(default=None, max_length=255)
     icon: str | None = Field(default=None, max_length=255)
     color: str | None = Field(default=None, max_length=32)
     sort: int = 99
@@ -122,6 +125,7 @@ class SysResourceModuleSchema(ApiSchema):
     id: str
     name: str
     code: str
+    locale_key: str | None = None
     icon: str | None = None
     color: str | None = None
     sort: int
@@ -138,6 +142,7 @@ class ResourceModuleSelectorOption(ApiSchema):
     id: str
     name: str
     code: str
+    locale_key: str | None = None
     icon: str | None = None
     color: str | None = None
 
@@ -146,6 +151,7 @@ class ResourcePermissionOption(ApiSchema):
     id: str
     permission_key: str
     title: str
+    locale_key: str | None = None
     data_scope: DataScope = DataScope.SELF
 
 
@@ -155,12 +161,15 @@ class ResourceGrantMenuOption(ApiSchema):
     parent_id: str | None = None
     parent_id_name: str
     title: str
+    locale_key: str | None = None
+    parent_locale_key: str | None = None
     button: list[ResourcePermissionOption] = Field(default_factory=list)
 
 
 class ResourceGrantModuleOption(ApiSchema):
     id: str
     title: str
+    locale_key: str | None = None
     menu: list[ResourceGrantMenuOption] = Field(default_factory=list)
 
 

@@ -32,8 +32,8 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.subject?.name
-    ? `${state.title || t('pages.iam.role.grantUser')} - ${state.subject.name}`
-    : state.title || t('pages.iam.role.grantUser'),
+    ? `${state.title || t('resource.iam.role.grant_user')} - ${state.subject.name}`
+    : state.title || t('resource.iam.role.grant_user'),
 )
 const filteredUsers = computed(() => {
   const keyword = state.searchKey.trim().toLowerCase()
@@ -53,7 +53,7 @@ const tableUsers = computed(() => {
 })
 const selectedIds = computed(() => new Set(state.selectedData.map((item) => String(item.id))))
 const secondaryTitle = computed(() =>
-  state.searchFields.includes('code') ? t('pages.iam.role.code') : t('pages.iam.account.account'),
+  state.searchFields.includes('code') ? t('resource.iam.role.code') : t('resource.iam.account.account'),
 )
 
 const userColumns = computed<DataTableColumns<any>>(() => [
@@ -74,7 +74,7 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('pages.iam.account.avatar'),
+    title: t('resource.iam.account.avatar'),
     key: 'avatar',
     width: 70,
     render: (row) =>
@@ -85,7 +85,7 @@ const userColumns = computed<DataTableColumns<any>>(() => [
       ) : null,
   },
   {
-    title: t('pages.iam.account.name'),
+    title: t('resource.iam.account.name'),
     key: 'name',
     minWidth: 120,
     ellipsis: {
@@ -115,7 +115,7 @@ const selectedColumns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('pages.iam.account.name'),
+    title: t('resource.iam.account.name'),
     key: 'name',
     minWidth: 120,
     ellipsis: {
@@ -165,7 +165,7 @@ async function submitGrant() {
       id: state.subject.id,
       [state.submitKey]: state.selectedData.map((item) => item.id),
     })
-    window.$message.success(t('pages.iam.role.grantSuccess'))
+    window.$message.success(t('resource.iam.role.grant_success'))
     closeModal()
     emit('saved')
   } finally {
@@ -224,12 +224,12 @@ defineExpose({
               <NInput
                 v-model:value="state.searchKey"
                 clearable
-                :placeholder="t('pages.iam.role.userSearchPlaceholder')"
+                :placeholder="t('resource.iam.role.placeholder.user_search')"
                 @keyup.enter="state.page = 1"
                 @clear="resetSearch"
               />
               <NButton type="primary" @click="state.page = 1">
-                {{ t('pages.iam.role.search') }}
+                {{ t('resource.iam.role.search') }}
               </NButton>
               <NButton @click="resetSearch">
                 {{ t('common.reset') }}
@@ -237,10 +237,10 @@ defineExpose({
             </NInputGroup>
             <NFlex justify="space-between" align="center">
               <NText>
-                {{ t('pages.iam.role.pendingUserCount', { count: filteredUsers.length }) }}
+                {{ t('resource.iam.role.pending_user_count', { count: filteredUsers.length }) }}
               </NText>
               <NButton dashed size="small" @click="addAllPageRecord">
-                {{ t('pages.iam.role.addCurrentPage') }}
+                {{ t('resource.iam.role.add_current_page') }}
               </NButton>
             </NFlex>
             <NDataTable
@@ -267,10 +267,10 @@ defineExpose({
           <NSpace vertical>
             <NFlex justify="space-between" align="center">
               <NText>{{
-                t('pages.iam.role.selectedUserCount', { count: state.selectedData.length })
+                t('resource.iam.role.selected_user_count', { count: state.selectedData.length })
               }}</NText>
               <NButton dashed type="error" size="small" @click="delAllRecord">
-                {{ t('pages.iam.role.removeAll') }}
+                {{ t('resource.iam.role.remove_all') }}
               </NButton>
             </NFlex>
             <NDataTable

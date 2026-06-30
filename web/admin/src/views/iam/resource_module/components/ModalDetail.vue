@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { resourceModuleApi } from '@/api'
-import { createTagColor, displayValue } from '@/utils'
+import { createTagColor, displayValue, translateLocale } from '@/utils'
 import { reactive } from 'vue'
 import { dictTypeColor, dictTypeData } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
@@ -39,25 +39,28 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('pages.iam.resource_module.detailModule')"
+    :title="t('resource.iam.resource_module.detail_module')"
     style="width: 620px"
   >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('pages.iam.resource_module.id')">
+          <NDescriptionsItem :label="t('resource.iam.resource_module.id')">
             {{ displayValue(state.module.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource_module.name')">
-            {{ displayValue(state.module.name) }}
+          <NDescriptionsItem :label="t('resource.iam.resource_module.name')">
+            {{ displayValue(translateLocale(state.module.locale_key, state.module.name)) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource_module.code')">
+          <NDescriptionsItem :label="t('common.often.locale_key')">
+            {{ displayValue(state.module.locale_key) }}
+          </NDescriptionsItem>
+          <NDescriptionsItem :label="t('resource.iam.resource_module.code')">
             {{ displayValue(state.module.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource_module.icon')">
+          <NDescriptionsItem :label="t('resource.iam.resource_module.icon')">
             {{ displayValue(state.module.icon) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource_module.color')">
+          <NDescriptionsItem :label="t('resource.iam.resource_module.color')">
             <NTag
               v-if="state.module.color"
               :color="createTagColor(state.module.color)"
@@ -67,7 +70,7 @@ defineExpose({
             </NTag>
             <template v-else> - </template>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource_module.sort')">
+          <NDescriptionsItem :label="t('resource.iam.resource_module.sort')">
             {{ displayValue(state.module.sort) }}
           </NDescriptionsItem>
           <NDescriptionsItem :label="t('common.often.status')">
@@ -81,19 +84,19 @@ defineExpose({
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('pages.iam.resource_module.description')">
+          <NDescriptionsItem :label="t('resource.iam.resource_module.description')">
             {{ displayValue(state.module.description) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdAt')">
+          <NDescriptionsItem :label="t('common.often.created_at')">
             {{ displayValue(state.module.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.createdBy')">
+          <NDescriptionsItem :label="t('common.often.created_by')">
             {{ displayValue(state.module.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedAt')">
+          <NDescriptionsItem :label="t('common.often.updated_at')">
             {{ displayValue(state.module.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updatedBy')">
+          <NDescriptionsItem :label="t('common.often.updated_by')">
             {{ displayValue(state.module.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

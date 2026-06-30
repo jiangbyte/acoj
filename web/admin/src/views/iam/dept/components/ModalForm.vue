@@ -14,7 +14,7 @@ const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   name: '',
   code: '',
-  category: '',
+  category: null as string | null,
   parent_id: '',
   master_id: '',
   deputy_master_id: '',
@@ -32,13 +32,13 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('pages.iam.dept.editDept') : t('pages.iam.dept.addDept'),
+  state.dataId ? t('resource.iam.dept.edit_dept') : t('resource.iam.dept.add_dept'),
 )
 
 const rules = computed<FormRules>(() => ({
-  name: createRequiredRule(t, t('pages.iam.dept.name'), 'input'),
-  code: createRequiredRule(t, t('pages.iam.dept.code'), 'input'),
-  category: createRequiredRule(t, t('pages.iam.dept.category'), 'change'),
+  name: createRequiredRule(t, t('resource.iam.dept.name'), 'input'),
+  code: createRequiredRule(t, t('resource.iam.dept.code'), 'input'),
+  category: createRequiredRule(t, t('resource.iam.dept.category'), 'change'),
   status: createRequiredRule(t, t('common.often.status'), 'change'),
 }))
 
@@ -93,10 +93,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.updateSuccess'))
+      window.$message.success(t('common.often.update_success'))
     } else {
       await deptApi.create(payload)
-      window.$message.success(t('common.often.createSuccess'))
+      window.$message.success(t('common.often.create_success'))
     }
 
     closeModal()
@@ -131,28 +131,28 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('pages.iam.dept.name')" path="name">
+          <NFormItem :label="t('resource.iam.dept.name')" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.dept.code')" path="code">
+          <NFormItem :label="t('resource.iam.dept.code')" path="code">
             <NInput v-model:value="state.formModel.code" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.dept.category')" path="category">
+          <NFormItem :label="t('resource.iam.dept.category')" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="DEPT_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.dept.parentId')" path="parent_id">
+          <NFormItem :label="t('resource.iam.dept.parent_id')" path="parent_id">
             <NInput v-model:value="state.formModel.parent_id" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.dept.masterId')" path="master_id">
+          <NFormItem :label="t('resource.iam.dept.master_id')" path="master_id">
             <NInput v-model:value="state.formModel.master_id" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.dept.deputyMasterId')" path="deputy_master_id">
+          <NFormItem :label="t('resource.iam.dept.deputy_master_id')" path="deputy_master_id">
             <NInput v-model:value="state.formModel.deputy_master_id" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.dept.sort')" path="sort">
+          <NFormItem :label="t('resource.iam.dept.sort')" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
-          <NFormItem :label="t('pages.iam.dept.isVirtual')" path="is_virtual">
+          <NFormItem :label="t('resource.iam.dept.is_virtual')" path="is_virtual">
             <NSwitch v-model:value="state.formModel.is_virtual" />
           </NFormItem>
           <NFormItem :label="t('common.often.status')" path="status">

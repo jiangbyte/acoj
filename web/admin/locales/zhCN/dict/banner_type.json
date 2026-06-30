@@ -1,0 +1,9 @@
+{
+  "title": "展示图类型",
+  "carousel": "轮播",
+  "hero": "首屏主图",
+  "notice": "通知",
+  "card": "卡片",
+  "popup": "弹窗",
+  "sidebar": "侧栏"
+}

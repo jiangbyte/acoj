@@ -15,6 +15,6 @@ const appStore = useAppStore()
         />
       </CommonWrapper>
     </template>
-    {{ $t('app.toggleSider') }}
+    {{ $t('app.toggle_sider') }}
   </n-tooltip>
 </template>

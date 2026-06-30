@@ -2,7 +2,7 @@
 import type { FormInst, FormRules } from 'naive-ui'
 import { dictApi } from '@/api'
 import CommonColorPicker from '@/components/common/CommonColorPicker.vue'
-import { createRequiredRule, isHexColor, toNullableString } from '@/utils'
+import { createRequiredRule, isHexColor, toNullableString, translateLocale } from '@/utils'
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -19,6 +19,7 @@ const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   code: '',
   label: '',
+  locale_key: '',
   value: '',
   color: '',
   category: 'SYS',
@@ -35,7 +36,7 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('pages.sys.dict.editDict') : t('pages.sys.dict.addDict'),
+  state.dataId ? t('resource.sys.dict.edit_dict') : t('resource.sys.dict.add_dict'),
 )
 const parentTreeOptions = computed(() =>
   buildTreeOptions(
@@ -46,22 +47,22 @@ const parentTreeOptions = computed(() =>
 
 const rules = computed<FormRules>(() => ({
   code: [
-    createRequiredRule(t, t('pages.sys.dict.code'), 'input'),
+    createRequiredRule(t, t('resource.sys.dict.code'), 'input'),
     {
       pattern: /^[A-Z0-9_]+$/,
-      message: t('pages.sys.dict.codePattern'),
+      message: t('resource.sys.dict.code_pattern'),
       trigger: ['input', 'blur'],
     },
   ],
-  label: createRequiredRule(t, t('pages.sys.dict.label'), 'input'),
+  label: createRequiredRule(t, t('resource.sys.dict.label'), 'input'),
   color: [
     {
       validator: (_rule, value) => isHexColor(value),
-      message: t('pages.sys.dict.colorPattern'),
+      message: t('resource.sys.dict.color_pattern'),
       trigger: ['change', 'blur'],
     },
   ],
-  category: createRequiredRule(t, t('pages.sys.dict.category'), 'change'),
+  category: createRequiredRule(t, t('resource.sys.dict.category'), 'change'),
   status: createRequiredRule(t, t('common.often.status'), 'change'),
 }))
 
@@ -85,6 +86,7 @@ async function fetchDetail(id: string) {
     const response = await dictApi.detail({ id })
     const data = response.data ?? {}
     state.formModel = Object.assign({}, defaultFormData, data, {
+      locale_key: data.locale_key ?? '',
       value: data.value ?? '',
       color: data.color ?? '',
       category: data.category ?? 'SYS',
@@ -108,6 +110,7 @@ async function submitForm() {
     ...state.formModel,
     code: state.formModel.code.trim().toUpperCase(),
     label: String(state.formModel.label ?? '').trim(),
+    locale_key: toNullableString(state.formModel.locale_key),
     value: toNullableString(state.formModel.value),
     color: toNullableString(state.formModel.color),
     parent_id: state.formModel.parent_id ?? null,
@@ -121,10 +124,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.updateSuccess'))
+      window.$message.success(t('common.often.update_success'))
     } else {
       await dictApi.create(payload)
-      window.$message.success(t('common.often.createSuccess'))
+      window.$message.success(t('common.often.create_success'))
     }
 
     emit('saved')
@@ -156,7 +159,7 @@ function buildTreeOptions(items: any[], excludeId?: string | null) {
         item.id,
         {
           key: item.id,
-          label: item.label ? `${item.label} (${item.code})` : item.code,
+          label: `${translateLocale(item.locale_key, item.label || item.code)} (${item.code})`,
           children: [] as any[],
           raw: item,
         },
@@ -227,7 +230,7 @@ defineExpose({
         label-width="100"
         :disabled="state.loading || state.submitLoading"
       >
-        <NFormItem :label="t('pages.sys.dict.category')" path="category">
+        <NFormItem :label="t('resource.sys.dict.category')" path="category">
           <DictSelect
             v-model="state.formModel.category"
             dict-code="SYS_BIZ_CATEGORY"
@@ -235,33 +238,36 @@ defineExpose({
             @change="updateCategory"
           />
         </NFormItem>
-        <NFormItem :label="t('pages.sys.dict.parent')" path="parent_id">
+        <NFormItem :label="t('resource.sys.dict.parent')" path="parent_id">
           <NTreeSelect
             v-model:value="state.formModel.parent_id"
             clearable
             filterable
             :options="parentTreeOptions"
-            :placeholder="t('pages.sys.dict.topLevel')"
+            :placeholder="t('resource.sys.dict.placeholder.top_level')"
             key-field="key"
             label-field="label"
           />
         </NFormItem>
-        <NFormItem :label="t('pages.sys.dict.code')" path="code">
+        <NFormItem :label="t('resource.sys.dict.code')" path="code">
           <NInput :value="state.formModel.code" @update:value="updateCode" />
         </NFormItem>
-        <NFormItem :label="t('pages.sys.dict.label')" path="label">
+        <NFormItem :label="t('resource.sys.dict.label')" path="label">
           <NInput v-model:value="state.formModel.label" />
         </NFormItem>
-        <NFormItem :label="t('pages.sys.dict.value')" path="value">
+        <NFormItem :label="t('common.often.locale_key')" path="locale_key">
+          <NInput v-model:value="state.formModel.locale_key" />
+        </NFormItem>
+        <NFormItem :label="t('resource.sys.dict.value')" path="value">
           <NInput v-model:value="state.formModel.value" />
         </NFormItem>
-        <NFormItem :label="t('pages.sys.dict.color')" path="color">
+        <NFormItem :label="t('resource.sys.dict.color')" path="color">
           <CommonColorPicker
             v-model="state.formModel.color"
             :disabled="state.loading || state.submitLoading"
           />
         </NFormItem>
-        <NFormItem :label="t('pages.sys.dict.sort')" path="sort">
+        <NFormItem :label="t('resource.sys.dict.sort')" path="sort">
           <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
         </NFormItem>
         <NFormItem :label="t('common.often.status')" path="status">

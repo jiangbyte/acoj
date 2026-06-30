@@ -41,7 +41,7 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('pages.sys.banner.displayScope'),
+    title: t('resource.sys.banner.display_scope'),
     path: 'display_scope',
     field: 'select',
     fieldProps: {
@@ -49,7 +49,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.sys.banner.category'),
+    title: t('resource.sys.banner.category'),
     path: 'category',
     field: 'select',
     fieldProps: {
@@ -57,7 +57,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.sys.banner.type'),
+    title: t('resource.sys.banner.type'),
     path: 'type',
     field: 'select',
     fieldProps: {
@@ -65,7 +65,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.sys.banner.position'),
+    title: t('resource.sys.banner.position'),
     path: 'position',
     field: 'select',
     fieldProps: {
@@ -114,7 +114,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.sys.banner.titleField'),
+    title: t('resource.sys.banner.title_field'),
     path: 'title',
     width: 180,
     ellipsis: {
@@ -122,13 +122,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('pages.sys.banner.image'),
+    title: t('resource.sys.banner.image'),
     key: 'image',
     width: 130,
     render: (row) => (
       <NImage
         src={row.image}
-        alt={row.title || t('pages.sys.banner.image')}
+        alt={row.title || t('resource.sys.banner.image')}
         width={96}
         height={42}
         objectFit="cover"
@@ -136,7 +136,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('pages.sys.banner.displayScope'),
+    title: t('resource.sys.banner.display_scope'),
     path: 'display_scope',
     width: 120,
     render: (row) => (
@@ -149,36 +149,36 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('pages.sys.banner.category'),
+    title: t('resource.sys.banner.category'),
     path: 'category',
     width: 150,
     render: (row) => dictTypeData('BANNER_CATEGORY', row.category),
   },
   {
-    title: t('pages.sys.banner.type'),
+    title: t('resource.sys.banner.type'),
     path: 'type',
     width: 120,
     render: (row) => dictTypeData('BANNER_TYPE', row.type),
   },
   {
-    title: t('pages.sys.banner.position'),
+    title: t('resource.sys.banner.position'),
     path: 'position',
     width: 160,
     render: (row) => dictTypeData('BANNER_POSITION', row.position),
   },
   {
-    title: t('pages.sys.banner.linkType'),
+    title: t('resource.sys.banner.link_type'),
     path: 'link_type',
     width: 110,
     render: (row) => dictTypeData('BANNER_LINK_TYPE', row.link_type),
   },
   {
-    title: t('pages.sys.banner.sort'),
+    title: t('resource.sys.banner.sort'),
     path: 'sort',
     width: 90,
   },
   {
-    title: t('pages.sys.banner.interactionCount'),
+    title: t('resource.sys.banner.interaction_count'),
     path: 'interaction_count',
     width: 120,
   },
@@ -193,7 +193,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updatedAt'),
+    title: t('common.often.updated_at'),
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -269,12 +269,12 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batchDelete') : t('common.often.delete'),
+    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('pages.sys.banner.batchDeleteConfirm', { count: ids.length })
-      : t('pages.sys.banner.deleteConfirm'),
+      ? t('resource.sys.banner.batch_delete_confirm', { count: ids.length })
+      : t('resource.sys.banner.delete_confirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: () => deleteData(ids),
@@ -285,7 +285,7 @@ async function deleteData(ids: string[]) {
   await bannerApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success(t('common.often.deleteSuccess'))
+  window.$message.success(t('common.often.delete_success'))
   await fetchPage()
   if (!state.banners.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -303,7 +303,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('pages.sys.banner.title')"
+      :title="t('resource.sys.banner.title')"
       row-key="id"
       :scroll-x="1780"
       :columns="tableColumns"
@@ -337,7 +337,7 @@ async function deleteData(ids: string[]) {
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >
-            {{ t('common.often.batchDelete') }}
+            {{ t('common.often.batch_delete') }}
             {{ t('common.often.total', { count: state.checkedRowKeys.length }) }}
           </NButton>
         </NFlex>
