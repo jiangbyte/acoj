@@ -14,11 +14,6 @@ ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/ \
 
 WORKDIR /app
 
-# Upgrade pip first — pip 24.0 in the base image has a broken resolver.
-# Use official PyPI as fallback in case the mirror is out of sync.
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir --upgrade setuptools wheel
-
 COPY pyproject.toml README.md alembic.ini ./
 COPY app ./app
 COPY migrations ./migrations
