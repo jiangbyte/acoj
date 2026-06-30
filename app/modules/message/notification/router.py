@@ -46,6 +46,18 @@ def register_current_user_routes(router: APIRouter, account_type: AccountType) -
         )
         return success(await NotificationService(db).page_my_notifications(query, session))
 
+    @router.get(
+        "/message/notifications/my-detail",
+        dependencies=dependencies,
+        response_model=ApiResponse[NotificationSchema],
+    )
+    async def my_notification_detail(
+        db: Annotated[AsyncSession, Depends(get_db_session)],
+        session: Annotated[SessionPayload, Depends(get_current_session)],
+        id: Annotated[Id, Query()],
+    ) -> ApiResponse[NotificationSchema]:
+        return success(await NotificationService(db).my_notification_detail(IdQuery(id=id), session))
+
     @router.post(
         "/message/notifications/read",
         dependencies=dependencies,

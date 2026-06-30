@@ -10,6 +10,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const avatarImgProps = { referrerPolicy: 'no-referrer' }
 const state = reactive({
   showModal: false,
   loading: false,
@@ -78,8 +79,10 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     key: 'avatar',
     width: 70,
     render: (row) =>
-      row.avatar || row.name ? (
-        <NAvatar size="small" src={row.avatar}>
+      row.avatar ? (
+        <NAvatar size="small" src={row.avatar} imgProps={avatarImgProps} />
+      ) : row.name ? (
+        <NAvatar size="small">
           {row.name?.slice(0, 1)}
         </NAvatar>
       ) : null,

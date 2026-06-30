@@ -13,5 +13,9 @@
   "send_system": "发送系统消息",
   "send_success": "发送成功",
   "detail_message": "消息详情",
-  "no_messages": "暂无消息"
+  "system_sender": "系统",
+  "no_messages": "暂无消息",
+  "reply": "回复",
+  "reply_required": "请输入回复内容",
+  "reply_placeholder": "请输入回复内容"
 }

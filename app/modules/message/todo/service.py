@@ -45,6 +45,14 @@ class TodoService:
     async def todo_detail(self, payload: IdQuery) -> TodoSchema:
         return _todo_schema(await self.repo.get_todo_required(payload.id), None)
 
+    async def my_todo_detail(self, payload: IdQuery, session: SessionPayload) -> TodoSchema:
+        item, assignee_status = await self.repo.get_my_todo(
+            payload.id,
+            account_type=str(session.account_type),
+            account_id=session.account_id,
+        )
+        return _todo_schema(item, assignee_status)
+
     async def page_todos_admin(self, query: TodoAdminPageQuery) -> PageData[TodoSchema]:
         items, total = await self.repo.page_todos_admin(query)
         return build_page(query.pagination, total, [_todo_schema(item, None) for item in items])
@@ -89,4 +97,3 @@ def _todo_schema(item: MsgTodo, assignee_status: str | None) -> TodoSchema:
     schema = to_schema(TodoSchema, item)
     schema.assignee_status = assignee_status
     return schema
-

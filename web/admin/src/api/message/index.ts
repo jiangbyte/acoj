@@ -14,6 +14,10 @@ export function myNotifications(params?: any) {
   return http.get<any>(`${prefix}/notifications/my-page`, { params })
 }
 
+export function myNotificationDetail(params: any) {
+  return http.get<any>(`${prefix}/notifications/my-detail`, { params })
+}
+
 export function readNotifications(data: any) {
   return http.post<any>(`${prefix}/notifications/read`, data)
 }
@@ -106,6 +110,10 @@ export function sendMessage(data: any) {
   return http.post<any>(`${prefix}/messages/send`, data)
 }
 
+export function replyMessage(data: any) {
+  return http.post<any>(`${prefix}/messages/reply`, data)
+}
+
 export function sendSystemMessage(data: any) {
   return http.post<any>(`${prefix}/threads/send-system`, data)
 }
@@ -120,6 +128,10 @@ export function reactMessage(data: any) {
 
 export function myTodos(params?: any) {
   return http.get<any>(`${prefix}/todos/my-page`, { params })
+}
+
+export function myTodoDetail(params: any) {
+  return http.get<any>(`${prefix}/todos/my-detail`, { params })
 }
 
 export function todoPage(params?: any) {

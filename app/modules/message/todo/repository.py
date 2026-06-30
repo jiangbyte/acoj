@@ -156,6 +156,29 @@ class TodoRepository:
         total = (await self.db.execute(count_stmt)).scalar_one()
         return todos, total, status_map
 
+    async def get_my_todo(
+        self,
+        todo_id: str,
+        *,
+        account_type: str,
+        account_id: str,
+    ) -> tuple[MsgTodo, str | None]:
+        stmt = select(MsgTodo, MsgTodoAssignee.status).outerjoin(
+            MsgTodoAssignee,
+            and_(
+                MsgTodoAssignee.todo_id == MsgTodo.id,
+                MsgTodoAssignee.account_type == account_type,
+                MsgTodoAssignee.account_id == account_id,
+            ),
+        ).where(
+            MsgTodo.id == todo_id,
+            self._todo_visible_filter(account_type, account_id),
+        )
+        row = (await self.db.execute(stmt)).one_or_none()
+        if row is None:
+            raise NotFoundError("Todo not found")
+        return row[0], row[1]
+
     async def count_my_todos(self, *, account_type: str, account_id: str) -> int:
         stmt = select(func.count(MsgTodo.id)).outerjoin(
             MsgTodoAssignee,
@@ -223,4 +246,3 @@ def tuple_account_filter(account_type_column, account_id_column, refs: set[tuple
     if not refs:
         return False
     return or_(*[and_(account_type_column == account_type, account_id_column == account_id) for account_type, account_id in refs])
-

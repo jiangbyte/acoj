@@ -1,6 +1,8 @@
 from app.core.config.enums import AccountType
+from pydantic import Field
+
 from app.core.schema.base import ApiSchema
-from app.modules.user.admin.schema import AdminProfileResponse
+from app.modules.user.admin.schema import AdminProfileResponse, IdNameResponse
 from app.modules.user.portal.schema import PortalProfileResponse
 
 
@@ -16,6 +18,9 @@ class AdminMeResponse(ApiSchema):
     role_ids: list[str]
     dept_ids: list[str]
     group_ids: list[str]
+    role_id_names: list[IdNameResponse] = Field(default_factory=list)
+    dept_id_names: list[IdNameResponse] = Field(default_factory=list)
+    group_id_names: list[IdNameResponse] = Field(default_factory=list)
     permission_keys: list[str]
     button_codes: list[str]
     profile: AdminProfileResponse

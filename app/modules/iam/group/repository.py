@@ -90,6 +90,13 @@ class GroupRepository:
         total = (await self.db.execute(count_stmt)).scalar_one()
         return groups, total
 
+    async def list_by_ids(self, group_ids: list[str]) -> list[SysGroup]:
+        unique_ids = list(dict.fromkeys(group_ids))
+        if not unique_ids:
+            return []
+        stmt = select(SysGroup).where(SysGroup.id.in_(unique_ids))
+        return list((await self.db.execute(stmt)).scalars().all())
+
     async def assign_group_to_role(self, payload: GroupRoleAssignRequest) -> SysGroupRoleRel:
         if not await self.db.get(SysGroup, payload.group_id):
             raise NotFoundError("Group not found")

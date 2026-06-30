@@ -130,6 +130,27 @@ class NotificationRepository:
         total = (await self.db.execute(count_stmt)).scalar_one()
         return items, total, read_ids
 
+    async def get_my_notification(
+        self,
+        notification_id: str,
+        *,
+        account_type: str,
+        account_id: str,
+    ) -> tuple[MsgNotification, bool]:
+        stmt = select(MsgNotification).where(
+            MsgNotification.id == notification_id,
+            self._notification_visible_filter(account_type, account_id),
+        )
+        entity = (await self.db.execute(stmt)).scalar_one_or_none()
+        if entity is None:
+            raise NotFoundError("Notification not found")
+        read_ids = await self.list_notification_read_ids(
+            [notification_id],
+            account_type=account_type,
+            account_id=account_id,
+        )
+        return entity, notification_id in read_ids
+
     async def count_unread_notifications(self, *, account_type: str, account_id: str) -> int:
         read_subquery = (
             select(MsgNotificationRead.notification_id)
@@ -218,4 +239,3 @@ class NotificationRepository:
                 ),
             ),
         )
-

@@ -15,6 +15,7 @@ const state = reactive({
 const avatarAlt = computed(
   () => state.account?.nickname || state.account?.name || state.account?.account,
 )
+const avatarImgProps = { referrerPolicy: 'no-referrer' }
 
 async function openModal(id: string) {
   state.account = {}
@@ -167,7 +168,12 @@ defineExpose({
                 {{ displayValue(state.account.nickname) }}
               </NDescriptionsItem>
               <NDescriptionsItem :label="t('resource.iam.account.avatar')">
-                <NAvatar v-if="state.account.avatar" :src="state.account.avatar" :alt="avatarAlt" />
+                <NAvatar
+                  v-if="state.account.avatar"
+                  :src="state.account.avatar"
+                  :alt="avatarAlt"
+                  :img-props="avatarImgProps"
+                />
                 <template v-else> - </template>
               </NDescriptionsItem>
               <NDescriptionsItem :label="t('resource.iam.account.signature')">

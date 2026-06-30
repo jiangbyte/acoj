@@ -132,6 +132,11 @@ class AccountRepository:
         await self.replace_account_identities(payload.id, payload)
         await self.db.flush()
 
+    async def update_password_hash(self, account_id: str, password_hash: str) -> None:
+        entity = await self.get_required(account_id)
+        entity.password_hash = password_hash
+        await self.db.flush()
+
     async def replace_account_identities(
         self,
         account_id: str,
@@ -204,6 +209,43 @@ class AccountRepository:
             .order_by(SysAccountIdentity.account_id.asc(), SysAccountIdentity.is_primary.desc(), SysAccountIdentity.id.asc())
         )
         return list((await self.db.execute(stmt)).scalars().all())
+
+    async def upsert_account_identity(
+        self,
+        account_id: str,
+        identity_type: AccountIdentityType,
+        identifier: str | None,
+        verified: bool = True,
+    ) -> None:
+        await self.get_required(account_id)
+        normalized_identifier = str(identifier or "").strip()
+        await self.db.execute(
+            delete(SysAccountIdentity).where(
+                SysAccountIdentity.account_id == account_id,
+                SysAccountIdentity.identity_type == identity_type.value,
+            )
+        )
+        if not normalized_identifier:
+            await self.db.flush()
+            return
+        stmt = select(SysAccountIdentity).where(
+            SysAccountIdentity.identity_type == identity_type.value,
+            SysAccountIdentity.identifier == normalized_identifier,
+            SysAccountIdentity.account_id != account_id,
+        )
+        if (await self.db.execute(stmt)).scalar_one_or_none():
+            raise ConflictError("Account identity already exists")
+        self.db.add(
+            SysAccountIdentity(
+                account_id=account_id,
+                identity_type=identity_type.value,
+                identifier=normalized_identifier,
+                verified=verified,
+                is_primary=False,
+                bind_status=AccountIdentityBindStatus.BOUND.value,
+            )
+        )
+        await self.db.flush()
 
     async def delete_many(self, account_ids: list[str]) -> None:
         unique_ids = list(dict.fromkeys(account_ids))

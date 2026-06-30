@@ -103,6 +103,13 @@ class RoleRepository:
         total = (await self.db.execute(count_stmt)).scalar_one()
         return roles, total
 
+    async def list_by_ids(self, role_ids: list[str]) -> list[SysRole]:
+        unique_ids = list(dict.fromkeys(role_ids))
+        if not unique_ids:
+            return []
+        stmt = select(SysRole).where(SysRole.id.in_(unique_ids))
+        return list((await self.db.execute(stmt)).scalars().all())
+
     async def list_permission_grants(self, role_id: str) -> list[RolePermissionGrantInfo]:
         await self.get_required(role_id)
         stmt = (

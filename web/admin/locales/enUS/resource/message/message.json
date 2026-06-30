@@ -13,5 +13,9 @@
   "send_system": "Send System Message",
   "send_success": "Sent successfully",
   "detail_message": "Message Detail",
-  "no_messages": "No messages"
+  "system_sender": "System",
+  "no_messages": "No messages",
+  "reply": "Reply",
+  "reply_required": "Please enter a reply",
+  "reply_placeholder": "Enter a reply"
 }

@@ -5,6 +5,13 @@ from pydantic import Field
 from app.core.schema.base import ApiSchema
 
 
+class IdNameResponse(ApiSchema):
+    """通用 ID/名称回显项。"""
+
+    id: str
+    name: str
+
+
 class AdminProfileResponse(ApiSchema):
     """管理端账户扩展资料响应模型。"""
 
@@ -35,3 +42,44 @@ class AdminProfileUpsertPayload(ApiSchema):
     title: str | None = None
     employee_no: str | None = None
     remark: str | None = None
+
+
+class AdminUserCenterProfileUpdateRequest(ApiSchema):
+    """当前管理员个人资料更新请求。"""
+
+    name: str = Field(min_length=1, max_length=64)
+    nickname: str | None = Field(default=None, max_length=64)
+    avatar: str | None = None
+    signature: str | None = None
+    title: str | None = Field(default=None, max_length=64)
+    employee_no: str | None = Field(default=None, max_length=64)
+    remark: str | None = None
+
+
+class AdminUserCenterPasswordUpdateRequest(ApiSchema):
+    """当前管理员修改密码请求。"""
+
+    old_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=6, max_length=128)
+
+
+class AdminUserCenterPhoneUpdateRequest(ApiSchema):
+    """当前管理员手机号绑定更新请求。"""
+
+    password: str = Field(min_length=1, max_length=128)
+    phone: str | None = Field(default=None, max_length=32)
+
+
+class AdminUserCenterEmailUpdateRequest(ApiSchema):
+    """当前管理员邮箱绑定更新请求。"""
+
+    password: str = Field(min_length=1, max_length=128)
+    email: str | None = Field(default=None, max_length=128)
+
+
+class AdminUserCenterOrgInfoResponse(ApiSchema):
+    """当前管理员组织信息回显。"""
+
+    role_id_names: list[IdNameResponse] = Field(default_factory=list)
+    dept_id_names: list[IdNameResponse] = Field(default_factory=list)
+    group_id_names: list[IdNameResponse] = Field(default_factory=list)

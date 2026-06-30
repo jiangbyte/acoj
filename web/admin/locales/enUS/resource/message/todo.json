@@ -10,7 +10,10 @@
   "target_scope": "Target Scope",
   "target_account_type": "Target Account Type",
   "target_account_id": "Target Account ID",
+  "assignee_status": "Assignee Status",
   "due_at": "Due At",
+  "start_task": "Start Task",
+  "complete_task": "Complete Task",
   "cancel_task": "Cancel Task",
   "cancel_success": "Cancelled successfully"
 }

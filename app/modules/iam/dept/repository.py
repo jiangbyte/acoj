@@ -114,6 +114,13 @@ class DeptRepository:
             stmt = stmt.where(data_scope_filter)
         return list((await self.db.execute(stmt)).scalars().all())
 
+    async def list_by_ids(self, dept_ids: list[str]) -> list[SysDept]:
+        unique_ids = list(dict.fromkeys(dept_ids))
+        if not unique_ids:
+            return []
+        stmt = select(SysDept).where(SysDept.id.in_(unique_ids))
+        return list((await self.db.execute(stmt)).scalars().all())
+
     async def get_dept_tree(
         self,
         data_scope_filter: ColumnElement[bool] | None = None,

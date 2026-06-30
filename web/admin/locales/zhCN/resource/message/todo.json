@@ -10,7 +10,10 @@
   "target_scope": "目标范围",
   "target_account_type": "目标账户类型",
   "target_account_id": "目标账户ID",
+  "assignee_status": "处理状态",
   "due_at": "截止时间",
+  "start_task": "开始处理",
+  "complete_task": "完成任务",
   "cancel_task": "取消任务",
   "cancel_success": "取消成功"
 }

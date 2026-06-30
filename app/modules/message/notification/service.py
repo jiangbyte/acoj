@@ -48,6 +48,14 @@ class NotificationService:
     async def notification_detail(self, payload: IdQuery) -> NotificationSchema:
         return _notification_schema(await self.repo.get_notification_required(payload.id), is_read=False)
 
+    async def my_notification_detail(self, payload: IdQuery, session: SessionPayload) -> NotificationSchema:
+        item, is_read = await self.repo.get_my_notification(
+            payload.id,
+            account_type=str(session.account_type),
+            account_id=session.account_id,
+        )
+        return _notification_schema(item, is_read=is_read)
+
     async def page_notifications_admin(self, query: NotificationAdminPageQuery) -> PageData[NotificationSchema]:
         items, total = await self.repo.page_notifications_admin(query)
         return build_page(query.pagination, total, [_notification_schema(item, is_read=False) for item in items])
@@ -80,4 +88,3 @@ def _notification_schema(item: MsgNotification, is_read: bool) -> NotificationSc
     schema = to_schema(NotificationSchema, item)
     schema.is_read = is_read
     return schema
-
