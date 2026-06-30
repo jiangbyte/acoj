@@ -1,5 +1,6 @@
 #FROM node:22-alpine AS build
-FROM docker.xuanyuan.run/library/node:22-alpine AS build
+#FROM docker.xuanyuan.run/library/node:22-alpine AS build
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/node:22-alpine AS build
 
 WORKDIR /app
 
@@ -12,7 +13,8 @@ COPY . .
 RUN pnpm build
 
 #FROM nginx:1.27-alpine
-FROM docker.xuanyuan.run/library/nginx:1.27-alpine
+#FROM docker.xuanyuan.run/library/nginx:1.27-alpine
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/nginx:1.27-alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
 
