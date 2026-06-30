@@ -30,7 +30,7 @@ const displayName = computed(() => (
 ))
 
 const avatar = computed(() => authStore.userInfo?.avatar || undefined)
-const avatarImgProps = { referrerPolicy: 'no-referrer' }
+const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
 // 桌面端用户菜单项。项目首页使用环境配置路径。
 const options = computed<DropdownOption[]>(() => [

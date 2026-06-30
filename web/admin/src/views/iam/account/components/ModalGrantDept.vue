@@ -60,7 +60,7 @@ async function submitGrant() {
   state.submitLoading = true
   try {
     const selectedDeptIds = state.deptIds.map(String)
-    const primaryDeptId = selectedDeptIds.includes(state.primaryDeptId)
+    const primaryDeptId = state.primaryDeptId && selectedDeptIds.includes(state.primaryDeptId)
       ? state.primaryDeptId
       : selectedDeptIds[0]
     await accountApi.grantDepts({

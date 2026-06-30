@@ -15,7 +15,7 @@ const state = reactive({
 const avatarAlt = computed(
   () => state.account?.nickname || state.account?.name || state.account?.account,
 )
-const avatarImgProps = { referrerPolicy: 'no-referrer' }
+const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
 async function openModal(id: string) {
   state.account = {}
