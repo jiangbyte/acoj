@@ -60,7 +60,7 @@ dev = [
 acoj = "app.main:main"
 
 [build-system]
-requires = ["setuptools>=80.0", "wheel"]
+requires = ["setuptools>=69.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
