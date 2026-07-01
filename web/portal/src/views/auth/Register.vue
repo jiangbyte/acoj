@@ -2,6 +2,7 @@
 import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
 import { authApi } from '@/api'
 import { computed, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AuthLayout from './AuthLayout.vue'
 

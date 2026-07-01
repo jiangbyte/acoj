@@ -4,35 +4,22 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { renderIcon } from '@/utils/icon'
-import { useAppStore, useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores'
 
 const router = useRouter()
-const appStore = useAppStore()
 const authStore = useAuthStore()
 const { t } = useI18n()
-const homePath = import.meta.env.VITE_HOME_PATH
-
-// 移动端抽屉头部需要展示用户名，桌面端下拉入口默认直接显示用户名。
-const { showName = false } = defineProps<{
-  showName?: boolean
-}>()
-
-// 移动端点击用户信息时不展开桌面下拉菜单，而是通知父组件打开右侧抽屉。
-const emit = defineEmits<{
-  openMobileDrawer: []
-}>()
-
-const displayName = computed(() => (
-  authStore.userInfo?.nickname
-  || authStore.userInfo?.name
-  || authStore.userInfo?.account
-  || t('app.nickname')
-))
+const displayName = computed(
+  () =>
+    authStore.userInfo?.nickname ||
+    authStore.userInfo?.name ||
+    authStore.userInfo?.account ||
+    t('app.nickname'),
+)
 
 const avatar = computed(() => authStore.userInfo?.avatar || undefined)
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
-// 桌面端用户菜单项。项目首页使用环境配置路径。
 const options = computed<DropdownOption[]>(() => [
   {
     label: t('app.user_center.title'),
@@ -40,13 +27,13 @@ const options = computed<DropdownOption[]>(() => [
     icon: renderIcon('icon-park-outline:user'),
   },
   {
-    type: 'divider',
-    key: 'divider-1',
+    label: t('app.my_space'),
+    key: 'mySpace',
+    icon: renderIcon('icon-park-outline:user-positioning'),
   },
   {
-    label: t('app.project_home'),
-    key: 'home',
-    icon: renderIcon('icon-park-outline:home'),
+    type: 'divider',
+    key: 'divider-1',
   },
   {
     label: t('app.login_out'),
@@ -55,13 +42,12 @@ const options = computed<DropdownOption[]>(() => [
   },
 ])
 
-// 根据下拉菜单 key 分发行为；保留弹窗确认可以避免后续接入真实登出时误触。
 function handleSelect(key: string | number) {
   if (key === 'userCenter') {
-    router.push('/usercenter')
+    router.push({ name: 'usercenter' })
   }
-  if (key === 'home') {
-    router.push(homePath)
+  if (key === 'mySpace') {
+    router.push({ name: 'my-space' })
   }
   if (key === 'logout') {
     window.$dialog.info({
@@ -79,36 +65,24 @@ function handleSelect(key: string | number) {
 </script>
 
 <template>
-  <div>
-    <div v-if="appStore.isMobile">
-      <div class="flex items-center gap-2" @click="emit('openMobileDrawer')">
-        <n-avatar
-          v-if="avatar"
-          round
-          class="cursor-pointer"
-          :src="avatar"
-          :img-props="avatarImgProps"
-        />
-        <n-avatar v-else round class="cursor-pointer">
-          <NovaIcon icon="icon-park-outline:user" />
-        </n-avatar>
-        <span v-if="showName">{{ displayName }}</span>
-      </div>
-    </div>
-    <n-dropdown v-else trigger="click" :options="options" @select="handleSelect">
-      <div class="flex items-center gap-2">
-        <n-avatar
-          v-if="avatar"
-          round
-          class="cursor-pointer"
-          :src="avatar"
-          :img-props="avatarImgProps"
-        />
-        <n-avatar v-else round class="cursor-pointer">
-          <NovaIcon icon="icon-park-outline:user" />
-        </n-avatar>
+  <n-dropdown trigger="click" :options="options" @select="handleSelect">
+    <button
+      class="min-w-0 inline-flex items-center gap-2 border-0 bg-transparent p-1 text-[var(--text-color-base)] cursor-pointer"
+      type="button"
+    >
+      <n-avatar
+        v-if="avatar"
+        round
+        :size="32"
+        :src="avatar"
+        :img-props="avatarImgProps"
+      />
+      <n-avatar v-else round :size="32">
+        <NovaIcon icon="icon-park-outline:user" />
+      </n-avatar>
+      <span class="hidden max-w-28 truncate text-sm font-medium lg:inline">
         {{ displayName }}
-      </div>
-    </n-dropdown>
-  </div>
+      </span>
+    </button>
+  </n-dropdown>
 </template>

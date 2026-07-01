@@ -60,12 +60,17 @@ const showMobileDrawer = ref(false)
     :sidebar-collapsed-width="64"
   >
     <template #logo>
-      <Logo />
+      <Logo sidebar />
     </template>
 
     <template #nav-left>
       <template v-if="appStore.isMobile">
-        <Logo />
+        <div class="h-full flex-y-center gap-3 p-x-sm">
+          <CommonWrapper @click="showMobileDrawer = true">
+            <NovaIcon icon="icon-park-outline:hamburger-button" />
+          </CommonWrapper>
+          <Logo />
+        </div>
       </template>
       <template v-else>
         <div class="h-full flex-y-center gap-1 p-x-sm">
@@ -82,7 +87,7 @@ const showMobileDrawer = ref(false)
           <Notices />
           <LanguageSwitch />
           <DarkModeSwitch />
-          <UserCenter @open-mobile-drawer="showMobileDrawer = true" />
+          <UserCenter />
         </template>
         <template v-else>
           <Search />

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import UserCenter from '../header/UserCenter.vue'
+import Logo from './Logo.vue'
 
-// 与父组件通过 v-model:show 双向绑定抽屉显隐状态，移动端点击用户入口后由父组件打开。
+// 与父组件通过 v-model:show 双向绑定抽屉显隐状态，移动端点击菜单入口后由父组件打开。
 const showDrawer = defineModel<boolean>('show', { default: false })
 </script>
 
@@ -9,20 +9,17 @@ const showDrawer = defineModel<boolean>('show', { default: false })
   <n-drawer
     v-model:show="showDrawer"
     :width="280"
-    placement="right"
+    placement="left"
     :mask-closable="true"
     :close-on-esc="true"
   >
     <n-drawer-content :native-scrollbar="false" :body-content-style="{ padding: '0' }">
       <template #header>
-        <div class="flex items-center gap-1 text-14px font-normal leading-normal">
-          <UserCenter show-name />
-        </div>
+        <Logo />
       </template>
-
-      <slot />
-
-      <template #footer> {{ $t('app.operation') }} </template>
+      <n-el tag="div" class="min-h-full bg-[var(--card-color)] text-[var(--text-color-base)]">
+        <slot />
+      </n-el>
     </n-drawer-content>
   </n-drawer>
 </template>

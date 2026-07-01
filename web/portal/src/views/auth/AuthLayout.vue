@@ -41,7 +41,7 @@ const highlights = computed(() => [
   },
 ])
 
-function handleShellScroll(event: Event) {
+function handleShellScroll(event: any) {
   isHeaderElevated.value = (event.currentTarget as HTMLElement).scrollTop > 8
 }
 </script>
@@ -107,7 +107,6 @@ function handleShellScroll(event: Event) {
   height: 100vh;
   min-height: 100vh;
   overflow: auto;
-  scrollbar-width: none;
   --auth-bg: #f8fafc;
   --auth-text: #1f2937;
   --auth-text-2: #4b5563;
@@ -117,21 +116,14 @@ function handleShellScroll(event: Event) {
   --auth-kicker-color: #0f766e;
   --auth-kicker-bg: rgba(20, 184, 166, 0.12);
   --auth-kicker-border: rgba(20, 184, 166, 0.22);
-  --auth-header-bg: rgba(248, 250, 252, 0.74);
+  --auth-header-bg: #ffffff;
   --auth-header-border: rgba(148, 163, 184, 0.18);
-  --auth-header-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  --auth-header-shadow: 0 6px 16px rgba(15, 23, 42, 0.035);
   --auth-card-border: transparent;
   --auth-card-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
   --auth-primary: #2563eb;
   color: var(--auth-text);
-  background:
-    linear-gradient(135deg, var(--auth-bg-accent-1, rgba(42, 148, 125, 0.14)), transparent 34%),
-    linear-gradient(315deg, var(--auth-bg-accent-2, rgba(54, 96, 181, 0.16)), transparent 40%),
-    var(--auth-bg);
-}
-
-.auth-shell::-webkit-scrollbar {
-  display: none;
+  background: var(--auth-bg);
 }
 
 .auth-shell--dark {
@@ -144,13 +136,11 @@ function handleShellScroll(event: Event) {
   --auth-kicker-color: #5eead4;
   --auth-kicker-bg: rgba(20, 184, 166, 0.1);
   --auth-kicker-border: rgba(94, 234, 212, 0.18);
-  --auth-header-bg: rgba(24, 24, 28, 0.72);
+  --auth-header-bg: #18181c;
   --auth-header-border: rgba(255, 255, 255, 0.08);
-  --auth-header-shadow: 0 12px 32px rgba(0, 0, 0, 0.26);
+  --auth-header-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
   --auth-card-border: rgba(255, 255, 255, 0.08);
   --auth-card-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-  --auth-bg-accent-1: rgba(37, 99, 235, 0.07);
-  --auth-bg-accent-2: rgba(20, 184, 166, 0.06);
 }
 
 .auth-header {
@@ -164,22 +154,16 @@ function handleShellScroll(event: Event) {
   gap: 16px;
   min-height: 72px;
   padding: 0 clamp(20px, 4vw, 56px);
-  background: transparent;
-  border-bottom: 1px solid transparent;
+  background: var(--auth-header-bg);
+  border-bottom: 1px solid var(--auth-header-border);
   transition:
     background-color 0.2s ease,
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    backdrop-filter 0.2s ease,
-    -webkit-backdrop-filter 0.2s ease;
+    box-shadow 0.2s ease;
 }
 
 .auth-header--elevated {
-  background: var(--auth-header-bg);
-  border-bottom-color: var(--auth-header-border);
   box-shadow: var(--auth-header-shadow);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
 }
 
 .auth-brand {
@@ -198,9 +182,8 @@ function handleShellScroll(event: Event) {
   width: 38px;
   height: 38px;
   color: #ffffff;
-  background: linear-gradient(135deg, #2563eb, #0f9f8f);
+  background: var(--auth-primary);
   border-radius: 8px;
-  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.28);
 }
 
 .auth-brand-text {

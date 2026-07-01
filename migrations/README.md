@@ -1,6 +1,6 @@
 # 数据库迁移说明
 
-本项目使用 Alembic 管理数据库结构迁移。迁移只负责表、字段、索引、约束等结构变更，不负责初始化业务数据。
+本项目使用 Alembic 管理数据库结构迁移。迁移只负责表、字段、索引、约束等结构变更，不负责初始化业务数据。超管账号、初始角色等业务数据由独立 seed 脚本处理。
 
 ## 执行迁移
 
@@ -21,7 +21,7 @@ alembic upgrade head
 配置优先级：
 
 ```text
-真实环境变量 > .env.local > .env > settings.py 默认值
+真实环境变量 > .env / .env.local > settings.py 默认值
 ```
 
 本地开发建议把个人数据库连接写在 `.env.local`，避免修改公共 `.env`。
@@ -145,4 +145,14 @@ python scripts/check_migration.py
 
 需要初始化数据：
 
-不要写进 Alembic migration。后续应放到独立 seed/dev 脚本、后台管理功能或部署初始化流程中。
+不要写进 Alembic migration。当前超管初始化使用独立脚本：
+
+```bash
+python scripts/seed_super_admin.py
+```
+
+默认账号、密码、昵称、邮箱和手机号可以通过脚本参数或环境变量覆盖：
+
+```bash
+python scripts/seed_super_admin.py --help
+```

@@ -32,4 +32,15 @@ class PortalMeResponse(ApiSchema):
     account_id: str
     account: str
     account_type: AccountType
+    name: str | None = None
+    nickname: str | None = None
+    avatar: str | None = None
+    role_ids: list[str] = Field(default_factory=list)
+    dept_ids: list[str] = Field(default_factory=list)
+    group_ids: list[str] = Field(default_factory=list)
+    role_id_names: list[IdNameResponse] = Field(default_factory=list)
+    dept_id_names: list[IdNameResponse] = Field(default_factory=list)
+    group_id_names: list[IdNameResponse] = Field(default_factory=list)
+    permission_keys: list[str] = Field(default_factory=list)
+    button_codes: list[str] = Field(default_factory=list)
     profile: PortalProfileResponse

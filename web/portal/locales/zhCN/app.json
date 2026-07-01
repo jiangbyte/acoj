@@ -1,5 +1,4 @@
 {
-  "project_home": "项目首页",
   "login_out": "退出登录",
   "login_out_title": "退出登录",
   "login_out_content": "确认退出当前账号？",
@@ -27,5 +26,80 @@
   "lang_zh": "简体中文",
   "lang_en": "English",
   "operation": "操作",
-  "nickname": "用户昵称"
+  "nickname": "用户昵称",
+  "my_space": "我的空间",
+  "space": {
+    "title": "个人主页",
+    "default_name": "门户用户",
+    "empty_value": "未设置",
+    "about": "个人简介",
+    "profile": "公开资料",
+    "recent_title": "最近内容",
+    "empty_content_title": "暂无公开内容",
+    "empty_content_desc": "公开发布后会展示在这里",
+    "stats": {
+      "posts": "内容",
+      "following": "关注",
+      "followers": "粉丝"
+    },
+    "tabs": {
+      "home": "主页",
+      "videos": "视频",
+      "collections": "合集",
+      "likes": "喜欢"
+    },
+    "showcase": {
+      "intro_title": "简介",
+      "signature_title": "签名"
+    },
+    "mock": {
+      "feed_type_video": "发布视频",
+      "feed_type_note": "发布动态",
+      "feed_1_title": "新内容正在整理",
+      "feed_1_text": "这里会展示用户公开视频、图文动态和更新记录。",
+      "feed_1_time": "刚刚",
+      "feed_2_title": "个人主页已开放",
+      "feed_2_text": "公开资料、简介和精选内容会聚合在这个空间中。",
+      "feed_2_time": "今天",
+      "video_1_title": "入门指南",
+      "video_1_meta": "03:28",
+      "video_2_title": "实践记录",
+      "video_2_meta": "08:16",
+      "video_3_title": "经验分享",
+      "video_3_meta": "12:04",
+      "video_4_title": "问答精选",
+      "video_4_meta": "05:42",
+      "collection_1_title": "精选内容",
+      "collection_1_desc": "收集公开发布的代表内容，适合快速了解这个空间。",
+      "collection_1_count": "4 个内容",
+      "collection_2_title": "学习记录",
+      "collection_2_desc": "按主题整理的长期更新合集。",
+      "collection_2_count": "6 个内容",
+      "like_1_title": "值得回看的内容",
+      "like_1_source": "来自公开视频",
+      "like_2_title": "收藏的合集",
+      "like_2_source": "来自社区推荐",
+      "like_3_title": "关注的问题",
+      "like_3_source": "来自互动区"
+    }
+  },
+  "portal": {
+    "home": "首页",
+    "footer_title": "企业门户",
+    "kicker": "企业级门户",
+    "hero_title": "统一入口，连接组织、流程与服务",
+    "hero_subtitle": "为团队提供清晰、稳定、响应式的业务入口。公开页面可配置，受保护能力在登录后按权限动态加载。",
+    "open_workspace": "进入工作区",
+    "panel_label": "服务概览",
+    "panel_title": "以统一体验承载多端访问",
+    "metric_availability": "可用性",
+    "metric_service": "服务支持",
+    "metric_entry": "核心入口",
+    "capability_process_title": "流程连接",
+    "capability_process_text": "将组织服务、业务流程和个人工作入口集中到清晰的门户导航中。",
+    "capability_team_title": "团队协作",
+    "capability_team_text": "登录后按权限加载动态资源，让不同角色只看到需要的能力。",
+    "capability_insight_title": "运营视图",
+    "capability_insight_text": "为通用企业场景预留数据、公告和服务扩展空间。"
+  }
 }

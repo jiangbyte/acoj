@@ -32,10 +32,10 @@ declare module 'vue-router' {
     // 所属资源模块名称，用于回显。
     module_id_name?: string | null
 
-    // 前端路由路径，例如 /dashboard。
+    // 前端路由路径，例如 /workspace。
     path?: string | null
 
-    // 页面组件路径，约定为 src/views 下的相对路径，例如 /dashboard/index.vue。
+    // 页面组件路径，约定为 src/views 下的相对路径，例如 /workspace/index.vue。
     component?: string | null
 
     // 路由重定向地址，目录未配置时会由前端自动补第一个可见子节点。
@@ -64,6 +64,9 @@ declare module 'vue-router' {
 
     // 资源描述，前端暂不展示，保留给后续扩展。
     description?: string | null
+
+    // 是否允许匿名访问；未显式声明且未命中公开路径配置时默认要求登录。
+    public?: boolean
   }
 }
 

@@ -31,9 +31,6 @@ function getInitialLang(): App.Lang {
  */
 export const useAppStore = defineStore('app-store', {
   state: () => ({
-    // 侧边栏是否折叠。
-    collapsed: false,
-
     // 页面内容渲染开关。reloadPage 会短暂关闭再打开，用于触发当前路由视图重载。
     loadFlag: true,
 
@@ -70,13 +67,6 @@ export const useAppStore = defineStore('app-store', {
       this.lang = lang
       localStorage.setItem('lang', lang)
       setLocale(lang)
-    },
-
-    /**
-     * 切换侧边栏折叠状态。
-     */
-    toggleCollapse() {
-      this.collapsed = !this.collapsed
     },
 
     /**

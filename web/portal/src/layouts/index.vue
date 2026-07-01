@@ -1,133 +1,138 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { ProLayout, useLayoutMenu } from 'pro-naive-ui'
-import { useAppStore, useRouteStore } from '@/stores'
-import { createMenus } from '@/stores/route/helper'
-import {
-  BackTop,
-  Breadcrumb,
-  CollapaseButton,
-  FullScreen,
-  LanguageSwitch,
-  Logo,
-  MobileDrawer,
-  Notices,
-  Search,
-  TabBar,
-  UserCenter,
-} from './components'
+import type { MenuOption } from 'naive-ui'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { computed, h, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useAppStore, useAuthStore, useRouteStore } from '@/stores'
+import { renderIcon } from '@/utils/icon'
+import { BackTop, LanguageSwitch, Logo, UserCenter } from './components'
 import Content from './Content.vue'
 
+const route = useRoute()
+const router = useRouter()
 const appStore = useAppStore()
+const authStore = useAuthStore()
 const routeStore = useRouteStore()
+const { t } = useI18n()
+const copyright = import.meta.env.VITE_COPYRIGHT_INFO
 
-const menus = computed(() => {
-  appStore.lang
-  return createMenus(routeStore.rowRoutes)
-})
+const showMobileMenu = ref(false)
 
-const { layout, activeKey } = useLayoutMenu({
-  mode: 'vertical',
-  accordion: true,
-  menus,
-} as never)
+const staticMenus = computed<MenuOption[]>(() => [
+  {
+    key: '/home',
+    label: () => h(RouterLink, { to: '/home' }, { default: () => t('app.portal.home') }),
+    icon: renderIcon('icon-park-outline:home'),
+  },
+])
+
+const menus = computed<MenuOption[]>(() => [
+  ...staticMenus.value,
+  ...(routeStore.menus as MenuOption[]),
+])
+
+const activeKey = computed(() => route.path)
 
 watch(
-  () => routeStore.currentMenuPath,
-  (currentMenuPath) => {
-    activeKey.value = currentMenuPath
+  () => appStore.isMobile,
+  (isMobile) => {
+    if (!isMobile) {
+      showMobileMenu.value = false
+    }
   },
-  { immediate: true },
 )
 
-const showMobileDrawer = ref(false)
+function handleMenuUpdate(key: string) {
+  showMobileMenu.value = false
+  router.push(key)
+}
+
+function goLogin() {
+  router.push({
+    path: '/auth/login',
+    query: route.path.startsWith('/auth') ? undefined : { redirect: route.fullPath },
+  })
+}
 </script>
 
 <template>
-  <ProLayout
-    v-model:collapsed="appStore.collapsed"
-    mode="vertical"
-    :is-mobile="appStore.isMobile"
-    :show-logo="!appStore.isMobile"
-    :show-footer="false"
-    show-tabbar
-    nav-fixed
-    show-nav
-    show-sidebar
-    :nav-height="60"
-    :tabbar-height="45"
-    :sidebar-width="240"
-    :sidebar-collapsed-width="64"
-  >
-    <template #logo>
-      <Logo />
-    </template>
-
-    <template #nav-left>
-      <template v-if="appStore.isMobile">
-        <Logo />
-      </template>
-      <template v-else>
-        <div class="h-full flex-y-center gap-1 p-x-sm">
-          <CollapaseButton />
-          <Breadcrumb />
+  <n-el tag="div" class="min-h-screen bg-[var(--body-color)] text-[var(--text-color-base)]">
+    <header
+      class="portal-header sticky top-0 z-50 border-b border-[var(--border-color)] bg-[var(--card-color)]"
+    >
+      <div class="h-16 flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div class="min-w-0 flex items-center gap-3">
+          <CommonWrapper v-if="appStore.isMobile" @click="showMobileMenu = true">
+            <NovaIcon icon="icon-park-outline:hamburger-button" />
+          </CommonWrapper>
+          <Logo />
         </div>
-      </template>
-    </template>
 
-    <template #nav-right>
-      <div class="h-full flex-y-center gap-1 p-x-xl">
-        <template v-if="appStore.isMobile">
-          <Search />
-          <Notices />
+        <nav class="hidden min-w-0 flex-1 justify-center md:flex">
+          <n-menu
+            mode="horizontal"
+            responsive
+            :value="activeKey"
+            :options="menus"
+            class="max-w-full border-0 bg-transparent"
+          />
+        </nav>
+
+        <div class="shrink-0 flex items-center justify-end gap-1 sm:gap-2">
           <LanguageSwitch />
           <DarkModeSwitch />
-          <UserCenter @open-mobile-drawer="showMobileDrawer = true" />
-        </template>
-        <template v-else>
-          <Search />
-          <Notices />
-          <FullScreen />
-          <LanguageSwitch />
-          <DarkModeSwitch />
-          <UserCenter />
-        </template>
+          <UserCenter v-if="authStore.isLogin" />
+          <n-button v-else type="primary" :focusable="false" @click="goLogin">
+            {{ t('auth.login') }}
+          </n-button>
+        </div>
       </div>
-    </template>
-
-    <template #sidebar>
-      <n-scrollbar class="sidebar-menu-scrollbar">
-        <n-menu v-bind="layout.verticalMenuProps" :collapsed-width="64" />
-      </n-scrollbar>
-    </template>
-
-    <template #sidebar-extra>
-      <n-scrollbar class="flex-[1_0_0]">
-        <n-menu v-bind="layout.verticalExtraMenuProps" :collapsed-width="64" />
-      </n-scrollbar>
-    </template>
-
-    <template #tabbar>
-      <TabBar />
-    </template>
+    </header>
 
     <Content />
-    <BackTop class="z-999" />
 
-    <MobileDrawer v-model:show="showMobileDrawer">
-      <n-menu v-bind="layout.verticalMenuProps" :collapsed="false" />
-    </MobileDrawer>
-  </ProLayout>
+    <footer class="border-t border-[var(--border-color)] bg-[var(--card-color)]">
+      <div
+        class="flex flex-col gap-3 px-4 py-6 text-sm text-[var(--text-color-3)] sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8"
+      >
+        <div class="font-medium text-[var(--text-color-2)]">
+          {{ t('app.portal.footer_title') }}
+        </div>
+        <div>{{ copyright }}</div>
+      </div>
+    </footer>
+
+    <n-drawer v-model:show="showMobileMenu" placement="left" :width="300">
+      <n-drawer-content :native-scrollbar="false" body-content-class="p-0!">
+        <template #header>
+          <Logo />
+        </template>
+        <n-el tag="div" class="min-h-full bg-[var(--card-color)] text-[var(--text-color-base)]">
+          <n-menu
+            :value="activeKey"
+            :options="menus"
+            class="border-0"
+            @update:value="handleMenuUpdate"
+          />
+        </n-el>
+      </n-drawer-content>
+    </n-drawer>
+
+    <BackTop class="z-999" />
+  </n-el>
 </template>
 
 <style scoped>
-:deep(.n-pro-layout__sidebar) {
-  min-height: 0;
-  overflow: hidden;
+.portal-header {
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--border-color) 72%, transparent),
+    0 6px 16px rgba(15, 23, 42, 0.035);
 }
 
-.sidebar-menu-scrollbar {
-  min-height: 0;
-  flex: 1 1 0;
+:deep(.dark) .portal-header,
+:deep(html.dark) .portal-header {
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--border-color) 76%, transparent),
+    0 6px 16px rgba(0, 0, 0, 0.16);
 }
 </style>

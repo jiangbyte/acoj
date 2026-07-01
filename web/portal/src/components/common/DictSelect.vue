@@ -30,6 +30,12 @@ const emit = defineEmits<{
 }>()
 
 const options = computed(() => dictList(props.dictCode))
+const singleValue = computed(() =>
+  typeof modelValue.value === 'string' || typeof modelValue.value === 'number'
+    ? modelValue.value
+    : null,
+)
+const multipleValue = computed(() => (Array.isArray(modelValue.value) ? modelValue.value : []))
 
 function handleUpdateValue(value: any) {
   modelValue.value = value
@@ -40,7 +46,7 @@ function handleUpdateValue(value: any) {
 <template>
   <NSelect
     v-if="type === 'select'"
-    :value="modelValue as string | number | null"
+    :value="singleValue"
     :options="options"
     :placeholder="placeholder"
     :clearable="clearable"
@@ -52,7 +58,7 @@ function handleUpdateValue(value: any) {
   <NRadioGroup
     v-else-if="type === 'radio'"
     class="flex flex-wrap gap-x-16px gap-y-8px"
-    :value="modelValue as string | number | null"
+    :value="singleValue"
     :disabled="disabled"
     :size="size"
     @update:value="handleUpdateValue"
@@ -65,7 +71,7 @@ function handleUpdateValue(value: any) {
   <NCheckboxGroup
     v-else
     class="flex flex-wrap gap-x-16px gap-y-8px"
-    :value="Array.isArray(modelValue) ? modelValue : []"
+    :value="multipleValue"
     :disabled="disabled"
     @update:value="handleUpdateValue"
   >

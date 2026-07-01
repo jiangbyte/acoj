@@ -80,6 +80,15 @@ async def portal_login(
     )
 
 
+@portal_router.post("/register", response_model=RegisterApiResponse)
+async def portal_register(
+    payload: RegisterRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> RegisterApiResponse:
+    """门户端注册入口，创建门户账户主体和门户资料。"""
+    return success(await AuthService(db).register_portal(payload))
+
+
 @portal_router.post(
     "/logout",
     response_model=LogoutApiResponse,

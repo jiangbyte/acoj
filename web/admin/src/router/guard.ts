@@ -15,7 +15,7 @@ const loginPath = '/auth/login'
  * 这里集中处理外链跳转、授权路由初始化、标签页同步、菜单高亮和页面标题等路由副作用。
  */
 export function setupRouterGuard(router: Router) {
-  router.beforeEach(async (to, _from, next) => {
+  router.beforeEach(async (to) => {
     const authStore = useAuthStore()
     const dictStore = useDictStore()
     const routeStore = useRouteStore()
@@ -24,8 +24,7 @@ export function setupRouterGuard(router: Router) {
     // 资源配置了 href 时视为外链。打开新窗口后阻止当前路由继续跳转。
     if (to.meta.href) {
       window.open(to.meta.href)
-      next(false)
-      return
+      return false
     }
 
     window.$loadingBar?.start()
@@ -34,31 +33,27 @@ export function setupRouterGuard(router: Router) {
 
     // 根路径只做入口转发：已登录进入首页，未登录进入登录页。
     if (to.name === 'root') {
-      next({ path: isLogin ? homePath : loginPath, replace: true })
-      return
+      return { path: isLogin ? homePath : loginPath, replace: true }
     }
 
     // 已登录用户访问认证页时，直接回到 redirect 或首页。
     if (isAuthRoute(to) && isLogin) {
-      next({ path: getRedirectPath(to) ?? homePath, replace: true })
-      return
+      return { path: getRedirectPath(to) ?? homePath, replace: true }
     }
 
     // 认证页和显式 404 是公开路由，不触发登录态和授权路由初始化。
     if (isPublicRoute(to)) {
-      next()
       return
     }
 
     // 未登录访问后台页面时跳转到登录页，并保留原目标地址。
     if (!isLogin) {
-      next({
+      return {
         path: loginPath,
         query: {
           redirect: to.fullPath,
         },
-      })
-      return
+      }
     }
 
     // 登录后首次进入系统时注册授权路由。注册完成后，如果当前命中的是 404 兜底路由，需要重新匹配一次目标路径。
@@ -66,28 +61,24 @@ export function setupRouterGuard(router: Router) {
       try {
         await Promise.all([routeStore.initAuthRoute(), dictStore.refreshDict()])
         if (isFallbackRoute(to)) {
-          next({
+          return {
             path: to.fullPath,
             replace: true,
             query: to.query,
             hash: to.hash,
-          })
-          return
+          }
         }
       } catch {
         authStore.resetSession()
-        next({
+        return {
           path: loginPath,
           replace: true,
           query: {
             redirect: to.fullPath,
           },
-        })
-        return
+        }
       }
     }
-
-    next()
   })
 
   // 路由解析完成前同步 UI 状态：侧边菜单高亮、标签页新增、当前标签记录。

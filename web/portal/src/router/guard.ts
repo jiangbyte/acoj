@@ -1,5 +1,5 @@
 import type { RouteLocationNormalized, Router } from 'vue-router'
-import { useAuthStore, useDictStore, useRouteStore, useTabStore } from '@/stores'
+import { useAuthStore, useDictStore, useRouteStore } from '@/stores'
 import { getRouteTitle } from '@/stores/route'
 
 // 浏览器标题后缀，来自应用环境配置。
@@ -8,6 +8,7 @@ const appTitle = import.meta.env.VITE_APP_TITLE
 // 首页路径只用于跳转和默认重定向，不用于覆盖资源表里的 path 字段。
 const homePath = import.meta.env.VITE_HOME_PATH
 const loginPath = '/auth/login'
+const publicRoutePaths = parsePublicRoutePaths(import.meta.env.VITE_PUBLIC_ROUTE_PATHS)
 
 /**
  * 注册全局路由守卫。
@@ -15,7 +16,7 @@ const loginPath = '/auth/login'
  * 这里集中处理外链跳转、授权路由初始化、标签页同步、菜单高亮和页面标题等路由副作用。
  */
 export function setupRouterGuard(router: Router) {
-  router.beforeEach(async (to, _from, next) => {
+  router.beforeEach(async (to) => {
     const authStore = useAuthStore()
     const dictStore = useDictStore()
     const routeStore = useRouteStore()
@@ -24,41 +25,31 @@ export function setupRouterGuard(router: Router) {
     // 资源配置了 href 时视为外链。打开新窗口后阻止当前路由继续跳转。
     if (to.meta.href) {
       window.open(to.meta.href)
-      next(false)
-      return
+      return false
     }
 
     window.$loadingBar?.start()
 
     const isLogin = authStore.isLogin
 
-    // 根路径只做入口转发：已登录进入首页，未登录进入登录页。
-    if (to.name === 'root') {
-      next({ path: isLogin ? homePath : loginPath, replace: true })
-      return
-    }
-
     // 已登录用户访问认证页时，直接回到 redirect 或首页。
     if (isAuthRoute(to) && isLogin) {
-      next({ path: getRedirectPath(to) ?? homePath, replace: true })
-      return
+      return { path: getRedirectPath(to) ?? homePath, replace: true }
     }
 
-    // 认证页和显式 404 是公开路由，不触发登录态和授权路由初始化。
+    // 认证页、错误页和配置公开页不触发登录态和授权路由初始化。
     if (isPublicRoute(to)) {
-      next()
       return
     }
 
     // 未登录访问后台页面时跳转到登录页，并保留原目标地址。
     if (!isLogin) {
-      next({
+      return {
         path: loginPath,
         query: {
           redirect: to.fullPath,
         },
-      })
-      return
+      }
     }
 
     // 登录后首次进入系统时注册授权路由。注册完成后，如果当前命中的是 404 兜底路由，需要重新匹配一次目标路径。
@@ -66,38 +57,24 @@ export function setupRouterGuard(router: Router) {
       try {
         await Promise.all([routeStore.initAuthRoute(), dictStore.refreshDict()])
         if (isFallbackRoute(to)) {
-          next({
+          return {
             path: to.fullPath,
             replace: true,
             query: to.query,
             hash: to.hash,
-          })
-          return
+          }
         }
       } catch {
         authStore.resetSession()
-        next({
+        return {
           path: loginPath,
           replace: true,
           query: {
             redirect: to.fullPath,
           },
-        })
-        return
+        }
       }
     }
-
-    next()
-  })
-
-  // 路由解析完成前同步 UI 状态：侧边菜单高亮、标签页新增、当前标签记录。
-  router.beforeResolve((to) => {
-    const routeStore = useRouteStore()
-    const tabStore = useTabStore()
-
-    routeStore.setCurrentMenuPath(to.path)
-    tabStore.addTab(to)
-    tabStore.setCurrentTab(to.fullPath)
   })
 
   // 路由完成后更新浏览器标题并结束顶部加载条。
@@ -122,7 +99,12 @@ function isAuthRoute(route: RouteLocationNormalized) {
 }
 
 function isPublicRoute(route: RouteLocationNormalized) {
-  return isAuthRoute(route) || route.name === 'not-found'
+  return (
+    isAuthRoute(route) ||
+    route.name === 'not-found' ||
+    route.meta.public === true ||
+    publicRoutePaths.has(route.path)
+  )
 }
 
 function getRedirectPath(route: RouteLocationNormalized) {
@@ -131,4 +113,13 @@ function getRedirectPath(route: RouteLocationNormalized) {
     return undefined
   }
   return redirect
+}
+
+function parsePublicRoutePaths(value?: string) {
+  return new Set(
+    (value ?? '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+  )
 }

@@ -217,8 +217,9 @@ function displayValue(value: unknown) {
 </script>
 
 <template>
-  <NSpin :show="state.loading">
-    <NGrid :cols="24" :x-gap="16" :y-gap="16" item-responsive responsive="screen">
+  <div>
+    <NSpin :show="state.loading">
+      <NGrid :cols="24" :x-gap="16" :y-gap="16" item-responsive responsive="screen">
       <NGridItem span="24 m:7">
         <NCard :bordered="false" class="h-full">
           <div class="flex flex-col items-center text-center">
@@ -411,43 +412,44 @@ function displayValue(value: unknown) {
           </NTabs>
         </NCard>
       </NGridItem>
-    </NGrid>
-  </NSpin>
+      </NGrid>
+    </NSpin>
 
-  <NModal
-    v-model:show="state.bindConfirm.show"
-    preset="card"
-    :title="bindConfirmTitle"
-    class="max-w-120"
-    :bordered="false"
-    :mask-closable="false"
-  >
-    <NForm label-placement="top">
-      <NFormItem :label="t('app.user_center.current_password')">
-        <NInput
-          v-model:value="state.bindConfirm.password"
-          type="password"
-          show-password-on="click"
-          :placeholder="t('app.user_center.placeholder.current_password')"
-          @keydown.enter="confirmBind"
-        />
-      </NFormItem>
-    </NForm>
-    <template #footer>
-      <NSpace justify="end">
-        <NButton @click="state.bindConfirm.show = false">
-          {{ t('common.cancel') }}
-        </NButton>
-        <NButton
-          type="primary"
-          :loading="state.bindConfirm.loading"
-          @click="confirmBind"
-        >
-          {{ t('common.confirm') }}
-        </NButton>
-      </NSpace>
-    </template>
-  </NModal>
+    <NModal
+      v-model:show="state.bindConfirm.show"
+      preset="card"
+      :title="bindConfirmTitle"
+      class="max-w-120"
+      :bordered="false"
+      :mask-closable="false"
+    >
+      <NForm label-placement="top">
+        <NFormItem :label="t('app.user_center.current_password')">
+          <NInput
+            v-model:value="state.bindConfirm.password"
+            type="password"
+            show-password-on="click"
+            :placeholder="t('app.user_center.placeholder.current_password')"
+            @keydown.enter="confirmBind"
+          />
+        </NFormItem>
+      </NForm>
+      <template #footer>
+        <NSpace justify="end">
+          <NButton @click="state.bindConfirm.show = false">
+            {{ t('common.cancel') }}
+          </NButton>
+          <NButton
+            type="primary"
+            :loading="state.bindConfirm.loading"
+            @click="confirmBind"
+          >
+            {{ t('common.confirm') }}
+          </NButton>
+        </NSpace>
+      </template>
+    </NModal>
 
-  <MessageDetailModal ref="detailModalRef" @changed="handleDetailChanged" />
+    <MessageDetailModal ref="detailModalRef" @changed="handleDetailChanged" />
+  </div>
 </template>
