@@ -1,0 +1,78 @@
+{
+  "title": "运营工作台",
+  "subtitle": "聚合收入、订单、转化、风险与协同事项，辅助运营团队快速判断今日业务状态。",
+  "units": {
+    "currency": "元",
+    "count": "单",
+    "items": "项"
+  },
+  "metrics": {
+    "revenue": "今日成交额",
+    "revenue_helper": "较过去 7 日均值提升",
+    "orders": "有效订单",
+    "orders_helper": "支付成功且未取消订单",
+    "ticket": "客单价",
+    "ticket_helper": "促销期客单价轻微回落",
+    "risk": "风险工单",
+    "risk_helper": "高优先级异常待跟进"
+  },
+  "charts": {
+    "operation_trend": "运营趋势",
+    "conversion": "核心链路转化",
+    "channel_share": "渠道贡献",
+    "load_failed": "图表资源加载失败，请刷新页面或重启开发服务"
+  },
+  "series": {
+    "revenue": "成交额",
+    "orders": "订单数"
+  },
+  "conversion": {
+    "visit": "访问",
+    "signup": "注册",
+    "trial": "试用",
+    "order": "下单",
+    "repurchase": "复购"
+  },
+  "channels": {
+    "total": "总占比",
+    "search": "搜索",
+    "direct": "直接访问",
+    "partner": "渠道合作",
+    "campaign": "活动投放",
+    "other": "其他"
+  },
+  "ranking": {
+    "title": "业务线贡献",
+    "saas": "SaaS 订阅",
+    "training": "培训服务",
+    "marketplace": "内容市场",
+    "service": "企业服务"
+  },
+  "todos": {
+    "title": "待办队列",
+    "refund_audit": "退款审核",
+    "refund_meta": "超过 2 小时未处理",
+    "enterprise_lead": "企业线索回访",
+    "enterprise_meta": "今日新增高意向客户",
+    "contract_renewal": "合同续费确认",
+    "contract_meta": "7 日内到期客户"
+  },
+  "alerts": {
+    "title": "运营告警",
+    "payment_delay": "支付延迟",
+    "payment_delay_desc": "华东区支付链路平均耗时高于阈值，需要跟进网关回调。",
+    "stock_pressure": "库存压力",
+    "stock_pressure_desc": "热门套餐权益库存低于安全水位，建议提前补充。",
+    "sla": "客服 SLA",
+    "sla_desc": "晚高峰在线排队人数上升，建议临时调度值班人员。"
+  },
+  "timeline": {
+    "title": "今日动态",
+    "pricing": "价格策略已生效",
+    "pricing_desc": "企业版续费折扣已同步到销售工作台。",
+    "campaign": "活动素材完成审核",
+    "campaign_desc": "暑期增长活动进入投放排期。",
+    "audit": "风控复核进行中",
+    "audit_desc": "3 个异常订单等待二次确认。"
+  }
+}

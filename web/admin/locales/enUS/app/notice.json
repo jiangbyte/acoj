@@ -1,0 +1,20 @@
+{
+  "system_ready_title": "System initialized",
+  "system_tag": "System",
+  "system_ready_description": "The admin base layout is ready.",
+  "just_now": "Just now",
+  "placeholder_title": "Real notifications pending",
+  "placeholder_tag": "Placeholder",
+  "placeholder_description": "This can be replaced by the backend notification API later.",
+  "today": "Today",
+  "todo_title": "Complete business menus",
+  "todo_tag": "Todo",
+  "recently": "Recently",
+  "empty": "No data",
+  "read": "Read",
+  "unread": "Unread",
+  "category": "Category",
+  "time": "Time",
+  "content": "Content",
+  "load_more": "Load more"
+}

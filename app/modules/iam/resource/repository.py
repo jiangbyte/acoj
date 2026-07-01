@@ -1,0 +1,335 @@
+from sqlalchemy import Select, delete, func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config.enums import StatusEnum
+from app.core.exceptions.business import ConflictError, NotFoundError
+from app.modules.iam.enums import ResourceType
+from app.modules.iam.reference_guard import (
+    count_resource_references,
+    ensure_not_self_or_descendant,
+    list_descendant_ids,
+    raise_if_referenced,
+)
+from app.modules.iam.resource.model import SysResource, SysResourceModule, SysResourcePermissionRel
+from app.modules.iam.resource.schema import (
+    ResourceAdminPageQuery,
+    ResourceCreateRequest,
+    ResourceGrantMenuOption,
+    ResourceGrantModuleOption,
+    ResourceModuleAdminPageQuery,
+    ResourceModuleCreateRequest,
+    ResourceModuleUpdateRequest,
+    ResourcePermissionOption,
+    ResourcePermissionBindRequest,
+    ResourceUpdateRequest,
+)
+
+
+class ResourceRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def create(self, payload: ResourceCreateRequest) -> None:
+        await self._ensure_payload_valid(payload)
+        resource = SysResource(**payload.model_dump())
+        self.db.add(resource)
+        await self.db.flush()
+
+    async def get_by_id(self, resource_id: str) -> SysResource | None:
+        return await self.db.get(SysResource, resource_id)
+
+    async def get_required(self, resource_id: str) -> SysResource:
+        entity = await self.get_by_id(resource_id)
+        if entity is None:
+            raise NotFoundError("Resource not found")
+        return entity
+
+    async def update(self, payload: ResourceUpdateRequest) -> None:
+        entity = await self.get_required(payload.id)
+        await ensure_not_self_or_descendant(
+            self.db,
+            SysResource,
+            payload.id,
+            payload.parent_id,
+            "Resource",
+        )
+        await self._ensure_payload_valid(payload, payload.id)
+        old_module_id = entity.module_id
+        data = payload.model_dump(exclude={"id"})
+        for key, value in data.items():
+            setattr(entity, key, value)
+        if old_module_id != payload.module_id:
+            descendant_ids = await list_descendant_ids(self.db, SysResource, payload.id)
+            if descendant_ids:
+                await self.db.execute(
+                    update(SysResource)
+                    .where(SysResource.id.in_(descendant_ids))
+                    .values(module_id=payload.module_id)
+                )
+        await self.db.flush()
+
+    async def _ensure_payload_valid(
+        self,
+        payload: ResourceCreateRequest | ResourceUpdateRequest,
+        resource_id: str | None = None,
+    ) -> None:
+        if payload.module_id and not await self.db.get(SysResourceModule, payload.module_id):
+            raise ConflictError("Resource module does not exist")
+        if not payload.parent_id:
+            return
+        parent = await self.db.get(SysResource, payload.parent_id)
+        if parent is None:
+            raise ConflictError("Resource parent does not exist")
+        if resource_id is not None and parent.id == resource_id:
+            raise ConflictError("Resource cannot move under itself")
+        if parent.module_id != payload.module_id:
+            raise ConflictError("Resource module must be same as parent resource module")
+
+    async def delete_many(self, resource_ids: list[str]) -> None:
+        unique_ids = list(dict.fromkeys(resource_ids))
+        if not unique_ids:
+            return
+        stmt = select(SysResource.id).where(SysResource.id.in_(unique_ids))
+        existing_ids = set((await self.db.execute(stmt)).scalars().all())
+        if len(existing_ids) != len(unique_ids):
+            raise NotFoundError("Resource not found")
+        raise_if_referenced("Resource", await count_resource_references(self.db, unique_ids))
+        await self.db.execute(delete(SysResource).where(SysResource.id.in_(unique_ids)))
+
+    async def page_admin(self, query: ResourceAdminPageQuery) -> tuple[list[SysResource], int]:
+        stmt: Select[tuple[SysResource]] = select(SysResource)
+        count_stmt = select(func.count(SysResource.id))
+        filters = []
+        if query.code:
+            filters.append(SysResource.code.contains(query.code))
+        if query.name:
+            filters.append(SysResource.name.contains(query.name))
+        if query.resource_type:
+            filters.append(SysResource.resource_type == query.resource_type.value)
+        if query.module_id:
+            filters.append(SysResource.module_id == query.module_id)
+        if query.parent_id:
+            filters.append(SysResource.parent_id == query.parent_id)
+        if query.status:
+            filters.append(SysResource.status == query.status)
+        if filters:
+            stmt = stmt.where(*filters)
+            count_stmt = count_stmt.where(*filters)
+        stmt = (
+            stmt.order_by(SysResource.sort.asc(), SysResource.id.desc())
+            .offset(query.pagination.offset)
+            .limit(query.pagination.size)
+        )
+        resources = list((await self.db.execute(stmt)).scalars().all())
+        total = (await self.db.execute(count_stmt)).scalar_one()
+        return resources, total
+
+    async def list_resources(self) -> list[SysResource]:
+        stmt = (
+            select(SysResource)
+            .where(SysResource.status == StatusEnum.ENABLED.value)
+            .order_by(
+                SysResource.sort.asc(),
+                SysResource.id.asc(),
+            )
+        )
+        return list((await self.db.execute(stmt)).scalars().all())
+
+    async def list_module_name_map(self, module_ids: list[str]) -> dict[str, str]:
+        unique_ids = list(dict.fromkeys(module_ids))
+        if not unique_ids:
+            return {}
+        rows = (
+            await self.db.execute(
+                select(SysResourceModule.id, SysResourceModule.name).where(SysResourceModule.id.in_(unique_ids))
+            )
+        ).all()
+        return {str(module_id): str(name) for module_id, name in rows}
+
+    async def bind_resource_permission(
+        self,
+        payload: ResourcePermissionBindRequest,
+    ) -> SysResourcePermissionRel:
+        if not await self.db.get(SysResource, payload.resource_id):
+            raise NotFoundError("Resource not found")
+        relation = SysResourcePermissionRel(**payload.model_dump())
+        self.db.add(relation)
+        await self.db.flush()
+        return relation
+
+    async def list_resource_permissions(self) -> list[SysResourcePermissionRel]:
+        stmt = (
+            select(SysResourcePermissionRel)
+            .where(SysResourcePermissionRel.status == StatusEnum.ENABLED.value)
+            .order_by(SysResourcePermissionRel.sort.asc(), SysResourcePermissionRel.id.asc())
+        )
+        return list((await self.db.execute(stmt)).scalars().all())
+
+    async def list_resources_by_ids_with_parents(self, resource_ids: list[str]) -> list[SysResource]:
+        unique_ids = set(resource_ids)
+        if not unique_ids:
+            return []
+        all_resources = await self.list_resources()
+        resource_map = {resource.id: resource for resource in all_resources}
+        result_ids: set[str] = set()
+        for resource_id in unique_ids:
+            current = resource_map.get(resource_id)
+            while current:
+                result_ids.add(current.id)
+                current = resource_map.get(current.parent_id or "")
+        return [resource for resource in all_resources if resource.id in result_ids]
+
+    async def list_all_resource_grant_modules(self) -> list[ResourceGrantModuleOption]:
+        resources = await self.list_resources()
+        permissions = await self.list_resource_permissions()
+        modules = await ResourceModuleRepository(self.db).list_enabled_modules()
+        permission_map: dict[str, list[ResourcePermissionOption]] = {}
+        for permission in permissions:
+            permission_map.setdefault(permission.resource_id, []).append(
+                ResourcePermissionOption(
+                    id=permission.id,
+                    permission_key=permission.permission_key,
+                    title=permission.description or permission.permission_key,
+                    data_scope=permission.data_scope,
+                )
+            )
+        resource_map = {resource.id: resource for resource in resources}
+        child_permission_map: dict[str, list[ResourcePermissionOption]] = {}
+        for resource in resources:
+            if resource.resource_type not in {ResourceType.BUTTON.value, ResourceType.ACTION.value}:
+                continue
+            if not resource.parent_id:
+                continue
+            options = permission_map.get(resource.id)
+            if not options:
+                options = [
+                    ResourcePermissionOption(
+                        id=resource.id,
+                        permission_key=resource.code,
+                        title=resource.name,
+                        locale_key=resource.locale_key,
+                    )
+                ]
+            child_permission_map.setdefault(resource.parent_id, []).extend(options)
+        module_map: dict[str, ResourceGrantModuleOption] = {
+            module.id: ResourceGrantModuleOption(
+                id=module.id,
+                title=module.name,
+                locale_key=module.locale_key,
+                menu=[],
+            )
+            for module in modules
+        }
+        module_sort_map = {module.id: module.sort for module in modules}
+        for resource in resources:
+            if resource.resource_type in {ResourceType.BUTTON.value, ResourceType.ACTION.value}:
+                continue
+            if not resource.module_id:
+                continue
+            module_id = resource.module_id
+            module = module_map.setdefault(
+                module_id,
+                ResourceGrantModuleOption(id=module_id, title=module_id, menu=[]),
+            )
+            parent = resource_map.get(resource.parent_id or "")
+            module.menu.append(
+                ResourceGrantMenuOption(
+                    id=resource.id,
+                    module_id=module_id,
+                    parent_id=resource.parent_id,
+                    parent_id_name=parent.name if parent else "ROOT",
+                    title=resource.name,
+                    locale_key=resource.locale_key,
+                    parent_locale_key=parent.locale_key if parent else None,
+                    button=permission_map.get(resource.id, []) + child_permission_map.get(resource.id, []),
+                )
+            )
+        return sorted(
+            [module for module in module_map.values() if module.menu],
+            key=lambda item: (module_sort_map.get(item.id, 99), item.id),
+        )
+
+
+class ResourceModuleRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def create(self, payload: ResourceModuleCreateRequest) -> None:
+        await self._ensure_code_unique(payload.code)
+        module = SysResourceModule(**payload.model_dump())
+        self.db.add(module)
+        await self.db.flush()
+
+    async def get_by_id(self, module_id: str) -> SysResourceModule | None:
+        return await self.db.get(SysResourceModule, module_id)
+
+    async def get_required(self, module_id: str) -> SysResourceModule:
+        entity = await self.get_by_id(module_id)
+        if entity is None:
+            raise NotFoundError("Resource module not found")
+        return entity
+
+    async def update(self, payload: ResourceModuleUpdateRequest) -> None:
+        entity = await self.get_required(payload.id)
+        await self._ensure_code_unique(payload.code, payload.id)
+        data = payload.model_dump(exclude={"id"})
+        for key, value in data.items():
+            setattr(entity, key, value)
+        await self.db.flush()
+
+    async def delete_many(self, module_ids: list[str]) -> None:
+        unique_ids = list(dict.fromkeys(module_ids))
+        if not unique_ids:
+            return
+        stmt = select(SysResourceModule.id).where(SysResourceModule.id.in_(unique_ids))
+        existing_ids = set((await self.db.execute(stmt)).scalars().all())
+        if len(existing_ids) != len(unique_ids):
+            raise NotFoundError("Resource module not found")
+        reference_count = await self.count_resource_references(unique_ids)
+        if reference_count > 0:
+            raise ConflictError(f"Resource module is referenced: resources={reference_count}")
+        await self.db.execute(delete(SysResourceModule).where(SysResourceModule.id.in_(unique_ids)))
+
+    async def page_admin(self, query: ResourceModuleAdminPageQuery) -> tuple[list[SysResourceModule], int]:
+        stmt: Select[tuple[SysResourceModule]] = select(SysResourceModule)
+        count_stmt = select(func.count(SysResourceModule.id))
+        filters = []
+        if query.name:
+            filters.append(SysResourceModule.name.contains(query.name))
+        if query.code:
+            filters.append(SysResourceModule.code.contains(query.code))
+        if query.status:
+            filters.append(SysResourceModule.status == query.status)
+        if filters:
+            stmt = stmt.where(*filters)
+            count_stmt = count_stmt.where(*filters)
+        stmt = (
+            stmt.order_by(SysResourceModule.sort.asc(), SysResourceModule.id.desc())
+            .offset(query.pagination.offset)
+            .limit(query.pagination.size)
+        )
+        modules = list((await self.db.execute(stmt)).scalars().all())
+        total = (await self.db.execute(count_stmt)).scalar_one()
+        return modules, total
+
+    async def list_enabled_modules(self) -> list[SysResourceModule]:
+        stmt = (
+            select(SysResourceModule)
+            .where(SysResourceModule.status == StatusEnum.ENABLED.value)
+            .order_by(SysResourceModule.sort.asc(), SysResourceModule.id.asc())
+        )
+        return list((await self.db.execute(stmt)).scalars().all())
+
+    async def count_resource_references(self, module_ids: list[str]) -> int:
+        unique_ids = list(dict.fromkeys(module_ids))
+        if not unique_ids:
+            return 0
+        stmt = select(func.count(SysResource.id)).where(SysResource.module_id.in_(unique_ids))
+        return int((await self.db.execute(stmt)).scalar_one())
+
+    async def _ensure_code_unique(self, code: str, module_id: str | None = None) -> None:
+        stmt = select(SysResourceModule.id).where(SysResourceModule.code == code)
+        if module_id is not None:
+            stmt = stmt.where(SysResourceModule.id != module_id)
+        if (await self.db.execute(stmt)).scalar_one_or_none() is not None:
+            raise ConflictError("Resource module code already exists")

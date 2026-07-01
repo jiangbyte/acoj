@@ -1,0 +1,82 @@
+<script setup lang="ts">
+import { NCheckbox, NCheckboxGroup, NRadio } from 'naive-ui'
+import { computed } from 'vue'
+import { dictList } from '@/utils/dict'
+
+const modelValue = defineModel<any>({
+  default: null,
+})
+
+const props = withDefaults(
+  defineProps<{
+    dictCode: any
+    type?: any
+    placeholder?: any
+    clearable?: any
+    disabled?: any
+    size?: any
+  }>(),
+  {
+    type: 'select',
+    placeholder: '',
+    clearable: true,
+    disabled: false,
+    size: 'medium',
+  },
+)
+
+const emit = defineEmits<{
+  change: [value: any]
+}>()
+
+const options = computed(() => dictList(props.dictCode))
+const singleValue = computed(() =>
+  typeof modelValue.value === 'string' || typeof modelValue.value === 'number'
+    ? modelValue.value
+    : null,
+)
+const multipleValue = computed(() => (Array.isArray(modelValue.value) ? modelValue.value : []))
+
+function handleUpdateValue(value: any) {
+  modelValue.value = value
+  emit('change', modelValue.value)
+}
+</script>
+
+<template>
+  <NSelect
+    v-if="type === 'select'"
+    :value="singleValue"
+    :options="options"
+    :placeholder="placeholder"
+    :clearable="clearable"
+    :disabled="disabled"
+    :size="size"
+    @update:value="handleUpdateValue"
+  />
+
+  <NRadioGroup
+    v-else-if="type === 'radio'"
+    class="flex flex-wrap gap-x-16px gap-y-8px"
+    :value="singleValue"
+    :disabled="disabled"
+    :size="size"
+    @update:value="handleUpdateValue"
+  >
+    <NRadio v-for="option in options" :key="option.value" :value="option.value">
+      {{ option.label }}
+    </NRadio>
+  </NRadioGroup>
+
+  <NCheckboxGroup
+    v-else
+    class="flex flex-wrap gap-x-16px gap-y-8px"
+    :value="multipleValue"
+    :disabled="disabled"
+    @update:value="handleUpdateValue"
+  >
+    <NCheckbox v-for="option in options" :key="option.value" :value="option.value">
+      {{ option.label }}
+    </NCheckbox>
+  </NCheckboxGroup>
+</template>

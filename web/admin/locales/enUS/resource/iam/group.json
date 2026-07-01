@@ -1,0 +1,18 @@
+{
+  "title": "Group Management",
+  "id": "Group ID",
+  "name": "Group Name",
+  "description": "Description",
+  "status": "Status",
+  "extra": "Extra",
+  "add_group": "Add Group",
+  "edit_group": "Edit Group",
+  "detail_group": "Group Detail",
+  "grant": "Grant",
+  "grant_user": "Grant Users",
+  "grant_role": "Grant Roles",
+  "grant_resource": "Grant Resources",
+  "grant_permission": "Grant Permissions",
+  "delete_confirm": "Delete this group?",
+  "batch_delete_confirm": "Delete {count} selected groups?"
+}

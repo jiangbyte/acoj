@@ -1,0 +1,22 @@
+from sqlalchemy import String, Text
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.platform.db.base import Base
+from app.platform.db.mixins import TimestampMixin
+
+
+class AdminUserProfile(Base, TimestampMixin):
+    """管理端账户扩展资料表，承接展示资料和联系方式。"""
+
+    __tablename__ = "admin_user_profile"
+
+    account_id: Mapped[str] = mapped_column(String(64), primary_key=True, comment="账户ID")
+    name: Mapped[str | None] = mapped_column(String(64), comment="姓名")
+    nickname: Mapped[str | None] = mapped_column(String(64), comment="昵称")
+    avatar: Mapped[str | None] = mapped_column(Text, comment="头像")
+    signature: Mapped[str | None] = mapped_column(Text, comment="个性签名")
+    phone: Mapped[str | None] = mapped_column(String(32), comment="手机号")
+    email: Mapped[str | None] = mapped_column(String(128), comment="邮箱")
+    title: Mapped[str | None] = mapped_column(String(64), comment="岗位头衔")
+    employee_no: Mapped[str | None] = mapped_column(String(64), comment="员工编号")
+    remark: Mapped[str | None] = mapped_column(Text, comment="备注")

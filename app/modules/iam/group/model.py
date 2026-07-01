@@ -1,0 +1,37 @@
+from sqlalchemy import JSON, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.config.enums import StatusEnum
+from app.platform.db.base import Base
+from app.platform.db.mixins import TimestampMixin
+from app.platform.id_generator.snowflake import generate_snowflake_id
+
+
+class SysGroup(Base, TimestampMixin):
+    """账户组表，作为批量授权、批量分组和批量例外授权的载体。"""
+
+    __tablename__ = "sys_group"
+    __table_args__ = (UniqueConstraint("name", name="uq_sys_group_name"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
+    name: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户组名称")
+    owner_dept_id: Mapped[str | None] = mapped_column(String(64), comment="所属部门ID")
+    description: Mapped[str | None] = mapped_column(Text, comment="描述")
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default=StatusEnum.ENABLED.value,
+        comment="状态",
+    )
+    extra: Mapped[dict] = mapped_column(JSON, default=dict, comment="扩展信息")
+
+
+class SysGroupRoleRel(Base, TimestampMixin):
+    """账户组角色关系表，用于批量把角色赋予到账户组。"""
+
+    __tablename__ = "sys_group_role_rel"
+    __table_args__ = (UniqueConstraint("group_id", "role_id", name="uq_sys_group_role_rel_group_role"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
+    group_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户组ID")
+    role_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="角色ID")
