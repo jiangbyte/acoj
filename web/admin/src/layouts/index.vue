@@ -69,7 +69,6 @@ const showMobileDrawer = ref(false)
           <CommonWrapper @click="showMobileDrawer = true">
             <NovaIcon icon="icon-park-outline:hamburger-button" />
           </CommonWrapper>
-          <Logo />
         </div>
       </template>
       <template v-else>

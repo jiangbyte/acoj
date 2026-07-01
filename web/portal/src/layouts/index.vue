@@ -65,7 +65,7 @@ function goLogin() {
           <CommonWrapper v-if="appStore.isMobile" @click="showMobileMenu = true">
             <NovaIcon icon="icon-park-outline:hamburger-button" />
           </CommonWrapper>
-          <Logo />
+          <Logo v-if="!appStore.isMobile" />
         </div>
 
         <nav class="hidden min-w-0 flex-1 justify-center md:flex">
