@@ -275,8 +275,7 @@ function displayValue(value: unknown) {
             <NTabPane name="basic_info" :tab="t('app.user_center.basic_info')">
               <NForm
                 :model="state.profileForm"
-                label-placement="left"
-                label-width="120"
+                label-placement="top"
                 class="max-w-220 pt-4"
               >
                 <NFormItem :label="t('app.user_center.account')">
