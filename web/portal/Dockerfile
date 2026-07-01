@@ -28,4 +28,4 @@ COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 # 后端地址默认值，可在启动时用 -e BACKEND_URL=... 覆盖。
 ENV BACKEND_URL="http://127.0.0.1:8000"
 
-EXPOSE 81
+EXPOSE 80

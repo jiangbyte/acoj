@@ -3,7 +3,6 @@ import { router } from '@/router'
 import { authApi } from '@/api'
 import { useDictStore } from './dict'
 import { useRouteStore } from './route'
-import { useTabStore } from './tab'
 
 interface AuthUserInfo {
   accountId: string
@@ -152,9 +151,6 @@ export const useAuthStore = defineStore('auth-store', {
 
       const routeStore = useRouteStore()
       routeStore.resetRouteStore()
-
-      const tabStore = useTabStore()
-      tabStore.clearAllTabs()
 
       const dictStore = useDictStore()
       dictStore.clearDict()

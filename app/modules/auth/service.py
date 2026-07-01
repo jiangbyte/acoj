@@ -15,6 +15,8 @@ from app.modules.iam.enums import AccountIdentityType
 from app.modules.iam.grant.repository import GrantRepository
 from app.modules.user.admin.schema import AdminProfileUpsertPayload
 from app.modules.user.admin.service import AdminUserProfileService
+from app.modules.user.portal.schema import PortalProfileUpsertPayload
+from app.modules.user.portal.service import PortalUserProfileService
 from app.platform.db.transaction import transactional
 
 
@@ -80,6 +82,45 @@ class AuthService:
             account_id=account.id,
             account=payload.account,
             account_type=AccountType.ADMIN,
+        )
+
+    async def register_portal(self, payload: RegisterRequest) -> RegisterResponse:
+        async with transactional(self.db):
+            account_payload = AccountCreateRequest(
+                account=payload.account,
+                password=payload.password,
+                account_type=AccountType.PORTAL,
+                account_status=AccountStatusEnum.ENABLED,
+                name=payload.name,
+                nickname=payload.nickname,
+                phone=payload.phone,
+                email=payload.email,
+                email_identity=payload.email,
+                phone_identity=payload.phone,
+                email_identity_verified=bool(payload.email),
+                phone_identity_verified=bool(payload.phone),
+            )
+            account = await self.account_repo.create(
+                account_payload,
+                password_hash=hash_password(payload.password),
+            )
+            await PortalUserProfileService(self.db).upsert_profile(
+                PortalProfileUpsertPayload(
+                    account_id=account.id,
+                    name=payload.name,
+                    nickname=payload.nickname,
+                    phone=payload.phone,
+                    email=payload.email,
+                    avatar=None,
+                    signature=None,
+                    bio=None,
+                    level=None,
+                ),
+            )
+        return RegisterResponse(
+            account_id=account.id,
+            account=payload.account,
+            account_type=AccountType.PORTAL,
         )
 
     async def build_session_payload(self, account: SysAccount, token: str) -> SessionPayload:

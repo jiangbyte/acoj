@@ -1,18 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import {
-  create,
-  ProCard,
-  ProDataTable,
-  ProInput,
-  ProModalForm,
-  ProPassword,
-  ProRadioGroup,
-  ProSearchForm,
-  ProSelect,
-  ProTextarea,
-} from 'pro-naive-ui'
 import 'virtual:uno.css'
 import './style.css'
 import App from './App.vue'
@@ -25,21 +13,6 @@ async function bootstrap() {
 
   pinia.use(piniaPluginPersistedstate)
   app.use(pinia)
-  app.use(
-    create({
-      components: [
-        ProCard,
-        ProSearchForm,
-        ProDataTable,
-        ProModalForm,
-        ProInput,
-        ProRadioGroup,
-        ProPassword,
-        ProSelect,
-        ProTextarea,
-      ],
-    }),
-  )
   installI18n(app)
   await installRouter(app)
   app.mount('#app')

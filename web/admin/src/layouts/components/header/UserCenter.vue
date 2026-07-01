@@ -4,23 +4,12 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { renderIcon } from '@/utils/icon'
-import { useAppStore, useAuthStore } from '@/stores'
+import { useAuthStore } from '@/stores'
 
 const router = useRouter()
-const appStore = useAppStore()
 const authStore = useAuthStore()
 const { t } = useI18n()
 const homePath = import.meta.env.VITE_HOME_PATH
-
-// 移动端抽屉头部需要展示用户名，桌面端下拉入口默认直接显示用户名。
-const { showName = false } = defineProps<{
-  showName?: boolean
-}>()
-
-// 移动端点击用户信息时不展开桌面下拉菜单，而是通知父组件打开右侧抽屉。
-const emit = defineEmits<{
-  openMobileDrawer: []
-}>()
 
 const displayName = computed(() => (
   authStore.userInfo?.nickname
@@ -79,36 +68,19 @@ function handleSelect(key: string | number) {
 </script>
 
 <template>
-  <div>
-    <div v-if="appStore.isMobile">
-      <div class="flex items-center gap-2" @click="emit('openMobileDrawer')">
-        <n-avatar
-          v-if="avatar"
-          round
-          class="cursor-pointer"
-          :src="avatar"
-          :img-props="avatarImgProps"
-        />
-        <n-avatar v-else round class="cursor-pointer">
-          <NovaIcon icon="icon-park-outline:user" />
-        </n-avatar>
-        <span v-if="showName">{{ displayName }}</span>
-      </div>
+  <n-dropdown trigger="click" :options="options" @select="handleSelect">
+    <div class="flex items-center gap-2">
+      <n-avatar
+        v-if="avatar"
+        round
+        class="cursor-pointer"
+        :src="avatar"
+        :img-props="avatarImgProps"
+      />
+      <n-avatar v-else round class="cursor-pointer">
+        <NovaIcon icon="icon-park-outline:user" />
+      </n-avatar>
+      <span class="hidden md:inline">{{ displayName }}</span>
     </div>
-    <n-dropdown v-else trigger="click" :options="options" @select="handleSelect">
-      <div class="flex items-center gap-2">
-        <n-avatar
-          v-if="avatar"
-          round
-          class="cursor-pointer"
-          :src="avatar"
-          :img-props="avatarImgProps"
-        />
-        <n-avatar v-else round class="cursor-pointer">
-          <NovaIcon icon="icon-park-outline:user" />
-        </n-avatar>
-        {{ displayName }}
-      </div>
-    </n-dropdown>
-  </div>
+  </n-dropdown>
 </template>

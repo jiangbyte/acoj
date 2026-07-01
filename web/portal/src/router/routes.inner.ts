@@ -1,58 +1,103 @@
 import type { RouteRecordRaw } from 'vue-router'
+import Layout from '@/layouts/index.vue'
 
 /**
  * 内置基础路由。
  *
- * 这些路由不是后端 SysResource 资源，不参与侧边菜单和标签页生成。
- * 授权业务路由会在 route store 初始化时动态挂载到 appRoot 下。
+ * portalRoot 是前台门户的自定义布局根节点。静态页面在这里直接声明，授权动态页面会在
+ * route store 初始化时追加到 portalRoot 下，二者可以同时存在。
  */
 export const routes: RouteRecordRaw[] = [
   {
-    // 根路径只作为入口，由路由守卫重定向到 VITE_HOME_PATH。
     path: '/',
-    name: 'root',
-    children: [],
+    name: 'portalRoot',
+    redirect: import.meta.env.VITE_HOME_PATH,
+    component: Layout,
+    children: [
+      {
+        path: '/home',
+        name: 'home',
+        component: () => import('@/views/home/index.vue'),
+        meta: {
+          name: 'Home',
+          public: true,
+          icon: 'icon-park-outline:home',
+        },
+      },
+      {
+        path: '/k',
+        name: 'usercenter',
+        component: () => import('@/views/usercenter/index.vue'),
+        meta: {
+          name: 'User Center',
+          locale_key: 'app.user_center.title',
+          icon: 'icon-park-outline:user',
+        },
+      },
+      {
+        path: '/my-space',
+        name: 'my-space',
+        component: () => import('@/views/space/index.vue'),
+        meta: {
+          name: 'My Space',
+          locale_key: 'app.my_space',
+          icon: 'icon-park-outline:user-positioning',
+        },
+      },
+      {
+        path: '/space/:accountId',
+        name: 'space',
+        component: () => import('@/views/space/index.vue'),
+        meta: {
+          name: 'Space',
+          locale_key: 'app.space.title',
+          public: true,
+          icon: 'icon-park-outline:user-positioning',
+        },
+      },
+    ],
   },
   {
-    // 显式 404 页面，用于守卫初始化失败或主动跳转。
     path: '/not-found',
     name: 'not-found',
     component: () => import('@/views/error/NotFound.vue'),
+    meta: { name: 'Not Found', public: true },
   },
   {
-    // 认证页面是公开静态路由，不进入后台 Layout、菜单和标签栏。
     path: '/auth',
     name: 'auth',
     redirect: '/auth/login',
+    meta: { public: true },
   },
   {
     path: '/auth/login',
     name: 'auth-login',
     component: () => import('@/views/auth/Login.vue'),
-    meta: { name: 'Login' },
+    meta: { name: 'Login', public: true },
   },
   {
     path: '/auth/register',
     name: 'auth-register',
     component: () => import('@/views/auth/Register.vue'),
-    meta: { name: 'Register' },
+    meta: { name: 'Register', public: true },
   },
   {
     path: '/auth/forgot-password',
     name: 'auth-forgot-password',
     component: () => import('@/views/auth/ForgotPassword.vue'),
-    meta: { name: 'Forgot Password' },
+    meta: { name: 'Forgot Password', public: true },
   },
   {
     path: '/auth/reset-password',
     name: 'auth-reset-password',
     component: () => import('@/views/auth/ResetPassword.vue'),
-    meta: { name: 'Reset Password' },
+    meta: { name: 'Reset Password', public: true },
   },
   {
     // 兜底路由必须放在最后。动态路由注册完成后，守卫会重新匹配原始目标地址。
     path: '/:pathMatch(.*)*',
     name: 'not-found-catch',
     component: () => import('@/views/error/NotFound.vue'),
+    meta: { name: 'Not Found', public: true },
   },
 ]

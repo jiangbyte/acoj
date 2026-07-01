@@ -1,6 +1,6 @@
 import { http } from '@/utils'
 
-const authPrefix = '/api/v1/admin'
+const authPrefix = '/api/v1/portal'
 
 export function login(data: any) {
   return http.post<any>(`${authPrefix}/login`, data, {
@@ -40,8 +40,4 @@ export function updateUserCenterPhone(data: any) {
 
 export function updateUserCenterEmail(data: any) {
   return http.post<any>(`${authPrefix}/user-center/email/update`, data)
-}
-
-export function userCenterOrgInfo() {
-  return http.get<any>(`${authPrefix}/user-center/org-info`)
 }

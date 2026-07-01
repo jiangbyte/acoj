@@ -1,5 +1,5 @@
 {
-  "name": "admin",
+  "name": "portal",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -20,7 +20,6 @@
     "naive-ui": "^2.44.1",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
-    "pro-naive-ui": "^3.2.3",
     "radash": "^12.1.1",
     "vue": "^3.5.38",
     "vue-draggable-plus": "^0.6.1",

@@ -43,6 +43,7 @@ function renderLabel(option: { label: string; icon: string }) {
     :render-label="renderLabel"
     :options="options"
     trigger="click"
+    :to="false"
     @update:value="appStore.setColorMode"
   >
     <CommonWrapper>
