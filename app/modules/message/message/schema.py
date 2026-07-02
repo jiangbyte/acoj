@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from app.core.config.enums import AccountType
 from app.core.response.pagination import PageQuery
@@ -8,20 +8,11 @@ from app.core.schema.base import ApiSchema
 from app.modules.message.enums import (
     MessageContentType,
     MessageGroupStatus,
-    MessageTargetScope,
     MessageThreadStatus,
     MessageThreadType,
-    NotificationSeverity,
-    NotificationStatus,
-    TodoAssigneeStatus,
-    TodoPriority,
-    TodoStatus,
 )
+from app.modules.message.schema import AccountRef as AccountRef
 
-
-class AccountRef(ApiSchema):
-    account_type: AccountType
-    account_id: str = Field(min_length=1, max_length=64)
 
 class GroupCreateRequest(ApiSchema):
     name: str = Field(min_length=1, max_length=128)
@@ -29,6 +20,7 @@ class GroupCreateRequest(ApiSchema):
     description: str | None = None
     member_refs: list[AccountRef] = Field(default_factory=list)
     extra: dict = Field(default_factory=dict)
+
 
 class GroupUpdateRequest(ApiSchema):
     id: str = Field(min_length=1, max_length=64)
@@ -38,14 +30,17 @@ class GroupUpdateRequest(ApiSchema):
     description: str | None = None
     extra: dict = Field(default_factory=dict)
 
+
 class GroupMemberRequest(ApiSchema):
     group_id: str = Field(min_length=1, max_length=64)
     member_refs: list[AccountRef] = Field(min_length=1)
+
 
 class GroupPageQuery(ApiSchema):
     pagination: PageQuery
     name: str | None = Field(default=None, max_length=128)
     status: MessageGroupStatus | None = None
+
 
 class GroupSchema(ApiSchema):
     id: str
@@ -62,6 +57,7 @@ class GroupSchema(ApiSchema):
     updated_at: datetime
     updated_by: str | None = None
 
+
 class GroupMemberSchema(ApiSchema):
     id: str
     group_id: str
@@ -72,10 +68,12 @@ class GroupMemberSchema(ApiSchema):
     joined_at: datetime
     left_at: datetime | None = None
 
+
 class ThreadPageQuery(ApiSchema):
     pagination: PageQuery
     thread_type: MessageThreadType | None = None
     status: MessageThreadStatus | None = None
+
 
 class ThreadCreateRequest(ApiSchema):
     thread_type: MessageThreadType = MessageThreadType.DIRECT
@@ -83,6 +81,7 @@ class ThreadCreateRequest(ApiSchema):
     group_id: str | None = Field(default=None, max_length=64)
     participant_refs: list[AccountRef] = Field(default_factory=list)
     extra: dict = Field(default_factory=dict)
+
 
 class SendMessageRequest(ApiSchema):
     thread_id: str | None = Field(default=None, max_length=64)
@@ -96,6 +95,7 @@ class SendMessageRequest(ApiSchema):
     attachments: list["MessageAttachmentInput"] = Field(default_factory=list)
     extra: dict = Field(default_factory=dict)
 
+
 class MessageAttachmentInput(ApiSchema):
     name: str = Field(min_length=1, max_length=255)
     url: str = Field(min_length=1, max_length=1024)
@@ -104,9 +104,11 @@ class MessageAttachmentInput(ApiSchema):
     sort: int = 0
     extra: dict = Field(default_factory=dict)
 
+
 class ThreadMessagePageQuery(ApiSchema):
     pagination: PageQuery
     thread_id: str
+
 
 class MessageAttachmentSchema(ApiSchema):
     id: str
@@ -118,10 +120,12 @@ class MessageAttachmentSchema(ApiSchema):
     sort: int
     extra: dict
 
+
 class MessageReactionSummary(ApiSchema):
     reaction: str
     count: int
     reacted: bool = False
+
 
 class MessageSchema(ApiSchema):
     id: str
@@ -143,6 +147,7 @@ class MessageSchema(ApiSchema):
     updated_at: datetime
     updated_by: str | None = None
 
+
 class ThreadSchema(ApiSchema):
     id: str
     thread_type: MessageThreadType | str
@@ -161,8 +166,10 @@ class ThreadSchema(ApiSchema):
     updated_at: datetime
     updated_by: str | None = None
 
+
 class ReadThreadRequest(ApiSchema):
     thread_id: str = Field(min_length=1, max_length=64)
+
 
 class ReactMessageRequest(ApiSchema):
     message_id: str = Field(min_length=1, max_length=64)

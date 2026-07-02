@@ -1,25 +1,19 @@
 from datetime import datetime
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from app.core.config.enums import AccountType
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
 from app.modules.message.enums import (
     MessageContentType,
-    MessageGroupStatus,
     MessageTargetScope,
-    MessageThreadStatus,
-    MessageThreadType,
-    NotificationSeverity,
-    NotificationStatus,
     TodoAssigneeStatus,
     TodoPriority,
     TodoStatus,
 )
+from app.modules.message.schema import AccountRef
 
-
-from app.modules.message.message.schema import AccountRef
 
 class TodoCreateRequest(ApiSchema):
     title: str = Field(min_length=1, max_length=255)
@@ -36,8 +30,10 @@ class TodoCreateRequest(ApiSchema):
     due_at: datetime | None = None
     extra: dict = Field(default_factory=dict)
 
+
 class TodoUpdateRequest(TodoCreateRequest):
     id: str = Field(min_length=1, max_length=64)
+
 
 class TodoAdminPageQuery(ApiSchema):
     pagination: PageQuery
@@ -45,9 +41,11 @@ class TodoAdminPageQuery(ApiSchema):
     status: TodoStatus | None = None
     target_account_type: AccountType | None = None
 
+
 class MyTodoPageQuery(ApiSchema):
     pagination: PageQuery
     include_done: bool = False
+
 
 class TodoSchema(ApiSchema):
     id: str
@@ -70,6 +68,7 @@ class TodoSchema(ApiSchema):
     created_by: str | None = None
     updated_at: datetime
     updated_by: str | None = None
+
 
 class TodoStatusRequest(ApiSchema):
     todo_id: str = Field(min_length=1, max_length=64)

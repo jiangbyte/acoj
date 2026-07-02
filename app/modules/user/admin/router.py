@@ -5,11 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
 from app.core.response.schema import ApiResponse, success
-from app.core.schema.base import IdQuery
 from app.core.security.session import SessionPayload
 from app.deps.auth import get_current_session, require_account_type
 from app.deps.db import get_db_session
-from app.modules.iam.account.service import AccountService
+from app.modules.iam.account.query_service import AccountQueryService
+from app.modules.iam.account.repository import AccountRepository
 from app.modules.user.admin.schema import (
     AdminProfileResponse,
     AdminUserCenterAvatarUpdateResponse,
@@ -35,9 +35,14 @@ async def get_me(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[AdminMeResponse]:
-    account = await AccountService(db).detail(IdQuery(id=session.account_id))
+    account_entity = await AccountRepository(db).get_required(session.account_id)
+    account = (await AccountQueryService(db).build_account_schemas([account_entity]))[0]
     avatar = resolve_file_url(account.avatar)
-    role_id_names, dept_id_names, group_id_names = await AdminUserProfileService(db).get_id_name_groups(
+    (
+        role_id_names,
+        dept_id_names,
+        group_id_names,
+    ) = await AdminUserProfileService(db).get_id_name_groups(
         session.role_ids,
         session.dept_ids,
         session.group_ids,

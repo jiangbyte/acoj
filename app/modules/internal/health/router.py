@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from sqlalchemy import text
 
+from app.core.config.settings import settings
 from app.core.schema.health import (
     HealthCheckItem,
     LiveHealthResponse,
@@ -8,12 +9,11 @@ from app.core.schema.health import (
     ReadyHealthResponse,
 )
 from app.platform.cache.redis import get_redis
-from app.core.config.settings import settings
 from app.platform.db.session import get_session_factory
 from app.platform.storage.manager import get_storage
 from app.platform.tasks.celery_app import celery_app
 
-router = APIRouter(prefix="/internal", tags=["internal"])
+router = APIRouter()
 
 
 @router.get("/health/live", response_model=LiveHealthResponse)
@@ -57,7 +57,6 @@ async def ready() -> ReadyHealthResponse:
     else:
         try:
             connection = celery_app.connection_for_read()
-            # 仅做轻量连接探测，不消费消息、不创建业务副作用。
             with connection.ensure_connection(max_retries=1):
                 pass
             checks.celery_broker.ok = True

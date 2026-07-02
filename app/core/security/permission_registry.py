@@ -7,7 +7,6 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
-from app.api.constants import API_V1_PREFIX
 from app.platform.cache.keys import (
     permission_resource_cache_key,
     permission_resource_method_cache_key,
@@ -17,6 +16,7 @@ from app.platform.cache.redis import get_redis
 logger = logging.getLogger(__name__)
 
 PERMISSION_KEY_PATTERN = re.compile(r"^[a-z0-9*]+(?::[a-z0-9*]+)+$")
+API_VERSION_PREFIX_PATTERN = re.compile(r"^/api/v[0-9]+(?=/|$)")
 PERMISSION_META_ATTR = "__permission_meta__"
 ACCOUNT_TYPE_META_ATTR = "__account_type_meta__"
 
@@ -53,11 +53,9 @@ def _normalize_methods(route: APIRoute) -> list[str]:
 
 def normalize_route_path(path: str) -> str:
     normalized = path.strip() or "/"
-    api_prefix = API_V1_PREFIX.rstrip("/")
-    if api_prefix and normalized == api_prefix:
+    if normalized == "/api":
         return "/"
-    if api_prefix and normalized.startswith(api_prefix + "/"):
-        normalized = normalized.removeprefix(api_prefix)
+    normalized = API_VERSION_PREFIX_PATTERN.sub("", normalized, count=1) or "/"
     return normalized
 
 

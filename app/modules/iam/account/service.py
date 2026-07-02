@@ -5,23 +5,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config.enums import AccountType
 from app.core.exceptions.business import AuthorizationError
 from app.core.response.pagination import PageData, build_page
-from app.core.schema.base import IdQuery, IdsRequest
-from app.core.schema.base import to_schema
+from app.core.schema.base import IdQuery, IdsRequest, to_schema
 from app.core.security.data_scope import build_data_scope_filter, resolve_data_scope_dept_ids
 from app.core.security.password import hash_password
 from app.core.security.permission_registry import list_registered_permission_keys
 from app.core.security.session import SessionPayload
-from app.modules.auth.service import AuthService
-from app.modules.iam.enums import GrantSubjectType
+from app.modules.auth.session_service import AccountSessionService
 from app.modules.iam.account.model import SysAccount, SysAccountDeptRel
-from app.modules.iam.grant.repository import GrantRepository
-from app.modules.iam.group.model import SysGroup
-from app.modules.iam.permission.service import ensure_registered_permission
-from app.modules.iam.resource.service import ResourceService
+from app.modules.iam.account.query_service import AccountQueryService
 from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.account.schema import (
-    AccountCreateRequest,
     AccountAdminPageQuery,
+    AccountCreateRequest,
     AccountDeptAssignRequest,
     AccountGrantDeptRequest,
     AccountGrantGroupRequest,
@@ -44,15 +39,19 @@ from app.modules.iam.account.schema import (
     SysAccountRoleRelSchema,
     SysAccountSchema,
 )
-from app.modules.user.admin.service import AdminUserProfileService
+from app.modules.iam.enums import GrantSubjectType
+from app.modules.iam.grant.repository import GrantRepository
+from app.modules.iam.group.model import SysGroup
+from app.modules.iam.group.repository import GroupRepository
+from app.modules.iam.permission.service import ensure_registered_permission
+from app.modules.iam.resource.service import ResourceService
+from app.modules.iam.role.model import SysRole
+from app.modules.iam.role.repository import RoleRepository
 from app.modules.user.admin.repository import AdminUserProfileRepository
 from app.modules.user.admin.schema import AdminProfileUpsertPayload
-from app.modules.user.portal.service import PortalUserProfileService
 from app.modules.user.portal.repository import PortalUserProfileRepository
 from app.modules.user.portal.schema import PortalProfileUpsertPayload
-from app.modules.iam.role.model import SysRole
 from app.platform.db.transaction import transactional
-from app.platform.storage.url import resolve_file_url
 
 
 class AccountService:
@@ -68,15 +67,19 @@ class AccountService:
                 password_hash=hash_password(payload.password),
             )
             if payload.account_type == AccountType.ADMIN:
-                await AdminUserProfileService(self.db).upsert_profile(
+                await AdminUserProfileRepository(self.db).upsert(
                     self._admin_profile_payload(account.id, payload),
                 )
             elif payload.account_type == AccountType.PORTAL:
-                await PortalUserProfileService(self.db).upsert_profile(
+                await PortalUserProfileRepository(self.db).upsert(
                     self._portal_profile_payload(account.id, payload),
                 )
 
-    async def update(self, payload: AccountUpdateRequest, session: SessionPayload | None = None) -> None:
+    async def update(
+        self,
+        payload: AccountUpdateRequest,
+        session: SessionPayload | None = None,
+    ) -> None:
         if session is not None:
             await self._ensure_accounts_visible(session, "iam:account:update", [payload.id])
         async with transactional(self.db):
@@ -84,11 +87,11 @@ class AccountService:
             await self.repo.update(payload, password_hash)
             account = await self.repo.get_required(payload.id)
             if account.account_type == AccountType.ADMIN.value:
-                await AdminUserProfileService(self.db).upsert_profile(
+                await AdminUserProfileRepository(self.db).upsert(
                     self._admin_profile_payload(payload.id, payload),
                 )
             elif account.account_type == AccountType.PORTAL.value:
-                await PortalUserProfileService(self.db).upsert_profile(
+                await PortalUserProfileRepository(self.db).upsert(
                     self._portal_profile_payload(payload.id, payload),
                 )
 
@@ -107,16 +110,20 @@ class AccountService:
         session_targets = [(account.account_type, account.id) for account in accounts]
         async with transactional(self.db):
             await self.repo.purge_many(account_ids)
-        auth_service = AuthService(self.db)
+        session_service = AccountSessionService(self.db)
         for account_type, account_id in session_targets:
-            await auth_service.delete_account_sessions(account_type, account_id)
+            await session_service.delete_account_sessions(account_type, account_id)
         return len(account_ids)
 
-    async def detail(self, query: IdQuery, session: SessionPayload | None = None) -> SysAccountSchema:
+    async def detail(
+        self,
+        query: IdQuery,
+        session: SessionPayload | None = None,
+    ) -> SysAccountSchema:
         if session is not None:
             await self._ensure_accounts_visible(session, "iam:account:detail", [query.id])
         accounts = [await self.repo.get_required(query.id)]
-        return (await self.build_account_schemas(accounts))[0]
+        return (await AccountQueryService(self.db).build_account_schemas(accounts))[0]
 
     async def page_admin(
         self,
@@ -129,7 +136,8 @@ class AccountService:
             else None
         )
         accounts, total = await self.repo.page_admin(query, data_scope_filter)
-        return build_page(query.pagination, total, await self.build_account_schemas(accounts))
+        items = await AccountQueryService(self.db).build_account_schemas(accounts)
+        return build_page(query.pagination, total, items)
 
     async def assign_account_role(
         self,
@@ -137,7 +145,11 @@ class AccountService:
         session: SessionPayload | None = None,
     ) -> SysAccountRoleRelSchema:
         if session is not None:
-            await self._ensure_accounts_visible(session, "iam:account:grantrole", [payload.account_id])
+            await self._ensure_accounts_visible(
+                session,
+                "iam:account:grantrole",
+                [payload.account_id],
+            )
             await self._ensure_roles_visible(session, "iam:account:grantrole", [payload.role_id])
         async with transactional(self.db):
             return to_schema(
@@ -151,7 +163,11 @@ class AccountService:
         session: SessionPayload | None = None,
     ) -> SysAccountGroupRelSchema:
         if session is not None:
-            await self._ensure_accounts_visible(session, "iam:account:grantgroup", [payload.account_id])
+            await self._ensure_accounts_visible(
+                session,
+                "iam:account:grantgroup",
+                [payload.account_id],
+            )
             await self._ensure_groups_visible(session, "iam:account:grantgroup", [payload.group_id])
         async with transactional(self.db):
             return to_schema(
@@ -165,7 +181,11 @@ class AccountService:
         session: SessionPayload | None = None,
     ) -> SysAccountDeptRelSchema:
         if session is not None:
-            await self._ensure_accounts_visible(session, "iam:account:grantdept", [payload.account_id])
+            await self._ensure_accounts_visible(
+                session,
+                "iam:account:grantdept",
+                [payload.account_id],
+            )
             await self._ensure_depts_visible(session, "iam:account:grantdept", [payload.dept_id])
         async with transactional(self.db):
             return to_schema(
@@ -197,11 +217,15 @@ class AccountService:
         session: SessionPayload | None = None,
     ) -> None:
         if session is not None:
-            await self._ensure_accounts_visible(session, "iam:account:grantpermission", [payload.id])
+            await self._ensure_accounts_visible(
+                session,
+                "iam:account:grantpermission",
+                [payload.id],
+            )
             await self._ensure_grant_custom_depts_visible(
                 session,
                 "iam:account:grantpermission",
-                [dept_id for grant in payload.grant_info_list for dept_id in grant.custom_scope_dept_ids],
+                _grant_custom_dept_ids(payload.grant_info_list),
             )
         await self._ensure_registered_permissions(
             [grant.permission_key for grant in payload.grant_info_list]
@@ -370,7 +394,7 @@ class AccountService:
                 await ensure_registered_permission(permission_key)
 
     async def _refresh_accounts(self, account_ids: list[str]) -> None:
-        await AuthService(self.db).refresh_accounts_sessions(sorted(set(account_ids)))
+        await AccountSessionService(self.db).refresh_accounts_sessions(sorted(set(account_ids)))
 
     async def _account_scope_filter(self, session: SessionPayload, permission_key: str):
         return await build_data_scope_filter(
@@ -409,7 +433,8 @@ class AccountService:
         if not unique_ids:
             return
         data_scope_filter = await self._account_scope_filter(session, permission_key)
-        if await self.repo.count_accounts_in_scope(unique_ids, data_scope_filter) != len(unique_ids):
+        count = await self.repo.count_accounts_in_scope(unique_ids, data_scope_filter)
+        if count != len(unique_ids):
             raise AuthorizationError("Account is outside current data scope")
 
     async def _ensure_roles_visible(
@@ -422,9 +447,8 @@ class AccountService:
         if not unique_ids:
             return
         data_scope_filter = await self._role_scope_filter(session, permission_key)
-        from app.modules.iam.role.repository import RoleRepository
-
-        if await RoleRepository(self.db).count_roles_in_scope(unique_ids, data_scope_filter) != len(unique_ids):
+        count = await RoleRepository(self.db).count_roles_in_scope(unique_ids, data_scope_filter)
+        if count != len(unique_ids):
             raise AuthorizationError("Role is outside current data scope")
 
     async def _ensure_groups_visible(
@@ -437,9 +461,8 @@ class AccountService:
         if not unique_ids:
             return
         data_scope_filter = await self._group_scope_filter(session, permission_key)
-        from app.modules.iam.group.repository import GroupRepository
-
-        if await GroupRepository(self.db).count_groups_in_scope(unique_ids, data_scope_filter) != len(unique_ids):
+        count = await GroupRepository(self.db).count_groups_in_scope(unique_ids, data_scope_filter)
+        if count != len(unique_ids):
             raise AuthorizationError("Group is outside current data scope")
 
     async def _ensure_depts_visible(
@@ -498,81 +521,10 @@ class AccountService:
             email=payload.email,
         )
 
-    async def build_account_schemas(self, accounts: list) -> list[SysAccountSchema]:
-        account_ids = [account.id for account in accounts]
-        identities = await self.repo.list_identities_by_account_ids(account_ids)
-        admin_profiles = await AdminUserProfileRepository(self.db).list_by_account_ids(account_ids)
-        portal_profiles = await PortalUserProfileRepository(self.db).list_by_account_ids(account_ids)
-        identity_map: dict[str, list] = {}
-        for identity in identities:
-            identity_map.setdefault(identity.account_id, []).append(identity)
-        admin_profile_map = {profile.account_id: profile for profile in admin_profiles}
-        portal_profile_map = {profile.account_id: profile for profile in portal_profiles}
 
-        items: list[SysAccountSchema] = []
-        for account in accounts:
-            account_identities = identity_map.get(account.id, [])
-            primary_identity = next(
-                (
-                    item
-                    for item in account_identities
-                    if item.identity_type == "ACCOUNT" and item.is_primary
-                ),
-                None,
-            ) or next(
-                (item for item in account_identities if item.identity_type == "ACCOUNT"),
-                None,
-            )
-            email_identity = next(
-                (item for item in account_identities if item.identity_type == "EMAIL"),
-                None,
-            )
-            phone_identity = next(
-                (item for item in account_identities if item.identity_type == "PHONE"),
-                None,
-            )
-            profile = (
-                admin_profile_map.get(account.id)
-                if account.account_type == AccountType.ADMIN.value
-                else portal_profile_map.get(account.id)
-            )
-            items.append(
-                SysAccountSchema(
-                    id=account.id,
-                    account=getattr(primary_identity, "identifier", ""),
-                    account_type=account.account_type,
-                    account_status=account.account_status,
-                    name=getattr(profile, "name", None) or "",
-                    nickname=getattr(profile, "nickname", None),
-                    avatar=resolve_file_url(getattr(profile, "avatar", None)),
-                    signature=getattr(profile, "signature", None),
-                    phone=getattr(profile, "phone", None),
-                    email=getattr(profile, "email", None),
-                    employee_no=getattr(profile, "employee_no", None),
-                    title=getattr(profile, "title", None),
-                    remark=getattr(profile, "remark", None),
-                    email_identity=getattr(email_identity, "identifier", None),
-                    phone_identity=getattr(phone_identity, "identifier", None),
-                    email_identity_verified=bool(getattr(email_identity, "verified", False)),
-                    phone_identity_verified=bool(getattr(phone_identity, "verified", False)),
-                    email_identity_bind_status=getattr(email_identity, "bind_status", None),
-                    phone_identity_bind_status=getattr(phone_identity, "bind_status", None),
-                    identities=account_identities,
-                    cancelled_at=account.cancelled_at,
-                    cancelled_by=account.cancelled_by,
-                    cancel_reason=account.cancel_reason,
-                    last_login_ip=account.last_login_ip,
-                    last_login_address=account.last_login_address,
-                    last_login_time=account.last_login_time,
-                    last_login_device=account.last_login_device,
-                    latest_login_ip=account.latest_login_ip,
-                    latest_login_address=account.latest_login_address,
-                    latest_login_time=account.latest_login_time,
-                    latest_login_device=account.latest_login_device,
-                    created_at=account.created_at,
-                    created_by=account.created_by,
-                    updated_at=account.updated_at,
-                    updated_by=account.updated_by,
-                )
-            )
-        return items
+def _grant_custom_dept_ids(grant_info_list: list) -> list[str]:
+    return [
+        dept_id
+        for grant in grant_info_list
+        for dept_id in grant.custom_scope_dept_ids
+    ]

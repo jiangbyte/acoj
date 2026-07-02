@@ -5,8 +5,12 @@ from pydantic import Field
 from app.core.config.enums import DataScope, StatusEnum
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
-from app.modules.iam.account.schema import AccountRoleOption, SysAccountSchema
-from app.modules.iam.resource.schema import PermissionRegistryItem, ResourceGrantModuleOption
+from app.modules.iam.schema import (
+    PermissionRegistryItem,
+    ResourceGrantModuleOption,
+    RoleOption,
+    SysAccountSchema,
+)
 
 
 class GroupCreateRequest(ApiSchema):
@@ -79,7 +83,7 @@ class GroupGrantUserRequest(ApiSchema):
 
 class GroupOwnRoleResponse(ApiSchema):
     id: str
-    roles: list[AccountRoleOption] = Field(default_factory=list)
+    roles: list[RoleOption] = Field(default_factory=list)
     role_ids: list[str] = Field(default_factory=list)
 
 

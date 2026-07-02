@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions.business import AuthenticationError, BusinessError
 from app.core.security.password import hash_password, verify_password
 from app.core.security.session import SessionPayload
+from app.modules.auth.session_service import AccountSessionService
 from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.dept.repository import DeptRepository
 from app.modules.iam.enums import AccountIdentityType
@@ -23,8 +24,8 @@ from app.modules.user.admin.schema import (
     AdminUserCenterPasswordUpdateRequest,
     AdminUserCenterPhoneUpdateRequest,
     AdminUserCenterProfileUpdateRequest,
-    IdNameResponse,
 )
+from app.core.schema.common_schema import IdNameResponse
 from app.platform.db.transaction import transactional
 from app.platform.storage.url import is_external_url, normalize_object_name, resolve_file_url
 
@@ -151,9 +152,7 @@ class AdminUserProfileService:
                 session.account_id,
                 hash_password(payload.new_password),
             )
-        from app.modules.auth.service import AuthService
-
-        await AuthService(self.db).refresh_account_sessions(session.account_id)
+        await AccountSessionService(self.db).refresh_account_sessions(session.account_id)
 
     async def update_current_phone(
         self,
@@ -233,7 +232,11 @@ class AdminUserProfileService:
         extension = AVATAR_CONTENT_TYPES[content_type]
         return f"avatars/admin/{account_id}/avatar-{timestamp}-{uuid4().hex}{extension}"
 
-    async def _delete_previous_avatar(self, previous_avatar: str | None, current_avatar: str) -> None:
+    async def _delete_previous_avatar(
+        self,
+        previous_avatar: str | None,
+        current_avatar: str,
+    ) -> None:
         previous_object_name = normalize_object_name(previous_avatar)
         current_object_name = normalize_object_name(current_avatar)
         if (

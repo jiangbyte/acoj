@@ -2,13 +2,15 @@ from datetime import datetime
 
 from pydantic import Field
 
-from app.core.config.enums import StatusEnum
-from app.core.config.enums import DataScope
+from app.core.config.enums import DataScope, StatusEnum
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
-from app.modules.iam.resource.schema import ResourceGrantModuleOption, PermissionRegistryItem
 from app.modules.iam.enums import RoleScopeType
-from app.modules.iam.account.schema import SysAccountSchema
+from app.modules.iam.schema import (
+    PermissionRegistryItem,
+    ResourceGrantModuleOption,
+    SysAccountSchema,
+)
 
 
 class RoleCreateRequest(ApiSchema):

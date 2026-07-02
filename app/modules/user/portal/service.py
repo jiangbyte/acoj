@@ -8,6 +8,7 @@ from app.core.config.enums import AccountType
 from app.core.exceptions.business import AuthenticationError, BusinessError, NotFoundError
 from app.core.security.password import hash_password, verify_password
 from app.core.security.session import SessionPayload
+from app.modules.auth.session_service import AccountSessionService
 from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.enums import AccountIdentityType
 from app.modules.sys.file.schema import FileUploadRequest
@@ -132,9 +133,7 @@ class PortalUserProfileService:
                 session.account_id,
                 hash_password(payload.new_password),
             )
-        from app.modules.auth.service import AuthService
-
-        await AuthService(self.db).refresh_account_sessions(session.account_id)
+        await AccountSessionService(self.db).refresh_account_sessions(session.account_id)
 
     async def update_current_phone(
         self,
@@ -212,7 +211,11 @@ class PortalUserProfileService:
         extension = AVATAR_CONTENT_TYPES[content_type]
         return f"avatars/portal/{account_id}/avatar-{timestamp}-{uuid4().hex}{extension}"
 
-    async def _delete_previous_avatar(self, previous_avatar: str | None, current_avatar: str) -> None:
+    async def _delete_previous_avatar(
+        self,
+        previous_avatar: str | None,
+        current_avatar: str,
+    ) -> None:
         previous_object_name = normalize_object_name(previous_avatar)
         current_object_name = normalize_object_name(current_avatar)
         if (

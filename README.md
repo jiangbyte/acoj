@@ -219,15 +219,36 @@ web/
 
 ## API 组织
 
-运行时路径版本和代码目录版本保持一致：
+API 运行时路径仍按版本暴露，例如 `/api/v1/*`。版本、前缀、路由、模型和任务由模块自己的
+`module.py` 声明，应用启动、Alembic 和 Celery 会自动读取这些声明。
 
-- 运行时路径版本：`/api/v1/*`
-- 代码目录版本：`app/api/v1`
-- 管理端聚合入口：`app/api/v1/admin.py`
-- 门户端聚合入口：`app/api/v1/portal.py`
-- 内部接口聚合入口：`app/api/v1/internal.py`
+模块声明示例：
 
-业务模块路由不携带版本号，版本差异只在 API 装配层处理。
+```python
+from app.platform.module import ModuleSpec, RouteSpec
+
+module = ModuleSpec(
+    name="example",
+    routes=(
+        RouteSpec(
+            version="v1",
+            prefix="/admin",
+            tags=("admin",),
+            router="app.modules.example.router:router",
+        ),
+    ),
+    models=("app.modules.example.model",),
+    startup_hooks=("app.modules.example.lifecycle:startup",),
+    shutdown_hooks=("app.modules.example.lifecycle:shutdown",),
+)
+```
+
+新增 `v2` 接口时，在模块内追加新的 `RouteSpec(version="v2", ...)`，不需要修改全局 API 聚合文件。
+
+MQ 默认不启动消费者，需要配置 `MQ__ENABLED=true`。`MQ__URL` 为空时复用 `CELERY__BROKER_URL`。
+模块内可通过 `app.platform.mq.event_producer` 发布消息；如需消费消息，在模块自己的
+`startup_hooks/shutdown_hooks` 中使用 `create_blocking_connection` 或 `MQConsumerWorker`
+自行声明 exchange、queue、binding、ack、重试等策略。
 
 ## 内置模块
 
@@ -244,6 +265,7 @@ web/
 ```text
 app/modules/example/
   __init__.py
+  module.py
   model.py
   schema.py
   repository.py
@@ -258,8 +280,9 @@ app/modules/example/
 3. 在 `repository.py` 封装数据访问。
 4. 在 `service.py` 编排业务逻辑和事务。
 5. 在 `router.py` 暴露 FastAPI 路由。
-6. 在 `app/api/v1/admin.py` 或 `app/api/v1/portal.py` 装配路由。
-7. 在 `migrations/env.py` 导入新模型，再生成迁移。
+6. 在 `module.py` 声明路由版本、前缀和模型。
+7. 如包含 Celery 任务、MQ consumer 或生命周期钩子，也在 `module.py` 中声明。
+8. 如包含新表，执行迁移生成命令。
 
 ## 数据库迁移
 

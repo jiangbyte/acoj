@@ -14,14 +14,16 @@ from app.modules.iam.resource.model import SysResource, SysResourceModule, SysRe
 from app.modules.iam.resource.schema import (
     ResourceAdminPageQuery,
     ResourceCreateRequest,
-    ResourceGrantMenuOption,
-    ResourceGrantModuleOption,
     ResourceModuleAdminPageQuery,
     ResourceModuleCreateRequest,
     ResourceModuleUpdateRequest,
-    ResourcePermissionOption,
     ResourcePermissionBindRequest,
     ResourceUpdateRequest,
+)
+from app.modules.iam.schema import (
+    ResourceGrantMenuOption,
+    ResourceGrantModuleOption,
+    ResourcePermissionOption,
 )
 
 
@@ -141,7 +143,9 @@ class ResourceRepository:
             return {}
         rows = (
             await self.db.execute(
-                select(SysResourceModule.id, SysResourceModule.name).where(SysResourceModule.id.in_(unique_ids))
+                select(SysResourceModule.id, SysResourceModule.name).where(
+                    SysResourceModule.id.in_(unique_ids)
+                )
             )
         ).all()
         return {str(module_id): str(name) for module_id, name in rows}
@@ -165,7 +169,10 @@ class ResourceRepository:
         )
         return list((await self.db.execute(stmt)).scalars().all())
 
-    async def list_resources_by_ids_with_parents(self, resource_ids: list[str]) -> list[SysResource]:
+    async def list_resources_by_ids_with_parents(
+        self,
+        resource_ids: list[str],
+    ) -> list[SysResource]:
         unique_ids = set(resource_ids)
         if not unique_ids:
             return []
@@ -241,7 +248,10 @@ class ResourceRepository:
                     title=resource.name,
                     locale_key=resource.locale_key,
                     parent_locale_key=parent.locale_key if parent else None,
-                    button=permission_map.get(resource.id, []) + child_permission_map.get(resource.id, []),
+                    button=(
+                        permission_map.get(resource.id, [])
+                        + child_permission_map.get(resource.id, [])
+                    ),
                 )
             )
         return sorted(
@@ -290,7 +300,10 @@ class ResourceModuleRepository:
             raise ConflictError(f"Resource module is referenced: resources={reference_count}")
         await self.db.execute(delete(SysResourceModule).where(SysResourceModule.id.in_(unique_ids)))
 
-    async def page_admin(self, query: ResourceModuleAdminPageQuery) -> tuple[list[SysResourceModule], int]:
+    async def page_admin(
+        self,
+        query: ResourceModuleAdminPageQuery,
+    ) -> tuple[list[SysResourceModule], int]:
         stmt: Select[tuple[SysResourceModule]] = select(SysResourceModule)
         count_stmt = select(func.count(SysResourceModule.id))
         filters = []

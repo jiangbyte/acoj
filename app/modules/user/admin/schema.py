@@ -3,13 +3,7 @@ from datetime import datetime
 from pydantic import Field
 
 from app.core.schema.base import ApiSchema
-
-
-class IdNameResponse(ApiSchema):
-    """通用 ID/名称回显项。"""
-
-    id: str
-    name: str
+from app.core.schema.common_schema import IdNameResponse as IdNameResponse
 
 
 class AdminProfileResponse(ApiSchema):

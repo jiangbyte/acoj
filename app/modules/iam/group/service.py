@@ -6,9 +6,10 @@ from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.data_scope import build_data_scope_filter, resolve_data_scope_dept_ids
 from app.core.security.permission_registry import list_registered_permission_keys
 from app.core.security.session import SessionPayload
-from app.modules.auth.service import AuthService
+from app.modules.auth.session_service import AccountSessionService
 from app.modules.iam.account.model import SysAccount, SysAccountDeptRel
-from app.modules.iam.account.service import AccountService
+from app.modules.iam.account.query_service import AccountQueryService
+from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.enums import GrantSubjectType
 from app.modules.iam.grant.repository import GrantRepository
 from app.modules.iam.group.model import SysGroup
@@ -45,17 +46,29 @@ class GroupService:
         self.repo = GroupRepository(db)
         self.grant_repo = GrantRepository(db)
 
-    async def create(self, payload: GroupCreateRequest, session: SessionPayload | None = None) -> None:
+    async def create(
+        self,
+        payload: GroupCreateRequest,
+        session: SessionPayload | None = None,
+    ) -> None:
         if session is not None and payload.owner_dept_id:
             await self._ensure_depts_visible(session, "iam:group:create", [payload.owner_dept_id])
         async with transactional(self.db):
             await self.repo.create(payload)
 
-    async def update(self, payload: GroupUpdateRequest, session: SessionPayload | None = None) -> None:
+    async def update(
+        self,
+        payload: GroupUpdateRequest,
+        session: SessionPayload | None = None,
+    ) -> None:
         if session is not None:
             await self._ensure_groups_visible(session, "iam:group:update", [payload.id])
             if payload.owner_dept_id:
-                await self._ensure_depts_visible(session, "iam:group:update", [payload.owner_dept_id])
+                await self._ensure_depts_visible(
+                    session,
+                    "iam:group:update",
+                    [payload.owner_dept_id],
+                )
         async with transactional(self.db):
             await self.repo.update(payload)
 
@@ -110,7 +123,7 @@ class GroupService:
         group_users = await self.repo.list_group_accounts(query.id, account_filter)
         return GroupOwnUserResponse(
             id=query.id,
-            users=await AccountService(self.db).build_account_schemas(users),
+            users=await AccountQueryService(self.db).build_account_schemas(users),
             account_ids=[account.id for account in group_users],
         )
 
@@ -240,7 +253,7 @@ class GroupService:
             await self._ensure_depts_visible(
                 session,
                 "iam:group:grantpermission",
-                [dept_id for grant in payload.grant_info_list for dept_id in grant.custom_scope_dept_ids],
+                _grant_custom_dept_ids(payload.grant_info_list),
             )
         await self._ensure_registered_permissions(
             [grant.permission_key for grant in payload.grant_info_list]
@@ -264,7 +277,7 @@ class GroupService:
                 await ensure_registered_permission(permission_key)
 
     async def _refresh_accounts(self, account_ids: list[str]) -> None:
-        await AuthService(self.db).refresh_accounts_sessions(sorted(set(account_ids)))
+        await AccountSessionService(self.db).refresh_accounts_sessions(sorted(set(account_ids)))
 
     async def _group_scope_filter(self, session: SessionPayload, permission_key: str):
         return await build_data_scope_filter(
@@ -316,7 +329,8 @@ class GroupService:
         if not unique_ids:
             return
         data_scope_filter = await self._role_scope_filter(session, permission_key)
-        if await RoleRepository(self.db).count_roles_in_scope(unique_ids, data_scope_filter) != len(unique_ids):
+        count = await RoleRepository(self.db).count_roles_in_scope(unique_ids, data_scope_filter)
+        if count != len(unique_ids):
             raise AuthorizationError("Role is outside current data scope")
 
     async def _ensure_accounts_visible(
@@ -329,7 +343,11 @@ class GroupService:
         if not unique_ids:
             return
         data_scope_filter = await self._account_scope_filter(session, permission_key)
-        if await AccountService(self.db).repo.count_accounts_in_scope(unique_ids, data_scope_filter) != len(unique_ids):
+        count = await AccountRepository(self.db).count_accounts_in_scope(
+            unique_ids,
+            data_scope_filter,
+        )
+        if count != len(unique_ids):
             raise AuthorizationError("Account is outside current data scope")
 
     async def _ensure_depts_visible(
@@ -347,3 +365,11 @@ class GroupService:
         allowed_ids = set(visible_dept_ids)
         if any(dept_id not in allowed_ids for dept_id in unique_ids):
             raise AuthorizationError("Dept is outside current data scope")
+
+
+def _grant_custom_dept_ids(grant_info_list: list) -> list[str]:
+    return [
+        dept_id
+        for grant in grant_info_list
+        for dept_id in grant.custom_scope_dept_ids
+    ]

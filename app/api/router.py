@@ -1,7 +1,3 @@
-from fastapi import APIRouter
+from app.platform.module import build_api_router, load_module_specs
 
-from app.api.constants import API_V1_PREFIX
-from app.api.v1.router import router as v1_router
-
-router = APIRouter()
-router.include_router(v1_router, prefix=API_V1_PREFIX)
+router = build_api_router(load_module_specs())

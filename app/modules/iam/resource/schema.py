@@ -145,36 +145,3 @@ class ResourceModuleSelectorOption(ApiSchema):
     locale_key: str | None = None
     icon: str | None = None
     color: str | None = None
-
-
-class ResourcePermissionOption(ApiSchema):
-    id: str
-    permission_key: str
-    title: str
-    locale_key: str | None = None
-    data_scope: DataScope = DataScope.SELF
-
-
-class ResourceGrantMenuOption(ApiSchema):
-    id: str
-    module_id: str
-    parent_id: str | None = None
-    parent_id_name: str
-    title: str
-    locale_key: str | None = None
-    parent_locale_key: str | None = None
-    button: list[ResourcePermissionOption] = Field(default_factory=list)
-
-
-class ResourceGrantModuleOption(ApiSchema):
-    id: str
-    title: str
-    locale_key: str | None = None
-    menu: list[ResourceGrantMenuOption] = Field(default_factory=list)
-
-
-class PermissionRegistryItem(ApiSchema):
-    permission_key: str
-    name: str
-    method: str | None = None
-    path: str | None = None

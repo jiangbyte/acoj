@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import Select, and_, delete, func, or_, select, update
+from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
@@ -20,7 +20,6 @@ from app.modules.message.message.model import (
     MsgThreadParticipant,
 )
 from app.modules.message.message.schema import (
-    AccountRef,
     GroupCreateRequest,
     GroupPageQuery,
     GroupUpdateRequest,
@@ -28,6 +27,7 @@ from app.modules.message.message.schema import (
     ThreadCreateRequest,
     ThreadPageQuery,
 )
+from app.modules.message.schema import AccountRef
 
 
 class MessageRepository:
@@ -59,7 +59,11 @@ class MessageRepository:
         await self.db.flush()
         members = payload.member_refs[:]
         if owner_account_type and owner_account_id:
-            members.append(AccountRef(account_type=AccountType(owner_account_type), account_id=owner_account_id))
+            members.append(
+                AccountRef(
+                    account_type=AccountType(owner_account_type), account_id=owner_account_id
+                )
+            )
         await self.add_group_members(group.id, members)
         return group
 
@@ -88,7 +92,9 @@ class MessageRepository:
                 await self.db.execute(
                     select(MsgGroupMember.account_type, MsgGroupMember.account_id).where(
                         MsgGroupMember.group_id == group_id,
-                        tuple_account_filter(MsgGroupMember.account_type, MsgGroupMember.account_id, unique),
+                        tuple_account_filter(
+                            MsgGroupMember.account_type, MsgGroupMember.account_id, unique
+                        ),
                     )
                 )
             ).all()
@@ -96,7 +102,12 @@ class MessageRepository:
         now = datetime.now(UTC)
         self.db.add_all(
             [
-                MsgGroupMember(group_id=group_id, account_type=account_type, account_id=account_id, joined_at=now)
+                MsgGroupMember(
+                    group_id=group_id,
+                    account_type=account_type,
+                    account_id=account_id,
+                    joined_at=now,
+                )
                 for account_type, account_id in unique
                 if (account_type, account_id) not in existing
             ]
@@ -111,12 +122,16 @@ class MessageRepository:
             update(MsgGroupMember)
             .where(
                 MsgGroupMember.group_id == group_id,
-                tuple_account_filter(MsgGroupMember.account_type, MsgGroupMember.account_id, unique),
+                tuple_account_filter(
+                    MsgGroupMember.account_type, MsgGroupMember.account_id, unique
+                ),
             )
             .values(left_at=datetime.now(UTC))
         )
 
-    async def page_groups(self, query: GroupPageQuery) -> tuple[list[MsgGroup], int, dict[str, int]]:
+    async def page_groups(
+        self, query: GroupPageQuery
+    ) -> tuple[list[MsgGroup], int, dict[str, int]]:
         stmt = select(MsgGroup)
         count_stmt = select(func.count(MsgGroup.id))
         filters = []
@@ -127,8 +142,10 @@ class MessageRepository:
         if filters:
             stmt = stmt.where(*filters)
             count_stmt = count_stmt.where(*filters)
-        stmt = stmt.order_by(MsgGroup.updated_at.desc(), MsgGroup.id.desc()).offset(query.pagination.offset).limit(
-            query.pagination.size
+        stmt = (
+            stmt.order_by(MsgGroup.updated_at.desc(), MsgGroup.id.desc())
+            .offset(query.pagination.offset)
+            .limit(query.pagination.size)
         )
         items = list((await self.db.execute(stmt)).scalars().all())
         counts = await self.count_group_members([item.id for item in items])
@@ -196,9 +213,18 @@ class MessageRepository:
         refs = payload.participant_refs[:]
         if payload.group_id:
             members = await self.list_group_members(payload.group_id)
-            refs.extend(AccountRef(account_type=AccountType(member.account_type), account_id=member.account_id) for member in members)
+            refs.extend(
+                AccountRef(
+                    account_type=AccountType(member.account_type), account_id=member.account_id
+                )
+                for member in members
+            )
         if created_account_type and created_account_id:
-            refs.append(AccountRef(account_type=AccountType(created_account_type), account_id=created_account_id))
+            refs.append(
+                AccountRef(
+                    account_type=AccountType(created_account_type), account_id=created_account_id
+                )
+            )
         await self.add_thread_participants(thread.id, refs)
         return thread
 
@@ -211,7 +237,9 @@ class MessageRepository:
     ) -> MsgThread:
         if payload.thread_id:
             thread = await self.get_thread_required(payload.thread_id)
-            await self.ensure_thread_participant(thread.id, account_type=sender_account_type, account_id=sender_account_id)
+            await self.ensure_thread_participant(
+                thread.id, account_type=sender_account_type, account_id=sender_account_id
+            )
             return thread
         thread_type = MessageThreadType.GROUP if payload.group_id else MessageThreadType.DIRECT
         return await self.create_thread(
@@ -233,9 +261,15 @@ class MessageRepository:
         existing = set(
             (
                 await self.db.execute(
-                    select(MsgThreadParticipant.account_type, MsgThreadParticipant.account_id).where(
+                    select(
+                        MsgThreadParticipant.account_type, MsgThreadParticipant.account_id
+                    ).where(
                         MsgThreadParticipant.thread_id == thread_id,
-                        tuple_account_filter(MsgThreadParticipant.account_type, MsgThreadParticipant.account_id, unique),
+                        tuple_account_filter(
+                            MsgThreadParticipant.account_type,
+                            MsgThreadParticipant.account_id,
+                            unique,
+                        ),
                     )
                 )
             ).all()
@@ -255,7 +289,9 @@ class MessageRepository:
         )
         await self.db.flush()
 
-    async def ensure_thread_participant(self, thread_id: str, *, account_type: str, account_id: str) -> MsgThreadParticipant:
+    async def ensure_thread_participant(
+        self, thread_id: str, *, account_type: str, account_id: str
+    ) -> MsgThreadParticipant:
         stmt = select(MsgThreadParticipant).where(
             MsgThreadParticipant.thread_id == thread_id,
             MsgThreadParticipant.account_type == account_type,
@@ -363,17 +399,23 @@ class MessageRepository:
             filters.append(MsgThread.status == query.status.value)
         stmt = stmt.where(*filters)
         count_stmt = count_stmt.where(*filters)
-        stmt = stmt.order_by(MsgThread.last_message_at.desc().nullslast(), MsgThread.updated_at.desc()).offset(
-            query.pagination.offset
-        ).limit(query.pagination.size)
+        stmt = (
+            stmt.order_by(MsgThread.last_message_at.desc().nullslast(), MsgThread.updated_at.desc())
+            .offset(query.pagination.offset)
+            .limit(query.pagination.size)
+        )
         rows = (await self.db.execute(stmt)).all()
         threads = [row[0] for row in rows]
         unread_map = {row[0].id: int(row[1]) for row in rows}
-        latest_map = await self.map_messages([thread.last_message_id for thread in threads if thread.last_message_id])
+        latest_map = await self.map_messages(
+            [thread.last_message_id for thread in threads if thread.last_message_id]
+        )
         total = (await self.db.execute(count_stmt)).scalar_one()
         return threads, total, unread_map, latest_map
 
-    async def page_all_threads(self, query: ThreadPageQuery) -> tuple[list[MsgThread], int, dict[str, MsgMessage]]:
+    async def page_all_threads(
+        self, query: ThreadPageQuery
+    ) -> tuple[list[MsgThread], int, dict[str, MsgMessage]]:
         stmt = select(MsgThread)
         count_stmt = select(func.count(MsgThread.id))
         filters = []
@@ -384,11 +426,15 @@ class MessageRepository:
         if filters:
             stmt = stmt.where(*filters)
             count_stmt = count_stmt.where(*filters)
-        stmt = stmt.order_by(MsgThread.last_message_at.desc().nullslast(), MsgThread.updated_at.desc()).offset(
-            query.pagination.offset
-        ).limit(query.pagination.size)
+        stmt = (
+            stmt.order_by(MsgThread.last_message_at.desc().nullslast(), MsgThread.updated_at.desc())
+            .offset(query.pagination.offset)
+            .limit(query.pagination.size)
+        )
         threads = list((await self.db.execute(stmt)).scalars().all())
-        latest_map = await self.map_messages([thread.last_message_id for thread in threads if thread.last_message_id])
+        latest_map = await self.map_messages(
+            [thread.last_message_id for thread in threads if thread.last_message_id]
+        )
         total = (await self.db.execute(count_stmt)).scalar_one()
         return threads, total, latest_map
 
@@ -399,7 +445,12 @@ class MessageRepository:
         pagination,
         account_type: str | None = None,
         account_id: str | None = None,
-    ) -> tuple[list[MsgMessage], int, dict[str, list[MsgMessageAttachment]], dict[str, list[tuple[str, int, bool]]]]:
+    ) -> tuple[
+        list[MsgMessage],
+        int,
+        dict[str, list[MsgMessageAttachment]],
+        dict[str, list[tuple[str, int, bool]]],
+    ]:
         stmt = (
             select(MsgMessage)
             .where(MsgMessage.thread_id == thread_id)
@@ -411,7 +462,9 @@ class MessageRepository:
         items = list((await self.db.execute(stmt)).scalars().all())
         ids = [item.id for item in items]
         attachment_map = await self.map_message_attachments(ids)
-        reaction_map = await self.map_message_reactions(ids, account_type=account_type, account_id=account_id)
+        reaction_map = await self.map_message_reactions(
+            ids, account_type=account_type, account_id=account_id
+        )
         total = (await self.db.execute(count_stmt)).scalar_one()
         return items, total, attachment_map, reaction_map
 
@@ -422,16 +475,22 @@ class MessageRepository:
         stmt = select(MsgMessage).where(MsgMessage.id.in_(unique_ids))
         return {message.id: message for message in (await self.db.execute(stmt)).scalars().all()}
 
-    async def map_message_attachments(self, message_ids: list[str]) -> dict[str, list[MsgMessageAttachment]]:
+    async def map_message_attachments(
+        self, message_ids: list[str]
+    ) -> dict[str, list[MsgMessageAttachment]]:
         if not message_ids:
             return {}
         rows = (
-            await self.db.execute(
-                select(MsgMessageAttachment)
-                .where(MsgMessageAttachment.message_id.in_(message_ids))
-                .order_by(MsgMessageAttachment.sort.asc(), MsgMessageAttachment.id.asc())
+            (
+                await self.db.execute(
+                    select(MsgMessageAttachment)
+                    .where(MsgMessageAttachment.message_id.in_(message_ids))
+                    .order_by(MsgMessageAttachment.sort.asc(), MsgMessageAttachment.id.asc())
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         result: dict[str, list[MsgMessageAttachment]] = {}
         for item in rows:
             result.setdefault(item.message_id, []).append(item)
@@ -448,7 +507,11 @@ class MessageRepository:
             return {}
         rows = (
             await self.db.execute(
-                select(MsgMessageReaction.message_id, MsgMessageReaction.reaction, func.count(MsgMessageReaction.id))
+                select(
+                    MsgMessageReaction.message_id,
+                    MsgMessageReaction.reaction,
+                    func.count(MsgMessageReaction.id),
+                )
                 .where(MsgMessageReaction.message_id.in_(message_ids))
                 .group_by(MsgMessageReaction.message_id, MsgMessageReaction.reaction)
             )
@@ -468,11 +531,15 @@ class MessageRepository:
             )
         result: dict[str, list[tuple[str, int, bool]]] = {}
         for message_id, reaction, count in rows:
-            result.setdefault(str(message_id), []).append((str(reaction), int(count), (str(message_id), str(reaction)) in own))
+            result.setdefault(str(message_id), []).append(
+                (str(reaction), int(count), (str(message_id), str(reaction)) in own)
+            )
         return result
 
     async def mark_thread_read(self, *, thread_id: str, account_type: str, account_id: str) -> None:
-        await self.ensure_thread_participant(thread_id, account_type=account_type, account_id=account_id)
+        await self.ensure_thread_participant(
+            thread_id, account_type=account_type, account_id=account_id
+        )
         thread = await self.get_thread_required(thread_id)
         await self.db.execute(
             update(MsgThreadParticipant)
@@ -481,14 +548,22 @@ class MessageRepository:
                 MsgThreadParticipant.account_type == account_type,
                 MsgThreadParticipant.account_id == account_id,
             )
-            .values(unread_count=0, last_read_message_id=thread.last_message_id, last_read_at=datetime.now(UTC))
+            .values(
+                unread_count=0,
+                last_read_message_id=thread.last_message_id,
+                last_read_at=datetime.now(UTC),
+            )
         )
 
-    async def react_message(self, *, message_id: str, account_type: str, account_id: str, reaction: str) -> None:
+    async def react_message(
+        self, *, message_id: str, account_type: str, account_id: str, reaction: str
+    ) -> None:
         message = await self.db.get(MsgMessage, message_id)
         if message is None:
             raise NotFoundError("Message not found")
-        await self.ensure_thread_participant(message.thread_id, account_type=account_type, account_id=account_id)
+        await self.ensure_thread_participant(
+            message.thread_id, account_type=account_type, account_id=account_id
+        )
         stmt = select(MsgMessageReaction).where(
             MsgMessageReaction.message_id == message_id,
             MsgMessageReaction.account_type == account_type,
@@ -514,5 +589,9 @@ class MessageRepository:
 def tuple_account_filter(account_type_column, account_id_column, refs: set[tuple[str, str]]):
     if not refs:
         return False
-    return or_(*[and_(account_type_column == account_type, account_id_column == account_id) for account_type, account_id in refs])
-
+    return or_(
+        *[
+            and_(account_type_column == account_type, account_id_column == account_id)
+            for account_type, account_id in refs
+        ]
+    )

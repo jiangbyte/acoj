@@ -9,13 +9,10 @@ from app.core.security.session import SessionPayload
 from app.modules.iam.grant.repository import GrantRepository
 from app.modules.iam.permission.service import ensure_registered_permission
 from app.modules.iam.resource.model import SysResource
-from app.modules.iam.resource.repository import ResourceRepository
-from app.modules.iam.resource.repository import ResourceModuleRepository
+from app.modules.iam.resource.repository import ResourceModuleRepository, ResourceRepository
 from app.modules.iam.resource.schema import (
-    PermissionRegistryItem,
     ResourceAdminPageQuery,
     ResourceCreateRequest,
-    ResourceGrantModuleOption,
     ResourceModuleAdminPageQuery,
     ResourceModuleCreateRequest,
     ResourceModuleSelectorOption,
@@ -23,10 +20,11 @@ from app.modules.iam.resource.schema import (
     ResourcePermissionBindRequest,
     ResourceTreeNode,
     ResourceUpdateRequest,
-    SysResourcePermissionRelSchema,
     SysResourceModuleSchema,
+    SysResourcePermissionRelSchema,
     SysResourceSchema,
 )
+from app.modules.iam.schema import PermissionRegistryItem, ResourceGrantModuleOption
 from app.platform.db.transaction import transactional
 
 
@@ -60,7 +58,11 @@ class ResourceService:
         session: SessionPayload | None = None,
     ) -> SysResourcePermissionRelSchema:
         if session is not None:
-            await self._ensure_depts_visible(session, "iam:resource:grant", payload.custom_scope_dept_ids)
+            await self._ensure_depts_visible(
+                session,
+                "iam:resource:grant",
+                payload.custom_scope_dept_ids,
+            )
         await ensure_registered_permission(payload.permission_key)
         async with transactional(self.db):
             return to_schema(
@@ -85,7 +87,10 @@ class ResourceService:
     async def list_grant_modules(self) -> list[ResourceGrantModuleOption]:
         return await self.repo.list_all_resource_grant_modules()
 
-    async def _build_resource_schemas(self, resources: list[SysResource]) -> list[SysResourceSchema]:
+    async def _build_resource_schemas(
+        self,
+        resources: list[SysResource],
+    ) -> list[SysResourceSchema]:
         module_name_map = await self.repo.list_module_name_map(
             [resource.module_id for resource in resources if resource.module_id]
         )
@@ -94,7 +99,10 @@ class ResourceService:
             schema.module_id_name = module_name_map.get(schema.module_id or "")
         return schemas
 
-    async def _build_resource_tree_nodes(self, resources: list[SysResource]) -> list[ResourceTreeNode]:
+    async def _build_resource_tree_nodes(
+        self,
+        resources: list[SysResource],
+    ) -> list[ResourceTreeNode]:
         module_name_map = await self.repo.list_module_name_map(
             [resource.module_id for resource in resources if resource.module_id]
         )
@@ -106,7 +114,11 @@ class ResourceService:
         for resource in resources:
             index = resource.find("[")
             permission_key = resource[:index] if index > -1 else resource
-            name = resource[index + 1 : -1] if index > -1 and resource.endswith("]") else permission_key
+            name = (
+                resource[index + 1 : -1]
+                if index > -1 and resource.endswith("]")
+                else permission_key
+            )
             items.append(PermissionRegistryItem(permission_key=permission_key, name=name))
         return sorted(items, key=lambda item: item.permission_key)
 
@@ -147,7 +159,10 @@ class ResourceModuleService:
     async def detail(self, query: IdQuery) -> SysResourceModuleSchema:
         return to_schema(SysResourceModuleSchema, await self.repo.get_required(query.id))
 
-    async def page_admin(self, query: ResourceModuleAdminPageQuery) -> PageData[SysResourceModuleSchema]:
+    async def page_admin(
+        self,
+        query: ResourceModuleAdminPageQuery,
+    ) -> PageData[SysResourceModuleSchema]:
         items, total = await self.repo.page_admin(query)
         return build_page(query.pagination, total, to_schema_list(SysResourceModuleSchema, items))
 

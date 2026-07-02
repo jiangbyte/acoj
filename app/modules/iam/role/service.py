@@ -5,23 +5,24 @@ from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.data_scope import build_data_scope_filter, resolve_data_scope_dept_ids
 from app.core.security.session import SessionPayload
-from app.modules.auth.service import AuthService
+from app.modules.auth.session_service import AccountSessionService
 from app.modules.iam.account.model import SysAccount, SysAccountDeptRel
-from app.modules.iam.account.service import AccountService
+from app.modules.iam.account.query_service import AccountQueryService
+from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.permission.service import PermissionService, ensure_registered_permission
 from app.modules.iam.resource.service import ResourceService
 from app.modules.iam.role.model import SysRole
 from app.modules.iam.role.repository import RoleRepository
 from app.modules.iam.role.schema import (
     RoleAdminPageQuery,
+    RoleCreateRequest,
+    RoleGrantPermissionRequest,
     RoleGrantResourceRequest,
     RoleGrantUserRequest,
     RoleOwnPermissionDetailResponse,
-    RoleGrantPermissionRequest,
     RoleOwnPermissionResponse,
     RoleOwnResourceResponse,
     RoleOwnUserResponse,
-    RoleCreateRequest,
     RoleUpdateRequest,
     SysRoleSchema,
 )
@@ -33,17 +34,29 @@ class RoleService:
         self.db = db
         self.repo = RoleRepository(db)
 
-    async def create(self, payload: RoleCreateRequest, session: SessionPayload | None = None) -> None:
+    async def create(
+        self,
+        payload: RoleCreateRequest,
+        session: SessionPayload | None = None,
+    ) -> None:
         if session is not None and payload.owner_dept_id:
             await self._ensure_depts_visible(session, "iam:role:create", [payload.owner_dept_id])
         async with transactional(self.db):
             await self.repo.create(payload)
 
-    async def update(self, payload: RoleUpdateRequest, session: SessionPayload | None = None) -> None:
+    async def update(
+        self,
+        payload: RoleUpdateRequest,
+        session: SessionPayload | None = None,
+    ) -> None:
         if session is not None:
             await self._ensure_roles_visible(session, "iam:role:update", [payload.id])
             if payload.owner_dept_id:
-                await self._ensure_depts_visible(session, "iam:role:update", [payload.owner_dept_id])
+                await self._ensure_depts_visible(
+                    session,
+                    "iam:role:update",
+                    [payload.owner_dept_id],
+                )
         async with transactional(self.db):
             await self.repo.update(payload)
 
@@ -109,7 +122,7 @@ class RoleService:
             await self._ensure_depts_visible(
                 session,
                 "iam:role:grantpermission",
-                [dept_id for grant in payload.grant_info_list for dept_id in grant.custom_scope_dept_ids],
+                _grant_custom_dept_ids(payload.grant_info_list),
             )
         for grant in payload.grant_info_list:
             await ensure_registered_permission(grant.permission_key)
@@ -159,7 +172,7 @@ class RoleService:
         role_users = await self.repo.list_role_accounts(query.id, account_filter)
         return RoleOwnUserResponse(
             id=query.id,
-            users=await AccountService(self.db).build_account_schemas(users),
+            users=await AccountQueryService(self.db).build_account_schemas(users),
             account_ids=[account.id for account in role_users],
         )
 
@@ -177,7 +190,7 @@ class RoleService:
         await self._refresh_accounts(sorted(set(old_account_ids + payload.account_ids)))
 
     async def _refresh_accounts(self, account_ids: list[str]) -> None:
-        await AuthService(self.db).refresh_accounts_sessions(sorted(set(account_ids)))
+        await AccountSessionService(self.db).refresh_accounts_sessions(sorted(set(account_ids)))
 
     async def _role_scope_filter(self, session: SessionPayload, permission_key: str):
         return await build_data_scope_filter(
@@ -220,7 +233,11 @@ class RoleService:
         if not unique_ids:
             return
         data_scope_filter = await self._account_scope_filter(session, permission_key)
-        if await AccountService(self.db).repo.count_accounts_in_scope(unique_ids, data_scope_filter) != len(unique_ids):
+        count = await AccountRepository(self.db).count_accounts_in_scope(
+            unique_ids,
+            data_scope_filter,
+        )
+        if count != len(unique_ids):
             raise AuthorizationError("Account is outside current data scope")
 
     async def _ensure_depts_visible(
@@ -238,3 +255,11 @@ class RoleService:
         allowed_ids = set(visible_dept_ids)
         if any(dept_id not in allowed_ids for dept_id in unique_ids):
             raise AuthorizationError("Dept is outside current data scope")
+
+
+def _grant_custom_dept_ids(grant_info_list: list) -> list[str]:
+    return [
+        dept_id
+        for grant in grant_info_list
+        for dept_id in grant.custom_scope_dept_ids
+    ]

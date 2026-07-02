@@ -1,6 +1,5 @@
-"""Worker tasks."""
+"""Load Celery tasks declared by modules."""
 
-from app.modules.sys.banner.tasks import flush_banner_interactions
-from app.modules.iam.account.tasks import purge_cancelled_accounts
+from app.platform.module import load_declared_tasks, load_module_specs
 
-__all__ = ["flush_banner_interactions", "purge_cancelled_accounts"]
+load_declared_tasks(load_module_specs())

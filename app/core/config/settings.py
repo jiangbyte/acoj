@@ -57,6 +57,14 @@ class CelerySettings(BaseSettings):
     shutdown_timeout_seconds: float = 10.0
 
 
+class MQSettings(BaseSettings):
+    enabled: bool = False
+    url: str = ""
+    reconnect_interval_seconds: float = 5.0
+    publish_exchange: str = ""
+    publish_exchange_type: str = "topic"
+
+
 class StorageSettings(BaseSettings):
     provider: StorageProvider = StorageProvider.S3
     bucket: str = "hei-fastapi"
@@ -112,6 +120,7 @@ class Settings(BaseSettings):
     auth: AuthSettings = Field(default_factory=AuthSettings)
     cors: CorsSettings = Field(default_factory=CorsSettings)
     celery: CelerySettings = Field(default_factory=CelerySettings)
+    mq: MQSettings = Field(default_factory=MQSettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
     id_generator: IdGeneratorSettings = Field(default_factory=IdGeneratorSettings)
     swagger: SwaggerSettings = Field(default_factory=SwaggerSettings)
