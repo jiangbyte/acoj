@@ -1,0 +1,7 @@
+{
+  "title": "Storage Provider",
+  "local": "Local",
+  "minio": "MinIO",
+  "s3": "Amazon S3",
+  "oss": "Alibaba Cloud OSS"
+}

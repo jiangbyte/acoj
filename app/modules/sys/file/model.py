@@ -1,6 +1,7 @@
 from sqlalchemy import BigInteger, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.config.enums import StorageProvider
 from app.platform.db.base import Base
 from app.platform.db.mixins import TimestampMixin
 from app.platform.id_generator.snowflake import generate_snowflake_id
@@ -14,7 +15,7 @@ class SysFile(Base, TimestampMixin):
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
     object_name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, comment="对象存储路径")
     original_name: Mapped[str] = mapped_column(String(255), nullable=False, comment="原始文件名")
-    storage_provider: Mapped[str] = mapped_column(String(32), nullable=False, comment="存储服务商")
+    storage_provider: Mapped[StorageProvider] = mapped_column(String(32), nullable=False, comment="存储服务商")
     bucket: Mapped[str | None] = mapped_column(String(128), comment="存储桶")
     content_type: Mapped[str] = mapped_column(String(128), nullable=False, comment="文件类型")
     size: Mapped[int] = mapped_column(BigInteger, nullable=False, comment="文件大小")

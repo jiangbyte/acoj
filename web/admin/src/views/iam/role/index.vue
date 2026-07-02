@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { roleApi } from '@/api'
-import { createTagColor, hasPermission, normalizeSearchValues } from '@/utils'
+import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -184,7 +184,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: t('common.often.operation'),
     key: 'actions',
-    width: 230,
+    width: 150,
     fixed: 'right',
     render: (row) => {
       const options = grantOptions.value
@@ -192,12 +192,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
         <NFlex size={12}>
           {hasPermission('iam:role:detail') ? (
             <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
-              {t('common.often.detail')}
+              {renderButtonIcon('icon-park-outline:preview-open')}
             </NButton>
           ) : null}
           {hasPermission('iam:role:update') ? (
             <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
-              {t('common.often.edit')}
+              {renderButtonIcon('icon-park-outline:edit')}
             </NButton>
           ) : null}
           {options.length ? (
@@ -207,13 +207,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
               onSelect={(key) => openGrantModal(String(key), row)}
             >
               <NButton type="warning" size="small" text={true}>
-                {t('resource.iam.role.grant')}
+                {renderButtonIcon('icon-park-outline:permissions')}
               </NButton>
             </NDropdown>
           ) : null}
           {hasPermission('iam:role:delete') ? (
             <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
-              {t('common.often.delete')}
+              {renderButtonIcon('icon-park-outline:delete')}
             </NButton>
           ) : null}
         </NFlex>
@@ -335,7 +335,17 @@ async function deleteData(ids: string[]) {
 <template>
   <NFlex class="h-full min-h-0" vertical>
     <ProCard content-class="pb-0!">
-      <ProSearchForm :form="searchForm" :columns="searchColumns" />
+      <ProSearchForm
+        :form="searchForm"
+        :columns="searchColumns"
+        :reset-button-props="{ content: t('common.search_form.reset') }"
+        :search-button-props="{ content: t('common.search_form.search') }"
+        :collapse-button-props="{
+          content: searchForm.collapsed.value
+            ? t('common.search_form.expand')
+            : t('common.search_form.collapse'),
+        }"
+      />
     </ProCard>
 
     <ProDataTable
@@ -353,30 +363,33 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton type="primary" ghost @click="openCreateModal">
+          <NButton type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
             <template #icon>
               <NIcon>
-                <Icon icon="ant-design:plus-outlined" />
+                <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
-            {{ t('common.often.add') }}
           </NButton>
-          <NButton ghost :loading="state.loading" @click="fetchPage">
+          <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
-                <Icon icon="ant-design:reload-outlined" />
+                <Icon icon="icon-park-outline:reload" />
               </NIcon>
             </template>
-            {{ t('common.reload') }}
           </NButton>
           <NButton
             type="error"
-            ghost
+            text
+            :title="t('common.often.batch_delete')"
+            :aria-label="t('common.often.batch_delete')"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >
-            {{ t('common.often.batch_delete') }}
-            {{ t('common.often.total', { count: state.checkedRowKeys.length }) }}
+            <template #icon>
+              <NIcon>
+                <Icon icon="icon-park-outline:delete" />
+              </NIcon>
+            </template>
           </NButton>
         </NFlex>
       </template>

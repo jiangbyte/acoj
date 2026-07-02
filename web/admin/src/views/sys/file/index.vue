@@ -2,9 +2,9 @@
 import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
-import { resourceModuleApi } from '@/api'
-import { createTagColor, normalizeSearchValues, renderButtonIcon, translateLocale } from '@/utils'
-import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
+import { NButton, NFlex, NIcon, NImage, NTag } from 'naive-ui'
+import { fileApi } from '@/api'
+import { createTagColor, normalizeSearchValues, renderButtonIcon, resolveFileUrl } from '@/utils'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
@@ -15,10 +15,12 @@ import ModalForm from './components/ModalForm.vue'
 const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 const state = reactive({
-  modules: [] as any[],
+  files: [] as any[],
   total: 0,
   loading: false,
+  uploadLoading: false,
   searchValues: {} as any,
   checkedRowKeys: [] as string[],
   page: 1,
@@ -28,10 +30,7 @@ const state = reactive({
 const searchForm = createProSearchForm<any>({
   defaultCollapsed: true,
   onSubmit(values) {
-    state.searchValues = normalizeSearchValues(values, {
-      name: (value) => String(value).trim(),
-      code: (value) => String(value).trim(),
-    })
+    state.searchValues = normalizeSearchValues(values)
     state.page = 1
     fetchPage()
   },
@@ -44,22 +43,27 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('resource.iam.resource_module.name'),
-    path: 'name',
+    title: t('resource.sys.file.original_name'),
+    path: 'original_name',
     field: 'input',
   },
   {
-    title: t('resource.iam.resource_module.code'),
-    path: 'code',
+    title: t('resource.sys.file.object_name'),
+    path: 'object_name',
     field: 'input',
   },
   {
-    title: t('common.often.status'),
-    path: 'status',
+    title: t('resource.sys.file.storage_provider'),
+    path: 'storage_provider',
     field: 'select',
     fieldProps: {
-      options: dictList('COMMON_STATUS'),
+      options: dictList('STORAGE_PROVIDER'),
     },
+  },
+  {
+    title: t('resource.sys.file.content_type'),
+    path: 'content_type',
+    field: 'input',
   },
 ])
 
@@ -88,72 +92,68 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   },
   {
     title: t('common.often.index'),
-    width: 80,
+    width: 90,
     path: 'id',
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('resource.iam.resource_module.name'),
-    path: 'name',
-    width: 160,
-    render: (row) => translateLocale(row.locale_key, row.name),
-    ellipsis: {
-      tooltip: true,
-    },
+    title: t('resource.sys.file.preview'),
+    key: 'preview',
+    width: 120,
+    render: (row) => renderPreview(row),
   },
   {
-    title: t('common.often.locale_key'),
-    path: 'locale_key',
+    title: t('resource.sys.file.original_name'),
+    path: 'original_name',
     width: 220,
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('resource.iam.resource_module.code'),
-    path: 'code',
-    width: 160,
+    title: t('resource.sys.file.object_name'),
+    path: 'object_name',
+    width: 320,
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('resource.iam.resource_module.icon'),
-    path: 'icon',
-    width: 190,
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
-    title: t('resource.iam.resource_module.color'),
-    path: 'color',
-    width: 110,
-    render: (row) =>
-      row.color ? (
-        <NTag color={createTagColor(row.color)} bordered={false}>
-          {row.color}
-        </NTag>
-      ) : (
-        '-'
-      ),
-  },
-  {
-    title: t('resource.iam.resource_module.sort'),
-    path: 'sort',
-    width: 90,
-  },
-  {
-    title: t('common.often.status'),
-    path: 'status',
-    width: 110,
+    title: t('resource.sys.file.storage_provider'),
+    path: 'storage_provider',
+    width: 130,
     render: (row) => (
-      <NTag color={createTagColor(dictTypeColor('COMMON_STATUS', row.status))} bordered={false}>
-        {dictTypeData('COMMON_STATUS', row.status) || row.status}
+      <NTag
+        color={createTagColor(dictTypeColor('STORAGE_PROVIDER', row.storage_provider))}
+        bordered={false}
+      >
+        {dictTypeData('STORAGE_PROVIDER', row.storage_provider) || row.storage_provider}
       </NTag>
     ),
+  },
+  {
+    title: t('resource.sys.file.bucket'),
+    path: 'bucket',
+    width: 150,
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: t('resource.sys.file.content_type'),
+    path: 'content_type',
+    width: 180,
+    ellipsis: {
+      tooltip: true,
+    },
+  },
+  {
+    title: t('resource.sys.file.size'),
+    path: 'size',
+    width: 120,
+    render: (row) => formatFileSize(row.size),
   },
   {
     title: t('common.often.updated_at'),
@@ -166,7 +166,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: t('common.often.operation'),
     key: 'actions',
-    width: 120,
+    width: 150,
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
@@ -175,6 +175,9 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
         </NButton>
         <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
           {renderButtonIcon('icon-park-outline:edit')}
+        </NButton>
+        <NButton type="primary" size="small" text={true} onClick={() => openFile(row)}>
+          {renderButtonIcon('icon-park-outline:link')}
         </NButton>
         <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
           {renderButtonIcon('icon-park-outline:delete')}
@@ -193,38 +196,95 @@ onMounted(() => {
 async function fetchPage() {
   state.loading = true
   try {
-    const response = await resourceModuleApi.page({
+    const response = await fileApi.page({
       current: state.page,
       size: state.pageSize,
       ...state.searchValues,
     })
     const data = response.data ?? {}
-    state.modules = data.records ?? []
+    state.files = data.records ?? []
     state.total = data.total ?? 0
     state.page = data.current ?? state.page
     state.pageSize = data.size ?? state.pageSize
-    state.checkedRowKeys = state.checkedRowKeys.filter((key) =>
-      state.modules.some((item) => item.id === key),
-    )
   } finally {
     state.loading = false
   }
+}
+
+function renderPreview(row: any) {
+  const src = resolveFileUrl(row.url)
+  if (!src || !isImage(row)) {
+    return <NTag bordered={false}>{row.content_type || '-'}</NTag>
+  }
+  return (
+    <NImage
+      src={src}
+      alt={row.original_name || t('resource.sys.file.preview')}
+      width={72}
+      height={48}
+      objectFit="cover"
+    />
+  )
+}
+
+function isImage(row: any) {
+  return String(row.content_type || '').startsWith('image/')
+}
+
+function formatFileSize(size?: number | string | null) {
+  const value = Number(size ?? 0)
+  if (!Number.isFinite(value) || value <= 0) {
+    return '0 B'
+  }
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let current = value
+  let unitIndex = 0
+  while (current >= 1024 && unitIndex < units.length - 1) {
+    current /= 1024
+    unitIndex += 1
+  }
+  return `${current.toFixed(unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`
 }
 
 function openDetailModal(id: string) {
   detailModalRef.value?.openModal(id)
 }
 
-function openCreateModal() {
-  formModalRef.value?.openModal()
-}
-
 function openEditModal(id: string) {
   formModalRef.value?.openModal(id)
 }
 
+function triggerUpload() {
+  fileInputRef.value?.click()
+}
+
+async function handleFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) {
+    return
+  }
+  state.uploadLoading = true
+  try {
+    await fileApi.upload(file)
+    window.$message.success(t('resource.sys.file.upload_success'))
+    await fetchPage()
+  } finally {
+    state.uploadLoading = false
+  }
+}
+
 function handleCheckedRowKeys(keys: Array<string | number>) {
   state.checkedRowKeys = keys.map(String)
+}
+
+function openFile(row: any) {
+  const url = resolveFileUrl(row.url)
+  if (!url) {
+    return
+  }
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 function confirmDelete(value: string | string[]) {
@@ -239,8 +299,8 @@ function confirmDelete(value: string | string[]) {
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('resource.iam.resource_module.batch_delete_confirm', { count: ids.length })
-      : t('resource.iam.resource_module.delete_confirm'),
+      ? t('resource.sys.file.batch_delete_confirm', { count: ids.length })
+      : t('resource.sys.file.delete_confirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
     onPositiveClick: () => deleteData(ids),
@@ -248,12 +308,12 @@ function confirmDelete(value: string | string[]) {
 }
 
 async function deleteData(ids: string[]) {
-  await resourceModuleApi.remove({ ids })
+  await fileApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
   window.$message.success(t('common.often.delete_success'))
   await fetchPage()
-  if (!state.modules.length && state.total > 0 && state.page > 1) {
+  if (!state.files.length && state.total > 0 && state.page > 1) {
     state.page -= 1
     await fetchPage()
   }
@@ -279,11 +339,11 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('resource.iam.resource_module.title')"
+      :title="t('resource.sys.file.title')"
       row-key="id"
-      :scroll-x="1380"
+      :scroll-x="1890"
       :columns="tableColumns"
-      :data="state.modules"
+      :data="state.files"
       :loading="state.loading"
       :pagination="pagination"
       :checked-row-keys="state.checkedRowKeys"
@@ -291,10 +351,10 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+          <NButton type="primary" text :title="t('resource.sys.file.upload')" :aria-label="t('resource.sys.file.upload')" :loading="state.uploadLoading" @click="triggerUpload">
             <template #icon>
               <NIcon>
-                <Icon icon="icon-park-outline:plus" />
+                <Icon icon="icon-park-outline:upload" />
               </NIcon>
             </template>
           </NButton>
@@ -323,9 +383,8 @@ async function deleteData(ids: string[]) {
       </template>
     </ProDataTable>
 
+    <input ref="fileInputRef" class="hidden" type="file" @change="handleFileChange" />
     <ModalForm ref="formModalRef" @saved="fetchPage" />
     <ModalDetail ref="detailModalRef" />
   </NFlex>
 </template>
-
-<style scoped></style>

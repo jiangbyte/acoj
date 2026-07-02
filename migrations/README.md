@@ -65,28 +65,20 @@ python scripts/check_migration.py
 
 如果项目早期还没有稳定发布，想清空 `migrations/versions` 并重新生成一份全新的初始迁移，不要直接拿已有开发库生成。已有库里已经有业务表，Alembic 会把它当作“当前结构”，生成结果会不正确。
 
-推荐用临时空库生成：
+推荐使用脚本通过临时空库生成：
 
 ```bash
-rm -rf migrations/versions/*
-createdb hei_fastapi_migration_tmp
-DB__URL=postgresql+asyncpg://postgres:123456@127.0.0.1:5432/hei_fastapi_migration_tmp \
-  python scripts/makemigration.py "initial schema"
+python scripts/rebuild_initial_migration.py --yes
 ```
 
-生成后先在临时空库验证：
+脚本会清空 `migrations/versions/*.py`，创建临时空库，生成 `initial schema`，再执行 `migrate.py` 和 `check_migration.py` 验证。默认临时库名是 `hei_fastapi_migration_shadow`，连接账号、密码、主机和端口来自当前 `DB__URL`。
+
+如果需要调整迁移说明、临时库名或保留临时库排查问题：
 
 ```bash
-DB__URL=postgresql+asyncpg://postgres:123456@127.0.0.1:5432/hei_fastapi_migration_tmp \
-  python scripts/migrate.py
-DB__URL=postgresql+asyncpg://postgres:123456@127.0.0.1:5432/hei_fastapi_migration_tmp \
-  python scripts/check_migration.py
-```
-
-确认无误后删除临时库：
-
-```bash
-dropdb hei_fastapi_migration_tmp
+python scripts/rebuild_initial_migration.py --yes -m "initial schema"
+python scripts/rebuild_initial_migration.py --yes --shadow-db hei_fastapi_migration_tmp
+python scripts/rebuild_initial_migration.py --yes --keep-db
 ```
 
 重建初始迁移后，旧开发库里的 `alembic_version` 会指向已经删除的旧 revision。要迁移旧开发库，最干净的方式是删除并重建数据库，再执行：

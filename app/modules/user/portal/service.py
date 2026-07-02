@@ -23,7 +23,7 @@ from app.modules.user.portal.schema import (
     PortalUserCenterProfileUpdateRequest,
 )
 from app.platform.db.transaction import transactional
-from app.platform.storage.url import resolve_file_url
+from app.platform.storage.url import is_external_url, normalize_object_name, resolve_file_url
 
 AVATAR_MAX_SIZE = 2 * 1024 * 1024
 AVATAR_CONTENT_TYPES = {
@@ -98,6 +98,8 @@ class PortalUserProfileService:
     ) -> PortalUserCenterAvatarUpdateResponse:
         content_type = self._normalize_avatar_content_type(content_type)
         self._ensure_avatar_file(content, content_type)
+        profile = await self.repo.get_by_account_id(session.account_id)
+        previous_avatar = profile.avatar if profile else None
         avatar_object_name = self._build_avatar_object_name(session.account_id, content_type)
         uploaded = await FileService(self.db).upload(
             FileUploadRequest(
@@ -110,6 +112,7 @@ class PortalUserProfileService:
         )
         async with transactional(self.db):
             await self.repo.update_avatar(session.account_id, uploaded.object_name)
+        await self._delete_previous_avatar(previous_avatar, uploaded.object_name)
         return PortalUserCenterAvatarUpdateResponse(
             avatar=resolve_file_url(uploaded.object_name) or uploaded.url,
             file_id=uploaded.id,
@@ -208,3 +211,14 @@ class PortalUserProfileService:
         timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
         extension = AVATAR_CONTENT_TYPES[content_type]
         return f"avatars/portal/{account_id}/avatar-{timestamp}-{uuid4().hex}{extension}"
+
+    async def _delete_previous_avatar(self, previous_avatar: str | None, current_avatar: str) -> None:
+        previous_object_name = normalize_object_name(previous_avatar)
+        current_object_name = normalize_object_name(current_avatar)
+        if (
+            not previous_object_name
+            or previous_object_name == current_object_name
+            or is_external_url(previous_object_name)
+        ):
+            return
+        await FileService(self.db).delete_by_object_name(previous_object_name)

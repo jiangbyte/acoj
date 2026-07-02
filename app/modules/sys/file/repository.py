@@ -1,9 +1,10 @@
-from sqlalchemy import func, select
+from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 
+from app.core.exceptions.business import NotFoundError
 from app.modules.sys.file.model import SysFile
-from app.modules.sys.file.schema import FileRecordCreate
+from app.modules.sys.file.schema import FileAdminPageQuery, FileRecordCreate, FileUpdateRequest
 
 
 class FileRepository:
@@ -28,19 +29,53 @@ class FileRepository:
         """按文件 ID 获取文件元数据。"""
         return await self.db.get(SysFile, file_id)
 
+    async def get_required(self, file_id: str) -> SysFile:
+        entity = await self.get_by_id(file_id)
+        if entity is None:
+            raise NotFoundError("File not found")
+        return entity
+
+    async def update(self, payload: FileUpdateRequest) -> None:
+        entity = await self.get_required(payload.id)
+        entity.original_name = payload.original_name
+        await self.db.flush()
+
+    async def list_by_ids(self, file_ids: list[str]) -> list[SysFile]:
+        unique_ids = list(dict.fromkeys(file_ids))
+        stmt = select(SysFile).where(SysFile.id.in_(unique_ids))
+        return list((await self.db.execute(stmt)).scalars().all())
+
+    async def delete_many(self, file_ids: list[str]) -> None:
+        unique_ids = list(dict.fromkeys(file_ids))
+        await self.db.execute(delete(SysFile).where(SysFile.id.in_(unique_ids)))
+
     async def list_files(
         self,
-        offset: int,
-        limit: int,
+        query: FileAdminPageQuery,
         data_scope_filter: ColumnElement[bool] | None = None,
     ) -> tuple[list[SysFile], int]:
         """分页查询文件元数据列表。"""
-        stmt = select(SysFile)
+        stmt: Select[tuple[SysFile]] = select(SysFile)
         count_stmt = select(func.count(SysFile.id))
+        filters = []
+        if query.original_name:
+            filters.append(SysFile.original_name.ilike(f"%{query.original_name}%"))
+        if query.object_name:
+            filters.append(SysFile.object_name.ilike(f"%{query.object_name}%"))
+        if query.storage_provider:
+            filters.append(SysFile.storage_provider == query.storage_provider)
+        if query.content_type:
+            filters.append(SysFile.content_type.ilike(f"%{query.content_type}%"))
         if data_scope_filter is not None:
-            stmt = stmt.where(data_scope_filter)
-            count_stmt = count_stmt.where(data_scope_filter)
-        stmt = stmt.order_by(SysFile.created_at.desc()).offset(offset).limit(limit)
+            filters.append(data_scope_filter)
+        if filters:
+            stmt = stmt.where(*filters)
+            count_stmt = count_stmt.where(*filters)
+        stmt = (
+            stmt.order_by(SysFile.created_at.desc(), SysFile.id.desc())
+            .offset(query.pagination.offset)
+            .limit(query.pagination.size)
+        )
         items = list((await self.db.execute(stmt)).scalars().all())
         total = (await self.db.execute(count_stmt)).scalar_one()
         return items, total

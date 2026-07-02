@@ -299,8 +299,10 @@ function displayTime(value?: string | null) {
         </p>
       </div>
       <n-button
-        secondary
+        text
         :focusable="false"
+        :title="t('common.reload')"
+        :aria-label="t('common.reload')"
         :loading="currentListLoading"
         @click="
           activeTab === 'notifications'
@@ -311,7 +313,6 @@ function displayTime(value?: string | null) {
         <template #icon>
           <NovaIcon icon="icon-park-outline:refresh" />
         </template>
-        {{ t('common.reload') }}
       </n-button>
     </div>
 

@@ -1,16 +1,18 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config.enums import AccountType
+from app.core.config.enums import AccountType, StorageProvider
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
+from app.core.schema.base import Id, IdQuery, IdsRequest
 from app.core.security.session import SessionPayload
 from app.deps.auth import get_current_session, require_permission, require_account_type
 from app.deps.db import get_db_session
 from app.modules.sys.file.schema import (
-    FileDeleteResponse,
+    FileAdminPageQuery,
+    FileUpdateRequest,
     FileUploadRequest,
     FileUrlRequest,
     FileUrlResponse,
@@ -51,14 +53,45 @@ async def upload(
         Depends(require_account_type(AccountType.ADMIN)),
         Depends(require_permission("sys:file:delete")),
     ],
-    response_model=ApiResponse[FileDeleteResponse],
+    response_model=ApiResponse[None],
 )
 async def delete(
-    payload: FileUrlRequest,
+    payload: IdsRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-) -> ApiResponse[FileDeleteResponse]:
-    await FileService(db).delete(payload.object_name)
-    return success(FileDeleteResponse(object_name=payload.object_name, deleted=True))
+) -> ApiResponse[None]:
+    await FileService(db).delete(payload)
+    return success()
+
+
+@router.post(
+    "/sys/file/update",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:file:update")),
+    ],
+    response_model=ApiResponse[None],
+)
+async def update(
+    payload: FileUpdateRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[None]:
+    await FileService(db).update(payload)
+    return success()
+
+
+@router.get(
+    "/sys/file/detail",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("sys:file:detail")),
+    ],
+    response_model=ApiResponse[SysFileSchema],
+)
+async def detail(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    id: Annotated[Id, Query()],
+) -> ApiResponse[SysFileSchema]:
+    return success(await FileService(db).detail(IdQuery(id=id)))
 
 
 @router.post(
@@ -114,6 +147,16 @@ async def page(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     current: Current = 1,
     size: Size = 20,
+    original_name: str | None = Query(default=None, max_length=255),
+    object_name: str | None = Query(default=None, max_length=255),
+    storage_provider: StorageProvider | None = Query(default=None),
+    content_type: str | None = Query(default=None, max_length=128),
 ) -> ApiResponse[PageData[SysFileSchema]]:
-    pagination = PageQuery(current=current, size=size)
-    return success(await FileService(db).page(pagination, session))
+    query = FileAdminPageQuery(
+        pagination=PageQuery(current=current, size=size),
+        original_name=original_name,
+        object_name=object_name,
+        storage_provider=storage_provider,
+        content_type=content_type,
+    )
+    return success(await FileService(db).page(query, session))

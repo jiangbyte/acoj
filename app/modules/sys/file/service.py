@@ -5,15 +5,22 @@ from uuid import uuid4
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config.enums import StorageProvider
 from app.core.config.settings import settings
 from app.core.exceptions.business import NotFoundError
 from app.core.response.pagination import PageData, PageQuery, build_page
-from app.core.schema.base import to_schema, to_schema_list
+from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.data_scope import build_data_scope_filter
 from app.core.security.session import SessionPayload
 from app.modules.sys.file.model import SysFile
 from app.modules.sys.file.repository import FileRepository
-from app.modules.sys.file.schema import FileRecordCreate, FileUploadRequest, SysFileSchema
+from app.modules.sys.file.schema import (
+    FileAdminPageQuery,
+    FileRecordCreate,
+    FileUpdateRequest,
+    FileUploadRequest,
+    SysFileSchema,
+)
 from app.platform.db.transaction import transactional
 from app.platform.storage.local import LocalStorage
 from app.platform.storage.manager import get_storage
@@ -53,7 +60,11 @@ class FileService:
                     object_name=object_name,
                     original_name=PurePosixPath(payload.filename).name,
                     storage_provider=settings.storage.provider,
-                    bucket=settings.storage.bucket if settings.storage.provider != "local" else None,
+                    bucket=(
+                        settings.storage.bucket
+                        if settings.storage.provider != StorageProvider.LOCAL
+                        else None
+                    ),
                     content_type=payload.content_type,
                     size=len(payload.content),
                     url=resolve_file_url(object_name) or url,
@@ -61,12 +72,34 @@ class FileService:
             )
             return self._with_resolved_url(to_schema(SysFileSchema, entity))
 
-    async def delete(self, object_name: str) -> None:
-        """删除对象存储文件和文件元数据，删除顺序由服务层显式协调。"""
-        entity = await self.repo.get_by_object_name(object_name)
-        self.storage.delete_object(object_name)
-        if entity:
-            await self.repo.delete(entity)
+    async def update(self, payload: FileUpdateRequest) -> None:
+        async with transactional(self.db):
+            await self.repo.update(payload)
+
+    async def delete(self, payload: IdsRequest) -> None:
+        """按文件 ID 批量删除对象存储文件和文件元数据。"""
+        unique_ids = list(dict.fromkeys(payload.ids))
+        entities = await self.repo.list_by_ids(unique_ids)
+        if len(entities) != len(unique_ids):
+            raise NotFoundError("File not found")
+        async with transactional(self.db):
+            for entity in entities:
+                self.storage.delete_object(entity.object_name)
+            await self.repo.delete_many(unique_ids)
+
+    async def delete_by_object_name(self, object_name: str) -> None:
+        """按对象存储路径删除文件和元数据，供业务表引用清理使用。"""
+        normalized = normalize_object_name(object_name)
+        if not normalized or is_external_url(normalized):
+            raise NotFoundError("File not found")
+        entity = await self.repo.get_by_object_name(normalized)
+        async with transactional(self.db):
+            self.storage.delete_object(normalized)
+            if entity:
+                await self.repo.delete(entity)
+
+    async def detail(self, query: IdQuery) -> SysFileSchema:
+        return self._with_resolved_url(to_schema(SysFileSchema, await self.repo.get_required(query.id)))
 
     async def get_url(self, object_name: str) -> str:
         """优先返回已落库的稳定 URL，不存在时退化为存储层实时构造。"""
@@ -105,10 +138,15 @@ class FileService:
 
     async def page(
         self,
-        pagination: PageQuery,
+        query: FileAdminPageQuery | PageQuery,
         session: SessionPayload | None = None,
     ) -> PageData[SysFileSchema]:
         """分页列出文件元数据记录。"""
+        page_query = (
+            query
+            if isinstance(query, FileAdminPageQuery)
+            else FileAdminPageQuery(pagination=query)
+        )
         data_scope_filter = None
         if session is not None:
             data_scope_filter = await build_data_scope_filter(
@@ -118,12 +156,11 @@ class FileService:
                 owner_column=SysFile.created_by,
             )
         items, total = await self.repo.list_files(
-            pagination.offset,
-            pagination.size,
+            page_query,
             data_scope_filter,
         )
         schemas = [self._with_resolved_url(schema) for schema in to_schema_list(SysFileSchema, items)]
-        return build_page(pagination, total, schemas)
+        return build_page(page_query.pagination, total, schemas)
 
     def _with_resolved_url(self, schema: SysFileSchema) -> SysFileSchema:
         schema.url = resolve_file_url(schema.object_name) or schema.url

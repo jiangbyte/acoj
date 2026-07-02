@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import Field
 
+from app.core.config.enums import StorageProvider
+from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
 
 
@@ -9,7 +11,7 @@ class SysFileSchema(ApiSchema):
     id: str
     object_name: str
     original_name: str
-    storage_provider: str
+    storage_provider: StorageProvider
     bucket: str | None = None
     content_type: str
     size: int
@@ -35,11 +37,24 @@ class FileRecordCreate(ApiSchema):
 
     object_name: str
     original_name: str
-    storage_provider: str
+    storage_provider: StorageProvider
     bucket: str | None = None
     content_type: str
     size: int
     url: str
+
+
+class FileUpdateRequest(ApiSchema):
+    id: str = Field(min_length=1, max_length=64)
+    original_name: str = Field(min_length=1, max_length=255)
+
+
+class FileAdminPageQuery(ApiSchema):
+    pagination: PageQuery
+    original_name: str | None = Field(default=None, max_length=255)
+    object_name: str | None = Field(default=None, max_length=255)
+    storage_provider: StorageProvider | None = None
+    content_type: str | None = Field(default=None, max_length=128)
 
 
 class FileUrlRequest(ApiSchema):
@@ -49,8 +64,3 @@ class FileUrlRequest(ApiSchema):
 class FileUrlResponse(ApiSchema):
     object_name: str
     url: str
-
-
-class FileDeleteResponse(ApiSchema):
-    object_name: str
-    deleted: bool = True

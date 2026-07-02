@@ -18,54 +18,20 @@ alembic upgrade head
 
 ## 清空 versions 后重新生成完整迁移
 
-如果要重建完整初始迁移，先清空迁移版本文件：
+如果要重建完整初始迁移，直接执行脚本：
 
 ```bash
-rm -f migrations/versions/*.py
+python scripts/rebuild_initial_migration.py --yes
 ```
 
-建议用临时空库生成完整迁移，避免当前开发库已有表导致只生成增量：
+脚本会创建临时空库、清空 `migrations/versions/*.py`、生成 `initial schema`、执行迁移校验，最后删除临时库。默认临时库名是 `hei_fastapi_migration_shadow`，连接账号、密码、主机和端口来自当前 `DB__URL`。
+
+常用参数：
 
 ```bash
-python - <<'PY'
-import asyncio
-import asyncpg
-
-async def main():
-    conn = await asyncpg.connect(
-        user="postgres",
-        password="123456",
-        host="127.0.0.1",
-        port=5432,
-        database="postgres",
-    )
-    await conn.execute("DROP DATABASE IF EXISTS hei_fastapi_migration_shadow")
-    await conn.execute("CREATE DATABASE hei_fastapi_migration_shadow")
-    await conn.close()
-
-asyncio.run(main())
-PY
-
-DB__URL=postgresql+asyncpg://postgres:123456@127.0.0.1:5432/hei_fastapi_migration_shadow \
-  alembic revision --autogenerate -m "initial schema"
-
-python - <<'PY'
-import asyncio
-import asyncpg
-
-async def main():
-    conn = await asyncpg.connect(
-        user="postgres",
-        password="123456",
-        host="127.0.0.1",
-        port=5432,
-        database="postgres",
-    )
-    await conn.execute("DROP DATABASE IF EXISTS hei_fastapi_migration_shadow")
-    await conn.close()
-
-asyncio.run(main())
-PY
+python scripts/rebuild_initial_migration.py --yes -m "initial schema"
+python scripts/rebuild_initial_migration.py --yes --shadow-db hei_fastapi_migration_tmp
+python scripts/rebuild_initial_migration.py --yes --keep-db
 ```
 
 如果当前开发库的 `alembic_version` 还指向已删除的旧 revision，不要直接在该库上 autogenerate。重建完整迁移后，开发库通常直接重建库再执行：

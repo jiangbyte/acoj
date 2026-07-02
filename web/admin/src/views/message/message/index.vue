@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { messageApi } from '@/api'
-import { createTagColor, normalizeSearchValues } from '@/utils'
+import { createTagColor, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
@@ -137,15 +137,15 @@ const threadColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: t('common.often.operation'),
     key: 'actions',
-    width: 210,
+    width: 95,
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
         <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row)}>
-          {t('common.often.detail')}
+          {renderButtonIcon('icon-park-outline:preview-open')}
         </NButton>
         <NButton type="primary" size="small" text={true} onClick={() => openSystemMessage(row.id)}>
-          {t('resource.message.message.send_system')}
+          {renderButtonIcon('icon-park-outline:send')}
         </NButton>
       </NFlex>
     ),
@@ -155,7 +155,7 @@ const threadColumns = computed<ProDataTableColumns<any>>(() => [
 const groupColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: t('common.often.index'),
-    width: 100,
+    width: 60,
     path: 'id',
     ellipsis: { tooltip: true },
   },
@@ -193,7 +193,7 @@ const groupColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'right',
     render: (row) => (
       <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row)}>
-        {t('common.often.detail')}
+        {renderButtonIcon('icon-park-outline:preview-open')}
       </NButton>
     ),
   },
@@ -250,7 +250,18 @@ function openDetailModal(row: any) {
           <NTabPane name="threads" :tab="t('resource.message.message.threads')" />
           <NTabPane name="groups" :tab="t('resource.message.message.groups')" />
         </NTabs>
-        <ProSearchForm :key="activeTab" :form="searchForm" :columns="searchColumns" />
+        <ProSearchForm
+          :key="activeTab"
+          :form="searchForm"
+          :columns="searchColumns"
+          :reset-button-props="{ content: t('common.search_form.reset') }"
+          :search-button-props="{ content: t('common.search_form.search') }"
+          :collapse-button-props="{
+            content: searchForm.collapsed.value
+              ? t('common.search_form.expand')
+              : t('common.search_form.collapse'),
+          }"
+        />
       </NFlex>
     </ProCard>
 
@@ -267,13 +278,12 @@ function openDetailModal(row: any) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton ghost :loading="state.loading" @click="fetchPage">
+          <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
-                <Icon icon="ant-design:reload-outlined" />
+                <Icon icon="icon-park-outline:reload" />
               </NIcon>
             </template>
-            {{ t('common.reload') }}
           </NButton>
         </NFlex>
       </template>

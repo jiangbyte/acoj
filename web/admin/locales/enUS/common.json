@@ -9,6 +9,12 @@
   "reset": "Reset",
   "view": "View",
   "required": "Please enter {field}",
+  "search_form": {
+    "search": "Search",
+    "reset": "Reset",
+    "expand": "Expand",
+    "collapse": "Collapse"
+  },
   "often": {
     "index": "ID",
     "status": "Status",

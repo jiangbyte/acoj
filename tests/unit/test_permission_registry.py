@@ -49,6 +49,9 @@ def test_scan_permission_registry_collects_api_resources():
     items = scan_permission_registry(app)
 
     assert any(item.permission_key == "sys:file:upload" for item in items)
+    assert any(item.permission_key == "sys:file:detail" for item in items)
+    assert any(item.permission_key == "sys:file:update" for item in items)
+    assert any(item.permission_key == "sys:file:delete" for item in items)
     file_page = next(item for item in items if item.permission_key == "sys:file:page")
     assert file_page.route_path == "/sys/file/page"
     assert file_page.method == "GET"

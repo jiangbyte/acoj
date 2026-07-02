@@ -273,6 +273,12 @@ python scripts/check_migration.py
 python scripts/migrate.py
 ```
 
+早期开发阶段如需重建完整初始迁移：
+
+```bash
+python scripts/rebuild_initial_migration.py --yes
+```
+
 初始化超管：
 
 ```bash

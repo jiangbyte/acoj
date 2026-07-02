@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import type { DataTableColumns } from 'naive-ui'
 import { roleApi } from '@/api'
-import { resolveFileUrl } from '@/utils'
+import { renderButtonIcon, resolveFileUrl } from '@/utils'
 import { NAvatar, NButton } from 'naive-ui'
 import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -65,22 +65,23 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     title: t('common.often.operation'),
     key: 'action',
     align: 'center',
-    width: 70,
+    width: 56,
     render: (row) => (
       <NButton
-        dashed
+        text
+        type="primary"
         size="small"
         disabled={selectedIds.value.has(String(row.id))}
         onClick={() => addRecord(row)}
       >
-        +
+        {renderButtonIcon('icon-park-outline:plus')}
       </NButton>
     ),
   },
   {
     title: t('resource.iam.account.avatar'),
     key: 'avatar',
-    width: 70,
+    width: 56,
     render: (row) => {
       const avatar = resolveFileUrl(row.avatar)
       if (avatar) {
@@ -114,8 +115,8 @@ const selectedColumns = computed<DataTableColumns<any>>(() => [
     align: 'center',
     width: 70,
     render: (row) => (
-      <NButton dashed type="error" size="small" onClick={() => delRecord(row)}>
-        -
+      <NButton text type="error" size="small" onClick={() => delRecord(row)}>
+        {renderButtonIcon('icon-park-outline:delete')}
       </NButton>
     ),
   },

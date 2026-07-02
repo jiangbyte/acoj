@@ -4,6 +4,8 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.core.config.enums import StorageProvider
+
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -51,7 +53,7 @@ class CelerySettings(BaseSettings):
 
 
 class StorageSettings(BaseSettings):
-    provider: str = "s3"
+    provider: StorageProvider = StorageProvider.S3
     bucket: str = "hei-fastapi"
     endpoint: str = "http://127.0.0.1:9000"
     access_key: str = "minioadmin"

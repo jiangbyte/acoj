@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { messageApi } from '@/api'
-import { createTagColor, normalizeSearchValues } from '@/utils'
+import { createTagColor, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
@@ -154,24 +154,24 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: t('common.often.operation'),
     key: 'actions',
-    width: 270,
+    width: 180,
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
         <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
-          {t('common.often.detail')}
+          {renderButtonIcon('icon-park-outline:preview-open')}
         </NButton>
         <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
-          {t('common.often.edit')}
+          {renderButtonIcon('icon-park-outline:edit')}
         </NButton>
         <NButton type="success" size="small" text={true} onClick={() => publishData(row.id)}>
-          {t('resource.message.notification.publish')}
+          {renderButtonIcon('icon-park-outline:send-one')}
         </NButton>
         <NButton type="warning" size="small" text={true} onClick={() => revokeData(row.id)}>
-          {t('resource.message.notification.revoke')}
+          {renderButtonIcon('icon-park-outline:back')}
         </NButton>
         <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
-          {t('common.often.delete')}
+          {renderButtonIcon('icon-park-outline:delete')}
         </NButton>
       </NFlex>
     ),
@@ -263,7 +263,17 @@ async function revokeData(id: string) {
 <template>
   <NFlex class="h-full min-h-0" vertical>
     <ProCard content-class="pb-0!">
-      <ProSearchForm :form="searchForm" :columns="searchColumns" />
+      <ProSearchForm
+        :form="searchForm"
+        :columns="searchColumns"
+        :reset-button-props="{ content: t('common.search_form.reset') }"
+        :search-button-props="{ content: t('common.search_form.search') }"
+        :collapse-button-props="{
+          content: searchForm.collapsed.value
+            ? t('common.search_form.expand')
+            : t('common.search_form.collapse'),
+        }"
+      />
     </ProCard>
 
     <ProDataTable
@@ -281,30 +291,33 @@ async function revokeData(id: string) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton type="primary" ghost @click="openCreateModal">
+          <NButton type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
             <template #icon>
               <NIcon>
-                <Icon icon="ant-design:plus-outlined" />
+                <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
-            {{ t('common.often.add') }}
           </NButton>
-          <NButton ghost :loading="state.loading" @click="fetchPage">
+          <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
-                <Icon icon="ant-design:reload-outlined" />
+                <Icon icon="icon-park-outline:reload" />
               </NIcon>
             </template>
-            {{ t('common.reload') }}
           </NButton>
           <NButton
             type="error"
-            ghost
+            text
+            :title="t('common.often.batch_delete')"
+            :aria-label="t('common.often.batch_delete')"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >
-            {{ t('common.often.batch_delete') }}
-            {{ t('common.often.total', { count: state.checkedRowKeys.length }) }}
+            <template #icon>
+              <NIcon>
+                <Icon icon="icon-park-outline:delete" />
+              </NIcon>
+            </template>
           </NButton>
         </NFlex>
       </template>

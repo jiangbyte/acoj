@@ -1,4 +1,5 @@
 import { Icon } from '@iconify/vue/offline'
+import { NIcon } from 'naive-ui'
 import { h } from 'vue'
 
 /**
@@ -13,4 +14,13 @@ export function renderIcon(icon?: string, size = 18) {
 
   // 返回函数而不是 VNode，符合 Naive UI option.icon 的懒渲染约定。
   return () => h(Icon, { icon, width: size, height: size })
+}
+
+export function renderButtonIcon(icon: string, size = 16) {
+  return {
+    icon: () =>
+      h(NIcon, null, {
+        default: () => h(Icon, { icon, width: size, height: size }),
+      }),
+  }
 }

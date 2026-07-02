@@ -52,3 +52,14 @@ class SysBizCategory(StrEnum):
 
     SYS = "SYS"  # 系统
     BIZ = "BIZ"  # 业务
+
+
+class StorageProvider(StrEnum):
+    """
+    文件存储服务商
+    """
+
+    LOCAL = "local"  # 本地存储
+    MINIO = "minio"  # MinIO
+    S3 = "s3"  # Amazon S3
+    OSS = "oss"  # 阿里云 OSS

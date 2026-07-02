@@ -1,0 +1,21 @@
+{
+  "title": "File Management",
+  "id": "File ID",
+  "preview": "Preview",
+  "original_name": "File Name",
+  "object_name": "Object Path",
+  "storage_provider": "Storage Provider",
+  "bucket": "Bucket",
+  "content_type": "Content Type",
+  "size": "File Size",
+  "url": "Access URL",
+  "upload": "Upload File",
+  "open": "Open",
+  "copy": "Copy",
+  "edit_file": "Edit File",
+  "detail_file": "File Detail",
+  "upload_success": "Uploaded successfully",
+  "copy_success": "Copied successfully",
+  "delete_confirm": "Delete this file?",
+  "batch_delete_confirm": "Delete {count} selected files?"
+}
