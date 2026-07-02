@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { accountApi } from '@/api'
-import { createTagColor, displayValue } from '@/utils'
+import { createTagColor, displayValue, resolveFileUrl } from '@/utils'
 import { computed, reactive } from 'vue'
 import { dictTypeData, dictTypeColor } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
@@ -15,6 +15,7 @@ const state = reactive({
 const avatarAlt = computed(
   () => state.account?.nickname || state.account?.name || state.account?.account,
 )
+const avatarUrl = computed(() => resolveFileUrl(state.account?.avatar))
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
 async function openModal(id: string) {
@@ -169,8 +170,8 @@ defineExpose({
               </NDescriptionsItem>
               <NDescriptionsItem :label="t('resource.iam.account.avatar')">
                 <NAvatar
-                  v-if="state.account.avatar"
-                  :src="state.account.avatar"
+                  v-if="avatarUrl"
+                  :src="avatarUrl"
                   :alt="avatarAlt"
                   :img-props="avatarImgProps"
                 />

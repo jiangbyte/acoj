@@ -10,16 +10,22 @@ from app.modules.sys.file.service import FileService
 async def test_file_service_upload_and_url(tmp_path, db_session):
     old_provider = settings.storage.provider
     old_root = settings.storage.local_root
+    old_base_url = settings.storage.base_url
+    old_public_path = settings.storage.public_path
     settings.storage.provider = "local"
     settings.storage.local_root = str(tmp_path)
+    settings.storage.base_url = ""
+    settings.storage.public_path = "/api/v1/files"
     try:
         service = FileService(db_session)
         entity = await service.upload(
             FileUploadRequest(filename="avatar.png", content=b"hello", content_type="image/png")
         )
         await db_session.commit()
-        assert entity.object_name.endswith("/avatar.png")
-        assert "avatar.png" in entity.url
+        assert entity.object_name.startswith("uploads/")
+        assert entity.object_name.endswith(".png")
+        assert entity.url == f"/api/v1/files/{entity.object_name}"
+        assert str(tmp_path) not in entity.url
         assert format_utc_iso8601(entity.created_at).endswith("Z")
         assert await service.get_url(entity.object_name) == entity.url
         stored = (
@@ -30,3 +36,5 @@ async def test_file_service_upload_and_url(tmp_path, db_session):
     finally:
         settings.storage.provider = old_provider
         settings.storage.local_root = old_root
+        settings.storage.base_url = old_base_url
+        settings.storage.public_path = old_public_path

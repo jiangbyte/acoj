@@ -76,3 +76,12 @@ class PortalUserCenterEmailUpdateRequest(ApiSchema):
 
     password: str = Field(min_length=1, max_length=128)
     email: str | None = Field(default=None, max_length=128)
+
+
+class PortalUserCenterAvatarUpdateResponse(ApiSchema):
+    """当前门户用户头像更新响应。"""
+
+    avatar: str
+    file_id: str
+    object_name: str
+    url: str

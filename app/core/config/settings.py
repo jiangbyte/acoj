@@ -60,7 +60,8 @@ class StorageSettings(BaseSettings):
     use_ssl: bool = False
     presign_expire_seconds: int = 3600
     base_url: str = ""
-    local_root: str = "./storage"
+    public_path: str = "/api/v1/files"
+    local_root: str = "storage"
 
 
 class IdGeneratorSettings(BaseSettings):

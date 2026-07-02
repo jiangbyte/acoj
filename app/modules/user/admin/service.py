@@ -1,16 +1,23 @@
+from datetime import UTC, datetime
+from pathlib import PurePosixPath
+from uuid import uuid4
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions.business import AuthenticationError
+from app.core.exceptions.business import AuthenticationError, BusinessError
 from app.core.security.password import hash_password, verify_password
 from app.core.security.session import SessionPayload
 from app.modules.iam.account.repository import AccountRepository
-from app.modules.iam.enums import AccountIdentityType
 from app.modules.iam.dept.repository import DeptRepository
+from app.modules.iam.enums import AccountIdentityType
 from app.modules.iam.group.repository import GroupRepository
 from app.modules.iam.role.repository import RoleRepository
+from app.modules.sys.file.schema import FileUploadRequest
+from app.modules.sys.file.service import FileService
 from app.modules.user.admin.repository import AdminUserProfileRepository
 from app.modules.user.admin.schema import (
     AdminProfileUpsertPayload,
+    AdminUserCenterAvatarUpdateResponse,
     AdminUserCenterEmailUpdateRequest,
     AdminUserCenterOrgInfoResponse,
     AdminUserCenterPasswordUpdateRequest,
@@ -19,6 +26,14 @@ from app.modules.user.admin.schema import (
     IdNameResponse,
 )
 from app.platform.db.transaction import transactional
+from app.platform.storage.url import resolve_file_url
+
+AVATAR_MAX_SIZE = 2 * 1024 * 1024
+AVATAR_CONTENT_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
 
 
 class AdminUserProfileService:
@@ -84,7 +99,7 @@ class AdminUserProfileService:
                     account_id=session.account_id,
                     name=payload.name,
                     nickname=payload.nickname,
-                    avatar=payload.avatar,
+                    avatar=profile.avatar if profile else None,
                     signature=payload.signature,
                     phone=profile.phone if profile else None,
                     email=profile.email if profile else None,
@@ -93,6 +108,33 @@ class AdminUserProfileService:
                     remark=payload.remark,
                 )
             )
+
+    async def update_current_avatar(
+        self,
+        content: bytes,
+        content_type: str,
+        session: SessionPayload,
+    ) -> AdminUserCenterAvatarUpdateResponse:
+        content_type = self._normalize_avatar_content_type(content_type)
+        self._ensure_avatar_file(content, content_type)
+        avatar_object_name = self._build_avatar_object_name(session.account_id, content_type)
+        uploaded = await FileService(self.db).upload(
+            FileUploadRequest(
+                filename=PurePosixPath(avatar_object_name).name,
+                content=content,
+                content_type=content_type,
+                category="avatars",
+                object_name=avatar_object_name,
+            )
+        )
+        async with transactional(self.db):
+            await self.repo.update_avatar(session.account_id, uploaded.object_name)
+        return AdminUserCenterAvatarUpdateResponse(
+            avatar=resolve_file_url(uploaded.object_name) or uploaded.url,
+            file_id=uploaded.id,
+            object_name=uploaded.object_name,
+            url=resolve_file_url(uploaded.object_name) or uploaded.url,
+        )
 
     async def update_current_password(
         self,
@@ -171,6 +213,22 @@ class AdminUserProfileService:
     def _ensure_password(self, password_hash: str, password: str) -> None:
         if not verify_password(password, password_hash):
             raise AuthenticationError("Invalid account or password")
+
+    def _normalize_avatar_content_type(self, content_type: str) -> str:
+        return (content_type or "").split(";")[0].strip().lower()
+
+    def _ensure_avatar_file(self, content: bytes, content_type: str) -> None:
+        if not content:
+            raise BusinessError("Avatar file is empty")
+        if len(content) > AVATAR_MAX_SIZE:
+            raise BusinessError("Avatar file must be 2MB or smaller")
+        if content_type not in AVATAR_CONTENT_TYPES:
+            raise BusinessError("Avatar file must be a JPEG, PNG, or WebP image")
+
+    def _build_avatar_object_name(self, account_id: str, content_type: str) -> str:
+        timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+        extension = AVATAR_CONTENT_TYPES[content_type]
+        return f"avatars/admin/{account_id}/avatar-{timestamp}-{uuid4().hex}{extension}"
 
     def _build_id_names(
         self,

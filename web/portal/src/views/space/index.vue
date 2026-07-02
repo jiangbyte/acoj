@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { spaceApi } from '@/api'
 import { useAuthStore } from '@/stores'
+import { resolveFileUrl } from '@/utils'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,6 +26,7 @@ const accountId = computed(() => {
 const displayName = computed(
   () => state.profile?.nickname || state.profile?.name || t('app.space.default_name'),
 )
+const avatarUrl = computed(() => resolveFileUrl(state.profile?.avatar))
 
 const handle = computed(() => (state.profile?.account_id ? `ID ${state.profile.account_id}` : ''))
 const signature = computed(() => displayValue(state.profile?.signature))
@@ -164,10 +166,10 @@ function displayValue(value: unknown) {
           <div class="-mt-14 flex flex-col gap-4 sm:-mt-16 sm:flex-row sm:items-end">
             <div class="shrink-0">
               <NAvatar
-                v-if="state.profile?.avatar"
+                v-if="avatarUrl"
                 round
                 :size="128"
-                :src="state.profile.avatar"
+                :src="avatarUrl"
                 :img-props="avatarImgProps"
                 class="space-avatar"
               />

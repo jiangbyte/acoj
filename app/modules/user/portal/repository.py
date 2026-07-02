@@ -35,6 +35,16 @@ class PortalUserProfileRepository:
         await self.db.flush()
         return profile
 
+    async def update_avatar(self, account_id: str, avatar: str) -> PortalUserProfile:
+        """只更新当前门户账户头像，避免覆盖其他资料字段。"""
+        profile = await self.get_by_account_id(account_id)
+        if profile is None:
+            profile = PortalUserProfile(account_id=account_id)
+            self.db.add(profile)
+        profile.avatar = avatar
+        await self.db.flush()
+        return profile
+
     async def get_by_account_id(self, account_id: str) -> PortalUserProfile | None:
         """按账户 ID 查询门户资料记录。"""
         stmt = select(PortalUserProfile).where(PortalUserProfile.account_id == account_id)

@@ -52,6 +52,7 @@ from app.modules.user.portal.repository import PortalUserProfileRepository
 from app.modules.user.portal.schema import PortalProfileUpsertPayload
 from app.modules.iam.role.model import SysRole
 from app.platform.db.transaction import transactional
+from app.platform.storage.url import resolve_file_url
 
 
 class AccountService:
@@ -543,7 +544,7 @@ class AccountService:
                     account_status=account.account_status,
                     name=getattr(profile, "name", None) or "",
                     nickname=getattr(profile, "nickname", None),
-                    avatar=getattr(profile, "avatar", None),
+                    avatar=resolve_file_url(getattr(profile, "avatar", None)),
                     signature=getattr(profile, "signature", None),
                     phone=getattr(profile, "phone", None),
                     email=getattr(profile, "email", None),

@@ -17,7 +17,7 @@ const showDrawer = defineModel<boolean>('show', { default: false })
       <template #header>
         <Logo />
       </template>
-      <n-el tag="div" class="min-h-full bg-[var(--card-color)] text-[var(--text-color-base)]">
+      <n-el tag="div" class="min-h-full  text-[var(--text-color-base)]">
         <slot />
       </n-el>
     </n-drawer-content>

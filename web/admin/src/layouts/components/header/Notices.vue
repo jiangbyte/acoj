@@ -284,7 +284,7 @@ function mapHistoryItem(type: NoticeType, item: any): NoticeSource {
       tagTitle: translateTag('notification_severity', severity, item.severity),
       tagType: notificationTagType(severity),
       description: item.content,
-      date: formatDate(item.publish_at || item.created_at),
+      date: item.publish_at || item.created_at || '',
       sourceType: 'notification',
       sourceId: item.id,
       isRead: Boolean(item.is_read),
@@ -300,7 +300,7 @@ function mapHistoryItem(type: NoticeType, item: any): NoticeSource {
       tagTitle: translateTag('message_thread_type', threadType, item.thread_type),
       tagType: 'info',
       description: item.last_message?.content,
-      date: formatDate(item.last_message_at || item.updated_at || item.created_at),
+      date: item.last_message_at || item.updated_at || item.created_at || '',
       sourceType: 'message',
       sourceId: item.id,
       isRead: (item.unread_count ?? 0) <= 0,
@@ -316,7 +316,7 @@ function mapHistoryItem(type: NoticeType, item: any): NoticeSource {
     tagTitle: translateTag('todo_priority', priority, item.priority),
     tagType: priorityTagType(priority),
     description: item.content,
-    date: formatDate(item.due_at || item.updated_at || item.created_at),
+    date: item.due_at || item.updated_at || item.created_at || '',
     sourceType: 'todo',
     sourceId: item.id,
     isRead: Boolean(item.assignee_status),
@@ -360,12 +360,6 @@ function priorityTagType(priority: string): NoticeItem['tagType'] {
   return typeMap[priority] || 'info'
 }
 
-function formatDate(value?: string | null) {
-  if (!value) {
-    return ''
-  }
-  return new Date(value).toLocaleString()
-}
 </script>
 
 <template>

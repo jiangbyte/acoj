@@ -4,6 +4,7 @@ import pytest
 
 from app.core.schema.datetime import format_utc_iso8601
 from app.core.schema.base import ApiSchema, to_schema
+from app.core.response.schema import ApiResponse
 
 
 class SampleSchema(ApiSchema):
@@ -32,3 +33,15 @@ def test_to_schema_assumes_orm_naive_datetime_is_utc():
 
     assert schema.created_at.tzinfo is UTC
     assert format_utc_iso8601(schema.created_at) == "2026-06-17T12:00:00Z"
+
+
+def test_api_response_serializes_nested_datetime_values():
+    payload = ApiResponse(
+        data={
+            "created_at": datetime(2026, 6, 17, 12, 0, 0, tzinfo=UTC),
+            "records": [{"updated_at": datetime(2026, 6, 17, 13, 0, 0, tzinfo=UTC)}],
+        }
+    ).model_dump(mode="json")
+
+    assert payload["data"]["created_at"] == "2026-06-17T12:00:00Z"
+    assert payload["data"]["records"][0]["updated_at"] == "2026-06-17T13:00:00Z"

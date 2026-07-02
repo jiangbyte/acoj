@@ -36,6 +36,16 @@ class AdminUserProfileRepository:
         await self.db.flush()
         return profile
 
+    async def update_avatar(self, account_id: str, avatar: str) -> AdminUserProfile:
+        """只更新当前管理端账户头像，避免覆盖其他资料字段。"""
+        profile = await self.get_by_account_id(account_id)
+        if profile is None:
+            profile = AdminUserProfile(account_id=account_id)
+            self.db.add(profile)
+        profile.avatar = avatar
+        await self.db.flush()
+        return profile
+
     async def get_by_account_id(self, account_id: str) -> AdminUserProfile | None:
         """按账户 ID 查询管理端扩展资料。"""
         stmt = select(AdminUserProfile).where(AdminUserProfile.account_id == account_id)

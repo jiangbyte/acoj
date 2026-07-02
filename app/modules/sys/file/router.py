@@ -89,11 +89,14 @@ async def url(
     ],
     response_model=ApiResponse[FileUrlResponse],
 )
-async def presigned_url(payload: FileUrlRequest) -> ApiResponse[FileUrlResponse]:
+async def presigned_url(
+    payload: FileUrlRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[FileUrlResponse]:
     return success(
         FileUrlResponse(
             object_name=payload.object_name,
-            url=FileService.__new__(FileService).storage.get_presigned_url(payload.object_name),
+            url=await FileService(db).get_presigned_url(payload.object_name),
         )
     )
 

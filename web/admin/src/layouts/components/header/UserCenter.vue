@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { renderIcon } from '@/utils/icon'
+import { resolveFileUrl } from '@/utils'
 import { useAuthStore } from '@/stores'
 
 const router = useRouter()
@@ -19,7 +20,7 @@ const displayName = computed(
     t('app.nickname'),
 )
 
-const avatar = computed(() => authStore.userInfo?.avatar || undefined)
+const avatar = computed(() => resolveFileUrl(authStore.userInfo?.avatar))
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
 // 桌面端用户菜单项。项目首页使用环境配置路径。

@@ -142,7 +142,8 @@ pnpm preview
 - `AUTH__TOKEN_NAME`：认证请求头名称，默认 `Authorization`。
 - `CORS__ALLOW_ORIGINS`：允许访问后端的前端源。
 - `CELERY__BROKER_URL`：RabbitMQ broker 地址。
-- `STORAGE__PROVIDER`：文件存储方式，可选 `s3` 或 `local`。
+- `STORAGE__PROVIDER`：文件存储方式，可选 `local`、`minio`、`s3`、`oss`。
+- `STORAGE__PUBLIC_PATH`：本地文件公开访问前缀，默认 `/api/v1/files`。
 - `SWAGGER__ENABLED`：是否开启接口文档。
 - `OBSERVABILITY__ENABLED`：可观测性总开关。
 
@@ -151,8 +152,12 @@ pnpm preview
 ```env
 REDIS__URL=redis://127.0.0.1:6379/0
 STORAGE__PROVIDER=local
+STORAGE__PUBLIC_PATH=/api/v1/files
+STORAGE__LOCAL_ROOT=storage
 OBSERVABILITY__ENABLED=false
 ```
+
+MinIO/S3/OSS 可通过 `STORAGE__BASE_URL` 配置公开 CDN/桶域名；为空时后端会返回 `/api/v1/files/...` 或签名访问地址，前端不应直接使用服务器本地文件路径。
 
 前端生产构建使用各自目录下的 `.env.production`。当前 `VITE_API_URL=""`，表示生产环境走同源 `/api/`，由 nginx 反向代理到后端。
 

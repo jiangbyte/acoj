@@ -5,6 +5,7 @@ export * from './i18n'
 export * from './color'
 export * from './normalize'
 export * from './permission'
+export * from './file'
 
 import { createHttp } from './axios'
 

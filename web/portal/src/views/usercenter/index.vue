@@ -3,6 +3,8 @@ import { computed, onMounted, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { authApi } from '@/api'
 import { useAuthStore } from '@/stores'
+import { resolveFileUrl } from '@/utils'
+import AvatarUploadModal from './components/AvatarUploadModal.vue'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -15,6 +17,7 @@ const state = reactive({
   savingPhone: false,
   savingEmail: false,
   activeTab: 'basic_info',
+  avatarModalShow: false,
   me: null as any,
   profileForm: {
     name: '',
@@ -43,6 +46,7 @@ const state = reactive({
 })
 
 const profile = computed(() => state.me?.profile ?? {})
+const avatarUrl = computed(() => resolveFileUrl(state.profileForm.avatar))
 const displayName = computed(() => state.me?.nickname || state.me?.name || state.me?.account || '-')
 const contactText = computed(() => {
   const parts = [profile.value.phone, profile.value.email].filter(Boolean)
@@ -86,7 +90,6 @@ async function saveProfile() {
     await authApi.updateUserCenterProfile({
       name: state.profileForm.name,
       nickname: state.profileForm.nickname || null,
-      avatar: state.profileForm.avatar || null,
       signature: state.profileForm.signature || null,
       bio: state.profileForm.bio || null,
     })
@@ -193,16 +196,23 @@ function displayValue(value: unknown) {
             size="small"
           >
             <div class="flex flex-col items-center text-center">
-              <NAvatar
-                v-if="state.profileForm.avatar"
-                round
-                :size="104"
-                :src="state.profileForm.avatar"
-                :img-props="avatarImgProps"
-              />
-              <NAvatar v-else round :size="104">
-                <NovaIcon icon="icon-park-outline:user" :size="44" />
-              </NAvatar>
+              <button
+                class="avatar-trigger"
+                type="button"
+                :title="t('app.user_center.change_avatar')"
+                @click="state.avatarModalShow = true"
+              >
+                <NAvatar
+                  v-if="avatarUrl"
+                  round
+                  :size="104"
+                  :src="avatarUrl"
+                  :img-props="avatarImgProps"
+                />
+                <NAvatar v-else round :size="104">
+                  <NovaIcon icon="icon-park-outline:user" :size="44" />
+                </NAvatar>
+              </button>
               <div class="mt-4 max-w-full truncate text-xl font-medium">
                 {{ displayName }}
               </div>
@@ -266,12 +276,6 @@ function displayValue(value: unknown) {
                   </NFormItem>
                   <NFormItem :label="t('app.user_center.nickname')">
                     <NInput v-model:value="state.profileForm.nickname" />
-                  </NFormItem>
-                  <NFormItem :label="t('app.user_center.avatar')">
-                    <NInput
-                      v-model:value="state.profileForm.avatar"
-                      :placeholder="t('app.user_center.placeholder.avatar')"
-                    />
                   </NFormItem>
                   <NFormItem :label="t('app.user_center.signature')">
                     <NInput v-model:value="state.profileForm.signature" type="textarea" />
@@ -379,6 +383,12 @@ function displayValue(value: unknown) {
         </NSpace>
       </template>
     </NModal>
+
+    <AvatarUploadModal
+      v-model:show="state.avatarModalShow"
+      :avatar="avatarUrl"
+      @uploaded="refreshMe"
+    />
   </div>
 </template>
 
@@ -403,6 +413,29 @@ function displayValue(value: unknown) {
 .user-center-form :deep(.n-input) {
   width: 100%;
   min-width: min(180px, 100%);
+}
+
+.avatar-trigger {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.avatar-trigger:hover,
+.avatar-trigger:focus-visible {
+  background: var(--hover-color);
+  box-shadow:
+    0 0 0 3px var(--card-color),
+    0 0 0 5px var(--primary-color-hover);
+  transform: translateY(-1px);
+  outline: none;
 }
 
 .user-center-profile :deep(.n-descriptions-table) {

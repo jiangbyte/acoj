@@ -1,14 +1,13 @@
 from collections.abc import Iterable
-from datetime import datetime
 from typing import Annotated, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_validator
 
 from app.core.schema.datetime import (
     ensure_utc_datetime,
-    format_utc_iso8601,
     is_datetime_annotation,
     normalize_orm_datetimes,
+    serialize_datetime_value,
 )
 
 SchemaT = TypeVar("SchemaT", bound="ApiSchema")
@@ -26,9 +25,7 @@ class ApiSchema(BaseModel):
     @field_serializer("*", when_used="json")
     def serialize_datetime_fields(self, value):
         """在响应序列化阶段将所有 datetime 字段统一转成 ISO 8601 UTC 字符串。"""
-        if isinstance(value, datetime):
-            return format_utc_iso8601(value)
-        return value
+        return serialize_datetime_value(value)
 
     @model_validator(mode="after")
     def normalize_datetimes(self):

@@ -49,8 +49,8 @@ const selectedTitle = computed(() => {
 })
 
 const sortedThreadMessages = computed(() =>
-  [...detail.messages].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  [...detail.messages].sort((a, b) =>
+    String(a.created_at || '').localeCompare(String(b.created_at || '')),
   ),
 )
 
@@ -284,11 +284,8 @@ function statusTagType(isRead: boolean) {
   return isRead ? 'success' : 'warning'
 }
 
-function formatDate(value?: string | null) {
-  if (!value) {
-    return ''
-  }
-  return new Date(value).toLocaleString()
+function displayTime(value?: string | null) {
+  return value || ''
 }
 </script>
 
@@ -380,7 +377,7 @@ function formatDate(value?: string | null) {
                       <n-ellipsis :line-clamp="2">{{ item.content }}</n-ellipsis>
                     </template>
                     <template #footer>
-                      {{ formatDate(item.publish_at || item.created_at) }}
+                      {{ displayTime(item.publish_at || item.created_at) }}
                     </template>
                   </n-thing>
                 </n-list-item>
@@ -453,7 +450,7 @@ function formatDate(value?: string | null) {
                       </n-ellipsis>
                     </template>
                     <template #footer>
-                      {{ formatDate(item.last_message_at || item.updated_at || item.created_at) }}
+                      {{ displayTime(item.last_message_at || item.updated_at || item.created_at) }}
                     </template>
                   </n-thing>
                 </n-list-item>
@@ -548,7 +545,7 @@ function formatDate(value?: string | null) {
                 <n-descriptions-item :label="t('resource.message.notification.publish_at')">
                   {{
                     displayValue(
-                      formatDate(detail.notification.publish_at || detail.notification.created_at),
+                      displayTime(detail.notification.publish_at || detail.notification.created_at),
                     )
                   }}
                 </n-descriptions-item>
@@ -617,7 +614,7 @@ function formatDate(value?: string | null) {
                         }}
                       </div>
                       <div class="shrink-0 text-xs text-[var(--text-color-3)]">
-                        {{ formatDate(item.created_at) }}
+                        {{ displayTime(item.created_at) }}
                       </div>
                     </div>
                     <div

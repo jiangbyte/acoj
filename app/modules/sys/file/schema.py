@@ -26,6 +26,8 @@ class FileUploadRequest(ApiSchema):
     filename: str
     content: bytes
     content_type: str
+    category: str = "uploads"
+    object_name: str | None = None
 
 
 class FileRecordCreate(ApiSchema):

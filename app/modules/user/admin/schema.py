@@ -83,3 +83,12 @@ class AdminUserCenterOrgInfoResponse(ApiSchema):
     role_id_names: list[IdNameResponse] = Field(default_factory=list)
     dept_id_names: list[IdNameResponse] = Field(default_factory=list)
     group_id_names: list[IdNameResponse] = Field(default_factory=list)
+
+
+class AdminUserCenterAvatarUpdateResponse(ApiSchema):
+    """当前管理员头像更新响应。"""
+
+    avatar: str
+    file_id: str
+    object_name: str
+    url: str

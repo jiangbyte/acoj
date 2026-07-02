@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
@@ -12,6 +12,7 @@ from app.modules.iam.account.repository import AccountRepository
 from app.modules.user.portal.schema import (
     PortalProfileResponse,
     PortalPublicProfileResponse,
+    PortalUserCenterAvatarUpdateResponse,
     PortalUserCenterEmailUpdateRequest,
     PortalUserCenterPasswordUpdateRequest,
     PortalUserCenterPhoneUpdateRequest,
@@ -19,6 +20,7 @@ from app.modules.user.portal.schema import (
 )
 from app.modules.user.portal.service import PortalUserProfileService
 from app.modules.user.schema import PortalMeResponse
+from app.platform.storage.url import resolve_file_url
 
 router = APIRouter()
 
@@ -45,6 +47,7 @@ async def get_me(
         None,
     ) or next((item for item in identities if item.identity_type == "ACCOUNT"), None)
     profile = await PortalUserProfileService(db).get_profile(session.account_id)
+    avatar = resolve_file_url(profile.avatar if profile else None)
     return success(
         PortalMeResponse(
             account_id=session.account_id,
@@ -52,7 +55,7 @@ async def get_me(
             account_type=AccountType(str(session.account_type)),
             name=profile.name if profile else None,
             nickname=profile.nickname if profile else None,
-            avatar=profile.avatar if profile else None,
+            avatar=avatar,
             role_ids=session.role_ids,
             dept_ids=session.dept_ids,
             group_ids=session.group_ids,
@@ -62,7 +65,7 @@ async def get_me(
                 account_id=session.account_id,
                 name=profile.name if profile else None,
                 nickname=profile.nickname if profile else None,
-                avatar=profile.avatar if profile else None,
+                avatar=avatar,
                 signature=profile.signature if profile else None,
                 phone=profile.phone if profile else None,
                 email=profile.email if profile else None,
@@ -87,6 +90,26 @@ async def update_user_center_profile(
 ) -> ApiResponse[None]:
     await PortalUserProfileService(db).update_current_profile(payload, session)
     return success()
+
+
+@router.post(
+    "/user-center/avatar/upload",
+    dependencies=[Depends(require_account_type(AccountType.PORTAL))],
+    response_model=ApiResponse[PortalUserCenterAvatarUpdateResponse],
+)
+async def upload_user_center_avatar(
+    file: Annotated[UploadFile, File(...)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[PortalUserCenterAvatarUpdateResponse]:
+    content = await file.read()
+    return success(
+        await PortalUserProfileService(db).update_current_avatar(
+            content=content,
+            content_type=file.content_type or "",
+            session=session,
+        )
+    )
 
 
 @router.post(

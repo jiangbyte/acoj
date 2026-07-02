@@ -1,6 +1,7 @@
 <script setup lang="tsx">
 import type { DataTableColumns } from 'naive-ui'
 import { roleApi } from '@/api'
+import { resolveFileUrl } from '@/utils'
 import { NAvatar, NButton } from 'naive-ui'
 import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -80,12 +81,13 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     title: t('resource.iam.account.avatar'),
     key: 'avatar',
     width: 70,
-    render: (row) =>
-      row.avatar ? (
-        <NAvatar size="small" src={row.avatar} imgProps={avatarImgProps} />
-      ) : row.name ? (
-        <NAvatar size="small">{row.name?.slice(0, 1)}</NAvatar>
-      ) : null,
+    render: (row) => {
+      const avatar = resolveFileUrl(row.avatar)
+      if (avatar) {
+        return <NAvatar size="small" src={avatar} imgProps={avatarImgProps} />
+      }
+      return row.name ? <NAvatar size="small">{row.name?.slice(0, 1)}</NAvatar> : null
+    },
   },
   {
     title: t('resource.iam.account.name'),
