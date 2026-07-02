@@ -58,7 +58,7 @@ python scripts/dev.py
 uvicorn app.main:app --reload
 ```
 
-后端本地开发至少需要 PostgreSQL 和 Redis。RabbitMQ、S3/MinIO、可观测性按实际功能启用。
+后端本地开发至少需要 PostgreSQL、Redis 和 RabbitMQ。FastAPI 启动时会自动拉起 Celery worker 和 beat。S3/MinIO、可观测性按实际功能启用。
 
 安装后也可以使用命令入口：
 

@@ -50,6 +50,11 @@ class CorsSettings(BaseSettings):
 
 class CelerySettings(BaseSettings):
     broker_url: str = "amqp://guest:guest@127.0.0.1:5672//"
+    worker_log_level: str = "INFO"
+    beat_log_level: str = "INFO"
+    worker_pool: str = "solo"
+    worker_concurrency: int = 1
+    shutdown_timeout_seconds: float = 10.0
 
 
 class StorageSettings(BaseSettings):
