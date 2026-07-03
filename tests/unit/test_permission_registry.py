@@ -73,6 +73,27 @@ async def test_sync_permission_registry_writes_cache_structure(monkeypatch):
     assert method_map["sys:file:page[page]"] == "GET"
 
 
+async def test_sync_permission_registry_refuses_empty_scan(monkeypatch):
+    fake_redis = FakeRedis()
+    app = FastAPI()
+
+    @app.get("/")
+    async def root():
+        return {"status": "ok"}
+
+    monkeypatch.setattr("app.core.security.permission_registry.get_redis", lambda: fake_redis)
+
+    try:
+        await sync_permission_registry(app)
+    except RuntimeError as exc:
+        assert str(exc) == "Permission registry scan returned 0 resources; refusing to write Redis"
+    else:
+        raise AssertionError("Expected empty permission registry sync to fail")
+
+    assert permission_resource_cache_key() not in fake_redis.values
+    assert permission_resource_method_cache_key() not in fake_redis.values
+
+
 async def test_bind_resource_permission_requires_registered_permission_key(db_session, monkeypatch):
     fake_redis = FakeRedis()
     fake_redis.values[permission_resource_cache_key()] = json.dumps([])

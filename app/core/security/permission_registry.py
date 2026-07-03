@@ -155,6 +155,15 @@ def scan_permission_registry(app: FastAPI) -> list[PermissionResource]:
 
 async def sync_permission_registry(app: FastAPI) -> list[PermissionResource]:
     resources = scan_permission_registry(app)
+    if not resources:
+        api_route_count = sum(1 for route in app.routes if isinstance(route, APIRoute))
+        logger.error(
+            "Refusing to write empty permission registry to Redis: total_routes=%d, api_routes=%d",
+            len(app.routes),
+            api_route_count,
+        )
+        raise RuntimeError("Permission registry scan returned 0 resources; refusing to write Redis")
+
     redis = get_redis()
     if not redis:
         raise RuntimeError("Redis is required to sync permission registry")
