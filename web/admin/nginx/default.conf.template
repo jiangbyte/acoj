@@ -7,9 +7,23 @@ server {
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
+    client_max_body_size ${CLIENT_MAX_BODY_SIZE};
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header Content-Security-Policy "${CONTENT_SECURITY_POLICY}" always;
+    add_header Strict-Transport-Security "${HSTS_HEADER}" always;
 
     location / {
         try_files $uri $uri/ /index.html;
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
     }
 
     # 前端同源请求统一走 /api/，反向代理到后端（启动时通过 BACKEND_URL 指定）。
@@ -34,5 +48,6 @@ server {
         access_log off;
         expires 1y;
         add_header Cache-Control "public, immutable";
+        add_header X-Content-Type-Options "nosniff" always;
     }
 }

@@ -11,6 +11,7 @@ from app.core.schema.health import (
 from app.platform.cache.redis import get_redis
 from app.platform.db.session import get_session_factory
 from app.platform.storage.manager import get_storage
+from app.platform.tasks.autostart import celery_process_manager
 from app.platform.tasks.celery_app import celery_app
 
 router = APIRouter()
@@ -33,6 +34,11 @@ async def ready() -> ReadyHealthResponse:
             ok=False,
             detail=None,
         ),
+        celery_autostart=HealthCheckItem(
+            enabled=settings.celery.auto_start_enabled,
+            ok=True,
+            detail=None,
+        ),
         storage=HealthCheckItem(enabled=True, ok=False, detail=None),
     )
     try:
@@ -41,7 +47,7 @@ async def ready() -> ReadyHealthResponse:
         checks.database.ok = True
         checks.database.detail = "connection ok"
     except Exception as exc:
-        checks.database.detail = str(exc)
+        checks.database.detail = _safe_detail(exc)
     redis = get_redis()
     if redis is None:
         checks.redis.detail = "redis not initialized"
@@ -51,7 +57,7 @@ async def ready() -> ReadyHealthResponse:
             checks.redis.ok = True
             checks.redis.detail = "connection ok"
         except Exception as exc:
-            checks.redis.detail = str(exc)
+            checks.redis.detail = _safe_detail(exc)
     if not checks.celery_broker.enabled:
         checks.celery_broker.detail = "celery broker not configured"
     else:
@@ -62,19 +68,36 @@ async def ready() -> ReadyHealthResponse:
             checks.celery_broker.ok = True
             checks.celery_broker.detail = "connection ok"
         except Exception as exc:
-            checks.celery_broker.detail = str(exc)
+            checks.celery_broker.detail = _safe_detail(exc)
+    if checks.celery_autostart.enabled:
+        status = celery_process_manager.status()
+        checks.celery_autostart.detail = (
+            f"processes={status['processes']}, beat_lock_held={status['beat_lock_held']}"
+        )
     try:
         storage = get_storage()
         checks.storage.ok = True
         checks.storage.detail = f"{storage.__class__.__name__} configured"
     except Exception as exc:
-        checks.storage.detail = str(exc)
+        checks.storage.detail = _safe_detail(exc)
     overall = all(
         component.ok
-        for component in [checks.database, checks.redis, checks.celery_broker, checks.storage]
+        for component in [
+            checks.database,
+            checks.redis,
+            checks.celery_broker,
+            checks.celery_autostart,
+            checks.storage,
+        ]
         if component.enabled
     )
     return ReadyHealthResponse(
         status="ready" if overall else "not_ready",
         checks=checks,
     )
+
+
+def _safe_detail(exc: Exception) -> str:
+    if settings.app.debug:
+        return str(exc)
+    return exc.__class__.__name__

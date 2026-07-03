@@ -4,11 +4,12 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType, StorageProvider
+from app.core.config.settings import settings
 from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
 from app.core.security.session import SessionPayload
-from app.deps.auth import get_current_session, require_permission, require_account_type
+from app.deps.auth import get_current_session, require_account_type, require_permission
 from app.deps.db import get_db_session
 from app.modules.sys.file.schema import (
     FileAdminPageQuery,
@@ -35,7 +36,7 @@ async def upload(
     file: Annotated[UploadFile, File(...)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[SysFileSchema]:
-    content = await file.read()
+    content = await file.read(settings.storage.upload_max_bytes + 1)
     return success(
         await FileService(db).upload(
             FileUploadRequest(
@@ -149,7 +150,7 @@ async def page(
     size: Size = 20,
     original_name: str | None = Query(default=None, max_length=255),
     object_name: str | None = Query(default=None, max_length=255),
-    storage_provider: StorageProvider | None = Query(default=None),
+    storage_provider: Annotated[StorageProvider | None, Query()] = None,
     content_type: str | None = Query(default=None, max_length=128),
 ) -> ApiResponse[PageData[SysFileSchema]]:
     query = FileAdminPageQuery(

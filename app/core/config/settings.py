@@ -36,6 +36,12 @@ class AuthSettings(BaseSettings):
     token_name: str = "Authorization"
     token_ttl_seconds: int = 60 * 60 * 24 * 30
     refresh_ttl_seconds: int = 60 * 60 * 24 * 30
+    admin_register_enabled: bool = False
+    portal_register_enabled: bool = True
+    login_failure_window_seconds: int = 15 * 60
+    login_account_max_failures: int = 5
+    login_ip_max_failures: int = 30
+    login_lock_seconds: int = 15 * 60
 
 
 class CorsSettings(BaseSettings):
@@ -55,6 +61,12 @@ class CelerySettings(BaseSettings):
     worker_pool: str = "solo"
     worker_concurrency: int = 1
     shutdown_timeout_seconds: float = 10.0
+    auto_start_enabled: bool = True
+    auto_start_worker_enabled: bool = True
+    auto_start_beat_enabled: bool = True
+    beat_lock_key: str = "process:celery:beat:lock"
+    beat_lock_ttl_seconds: int = 60
+    beat_lock_renew_seconds: int = 20
 
 
 class MQSettings(BaseSettings):
@@ -77,6 +89,28 @@ class StorageSettings(BaseSettings):
     base_url: str = ""
     public_path: str = "/api/v1/files"
     local_root: str = "storage"
+    upload_max_bytes: int = 10 * 1024 * 1024
+    upload_allowed_content_types: list[str] = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "application/pdf",
+        "text/plain",
+    ]
+    upload_allowed_extensions: list[str] = [".jpg", ".jpeg", ".png", ".webp", ".pdf", ".txt"]
+    upload_denied_extensions: list[str] = [
+        ".exe",
+        ".bat",
+        ".cmd",
+        ".sh",
+        ".js",
+        ".html",
+        ".php",
+        ".py",
+        ".jar",
+    ]
+    upload_category_max_length: int = 64
+    public_upload_enabled: bool = False
 
 
 class IdGeneratorSettings(BaseSettings):

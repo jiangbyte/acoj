@@ -1,11 +1,13 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
+from app.core.config.settings import settings
+from app.core.exceptions.business import BusinessError
 from app.core.response.schema import success
-from app.core.security.session import SessionPayload, session_store
+from app.core.security.session import SessionPayload
 from app.deps.auth import get_current_session, require_account_type
 from app.deps.db import get_db_session
 from app.modules.auth.schema import (
@@ -30,6 +32,7 @@ portal_router = APIRouter()
 @admin_router.post("/login", response_model=LoginApiResponse)
 async def admin_login(
     payload: LoginRequest,
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> LoginApiResponse:
     """管理端登录入口，仅允许管理端用户体系访问。"""
@@ -38,6 +41,8 @@ async def admin_login(
             account=payload.account,
             password=payload.password,
             account_type=AccountType.ADMIN,
+            client_ip=_client_ip(request),
+            user_agent=request.headers.get("user-agent"),
         )
     )
     return success(
@@ -55,12 +60,15 @@ async def admin_register(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> RegisterApiResponse:
     """管理端注册入口，创建账户主体、主登录标识和管理端资料。"""
+    if not settings.auth.admin_register_enabled:
+        raise BusinessError("Admin registration is disabled")
     return success(await AuthService(db).register_admin(payload))
 
 
 @portal_router.post("/login", response_model=LoginApiResponse)
 async def portal_login(
     payload: LoginRequest,
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> LoginApiResponse:
     """门户端登录入口，仅允许门户用户体系访问。"""
@@ -69,6 +77,8 @@ async def portal_login(
             account=payload.account,
             password=payload.password,
             account_type=AccountType.PORTAL,
+            client_ip=_client_ip(request),
+            user_agent=request.headers.get("user-agent"),
         )
     )
     return success(
@@ -86,6 +96,8 @@ async def portal_register(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> RegisterApiResponse:
     """门户端注册入口，创建门户账户主体和门户资料。"""
+    if not settings.auth.portal_register_enabled:
+        raise BusinessError("Portal registration is disabled")
     return success(await AuthService(db).register_portal(payload))
 
 
@@ -101,12 +113,20 @@ async def portal_register(
 )
 async def logout(
     session: Annotated[SessionPayload, Depends(get_current_session)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
     authorization: Annotated[str | None, Header(alias="Authorization")] = None,
 ) -> LogoutApiResponse:
     """统一退出登录接口，优先读取请求头中的原始 token。"""
     token = authorization or session.token
-    await session_store.delete(token)
+    await AuthService(db).logout(token)
     return success(LogoutResponse(success=True))
+
+
+def _client_ip(request: Request) -> str | None:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        return forwarded_for.split(",", 1)[0].strip()
+    return request.client.host if request.client else None
 
 
 @portal_router.post(

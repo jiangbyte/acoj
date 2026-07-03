@@ -1,17 +1,21 @@
 from fastapi import FastAPI
 
-from app.core.schema.health import RootHealthResponse
+from app.api.router import router as api_router
 from app.core.config.settings import settings
-from app.core.exceptions.handlers import customize_openapi_error_responses, register_exception_handlers
+from app.core.exceptions.handlers import (
+    customize_openapi_error_responses,
+    register_exception_handlers,
+)
 from app.core.logger.setup import setup_logging
+from app.core.schema.health import RootHealthResponse
 from app.lifespan import lifespan
 from app.middleware.access_log import AccessLogMiddleware
 from app.middleware.auth_context import AuthContextMiddleware
 from app.middleware.cors import add_cors
+from app.middleware.operation_audit import OperationAuditMiddleware
 from app.middleware.trace import TraceMiddleware
 from app.platform.db.session import engine
 from app.platform.observability.manager import setup_observability
-from app.api.router import router as api_router
 
 
 def create_app() -> FastAPI:
@@ -26,6 +30,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(TraceMiddleware)
     app.add_middleware(AccessLogMiddleware)
+    app.add_middleware(OperationAuditMiddleware)
     app.add_middleware(AuthContextMiddleware)
     add_cors(app)
     register_exception_handlers(app)

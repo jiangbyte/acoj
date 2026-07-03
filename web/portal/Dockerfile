@@ -26,6 +26,9 @@ COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 
 # 后端地址默认值，可在启动时用 -e BACKEND_URL=... 覆盖。
-ENV BACKEND_URL="http://127.0.0.1:8000"
+ENV BACKEND_URL="http://127.0.0.1:8000" \
+    CLIENT_MAX_BODY_SIZE="10m" \
+    CONTENT_SECURITY_POLICY="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" \
+    HSTS_HEADER=""
 
 EXPOSE 80

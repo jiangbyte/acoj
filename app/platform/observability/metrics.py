@@ -1,8 +1,14 @@
 import time
-from collections.abc import Callable
 from contextlib import contextmanager
 
-from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, Counter, Gauge, Histogram, generate_latest
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    CollectorRegistry,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 from starlette.responses import Response
 
 from app.core.config.settings import settings
@@ -62,6 +68,41 @@ celery_task_duration_seconds = Histogram(
     ["task_name"],
     registry=registry,
 )
+auth_login_total = Counter(
+    "auth_login_total",
+    "Total login attempts",
+    ["account_type", "result", "reason"],
+    registry=registry,
+)
+auth_login_lock_total = Counter(
+    "auth_login_lock_total",
+    "Total login lock events",
+    ["account_type", "scope"],
+    registry=registry,
+)
+operation_audit_total = Counter(
+    "operation_audit_total",
+    "Total operation audit events",
+    ["module", "action", "result"],
+    registry=registry,
+)
+file_upload_rejected_total = Counter(
+    "file_upload_rejected_total",
+    "Total rejected file uploads",
+    ["reason"],
+    registry=registry,
+)
+celery_autostart_process_state = Gauge(
+    "celery_autostart_process_state",
+    "Celery auto-start managed process state",
+    ["process"],
+    registry=registry,
+)
+celery_beat_lock_state = Gauge(
+    "celery_beat_lock_state",
+    "Celery beat lock held by this process",
+    registry=registry,
+)
 
 
 def metrics_enabled() -> bool:
@@ -104,6 +145,40 @@ def record_validation_error() -> None:
         validation_errors_total.inc()
 
 
+def record_login_attempt(account_type: str, result: str, reason: str = "none") -> None:
+    if metrics_enabled():
+        auth_login_total.labels(account_type=account_type, result=result, reason=reason).inc()
+
+
+def record_login_lock(account_type: str, scope: str) -> None:
+    if metrics_enabled():
+        auth_login_lock_total.labels(account_type=account_type, scope=scope).inc()
+
+
+def record_operation_audit(module: str, action: str, success: bool) -> None:
+    if metrics_enabled():
+        operation_audit_total.labels(
+            module=module,
+            action=action,
+            result="success" if success else "failure",
+        ).inc()
+
+
+def record_file_upload_rejected(reason: str) -> None:
+    if metrics_enabled():
+        file_upload_rejected_total.labels(reason=reason).inc()
+
+
+def set_celery_process_state(process: str, running: bool) -> None:
+    if metrics_enabled():
+        celery_autostart_process_state.labels(process=process).set(1 if running else 0)
+
+
+def set_celery_beat_lock_state(held: bool) -> None:
+    if metrics_enabled():
+        celery_beat_lock_state.set(1 if held else 0)
+
+
 @contextmanager
 def track_http_client_request(method: str, host: str):
     if not metrics_enabled():
@@ -114,7 +189,11 @@ def track_http_client_request(method: str, host: str):
     def finalize(status_code: int) -> None:
         duration = time.perf_counter() - start
         http_client_request_duration_seconds.labels(method=method, host=host).observe(duration)
-        http_client_requests_total.labels(method=method, host=host, status_code=str(status_code)).inc()
+        http_client_requests_total.labels(
+            method=method,
+            host=host,
+            status_code=str(status_code),
+        ).inc()
 
     yield finalize
 
