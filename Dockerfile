@@ -32,13 +32,10 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    python -m pip install --upgrade pip setuptools wheel && \
     python -c 'import subprocess, sys, tomllib; data = tomllib.load(open("pyproject.toml", "rb")); deps = data["project"]["dependencies"] + data["project"]["optional-dependencies"]["postgres"]; subprocess.check_call([sys.executable, "-m", "pip", "install", "--prefer-binary", *deps])'
 
 COPY app ./app
 
-RUN --mount=type=cache,target=/root/.cache/pip \
-    python -m pip install --no-deps --no-build-isolation .
 RUN mkdir -p /app/storage /app/.runtime
 
 VOLUME ["/app/storage"]
