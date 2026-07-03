@@ -43,6 +43,7 @@ async def admin_login(
             account_type=AccountType.ADMIN,
             client_ip=_client_ip(request),
             user_agent=request.headers.get("user-agent"),
+            device_label=_device_label(request.headers.get("user-agent")),
         )
     )
     return success(
@@ -79,6 +80,7 @@ async def portal_login(
             account_type=AccountType.PORTAL,
             client_ip=_client_ip(request),
             user_agent=request.headers.get("user-agent"),
+            device_label=_device_label(request.headers.get("user-agent")),
         )
     )
     return success(
@@ -127,6 +129,17 @@ def _client_ip(request: Request) -> str | None:
     if forwarded_for:
         return forwarded_for.split(",", 1)[0].strip()
     return request.client.host if request.client else None
+
+
+def _device_label(user_agent: str | None) -> str | None:
+    if not user_agent:
+        return None
+    value = user_agent.lower()
+    if "mobile" in value or "android" in value or "iphone" in value:
+        return "Mobile"
+    if "ipad" in value or "tablet" in value:
+        return "Tablet"
+    return "Desktop"
 
 
 @portal_router.post(

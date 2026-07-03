@@ -1,78 +1,48 @@
 {
   "title": "Operations Workbench",
-  "subtitle": "A consolidated view of revenue, orders, conversion, risks, and collaboration queues for daily operations.",
-  "units": {
-    "currency": "USD",
-    "count": "orders",
-    "items": "items"
-  },
+  "subtitle": "A live system overview for accounts, online sessions, files, banners, and published notices.",
   "metrics": {
-    "revenue": "Today's Revenue",
-    "revenue_helper": "Above the 7-day average",
-    "orders": "Valid Orders",
-    "orders_helper": "Paid orders excluding cancellations",
-    "ticket": "Average Ticket",
-    "ticket_helper": "Slightly lower during promotion",
-    "risk": "Risk Tickets",
-    "risk_helper": "High-priority exceptions pending"
+    "accounts": "Accounts",
+    "online_sessions": "Online Devices",
+    "files": "Files",
+    "banners": "Banners",
+    "notifications": "Published Notices"
   },
-  "charts": {
-    "operation_trend": "Operations Trend",
-    "conversion": "Core Funnel Conversion",
-    "channel_share": "Channel Contribution",
-    "load_failed": "Chart runtime failed to load. Refresh the page or restart the dev server."
+  "helpers": {
+    "accounts": "Accounts created today are tracked separately",
+    "online_sessions": "Current online tokens in Redis",
+    "files": "File count and storage usage",
+    "banners": "Total banner configurations",
+    "notifications": "Notices currently published"
+  },
+  "units": {
+    "accounts": {
+      "one": "account",
+      "other": "accounts"
+    },
+    "online_sessions": {
+      "one": "device",
+      "other": "devices"
+    },
+    "files": {
+      "one": "file",
+      "other": "files"
+    },
+    "banners": {
+      "one": "banner",
+      "other": "banners"
+    },
+    "notifications": {
+      "one": "notice",
+      "other": "notices"
+    }
   },
   "series": {
-    "revenue": "Revenue",
-    "orders": "Orders"
+    "accounts": "New Accounts"
   },
-  "conversion": {
-    "visit": "Visits",
-    "signup": "Sign-ups",
-    "trial": "Trials",
-    "order": "Orders",
-    "repurchase": "Repurchase"
-  },
-  "channels": {
-    "total": "Total",
-    "search": "Search",
-    "direct": "Direct",
-    "partner": "Partners",
-    "campaign": "Campaigns",
-    "other": "Other"
-  },
-  "ranking": {
-    "title": "Business Line Contribution",
-    "saas": "SaaS Subscription",
-    "training": "Training Services",
-    "marketplace": "Content Marketplace",
-    "service": "Enterprise Services"
-  },
-  "todos": {
-    "title": "Work Queue",
-    "refund_audit": "Refund Review",
-    "refund_meta": "Open for more than 2 hours",
-    "enterprise_lead": "Enterprise Lead Follow-up",
-    "enterprise_meta": "New high-intent leads today",
-    "contract_renewal": "Renewal Confirmation",
-    "contract_meta": "Customers expiring in 7 days"
-  },
-  "alerts": {
-    "title": "Operations Alerts",
-    "payment_delay": "Payment Delay",
-    "payment_delay_desc": "Average payment callback latency in East China is above threshold.",
-    "stock_pressure": "Inventory Pressure",
-    "stock_pressure_desc": "Popular package benefits are below the safety level.",
-    "sla": "Support SLA",
-    "sla_desc": "Evening queue volume is rising. Consider temporary staffing."
-  },
-  "timeline": {
-    "title": "Today's Updates",
-    "pricing": "Pricing Policy Applied",
-    "pricing_desc": "Enterprise renewal discounts have been synced to the sales workspace.",
-    "campaign": "Campaign Assets Approved",
-    "campaign_desc": "Summer growth campaign is ready for media scheduling.",
-    "audit": "Risk Review In Progress",
-    "audit_desc": "3 abnormal orders are waiting for secondary confirmation."
+  "charts": {
+    "trend": "Last 7 Days",
+    "file_type": "File Types",
+    "load_failed": "Chart runtime failed to load. Refresh the page or restart the dev server."
   }
 }

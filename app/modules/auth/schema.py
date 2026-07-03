@@ -18,6 +18,7 @@ class LoginPayload(ApiSchema):
     account_type: AccountType
     client_ip: str | None = None
     user_agent: str | None = None
+    device_label: str | None = None
 
 
 class LoginResponse(ApiSchema):

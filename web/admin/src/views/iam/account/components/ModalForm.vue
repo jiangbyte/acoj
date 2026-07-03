@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui'
+import ImageUpload from '@/components/upload/ImageUpload.vue'
 import { accountApi } from '@/api'
 import { createRequiredRule, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
@@ -233,7 +234,7 @@ defineExpose({
                 <NInput v-model:value="state.formModel.nickname" />
               </NFormItem>
               <NFormItem :label="t('resource.iam.account.avatar')" path="avatar">
-                <NInput v-model:value="state.formModel.avatar" />
+                <ImageUpload v-model:value="state.formModel.avatar" />
               </NFormItem>
               <NFormItem :label="t('resource.iam.account.signature')" path="signature">
                 <NInput

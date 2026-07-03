@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui'
+import FileUpload from '@/components/upload/FileUpload.vue'
 import { messageApi } from '@/api'
 import { createRequiredRule } from '@/utils'
 import { computed, reactive, ref } from 'vue'
@@ -17,6 +18,7 @@ const state = reactive({
   formModel: {
     thread_id: '',
     content: '',
+    attachments: [] as any[],
   },
 })
 
@@ -27,6 +29,7 @@ const rules = computed<FormRules>(() => ({
 function openModal(threadId: string) {
   state.formModel.thread_id = threadId
   state.formModel.content = ''
+  state.formModel.attachments = []
   state.showModal = true
 }
 
@@ -43,6 +46,7 @@ async function submitForm() {
       thread_id: state.formModel.thread_id,
       content: state.formModel.content,
       sender_name: 'System',
+      attachments: state.formModel.attachments,
     })
     window.$message.success(t('resource.message.message.send_success'))
     closeModal()
@@ -53,6 +57,23 @@ async function submitForm() {
 }
 
 defineExpose({ openModal })
+
+function appendAttachment(file: any) {
+  state.formModel.attachments.push({
+    name: file.original_name || file.object_name || file.url,
+    url: file.url || file.object_name,
+    content_type: file.content_type || null,
+    size: file.size ?? null,
+    sort: state.formModel.attachments.length,
+  })
+}
+
+function removeAttachment(index: number) {
+  state.formModel.attachments.splice(index, 1)
+  state.formModel.attachments.forEach((item, itemIndex) => {
+    item.sort = itemIndex
+  })
+}
 </script>
 
 <template>
@@ -82,6 +103,22 @@ defineExpose({ openModal })
           type="textarea"
           :autosize="{ minRows: 4, maxRows: 8 }"
         />
+      </NFormItem>
+      <NFormItem :label="t('resource.message.message.attachments')">
+        <NFlex vertical class="w-full">
+          <FileUpload compact @uploaded="appendAttachment" />
+          <NList v-if="state.formModel.attachments.length" bordered>
+            <NListItem v-for="(item, index) in state.formModel.attachments" :key="`${item.url}-${index}`">
+              <NThing :title="item.name" :description="item.content_type || undefined">
+                <template #header-extra>
+                  <NButton size="small" text type="error" @click="removeAttachment(index)">
+                    {{ t('common.often.delete') }}
+                  </NButton>
+                </template>
+              </NThing>
+            </NListItem>
+          </NList>
+        </NFlex>
       </NFormItem>
     </NForm>
 

@@ -6,6 +6,10 @@ def login_account_tokens_key(account_type: str, account_id: str) -> str:
     return f"login:account:{account_type}:{account_id}"
 
 
+def login_tokens_key() -> str:
+    return "login:tokens"
+
+
 def login_failure_account_key(account_type: str, account: str) -> str:
     return f"login:failure:account:{account_type}:{account}"
 

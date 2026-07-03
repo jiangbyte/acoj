@@ -1,0 +1,28 @@
+{
+  "title": "在线会话",
+  "account_id": "账号ID",
+  "account_type": "账号类型",
+  "account": "账号",
+  "name": "名称",
+  "token_count": "终端数",
+  "token": "Token",
+  "device": "设备",
+  "client_ip": "客户端 IP",
+  "login_at": "登录时间",
+  "last_active_at": "最后活跃",
+  "latest_active_at": "最近活跃",
+  "expires_at": "过期时间",
+  "token_detail": "终端详情",
+  "force_logout": "强制下线",
+  "force_logout_account_confirm": "确认强制下线该账号的所有在线终端？",
+  "force_logout_token_confirm": "确认强制下线该在线终端？",
+  "force_logout_success": "已强制下线",
+  "analysis": {
+    "online_account_count": "在线账号",
+    "online_token_count": "在线终端",
+    "admin_account_count": "后台账号",
+    "portal_account_count": "门户账号",
+    "one_hour_new_count": "近 1 小时登录",
+    "max_token_count": "单账号最大终端"
+  }
+}

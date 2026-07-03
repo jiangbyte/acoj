@@ -1,6 +1,9 @@
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.constants import SUPER_ADMIN_ROLE_CODE
+from app.core.config.settings import settings
 from app.core.security.session import SessionPayload, session_store
 from app.modules.iam.account.model import SysAccount
 from app.modules.iam.account.repository import AccountRepository
@@ -15,9 +18,24 @@ class AccountSessionService:
         self.account_repo = AccountRepository(db)
         self.grant_repo = GrantRepository(db)
 
-    async def build_session_payload(self, account: SysAccount, token: str) -> SessionPayload:
+    async def build_session_payload(
+        self,
+        account: SysAccount,
+        token: str,
+        *,
+        client_ip: str | None = None,
+        user_agent: str | None = None,
+        device_label: str | None = None,
+    ) -> SessionPayload:
         authorization = await self.grant_repo.get_account_authorization(account.id)
-        return self._build_session_payload_from_authorization(account, token, authorization)
+        return self._build_session_payload_from_authorization(
+            account,
+            token,
+            authorization,
+            client_ip=client_ip,
+            user_agent=user_agent,
+            device_label=device_label,
+        )
 
     async def refresh_account_sessions(self, account_id: str) -> None:
         await self.refresh_accounts_sessions([account_id])
@@ -60,12 +78,18 @@ class AccountSessionService:
         account: SysAccount,
         token: str,
         authorization: dict,
+        *,
+        client_ip: str | None = None,
+        user_agent: str | None = None,
+        device_label: str | None = None,
     ) -> SessionPayload:
         permission_keys = set(authorization["permission_keys"])
         button_codes = set(authorization["button_codes"])
         if SUPER_ADMIN_ROLE_CODE in authorization["role_codes"]:
             permission_keys.add("*:*:*")
             button_codes.add("*:*:*")
+        now = datetime.now(UTC)
+        expires_at = now + timedelta(seconds=settings.auth.token_ttl_seconds)
         return SessionPayload(
             token=token,
             account_id=account.id,
@@ -77,4 +101,10 @@ class AccountSessionService:
             button_codes=sorted(button_codes),
             permission_keys=sorted(permission_keys),
             permission_grants=authorization["permission_grants"],
+            client_ip=client_ip,
+            user_agent=user_agent,
+            device_label=device_label,
+            login_at=now.isoformat(),
+            last_active_at=now.isoformat(),
+            expires_at=expires_at.isoformat(),
         )

@@ -12,6 +12,13 @@ module = ModuleSpec(
         ),
         RouteSpec(
             version="v1",
+            prefix="/admin",
+            tags=("admin",),
+            router="app.modules.auth.session_admin_router:router",
+            order=11,
+        ),
+        RouteSpec(
+            version="v1",
             prefix="/portal",
             tags=("portal",),
             router="app.modules.auth.router:portal_router",

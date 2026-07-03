@@ -1,7 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
+from app.core.schema.datetime import normalize_orm_datetimes
 from app.modules.iam.account.repository import AccountRepository
+from app.modules.iam.schema import AccountIdentitySchema
 from app.modules.iam.schema import SysAccountSchema
 from app.modules.user.admin.repository import AdminUserProfileRepository
 from app.modules.user.portal.repository import PortalUserProfileRepository
@@ -55,6 +57,11 @@ class AccountQueryService:
                 if account.account_type == AccountType.ADMIN.value
                 else portal_profile_map.get(account.id)
             )
+            normalize_orm_datetimes(account)
+            if profile is not None:
+                normalize_orm_datetimes(profile)
+            for identity in account_identities:
+                normalize_orm_datetimes(identity)
             items.append(
                 SysAccountSchema(
                     id=account.id,
@@ -76,7 +83,10 @@ class AccountQueryService:
                     phone_identity_verified=bool(getattr(phone_identity, "verified", False)),
                     email_identity_bind_status=getattr(email_identity, "bind_status", None),
                     phone_identity_bind_status=getattr(phone_identity, "bind_status", None),
-                    identities=account_identities,
+                    identities=[
+                        AccountIdentitySchema.model_validate(identity)
+                        for identity in account_identities
+                    ],
                     cancelled_at=account.cancelled_at,
                     cancelled_by=account.cancelled_by,
                     cancel_reason=account.cancel_reason,

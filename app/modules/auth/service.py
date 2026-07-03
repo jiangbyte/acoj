@@ -76,6 +76,9 @@ class AuthService:
         session_payload = await self.session_service.build_session_payload(
             account,
             generate_token(),
+            client_ip=payload.client_ip,
+            user_agent=payload.user_agent,
+            device_label=payload.device_label,
         )
         await session_store.set(session_payload, ttl_seconds=settings.auth.token_ttl_seconds)
         await login_protection_service.record_success(

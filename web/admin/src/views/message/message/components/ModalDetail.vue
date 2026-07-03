@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { messageApi } from '@/api'
-import { displayValue } from '@/utils'
+import { displayValue, resolveFileUrl } from '@/utils'
 import { dictTypeData } from '@/utils/dict'
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -42,6 +42,14 @@ async function fetchDetail(row: any) {
 }
 
 defineExpose({ openModal })
+
+function openAttachment(url: string) {
+  const resolved = resolveFileUrl(url)
+  if (!resolved) {
+    return
+  }
+  window.open(resolved, '_blank', 'noopener,noreferrer')
+}
 </script>
 
 <template>
@@ -105,6 +113,18 @@ defineExpose({ openModal })
                 {{ item.created_at }}
               </template>
               {{ item.content }}
+              <template v-if="item.attachments?.length" #footer>
+                <NFlex class="mt-8px">
+                  <NButton
+                    v-for="attachment in item.attachments"
+                    :key="attachment.id || attachment.url"
+                    size="small"
+                    @click="openAttachment(attachment.url)"
+                  >
+                    {{ attachment.name }}
+                  </NButton>
+                </NFlex>
+              </template>
             </NThing>
           </NListItem>
         </NList>

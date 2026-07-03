@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui'
+import ImageUpload from '@/components/upload/ImageUpload.vue'
 import { bannerApi } from '@/api'
 import { createRequiredRule, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
@@ -136,7 +137,7 @@ defineExpose({
             <NInput v-model:value="state.formModel.title" />
           </NFormItem>
           <NFormItem :label="t('resource.sys.banner.image')" path="image">
-            <NInput v-model:value="state.formModel.image" />
+            <ImageUpload v-model:value="state.formModel.image" />
           </NFormItem>
           <NFormItem :label="t('resource.sys.banner.url')" path="url">
             <NInput v-model:value="state.formModel.url" />

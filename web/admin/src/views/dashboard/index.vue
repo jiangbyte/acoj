@@ -1,204 +1,117 @@
 <script setup lang="ts">
 import { Chart } from '@antv/g2'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { dashboardApi } from '@/api'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAppStore } from '@/stores'
+import { NIcon } from 'naive-ui'
+import { Icon } from '@iconify/vue/offline'
 
-type Trend = 'up' | 'down'
-type TagType = 'default' | 'success' | 'warning' | 'error' | 'info' | 'primary'
 type ChartInstance = InstanceType<typeof Chart>
 
-interface MetricCard {
-  key: string
-  title: string
-  value: string
-  unit: string
-  trend: Trend
-  trendValue: string
-  helper: string
-  icon: string
-  color: string
+const { t } = useI18n()
+const trendChartRef = ref<HTMLDivElement | null>(null)
+const fileChartRef = ref<HTMLDivElement | null>(null)
+const charts: ChartInstance[] = []
+const state = reactive({
+  loading: false,
+  chartLoadError: false,
+  overview: {
+    metrics: [] as any[],
+    account_trend: [] as any[],
+    file_type_share: [] as any[],
+  },
+})
+
+const metricMeta: Record<string, { icon: string; color: string }> = {
+  accounts: { icon: 'icon-park-outline:people', color: '#2563eb' },
+  online_sessions: { icon: 'icon-park-outline:connection', color: '#0891b2' },
+  files: { icon: 'icon-park-outline:file-code', color: '#0f766e' },
+  banners: { icon: 'icon-park-outline:ad-product', color: '#7c3aed' },
+  notifications: { icon: 'icon-park-outline:tips-one', color: '#16a34a' },
 }
 
-const { t } = useI18n()
-const appStore = useAppStore()
-const operationChartRef = ref<HTMLDivElement | null>(null)
-const conversionChartRef = ref<HTMLDivElement | null>(null)
-const channelChartRef = ref<HTMLDivElement | null>(null)
-const charts: ChartInstance[] = []
-const chartLoadError = ref(false)
+const metricCards = computed(() =>
+  state.overview.metrics.map((item) => {
+    const meta = metricMeta[item.key] ?? { icon: 'icon-park-outline:analysis', color: '#64748b' }
+    return {
+      ...item,
+      title: t(`resource.dashboard.metrics.${item.key}`),
+      helper: t(`resource.dashboard.helpers.${item.key}`),
+      value: item.value ?? 0,
+      unitText: formatMetricUnit(item),
+      ...meta,
+    }
+  }),
+)
 
-const metricCards = computed<MetricCard[]>(() => [
-  {
-    key: 'gmv',
-    title: t('resource.dashboard.metrics.revenue'),
-    value: '1,284,600',
-    unit: t('resource.dashboard.units.currency'),
-    trend: 'up',
-    trendValue: '12.8%',
-    helper: t('resource.dashboard.metrics.revenue_helper'),
-    icon: 'icon-park-outline:chart-line',
-    color: '#2563eb',
-  },
-  {
-    key: 'orders',
-    title: t('resource.dashboard.metrics.orders'),
-    value: '8,426',
-    unit: t('resource.dashboard.units.count'),
-    trend: 'up',
-    trendValue: '8.3%',
-    helper: t('resource.dashboard.metrics.orders_helper'),
-    icon: 'icon-park-outline:transaction-order',
-    color: '#0f766e',
-  },
-  {
-    key: 'ticket',
-    title: t('resource.dashboard.metrics.ticket'),
-    value: '152.5',
-    unit: t('resource.dashboard.units.currency'),
-    trend: 'down',
-    trendValue: '2.1%',
-    helper: t('resource.dashboard.metrics.ticket_helper'),
-    icon: 'icon-park-outline:wallet',
-    color: '#7c3aed',
-  },
-  {
-    key: 'risk',
-    title: t('resource.dashboard.metrics.risk'),
-    value: '17',
-    unit: t('resource.dashboard.units.items'),
-    trend: 'down',
-    trendValue: '18.6%',
-    helper: t('resource.dashboard.metrics.risk_helper'),
-    icon: 'icon-park-outline:alarm',
-    color: '#dc2626',
-  },
+const trendData = computed(() => [
+  ...state.overview.account_trend.map((item) => ({
+    ...item,
+    type: t('resource.dashboard.series.accounts'),
+  })),
 ])
 
-const operationTrend = computed(() => [
-  { date: '07-01', type: t('resource.dashboard.series.revenue'), value: 128 },
-  { date: '07-02', type: t('resource.dashboard.series.revenue'), value: 152 },
-  { date: '07-03', type: t('resource.dashboard.series.revenue'), value: 176 },
-  { date: '07-04', type: t('resource.dashboard.series.revenue'), value: 169 },
-  { date: '07-05', type: t('resource.dashboard.series.revenue'), value: 198 },
-  { date: '07-06', type: t('resource.dashboard.series.revenue'), value: 226 },
-  { date: '07-07', type: t('resource.dashboard.series.revenue'), value: 241 },
-  { date: '07-01', type: t('resource.dashboard.series.orders'), value: 88 },
-  { date: '07-02', type: t('resource.dashboard.series.orders'), value: 96 },
-  { date: '07-03', type: t('resource.dashboard.series.orders'), value: 118 },
-  { date: '07-04', type: t('resource.dashboard.series.orders'), value: 105 },
-  { date: '07-05', type: t('resource.dashboard.series.orders'), value: 124 },
-  { date: '07-06', type: t('resource.dashboard.series.orders'), value: 139 },
-  { date: '07-07', type: t('resource.dashboard.series.orders'), value: 151 },
-])
-
-const conversionStages = computed(() => [
-  { stage: t('resource.dashboard.conversion.visit'), value: 68400 },
-  { stage: t('resource.dashboard.conversion.signup'), value: 21600 },
-  { stage: t('resource.dashboard.conversion.trial'), value: 11800 },
-  { stage: t('resource.dashboard.conversion.order'), value: 8426 },
-  { stage: t('resource.dashboard.conversion.repurchase'), value: 3290 },
-])
-
-const channelShare = computed(() => [
-  { channel: t('resource.dashboard.channels.search'), value: 38 },
-  { channel: t('resource.dashboard.channels.direct'), value: 24 },
-  { channel: t('resource.dashboard.channels.partner'), value: 18 },
-  { channel: t('resource.dashboard.channels.campaign'), value: 12 },
-  { channel: t('resource.dashboard.channels.other'), value: 8 },
-])
-
-const todoList = computed(() => [
-  {
-    title: t('resource.dashboard.todos.refund_audit'),
-    meta: t('resource.dashboard.todos.refund_meta'),
-    count: 24,
-    type: 'warning' as TagType,
-  },
-  {
-    title: t('resource.dashboard.todos.enterprise_lead'),
-    meta: t('resource.dashboard.todos.enterprise_meta'),
-    count: 16,
-    type: 'info' as TagType,
-  },
-  {
-    title: t('resource.dashboard.todos.contract_renewal'),
-    meta: t('resource.dashboard.todos.contract_meta'),
-    count: 9,
-    type: 'success' as TagType,
-  },
-])
-
-const alertList = computed(() => [
-  {
-    title: t('resource.dashboard.alerts.payment_delay'),
-    description: t('resource.dashboard.alerts.payment_delay_desc'),
-    type: 'error' as TagType,
-  },
-  {
-    title: t('resource.dashboard.alerts.stock_pressure'),
-    description: t('resource.dashboard.alerts.stock_pressure_desc'),
-    type: 'warning' as TagType,
-  },
-  {
-    title: t('resource.dashboard.alerts.sla'),
-    description: t('resource.dashboard.alerts.sla_desc'),
-    type: 'info' as TagType,
-  },
-])
-
-const activityTimeline = computed(() => [
-  {
-    title: t('resource.dashboard.timeline.pricing'),
-    time: '09:42',
-    content: t('resource.dashboard.timeline.pricing_desc'),
-    type: 'success' as const,
-  },
-  {
-    title: t('resource.dashboard.timeline.campaign'),
-    time: '11:10',
-    content: t('resource.dashboard.timeline.campaign_desc'),
-    type: 'info' as const,
-  },
-  {
-    title: t('resource.dashboard.timeline.audit'),
-    time: '14:25',
-    content: t('resource.dashboard.timeline.audit_desc'),
-    type: 'warning' as const,
-  },
-])
-
-const rankingList = computed(() => [
-  { name: t('resource.dashboard.ranking.saas'), value: '486K', percent: 86 },
-  { name: t('resource.dashboard.ranking.training'), value: '312K', percent: 68 },
-  { name: t('resource.dashboard.ranking.marketplace'), value: '246K', percent: 54 },
-  { name: t('resource.dashboard.ranking.service'), value: '198K', percent: 43 },
-])
-
-onMounted(async () => {
-  await nextTick()
-  await renderCharts()
-})
+onMounted(fetchOverview)
 
 onBeforeUnmount(() => {
   destroyCharts()
 })
 
 watch(
-  () => [appStore.storeColorMode, operationTrend.value, conversionStages.value, channelShare.value],
+  () => [trendData.value, state.overview.file_type_share],
   async () => {
     await nextTick()
     await renderCharts()
   },
 )
 
+async function fetchOverview() {
+  state.loading = true
+  try {
+    const response = await dashboardApi.overview()
+    state.overview = Object.assign(state.overview, response.data ?? {})
+    await nextTick()
+    await renderCharts()
+  } finally {
+    state.loading = false
+  }
+}
+
+function formatMetricUnit(item: any) {
+  if (item.key === 'files') {
+    return `${formatMetricUnitName(item.value, item.key)} / ${formatFileSize(item.trend_value)}`
+  }
+  return formatMetricUnitName(item.value, item.key)
+}
+
+function formatMetricUnitName(value: number | string | null | undefined, key: string) {
+  const count = Number(value ?? 0)
+  const unitType = count === 1 ? 'one' : 'other'
+  return t(`resource.dashboard.units.${key}.${unitType}`)
+}
+
+function formatFileSize(size?: number | string | null) {
+  const value = Number(size ?? 0)
+  if (!Number.isFinite(value) || value <= 0) {
+    return '0 B'
+  }
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let current = value
+  let unitIndex = 0
+  while (current >= 1024 && unitIndex < units.length - 1) {
+    current /= 1024
+    unitIndex += 1
+  }
+  return `${current.toFixed(unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`
+}
+
 async function renderCharts() {
   destroyCharts()
-  chartLoadError.value = false
+  state.chartLoadError = false
   try {
-    await Promise.all([renderOperationChart(), renderConversionChart(), renderChannelChart()])
+    await Promise.all([renderTrendChart(), renderFileChart()])
   } catch {
-    chartLoadError.value = true
+    state.chartLoadError = true
   }
 }
 
@@ -208,133 +121,35 @@ function destroyCharts() {
   }
 }
 
-async function renderOperationChart() {
-  if (!operationChartRef.value) {
+async function renderTrendChart() {
+  if (!trendChartRef.value) {
     return
   }
-  const chart = new Chart({
-    container: operationChartRef.value,
-    autoFit: true,
-    height: 280,
-  })
+  const chart = new Chart({ container: trendChartRef.value, autoFit: true, height: 280 })
   chart.options({
     type: 'line',
-    data: operationTrend.value,
-    encode: {
-      x: 'date',
-      y: 'value',
-      color: 'type',
-    },
-    scale: {
-      color: {
-        range: ['#2563eb', '#0f766e'],
-      },
-    },
-    style: {
-      lineWidth: 2.4,
-    },
-    axis: {
-      x: { title: false },
-      y: { title: false, grid: true },
-    },
-    legend: {
-      color: { position: 'top' },
-    },
-    tooltip: {
-      title: 'date',
-      items: [{ field: 'value', name: 'type' }],
-    },
+    data: trendData.value,
+    encode: { x: 'date', y: 'value', color: 'type' },
+    scale: { color: { range: ['#2563eb'] } },
+    style: { lineWidth: 2.4 },
+    axis: { x: { title: false }, y: { title: false, grid: true } },
+    legend: { color: { position: 'top' } },
   })
   charts.push(chart)
   await chart.render()
 }
 
-async function renderConversionChart() {
-  if (!conversionChartRef.value) {
+async function renderFileChart() {
+  if (!fileChartRef.value) {
     return
   }
-  const chart = new Chart({
-    container: conversionChartRef.value,
-    autoFit: true,
-    height: 280,
-  })
+  const chart = new Chart({ container: fileChartRef.value, autoFit: true, height: 240 })
   chart.options({
     type: 'interval',
-    data: conversionStages.value,
-    encode: {
-      x: 'stage',
-      y: 'value',
-      color: () => '#2563eb',
-    },
-    style: {
-      radiusTopLeft: 6,
-      radiusTopRight: 6,
-      maxWidth: 34,
-    },
-    axis: {
-      x: { title: false },
-      y: { title: false, grid: true },
-    },
-    labels: [
-      {
-        text: 'value',
-        position: 'top',
-        style: {
-          fill: 'var(--text-color-2)',
-          fontSize: 12,
-        },
-      },
-    ],
-  })
-  charts.push(chart)
-  await chart.render()
-}
-
-async function renderChannelChart() {
-  if (!channelChartRef.value) {
-    return
-  }
-  const chart = new Chart({
-    container: channelChartRef.value,
-    autoFit: true,
-    height: 240,
-  })
-  chart.options({
-    type: 'interval',
-    data: channelShare.value,
-    encode: {
-      y: 'value',
-      color: 'channel',
-    },
-    transform: [{ type: 'stackY' }],
-    coordinate: {
-      type: 'theta',
-      outerRadius: 0.86,
-      innerRadius: 0.62,
-    },
-    scale: {
-      color: {
-        range: ['#2563eb', '#0f766e', '#7c3aed', '#f59e0b', '#64748b'],
-      },
-    },
-    legend: {
-      color: { position: 'bottom' },
-    },
-    labels: [
-      {
-        text: 'channel',
-        radius: 0.82,
-        style: {
-          fontSize: 11,
-          fontWeight: 500,
-          fill: 'var(--text-color-2)',
-        },
-      },
-    ],
-    tooltip: {
-      title: 'channel',
-      items: [{ field: 'value' }],
-    },
+    data: state.overview.file_type_share,
+    encode: { x: 'name', y: 'value', color: 'name' },
+    axis: { x: { title: false }, y: { title: false, grid: true } },
+    legend: false,
   })
   charts.push(chart)
   await chart.render()
@@ -342,184 +157,92 @@ async function renderChannelChart() {
 </script>
 
 <template>
-  <n-el class="workbench-page">
-    <div class="workbench-header">
-      <div class="min-w-0">
-        <h1>{{ t('resource.dashboard.title') }}</h1>
-        <p>{{ t('resource.dashboard.subtitle') }}</p>
+  <NSpin :show="state.loading">
+    <n-el class="dashboard-page">
+      <div class="dashboard-header">
+        <div class="min-w-0">
+          <h1>{{ t('resource.dashboard.title') }}</h1>
+          <p>{{ t('resource.dashboard.subtitle') }}</p>
+        </div>
+        <NButton text :loading="state.loading" @click="fetchOverview">
+          <template #icon>
+            <NIcon>
+              <Icon icon="icon-park-outline:reload" />
+            </NIcon>
+          </template>
+        </NButton>
       </div>
-    </div>
 
-    <n-grid cols="1 s:2 xl:4" responsive="screen" :x-gap="16" :y-gap="16">
-      <n-grid-item v-for="item in metricCards" :key="item.key">
-        <n-card class="metric-card" :bordered="false">
-          <div class="metric-card__top">
-            <span class="metric-card__icon" :style="{ color: item.color, backgroundColor: `${item.color}14` }">
-              <NovaIcon :icon="item.icon" :size="22" />
-            </span>
-            <n-tag :type="item.trend === 'up' ? 'success' : 'warning'" :bordered="false" size="small">
-              {{ item.trend === 'up' ? '+' : '-' }}{{ item.trendValue }}
-            </n-tag>
-          </div>
-          <div class="metric-card__title">
-            {{ item.title }}
-          </div>
-          <div class="metric-card__value">
-            <span>{{ item.value }}</span>
-            <small>{{ item.unit }}</small>
-          </div>
-          <div class="metric-card__helper">
-            {{ item.helper }}
-          </div>
-        </n-card>
-      </n-grid-item>
-    </n-grid>
-
-    <n-grid class="mt-4" cols="1 xl:24" responsive="screen" :x-gap="16" :y-gap="16">
-      <n-grid-item span="1 xl:16">
-        <n-card
-          class="workbench-card workbench-card--chart"
-          :title="t('resource.dashboard.charts.operation_trend')"
-          :bordered="false"
-        >
-          <div class="chart-shell">
-            <div ref="operationChartRef" class="chart-box" />
-            <div v-if="chartLoadError" class="chart-error">
-              {{ t('resource.dashboard.charts.load_failed') }}
+      <NGrid cols="1 s:2 m:3 xl:5" responsive="screen" :x-gap="16" :y-gap="16">
+        <NGridItem v-for="item in metricCards" :key="item.key">
+          <NCard class="metric-card" :bordered="false">
+            <div class="metric-card__top">
+              <span
+                class="metric-card__icon"
+                :style="{ color: item.color, backgroundColor: `${item.color}14` }"
+              >
+                <NovaIcon :icon="item.icon" :size="22" />
+              </span>
             </div>
-          </div>
-        </n-card>
-      </n-grid-item>
-      <n-grid-item span="1 xl:8">
-        <n-card
-          class="workbench-card workbench-card--chart"
-          :title="t('resource.dashboard.charts.channel_share')"
-          :bordered="false"
-        >
-          <div class="chart-shell">
-            <div ref="channelChartRef" class="chart-box chart-box--small" />
-            <div v-if="chartLoadError" class="chart-error">
-              {{ t('resource.dashboard.charts.load_failed') }}
+            <div class="metric-card__title">{{ item.title }}</div>
+            <div class="metric-card__value">
+              <span class="metric-card__number">{{ item.value }}</span>
+              <span class="metric-card__unit">{{ item.unitText }}</span>
             </div>
-          </div>
-        </n-card>
-      </n-grid-item>
-    </n-grid>
+            <div class="metric-card__helper">{{ item.helper }}</div>
+          </NCard>
+        </NGridItem>
+      </NGrid>
 
-    <n-grid class="mt-4" cols="1 xl:24" responsive="screen" :x-gap="16" :y-gap="16">
-      <n-grid-item span="1 xl:15">
-        <n-card
-          class="workbench-card workbench-card--chart"
-          :title="t('resource.dashboard.charts.conversion')"
-          :bordered="false"
-        >
-          <div class="chart-shell">
-            <div ref="conversionChartRef" class="chart-box" />
-            <div v-if="chartLoadError" class="chart-error">
-              {{ t('resource.dashboard.charts.load_failed') }}
-            </div>
-          </div>
-        </n-card>
-      </n-grid-item>
-      <n-grid-item span="1 xl:9">
-        <n-card
-          class="workbench-card workbench-card--chart"
-          :title="t('resource.dashboard.ranking.title')"
-          :bordered="false"
-        >
-          <div class="ranking-list">
-            <div v-for="item in rankingList" :key="item.name" class="ranking-item">
-              <div class="ranking-item__main">
-                <span>{{ item.name }}</span>
-                <strong>{{ item.value }}</strong>
-              </div>
-              <n-progress type="line" :show-indicator="false" :percentage="item.percent" :height="8" />
-            </div>
-          </div>
-        </n-card>
-      </n-grid-item>
-    </n-grid>
+      <NGrid class="mt-4" cols="1 xl:24" responsive="screen" :x-gap="16" :y-gap="16">
+        <NGridItem span="1 xl:16">
+          <NCard
+            class="dashboard-card"
+            :title="t('resource.dashboard.charts.trend')"
+            :bordered="false"
+          >
+            <div ref="trendChartRef" class="chart-box" />
+          </NCard>
+        </NGridItem>
+        <NGridItem span="1 xl:8">
+          <NCard
+            class="dashboard-card"
+            :title="t('resource.dashboard.charts.file_type')"
+            :bordered="false"
+          >
+            <div ref="fileChartRef" class="chart-box chart-box--small" />
+          </NCard>
+        </NGridItem>
+      </NGrid>
 
-    <n-grid class="mt-4" cols="1 l:3" responsive="screen" :x-gap="16" :y-gap="16">
-      <n-grid-item>
-        <n-card
-          class="workbench-card workbench-card--panel"
-          :title="t('resource.dashboard.todos.title')"
-          :bordered="false"
-        >
-          <n-list hoverable clickable>
-            <n-list-item v-for="item in todoList" :key="item.title">
-              <n-thing :title="item.title" :description="item.meta">
-                <template #header-extra>
-                  <n-tag :type="item.type" :bordered="false">
-                    {{ item.count }}
-                  </n-tag>
-                </template>
-              </n-thing>
-            </n-list-item>
-          </n-list>
-        </n-card>
-      </n-grid-item>
-
-      <n-grid-item>
-        <n-card
-          class="workbench-card workbench-card--panel"
-          :title="t('resource.dashboard.alerts.title')"
-          :bordered="false"
-        >
-          <div class="alert-list">
-            <div v-for="item in alertList" :key="item.title" class="alert-item">
-              <n-tag :type="item.type" :bordered="false" size="small">
-                {{ item.title }}
-              </n-tag>
-              <p>{{ item.description }}</p>
-            </div>
-          </div>
-        </n-card>
-      </n-grid-item>
-
-      <n-grid-item>
-        <n-card
-          class="workbench-card workbench-card--panel"
-          :title="t('resource.dashboard.timeline.title')"
-          :bordered="false"
-        >
-          <n-timeline>
-            <n-timeline-item
-              v-for="item in activityTimeline"
-              :key="item.title"
-              :type="item.type"
-              :title="item.title"
-              :content="item.content"
-              :time="item.time"
-            />
-          </n-timeline>
-        </n-card>
-      </n-grid-item>
-    </n-grid>
-  </n-el>
+      <NAlert v-if="state.chartLoadError" class="mt-4" type="warning" :show-icon="false">
+        {{ t('resource.dashboard.charts.load_failed') }}
+      </NAlert>
+    </n-el>
+  </NSpin>
 </template>
 
 <style scoped>
-.workbench-page {
+.dashboard-page {
   min-height: 100%;
   min-width: 0;
 }
 
-.workbench-header {
+.dashboard-header {
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
 }
 
-.workbench-header h1 {
+.dashboard-header h1 {
   margin: 0;
   font-size: 26px;
   line-height: 1.25;
 }
 
-.workbench-header p {
+.dashboard-header p {
   margin: 8px 0 0;
   color: var(--text-color-3);
 }
@@ -527,16 +250,12 @@ async function renderChannelChart() {
 .metric-card :deep(.n-card__content) {
   display: grid;
   gap: 10px;
-  min-height: 142px;
+  min-height: 138px;
 }
 
-.metric-card__top,
-.metric-card__value,
-.ranking-item__main {
+.metric-card__top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
 }
 
 .metric-card__icon {
@@ -554,36 +273,36 @@ async function renderChannelChart() {
   font-size: 13px;
 }
 
-.metric-card__value span {
+.metric-card__value {
+  display: grid;
+  gap: 4px;
   color: var(--text-color-base);
-  font-size: 28px;
+  word-break: break-word;
+}
+
+.metric-card__number {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1.1;
 }
 
-.metric-card__value small {
-  color: var(--text-color-3);
-}
-
-.chart-shell {
-  position: relative;
+.metric-card__unit {
   min-width: 0;
+  color: var(--text-color-3);
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-.workbench-card {
+.dashboard-card {
   height: 100%;
 }
 
-.workbench-card :deep(.n-card__content) {
+.dashboard-card :deep(.n-card__content) {
   min-width: 0;
-}
-
-.workbench-card--chart :deep(.n-card__content) {
-  min-height: 312px;
-}
-
-.workbench-card--panel :deep(.n-card__content) {
-  min-height: 292px;
+  min-height: 290px;
 }
 
 .chart-box {
@@ -594,57 +313,5 @@ async function renderChannelChart() {
 
 .chart-box--small {
   height: 240px;
-}
-
-.chart-error {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-color-3);
-  background: var(--card-color);
-  border: 1px dashed var(--border-color);
-  border-radius: 6px;
-}
-
-.ranking-list,
-.alert-list {
-  display: grid;
-  gap: 16px;
-}
-
-.ranking-item {
-  display: grid;
-  gap: 8px;
-}
-
-.ranking-item__main span {
-  color: var(--text-color-2);
-}
-
-.ranking-item__main strong {
-  color: var(--text-color-base);
-}
-
-.alert-item {
-  padding: 12px;
-  background: var(--body-color);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-}
-
-.alert-item p {
-  margin: 8px 0 0;
-  color: var(--text-color-3);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-@media (max-width: 720px) {
-  .workbench-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 }
 </style>

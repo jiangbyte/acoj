@@ -3,6 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { NButton, NFlex, NIcon, NImage, NTag } from 'naive-ui'
+import FileUpload from '@/components/upload/FileUpload.vue'
 import { fileApi } from '@/api'
 import { createTagColor, normalizeSearchValues, renderButtonIcon, resolveFileUrl } from '@/utils'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
@@ -15,12 +16,10 @@ import ModalForm from './components/ModalForm.vue'
 const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
-const fileInputRef = ref<HTMLInputElement | null>(null)
 const state = reactive({
   files: [] as any[],
   total: 0,
   loading: false,
-  uploadLoading: false,
   searchValues: {} as any,
   checkedRowKeys: [] as string[],
   page: 1,
@@ -254,27 +253,6 @@ function openEditModal(id: string) {
   formModalRef.value?.openModal(id)
 }
 
-function triggerUpload() {
-  fileInputRef.value?.click()
-}
-
-async function handleFileChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) {
-    return
-  }
-  state.uploadLoading = true
-  try {
-    await fileApi.upload(file)
-    window.$message.success(t('resource.sys.file.upload_success'))
-    await fetchPage()
-  } finally {
-    state.uploadLoading = false
-  }
-}
-
 function handleCheckedRowKeys(keys: Array<string | number>) {
   state.checkedRowKeys = keys.map(String)
 }
@@ -350,14 +328,14 @@ async function deleteData(ids: string[]) {
       :on-update-checked-row-keys="handleCheckedRowKeys"
     >
       <template #toolbar>
-        <NFlex>
-          <NButton type="primary" text :title="t('resource.sys.file.upload')" :aria-label="t('resource.sys.file.upload')" :loading="state.uploadLoading" @click="triggerUpload">
-            <template #icon>
-              <NIcon>
-                <Icon icon="icon-park-outline:upload" />
-              </NIcon>
-            </template>
-          </NButton>
+        <NFlex align="center">
+          <FileUpload
+            compact
+            mode="icon"
+            icon="icon-park-outline:upload"
+            :button-text="t('resource.sys.file.upload')"
+            @uploaded="fetchPage"
+          />
           <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
@@ -383,7 +361,6 @@ async function deleteData(ids: string[]) {
       </template>
     </ProDataTable>
 
-    <input ref="fileInputRef" class="hidden" type="file" @change="handleFileChange" />
     <ModalForm ref="formModalRef" @saved="fetchPage" />
     <ModalDetail ref="detailModalRef" />
   </NFlex>

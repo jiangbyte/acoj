@@ -11,10 +11,12 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
+import ModalGroupForm from './components/ModalGroupForm.vue'
 
 const { t } = useI18n()
 const activeTab = ref<'threads' | 'groups'>('threads')
 const formModalRef = ref<any>(null)
+const groupFormModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
 const state = reactive({
   rows: [] as any[],
@@ -166,6 +168,13 @@ const groupColumns = computed<ProDataTableColumns<any>>(() => [
     ellipsis: { tooltip: true },
   },
   {
+    title: t('resource.message.message.group_avatar'),
+    path: 'avatar',
+    width: 120,
+    ellipsis: { tooltip: true },
+    render: (row) => row.avatar || '-',
+  },
+  {
     title: t('resource.message.message.member_count'),
     path: 'member_count',
     width: 110,
@@ -189,12 +198,20 @@ const groupColumns = computed<ProDataTableColumns<any>>(() => [
   {
     title: t('common.often.operation'),
     key: 'actions',
-    width: 100,
+    width: 140,
     fixed: 'right',
     render: (row) => (
-      <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row)}>
-        {renderButtonIcon('icon-park-outline:preview-open')}
-      </NButton>
+      <NFlex size={12}>
+        <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row)}>
+          {renderButtonIcon('icon-park-outline:preview-open')}
+        </NButton>
+        <NButton type="primary" size="small" text={true} onClick={() => openGroupForm(row.id)}>
+          {renderButtonIcon('icon-park-outline:edit')}
+        </NButton>
+        <NButton type="error" size="small" text={true} onClick={() => confirmDeleteGroup(row.id)}>
+          {renderButtonIcon('icon-park-outline:delete')}
+        </NButton>
+      </NFlex>
     ),
   },
 ])
@@ -240,6 +257,26 @@ function openSystemMessage(threadId: string) {
 function openDetailModal(row: any) {
   detailModalRef.value?.openModal(row, activeTab.value)
 }
+
+function openGroupForm(id?: string) {
+  groupFormModalRef.value?.openModal(id)
+}
+
+function confirmDeleteGroup(id: string) {
+  window.$dialog.warning({
+    title: t('common.often.delete'),
+    draggable: true,
+    maskClosable: false,
+    content: t('resource.message.message.group_delete_confirm'),
+    positiveText: t('common.confirm'),
+    negativeText: t('common.cancel'),
+    onPositiveClick: async () => {
+      await messageApi.removeGroup({ ids: [id] })
+      window.$message.success(t('common.often.delete_success'))
+      await fetchPage()
+    },
+  })
+}
 </script>
 
 <template>
@@ -278,6 +315,20 @@ function openDetailModal(row: any) {
     >
       <template #toolbar>
         <NFlex>
+          <NButton
+            v-if="activeTab === 'groups'"
+            type="primary"
+            text
+            :title="t('resource.message.message.add_group')"
+            :aria-label="t('resource.message.message.add_group')"
+            @click="openGroupForm()"
+          >
+            <template #icon>
+              <NIcon>
+                <Icon icon="icon-park-outline:plus" />
+              </NIcon>
+            </template>
+          </NButton>
           <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
@@ -290,6 +341,7 @@ function openDetailModal(row: any) {
     </ProDataTable>
 
     <ModalForm ref="formModalRef" @saved="fetchPage" />
+    <ModalGroupForm ref="groupFormModalRef" @saved="fetchPage" />
     <ModalDetail ref="detailModalRef" />
   </NFlex>
 </template>

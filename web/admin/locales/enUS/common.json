@@ -9,6 +9,12 @@
   "reset": "Reset",
   "view": "View",
   "required": "Please enter {field}",
+  "upload": {
+    "select": "Upload",
+    "clear": "Clear",
+    "empty": "No file selected",
+    "success": "Uploaded successfully"
+  },
   "search_form": {
     "search": "Search",
     "reset": "Reset",

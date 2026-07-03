@@ -72,12 +72,12 @@ async def test_permission_tree_selector_route_lists_resources(client, monkeypatc
 
 
 async def test_role_permission_grant_overwrites_existing_grants(client, monkeypatch):
-    async def fake_ensure_registered_permission(permission_key: str) -> None:
-        assert permission_key in {"sys:file:page", "iam:role:page"}
+    async def fake_ensure_registered_permissions(permission_keys: list[str]) -> None:
+        assert set(permission_keys) <= {"sys:file:page", "iam:role:page"}
 
     monkeypatch.setattr(
-        "app.modules.iam.role.service.ensure_registered_permission",
-        fake_ensure_registered_permission,
+        "app.modules.iam.role.service.ensure_registered_permissions",
+        fake_ensure_registered_permissions,
     )
     token = "admin-role-grant-token"
     await _seed_admin(
@@ -134,12 +134,12 @@ async def test_role_permission_grant_overwrites_existing_grants(client, monkeypa
 
 
 async def test_account_permission_grant_overwrites_existing_grants(client, monkeypatch):
-    async def fake_list_registered_permission_keys() -> set[str]:
-        return {"sys:file:page"}
+    async def fake_ensure_registered_permissions(permission_keys: list[str]) -> None:
+        assert set(permission_keys) <= {"sys:file:page"}
 
     monkeypatch.setattr(
-        "app.modules.iam.account.service.list_registered_permission_keys",
-        fake_list_registered_permission_keys,
+        "app.modules.iam.account.service.ensure_registered_permissions",
+        fake_ensure_registered_permissions,
     )
     token = "admin-account-grant-token"
     await _seed_admin(

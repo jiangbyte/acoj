@@ -110,8 +110,21 @@ class StorageSettings(BaseSettings):
         "image/webp",
         "application/pdf",
         "text/plain",
+        "video/mp4",
+        "video/webm",
+        "video/quicktime",
     ]
-    upload_allowed_extensions: list[str] = [".jpg", ".jpeg", ".png", ".webp", ".pdf", ".txt"]
+    upload_allowed_extensions: list[str] = [
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+        ".pdf",
+        ".txt",
+        ".mp4",
+        ".webm",
+        ".mov",
+    ]
     upload_denied_extensions: list[str] = [
         ".exe",
         ".bat",
