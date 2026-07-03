@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 
-from app.api.router import router as api_router
 from app.core.config.settings import settings
 from app.core.exceptions.handlers import (
     customize_openapi_error_responses,
@@ -20,6 +19,10 @@ from app.platform.observability.manager import setup_observability
 
 def create_app() -> FastAPI:
     setup_logging()
+
+    # 延迟导入：确保 setup_logging() 先配置好，模块发现的日志才能正常输出
+    from app.api.router import router as api_router
+
     app = FastAPI(
         title=settings.app.name,
         debug=False,

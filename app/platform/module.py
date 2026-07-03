@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import importlib
 import inspect
+import logging
 import pkgutil
 from dataclasses import dataclass
 from typing import Any
 
 from fastapi import APIRouter
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,22 +60,43 @@ def _iter_module_manifest_names(package_name: str) -> list[str]:
     package = importlib.import_module(package_name)
     package_paths = getattr(package, "__path__", None)
     if package_paths is None:
+        logger.warning(
+            "Package %s has no __path__ (namespace package?) — no modules will be discovered",
+            package_name,
+        )
         return []
 
+    logger.info(
+        "Scanning for module manifests in %s at paths: %s",
+        package_name,
+        list(package_paths),
+    )
+
     names: list[str] = []
+    subpkg_count = 0
     for module_info in pkgutil.walk_packages(package_paths, prefix=f"{package_name}."):
         if not module_info.ispkg:
             continue
+        subpkg_count += 1
         manifest_name = f"{module_info.name}.module"
         if importlib.util.find_spec(manifest_name) is not None:
             names.append(manifest_name)
+
+    logger.info(
+        "Found %d subpackages in %s, %d have module manifests",
+        subpkg_count,
+        package_name,
+        len(names),
+    )
     return sorted(set(names))
 
 
 def load_module_specs(package_name: str = "app.modules") -> list[ModuleSpec]:
     specs: list[ModuleSpec] = []
     seen: set[str] = set()
-    for manifest_name in _iter_module_manifest_names(package_name):
+    manifest_names = _iter_module_manifest_names(package_name)
+    logger.info("Loading %d module specs from %s", len(manifest_names), package_name)
+    for manifest_name in manifest_names:
         manifest = importlib.import_module(manifest_name)
         module_spec = getattr(manifest, "module", None)
         if not isinstance(module_spec, ModuleSpec):
@@ -81,6 +105,12 @@ def load_module_specs(package_name: str = "app.modules") -> list[ModuleSpec]:
             raise ValueError(f"Duplicate module name: {module_spec.name}")
         seen.add(module_spec.name)
         specs.append(module_spec)
+    route_count = sum(len(spec.routes) for spec in specs)
+    logger.info(
+        "Loaded %d modules with %d route specs total",
+        len(specs),
+        route_count,
+    )
     return sorted(specs, key=lambda item: (item.order, item.name))
 
 
@@ -93,12 +123,20 @@ def build_api_router(module_specs: list[ModuleSpec]) -> APIRouter:
     ]
     route_specs.sort(key=lambda item: (item[1].version, item[1].order, item[0].order, item[0].name))
 
+    logger.info("Building API router with %d route specs", len(route_specs))
     for module_spec, route_spec in route_specs:
         route_router = import_string(route_spec.router)
         if not isinstance(route_router, APIRouter):
             raise TypeError(f"{module_spec.name} route {route_spec.router} is not an APIRouter")
         prefix = _join_prefixes("/api", route_spec.version, route_spec.prefix)
+        logger.debug(
+            "Including router %s -> prefix=%s, tags=%s",
+            route_spec.router,
+            prefix,
+            route_spec.tags,
+        )
         api_router.include_router(route_router, prefix=prefix, tags=list(route_spec.tags))
+    logger.info("API router built with %d total routes", len(api_router.routes))
     return api_router
 
 
