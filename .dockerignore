@@ -12,6 +12,7 @@ htmlcov/
 .env.*
 storage/
 tests/
+migrations/
 web/
 node_modules/
 dist/

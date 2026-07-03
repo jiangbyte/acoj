@@ -2,6 +2,8 @@
 FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/python:3.11-slim
 #FROM docker.xuanyuan.run/library/python:3.11-slim
 
+ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     APP__HOST=0.0.0.0 \
@@ -20,18 +22,23 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     STORAGE__LOCAL_ROOT=/app/storage \
     STORAGE__PUBLIC_PATH=/api/v1/files
 
-ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/ \
-    PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
+ENV PIP_INDEX_URL=${PIP_INDEX_URL} \
     PIP_DEFAULT_TIMEOUT=120 \
-    PIP_RETRIES=5
+    PIP_RETRIES=5 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 WORKDIR /app
 
-COPY pyproject.toml README.md alembic.ini ./
-COPY app ./app
-COPY migrations ./migrations
+COPY pyproject.toml README.md ./
 
-RUN pip install --no-cache-dir ".[postgres]"
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m pip install --upgrade pip setuptools wheel && \
+    python -c 'import subprocess, sys, tomllib; data = tomllib.load(open("pyproject.toml", "rb")); deps = data["project"]["dependencies"] + data["project"]["optional-dependencies"]["postgres"]; subprocess.check_call([sys.executable, "-m", "pip", "install", "--prefer-binary", *deps])'
+
+COPY app ./app
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m pip install --no-deps --no-build-isolation .
 RUN mkdir -p /app/storage /app/.runtime
 
 VOLUME ["/app/storage"]
