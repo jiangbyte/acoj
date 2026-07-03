@@ -81,7 +81,11 @@ class ResourceService:
     async def _list_visible_resources(self, session: SessionPayload) -> list[SysResource]:
         if "*:*:*" in session.permission_keys:
             return await self.repo.list_resources()
-        resource_ids = await GrantRepository(self.db).get_account_resource_ids(session.account_id)
+        resource_ids = session.resource_ids
+        if not resource_ids:
+            resource_ids = await GrantRepository(self.db).get_account_resource_ids(
+                session.account_id
+            )
         return await self.repo.list_resources_by_ids_with_parents(resource_ids)
 
     async def list_grant_modules(self) -> list[ResourceGrantModuleOption]:

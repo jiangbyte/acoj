@@ -8,7 +8,6 @@ from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema
 from app.core.security.data_scope import build_data_scope_filter, resolve_data_scope_dept_ids
 from app.core.security.password import hash_password
-from app.core.security.permission_registry import list_registered_permission_keys
 from app.core.security.session import SessionPayload
 from app.modules.auth.session_service import AccountSessionService
 from app.modules.iam.account.model import SysAccount, SysAccountDeptRel
@@ -43,7 +42,7 @@ from app.modules.iam.enums import GrantSubjectType
 from app.modules.iam.grant.repository import GrantRepository
 from app.modules.iam.group.model import SysGroup
 from app.modules.iam.group.repository import GroupRepository
-from app.modules.iam.permission.service import ensure_registered_permission
+from app.modules.iam.permission.service import ensure_registered_permissions
 from app.modules.iam.resource.service import ResourceService
 from app.modules.iam.role.model import SysRole
 from app.modules.iam.role.repository import RoleRepository
@@ -110,9 +109,7 @@ class AccountService:
         session_targets = [(account.account_type, account.id) for account in accounts]
         async with transactional(self.db):
             await self.repo.purge_many(account_ids)
-        session_service = AccountSessionService(self.db)
-        for account_type, account_id in session_targets:
-            await session_service.delete_account_sessions(account_type, account_id)
+        await AccountSessionService(self.db).delete_accounts_sessions(session_targets)
         return len(account_ids)
 
     async def detail(
@@ -227,7 +224,7 @@ class AccountService:
                 "iam:account:grantpermission",
                 _grant_custom_dept_ids(payload.grant_info_list),
             )
-        await self._ensure_registered_permissions(
+        await ensure_registered_permissions(
             [grant.permission_key for grant in payload.grant_info_list]
         )
         async with transactional(self.db):
@@ -383,15 +380,6 @@ class AccountService:
         async with transactional(self.db):
             await self.repo.replace_account_depts(payload)
         await self._refresh_accounts([payload.id])
-
-    async def _ensure_registered_permissions(self, permission_keys: list[str]) -> None:
-        unique_permission_keys = sorted(set(permission_keys))
-        if not unique_permission_keys:
-            return
-        registered_permission_keys = await list_registered_permission_keys()
-        for permission_key in unique_permission_keys:
-            if permission_key not in registered_permission_keys:
-                await ensure_registered_permission(permission_key)
 
     async def _refresh_accounts(self, account_ids: list[str]) -> None:
         await AccountSessionService(self.db).refresh_accounts_sessions(sorted(set(account_ids)))

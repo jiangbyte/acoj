@@ -6,8 +6,6 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.config.enums import AccountStatusEnum
 from app.core.exceptions.business import ConflictError, NotFoundError
-from app.modules.iam.enums import GrantSubjectType
-from app.modules.iam.enums import AccountIdentityBindStatus, AccountIdentityType
 from app.modules.iam.account.model import (
     SysAccount,
     SysAccountDeptRel,
@@ -15,24 +13,25 @@ from app.modules.iam.account.model import (
     SysAccountIdentity,
     SysAccountRoleRel,
 )
-from app.modules.iam.grant.model import SysSubjectPermissionGrantRel, SysSubjectResourceGrantRel
 from app.modules.iam.account.schema import (
-    AccountCreateRequest,
     AccountAdminPageQuery,
     AccountCancelPayload,
-    AccountDeptGrantInfo,
+    AccountCreateRequest,
     AccountDeptAssignRequest,
+    AccountDeptGrantInfo,
     AccountGrantDeptRequest,
     AccountGrantGroupRequest,
-    AccountGroupAssignRequest,
     AccountGrantPermissionRequest,
+    AccountGrantRoleRequest,
+    AccountGroupAssignRequest,
     AccountIdentityUpsertPayload,
     AccountPermissionGrantInfo,
-    AccountGrantRoleRequest,
     AccountRoleAssignRequest,
     AccountUpdateRequest,
 )
 from app.modules.iam.dept.model import SysDept
+from app.modules.iam.enums import AccountIdentityBindStatus, AccountIdentityType, GrantSubjectType
+from app.modules.iam.grant.model import SysSubjectPermissionGrantRel, SysSubjectResourceGrantRel
 from app.modules.iam.group.model import SysGroup, SysGroupRoleRel
 from app.modules.iam.role.model import SysRole
 from app.modules.user.admin.model import AdminUserProfile
@@ -177,15 +176,25 @@ class AccountRepository:
             for identity_type, identifier, is_primary, verified, bind_status in identity_specs
             if str(identifier or "").strip()
         ]
-        for item in identities:
-            stmt = select(SysAccountIdentity).where(
-                SysAccountIdentity.identity_type == item.identity_type.value,
-                SysAccountIdentity.identifier == item.identifier,
-                SysAccountIdentity.account_id != account_id,
+        if identities:
+            conflict_conditions = [
+                (SysAccountIdentity.identity_type == item.identity_type.value)
+                & (SysAccountIdentity.identifier == item.identifier)
+                for item in identities
+            ]
+            stmt = (
+                select(SysAccountIdentity.id)
+                .where(
+                    SysAccountIdentity.account_id != account_id,
+                    or_(*conflict_conditions),
+                )
+                .limit(1)
             )
             if (await self.db.execute(stmt)).scalar_one_or_none():
                 raise ConflictError("Account identity already exists")
-        await self.db.execute(delete(SysAccountIdentity).where(SysAccountIdentity.account_id == account_id))
+        await self.db.execute(
+            delete(SysAccountIdentity).where(SysAccountIdentity.account_id == account_id)
+        )
         for item in identities:
             self.db.add(
                 SysAccountIdentity(
@@ -199,14 +208,21 @@ class AccountRepository:
             )
         await self.db.flush()
 
-    async def list_identities_by_account_ids(self, account_ids: list[str]) -> list[SysAccountIdentity]:
+    async def list_identities_by_account_ids(
+        self,
+        account_ids: list[str],
+    ) -> list[SysAccountIdentity]:
         unique_ids = list(dict.fromkeys(account_ids))
         if not unique_ids:
             return []
         stmt = (
             select(SysAccountIdentity)
             .where(SysAccountIdentity.account_id.in_(unique_ids))
-            .order_by(SysAccountIdentity.account_id.asc(), SysAccountIdentity.is_primary.desc(), SysAccountIdentity.id.asc())
+            .order_by(
+                SysAccountIdentity.account_id.asc(),
+                SysAccountIdentity.is_primary.desc(),
+                SysAccountIdentity.id.asc(),
+            )
         )
         return list((await self.db.execute(stmt)).scalars().all())
 
@@ -298,12 +314,24 @@ class AccountRepository:
                 SysSubjectResourceGrantRel.subject_id.in_(unique_ids),
             )
         )
-        await self.db.execute(delete(SysAccountRoleRel).where(SysAccountRoleRel.account_id.in_(unique_ids)))
-        await self.db.execute(delete(SysAccountDeptRel).where(SysAccountDeptRel.account_id.in_(unique_ids)))
-        await self.db.execute(delete(SysAccountGroupRel).where(SysAccountGroupRel.account_id.in_(unique_ids)))
-        await self.db.execute(delete(SysAccountIdentity).where(SysAccountIdentity.account_id.in_(unique_ids)))
-        await self.db.execute(delete(AdminUserProfile).where(AdminUserProfile.account_id.in_(unique_ids)))
-        await self.db.execute(delete(PortalUserProfile).where(PortalUserProfile.account_id.in_(unique_ids)))
+        await self.db.execute(
+            delete(SysAccountRoleRel).where(SysAccountRoleRel.account_id.in_(unique_ids))
+        )
+        await self.db.execute(
+            delete(SysAccountDeptRel).where(SysAccountDeptRel.account_id.in_(unique_ids))
+        )
+        await self.db.execute(
+            delete(SysAccountGroupRel).where(SysAccountGroupRel.account_id.in_(unique_ids))
+        )
+        await self.db.execute(
+            delete(SysAccountIdentity).where(SysAccountIdentity.account_id.in_(unique_ids))
+        )
+        await self.db.execute(
+            delete(AdminUserProfile).where(AdminUserProfile.account_id.in_(unique_ids))
+        )
+        await self.db.execute(
+            delete(PortalUserProfile).where(PortalUserProfile.account_id.in_(unique_ids))
+        )
         await self.db.execute(delete(SysAccount).where(SysAccount.id.in_(unique_ids)))
         await self.db.flush()
 
@@ -349,17 +377,38 @@ class AccountRepository:
             .outerjoin(PortalUserProfile, PortalUserProfile.account_id == SysAccount.id)
         )
         if data_scope_filter is not None:
-            stmt = stmt.outerjoin(SysAccountDeptRel, SysAccountDeptRel.account_id == SysAccount.id)
-            count_stmt = count_stmt.outerjoin(SysAccountDeptRel, SysAccountDeptRel.account_id == SysAccount.id)
+            stmt = stmt.outerjoin(
+                SysAccountDeptRel,
+                SysAccountDeptRel.account_id == SysAccount.id,
+            )
+            count_stmt = count_stmt.outerjoin(
+                SysAccountDeptRel,
+                SysAccountDeptRel.account_id == SysAccount.id,
+            )
         filters = []
         if query.account:
             filters.append(account_identity.identifier.contains(query.account))
         if query.name:
-            filters.append(or_(AdminUserProfile.name.contains(query.name), PortalUserProfile.name.contains(query.name)))
+            filters.append(
+                or_(
+                    AdminUserProfile.name.contains(query.name),
+                    PortalUserProfile.name.contains(query.name),
+                )
+            )
         if query.phone:
-            filters.append(or_(AdminUserProfile.phone.contains(query.phone), PortalUserProfile.phone.contains(query.phone)))
+            filters.append(
+                or_(
+                    AdminUserProfile.phone.contains(query.phone),
+                    PortalUserProfile.phone.contains(query.phone),
+                )
+            )
         if query.email:
-            filters.append(or_(AdminUserProfile.email.contains(query.email), PortalUserProfile.email.contains(query.email)))
+            filters.append(
+                or_(
+                    AdminUserProfile.email.contains(query.email),
+                    PortalUserProfile.email.contains(query.email),
+                )
+            )
         if query.account_type:
             filters.append(SysAccount.account_type == query.account_type.value)
         if query.account_status:
@@ -428,7 +477,9 @@ class AccountRepository:
         await self.get_required(account_id)
         stmt = select(SysAccountRoleRel.role_id).where(SysAccountRoleRel.account_id == account_id)
         if data_scope_filter is not None:
-            stmt = stmt.join(SysRole, SysRole.id == SysAccountRoleRel.role_id).where(data_scope_filter)
+            stmt = stmt.join(SysRole, SysRole.id == SysAccountRoleRel.role_id).where(
+                data_scope_filter
+            )
         return [str(value) for value in (await self.db.execute(stmt)).scalars().all()]
 
     async def replace_account_roles(self, payload: AccountGrantRoleRequest) -> None:
@@ -439,7 +490,9 @@ class AccountRepository:
             existing_ids = set((await self.db.execute(stmt)).scalars().all())
             if len(existing_ids) != len(role_ids):
                 raise NotFoundError("Role not found")
-        await self.db.execute(delete(SysAccountRoleRel).where(SysAccountRoleRel.account_id == payload.id))
+        await self.db.execute(
+            delete(SysAccountRoleRel).where(SysAccountRoleRel.account_id == payload.id)
+        )
         for role_id in role_ids:
             self.db.add(SysAccountRoleRel(account_id=payload.id, role_id=role_id))
         await self.db.flush()
@@ -459,9 +512,13 @@ class AccountRepository:
         data_scope_filter: ColumnElement[bool] | None = None,
     ) -> list[str]:
         await self.get_required(account_id)
-        stmt = select(SysAccountGroupRel.group_id).where(SysAccountGroupRel.account_id == account_id)
+        stmt = select(SysAccountGroupRel.group_id).where(
+            SysAccountGroupRel.account_id == account_id
+        )
         if data_scope_filter is not None:
-            stmt = stmt.join(SysGroup, SysGroup.id == SysAccountGroupRel.group_id).where(data_scope_filter)
+            stmt = stmt.join(SysGroup, SysGroup.id == SysAccountGroupRel.group_id).where(
+                data_scope_filter
+            )
         return [str(value) for value in (await self.db.execute(stmt)).scalars().all()]
 
     async def replace_account_groups(self, payload: AccountGrantGroupRequest) -> None:
@@ -472,7 +529,9 @@ class AccountRepository:
             existing_ids = set((await self.db.execute(stmt)).scalars().all())
             if len(existing_ids) != len(group_ids):
                 raise NotFoundError("Group not found")
-        await self.db.execute(delete(SysAccountGroupRel).where(SysAccountGroupRel.account_id == payload.id))
+        await self.db.execute(
+            delete(SysAccountGroupRel).where(SysAccountGroupRel.account_id == payload.id)
+        )
         for group_id in group_ids:
             self.db.add(SysAccountGroupRel(account_id=payload.id, group_id=group_id))
         await self.db.flush()
@@ -505,7 +564,9 @@ class AccountRepository:
             if len(existing_ids) != len(dept_ids):
                 raise NotFoundError("Dept not found")
         primary_seen = False
-        await self.db.execute(delete(SysAccountDeptRel).where(SysAccountDeptRel.account_id == payload.id))
+        await self.db.execute(
+            delete(SysAccountDeptRel).where(SysAccountDeptRel.account_id == payload.id)
+        )
         for item in payload.grant_info_list:
             is_primary = bool(item.is_primary) and not primary_seen
             primary_seen = primary_seen or is_primary

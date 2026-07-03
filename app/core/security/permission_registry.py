@@ -160,8 +160,23 @@ async def list_registered_permission_keys() -> set[str]:
 
 
 async def ensure_registered_permission_key(permission_key: str) -> None:
+    await ensure_registered_permission_keys([permission_key])
+
+
+async def ensure_registered_permission_keys(permission_keys: list[str]) -> None:
+    unique_permission_keys = sorted({key for key in permission_keys if key})
+    if not unique_permission_keys:
+        return
     registered_permission_keys = await list_registered_permission_keys()
-    if permission_key not in registered_permission_keys:
+    missing_permission_keys = [
+        permission_key
+        for permission_key in unique_permission_keys
+        if permission_key not in registered_permission_keys
+    ]
+    if missing_permission_keys:
         from app.core.exceptions.business import BusinessError
 
-        raise BusinessError(f"Permission is not registered in Redis: {permission_key}")
+        raise BusinessError(
+            "Permission is not registered in Redis: "
+            + ", ".join(missing_permission_keys)
+        )

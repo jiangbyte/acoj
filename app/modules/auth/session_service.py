@@ -28,6 +28,8 @@ class AccountSessionService:
             return
         account_map = {account.id: account for account in accounts}
         authorizations = await self.grant_repo.get_accounts_authorization(list(account_map.keys()))
+        targets = [(account.account_type, account.id) for account in accounts]
+        payload_factories = {}
 
         for account in accounts:
             authorization = authorizations[account.id]
@@ -43,14 +45,15 @@ class AccountSessionService:
                     current_authorization,
                 )
 
-            await session_store.refresh_account_sessions(
-                account.account_type,
-                account.id,
-                payload_factory,
-            )
+            payload_factories[(account.account_type, account.id)] = payload_factory
+
+        await session_store.refresh_accounts_sessions(targets, payload_factories)
 
     async def delete_account_sessions(self, account_type: str, account_id: str) -> None:
         await session_store.delete_account_sessions(account_type, account_id)
+
+    async def delete_accounts_sessions(self, targets: list[tuple[str, str]]) -> None:
+        await session_store.delete_accounts_sessions(targets)
 
     def _build_session_payload_from_authorization(
         self,

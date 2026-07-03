@@ -9,7 +9,7 @@ from app.modules.auth.session_service import AccountSessionService
 from app.modules.iam.account.model import SysAccount, SysAccountDeptRel
 from app.modules.iam.account.query_service import AccountQueryService
 from app.modules.iam.account.repository import AccountRepository
-from app.modules.iam.permission.service import PermissionService, ensure_registered_permission
+from app.modules.iam.permission.service import PermissionService, ensure_registered_permissions
 from app.modules.iam.resource.service import ResourceService
 from app.modules.iam.role.model import SysRole
 from app.modules.iam.role.repository import RoleRepository
@@ -124,8 +124,9 @@ class RoleService:
                 "iam:role:grantpermission",
                 _grant_custom_dept_ids(payload.grant_info_list),
             )
-        for grant in payload.grant_info_list:
-            await ensure_registered_permission(grant.permission_key)
+        await ensure_registered_permissions(
+            [grant.permission_key for grant in payload.grant_info_list]
+        )
         async with transactional(self.db):
             old_account_ids = await self.repo.list_account_ids_by_role(payload.id)
             await self.repo.replace_permission_grants(payload)

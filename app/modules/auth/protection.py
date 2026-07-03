@@ -73,8 +73,7 @@ class LoginProtectionService:
         keys = [login_failure_account_key(account_type.value, normalized_account)]
         if client_ip:
             keys.append(login_failure_ip_key(account_type.value, client_ip))
-        for key in keys:
-            await redis.delete(key)
+        await redis.delete(*keys)
 
     async def _increase_failure(
         self,
