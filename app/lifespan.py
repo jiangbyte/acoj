@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
 
@@ -16,9 +17,12 @@ from app.platform.module import (
 from app.platform.observability.tracing import shutdown_tracing
 from app.platform.tasks.autostart import celery_process_manager
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    logger.info("lifespan startup: app.routes count = %d", len(app.routes))
     module_specs = load_module_specs()
     init_engine()
     await init_redis()

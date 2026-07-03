@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+import logging
 
 from app.core.config.settings import settings
 from app.core.exceptions.handlers import (
@@ -16,12 +17,16 @@ from app.middleware.trace import TraceMiddleware
 from app.platform.db.session import engine
 from app.platform.observability.manager import setup_observability
 
+logger = logging.getLogger(__name__)
+
 
 def create_app() -> FastAPI:
     setup_logging()
 
     # 延迟导入：确保 setup_logging() 先配置好，模块发现的日志才能正常输出
     from app.api.router import router as api_router
+
+    logger.info("create_app: api_router has %d routes", len(api_router.routes))
 
     app = FastAPI(
         title=settings.app.name,
@@ -44,5 +49,7 @@ def create_app() -> FastAPI:
     async def root() -> RootHealthResponse:
         return RootHealthResponse(status="ok", service=settings.app.name)
 
+    logger.info("create_app: app.routes before include_router = %d", len(app.routes))
     app.include_router(api_router)
+    logger.info("create_app: app.routes after include_router = %d", len(app.routes))
     return app
