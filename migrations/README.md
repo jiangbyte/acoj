@@ -1,10 +1,10 @@
 # 数据库迁移说明
 
-本项目使用 Alembic 管理数据库结构迁移。迁移只负责表、字段、索引、约束等结构变更，不负责初始化业务数据。超管账号、初始角色等业务数据由独立 seed 脚本处理。
+本目录保存 Alembic 迁移文件。迁移只管理数据库结构，不写入业务种子数据。
 
 ## 执行迁移
 
-本地或部署时执行：
+源码环境：
 
 ```bash
 python scripts/migrate.py
@@ -16,19 +16,26 @@ python scripts/migrate.py
 alembic upgrade head
 ```
 
-迁移使用后端配置中的 `DB__URL`，当前项目按 PostgreSQL 生成和验证迁移，不使用 SQLite 生成迁移。
+Docker 后端镜像没有复制 `scripts/`，镜像内执行迁移应使用：
 
-配置优先级：
+```bash
+docker run --rm \
+  --env-file .env \
+  hei-fastapi-backend \
+  python -m alembic upgrade head
+```
+
+迁移使用后端配置中的 `DB__URL`。配置优先级：
 
 ```text
 真实环境变量 > .env / .env.local > settings.py 默认值
 ```
 
-本地开发建议把个人数据库连接写在 `.env.local`，避免修改公共 `.env`。
+当前项目按 PostgreSQL 生成和验证迁移，不使用 SQLite 生成迁移。
 
 ## 自动生成结构迁移
 
-修改数据库结构时，先改 SQLAlchemy model，再生成迁移：
+修改 SQLAlchemy model 后生成迁移：
 
 ```bash
 python scripts/makemigration.py "describe schema change"
@@ -45,12 +52,7 @@ python scripts/makemigration.py "describe schema change"
 - `op.drop_column`
 - `op.drop_index`
 
-禁止在 migration 里写业务数据操作：
-
-- `op.bulk_insert`
-- `op.execute` 写入业务数据
-- `insert/update/delete` seed 或修复业务数据
-- 默认管理员、角色、字典、Banner 等初始化数据
+禁止在 migration 中写业务数据操作，例如 seed 默认管理员、角色、字典、Banner 等。
 
 检查无误后执行：
 
@@ -59,21 +61,18 @@ python scripts/migrate.py
 python scripts/check_migration.py
 ```
 
-`check_migration.py` 用于确认当前数据库结构和 SQLAlchemy model 没有未生成的结构差异。
-
 ## 重建初始迁移
 
-如果项目早期还没有稳定发布，想清空 `migrations/versions` 并重新生成一份全新的初始迁移，不要直接拿已有开发库生成。已有库里已经有业务表，Alembic 会把它当作“当前结构”，生成结果会不正确。
-
-推荐使用脚本通过临时空库生成：
+项目早期如果要清空 `migrations/versions` 并重新生成完整初始迁移，使用临时空库脚本：
 
 ```bash
 python scripts/rebuild_initial_migration.py --yes
 ```
 
-脚本会清空 `migrations/versions/*.py`，创建临时空库，生成 `initial schema`，再执行 `migrate.py` 和 `check_migration.py` 验证。默认临时库名是 `hei_fastapi_migration_shadow`，连接账号、密码、主机和端口来自当前 `DB__URL`。
+脚本会清空 `migrations/versions/*.py`，创建临时空库，生成 `initial schema`，再执行迁移和结构差异检查。
+默认临时库名是 `hei_fastapi_migration_shadow`，连接账号、密码、主机和端口来自当前 `DB__URL`。
 
-如果需要调整迁移说明、临时库名或保留临时库排查问题：
+常用参数：
 
 ```bash
 python scripts/rebuild_initial_migration.py --yes -m "initial schema"
@@ -81,63 +80,18 @@ python scripts/rebuild_initial_migration.py --yes --shadow-db hei_fastapi_migrat
 python scripts/rebuild_initial_migration.py --yes --keep-db
 ```
 
-重建初始迁移后，旧开发库里的 `alembic_version` 会指向已经删除的旧 revision。要迁移旧开发库，最干净的方式是删除并重建数据库，再执行：
+重建初始迁移后，旧开发库里的 `alembic_version` 会指向已经删除的旧 revision。最干净的处理方式是删除并
+重建开发库，再执行：
 
 ```bash
 python scripts/migrate.py
 ```
 
-如果旧库里有需要保留的数据，不要直接重建初始迁移；应走上一节的增量迁移流程。
+如果旧库里有需要保留的数据，不要重建初始迁移，应走增量迁移流程。
 
-## 新开发库初始化
+## 初始化数据
 
-如果是空库，直接执行：
-
-```bash
-python scripts/migrate.py
-```
-
-如果需要重建本地开发库，先删除并重新创建 PostgreSQL 数据库，再执行：
-
-```bash
-python scripts/migrate.py
-```
-
-示例：
-
-```bash
-dropdb hei_fastapi
-createdb hei_fastapi
-python scripts/migrate.py
-```
-
-如果本地没有 `dropdb/createdb` 命令，也可以用数据库管理工具删除并重建 `DB__URL` 指向的数据库。
-
-## 常见问题
-
-`Target database is not up to date`：
-
-当前数据库没有升级到最新 migration。先执行：
-
-```bash
-python scripts/migrate.py
-```
-
-然后再生成新的迁移。
-
-生成的 migration 为空：
-
-说明当前 model 和数据库结构没有检测到差异。可以运行：
-
-```bash
-python scripts/check_migration.py
-```
-
-确认是否已经一致。
-
-需要初始化数据：
-
-不要写进 Alembic migration。当前超管初始化使用独立脚本：
+初始化超管使用独立 seed 脚本：
 
 ```bash
 python scripts/seed_super_admin.py
@@ -148,3 +102,12 @@ python scripts/seed_super_admin.py
 ```bash
 python scripts/seed_super_admin.py --help
 ```
+
+不要把 seed 数据写进 Alembic migration。
+
+当前后端 Docker 镜像没有复制 `scripts/`。如果要在容器内 seed，需要自行扩展镜像或挂载源码脚本；否则在
+源码环境执行 seed。
+
+## 更多说明
+
+完整流程见 [docs/migration.md](../docs/migration.md)。

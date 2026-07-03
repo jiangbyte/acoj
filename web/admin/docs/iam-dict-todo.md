@@ -5,7 +5,7 @@
 | 字典编码            | 用途         | 建议值                                                     |
 | ------------------- | ------------ | ---------------------------------------------------------- |
 | `ACCOUNT_TYPE`      | 账号类型     | `ADMIN`、`PORTAL`                                          |
-| `ACCOUNT_STATUS`    | 账号状态     | `ENABLED`、`DISABLED`                                      |
+| `ACCOUNT_STATUS`    | 账号状态     | `ENABLED`、`DISABLED`、`CANCELLED`                         |
 | `COMMON_STATUS`     | 通用状态     | `ENABLED`、`DISABLED`                                      |
 | `DEPT_CATEGORY`     | 部门分类     | 按业务补充                                                 |
 | `POSITION_CATEGORY` | 岗位分类     | 按业务补充                                                 |
