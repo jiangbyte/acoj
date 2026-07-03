@@ -18,7 +18,7 @@ from app.modules.user.portal.schema import (
     PortalUserCenterPhoneUpdateRequest,
     PortalUserCenterProfileUpdateRequest,
 )
-from app.modules.user.portal.service import PortalUserProfileService
+from app.modules.user.portal.service import AVATAR_MAX_SIZE, PortalUserProfileService
 from app.modules.user.schema import PortalMeResponse
 from app.platform.storage.url import resolve_file_url
 
@@ -102,7 +102,7 @@ async def upload_user_center_avatar(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[PortalUserCenterAvatarUpdateResponse]:
-    content = await file.read()
+    content = await file.read(AVATAR_MAX_SIZE + 1)
     return success(
         await PortalUserProfileService(db).update_current_avatar(
             content=content,

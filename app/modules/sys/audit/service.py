@@ -42,6 +42,7 @@ class OperationAuditService:
         error_message: str | None = None,
         account_id: str | None = None,
         account_type: str | None = None,
+        request_id: str | None = None,
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> None:
@@ -55,7 +56,7 @@ class OperationAuditService:
             after_data=after_data,
             account_id=account_id if account_id is not None else account_id_ctx.get(),
             account_type=account_type if account_type is not None else account_type_ctx.get(),
-            request_id=request_id_ctx.get(),
+            request_id=request_id if request_id is not None else request_id_ctx.get(),
             ip=ip if ip is not None else client_ip_ctx.get(),
             user_agent=user_agent if user_agent is not None else user_agent_ctx.get(),
             success=success,

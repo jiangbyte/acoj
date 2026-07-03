@@ -9,6 +9,7 @@ from typing import Any
 from app.core.config.settings import settings
 from app.platform.mq.connection import create_blocking_connection
 from app.platform.mq.message import MQMessage
+from app.platform.tasks.async_runner import worker_async_runner
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,7 @@ class MQConsumerWorker:
             try:
                 result = self.handler(message)
                 if inspect.isawaitable(result):
-                    asyncio.run(result)
+                    worker_async_runner.run(result)
                 if not self.auto_ack:
                     channel.basic_ack(delivery_tag=method.delivery_tag)
             except Exception:

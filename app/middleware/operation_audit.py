@@ -3,8 +3,14 @@ import re
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-from app.modules.sys.audit.service import OperationAuditService
-from app.platform.db.session import get_session_factory
+from app.deps.context import (
+    account_id_ctx,
+    account_type_ctx,
+    client_ip_ctx,
+    request_id_ctx,
+    user_agent_ctx,
+)
+from app.modules.sys.audit.queue import OperationAuditEvent, operation_audit_queue
 
 AUDIT_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 AUDIT_PATH_RE = re.compile(
@@ -19,15 +25,20 @@ class OperationAuditMiddleware(BaseHTTPMiddleware):
         audit_info = _match_audit_target(request)
         if audit_info is not None:
             resource_type, action = audit_info
-            async with get_session_factory()() as session:
-                await OperationAuditService(session).record(
-                    module="iam" if resource_type != "resources" else "resource",
+            operation_audit_queue.enqueue(
+                OperationAuditEvent(
                     resource_type=resource_type,
                     action=action,
-                    summary=f"{request.method} {request.url.path}",
-                    success=response.status_code < 400,
-                    error_message=None if response.status_code < 400 else str(response.status_code),
+                    method=request.method,
+                    path=request.url.path,
+                    status_code=response.status_code,
+                    account_id=account_id_ctx.get(),
+                    account_type=account_type_ctx.get(),
+                    request_id=request_id_ctx.get(),
+                    ip=client_ip_ctx.get(),
+                    user_agent=user_agent_ctx.get(),
                 )
+            )
         return response
 
 

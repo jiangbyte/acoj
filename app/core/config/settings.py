@@ -16,6 +16,8 @@ class AppSettings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
     debug: bool = True
+    workers: int = 1
+    worker_max: int = 4
     timezone: str = "Asia/Shanghai"
 
 
@@ -24,6 +26,14 @@ class DatabaseSettings(BaseSettings):
     echo: bool = False
     pool_size: int = 10
     max_overflow: int = 20
+    pool_timeout_seconds: float = 30.0
+    pool_recycle_seconds: int = 1800
+    pool_pre_ping: bool = True
+
+
+class AuditSettings(BaseSettings):
+    operation_queue_size: int = 1000
+    operation_shutdown_timeout_seconds: float = 5.0
 
 
 class RedisSettings(BaseSettings):
@@ -154,6 +164,7 @@ class Settings(BaseSettings):
 
     app: AppSettings = Field(default_factory=AppSettings)
     db: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    audit: AuditSettings = Field(default_factory=AuditSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
     auth: AuthSettings = Field(default_factory=AuthSettings)
     cors: CorsSettings = Field(default_factory=CorsSettings)

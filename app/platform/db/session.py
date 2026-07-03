@@ -1,4 +1,9 @@
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.core.config.settings import settings
 from app.platform.observability.tracing import init_tracing
@@ -15,6 +20,9 @@ def init_engine() -> None:
     if not settings.db.url.startswith("sqlite"):
         engine_kwargs["pool_size"] = settings.db.pool_size
         engine_kwargs["max_overflow"] = settings.db.max_overflow
+        engine_kwargs["pool_timeout"] = settings.db.pool_timeout_seconds
+        engine_kwargs["pool_recycle"] = settings.db.pool_recycle_seconds
+        engine_kwargs["pool_pre_ping"] = settings.db.pool_pre_ping
     engine = create_async_engine(settings.db.url, **engine_kwargs)
     async_session_factory = async_sessionmaker(engine, expire_on_commit=False)
     if settings.observability.enabled and settings.observability.db_observability_enabled:

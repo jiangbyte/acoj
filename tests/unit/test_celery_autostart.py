@@ -47,6 +47,9 @@ def test_celery_autostart_starts_worker_and_beat(monkeypatch) -> None:
         return FakeProcess()
 
     monkeypatch.setattr(settings.celery, "broker_url", "amqp://guest:guest@127.0.0.1:5672//")
+    monkeypatch.setattr(settings.celery, "auto_start_enabled", True)
+    monkeypatch.setattr(settings.celery, "auto_start_worker_enabled", True)
+    monkeypatch.setattr(settings.celery, "auto_start_beat_enabled", True)
     monkeypatch.setattr("app.platform.tasks.autostart.subprocess.Popen", fake_popen)
 
     manager = CeleryProcessManager()

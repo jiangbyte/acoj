@@ -1,3 +1,4 @@
+import asyncio
 import re
 from datetime import UTC, datetime
 from pathlib import PurePosixPath
@@ -57,7 +58,8 @@ class FileService:
             payload.category,
         )
         object_name = self._validate_object_name(object_name)
-        url = self.storage.upload_bytes(
+        url = await asyncio.to_thread(
+            self.storage.upload_bytes,
             object_name,
             payload.content,
             content_type=payload.content_type,
@@ -92,7 +94,7 @@ class FileService:
             raise NotFoundError("File not found")
         async with transactional(self.db):
             for entity in entities:
-                self.storage.delete_object(entity.object_name)
+                await asyncio.to_thread(self.storage.delete_object, entity.object_name)
             await self.repo.delete_many(unique_ids)
 
     async def delete_by_object_name(self, object_name: str) -> None:
@@ -102,7 +104,7 @@ class FileService:
             raise NotFoundError("File not found")
         entity = await self.repo.get_by_object_name(normalized)
         async with transactional(self.db):
-            self.storage.delete_object(normalized)
+            await asyncio.to_thread(self.storage.delete_object, normalized)
             if entity:
                 await self.repo.delete(entity)
 

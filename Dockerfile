@@ -6,6 +6,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     APP__HOST=0.0.0.0 \
     APP__PORT=8000 \
+    APP__DEBUG=false \
+    APP__WORKERS=0 \
+    APP__WORKER_MAX=4 \
+    CELERY__AUTO_START_ENABLED=false \
+    DB__POOL_SIZE=5 \
+    DB__MAX_OVERFLOW=5 \
+    DB__POOL_PRE_PING=true \
+    DB__POOL_RECYCLE_SECONDS=1800 \
+    AUDIT__OPERATION_QUEUE_SIZE=1000 \
+    AUDIT__OPERATION_SHUTDOWN_TIMEOUT_SECONDS=5 \
     STORAGE__PROVIDER=local \
     STORAGE__LOCAL_ROOT=/app/storage \
     STORAGE__PUBLIC_PATH=/api/v1/files
@@ -22,7 +32,7 @@ COPY app ./app
 COPY migrations ./migrations
 
 RUN pip install --no-cache-dir ".[postgres]"
-RUN mkdir -p /app/storage
+RUN mkdir -p /app/storage /app/.runtime
 
 VOLUME ["/app/storage"]
 

@@ -19,7 +19,7 @@ from app.modules.user.admin.schema import (
     AdminUserCenterPhoneUpdateRequest,
     AdminUserCenterProfileUpdateRequest,
 )
-from app.modules.user.admin.service import AdminUserProfileService
+from app.modules.user.admin.service import AVATAR_MAX_SIZE, AdminUserProfileService
 from app.modules.user.schema import AdminMeResponse
 from app.platform.storage.url import resolve_file_url
 
@@ -105,7 +105,7 @@ async def upload_user_center_avatar(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[AdminUserCenterAvatarUpdateResponse]:
-    content = await file.read()
+    content = await file.read(AVATAR_MAX_SIZE + 1)
     return success(
         await AdminUserProfileService(db).update_current_avatar(
             content=content,
