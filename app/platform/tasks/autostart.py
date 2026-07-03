@@ -101,9 +101,17 @@ class CeleryProcessManager:
             "-A",
             CELERY_APP_PATH,
             "worker",
-            "--loglevel",
-            settings.celery.worker_log_level,
         ]
+        if settings.celery.worker_without_mingle:
+            command.append("--without-mingle")
+        if settings.celery.worker_without_gossip:
+            command.append("--without-gossip")
+        command.extend(
+            [
+                "--loglevel",
+                settings.celery.worker_log_level,
+            ]
+        )
         if settings.celery.worker_pool:
             command.extend(["--pool", settings.celery.worker_pool])
         if settings.celery.worker_concurrency > 0:

@@ -18,11 +18,25 @@ def test_celery_autostart_builds_worker_command(monkeypatch) -> None:
     monkeypatch.setattr(settings.celery, "worker_log_level", "DEBUG")
     monkeypatch.setattr(settings.celery, "worker_pool", "solo")
     monkeypatch.setattr(settings.celery, "worker_concurrency", 2)
+    monkeypatch.setattr(settings.celery, "worker_without_mingle", True)
+    monkeypatch.setattr(settings.celery, "worker_without_gossip", True)
 
     command = CeleryProcessManager()._worker_command()
 
     assert command[2:6] == ["celery", "-A", CELERY_APP_PATH, "worker"]
+    assert "--without-mingle" in command
+    assert "--without-gossip" in command
     assert command[-6:] == ["--loglevel", "DEBUG", "--pool", "solo", "--concurrency", "2"]
+
+
+def test_celery_autostart_can_keep_worker_cluster_features(monkeypatch) -> None:
+    monkeypatch.setattr(settings.celery, "worker_without_mingle", False)
+    monkeypatch.setattr(settings.celery, "worker_without_gossip", False)
+
+    command = CeleryProcessManager()._worker_command()
+
+    assert "--without-mingle" not in command
+    assert "--without-gossip" not in command
 
 
 def test_celery_autostart_starts_worker_and_beat(monkeypatch) -> None:

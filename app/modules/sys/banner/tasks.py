@@ -1,9 +1,9 @@
-import asyncio
 import logging
 
 from app.modules.sys.banner.service import flush_interaction_deltas
 from app.platform.cache.redis import get_redis, init_redis
 from app.platform.db.session import get_session_factory, init_engine
+from app.platform.tasks.async_runner import worker_async_runner
 from app.platform.tasks.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @celery_app.task(name="banner.flush_interactions")
 def flush_banner_interactions() -> int:
-    return asyncio.run(_flush_banner_interactions())
+    return worker_async_runner.run(_flush_banner_interactions())
 
 
 async def _flush_banner_interactions() -> int:

@@ -60,6 +60,10 @@ class CelerySettings(BaseSettings):
     beat_log_level: str = "INFO"
     worker_pool: str = "solo"
     worker_concurrency: int = 1
+    worker_without_mingle: bool = True
+    worker_without_gossip: bool = True
+    worker_remote_control_enabled: bool = False
+    worker_cancel_long_running_tasks_on_connection_loss: bool = True
     shutdown_timeout_seconds: float = 10.0
     auto_start_enabled: bool = True
     auto_start_worker_enabled: bool = True
