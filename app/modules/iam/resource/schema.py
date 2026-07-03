@@ -5,7 +5,7 @@ from pydantic import Field
 from app.core.config.enums import DataScope, StatusEnum
 from app.core.response.pagination import PageQuery
 from app.core.schema.base import ApiSchema
-from app.modules.iam.enums import ResourceType
+from app.modules.iam.enums import ResourceModuleClient, ResourceType
 
 
 class ResourceCreateRequest(ApiSchema):
@@ -39,7 +39,16 @@ class ResourceAdminPageQuery(ApiSchema):
     name: str | None = Field(default=None, max_length=64)
     resource_type: ResourceType | None = None
     module_id: str | None = Field(default=None, max_length=64)
+    module_client: ResourceModuleClient | None = None
     parent_id: str | None = Field(default=None, max_length=64)
+    status: str | None = Field(default=None, max_length=32)
+
+
+class ResourceButtonPageQuery(ApiSchema):
+    pagination: PageQuery
+    parent_id: str = Field(min_length=1, max_length=64)
+    code: str | None = Field(default=None, max_length=64)
+    name: str | None = Field(default=None, max_length=64)
     status: str | None = Field(default=None, max_length=32)
 
 
@@ -52,6 +61,7 @@ class SysResourceSchema(ApiSchema):
     resource_type: ResourceType
     module_id: str | None = None
     module_id_name: str | None = None
+    module_client: ResourceModuleClient | None = None
     path: str | None = None
     component: str | None = None
     redirect: str | None = None
@@ -79,6 +89,23 @@ class ResourcePermissionBindRequest(ApiSchema):
     description: str | None = None
 
 
+class ResourceButtonCreateRequest(ApiSchema):
+    parent_id: str = Field(min_length=1, max_length=64)
+    code: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=64)
+    locale_key: str | None = Field(default=None, max_length=255)
+    permission_key: str = Field(min_length=1, max_length=128)
+    data_scope: DataScope = DataScope.SELF
+    custom_scope_dept_ids: list[str] = Field(default_factory=list)
+    sort: int = 99
+    status: StatusEnum = StatusEnum.ENABLED
+    description: str | None = None
+
+
+class ResourceButtonUpdateRequest(ResourceButtonCreateRequest):
+    id: str = Field(min_length=1, max_length=64)
+
+
 class SysResourcePermissionRelSchema(ApiSchema):
     id: str
     resource_id: str
@@ -94,6 +121,14 @@ class SysResourcePermissionRelSchema(ApiSchema):
     updated_by: str | None = None
 
 
+class ResourceButtonSchema(SysResourceSchema):
+    permission_rel_id: str | None = None
+    permission_key: str | None = None
+    data_scope: DataScope | None = None
+    custom_scope_dept_ids: list[str] = Field(default_factory=list)
+    permission_description: str | None = None
+
+
 class ResourceTreeNode(SysResourceSchema):
     children: list["ResourceTreeNode"] = Field(default_factory=list)
 
@@ -101,6 +136,7 @@ class ResourceTreeNode(SysResourceSchema):
 class ResourceModuleCreateRequest(ApiSchema):
     name: str = Field(min_length=1, max_length=64)
     code: str = Field(min_length=1, max_length=64)
+    client: ResourceModuleClient = ResourceModuleClient.ADMIN
     locale_key: str | None = Field(default=None, max_length=255)
     icon: str | None = Field(default=None, max_length=255)
     color: str | None = Field(default=None, max_length=32)
@@ -118,6 +154,7 @@ class ResourceModuleAdminPageQuery(ApiSchema):
     pagination: PageQuery
     name: str | None = Field(default=None, max_length=64)
     code: str | None = Field(default=None, max_length=64)
+    client: ResourceModuleClient | None = None
     status: str | None = Field(default=None, max_length=32)
 
 
@@ -125,6 +162,7 @@ class SysResourceModuleSchema(ApiSchema):
     id: str
     name: str
     code: str
+    client: ResourceModuleClient
     locale_key: str | None = None
     icon: str | None = None
     color: str | None = None
@@ -142,6 +180,7 @@ class ResourceModuleSelectorOption(ApiSchema):
     id: str
     name: str
     code: str
+    client: ResourceModuleClient
     locale_key: str | None = None
     icon: str | None = None
     color: str | None = None

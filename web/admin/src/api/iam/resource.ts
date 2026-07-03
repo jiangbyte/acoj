@@ -25,3 +25,23 @@ export function update(data: any) {
 export function remove(data: any) {
   return http.post<any>(`${resourcePrefix}/delete`, data)
 }
+
+export function permissionRegistry() {
+  return http.get<any>('/api/v1/admin/permission-registry')
+}
+
+export function buttonPage(params?: any) {
+  return http.get<any>('/api/v1/admin/sys/resource-buttons/page', { params })
+}
+
+export function buttonCreate(data: any) {
+  return http.post<any>('/api/v1/admin/sys/resource-buttons/create', data)
+}
+
+export function buttonUpdate(data: any) {
+  return http.post<any>('/api/v1/admin/sys/resource-buttons/update', data)
+}
+
+export function buttonRemove(data: any) {
+  return http.post<any>('/api/v1/admin/sys/resource-buttons/delete', data)
+}

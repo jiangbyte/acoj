@@ -3,6 +3,7 @@
   "id": "Resource Module ID",
   "name": "Module Name",
   "code": "Module Code",
+  "client": "Client",
   "icon": "Icon",
   "color": "Color",
   "sort": "Sort",

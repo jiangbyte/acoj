@@ -138,12 +138,16 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
       const options = grantOptions.value
       return (
         <NFlex size={12}>
-          <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
-            {renderButtonIcon('icon-park-outline:preview-open')}
-          </NButton>
-          <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
-            {renderButtonIcon('icon-park-outline:edit')}
-          </NButton>
+          {hasPermission('iam:group:detail') ? (
+            <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
+              {renderButtonIcon('icon-park-outline:preview-open')}
+            </NButton>
+          ) : null}
+          {hasPermission('iam:group:update') ? (
+            <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
+              {renderButtonIcon('icon-park-outline:edit')}
+            </NButton>
+          ) : null}
           {options.length ? (
             <NDropdown
               trigger="click"
@@ -155,9 +159,11 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
               </NButton>
             </NDropdown>
           ) : null}
-          <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
-            {renderButtonIcon('icon-park-outline:delete')}
-          </NButton>
+          {hasPermission('iam:group:delete') ? (
+            <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
+              {renderButtonIcon('icon-park-outline:delete')}
+            </NButton>
+          ) : null}
         </NFlex>
       )
     },
@@ -323,7 +329,7 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+          <NButton v-if="hasPermission('iam:group:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
@@ -338,6 +344,7 @@ async function deleteData(ids: string[]) {
             </template>
           </NButton>
           <NButton
+            v-if="hasPermission('iam:group:delete')"
             type="error"
             text
             :title="t('common.often.batch_delete')"

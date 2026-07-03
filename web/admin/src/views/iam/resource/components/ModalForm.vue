@@ -61,11 +61,15 @@ const parentTreeOptions = computed(() => {
   return buildParentTreeOptions(state.resourceTree, excludedIds)
 })
 
-async function openModal(id?: string, parentId?: string) {
+async function openModal(id?: string, parentId?: string, moduleId?: string | null) {
   state.dataId = id ?? null
-  state.formModel = { ...defaultFormData, parent_id: parentId ?? null }
+  state.formModel = {
+    ...defaultFormData,
+    parent_id: parentId ?? null,
+    module_id: moduleId ?? null,
+  }
   state.showModal = true
-  await Promise.all([fetchResourceTree(), fetchModules()])
+  await Promise.all([fetchResourceTree(moduleId), fetchModules()])
 
   if (id) {
     await fetchDetail(id)
@@ -75,10 +79,12 @@ async function openModal(id?: string, parentId?: string) {
   }
 }
 
-async function fetchResourceTree() {
+async function fetchResourceTree(moduleId?: string | null) {
   state.treeLoading = true
   try {
-    const response = await resourceApi.tree()
+    const response = await resourceApi.tree({
+      module_id: moduleId ?? undefined,
+    })
     state.resourceTree = response.data ?? []
   } finally {
     state.treeLoading = false

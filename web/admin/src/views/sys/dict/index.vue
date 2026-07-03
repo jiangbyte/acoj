@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { dictApi } from '@/api'
-import { createTagColor, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -194,15 +194,21 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
-        <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
-          {renderButtonIcon('icon-park-outline:preview-open')}
-        </NButton>
-        <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
-          {renderButtonIcon('icon-park-outline:edit')}
-        </NButton>
-        <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
-          {renderButtonIcon('icon-park-outline:delete')}
-        </NButton>
+        {hasPermission('sys:dict:detail') ? (
+          <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
+            {renderButtonIcon('icon-park-outline:preview-open')}
+          </NButton>
+        ) : null}
+        {hasPermission('sys:dict:update') ? (
+          <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
+            {renderButtonIcon('icon-park-outline:edit')}
+          </NButton>
+        ) : null}
+        {hasPermission('sys:dict:delete') ? (
+          <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
+            {renderButtonIcon('icon-park-outline:delete')}
+          </NButton>
+        ) : null}
       </NFlex>
     ),
   },
@@ -493,7 +499,7 @@ function flattenDictTree(items: any[]) {
       >
         <template #toolbar>
           <NFlex>
-            <NButton type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+            <NButton v-if="hasPermission('sys:dict:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
               <template #icon>
                 <NIcon>
                   <Icon icon="icon-park-outline:plus" />
@@ -508,6 +514,7 @@ function flattenDictTree(items: any[]) {
               </template>
             </NButton>
             <NButton
+              v-if="hasPermission('sys:dict:delete')"
               type="error"
               text
               :title="t('common.often.batch_delete')"

@@ -4,7 +4,7 @@ import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { NButton, NFlex, NIcon, NImage, NTag } from 'naive-ui'
 import { bannerApi } from '@/api'
-import { createTagColor, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
@@ -207,15 +207,21 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
-        <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
-          {renderButtonIcon('icon-park-outline:preview-open')}
-        </NButton>
-        <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
-          {renderButtonIcon('icon-park-outline:edit')}
-        </NButton>
-        <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
-          {renderButtonIcon('icon-park-outline:delete')}
-        </NButton>
+        {hasPermission('sys:banner:detail') ? (
+          <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
+            {renderButtonIcon('icon-park-outline:preview-open')}
+          </NButton>
+        ) : null}
+        {hasPermission('sys:banner:update') ? (
+          <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
+            {renderButtonIcon('icon-park-outline:edit')}
+          </NButton>
+        ) : null}
+        {hasPermission('sys:banner:delete') ? (
+          <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
+            {renderButtonIcon('icon-park-outline:delete')}
+          </NButton>
+        ) : null}
       </NFlex>
     ),
   },
@@ -325,7 +331,7 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+          <NButton v-if="hasPermission('sys:banner:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
@@ -340,6 +346,7 @@ async function deleteData(ids: string[]) {
             </template>
           </NButton>
           <NButton
+            v-if="hasPermission('sys:banner:delete')"
             type="error"
             text
             :title="t('common.often.batch_delete')"

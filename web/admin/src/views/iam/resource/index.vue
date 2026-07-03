@@ -2,20 +2,24 @@
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { resourceApi, resourceModuleApi } from '@/api'
-import { createTagColor, normalizeSearchValues, renderButtonIcon, translateLocale } from '@/utils'
-import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
+import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon, translateLocale } from '@/utils'
+import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
 import { useI18n } from 'vue-i18n'
+import ModalButtonPermission from './components/ModalButtonPermission.vue'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 
 const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
+const buttonPermissionModalRef = ref<any>(null)
 const state = reactive({
   resources: [] as any[],
+  modules: [] as any[],
+  activeModuleId: null as string | null,
   moduleOptions: [] as any[],
   loading: false,
   searchValues: {} as any,
@@ -178,34 +182,62 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     key: 'actions',
     width: 150,
     fixed: 'right',
-    render: (row) => (
-      <NFlex size={12}>
-        <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
-          {renderButtonIcon('icon-park-outline:preview-open')}
-        </NButton>
-        <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
-          {renderButtonIcon('icon-park-outline:edit')}
-        </NButton>
-        <NButton type="primary" size="small" text={true} onClick={() => openCreateModal(row.id)}>
-          {renderButtonIcon('icon-park-outline:plus')}
-        </NButton>
-        <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
-          {renderButtonIcon('icon-park-outline:delete')}
-        </NButton>
-      </NFlex>
-    ),
+    render: (row) => {
+      const moreOptions = resourceMoreOptions(row)
+      return (
+        <NFlex size={12}>
+          {hasPermission('iam:resource:detail') ? (
+            <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
+              {renderButtonIcon('icon-park-outline:preview-open')}
+            </NButton>
+          ) : null}
+          {hasPermission('iam:resource:update') ? (
+            <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
+              {renderButtonIcon('icon-park-outline:edit')}
+            </NButton>
+          ) : null}
+          {moreOptions.length ? (
+            <NDropdown
+              trigger="click"
+              options={moreOptions}
+              onSelect={(key) => handleMoreAction(String(key), row)}
+            >
+              <NButton type="warning" size="small" text={true}>
+                {renderButtonIcon('icon-park-outline:more')}
+              </NButton>
+            </NDropdown>
+          ) : null}
+          {hasPermission('iam:resource:delete') ? (
+            <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
+              {renderButtonIcon('icon-park-outline:delete')}
+            </NButton>
+          ) : null}
+        </NFlex>
+      )
+    },
   },
 ])
 
 onMounted(() => {
-  fetchModules()
-  fetchTree()
+  initialize()
 })
 
+async function initialize() {
+  await fetchModules()
+  await fetchTree()
+}
+
 async function fetchTree() {
+  if (!state.activeModuleId) {
+    state.resources = []
+    state.checkedRowKeys = []
+    return
+  }
   state.loading = true
   try {
-    const response = await resourceApi.tree()
+    const response = await resourceApi.tree({
+      module_id: state.activeModuleId,
+    })
     state.resources = response.data ?? []
     const existingIds = new Set(flattenResourceTree(state.resources).map((item) => item.id))
     state.checkedRowKeys = state.checkedRowKeys.filter((key) => existingIds.has(key))
@@ -216,10 +248,20 @@ async function fetchTree() {
 
 async function fetchModules() {
   const response = await resourceModuleApi.selector()
-  state.moduleOptions = (response.data ?? []).map((item: any) => ({
+  state.modules = response.data ?? []
+  state.moduleOptions = state.modules.map((item: any) => ({
     label: translateLocale(item.locale_key, item.name),
     value: item.id,
   }))
+  if (!state.modules.some((item) => item.id === state.activeModuleId)) {
+    state.activeModuleId = state.modules[0]?.id ?? null
+  }
+}
+
+async function handleModuleChange(moduleId: string | number) {
+  state.activeModuleId = String(moduleId)
+  state.checkedRowKeys = []
+  await fetchTree()
 }
 
 function openDetailModal(id: string) {
@@ -227,11 +269,40 @@ function openDetailModal(id: string) {
 }
 
 function openCreateModal(parentId?: string) {
-  formModalRef.value?.openModal(undefined, parentId)
+  formModalRef.value?.openModal(undefined, parentId, state.activeModuleId)
 }
 
 function openEditModal(id: string) {
-  formModalRef.value?.openModal(id)
+  formModalRef.value?.openModal(id, undefined, state.activeModuleId)
+}
+
+function openButtonPermissionModal(row: any) {
+  buttonPermissionModalRef.value?.openModal(row)
+}
+
+function resourceMoreOptions(row: any) {
+  const options = []
+  if (hasPermission('iam:resource:create')) {
+    options.push({
+      label: t('resource.iam.resource.add_child_resource'),
+      key: 'add-child',
+    })
+  }
+  if (hasPermission('iam:resource:list')) {
+    options.push({
+      label: t('resource.iam.resource.button_permissions'),
+      key: 'button-permissions',
+    })
+  }
+  return row.resource_type === 'BUTTON' || row.resource_type === 'ACTION' ? [] : options
+}
+
+function handleMoreAction(key: string, row: any) {
+  if (key === 'add-child') {
+    openCreateModal(row.id)
+  } else if (key === 'button-permissions') {
+    openButtonPermissionModal(row)
+  }
 }
 
 function handleCheckedRowKeys(keys: Array<string | number>) {
@@ -336,6 +407,23 @@ function flattenResourceTree(items: any[]) {
       />
     </ProCard>
 
+    <ProCard v-if="state.moduleOptions.length" content-class="py-12px!">
+      <div class="max-w-full overflow-x-auto">
+        <NButtonGroup>
+          <NButton
+            v-for="option in state.moduleOptions"
+            :key="option.value"
+            :type="state.activeModuleId === option.value ? 'primary' : 'default'"
+            :secondary="state.activeModuleId !== option.value"
+            :focusable="false"
+            @click="handleModuleChange(option.value)"
+          >
+            {{ option.label }}
+          </NButton>
+        </NButtonGroup>
+      </div>
+    </ProCard>
+
     <ProDataTable
       class="min-h-0 flex-1"
       :title="t('resource.iam.resource.title')"
@@ -351,7 +439,7 @@ function flattenResourceTree(items: any[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal()">
+          <NButton v-if="hasPermission('iam:resource:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal()">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
@@ -366,6 +454,7 @@ function flattenResourceTree(items: any[]) {
             </template>
           </NButton>
           <NButton
+            v-if="hasPermission('iam:resource:delete')"
             type="error"
             text
             :title="t('common.often.batch_delete')"
@@ -385,6 +474,7 @@ function flattenResourceTree(items: any[]) {
 
     <ModalForm ref="formModalRef" @saved="fetchTree" />
     <ModalDetail ref="detailModalRef" />
+    <ModalButtonPermission ref="buttonPermissionModalRef" />
   </NFlex>
 </template>
 

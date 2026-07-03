@@ -10,8 +10,8 @@ export function detail(params: any) {
   return http.get<any>(`${resourceModulePrefix}/detail`, { params })
 }
 
-export function selector() {
-  return http.get<any>(`${resourceModulePrefix}/selector`)
+export function selector(params?: any) {
+  return http.get<any>(`${resourceModulePrefix}/selector`, { params })
 }
 
 export function create(data: any) {

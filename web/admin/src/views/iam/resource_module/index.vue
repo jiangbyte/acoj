@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { resourceModuleApi } from '@/api'
-import { createTagColor, normalizeSearchValues, renderButtonIcon, translateLocale } from '@/utils'
+import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon, translateLocale } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -31,6 +31,7 @@ const searchForm = createProSearchForm<any>({
     state.searchValues = normalizeSearchValues(values, {
       name: (value) => String(value).trim(),
       code: (value) => String(value).trim(),
+      client: (value) => String(value).trim(),
     })
     state.page = 1
     fetchPage()
@@ -52,6 +53,14 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     title: t('resource.iam.resource_module.code'),
     path: 'code',
     field: 'input',
+  },
+  {
+    title: t('resource.iam.resource_module.client'),
+    path: 'client',
+    field: 'select',
+    fieldProps: {
+      options: dictList('RESOURCE_MODULE_CLIENT'),
+    },
   },
   {
     title: t('common.often.status'),
@@ -120,6 +129,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
+    title: t('resource.iam.resource_module.client'),
+    path: 'client',
+    width: 120,
+    render: (row) => dictTypeData('RESOURCE_MODULE_CLIENT', row.client) || row.client,
+  },
+  {
     title: t('resource.iam.resource_module.icon'),
     path: 'icon',
     width: 190,
@@ -170,15 +185,21 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
-        <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
-          {renderButtonIcon('icon-park-outline:preview-open')}
-        </NButton>
-        <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
-          {renderButtonIcon('icon-park-outline:edit')}
-        </NButton>
-        <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
-          {renderButtonIcon('icon-park-outline:delete')}
-        </NButton>
+        {hasPermission('iam:resourcemodule:detail') ? (
+          <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
+            {renderButtonIcon('icon-park-outline:preview-open')}
+          </NButton>
+        ) : null}
+        {hasPermission('iam:resourcemodule:update') ? (
+          <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
+            {renderButtonIcon('icon-park-outline:edit')}
+          </NButton>
+        ) : null}
+        {hasPermission('iam:resourcemodule:delete') ? (
+          <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
+            {renderButtonIcon('icon-park-outline:delete')}
+          </NButton>
+        ) : null}
       </NFlex>
     ),
   },
@@ -281,7 +302,7 @@ async function deleteData(ids: string[]) {
       remote
       :title="t('resource.iam.resource_module.title')"
       row-key="id"
-      :scroll-x="1380"
+      :scroll-x="1500"
       :columns="tableColumns"
       :data="state.modules"
       :loading="state.loading"
@@ -291,7 +312,7 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+          <NButton v-if="hasPermission('iam:resourcemodule:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
@@ -306,6 +327,7 @@ async function deleteData(ids: string[]) {
             </template>
           </NButton>
           <NButton
+            v-if="hasPermission('iam:resourcemodule:delete')"
             type="error"
             text
             :title="t('common.often.batch_delete')"

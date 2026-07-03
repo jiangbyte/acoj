@@ -23,6 +23,15 @@ class ResourceType(StrEnum):
     API_GROUP = "API_GROUP"  # API组
 
 
+class ResourceModuleClient(StrEnum):
+    """
+    资源模块所属端
+    """
+
+    ADMIN = "ADMIN"  # 管理后台
+    PORTAL = "PORTAL"  # 门户端
+
+
 class GrantSubjectType(StrEnum):
     """
     授权对象类型

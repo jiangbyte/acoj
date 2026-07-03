@@ -3,7 +3,7 @@ import type { DataTableColumns, PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { sessionApi } from '@/api'
-import { createTagColor, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NDataTable, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
@@ -115,12 +115,16 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
-        <NButton type="info" size="small" text={true} onClick={() => openTokens(row)}>
-          {renderButtonIcon('icon-park-outline:preview-open')}
-        </NButton>
-        <NButton type="error" size="small" text={true} onClick={() => confirmExitAccount(row)}>
-          {renderButtonIcon('icon-park-outline:logout')}
-        </NButton>
+        {hasPermission('auth:session:tokenlist') ? (
+          <NButton type="info" size="small" text={true} onClick={() => openTokens(row)}>
+            {renderButtonIcon('icon-park-outline:preview-open')}
+          </NButton>
+        ) : null}
+        {hasPermission('auth:session:exit') ? (
+          <NButton type="error" size="small" text={true} onClick={() => confirmExitAccount(row)}>
+            {renderButtonIcon('icon-park-outline:logout')}
+          </NButton>
+        ) : null}
       </NFlex>
     ),
   },
@@ -144,9 +148,11 @@ const tokenColumns = computed<DataTableColumns<any>>(() => [
     width: 90,
     fixed: 'right',
     render: (row) => (
-      <NButton type="error" size="small" text={true} onClick={() => confirmExitToken(row.token)}>
-        {renderButtonIcon('icon-park-outline:logout')}
-      </NButton>
+      hasPermission('auth:session:tokenexit') ? (
+        <NButton type="error" size="small" text={true} onClick={() => confirmExitToken(row.token)}>
+          {renderButtonIcon('icon-park-outline:logout')}
+        </NButton>
+      ) : null
     ),
   },
 ])

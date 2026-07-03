@@ -2,6 +2,7 @@ from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.security.session import SessionPayload, session_store
 from app.deps.db import get_db_session
 from app.modules.iam.account.model import SysAccount
+from app.modules.sys.dict.model import SysDict
 
 
 async def _seed_admin(client, token: str, permissions: list[str]) -> str:
@@ -165,6 +166,29 @@ async def test_admin_dict_tree_supports_optional_category(client):
         "PROFILE_GENDER",
         "ORDER_STATUS",
     ]
+
+
+async def test_portal_dict_tree_is_public(client):
+    override = client._transport.app.dependency_overrides[get_db_session]
+    async for session in override():
+        session.add(
+            SysDict(
+                id="portal_dict_status",
+                code="COMMON_STATUS",
+                label="Common Status",
+                value="common_status",
+                category="SYS",
+                sort=1,
+            )
+        )
+        await session.commit()
+        break
+
+    response = await client.get("/api/v1/portal/sys/dicts/tree")
+
+    assert response.status_code == 200
+    assert response.json()["code"] == 200
+    assert [node["code"] for node in response.json()["data"]] == ["COMMON_STATUS"]
 
 
 async def test_admin_dict_page_detail_tree_include_parent_id_name(client):

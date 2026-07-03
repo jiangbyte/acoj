@@ -111,3 +111,15 @@ python scripts/seed_super_admin.py --help
 ## 更多说明
 
 完整流程见 [docs/migration.md](../docs/migration.md)。
+
+
+
+
+```bash
+# 完整的一键迁移脚本（包含强制断开连接）
+docker exec -e PGPASSWORD=123456 -it postgres psql -U postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'hei_fastapi_test' AND pid <> pg_backend_pid();" && \
+docker exec -e PGPASSWORD=123456 -it postgres psql -U postgres -c "DROP DATABASE IF EXISTS hei_fastapi_test;" && \
+docker exec -e PGPASSWORD=123456 -it postgres psql -U postgres -c "CREATE DATABASE hei_fastapi_test;" && \
+docker exec -e PGPASSWORD=123456 postgres pg_dump -U postgres -d hei_fastapi --inserts --column-inserts --no-owner --no-privileges | docker exec -e PGPASSWORD=123456 -i postgres psql -U postgres -d hei_fastapi_test && \
+echo "✅ 迁移完成！"
+```

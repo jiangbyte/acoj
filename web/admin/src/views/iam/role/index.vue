@@ -363,7 +363,7 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+          <NButton v-if="hasPermission('iam:role:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
@@ -378,6 +378,7 @@ async function deleteData(ids: string[]) {
             </template>
           </NButton>
           <NButton
+            v-if="hasPermission('iam:role:delete')"
             type="error"
             text
             :title="t('common.often.batch_delete')"

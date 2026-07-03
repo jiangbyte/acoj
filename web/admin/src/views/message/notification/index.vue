@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { messageApi } from '@/api'
-import { createTagColor, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
@@ -158,21 +158,31 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
-        <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
-          {renderButtonIcon('icon-park-outline:preview-open')}
-        </NButton>
-        <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
-          {renderButtonIcon('icon-park-outline:edit')}
-        </NButton>
-        <NButton type="success" size="small" text={true} onClick={() => publishData(row.id)}>
-          {renderButtonIcon('icon-park-outline:send-one')}
-        </NButton>
-        <NButton type="warning" size="small" text={true} onClick={() => revokeData(row.id)}>
-          {renderButtonIcon('icon-park-outline:back')}
-        </NButton>
-        <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
-          {renderButtonIcon('icon-park-outline:delete')}
-        </NButton>
+        {hasPermission('message:notification:detail') ? (
+          <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row.id)}>
+            {renderButtonIcon('icon-park-outline:preview-open')}
+          </NButton>
+        ) : null}
+        {hasPermission('message:notification:update') ? (
+          <NButton type="primary" size="small" text={true} onClick={() => openEditModal(row.id)}>
+            {renderButtonIcon('icon-park-outline:edit')}
+          </NButton>
+        ) : null}
+        {hasPermission('message:notification:publish') ? (
+          <NButton type="success" size="small" text={true} onClick={() => publishData(row.id)}>
+            {renderButtonIcon('icon-park-outline:send-one')}
+          </NButton>
+        ) : null}
+        {hasPermission('message:notification:revoke') ? (
+          <NButton type="warning" size="small" text={true} onClick={() => revokeData(row.id)}>
+            {renderButtonIcon('icon-park-outline:back')}
+          </NButton>
+        ) : null}
+        {hasPermission('message:notification:delete') ? (
+          <NButton type="error" size="small" text={true} onClick={() => confirmDelete(row.id)}>
+            {renderButtonIcon('icon-park-outline:delete')}
+          </NButton>
+        ) : null}
       </NFlex>
     ),
   },
@@ -291,7 +301,7 @@ async function revokeData(id: string) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+          <NButton v-if="hasPermission('message:notification:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
@@ -306,6 +316,7 @@ async function revokeData(id: string) {
             </template>
           </NButton>
           <NButton
+            v-if="hasPermission('message:notification:delete')"
             type="error"
             text
             :title="t('common.often.batch_delete')"

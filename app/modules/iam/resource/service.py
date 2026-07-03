@@ -1,17 +1,22 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions.business import AuthorizationError
+from app.core.exceptions.business import AuthorizationError, ConflictError
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.data_scope import resolve_data_scope_dept_ids
 from app.core.security.permission_registry import list_permission_resources
 from app.core.security.session import SessionPayload
+from app.modules.iam.enums import ResourceModuleClient, ResourceType
 from app.modules.iam.grant.repository import GrantRepository
 from app.modules.iam.permission.service import ensure_registered_permission
 from app.modules.iam.resource.model import SysResource
 from app.modules.iam.resource.repository import ResourceModuleRepository, ResourceRepository
 from app.modules.iam.resource.schema import (
     ResourceAdminPageQuery,
+    ResourceButtonCreateRequest,
+    ResourceButtonPageQuery,
+    ResourceButtonSchema,
+    ResourceButtonUpdateRequest,
     ResourceCreateRequest,
     ResourceModuleAdminPageQuery,
     ResourceModuleCreateRequest,
@@ -52,6 +57,11 @@ class ResourceService:
         items, total = await self.repo.page_admin(query)
         return build_page(query.pagination, total, await self._build_resource_schemas(items))
 
+    async def page_buttons(self, query: ResourceButtonPageQuery) -> PageData[ResourceButtonSchema]:
+        await self._get_button_parent(query.parent_id)
+        items, total = await self.repo.page_buttons(query)
+        return build_page(query.pagination, total, await self._build_button_schemas(items))
+
     async def bind_resource_permission(
         self,
         payload: ResourcePermissionBindRequest,
@@ -70,23 +80,100 @@ class ResourceService:
                 await self.repo.bind_resource_permission(payload),
             )
 
-    async def list_resource_tree(self, session: SessionPayload) -> list[ResourceTreeNode]:
-        resources = await self._list_visible_resources(session)
+    async def create_button(
+        self,
+        payload: ResourceButtonCreateRequest,
+        session: SessionPayload | None = None,
+    ) -> ResourceButtonSchema:
+        parent = await self._prepare_button_permission(payload, session)
+        async with transactional(self.db):
+            button = await self.repo.create(
+                self._build_button_resource_payload(payload, parent)
+            )
+            await self.repo.replace_resource_permission(
+                self._build_button_permission_payload(button.id, payload)
+            )
+            return (await self._build_button_schemas([button]))[0]
+
+    async def update_button(
+        self,
+        payload: ResourceButtonUpdateRequest,
+        session: SessionPayload | None = None,
+    ) -> ResourceButtonSchema:
+        button = await self.repo.get_required(payload.id)
+        if button.resource_type != ResourceType.BUTTON.value:
+            raise ConflictError("Resource is not a button")
+        parent = await self._prepare_button_permission(payload, session)
+        async with transactional(self.db):
+            await self.repo.update(
+                ResourceUpdateRequest(
+                    id=payload.id,
+                    **self._build_button_resource_payload(payload, parent).model_dump(),
+                )
+            )
+            await self.repo.replace_resource_permission(
+                self._build_button_permission_payload(payload.id, payload)
+            )
+            return (await self._build_button_schemas([await self.repo.get_required(payload.id)]))[0]
+
+    async def delete_button(self, payload: IdsRequest) -> None:
+        async with transactional(self.db):
+            for button_id in dict.fromkeys(payload.ids):
+                await self.repo.delete_button(button_id)
+
+    async def list_resource_tree(
+        self,
+        session: SessionPayload,
+        module_id: str | None = None,
+        module_client: ResourceModuleClient | None = None,
+    ) -> list[ResourceTreeNode]:
+        resources = await self._list_visible_resources(session, module_id, module_client)
+        resources = [
+            resource
+            for resource in resources
+            if resource.resource_type
+            not in {ResourceType.BUTTON.value, ResourceType.ACTION.value}
+        ]
         return await self._build_resource_tree_nodes(resources)
 
-    async def list_current_resources(self, session: SessionPayload) -> list[SysResourceSchema]:
-        resources = await self._list_visible_resources(session)
+    async def list_current_resources(
+        self,
+        session: SessionPayload,
+        module_client: ResourceModuleClient | None = None,
+    ) -> list[SysResourceSchema]:
+        resources = await self._list_visible_resources(
+            session,
+            module_client=module_client,
+        )
         return await self._build_resource_schemas(resources)
 
-    async def _list_visible_resources(self, session: SessionPayload) -> list[SysResource]:
+    async def list_public_portal_resources(self) -> list[SysResourceSchema]:
+        resources = await self.repo.list_resources(module_client=ResourceModuleClient.PORTAL)
+        return await self._build_resource_schemas(resources)
+
+    async def _list_visible_resources(
+        self,
+        session: SessionPayload,
+        module_id: str | None = None,
+        module_client: ResourceModuleClient | None = None,
+    ) -> list[SysResource]:
         if "*:*:*" in session.permission_keys:
-            return await self.repo.list_resources()
+            return await self.repo.list_resources(
+                module_id=module_id,
+                module_client=module_client,
+            )
         resource_ids = session.resource_ids
         if not resource_ids:
             resource_ids = await GrantRepository(self.db).get_account_resource_ids(
                 session.account_id
             )
-        return await self.repo.list_resources_by_ids_with_parents(resource_ids)
+        resources = await self.repo.list_resources_by_ids_with_parents(
+            resource_ids,
+            module_client=module_client,
+        )
+        if module_id:
+            resources = [resource for resource in resources if resource.module_id == module_id]
+        return resources
 
     async def list_grant_modules(self) -> list[ResourceGrantModuleOption]:
         return await self.repo.list_all_resource_grant_modules()
@@ -95,22 +182,44 @@ class ResourceService:
         self,
         resources: list[SysResource],
     ) -> list[SysResourceSchema]:
-        module_name_map = await self.repo.list_module_name_map(
+        module_meta_map = await self.repo.list_module_meta_map(
             [resource.module_id for resource in resources if resource.module_id]
         )
         schemas = to_schema_list(SysResourceSchema, resources)
         for schema in schemas:
-            schema.module_id_name = module_name_map.get(schema.module_id or "")
+            module_name, module_client = module_meta_map.get(schema.module_id or "", ("", None))
+            schema.module_id_name = module_name
+            schema.module_client = module_client
+        return schemas
+
+    async def _build_button_schemas(
+        self,
+        resources: list[SysResource],
+    ) -> list[ResourceButtonSchema]:
+        schemas = to_schema_list(ResourceButtonSchema, resources)
+        permission_map = await self.repo.list_permissions_by_resource_ids(
+            [resource.id for resource in resources]
+        )
+        for schema in schemas:
+            permissions = permission_map.get(schema.id, [])
+            permission = permissions[0] if permissions else None
+            if permission is None:
+                continue
+            schema.permission_rel_id = permission.id
+            schema.permission_key = permission.permission_key
+            schema.data_scope = permission.data_scope
+            schema.custom_scope_dept_ids = list(permission.custom_scope_dept_ids or [])
+            schema.permission_description = permission.description
         return schemas
 
     async def _build_resource_tree_nodes(
         self,
         resources: list[SysResource],
     ) -> list[ResourceTreeNode]:
-        module_name_map = await self.repo.list_module_name_map(
+        module_meta_map = await self.repo.list_module_meta_map(
             [resource.module_id for resource in resources if resource.module_id]
         )
-        return _build_resource_tree_nodes(resources, module_name_map)
+        return _build_resource_tree_nodes(resources, module_meta_map)
 
     async def list_permission_registry_items(self) -> list[PermissionRegistryItem]:
         resources = await list_permission_resources()
@@ -142,6 +251,67 @@ class ResourceService:
         if any(dept_id not in allowed_ids for dept_id in unique_ids):
             raise AuthorizationError("Dept is outside current data scope")
 
+    async def _get_button_parent(self, parent_id: str) -> SysResource:
+        parent = await self.repo.get_required(parent_id)
+        if parent.resource_type in {ResourceType.BUTTON.value, ResourceType.ACTION.value}:
+            raise ConflictError("Button resource cannot be parent resource")
+        return parent
+
+    async def _prepare_button_permission(
+        self,
+        payload: ResourceButtonCreateRequest | ResourceButtonUpdateRequest,
+        session: SessionPayload | None,
+    ) -> SysResource:
+        parent = await self._get_button_parent(payload.parent_id)
+        if session is not None:
+            await self._ensure_depts_visible(
+                session,
+                "iam:resource:grant",
+                payload.custom_scope_dept_ids,
+            )
+        await ensure_registered_permission(payload.permission_key)
+        return parent
+
+    def _build_button_resource_payload(
+        self,
+        payload: ResourceButtonCreateRequest | ResourceButtonUpdateRequest,
+        parent: SysResource,
+    ) -> ResourceCreateRequest:
+        return ResourceCreateRequest(
+            code=payload.code,
+            name=payload.name,
+            locale_key=payload.locale_key,
+            resource_type=ResourceType.BUTTON,
+            parent_id=parent.id,
+            module_id=parent.module_id,
+            path=None,
+            component=None,
+            redirect=None,
+            icon=None,
+            href=None,
+            sort=payload.sort,
+            is_visible=False,
+            is_cache=False,
+            is_affix=False,
+            status=payload.status,
+            description=payload.description,
+            extra={},
+        )
+
+    def _build_button_permission_payload(
+        self,
+        button_id: str,
+        payload: ResourceButtonCreateRequest | ResourceButtonUpdateRequest,
+    ) -> ResourcePermissionBindRequest:
+        return ResourcePermissionBindRequest(
+            resource_id=button_id,
+            permission_key=payload.permission_key,
+            data_scope=payload.data_scope,
+            custom_scope_dept_ids=payload.custom_scope_dept_ids,
+            sort=payload.sort,
+            description=payload.description,
+        )
+
 
 class ResourceModuleService:
     def __init__(self, db: AsyncSession):
@@ -170,20 +340,28 @@ class ResourceModuleService:
         items, total = await self.repo.page_admin(query)
         return build_page(query.pagination, total, to_schema_list(SysResourceModuleSchema, items))
 
-    async def selector(self) -> list[ResourceModuleSelectorOption]:
-        return to_schema_list(ResourceModuleSelectorOption, await self.repo.list_enabled_modules())
+    async def selector(
+        self,
+        client: ResourceModuleClient | None = None,
+    ) -> list[ResourceModuleSelectorOption]:
+        return to_schema_list(
+            ResourceModuleSelectorOption,
+            await self.repo.list_enabled_modules(client),
+        )
 
 
 def _build_resource_tree_nodes(
     resources: list[SysResource],
-    module_name_map: dict[str, str],
+    module_meta_map: dict[str, tuple[str, str]],
 ) -> list[ResourceTreeNode]:
     node_map = {
         resource.id: to_schema(ResourceTreeNode, resource)
         for resource in resources
     }
     for node in node_map.values():
-        node.module_id_name = module_name_map.get(node.module_id or "")
+        module_name, module_client = module_meta_map.get(node.module_id or "", ("", None))
+        node.module_id_name = module_name
+        node.module_client = module_client
     roots: list[ResourceTreeNode] = []
     for resource in resources:
         node = node_map[resource.id]

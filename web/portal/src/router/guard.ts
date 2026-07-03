@@ -37,7 +37,35 @@ export function setupRouterGuard(router: Router) {
       return { path: getRedirectPath(to) ?? homePath, replace: true }
     }
 
-    // 认证页、错误页和配置公开页不触发登录态和授权路由初始化。
+    // portal 资源是公开资源，非认证页都需要先注册动态路由和菜单。
+    if (!isAuthRoute(to) && !routeStore.isInitAuthRoute) {
+      try {
+        await Promise.all([routeStore.initAuthRoute(), dictStore.refreshDict()])
+        if (isFallbackRoute(to)) {
+          return {
+            path: to.fullPath,
+            replace: true,
+            query: to.query,
+            hash: to.hash,
+          }
+        }
+      } catch {
+        if (isLogin) {
+          authStore.resetSession()
+        }
+        if (!isPublicRoute(to)) {
+          return {
+            path: loginPath,
+            replace: true,
+            query: {
+              redirect: to.fullPath,
+            },
+          }
+        }
+      }
+    }
+
+    // 认证页、错误页和配置公开页不触发登录校验。
     if (isPublicRoute(to)) {
       return
     }
@@ -52,28 +80,8 @@ export function setupRouterGuard(router: Router) {
       }
     }
 
-    // 登录后首次进入系统时注册授权路由。注册完成后，如果当前命中的是 404 兜底路由，需要重新匹配一次目标路径。
-    if (!routeStore.isInitAuthRoute) {
-      try {
-        await Promise.all([routeStore.initAuthRoute(), dictStore.refreshDict()])
-        if (isFallbackRoute(to)) {
-          return {
-            path: to.fullPath,
-            replace: true,
-            query: to.query,
-            hash: to.hash,
-          }
-        }
-      } catch {
-        authStore.resetSession()
-        return {
-          path: loginPath,
-          replace: true,
-          query: {
-            redirect: to.fullPath,
-          },
-        }
-      }
+    if (!dictStore.loaded) {
+      await dictStore.refreshDict()
     }
   })
 

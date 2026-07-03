@@ -1,7 +1,8 @@
-from sqlalchemy import Boolean, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config.enums import DataScope, StatusEnum
+from app.modules.iam.enums import ResourceModuleClient
 from app.platform.db.base import Base
 from app.platform.db.mixins import TimestampMixin
 from app.platform.id_generator.snowflake import generate_snowflake_id
@@ -13,7 +14,12 @@ class SysResource(Base, TimestampMixin):
     __tablename__ = "sys_resource"
     __table_args__ = (UniqueConstraint("code", name="uq_sys_resource_code"),)
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
+    id: Mapped[str] = mapped_column(
+        String(64),
+        primary_key=True,
+        default=generate_snowflake_id,
+        comment="主键",
+    )
     parent_id: Mapped[str | None] = mapped_column(String(64), comment="父资源ID")
     code: Mapped[str] = mapped_column(String(64), nullable=False, comment="资源编码")
     name: Mapped[str] = mapped_column(String(64), nullable=False, comment="资源名称")
@@ -26,9 +32,24 @@ class SysResource(Base, TimestampMixin):
     icon: Mapped[str | None] = mapped_column(String(255), comment="图标")
     href: Mapped[str | None] = mapped_column(String(255), comment="外链地址")
     sort: Mapped[int] = mapped_column(Integer, default=99, nullable=False, comment="排序")
-    is_visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, comment="是否可见")
-    is_cache: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="是否缓存")
-    is_affix: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="是否固定标签")
+    is_visible: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+        comment="是否可见",
+    )
+    is_cache: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        comment="是否缓存",
+    )
+    is_affix: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        comment="是否固定标签",
+    )
     status: Mapped[str] = mapped_column(
         String(32),
         nullable=False,
@@ -45,9 +66,20 @@ class SysResourceModule(Base, TimestampMixin):
     __tablename__ = "sys_resource_module"
     __table_args__ = (UniqueConstraint("code", name="uq_sys_resource_module_code"),)
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
+    id: Mapped[str] = mapped_column(
+        String(64),
+        primary_key=True,
+        default=generate_snowflake_id,
+        comment="主键",
+    )
     name: Mapped[str] = mapped_column(String(64), nullable=False, comment="模块名称")
     code: Mapped[str] = mapped_column(String(64), nullable=False, comment="模块编码")
+    client: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default=ResourceModuleClient.ADMIN.value,
+        comment="所属端",
+    )
     locale_key: Mapped[str | None] = mapped_column(String(255), comment="国际化键")
     icon: Mapped[str | None] = mapped_column(String(255), comment="图标")
     color: Mapped[str | None] = mapped_column(String(32), comment="颜色")
@@ -67,10 +99,19 @@ class SysResourcePermissionRel(Base, TimestampMixin):
 
     __tablename__ = "sys_resource_permission_rel"
     __table_args__ = (
-        UniqueConstraint("resource_id", "permission_key", name="uq_sys_resource_permission_rel_resource_permission"),
+        UniqueConstraint(
+            "resource_id",
+            "permission_key",
+            name="uq_sys_resource_permission_rel_resource_permission",
+        ),
     )
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
+    id: Mapped[str] = mapped_column(
+        String(64),
+        primary_key=True,
+        default=generate_snowflake_id,
+        comment="主键",
+    )
     resource_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="资源ID")
     permission_key: Mapped[str] = mapped_column(String(128), nullable=False, comment="权限标识")
     data_scope: Mapped[str] = mapped_column(

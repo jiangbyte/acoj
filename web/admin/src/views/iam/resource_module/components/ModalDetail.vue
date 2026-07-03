@@ -57,6 +57,12 @@ defineExpose({
           <NDescriptionsItem :label="t('resource.iam.resource_module.code')">
             {{ displayValue(state.module.code) }}
           </NDescriptionsItem>
+          <NDescriptionsItem :label="t('resource.iam.resource_module.client')">
+            {{
+              dictTypeData('RESOURCE_MODULE_CLIENT', state.module.client) ||
+              displayValue(state.module.client)
+            }}
+          </NDescriptionsItem>
           <NDescriptionsItem :label="t('resource.iam.resource_module.icon')">
             {{ displayValue(state.module.icon) }}
           </NDescriptionsItem>

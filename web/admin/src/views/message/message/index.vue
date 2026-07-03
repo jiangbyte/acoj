@@ -3,7 +3,7 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { messageApi } from '@/api'
-import { createTagColor, normalizeSearchValues, renderButtonIcon } from '@/utils'
+import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
@@ -42,6 +42,21 @@ const searchForm = createProSearchForm<any>({
     fetchPage()
   },
 })
+
+const availableTabs = computed(() =>
+  [
+    {
+      name: 'threads',
+      tab: t('resource.message.message.threads'),
+      permission: 'message:thread:page',
+    },
+    {
+      name: 'groups',
+      tab: t('resource.message.message.groups'),
+      permission: 'message:group:page',
+    },
+  ].filter((item) => hasPermission(item.permission)),
+)
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() =>
   activeTab.value === 'threads'
@@ -143,12 +158,16 @@ const threadColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
-        <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row)}>
-          {renderButtonIcon('icon-park-outline:preview-open')}
-        </NButton>
-        <NButton type="primary" size="small" text={true} onClick={() => openSystemMessage(row.id)}>
-          {renderButtonIcon('icon-park-outline:send')}
-        </NButton>
+        {hasPermission('message:thread:detail') ? (
+          <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row)}>
+            {renderButtonIcon('icon-park-outline:preview-open')}
+          </NButton>
+        ) : null}
+        {hasPermission('message:thread:send') ? (
+          <NButton type="primary" size="small" text={true} onClick={() => openSystemMessage(row.id)}>
+            {renderButtonIcon('icon-park-outline:send')}
+          </NButton>
+        ) : null}
       </NFlex>
     ),
   },
@@ -202,15 +221,21 @@ const groupColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'right',
     render: (row) => (
       <NFlex size={12}>
-        <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row)}>
-          {renderButtonIcon('icon-park-outline:preview-open')}
-        </NButton>
-        <NButton type="primary" size="small" text={true} onClick={() => openGroupForm(row.id)}>
-          {renderButtonIcon('icon-park-outline:edit')}
-        </NButton>
-        <NButton type="error" size="small" text={true} onClick={() => confirmDeleteGroup(row.id)}>
-          {renderButtonIcon('icon-park-outline:delete')}
-        </NButton>
+        {hasPermission('message:group:detail') ? (
+          <NButton type="info" size="small" text={true} onClick={() => openDetailModal(row)}>
+            {renderButtonIcon('icon-park-outline:preview-open')}
+          </NButton>
+        ) : null}
+        {hasPermission('message:group:update') ? (
+          <NButton type="primary" size="small" text={true} onClick={() => openGroupForm(row.id)}>
+            {renderButtonIcon('icon-park-outline:edit')}
+          </NButton>
+        ) : null}
+        {hasPermission('message:group:delete') ? (
+          <NButton type="error" size="small" text={true} onClick={() => confirmDeleteGroup(row.id)}>
+            {renderButtonIcon('icon-park-outline:delete')}
+          </NButton>
+        ) : null}
       </NFlex>
     ),
   },
@@ -221,10 +246,18 @@ const tableColumns = computed<ProDataTableColumns<any>>(() =>
 )
 
 onMounted(() => {
+  if (!availableTabs.value.some((item) => item.name === activeTab.value)) {
+    activeTab.value = (availableTabs.value[0]?.name as 'threads' | 'groups') ?? 'threads'
+  }
   fetchPage()
 })
 
 async function fetchPage() {
+  if (!availableTabs.value.some((item) => item.name === activeTab.value)) {
+    state.rows = []
+    state.total = 0
+    return
+  }
   state.loading = true
   try {
     const api = activeTab.value === 'threads' ? messageApi.threadPage : messageApi.groupPage
@@ -244,6 +277,9 @@ async function fetchPage() {
 }
 
 function handleTabUpdate(value: string) {
+  if (!availableTabs.value.some((item) => item.name === value)) {
+    return
+  }
   activeTab.value = value as 'threads' | 'groups'
   state.searchValues = {}
   state.page = 1
@@ -284,8 +320,7 @@ function confirmDeleteGroup(id: string) {
     <ProCard content-class="pb-0!">
       <NFlex vertical>
         <NTabs :value="activeTab" type="line" @update:value="handleTabUpdate">
-          <NTabPane name="threads" :tab="t('resource.message.message.threads')" />
-          <NTabPane name="groups" :tab="t('resource.message.message.groups')" />
+          <NTabPane v-for="item in availableTabs" :key="item.name" :name="item.name" :tab="item.tab" />
         </NTabs>
         <ProSearchForm
           :key="activeTab"
@@ -316,7 +351,7 @@ function confirmDeleteGroup(id: string) {
       <template #toolbar>
         <NFlex>
           <NButton
-            v-if="activeTab === 'groups'"
+            v-if="activeTab === 'groups' && hasPermission('message:group:create')"
             type="primary"
             text
             :title="t('resource.message.message.add_group')"

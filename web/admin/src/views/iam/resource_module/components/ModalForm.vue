@@ -15,6 +15,7 @@ const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   name: '',
   code: '',
+  client: 'ADMIN',
   locale_key: '',
   icon: '',
   color: '',
@@ -40,6 +41,7 @@ const modalTitle = computed(() =>
 const rules = computed<FormRules>(() => ({
   name: createRequiredRule(t, t('resource.iam.resource_module.name'), 'input'),
   code: createRequiredRule(t, t('resource.iam.resource_module.code'), 'input'),
+  client: createRequiredRule(t, t('resource.iam.resource_module.client'), 'change'),
   color: [
     {
       validator: (_rule, value) => isHexColor(value),
@@ -65,6 +67,7 @@ async function fetchDetail(id: string) {
   try {
     const response = await resourceModuleApi.detail({ id })
     state.formModel = Object.assign({}, defaultFormData, response.data, {
+      client: response.data?.client ?? defaultFormData.client,
       locale_key: response.data?.locale_key ?? '',
       icon: response.data?.icon ?? '',
       color: response.data?.color ?? '',
@@ -89,6 +92,7 @@ async function submitForm() {
       ...state.formModel,
       name: state.formModel.name.trim(),
       code: state.formModel.code.trim(),
+      client: state.formModel.client,
       locale_key: toNullableString(state.formModel.locale_key),
       icon: toNullableString(state.formModel.icon),
       color: toNullableString(state.formModel.color),
@@ -148,6 +152,13 @@ defineExpose({
           </NFormItem>
           <NFormItem :label="t('resource.iam.resource_module.code')" path="code">
             <NInput v-model:value="state.formModel.code" />
+          </NFormItem>
+          <NFormItem :label="t('resource.iam.resource_module.client')" path="client">
+            <DictSelect
+              v-model="state.formModel.client"
+              dict-code="RESOURCE_MODULE_CLIENT"
+              type="radio"
+            />
           </NFormItem>
           <NFormItem :label="t('resource.iam.resource_module.icon')" path="icon">
             <NInput v-model:value="state.formModel.icon" />

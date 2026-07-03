@@ -8,10 +8,15 @@ from app.core.response.pagination import Current, PageData, PageQuery, Size
 from app.core.response.schema import ApiResponse, success
 from app.core.schema.base import Id, IdQuery, IdsRequest
 from app.core.security.session import SessionPayload
-from app.deps.auth import get_current_session, require_permission, require_account_type
+from app.deps.auth import get_current_session, require_account_type, require_permission
 from app.deps.db import get_db_session
+from app.modules.iam.enums import ResourceModuleClient
 from app.modules.iam.resource.schema import (
     ResourceAdminPageQuery,
+    ResourceButtonCreateRequest,
+    ResourceButtonPageQuery,
+    ResourceButtonSchema,
+    ResourceButtonUpdateRequest,
     ResourceCreateRequest,
     ResourceModuleAdminPageQuery,
     ResourceModuleCreateRequest,
@@ -20,11 +25,12 @@ from app.modules.iam.resource.schema import (
     ResourcePermissionBindRequest,
     ResourceTreeNode,
     ResourceUpdateRequest,
-    SysResourcePermissionRelSchema,
     SysResourceModuleSchema,
+    SysResourcePermissionRelSchema,
     SysResourceSchema,
 )
 from app.modules.iam.resource.service import ResourceModuleService, ResourceService
+from app.modules.iam.schema import PermissionRegistryItem
 
 router = APIRouter()
 
@@ -108,6 +114,7 @@ async def page(
     name: str | None = Query(default=None, max_length=64),
     resource_type: str | None = Query(default=None, max_length=32),
     module_id: str | None = Query(default=None, max_length=64),
+    module_client: Annotated[ResourceModuleClient | None, Query()] = None,
     parent_id: str | None = Query(default=None, max_length=64),
     status: str | None = Query(default=None, max_length=32),
 ) -> ApiResponse[PageData[SysResourceSchema]]:
@@ -117,6 +124,7 @@ async def page(
         name=name,
         resource_type=resource_type,
         module_id=module_id,
+        module_client=module_client,
         parent_id=parent_id,
         status=status,
     )
@@ -148,8 +156,16 @@ async def current_resources(
 async def list_resource_tree(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    module_id: str | None = Query(default=None, max_length=64),
+    module_client: Annotated[ResourceModuleClient | None, Query()] = None,
 ) -> ApiResponse[list[ResourceTreeNode]]:
-    return success(await ResourceService(db).list_resource_tree(session))
+    return success(
+        await ResourceService(db).list_resource_tree(
+            session,
+            module_id=module_id,
+            module_client=module_client,
+        )
+    )
 
 
 @router.post(
@@ -166,6 +182,97 @@ async def bind_resource_permission(
     session: Annotated[SessionPayload, Depends(get_current_session)],
 ) -> ApiResponse[SysResourcePermissionRelSchema]:
     return success(await ResourceService(db).bind_resource_permission(payload, session))
+
+
+@router.get(
+    "/permission-registry",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:grant")),
+    ],
+    response_model=ApiResponse[list[PermissionRegistryItem]],
+)
+async def permission_registry(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[list[PermissionRegistryItem]]:
+    return success(await ResourceService(db).list_permission_registry_items())
+
+
+@router.post(
+    "/sys/resource-buttons/create",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:create")),
+        Depends(require_permission("iam:resource:grant")),
+    ],
+    response_model=ApiResponse[ResourceButtonSchema],
+)
+async def create_button(
+    payload: ResourceButtonCreateRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+) -> ApiResponse[ResourceButtonSchema]:
+    return success(await ResourceService(db).create_button(payload, session))
+
+
+@router.post(
+    "/sys/resource-buttons/update",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:update")),
+        Depends(require_permission("iam:resource:grant")),
+    ],
+    response_model=ApiResponse[ResourceButtonSchema],
+)
+async def update_button(
+    payload: ResourceButtonUpdateRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    session: Annotated[SessionPayload, Depends(get_current_session)],
+) -> ApiResponse[ResourceButtonSchema]:
+    return success(await ResourceService(db).update_button(payload, session))
+
+
+@router.post(
+    "/sys/resource-buttons/delete",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:delete")),
+    ],
+    response_model=ApiResponse[None],
+)
+async def delete_button(
+    payload: IdsRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ApiResponse[None]:
+    await ResourceService(db).delete_button(payload)
+    return success()
+
+
+@router.get(
+    "/sys/resource-buttons/page",
+    dependencies=[
+        Depends(require_account_type(AccountType.ADMIN)),
+        Depends(require_permission("iam:resource:list")),
+    ],
+    response_model=ApiResponse[PageData[ResourceButtonSchema]],
+)
+async def button_page(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    parent_id: str = Query(min_length=1, max_length=64),
+    current: Current = 1,
+    size: Size = 20,
+    code: str | None = Query(default=None, max_length=64),
+    name: str | None = Query(default=None, max_length=64),
+    status: str | None = Query(default=None, max_length=32),
+) -> ApiResponse[PageData[ResourceButtonSchema]]:
+    query = ResourceButtonPageQuery(
+        pagination=PageQuery(current=current, size=size),
+        parent_id=parent_id,
+        code=code,
+        name=name,
+        status=status,
+    )
+    return success(await ResourceService(db).page_buttons(query))
 
 
 @router.post(
@@ -245,12 +352,14 @@ async def resource_module_page(
     size: Size = 20,
     name: str | None = Query(default=None, max_length=64),
     code: str | None = Query(default=None, max_length=64),
+    client: Annotated[ResourceModuleClient | None, Query()] = None,
     status: str | None = Query(default=None, max_length=32),
 ) -> ApiResponse[PageData[SysResourceModuleSchema]]:
     query = ResourceModuleAdminPageQuery(
         pagination=PageQuery(current=current, size=size),
         name=name,
         code=code,
+        client=client,
         status=status,
     )
     return success(await ResourceModuleService(db).page_admin(query))
@@ -265,5 +374,6 @@ async def resource_module_page(
 )
 async def resource_module_selector(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    client: Annotated[ResourceModuleClient | None, Query()] = None,
 ) -> ApiResponse[list[ResourceModuleSelectorOption]]:
-    return success(await ResourceModuleService(db).selector())
+    return success(await ResourceModuleService(db).selector(client))

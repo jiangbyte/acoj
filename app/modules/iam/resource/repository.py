@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import StatusEnum
 from app.core.exceptions.business import ConflictError, NotFoundError
-from app.modules.iam.enums import ResourceType
+from app.modules.iam.enums import ResourceModuleClient, ResourceType
 from app.modules.iam.reference_guard import (
     count_resource_references,
     ensure_not_self_or_descendant,
@@ -13,6 +13,7 @@ from app.modules.iam.reference_guard import (
 from app.modules.iam.resource.model import SysResource, SysResourceModule, SysResourcePermissionRel
 from app.modules.iam.resource.schema import (
     ResourceAdminPageQuery,
+    ResourceButtonPageQuery,
     ResourceCreateRequest,
     ResourceModuleAdminPageQuery,
     ResourceModuleCreateRequest,
@@ -31,11 +32,12 @@ class ResourceRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create(self, payload: ResourceCreateRequest) -> None:
+    async def create(self, payload: ResourceCreateRequest) -> SysResource:
         await self._ensure_payload_valid(payload)
         resource = SysResource(**payload.model_dump())
         self.db.add(resource)
         await self.db.flush()
+        return resource
 
     async def get_by_id(self, resource_id: str) -> SysResource | None:
         return await self.db.get(SysResource, resource_id)
@@ -110,6 +112,13 @@ class ResourceRepository:
             filters.append(SysResource.resource_type == query.resource_type.value)
         if query.module_id:
             filters.append(SysResource.module_id == query.module_id)
+        if query.module_client:
+            stmt = stmt.join(SysResourceModule, SysResource.module_id == SysResourceModule.id)
+            count_stmt = count_stmt.join(
+                SysResourceModule,
+                SysResource.module_id == SysResourceModule.id,
+            )
+            filters.append(SysResourceModule.client == query.module_client.value)
         if query.parent_id:
             filters.append(SysResource.parent_id == query.parent_id)
         if query.status:
@@ -126,7 +135,39 @@ class ResourceRepository:
         total = (await self.db.execute(count_stmt)).scalar_one()
         return resources, total
 
-    async def list_resources(self) -> list[SysResource]:
+    async def page_buttons(self, query: ResourceButtonPageQuery) -> tuple[list[SysResource], int]:
+        stmt: Select[tuple[SysResource]] = select(SysResource).where(
+            SysResource.parent_id == query.parent_id,
+            SysResource.resource_type == ResourceType.BUTTON.value,
+        )
+        count_stmt = select(func.count(SysResource.id)).where(
+            SysResource.parent_id == query.parent_id,
+            SysResource.resource_type == ResourceType.BUTTON.value,
+        )
+        filters = []
+        if query.code:
+            filters.append(SysResource.code.contains(query.code))
+        if query.name:
+            filters.append(SysResource.name.contains(query.name))
+        if query.status:
+            filters.append(SysResource.status == query.status)
+        if filters:
+            stmt = stmt.where(*filters)
+            count_stmt = count_stmt.where(*filters)
+        stmt = (
+            stmt.order_by(SysResource.sort.asc(), SysResource.id.desc())
+            .offset(query.pagination.offset)
+            .limit(query.pagination.size)
+        )
+        resources = list((await self.db.execute(stmt)).scalars().all())
+        total = (await self.db.execute(count_stmt)).scalar_one()
+        return resources, total
+
+    async def list_resources(
+        self,
+        module_id: str | None = None,
+        module_client: ResourceModuleClient | None = None,
+    ) -> list[SysResource]:
         stmt = (
             select(SysResource)
             .where(SysResource.status == StatusEnum.ENABLED.value)
@@ -135,20 +176,30 @@ class ResourceRepository:
                 SysResource.id.asc(),
             )
         )
+        if module_id:
+            stmt = stmt.where(SysResource.module_id == module_id)
+        if module_client:
+            stmt = stmt.join(SysResourceModule, SysResource.module_id == SysResourceModule.id)
+            stmt = stmt.where(SysResourceModule.client == module_client.value)
         return list((await self.db.execute(stmt)).scalars().all())
 
-    async def list_module_name_map(self, module_ids: list[str]) -> dict[str, str]:
+    async def list_module_meta_map(self, module_ids: list[str]) -> dict[str, tuple[str, str]]:
         unique_ids = list(dict.fromkeys(module_ids))
         if not unique_ids:
             return {}
         rows = (
             await self.db.execute(
-                select(SysResourceModule.id, SysResourceModule.name).where(
-                    SysResourceModule.id.in_(unique_ids)
-                )
+                select(
+                    SysResourceModule.id,
+                    SysResourceModule.name,
+                    SysResourceModule.client,
+                ).where(SysResourceModule.id.in_(unique_ids))
             )
         ).all()
-        return {str(module_id): str(name) for module_id, name in rows}
+        return {
+            str(module_id): (str(name), str(client))
+            for module_id, name, client in rows
+        }
 
     async def bind_resource_permission(
         self,
@@ -161,6 +212,33 @@ class ResourceRepository:
         await self.db.flush()
         return relation
 
+    async def replace_resource_permission(
+        self,
+        payload: ResourcePermissionBindRequest,
+    ) -> SysResourcePermissionRel:
+        if not await self.db.get(SysResource, payload.resource_id):
+            raise NotFoundError("Resource not found")
+        await self.db.execute(
+            delete(SysResourcePermissionRel).where(
+                SysResourcePermissionRel.resource_id == payload.resource_id
+            )
+        )
+        relation = SysResourcePermissionRel(**payload.model_dump())
+        self.db.add(relation)
+        await self.db.flush()
+        return relation
+
+    async def delete_button(self, button_id: str) -> None:
+        button = await self.get_required(button_id)
+        if button.resource_type != ResourceType.BUTTON.value:
+            raise ConflictError("Resource is not a button")
+        await self.db.execute(
+            delete(SysResourcePermissionRel).where(
+                SysResourcePermissionRel.resource_id == button_id
+            )
+        )
+        await self.delete_many([button_id])
+
     async def list_resource_permissions(self) -> list[SysResourcePermissionRel]:
         stmt = (
             select(SysResourcePermissionRel)
@@ -169,14 +247,32 @@ class ResourceRepository:
         )
         return list((await self.db.execute(stmt)).scalars().all())
 
+    async def list_permissions_by_resource_ids(
+        self,
+        resource_ids: list[str],
+    ) -> dict[str, list[SysResourcePermissionRel]]:
+        unique_ids = list(dict.fromkeys(resource_ids))
+        if not unique_ids:
+            return {}
+        stmt = (
+            select(SysResourcePermissionRel)
+            .where(SysResourcePermissionRel.resource_id.in_(unique_ids))
+            .order_by(SysResourcePermissionRel.sort.asc(), SysResourcePermissionRel.id.asc())
+        )
+        result: dict[str, list[SysResourcePermissionRel]] = {}
+        for permission in (await self.db.execute(stmt)).scalars().all():
+            result.setdefault(permission.resource_id, []).append(permission)
+        return result
+
     async def list_resources_by_ids_with_parents(
         self,
         resource_ids: list[str],
+        module_client: ResourceModuleClient | None = None,
     ) -> list[SysResource]:
         unique_ids = set(resource_ids)
         if not unique_ids:
             return []
-        all_resources = await self.list_resources()
+        all_resources = await self.list_resources(module_client=module_client)
         resource_map = {resource.id: resource for resource in all_resources}
         result_ids: set[str] = set()
         for resource_id in unique_ids:
@@ -311,6 +407,8 @@ class ResourceModuleRepository:
             filters.append(SysResourceModule.name.contains(query.name))
         if query.code:
             filters.append(SysResourceModule.code.contains(query.code))
+        if query.client:
+            filters.append(SysResourceModule.client == query.client.value)
         if query.status:
             filters.append(SysResourceModule.status == query.status)
         if filters:
@@ -325,12 +423,17 @@ class ResourceModuleRepository:
         total = (await self.db.execute(count_stmt)).scalar_one()
         return modules, total
 
-    async def list_enabled_modules(self) -> list[SysResourceModule]:
+    async def list_enabled_modules(
+        self,
+        client: ResourceModuleClient | None = None,
+    ) -> list[SysResourceModule]:
         stmt = (
             select(SysResourceModule)
             .where(SysResourceModule.status == StatusEnum.ENABLED.value)
             .order_by(SysResourceModule.sort.asc(), SysResourceModule.id.asc())
         )
+        if client:
+            stmt = stmt.where(SysResourceModule.client == client.value)
         return list((await self.db.execute(stmt)).scalars().all())
 
     async def count_resource_references(self, module_ids: list[str]) -> int:
