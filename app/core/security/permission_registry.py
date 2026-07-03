@@ -100,11 +100,34 @@ def _extract_permission_key(route: APIRoute) -> str | None:
 def scan_permission_registry(app: FastAPI) -> list[PermissionResource]:
     resources: list[PermissionResource] = []
     seen_permission_keys: set[str] = set()
-    for route in app.routes:
-        if not isinstance(route, APIRoute):
-            continue
+
+    total_routes = len(app.routes)
+    api_routes = [r for r in app.routes if isinstance(r, APIRoute)]
+    logger.info(
+        "Permission scan starting: total_routes=%d, api_routes=%d",
+        total_routes,
+        len(api_routes),
+    )
+
+    for route in api_routes:
         permission_key = _extract_permission_key(route)
         if not permission_key:
+            # 诊断：检查为什么没找到 permission key
+            dep_calls = _iter_dependant_calls(route.dependant)
+            dep_count = len(dep_calls)
+            if dep_count == 0:
+                logger.warning(
+                    "Route %s %s has ZERO dependency calls — decorator deps may not be populated",
+                    route.methods,
+                    route.path,
+                )
+            elif dep_count > 0:
+                logger.debug(
+                    "Route %s %s has %d dependency calls but no permission key found",
+                    route.methods,
+                    route.path,
+                    dep_count,
+                )
             continue
         methods = _normalize_methods(route)
         if not methods:
@@ -121,6 +144,12 @@ def scan_permission_registry(app: FastAPI) -> list[PermissionResource]:
                 method=methods[0],
             )
         )
+
+    logger.info(
+        "Permission scan complete: found %d permission keys from %d API routes",
+        len(resources),
+        len(api_routes),
+    )
     return sorted(resources, key=lambda item: item.permission_key)
 
 
@@ -134,6 +163,12 @@ async def sync_permission_registry(app: FastAPI) -> list[PermissionResource]:
     method_key = permission_resource_method_cache_key()
     resource_values = [resource.resource_text for resource in resources]
     method_map = {resource.resource_text: resource.method for resource in resources}
+
+    logger.info(
+        "Writing permission registry to Redis: key=%s, count=%d",
+        resource_key,
+        len(resource_values),
+    )
     await redis.set(resource_key, json.dumps(resource_values, ensure_ascii=True))
     await redis.set(method_key, json.dumps(method_map, ensure_ascii=True))
     return resources
