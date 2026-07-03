@@ -45,7 +45,7 @@ def _iter_dependant_calls(dependant: Any) -> list[Any]:
     return calls
 
 
-def _normalize_methods(route: APIRoute) -> list[str]:
+def _normalize_methods(route: Any) -> list[str]:
     return sorted(
         method for method in (route.methods or set()) if method not in {"HEAD", "OPTIONS"}
     )
@@ -59,7 +59,7 @@ def normalize_route_path(path: str) -> str:
     return normalized
 
 
-def normalize_permission_route_path(route: APIRoute) -> str:
+def normalize_permission_route_path(route: Any) -> str:
     normalized = normalize_route_path(route.path)
     route_tags = [str(tag).strip("/") for tag in getattr(route, "tags", []) if str(tag).strip("/")]
     for tag in route_tags:
@@ -71,14 +71,14 @@ def normalize_permission_route_path(route: APIRoute) -> str:
     return normalized
 
 
-def _resolve_route_name(route: APIRoute) -> str:
+def _resolve_route_name(route: Any) -> str:
     if route.summary:
         return route.summary
     endpoint_name = getattr(route.endpoint, "__name__", "")
     return endpoint_name or RESOURCE_NAME_FALLBACK
 
 
-def _extract_permission_key(route: APIRoute) -> str | None:
+def _extract_permission_key(route: Any) -> str | None:
     permission_keys: list[str] = []
     for call in _iter_dependant_calls(route.dependant):
         permission_meta = getattr(call, PERMISSION_META_ATTR, None)
@@ -97,12 +97,32 @@ def _extract_permission_key(route: APIRoute) -> str | None:
     return sorted(permission_keys)[0]
 
 
+def _is_api_route_like(route: Any) -> bool:
+    return isinstance(route, APIRoute) or isinstance(
+        getattr(route, "original_route", None),
+        APIRoute,
+    )
+
+
+def _iter_api_route_candidates(routes: list[Any]) -> list[Any]:
+    api_routes: list[Any] = []
+    for route in routes:
+        if _is_api_route_like(route):
+            api_routes.append(route)
+            continue
+
+        effective_candidates = getattr(route, "effective_candidates", None)
+        if callable(effective_candidates):
+            api_routes.extend(_iter_api_route_candidates(list(effective_candidates())))
+    return api_routes
+
+
 def scan_permission_registry(app: FastAPI) -> list[PermissionResource]:
     resources: list[PermissionResource] = []
     seen_permission_keys: set[str] = set()
 
     total_routes = len(app.routes)
-    api_routes = [r for r in app.routes if isinstance(r, APIRoute)]
+    api_routes = _iter_api_route_candidates(list(app.routes))
     logger.info(
         "Permission scan starting: total_routes=%d, api_routes=%d",
         total_routes,
@@ -156,7 +176,7 @@ def scan_permission_registry(app: FastAPI) -> list[PermissionResource]:
 async def sync_permission_registry(app: FastAPI) -> list[PermissionResource]:
     resources = scan_permission_registry(app)
     if not resources:
-        api_route_count = sum(1 for route in app.routes if isinstance(route, APIRoute))
+        api_route_count = len(_iter_api_route_candidates(list(app.routes)))
         logger.error(
             "Refusing to write empty permission registry to Redis: total_routes=%d, api_routes=%d",
             len(app.routes),

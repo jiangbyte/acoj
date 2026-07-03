@@ -1,15 +1,17 @@
 import json
+from dataclasses import dataclass
+from typing import Any
 
-from fastapi import FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from sqlalchemy import select
 
+from app.core.exceptions.business import BusinessError
 from app.core.security.permission_registry import (
     ACCOUNT_TYPE_META_ATTR,
     PERMISSION_META_ATTR,
     scan_permission_registry,
     sync_permission_registry,
 )
-from app.core.exceptions.business import BusinessError
 from app.deps.auth import require_account_type, require_permission
 from app.factory import create_app
 from app.modules.iam.enums import ResourceType
@@ -31,6 +33,25 @@ class FakeRedis:
 
     async def get(self, key: str):
         return self.values.get(key)
+
+
+@dataclass
+class FakeEffectiveRoute:
+    original_route: Any
+    path: str
+    tags: list[str]
+    methods: set[str]
+    dependant: Any
+    summary: str | None
+    endpoint: Any
+
+
+class FakeIncludedRouter:
+    def __init__(self, candidates: list[Any]) -> None:
+        self._candidates = candidates
+
+    def effective_candidates(self) -> list[Any]:
+        return self._candidates
 
 
 async def test_permission_dependency_carries_scan_metadata():
@@ -56,6 +77,44 @@ def test_scan_permission_registry_collects_api_resources():
     assert file_page.route_path == "/sys/file/page"
     assert file_page.method == "GET"
     assert file_page.resource_text == "sys:file:page[page]"
+
+
+def test_scan_permission_registry_collects_fastapi_137_included_router_candidates():
+    router = APIRouter()
+
+    @router.get(
+        "/files/page",
+        dependencies=[Depends(require_permission("sys:file:page"))],
+        summary="page",
+    )
+    async def page():
+        return {"items": []}
+
+    original_route = router.routes[0]
+    app = FastAPI()
+    app.router.routes.append(
+        FakeIncludedRouter(
+            [
+                FakeEffectiveRoute(
+                    original_route=original_route,
+                    path="/api/v1/admin/files/page",
+                    tags=["admin"],
+                    methods=original_route.methods,
+                    dependant=original_route.dependant,
+                    summary=original_route.summary,
+                    endpoint=original_route.endpoint,
+                )
+            ]
+        )
+    )
+
+    items = scan_permission_registry(app)
+
+    assert len(items) == 1
+    assert items[0].permission_key == "sys:file:page"
+    assert items[0].route_path == "/files/page"
+    assert items[0].method == "GET"
+    assert items[0].resource_text == "sys:file:page[page]"
 
 
 async def test_sync_permission_registry_writes_cache_structure(monkeypatch):
