@@ -3,7 +3,6 @@ import type { DropdownOption } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDraggable } from 'vue-draggable-plus'
-import { useI18n } from 'vue-i18n'
 import { useTabScroll } from '@/hooks/useTabScroll'
 import { useAppStore, useTabStore } from '@/stores'
 import { getRouteTitle } from '@/stores/route'
@@ -15,7 +14,6 @@ import Reload from './Reload.vue'
 const tabStore = useTabStore()
 const appStore = useAppStore()
 const router = useRouter()
-const { t } = useI18n()
 // useTabScroll 将鼠标滚轮转换成横向滚动，并在当前页签变化时滚动到可视区域。
 const {
   scrollbar,
@@ -65,36 +63,36 @@ const options = computed<DropdownOption[]>(() => {
 
   return [
     {
-      label: t('common.reload'),
+      label: 'Reload',
       key: 'reload',
       icon: renderIcon('icon-park-outline:redo'),
     },
     {
-      label: t('app.close_current'),
+      label: 'Close current',
       key: 'closeCurrent',
       icon: renderIcon('icon-park-outline:close'),
       disabled: disabledCurrent,
     },
     {
-      label: t('app.close_other'),
+      label: 'Close others',
       key: 'closeOther',
       icon: renderIcon('icon-park-outline:delete-four'),
       disabled: disabledCurrent || disabledNormal,
     },
     {
-      label: t('app.close_left'),
+      label: 'Close left',
       key: 'closeLeft',
       icon: renderIcon('icon-park-outline:to-left'),
       disabled: disabledCurrent || disabledNormal,
     },
     {
-      label: t('app.close_right'),
+      label: 'Close right',
       key: 'closeRight',
       icon: renderIcon('icon-park-outline:to-right'),
       disabled: disabledCurrent || disabledNormal,
     },
     {
-      label: t('app.close_all'),
+      label: 'Close all',
       key: 'closeAll',
       icon: renderIcon('icon-park-outline:fullwidth'),
       disabled: disabledNormal,

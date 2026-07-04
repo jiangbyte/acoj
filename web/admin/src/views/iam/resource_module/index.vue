@@ -3,16 +3,14 @@ import type { PaginationProps } from 'naive-ui'
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { resourceModuleApi } from '@/api'
-import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon, translateLocale } from '@/utils'
+import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
-import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 
-const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
 const state = reactive({
@@ -45,17 +43,17 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('resource.iam.resource_module.name'),
+    title: 'Module Name',
     path: 'name',
     field: 'input',
   },
   {
-    title: t('resource.iam.resource_module.code'),
+    title: 'Module Code',
     path: 'code',
     field: 'input',
   },
   {
-    title: t('resource.iam.resource_module.client'),
+    title: 'Client',
     path: 'client',
     field: 'select',
     fieldProps: {
@@ -63,7 +61,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     field: 'select',
     fieldProps: {
@@ -78,7 +76,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => t('common.often.total', { count: itemCount }),
+  prefix: ({ itemCount }) => `${itemCount} total`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -96,7 +94,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: t('common.often.index'),
+    title: 'ID',
     width: 80,
     path: 'id',
     ellipsis: {
@@ -104,24 +102,16 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.resource_module.name'),
+    title: 'Module Name',
     path: 'name',
     width: 160,
-    render: (row) => translateLocale(row.locale_key, row.name),
+    render: (row) => row.name,
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('common.often.locale_key'),
-    path: 'locale_key',
-    width: 220,
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
-    title: t('resource.iam.resource_module.code'),
+    title: 'Module Code',
     path: 'code',
     width: 160,
     ellipsis: {
@@ -129,13 +119,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.resource_module.client'),
+    title: 'Client',
     path: 'client',
     width: 120,
     render: (row) => dictTypeData('RESOURCE_MODULE_CLIENT', row.client) || row.client,
   },
   {
-    title: t('resource.iam.resource_module.icon'),
+    title: 'Icon',
     path: 'icon',
     width: 190,
     ellipsis: {
@@ -143,7 +133,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.resource_module.color'),
+    title: 'Color',
     path: 'color',
     width: 110,
     render: (row) =>
@@ -156,12 +146,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
       ),
   },
   {
-    title: t('resource.iam.resource_module.sort'),
+    title: 'Sort',
     path: 'sort',
     width: 90,
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     width: 110,
     render: (row) => (
@@ -171,7 +161,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updated_at'),
+    title: 'Updated At',
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -179,7 +169,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 120,
     fixed: 'right',
@@ -256,14 +246,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
+    title: isBatch ? 'Batch Delete' : 'Delete',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('resource.iam.resource_module.batch_delete_confirm', { count: ids.length })
-      : t('resource.iam.resource_module.delete_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
+      ? `Delete ${ids.length} selected resource modules?`
+      : 'Delete this resource module?',
+    positiveText: 'Confirm',
+    negativeText: 'Cancel',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -272,7 +262,7 @@ async function deleteData(ids: string[]) {
   await resourceModuleApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success(t('common.often.delete_success'))
+  window.$message.success('Deleted successfully')
   await fetchPage()
   if (!state.modules.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -287,12 +277,12 @@ async function deleteData(ids: string[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: t('common.search_form.reset') }"
-        :search-button-props="{ content: t('common.search_form.search') }"
+        :reset-button-props="{ content: 'Reset' }"
+        :search-button-props="{ content: 'Search' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? t('common.search_form.expand')
-            : t('common.search_form.collapse'),
+            ? 'Expand'
+            : 'Collapse',
         }"
       />
     </ProCard>
@@ -300,7 +290,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('resource.iam.resource_module.title')"
+      :title="'Resource Module Management'"
       row-key="id"
       :scroll-x="1500"
       :columns="tableColumns"
@@ -312,14 +302,14 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:resourcemodule:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+          <NButton v-if="hasPermission('iam:resourcemodule:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -330,8 +320,8 @@ async function deleteData(ids: string[]) {
             v-if="hasPermission('iam:resourcemodule:delete')"
             type="error"
             text
-            :title="t('common.often.batch_delete')"
-            :aria-label="t('common.often.batch_delete')"
+            :title="'Batch Delete'"
+            :aria-label="'Batch Delete'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >

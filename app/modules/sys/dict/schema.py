@@ -15,7 +15,6 @@ DictId = Annotated[str, Field(min_length=1, max_length=32)]
 class DictCreateRequest(ApiSchema):
     code: str = Field(min_length=1, max_length=50, pattern=r"^[A-Z0-9_]+$")
     label: str | None = Field(default=None, max_length=255)
-    locale_key: str | None = Field(default=None, max_length=255)
     value: str | None = Field(default=None, max_length=255)
     color: str | None = Field(default=None, max_length=32)
     category: SysBizCategory | None = None
@@ -52,7 +51,6 @@ class SysDictSchema(ApiSchema):
     id: str
     code: str
     label: str | None = None
-    locale_key: str | None = None
     value: str | None = None
     color: str | None = None
     category: SysBizCategory | None = None
@@ -70,7 +68,6 @@ class SysDictTreeNode(ApiSchema):
     id: str
     code: str
     label: str | None = None
-    locale_key: str | None = None
     value: str | None = None
     color: str | None = None
     category: SysBizCategory | None = None

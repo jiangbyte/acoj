@@ -1,25 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 
 const stats = computed(() => [
-  { label: t('resource.demo.route_count'), value: '1' },
-  { label: t('resource.demo.menu_page'), value: t('resource.demo.visible_page') },
-  { label: t('resource.demo.cache_page'), value: 'OFF' },
+  { label: 'Routes', value: '1' },
+  { label: 'Menu Pages', value: 'Visible pages' },
+  { label: 'Cached Pages', value: 'OFF' },
 ])
 
 const actions = computed(() => [
   {
     icon: 'icon-park-outline:connection-point',
-    title: t('resource.demo.route_init'),
-    text: t('resource.demo.route_init_content'),
+    title: 'Route Initialization',
+    text: 'Load the static route table',
   },
   {
     icon: 'icon-park-outline:tree-diagram',
-    title: t('resource.demo.menu_generate'),
-    text: t('resource.demo.menu_generate_content'),
+    title: 'Menu Generation',
+    text: 'Generate sidebar menus from RowRoute',
   },
 ])
 </script>
@@ -31,11 +29,11 @@ const actions = computed(() => [
         class="mb-4 inline-flex items-center gap-2 rounded-2 border border-[var(--border-color)] bg-[var(--card-color)] px-3 py-1 text-sm font-600 text-[var(--primary-color)]"
       >
         <NovaIcon icon="icon-park-outline:experiment-one" />
-        {{ t('resource.demo.static_example') }}
+        {{ 'Static example' }}
       </div>
-      <h1 class="text-3xl font-800 sm:text-4xl">{{ t('resource.demo.title') }}</h1>
+      <h1 class="text-3xl font-800 sm:text-4xl">{{ 'Demo' }}</h1>
       <p class="mt-3 max-w-160 text-base leading-7 text-[var(--text-color-2)]">
-        {{ t('resource.demo.overview_subtitle') }}
+        {{ 'Static route, menu, and tab examples' }}
       </p>
     </div>
 

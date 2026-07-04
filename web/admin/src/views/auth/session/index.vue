@@ -8,9 +8,7 @@ import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NDataTable, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const state = reactive({
   rows: [] as any[],
   tokens: [] as any[],
@@ -49,17 +47,25 @@ const analysisCards = computed(() => [
   { key: 'one_hour_new_count', icon: 'icon-park-outline:time', color: '#f59e0b' },
   { key: 'max_token_count', icon: 'icon-park-outline:connection', color: '#dc2626' },
 ])
+const analysisTitleMap: Record<string, string> = {
+  online_account_count: 'Online Accounts',
+  online_token_count: 'Online Devices',
+  admin_account_count: 'Admin Accounts',
+  portal_account_count: 'Portal Accounts',
+  one_hour_new_count: 'Logins in 1 Hour',
+  max_token_count: 'Max Devices per Account',
+}
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('resource.auth.session.account_type'),
+    title: 'Account Type',
     path: 'account_type',
     field: 'select',
     fieldProps: { options: dictList('ACCOUNT_TYPE') },
   },
-  { title: t('resource.auth.session.account'), path: 'account', field: 'input' },
-  { title: t('resource.auth.session.account_id'), path: 'account_id', field: 'input' },
-  { title: t('resource.auth.session.client_ip'), path: 'ip', field: 'input' },
+  { title: 'Account', path: 'account', field: 'input' },
+  { title: 'Account ID', path: 'account_id', field: 'input' },
+  { title: 'Client IP', path: 'ip', field: 'input' },
 ])
 
 const pagination = computed<PaginationProps>(() => ({
@@ -68,7 +74,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => t('common.often.total', { count: itemCount }),
+  prefix: ({ itemCount }) => `${itemCount} total`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -81,9 +87,9 @@ const pagination = computed<PaginationProps>(() => ({
 }))
 
 const tableColumns = computed<ProDataTableColumns<any>>(() => [
-  { title: t('resource.auth.session.account_id'), path: 'account_id', width: 170, ellipsis: { tooltip: true } },
+  { title: 'Account ID', path: 'account_id', width: 170, ellipsis: { tooltip: true } },
   {
-    title: t('resource.auth.session.account_type'),
+    title: 'Account Type',
     path: 'account_type',
     width: 130,
     render: (row) => (
@@ -92,24 +98,24 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
       </NTag>
     ),
   },
-  { title: t('resource.auth.session.account'), path: 'account', width: 160, ellipsis: { tooltip: true } },
-  { title: t('resource.auth.session.name'), path: 'name', width: 160, ellipsis: { tooltip: true } },
-  { title: t('resource.auth.session.token_count'), path: 'token_count', width: 110 },
+  { title: 'Account', path: 'account', width: 160, ellipsis: { tooltip: true } },
+  { title: 'Name', path: 'name', width: 160, ellipsis: { tooltip: true } },
+  { title: 'Devices', path: 'token_count', width: 110 },
   {
-    title: t('resource.auth.session.client_ip'),
+    title: 'Client IP',
     key: 'client_ip',
     width: 150,
     render: (row) => row.tokens?.[0]?.client_ip || row.latest_login_ip || '-',
   },
   {
-    title: t('resource.auth.session.device'),
+    title: 'Device',
     key: 'device',
     width: 140,
     render: (row) => row.tokens?.[0]?.device_label || '-',
   },
-  { title: t('resource.auth.session.latest_active_at'), path: 'latest_active_at', width: 190, ellipsis: { tooltip: true } },
+  { title: 'Latest Active', path: 'latest_active_at', width: 190, ellipsis: { tooltip: true } },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 130,
     fixed: 'right',
@@ -131,19 +137,19 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
 ])
 
 const tokenColumns = computed<DataTableColumns<any>>(() => [
-  { title: t('resource.auth.session.token'), key: 'token', width: 220, ellipsis: { tooltip: true } },
-  { title: t('resource.auth.session.device'), key: 'device_label', width: 110 },
-  { title: t('resource.auth.session.client_ip'), key: 'client_ip', width: 140 },
-  { title: t('resource.auth.session.login_at'), key: 'login_at', width: 180, ellipsis: { tooltip: true } },
+  { title: 'Token', key: 'token', width: 220, ellipsis: { tooltip: true } },
+  { title: 'Device', key: 'device_label', width: 110 },
+  { title: 'Client IP', key: 'client_ip', width: 140 },
+  { title: 'Login At', key: 'login_at', width: 180, ellipsis: { tooltip: true } },
   {
-    title: t('resource.auth.session.last_active_at'),
+    title: 'Last Active',
     key: 'last_active_at',
     width: 180,
     ellipsis: { tooltip: true },
   },
-  { title: t('resource.auth.session.expires_at'), key: 'expires_at', width: 180, ellipsis: { tooltip: true } },
+  { title: 'Expires At', key: 'expires_at', width: 180, ellipsis: { tooltip: true } },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 90,
     fixed: 'right',
@@ -193,15 +199,15 @@ function openTokens(row: any) {
 
 function confirmExitAccount(row: any) {
   window.$dialog.warning({
-    title: t('resource.auth.session.force_logout'),
+    title: 'Force Logout',
     draggable: true,
     maskClosable: false,
-    content: t('resource.auth.session.force_logout_account_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
+    content: 'Force logout all online devices for this account?',
+    positiveText: 'Confirm',
+    negativeText: 'Cancel',
     onPositiveClick: async () => {
       await sessionApi.exit({ targets: [{ account_type: row.account_type, account_id: row.account_id }] })
-      window.$message.success(t('resource.auth.session.force_logout_success'))
+      window.$message.success('Forced logout successfully')
       await fetchAll()
     },
   })
@@ -209,15 +215,15 @@ function confirmExitAccount(row: any) {
 
 function confirmExitToken(token: string) {
   window.$dialog.warning({
-    title: t('resource.auth.session.force_logout'),
+    title: 'Force Logout',
     draggable: true,
     maskClosable: false,
-    content: t('resource.auth.session.force_logout_token_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
+    content: 'Force logout this online device?',
+    positiveText: 'Confirm',
+    negativeText: 'Cancel',
     onPositiveClick: async () => {
       await sessionApi.tokenExit({ tokens: [token] })
-      window.$message.success(t('resource.auth.session.force_logout_success'))
+      window.$message.success('Forced logout successfully')
       state.tokens = state.tokens.filter((item) => item.token !== token)
       await fetchAll()
     },
@@ -233,7 +239,7 @@ function confirmExitToken(token: string) {
           <div class="session-stat__icon" :style="{ color: item.color, backgroundColor: `${item.color}14` }">
             <NovaIcon :icon="item.icon" :size="22" />
           </div>
-          <div class="session-stat__title">{{ t(`resource.auth.session.analysis.${item.key}`) }}</div>
+          <div class="session-stat__title">{{ analysisTitleMap[item.key] ?? item.key }}</div>
           <div class="session-stat__value">{{ state.analysis[item.key] ?? 0 }}</div>
         </NCard>
       </NGridItem>
@@ -243,12 +249,12 @@ function confirmExitToken(token: string) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: t('common.search_form.reset') }"
-        :search-button-props="{ content: t('common.search_form.search') }"
+        :reset-button-props="{ content: 'Reset' }"
+        :search-button-props="{ content: 'Search' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? t('common.search_form.expand')
-            : t('common.search_form.collapse'),
+            ? 'Expand'
+            : 'Collapse',
         }"
       />
     </ProCard>
@@ -256,7 +262,7 @@ function confirmExitToken(token: string) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('resource.auth.session.title')"
+      :title="'Online Sessions'"
       row-key="account_id"
       :scroll-x="1340"
       :columns="tableColumns"
@@ -265,7 +271,7 @@ function confirmExitToken(token: string) {
       :pagination="pagination"
     >
       <template #toolbar>
-        <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchAll">
+        <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchAll">
           <template #icon>
             <NIcon>
               <Icon icon="icon-park-outline:reload" />
@@ -279,7 +285,7 @@ function confirmExitToken(token: string) {
       v-model:show="state.tokenModalShow"
       preset="card"
       draggable
-      :title="t('resource.auth.session.token_detail')"
+      :title="'Device Detail'"
       style="width: min(960px, calc(100vw - 32px))"
     >
       <NDataTable

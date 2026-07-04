@@ -13,6 +13,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppLoading: typeof import('./../components/common/AppLoading.vue')['default']
+    CaptchaInput: typeof import('./../components/common/CaptchaInput.vue')['default']
     CommonColorPicker: typeof import('./../components/common/CommonColorPicker.vue')['default']
     CommonWrapper: typeof import('./../components/common/CommonWrapper.vue')['default']
     DarkModeSwitch: typeof import('./../components/common/DarkModeSwitch.vue')['default']
@@ -77,8 +78,6 @@ declare module 'vue' {
     NTag: typeof import('naive-ui')['NTag']
     NText: typeof import('naive-ui')['NText']
     NThing: typeof import('naive-ui')['NThing']
-    NTimeline: typeof import('naive-ui')['NTimeline']
-    NTimelineItem: typeof import('naive-ui')['NTimelineItem']
     NTooltip: typeof import('naive-ui')['NTooltip']
     NTree: typeof import('naive-ui')['NTree']
     NTreeSelect: typeof import('naive-ui')['NTreeSelect']
@@ -93,6 +92,7 @@ declare module 'vue' {
 // For TSX support
 declare global {
   const AppLoading: typeof import('./../components/common/AppLoading.vue')['default']
+  const CaptchaInput: typeof import('./../components/common/CaptchaInput.vue')['default']
   const CommonColorPicker: typeof import('./../components/common/CommonColorPicker.vue')['default']
   const CommonWrapper: typeof import('./../components/common/CommonWrapper.vue')['default']
   const DarkModeSwitch: typeof import('./../components/common/DarkModeSwitch.vue')['default']
@@ -157,8 +157,6 @@ declare global {
   const NTag: typeof import('naive-ui')['NTag']
   const NText: typeof import('naive-ui')['NText']
   const NThing: typeof import('naive-ui')['NThing']
-  const NTimeline: typeof import('naive-ui')['NTimeline']
-  const NTimelineItem: typeof import('naive-ui')['NTimelineItem']
   const NTooltip: typeof import('naive-ui')['NTooltip']
   const NTree: typeof import('naive-ui')['NTree']
   const NTreeSelect: typeof import('naive-ui')['NTreeSelect']

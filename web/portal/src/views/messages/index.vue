@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { messageApi } from '@/api'
 import { useAppStore } from '@/stores'
 import { createTagColor, displayValue } from '@/utils'
@@ -18,7 +17,6 @@ interface PageState<T> {
   loaded: boolean
 }
 
-const { t } = useI18n()
 const appStore = useAppStore()
 const activeTab = ref<ActiveTab>('notifications')
 const replyContent = ref('')
@@ -43,9 +41,9 @@ const showDetailPane = computed(() => !appStore.isMobile || mobileDetailVisible.
 
 const selectedTitle = computed(() => {
   if (activeTab.value === 'notifications') {
-    return detail.notification?.title || t('app.message_center.select_notification')
+    return detail.notification?.title || 'Select a notification'
   }
-  return detail.thread?.title || t('app.message_center.select_thread')
+  return detail.thread?.title || 'Select a thread'
 })
 
 const sortedThreadMessages = computed(() =>
@@ -248,7 +246,7 @@ function markThreadLocalRead(id: string) {
 async function replyMessage() {
   const content = replyContent.value.trim()
   if (!content || !detail.thread?.id) {
-    window.$message.warning(t('resource.message.message.reply_required'))
+    window.$message.warning('Please enter a reply')
     return
   }
 
@@ -293,16 +291,16 @@ function displayTime(value?: string | null) {
   <section class="px-4 py-6 sm:px-6 lg:px-8">
     <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 class="text-2xl font-800">{{ t('app.messages_center') }}</h1>
+        <h1 class="text-2xl font-800">{{ 'Message Center' }}</h1>
         <p class="mt-1 text-sm text-[var(--text-color-3)]">
-          {{ t('app.message_center.subtitle') }}
+          {{ 'Review notifications and messages, clear unread items, and reply to conversations.' }}
         </p>
       </div>
       <n-button
         text
         :focusable="false"
-        :title="t('common.reload')"
-        :aria-label="t('common.reload')"
+        :title="'Reload'"
+        :aria-label="'Reload'"
         :loading="currentListLoading"
         @click="
           activeTab === 'notifications'
@@ -326,7 +324,7 @@ function displayTime(value?: string | null) {
           <n-tab-pane name="notifications">
             <template #tab>
               <div class="inline-flex items-center gap-2">
-                {{ t('app.notifications') }}
+                {{ 'Notifications' }}
                 <n-badge
                   type="info"
                   :value="notifications.records.filter((item) => !item.is_read).length"
@@ -345,7 +343,7 @@ function displayTime(value?: string | null) {
               <n-empty
                 v-else-if="!notifications.records.length"
                 class="py-18"
-                :description="t('app.notice.empty')"
+                :description="'No data'"
               />
               <n-list v-else hoverable clickable>
                 <n-list-item
@@ -371,7 +369,7 @@ function displayTime(value?: string | null) {
                         :bordered="false"
                         :type="statusTagType(Boolean(item.is_read))"
                       >
-                        {{ item.is_read ? t('app.notice.read') : t('app.notice.unread') }}
+                        {{ item.is_read ? 'Read' : 'Unread' }}
                       </n-tag>
                     </template>
                     <template #description>
@@ -392,7 +390,7 @@ function displayTime(value?: string | null) {
                     :loading="notifications.loading"
                     @click.stop="loadMoreNotifications"
                   >
-                    {{ t('app.notice.load_more') }}
+                    {{ 'Load more' }}
                   </n-button>
                 </div>
               </n-list>
@@ -402,7 +400,7 @@ function displayTime(value?: string | null) {
           <n-tab-pane name="messages">
             <template #tab>
               <div class="inline-flex items-center gap-2">
-                {{ t('app.messages') }}
+                {{ 'Messages' }}
                 <n-badge
                   type="warning"
                   :value="threads.records.reduce((sum, item) => sum + (item.unread_count ?? 0), 0)"
@@ -418,7 +416,7 @@ function displayTime(value?: string | null) {
               <n-empty
                 v-else-if="!threads.records.length"
                 class="py-18"
-                :description="t('app.notice.empty')"
+                :description="'No data'"
               />
               <n-list v-else hoverable clickable>
                 <n-list-item
@@ -437,7 +435,7 @@ function displayTime(value?: string | null) {
                     </template>
                     <template #header>
                       <n-ellipsis :line-clamp="1">
-                        {{ item.title || t('resource.message.message.thread_title') }}
+                        {{ item.title || 'Thread Title' }}
                       </n-ellipsis>
                     </template>
                     <template v-if="item.unread_count" #header-extra>
@@ -446,7 +444,7 @@ function displayTime(value?: string | null) {
                     <template #description>
                       <n-ellipsis :line-clamp="2">
                         {{
-                          item.last_message?.content || t('resource.message.message.no_messages')
+                          item.last_message?.content || 'No messages'
                         }}
                       </n-ellipsis>
                     </template>
@@ -462,7 +460,7 @@ function displayTime(value?: string | null) {
                     :loading="threads.loading"
                     @click.stop="loadMoreThreads"
                   >
-                    {{ t('app.notice.load_more') }}
+                    {{ 'Load more' }}
                   </n-button>
                 </div>
               </n-list>
@@ -488,15 +486,15 @@ function displayTime(value?: string | null) {
             <template #icon>
               <NovaIcon icon="icon-park-outline:arrow-left" />
             </template>
-            {{ t('app.message_center.back_to_list') }}
+            {{ 'Back to list' }}
           </n-button>
           <div class="min-w-0">
             <h2 class="truncate text-lg font-750">{{ selectedTitle }}</h2>
             <p class="mt-1 text-sm text-[var(--text-color-3)]">
               {{
                 activeTab === 'notifications'
-                  ? t('app.message_center.notification_detail')
-                  : t('app.message_center.thread_detail')
+                  ? 'Notification Detail'
+                  : 'Thread Detail'
               }}
             </p>
           </div>
@@ -507,7 +505,7 @@ function displayTime(value?: string | null) {
             <n-empty
               v-if="!detail.notification"
               class="py-24"
-              :description="t('app.message_center.select_notification')"
+              :description="'Select a notification'"
             />
             <div v-else class="space-y-4">
               <n-descriptions
@@ -515,10 +513,10 @@ function displayTime(value?: string | null) {
                 bordered
                 :column="1"
               >
-                <n-descriptions-item :label="t('resource.message.notification.title_field')">
+                <n-descriptions-item :label="'Title'">
                   {{ displayValue(detail.notification.title) }}
                 </n-descriptions-item>
-                <n-descriptions-item :label="t('resource.message.notification.severity')">
+                <n-descriptions-item :label="'Severity'">
                   <n-tag
                     :color="
                       createTagColor(
@@ -533,24 +531,24 @@ function displayTime(value?: string | null) {
                     }}
                   </n-tag>
                 </n-descriptions-item>
-                <n-descriptions-item :label="t('common.often.status')">
+                <n-descriptions-item :label="'Status'">
                   <n-tag
                     :type="statusTagType(Boolean(detail.notification.is_read))"
                     :bordered="false"
                   >
                     {{
-                      detail.notification.is_read ? t('app.notice.read') : t('app.notice.unread')
+                      detail.notification.is_read ? 'Read' : 'Unread'
                     }}
                   </n-tag>
                 </n-descriptions-item>
-                <n-descriptions-item :label="t('resource.message.notification.publish_at')">
+                <n-descriptions-item :label="'Published At'">
                   {{
                     displayValue(
                       displayTime(detail.notification.publish_at || detail.notification.created_at),
                     )
                   }}
                 </n-descriptions-item>
-                <n-descriptions-item :label="t('resource.message.notification.content')">
+                <n-descriptions-item :label="'Content'">
                   <div class="whitespace-pre-wrap leading-7">
                     {{ displayValue(detail.notification.content) }}
                   </div>
@@ -563,7 +561,7 @@ function displayTime(value?: string | null) {
             <n-empty
               v-if="!detail.thread"
               class="py-24"
-              :description="t('app.message_center.select_thread')"
+              :description="'Select a thread'"
             />
             <div v-else class="flex min-h-[calc(100vh-300px)] flex-col">
               <n-descriptions
@@ -572,10 +570,10 @@ function displayTime(value?: string | null) {
                 bordered
                 :column="1"
               >
-                <n-descriptions-item :label="t('resource.message.message.thread_title')">
+                <n-descriptions-item :label="'Thread Title'">
                   {{ displayValue(detail.thread.title) }}
                 </n-descriptions-item>
-                <n-descriptions-item :label="t('resource.message.message.thread_type')">
+                <n-descriptions-item :label="'Thread Type'">
                   <n-tag
                     :color="
                       createTagColor(
@@ -598,7 +596,7 @@ function displayTime(value?: string | null) {
                 <n-empty
                   v-if="!sortedThreadMessages.length"
                   class="py-16"
-                  :description="t('resource.message.message.no_messages')"
+                  :description="'No messages'"
                 />
                 <div v-else class="space-y-3">
                   <div
@@ -611,7 +609,7 @@ function displayTime(value?: string | null) {
                         {{
                           item.sender_name ||
                           item.sender_account_id ||
-                          t('resource.message.message.system_sender')
+                          'System'
                         }}
                       </div>
                       <div class="shrink-0 text-xs text-[var(--text-color-3)]">
@@ -632,7 +630,7 @@ function displayTime(value?: string | null) {
                   v-model:value="replyContent"
                   type="textarea"
                   :autosize="{ minRows: 3, maxRows: 6 }"
-                  :placeholder="t('resource.message.message.reply_placeholder')"
+                  :placeholder="'Enter a reply'"
                 />
                 <div class="mt-3 flex justify-end">
                   <n-button
@@ -641,7 +639,7 @@ function displayTime(value?: string | null) {
                     :loading="detail.actionLoading"
                     @click="replyMessage"
                   >
-                    {{ t('resource.message.message.reply') }}
+                    {{ 'Reply' }}
                   </n-button>
                 </div>
               </div>

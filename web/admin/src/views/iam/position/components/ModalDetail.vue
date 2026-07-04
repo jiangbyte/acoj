@@ -3,9 +3,7 @@ import { positionApi } from '@/api'
 import { createTagColor, displayValue } from '@/utils'
 import { reactive } from 'vue'
 import { dictTypeData, dictTypeColor } from '@/utils/dict'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const state = reactive({
   showModal: false,
   loading: false,
@@ -39,38 +37,38 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('resource.iam.position.detail_position')"
+    :title="'Position Detail'"
     style="width: 680px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('resource.iam.position.id')">
+          <NDescriptionsItem :label="'Position ID'">
             {{ displayValue(state.position.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.position.name')">
+          <NDescriptionsItem :label="'Position Name'">
             {{ displayValue(state.position.name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.position.code')">
+          <NDescriptionsItem :label="'Position Code'">
             {{ displayValue(state.position.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.position.category')">
+          <NDescriptionsItem :label="'Position Category'">
             {{
               dictTypeData('POSITION_CATEGORY', state.position.category) ||
               displayValue(state.position.category)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.position.sort')">
+          <NDescriptionsItem :label="'Sort'">
             {{ displayValue(state.position.sort) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.position.is_virtual')">
+          <NDescriptionsItem :label="'Virtual Position'">
             {{
               state.position.is_virtual
-                ? t('resource.iam.position.yes')
-                : t('resource.iam.position.no')
+                ? 'Yes'
+                : 'No'
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.status')">
+          <NDescriptionsItem :label="'Status'">
             <NTag
               :color="createTagColor(dictTypeColor('COMMON_STATUS', state.position.status))"
               :bordered="false"
@@ -81,19 +79,19 @@ defineExpose({
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.position.description')">
+          <NDescriptionsItem :label="'Description'">
             {{ displayValue(state.position.description) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.created_at')">
+          <NDescriptionsItem :label="'Created At'">
             {{ displayValue(state.position.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.created_by')">
+          <NDescriptionsItem :label="'Created By'">
             {{ displayValue(state.position.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updated_at')">
+          <NDescriptionsItem :label="'Updated At'">
             {{ displayValue(state.position.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updated_by')">
+          <NDescriptionsItem :label="'Updated By'">
             {{ displayValue(state.position.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

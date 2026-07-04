@@ -1,11 +1,40 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config.enums import AccountStatusEnum, AccountType
+from app.core.security.session import SessionPayload, session_store
 from app.deps.db import get_db_session
+from app.modules.iam.account.model import SysAccount
 from app.modules.iam.enums import ResourceModuleClient, ResourceType
 from app.modules.iam.resource.model import SysResource, SysResourceModule
 
 
-async def test_portal_current_resources_are_public(client):
+async def _seed_admin(client, token: str, permissions: list[str]) -> None:
+    override = client._transport.app.dependency_overrides[get_db_session]
+    async for session in override():
+        db_session: AsyncSession = session
+        account = SysAccount(
+            password_hash="hashed",
+            account_type=AccountType.ADMIN.value,
+            account_status=AccountStatusEnum.ENABLED.value,
+        )
+        db_session.add(account)
+        await db_session.flush()
+        await session_store.set(
+            SessionPayload(
+                token=token,
+                account_id=account.id,
+                account_type=AccountType.ADMIN.value,
+                permission_keys=permissions,
+                permission_grants=[],
+            ),
+            ttl_seconds=3600,
+        )
+        await db_session.commit()
+        return
+    raise AssertionError("Expected test database session")
+
+
+async def _seed_admin_and_portal_resources(client) -> None:
     override = client._transport.app.dependency_overrides[get_db_session]
     async for session in override():
         db_session: AsyncSession = session
@@ -16,12 +45,14 @@ async def test_portal_current_resources_are_public(client):
                     code="admin",
                     name="Admin",
                     client=ResourceModuleClient.ADMIN.value,
+                    sort=1,
                 ),
                 SysResourceModule(
                     id="module_portal",
                     code="portal",
                     name="Portal",
                     client=ResourceModuleClient.PORTAL.value,
+                    sort=2,
                 ),
                 SysResource(
                     id="resource_admin",
@@ -29,6 +60,8 @@ async def test_portal_current_resources_are_public(client):
                     name="Admin Resource",
                     resource_type=ResourceType.MENU.value,
                     module_id="module_admin",
+                    path="/admin-resource",
+                    component="/admin-resource/index.vue",
                     sort=1,
                 ),
                 SysResource(
@@ -37,14 +70,60 @@ async def test_portal_current_resources_are_public(client):
                     name="Portal Resource",
                     resource_type=ResourceType.MENU.value,
                     module_id="module_portal",
-                    path="/demo",
-                    component="/demo/index.vue",
+                    path="/portal-resource",
+                    component="/portal-resource/index.vue",
                     sort=2,
                 ),
             ]
         )
         await db_session.commit()
-        break
+        return
+    raise AssertionError("Expected test database session")
+
+
+async def test_admin_current_resources_only_return_admin_client_resources(client):
+    token = "admin-current-resource-token"
+    await _seed_admin(client, token, ["*:*:*"])
+    await _seed_admin_and_portal_resources(client)
+
+    response = await client.get(
+        "/api/v1/admin/sys/resources/current",
+        headers={"Authorization": token},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["code"] == 200
+    data = response.json()["data"]
+    assert [item["id"] for item in data] == ["resource_admin"]
+    assert data[0]["module_client"] == ResourceModuleClient.ADMIN.value
+
+
+async def test_admin_resource_management_interfaces_keep_all_clients_by_default(client):
+    token = "admin-resource-management-token"
+    await _seed_admin(client, token, ["iam:resource:page", "iam:resource:list", "*:*:*"])
+    await _seed_admin_and_portal_resources(client)
+    headers = {"Authorization": token}
+
+    page_response = await client.get(
+        "/api/v1/admin/sys/resources/page?current=1&size=20",
+        headers=headers,
+    )
+    tree_response = await client.get("/api/v1/admin/sys/resources/tree", headers=headers)
+
+    assert page_response.status_code == 200
+    assert tree_response.status_code == 200
+    page_records = page_response.json()["data"]["records"]
+    tree_records = tree_response.json()["data"]
+    assert [item["id"] for item in page_records] == ["resource_admin", "resource_portal"]
+    assert [item["id"] for item in tree_records] == ["resource_admin", "resource_portal"]
+    assert {item["module_client"] for item in page_records} == {
+        ResourceModuleClient.ADMIN.value,
+        ResourceModuleClient.PORTAL.value,
+    }
+
+
+async def test_portal_current_resources_are_public(client):
+    await _seed_admin_and_portal_resources(client)
 
     response = await client.get("/api/v1/portal/sys/resources/current")
 

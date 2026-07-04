@@ -3,11 +3,12 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
-from app.core.exceptions.business import AuthorizationError
+from app.core.exceptions.business import AuthorizationError, BusinessError
 from app.core.response.pagination import PageData, build_page
 from app.core.schema.base import IdQuery, IdsRequest, to_schema
 from app.core.security.data_scope import build_data_scope_filter, resolve_data_scope_dept_ids
 from app.core.security.password import hash_password
+from app.core.security.transport import decrypt_passwords
 from app.core.security.session import SessionPayload
 from app.modules.auth.session_service import AccountSessionService
 from app.modules.iam.account.model import SysAccount, SysAccountDeptRel
@@ -60,10 +61,12 @@ class AccountService:
         self.grant_repo = GrantRepository(db)
 
     async def create(self, payload: AccountCreateRequest) -> None:
+        self._ensure_login_contact_payload(payload)
+        password = await self._resolve_password(payload.password, payload.password_key_id)
         async with transactional(self.db):
             account = await self.repo.create(
                 payload,
-                password_hash=hash_password(payload.password),
+                password_hash=hash_password(password),
             )
             if payload.account_type == AccountType.ADMIN:
                 await AdminUserProfileRepository(self.db).upsert(
@@ -81,8 +84,14 @@ class AccountService:
     ) -> None:
         if session is not None:
             await self._ensure_accounts_visible(session, "iam:account:update", [payload.id])
+        self._ensure_login_contact_payload(payload)
+        password = (
+            await self._resolve_password(payload.password, payload.password_key_id)
+            if payload.password
+            else None
+        )
         async with transactional(self.db):
-            password_hash = hash_password(payload.password) if payload.password else None
+            password_hash = hash_password(password) if password else None
             await self.repo.update(payload, password_hash)
             account = await self.repo.get_required(payload.id)
             if account.account_type == AccountType.ADMIN.value:
@@ -507,7 +516,28 @@ class AccountService:
             signature=payload.signature,
             phone=payload.phone,
             email=payload.email,
+            bio=payload.bio,
+            level=payload.level,
         )
+
+    def _ensure_login_contact_payload(
+        self,
+        payload: AccountCreateRequest | AccountUpdateRequest,
+    ) -> None:
+        if payload.email_login_enabled and not str(
+            payload.email_identity or payload.email or ""
+        ).strip():
+            raise BusinessError("Email login requires an email")
+        if payload.phone_login_enabled and not str(
+            payload.phone_identity or payload.phone or ""
+        ).strip():
+            raise BusinessError("Phone login requires a phone")
+
+    async def _resolve_password(self, password: str, password_key_id: str | None) -> str:
+        if not password_key_id:
+            return password
+        decrypted = (await decrypt_passwords(password_key_id, password))[0]
+        return decrypted or ""
 
 
 def _grant_custom_dept_ids(grant_info_list: list) -> list[str]:

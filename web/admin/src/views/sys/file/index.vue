@@ -9,11 +9,9 @@ import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon,
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
-import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 
-const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
 const state = reactive({
@@ -42,17 +40,17 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('resource.sys.file.original_name'),
+    title: 'File Name',
     path: 'original_name',
     field: 'input',
   },
   {
-    title: t('resource.sys.file.object_name'),
+    title: 'Object Path',
     path: 'object_name',
     field: 'input',
   },
   {
-    title: t('resource.sys.file.storage_provider'),
+    title: 'Storage Provider',
     path: 'storage_provider',
     field: 'select',
     fieldProps: {
@@ -60,7 +58,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.file.content_type'),
+    title: 'Content Type',
     path: 'content_type',
     field: 'input',
   },
@@ -72,7 +70,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => t('common.often.total', { count: itemCount }),
+  prefix: ({ itemCount }) => `${itemCount} total`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -90,7 +88,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: t('common.often.index'),
+    title: 'ID',
     width: 90,
     path: 'id',
     ellipsis: {
@@ -98,13 +96,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.file.preview'),
+    title: 'Preview',
     key: 'preview',
     width: 120,
     render: (row) => renderPreview(row),
   },
   {
-    title: t('resource.sys.file.original_name'),
+    title: 'File Name',
     path: 'original_name',
     width: 220,
     ellipsis: {
@@ -112,7 +110,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.file.object_name'),
+    title: 'Object Path',
     path: 'object_name',
     width: 320,
     ellipsis: {
@@ -120,7 +118,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.file.storage_provider'),
+    title: 'Storage Provider',
     path: 'storage_provider',
     width: 130,
     render: (row) => (
@@ -133,7 +131,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('resource.sys.file.bucket'),
+    title: 'Bucket',
     path: 'bucket',
     width: 150,
     ellipsis: {
@@ -141,7 +139,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.file.content_type'),
+    title: 'Content Type',
     path: 'content_type',
     width: 180,
     ellipsis: {
@@ -149,13 +147,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.file.size'),
+    title: 'File Size',
     path: 'size',
     width: 120,
     render: (row) => formatFileSize(row.size),
   },
   {
-    title: t('common.often.updated_at'),
+    title: 'Updated At',
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -163,7 +161,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 150,
     fixed: 'right',
@@ -226,7 +224,7 @@ function renderPreview(row: any) {
   return (
     <NImage
       src={src}
-      alt={row.original_name || t('resource.sys.file.preview')}
+      alt={row.original_name || 'Preview'}
       width={72}
       height={48}
       objectFit="cover"
@@ -281,14 +279,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
+    title: isBatch ? 'Batch Delete' : 'Delete',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('resource.sys.file.batch_delete_confirm', { count: ids.length })
-      : t('resource.sys.file.delete_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
+      ? `Delete ${ids.length} selected files?`
+      : 'Delete this file?',
+    positiveText: 'Confirm',
+    negativeText: 'Cancel',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -297,7 +295,7 @@ async function deleteData(ids: string[]) {
   await fileApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success(t('common.often.delete_success'))
+  window.$message.success('Deleted successfully')
   await fetchPage()
   if (!state.files.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -312,12 +310,12 @@ async function deleteData(ids: string[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: t('common.search_form.reset') }"
-        :search-button-props="{ content: t('common.search_form.search') }"
+        :reset-button-props="{ content: 'Reset' }"
+        :search-button-props="{ content: 'Search' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? t('common.search_form.expand')
-            : t('common.search_form.collapse'),
+            ? 'Expand'
+            : 'Collapse',
         }"
       />
     </ProCard>
@@ -325,7 +323,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('resource.sys.file.title')"
+      :title="'File Management'"
       row-key="id"
       :scroll-x="1890"
       :columns="tableColumns"
@@ -342,10 +340,10 @@ async function deleteData(ids: string[]) {
             compact
             mode="icon"
             icon="icon-park-outline:upload"
-            :button-text="t('resource.sys.file.upload')"
+            :button-text="'Upload File'"
             @uploaded="fetchPage"
           />
-          <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -356,8 +354,8 @@ async function deleteData(ids: string[]) {
             v-if="hasPermission('sys:file:delete')"
             type="error"
             text
-            :title="t('common.often.batch_delete')"
-            :aria-label="t('common.often.batch_delete')"
+            :title="'Batch Delete'"
+            :aria-label="'Batch Delete'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >

@@ -1,35 +1,33 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const { t } = useI18n()
 
 const capabilities = computed(() => [
   {
     icon: 'icon-park-outline:connection-point',
-    title: t('app.portal.capability_process_title'),
-    text: t('app.portal.capability_process_text'),
+    title: 'Workflow Access',
+    text: 'Bring organization services, business workflows, and personal work entry points into one clear portal navigation.',
   },
   {
     icon: 'icon-park-outline:people',
-    title: t('app.portal.capability_team_title'),
-    text: t('app.portal.capability_team_text'),
+    title: 'Team Collaboration',
+    text: 'Load dynamic resources by permission after sign-in, so each role sees only what it needs.',
   },
   {
     icon: 'icon-park-outline:chart-line',
-    title: t('app.portal.capability_insight_title'),
-    text: t('app.portal.capability_insight_text'),
+    title: 'Operational View',
+    text: 'Keep room for data, announcements, and service extensions in generic enterprise scenarios.',
   },
 ])
 
 const metrics = computed(() => [
-  { value: '99.9%', label: t('app.portal.metric_availability') },
-  { value: '24/7', label: t('app.portal.metric_service') },
-  { value: '3', label: t('app.portal.metric_entry') },
+  { value: '99.9%', label: 'Availability' },
+  { value: '24/7', label: 'Service' },
+  { value: '3', label: 'Core Entries' },
 ])
 
 function openPrimary() {
@@ -46,20 +44,20 @@ function openPrimary() {
             class="mb-5 inline-flex items-center gap-2 rounded-2 border border-[var(--border-color)] bg-[var(--card-color)] px-3 py-1 text-sm font-600 text-[var(--primary-color)]"
           >
             <NovaIcon icon="icon-park-outline:building-one" />
-            {{ t('app.portal.kicker') }}
+            {{ 'Enterprise Portal' }}
           </div>
           <h1 class="max-w-180 text-4xl font-800 leading-tight sm:text-5xl lg:text-6xl">
-            {{ t('app.portal.hero_title') }}
+            {{ 'One entry for teams, workflows, and services' }}
           </h1>
           <p class="mt-5 max-w-170 text-base leading-7 text-[var(--text-color-2)] sm:text-lg">
-            {{ t('app.portal.hero_subtitle') }}
+            {{ 'A clear, stable, responsive business entry for teams. Public pages are configurable, and protected capabilities load after sign-in according to permissions.' }}
           </p>
           <div class="mt-8 flex flex-col gap-3 sm:flex-row">
             <NButton type="primary" size="large" :focusable="false" @click="openPrimary">
-              {{ authStore.isLogin ? t('app.portal.open_workspace') : t('auth.login') }}
+              {{ authStore.isLogin ? 'Open Workspace' : 'Sign In' }}
             </NButton>
             <NButton size="large" :focusable="false" @click="router.push('/auth/register')">
-              {{ t('auth.register') }}
+              {{ 'Register' }}
             </NButton>
           </div>
         </div>
@@ -69,8 +67,8 @@ function openPrimary() {
         >
           <div class="grid gap-4">
             <div class="rounded-2 bg-[var(--primary-color)] p-5 text-white">
-              <div class="text-sm opacity-80">{{ t('app.portal.panel_label') }}</div>
-              <div class="mt-3 text-2xl font-750">{{ t('app.portal.panel_title') }}</div>
+              <div class="text-sm opacity-80">{{ 'Service Overview' }}</div>
+              <div class="mt-3 text-2xl font-750">{{ 'A unified experience for every device' }}</div>
               <div class="mt-6 grid grid-cols-3 gap-3">
                 <div v-for="item in metrics" :key="item.label">
                   <div class="text-xl font-800">{{ item.value }}</div>

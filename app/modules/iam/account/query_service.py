@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
 from app.core.schema.datetime import normalize_orm_datetimes
+from app.modules.iam.enums import AccountIdentityBindStatus
 from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.schema import AccountIdentitySchema
 from app.modules.iam.schema import SysAccountSchema
@@ -68,14 +69,18 @@ class AccountQueryService:
                     account=getattr(primary_identity, "identifier", ""),
                     account_type=account.account_type,
                     account_status=account.account_status,
-                    name=getattr(profile, "name", None) or "",
+                    name=getattr(profile, "name", None),
                     nickname=getattr(profile, "nickname", None),
                     avatar=resolve_file_url(getattr(profile, "avatar", None)),
                     signature=getattr(profile, "signature", None),
                     phone=getattr(profile, "phone", None),
                     email=getattr(profile, "email", None),
+                    email_login_enabled=_identity_login_enabled(email_identity),
+                    phone_login_enabled=_identity_login_enabled(phone_identity),
                     employee_no=getattr(profile, "employee_no", None),
                     title=getattr(profile, "title", None),
+                    bio=getattr(profile, "bio", None),
+                    level=getattr(profile, "level", None),
                     remark=getattr(profile, "remark", None),
                     email_identity=getattr(email_identity, "identifier", None),
                     phone_identity=getattr(phone_identity, "identifier", None),
@@ -105,3 +110,12 @@ class AccountQueryService:
                 )
             )
         return items
+
+
+def _identity_login_enabled(identity) -> bool:
+    return bool(
+        identity
+        and identity.identifier
+        and identity.verified
+        and identity.bind_status == AccountIdentityBindStatus.BOUND.value
+    )

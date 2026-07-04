@@ -3,13 +3,11 @@ import type { FormInst, FormRules } from 'naive-ui'
 import { positionApi } from '@/api'
 import { createRequiredRule, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   name: '',
@@ -30,14 +28,14 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('resource.iam.position.edit_position') : t('resource.iam.position.add_position'),
+  state.dataId ? 'Edit Position' : 'Add Position',
 )
 
 const rules = computed<FormRules>(() => ({
-  name: createRequiredRule(t, t('resource.iam.position.name'), 'input'),
-  code: createRequiredRule(t, t('resource.iam.position.code'), 'input'),
-  category: createRequiredRule(t, t('resource.iam.position.category'), 'change'),
-  status: createRequiredRule(t, t('common.often.status'), 'change'),
+  name: createRequiredRule('Position Name', 'input'),
+  code: createRequiredRule('Position Code', 'input'),
+  category: createRequiredRule('Position Category', 'change'),
+  status: createRequiredRule('Status', 'change'),
 }))
 
 async function openModal(id?: string) {
@@ -87,10 +85,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.update_success'))
+      window.$message.success('Updated successfully')
     } else {
       await positionApi.create(payload)
-      window.$message.success(t('common.often.create_success'))
+      window.$message.success('Created successfully')
     }
 
     closeModal()
@@ -125,25 +123,25 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('resource.iam.position.name')" path="name">
+          <NFormItem :label="'Position Name'" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.position.code')" path="code">
+          <NFormItem :label="'Position Code'" path="code">
             <NInput v-model:value="state.formModel.code" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.position.category')" path="category">
+          <NFormItem :label="'Position Category'" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="POSITION_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.position.sort')" path="sort">
+          <NFormItem :label="'Sort'" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.position.is_virtual')" path="is_virtual">
+          <NFormItem :label="'Virtual Position'" path="is_virtual">
             <NSwitch v-model:value="state.formModel.is_virtual" />
           </NFormItem>
-          <NFormItem :label="t('common.often.status')" path="status">
+          <NFormItem :label="'Status'" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.position.description')" path="description">
+          <NFormItem :label="'Description'" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"
@@ -157,10 +155,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ t('common.cancel') }}
+          {{ 'Cancel' }}
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ t('common.confirm') }}
+          {{ 'Confirm' }}
         </NButton>
       </NSpace>
     </template>

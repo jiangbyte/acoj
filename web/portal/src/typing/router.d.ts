@@ -20,9 +20,6 @@ declare module 'vue-router' {
     // 资源名称，用于菜单、面包屑、标签页、文档标题等展示文本。
     name?: string
 
-    // 前端国际化键。存在且命中语言包时优先用于资源展示文本。
-    locale_key?: string | null
-
     // 资源类型，决定该资源是否生成路由、菜单或仅作为权限节点。
     resource_type?: AppRoute.ResourceType
 
@@ -94,7 +91,6 @@ declare global {
       parent_id: string | null
       code: string
       name: string
-      locale_key?: string | null
       resource_type: ResourceType
       module_id?: string | null
       module_id_name?: string | null

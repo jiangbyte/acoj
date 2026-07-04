@@ -3,13 +3,11 @@ import type { FormInst, FormRules } from 'naive-ui'
 import { deptApi } from '@/api'
 import { createRequiredRule, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   name: '',
@@ -32,14 +30,14 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('resource.iam.dept.edit_dept') : t('resource.iam.dept.add_dept'),
+  state.dataId ? 'Edit Department' : 'Add Department',
 )
 
 const rules = computed<FormRules>(() => ({
-  name: createRequiredRule(t, t('resource.iam.dept.name'), 'input'),
-  code: createRequiredRule(t, t('resource.iam.dept.code'), 'input'),
-  category: createRequiredRule(t, t('resource.iam.dept.category'), 'change'),
-  status: createRequiredRule(t, t('common.often.status'), 'change'),
+  name: createRequiredRule('Department Name', 'input'),
+  code: createRequiredRule('Department Code', 'input'),
+  category: createRequiredRule('Department Category', 'change'),
+  status: createRequiredRule('Status', 'change'),
 }))
 
 async function openModal(id?: string) {
@@ -93,10 +91,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.update_success'))
+      window.$message.success('Updated successfully')
     } else {
       await deptApi.create(payload)
-      window.$message.success(t('common.often.create_success'))
+      window.$message.success('Created successfully')
     }
 
     closeModal()
@@ -131,31 +129,31 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('resource.iam.dept.name')" path="name">
+          <NFormItem :label="'Department Name'" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.dept.code')" path="code">
+          <NFormItem :label="'Department Code'" path="code">
             <NInput v-model:value="state.formModel.code" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.dept.category')" path="category">
+          <NFormItem :label="'Department Category'" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="DEPT_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.dept.parent_id')" path="parent_id">
+          <NFormItem :label="'Parent Department ID'" path="parent_id">
             <NInput v-model:value="state.formModel.parent_id" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.dept.master_id')" path="master_id">
+          <NFormItem :label="'Master ID'" path="master_id">
             <NInput v-model:value="state.formModel.master_id" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.dept.deputy_master_id')" path="deputy_master_id">
+          <NFormItem :label="'Deputy Master ID'" path="deputy_master_id">
             <NInput v-model:value="state.formModel.deputy_master_id" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.dept.sort')" path="sort">
+          <NFormItem :label="'Sort'" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.dept.is_virtual')" path="is_virtual">
+          <NFormItem :label="'Virtual Department'" path="is_virtual">
             <NSwitch v-model:value="state.formModel.is_virtual" />
           </NFormItem>
-          <NFormItem :label="t('common.often.status')" path="status">
+          <NFormItem :label="'Status'" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
         </NForm>
@@ -165,10 +163,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ t('common.cancel') }}
+          {{ 'Cancel' }}
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ t('common.confirm') }}
+          {{ 'Confirm' }}
         </NButton>
       </NSpace>
     </template>

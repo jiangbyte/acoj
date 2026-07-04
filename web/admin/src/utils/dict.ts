@@ -1,5 +1,4 @@
 import { dictTreeState } from '@/stores/dict'
-import { translateLocale } from '@/utils/i18n'
 
 export function dictDataAll() {
   return dictTreeState.value
@@ -51,7 +50,7 @@ export function getDictValue(item: any) {
 }
 
 export function getDictLabel(item: any) {
-  return translateLocale(item.locale_key, item.label || item.code)
+  return item.label || item.code
 }
 
 export function isEnabledDict(item: any) {

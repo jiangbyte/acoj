@@ -4,6 +4,7 @@ from pydantic import Field
 
 from app.core.schema.base import ApiSchema
 from app.core.schema.common_schema import IdNameResponse as IdNameResponse
+from app.core.security.transport import PasswordKeyMixin
 
 
 class AdminProfileResponse(ApiSchema):
@@ -16,6 +17,8 @@ class AdminProfileResponse(ApiSchema):
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
+    phone_login_enabled: bool = False
+    email_login_enabled: bool = False
     title: str | None = None
     employee_no: str | None = None
     remark: str | None = None
@@ -41,7 +44,7 @@ class AdminProfileUpsertPayload(ApiSchema):
 class AdminUserCenterProfileUpdateRequest(ApiSchema):
     """当前管理员个人资料更新请求。"""
 
-    name: str = Field(min_length=1, max_length=64)
+    name: str | None = Field(default=None, max_length=64)
     nickname: str | None = Field(default=None, max_length=64)
     avatar: str | None = None
     signature: str | None = None
@@ -50,25 +53,27 @@ class AdminUserCenterProfileUpdateRequest(ApiSchema):
     remark: str | None = None
 
 
-class AdminUserCenterPasswordUpdateRequest(ApiSchema):
+class AdminUserCenterPasswordUpdateRequest(PasswordKeyMixin):
     """当前管理员修改密码请求。"""
 
-    old_password: str = Field(min_length=1, max_length=128)
-    new_password: str = Field(min_length=6, max_length=128)
+    old_password: str = Field(min_length=1, max_length=512)
+    new_password: str = Field(min_length=1, max_length=512)
 
 
-class AdminUserCenterPhoneUpdateRequest(ApiSchema):
+class AdminUserCenterPhoneUpdateRequest(PasswordKeyMixin):
     """当前管理员手机号绑定更新请求。"""
 
-    password: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=1, max_length=512)
     phone: str | None = Field(default=None, max_length=32)
+    phone_login_enabled: bool = False
 
 
-class AdminUserCenterEmailUpdateRequest(ApiSchema):
+class AdminUserCenterEmailUpdateRequest(PasswordKeyMixin):
     """当前管理员邮箱绑定更新请求。"""
 
-    password: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=1, max_length=512)
     email: str | None = Field(default=None, max_length=128)
+    email_login_enabled: bool = False
 
 
 class AdminUserCenterOrgInfoResponse(ApiSchema):

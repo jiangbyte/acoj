@@ -3,13 +3,11 @@ import type { DataTableColumns } from 'naive-ui'
 import { resourceApi } from '@/api'
 import { NButton, NInput, NInputGroup, NTag } from 'naive-ui'
 import { computed, reactive } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   selected: [permission: any]
 }>()
 
-const { t } = useI18n()
 const state = reactive({
   showModal: false,
   loading: false,
@@ -45,7 +43,7 @@ const firstShowMap = computed<Record<string, number[]>>(() => {
 
 const columns = computed<DataTableColumns<any>>(() => [
   {
-    title: t('resource.iam.resource.permission_prefix'),
+    title: 'Permission Group',
     key: 'prefix',
     fixed: 'left',
     width: 220,
@@ -56,7 +54,7 @@ const columns = computed<DataTableColumns<any>>(() => [
     render: (row) => row.prefix,
   },
   {
-    title: t('resource.iam.resource.permission_key'),
+    title: 'Permission Key',
     key: 'suffix',
     minWidth: 360,
     filter: true,
@@ -64,7 +62,7 @@ const columns = computed<DataTableColumns<any>>(() => [
       <div class="permission-selector-filter">
         <NInput
           value={state.searchText}
-          placeholder={t('resource.iam.resource.permission_search_placeholder')}
+          placeholder={'Enter permission key or name'}
           onUpdateValue={(value) => {
             state.searchText = value
           }}
@@ -84,7 +82,7 @@ const columns = computed<DataTableColumns<any>>(() => [
               hide()
             }}
           >
-            {t('common.search_form.search')}
+            {'Search'}
           </NButton>
           <NButton
             size="small"
@@ -93,7 +91,7 @@ const columns = computed<DataTableColumns<any>>(() => [
               hide()
             }}
           >
-            {t('common.reset')}
+            {'Reset'}
           </NButton>
         </NInputGroup>
       </div>
@@ -103,14 +101,14 @@ const columns = computed<DataTableColumns<any>>(() => [
         <span>{row.suffix}</span>
         {row.permission_key === state.currentKey ? (
           <NTag size="small" type="success" bordered={false}>
-            {t('resource.iam.resource.selected')}
+            {'Selected'}
           </NTag>
         ) : null}
       </div>
     ),
   },
   {
-    title: t('resource.iam.resource.permission_name'),
+    title: 'Permission Name',
     key: 'name',
     minWidth: 200,
     ellipsis: {
@@ -118,13 +116,13 @@ const columns = computed<DataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 100,
     fixed: 'right',
     render: (row) => (
       <NButton type="primary" size="small" text={true} onClick={() => selectPermission(row)}>
-        {t('resource.iam.resource.select_permission')}
+        {'Select Permission'}
       </NButton>
     ),
   },
@@ -195,7 +193,7 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('resource.iam.resource.select_permission')"
+    :title="'Select Permission'"
     style="width: 980px"
     :segmented="{ content: true, action: true }"
   >
@@ -225,7 +223,7 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ t('common.close') }}
+          {{ 'Close' }}
         </NButton>
       </NSpace>
     </template>

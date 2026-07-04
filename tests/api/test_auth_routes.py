@@ -1,3 +1,7 @@
+import re
+from urllib.parse import parse_qs, urlparse
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.constants import SUPER_ADMIN_ROLE_CODE
@@ -6,8 +10,31 @@ from app.core.security.password import hash_password
 from app.core.security.session import SessionPayload, session_store
 from app.deps.db import get_db_session
 from app.modules.iam.account.model import SysAccount, SysAccountIdentity, SysAccountRoleRel
-from app.modules.iam.enums import AccountIdentityType, RoleScopeType
+from app.modules.iam.enums import AccountIdentityBindStatus, AccountIdentityType, RoleScopeType
 from app.modules.iam.role.model import SysRole
+
+
+@pytest.fixture(autouse=True)
+def auth_security_bypass(monkeypatch):
+    async def fake_verify_captcha(captcha_id: str, captcha_value: str) -> None:
+        return None
+
+    async def fake_decrypt_passwords(password_key_id: str, *values: str | None):
+        return list(values)
+
+    monkeypatch.setattr("app.modules.auth.router.verify_captcha", fake_verify_captcha)
+    monkeypatch.setattr("app.modules.auth.router.decrypt_passwords", fake_decrypt_passwords)
+
+
+def _secured(payload: dict) -> dict:
+    data = {
+        **payload,
+        "captcha_id": "captcha-test-id",
+        "captcha_value": "ABCD",
+    }
+    if "password" in data:
+        data["password_key_id"] = "password-key-test-id"
+    return data
 
 
 async def _seed_account(
@@ -36,6 +63,25 @@ async def _seed_account(
     return account
 
 
+async def _add_identity(
+    db_session: AsyncSession,
+    account: SysAccount,
+    identity_type: AccountIdentityType,
+    identifier: str,
+    verified: bool = True,
+) -> None:
+    db_session.add(
+        SysAccountIdentity(
+            account_id=account.id,
+            identity_type=identity_type.value,
+            identifier=identifier,
+            verified=verified,
+            is_primary=False,
+            bind_status=AccountIdentityBindStatus.BOUND.value,
+        )
+    )
+
+
 async def test_public_auth_login_route_not_found(client):
     response = await client.post(
         "/api/v1/public/auth/login",
@@ -60,7 +106,7 @@ async def test_portal_auth_login_success(client):
 
     response = await client.post(
         "/api/v1/portal/login",
-        json={"account": "portal_login_user", "password": "Portal@123456"},
+        json=_secured({"account": "portal_login_user", "password": "Portal@123456"}),
     )
 
     assert response.status_code == 200
@@ -68,6 +114,150 @@ async def test_portal_auth_login_success(client):
     assert payload["code"] == 200
     data = payload["data"]
     assert data["account_type"] == AccountType.PORTAL.value
+
+
+async def test_login_identity_type_is_strict(client):
+    override = client._transport.app.dependency_overrides[get_db_session]
+    async for session in override():
+        db_session: AsyncSession = session
+        account = await _seed_account(
+            db_session,
+            identifier="portal_identity_user",
+            password="Portal@123456",
+            account_type=AccountType.PORTAL,
+        )
+        await _add_identity(
+            db_session,
+            account,
+            AccountIdentityType.EMAIL,
+            "portal_identity@example.com",
+        )
+        await db_session.commit()
+        break
+
+    wrong_type_response = await client.post(
+        "/api/v1/portal/login",
+        json=_secured({
+            "account": "portal_identity_user",
+            "password": "Portal@123456",
+            "identity_type": "EMAIL",
+        }),
+    )
+    email_response = await client.post(
+        "/api/v1/portal/login",
+        json=_secured({
+            "account": "portal_identity@example.com",
+            "password": "Portal@123456",
+            "identity_type": "EMAIL",
+        }),
+    )
+
+    assert wrong_type_response.status_code == 401
+    assert email_response.status_code == 200
+
+
+async def test_admin_register_route_is_removed(client):
+    response = await client.post(
+        "/api/v1/admin/register",
+        json=_secured({
+            "account": "admin_register_removed",
+            "nickname": "Admin",
+            "email": "admin-register@example.com",
+            "password": "Admin@123456",
+        }),
+    )
+
+    assert response.status_code == 404
+
+
+async def test_portal_register_requires_email_and_does_not_require_name_or_phone(client):
+    missing_email = await client.post(
+        "/api/v1/portal/register",
+        json=_secured({
+            "account": "portal_missing_email",
+            "nickname": "Portal User",
+            "password": "Portal@123456",
+        }),
+    )
+    created = await client.post(
+        "/api/v1/portal/register",
+        json=_secured({
+            "account": "portal_register_email",
+            "nickname": "Portal User",
+            "email": "portal-register@example.com",
+            "password": "Portal@123456",
+        }),
+    )
+
+    assert missing_email.status_code == 422
+    assert created.status_code == 200
+    assert created.json()["data"]["account_type"] == AccountType.PORTAL.value
+
+
+async def test_admin_forgot_and_reset_password_use_email_link(client, monkeypatch):
+    sent_messages: list[tuple[str, str, str]] = []
+
+    async def fake_send_mail(to_email: str, subject: str, body: str) -> None:
+        sent_messages.append((to_email, subject, body))
+
+    monkeypatch.setattr("app.modules.auth.service.send_mail", fake_send_mail)
+
+    override = client._transport.app.dependency_overrides[get_db_session]
+    async for session in override():
+        db_session: AsyncSession = session
+        account = await _seed_account(
+            db_session,
+            identifier="admin_reset_user",
+            password="Admin@123456",
+            account_type=AccountType.ADMIN,
+        )
+        await _add_identity(
+            db_session,
+            account,
+            AccountIdentityType.EMAIL,
+            "admin-reset@example.com",
+        )
+        await db_session.commit()
+        break
+
+    forgot = await client.post(
+        "/api/v1/admin/forgot-password",
+        json=_secured({"email": "admin-reset@example.com"}),
+    )
+    assert forgot.status_code == 200
+    assert sent_messages and sent_messages[0][0] == "admin-reset@example.com"
+    link = re.search(r"https?://\S+", sent_messages[0][2]).group(0)
+    query = parse_qs(urlparse(link).query)
+    token = query["token"][0]
+
+    reset = await client.post(
+        "/api/v1/admin/reset-password",
+        json=_secured({
+            "email": "admin-reset@example.com",
+            "token": token,
+            "password": "Admin@654321",
+        }),
+    )
+    login = await client.post(
+        "/api/v1/admin/login",
+        json=_secured({
+            "account": "admin-reset@example.com",
+            "password": "Admin@654321",
+            "identity_type": "EMAIL",
+        }),
+    )
+    reused = await client.post(
+        "/api/v1/admin/reset-password",
+        json=_secured({
+            "email": "admin-reset@example.com",
+            "token": token,
+            "password": "Admin@111111",
+        }),
+    )
+
+    assert reset.status_code == 200
+    assert login.status_code == 200
+    assert reused.status_code == 401
 
 
 async def test_logout_rejects_bearer_prefixed_token(client):
@@ -259,7 +449,7 @@ async def test_admin_route_allows_super_admin_role_without_explicit_permission(c
 
     login_response = await client.post(
         "/api/v1/admin/login",
-        json={"account": "admin_super_role", "password": "Admin@123456"},
+        json=_secured({"account": "admin_super_role", "password": "Admin@123456"}),
     )
     assert login_response.status_code == 200
     token = login_response.json()["data"]["token"]
@@ -276,7 +466,7 @@ async def test_admin_route_allows_super_admin_role_without_explicit_permission(c
 async def test_login_validation_error_uses_unified_response(client):
     response = await client.post(
         "/api/v1/portal/login",
-        json={"account": "ab", "password": "123"},
+        json=_secured({"account": "ab", "password": "123"}),
     )
 
     assert response.status_code == 422

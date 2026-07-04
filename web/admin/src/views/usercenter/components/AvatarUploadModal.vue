@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { authApi } from '@/api'
 import { computed, reactive, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 
@@ -15,7 +14,6 @@ const emit = defineEmits<{
   (e: 'uploaded'): void
 }>()
 
-const { t } = useI18n()
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const cropperRef = ref<any>(null)
 
@@ -52,7 +50,7 @@ function onFileChange(event: Event) {
     return
   }
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-    window.$message.warning(t('app.user_center.avatar_format_tip'))
+    window.$message.warning('JPG, PNG, and WebP images are supported. Upload after cropping.')
     return
   }
   resetSource()
@@ -64,7 +62,7 @@ function onFileChange(event: Event) {
 async function uploadAvatar() {
   const canvas = cropperRef.value?.getResult?.().canvas
   if (!canvas) {
-    window.$message.warning(t('app.user_center.avatar_select_required'))
+    window.$message.warning('Please choose an avatar image first')
     return
   }
 
@@ -72,7 +70,7 @@ async function uploadAvatar() {
   try {
     const blob = await canvasToBlob(canvas)
     await authApi.uploadUserCenterAvatar(new File([blob], 'avatar.png', { type: 'image/png' }))
-    window.$message.success(t('app.user_center.avatar_upload_success'))
+    window.$message.success('Avatar updated')
     emit('uploaded')
     modalShow.value = false
   } finally {
@@ -121,7 +119,7 @@ function resetSource() {
   <NModal
     v-model:show="modalShow"
     preset="card"
-    :title="t('app.user_center.upload_avatar')"
+    :title="'Upload Avatar'"
     class="max-w-150"
     :bordered="false"
     :mask-closable="!state.uploading"
@@ -151,7 +149,7 @@ function resetSource() {
             <img v-if="state.previewUrl" :src="state.previewUrl" alt="" />
           </div>
           <div class="mt-3 text-sm text-[var(--text-color-3)]">
-            {{ t('app.user_center.avatar_preview') }}
+            {{ 'Live Preview' }}
           </div>
         </div>
       </div>
@@ -164,7 +162,7 @@ function resetSource() {
           <template #icon>
             <NovaIcon icon="icon-park-outline:upload-picture" />
           </template>
-          {{ t('app.user_center.choose_image') }}
+          {{ 'Choose Image' }}
         </NButton>
       </div>
     </div>
@@ -172,17 +170,17 @@ function resetSource() {
     <template #footer>
       <NSpace justify="space-between" align="center">
         <div class="max-w-70 truncate text-sm text-[var(--text-color-3)]">
-          {{ state.fileName || t('app.user_center.avatar_format_tip') }}
+          {{ state.fileName || 'JPG, PNG, and WebP images are supported. Upload after cropping.' }}
         </div>
         <NSpace>
           <NButton @click="modalShow = false">
-            {{ t('common.cancel') }}
+            {{ 'Cancel' }}
           </NButton>
           <NButton v-if="state.source" secondary @click="openFilePicker">
-            {{ t('app.user_center.reselect_image') }}
+            {{ 'Choose Again' }}
           </NButton>
           <NButton type="primary" :loading="state.uploading" @click="uploadAvatar">
-            {{ t('app.user_center.crop_avatar') }}
+            {{ 'Crop and Upload' }}
           </NButton>
         </NSpace>
       </NSpace>

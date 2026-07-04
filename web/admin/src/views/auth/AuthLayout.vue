@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { usePreferredDark } from '@vueuse/core'
 import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import DarkModeSwitch from '@/components/common/DarkModeSwitch.vue'
-import LanguageSwitch from '@/layouts/components/header/LanguageSwitch.vue'
 import { useAppStore } from '@/stores'
 
 defineProps<{
@@ -12,7 +10,6 @@ defineProps<{
   wide?: boolean
 }>()
 
-const { t } = useI18n()
 const appStore = useAppStore()
 const prefersDark = usePreferredDark()
 const appTitle = import.meta.env.VITE_APP_TITLE
@@ -27,18 +24,18 @@ const isDarkTheme = computed(
 const highlights = computed(() => [
   {
     icon: 'icon-park-outline:shield',
-    title: t('auth.highlight_security_title'),
-    text: t('auth.highlight_security_text'),
+    title: 'Secure Access',
+    text: 'Clear sign-in and recovery flows',
   },
   {
     icon: 'icon-park-outline:code-computer',
-    title: t('auth.highlight_workspace_title'),
-    text: t('auth.highlight_workspace_text'),
+    title: 'Admin Workspace',
+    text: 'Designed for general management workflows',
   },
   {
     icon: 'icon-park-outline:chart-line',
-    title: t('auth.highlight_analytics_title'),
-    text: t('auth.highlight_analytics_text'),
+    title: 'Operational Insight',
+    text: 'Fast entry to data and admin work',
   },
 ])
 
@@ -58,7 +55,6 @@ function handleShellScroll(event: Event) {
       </RouterLink>
 
       <div class="auth-tools">
-        <LanguageSwitch />
         <DarkModeSwitch />
       </div>
     </header>
@@ -66,9 +62,9 @@ function handleShellScroll(event: Event) {
     <section class="auth-content" :class="{ 'auth-content--wide': wide }">
       <aside class="auth-visual" aria-hidden="true">
         <div class="auth-visual-inner">
-          <p class="auth-kicker">{{ t('auth.kicker') }}</p>
-          <h1>{{ t('auth.hero_title') }}</h1>
-          <p class="auth-hero-text">{{ t('auth.hero_subtitle') }}</p>
+          <p class="auth-kicker">{{ 'Universal Admin Console' }}</p>
+          <h1>{{ 'Manage accounts, permissions, and operations in one place' }}</h1>
+          <p class="auth-hero-text">{{ 'A focused identity entry for administrators and operations teams with theme-aware and mobile-ready access.' }}</p>
 
           <div class="auth-highlights">
             <div v-for="item in highlights" :key="item.title" class="auth-highlight">

@@ -8,14 +8,12 @@ import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
-import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 import ModalGrantPermission from '../role/components/ModalGrantPermission.vue'
 import ModalGrantResource from '../role/components/ModalGrantResource.vue'
 import ModalGrantUser from '../role/components/ModalGrantUser.vue'
 
-const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
 const grantUserModalRef = ref<any>(null)
@@ -50,12 +48,12 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('resource.iam.group.name'),
+    title: 'Group Name',
     path: 'name',
     field: 'input',
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     field: 'select',
     fieldProps: {
@@ -70,7 +68,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => t('common.often.total', { count: itemCount }),
+  prefix: ({ itemCount }) => `${itemCount} total`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -88,7 +86,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: t('common.often.index'),
+    title: 'ID',
     width: 80,
     path: 'id',
     ellipsis: {
@@ -96,7 +94,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.group.name'),
+    title: 'Group Name',
     path: 'name',
     width: 180,
     ellipsis: {
@@ -104,7 +102,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.group.description'),
+    title: 'Description',
     path: 'description',
     width: 260,
     ellipsis: {
@@ -112,7 +110,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     width: 110,
     render: (row) => (
@@ -122,7 +120,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updated_at'),
+    title: 'Updated At',
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -130,7 +128,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 150,
     fixed: 'right',
@@ -173,22 +171,22 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
 const grantOptions = computed(() =>
   [
     {
-      label: t('resource.iam.group.grant_user'),
+      label: 'Grant Users',
       key: 'user',
       permission: 'iam:group:grantuser',
     },
     {
-      label: t('resource.iam.group.grant_role'),
+      label: 'Grant Roles',
       key: 'role',
       permission: 'iam:group:grantrole',
     },
     {
-      label: t('resource.iam.group.grant_resource'),
+      label: 'Grant Resources',
       key: 'resource',
       permission: 'iam:group:grantresource',
     },
     {
-      label: t('resource.iam.group.grant_permission'),
+      label: 'Grant Permissions',
       key: 'permission',
       permission: 'iam:group:grantpermission',
     },
@@ -240,9 +238,9 @@ function openGrantModal(type: string, row: any) {
     name: row.name,
   }
   if (type === 'user') {
-    grantUserModalRef.value?.openModal(group, groupApi, t('resource.iam.group.grant_user'))
+    grantUserModalRef.value?.openModal(group, groupApi, 'Grant Users')
   } else if (type === 'role') {
-    grantRoleModalRef.value?.openModal(group, groupApi, t('resource.iam.group.grant_role'), {
+    grantRoleModalRef.value?.openModal(group, groupApi, 'Grant Roles', {
       ownMethod: 'ownRoles',
       grantMethod: 'grantRoles',
       listKey: 'roles',
@@ -251,12 +249,12 @@ function openGrantModal(type: string, row: any) {
       searchFields: ['code', 'name'],
     })
   } else if (type === 'resource') {
-    grantResourceModalRef.value?.openModal(group, groupApi, t('resource.iam.group.grant_resource'))
+    grantResourceModalRef.value?.openModal(group, groupApi, 'Grant Resources')
   } else if (type === 'permission') {
     grantPermissionModalRef.value?.openModal(
       group,
       groupApi,
-      t('resource.iam.group.grant_permission'),
+      'Grant Permissions',
     )
   }
 }
@@ -273,14 +271,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
+    title: isBatch ? 'Batch Delete' : 'Delete',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('resource.iam.group.batch_delete_confirm', { count: ids.length })
-      : t('resource.iam.group.delete_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
+      ? `Delete ${ids.length} selected groups?`
+      : 'Delete this group?',
+    positiveText: 'Confirm',
+    negativeText: 'Cancel',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -289,7 +287,7 @@ async function deleteData(ids: string[]) {
   await groupApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success(t('common.often.delete_success'))
+  window.$message.success('Deleted successfully')
   await fetchPage()
   if (!state.groups.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -304,12 +302,12 @@ async function deleteData(ids: string[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: t('common.search_form.reset') }"
-        :search-button-props="{ content: t('common.search_form.search') }"
+        :reset-button-props="{ content: 'Reset' }"
+        :search-button-props="{ content: 'Search' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? t('common.search_form.expand')
-            : t('common.search_form.collapse'),
+            ? 'Expand'
+            : 'Collapse',
         }"
       />
     </ProCard>
@@ -317,7 +315,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('resource.iam.group.title')"
+      :title="'Group Management'"
       row-key="id"
       :scroll-x="1100"
       :columns="tableColumns"
@@ -329,14 +327,14 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:group:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+          <NButton v-if="hasPermission('iam:group:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -347,8 +345,8 @@ async function deleteData(ids: string[]) {
             v-if="hasPermission('iam:group:delete')"
             type="error"
             text
-            :title="t('common.often.batch_delete')"
-            :aria-label="t('common.often.batch_delete')"
+            :title="'Batch Delete'"
+            :aria-label="'Batch Delete'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >

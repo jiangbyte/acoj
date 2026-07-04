@@ -8,7 +8,6 @@ import {
   Breadcrumb,
   CollapaseButton,
   FullScreen,
-  LanguageSwitch,
   Logo,
   MobileDrawer,
   Notices,
@@ -22,7 +21,6 @@ const appStore = useAppStore()
 const routeStore = useRouteStore()
 
 const menus = computed(() => {
-  appStore.lang
   return createMenus(routeStore.rowRoutes)
 })
 
@@ -84,7 +82,6 @@ const showMobileDrawer = ref(false)
         <template v-if="appStore.isMobile">
           <Search />
           <Notices />
-          <LanguageSwitch />
           <DarkModeSwitch />
           <UserCenter />
         </template>
@@ -92,7 +89,6 @@ const showMobileDrawer = ref(false)
           <Search />
           <Notices />
           <FullScreen />
-          <LanguageSwitch />
           <DarkModeSwitch />
           <UserCenter />
         </template>

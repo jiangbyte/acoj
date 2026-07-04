@@ -38,13 +38,12 @@ export function displayValue(value?: string | number | null) {
 }
 
 export function createRequiredRule(
-  t: (key: string, params?: Record<string, unknown>) => string,
   field: string,
   trigger: 'input' | 'change',
 ) {
   return {
     required: true,
-    message: t('common.required', { field }),
+    message: `Please enter ${field}`,
     trigger,
   }
 }

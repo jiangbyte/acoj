@@ -2,17 +2,15 @@
 import type { ProDataTableColumns, ProSearchFormColumns } from 'pro-naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { resourceApi, resourceModuleApi } from '@/api'
-import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon, translateLocale } from '@/utils'
+import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon } from '@/utils'
 import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
-import { useI18n } from 'vue-i18n'
 import ModalButtonPermission from './components/ModalButtonPermission.vue'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 
-const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
 const buttonPermissionModalRef = ref<any>(null)
@@ -46,17 +44,17 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('resource.iam.resource.code'),
+    title: 'Resource Code',
     path: 'code',
     field: 'input',
   },
   {
-    title: t('resource.iam.resource.name'),
+    title: 'Resource Name',
     path: 'name',
     field: 'input',
   },
   {
-    title: t('resource.iam.resource.resource_type'),
+    title: 'Resource Type',
     path: 'resource_type',
     field: 'select',
     fieldProps: {
@@ -64,7 +62,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.resource.module'),
+    title: 'Resource Module',
     path: 'module_id',
     field: 'select',
     fieldProps: {
@@ -72,12 +70,12 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.resource.parent_id'),
+    title: 'Parent Resource ID',
     path: 'parent_id',
     field: 'input',
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     field: 'select',
     fieldProps: {
@@ -92,24 +90,16 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: t('resource.iam.resource.name'),
+    title: 'Resource Name',
     path: 'name',
     width: 220,
-    render: (row) => translateLocale(row.locale_key, row.name),
+    render: (row) => row.name,
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('common.often.locale_key'),
-    path: 'locale_key',
-    width: 220,
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
-    title: t('resource.iam.resource.code'),
+    title: 'Resource Code',
     path: 'code',
     width: 180,
     ellipsis: {
@@ -117,13 +107,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.resource.resource_type'),
+    title: 'Resource Type',
     path: 'resource_type',
     width: 130,
     render: (row) => dictTypeData('RESOURCE_TYPE', row.resource_type) || row.resource_type,
   },
   {
-    title: t('resource.iam.resource.module'),
+    title: 'Resource Module',
     path: 'module_id_name',
     width: 130,
     ellipsis: {
@@ -132,7 +122,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     render: (row) => row.module_id_name || row.module_id || '-',
   },
   {
-    title: t('resource.iam.resource.path'),
+    title: 'Path',
     path: 'path',
     width: 210,
     ellipsis: {
@@ -140,7 +130,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.resource.component'),
+    title: 'Component',
     path: 'component',
     width: 150,
     ellipsis: {
@@ -148,19 +138,19 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.resource.sort'),
+    title: 'Sort',
     path: 'sort',
     width: 90,
   },
   {
-    title: t('resource.iam.resource.is_visible'),
+    title: 'Visible',
     path: 'is_visible',
     width: 90,
     render: (row) =>
-      row.is_visible ? t('resource.iam.resource.yes') : t('resource.iam.resource.no'),
+      row.is_visible ? 'Yes' : 'No',
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     width: 110,
     render: (row) => (
@@ -170,7 +160,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updated_at'),
+    title: 'Updated At',
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -178,7 +168,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 150,
     fixed: 'right',
@@ -250,7 +240,7 @@ async function fetchModules() {
   const response = await resourceModuleApi.selector()
   state.modules = response.data ?? []
   state.moduleOptions = state.modules.map((item: any) => ({
-    label: translateLocale(item.locale_key, item.name),
+    label: item.name,
     value: item.id,
   }))
   if (!state.modules.some((item) => item.id === state.activeModuleId)) {
@@ -284,13 +274,13 @@ function resourceMoreOptions(row: any) {
   const options = []
   if (hasPermission('iam:resource:create')) {
     options.push({
-      label: t('resource.iam.resource.add_child_resource'),
+      label: 'Add Child Resource',
       key: 'add-child',
     })
   }
   if (hasPermission('iam:resource:list')) {
     options.push({
-      label: t('resource.iam.resource.button_permissions'),
+      label: 'Button Permissions',
       key: 'button-permissions',
     })
   }
@@ -317,14 +307,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
+    title: isBatch ? 'Batch Delete' : 'Delete',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('resource.iam.resource.batch_delete_confirm', { count: ids.length })
-      : t('resource.iam.resource.delete_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
+      ? `Delete ${ids.length} selected resources?`
+      : 'Delete this resource?',
+    positiveText: 'Confirm',
+    negativeText: 'Cancel',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -332,7 +322,7 @@ function confirmDelete(value: string | string[]) {
 async function deleteData(ids: string[]) {
   await resourceApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
-  window.$message.success(t('common.often.delete_success'))
+  window.$message.success('Deleted successfully')
   await fetchTree()
 }
 
@@ -397,12 +387,12 @@ function flattenResourceTree(items: any[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: t('common.search_form.reset') }"
-        :search-button-props="{ content: t('common.search_form.search') }"
+        :reset-button-props="{ content: 'Reset' }"
+        :search-button-props="{ content: 'Search' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? t('common.search_form.expand')
-            : t('common.search_form.collapse'),
+            ? 'Expand'
+            : 'Collapse',
         }"
       />
     </ProCard>
@@ -426,7 +416,7 @@ function flattenResourceTree(items: any[]) {
 
     <ProDataTable
       class="min-h-0 flex-1"
-      :title="t('resource.iam.resource.title')"
+      :title="'Resource Management'"
       row-key="id"
       :scroll-x="1800"
       :columns="tableColumns"
@@ -439,14 +429,14 @@ function flattenResourceTree(items: any[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:resource:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal()">
+          <NButton v-if="hasPermission('iam:resource:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal()">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchTree">
+          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchTree">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -457,8 +447,8 @@ function flattenResourceTree(items: any[]) {
             v-if="hasPermission('iam:resource:delete')"
             type="error"
             text
-            :title="t('common.often.batch_delete')"
-            :aria-label="t('common.often.batch_delete')"
+            :title="'Batch Delete'"
+            :aria-label="'Batch Delete'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >

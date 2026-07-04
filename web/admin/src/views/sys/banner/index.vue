@@ -8,11 +8,9 @@ import { createTagColor, hasPermission, normalizeSearchValues, renderButtonIcon 
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
-import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 
-const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
 const state = reactive({
@@ -41,7 +39,7 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('resource.sys.banner.display_scope'),
+    title: 'Display Scope',
     path: 'display_scope',
     field: 'select',
     fieldProps: {
@@ -49,7 +47,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.banner.category'),
+    title: 'Category',
     path: 'category',
     field: 'select',
     fieldProps: {
@@ -57,7 +55,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.banner.type'),
+    title: 'Type',
     path: 'type',
     field: 'select',
     fieldProps: {
@@ -65,7 +63,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.banner.position'),
+    title: 'Position',
     path: 'position',
     field: 'select',
     fieldProps: {
@@ -73,7 +71,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     field: 'select',
     fieldProps: {
@@ -88,7 +86,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => t('common.often.total', { count: itemCount }),
+  prefix: ({ itemCount }) => `${itemCount} total`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -106,7 +104,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: t('common.often.index'),
+    title: 'ID',
     width: 80,
     path: 'id',
     ellipsis: {
@@ -114,7 +112,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.banner.title_field'),
+    title: 'Title',
     path: 'title',
     width: 180,
     ellipsis: {
@@ -122,13 +120,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.banner.image'),
+    title: 'Image',
     key: 'image',
     width: 130,
     render: (row) => (
       <NImage
         src={row.image}
-        alt={row.title || t('resource.sys.banner.image')}
+        alt={row.title || 'Image'}
         width={96}
         height={42}
         objectFit="cover"
@@ -136,7 +134,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('resource.sys.banner.display_scope'),
+    title: 'Display Scope',
     path: 'display_scope',
     width: 120,
     render: (row) => (
@@ -149,41 +147,41 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('resource.sys.banner.category'),
+    title: 'Category',
     path: 'category',
     width: 150,
     render: (row) => dictTypeData('BANNER_CATEGORY', row.category),
   },
   {
-    title: t('resource.sys.banner.type'),
+    title: 'Type',
     path: 'type',
     width: 120,
     render: (row) => dictTypeData('BANNER_TYPE', row.type),
   },
   {
-    title: t('resource.sys.banner.position'),
+    title: 'Position',
     path: 'position',
     width: 160,
     render: (row) => dictTypeData('BANNER_POSITION', row.position),
   },
   {
-    title: t('resource.sys.banner.link_type'),
+    title: 'Link Type',
     path: 'link_type',
     width: 110,
     render: (row) => dictTypeData('BANNER_LINK_TYPE', row.link_type),
   },
   {
-    title: t('resource.sys.banner.sort'),
+    title: 'Sort',
     path: 'sort',
     width: 90,
   },
   {
-    title: t('resource.sys.banner.interaction_count'),
+    title: 'Interactions',
     path: 'interaction_count',
     width: 120,
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     width: 110,
     render: (row) => (
@@ -193,7 +191,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updated_at'),
+    title: 'Updated At',
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -201,7 +199,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 120,
     fixed: 'right',
@@ -275,14 +273,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
+    title: isBatch ? 'Batch Delete' : 'Delete',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('resource.sys.banner.batch_delete_confirm', { count: ids.length })
-      : t('resource.sys.banner.delete_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
+      ? `Delete ${ids.length} selected display images?`
+      : 'Delete this display image?',
+    positiveText: 'Confirm',
+    negativeText: 'Cancel',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -291,7 +289,7 @@ async function deleteData(ids: string[]) {
   await bannerApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success(t('common.often.delete_success'))
+  window.$message.success('Deleted successfully')
   await fetchPage()
   if (!state.banners.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -306,12 +304,12 @@ async function deleteData(ids: string[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: t('common.search_form.reset') }"
-        :search-button-props="{ content: t('common.search_form.search') }"
+        :reset-button-props="{ content: 'Reset' }"
+        :search-button-props="{ content: 'Search' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? t('common.search_form.expand')
-            : t('common.search_form.collapse'),
+            ? 'Expand'
+            : 'Collapse',
         }"
       />
     </ProCard>
@@ -319,7 +317,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('resource.sys.banner.title')"
+      :title="'Display Image Page'"
       row-key="id"
       :scroll-x="1780"
       :columns="tableColumns"
@@ -331,14 +329,14 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('sys:banner:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+          <NButton v-if="hasPermission('sys:banner:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -349,8 +347,8 @@ async function deleteData(ids: string[]) {
             v-if="hasPermission('sys:banner:delete')"
             type="error"
             text
-            :title="t('common.often.batch_delete')"
-            :aria-label="t('common.often.batch_delete')"
+            :title="'Batch Delete'"
+            :aria-label="'Batch Delete'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >

@@ -26,7 +26,6 @@ class SysDict(Base, TimestampMixin):
     )
     code: Mapped[str] = mapped_column(String(50), nullable=False, comment="编码")
     label: Mapped[str | None] = mapped_column(String(255), comment="标签")
-    locale_key: Mapped[str | None] = mapped_column(String(255), comment="国际化键")
     value: Mapped[str | None] = mapped_column(String(255), comment="值")
     color: Mapped[str | None] = mapped_column(String(32), comment="颜色")
     category: Mapped[str | None] = mapped_column(

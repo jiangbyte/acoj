@@ -280,7 +280,6 @@ class ResourceService:
         return ResourceCreateRequest(
             code=payload.code,
             name=payload.name,
-            locale_key=payload.locale_key,
             resource_type=ResourceType.BUTTON,
             parent_id=parent.id,
             module_id=parent.module_id,

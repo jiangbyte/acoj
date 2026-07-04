@@ -73,7 +73,6 @@ def _build_tree_nodes(
                 id=str(raw_item["id"]),
                 code=str(raw_item["code"]),
                 label=raw_item.get("label"),  # type: ignore[arg-type]
-                locale_key=raw_item.get("locale_key"),  # type: ignore[arg-type]
                 value=raw_item.get("value"),  # type: ignore[arg-type]
                 color=raw_item.get("color"),  # type: ignore[arg-type]
                 category=raw_item.get("category"),  # type: ignore[arg-type]

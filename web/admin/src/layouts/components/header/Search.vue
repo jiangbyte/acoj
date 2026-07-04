@@ -2,15 +2,12 @@
 import { computed, nextTick, ref, watchEffect } from 'vue'
 import { useMagicKeys } from '@vueuse/core'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import { useBoolean } from '@/hooks'
 import { useAppStore, useRouteStore } from '@/stores'
-import { translateLocale } from '@/utils/i18n'
 
 const appStore = useAppStore()
 const routeStore = useRouteStore()
 const router = useRouter()
-const { t } = useI18n()
 
 // 搜索弹窗中的可跳转项，value 固定使用路由 path，code 用于辅助识别权限/菜单编码。
 interface SearchOption {
@@ -64,7 +61,7 @@ const options = computed<SearchOption[]>(() => {
   return routeStore.rowRoutes
     .map((item) => ({
       item,
-      label: translateLocale(item.locale_key, item.name),
+      label: item.name,
     }))
     .filter(({ item, label }) => {
       if (
@@ -199,7 +196,7 @@ function handleMouseEnter(index: number) {
     <template #header>
       <n-input
         v-model:value="searchValue"
-        :placeholder="t('app.placeholder.search')"
+        :placeholder="'Search menu / path / code'"
         clearable
         size="large"
         @input="handleInputChange"
@@ -240,7 +237,7 @@ function handleMouseEnter(index: number) {
         v-else
         size="large"
         class="h-450px flex-center"
-        :description="t('app.search_empty')"
+        :description="'No results'"
       />
     </n-scrollbar>
 
@@ -248,16 +245,16 @@ function handleMouseEnter(index: number) {
       <n-flex class="items-center">
         <span class="flex-y-center gap-1">
           <n-tag size="small" round>Enter</n-tag>
-          <span>{{ t('common.choose') }}</span>
+          <span>{{ 'Choose' }}</span>
         </span>
         <span class="flex-y-center gap-1">
           <n-tag size="small" round>↑</n-tag>
           <n-tag size="small" round>↓</n-tag>
-          <span>{{ t('common.navigate') }}</span>
+          <span>{{ 'Navigate' }}</span>
         </span>
         <span class="flex-y-center gap-1">
           <n-tag size="small" round>Esc</n-tag>
-          <span>{{ t('common.close') }}</span>
+          <span>{{ 'Close' }}</span>
         </span>
       </n-flex>
     </template>

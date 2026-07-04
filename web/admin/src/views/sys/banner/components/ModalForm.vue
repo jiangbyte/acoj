@@ -4,13 +4,11 @@ import ImageUpload from '@/components/upload/ImageUpload.vue'
 import { bannerApi } from '@/api'
 import { createRequiredRule, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   title: '',
@@ -37,18 +35,18 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('resource.sys.banner.edit_banner') : t('resource.sys.banner.add_banner'),
+  state.dataId ? 'Edit Display Image' : 'Add Display Image',
 )
 
 const rules = computed<FormRules>(() => ({
-  title: createRequiredRule(t, t('resource.sys.banner.title_field'), 'input'),
-  image: createRequiredRule(t, t('resource.sys.banner.image'), 'input'),
-  link_type: createRequiredRule(t, t('resource.sys.banner.link_type'), 'change'),
-  category: createRequiredRule(t, t('resource.sys.banner.category'), 'change'),
-  type: createRequiredRule(t, t('resource.sys.banner.type'), 'change'),
-  position: createRequiredRule(t, t('resource.sys.banner.position'), 'change'),
-  display_scope: createRequiredRule(t, t('resource.sys.banner.display_scope'), 'change'),
-  status: createRequiredRule(t, t('common.often.status'), 'change'),
+  title: createRequiredRule('Title', 'input'),
+  image: createRequiredRule('Image', 'input'),
+  link_type: createRequiredRule('Link Type', 'change'),
+  category: createRequiredRule('Category', 'change'),
+  type: createRequiredRule('Type', 'change'),
+  position: createRequiredRule('Position', 'change'),
+  display_scope: createRequiredRule('Display Scope', 'change'),
+  status: createRequiredRule('Status', 'change'),
 }))
 
 async function openModal(id?: string) {
@@ -95,10 +93,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.update_success'))
+      window.$message.success('Updated successfully')
     } else {
       await bannerApi.create(payload)
-      window.$message.success(t('common.often.create_success'))
+      window.$message.success('Created successfully')
     }
 
     closeModal()
@@ -133,50 +131,50 @@ defineExpose({
           label-width="100"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('resource.sys.banner.title_field')" path="title">
+          <NFormItem :label="'Title'" path="title">
             <NInput v-model:value="state.formModel.title" />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.image')" path="image">
+          <NFormItem :label="'Image'" path="image">
             <ImageUpload v-model:value="state.formModel.image" />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.url')" path="url">
+          <NFormItem :label="'Target URL'" path="url">
             <NInput v-model:value="state.formModel.url" />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.link_type')" path="link_type">
+          <NFormItem :label="'Link Type'" path="link_type">
             <DictSelect
               v-model="state.formModel.link_type"
               dict-code="BANNER_LINK_TYPE"
               type="radio"
             />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.category')" path="category">
+          <NFormItem :label="'Category'" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="BANNER_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.type')" path="type">
+          <NFormItem :label="'Type'" path="type">
             <DictSelect v-model="state.formModel.type" dict-code="BANNER_TYPE" />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.position')" path="position">
+          <NFormItem :label="'Position'" path="position">
             <DictSelect v-model="state.formModel.position" dict-code="BANNER_POSITION" />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.display_scope')" path="display_scope">
+          <NFormItem :label="'Display Scope'" path="display_scope">
             <DictSelect v-model="state.formModel.display_scope" dict-code="BANNER_DISPLAY_SCOPE" />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.sort')" path="sort">
+          <NFormItem :label="'Sort'" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
-          <NFormItem :label="t('common.often.status')" path="status">
+          <NFormItem :label="'Status'" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.start_at')" path="start_at">
+          <NFormItem :label="'Start At'" path="start_at">
             <NInput v-model:value="state.formModel.start_at" />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.end_at')" path="end_at">
+          <NFormItem :label="'End At'" path="end_at">
             <NInput v-model:value="state.formModel.end_at" />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.summary')" path="summary">
+          <NFormItem :label="'Summary'" path="summary">
             <NInput v-model:value="state.formModel.summary" />
           </NFormItem>
-          <NFormItem :label="t('resource.sys.banner.description')" path="description">
+          <NFormItem :label="'Description'" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"
@@ -190,10 +188,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ t('common.cancel') }}
+          {{ 'Cancel' }}
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ t('common.confirm') }}
+          {{ 'Confirm' }}
         </NButton>
       </NSpace>
     </template>

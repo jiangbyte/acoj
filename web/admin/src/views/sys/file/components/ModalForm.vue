@@ -3,13 +3,11 @@ import type { FormInst, FormRules } from 'naive-ui'
 import { fileApi } from '@/api'
 import { createRequiredRule } from '@/utils'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   original_name: '',
@@ -23,7 +21,7 @@ const state = reactive({
 })
 
 const rules = computed<FormRules>(() => ({
-  original_name: createRequiredRule(t, t('resource.sys.file.original_name'), 'input'),
+  original_name: createRequiredRule('File Name', 'input'),
 }))
 
 async function openModal(id: string) {
@@ -61,7 +59,7 @@ async function submitForm() {
       id: state.dataId,
       original_name: state.formModel.original_name,
     })
-    window.$message.success(t('common.often.update_success'))
+    window.$message.success('Updated successfully')
     closeModal()
     emit('saved')
   } finally {
@@ -80,7 +78,7 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('resource.sys.file.edit_file')"
+    :title="'Edit File'"
     style="width: 560px"
     :segmented="{ content: true, action: true }"
   >
@@ -93,7 +91,7 @@ defineExpose({
         label-width="110"
         :disabled="state.loading || state.submitLoading"
       >
-        <NFormItem :label="t('resource.sys.file.original_name')" path="original_name">
+        <NFormItem :label="'File Name'" path="original_name">
           <NInput v-model:value="state.formModel.original_name" />
         </NFormItem>
       </NForm>
@@ -102,10 +100,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ t('common.cancel') }}
+          {{ 'Cancel' }}
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ t('common.confirm') }}
+          {{ 'Confirm' }}
         </NButton>
       </NSpace>
     </template>

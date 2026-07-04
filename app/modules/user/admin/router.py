@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
 from app.core.response.schema import ApiResponse, success
+from app.core.security.transport import decrypt_passwords
 from app.core.security.session import SessionPayload
 from app.deps.auth import get_current_session, require_account_type
 from app.deps.db import get_db_session
@@ -71,6 +72,8 @@ async def get_me(
                 signature=account.signature,
                 phone=account.phone,
                 email=account.email,
+                phone_login_enabled=account.phone_login_enabled,
+                email_login_enabled=account.email_login_enabled,
                 title=account.title,
                 employee_no=account.employee_no,
                 remark=account.remark,
@@ -125,7 +128,20 @@ async def update_user_center_password(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await AdminUserProfileService(db).update_current_password(payload, session)
+    old_password, new_password = await decrypt_passwords(
+        payload.password_key_id,
+        payload.old_password,
+        payload.new_password,
+    )
+    await AdminUserProfileService(db).update_current_password(
+        payload.model_copy(
+            update={
+                "old_password": old_password or "",
+                "new_password": new_password or "",
+            }
+        ),
+        session,
+    )
     return success()
 
 
@@ -139,7 +155,11 @@ async def update_user_center_phone(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await AdminUserProfileService(db).update_current_phone(payload, session)
+    password = (await decrypt_passwords(payload.password_key_id, payload.password))[0]
+    await AdminUserProfileService(db).update_current_phone(
+        payload.model_copy(update={"password": password or ""}),
+        session,
+    )
     return success()
 
 
@@ -153,7 +173,11 @@ async def update_user_center_email(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await AdminUserProfileService(db).update_current_email(payload, session)
+    password = (await decrypt_passwords(payload.password_key_id, payload.password))[0]
+    await AdminUserProfileService(db).update_current_email(
+        payload.model_copy(update={"password": password or ""}),
+        session,
+    )
     return success()
 
 

@@ -4,9 +4,15 @@ from fastapi import APIRouter, Depends, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
-from app.core.config.settings import settings
-from app.core.exceptions.business import BusinessError
 from app.core.response.schema import success
+from app.core.security.transport import (
+    CaptchaApiResponse,
+    PasswordKeyApiResponse,
+    create_captcha,
+    create_password_key,
+    decrypt_passwords,
+    verify_captcha,
+)
 from app.core.security.session import SessionPayload
 from app.deps.auth import get_current_session, require_account_type
 from app.deps.db import get_db_session
@@ -14,6 +20,7 @@ from app.modules.auth.schema import (
     CancelAccountApiResponse,
     CancelAccountRequest,
     CancelAccountResponse,
+    ForgotPasswordRequest,
     LoginApiResponse,
     LoginPayload,
     LoginRequest,
@@ -22,11 +29,24 @@ from app.modules.auth.schema import (
     LogoutResponse,
     RegisterApiResponse,
     RegisterRequest,
+    ResetPasswordRequest,
 )
 from app.modules.auth.service import AuthService
 
 admin_router = APIRouter()
 portal_router = APIRouter()
+
+
+@admin_router.get("/captcha", response_model=CaptchaApiResponse)
+@portal_router.get("/captcha", response_model=CaptchaApiResponse)
+async def captcha() -> CaptchaApiResponse:
+    return success(await create_captcha())
+
+
+@admin_router.get("/password-key", response_model=PasswordKeyApiResponse)
+@portal_router.get("/password-key", response_model=PasswordKeyApiResponse)
+async def password_key() -> PasswordKeyApiResponse:
+    return success(await create_password_key())
 
 
 @admin_router.post("/login", response_model=LoginApiResponse)
@@ -36,11 +56,14 @@ async def admin_login(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> LoginApiResponse:
     """管理端登录入口，仅允许管理端用户体系访问。"""
+    await verify_captcha(payload.captcha_id, payload.captcha_value)
+    password = (await decrypt_passwords(payload.password_key_id, payload.password))[0]
     session = await AuthService(db).login(
         LoginPayload(
             account=payload.account,
-            password=payload.password,
+            password=password or "",
             account_type=AccountType.ADMIN,
+            identity_type=payload.identity_type,
             client_ip=_client_ip(request),
             user_agent=request.headers.get("user-agent"),
             device_label=_device_label(request.headers.get("user-agent")),
@@ -55,17 +78,6 @@ async def admin_login(
     )
 
 
-@admin_router.post("/register", response_model=RegisterApiResponse)
-async def admin_register(
-    payload: RegisterRequest,
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-) -> RegisterApiResponse:
-    """管理端注册入口，创建账户主体、主登录标识和管理端资料。"""
-    if not settings.auth.admin_register_enabled:
-        raise BusinessError("Admin registration is disabled")
-    return success(await AuthService(db).register_admin(payload))
-
-
 @portal_router.post("/login", response_model=LoginApiResponse)
 async def portal_login(
     payload: LoginRequest,
@@ -73,11 +85,14 @@ async def portal_login(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> LoginApiResponse:
     """门户端登录入口，仅允许门户用户体系访问。"""
+    await verify_captcha(payload.captcha_id, payload.captcha_value)
+    password = (await decrypt_passwords(payload.password_key_id, payload.password))[0]
     session = await AuthService(db).login(
         LoginPayload(
             account=payload.account,
-            password=payload.password,
+            password=password or "",
             account_type=AccountType.PORTAL,
+            identity_type=payload.identity_type,
             client_ip=_client_ip(request),
             user_agent=request.headers.get("user-agent"),
             device_label=_device_label(request.headers.get("user-agent")),
@@ -98,9 +113,79 @@ async def portal_register(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> RegisterApiResponse:
     """门户端注册入口，创建门户账户主体和门户资料。"""
-    if not settings.auth.portal_register_enabled:
-        raise BusinessError("Portal registration is disabled")
-    return success(await AuthService(db).register_portal(payload))
+    await verify_captcha(payload.captcha_id, payload.captcha_value)
+    password = (await decrypt_passwords(payload.password_key_id, payload.password))[0]
+    return success(
+        await AuthService(db).register_portal(
+            payload.model_copy(update={"password": password or ""})
+        )
+    )
+
+
+@admin_router.post("/forgot-password")
+async def admin_forgot_password(
+    payload: ForgotPasswordRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+):
+    await verify_captcha(payload.captcha_id, payload.captcha_value)
+    await AuthService(db).forgot_password(
+        payload,
+        AccountType.ADMIN,
+        client_ip=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    return success()
+
+
+@admin_router.post("/reset-password")
+async def admin_reset_password(
+    payload: ResetPasswordRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+):
+    await verify_captcha(payload.captcha_id, payload.captcha_value)
+    password = (await decrypt_passwords(payload.password_key_id, payload.password))[0]
+    await AuthService(db).reset_password(
+        payload.model_copy(update={"password": password or ""}),
+        AccountType.ADMIN,
+        client_ip=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    return success()
+
+
+@portal_router.post("/forgot-password")
+async def portal_forgot_password(
+    payload: ForgotPasswordRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+):
+    await verify_captcha(payload.captcha_id, payload.captcha_value)
+    await AuthService(db).forgot_password(
+        payload,
+        AccountType.PORTAL,
+        client_ip=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    return success()
+
+
+@portal_router.post("/reset-password")
+async def portal_reset_password(
+    payload: ResetPasswordRequest,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+):
+    await verify_captcha(payload.captcha_id, payload.captcha_value)
+    password = (await decrypt_passwords(payload.password_key_id, payload.password))[0]
+    await AuthService(db).reset_password(
+        payload.model_copy(update={"password": password or ""}),
+        AccountType.PORTAL,
+        client_ip=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    return success()
 
 
 @portal_router.post(

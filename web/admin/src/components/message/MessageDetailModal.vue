@@ -3,7 +3,6 @@ import { messageApi } from '@/api'
 import { createTagColor, displayValue } from '@/utils'
 import { dictTypeColor, dictTypeData } from '@/utils/dict'
 import { computed, reactive } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 type DetailType = 'notification' | 'message' | 'todo'
 
@@ -11,7 +10,6 @@ const emit = defineEmits<{
   changed: [payload: { type: DetailType; id: string }]
 }>()
 
-const { t } = useI18n()
 const state = reactive({
   show: false,
   loading: false,
@@ -25,12 +23,12 @@ const state = reactive({
 
 const title = computed(() => {
   if (state.type === 'notification') {
-    return t('resource.message.notification.detail_notification')
+    return 'Notification Detail'
   }
   if (state.type === 'message') {
-    return t('resource.message.message.detail_message')
+    return 'Message Detail'
   }
-  return t('resource.message.todo.detail_todo')
+  return 'Todo Detail'
 })
 
 async function open(type: DetailType, source: any) {
@@ -110,7 +108,7 @@ async function acknowledgeOpen() {
 async function replyMessage() {
   const content = state.replyContent.trim()
   if (!content) {
-    window.$message.warning(t('resource.message.message.reply_required'))
+    window.$message.warning('Please enter a reply')
     return
   }
   state.actionLoading = true
@@ -183,10 +181,10 @@ defineExpose({ open })
       <NSpin :show="state.loading">
         <template v-if="state.type === 'notification'">
           <NDescriptions label-placement="left" bordered :column="1">
-            <NDescriptionsItem :label="t('resource.message.notification.title_field')">
+            <NDescriptionsItem :label="'Title'">
               {{ displayValue(state.detail.title || state.source.title) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('resource.message.notification.severity')">
+            <NDescriptionsItem :label="'Severity'">
               <NTag
                 :color="
                   createTagColor(dictTypeColor('NOTIFICATION_SEVERITY', state.detail.severity))
@@ -199,28 +197,28 @@ defineExpose({ open })
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('common.often.status')">
+            <NDescriptionsItem :label="'Status'">
               <NTag
                 :type="state.detail.is_read || state.source.is_read ? 'success' : 'warning'"
                 :bordered="false"
               >
                 {{
                   state.detail.is_read || state.source.is_read
-                    ? t('app.notice.read')
-                    : t('app.notice.unread')
+                    ? 'Read'
+                    : 'Unread'
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('resource.message.notification.publish_at')">
+            <NDescriptionsItem :label="'Published At'">
               {{ displayValue(state.detail.publish_at || state.source.publish_at) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('resource.message.notification.content')">
+            <NDescriptionsItem :label="'Content'">
               {{ displayValue(state.detail.content || state.source.content) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('common.often.created_at')">
+            <NDescriptionsItem :label="'Created At'">
               {{ displayValue(state.detail.created_at) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('common.often.updated_at')">
+            <NDescriptionsItem :label="'Updated At'">
               {{ displayValue(state.detail.updated_at) }}
             </NDescriptionsItem>
           </NDescriptions>
@@ -231,17 +229,17 @@ defineExpose({ open })
               :loading="state.actionLoading"
               @click="markNotificationRead"
             >
-              {{ t('resource.message.notification.mark_read') }}
+              {{ 'Mark as Read' }}
             </NButton>
           </NSpace>
         </template>
 
         <template v-else-if="state.type === 'message'">
           <NDescriptions label-placement="left" bordered :column="1">
-            <NDescriptionsItem :label="t('resource.message.message.thread_title')">
+            <NDescriptionsItem :label="'Thread Title'">
               {{ displayValue(state.detail.title || state.source.title) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('resource.message.message.thread_type')">
+            <NDescriptionsItem :label="'Thread Type'">
               <NTag
                 :color="
                   createTagColor(
@@ -261,7 +259,7 @@ defineExpose({ open })
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('common.often.updated_at')">
+            <NDescriptionsItem :label="'Updated At'">
               {{ displayValue(state.detail.updated_at || state.source.updated_at) }}
             </NDescriptionsItem>
           </NDescriptions>
@@ -273,7 +271,7 @@ defineExpose({ open })
                   {{
                     item.sender_name ||
                     item.sender_account_id ||
-                    t('resource.message.message.system_sender')
+                    'System'
                   }}
                 </template>
                 <template #description>
@@ -283,26 +281,26 @@ defineExpose({ open })
               </NThing>
             </NListItem>
           </NList>
-          <NEmpty v-else class="py-32px" :description="t('resource.message.message.no_messages')" />
+          <NEmpty v-else class="py-32px" :description="'No messages'" />
           <NInput
             v-model:value="state.replyContent"
             class="mt-4"
             type="textarea"
-            :placeholder="t('resource.message.message.reply_placeholder')"
+            :placeholder="'Enter a reply'"
           />
           <NSpace class="mt-3" justify="end">
             <NButton type="primary" :loading="state.actionLoading" @click="replyMessage">
-              {{ t('resource.message.message.reply') }}
+              {{ 'Reply' }}
             </NButton>
           </NSpace>
         </template>
 
         <template v-else>
           <NDescriptions label-placement="left" bordered :column="1">
-            <NDescriptionsItem :label="t('resource.message.todo.title_field')">
+            <NDescriptionsItem :label="'Title'">
               {{ displayValue(state.detail.title || state.source.title) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('resource.message.todo.priority')">
+            <NDescriptionsItem :label="'Priority'">
               <NTag
                 :color="createTagColor(dictTypeColor('TODO_PRIORITY', state.detail.priority))"
                 :bordered="false"
@@ -313,7 +311,7 @@ defineExpose({ open })
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('common.often.status')">
+            <NDescriptionsItem :label="'Status'">
               <NTag
                 :color="createTagColor(dictTypeColor('TODO_STATUS', state.detail.status))"
                 :bordered="false"
@@ -324,7 +322,7 @@ defineExpose({ open })
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('resource.message.todo.assignee_status')">
+            <NDescriptionsItem :label="'Assignee Status'">
               <NTag
                 :color="createTagColor(dictTypeColor('TODO_STATUS', todoAssigneeStatus()))"
                 :bordered="false"
@@ -335,16 +333,16 @@ defineExpose({ open })
                 }}
               </NTag>
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('resource.message.todo.due_at')">
+            <NDescriptionsItem :label="'Due At'">
               {{ displayValue(state.detail.due_at || state.source.due_at) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('resource.message.todo.content')">
+            <NDescriptionsItem :label="'Content'">
               {{ displayValue(state.detail.content || state.source.content) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('common.often.created_at')">
+            <NDescriptionsItem :label="'Created At'">
               {{ displayValue(state.detail.created_at) }}
             </NDescriptionsItem>
-            <NDescriptionsItem :label="t('common.often.updated_at')">
+            <NDescriptionsItem :label="'Updated At'">
               {{ displayValue(state.detail.updated_at) }}
             </NDescriptionsItem>
           </NDescriptions>
@@ -355,7 +353,7 @@ defineExpose({ open })
               :loading="state.actionLoading"
               @click="updateTodo('start')"
             >
-              {{ t('resource.message.todo.start_task') }}
+              {{ 'Start Task' }}
             </NButton>
             <NButton
               v-if="canCompleteTodo()"
@@ -363,7 +361,7 @@ defineExpose({ open })
               :loading="state.actionLoading"
               @click="updateTodo('complete')"
             >
-              {{ t('resource.message.todo.complete_task') }}
+              {{ 'Complete Task' }}
             </NButton>
             <NButton
               v-if="canCancelTodo()"
@@ -371,7 +369,7 @@ defineExpose({ open })
               :loading="state.actionLoading"
               @click="updateTodo('cancel')"
             >
-              {{ t('resource.message.todo.cancel_task') }}
+              {{ 'Cancel Task' }}
             </NButton>
           </NSpace>
         </template>

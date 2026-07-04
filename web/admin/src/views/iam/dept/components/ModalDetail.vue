@@ -3,9 +3,7 @@ import { deptApi } from '@/api'
 import { createTagColor, displayValue } from '@/utils'
 import { reactive } from 'vue'
 import { dictTypeData, dictTypeColor } from '@/utils/dict'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const state = reactive({
   showModal: false,
   loading: false,
@@ -39,43 +37,43 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('resource.iam.dept.detail_dept')"
+    :title="'Department Detail'"
     style="width: 680px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('resource.iam.dept.id')">
+          <NDescriptionsItem :label="'Department ID'">
             {{ displayValue(state.dept.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.dept.name')">
+          <NDescriptionsItem :label="'Department Name'">
             {{ displayValue(state.dept.name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.dept.code')">
+          <NDescriptionsItem :label="'Department Code'">
             {{ displayValue(state.dept.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.dept.category')">
+          <NDescriptionsItem :label="'Department Category'">
             {{
               dictTypeData('DEPT_CATEGORY', state.dept.category) ||
               displayValue(state.dept.category)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.dept.parent_id')">
+          <NDescriptionsItem :label="'Parent Department ID'">
             {{ displayValue(state.dept.parent_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.dept.master_id')">
+          <NDescriptionsItem :label="'Master ID'">
             {{ displayValue(state.dept.master_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.dept.deputy_master_id')">
+          <NDescriptionsItem :label="'Deputy Master ID'">
             {{ displayValue(state.dept.deputy_master_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.dept.sort')">
+          <NDescriptionsItem :label="'Sort'">
             {{ displayValue(state.dept.sort) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.dept.is_virtual')">
-            {{ state.dept.is_virtual ? t('resource.iam.dept.yes') : t('resource.iam.dept.no') }}
+          <NDescriptionsItem :label="'Virtual Department'">
+            {{ state.dept.is_virtual ? 'Yes' : 'No' }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.status')">
+          <NDescriptionsItem :label="'Status'">
             <NTag
               :color="createTagColor(dictTypeColor('COMMON_STATUS', state.dept.status))"
               :bordered="false"
@@ -85,16 +83,16 @@ defineExpose({
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.created_at')">
+          <NDescriptionsItem :label="'Created At'">
             {{ displayValue(state.dept.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.created_by')">
+          <NDescriptionsItem :label="'Created By'">
             {{ displayValue(state.dept.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updated_at')">
+          <NDescriptionsItem :label="'Updated At'">
             {{ displayValue(state.dept.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updated_by')">
+          <NDescriptionsItem :label="'Updated By'">
             {{ displayValue(state.dept.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

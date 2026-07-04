@@ -3,9 +3,7 @@ import { fileApi } from '@/api'
 import { displayValue, resolveFileUrl } from '@/utils'
 import { computed, reactive } from 'vue'
 import { dictTypeData } from '@/utils/dict'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const state = reactive({
   showModal: false,
   loading: false,
@@ -13,7 +11,7 @@ const state = reactive({
 })
 
 const fileUrl = computed(() => resolveFileUrl(state.file?.url))
-const imageAlt = computed(() => state.file?.original_name ?? t('resource.sys.file.preview'))
+const imageAlt = computed(() => state.file?.original_name ?? 'Preview')
 const isImage = computed(() => String(state.file?.content_type || '').startsWith('image/'))
 
 async function openModal(id: string) {
@@ -71,7 +69,7 @@ async function copyText(value?: string | null) {
     document.execCommand('copy')
     document.body.removeChild(textarea)
   }
-  window.$message.success(t('resource.sys.file.copy_success'))
+  window.$message.success('Copied successfully')
 }
 
 defineExpose({
@@ -85,13 +83,13 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('resource.sys.file.detail_file')"
+    :title="'File Detail'"
     style="width: 700px"
   >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('resource.sys.file.preview')">
+          <NDescriptionsItem :label="'Preview'">
             <NImage
               v-if="isImage && fileUrl"
               class="file-detail-image"
@@ -102,64 +100,64 @@ defineExpose({
               object-fit="cover"
             />
             <NButton v-else-if="fileUrl" type="primary" text @click="openFile">
-              {{ t('resource.sys.file.open') }}
+              {{ 'Open' }}
             </NButton>
             <template v-else> - </template>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.sys.file.id')">
+          <NDescriptionsItem :label="'File ID'">
             {{ displayValue(state.file.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.sys.file.original_name')">
+          <NDescriptionsItem :label="'File Name'">
             {{ displayValue(state.file.original_name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.sys.file.object_name')">
+          <NDescriptionsItem :label="'Object Path'">
             <NFlex align="center" :size="8">
               <NEllipsis class="file-detail-text">
                 {{ displayValue(state.file.object_name) }}
               </NEllipsis>
               <NButton size="small" text type="primary" @click="copyText(state.file.object_name)">
-                {{ t('resource.sys.file.copy') }}
+                {{ 'Copy' }}
               </NButton>
             </NFlex>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.sys.file.url')">
+          <NDescriptionsItem :label="'Access URL'">
             <NFlex align="center" :size="8">
               <NEllipsis class="file-detail-text">
                 {{ displayValue(fileUrl) }}
               </NEllipsis>
               <NButton v-if="fileUrl" size="small" text type="primary" @click="openFile">
-                {{ t('resource.sys.file.open') }}
+                {{ 'Open' }}
               </NButton>
               <NButton v-if="fileUrl" size="small" text type="primary" @click="copyText(fileUrl)">
-                {{ t('resource.sys.file.copy') }}
+                {{ 'Copy' }}
               </NButton>
             </NFlex>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.sys.file.storage_provider')">
+          <NDescriptionsItem :label="'Storage Provider'">
             {{
               dictTypeData('STORAGE_PROVIDER', state.file.storage_provider) ||
               displayValue(state.file.storage_provider)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.sys.file.bucket')">
+          <NDescriptionsItem :label="'Bucket'">
             {{ displayValue(state.file.bucket) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.sys.file.content_type')">
+          <NDescriptionsItem :label="'Content Type'">
             {{ displayValue(state.file.content_type) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.sys.file.size')">
+          <NDescriptionsItem :label="'File Size'">
             {{ formatFileSize(state.file.size) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.created_at')">
+          <NDescriptionsItem :label="'Created At'">
             {{ displayValue(state.file.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.created_by')">
+          <NDescriptionsItem :label="'Created By'">
             {{ displayValue(state.file.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updated_at')">
+          <NDescriptionsItem :label="'Updated At'">
             {{ displayValue(state.file.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updated_by')">
+          <NDescriptionsItem :label="'Updated By'">
             {{ displayValue(state.file.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

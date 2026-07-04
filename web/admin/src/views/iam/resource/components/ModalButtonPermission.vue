@@ -2,14 +2,12 @@
 import type { DataTableColumns } from 'naive-ui'
 import { Icon } from '@iconify/vue/offline'
 import { resourceApi } from '@/api'
-import { createTagColor, hasPermission, renderButtonIcon, translateLocale } from '@/utils'
+import { createTagColor, hasPermission, renderButtonIcon } from '@/utils'
 import { dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NTag } from 'naive-ui'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import ModalButtonForm from './ModalButtonForm.vue'
 
-const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const state = reactive({
   showModal: false,
@@ -20,22 +18,22 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.parent?.name
-    ? `${t('resource.iam.resource.button_permissions')} - ${translateLocale(state.parent.locale_key, state.parent.name)}`
-    : t('resource.iam.resource.button_permissions'),
+    ? `${'Button Permissions'} - ${state.parent.name}`
+    : 'Button Permissions',
 )
 
 const columns = computed<DataTableColumns<any>>(() => [
   {
-    title: t('resource.iam.resource.name'),
+    title: 'Resource Name',
     key: 'name',
     minWidth: 160,
-    render: (row) => translateLocale(row.locale_key, row.name),
+    render: (row) => row.name,
     ellipsis: {
       tooltip: true,
     },
   },
   {
-    title: t('resource.iam.resource.code'),
+    title: 'Resource Code',
     key: 'code',
     minWidth: 160,
     ellipsis: {
@@ -43,7 +41,7 @@ const columns = computed<DataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.resource.permission_key'),
+    title: 'Permission Key',
     key: 'permission_key',
     minWidth: 220,
     ellipsis: {
@@ -52,18 +50,18 @@ const columns = computed<DataTableColumns<any>>(() => [
     render: (row) => row.permission_key || '-',
   },
   {
-    title: t('resource.iam.resource.data_scope'),
+    title: 'Data Scope',
     key: 'data_scope',
     width: 140,
     render: (row) => dictTypeData('DATA_SCOPE', row.data_scope) || row.data_scope || '-',
   },
   {
-    title: t('resource.iam.resource.sort'),
+    title: 'Sort',
     key: 'sort',
     width: 90,
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     key: 'status',
     width: 110,
     render: (row) => (
@@ -73,7 +71,7 @@ const columns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 130,
     fixed: 'right',
@@ -129,19 +127,19 @@ function openForm(row?: any) {
 
 function confirmDelete(id: string) {
   window.$dialog.warning({
-    title: t('common.often.delete'),
+    title: 'Delete',
     draggable: true,
     maskClosable: false,
-    content: t('resource.iam.resource.delete_button_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
+    content: 'Delete this button?',
+    positiveText: 'Confirm',
+    negativeText: 'Cancel',
     onPositiveClick: () => deleteButton(id),
   })
 }
 
 async function deleteButton(id: string) {
   await resourceApi.buttonRemove({ ids: [id] })
-  window.$message.success(t('common.often.delete_success'))
+  window.$message.success('Deleted successfully')
   await fetchButtons()
 }
 
@@ -167,8 +165,8 @@ defineExpose({
             v-if="hasPermission('iam:resource:create') && hasPermission('iam:resource:grant')"
             type="primary"
             text
-            :title="t('resource.iam.resource.add_button')"
-            :aria-label="t('resource.iam.resource.add_button')"
+            :title="'Add Button'"
+            :aria-label="'Add Button'"
             @click="openForm()"
           >
             <template #icon>
@@ -177,7 +175,7 @@ defineExpose({
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchButtons">
+          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchButtons">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -203,7 +201,7 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ t('common.close') }}
+          {{ 'Close' }}
         </NButton>
       </NSpace>
     </template>

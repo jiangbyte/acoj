@@ -18,7 +18,7 @@
 - Vue 3 / Vite / TypeScript
 - Naive UI / Pro Naive UI
 - Pinia / pinia-plugin-persistedstate
-- Vue Router / vue-i18n
+- Vue Router
 - axios
 - UnoCSS
 - Iconify
@@ -106,7 +106,6 @@ src/
   api/          admin API 封装
   components/   通用组件和业务组件
   hooks/        组合式工具
-  i18n/         国际化装配
   layouts/      管理端布局
   plugins/      图标等插件初始化
   router/       静态路由、动态路由和守卫
@@ -115,7 +114,6 @@ src/
   typing/       类型声明
   utils/        axios、权限、字典、文件 URL 等工具
   views/        页面
-locales/        国际化文案
 nginx/          生产 nginx 模板
 ```
 

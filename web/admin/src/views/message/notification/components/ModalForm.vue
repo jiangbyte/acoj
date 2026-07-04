@@ -3,13 +3,11 @@ import type { FormInst, FormRules } from 'naive-ui'
 import { messageApi } from '@/api'
 import { createRequiredRule, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   title: '',
@@ -32,16 +30,16 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.dataId
-    ? t('resource.message.notification.edit_notification')
-    : t('resource.message.notification.add_notification'),
+    ? 'Edit Notification'
+    : 'Add Notification',
 )
 
 const rules = computed<FormRules>(() => ({
-  title: createRequiredRule(t, t('resource.message.notification.title_field'), 'input'),
-  content: createRequiredRule(t, t('resource.message.notification.content'), 'input'),
-  severity: createRequiredRule(t, t('resource.message.notification.severity'), 'change'),
-  target_scope: createRequiredRule(t, t('resource.message.notification.target_scope'), 'change'),
-  status: createRequiredRule(t, t('common.often.status'), 'change'),
+  title: createRequiredRule('Title', 'input'),
+  content: createRequiredRule('Content', 'input'),
+  severity: createRequiredRule('Severity', 'change'),
+  target_scope: createRequiredRule('Target Scope', 'change'),
+  status: createRequiredRule('Status', 'change'),
 }))
 
 async function openModal(id?: string) {
@@ -80,10 +78,10 @@ async function submitForm() {
     }
     if (state.dataId) {
       await messageApi.updateNotification({ ...payload, id: state.dataId })
-      window.$message.success(t('common.often.update_success'))
+      window.$message.success('Updated successfully')
     } else {
       await messageApi.createNotification(payload)
-      window.$message.success(t('common.often.create_success'))
+      window.$message.success('Created successfully')
     }
     closeModal()
     emit('saved')
@@ -115,35 +113,35 @@ defineExpose({ openModal })
           label-width="120"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('resource.message.notification.title_field')" path="title">
+          <NFormItem :label="'Title'" path="title">
             <NInput v-model:value="state.formModel.title" />
           </NFormItem>
-          <NFormItem :label="t('resource.message.notification.content')" path="content">
+          <NFormItem :label="'Content'" path="content">
             <NInput
               v-model:value="state.formModel.content"
               type="textarea"
               :autosize="{ minRows: 4, maxRows: 8 }"
             />
           </NFormItem>
-          <NFormItem :label="t('resource.message.notification.severity')" path="severity">
+          <NFormItem :label="'Severity'" path="severity">
             <DictSelect v-model="state.formModel.severity" dict-code="NOTIFICATION_SEVERITY" />
           </NFormItem>
-          <NFormItem :label="t('resource.message.notification.target_scope')" path="target_scope">
+          <NFormItem :label="'Target Scope'" path="target_scope">
             <DictSelect v-model="state.formModel.target_scope" dict-code="MESSAGE_TARGET_SCOPE" />
           </NFormItem>
           <NFormItem
-            :label="t('resource.message.notification.target_account_type')"
+            :label="'Target Account Type'"
             path="target_account_type"
           >
             <DictSelect v-model="state.formModel.target_account_type" dict-code="ACCOUNT_TYPE" />
           </NFormItem>
           <NFormItem
-            :label="t('resource.message.notification.target_account_id')"
+            :label="'Target Account ID'"
             path="target_account_id"
           >
             <NInput v-model:value="state.formModel.target_account_id" clearable />
           </NFormItem>
-          <NFormItem :label="t('common.often.status')" path="status">
+          <NFormItem :label="'Status'" path="status">
             <DictSelect
               v-model="state.formModel.status"
               dict-code="NOTIFICATION_STATUS"
@@ -156,9 +154,9 @@ defineExpose({ openModal })
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">{{ t('common.cancel') }}</NButton>
+        <NButton @click="closeModal">{{ 'Cancel' }}</NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ t('common.confirm') }}
+          {{ 'Confirm' }}
         </NButton>
       </NSpace>
     </template>

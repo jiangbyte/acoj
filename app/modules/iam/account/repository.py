@@ -151,14 +151,14 @@ class AccountRepository:
             ),
             (
                 AccountIdentityType.EMAIL,
-                payload.email_identity,
+                (payload.email_identity or payload.email) if payload.email_login_enabled else None,
                 False,
                 payload.email_identity_verified,
                 payload.email_identity_bind_status,
             ),
             (
                 AccountIdentityType.PHONE,
-                payload.phone_identity,
+                (payload.phone_identity or payload.phone) if payload.phone_login_enabled else None,
                 False,
                 payload.phone_identity_verified,
                 payload.phone_identity_bind_status,
@@ -232,9 +232,10 @@ class AccountRepository:
         identity_type: AccountIdentityType,
         identifier: str | None,
         verified: bool = True,
+        enabled: bool = True,
     ) -> None:
         await self.get_required(account_id)
-        normalized_identifier = str(identifier or "").strip()
+        normalized_identifier = str(identifier or "").strip() if enabled else ""
         await self.db.execute(
             delete(SysAccountIdentity).where(
                 SysAccountIdentity.account_id == account_id,

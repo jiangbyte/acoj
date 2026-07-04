@@ -2,9 +2,8 @@
 import type { FormInst, FormRules } from 'naive-ui'
 import { dictApi } from '@/api'
 import CommonColorPicker from '@/components/common/CommonColorPicker.vue'
-import { createRequiredRule, isHexColor, toNullableString, translateLocale } from '@/utils'
+import { createRequiredRule, isHexColor, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   dicts: any[]
@@ -14,12 +13,10 @@ const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   code: '',
   label: '',
-  locale_key: '',
   value: '',
   color: '',
   category: 'SYS',
@@ -36,7 +33,7 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('resource.sys.dict.edit_dict') : t('resource.sys.dict.add_dict'),
+  state.dataId ? 'Edit Dict' : 'Add Dict',
 )
 const parentTreeOptions = computed(() =>
   buildTreeOptions(
@@ -47,23 +44,23 @@ const parentTreeOptions = computed(() =>
 
 const rules = computed<FormRules>(() => ({
   code: [
-    createRequiredRule(t, t('resource.sys.dict.code'), 'input'),
+    createRequiredRule('Code', 'input'),
     {
       pattern: /^[A-Z0-9_]+$/,
-      message: t('resource.sys.dict.code_pattern'),
+      message: 'Code can only contain uppercase letters, numbers, and underscores',
       trigger: ['input', 'blur'],
     },
   ],
-  label: createRequiredRule(t, t('resource.sys.dict.label'), 'input'),
+  label: createRequiredRule('Label', 'input'),
   color: [
     {
       validator: (_rule, value) => isHexColor(value),
-      message: t('resource.sys.dict.color_pattern'),
+      message: 'Please select a valid hex color',
       trigger: ['change', 'blur'],
     },
   ],
-  category: createRequiredRule(t, t('resource.sys.dict.category'), 'change'),
-  status: createRequiredRule(t, t('common.often.status'), 'change'),
+  category: createRequiredRule('Category', 'change'),
+  status: createRequiredRule('Status', 'change'),
 }))
 
 async function openModal(id?: string, options?: { category?: string; parentId?: string | null }) {
@@ -86,7 +83,6 @@ async function fetchDetail(id: string) {
     const response = await dictApi.detail({ id })
     const data = response.data ?? {}
     state.formModel = Object.assign({}, defaultFormData, data, {
-      locale_key: data.locale_key ?? '',
       value: data.value ?? '',
       color: data.color ?? '',
       category: data.category ?? 'SYS',
@@ -110,7 +106,6 @@ async function submitForm() {
     ...state.formModel,
     code: state.formModel.code.trim().toUpperCase(),
     label: String(state.formModel.label ?? '').trim(),
-    locale_key: toNullableString(state.formModel.locale_key),
     value: toNullableString(state.formModel.value),
     color: toNullableString(state.formModel.color),
     parent_id: state.formModel.parent_id ?? null,
@@ -124,10 +119,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.update_success'))
+      window.$message.success('Updated successfully')
     } else {
       await dictApi.create(payload)
-      window.$message.success(t('common.often.create_success'))
+      window.$message.success('Created successfully')
     }
 
     emit('saved')
@@ -159,7 +154,7 @@ function buildTreeOptions(items: any[], excludeId?: string | null) {
         item.id,
         {
           key: item.id,
-          label: `${translateLocale(item.locale_key, item.label || item.code)} (${item.code})`,
+          label: `${item.label || item.code} (${item.code})`,
           children: [] as any[],
           raw: item,
         },
@@ -230,7 +225,7 @@ defineExpose({
         label-width="100"
         :disabled="state.loading || state.submitLoading"
       >
-        <NFormItem :label="t('resource.sys.dict.category')" path="category">
+        <NFormItem :label="'Category'" path="category">
           <DictSelect
             v-model="state.formModel.category"
             dict-code="SYS_BIZ_CATEGORY"
@@ -238,39 +233,36 @@ defineExpose({
             @change="updateCategory"
           />
         </NFormItem>
-        <NFormItem :label="t('resource.sys.dict.parent')" path="parent_id">
+        <NFormItem :label="'Parent Dict'" path="parent_id">
           <NTreeSelect
             v-model:value="state.formModel.parent_id"
             clearable
             filterable
             :options="parentTreeOptions"
-            :placeholder="t('resource.sys.dict.placeholder.top_level')"
+            :placeholder="'Top Level'"
             key-field="key"
             label-field="label"
           />
         </NFormItem>
-        <NFormItem :label="t('resource.sys.dict.code')" path="code">
+        <NFormItem :label="'Code'" path="code">
           <NInput :value="state.formModel.code" @update:value="updateCode" />
         </NFormItem>
-        <NFormItem :label="t('resource.sys.dict.label')" path="label">
+        <NFormItem :label="'Label'" path="label">
           <NInput v-model:value="state.formModel.label" />
         </NFormItem>
-        <NFormItem :label="t('common.often.locale_key')" path="locale_key">
-          <NInput v-model:value="state.formModel.locale_key" />
-        </NFormItem>
-        <NFormItem :label="t('resource.sys.dict.value')" path="value">
+        <NFormItem :label="'Value'" path="value">
           <NInput v-model:value="state.formModel.value" />
         </NFormItem>
-        <NFormItem :label="t('resource.sys.dict.color')" path="color">
+        <NFormItem :label="'Color'" path="color">
           <CommonColorPicker
             v-model="state.formModel.color"
             :disabled="state.loading || state.submitLoading"
           />
         </NFormItem>
-        <NFormItem :label="t('resource.sys.dict.sort')" path="sort">
+        <NFormItem :label="'Sort'" path="sort">
           <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
         </NFormItem>
-        <NFormItem :label="t('common.often.status')" path="status">
+        <NFormItem :label="'Status'" path="status">
           <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
         </NFormItem>
       </NForm>
@@ -279,10 +271,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ t('common.cancel') }}
+          {{ 'Cancel' }}
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ t('common.confirm') }}
+          {{ 'Confirm' }}
         </NButton>
       </NSpace>
     </template>

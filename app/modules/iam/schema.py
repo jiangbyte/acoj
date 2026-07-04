@@ -26,12 +26,14 @@ class SysAccountSchema(ApiSchema):
     account: str
     account_type: AccountType
     account_status: AccountStatusEnum
-    name: str
+    name: str | None = None
     nickname: str | None = None
     avatar: str | None = None
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
+    email_login_enabled: bool = False
+    phone_login_enabled: bool = False
     email_identity: str | None = None
     phone_identity: str | None = None
     email_identity_verified: bool = False
@@ -41,6 +43,8 @@ class SysAccountSchema(ApiSchema):
     identities: list[AccountIdentitySchema] = Field(default_factory=list)
     employee_no: str | None = None
     title: str | None = None
+    bio: str | None = None
+    level: str | None = None
     remark: str | None = None
     cancelled_at: datetime | None = Field(default=None, examples=["2026-06-18T12:00:00Z"])
     cancelled_by: str | None = None
@@ -70,7 +74,6 @@ class ResourcePermissionOption(ApiSchema):
     id: str
     permission_key: str
     title: str
-    locale_key: str | None = None
     data_scope: DataScope = DataScope.SELF
 
 
@@ -80,15 +83,12 @@ class ResourceGrantMenuOption(ApiSchema):
     parent_id: str | None = None
     parent_id_name: str
     title: str
-    locale_key: str | None = None
-    parent_locale_key: str | None = None
     button: list[ResourcePermissionOption] = Field(default_factory=list)
 
 
 class ResourceGrantModuleOption(ApiSchema):
     id: str
     title: str
-    locale_key: str | None = None
     menu: list[ResourceGrantMenuOption] = Field(default_factory=list)
 
 

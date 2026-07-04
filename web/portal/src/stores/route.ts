@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { router } from '@/router'
 import { resourceApi } from '@/api'
 import { staticRoutes } from '@/router/routes.static'
-import { translateLocale } from '@/utils/i18n'
 import { createMenus, createRoutes } from './route/helper'
 
 /**
@@ -135,10 +134,9 @@ export function getRouteTitle(route: {
   path?: string
   meta: {
     name?: string
-    locale_key?: string | null
   }
 }) {
-  return translateLocale(route.meta.locale_key, route.meta.name ?? String(route.name ?? route.path))
+  return route.meta.name ?? String(route.name ?? route.path)
 }
 
 // 动态路由接口占位。当前没有接入后端资源接口，所以仍返回静态资源数据。

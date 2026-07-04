@@ -1,16 +1,14 @@
 <script setup lang="tsx">
 import type { DataTableColumns } from 'naive-ui'
 import { roleApi } from '@/api'
-import { translateLocale } from '@/utils'
+import { } from '@/utils'
 import { NCheckbox } from 'naive-ui'
 import { computed, reactive } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const state = reactive({
   showModal: false,
   loading: false,
@@ -24,8 +22,8 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.subject?.name
-    ? `${state.title || t('resource.iam.role.grant_resource')} - ${state.subject.name}`
-    : state.title || t('resource.iam.role.grant_resource'),
+    ? `${state.title || 'Grant Resources'} - ${state.subject.name}`
+    : state.title || 'Grant Resources',
 )
 const activeModule = computed(
   () => state.modules.find((item) => item.id === state.activeModuleId) ?? state.modules[0],
@@ -44,7 +42,7 @@ const firstShowMap = computed<Record<string, number[]>>(() => {
 })
 const columns = computed<DataTableColumns<any>>(() => [
   {
-    title: t('resource.iam.role.parent_resource'),
+    title: 'Parent Resource',
     key: 'parent_id_name',
     fixed: 'left',
     width: 180,
@@ -62,7 +60,7 @@ const columns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('resource.iam.role.menu_resource'),
+    title: 'Menu',
     key: 'title',
     width: 220,
     render: (row) => (
@@ -75,7 +73,7 @@ const columns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('resource.iam.role.button_grant'),
+    title: 'Button Grant',
     key: 'button',
     minWidth: 520,
     render: (row) => {
@@ -134,7 +132,7 @@ async function submitGrant() {
       id: state.subject.id,
       grant_info_list: convertData(),
     })
-    window.$message.success(t('resource.iam.role.grant_success'))
+    window.$message.success('Grant saved successfully')
     closeModal()
     emit('saved')
   } finally {
@@ -155,19 +153,19 @@ function echoModuleData(modules: any[], grant_info_list: any[]) {
   )
   return JSON.parse(JSON.stringify(modules)).map((module: any) => ({
     ...module,
-    title_display: translateLocale(module.locale_key, module.title),
+    title_display: module.title,
     menu: (module.menu ?? [])
       .map((menu: any) => {
         const buttonSet = grantMap.get(menu.id)
         return {
           ...menu,
-          parent_id_name_display: translateLocale(menu.parent_locale_key, menu.parent_id_name),
-          title_display: translateLocale(menu.locale_key, menu.title),
+          parent_id_name_display: menu.parent_id_name,
+          title_display: menu.title,
           parentCheck: Boolean(buttonSet),
           nameCheck: Boolean(buttonSet),
           button: (menu.button ?? []).map((button: any) => ({
             ...button,
-            title_display: translateLocale(button.locale_key, button.title),
+            title_display: button.title,
             check: Boolean(buttonSet?.has(button.permission_key ?? button.id)),
           })),
         }
@@ -232,7 +230,7 @@ defineExpose({
   >
     <NDrawerContent :title="modalTitle" closable :native-scrollbar="false">
       <NAlert type="warning" :bordered="false" class="mb-10px">
-        {{ t('resource.iam.role.grant_resource_tip') }}
+        {{ 'Non-super-admin roles cannot be granted system module menu resources.' }}
       </NAlert>
       <NSpin :show="state.loading">
         <NRadioGroup v-model:value="state.activeModuleId" size="small" class="mb-10px">
@@ -259,10 +257,10 @@ defineExpose({
       <template #footer>
         <NSpace justify="end" align="center">
           <NButton @click="closeModal">
-            {{ t('common.close') }}
+            {{ 'Close' }}
           </NButton>
           <NButton type="primary" :loading="state.submitLoading" @click="submitGrant">
-            {{ t('common.save') }}
+            {{ 'Save' }}
           </NButton>
         </NSpace>
       </template>

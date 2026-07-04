@@ -3,9 +3,7 @@ import { messageApi } from '@/api'
 import { createTagColor, displayValue } from '@/utils'
 import { dictTypeColor, dictTypeData } from '@/utils/dict'
 import { reactive } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const state = reactive({
   showModal: false,
   loading: false,
@@ -37,19 +35,19 @@ defineExpose({ openModal })
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('resource.message.notification.detail_notification')"
+    :title="'Notification Detail'"
     style="width: 640px"
   >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('common.often.index')">
+          <NDescriptionsItem :label="'ID'">
             {{ displayValue(state.detailData.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.message.notification.title_field')">
+          <NDescriptionsItem :label="'Title'">
             {{ displayValue(state.detailData.title) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.message.notification.severity')">
+          <NDescriptionsItem :label="'Severity'">
             <NTag
               :color="
                 createTagColor(dictTypeColor('NOTIFICATION_SEVERITY', state.detailData.severity))
@@ -62,22 +60,22 @@ defineExpose({ openModal })
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.message.notification.target_scope')">
+          <NDescriptionsItem :label="'Target Scope'">
             {{
               dictTypeData('MESSAGE_TARGET_SCOPE', state.detailData.target_scope) ||
               displayValue(state.detailData.target_scope)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.message.notification.target_account_type')">
+          <NDescriptionsItem :label="'Target Account Type'">
             {{
               dictTypeData('ACCOUNT_TYPE', state.detailData.target_account_type) ||
               displayValue(state.detailData.target_account_type)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.message.notification.target_account_id')">
+          <NDescriptionsItem :label="'Target Account ID'">
             {{ displayValue(state.detailData.target_account_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.status')">
+          <NDescriptionsItem :label="'Status'">
             <NTag
               :color="createTagColor(dictTypeColor('NOTIFICATION_STATUS', state.detailData.status))"
               :bordered="false"
@@ -88,16 +86,16 @@ defineExpose({ openModal })
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.message.notification.publish_at')">
+          <NDescriptionsItem :label="'Published At'">
             {{ displayValue(state.detailData.publish_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.message.notification.content')">
+          <NDescriptionsItem :label="'Content'">
             {{ displayValue(state.detailData.content) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.created_at')">
+          <NDescriptionsItem :label="'Created At'">
             {{ displayValue(state.detailData.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updated_at')">
+          <NDescriptionsItem :label="'Updated At'">
             {{ displayValue(state.detailData.updated_at) }}
           </NDescriptionsItem>
         </NDescriptions>

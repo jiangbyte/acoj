@@ -134,7 +134,9 @@ pnpm preview
 - `DB__POOL_TIMEOUT_SECONDS`：连接池获取连接超时时间。
 - `DB__POOL_PRE_PING` / `DB__POOL_RECYCLE_SECONDS`：连接健康检查和回收，降低空闲断连影响。
 - `AUDIT__OPERATION_QUEUE_SIZE`：操作审计异步写库队列容量，队列满会丢弃审计日志但不阻塞主请求。
-- `REDIS__URL`：Redis 地址，用于会话、权限注册表、授权缓存和 beat lock。
+- `REDIS__URL`：Redis 地址，用于会话、权限注册表、授权缓存、密码重置 token 和 beat lock。
+- `MAIL__HOST` / `MAIL__PORT` / `MAIL__FROM_EMAIL`：SMTP 配置，用于忘记密码重置链接邮件。
+- `MAIL__ADMIN_PASSWORD_RESET_URL` / `MAIL__PORTAL_PASSWORD_RESET_URL`：邮件中的重置密码前端链接地址。
 - `CELERY__BROKER_URL`：RabbitMQ broker 地址。
 - `CELERY__AUTO_START_ENABLED`：是否由 API 进程内嵌自启动 Celery worker/beat。
 - `CELERY__WORKER_WITHOUT_MINGLE` / `CELERY__WORKER_WITHOUT_GOSSIP`：兼容新版 RabbitMQ 的 worker 启动选项。

@@ -30,7 +30,6 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/views/usercenter/index.vue'),
         meta: {
           name: 'User Center',
-          locale_key: 'app.user_center.title',
           icon: 'icon-park-outline:user',
         },
       },
@@ -39,8 +38,7 @@ export const routes: RouteRecordRaw[] = [
         name: 'messages',
         component: () => import('@/views/messages/index.vue'),
         meta: {
-          name: 'Messages',
-          locale_key: 'app.messages_center',
+          name: 'Message Center',
           icon: 'icon-park-outline:message',
         },
       },
@@ -50,7 +48,6 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/views/space/index.vue'),
         meta: {
           name: 'My Space',
-          locale_key: 'app.my_space',
           icon: 'icon-park-outline:user-positioning',
         },
       },
@@ -59,8 +56,7 @@ export const routes: RouteRecordRaw[] = [
         name: 'space',
         component: () => import('@/views/space/index.vue'),
         meta: {
-          name: 'Space',
-          locale_key: 'app.space.title',
+          name: 'Profile',
           public: true,
           icon: 'icon-park-outline:user-positioning',
         },

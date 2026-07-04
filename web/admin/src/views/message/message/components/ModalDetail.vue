@@ -3,9 +3,7 @@ import { messageApi } from '@/api'
 import { displayValue, resolveFileUrl } from '@/utils'
 import { dictTypeData } from '@/utils/dict'
 import { reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const activeTab = ref<'threads' | 'groups'>('threads')
 const state = reactive({
   showModal: false,
@@ -58,24 +56,24 @@ function openAttachment(url: string) {
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('resource.message.message.detail_message')"
+    :title="'Message Detail'"
     style="width: 720px"
   >
     <NScrollbar class="max-h-[min(620px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('common.often.index')">
+          <NDescriptionsItem :label="'ID'">
             {{ displayValue(state.detailData.id) }}
           </NDescriptionsItem>
           <NDescriptionsItem
             v-if="activeTab === 'threads'"
-            :label="t('resource.message.message.thread_title')"
+            :label="'Thread Title'"
           >
             {{ displayValue(state.detailData.title) }}
           </NDescriptionsItem>
           <NDescriptionsItem
             v-if="activeTab === 'threads'"
-            :label="t('resource.message.message.thread_type')"
+            :label="'Thread Type'"
           >
             {{
               dictTypeData('MESSAGE_THREAD_TYPE', state.detailData.thread_type) ||
@@ -84,20 +82,20 @@ function openAttachment(url: string) {
           </NDescriptionsItem>
           <NDescriptionsItem
             v-if="activeTab === 'groups'"
-            :label="t('resource.message.message.group_name')"
+            :label="'Group Name'"
           >
             {{ displayValue(state.detailData.name) }}
           </NDescriptionsItem>
           <NDescriptionsItem
             v-if="activeTab === 'groups'"
-            :label="t('resource.message.message.member_count')"
+            :label="'Members'"
           >
             {{ displayValue(state.detailData.member_count) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.status')">
+          <NDescriptionsItem :label="'Status'">
             {{ displayValue(state.detailData.status) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updated_at')">
+          <NDescriptionsItem :label="'Updated At'">
             {{ displayValue(state.detailData.updated_at) }}
           </NDescriptionsItem>
         </NDescriptions>
@@ -131,7 +129,7 @@ function openAttachment(url: string) {
         <NEmpty
           v-else-if="activeTab === 'threads'"
           class="py-32px"
-          :description="t('resource.message.message.no_messages')"
+          :description="'No messages'"
         />
       </NSpin>
     </NScrollbar>

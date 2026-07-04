@@ -2,13 +2,11 @@
 import { Chart } from '@antv/g2'
 import { dashboardApi } from '@/api'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { NIcon } from 'naive-ui'
 import { Icon } from '@iconify/vue/offline'
 
 type ChartInstance = InstanceType<typeof Chart>
 
-const { t } = useI18n()
 const trendChartRef = ref<HTMLDivElement | null>(null)
 const fileChartRef = ref<HTMLDivElement | null>(null)
 const charts: ChartInstance[] = []
@@ -29,14 +27,35 @@ const metricMeta: Record<string, { icon: string; color: string }> = {
   banners: { icon: 'icon-park-outline:ad-product', color: '#7c3aed' },
   notifications: { icon: 'icon-park-outline:tips-one', color: '#16a34a' },
 }
+const metricTitleMap: Record<string, string> = {
+  accounts: 'Accounts',
+  online_sessions: 'Online Devices',
+  files: 'Files',
+  banners: 'Banners',
+  notifications: 'Published Notices',
+}
+const metricHelperMap: Record<string, string> = {
+  accounts: 'Accounts created today are tracked separately',
+  online_sessions: 'Current online tokens in Redis',
+  files: 'File count and storage usage',
+  banners: 'Total banner configurations',
+  notifications: 'Notices currently published',
+}
+const metricUnitMap: Record<string, { one: string; other: string }> = {
+  accounts: { one: 'account', other: 'accounts' },
+  online_sessions: { one: 'device', other: 'devices' },
+  files: { one: 'file', other: 'files' },
+  banners: { one: 'banner', other: 'banners' },
+  notifications: { one: 'notice', other: 'notices' },
+}
 
 const metricCards = computed(() =>
   state.overview.metrics.map((item) => {
     const meta = metricMeta[item.key] ?? { icon: 'icon-park-outline:analysis', color: '#64748b' }
     return {
       ...item,
-      title: t(`resource.dashboard.metrics.${item.key}`),
-      helper: t(`resource.dashboard.helpers.${item.key}`),
+      title: metricTitleMap[item.key] ?? item.key,
+      helper: metricHelperMap[item.key] ?? '',
       value: item.value ?? 0,
       unitText: formatMetricUnit(item),
       ...meta,
@@ -47,7 +66,7 @@ const metricCards = computed(() =>
 const trendData = computed(() => [
   ...state.overview.account_trend.map((item) => ({
     ...item,
-    type: t('resource.dashboard.series.accounts'),
+    type: 'New Accounts',
   })),
 ])
 
@@ -87,7 +106,7 @@ function formatMetricUnit(item: any) {
 function formatMetricUnitName(value: number | string | null | undefined, key: string) {
   const count = Number(value ?? 0)
   const unitType = count === 1 ? 'one' : 'other'
-  return t(`resource.dashboard.units.${key}.${unitType}`)
+  return metricUnitMap[key]?.[unitType] ?? key
 }
 
 function formatFileSize(size?: number | string | null) {
@@ -161,8 +180,8 @@ async function renderFileChart() {
     <n-el class="dashboard-page">
       <div class="dashboard-header">
         <div class="min-w-0">
-          <h1>{{ t('resource.dashboard.title') }}</h1>
-          <p>{{ t('resource.dashboard.subtitle') }}</p>
+          <h1>{{ 'Operations Workbench' }}</h1>
+          <p>{{ 'A live system overview for accounts, online sessions, files, banners, and published notices.' }}</p>
         </div>
         <NButton text :loading="state.loading" @click="fetchOverview">
           <template #icon>
@@ -198,7 +217,7 @@ async function renderFileChart() {
         <NGridItem span="1 xl:16">
           <NCard
             class="dashboard-card"
-            :title="t('resource.dashboard.charts.trend')"
+            title="Last 7 Days"
             :bordered="false"
           >
             <div ref="trendChartRef" class="chart-box" />
@@ -207,7 +226,7 @@ async function renderFileChart() {
         <NGridItem span="1 xl:8">
           <NCard
             class="dashboard-card"
-            :title="t('resource.dashboard.charts.file_type')"
+            title="File Types"
             :bordered="false"
           >
             <div ref="fileChartRef" class="chart-box chart-box--small" />
@@ -216,7 +235,7 @@ async function renderFileChart() {
       </NGrid>
 
       <NAlert v-if="state.chartLoadError" class="mt-4" type="warning" :show-icon="false">
-        {{ t('resource.dashboard.charts.load_failed') }}
+        {{ 'Chart runtime failed to load. Refresh the page or restart the dev server.' }}
       </NAlert>
     </n-el>
   </NSpin>

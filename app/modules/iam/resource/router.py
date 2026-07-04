@@ -142,7 +142,12 @@ async def current_resources(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[list[SysResourceSchema]]:
-    return success(await ResourceService(db).list_current_resources(session))
+    return success(
+        await ResourceService(db).list_current_resources(
+            session,
+            module_client=ResourceModuleClient.ADMIN,
+        )
+    )
 
 
 @router.get(

@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import Field
 
 from app.core.schema.base import ApiSchema
+from app.core.security.transport import PasswordKeyMixin
 
 
 class PortalProfileResponse(ApiSchema):
@@ -15,6 +16,8 @@ class PortalProfileResponse(ApiSchema):
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
+    phone_login_enabled: bool = False
+    email_login_enabled: bool = False
     bio: str | None = None
     level: str | None = None
     created_at: datetime | None = Field(default=None, examples=["2026-06-17T12:00:00Z"])
@@ -50,32 +53,34 @@ class PortalProfileUpsertPayload(ApiSchema):
 class PortalUserCenterProfileUpdateRequest(ApiSchema):
     """当前门户用户个人资料更新请求。"""
 
-    name: str = Field(min_length=1, max_length=64)
+    name: str | None = Field(default=None, max_length=64)
     nickname: str | None = Field(default=None, max_length=64)
     avatar: str | None = None
     signature: str | None = None
     bio: str | None = Field(default=None, max_length=255)
 
 
-class PortalUserCenterPasswordUpdateRequest(ApiSchema):
+class PortalUserCenterPasswordUpdateRequest(PasswordKeyMixin):
     """当前门户用户修改密码请求。"""
 
-    old_password: str = Field(min_length=1, max_length=128)
-    new_password: str = Field(min_length=6, max_length=128)
+    old_password: str = Field(min_length=1, max_length=512)
+    new_password: str = Field(min_length=1, max_length=512)
 
 
-class PortalUserCenterPhoneUpdateRequest(ApiSchema):
+class PortalUserCenterPhoneUpdateRequest(PasswordKeyMixin):
     """当前门户用户手机号绑定更新请求。"""
 
-    password: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=1, max_length=512)
     phone: str | None = Field(default=None, max_length=32)
+    phone_login_enabled: bool = False
 
 
-class PortalUserCenterEmailUpdateRequest(ApiSchema):
+class PortalUserCenterEmailUpdateRequest(PasswordKeyMixin):
     """当前门户用户邮箱绑定更新请求。"""
 
-    password: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=1, max_length=512)
     email: str | None = Field(default=None, max_length=128)
+    email_login_enabled: bool = False
 
 
 class PortalUserCenterAvatarUpdateResponse(ApiSchema):

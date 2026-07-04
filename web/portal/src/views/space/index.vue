@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import { spaceApi } from '@/api'
 import { useAuthStore } from '@/stores'
 import { resolveFileUrl } from '@/utils'
@@ -9,7 +8,6 @@ import { resolveFileUrl } from '@/utils'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const { t } = useI18n()
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
 const state = reactive({
@@ -23,9 +21,7 @@ const accountId = computed(() => {
   return typeof id === 'string' ? id : authStore.userInfo?.accountId
 })
 
-const displayName = computed(
-  () => state.profile?.nickname || state.profile?.name || t('app.space.default_name'),
-)
+const displayName = computed(() => state.profile?.nickname || '-')
 const avatarUrl = computed(() => resolveFileUrl(state.profile?.avatar))
 
 const handle = computed(() => (state.profile?.account_id ? `ID ${state.profile.account_id}` : ''))
@@ -33,22 +29,22 @@ const signature = computed(() => displayValue(state.profile?.signature))
 const bio = computed(() => displayValue(state.profile?.bio))
 
 const stats = computed(() => [
-  { label: t('app.space.stats.posts'), value: '0' },
-  { label: t('app.space.stats.following'), value: '0' },
-  { label: t('app.space.stats.followers'), value: '0' },
+  { label: 'Posts', value: '0' },
+  { label: 'Following', value: '0' },
+  { label: 'Followers', value: '0' },
 ])
 
 const showcaseItems = computed(() => [
   {
     key: 'intro',
     icon: 'icon-park-outline:topic',
-    title: t('app.space.showcase.intro_title'),
+    title: 'Intro',
     text: bio.value,
   },
   {
     key: 'signature',
     icon: 'icon-park-outline:quote',
-    title: t('app.space.showcase.signature_title'),
+    title: 'Signature',
     text: signature.value,
   },
 ])
@@ -56,18 +52,18 @@ const showcaseItems = computed(() => [
 const homeFeeds = computed(() => [
   {
     id: 'feed-1',
-    type: t('app.space.mock.feed_type_video'),
-    title: t('app.space.mock.feed_1_title'),
-    text: t('app.space.mock.feed_1_text'),
-    time: t('app.space.mock.feed_1_time'),
+    type: 'Posted video',
+    title: 'New content is being organized',
+    text: 'Public videos, posts, and update history will appear here.',
+    time: 'Just now',
     icon: 'icon-park-outline:video-two',
   },
   {
     id: 'feed-2',
-    type: t('app.space.mock.feed_type_note'),
-    title: t('app.space.mock.feed_2_title'),
-    text: t('app.space.mock.feed_2_text'),
-    time: t('app.space.mock.feed_2_time'),
+    type: 'Posted update',
+    title: 'Public profile is live',
+    text: 'Public details, intro, and featured content are collected in this space.',
+    time: 'Today',
     icon: 'icon-park-outline:doc-detail',
   },
 ])
@@ -75,58 +71,58 @@ const homeFeeds = computed(() => [
 const videos = computed(() => [
   {
     id: 'video-1',
-    title: t('app.space.mock.video_1_title'),
-    meta: t('app.space.mock.video_1_meta'),
+    title: 'Getting Started',
+    meta: '03:28',
   },
   {
     id: 'video-2',
-    title: t('app.space.mock.video_2_title'),
-    meta: t('app.space.mock.video_2_meta'),
+    title: 'Practice Log',
+    meta: '08:16',
   },
   {
     id: 'video-3',
-    title: t('app.space.mock.video_3_title'),
-    meta: t('app.space.mock.video_3_meta'),
+    title: 'Experience Share',
+    meta: '12:04',
   },
   {
     id: 'video-4',
-    title: t('app.space.mock.video_4_title'),
-    meta: t('app.space.mock.video_4_meta'),
+    title: 'Q&A Picks',
+    meta: '05:42',
   },
 ])
 
 const collections = computed(() => [
   {
     id: 'collection-1',
-    title: t('app.space.mock.collection_1_title'),
-    desc: t('app.space.mock.collection_1_desc'),
-    count: t('app.space.mock.collection_1_count'),
+    title: 'Featured',
+    desc: 'Representative public content for quickly understanding this space.',
+    count: '4 items',
   },
   {
     id: 'collection-2',
-    title: t('app.space.mock.collection_2_title'),
-    desc: t('app.space.mock.collection_2_desc'),
-    count: t('app.space.mock.collection_2_count'),
+    title: 'Learning Log',
+    desc: 'A long-running collection organized by topic.',
+    count: '6 items',
   },
 ])
 
 const likes = computed(() => [
   {
     id: 'like-1',
-    title: t('app.space.mock.like_1_title'),
-    source: t('app.space.mock.like_1_source'),
+    title: 'Worth Rewatching',
+    source: 'From public videos',
     icon: 'icon-park-outline:like',
   },
   {
     id: 'like-2',
-    title: t('app.space.mock.like_2_title'),
-    source: t('app.space.mock.like_2_source'),
+    title: 'Saved Collection',
+    source: 'From community picks',
     icon: 'icon-park-outline:star',
   },
   {
     id: 'like-3',
-    title: t('app.space.mock.like_3_title'),
-    source: t('app.space.mock.like_3_source'),
+    title: 'Followed Topic',
+    source: 'From discussions',
     icon: 'icon-park-outline:bookmark',
   },
 ])
@@ -150,7 +146,7 @@ async function loadSpace() {
 }
 
 function displayValue(value: unknown) {
-  return value ? String(value) : t('app.space.empty_value')
+  return value ? String(value) : 'Not set'
 }
 </script>
 
@@ -221,7 +217,7 @@ function displayValue(value: unknown) {
 
       <section class="space-tabs w-full min-w-0">
         <NTabs v-model:value="state.activeTab" type="line" animated pane-class="space-pane">
-          <NTabPane name="home" :tab="t('app.space.tabs.home')">
+          <NTabPane name="home" :tab="'Home'">
             <div class="grid gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8">
               <div class="min-w-0 space-y-4">
                 <div class="grid gap-4 lg:hidden">
@@ -229,16 +225,13 @@ function displayValue(value: unknown) {
                     class="rounded border border-[var(--border-color)] bg-[var(--card-color)] p-5"
                   >
                     <h2 class="m-0 text-base font-750">
-                      {{ t('app.space.profile') }}
+                      {{ 'Public Profile' }}
                     </h2>
                     <NDescriptions class="mt-4" :column="1" label-placement="left" size="small">
-                      <NDescriptionsItem :label="t('app.user_center.name')">
-                        {{ displayValue(state.profile?.name) }}
-                      </NDescriptionsItem>
-                      <NDescriptionsItem :label="t('app.user_center.nickname')">
+                      <NDescriptionsItem :label="'Nickname'">
                         {{ displayValue(state.profile?.nickname) }}
                       </NDescriptionsItem>
-                      <NDescriptionsItem :label="t('app.user_center.level')">
+                      <NDescriptionsItem :label="'Level'">
                         {{ displayValue(state.profile?.level) }}
                       </NDescriptionsItem>
                     </NDescriptions>
@@ -248,7 +241,7 @@ function displayValue(value: unknown) {
                     class="rounded border border-[var(--border-color)] bg-[var(--card-color)] p-5"
                   >
                     <h2 class="m-0 text-base font-750">
-                      {{ t('app.space.about') }}
+                      {{ 'About' }}
                     </h2>
                     <p
                       class="mt-4 whitespace-pre-wrap text-sm leading-7 text-[var(--text-color-2)]"
@@ -285,7 +278,7 @@ function displayValue(value: unknown) {
                 <article class="rounded border border-[var(--border-color)] bg-[var(--card-color)]">
                   <div class="border-b border-[var(--border-color)] px-5 py-4">
                     <h2 class="m-0 text-base font-750">
-                      {{ t('app.space.recent_title') }}
+                      {{ 'Recent' }}
                     </h2>
                   </div>
                   <div class="divide-y divide-[var(--border-color)]">
@@ -319,16 +312,13 @@ function displayValue(value: unknown) {
                   class="rounded border border-[var(--border-color)] bg-[var(--card-color)] p-5"
                 >
                   <h2 class="m-0 text-base font-750">
-                    {{ t('app.space.profile') }}
+                    {{ 'Public Profile' }}
                   </h2>
                   <NDescriptions class="mt-4" :column="1" label-placement="left" size="small">
-                    <NDescriptionsItem :label="t('app.user_center.name')">
-                      {{ displayValue(state.profile?.name) }}
-                    </NDescriptionsItem>
-                    <NDescriptionsItem :label="t('app.user_center.nickname')">
+                    <NDescriptionsItem :label="'Nickname'">
                       {{ displayValue(state.profile?.nickname) }}
                     </NDescriptionsItem>
-                    <NDescriptionsItem :label="t('app.user_center.level')">
+                    <NDescriptionsItem :label="'Level'">
                       {{ displayValue(state.profile?.level) }}
                     </NDescriptionsItem>
                   </NDescriptions>
@@ -338,7 +328,7 @@ function displayValue(value: unknown) {
                   class="rounded border border-[var(--border-color)] bg-[var(--card-color)] p-5"
                 >
                   <h2 class="m-0 text-base font-750">
-                    {{ t('app.space.about') }}
+                    {{ 'About' }}
                   </h2>
                   <p class="mt-4 whitespace-pre-wrap text-sm leading-7 text-[var(--text-color-2)]">
                     {{ bio }}
@@ -348,12 +338,12 @@ function displayValue(value: unknown) {
             </div>
           </NTabPane>
 
-          <NTabPane name="videos" :tab="t('app.space.tabs.videos')">
+          <NTabPane name="videos" :tab="'Videos'">
             <div class="px-4 py-4 sm:px-6 lg:px-8">
               <article class="rounded border border-[var(--border-color)] bg-[var(--card-color)]">
                 <div class="border-b border-[var(--border-color)] px-5 py-4">
                   <h2 class="m-0 text-base font-750">
-                    {{ t('app.space.tabs.videos') }}
+                    {{ 'Videos' }}
                   </h2>
                 </div>
                 <div class="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -383,12 +373,12 @@ function displayValue(value: unknown) {
             </div>
           </NTabPane>
 
-          <NTabPane name="collections" :tab="t('app.space.tabs.collections')">
+          <NTabPane name="collections" :tab="'Collections'">
             <div class="px-4 py-4 sm:px-6 lg:px-8">
               <article class="rounded border border-[var(--border-color)] bg-[var(--card-color)]">
                 <div class="border-b border-[var(--border-color)] px-5 py-4">
                   <h2 class="m-0 text-base font-750">
-                    {{ t('app.space.tabs.collections') }}
+                    {{ 'Collections' }}
                   </h2>
                 </div>
                 <div class="grid gap-4 p-5 md:grid-cols-2">
@@ -425,12 +415,12 @@ function displayValue(value: unknown) {
             </div>
           </NTabPane>
 
-          <NTabPane name="likes" :tab="t('app.space.tabs.likes')">
+          <NTabPane name="likes" :tab="'Likes'">
             <div class="px-4 py-4 sm:px-6 lg:px-8">
               <article class="rounded border border-[var(--border-color)] bg-[var(--card-color)]">
                 <div class="border-b border-[var(--border-color)] px-5 py-4">
                   <h2 class="m-0 text-base font-750">
-                    {{ t('app.space.tabs.likes') }}
+                    {{ 'Likes' }}
                   </h2>
                 </div>
                 <div class="grid gap-3 p-5 md:grid-cols-3">

@@ -12,13 +12,11 @@ import {
   NTreeSelect,
 } from 'naive-ui'
 import { computed, reactive } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const customValue = 'CUSTOM'
 const state = reactive({
   showModal: false,
@@ -37,8 +35,8 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.subject?.name
-    ? `${state.title || t('resource.iam.role.grant_permission')} - ${state.subject.name}`
-    : state.title || t('resource.iam.role.grant_permission'),
+    ? `${state.title || 'Grant Permissions'} - ${state.subject.name}`
+    : state.title || 'Grant Permissions',
 )
 const filteredRows = computed(() => {
   const keyword = state.searchText.trim().toUpperCase()
@@ -73,7 +71,7 @@ const columns = computed<DataTableColumns<any>>(() => [
         checked={allChecked.value}
         onUpdateChecked={(checked) => onCheckAllChange(Boolean(checked))}
       >
-        {t('resource.iam.role.api_prefix')}
+        {'API Prefix'}
       </NCheckbox>
     ),
     key: 'prefix',
@@ -98,7 +96,7 @@ const columns = computed<DataTableColumns<any>>(() => [
         checked={allChecked.value}
         onUpdateChecked={(checked) => onCheckAllChange(Boolean(checked))}
       >
-        {t('resource.iam.role.api_resource')}
+        {'API'}
       </NCheckbox>
     ),
     key: 'suffix',
@@ -108,7 +106,7 @@ const columns = computed<DataTableColumns<any>>(() => [
       <div class="grant-permission-filter">
         <NInput
           value={state.searchText}
-          placeholder={t('resource.iam.role.placeholder.permission_search')}
+          placeholder={'Enter API or API name'}
           onUpdateValue={(value) => {
             state.searchText = value
           }}
@@ -128,7 +126,7 @@ const columns = computed<DataTableColumns<any>>(() => [
               hide()
             }}
           >
-            {t('resource.iam.role.search')}
+            {'Search'}
           </NButton>
           <NButton
             size="small"
@@ -137,7 +135,7 @@ const columns = computed<DataTableColumns<any>>(() => [
               hide()
             }}
           >
-            {t('common.reset')}
+            {'Reset'}
           </NButton>
         </NInputGroup>
       </div>
@@ -154,7 +152,7 @@ const columns = computed<DataTableColumns<any>>(() => [
   {
     title: () => (
       <div class="grant-permission-scope-header">
-        <span>{t('resource.iam.role.data_scope')}</span>
+        <span>{'Data Scope'}</span>
         <NRadioGroup
           value={state.scopeRadioValue}
           size="small"
@@ -258,7 +256,7 @@ async function submitGrant() {
       id: state.subject.id,
       grant_info_list: convertData(),
     })
-    window.$message.success(t('resource.iam.role.grant_success'))
+    window.$message.success('Grant saved successfully')
     closeModal()
     emit('saved')
   } finally {
@@ -310,31 +308,31 @@ function dataScopeOptions(id: string) {
   return [
     {
       id: `SCOPE_ALL_${id}`,
-      title: t('resource.iam.role.data_scope_all'),
+      title: 'All',
       value: 'ALL',
       check: false,
     },
     {
       id: `SCOPE_SELF_${id}`,
-      title: t('resource.iam.role.data_scope_self'),
+      title: 'Self',
       value: 'SELF',
       check: false,
     },
     {
       id: `SCOPE_ORG_${id}`,
-      title: t('resource.iam.role.data_scope_org'),
+      title: 'Organization',
       value: 'DEPT',
       check: false,
     },
     {
       id: `SCOPE_ORG_CHILD_${id}`,
-      title: t('resource.iam.role.data_scope_org_child'),
+      title: 'Organization and Children',
       value: 'DEPT_AND_CHILD',
       check: false,
     },
     {
       id: `SCOPE_ORG_DEFINE_${id}`,
-      title: t('resource.iam.role.data_scope_custom'),
+      title: 'Custom',
       value: customValue,
       check: false,
       custom_scope_dept_ids: [],
@@ -458,7 +456,7 @@ defineExpose({
   >
     <NDrawerContent :title="modalTitle" closable :native-scrollbar="false">
       <NAlert type="warning" closable>
-        {{ t('resource.iam.role.grant_permission_tip') }}
+        {{ 'Note: this UI must be used with code query conditions. Not every API needs data scope. It is mostly used by business modules. Data scope changes take effect after re-login.' }}
       </NAlert>
       <NSpin :show="state.loading">
         <div class="mt-16px">
@@ -488,10 +486,10 @@ defineExpose({
       <template #footer>
         <NSpace justify="end" align="center">
           <NButton @click="closeModal">
-            {{ t('common.close') }}
+            {{ 'Close' }}
           </NButton>
           <NButton type="primary" :loading="state.submitLoading" @click="submitGrant">
-            {{ t('common.save') }}
+            {{ 'Save' }}
           </NButton>
         </NSpace>
       </template>

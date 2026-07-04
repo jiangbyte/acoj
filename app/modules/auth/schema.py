@@ -3,11 +3,14 @@ from pydantic import Field
 from app.core.config.enums import AccountType
 from app.core.response.schema import ApiResponse
 from app.core.schema.base import ApiSchema
+from app.core.security.transport import CaptchaMixin, PasswordKeyMixin
+from app.modules.iam.enums import AccountIdentityType
 
 
-class LoginRequest(ApiSchema):
+class LoginRequest(CaptchaMixin, PasswordKeyMixin):
     account: str = Field(min_length=3, max_length=128)
-    password: str = Field(min_length=6, max_length=128)
+    password: str = Field(min_length=1, max_length=512)
+    identity_type: AccountIdentityType = AccountIdentityType.ACCOUNT
 
 
 class LoginPayload(ApiSchema):
@@ -16,6 +19,7 @@ class LoginPayload(ApiSchema):
     account: str
     password: str
     account_type: AccountType
+    identity_type: AccountIdentityType = AccountIdentityType.ACCOUNT
     client_ip: str | None = None
     user_agent: str | None = None
     device_label: str | None = None
@@ -27,13 +31,22 @@ class LoginResponse(ApiSchema):
     account_type: AccountType
 
 
-class RegisterRequest(ApiSchema):
+class RegisterRequest(CaptchaMixin, PasswordKeyMixin):
     account: str = Field(min_length=3, max_length=64)
-    password: str = Field(min_length=6, max_length=128)
-    name: str = Field(min_length=1, max_length=64)
-    nickname: str | None = Field(default=None, max_length=64)
-    phone: str | None = Field(default=None, max_length=32)
-    email: str | None = Field(default=None, max_length=128)
+    password: str = Field(min_length=1, max_length=512)
+    name: str | None = Field(default=None, max_length=64)
+    nickname: str = Field(min_length=1, max_length=64)
+    email: str = Field(min_length=3, max_length=128)
+
+
+class ForgotPasswordRequest(CaptchaMixin):
+    email: str = Field(min_length=3, max_length=128)
+
+
+class ResetPasswordRequest(CaptchaMixin, PasswordKeyMixin):
+    email: str = Field(min_length=3, max_length=128)
+    token: str = Field(min_length=16, max_length=256)
+    password: str = Field(min_length=1, max_length=512)
 
 
 class RegisterResponse(ApiSchema):

@@ -1,70 +1,173 @@
 <script setup lang="ts">
-import type { FormInst, FormRules } from 'naive-ui'
+import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
+import { authApi } from '@/api'
+import CaptchaInput from '@/components/common/CaptchaInput.vue'
+import { encryptPasswords } from '@/utils/security'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import AuthLayout from './AuthLayout.vue'
 
+const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
+const captchaRef = ref<InstanceType<typeof CaptchaInput> | null>(null)
 const loading = ref(false)
 
 const form = reactive({
-  account: '',
+  email: typeof route.query.email === 'string' ? route.query.email : '',
+  token: typeof route.query.token === 'string' ? route.query.token : '',
+  password: '',
+  confirmPassword: '',
+  captcha_id: '',
+  captcha_value: '',
 })
 
+const isResetMode = computed(() => Boolean(form.token))
+
+function validateConfirmPassword(_rule: FormItemRule, value: string) {
+  if (!value) {
+    return new Error('Please confirm password')
+  }
+  if (value !== form.password) {
+    return new Error('The two passwords do not match')
+  }
+  return true
+}
+
 const rules = computed<FormRules>(() => ({
-  account: [
+  email: [
     {
       required: true,
-      message: t('auth.account_required'),
+      message: 'Please enter login email',
+      trigger: ['input', 'blur'],
+    },
+  ],
+  password: [
+    {
+      required: isResetMode.value,
+      message: 'Please enter new password',
+      trigger: ['input', 'blur'],
+    },
+    {
+      min: 8,
+      message: 'Password must be at least 8 characters',
+      trigger: ['input', 'blur'],
+    },
+  ],
+  confirmPassword: [
+    {
+      required: isResetMode.value,
+      validator: isResetMode.value ? validateConfirmPassword : undefined,
+      trigger: ['input', 'blur'],
+    },
+  ],
+  captcha_value: [
+    {
+      required: true,
+      message: 'Please enter captcha',
       trigger: ['input', 'blur'],
     },
   ],
 }))
 
-async function handleSubmit() {
+async function sendLink() {
+  if (!form.email.trim()) {
+    window.$message.warning('Please enter login email')
+    return
+  }
+  if (!form.captcha_value.trim()) {
+    window.$message.warning('Please enter captcha')
+    return
+  }
+  loading.value = true
+  try {
+    await authApi.forgotPassword({
+      email: form.email.trim(),
+      captcha_id: form.captcha_id,
+      captcha_value: form.captcha_value,
+    })
+    window.$message.success('Password reset link sent')
+    await captchaRef.value?.refresh()
+  } catch {
+    await captchaRef.value?.refresh()
+  } finally {
+    loading.value = false
+  }
+}
+
+async function resetPassword() {
   try {
     await formRef.value?.validate()
   } catch {
     return
   }
-
   loading.value = true
-  window.setTimeout(() => {
+  try {
+    const encrypted = await encryptPasswords({ password: form.password })
+    await authApi.resetPassword({
+      email: form.email.trim(),
+      token: form.token,
+      password: encrypted.values.password,
+      password_key_id: encrypted.password_key_id,
+      captcha_id: form.captcha_id,
+      captcha_value: form.captcha_value,
+    })
+    window.$message.success('Password reset. Please sign in again')
+    router.push('/auth/login')
+  } catch {
+    await captchaRef.value?.refresh()
+  } finally {
     loading.value = false
-    window.$message.success(t('auth.reset_guide_sent'))
-    router.push('/auth/reset-password')
-  }, 500)
+  }
 }
 </script>
 
 <template>
-  <AuthLayout :title="t('auth.forgot_title')" :subtitle="t('auth.forgot_subtitle')">
+  <AuthLayout :title="isResetMode ? 'Reset Admin Password' : 'Recover Admin Password'" :subtitle="isResetMode ? 'Set a new password from your email reset link.' : 'Send a password reset link to your enabled admin login email.'">
     <n-alert class="auth-alert" type="info" :bordered="false">
-      {{ t('auth.forgot_hint') }}
+      {{ isResetMode ? 'This reset link can be used once before it expires.' : 'A reset link will be sent only when this email is enabled for admin login.' }}
     </n-alert>
 
-    <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
-      <n-form-item path="account" :label="t('auth.account')">
-        <n-input
-          v-model:value="form.account"
-          :placeholder="t('auth.placeholder.account')"
-          clearable
-        >
+    <n-form ref="formRef" :model="form" :rules="rules" size="large">
+      <n-form-item path="email" :label="'Login Email'">
+        <n-input v-model:value="form.email" :disabled="isResetMode" clearable>
           <template #prefix>
             <NovaIcon icon="icon-park-outline:mail" />
           </template>
         </n-input>
       </n-form-item>
 
-      <n-button type="primary" size="large" block attr-type="submit" :loading="loading">
-        {{ t('auth.send_reset_guide') }}
+      <template v-if="isResetMode">
+        <n-form-item path="password" :label="'New Password'">
+          <n-input v-model:value="form.password" type="password" show-password-on="click" />
+        </n-form-item>
+        <n-form-item path="confirmPassword" :label="'Confirm Password'">
+          <n-input v-model:value="form.confirmPassword" type="password" show-password-on="click" />
+        </n-form-item>
+      </template>
+
+      <n-form-item path="captcha_value" :label="'Captcha'">
+        <CaptchaInput
+          ref="captchaRef"
+          v-model:captcha-id="form.captcha_id"
+          v-model:captcha-value="form.captcha_value"
+        />
+      </n-form-item>
+
+      <n-button
+        type="primary"
+        size="large"
+        block
+        :loading="loading"
+        @click="isResetMode ? resetPassword() : sendLink()"
+      >
+        {{ isResetMode ? 'Reset Password' : 'Send Reset Link' }}
       </n-button>
 
       <div class="auth-links">
-        <RouterLink to="/auth/login">{{ t('auth.back_to_login') }}</RouterLink>
-        <RouterLink to="/auth/reset-password">{{ t('auth.have_reset_code') }}</RouterLink>
+        <RouterLink to="/auth/login">{{ 'Back to sign in' }}</RouterLink>
+        <n-button v-if="isResetMode" text type="primary" @click="sendLink">
+          {{ 'Send a new link' }}
+        </n-button>
       </div>
     </n-form>
   </AuthLayout>
@@ -87,12 +190,5 @@ async function handleSubmit() {
 .auth-links a {
   color: var(--n-primary-color, #2563eb);
   text-decoration: none;
-}
-
-@media (max-width: 420px) {
-  .auth-links {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 }
 </style>

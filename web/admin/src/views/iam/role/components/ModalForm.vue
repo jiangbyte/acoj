@@ -3,13 +3,11 @@ import type { FormInst, FormRules } from 'naive-ui'
 import { roleApi } from '@/api'
 import { createRequiredRule, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
 const defaultFormData = {
   code: '',
@@ -32,15 +30,15 @@ const state = reactive({
 })
 
 const modalTitle = computed(() =>
-  state.dataId ? t('resource.iam.role.edit_role') : t('resource.iam.role.add_role'),
+  state.dataId ? 'Edit Role' : 'Add Role',
 )
 
 const rules = computed<FormRules>(() => ({
-  code: createRequiredRule(t, t('resource.iam.role.code'), 'input'),
-  name: createRequiredRule(t, t('resource.iam.role.name'), 'input'),
-  category: createRequiredRule(t, t('resource.iam.role.category'), 'change'),
-  scope_type: createRequiredRule(t, t('resource.iam.role.scope_type'), 'change'),
-  status: createRequiredRule(t, t('common.often.status'), 'change'),
+  code: createRequiredRule('Role Code', 'input'),
+  name: createRequiredRule('Role Name', 'input'),
+  category: createRequiredRule('Role Category', 'change'),
+  scope_type: createRequiredRule('Scope Type', 'change'),
+  status: createRequiredRule('Status', 'change'),
 }))
 
 async function openModal(id?: string) {
@@ -92,10 +90,10 @@ async function submitForm() {
         ...payload,
         id: state.dataId,
       })
-      window.$message.success(t('common.often.update_success'))
+      window.$message.success('Updated successfully')
     } else {
       await roleApi.create(payload)
-      window.$message.success(t('common.often.create_success'))
+      window.$message.success('Created successfully')
     }
 
     closeModal()
@@ -130,31 +128,31 @@ defineExpose({
           label-width="110"
           :disabled="state.loading || state.submitLoading"
         >
-          <NFormItem :label="t('resource.iam.role.code')" path="code">
+          <NFormItem :label="'Role Code'" path="code">
             <NInput v-model:value="state.formModel.code" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.role.name')" path="name">
+          <NFormItem :label="'Role Name'" path="name">
             <NInput v-model:value="state.formModel.name" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.role.category')" path="category">
+          <NFormItem :label="'Role Category'" path="category">
             <DictSelect v-model="state.formModel.category" dict-code="SYS_BIZ_CATEGORY" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.role.scope_type')" path="scope_type">
+          <NFormItem :label="'Scope Type'" path="scope_type">
             <DictSelect v-model="state.formModel.scope_type" dict-code="ROLE_SCOPE_TYPE" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.role.owner_dept_id')" path="owner_dept_id">
+          <NFormItem :label="'Owner Department ID'" path="owner_dept_id">
             <NInput v-model:value="state.formModel.owner_dept_id" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.role.sort')" path="sort">
+          <NFormItem :label="'Sort'" path="sort">
             <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.role.is_builtin')" path="is_builtin">
+          <NFormItem :label="'Builtin Role'" path="is_builtin">
             <NSwitch v-model:value="state.formModel.is_builtin" />
           </NFormItem>
-          <NFormItem :label="t('common.often.status')" path="status">
+          <NFormItem :label="'Status'" path="status">
             <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.role.description')" path="description">
+          <NFormItem :label="'Description'" path="description">
             <NInput
               v-model:value="state.formModel.description"
               type="textarea"
@@ -168,10 +166,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ t('common.cancel') }}
+          {{ 'Cancel' }}
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ t('common.confirm') }}
+          {{ 'Confirm' }}
         </NButton>
       </NSpace>
     </template>

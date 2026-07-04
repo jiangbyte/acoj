@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import { messageApi } from '@/api'
 
 const router = useRouter()
-const { t } = useI18n()
 
 const notificationUnread = ref(0)
 const messageUnread = ref(0)
@@ -77,6 +75,6 @@ function openMessages() {
         </n-badge>
       </CommonWrapper>
     </template>
-    {{ t('app.notifications_tips') }}
+    {{ 'Notifications' }}
   </n-tooltip>
 </template>

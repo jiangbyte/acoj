@@ -4,13 +4,11 @@ import { roleApi } from '@/api'
 import { renderButtonIcon, resolveFileUrl } from '@/utils'
 import { NAvatar, NButton } from 'naive-ui'
 import { computed, reactive } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 const state = reactive({
   showModal: false,
@@ -34,8 +32,8 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.subject?.name
-    ? `${state.title || t('resource.iam.role.grant_user')} - ${state.subject.name}`
-    : state.title || t('resource.iam.role.grant_user'),
+    ? `${state.title || 'Grant Users'} - ${state.subject.name}`
+    : state.title || 'Grant Users',
 )
 const filteredUsers = computed(() => {
   const keyword = state.searchKey.trim().toLowerCase()
@@ -56,13 +54,13 @@ const tableUsers = computed(() => {
 const selectedIds = computed(() => new Set(state.selectedData.map((item) => String(item.id))))
 const secondaryTitle = computed(() =>
   state.searchFields.includes('code')
-    ? t('resource.iam.role.code')
-    : t('resource.iam.account.account'),
+    ? 'Role Code'
+    : 'Account',
 )
 
 const userColumns = computed<DataTableColumns<any>>(() => [
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'action',
     align: 'center',
     width: 56,
@@ -79,7 +77,7 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('resource.iam.account.avatar'),
+    title: 'Avatar',
     key: 'avatar',
     width: 56,
     render: (row) => {
@@ -91,7 +89,7 @@ const userColumns = computed<DataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.account.name'),
+    title: 'Name',
     key: 'name',
     minWidth: 120,
     ellipsis: {
@@ -110,7 +108,7 @@ const userColumns = computed<DataTableColumns<any>>(() => [
 ])
 const selectedColumns = computed<DataTableColumns<any>>(() => [
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'action',
     align: 'center',
     width: 70,
@@ -121,7 +119,7 @@ const selectedColumns = computed<DataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('resource.iam.account.name'),
+    title: 'Name',
     key: 'name',
     minWidth: 120,
     ellipsis: {
@@ -171,7 +169,7 @@ async function submitGrant() {
       id: state.subject.id,
       [state.submitKey]: state.selectedData.map((item) => item.id),
     })
-    window.$message.success(t('resource.iam.role.grant_success'))
+    window.$message.success('Grant saved successfully')
     closeModal()
     emit('saved')
   } finally {
@@ -230,23 +228,23 @@ defineExpose({
               <NInput
                 v-model:value="state.searchKey"
                 clearable
-                :placeholder="t('resource.iam.role.placeholder.user_search')"
+                :placeholder="'Enter username'"
                 @keyup.enter="state.page = 1"
                 @clear="resetSearch"
               />
               <NButton type="primary" @click="state.page = 1">
-                {{ t('resource.iam.role.search') }}
+                {{ 'Search' }}
               </NButton>
               <NButton @click="resetSearch">
-                {{ t('common.reset') }}
+                {{ 'Reset' }}
               </NButton>
             </NInputGroup>
             <NFlex justify="space-between" align="center">
               <NText>
-                {{ t('resource.iam.role.pending_user_count', { count: filteredUsers.length }) }}
+                {{ `Pending list: ${filteredUsers.length}` }}
               </NText>
               <NButton dashed size="small" @click="addAllPageRecord">
-                {{ t('resource.iam.role.add_current_page') }}
+                {{ 'Add Current Page' }}
               </NButton>
             </NFlex>
             <NDataTable
@@ -273,10 +271,10 @@ defineExpose({
           <NSpace vertical>
             <NFlex justify="space-between" align="center">
               <NText>{{
-                t('resource.iam.role.selected_user_count', { count: state.selectedData.length })
+                `Selected: ${state.selectedData.length}`
               }}</NText>
               <NButton dashed type="error" size="small" @click="delAllRecord">
-                {{ t('resource.iam.role.remove_all') }}
+                {{ 'Remove All' }}
               </NButton>
             </NFlex>
             <NDataTable
@@ -295,10 +293,10 @@ defineExpose({
       <template #footer>
         <NSpace justify="end" align="center">
           <NButton @click="closeModal">
-            {{ t('common.close') }}
+            {{ 'Close' }}
           </NButton>
           <NButton type="primary" :loading="state.submitLoading" @click="submitGrant">
-            {{ t('common.save') }}
+            {{ 'Save' }}
           </NButton>
         </NSpace>
       </template>

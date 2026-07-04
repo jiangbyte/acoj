@@ -3,9 +3,7 @@ import { roleApi } from '@/api'
 import { createTagColor, displayValue } from '@/utils'
 import { reactive } from 'vue'
 import { dictTypeData, dictTypeColor } from '@/utils/dict'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const state = reactive({
   showModal: false,
   loading: false,
@@ -39,43 +37,43 @@ defineExpose({
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('resource.iam.role.detail_role')"
+    :title="'Role Detail'"
     style="width: 680px"
   >
     <NScrollbar class="max-h-[min(640px,calc(100vh-300px))] pr-16px">
       <NSpin :show="state.loading">
         <NDescriptions label-placement="left" bordered :column="1">
-          <NDescriptionsItem :label="t('resource.iam.role.id')">
+          <NDescriptionsItem :label="'Role ID'">
             {{ displayValue(state.role.id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.role.code')">
+          <NDescriptionsItem :label="'Role Code'">
             {{ displayValue(state.role.code) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.role.name')">
+          <NDescriptionsItem :label="'Role Name'">
             {{ displayValue(state.role.name) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.role.category')">
+          <NDescriptionsItem :label="'Role Category'">
             {{
               dictTypeData('SYS_BIZ_CATEGORY', state.role.category) ||
               displayValue(state.role.category)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.role.scope_type')">
+          <NDescriptionsItem :label="'Scope Type'">
             {{
               dictTypeData('ROLE_SCOPE_TYPE', state.role.scope_type) ||
               displayValue(state.role.scope_type)
             }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.role.owner_dept_id')">
+          <NDescriptionsItem :label="'Owner Department ID'">
             {{ displayValue(state.role.owner_dept_id) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.role.sort')">
+          <NDescriptionsItem :label="'Sort'">
             {{ displayValue(state.role.sort) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.role.is_builtin')">
-            {{ state.role.is_builtin ? t('resource.iam.role.yes') : t('resource.iam.role.no') }}
+          <NDescriptionsItem :label="'Builtin Role'">
+            {{ state.role.is_builtin ? 'Yes' : 'No' }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.status')">
+          <NDescriptionsItem :label="'Status'">
             <NTag
               :color="createTagColor(dictTypeColor('COMMON_STATUS', state.role.status))"
               :bordered="false"
@@ -85,19 +83,19 @@ defineExpose({
               }}
             </NTag>
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('resource.iam.role.description')">
+          <NDescriptionsItem :label="'Description'">
             {{ displayValue(state.role.description) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.created_at')">
+          <NDescriptionsItem :label="'Created At'">
             {{ displayValue(state.role.created_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.created_by')">
+          <NDescriptionsItem :label="'Created By'">
             {{ displayValue(state.role.created_by) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updated_at')">
+          <NDescriptionsItem :label="'Updated At'">
             {{ displayValue(state.role.updated_at) }}
           </NDescriptionsItem>
-          <NDescriptionsItem :label="t('common.often.updated_by')">
+          <NDescriptionsItem :label="'Updated By'">
             {{ displayValue(state.role.updated_by) }}
           </NDescriptionsItem>
         </NDescriptions>

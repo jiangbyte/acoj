@@ -143,11 +143,14 @@ class PortalUserProfileService:
         account = await self.account_repo.get_required(session.account_id)
         self._ensure_password(account.password_hash, payload.password)
         profile = await self.repo.get_by_account_id(session.account_id)
+        if payload.phone_login_enabled and not str(payload.phone or "").strip():
+            raise BusinessError("Phone login requires a phone")
         async with transactional(self.db):
             await self.account_repo.upsert_account_identity(
                 session.account_id,
                 AccountIdentityType.PHONE,
                 payload.phone,
+                enabled=payload.phone_login_enabled,
             )
             await self.repo.upsert(
                 PortalProfileUpsertPayload(
@@ -171,11 +174,14 @@ class PortalUserProfileService:
         account = await self.account_repo.get_required(session.account_id)
         self._ensure_password(account.password_hash, payload.password)
         profile = await self.repo.get_by_account_id(session.account_id)
+        if payload.email_login_enabled and not str(payload.email or "").strip():
+            raise BusinessError("Email login requires an email")
         async with transactional(self.db):
             await self.account_repo.upsert_account_identity(
                 session.account_id,
                 AccountIdentityType.EMAIL,
                 payload.email,
+                enabled=payload.email_login_enabled,
             )
             await self.repo.upsert(
                 PortalProfileUpsertPayload(

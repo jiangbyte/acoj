@@ -4,13 +4,11 @@ import FileUpload from '@/components/upload/FileUpload.vue'
 import { messageApi } from '@/api'
 import { createRequiredRule } from '@/utils'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
 const state = reactive({
   showModal: false,
@@ -23,7 +21,7 @@ const state = reactive({
 })
 
 const rules = computed<FormRules>(() => ({
-  content: createRequiredRule(t, t('resource.message.message.content'), 'input'),
+  content: createRequiredRule('Content', 'input'),
 }))
 
 function openModal(threadId: string) {
@@ -48,7 +46,7 @@ async function submitForm() {
       sender_name: 'System',
       attachments: state.formModel.attachments,
     })
-    window.$message.success(t('resource.message.message.send_success'))
+    window.$message.success('Sent successfully')
     closeModal()
     emit('saved')
   } finally {
@@ -82,7 +80,7 @@ function removeAttachment(index: number) {
     preset="card"
     draggable
     :mask-closable="false"
-    :title="t('resource.message.message.send_system')"
+    :title="'Send System Message'"
     style="width: 640px"
     :segmented="{ content: true, action: true }"
   >
@@ -94,17 +92,17 @@ function removeAttachment(index: number) {
       label-width="100"
       :disabled="state.submitLoading"
     >
-      <NFormItem :label="t('resource.message.message.thread_id')" path="thread_id">
+      <NFormItem :label="'Thread ID'" path="thread_id">
         <NInput v-model:value="state.formModel.thread_id" disabled />
       </NFormItem>
-      <NFormItem :label="t('resource.message.message.content')" path="content">
+      <NFormItem :label="'Content'" path="content">
         <NInput
           v-model:value="state.formModel.content"
           type="textarea"
           :autosize="{ minRows: 4, maxRows: 8 }"
         />
       </NFormItem>
-      <NFormItem :label="t('resource.message.message.attachments')">
+      <NFormItem :label="'Attachments'">
         <NFlex vertical class="w-full">
           <FileUpload compact @uploaded="appendAttachment" />
           <NList v-if="state.formModel.attachments.length" bordered>
@@ -112,7 +110,7 @@ function removeAttachment(index: number) {
               <NThing :title="item.name" :description="item.content_type || undefined">
                 <template #header-extra>
                   <NButton size="small" text type="error" @click="removeAttachment(index)">
-                    {{ t('common.often.delete') }}
+                    {{ 'Delete' }}
                   </NButton>
                 </template>
               </NThing>
@@ -124,9 +122,9 @@ function removeAttachment(index: number) {
 
     <template #action>
       <NSpace justify="end" align="center">
-        <NButton @click="closeModal">{{ t('common.cancel') }}</NButton>
+        <NButton @click="closeModal">{{ 'Cancel' }}</NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ t('common.confirm') }}
+          {{ 'Confirm' }}
         </NButton>
       </NSpace>
     </template>

@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { authApi } from '@/api'
 import { useAuthStore } from '@/stores'
 import { resolveFileUrl } from '@/utils'
+import { encryptPasswords } from '@/utils/security'
 import AvatarUploadModal from './components/AvatarUploadModal.vue'
 
-const { t } = useI18n()
 const authStore = useAuthStore()
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
@@ -33,9 +32,11 @@ const state = reactive({
   },
   phoneForm: {
     phone: '',
+    phone_login_enabled: false,
   },
   emailForm: {
     email: '',
+    email_login_enabled: false,
   },
   bindConfirm: {
     show: false,
@@ -47,15 +48,15 @@ const state = reactive({
 
 const profile = computed(() => state.me?.profile ?? {})
 const avatarUrl = computed(() => resolveFileUrl(state.profileForm.avatar))
-const displayName = computed(() => state.me?.nickname || state.me?.name || state.me?.account || '-')
+const displayName = computed(() => state.me?.nickname || '-')
 const contactText = computed(() => {
   const parts = [profile.value.phone, profile.value.email].filter(Boolean)
-  return parts.length ? parts.join(' / ') : t('app.user_center.empty_value')
+  return parts.length ? parts.join(' / ') : 'Not set'
 })
 const bindConfirmTitle = computed(() =>
   state.bindConfirm.type === 'phone'
-    ? t('app.user_center.confirm_phone_title')
-    : t('app.user_center.confirm_email_title'),
+    ? 'Confirm Phone Update'
+    : 'Confirm Email Update',
 )
 
 onMounted(async () => {
@@ -82,19 +83,21 @@ function syncForms(data: any) {
   state.profileForm.bio = currentProfile.bio ?? ''
   state.phoneForm.phone = currentProfile.phone ?? ''
   state.emailForm.email = currentProfile.email ?? ''
+  state.phoneForm.phone_login_enabled = Boolean(currentProfile.phone_login_enabled)
+  state.emailForm.email_login_enabled = Boolean(currentProfile.email_login_enabled)
 }
 
 async function saveProfile() {
   state.savingProfile = true
   try {
     await authApi.updateUserCenterProfile({
-      name: state.profileForm.name,
+      name: state.profileForm.name || null,
       nickname: state.profileForm.nickname || null,
       signature: state.profileForm.signature || null,
       bio: state.profileForm.bio || null,
     })
     await refreshMe()
-    window.$message.success(t('app.user_center.save_success'))
+    window.$message.success('Saved')
   } finally {
     state.savingProfile = false
   }
@@ -102,19 +105,24 @@ async function saveProfile() {
 
 async function savePassword() {
   if (state.passwordForm.new_password !== state.passwordForm.confirm_password) {
-    window.$message.warning(t('app.user_center.password_not_match'))
+    window.$message.warning('The new passwords do not match')
     return
   }
   state.savingPassword = true
   try {
-    await authApi.updateUserCenterPassword({
+    const encrypted = await encryptPasswords({
       old_password: state.passwordForm.old_password,
       new_password: state.passwordForm.new_password,
+    })
+    await authApi.updateUserCenterPassword({
+      old_password: encrypted.values.old_password,
+      new_password: encrypted.values.new_password,
+      password_key_id: encrypted.password_key_id,
     })
     state.passwordForm.old_password = ''
     state.passwordForm.new_password = ''
     state.passwordForm.confirm_password = ''
-    window.$message.success(t('app.user_center.password_success'))
+    window.$message.success('Password updated')
   } finally {
     state.savingPassword = false
   }
@@ -136,7 +144,7 @@ function openBindConfirm(type: 'phone' | 'email') {
 
 async function confirmBind() {
   if (!state.bindConfirm.password) {
-    window.$message.warning(t('app.user_center.password_required'))
+    window.$message.warning('Please enter the current password')
     return
   }
   const isPhone = state.bindConfirm.type === 'phone'
@@ -144,21 +152,26 @@ async function confirmBind() {
   state.savingPhone = isPhone
   state.savingEmail = !isPhone
   try {
+    const encrypted = await encryptPasswords({ password: state.bindConfirm.password })
     if (isPhone) {
       await authApi.updateUserCenterPhone({
-        password: state.bindConfirm.password,
+        password: encrypted.values.password,
+        password_key_id: encrypted.password_key_id,
         phone: state.phoneForm.phone || null,
+        phone_login_enabled: state.phoneForm.phone_login_enabled,
       })
     } else {
       await authApi.updateUserCenterEmail({
-        password: state.bindConfirm.password,
+        password: encrypted.values.password,
+        password_key_id: encrypted.password_key_id,
         email: state.emailForm.email || null,
+        email_login_enabled: state.emailForm.email_login_enabled,
       })
     }
     state.bindConfirm.show = false
     state.bindConfirm.password = ''
     await refreshMe()
-    window.$message.success(t('app.user_center.bind_success'))
+    window.$message.success('Binding updated')
   } finally {
     state.bindConfirm.loading = false
     state.savingPhone = false
@@ -173,7 +186,7 @@ async function refreshMe() {
 }
 
 function displayValue(value: unknown) {
-  return value ? String(value) : t('app.user_center.empty_value')
+  return value ? String(value) : 'Not set'
 }
 </script>
 
@@ -199,7 +212,7 @@ function displayValue(value: unknown) {
               <button
                 class="avatar-trigger"
                 type="button"
-                :title="t('app.user_center.change_avatar')"
+                :title="'Change Avatar'"
                 @click="state.avatarModalShow = true"
               >
                 <NAvatar
@@ -224,10 +237,10 @@ function displayValue(value: unknown) {
             <NDivider />
 
             <NDescriptions :column="1" label-placement="left" size="small">
-              <NDescriptionsItem :label="t('app.user_center.contact')">
+              <NDescriptionsItem :label="'Contact'">
                 {{ contactText }}
               </NDescriptionsItem>
-              <NDescriptionsItem :label="t('app.user_center.level')">
+              <NDescriptionsItem :label="'Level'">
                 {{ displayValue(profile.level) }}
               </NDescriptionsItem>
             </NDescriptions>
@@ -235,7 +248,7 @@ function displayValue(value: unknown) {
             <NDivider />
 
             <div class="text-sm font-medium">
-              {{ t('app.user_center.signature') }}
+              {{ 'Signature' }}
             </div>
             <div
               class="mt-2 min-h-18 rounded border border-[var(--border-color)] p-3 text-sm text-[var(--text-color-3)]"
@@ -243,7 +256,7 @@ function displayValue(value: unknown) {
               {{ displayValue(profile.signature) }}
             </div>
             <div class="mt-4 text-sm font-medium">
-              {{ t('app.user_center.bio') }}
+              {{ 'Bio' }}
             </div>
             <div
               class="mt-2 min-h-22 rounded border border-[var(--border-color)] p-3 text-sm text-[var(--text-color-3)]"
@@ -266,48 +279,48 @@ function displayValue(value: unknown) {
               animated
               class="user-center-tabs w-full min-w-0"
             >
-              <NTabPane name="basic_info" :tab="t('app.user_center.basic_info')">
+              <NTabPane name="basic_info" :tab="'Basic Info'">
                 <NForm class="user-center-form w-full min-w-0" label-placement="top">
-                  <NFormItem :label="t('app.user_center.account')">
+                  <NFormItem :label="'Account'">
                     <NInput :value="state.me?.account" disabled />
                   </NFormItem>
-                  <NFormItem :label="t('app.user_center.name')" required>
+                  <NFormItem :label="'Name'">
                     <NInput v-model:value="state.profileForm.name" />
                   </NFormItem>
-                  <NFormItem :label="t('app.user_center.nickname')">
+                  <NFormItem :label="'Nickname'">
                     <NInput v-model:value="state.profileForm.nickname" />
                   </NFormItem>
-                  <NFormItem :label="t('app.user_center.signature')">
+                  <NFormItem :label="'Signature'">
                     <NInput v-model:value="state.profileForm.signature" type="textarea" />
                   </NFormItem>
-                  <NFormItem :label="t('app.user_center.bio')">
+                  <NFormItem :label="'Bio'">
                     <NInput v-model:value="state.profileForm.bio" type="textarea" />
                   </NFormItem>
                   <NFormItem :show-label="false">
                     <NButton type="primary" :loading="state.savingProfile" @click="saveProfile">
-                      {{ t('common.save') }}
+                      {{ 'Save' }}
                     </NButton>
                   </NFormItem>
                 </NForm>
               </NTabPane>
 
-              <NTabPane name="password" :tab="t('app.user_center.password')">
+              <NTabPane name="password" :tab="'Password'">
                 <NForm class="user-center-form w-full min-w-0" label-placement="top">
-                  <NFormItem :label="t('app.user_center.old_password')">
+                  <NFormItem :label="'Old Password'">
                     <NInput
                       v-model:value="state.passwordForm.old_password"
                       type="password"
                       show-password-on="click"
                     />
                   </NFormItem>
-                  <NFormItem :label="t('app.user_center.new_password')">
+                  <NFormItem :label="'New Password'">
                     <NInput
                       v-model:value="state.passwordForm.new_password"
                       type="password"
                       show-password-on="click"
                     />
                   </NFormItem>
-                  <NFormItem :label="t('app.user_center.confirm_password')">
+                  <NFormItem :label="'Confirm Password'">
                     <NInput
                       v-model:value="state.passwordForm.confirm_password"
                       type="password"
@@ -316,33 +329,39 @@ function displayValue(value: unknown) {
                   </NFormItem>
                   <NFormItem :show-label="false">
                     <NButton type="primary" :loading="state.savingPassword" @click="savePassword">
-                      {{ t('app.user_center.update_password') }}
+                      {{ 'Update Password' }}
                     </NButton>
                   </NFormItem>
                 </NForm>
               </NTabPane>
 
-              <NTabPane name="phone" :tab="t('app.user_center.phone')">
+              <NTabPane name="phone" :tab="'Phone'">
                 <NForm class="user-center-form w-full min-w-0" label-placement="top">
-                  <NFormItem :label="t('app.user_center.phone')">
+                  <NFormItem :label="'Phone'">
                     <NInput v-model:value="state.phoneForm.phone" />
+                  </NFormItem>
+                  <NFormItem :label="'Enable Phone Login'">
+                    <NSwitch v-model:value="state.phoneForm.phone_login_enabled" />
                   </NFormItem>
                   <NFormItem :show-label="false">
                     <NButton type="primary" :loading="state.savingPhone" @click="savePhone">
-                      {{ t('app.user_center.update_phone') }}
+                      {{ 'Update Phone' }}
                     </NButton>
                   </NFormItem>
                 </NForm>
               </NTabPane>
 
-              <NTabPane name="email" :tab="t('app.user_center.email')">
+              <NTabPane name="email" :tab="'Email'">
                 <NForm class="user-center-form w-full min-w-0" label-placement="top">
-                  <NFormItem :label="t('app.user_center.email')">
+                  <NFormItem :label="'Email'">
                     <NInput v-model:value="state.emailForm.email" />
+                  </NFormItem>
+                  <NFormItem :label="'Enable Email Login'">
+                    <NSwitch v-model:value="state.emailForm.email_login_enabled" />
                   </NFormItem>
                   <NFormItem :show-label="false">
                     <NButton type="primary" :loading="state.savingEmail" @click="saveEmail">
-                      {{ t('app.user_center.update_email') }}
+                      {{ 'Update Email' }}
                     </NButton>
                   </NFormItem>
                 </NForm>
@@ -362,12 +381,12 @@ function displayValue(value: unknown) {
       :mask-closable="false"
     >
       <NForm label-placement="top">
-        <NFormItem :label="t('app.user_center.current_password')">
+        <NFormItem :label="'Current Password'">
           <NInput
             v-model:value="state.bindConfirm.password"
             type="password"
             show-password-on="click"
-            :placeholder="t('app.user_center.placeholder.current_password')"
+            :placeholder="'Enter current password'"
             @keydown.enter="confirmBind"
           />
         </NFormItem>
@@ -375,10 +394,10 @@ function displayValue(value: unknown) {
       <template #footer>
         <NSpace justify="end">
           <NButton @click="state.bindConfirm.show = false">
-            {{ t('common.cancel') }}
+            {{ 'Cancel' }}
           </NButton>
           <NButton type="primary" :loading="state.bindConfirm.loading" @click="confirmBind">
-            {{ t('common.confirm') }}
+            {{ 'Confirm' }}
           </NButton>
         </NSpace>
       </template>

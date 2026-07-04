@@ -32,22 +32,10 @@ export const routes: RouteRecordRaw[] = [
     meta: { name: 'Login' },
   },
   {
-    path: '/auth/register',
-    name: 'auth-register',
-    component: () => import('@/views/auth/Register.vue'),
-    meta: { name: 'Register' },
-  },
-  {
     path: '/auth/forgot-password',
     name: 'auth-forgot-password',
     component: () => import('@/views/auth/ForgotPassword.vue'),
     meta: { name: 'Forgot Password' },
-  },
-  {
-    path: '/auth/reset-password',
-    name: 'auth-reset-password',
-    component: () => import('@/views/auth/ResetPassword.vue'),
-    meta: { name: 'Reset Password' },
   },
   {
     // 兜底路由必须放在最后。动态路由注册完成后，守卫会重新匹配原始目标地址。

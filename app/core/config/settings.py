@@ -52,6 +52,22 @@ class AuthSettings(BaseSettings):
     login_account_max_failures: int = 5
     login_ip_max_failures: int = 30
     login_lock_seconds: int = 15 * 60
+    password_reset_token_ttl_seconds: int = 10 * 60
+    captcha_ttl_seconds: int = 5 * 60
+    password_crypto_key_ttl_seconds: int = 10 * 60
+
+
+class MailSettings(BaseSettings):
+    host: str = ""
+    port: int = 587
+    username: str = ""
+    password: str = ""
+    from_email: str = ""
+    from_name: str = "hei-fastapi"
+    use_tls: bool = True
+    timeout_seconds: float = 10.0
+    admin_password_reset_url: str = "http://localhost:5173/auth/forgot-password"
+    portal_password_reset_url: str = "http://localhost:5174/auth/reset-password"
 
 
 class CorsSettings(BaseSettings):
@@ -180,6 +196,7 @@ class Settings(BaseSettings):
     audit: AuditSettings = Field(default_factory=AuditSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
     auth: AuthSettings = Field(default_factory=AuthSettings)
+    mail: MailSettings = Field(default_factory=MailSettings)
     cors: CorsSettings = Field(default_factory=CorsSettings)
     celery: CelerySettings = Field(default_factory=CelerySettings)
     mq: MQSettings = Field(default_factory=MQSettings)

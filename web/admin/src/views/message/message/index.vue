@@ -8,12 +8,10 @@ import { dictList, dictTypeColor, dictTypeData } from '@/utils/dict'
 import { NButton, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 import ModalGroupForm from './components/ModalGroupForm.vue'
 
-const { t } = useI18n()
 const activeTab = ref<'threads' | 'groups'>('threads')
 const formModalRef = ref<any>(null)
 const groupFormModalRef = ref<any>(null)
@@ -47,12 +45,12 @@ const availableTabs = computed(() =>
   [
     {
       name: 'threads',
-      tab: t('resource.message.message.threads'),
+      tab: 'Threads',
       permission: 'message:thread:page',
     },
     {
       name: 'groups',
-      tab: t('resource.message.message.groups'),
+      tab: 'Groups',
       permission: 'message:group:page',
     },
   ].filter((item) => hasPermission(item.permission)),
@@ -62,7 +60,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() =>
   activeTab.value === 'threads'
     ? [
         {
-          title: t('resource.message.message.thread_type'),
+          title: 'Thread Type',
           path: 'thread_type',
           field: 'select',
           fieldProps: {
@@ -72,12 +70,12 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() =>
       ]
     : [
         {
-          title: t('resource.message.message.group_name'),
+          title: 'Group Name',
           path: 'name',
           field: 'input',
         },
         {
-          title: t('common.often.status'),
+          title: 'Status',
           path: 'status',
           field: 'select',
           fieldProps: {
@@ -93,7 +91,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => t('common.often.total', { count: itemCount }),
+  prefix: ({ itemCount }) => `${itemCount} total`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -107,20 +105,20 @@ const pagination = computed<PaginationProps>(() => ({
 
 const threadColumns = computed<ProDataTableColumns<any>>(() => [
   {
-    title: t('common.often.index'),
+    title: 'ID',
     width: 100,
     path: 'id',
     ellipsis: { tooltip: true },
   },
   {
-    title: t('resource.message.message.thread_title'),
+    title: 'Thread Title',
     path: 'title',
     width: 220,
     ellipsis: { tooltip: true },
     render: (row) => row.title || '-',
   },
   {
-    title: t('resource.message.message.thread_type'),
+    title: 'Thread Type',
     path: 'thread_type',
     width: 130,
     render: (row) => (
@@ -133,26 +131,26 @@ const threadColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('resource.message.message.group_id'),
+    title: 'Group ID',
     path: 'group_id',
     width: 160,
     ellipsis: { tooltip: true },
     render: (row) => row.group_id || '-',
   },
   {
-    title: t('resource.message.message.last_message_at'),
+    title: 'Last Message At',
     path: 'last_message_at',
     width: 190,
     ellipsis: { tooltip: true },
   },
   {
-    title: t('common.often.updated_at'),
+    title: 'Updated At',
     path: 'updated_at',
     width: 190,
     ellipsis: { tooltip: true },
   },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 95,
     fixed: 'right',
@@ -175,31 +173,31 @@ const threadColumns = computed<ProDataTableColumns<any>>(() => [
 
 const groupColumns = computed<ProDataTableColumns<any>>(() => [
   {
-    title: t('common.often.index'),
+    title: 'ID',
     width: 60,
     path: 'id',
     ellipsis: { tooltip: true },
   },
   {
-    title: t('resource.message.message.group_name'),
+    title: 'Group Name',
     path: 'name',
     width: 220,
     ellipsis: { tooltip: true },
   },
   {
-    title: t('resource.message.message.group_avatar'),
+    title: 'Group Avatar',
     path: 'avatar',
     width: 120,
     ellipsis: { tooltip: true },
     render: (row) => row.avatar || '-',
   },
   {
-    title: t('resource.message.message.member_count'),
+    title: 'Members',
     path: 'member_count',
     width: 110,
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     width: 120,
     render: (row) => (
@@ -209,13 +207,13 @@ const groupColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updated_at'),
+    title: 'Updated At',
     path: 'updated_at',
     width: 190,
     ellipsis: { tooltip: true },
   },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 140,
     fixed: 'right',
@@ -300,15 +298,15 @@ function openGroupForm(id?: string) {
 
 function confirmDeleteGroup(id: string) {
   window.$dialog.warning({
-    title: t('common.often.delete'),
+    title: 'Delete',
     draggable: true,
     maskClosable: false,
-    content: t('resource.message.message.group_delete_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
+    content: 'Delete this group?',
+    positiveText: 'Confirm',
+    negativeText: 'Cancel',
     onPositiveClick: async () => {
       await messageApi.removeGroup({ ids: [id] })
-      window.$message.success(t('common.often.delete_success'))
+      window.$message.success('Deleted successfully')
       await fetchPage()
     },
   })
@@ -326,12 +324,12 @@ function confirmDeleteGroup(id: string) {
           :key="activeTab"
           :form="searchForm"
           :columns="searchColumns"
-          :reset-button-props="{ content: t('common.search_form.reset') }"
-          :search-button-props="{ content: t('common.search_form.search') }"
+          :reset-button-props="{ content: 'Reset' }"
+          :search-button-props="{ content: 'Search' }"
           :collapse-button-props="{
             content: searchForm.collapsed.value
-              ? t('common.search_form.expand')
-              : t('common.search_form.collapse'),
+              ? 'Expand'
+              : 'Collapse',
           }"
         />
       </NFlex>
@@ -340,7 +338,7 @@ function confirmDeleteGroup(id: string) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('resource.message.message.title')"
+      :title="'Messages'"
       row-key="id"
       :scroll-x="activeTab === 'threads' ? 1150 : 760"
       :columns="tableColumns"
@@ -354,8 +352,8 @@ function confirmDeleteGroup(id: string) {
             v-if="activeTab === 'groups' && hasPermission('message:group:create')"
             type="primary"
             text
-            :title="t('resource.message.message.add_group')"
-            :aria-label="t('resource.message.message.add_group')"
+            :title="'Add Group'"
+            :aria-label="'Add Group'"
             @click="openGroupForm()"
           >
             <template #icon>
@@ -364,7 +362,7 @@ function confirmDeleteGroup(id: string) {
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />

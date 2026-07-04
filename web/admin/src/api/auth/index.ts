@@ -8,8 +8,26 @@ export function login(data: any) {
   })
 }
 
-export function register(data: any) {
-  return http.post<any>(`${authPrefix}/register`, data, {
+export function captcha() {
+  return http.get<any>(`${authPrefix}/captcha`, {
+    addToken: false,
+  })
+}
+
+export function passwordKey() {
+  return http.get<any>(`${authPrefix}/password-key`, {
+    addToken: false,
+  })
+}
+
+export function forgotPassword(data: any) {
+  return http.post<any>(`${authPrefix}/forgot-password`, data, {
+    addToken: false,
+  })
+}
+
+export function resetPassword(data: any) {
+  return http.post<any>(`${authPrefix}/reset-password`, data, {
     addToken: false,
   })
 }

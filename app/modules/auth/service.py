@@ -1,17 +1,22 @@
+import json
+from urllib.parse import urlencode
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountStatusEnum, AccountType
 from app.core.config.settings import settings
-from app.core.exceptions.business import AuthenticationError
+from app.core.exceptions.business import AuthenticationError, BusinessError
 from app.core.security.password import hash_password, verify_password
 from app.core.security.session import SessionPayload, session_store
 from app.core.security.token import generate_token
 from app.modules.auth.protection import login_protection_service
 from app.modules.auth.schema import (
     CancelAccountRequest,
+    ForgotPasswordRequest,
     LoginPayload,
     RegisterRequest,
     RegisterResponse,
+    ResetPasswordRequest,
 )
 from app.modules.auth.session_service import AccountSessionService
 from app.modules.iam.account.model import SysAccount
@@ -19,11 +24,12 @@ from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.account.schema import AccountCancelPayload, AccountCreateRequest
 from app.modules.iam.enums import AccountIdentityType
 from app.modules.sys.audit.service import OperationAuditService
-from app.modules.user.admin.repository import AdminUserProfileRepository
-from app.modules.user.admin.schema import AdminProfileUpsertPayload
 from app.modules.user.portal.repository import PortalUserProfileRepository
 from app.modules.user.portal.schema import PortalProfileUpsertPayload
+from app.platform.cache.keys import password_reset_token_key
+from app.platform.cache.redis import get_redis
 from app.platform.db.transaction import transactional
+from app.platform.email.sender import send_mail
 from app.platform.observability.metrics import record_login_attempt
 
 
@@ -45,11 +51,7 @@ class AuthService:
             )
             account = await self.account_repo.get_account_by_identifier(
                 payload.account,
-                [
-                    AccountIdentityType.ACCOUNT,
-                    AccountIdentityType.EMAIL,
-                    AccountIdentityType.PHONE,
-                ],
+                [payload.identity_type],
             )
             self._validate_account(account, payload.password, payload.account_type)
         except AuthenticationError:
@@ -101,57 +103,6 @@ class AuthService:
         )
         return session_payload
 
-    async def register_admin(self, payload: RegisterRequest) -> RegisterResponse:
-        async with transactional(self.db):
-            account_payload = AccountCreateRequest(
-                account=payload.account,
-                password=payload.password,
-                account_type=AccountType.ADMIN,
-                account_status=AccountStatusEnum.ENABLED,
-                name=payload.name,
-                nickname=payload.nickname,
-                phone=payload.phone,
-                email=payload.email,
-                email_identity=payload.email,
-                phone_identity=payload.phone,
-                email_identity_verified=bool(payload.email),
-                phone_identity_verified=bool(payload.phone),
-            )
-            account = await self.account_repo.create(
-                account_payload,
-                password_hash=hash_password(payload.password),
-            )
-            await AdminUserProfileRepository(self.db).upsert(
-                AdminProfileUpsertPayload(
-                    account_id=account.id,
-                    name=payload.name,
-                    nickname=payload.nickname,
-                    phone=payload.phone,
-                    email=payload.email,
-                    avatar=None,
-                    signature=None,
-                    employee_no=None,
-                    title=None,
-                    remark=None,
-                ),
-            )
-        response = RegisterResponse(
-            account_id=account.id,
-            account=payload.account,
-            account_type=AccountType.ADMIN,
-        )
-        await OperationAuditService(self.db).record(
-            module="auth",
-            action="register",
-            resource_type="account",
-            resource_id=account.id,
-            summary="Admin account registered",
-            success=True,
-            account_id=account.id,
-            account_type=AccountType.ADMIN.value,
-        )
-        return response
-
     async def register_portal(self, payload: RegisterRequest) -> RegisterResponse:
         async with transactional(self.db):
             account_payload = AccountCreateRequest(
@@ -161,12 +112,9 @@ class AuthService:
                 account_status=AccountStatusEnum.ENABLED,
                 name=payload.name,
                 nickname=payload.nickname,
-                phone=payload.phone,
                 email=payload.email,
-                email_identity=payload.email,
-                phone_identity=payload.phone,
+                email_login_enabled=True,
                 email_identity_verified=bool(payload.email),
-                phone_identity_verified=bool(payload.phone),
             )
             account = await self.account_repo.create(
                 account_payload,
@@ -177,7 +125,7 @@ class AuthService:
                     account_id=account.id,
                     name=payload.name,
                     nickname=payload.nickname,
-                    phone=payload.phone,
+                    phone=None,
                     email=payload.email,
                     avatar=None,
                     signature=None,
@@ -201,6 +149,111 @@ class AuthService:
             account_type=AccountType.PORTAL.value,
         )
         return response
+
+    async def forgot_password(
+        self,
+        payload: ForgotPasswordRequest,
+        account_type: AccountType,
+        client_ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> None:
+        email = payload.email.strip().lower()
+        account = await self.account_repo.get_account_by_identifier(
+            email,
+            [AccountIdentityType.EMAIL],
+        )
+        if account is None or account.account_type != account_type.value:
+            await self._record_password_reset_request(
+                account_type,
+                email,
+                False,
+                client_ip,
+                user_agent,
+            )
+            return
+        try:
+            self._validate_account_status(account, account_type)
+        except AuthenticationError:
+            await self._record_password_reset_request(
+                account_type,
+                email,
+                False,
+                client_ip,
+                user_agent,
+            )
+            return
+
+        reset_token = generate_token()
+        redis = self._required_redis()
+        await redis.setex(
+            password_reset_token_key(account_type.value, email),
+            settings.auth.password_reset_token_ttl_seconds,
+            json.dumps(
+                {
+                    "account_id": account.id,
+                    "email": email,
+                    "token_hash": hash_password(reset_token),
+                }
+            ),
+        )
+        reset_link = self._build_password_reset_link(account_type, email, reset_token)
+        await send_mail(
+            email,
+            f"{settings.app.name} password reset",
+            (
+                "Use the link below to reset your password. "
+                "It expires in 10 minutes.\n\n"
+                f"{reset_link}"
+            ),
+        )
+        await self._record_password_reset_request(
+            account_type,
+            email,
+            True,
+            client_ip,
+            user_agent,
+            account.id,
+        )
+
+    async def reset_password(
+        self,
+        payload: ResetPasswordRequest,
+        account_type: AccountType,
+        client_ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> None:
+        email = payload.email.strip().lower()
+        key = password_reset_token_key(account_type.value, email)
+        redis = self._required_redis()
+        raw = await redis.get(key)
+        raw_text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+        if not raw_text:
+            raise AuthenticationError("Invalid or expired reset link")
+        data = json.loads(raw_text)
+        if data.get("email") != email or not verify_password(payload.token, data["token_hash"]):
+            raise AuthenticationError("Invalid or expired reset link")
+
+        account = await self.account_repo.get_required(str(data["account_id"]))
+        self._validate_account_status(account, account_type)
+        async with transactional(self.db):
+            await self.account_repo.update_password_hash(
+                account.id,
+                hash_password(payload.password),
+            )
+        await redis.delete(key)
+        await self.session_service.delete_account_sessions(account.account_type, account.id)
+        await OperationAuditService(self.db).record(
+            module="auth",
+            action="reset_password",
+            resource_type="account",
+            resource_id=account.id,
+            summary=f"{account_type.value} password reset",
+            success=True,
+            account_id=account.id,
+            account_type=account.account_type,
+            ip=client_ip,
+            user_agent=user_agent,
+        )
 
     async def logout(self, token: str) -> None:
         """注销指定 token 对应的会话。"""
@@ -249,6 +302,13 @@ class AuthService:
         """校验账号密码、账号状态以及目标账户类型是否允许访问。"""
         if not account or not verify_password(password, account.password_hash):
             raise AuthenticationError("Invalid account or password")
+        self._validate_account_status(account, account_type)
+
+    def _validate_account_status(
+        self,
+        account: SysAccount,
+        account_type: AccountType,
+    ) -> None:
         if (
             account.account_status == AccountStatusEnum.CANCELLED.value
             or account.cancelled_at is not None
@@ -260,3 +320,45 @@ class AuthService:
             raise AuthenticationError("Account is not allowed to access admin account type")
         if account_type == AccountType.PORTAL and account.account_type != AccountType.PORTAL.value:
             raise AuthenticationError("Account is not allowed to access portal account type")
+
+    def _required_redis(self):
+        redis = get_redis()
+        if redis is None:
+            raise BusinessError("Redis is required for password reset")
+        return redis
+
+    def _build_password_reset_link(
+        self,
+        account_type: AccountType,
+        email: str,
+        token: str,
+    ) -> str:
+        base_url = (
+            settings.mail.admin_password_reset_url
+            if account_type == AccountType.ADMIN
+            else settings.mail.portal_password_reset_url
+        )
+        separator = "&" if "?" in base_url else "?"
+        return f"{base_url}{separator}{urlencode({'email': email, 'token': token})}"
+
+    async def _record_password_reset_request(
+        self,
+        account_type: AccountType,
+        email: str,
+        success: bool,
+        client_ip: str | None,
+        user_agent: str | None,
+        account_id: str | None = None,
+    ) -> None:
+        await OperationAuditService(self.db).record(
+            module="auth",
+            action="forgot_password",
+            resource_type="account",
+            resource_id=account_id or email,
+            summary=f"{account_type.value} password reset requested",
+            success=success,
+            account_id=account_id,
+            account_type=account_type.value,
+            ip=client_ip,
+            user_agent=user_agent,
+        )

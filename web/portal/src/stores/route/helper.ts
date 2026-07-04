@@ -2,7 +2,6 @@ import type { RouteRecordRaw } from 'vue-router'
 import { RouterLink } from 'vue-router'
 import { h } from 'vue'
 import { renderIcon } from '@/utils/icon'
-import { translateLocale } from '@/utils/i18n'
 
 // 能参与前端路由体系的资源类型。按钮、动作、接口分组只用于权限控制，不生成页面路由。
 const routeResourceTypes: AppRoute.ResourceType[] = ['CATALOG', 'MENU', 'PAGE']
@@ -83,7 +82,6 @@ function standardizedRoutes(resources: AppRoute.RowRoute[]) {
       parent_id: resource.parent_id,
       code: resource.code,
       name: resource.code,
-      locale_key: resource.locale_key,
       resource_type: resource.resource_type,
       module_id: resource.module_id,
       module_id_name: resource.module_id_name,
@@ -113,7 +111,7 @@ function transformRoutesToMenus(routes: AppRoute.Route[]): AppRoute.MenuOption[]
   return routes
     .sort((a, b) => (a.meta.sort ?? 99) - (b.meta.sort ?? 99))
     .map((item) => {
-      const label = () => translateLocale(item.meta.locale_key, item.meta.name ?? String(item.name))
+      const label = () => item.meta.name ?? String(item.name)
       const menu: AppRoute.MenuOption = {
         key: item.path,
         label: isClickableResource(item.meta.resource_type)

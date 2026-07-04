@@ -1,22 +1,20 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
-const { t } = useI18n()
 const homePath = import.meta.env.VITE_HOME_PATH
 </script>
 
 <template>
   <n-result
     status="404"
-    :title="t('error.not_found_title')"
-    :description="t('error.not_found_description')"
+    :title="'Page not found'"
+    :description="'Please check whether the URL is correct.'"
     class="flex h-full w-full items-center justify-center flex-col"
   >
     <template #footer>
       <n-button type="primary" @click="router.push(homePath)">
-        {{ t('error.back_workbench') }}
+        {{ 'Back to workbench' }}
       </n-button>
     </template>
   </n-result>

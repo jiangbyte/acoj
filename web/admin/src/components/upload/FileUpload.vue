@@ -3,7 +3,6 @@ import { Icon } from '@iconify/vue/offline'
 import { fileApi } from '@/api'
 import { resolveFileUrl } from '@/utils'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{
@@ -31,7 +30,6 @@ const emit = defineEmits<{
   uploaded: [file: any]
 }>()
 
-const { t } = useI18n()
 const inputRef = ref<HTMLInputElement | null>(null)
 const state = reactive({
   loading: false,
@@ -39,8 +37,8 @@ const state = reactive({
 })
 
 const currentUrl = computed(() => resolveFileUrl(props.value))
-const currentName = computed(() => state.fileName || props.value || t('common.upload.empty'))
-const uploadText = computed(() => props.buttonText || t('common.upload.select'))
+const currentName = computed(() => state.fileName || props.value || 'No file selected')
+const uploadText = computed(() => props.buttonText || 'Upload')
 const actionIcon = computed(() => props.icon || 'icon-park-outline:upload')
 
 function triggerUpload() {
@@ -66,7 +64,7 @@ async function handleFileChange(event: Event) {
     state.fileName = uploaded.original_name || file.name
     emit('update:value', uploaded.url || uploaded.object_name || '')
     emit('uploaded', uploaded)
-    window.$message.success(t('common.upload.success'))
+    window.$message.success('Uploaded successfully')
   } finally {
     state.loading = false
   }
@@ -114,7 +112,7 @@ async function handleFileChange(event: Event) {
         {{ uploadText }}
       </NButton>
       <NButton v-if="value" size="small" text type="error" @click="clearValue">
-        {{ t('common.upload.clear') }}
+        {{ 'Clear' }}
       </NButton>
     </div>
   </div>

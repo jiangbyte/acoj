@@ -9,11 +9,9 @@ import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-n
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor, getDictLabel } from '@/utils/dict'
 import { useDictStore } from '@/stores'
-import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 
-const { t } = useI18n()
 const dictStore = useDictStore()
 const detailModalRef = ref<any>(null)
 const formModalRef = ref<any>(null)
@@ -54,12 +52,12 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('resource.sys.dict.code'),
+    title: 'Code',
     path: 'code',
     field: 'input',
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     field: 'select',
     fieldProps: {
@@ -79,7 +77,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => t('common.often.total', { count: itemCount }),
+  prefix: ({ itemCount }) => `${itemCount} total`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -97,7 +95,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: t('common.often.index'),
+    title: 'ID',
     width: 80,
     path: 'id',
     ellipsis: {
@@ -105,7 +103,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.dict.code'),
+    title: 'Code',
     path: 'code',
     width: 190,
     ellipsis: {
@@ -113,7 +111,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.dict.label'),
+    title: 'Label',
     path: 'label',
     width: 150,
     render: (row) => getDictLabel(row),
@@ -122,15 +120,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.locale_key'),
-    path: 'locale_key',
-    width: 220,
-    ellipsis: {
-      tooltip: true,
-    },
-  },
-  {
-    title: t('resource.sys.dict.value'),
+    title: 'Value',
     path: 'value',
     width: 150,
     ellipsis: {
@@ -138,7 +128,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.dict.color'),
+    title: 'Color',
     path: 'color',
     width: 120,
     render: (row) =>
@@ -151,13 +141,13 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
       ),
   },
   {
-    title: t('resource.sys.dict.category'),
+    title: 'Category',
     path: 'category',
     width: 120,
     render: (row) => dictTypeData('SYS_BIZ_CATEGORY', row.category),
   },
   {
-    title: t('resource.sys.dict.parent'),
+    title: 'Parent Dict',
     path: 'parent_id_name',
     width: 180,
     ellipsis: {
@@ -165,12 +155,12 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.sys.dict.sort'),
+    title: 'Sort',
     path: 'sort',
     width: 90,
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     width: 110,
     render: (row) => (
@@ -180,7 +170,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updated_at'),
+    title: 'Updated At',
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -188,7 +178,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 120,
     fixed: 'right',
@@ -316,14 +306,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
+    title: isBatch ? 'Batch Delete' : 'Delete',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('resource.sys.dict.batch_delete_confirm', { count: deleteIds.length })
-      : t('resource.sys.dict.delete_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
+      ? `Delete ${deleteIds.length} selected dicts?`
+      : 'Delete this dict and its children?',
+    positiveText: 'Confirm',
+    negativeText: 'Cancel',
     onPositiveClick: () => deleteData(deleteIds),
   })
 }
@@ -334,7 +324,7 @@ async function deleteData(ids: string[]) {
   if (selectedParentId.value && ids.includes(selectedParentId.value)) {
     state.selectedTreeKeys = []
   }
-  window.$message.success(t('common.often.delete_success'))
+  window.$message.success('Deleted successfully')
 
   await refreshData()
   await dictStore.refreshDict()
@@ -388,10 +378,7 @@ function sortAndFilterTree(nodes: any[], keyword: string): any[] {
         String(raw.label ?? '')
           .toLowerCase()
           .includes(keyword) ||
-        String(raw.locale_key ?? '')
-          .toLowerCase()
-          .includes(keyword) ||
-        node.children.length > 0
+                node.children.length > 0
       )
     })
     .map((node) => ({
@@ -427,7 +414,7 @@ function flattenDictTree(items: any[]) {
         <NInput
           v-model:value="state.treeSearchKey"
           clearable
-          :placeholder="t('resource.sys.dict.placeholder.search_tree')"
+          :placeholder="'Search dict'"
         >
           <template #prefix>
             <NIcon>
@@ -442,8 +429,8 @@ function flattenDictTree(items: any[]) {
           justify-content="space-evenly"
           @update:value="handleCategoryUpdate"
         >
-          <NTabPane name="SYS" :tab="t('resource.sys.dict.categories.sys')" />
-          <NTabPane name="BIZ" :tab="t('resource.sys.dict.categories.biz')" />
+          <NTabPane name="SYS" :tab="'System'" />
+          <NTabPane name="BIZ" :tab="'Business'" />
         </NTabs>
         <div class="dict-tree-body">
           <NSpin
@@ -474,12 +461,12 @@ function flattenDictTree(items: any[]) {
         <ProSearchForm
           :form="searchForm"
           :columns="searchColumns"
-          :reset-button-props="{ content: t('common.search_form.reset') }"
-          :search-button-props="{ content: t('common.search_form.search') }"
+          :reset-button-props="{ content: 'Reset' }"
+          :search-button-props="{ content: 'Search' }"
           :collapse-button-props="{
             content: searchForm.collapsed.value
-              ? t('common.search_form.expand')
-              : t('common.search_form.collapse'),
+              ? 'Expand'
+              : 'Collapse',
           }"
         />
       </ProCard>
@@ -487,7 +474,7 @@ function flattenDictTree(items: any[]) {
       <ProDataTable
         class="min-h-0 flex-1"
         remote
-        :title="t('resource.sys.dict.title')"
+        :title="'Dict Management'"
         row-key="id"
         :scroll-x="1590"
         :columns="tableColumns"
@@ -499,14 +486,14 @@ function flattenDictTree(items: any[]) {
       >
         <template #toolbar>
           <NFlex>
-            <NButton v-if="hasPermission('sys:dict:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+            <NButton v-if="hasPermission('sys:dict:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal">
               <template #icon>
                 <NIcon>
                   <Icon icon="icon-park-outline:plus" />
                 </NIcon>
               </template>
             </NButton>
-            <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading || state.treeLoading" @click="refreshData">
+            <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading || state.treeLoading" @click="refreshData">
               <template #icon>
                 <NIcon>
                   <Icon icon="icon-park-outline:reload" />
@@ -517,8 +504,8 @@ function flattenDictTree(items: any[]) {
               v-if="hasPermission('sys:dict:delete')"
               type="error"
               text
-              :title="t('common.often.batch_delete')"
-              :aria-label="t('common.often.batch_delete')"
+              :title="'Batch Delete'"
+              :aria-label="'Batch Delete'"
               :disabled="!hasCheckedRows"
               @click="confirmDelete(state.checkedRowKeys)"
             >

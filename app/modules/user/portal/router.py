@@ -5,10 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import AccountType
 from app.core.response.schema import ApiResponse, success
+from app.core.security.transport import decrypt_passwords
 from app.core.security.session import SessionPayload
 from app.deps.auth import get_current_session, require_account_type
 from app.deps.db import get_db_session
 from app.modules.iam.account.repository import AccountRepository
+from app.modules.iam.enums import AccountIdentityBindStatus
 from app.modules.user.portal.schema import (
     PortalProfileResponse,
     PortalPublicProfileResponse,
@@ -46,6 +48,8 @@ async def get_me(
         ),
         None,
     ) or next((item for item in identities if item.identity_type == "ACCOUNT"), None)
+    email_identity = next((item for item in identities if item.identity_type == "EMAIL"), None)
+    phone_identity = next((item for item in identities if item.identity_type == "PHONE"), None)
     profile = await PortalUserProfileService(db).get_profile(session.account_id)
     avatar = resolve_file_url(profile.avatar if profile else None)
     return success(
@@ -69,6 +73,8 @@ async def get_me(
                 signature=profile.signature if profile else None,
                 phone=profile.phone if profile else None,
                 email=profile.email if profile else None,
+                phone_login_enabled=_identity_login_enabled(phone_identity),
+                email_login_enabled=_identity_login_enabled(email_identity),
                 bio=profile.bio if profile else None,
                 level=profile.level if profile else None,
                 created_at=profile.created_at if profile else None,
@@ -122,7 +128,20 @@ async def update_user_center_password(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await PortalUserProfileService(db).update_current_password(payload, session)
+    old_password, new_password = await decrypt_passwords(
+        payload.password_key_id,
+        payload.old_password,
+        payload.new_password,
+    )
+    await PortalUserProfileService(db).update_current_password(
+        payload.model_copy(
+            update={
+                "old_password": old_password or "",
+                "new_password": new_password or "",
+            }
+        ),
+        session,
+    )
     return success()
 
 
@@ -136,7 +155,11 @@ async def update_user_center_phone(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await PortalUserProfileService(db).update_current_phone(payload, session)
+    password = (await decrypt_passwords(payload.password_key_id, payload.password))[0]
+    await PortalUserProfileService(db).update_current_phone(
+        payload.model_copy(update={"password": password or ""}),
+        session,
+    )
     return success()
 
 
@@ -150,7 +173,11 @@ async def update_user_center_email(
     session: Annotated[SessionPayload, Depends(get_current_session)],
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[None]:
-    await PortalUserProfileService(db).update_current_email(payload, session)
+    password = (await decrypt_passwords(payload.password_key_id, payload.password))[0]
+    await PortalUserProfileService(db).update_current_email(
+        payload.model_copy(update={"password": password or ""}),
+        session,
+    )
     return success()
 
 
@@ -163,3 +190,12 @@ async def get_public_space(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> ApiResponse[PortalPublicProfileResponse]:
     return success(await PortalUserProfileService(db).get_public_profile(account_id))
+
+
+def _identity_login_enabled(identity) -> bool:
+    return bool(
+        identity
+        and identity.identifier
+        and identity.verified
+        and identity.bind_status == AccountIdentityBindStatus.BOUND.value
+    )

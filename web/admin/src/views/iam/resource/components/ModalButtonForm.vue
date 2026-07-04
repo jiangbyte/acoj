@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui'
 import { deptApi, resourceApi } from '@/api'
-import { createRequiredRule, toNullableString, translateLocale } from '@/utils'
+import { createRequiredRule, toNullableString } from '@/utils'
 import { computed, reactive, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import ModalPermissionSelector from './ModalPermissionSelector.vue'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
 const permissionSelectorRef = ref<any>(null)
 const defaultFormData = {
@@ -18,7 +16,6 @@ const defaultFormData = {
   parent_id: '',
   code: '',
   name: '',
-  locale_key: '',
   permission_key: '',
   data_scope: 'ALL',
   custom_scope_dept_ids: [] as string[],
@@ -37,18 +34,18 @@ const state = reactive({
 
 const modalTitle = computed(() => {
   const action = state.formModel.id
-    ? t('resource.iam.resource.edit_button')
-    : t('resource.iam.resource.add_button')
+    ? 'Edit Button'
+    : 'Add Button'
   return state.parent?.name
-    ? `${action} - ${translateLocale(state.parent.locale_key, state.parent.name)}`
+    ? `${action} - ${state.parent.name}`
     : action
 })
 const rules = computed<FormRules>(() => ({
-  code: createRequiredRule(t, t('resource.iam.resource.code'), 'input'),
-  name: createRequiredRule(t, t('resource.iam.resource.name'), 'input'),
-  permission_key: createRequiredRule(t, t('resource.iam.resource.permission_key'), 'change'),
-  data_scope: createRequiredRule(t, t('resource.iam.resource.data_scope'), 'change'),
-  status: createRequiredRule(t, t('common.often.status'), 'change'),
+  code: createRequiredRule('Resource Code', 'input'),
+  name: createRequiredRule('Resource Name', 'input'),
+  permission_key: createRequiredRule('Permission Key', 'change'),
+  data_scope: createRequiredRule('Data Scope', 'change'),
+  status: createRequiredRule('Status', 'change'),
 }))
 
 async function openModal(parent: any, row?: any) {
@@ -58,7 +55,6 @@ async function openModal(parent: any, row?: any) {
     ...row,
     id: row?.id ?? '',
     parent_id: parent?.id ?? row?.parent_id ?? '',
-    locale_key: row?.locale_key ?? '',
     permission_key: row?.permission_key ?? '',
     data_scope: row?.data_scope ?? 'ALL',
     custom_scope_dept_ids: row?.custom_scope_dept_ids ?? [],
@@ -104,7 +100,6 @@ async function submitForm() {
       parent_id: state.formModel.parent_id,
       code: state.formModel.code.trim(),
       name: state.formModel.name.trim(),
-      locale_key: toNullableString(state.formModel.locale_key),
       permission_key: state.formModel.permission_key.trim(),
       data_scope: state.formModel.data_scope,
       custom_scope_dept_ids:
@@ -119,10 +114,10 @@ async function submitForm() {
         ...payload,
         id: state.formModel.id,
       })
-      window.$message.success(t('common.often.update_success'))
+      window.$message.success('Updated successfully')
     } else {
       await resourceApi.buttonCreate(payload)
-      window.$message.success(t('common.often.create_success'))
+      window.$message.success('Created successfully')
     }
 
     closeModal()
@@ -156,29 +151,26 @@ defineExpose({
         label-width="120"
         :disabled="state.submitLoading"
       >
-        <NFormItem :label="t('resource.iam.resource.name')" path="name">
+        <NFormItem :label="'Resource Name'" path="name">
           <NInput v-model:value="state.formModel.name" />
         </NFormItem>
-        <NFormItem :label="t('common.often.locale_key')" path="locale_key">
-          <NInput v-model:value="state.formModel.locale_key" />
-        </NFormItem>
-        <NFormItem :label="t('resource.iam.resource.code')" path="code">
+        <NFormItem :label="'Resource Code'" path="code">
           <NInput v-model:value="state.formModel.code" />
         </NFormItem>
-        <NFormItem :label="t('resource.iam.resource.permission_key')" path="permission_key">
+        <NFormItem :label="'Permission Key'" path="permission_key">
           <NInputGroup>
             <NInput v-model:value="state.formModel.permission_key" readonly />
             <NButton type="primary" secondary @click="openPermissionSelector">
-              {{ t('resource.iam.resource.select_permission') }}
+              {{ 'Select Permission' }}
             </NButton>
           </NInputGroup>
         </NFormItem>
-        <NFormItem :label="t('resource.iam.resource.data_scope')" path="data_scope">
+        <NFormItem :label="'Data Scope'" path="data_scope">
           <DictSelect v-model="state.formModel.data_scope" dict-code="DATA_SCOPE" />
         </NFormItem>
         <NFormItem
           v-if="state.formModel.data_scope === 'CUSTOM'"
-          :label="t('resource.iam.resource.custom_scope_dept_ids')"
+          :label="'Custom Departments'"
           path="custom_scope_dept_ids"
         >
           <NTreeSelect
@@ -194,13 +186,13 @@ defineExpose({
             children-field="children"
           />
         </NFormItem>
-        <NFormItem :label="t('resource.iam.resource.sort')" path="sort">
+        <NFormItem :label="'Sort'" path="sort">
           <NInputNumber v-model:value="state.formModel.sort" class="w-full" :min="0" />
         </NFormItem>
-        <NFormItem :label="t('common.often.status')" path="status">
+        <NFormItem :label="'Status'" path="status">
           <DictSelect v-model="state.formModel.status" dict-code="COMMON_STATUS" type="radio" />
         </NFormItem>
-        <NFormItem :label="t('resource.iam.resource.description')" path="description">
+        <NFormItem :label="'Description'" path="description">
           <NInput
             v-model:value="state.formModel.description"
             type="textarea"
@@ -213,10 +205,10 @@ defineExpose({
     <template #action>
       <NSpace justify="end" align="center">
         <NButton @click="closeModal">
-          {{ t('common.cancel') }}
+          {{ 'Cancel' }}
         </NButton>
         <NButton type="primary" :loading="state.submitLoading" @click="submitForm">
-          {{ t('common.confirm') }}
+          {{ 'Confirm' }}
         </NButton>
       </NSpace>
     </template>

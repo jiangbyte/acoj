@@ -28,7 +28,7 @@ const emit = defineEmits<{
     <n-empty
       v-if="!loading && !list?.length"
       class="h-full py-80px"
-      :description="$t('app.notice.empty')"
+      :description="'No data'"
     />
     <div v-else-if="loading && !list?.length" class="h-full flex items-center justify-center">
       <n-spin size="small" />
@@ -61,7 +61,7 @@ const emit = defineEmits<{
       </n-list-item>
       <div v-if="hasMore" class="py-12px text-center">
         <n-button text size="small" :loading="loading" @click.stop="emit('loadMore')">
-          {{ $t('app.notice.load_more') }}
+          {{ 'Load more' }}
         </n-button>
       </div>
     </n-list>

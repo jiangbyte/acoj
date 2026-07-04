@@ -1,5 +1,4 @@
 import type { AxiosError, AxiosResponse } from 'axios'
-import { $t } from '@/utils/i18n'
 
 const loginPath = '/auth/login'
 let isHandlingUnauthorized = false
@@ -15,16 +14,16 @@ interface ApiResponse<T = unknown> {
   data: T
 }
 
-const httpStatusMessageKeyMap: Record<number, string> = {
-  400: 'error.request.status.bad_request',
-  401: 'error.request.status.unauthorized',
-  403: 'error.request.status.forbidden',
-  404: 'error.request.status.not_found',
-  422: 'error.request.status.validation_error',
-  500: 'error.request.status.server_error',
-  502: 'error.request.status.bad_gateway',
-  503: 'error.request.status.service_unavailable',
-  504: 'error.request.status.gateway_timeout',
+const httpStatusMessageMap: Record<number, string> = {
+  400: 'Bad request',
+  401: 'Unauthorized, please sign in again',
+  403: 'Access denied',
+  404: 'Resource not found',
+  422: 'Validation failed',
+  500: 'Server error',
+  502: 'Bad gateway',
+  503: 'Service unavailable',
+  504: 'Gateway timeout',
 }
 
 /**
@@ -176,10 +175,10 @@ function getErrorMessage(error: AxiosError) {
 
   const status = error.response?.status
   if (status) {
-    return $t(httpStatusMessageKeyMap[status] ?? 'error.request.status_default', { status })
+    return httpStatusMessageMap[status] ?? `Request failed (${status})`
   }
 
-  return $t('error.request.network')
+  return 'Network error. Please try again later.'
 }
 
 function getResponseMessage(data: unknown) {

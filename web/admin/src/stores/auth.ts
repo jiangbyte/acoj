@@ -9,7 +9,7 @@ interface AuthUserInfo {
   accountId: string
   account: string
   accountType: string
-  name: string
+  name?: string | null
   nickname?: string | null
   avatar?: string | null
   roleIds: string[]
@@ -63,10 +63,20 @@ export const useAuthStore = defineStore('auth-store', {
     isLogin: (state) => Boolean(state.token),
   },
   actions: {
-    async login(account: string, password: string, redirect?: string) {
+    async login(
+      account: string,
+      password: string,
+      redirect?: string,
+      identityType = 'ACCOUNT',
+      security?: { password_key_id: string; captcha_id: string; captcha_value: string },
+    ) {
       const response = await authApi.login({
         account,
         password,
+        identity_type: identityType,
+        password_key_id: security?.password_key_id,
+        captcha_id: security?.captcha_id,
+        captcha_value: security?.captcha_value,
       })
       const token = response.data.token
       localStorage.setItem(tokenKey, token)

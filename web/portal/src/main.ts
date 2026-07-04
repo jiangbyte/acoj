@@ -5,7 +5,6 @@ import 'virtual:uno.css'
 import './style.css'
 import './plugins/iconify'
 import App from './App.vue'
-import { installI18n } from './i18n'
 import { installRouter } from './router'
 
 async function bootstrap() {
@@ -14,7 +13,6 @@ async function bootstrap() {
 
   pinia.use(piniaPluginPersistedstate)
   app.use(pinia)
-  installI18n(app)
   await installRouter(app)
   app.mount('#app')
 }

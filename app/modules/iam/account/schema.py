@@ -30,15 +30,18 @@ class AccountIdentityUpsertPayload(ApiSchema):
 
 class AccountCreateRequest(ApiSchema):
     account: str = Field(min_length=3, max_length=64)
-    password: str = Field(min_length=6, max_length=128)
+    password: str = Field(min_length=1, max_length=512)
+    password_key_id: str | None = Field(default=None, max_length=64)
     account_type: AccountType
     account_status: AccountStatusEnum = AccountStatusEnum.ENABLED
-    name: str = Field(min_length=1, max_length=64)
+    name: str | None = Field(default=None, max_length=64)
     nickname: str | None = Field(default=None, max_length=64)
     avatar: str | None = None
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
+    email_login_enabled: bool = False
+    phone_login_enabled: bool = False
     email_identity: str | None = Field(default=None, max_length=128)
     phone_identity: str | None = Field(default=None, max_length=32)
     email_identity_verified: bool = False
@@ -47,21 +50,26 @@ class AccountCreateRequest(ApiSchema):
     phone_identity_bind_status: AccountIdentityBindStatus = AccountIdentityBindStatus.BOUND
     employee_no: str | None = Field(default=None, max_length=64)
     title: str | None = Field(default=None, max_length=64)
+    bio: str | None = Field(default=None, max_length=255)
+    level: str | None = Field(default=None, max_length=32)
     remark: str | None = None
 
 
 class AccountUpdateRequest(ApiSchema):
     id: str = Field(min_length=1, max_length=64)
     account: str = Field(min_length=3, max_length=64)
-    password: str | None = Field(default=None, min_length=6, max_length=128)
+    password: str | None = Field(default=None, min_length=1, max_length=512)
+    password_key_id: str | None = Field(default=None, max_length=64)
     account_type: AccountType
     account_status: AccountStatusEnum = AccountStatusEnum.ENABLED
-    name: str = Field(min_length=1, max_length=64)
+    name: str | None = Field(default=None, max_length=64)
     nickname: str | None = Field(default=None, max_length=64)
     avatar: str | None = None
     signature: str | None = None
     phone: str | None = None
     email: str | None = None
+    email_login_enabled: bool = False
+    phone_login_enabled: bool = False
     email_identity: str | None = Field(default=None, max_length=128)
     phone_identity: str | None = Field(default=None, max_length=32)
     email_identity_verified: bool = False
@@ -70,6 +78,8 @@ class AccountUpdateRequest(ApiSchema):
     phone_identity_bind_status: AccountIdentityBindStatus = AccountIdentityBindStatus.BOUND
     employee_no: str | None = Field(default=None, max_length=64)
     title: str | None = Field(default=None, max_length=64)
+    bio: str | None = Field(default=None, max_length=255)
+    level: str | None = Field(default=None, max_length=32)
     remark: str | None = None
 
 

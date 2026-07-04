@@ -23,7 +23,6 @@ class SysResource(Base, TimestampMixin):
     parent_id: Mapped[str | None] = mapped_column(String(64), comment="父资源ID")
     code: Mapped[str] = mapped_column(String(64), nullable=False, comment="资源编码")
     name: Mapped[str] = mapped_column(String(64), nullable=False, comment="资源名称")
-    locale_key: Mapped[str | None] = mapped_column(String(255), comment="国际化键")
     resource_type: Mapped[str] = mapped_column(String(32), nullable=False, comment="资源类型")
     module_id: Mapped[str | None] = mapped_column(String(64), comment="所属资源模块ID")
     path: Mapped[str | None] = mapped_column(String(255), comment="路由路径")
@@ -80,7 +79,6 @@ class SysResourceModule(Base, TimestampMixin):
         default=ResourceModuleClient.ADMIN.value,
         comment="所属端",
     )
-    locale_key: Mapped[str | None] = mapped_column(String(255), comment="国际化键")
     icon: Mapped[str | None] = mapped_column(String(255), comment="图标")
     color: Mapped[str | None] = mapped_column(String(32), comment="颜色")
     sort: Mapped[int] = mapped_column(Integer, default=99, nullable=False, comment="排序")

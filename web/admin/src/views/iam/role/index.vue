@@ -8,14 +8,12 @@ import { NButton, NDropdown, NFlex, NIcon, NTag } from 'naive-ui'
 import { createProSearchForm, ProCard, ProDataTable, ProSearchForm } from 'pro-naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { dictList, dictTypeData, dictTypeColor } from '@/utils/dict'
-import { useI18n } from 'vue-i18n'
 import ModalDetail from './components/ModalDetail.vue'
 import ModalForm from './components/ModalForm.vue'
 import ModalGrantPermission from './components/ModalGrantPermission.vue'
 import ModalGrantResource from './components/ModalGrantResource.vue'
 import ModalGrantUser from './components/ModalGrantUser.vue'
 
-const { t } = useI18n()
 const formModalRef = ref<any>(null)
 const detailModalRef = ref<any>(null)
 const grantResourceModalRef = ref<any>(null)
@@ -50,17 +48,17 @@ const searchForm = createProSearchForm<any>({
 
 const searchColumns = computed<ProSearchFormColumns<any>>(() => [
   {
-    title: t('resource.iam.role.code'),
+    title: 'Role Code',
     path: 'code',
     field: 'input',
   },
   {
-    title: t('resource.iam.role.name'),
+    title: 'Role Name',
     path: 'name',
     field: 'input',
   },
   {
-    title: t('resource.iam.role.category'),
+    title: 'Role Category',
     path: 'category',
     field: 'select',
     fieldProps: {
@@ -68,7 +66,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.role.scope_type'),
+    title: 'Scope Type',
     path: 'scope_type',
     field: 'select',
     fieldProps: {
@@ -76,7 +74,7 @@ const searchColumns = computed<ProSearchFormColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     field: 'select',
     fieldProps: {
@@ -91,7 +89,7 @@ const pagination = computed<PaginationProps>(() => ({
   itemCount: state.total,
   showSizePicker: true,
   pageSizes: [10, 20, 30, 50],
-  prefix: ({ itemCount }) => t('common.often.total', { count: itemCount }),
+  prefix: ({ itemCount }) => `${itemCount} total`,
   onUpdatePage: (value) => {
     state.page = value
     fetchPage()
@@ -109,7 +107,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     fixed: 'left',
   },
   {
-    title: t('common.often.index'),
+    title: 'ID',
     width: 80,
     path: 'id',
     ellipsis: {
@@ -117,7 +115,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.role.code'),
+    title: 'Role Code',
     path: 'code',
     width: 150,
     ellipsis: {
@@ -125,7 +123,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.role.name'),
+    title: 'Role Name',
     path: 'name',
     width: 160,
     ellipsis: {
@@ -133,19 +131,19 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.role.category'),
+    title: 'Role Category',
     path: 'category',
     width: 130,
     render: (row) => dictTypeData('SYS_BIZ_CATEGORY', row.category) || row.category,
   },
   {
-    title: t('resource.iam.role.scope_type'),
+    title: 'Scope Type',
     path: 'scope_type',
     width: 130,
     render: (row) => dictTypeData('ROLE_SCOPE_TYPE', row.scope_type) || row.scope_type,
   },
   {
-    title: t('resource.iam.role.owner_dept_id'),
+    title: 'Owner Department ID',
     path: 'owner_dept_id',
     width: 150,
     ellipsis: {
@@ -153,18 +151,18 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('resource.iam.role.sort'),
+    title: 'Sort',
     path: 'sort',
     width: 90,
   },
   {
-    title: t('resource.iam.role.is_builtin'),
+    title: 'Builtin Role',
     path: 'is_builtin',
     width: 110,
-    render: (row) => (row.is_builtin ? t('resource.iam.role.yes') : t('resource.iam.role.no')),
+    render: (row) => (row.is_builtin ? 'Yes' : 'No'),
   },
   {
-    title: t('common.often.status'),
+    title: 'Status',
     path: 'status',
     width: 110,
     render: (row) => (
@@ -174,7 +172,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     ),
   },
   {
-    title: t('common.often.updated_at'),
+    title: 'Updated At',
     path: 'updated_at',
     width: 190,
     ellipsis: {
@@ -182,7 +180,7 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
     },
   },
   {
-    title: t('common.often.operation'),
+    title: 'Operation',
     key: 'actions',
     width: 150,
     fixed: 'right',
@@ -225,17 +223,17 @@ const tableColumns = computed<ProDataTableColumns<any>>(() => [
 const grantOptions = computed(() =>
   [
     {
-      label: t('resource.iam.role.grant_resource'),
+      label: 'Grant Resources',
       key: 'resource',
       permission: 'iam:role:grantresource',
     },
     {
-      label: t('resource.iam.role.grant_permission'),
+      label: 'Grant Permissions',
       key: 'permission',
       permission: 'iam:role:grantpermission',
     },
     {
-      label: t('resource.iam.role.grant_user'),
+      label: 'Grant Users',
       key: 'user',
       permission: 'iam:role:grantuser',
     },
@@ -307,14 +305,14 @@ function confirmDelete(value: string | string[]) {
   const isBatch = ids.length > 1
 
   window.$dialog.warning({
-    title: isBatch ? t('common.often.batch_delete') : t('common.often.delete'),
+    title: isBatch ? 'Batch Delete' : 'Delete',
     draggable: true,
     maskClosable: false,
     content: isBatch
-      ? t('resource.iam.role.batch_delete_confirm', { count: ids.length })
-      : t('resource.iam.role.delete_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
+      ? `Delete ${ids.length} selected roles?`
+      : 'Delete this role?',
+    positiveText: 'Confirm',
+    negativeText: 'Cancel',
     onPositiveClick: () => deleteData(ids),
   })
 }
@@ -323,7 +321,7 @@ async function deleteData(ids: string[]) {
   await roleApi.remove({ ids })
   state.checkedRowKeys = state.checkedRowKeys.filter((key) => !ids.includes(key))
 
-  window.$message.success(t('common.often.delete_success'))
+  window.$message.success('Deleted successfully')
   await fetchPage()
   if (!state.roles.length && state.total > 0 && state.page > 1) {
     state.page -= 1
@@ -338,12 +336,12 @@ async function deleteData(ids: string[]) {
       <ProSearchForm
         :form="searchForm"
         :columns="searchColumns"
-        :reset-button-props="{ content: t('common.search_form.reset') }"
-        :search-button-props="{ content: t('common.search_form.search') }"
+        :reset-button-props="{ content: 'Reset' }"
+        :search-button-props="{ content: 'Search' }"
         :collapse-button-props="{
           content: searchForm.collapsed.value
-            ? t('common.search_form.expand')
-            : t('common.search_form.collapse'),
+            ? 'Expand'
+            : 'Collapse',
         }"
       />
     </ProCard>
@@ -351,7 +349,7 @@ async function deleteData(ids: string[]) {
     <ProDataTable
       class="min-h-0 flex-1"
       remote
-      :title="t('resource.iam.role.title')"
+      :title="'Role Management'"
       row-key="id"
       :scroll-x="1600"
       :columns="tableColumns"
@@ -363,14 +361,14 @@ async function deleteData(ids: string[]) {
     >
       <template #toolbar>
         <NFlex>
-          <NButton v-if="hasPermission('iam:role:create')" type="primary" text :title="t('common.often.add')" :aria-label="t('common.often.add')" @click="openCreateModal">
+          <NButton v-if="hasPermission('iam:role:create')" type="primary" text :title="'Add'" :aria-label="'Add'" @click="openCreateModal">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:plus" />
               </NIcon>
             </template>
           </NButton>
-          <NButton text :title="t('common.reload')" :aria-label="t('common.reload')" :loading="state.loading" @click="fetchPage">
+          <NButton text :title="'Reload'" :aria-label="'Reload'" :loading="state.loading" @click="fetchPage">
             <template #icon>
               <NIcon>
                 <Icon icon="icon-park-outline:reload" />
@@ -381,8 +379,8 @@ async function deleteData(ids: string[]) {
             v-if="hasPermission('iam:role:delete')"
             type="error"
             text
-            :title="t('common.often.batch_delete')"
-            :aria-label="t('common.often.batch_delete')"
+            :title="'Batch Delete'"
+            :aria-label="'Batch Delete'"
             :disabled="!hasCheckedRows"
             @click="confirmDelete(state.checkedRowKeys)"
           >

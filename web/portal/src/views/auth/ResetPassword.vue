@@ -1,56 +1,54 @@
 <script setup lang="ts">
 import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
+import { authApi } from '@/api'
+import CaptchaInput from '@/components/common/CaptchaInput.vue'
+import { encryptPasswords } from '@/utils/security'
 import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import AuthLayout from './AuthLayout.vue'
 
+const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
 const formRef = ref<FormInst | null>(null)
+const captchaRef = ref<InstanceType<typeof CaptchaInput> | null>(null)
 const loading = ref(false)
 
 const form = reactive({
-  account: '',
-  code: '',
+  email: typeof route.query.email === 'string' ? route.query.email : '',
+  token: typeof route.query.token === 'string' ? route.query.token : '',
   password: '',
   confirmPassword: '',
+  captcha_id: '',
+  captcha_value: '',
 })
 
 function validateConfirmPassword(_rule: FormItemRule, value: string) {
   if (!value) {
-    return new Error(t('auth.confirm_password_required'))
+    return new Error('Please confirm password')
   }
   if (value !== form.password) {
-    return new Error(t('auth.password_mismatch'))
+    return new Error('The two passwords do not match')
   }
   return true
 }
 
 const rules = computed<FormRules>(() => ({
-  account: [
+  email: [
     {
       required: true,
-      message: t('auth.account_required'),
-      trigger: ['input', 'blur'],
-    },
-  ],
-  code: [
-    {
-      required: true,
-      message: t('auth.reset_code_required'),
+      message: 'Please enter login email',
       trigger: ['input', 'blur'],
     },
   ],
   password: [
     {
       required: true,
-      message: t('auth.password_required'),
+      message: 'Please enter new password',
       trigger: ['input', 'blur'],
     },
     {
       min: 8,
-      message: t('auth.password_min'),
+      message: 'Password must be at least 8 characters',
       trigger: ['input', 'blur'],
     },
   ],
@@ -58,6 +56,13 @@ const rules = computed<FormRules>(() => ({
     {
       required: true,
       validator: validateConfirmPassword,
+      trigger: ['input', 'blur'],
+    },
+  ],
+  captcha_value: [
+    {
+      required: true,
+      message: 'Please enter captcha',
       trigger: ['input', 'blur'],
     },
   ],
@@ -71,91 +76,75 @@ async function handleSubmit() {
   }
 
   loading.value = true
-  window.setTimeout(() => {
-    loading.value = false
-    window.$message.success(t('auth.reset_success'))
+  try {
+    const encrypted = await encryptPasswords({ password: form.password })
+    await authApi.resetPassword({
+      email: form.email.trim(),
+      token: form.token,
+      password: encrypted.values.password,
+      password_key_id: encrypted.password_key_id,
+      captcha_id: form.captcha_id,
+      captcha_value: form.captcha_value,
+    })
+    window.$message.success('Password reset. Please sign in again')
     router.push('/auth/login')
-  }, 500)
+  } catch {
+    await captchaRef.value?.refresh()
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
 <template>
-  <AuthLayout :title="t('auth.reset_title')" :subtitle="t('auth.reset_subtitle')" wide>
+  <AuthLayout :title="'Reset Password'" :subtitle="'Use the email reset link to set a new password.'">
     <n-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleSubmit">
-      <div class="auth-form-grid">
-        <n-form-item path="account" :label="t('auth.account')">
-          <n-input
-            v-model:value="form.account"
-            :placeholder="t('auth.placeholder.account')"
-            clearable
-          >
-            <template #prefix>
-              <NovaIcon icon="icon-park-outline:mail" />
-            </template>
-          </n-input>
-        </n-form-item>
+      <n-form-item path="email" :label="'Login Email'">
+        <n-input v-model:value="form.email" :placeholder="'Enter login email'" :disabled="Boolean(form.token)" clearable>
+          <template #prefix>
+            <NovaIcon icon="icon-park-outline:mail" />
+          </template>
+        </n-input>
+      </n-form-item>
 
-        <n-form-item path="code" :label="t('auth.reset_code')">
-          <n-input
-            v-model:value="form.code"
-            :placeholder="t('auth.placeholder.reset_code')"
-            clearable
-          >
-            <template #prefix>
-              <NovaIcon icon="icon-park-outline:key" />
-            </template>
-          </n-input>
-        </n-form-item>
+      <n-form-item path="password" :label="'New Password'">
+        <n-input
+          v-model:value="form.password"
+          type="password"
+          show-password-on="click"
+          :placeholder="'At least 8 characters'"
+        />
+      </n-form-item>
 
-        <n-form-item path="password" :label="t('auth.new_password')">
-          <n-input
-            v-model:value="form.password"
-            type="password"
-            show-password-on="click"
-            :placeholder="t('auth.placeholder.password_create')"
-          >
-            <template #prefix>
-              <NovaIcon icon="icon-park-outline:lock" />
-            </template>
-          </n-input>
-        </n-form-item>
+      <n-form-item path="confirmPassword" :label="'Confirm Password'">
+        <n-input
+          v-model:value="form.confirmPassword"
+          type="password"
+          show-password-on="click"
+          :placeholder="'Enter password again'"
+        />
+      </n-form-item>
 
-        <n-form-item path="confirmPassword" :label="t('auth.confirm_password')">
-          <n-input
-            v-model:value="form.confirmPassword"
-            type="password"
-            show-password-on="click"
-            :placeholder="t('auth.placeholder.confirm_password')"
-          >
-            <template #prefix>
-              <NovaIcon icon="icon-park-outline:check-correct" />
-            </template>
-          </n-input>
-        </n-form-item>
-      </div>
+      <n-form-item path="captcha_value" :label="'Captcha'">
+        <CaptchaInput
+          ref="captchaRef"
+          v-model:captcha-id="form.captcha_id"
+          v-model:captcha-value="form.captcha_value"
+        />
+      </n-form-item>
 
       <n-button type="primary" size="large" block attr-type="submit" :loading="loading">
-        {{ t('auth.reset_password') }}
+        {{ 'Reset Password' }}
       </n-button>
 
       <p class="auth-switch">
-        <RouterLink to="/auth/login">{{ t('auth.back_to_login') }}</RouterLink>
+        <RouterLink to="/auth/login">{{ 'Back to sign in' }}</RouterLink>
       </p>
     </n-form>
   </AuthLayout>
 </template>
 
 <style scoped>
-.auth-form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 16px;
-}
-
-.auth-form-grid :deep(.n-form-item) {
-  min-width: 0;
-}
-
 .auth-switch {
   margin-top: 22px;
   font-size: 14px;
@@ -165,11 +154,5 @@ async function handleSubmit() {
 .auth-switch a {
   color: var(--n-primary-color, #2563eb);
   text-decoration: none;
-}
-
-@media (max-width: 920px) {
-  .auth-form-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

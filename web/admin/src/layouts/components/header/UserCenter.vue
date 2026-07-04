@@ -2,23 +2,15 @@
 import type { DropdownOption } from 'naive-ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import { renderIcon } from '@/utils/icon'
 import { resolveFileUrl } from '@/utils'
 import { useAuthStore } from '@/stores'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const { t } = useI18n()
 const homePath = import.meta.env.VITE_HOME_PATH
 
-const displayName = computed(
-  () =>
-    authStore.userInfo?.nickname ||
-    authStore.userInfo?.name ||
-    authStore.userInfo?.account ||
-    t('app.nickname'),
-)
+const displayName = computed(() => authStore.userInfo?.nickname || '-')
 
 const avatar = computed(() => resolveFileUrl(authStore.userInfo?.avatar))
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
@@ -26,7 +18,7 @@ const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 // 桌面端用户菜单项。项目首页使用环境配置路径。
 const options = computed<DropdownOption[]>(() => [
   {
-    label: t('app.user_center.title'),
+    label: 'User Center',
     key: 'userCenter',
     icon: renderIcon('icon-park-outline:user'),
   },
@@ -35,12 +27,12 @@ const options = computed<DropdownOption[]>(() => [
     key: 'divider-1',
   },
   {
-    label: t('app.project_home'),
+    label: 'Project Home',
     key: 'home',
     icon: renderIcon('icon-park-outline:home'),
   },
   {
-    label: t('app.login_out'),
+    label: 'Log Out',
     key: 'logout',
     icon: renderIcon('icon-park-outline:logout'),
   },
@@ -56,13 +48,13 @@ function handleSelect(key: string | number) {
   }
   if (key === 'logout') {
     window.$dialog.info({
-      title: t('app.login_out_title'),
-      content: t('app.login_out_content'),
-      positiveText: t('common.confirm'),
-      negativeText: t('common.cancel'),
+      title: 'Log Out',
+      content: 'Log out of the current account?',
+      positiveText: 'Confirm',
+      negativeText: 'Cancel',
       onPositiveClick: async () => {
         await authStore.logout()
-        window.$message.success(t('app.login_out_success'))
+        window.$message.success('Logged out')
       },
     })
   }

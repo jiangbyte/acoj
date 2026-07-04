@@ -1,13 +1,11 @@
 <script setup lang="tsx">
 import { accountApi, deptApi } from '@/api'
 import { computed, reactive } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits<{
   saved: []
 }>()
 
-const { t } = useI18n()
 const state = reactive({
   showModal: false,
   loading: false,
@@ -20,8 +18,8 @@ const state = reactive({
 
 const modalTitle = computed(() =>
   state.account?.name
-    ? `${t('resource.iam.account.grant_dept')} - ${state.account.name}`
-    : t('resource.iam.account.grant_dept'),
+    ? `${'Grant Departments'} - ${state.account.name}`
+    : 'Grant Departments',
 )
 const primaryOptions = computed(() =>
   buildDeptOptions(state.deptTree).filter((item) => state.deptIds.includes(item.value)),
@@ -71,7 +69,7 @@ async function submitGrant() {
         is_primary: deptId === primaryDeptId,
       })),
     })
-    window.$message.success(t('resource.iam.role.grant_success'))
+    window.$message.success('Grant saved successfully')
     closeModal()
     emit('saved')
   } finally {
@@ -113,7 +111,7 @@ defineExpose({
     <NDrawerContent :title="modalTitle" closable :native-scrollbar="false">
       <NSpin :show="state.loading">
         <NSpace vertical>
-          <NFormItem :label="t('resource.iam.account.grant_dept')">
+          <NFormItem :label="'Grant Departments'">
             <NTreeSelect
               v-model:value="state.deptIds"
               multiple
@@ -127,7 +125,7 @@ defineExpose({
               children-field="children"
             />
           </NFormItem>
-          <NFormItem :label="t('resource.iam.account.primary_dept')">
+          <NFormItem :label="'Primary Department'">
             <NSelect
               v-model:value="state.primaryDeptId"
               clearable
@@ -141,10 +139,10 @@ defineExpose({
       <template #footer>
         <NSpace justify="end" align="center">
           <NButton @click="closeModal">
-            {{ t('common.close') }}
+            {{ 'Close' }}
           </NButton>
           <NButton type="primary" :loading="state.submitLoading" @click="submitGrant">
-            {{ t('common.save') }}
+            {{ 'Save' }}
           </NButton>
         </NSpace>
       </template>

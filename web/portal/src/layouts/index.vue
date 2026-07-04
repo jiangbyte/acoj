@@ -2,10 +2,9 @@
 import type { MenuOption } from 'naive-ui'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { computed, h, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useAppStore, useAuthStore, useRouteStore } from '@/stores'
 import { renderIcon } from '@/utils/icon'
-import { BackTop, LanguageSwitch, Logo, MessageBell, MobileDrawer, UserCenter } from './components'
+import { BackTop, Logo, MessageBell, MobileDrawer, UserCenter } from './components'
 import Content from './Content.vue'
 
 const route = useRoute()
@@ -13,14 +12,13 @@ const router = useRouter()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const routeStore = useRouteStore()
-const { t } = useI18n()
 const copyright = import.meta.env.VITE_COPYRIGHT_INFO
 const showMobileMenu = ref(false)
 
 const staticMenus = computed<MenuOption[]>(() => [
   {
     key: '/home',
-    label: () => h(RouterLink, { to: '/home' }, { default: () => t('app.portal.home') }),
+    label: () => h(RouterLink, { to: '/home' }, { default: () => 'Home' }),
     icon: renderIcon('icon-park-outline:home'),
   },
 ])
@@ -87,12 +85,11 @@ function goLogin() {
           class="shrink-0 flex items-center justify-end"
           :class="appStore.isMobile ? 'gap-1' : 'gap-2'"
         >
-          <LanguageSwitch />
           <DarkModeSwitch />
           <MessageBell v-if="authStore.isLogin" />
           <UserCenter v-if="authStore.isLogin" />
           <n-button v-else type="primary" :focusable="false" @click="goLogin">
-            {{ t('auth.login') }}
+            {{ 'Sign In' }}
           </n-button>
         </div>
       </div>
@@ -111,7 +108,7 @@ function goLogin() {
           "
         >
           <div class="font-medium text-[var(--text-color-2)]">
-            {{ t('app.portal.footer_title') }}
+            {{ 'Enterprise Portal' }}
           </div>
           <div>{{ copyright }}</div>
         </div>

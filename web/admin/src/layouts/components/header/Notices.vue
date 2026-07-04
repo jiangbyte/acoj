@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { messageApi } from '@/api'
-import { translateLocale } from '@/utils'
+import { } from '@/utils'
 import MessageDetailModal from '@/components/message/MessageDetailModal.vue'
 import NoticeList, { type NoticeItem } from '../common/NoticeList.vue'
 
-const { t } = useI18n()
 const noticeTypes = [0, 1, 2] as const
 const pageSize = 8
 
@@ -281,7 +279,7 @@ function mapHistoryItem(type: NoticeType, item: any): NoticeSource {
       type,
       title: item.title,
       icon: 'icon-park-outline:tips-one',
-      tagTitle: translateTag('notification_severity', severity, item.severity),
+      tagTitle: translateTag(severity, item.severity),
       tagType: notificationTagType(severity),
       description: item.content,
       date: item.publish_at || item.created_at || '',
@@ -295,9 +293,9 @@ function mapHistoryItem(type: NoticeType, item: any): NoticeSource {
     return {
       id: `message:${item.id}`,
       type,
-      title: item.title || t('resource.message.message.thread_title'),
+      title: item.title || 'Thread Title',
       icon: 'icon-park-outline:message',
-      tagTitle: translateTag('message_thread_type', threadType, item.thread_type),
+      tagTitle: translateTag(threadType, item.thread_type),
       tagType: 'info',
       description: item.last_message?.content,
       date: item.last_message_at || item.updated_at || item.created_at || '',
@@ -313,7 +311,7 @@ function mapHistoryItem(type: NoticeType, item: any): NoticeSource {
     type,
     title: item.title,
     icon: 'icon-park-outline:checklist',
-    tagTitle: translateTag('todo_priority', priority, item.priority),
+    tagTitle: translateTag(priority, item.priority),
     tagType: priorityTagType(priority),
     description: item.content,
     date: item.due_at || item.updated_at || item.created_at || '',
@@ -330,11 +328,11 @@ function toNoticeItem(item: NoticeSource): NoticeItem {
   }
 }
 
-function translateTag(category: string, normalized: string, fallback: unknown) {
+function translateTag(normalized: string, fallback: unknown) {
   if (!normalized) {
     return undefined
   }
-  return translateLocale(`dict.${category}.${normalized}`, String(fallback ?? normalized))
+  return String(fallback ?? normalized)
 }
 
 function normalizeEnum(value: unknown) {
@@ -373,7 +371,7 @@ function priorityTagType(priority: string): NoticeItem['tagType'] {
             </n-badge>
           </CommonWrapper>
         </template>
-        {{ t('app.notifications_tips') }}
+        {{ 'Notifications' }}
       </n-tooltip>
     </template>
     <n-tabs
@@ -386,7 +384,7 @@ function priorityTagType(priority: string): NoticeItem['tagType'] {
       <n-tab-pane :name="0">
         <template #tab>
           <n-space class="w-130px" justify="center">
-            {{ t('app.notifications') }}
+            {{ 'Notifications' }}
             <n-badge type="info" :value="summary.notification_unread" :max="99" />
           </n-space>
         </template>
@@ -401,7 +399,7 @@ function priorityTagType(priority: string): NoticeItem['tagType'] {
       <n-tab-pane :name="1">
         <template #tab>
           <n-space class="w-130px" justify="center">
-            {{ t('app.messages') }}
+            {{ 'Messages' }}
             <n-badge type="warning" :value="summary.message_unread" :max="99" />
           </n-space>
         </template>
@@ -416,7 +414,7 @@ function priorityTagType(priority: string): NoticeItem['tagType'] {
       <n-tab-pane :name="2">
         <template #tab>
           <n-space class="w-130px" justify="center">
-            {{ t('app.todos') }}
+            {{ 'Todos' }}
             <n-badge type="error" :value="summary.todo_pending" :max="99" />
           </n-space>
         </template>
