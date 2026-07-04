@@ -30,13 +30,16 @@ from app.core.security.password import hash_password  # noqa: E402
 from app.modules.iam.account.model import (  # noqa: E402
     SysAccount,
     SysAccountIdentity,
-    SysAccountRoleRel,
 )
 from app.modules.iam.enums import (  # noqa: E402
     AccountIdentityBindStatus,
     AccountIdentityType,
+    IamRelationSubjectType,
+    IamRelationTargetType,
+    IamRelationType,
     RoleScopeType,
 )
+from app.modules.iam.relation.model import SysIamRelation  # noqa: E402
 from app.modules.iam.role.model import SysRole  # noqa: E402
 from app.modules.user.admin.model import AdminUserProfile  # noqa: E402
 from app.platform.db.session import close_engine, get_session_factory  # noqa: E402
@@ -242,28 +245,37 @@ async def ensure_role(db: AsyncSession) -> str:
 
 
 async def ensure_account_role_rel(db: AsyncSession) -> str:
-    stmt = select(SysAccountRoleRel).where(
-        SysAccountRoleRel.account_id == SUPER_ADMIN_ACCOUNT_ID,
-        SysAccountRoleRel.role_id == SUPER_ADMIN_ROLE_ID,
+    stmt = select(SysIamRelation).where(
+        SysIamRelation.subject_type == IamRelationSubjectType.ACCOUNT.value,
+        SysIamRelation.subject_id == SUPER_ADMIN_ACCOUNT_ID,
+        SysIamRelation.relation_type == IamRelationType.ACCOUNT_ROLE.value,
+        SysIamRelation.target_type == IamRelationTargetType.ROLE.value,
+        SysIamRelation.target_id == SUPER_ADMIN_ROLE_ID,
     )
     entity = (await db.execute(stmt)).scalar_one_or_none()
     if entity is not None:
         return "exists"
 
-    rel_by_id = await db.get(SysAccountRoleRel, SUPER_ADMIN_ACCOUNT_ROLE_REL_ID)
+    rel_by_id = await db.get(SysIamRelation, SUPER_ADMIN_ACCOUNT_ROLE_REL_ID)
     if rel_by_id is None:
         db.add(
-            SysAccountRoleRel(
+            SysIamRelation(
                 id=SUPER_ADMIN_ACCOUNT_ROLE_REL_ID,
-                account_id=SUPER_ADMIN_ACCOUNT_ID,
-                role_id=SUPER_ADMIN_ROLE_ID,
+                subject_type=IamRelationSubjectType.ACCOUNT.value,
+                subject_id=SUPER_ADMIN_ACCOUNT_ID,
+                relation_type=IamRelationType.ACCOUNT_ROLE.value,
+                target_type=IamRelationTargetType.ROLE.value,
+                target_id=SUPER_ADMIN_ROLE_ID,
             )
         )
     else:
         db.add(
-            SysAccountRoleRel(
-                account_id=SUPER_ADMIN_ACCOUNT_ID,
-                role_id=SUPER_ADMIN_ROLE_ID,
+            SysIamRelation(
+                subject_type=IamRelationSubjectType.ACCOUNT.value,
+                subject_id=SUPER_ADMIN_ACCOUNT_ID,
+                relation_type=IamRelationType.ACCOUNT_ROLE.value,
+                target_type=IamRelationTargetType.ROLE.value,
+                target_id=SUPER_ADMIN_ROLE_ID,
             )
         )
     await db.flush()

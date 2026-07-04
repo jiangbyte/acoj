@@ -2,15 +2,23 @@ from collections import defaultdict
 
 from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.exceptions.business import NotFoundError
 from app.modules.iam.reference_guard import count_role_references, raise_if_referenced
-from app.modules.iam.enums import GrantMode, GrantSubjectType
-from app.modules.iam.account.model import SysAccount, SysAccountDeptRel, SysAccountRoleRel
-from app.modules.iam.grant.model import SysSubjectPermissionGrantRel, SysSubjectResourceGrantRel
-from app.modules.iam.resource.model import SysResource, SysResourcePermissionRel
-from app.modules.iam.enums import ResourceType
+from app.modules.iam.enums import (
+    GrantMode,
+    GrantSubjectType,
+    IamRelationSubjectType,
+    IamRelationTargetType,
+    IamRelationType,
+    ResourceType,
+)
+from app.modules.iam.account.model import SysAccount
+from app.modules.iam.resource.model import SysResource
+from app.modules.iam.relation.model import SysIamRelation
+from app.modules.iam.relation.repository import IamRelationRepository, account_dept_condition
 from app.modules.iam.role.model import SysRole
 from app.modules.iam.role.schema import (
     RoleAdminPageQuery,
@@ -27,6 +35,7 @@ from app.modules.iam.role.schema import (
 class RoleRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.relations = IamRelationRepository(db)
 
     async def create(self, payload: RoleCreateRequest) -> None:
         role = SysRole(**payload.model_dump())
@@ -113,17 +122,19 @@ class RoleRepository:
     async def list_permission_grants(self, role_id: str) -> list[RolePermissionGrantInfo]:
         await self.get_required(role_id)
         stmt = (
-            select(SysSubjectPermissionGrantRel)
+            select(SysIamRelation)
             .where(
-                SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.ROLE.value,
-                SysSubjectPermissionGrantRel.subject_id == role_id,
+                SysIamRelation.subject_type == GrantSubjectType.ROLE.value,
+                SysIamRelation.subject_id == role_id,
+                SysIamRelation.relation_type == IamRelationType.SUBJECT_PERMISSION_GRANT.value,
+                SysIamRelation.target_type == IamRelationTargetType.PERMISSION.value,
             )
-            .order_by(SysSubjectPermissionGrantRel.id.asc())
+            .order_by(SysIamRelation.id.asc())
         )
         grants = list((await self.db.execute(stmt)).scalars().all())
         return [
             RolePermissionGrantInfo(
-                permission_key=grant.permission_key,
+                permission_key=grant.target_key,
                 data_scope=grant.data_scope,
                 custom_scope_dept_ids=list(grant.custom_scope_dept_ids),
             )
@@ -133,15 +144,17 @@ class RoleRepository:
     async def list_resource_grants(self, role_id: str) -> list[RoleResourceGrantInfo]:
         await self.get_required(role_id)
         stmt = (
-            select(SysSubjectResourceGrantRel)
+            select(SysIamRelation)
             .where(
-                SysSubjectResourceGrantRel.subject_type == GrantSubjectType.ROLE.value,
-                SysSubjectResourceGrantRel.subject_id == role_id,
+                SysIamRelation.subject_type == GrantSubjectType.ROLE.value,
+                SysIamRelation.subject_id == role_id,
+                SysIamRelation.relation_type == IamRelationType.SUBJECT_RESOURCE_GRANT.value,
+                SysIamRelation.target_type == IamRelationTargetType.RESOURCE.value,
             )
-            .order_by(SysSubjectResourceGrantRel.id.asc())
+            .order_by(SysIamRelation.id.asc())
         )
         grants = list((await self.db.execute(stmt)).scalars().all())
-        resource_ids = [grant.resource_id for grant in grants]
+        resource_ids = [grant.target_id for grant in grants]
         if not resource_ids:
             return []
 
@@ -149,13 +162,16 @@ class RoleRepository:
         resources = list((await self.db.execute(resource_stmt)).scalars().all())
         resource_map = {resource.id: resource for resource in resources}
 
-        permission_stmt = select(SysResourcePermissionRel).where(
-            SysResourcePermissionRel.resource_id.in_(resource_ids)
+        permission_stmt = select(SysIamRelation).where(
+            SysIamRelation.subject_type == IamRelationSubjectType.RESOURCE.value,
+            SysIamRelation.relation_type == IamRelationType.RESOURCE_PERMISSION.value,
+            SysIamRelation.target_type == IamRelationTargetType.PERMISSION.value,
+            SysIamRelation.subject_id.in_(resource_ids),
         )
         permissions = list((await self.db.execute(permission_stmt)).scalars().all())
         permission_map: dict[str, list[str]] = defaultdict(list)
         for permission in permissions:
-            permission_map[permission.resource_id].append(permission.permission_key)
+            permission_map[permission.subject_id].append(permission.target_key)
 
         menu_resource_ids = set()
         for resource_id in resource_ids:
@@ -205,9 +221,14 @@ class RoleRepository:
                 raise NotFoundError("Resource not found")
         if permission_keys:
             permission_resource_stmt = select(
-                SysResourcePermissionRel.permission_key,
-                SysResourcePermissionRel.resource_id,
-            ).where(SysResourcePermissionRel.permission_key.in_(permission_keys))
+                SysIamRelation.target_key,
+                SysIamRelation.subject_id,
+            ).where(
+                SysIamRelation.subject_type == IamRelationSubjectType.RESOURCE.value,
+                SysIamRelation.relation_type == IamRelationType.RESOURCE_PERMISSION.value,
+                SysIamRelation.target_type == IamRelationTargetType.PERMISSION.value,
+                SysIamRelation.target_key.in_(permission_keys),
+            )
             permission_resource_rows = list((await self.db.execute(permission_resource_stmt)).all())
             code_resource_stmt = select(SysResource.code, SysResource.id).where(
                 SysResource.code.in_(permission_keys),
@@ -231,11 +252,10 @@ class RoleRepository:
             for permission_key in permission_keys:
                 resource_ids.extend(permission_resource_map[permission_key])
         resource_ids = list(dict.fromkeys(resource_ids))
-        await self.db.execute(
-            delete(SysSubjectResourceGrantRel).where(
-                SysSubjectResourceGrantRel.subject_type == GrantSubjectType.ROLE.value,
-                SysSubjectResourceGrantRel.subject_id == payload.id,
-            )
+        await self.relations.delete_subject_relations(
+            GrantSubjectType.ROLE.value,
+            payload.id,
+            IamRelationType.SUBJECT_RESOURCE_GRANT,
         )
         for resource_id in resource_ids:
             grant_mode = (
@@ -244,11 +264,11 @@ class RoleRepository:
                 else GrantMode.DIRECT.value
             )
             self.db.add(
-                SysSubjectResourceGrantRel(
-                    subject_type=GrantSubjectType.ROLE.value,
-                    subject_id=payload.id,
-                    resource_id=resource_id,
-                    grant_mode=grant_mode,
+                self.relations.subject_resource_grant(
+                    GrantSubjectType.ROLE,
+                    payload.id,
+                    resource_id,
+                    GrantMode(grant_mode),
                 )
             )
         await self.db.flush()
@@ -259,24 +279,33 @@ class RoleRepository:
         data_scope_filter: ColumnElement[bool] | None = None,
     ) -> list[SysAccount]:
         await self.get_required(role_id)
+        account_role_rel = aliased(SysIamRelation)
         stmt = (
             select(SysAccount)
-            .join(SysAccountRoleRel, SysAccountRoleRel.account_id == SysAccount.id)
-            .where(SysAccountRoleRel.role_id == role_id)
+            .join(account_role_rel, account_role_rel.subject_id == SysAccount.id)
+            .where(
+                account_role_rel.subject_type == IamRelationSubjectType.ACCOUNT.value,
+                account_role_rel.relation_type == IamRelationType.ACCOUNT_ROLE.value,
+                account_role_rel.target_type == IamRelationTargetType.ROLE.value,
+                account_role_rel.target_id == role_id,
+            )
             .order_by(SysAccount.id.desc())
         )
         if data_scope_filter is not None:
-            stmt = stmt.outerjoin(SysAccountDeptRel, SysAccountDeptRel.account_id == SysAccount.id).where(data_scope_filter)
+            stmt = stmt.outerjoin(
+                SysIamRelation,
+                account_dept_condition(SysIamRelation, SysAccount.id),
+            ).where(data_scope_filter)
         return list((await self.db.execute(stmt)).unique().scalars().all())
 
     async def list_accounts(
         self,
         data_scope_filter: ColumnElement[bool] | None = None,
-    ) -> list[SysAccount]:
+        ) -> list[SysAccount]:
         stmt = select(SysAccount).order_by(SysAccount.id.desc())
         if data_scope_filter is not None:
             stmt = (
-                stmt.outerjoin(SysAccountDeptRel, SysAccountDeptRel.account_id == SysAccount.id)
+                stmt.outerjoin(SysIamRelation, account_dept_condition(SysIamRelation, SysAccount.id))
                 .where(data_scope_filter)
             )
         return list((await self.db.execute(stmt)).unique().scalars().all())
@@ -289,31 +318,39 @@ class RoleRepository:
             existing_ids = set((await self.db.execute(stmt)).scalars().all())
             if len(existing_ids) != len(account_ids):
                 raise NotFoundError("Account not found")
-        await self.db.execute(delete(SysAccountRoleRel).where(SysAccountRoleRel.role_id == payload.id))
+        await self.relations.delete_target_relations(
+            IamRelationType.ACCOUNT_ROLE,
+            IamRelationTargetType.ROLE.value,
+            [payload.id],
+        )
         for account_id in account_ids:
-            self.db.add(SysAccountRoleRel(account_id=account_id, role_id=payload.id))
+            self.db.add(self.relations.account_role(account_id, payload.id))
         await self.db.flush()
 
     async def list_account_ids_by_role(self, role_id: str) -> list[str]:
-        stmt = select(SysAccountRoleRel.account_id).where(SysAccountRoleRel.role_id == role_id)
+        stmt = select(SysIamRelation.subject_id).where(
+            SysIamRelation.subject_type == IamRelationSubjectType.ACCOUNT.value,
+            SysIamRelation.relation_type == IamRelationType.ACCOUNT_ROLE.value,
+            SysIamRelation.target_type == IamRelationTargetType.ROLE.value,
+            SysIamRelation.target_id == role_id,
+        )
         return [str(value) for value in (await self.db.execute(stmt)).scalars().all()]
 
     async def replace_permission_grants(self, payload: RoleGrantPermissionRequest) -> None:
         await self.get_required(payload.id)
-        await self.db.execute(
-            delete(SysSubjectPermissionGrantRel).where(
-                SysSubjectPermissionGrantRel.subject_type == GrantSubjectType.ROLE.value,
-                SysSubjectPermissionGrantRel.subject_id == payload.id,
-            )
+        await self.relations.delete_subject_relations(
+            GrantSubjectType.ROLE.value,
+            payload.id,
+            IamRelationType.SUBJECT_PERMISSION_GRANT,
         )
         for grant in payload.grant_info_list:
             self.db.add(
-                SysSubjectPermissionGrantRel(
-                    subject_type=GrantSubjectType.ROLE.value,
-                    subject_id=payload.id,
-                    permission_key=grant.permission_key,
-                    data_scope=grant.data_scope.value,
-                    custom_scope_dept_ids=list(grant.custom_scope_dept_ids),
+                self.relations.subject_permission_grant(
+                    GrantSubjectType.ROLE,
+                    payload.id,
+                    grant.permission_key,
+                    grant.data_scope,
+                    list(grant.custom_scope_dept_ids),
                 )
             )
         await self.db.flush()

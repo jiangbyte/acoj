@@ -37,6 +37,13 @@ export function displayValue(value?: string | number | null) {
   return value === undefined || value === null || value === '' ? '-' : String(value)
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export function isValidEmail(value: unknown) {
+  const text = String(value ?? '').trim()
+  return EMAIL_PATTERN.test(text)
+}
+
 export function createRequiredRule(
   field: string,
   trigger: 'input' | 'change',

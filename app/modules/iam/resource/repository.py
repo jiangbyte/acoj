@@ -3,14 +3,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.enums import StatusEnum
 from app.core.exceptions.business import ConflictError, NotFoundError
-from app.modules.iam.enums import ResourceModuleClient, ResourceType
+from app.modules.iam.enums import IamRelationSubjectType, IamRelationTargetType, IamRelationType, ResourceModuleClient, ResourceType
 from app.modules.iam.reference_guard import (
     count_resource_references,
     ensure_not_self_or_descendant,
     list_descendant_ids,
     raise_if_referenced,
 )
-from app.modules.iam.resource.model import SysResource, SysResourceModule, SysResourcePermissionRel
+from app.modules.iam.relation.model import SysIamRelation
+from app.modules.iam.relation.repository import IamRelationRepository
+from app.modules.iam.resource.model import SysResource, SysResourceModule
 from app.modules.iam.resource.schema import (
     ResourceAdminPageQuery,
     ResourceButtonPageQuery,
@@ -31,6 +33,7 @@ from app.modules.iam.schema import (
 class ResourceRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.relations = IamRelationRepository(db)
 
     async def create(self, payload: ResourceCreateRequest) -> SysResource:
         await self._ensure_payload_valid(payload)
@@ -204,10 +207,10 @@ class ResourceRepository:
     async def bind_resource_permission(
         self,
         payload: ResourcePermissionBindRequest,
-    ) -> SysResourcePermissionRel:
+    ) -> SysIamRelation:
         if not await self.db.get(SysResource, payload.resource_id):
             raise NotFoundError("Resource not found")
-        relation = SysResourcePermissionRel(**payload.model_dump())
+        relation = self.relations.resource_permission(**payload.model_dump())
         self.db.add(relation)
         await self.db.flush()
         return relation
@@ -215,15 +218,15 @@ class ResourceRepository:
     async def replace_resource_permission(
         self,
         payload: ResourcePermissionBindRequest,
-    ) -> SysResourcePermissionRel:
+    ) -> SysIamRelation:
         if not await self.db.get(SysResource, payload.resource_id):
             raise NotFoundError("Resource not found")
-        await self.db.execute(
-            delete(SysResourcePermissionRel).where(
-                SysResourcePermissionRel.resource_id == payload.resource_id
-            )
+        await self.relations.delete_subject_relations(
+            IamRelationSubjectType.RESOURCE.value,
+            payload.resource_id,
+            IamRelationType.RESOURCE_PERMISSION,
         )
-        relation = SysResourcePermissionRel(**payload.model_dump())
+        relation = self.relations.resource_permission(**payload.model_dump())
         self.db.add(relation)
         await self.db.flush()
         return relation
@@ -232,36 +235,46 @@ class ResourceRepository:
         button = await self.get_required(button_id)
         if button.resource_type != ResourceType.BUTTON.value:
             raise ConflictError("Resource is not a button")
-        await self.db.execute(
-            delete(SysResourcePermissionRel).where(
-                SysResourcePermissionRel.resource_id == button_id
-            )
+        await self.relations.delete_subject_relations(
+            IamRelationSubjectType.RESOURCE.value,
+            button_id,
+            IamRelationType.RESOURCE_PERMISSION,
         )
         await self.delete_many([button_id])
 
-    async def list_resource_permissions(self) -> list[SysResourcePermissionRel]:
+    async def list_resource_permissions(self) -> list[SysIamRelation]:
         stmt = (
-            select(SysResourcePermissionRel)
-            .where(SysResourcePermissionRel.status == StatusEnum.ENABLED.value)
-            .order_by(SysResourcePermissionRel.sort.asc(), SysResourcePermissionRel.id.asc())
+            select(SysIamRelation)
+            .where(
+                SysIamRelation.subject_type == IamRelationSubjectType.RESOURCE.value,
+                SysIamRelation.relation_type == IamRelationType.RESOURCE_PERMISSION.value,
+                SysIamRelation.target_type == IamRelationTargetType.PERMISSION.value,
+                SysIamRelation.status == StatusEnum.ENABLED.value,
+            )
+            .order_by(SysIamRelation.sort.asc(), SysIamRelation.id.asc())
         )
         return list((await self.db.execute(stmt)).scalars().all())
 
     async def list_permissions_by_resource_ids(
         self,
         resource_ids: list[str],
-    ) -> dict[str, list[SysResourcePermissionRel]]:
+    ) -> dict[str, list[SysIamRelation]]:
         unique_ids = list(dict.fromkeys(resource_ids))
         if not unique_ids:
             return {}
         stmt = (
-            select(SysResourcePermissionRel)
-            .where(SysResourcePermissionRel.resource_id.in_(unique_ids))
-            .order_by(SysResourcePermissionRel.sort.asc(), SysResourcePermissionRel.id.asc())
+            select(SysIamRelation)
+            .where(
+                SysIamRelation.subject_type == IamRelationSubjectType.RESOURCE.value,
+                SysIamRelation.relation_type == IamRelationType.RESOURCE_PERMISSION.value,
+                SysIamRelation.target_type == IamRelationTargetType.PERMISSION.value,
+                SysIamRelation.subject_id.in_(unique_ids),
+            )
+            .order_by(SysIamRelation.sort.asc(), SysIamRelation.id.asc())
         )
-        result: dict[str, list[SysResourcePermissionRel]] = {}
+        result: dict[str, list[SysIamRelation]] = {}
         for permission in (await self.db.execute(stmt)).scalars().all():
-            result.setdefault(permission.resource_id, []).append(permission)
+            result.setdefault(permission.subject_id, []).append(permission)
         return result
 
     async def list_resources_by_ids_with_parents(
@@ -288,11 +301,11 @@ class ResourceRepository:
         modules = await ResourceModuleRepository(self.db).list_enabled_modules()
         permission_map: dict[str, list[ResourcePermissionOption]] = {}
         for permission in permissions:
-            permission_map.setdefault(permission.resource_id, []).append(
+            permission_map.setdefault(permission.subject_id, []).append(
                 ResourcePermissionOption(
                     id=permission.id,
-                    permission_key=permission.permission_key,
-                    title=permission.description or permission.permission_key,
+                    permission_key=permission.target_key,
+                    title=permission.description or permission.target_key,
                     data_scope=permission.data_scope,
                 )
             )

@@ -7,7 +7,7 @@ from app.core.security.data_scope import resolve_data_scope_dept_ids
 from app.core.security.permission_registry import list_permission_resources
 from app.core.security.session import SessionPayload
 from app.modules.iam.enums import ResourceModuleClient, ResourceType
-from app.modules.iam.grant.repository import GrantRepository
+from app.modules.iam.relation.repository import IamRelationRepository
 from app.modules.iam.permission.service import ensure_registered_permission
 from app.modules.iam.resource.model import SysResource
 from app.modules.iam.resource.repository import ResourceModuleRepository, ResourceRepository
@@ -164,7 +164,7 @@ class ResourceService:
             )
         resource_ids = session.resource_ids
         if not resource_ids:
-            resource_ids = await GrantRepository(self.db).get_account_resource_ids(
+            resource_ids = await IamRelationRepository(self.db).get_account_resource_ids(
                 session.account_id
             )
         resources = await self.repo.list_resources_by_ids_with_parents(

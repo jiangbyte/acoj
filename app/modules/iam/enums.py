@@ -60,6 +60,44 @@ class GrantEffect(StrEnum):
     DENY = "DENY"  # 拒绝
 
 
+class IamRelationType(StrEnum):
+    """
+    IAM 通用关系类型
+    """
+
+    ACCOUNT_ROLE = "ACCOUNT_ROLE"
+    ACCOUNT_DEPT = "ACCOUNT_DEPT"
+    ACCOUNT_GROUP = "ACCOUNT_GROUP"
+    GROUP_ROLE = "GROUP_ROLE"
+    SUBJECT_RESOURCE_GRANT = "SUBJECT_RESOURCE_GRANT"
+    SUBJECT_PERMISSION_GRANT = "SUBJECT_PERMISSION_GRANT"
+    RESOURCE_PERMISSION = "RESOURCE_PERMISSION"
+
+
+class IamRelationSubjectType(StrEnum):
+    """
+    IAM 通用关系主体类型
+    """
+
+    ACCOUNT = "ACCOUNT"
+    GROUP = "GROUP"
+    ROLE = "ROLE"
+    RESOURCE = "RESOURCE"
+
+
+class IamRelationTargetType(StrEnum):
+    """
+    IAM 通用关系目标类型
+    """
+
+    ACCOUNT = "ACCOUNT"
+    GROUP = "GROUP"
+    ROLE = "ROLE"
+    DEPT = "DEPT"
+    RESOURCE = "RESOURCE"
+    PERMISSION = "PERMISSION"
+
+
 class AccountIdentityType(StrEnum):
     """
     账户登录标识类型

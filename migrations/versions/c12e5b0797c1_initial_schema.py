@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = 'e77130664f0c'
+revision: str = 'c12e5b0797c1'
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -257,29 +257,6 @@ def upgrade() -> None:
     sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_account'))
     )
-    op.create_table('sys_account_dept_rel',
-    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
-    sa.Column('account_id', sa.String(length=64), nullable=False, comment='账户ID'),
-    sa.Column('dept_id', sa.String(length=64), nullable=False, comment='部门ID'),
-    sa.Column('is_primary', sa.Boolean(), nullable=False, comment='是否主部门'),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
-    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
-    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_account_dept_rel')),
-    sa.UniqueConstraint('account_id', 'dept_id', name='uq_sys_account_dept_rel_account_dept')
-    )
-    op.create_table('sys_account_group_rel',
-    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
-    sa.Column('account_id', sa.String(length=64), nullable=False, comment='账户ID'),
-    sa.Column('group_id', sa.String(length=64), nullable=False, comment='账户组ID'),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
-    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
-    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_account_group_rel')),
-    sa.UniqueConstraint('account_id', 'group_id', name='uq_sys_account_group_rel_account_group')
-    )
     op.create_table('sys_account_identity',
     sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
     sa.Column('account_id', sa.String(length=64), nullable=False, comment='账户ID'),
@@ -294,17 +271,6 @@ def upgrade() -> None:
     sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_account_identity')),
     sa.UniqueConstraint('identity_type', 'identifier', name='uq_sys_account_identity_type_identifier')
-    )
-    op.create_table('sys_account_role_rel',
-    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
-    sa.Column('account_id', sa.String(length=64), nullable=False, comment='账户ID'),
-    sa.Column('role_id', sa.String(length=64), nullable=False, comment='角色ID'),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
-    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
-    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_account_role_rel')),
-    sa.UniqueConstraint('account_id', 'role_id', name='uq_sys_account_role_rel_account_role')
     )
     op.create_table('sys_banner',
     sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
@@ -398,17 +364,34 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_group')),
     sa.UniqueConstraint('name', name='uq_sys_group_name')
     )
-    op.create_table('sys_group_role_rel',
+    op.create_table('sys_iam_relation',
     sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
-    sa.Column('group_id', sa.String(length=64), nullable=False, comment='账户组ID'),
-    sa.Column('role_id', sa.String(length=64), nullable=False, comment='角色ID'),
+    sa.Column('subject_type', sa.String(length=32), nullable=False, comment='主体类型'),
+    sa.Column('subject_id', sa.String(length=64), nullable=False, comment='主体ID'),
+    sa.Column('relation_type', sa.String(length=64), nullable=False, comment='关系类型'),
+    sa.Column('target_type', sa.String(length=32), nullable=False, comment='目标类型'),
+    sa.Column('target_id', sa.String(length=64), nullable=False, comment='目标ID'),
+    sa.Column('target_key', sa.String(length=128), nullable=False, comment='目标标识'),
+    sa.Column('grant_mode', sa.String(length=32), nullable=False, comment='授权模式'),
+    sa.Column('effect', sa.String(length=32), nullable=False, comment='授权效果'),
+    sa.Column('data_scope', sa.String(length=32), nullable=False, comment='数据范围'),
+    sa.Column('custom_scope_dept_ids', sa.JSON(), nullable=False, comment='自定义数据范围部门ID列表'),
+    sa.Column('is_primary', sa.Boolean(), nullable=False, comment='主关系'),
+    sa.Column('sort', sa.Integer(), nullable=False, comment='排序'),
+    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
+    sa.Column('description', sa.Text(), nullable=True, comment='描述'),
+    sa.Column('reason', sa.Text(), nullable=True, comment='授权原因'),
+    sa.Column('expired_at', sa.DateTime(timezone=True), nullable=True, comment='失效时间'),
+    sa.Column('extra', sa.JSON(), nullable=False, comment='扩展信息'),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
     sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
     sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_group_role_rel')),
-    sa.UniqueConstraint('group_id', 'role_id', name='uq_sys_group_role_rel_group_role')
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_iam_relation')),
+    sa.UniqueConstraint('subject_type', 'subject_id', 'relation_type', 'target_type', 'target_id', 'target_key', name='uq_sys_iam_relation_subject_relation_target')
     )
+    op.create_index('ix_sys_iam_relation_subject', 'sys_iam_relation', ['subject_type', 'subject_id', 'relation_type'], unique=False)
+    op.create_index('ix_sys_iam_relation_target', 'sys_iam_relation', ['target_type', 'target_id', 'target_key'], unique=False)
     op.create_table('sys_operation_audit_log',
     sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
     sa.Column('module', sa.String(length=64), nullable=False, comment='模块'),
@@ -480,6 +463,7 @@ def upgrade() -> None:
     sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
     sa.Column('name', sa.String(length=64), nullable=False, comment='模块名称'),
     sa.Column('code', sa.String(length=64), nullable=False, comment='模块编码'),
+    sa.Column('client', sa.String(length=32), nullable=False, comment='所属端'),
     sa.Column('icon', sa.String(length=255), nullable=True, comment='图标'),
     sa.Column('color', sa.String(length=32), nullable=True, comment='颜色'),
     sa.Column('sort', sa.Integer(), nullable=False, comment='排序'),
@@ -492,22 +476,6 @@ def upgrade() -> None:
     sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_resource_module')),
     sa.UniqueConstraint('code', name='uq_sys_resource_module_code')
-    )
-    op.create_table('sys_resource_permission_rel',
-    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
-    sa.Column('resource_id', sa.String(length=64), nullable=False, comment='资源ID'),
-    sa.Column('permission_key', sa.String(length=128), nullable=False, comment='权限标识'),
-    sa.Column('data_scope', sa.String(length=32), nullable=False, comment='数据范围'),
-    sa.Column('custom_scope_dept_ids', sa.JSON(), nullable=False, comment='自定义数据范围部门ID列表'),
-    sa.Column('sort', sa.Integer(), nullable=False, comment='排序'),
-    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
-    sa.Column('description', sa.Text(), nullable=True, comment='描述'),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
-    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
-    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_resource_permission_rel')),
-    sa.UniqueConstraint('resource_id', 'permission_key', name='uq_sys_resource_permission_rel_resource_permission')
     )
     op.create_table('sys_role',
     sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
@@ -528,51 +496,12 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_role')),
     sa.UniqueConstraint('code', name='uq_sys_role_code')
     )
-    op.create_table('sys_subject_permission_grant_rel',
-    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
-    sa.Column('subject_type', sa.String(length=32), nullable=False, comment='授权主体类型'),
-    sa.Column('subject_id', sa.String(length=64), nullable=False, comment='授权主体ID'),
-    sa.Column('permission_key', sa.String(length=128), nullable=False, comment='权限标识'),
-    sa.Column('data_scope', sa.String(length=32), nullable=False, comment='数据范围'),
-    sa.Column('custom_scope_dept_ids', sa.JSON(), nullable=False, comment='自定义数据范围部门ID列表'),
-    sa.Column('effect', sa.String(length=32), nullable=False, comment='授权效果'),
-    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
-    sa.Column('description', sa.Text(), nullable=True, comment='描述'),
-    sa.Column('reason', sa.Text(), nullable=True, comment='授权原因'),
-    sa.Column('expired_at', sa.DateTime(timezone=True), nullable=True, comment='失效时间'),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
-    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
-    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_subject_permission_grant_rel')),
-    sa.UniqueConstraint('subject_type', 'subject_id', 'permission_key', name='uq_sys_subject_permission_grant_rel_subject_permission')
-    )
-    op.create_table('sys_subject_resource_grant_rel',
-    sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),
-    sa.Column('subject_type', sa.String(length=32), nullable=False, comment='授权主体类型'),
-    sa.Column('subject_id', sa.String(length=64), nullable=False, comment='授权主体ID'),
-    sa.Column('resource_id', sa.String(length=64), nullable=False, comment='资源ID'),
-    sa.Column('grant_mode', sa.String(length=32), nullable=False, comment='授权模式'),
-    sa.Column('effect', sa.String(length=32), nullable=False, comment='授权效果'),
-    sa.Column('status', sa.String(length=32), nullable=False, comment='状态'),
-    sa.Column('description', sa.Text(), nullable=True, comment='描述'),
-    sa.Column('expired_at', sa.DateTime(timezone=True), nullable=True, comment='失效时间'),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='创建时间'),
-    sa.Column('created_by', sa.String(length=64), nullable=True, comment='创建人'),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
-    sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_subject_resource_grant_rel')),
-    sa.UniqueConstraint('subject_type', 'subject_id', 'resource_id', name='uq_sys_subject_resource_grant_rel_subject_resource')
-    )
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('sys_subject_resource_grant_rel')
-    op.drop_table('sys_subject_permission_grant_rel')
     op.drop_table('sys_role')
-    op.drop_table('sys_resource_permission_rel')
     op.drop_table('sys_resource_module')
     op.drop_table('sys_resource')
     op.drop_table('sys_position')
@@ -581,7 +510,9 @@ def downgrade() -> None:
     op.drop_index('idx_sys_operation_audit_created_at', table_name='sys_operation_audit_log')
     op.drop_index('idx_sys_operation_audit_account_id', table_name='sys_operation_audit_log')
     op.drop_table('sys_operation_audit_log')
-    op.drop_table('sys_group_role_rel')
+    op.drop_index('ix_sys_iam_relation_target', table_name='sys_iam_relation')
+    op.drop_index('ix_sys_iam_relation_subject', table_name='sys_iam_relation')
+    op.drop_table('sys_iam_relation')
     op.drop_table('sys_group')
     op.drop_table('sys_file')
     op.drop_index('idx_sys_dict_parent_id', table_name='sys_dict')
@@ -591,10 +522,7 @@ def downgrade() -> None:
     op.drop_table('sys_dept')
     op.drop_index('ix_sys_banner_scope_position_status_sort', table_name='sys_banner')
     op.drop_table('sys_banner')
-    op.drop_table('sys_account_role_rel')
     op.drop_table('sys_account_identity')
-    op.drop_table('sys_account_group_rel')
-    op.drop_table('sys_account_dept_rel')
     op.drop_table('sys_account')
     op.drop_table('portal_user_profile')
     op.drop_index('ix_msg_todo_assignee_account', table_name='msg_todo_assignee')

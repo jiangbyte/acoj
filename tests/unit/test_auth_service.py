@@ -17,17 +17,19 @@ from app.modules.iam.enums import (
     ResourceType,
     RoleScopeType,
 )
-from app.modules.iam.account.model import (
-    SysAccount,
-    SysAccountGroupRel,
-    SysAccountIdentity,
-    SysAccountRoleRel,
-)
-from app.modules.iam.grant.model import SysSubjectPermissionGrantRel, SysSubjectResourceGrantRel
-from app.modules.iam.grant.repository import GrantRepository
-from app.modules.iam.group.model import SysGroup, SysGroupRoleRel
-from app.modules.iam.resource.model import SysResource, SysResourcePermissionRel
+from app.modules.iam.account.model import SysAccount, SysAccountIdentity
+from app.modules.iam.group.model import SysGroup
+from app.modules.iam.relation.repository import IamRelationRepository
+from app.modules.iam.resource.model import SysResource
 from app.modules.iam.role.model import SysRole
+from tests.iam_relation_helpers import (
+    account_group,
+    account_role,
+    group_role,
+    resource_permission,
+    subject_permission_grant,
+    subject_resource_grant,
+)
 
 
 async def _seed_account(
@@ -77,15 +79,11 @@ async def test_admin_login_success(db_session):
     )
     db_session.add_all([role, resource])
     await db_session.flush()
-    db_session.add(SysResourcePermissionRel(resource_id=resource.id, permission_key="iam:account:list"))
+    db_session.add(resource_permission(resource.id, "iam:account:list"))
     db_session.add(
-        SysSubjectResourceGrantRel(
-            subject_type=GrantSubjectType.ROLE.value,
-            subject_id=role.id,
-            resource_id=resource.id,
-        )
+        subject_resource_grant(GrantSubjectType.ROLE, role.id, resource.id)
     )
-    db_session.add(SysAccountRoleRel(account_id=account.id, role_id=role.id))
+    db_session.add(account_role(account.id, role.id))
     await db_session.commit()
 
     payload = await AuthService(db_session).login(
@@ -133,20 +131,20 @@ async def test_permission_grant_priority_group_over_role_and_account_deny(db_ses
     await db_session.flush()
     db_session.add_all(
         [
-            SysAccountRoleRel(account_id=account.id, role_id=role.id),
-            SysAccountGroupRel(account_id=account.id, group_id=group.id),
-            SysGroupRoleRel(group_id=group.id, role_id=role.id),
-            SysSubjectPermissionGrantRel(
-                subject_type=GrantSubjectType.ROLE.value,
-                subject_id=role.id,
-                permission_key="sys:file:page",
+            account_role(account.id, role.id),
+            account_group(account.id, group.id),
+            group_role(group.id, role.id),
+            subject_permission_grant(
+                GrantSubjectType.ROLE,
+                role.id,
+                "sys:file:page",
                 data_scope=DataScope.DEPT.value,
                 custom_scope_dept_ids=[],
             ),
-            SysSubjectPermissionGrantRel(
-                subject_type=GrantSubjectType.GROUP.value,
-                subject_id=group.id,
-                permission_key="sys:file:page",
+            subject_permission_grant(
+                GrantSubjectType.GROUP,
+                group.id,
+                "sys:file:page",
                 data_scope=DataScope.CUSTOM.value,
                 custom_scope_dept_ids=["dept_2"],
             ),
@@ -154,7 +152,7 @@ async def test_permission_grant_priority_group_over_role_and_account_deny(db_ses
     )
     await db_session.commit()
 
-    authorization = await GrantRepository(db_session).get_account_authorization(account.id)
+    authorization = await IamRelationRepository(db_session).get_account_authorization(account.id)
     assert authorization["permission_grants"] == [
         {
             "permission_key": "sys:file:page",
@@ -168,10 +166,10 @@ async def test_permission_grant_priority_group_over_role_and_account_deny(db_ses
     assert authorization["permission_keys"] == ["sys:file:page"]
 
     db_session.add(
-        SysSubjectPermissionGrantRel(
-            subject_type=GrantSubjectType.ACCOUNT.value,
-            subject_id=account.id,
-            permission_key="sys:file:page",
+        subject_permission_grant(
+            GrantSubjectType.ACCOUNT,
+            account.id,
+            "sys:file:page",
             data_scope=DataScope.ALL.value,
             custom_scope_dept_ids=[],
             effect=GrantEffect.DENY.value,
@@ -179,6 +177,6 @@ async def test_permission_grant_priority_group_over_role_and_account_deny(db_ses
     )
     await db_session.commit()
 
-    authorization = await GrantRepository(db_session).get_account_authorization(account.id)
+    authorization = await IamRelationRepository(db_session).get_account_authorization(account.id)
     assert authorization["permission_grants"] == []
     assert authorization["permission_keys"] == []

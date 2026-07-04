@@ -6,11 +6,10 @@ from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.data_scope import build_data_scope_filter, resolve_data_scope_dept_ids
 from app.core.security.session import SessionPayload
 from app.modules.auth.session_service import AccountSessionService
-from app.modules.iam.account.model import SysAccount, SysAccountDeptRel
+from app.modules.iam.account.model import SysAccount
 from app.modules.iam.account.query_service import AccountQueryService
 from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.enums import GrantSubjectType
-from app.modules.iam.grant.repository import GrantRepository
 from app.modules.iam.group.model import SysGroup
 from app.modules.iam.group.repository import GroupRepository
 from app.modules.iam.group.schema import (
@@ -34,6 +33,8 @@ from app.modules.iam.group.schema import (
 )
 from app.modules.iam.permission.service import ensure_registered_permissions
 from app.modules.iam.resource.service import ResourceService
+from app.modules.iam.relation.model import SysIamRelation
+from app.modules.iam.relation.repository import IamRelationRepository
 from app.modules.iam.role.model import SysRole
 from app.modules.iam.role.repository import RoleRepository
 from app.platform.db.transaction import transactional
@@ -43,7 +44,7 @@ class GroupService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.repo = GroupRepository(db)
-        self.grant_repo = GrantRepository(db)
+        self.relation_repo = IamRelationRepository(db)
 
     async def create(
         self,
@@ -182,7 +183,7 @@ class GroupService:
             modules=await ResourceService(self.db).list_grant_modules(),
             grant_info_list=[
                 GroupResourceGrantInfo.model_validate(grant)
-                for grant in await self.grant_repo.list_subject_resource_grants(
+                for grant in await self.relation_repo.list_subject_resource_grants(
                     GrantSubjectType.GROUP,
                     query.id,
                 )
@@ -198,7 +199,7 @@ class GroupService:
             await self._ensure_groups_visible(session, "iam:group:grantresource", [payload.id])
         async with transactional(self.db):
             account_ids = await self.repo.list_account_ids_by_group(payload.id)
-            await self.grant_repo.replace_subject_resource_grant_infos(
+            await self.relation_repo.replace_subject_resource_grant_infos(
                 GrantSubjectType.GROUP,
                 payload.id,
                 payload.grant_info_list,
@@ -216,7 +217,7 @@ class GroupService:
             id=query.id,
             grant_info_list=[
                 GroupPermissionGrantInfo.model_validate(grant)
-                for grant in await self.grant_repo.list_subject_permission_grants(
+                for grant in await self.relation_repo.list_subject_permission_grants(
                     GrantSubjectType.GROUP,
                     query.id,
                 )
@@ -235,7 +236,7 @@ class GroupService:
             permissions=await ResourceService(self.db).list_permission_registry_items(),
             grant_info_list=[
                 GroupPermissionGrantInfo.model_validate(grant)
-                for grant in await self.grant_repo.list_subject_permission_grants(
+                for grant in await self.relation_repo.list_subject_permission_grants(
                     GrantSubjectType.GROUP,
                     query.id,
                 )
@@ -259,7 +260,7 @@ class GroupService:
         )
         async with transactional(self.db):
             account_ids = await self.repo.list_account_ids_by_group(payload.id)
-            await self.grant_repo.replace_subject_permission_grants(
+            await self.relation_repo.replace_subject_permission_grants(
                 GrantSubjectType.GROUP,
                 payload.id,
                 payload.grant_info_list,
@@ -293,7 +294,7 @@ class GroupService:
             session,
             permission_key,
             owner_column=SysAccount.id,
-            dept_column=SysAccountDeptRel.dept_id,
+            dept_column=SysIamRelation.target_id,
         )
 
     async def _ensure_groups_visible(

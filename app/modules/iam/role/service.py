@@ -6,11 +6,12 @@ from app.core.schema.base import IdQuery, IdsRequest, to_schema, to_schema_list
 from app.core.security.data_scope import build_data_scope_filter, resolve_data_scope_dept_ids
 from app.core.security.session import SessionPayload
 from app.modules.auth.session_service import AccountSessionService
-from app.modules.iam.account.model import SysAccount, SysAccountDeptRel
+from app.modules.iam.account.model import SysAccount
 from app.modules.iam.account.query_service import AccountQueryService
 from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.permission.service import PermissionService, ensure_registered_permissions
 from app.modules.iam.resource.service import ResourceService
+from app.modules.iam.relation.model import SysIamRelation
 from app.modules.iam.role.model import SysRole
 from app.modules.iam.role.repository import RoleRepository
 from app.modules.iam.role.schema import (
@@ -208,7 +209,7 @@ class RoleService:
             session,
             permission_key,
             owner_column=SysAccount.id,
-            dept_column=SysAccountDeptRel.dept_id,
+            dept_column=SysIamRelation.target_id,
         )
 
     async def _ensure_roles_visible(

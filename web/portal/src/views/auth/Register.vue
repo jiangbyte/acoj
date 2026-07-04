@@ -2,6 +2,7 @@
 import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
 import { authApi } from '@/api'
 import CaptchaInput from '@/components/common/CaptchaInput.vue'
+import { isValidEmail } from '@/utils'
 import { encryptPasswords } from '@/utils/security'
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -32,6 +33,17 @@ function validateConfirmPassword(_rule: FormItemRule, value: string) {
   return true
 }
 
+function validateRequiredEmail(_rule: FormItemRule, value: string) {
+  const text = String(value ?? '').trim()
+  if (!text) {
+    return new Error('Please enter email')
+  }
+  if (!isValidEmail(text)) {
+    return new Error('Please enter a valid email')
+  }
+  return true
+}
+
 const rules = computed<FormRules>(() => ({
   account: [
     {
@@ -49,8 +61,7 @@ const rules = computed<FormRules>(() => ({
   ],
   email: [
     {
-      required: true,
-      message: 'Please enter email',
+      validator: validateRequiredEmail,
       trigger: ['input', 'blur'],
     },
   ],

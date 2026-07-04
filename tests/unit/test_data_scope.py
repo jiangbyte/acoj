@@ -3,15 +3,17 @@ from sqlalchemy import select
 from app.core.config.enums import AccountType, DataScope
 from app.core.security.data_scope import build_data_scope_filter, list_dept_and_child_ids
 from app.core.security.session import SessionPayload
-from app.modules.iam.account.model import SysAccountDeptRel
 from app.modules.iam.dept.model import SysDept
+from app.modules.iam.enums import IamRelationType
+from app.modules.iam.relation.model import SysIamRelation
+from tests.iam_relation_helpers import account_dept
 
 
 async def test_data_scope_defaults_to_self(db_session):
     db_session.add_all(
         [
-            SysAccountDeptRel(account_id="account_1", dept_id="dept_1"),
-            SysAccountDeptRel(account_id="account_2", dept_id="dept_1"),
+            account_dept("account_1", "dept_1"),
+            account_dept("account_2", "dept_1"),
         ]
     )
     await db_session.commit()
@@ -27,10 +29,17 @@ async def test_data_scope_defaults_to_self(db_session):
         db_session,
         session,
         "sys:file:page",
-        owner_column=SysAccountDeptRel.account_id,
-        dept_column=SysAccountDeptRel.dept_id,
+        owner_column=SysIamRelation.subject_id,
+        dept_column=SysIamRelation.target_id,
     )
-    rows = (await db_session.execute(select(SysAccountDeptRel.account_id).where(condition))).scalars().all()
+    rows = (
+        await db_session.execute(
+            select(SysIamRelation.subject_id).where(
+                SysIamRelation.relation_type == IamRelationType.ACCOUNT_DEPT.value,
+                condition,
+            )
+        )
+    ).scalars().all()
 
     assert rows == ["account_1"]
 
@@ -38,8 +47,8 @@ async def test_data_scope_defaults_to_self(db_session):
 async def test_data_scope_all_returns_all_rows(db_session):
     db_session.add_all(
         [
-            SysAccountDeptRel(account_id="account_1", dept_id="dept_1"),
-            SysAccountDeptRel(account_id="account_2", dept_id="dept_2"),
+            account_dept("account_1", "dept_1"),
+            account_dept("account_2", "dept_2"),
         ]
     )
     await db_session.commit()
@@ -64,10 +73,17 @@ async def test_data_scope_all_returns_all_rows(db_session):
         db_session,
         session,
         "sys:file:page",
-        owner_column=SysAccountDeptRel.account_id,
-        dept_column=SysAccountDeptRel.dept_id,
+        owner_column=SysIamRelation.subject_id,
+        dept_column=SysIamRelation.target_id,
     )
-    rows = (await db_session.execute(select(SysAccountDeptRel.account_id).where(condition))).scalars().all()
+    rows = (
+        await db_session.execute(
+            select(SysIamRelation.subject_id).where(
+                SysIamRelation.relation_type == IamRelationType.ACCOUNT_DEPT.value,
+                condition,
+            )
+        )
+    ).scalars().all()
 
     assert rows == ["account_1", "account_2"]
 
@@ -75,8 +91,8 @@ async def test_data_scope_all_returns_all_rows(db_session):
 async def test_data_scope_custom_uses_custom_dept_ids(db_session):
     db_session.add_all(
         [
-            SysAccountDeptRel(account_id="account_1", dept_id="dept_1"),
-            SysAccountDeptRel(account_id="account_2", dept_id="dept_2"),
+            account_dept("account_1", "dept_1"),
+            account_dept("account_2", "dept_2"),
         ]
     )
     await db_session.commit()
@@ -101,10 +117,17 @@ async def test_data_scope_custom_uses_custom_dept_ids(db_session):
         db_session,
         session,
         "sys:file:page",
-        owner_column=SysAccountDeptRel.account_id,
-        dept_column=SysAccountDeptRel.dept_id,
+        owner_column=SysIamRelation.subject_id,
+        dept_column=SysIamRelation.target_id,
     )
-    rows = (await db_session.execute(select(SysAccountDeptRel.account_id).where(condition))).scalars().all()
+    rows = (
+        await db_session.execute(
+            select(SysIamRelation.subject_id).where(
+                SysIamRelation.relation_type == IamRelationType.ACCOUNT_DEPT.value,
+                condition,
+            )
+        )
+    ).scalars().all()
 
     assert rows == ["account_2"]
 
@@ -116,10 +139,10 @@ async def test_data_scope_dept_and_child_loads_depts_in_batch(db_session):
             SysDept(id="dept_2", parent_id="dept_1", code="dept_2", name="Dept 2", category="SYS"),
             SysDept(id="dept_3", parent_id="dept_2", code="dept_3", name="Dept 3", category="SYS"),
             SysDept(id="dept_4", code="dept_4", name="Dept 4", category="SYS"),
-            SysAccountDeptRel(account_id="account_1", dept_id="dept_1"),
-            SysAccountDeptRel(account_id="account_2", dept_id="dept_2"),
-            SysAccountDeptRel(account_id="account_3", dept_id="dept_3"),
-            SysAccountDeptRel(account_id="account_4", dept_id="dept_4"),
+            account_dept("account_1", "dept_1"),
+            account_dept("account_2", "dept_2"),
+            account_dept("account_3", "dept_3"),
+            account_dept("account_4", "dept_4"),
         ]
     )
     await db_session.commit()
@@ -147,9 +170,16 @@ async def test_data_scope_dept_and_child_loads_depts_in_batch(db_session):
         db_session,
         session,
         "sys:file:page",
-        owner_column=SysAccountDeptRel.account_id,
-        dept_column=SysAccountDeptRel.dept_id,
+        owner_column=SysIamRelation.subject_id,
+        dept_column=SysIamRelation.target_id,
     )
-    rows = (await db_session.execute(select(SysAccountDeptRel.account_id).where(condition))).scalars().all()
+    rows = (
+        await db_session.execute(
+            select(SysIamRelation.subject_id).where(
+                SysIamRelation.relation_type == IamRelationType.ACCOUNT_DEPT.value,
+                condition,
+            )
+        )
+    ).scalars().all()
 
     assert rows == ["account_1", "account_2", "account_3"]

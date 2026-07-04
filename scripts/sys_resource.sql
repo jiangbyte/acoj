@@ -93,36 +93,56 @@ COMMENT ON COLUMN "public"."sys_resource"."updated_at" IS '更新时间';
 COMMENT ON COLUMN "public"."sys_resource"."updated_by" IS '更新人';
 
 -- ----------------------------
--- Table structure for sys_resource_permission_rel
+-- Table structure for sys_iam_relation
 -- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_resource_permission_rel";
-CREATE TABLE "public"."sys_resource_permission_rel" (
+DROP TABLE IF EXISTS "public"."sys_iam_relation";
+CREATE TABLE "public"."sys_iam_relation" (
   "id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "resource_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-  "permission_key" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "subject_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "subject_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "relation_type" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "target_type" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "target_id" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+  "target_key" varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
+  "grant_mode" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
+  "effect" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
   "data_scope" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
   "custom_scope_dept_ids" json NOT NULL,
+  "is_primary" bool NOT NULL,
   "sort" int4 NOT NULL,
   "status" varchar(32) COLLATE "pg_catalog"."default" NOT NULL,
   "description" text COLLATE "pg_catalog"."default",
+  "reason" text COLLATE "pg_catalog"."default",
+  "expired_at" timestamptz(6),
+  "extra" json NOT NULL,
   "created_at" timestamptz(6) NOT NULL DEFAULT now(),
   "created_by" varchar(64) COLLATE "pg_catalog"."default",
   "updated_at" timestamptz(6) NOT NULL DEFAULT now(),
   "updated_by" varchar(64) COLLATE "pg_catalog"."default"
 )
 ;
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."id" IS '主键';
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."resource_id" IS '资源ID';
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."permission_key" IS '权限标识';
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."data_scope" IS '数据范围';
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."custom_scope_dept_ids" IS '自定义数据范围部门ID列表';
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."sort" IS '排序';
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."status" IS '状态';
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."description" IS '描述';
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."created_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."created_by" IS '创建人';
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."updated_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_resource_permission_rel"."updated_by" IS '更新人';
+COMMENT ON COLUMN "public"."sys_iam_relation"."id" IS '主键';
+COMMENT ON COLUMN "public"."sys_iam_relation"."subject_type" IS '主体类型';
+COMMENT ON COLUMN "public"."sys_iam_relation"."subject_id" IS '主体ID';
+COMMENT ON COLUMN "public"."sys_iam_relation"."relation_type" IS '关系类型';
+COMMENT ON COLUMN "public"."sys_iam_relation"."target_type" IS '目标类型';
+COMMENT ON COLUMN "public"."sys_iam_relation"."target_id" IS '目标ID';
+COMMENT ON COLUMN "public"."sys_iam_relation"."target_key" IS '目标标识';
+COMMENT ON COLUMN "public"."sys_iam_relation"."grant_mode" IS '授权模式';
+COMMENT ON COLUMN "public"."sys_iam_relation"."effect" IS '授权效果';
+COMMENT ON COLUMN "public"."sys_iam_relation"."data_scope" IS '数据范围';
+COMMENT ON COLUMN "public"."sys_iam_relation"."custom_scope_dept_ids" IS '自定义数据范围部门ID列表';
+COMMENT ON COLUMN "public"."sys_iam_relation"."is_primary" IS '主关系';
+COMMENT ON COLUMN "public"."sys_iam_relation"."sort" IS '排序';
+COMMENT ON COLUMN "public"."sys_iam_relation"."status" IS '状态';
+COMMENT ON COLUMN "public"."sys_iam_relation"."description" IS '描述';
+COMMENT ON COLUMN "public"."sys_iam_relation"."reason" IS '授权原因';
+COMMENT ON COLUMN "public"."sys_iam_relation"."expired_at" IS '失效时间';
+COMMENT ON COLUMN "public"."sys_iam_relation"."extra" IS '扩展信息';
+COMMENT ON COLUMN "public"."sys_iam_relation"."created_at" IS '创建时间';
+COMMENT ON COLUMN "public"."sys_iam_relation"."created_by" IS '创建人';
+COMMENT ON COLUMN "public"."sys_iam_relation"."updated_at" IS '更新时间';
+COMMENT ON COLUMN "public"."sys_iam_relation"."updated_by" IS '更新人';
 
 -- ----------------------------
 -- Records of sys_resource
@@ -228,10 +248,10 @@ INSERT INTO "public"."sys_resource" ("id", "parent_id", "code", "name", "resourc
 ('201245', '200022', 'message-todo-cancel', '取消待办', 'BUTTON', '210001', NULL, NULL, NULL, NULL, NULL, 5, false, false, false, 'ENABLED', NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
 
 -- ----------------------------
--- Records of sys_resource_permission_rel
+-- Records of sys_iam_relation: resource permission bindings
 -- ----------------------------
-INSERT INTO "public"."sys_resource_permission_rel" ("id", "resource_id", "permission_key", "data_scope", "custom_scope_dept_ids", "sort", "status", "description", "created_at", "created_by", "updated_at", "updated_by")
-SELECT (400000 + row_number() OVER (ORDER BY v.sort, v.resource_id, v.permission_key))::text, v.resource_id, v.permission_key, 'ALL', '[]'::json, v.sort, 'ENABLED', v.description, '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL
+INSERT INTO "public"."sys_iam_relation" ("id", "subject_type", "subject_id", "relation_type", "target_type", "target_id", "target_key", "grant_mode", "effect", "data_scope", "custom_scope_dept_ids", "is_primary", "sort", "status", "description", "reason", "expired_at", "extra", "created_at", "created_by", "updated_at", "updated_by")
+SELECT (400000 + row_number() OVER (ORDER BY v.sort, v.resource_id, v.permission_key))::text, 'RESOURCE', v.resource_id, 'RESOURCE_PERMISSION', 'PERMISSION', '', v.permission_key, 'CASCADE', 'ALLOW', 'ALL', '[]'::json, false, v.sort, 'ENABLED', v.description, NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL
 FROM (VALUES
 (1, '200001', 'dashboard:overview:view', '工作台查看'),
 (10, '200004', 'sys:dict:page', '字典分页'),
@@ -347,33 +367,13 @@ FROM (VALUES
 ) AS v(sort, resource_id, permission_key, description);
 
 -- ----------------------------
--- Records of sys_subject_resource_grant_rel
--- 超管角色（id=1）默认拥有全部资源
+-- Records of sys_iam_relation: super admin role resource grants
+-- 超管角色（id=1）默认拥有全部后台资源
 -- ----------------------------
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300001', 'ROLE', '1', '200001', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300003', 'ROLE', '1', '200003', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300004', 'ROLE', '1', '200004', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300005', 'ROLE', '1', '200005', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300023', 'ROLE', '1', '200023', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300027', 'ROLE', '1', '200027', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300024', 'ROLE', '1', '200024', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300025', 'ROLE', '1', '200025', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300006', 'ROLE', '1', '200006', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300007', 'ROLE', '1', '200007', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300008', 'ROLE', '1', '200008', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300009', 'ROLE', '1', '200009', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300010', 'ROLE', '1', '200010', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300011', 'ROLE', '1', '200011', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300012', 'ROLE', '1', '200012', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300018', 'ROLE', '1', '200018', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300019', 'ROLE', '1', '200019', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300020', 'ROLE', '1', '200020', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300021', 'ROLE', '1', '200021', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by") VALUES ('300022', 'ROLE', '1', '200022', 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认资源授权', NULL, '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_subject_resource_grant_rel" ("id", "subject_type", "subject_id", "resource_id", "grant_mode", "effect", "status", "description", "expired_at", "created_at", "created_by", "updated_at", "updated_by")
-SELECT concat('3', substring(id from 2)), 'ROLE', '1', id, 'CASCADE', 'ALLOW', 'ENABLED', '超管角色默认按钮资源授权', NULL, '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL
+INSERT INTO "public"."sys_iam_relation" ("id", "subject_type", "subject_id", "relation_type", "target_type", "target_id", "target_key", "grant_mode", "effect", "data_scope", "custom_scope_dept_ids", "is_primary", "sort", "status", "description", "reason", "expired_at", "extra", "created_at", "created_by", "updated_at", "updated_by")
+SELECT concat('3', substring(id from 2)), 'ROLE', '1', 'SUBJECT_RESOURCE_GRANT', 'RESOURCE', id, '', 'CASCADE', 'ALLOW', 'SELF', '[]'::json, false, 99, 'ENABLED', '超管角色默认资源授权', NULL, NULL, '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL
 FROM "public"."sys_resource"
-WHERE "resource_type" = 'BUTTON' AND "module_id" = '210001';
+WHERE "module_id" = '210001';
 
 -- ----------------------------
 -- Uniques structure for table sys_resource_module
@@ -396,11 +396,17 @@ ALTER TABLE "public"."sys_resource" ADD CONSTRAINT "uq_sys_resource_code" UNIQUE
 ALTER TABLE "public"."sys_resource" ADD CONSTRAINT "pk_sys_resource" PRIMARY KEY ("id");
 
 -- ----------------------------
--- Uniques structure for table sys_resource_permission_rel
+-- Uniques structure for table sys_iam_relation
 -- ----------------------------
-ALTER TABLE "public"."sys_resource_permission_rel" ADD CONSTRAINT "uq_sys_resource_permission_rel_resource_permission" UNIQUE ("resource_id", "permission_key");
+ALTER TABLE "public"."sys_iam_relation" ADD CONSTRAINT "uq_sys_iam_relation_subject_relation_target" UNIQUE ("subject_type", "subject_id", "relation_type", "target_type", "target_id", "target_key");
 
 -- ----------------------------
--- Primary Key structure for table sys_resource_permission_rel
+-- Indexes structure for table sys_iam_relation
 -- ----------------------------
-ALTER TABLE "public"."sys_resource_permission_rel" ADD CONSTRAINT "pk_sys_resource_permission_rel" PRIMARY KEY ("id");
+CREATE INDEX "ix_sys_iam_relation_subject" ON "public"."sys_iam_relation" ("subject_type", "subject_id", "relation_type");
+CREATE INDEX "ix_sys_iam_relation_target" ON "public"."sys_iam_relation" ("target_type", "target_id", "target_key");
+
+-- ----------------------------
+-- Primary Key structure for table sys_iam_relation
+-- ----------------------------
+ALTER TABLE "public"."sys_iam_relation" ADD CONSTRAINT "pk_sys_iam_relation" PRIMARY KEY ("id");

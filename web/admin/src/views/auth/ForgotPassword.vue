@@ -2,6 +2,7 @@
 import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
 import { authApi } from '@/api'
 import CaptchaInput from '@/components/common/CaptchaInput.vue'
+import { isValidEmail } from '@/utils'
 import { encryptPasswords } from '@/utils/security'
 import { computed, reactive, ref } from 'vue'
 import AuthLayout from './AuthLayout.vue'
@@ -33,11 +34,21 @@ function validateConfirmPassword(_rule: FormItemRule, value: string) {
   return true
 }
 
+function validateRequiredEmail(_rule: FormItemRule, value: string) {
+  const text = String(value ?? '').trim()
+  if (!text) {
+    return new Error('Please enter login email')
+  }
+  if (!isValidEmail(text)) {
+    return new Error('Please enter a valid email')
+  }
+  return true
+}
+
 const rules = computed<FormRules>(() => ({
   email: [
     {
-      required: true,
-      message: 'Please enter login email',
+      validator: validateRequiredEmail,
       trigger: ['input', 'blur'],
     },
   ],
@@ -70,13 +81,22 @@ const rules = computed<FormRules>(() => ({
 }))
 
 async function sendLink() {
-  if (!form.email.trim()) {
-    window.$message.warning('Please enter login email')
-    return
-  }
-  if (!form.captcha_value.trim()) {
-    window.$message.warning('Please enter captcha')
-    return
+  if (isResetMode.value) {
+    const emailValidation = validateRequiredEmail({} as FormItemRule, form.email)
+    if (emailValidation instanceof Error) {
+      window.$message.warning(emailValidation.message)
+      return
+    }
+    if (!form.captcha_value.trim()) {
+      window.$message.warning('Please enter captcha')
+      return
+    }
+  } else {
+    try {
+      await formRef.value?.validate()
+    } catch {
+      return
+    }
   }
   loading.value = true
   try {

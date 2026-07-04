@@ -11,7 +11,7 @@ from app.core.security.password import hash_password
 from app.core.security.transport import decrypt_passwords
 from app.core.security.session import SessionPayload
 from app.modules.auth.session_service import AccountSessionService
-from app.modules.iam.account.model import SysAccount, SysAccountDeptRel
+from app.modules.iam.account.model import SysAccount
 from app.modules.iam.account.query_service import AccountQueryService
 from app.modules.iam.account.repository import AccountRepository
 from app.modules.iam.account.schema import (
@@ -40,9 +40,10 @@ from app.modules.iam.account.schema import (
     SysAccountSchema,
 )
 from app.modules.iam.enums import GrantSubjectType
-from app.modules.iam.grant.repository import GrantRepository
 from app.modules.iam.group.model import SysGroup
 from app.modules.iam.group.repository import GroupRepository
+from app.modules.iam.relation.model import SysIamRelation
+from app.modules.iam.relation.repository import IamRelationRepository
 from app.modules.iam.permission.service import ensure_registered_permissions
 from app.modules.iam.resource.service import ResourceService
 from app.modules.iam.role.model import SysRole
@@ -58,7 +59,7 @@ class AccountService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.repo = AccountRepository(db)
-        self.grant_repo = GrantRepository(db)
+        self.relation_repo = IamRelationRepository(db)
 
     async def create(self, payload: AccountCreateRequest) -> None:
         self._ensure_login_contact_payload(payload)
@@ -210,7 +211,7 @@ class AccountService:
             id=query.id,
             grant_info_list=[
                 AccountPermissionGrantInfo.model_validate(grant)
-                for grant in await self.grant_repo.list_subject_permission_grants(
+                for grant in await self.relation_repo.list_subject_permission_grants(
                     GrantSubjectType.ACCOUNT,
                     query.id,
                 )
@@ -237,7 +238,7 @@ class AccountService:
             [grant.permission_key for grant in payload.grant_info_list]
         )
         async with transactional(self.db):
-            await self.grant_repo.replace_subject_permission_grants(
+            await self.relation_repo.replace_subject_permission_grants(
                 GrantSubjectType.ACCOUNT,
                 payload.id,
                 payload.grant_info_list,
@@ -256,7 +257,7 @@ class AccountService:
             permissions=await ResourceService(self.db).list_permission_registry_items(),
             grant_info_list=[
                 AccountPermissionGrantInfo.model_validate(grant)
-                for grant in await self.grant_repo.list_subject_permission_grants(
+                for grant in await self.relation_repo.list_subject_permission_grants(
                     GrantSubjectType.ACCOUNT,
                     query.id,
                 )
@@ -275,7 +276,7 @@ class AccountService:
             modules=await ResourceService(self.db).list_grant_modules(),
             grant_info_list=[
                 AccountResourceGrantInfo.model_validate(grant)
-                for grant in await self.grant_repo.list_subject_resource_grants(
+                for grant in await self.relation_repo.list_subject_resource_grants(
                     GrantSubjectType.ACCOUNT,
                     query.id,
                 )
@@ -290,7 +291,7 @@ class AccountService:
         if session is not None:
             await self._ensure_accounts_visible(session, "iam:account:grantresource", [payload.id])
         async with transactional(self.db):
-            await self.grant_repo.replace_subject_resource_grant_infos(
+            await self.relation_repo.replace_subject_resource_grant_infos(
                 GrantSubjectType.ACCOUNT,
                 payload.id,
                 payload.grant_info_list,
@@ -399,7 +400,7 @@ class AccountService:
             session,
             permission_key,
             owner_column=SysAccount.id,
-            dept_column=SysAccountDeptRel.dept_id,
+            dept_column=SysIamRelation.target_id,
         )
 
     async def _role_scope_filter(self, session: SessionPayload, permission_key: str):

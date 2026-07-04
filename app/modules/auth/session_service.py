@@ -7,7 +7,7 @@ from app.core.config.settings import settings
 from app.core.security.session import SessionPayload, session_store
 from app.modules.iam.account.model import SysAccount
 from app.modules.iam.account.repository import AccountRepository
-from app.modules.iam.grant.repository import GrantRepository
+from app.modules.iam.relation.repository import IamRelationRepository
 
 
 class AccountSessionService:
@@ -16,7 +16,7 @@ class AccountSessionService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.account_repo = AccountRepository(db)
-        self.grant_repo = GrantRepository(db)
+        self.relation_repo = IamRelationRepository(db)
 
     async def build_session_payload(
         self,
@@ -27,7 +27,7 @@ class AccountSessionService:
         user_agent: str | None = None,
         device_label: str | None = None,
     ) -> SessionPayload:
-        authorization = await self.grant_repo.get_account_authorization(account.id)
+        authorization = await self.relation_repo.get_account_authorization(account.id)
         return self._build_session_payload_from_authorization(
             account,
             token,
@@ -45,7 +45,7 @@ class AccountSessionService:
         if not accounts:
             return
         account_map = {account.id: account for account in accounts}
-        authorizations = await self.grant_repo.get_accounts_authorization(list(account_map.keys()))
+        authorizations = await self.relation_repo.get_accounts_authorization(list(account_map.keys()))
         targets = [(account.account_type, account.id) for account in accounts]
         payload_factories = {}
 

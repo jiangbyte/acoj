@@ -1,7 +1,7 @@
 from sqlalchemy import JSON, Boolean, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.config.enums import DataScope, StatusEnum
+from app.core.config.enums import StatusEnum
 from app.modules.iam.enums import ResourceModuleClient
 from app.platform.db.base import Base
 from app.platform.db.mixins import TimestampMixin
@@ -90,45 +90,3 @@ class SysResourceModule(Base, TimestampMixin):
     )
     description: Mapped[str | None] = mapped_column(Text, comment="描述")
     extra: Mapped[dict] = mapped_column(JSON, default=dict, comment="扩展信息")
-
-
-class SysResourcePermissionRel(Base, TimestampMixin):
-    """资源权限项关系表，用于描述资源节点下挂载的权限及其数据范围。"""
-
-    __tablename__ = "sys_resource_permission_rel"
-    __table_args__ = (
-        UniqueConstraint(
-            "resource_id",
-            "permission_key",
-            name="uq_sys_resource_permission_rel_resource_permission",
-        ),
-    )
-
-    id: Mapped[str] = mapped_column(
-        String(64),
-        primary_key=True,
-        default=generate_snowflake_id,
-        comment="主键",
-    )
-    resource_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="资源ID")
-    permission_key: Mapped[str] = mapped_column(String(128), nullable=False, comment="权限标识")
-    data_scope: Mapped[str] = mapped_column(
-        String(32),
-        nullable=False,
-        default=DataScope.SELF.value,
-        comment="数据范围",
-    )
-    custom_scope_dept_ids: Mapped[list[str]] = mapped_column(
-        JSON,
-        default=list,
-        nullable=False,
-        comment="自定义数据范围部门ID列表",
-    )
-    sort: Mapped[int] = mapped_column(Integer, default=99, nullable=False, comment="排序")
-    status: Mapped[str] = mapped_column(
-        String(32),
-        nullable=False,
-        default=StatusEnum.ENABLED.value,
-        comment="状态",
-    )
-    description: Mapped[str | None] = mapped_column(Text, comment="描述")

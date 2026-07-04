@@ -1,10 +1,12 @@
 from sqlalchemy import Select, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.exceptions.business import NotFoundError
-from app.modules.iam.account.model import SysAccount, SysAccountDeptRel, SysAccountGroupRel
-from app.modules.iam.group.model import SysGroup, SysGroupRoleRel
+from app.modules.iam.account.model import SysAccount
+from app.modules.iam.enums import IamRelationSubjectType, IamRelationTargetType, IamRelationType
+from app.modules.iam.group.model import SysGroup
 from app.modules.iam.reference_guard import count_group_references, raise_if_referenced
 from app.modules.iam.group.schema import (
     GroupAdminPageQuery,
@@ -14,12 +16,15 @@ from app.modules.iam.group.schema import (
     GroupRoleAssignRequest,
     GroupUpdateRequest,
 )
+from app.modules.iam.relation.model import SysIamRelation
+from app.modules.iam.relation.repository import IamRelationRepository, account_dept_condition
 from app.modules.iam.role.model import SysRole
 
 
 class GroupRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.relations = IamRelationRepository(db)
 
     async def create(self, payload: GroupCreateRequest) -> None:
         group = SysGroup(**payload.model_dump())
@@ -97,12 +102,12 @@ class GroupRepository:
         stmt = select(SysGroup).where(SysGroup.id.in_(unique_ids))
         return list((await self.db.execute(stmt)).scalars().all())
 
-    async def assign_group_to_role(self, payload: GroupRoleAssignRequest) -> SysGroupRoleRel:
+    async def assign_group_to_role(self, payload: GroupRoleAssignRequest) -> SysIamRelation:
         if not await self.db.get(SysGroup, payload.group_id):
             raise NotFoundError("Group not found")
         if not await self.db.get(SysRole, payload.role_id):
             raise NotFoundError("Role not found")
-        relation = SysGroupRoleRel(**payload.model_dump())
+        relation = self.relations.group_role(payload.group_id, payload.role_id)
         self.db.add(relation)
         await self.db.flush()
         return relation
@@ -110,11 +115,11 @@ class GroupRepository:
     async def list_accounts(
         self,
         data_scope_filter: ColumnElement[bool] | None = None,
-    ) -> list[SysAccount]:
+        ) -> list[SysAccount]:
         stmt = select(SysAccount).order_by(SysAccount.id.desc())
         if data_scope_filter is not None:
             stmt = (
-                stmt.outerjoin(SysAccountDeptRel, SysAccountDeptRel.account_id == SysAccount.id)
+                stmt.outerjoin(SysIamRelation, account_dept_condition(SysIamRelation, SysAccount.id))
                 .where(data_scope_filter)
             )
         return list((await self.db.execute(stmt)).unique().scalars().all())
@@ -125,19 +130,33 @@ class GroupRepository:
         data_scope_filter: ColumnElement[bool] | None = None,
     ) -> list[SysAccount]:
         await self.get_required(group_id)
+        account_group_rel = aliased(SysIamRelation)
         stmt = (
             select(SysAccount)
-            .join(SysAccountGroupRel, SysAccountGroupRel.account_id == SysAccount.id)
-            .where(SysAccountGroupRel.group_id == group_id)
+            .join(account_group_rel, account_group_rel.subject_id == SysAccount.id)
+            .where(
+                account_group_rel.subject_type == IamRelationSubjectType.ACCOUNT.value,
+                account_group_rel.relation_type == IamRelationType.ACCOUNT_GROUP.value,
+                account_group_rel.target_type == IamRelationTargetType.GROUP.value,
+                account_group_rel.target_id == group_id,
+            )
             .order_by(SysAccount.id.desc())
         )
         if data_scope_filter is not None:
-            stmt = stmt.outerjoin(SysAccountDeptRel, SysAccountDeptRel.account_id == SysAccount.id).where(data_scope_filter)
+            stmt = stmt.outerjoin(
+                SysIamRelation,
+                account_dept_condition(SysIamRelation, SysAccount.id),
+            ).where(data_scope_filter)
         return list((await self.db.execute(stmt)).unique().scalars().all())
 
     async def list_account_ids_by_group(self, group_id: str) -> list[str]:
         await self.get_required(group_id)
-        stmt = select(SysAccountGroupRel.account_id).where(SysAccountGroupRel.group_id == group_id)
+        stmt = select(SysIamRelation.subject_id).where(
+            SysIamRelation.subject_type == IamRelationSubjectType.ACCOUNT.value,
+            SysIamRelation.relation_type == IamRelationType.ACCOUNT_GROUP.value,
+            SysIamRelation.target_type == IamRelationTargetType.GROUP.value,
+            SysIamRelation.target_id == group_id,
+        )
         return [str(value) for value in (await self.db.execute(stmt)).scalars().all()]
 
     async def replace_group_accounts(self, payload: GroupGrantUserRequest) -> None:
@@ -148,9 +167,13 @@ class GroupRepository:
             existing_ids = set((await self.db.execute(stmt)).scalars().all())
             if len(existing_ids) != len(account_ids):
                 raise NotFoundError("Account not found")
-        await self.db.execute(delete(SysAccountGroupRel).where(SysAccountGroupRel.group_id == payload.id))
+        await self.relations.delete_target_relations(
+            IamRelationType.ACCOUNT_GROUP,
+            IamRelationTargetType.GROUP.value,
+            [payload.id],
+        )
         for account_id in account_ids:
-            self.db.add(SysAccountGroupRel(account_id=account_id, group_id=payload.id))
+            self.db.add(self.relations.account_group(account_id, payload.id))
         await self.db.flush()
 
     async def list_all_roles(
@@ -166,11 +189,16 @@ class GroupRepository:
         self,
         group_id: str,
         data_scope_filter: ColumnElement[bool] | None = None,
-    ) -> list[str]:
+        ) -> list[str]:
         await self.get_required(group_id)
-        stmt = select(SysGroupRoleRel.role_id).where(SysGroupRoleRel.group_id == group_id)
+        stmt = select(SysIamRelation.target_id).where(
+            SysIamRelation.subject_type == IamRelationSubjectType.GROUP.value,
+            SysIamRelation.subject_id == group_id,
+            SysIamRelation.relation_type == IamRelationType.GROUP_ROLE.value,
+            SysIamRelation.target_type == IamRelationTargetType.ROLE.value,
+        )
         if data_scope_filter is not None:
-            stmt = stmt.join(SysRole, SysRole.id == SysGroupRoleRel.role_id).where(data_scope_filter)
+            stmt = stmt.join(SysRole, SysRole.id == SysIamRelation.target_id).where(data_scope_filter)
         return [str(value) for value in (await self.db.execute(stmt)).scalars().all()]
 
     async def replace_group_roles(self, payload: GroupGrantRoleRequest) -> None:
@@ -181,7 +209,11 @@ class GroupRepository:
             existing_ids = set((await self.db.execute(stmt)).scalars().all())
             if len(existing_ids) != len(role_ids):
                 raise NotFoundError("Role not found")
-        await self.db.execute(delete(SysGroupRoleRel).where(SysGroupRoleRel.group_id == payload.id))
+        await self.relations.delete_subject_relations(
+            IamRelationSubjectType.GROUP.value,
+            payload.id,
+            IamRelationType.GROUP_ROLE,
+        )
         for role_id in role_ids:
-            self.db.add(SysGroupRoleRel(group_id=payload.id, role_id=role_id))
+            self.db.add(self.relations.group_role(payload.id, role_id))
         await self.db.flush()

@@ -2,10 +2,10 @@ from app.core.config.enums import AccountType, StatusEnum
 from app.core.response.pagination import PageQuery
 from app.core.security.session import SessionPayload
 from app.modules.iam.enums import GrantSubjectType, ResourceModuleClient, ResourceType
-from app.modules.iam.grant.model import SysSubjectResourceGrantRel
 from app.modules.iam.resource.model import SysResource, SysResourceModule
 from app.modules.iam.resource.schema import ResourceModuleAdminPageQuery
 from app.modules.iam.resource.service import ResourceModuleService, ResourceService
+from tests.iam_relation_helpers import subject_resource_grant
 
 
 def _session(account_id: str, permission_keys: list[str]) -> SessionPayload:
@@ -89,10 +89,10 @@ async def test_current_resources_regular_account_returns_granted_resources_with_
                 resource_type=ResourceType.MENU.value,
                 sort=3,
             ),
-            SysSubjectResourceGrantRel(
-                subject_type=GrantSubjectType.ACCOUNT.value,
-                subject_id="account_1",
-                resource_id="resource_granted",
+            subject_resource_grant(
+                GrantSubjectType.ACCOUNT,
+                "account_1",
+                "resource_granted",
             ),
         ]
     )

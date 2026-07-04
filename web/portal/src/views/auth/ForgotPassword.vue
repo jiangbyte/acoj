@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import type { FormInst, FormRules } from 'naive-ui'
+import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
 import { authApi } from '@/api'
 import CaptchaInput from '@/components/common/CaptchaInput.vue'
+import { isValidEmail } from '@/utils'
 import { computed, reactive, ref } from 'vue'
 import AuthLayout from './AuthLayout.vue'
 
@@ -15,11 +16,21 @@ const form = reactive({
   captcha_value: '',
 })
 
+function validateRequiredEmail(_rule: FormItemRule, value: string) {
+  const text = String(value ?? '').trim()
+  if (!text) {
+    return new Error('Please enter login email')
+  }
+  if (!isValidEmail(text)) {
+    return new Error('Please enter a valid email')
+  }
+  return true
+}
+
 const rules = computed<FormRules>(() => ({
   email: [
     {
-      required: true,
-      message: 'Please enter login email',
+      validator: validateRequiredEmail,
       trigger: ['input', 'blur'],
     },
   ],

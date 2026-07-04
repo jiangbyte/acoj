@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { FormInst, FormRules } from 'naive-ui'
+import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
 import ImageUpload from '@/components/upload/ImageUpload.vue'
 import { accountApi } from '@/api'
-import { createRequiredRule, toNullableString } from '@/utils'
+import { createRequiredRule, isValidEmail, toNullableString } from '@/utils'
 import { encryptPasswords } from '@/utils/security'
 import { computed, reactive, ref } from 'vue'
 
@@ -48,6 +48,19 @@ const modalTitle = computed(() =>
   state.dataId ? 'Edit Account' : 'Add Account',
 )
 
+function validateEmailIdentity(_rule: FormItemRule, value: string) {
+  const text = String(value ?? '').trim()
+  if (!text) {
+    return state.formModel.email_login_enabled
+      ? new Error('Please enter Email')
+      : true
+  }
+  if (!isValidEmail(text)) {
+    return new Error('Please enter a valid email')
+  }
+  return true
+}
+
 const rules = computed<FormRules>(() => ({
   account: createRequiredRule('Account', 'input'),
   password: [
@@ -63,6 +76,12 @@ const rules = computed<FormRules>(() => ({
   ],
   account_type: createRequiredRule('Account Type', 'change'),
   account_status: createRequiredRule('Account Status', 'change'),
+  email: [
+    {
+      validator: validateEmailIdentity,
+      trigger: ['input', 'blur'],
+    },
+  ],
 }))
 
 async function openModal(id?: string) {

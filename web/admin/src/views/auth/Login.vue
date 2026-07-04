@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { FormInst, FormRules } from 'naive-ui'
+import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
 import { computed, reactive, ref } from 'vue'
 import CaptchaInput from '@/components/common/CaptchaInput.vue'
 import { useAuthStore } from '@/stores'
+import { isValidEmail } from '@/utils'
 import { encryptPasswords } from '@/utils/security'
 import AuthLayout from './AuthLayout.vue'
 
@@ -49,11 +50,21 @@ const form = reactive({
 const currentLogin = computed(() => loginTypes.find((item) => item.key === activeType.value)!)
 const activeField = computed(() => activeType.value.toLowerCase() as 'account' | 'email' | 'phone')
 
+function validateLoginIdentity(_rule: FormItemRule, value: string) {
+  const text = String(value ?? '').trim()
+  if (!text) {
+    return new Error(`Please enter ${currentLogin.value.label.toLowerCase()}`)
+  }
+  if (activeType.value === 'EMAIL' && !isValidEmail(text)) {
+    return new Error('Please enter a valid email')
+  }
+  return true
+}
+
 const rules = computed<FormRules>(() => ({
   [activeField.value]: [
     {
-      required: true,
-      message: `Please enter ${currentLogin.value.label.toLowerCase()}`,
+      validator: validateLoginIdentity,
       trigger: ['input', 'blur'],
     },
   ],

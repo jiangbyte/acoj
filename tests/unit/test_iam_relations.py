@@ -11,7 +11,8 @@ from app.modules.iam.account.service import AccountService
 from app.modules.iam.group.schema import GroupCreateRequest, GroupRoleAssignRequest
 from app.modules.iam.group.service import GroupService
 from app.modules.iam.group.model import SysGroup
-from app.modules.iam.grant.model import SysSubjectResourceGrantRel
+from app.modules.iam.enums import IamRelationTargetType, IamRelationType
+from app.modules.iam.relation.model import SysIamRelation
 from app.modules.iam.resource.model import SysResource
 from app.modules.iam.resource.schema import ResourceCreateRequest, ResourcePermissionBindRequest
 from app.modules.iam.resource.service import ResourceService
@@ -143,9 +144,11 @@ async def test_grant_role_resource_success(db_session):
     await db_session.commit()
     relation = (
         await db_session.execute(
-            select(SysSubjectResourceGrantRel).where(
-                SysSubjectResourceGrantRel.subject_id == role_id,
-                SysSubjectResourceGrantRel.resource_id == resource_id,
+            select(SysIamRelation).where(
+                SysIamRelation.subject_id == role_id,
+                SysIamRelation.relation_type == IamRelationType.SUBJECT_RESOURCE_GRANT.value,
+                SysIamRelation.target_type == IamRelationTargetType.RESOURCE.value,
+                SysIamRelation.target_id == resource_id,
             )
         )
     ).scalar_one()

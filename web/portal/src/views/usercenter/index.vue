@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
+import type { FormInst, FormItemRule, FormRules } from 'naive-ui'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { authApi } from '@/api'
 import { useAuthStore } from '@/stores'
-import { resolveFileUrl } from '@/utils'
+import { isValidEmail, resolveFileUrl } from '@/utils'
 import { encryptPasswords } from '@/utils/security'
 import AvatarUploadModal from './components/AvatarUploadModal.vue'
 
 const authStore = useAuthStore()
+const emailFormRef = ref<FormInst | null>(null)
 const avatarImgProps = { referrerPolicy: 'no-referrer' } as any
 
 const state = reactive({
@@ -58,6 +60,14 @@ const bindConfirmTitle = computed(() =>
     ? 'Confirm Phone Update'
     : 'Confirm Email Update',
 )
+const emailRules = computed<FormRules>(() => ({
+  email: [
+    {
+      validator: validateEmailForm,
+      trigger: ['input', 'blur'],
+    },
+  ],
+}))
 
 onMounted(async () => {
   await loadMe()
@@ -132,8 +142,26 @@ function savePhone() {
   openBindConfirm('phone')
 }
 
-function saveEmail() {
+async function saveEmail() {
+  try {
+    await emailFormRef.value?.validate()
+  } catch {
+    return
+  }
   openBindConfirm('email')
+}
+
+function validateEmailForm(_rule: FormItemRule, value: string) {
+  const text = String(value ?? '').trim()
+  if (!text) {
+    return state.emailForm.email_login_enabled
+      ? new Error('Please enter email')
+      : true
+  }
+  if (!isValidEmail(text)) {
+    return new Error('Please enter a valid email')
+  }
+  return true
 }
 
 function openBindConfirm(type: 'phone' | 'email') {
@@ -164,7 +192,7 @@ async function confirmBind() {
       await authApi.updateUserCenterEmail({
         password: encrypted.values.password,
         password_key_id: encrypted.password_key_id,
-        email: state.emailForm.email || null,
+        email: state.emailForm.email.trim() || null,
         email_login_enabled: state.emailForm.email_login_enabled,
       })
     }
@@ -352,8 +380,14 @@ function displayValue(value: unknown) {
               </NTabPane>
 
               <NTabPane name="email" :tab="'Email'">
-                <NForm class="user-center-form w-full min-w-0" label-placement="top">
-                  <NFormItem :label="'Email'">
+                <NForm
+                  ref="emailFormRef"
+                  class="user-center-form w-full min-w-0"
+                  :model="state.emailForm"
+                  :rules="emailRules"
+                  label-placement="top"
+                >
+                  <NFormItem :label="'Email'" path="email">
                     <NInput v-model:value="state.emailForm.email" />
                   </NFormItem>
                   <NFormItem :label="'Enable Email Login'">

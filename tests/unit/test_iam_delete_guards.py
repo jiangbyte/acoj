@@ -4,21 +4,29 @@ from sqlalchemy import select
 from app.core.config.enums import AccountStatusEnum, AccountType, DataScope, StatusEnum
 from app.core.exceptions.business import ConflictError
 from app.core.schema.base import IdsRequest
-from app.modules.iam.account.model import SysAccount, SysAccountDeptRel, SysAccountGroupRel, SysAccountRoleRel
+from app.modules.iam.account.model import SysAccount
 from app.modules.iam.dept.model import SysDept
 from app.modules.iam.dept.schema import DeptUpdateRequest
 from app.modules.iam.dept.service import DeptService
 from app.modules.iam.enums import GrantSubjectType, ResourceType, RoleScopeType
-from app.modules.iam.grant.model import SysSubjectPermissionGrantRel, SysSubjectResourceGrantRel
-from app.modules.iam.group.model import SysGroup, SysGroupRoleRel
+from app.modules.iam.group.model import SysGroup
 from app.modules.iam.group.service import GroupService
 from app.modules.iam.position.model import SysPosition
 from app.modules.iam.position.service import PositionService
-from app.modules.iam.resource.model import SysResource, SysResourcePermissionRel
+from app.modules.iam.resource.model import SysResource
 from app.modules.iam.resource.schema import ResourceUpdateRequest
 from app.modules.iam.resource.service import ResourceService
 from app.modules.iam.role.model import SysRole
 from app.modules.iam.role.service import RoleService
+from tests.iam_relation_helpers import (
+    account_dept,
+    account_group,
+    account_role,
+    group_role,
+    resource_permission,
+    subject_permission_grant,
+    subject_resource_grant,
+)
 
 
 async def _account(db_session) -> SysAccount:
@@ -96,8 +104,8 @@ async def test_delete_role_rejects_account_and_group_relations(db_session):
     group = await _group(db_session)
     db_session.add_all(
         [
-            SysAccountRoleRel(account_id=account.id, role_id=role.id),
-            SysGroupRoleRel(group_id=group.id, role_id=role.id),
+            account_role(account.id, role.id),
+            group_role(group.id, role.id),
         ]
     )
     await db_session.commit()
@@ -114,15 +122,11 @@ async def test_delete_role_rejects_grants(db_session):
     resource = await _resource(db_session, "guard_resource_grants")
     db_session.add_all(
         [
-            SysSubjectResourceGrantRel(
-                subject_type=GrantSubjectType.ROLE.value,
-                subject_id=role.id,
-                resource_id=resource.id,
-            ),
-            SysSubjectPermissionGrantRel(
-                subject_type=GrantSubjectType.ROLE.value,
-                subject_id=role.id,
-                permission_key="iam:guard:delete",
+            subject_resource_grant(GrantSubjectType.ROLE, role.id, resource.id),
+            subject_permission_grant(
+                GrantSubjectType.ROLE,
+                role.id,
+                "iam:guard:delete",
                 data_scope=DataScope.SELF.value,
             ),
         ]
@@ -143,17 +147,13 @@ async def test_delete_group_rejects_account_role_and_grant_relations(db_session)
     resource = await _resource(db_session, "guard_group_resource")
     db_session.add_all(
         [
-            SysAccountGroupRel(account_id=account.id, group_id=group.id),
-            SysGroupRoleRel(group_id=group.id, role_id=role.id),
-            SysSubjectResourceGrantRel(
-                subject_type=GrantSubjectType.GROUP.value,
-                subject_id=group.id,
-                resource_id=resource.id,
-            ),
-            SysSubjectPermissionGrantRel(
-                subject_type=GrantSubjectType.GROUP.value,
-                subject_id=group.id,
-                permission_key="iam:group:guard",
+            account_group(account.id, group.id),
+            group_role(group.id, role.id),
+            subject_resource_grant(GrantSubjectType.GROUP, group.id, resource.id),
+            subject_permission_grant(
+                GrantSubjectType.GROUP,
+                group.id,
+                "iam:group:guard",
                 data_scope=DataScope.SELF.value,
             ),
         ]
@@ -179,17 +179,17 @@ async def test_delete_dept_rejects_child_account_owner_and_custom_scope_refs(db_
     dept_id = dept.id
     db_session.add_all(
         [
-            SysAccountDeptRel(account_id=account.id, dept_id=dept.id),
-            SysResourcePermissionRel(
-                resource_id=(await _resource(db_session, "guard_dept_resource")).id,
-                permission_key="iam:dept:resource-scope",
+            account_dept(account.id, dept.id),
+            resource_permission(
+                (await _resource(db_session, "guard_dept_resource")).id,
+                "iam:dept:resource-scope",
                 data_scope=DataScope.CUSTOM.value,
                 custom_scope_dept_ids=[dept.id],
             ),
-            SysSubjectPermissionGrantRel(
-                subject_type=GrantSubjectType.ACCOUNT.value,
-                subject_id=account.id,
-                permission_key="iam:dept:custom-scope",
+            subject_permission_grant(
+                GrantSubjectType.ACCOUNT,
+                account.id,
+                "iam:dept:custom-scope",
                 data_scope=DataScope.CUSTOM.value,
                 custom_scope_dept_ids=[dept.id],
             ),
@@ -216,16 +216,12 @@ async def test_delete_resource_rejects_child_permission_and_grant_refs(db_sessio
     account = await _account(db_session)
     db_session.add_all(
         [
-            SysResourcePermissionRel(
-                resource_id=resource_id,
-                permission_key="iam:resource:guard",
+            resource_permission(
+                resource_id,
+                "iam:resource:guard",
                 data_scope=DataScope.SELF.value,
             ),
-            SysSubjectResourceGrantRel(
-                subject_type=GrantSubjectType.ACCOUNT.value,
-                subject_id=account.id,
-                resource_id=resource_id,
-            ),
+            subject_resource_grant(GrantSubjectType.ACCOUNT, account.id, resource_id),
         ]
     )
     await db_session.commit()

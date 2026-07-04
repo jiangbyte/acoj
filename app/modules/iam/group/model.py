@@ -24,14 +24,3 @@ class SysGroup(Base, TimestampMixin):
         comment="状态",
     )
     extra: Mapped[dict] = mapped_column(JSON, default=dict, comment="扩展信息")
-
-
-class SysGroupRoleRel(Base, TimestampMixin):
-    """账户组角色关系表，用于批量把角色赋予到账户组。"""
-
-    __tablename__ = "sys_group_role_rel"
-    __table_args__ = (UniqueConstraint("group_id", "role_id", name="uq_sys_group_role_rel_group_role"),)
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    group_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户组ID")
-    role_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="角色ID")

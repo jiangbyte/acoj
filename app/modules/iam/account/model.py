@@ -57,37 +57,3 @@ class SysAccountIdentity(Base, TimestampMixin):
         nullable=False,
         comment="绑定状态",
     )
-
-
-class SysAccountRoleRel(Base, TimestampMixin):
-    """账户角色关系表，用于表达账户直接拥有的角色集合。"""
-
-    __tablename__ = "sys_account_role_rel"
-    __table_args__ = (UniqueConstraint("account_id", "role_id", name="uq_sys_account_role_rel_account_role"),)
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    account_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户ID")
-    role_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="角色ID")
-
-
-class SysAccountDeptRel(Base, TimestampMixin):
-    """账户部门关系表，明确账户属于哪些部门以及主部门归属。"""
-
-    __tablename__ = "sys_account_dept_rel"
-    __table_args__ = (UniqueConstraint("account_id", "dept_id", name="uq_sys_account_dept_rel_account_dept"),)
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    account_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户ID")
-    dept_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="部门ID")
-    is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="是否主部门")
-
-
-class SysAccountGroupRel(Base, TimestampMixin):
-    """账户与账户组关系表，用于表达账户所属分组。"""
-
-    __tablename__ = "sys_account_group_rel"
-    __table_args__ = (UniqueConstraint("account_id", "group_id", name="uq_sys_account_group_rel_account_group"),)
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_snowflake_id, comment="主键")
-    account_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户ID")
-    group_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="账户组ID")
