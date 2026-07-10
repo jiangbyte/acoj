@@ -29,7 +29,11 @@ async def test_captcha_returns_base64_and_is_single_use(monkeypatch):
 
 async def test_password_key_decrypts_rsa_oaep_ciphertext():
     key = await create_password_key()
-    public_key = serialization.load_pem_public_key(key.public_key.encode("utf-8"))
+
+    assert "-----BEGIN PUBLIC KEY-----" not in key.public_key
+    assert "-----END PUBLIC KEY-----" not in key.public_key
+
+    public_key = serialization.load_der_public_key(base64.b64decode(key.public_key))
     encrypted = public_key.encrypt(
         b"Secret@123456",
         padding.OAEP(

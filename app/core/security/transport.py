@@ -70,10 +70,10 @@ async def create_password_key() -> PasswordKeyResponse:
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     ).decode("utf-8")
-    public_pem = private_key.public_key().public_bytes(
-        encoding=serialization.Encoding.PEM,
+    public_der = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.DER,
         format=serialization.PublicFormat.SubjectPublicKeyInfo,
-    ).decode("utf-8")
+    )
     key_id = uuid4().hex
     redis = _required_redis("Redis is required for password encryption")
     await redis.setex(
@@ -81,7 +81,10 @@ async def create_password_key() -> PasswordKeyResponse:
         settings.auth.password_crypto_key_ttl_seconds,
         private_pem,
     )
-    return PasswordKeyResponse(key_id=key_id, public_key=public_pem)
+    return PasswordKeyResponse(
+        key_id=key_id,
+        public_key=base64.b64encode(public_der).decode("ascii"),
+    )
 
 
 async def decrypt_passwords(
