@@ -23,7 +23,7 @@ interface TabState {
  * 这里只保存标签栏渲染和跳转需要的最小路由信息，避免把完整 Route 对象放入持久化状态。
  */
 export interface AppTab {
-  // Vue Router 的路由名称；当前资源路由使用资源 code 作为 route.name。
+  // Vue Router 的路由名称；当前资源路由使用 module_id + code 作为 route.name。
   name: RouteLocationNormalizedLoaded['name']
 
   // 不含查询参数的路由路径。

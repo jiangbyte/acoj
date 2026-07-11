@@ -125,7 +125,7 @@ nginx/          生产 nginx 模板
 VITE_ROUTE_LOAD_MODE="dynamic"
 ```
 
-登录后前端会调用 `/api/v1/admin/sys/resources/current` 获取当前用户可见资源，再生成动态路由和菜单。
+登录后前端会调用 `/api/v1/admin/sys/resources/current` 获取按模块分组的当前用户可见资源；所有模块资源用于生成动态路由，侧栏菜单按当前选中模块显示。
 静态内置路由主要包括认证页、错误页、用户中心和固定布局页。
 
 权限边界：

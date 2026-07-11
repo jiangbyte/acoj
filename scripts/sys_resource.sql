@@ -38,7 +38,7 @@ COMMENT ON COLUMN "public"."sys_resource_module"."updated_by" IS '更新人';
 -- Records of sys_resource_module
 -- ----------------------------
 INSERT INTO "public"."sys_resource_module" ("id", "name", "code", "client", "icon", "color", "sort", "status", "description", "extra", "created_at", "created_by", "updated_at", "updated_by") VALUES ('210001', 'System', 'system', 'ADMIN', 'icon-park-outline:setting-two', '#2563eb', 1, 'ENABLED', '系统内置资源模块', '{}', '2026-06-30 00:00:00+00', NULL, '2026-06-30 00:00:00+00', NULL);
-INSERT INTO "public"."sys_resource_module" ("id", "name", "code", "client", "icon", "color", "sort", "status", "description", "extra", "created_at", "created_by", "updated_at", "updated_by") VALUES ('210002', 'Portal', 'portal', 'PORTAL', 'icon-park-outline:browser', '#18a058', 2, 'ENABLED', '门户端公开资源模块', '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
+INSERT INTO "public"."sys_resource_module" ("id", "name", "code", "client", "icon", "color", "sort", "status", "description", "extra", "created_at", "created_by", "updated_at", "updated_by") VALUES ('210002', 'Portal Header', 'HEADER', 'PORTAL', 'icon-park-outline:browser', '#18a058', 2, 'ENABLED', '门户端头部导航资源模块', '{}', '2026-07-03 00:00:00+00', NULL, '2026-07-03 00:00:00+00', NULL);
 
 -- ----------------------------
 -- Table structure for sys_resource
@@ -388,7 +388,7 @@ ALTER TABLE "public"."sys_resource_module" ADD CONSTRAINT "pk_sys_resource_modul
 -- ----------------------------
 -- Uniques structure for table sys_resource
 -- ----------------------------
-ALTER TABLE "public"."sys_resource" ADD CONSTRAINT "uq_sys_resource_code" UNIQUE ("code");
+ALTER TABLE "public"."sys_resource" ADD CONSTRAINT "uq_sys_resource_module_id_code" UNIQUE ("module_id", "code");
 
 -- ----------------------------
 -- Primary Key structure for table sys_resource

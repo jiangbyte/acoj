@@ -62,6 +62,8 @@ class ResourceRepository:
         )
         await self._ensure_payload_valid(payload, payload.id)
         old_module_id = entity.module_id
+        if old_module_id != payload.module_id:
+            await self._ensure_descendant_codes_unique_for_module(payload.id, payload.module_id)
         data = payload.model_dump(exclude={"id"})
         for key, value in data.items():
             setattr(entity, key, value)
@@ -82,6 +84,7 @@ class ResourceRepository:
     ) -> None:
         if payload.module_id and not await self.db.get(SysResourceModule, payload.module_id):
             raise ConflictError("Resource module does not exist")
+        await self._ensure_resource_code_unique(payload.code, payload.module_id, resource_id)
         if not payload.parent_id:
             return
         parent = await self.db.get(SysResource, payload.parent_id)
@@ -91,6 +94,54 @@ class ResourceRepository:
             raise ConflictError("Resource cannot move under itself")
         if parent.module_id != payload.module_id:
             raise ConflictError("Resource module must be same as parent resource module")
+
+    async def _ensure_resource_code_unique(
+        self,
+        code: str,
+        module_id: str | None,
+        resource_id: str | None = None,
+    ) -> None:
+        stmt = select(SysResource.id).where(SysResource.code == code)
+        if module_id is None:
+            stmt = stmt.where(SysResource.module_id.is_(None))
+        else:
+            stmt = stmt.where(SysResource.module_id == module_id)
+        if resource_id is not None:
+            stmt = stmt.where(SysResource.id != resource_id)
+        if (await self.db.execute(stmt)).scalar_one_or_none() is not None:
+            raise ConflictError("Resource code already exists in module")
+
+    async def _ensure_descendant_codes_unique_for_module(
+        self,
+        resource_id: str,
+        module_id: str | None,
+    ) -> None:
+        descendant_ids = await list_descendant_ids(self.db, SysResource, resource_id)
+        if not descendant_ids:
+            return
+        moving_ids = {resource_id, *descendant_ids}
+        moving_codes = list(
+            (
+                await self.db.execute(
+                    select(SysResource.code).where(SysResource.id.in_(descendant_ids))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if not moving_codes:
+            return
+
+        stmt = select(SysResource.id).where(
+            SysResource.code.in_(moving_codes),
+            SysResource.id.notin_(moving_ids),
+        )
+        if module_id is None:
+            stmt = stmt.where(SysResource.module_id.is_(None))
+        else:
+            stmt = stmt.where(SysResource.module_id == module_id)
+        if (await self.db.execute(stmt)).scalar_one_or_none() is not None:
+            raise ConflictError("Resource code already exists in module")
 
     async def delete_many(self, resource_ids: list[str]) -> None:
         unique_ids = list(dict.fromkeys(resource_ids))

@@ -2,7 +2,6 @@
 import { computed, ref, watch } from 'vue'
 import { ProLayout, useLayoutMenu } from 'pro-naive-ui'
 import { useAppStore, useRouteStore } from '@/stores'
-import { createMenus } from '@/stores/route/helper'
 import {
   BackTop,
   Breadcrumb,
@@ -10,6 +9,7 @@ import {
   FullScreen,
   Logo,
   MobileDrawer,
+  ModuleSwitch,
   Notices,
   Search,
   TabBar,
@@ -21,7 +21,7 @@ const appStore = useAppStore()
 const routeStore = useRouteStore()
 
 const menus = computed(() => {
-  return createMenus(routeStore.rowRoutes)
+  return routeStore.menus
 })
 
 const { layout, activeKey } = useLayoutMenu({
@@ -72,6 +72,7 @@ const showMobileDrawer = ref(false)
       <template v-else>
         <div class="h-full flex-y-center gap-1 p-x-sm">
           <CollapaseButton />
+          <ModuleSwitch />
           <Breadcrumb />
         </div>
       </template>
@@ -115,6 +116,9 @@ const showMobileDrawer = ref(false)
     <BackTop class="z-999" />
 
     <MobileDrawer v-model:show="showMobileDrawer">
+      <div class="mt-3 mb-2 px-3">
+        <ModuleSwitch force-label block />
+      </div>
       <n-menu v-bind="layout.verticalMenuProps" :collapsed="false" />
     </MobileDrawer>
   </ProLayout>

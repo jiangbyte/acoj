@@ -1,0 +1,8 @@
+export * as authApi from './auth'
+export * as resourceApi from './iam/resource'
+export * as messageApi from './message'
+export * as spaceApi from './space'
+export * as bannerApi from './sys/banner'
+export * as dictApi from './sys/dict'
+export * as fileApi from './sys/file'
+export { uploadFile } from './sys/file'

@@ -17,6 +17,9 @@ interface RouteState {
   // 侧边栏菜单数据，由 SysResource 资源列表转换而来。
   menus: AppRoute.MenuOption[]
 
+  // 后端按资源模块分组返回的 portal 公开资源。
+  resourceModules: AppRoute.ResourceModule[]
+
   // 原始资源列表，字段与后端 SysResource 保持一致。
   rowRoutes: AppRoute.RowRoute[]
 
@@ -35,7 +38,7 @@ interface RouteActions {
   resetRoutes: () => void
 
   // 加载授权资源。static 模式返回本地静态资源，dynamic 模式后续接后端接口。
-  initRouteInfo: () => Promise<AppRoute.RowRoute[]>
+  initRouteInfo: () => Promise<AppRoute.ResourceModule[]>
 
   // 初始化授权路由、菜单和缓存路由列表。
   initAuthRoute: () => Promise<void>
@@ -53,6 +56,7 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
     state: (): RouteState => ({
       isInitAuthRoute: false,
       menus: [],
+      resourceModules: [],
       rowRoutes: [],
       dynamicRouteNames: [],
     }),
@@ -89,7 +93,16 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
           return fetchUserRoutes()
         }
 
-        return staticRoutes
+        return [
+          {
+            id: 'static',
+            name: 'Static',
+            code: 'HEADER',
+            client: 'PORTAL',
+            sort: 0,
+            resources: staticRoutes,
+          },
+        ]
       },
 
       /**
@@ -104,7 +117,9 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
       async initAuthRoute() {
         this.isInitAuthRoute = false
 
-        const rowRoutes = await this.initRouteInfo()
+        const resourceModules = await this.initRouteInfo()
+        this.resourceModules = resourceModules
+        const rowRoutes = resourceModules.flatMap((item) => item.resources)
         this.rowRoutes = rowRoutes
 
         this.resetRoutes()
@@ -117,7 +132,9 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
           }
         })
 
-        this.menus = createMenus(rowRoutes)
+        this.menus = createMenus(
+          resourceModules.find((item) => item.code === 'HEADER')?.resources ?? [],
+        )
         this.isInitAuthRoute = true
       },
     },
@@ -140,7 +157,7 @@ export function getRouteTitle(route: {
 }
 
 // 动态路由接口占位。当前没有接入后端资源接口，所以仍返回静态资源数据。
-async function fetchUserRoutes(): Promise<AppRoute.RowRoute[]> {
+async function fetchUserRoutes(): Promise<AppRoute.ResourceModule[]> {
   const response = await resourceApi.current()
   return response.data ?? []
 }

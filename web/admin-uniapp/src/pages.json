@@ -7,9 +7,17 @@
   },
   "pages": [
     {
-      "path": "pages/index/index",
+      "path": "pages/dashboard/index",
       "style": {
         "navigationBarTitleText": "首页",
+        "enablePullDownRefresh": true,
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/workbench/index",
+      "style": {
+        "navigationBarTitleText": "工作台",
         "enablePullDownRefresh": true,
         "navigationStyle": "custom"
       }
@@ -18,101 +26,63 @@
       "path": "pages/auth/login/login",
       "style": {
         "navigationBarTitleText": "登录",
-        "navigationStyle": "custom",
-        "animationType": "slide-in-right",
-        "animationDuration": 300
-      }
-    },
-    {
-      "path": "pages/auth/register/register",
-      "style": {
-        "navigationBarTitleText": "注册",
-        "navigationStyle": "custom",
-        "animationType": "slide-in-right",
-        "animationDuration": 300
-      }
-    },
-    {
-      "path": "pages/publish/publish",
-      "style": {
-        "navigationBarTitleText": "发布",
         "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/mine/mine",
+      "path": "pages/message/index",
+      "style": {
+        "navigationBarTitleText": "消息",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/usercenter/index",
       "style": {
         "navigationBarTitleText": "我的",
         "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/address/address",
+      "path": "pages/usercenter/profile/index",
       "style": {
-        "navigationBarTitleText": "收货地址",
+        "navigationBarTitleText": "个人资料",
         "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/history/history",
+      "path": "pages/resource/list/index",
       "style": {
-        "navigationBarTitleText": "浏览记录",
+        "navigationBarTitleText": "管理列表",
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/resource/form/index",
+      "style": {
+        "navigationBarTitleText": "编辑",
         "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/help/help",
+      "path": "pages/resource/detail/index",
       "style": {
-        "navigationBarTitleText": "帮助中心",
+        "navigationBarTitleText": "详情",
         "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/contact/contact",
+      "path": "pages/resource/grant/index",
       "style": {
-        "navigationBarTitleText": "联系我们",
+        "navigationBarTitleText": "授权",
         "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/setting/setting",
+      "path": "pages/resource/buttons/index",
       "style": {
-        "navigationBarTitleText": "设置",
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/wallet/balance",
-      "style": {
-        "navigationBarTitleText": "我的余额",
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/wallet/coupon",
-      "style": {
-        "navigationBarTitleText": "优惠券",
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/wallet/points",
-      "style": {
-        "navigationBarTitleText": "我的积分",
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/wallet/redpacket",
-      "style": {
-        "navigationBarTitleText": "我的红包",
-        "navigationStyle": "custom"
-      }
-    },
-    {
-      "path": "pages/product/detail",
-      "style": {
-        "navigationBarTitleText": "商品详情",
+        "navigationBarTitleText": "按钮权限",
         "navigationStyle": "custom"
       }
     }
@@ -128,18 +98,22 @@
     "selectedColor": "#2979ff",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
-    "custom": true,
-    "height": "0",
-    "fontSize": "0",
     "list": [
       {
-        "pagePath": "pages/index/index"
+        "pagePath": "pages/dashboard/index",
+        "text": "首页"
       },
       {
-        "pagePath": "pages/publish/publish"
+        "pagePath": "pages/workbench/index",
+        "text": "工作台"
       },
       {
-        "pagePath": "pages/mine/mine"
+        "pagePath": "pages/message/index",
+        "text": "消息"
+      },
+      {
+        "pagePath": "pages/usercenter/index",
+        "text": "我的"
       }
     ]
   }

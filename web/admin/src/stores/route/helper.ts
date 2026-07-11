@@ -77,12 +77,12 @@ export function createMenus(resources: AppRoute.RowRoute[]): AppRoute.MenuOption
 /**
  * 生成 keep-alive 的 include 列表。
  *
- * Vue keep-alive 按组件 name 匹配；当前项目约定资源 code 同时作为 route.name。
+ * 当前动态路由名按 module_id + code 生成，避免跨模块同 code 资源冲突。
  */
 export function generateCacheRoutes(resources: AppRoute.RowRoute[]) {
   return resources
     .filter((resource) => isRouteResource(resource) && resource.is_cache)
-    .map((resource) => resource.code)
+    .map(createRouteName)
 }
 
 /**
@@ -145,7 +145,7 @@ export function isClickableResource(resourceType?: AppRoute.ResourceType) {
 /**
  * 标准化资源为内部路由节点。
  *
- * route.name 使用资源 code，meta 保留完整 SysResource 字段，避免旧字段和资源字段混用。
+ * route.name 使用 module_id + code，meta 保留完整 SysResource 字段，避免跨模块同 code 冲突。
  */
 function standardizedRoutes(resources: AppRoute.RowRoute[]) {
   return resources.filter(isRouteResource).map((resource) => {
@@ -153,7 +153,7 @@ function standardizedRoutes(resources: AppRoute.RowRoute[]) {
       id: resource.id,
       parent_id: resource.parent_id,
       code: resource.code,
-      name: resource.code,
+      name: createRouteName(resource),
       resource_type: resource.resource_type,
       module_id: resource.module_id,
       module_id_name: resource.module_id_name,
@@ -172,6 +172,10 @@ function standardizedRoutes(resources: AppRoute.RowRoute[]) {
 
     return route
   })
+}
+
+function createRouteName(resource: AppRoute.RowRoute) {
+  return resource.module_id ? `${resource.module_id}:${resource.code}` : resource.code
 }
 
 /**

@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
+import { onLaunch } from '@dcloudio/uni-app'
+import { useAuthStore } from '@/stores/auth'
+
 onLaunch(() => {
-  console.log('App Launch')
-})
-onShow(() => {
-  console.log('App Show')
-})
-onHide(() => {
-  console.log('App Hide')
+  const authStore = useAuthStore()
+  if (!authStore.isLogin) {
+    uni.reLaunch({ url: '/pages/auth/login/login' })
+  }
 })
 </script>
 <style lang="scss">
 @import 'uview-pro/index.scss';
+
+page {
+  background: #f8f9fa;
+  color: #111827;
+  font-size: 14px;
+}
 </style>

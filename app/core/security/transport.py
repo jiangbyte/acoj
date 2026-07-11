@@ -1,6 +1,8 @@
 import base64
 import html
 import secrets
+import struct
+import zlib
 from uuid import uuid4
 
 from cryptography.hazmat.primitives import hashes, serialization
@@ -19,6 +21,7 @@ from app.platform.cache.redis import get_redis
 class CaptchaResponse(ApiSchema):
     captcha_id: str
     image_base64: str
+    image_type: str = "image/svg+xml"
 
 
 class PasswordKeyResponse(ApiSchema):
@@ -41,7 +44,7 @@ PasswordKeyApiResponse = ApiResponse[PasswordKeyResponse]
 CAPTCHA_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 
 
-async def create_captcha() -> CaptchaResponse:
+async def create_captcha(image_format: str = "svg") -> CaptchaResponse:
     value = "".join(secrets.choice(CAPTCHA_ALPHABET) for _ in range(4))
     captcha_id = uuid4().hex
     redis = _required_redis("Redis is required for captcha")
@@ -50,6 +53,12 @@ async def create_captcha() -> CaptchaResponse:
         settings.auth.captcha_ttl_seconds,
         hash_password(value.lower()),
     )
+    if image_format == "png":
+        return CaptchaResponse(
+            captcha_id=captcha_id,
+            image_base64=_captcha_png_base64(value),
+            image_type="image/png",
+        )
     return CaptchaResponse(captcha_id=captcha_id, image_base64=_captcha_svg_base64(value))
 
 
@@ -149,6 +158,164 @@ def _captcha_svg_base64(value: str) -> str:
         "</svg>"
     )
     return base64.b64encode(svg.encode("utf-8")).decode("ascii")
+
+
+CAPTCHA_GLYPHS: dict[str, tuple[str, ...]] = {
+    "2": ("11110", "00001", "00001", "11110", "10000", "10000", "11111"),
+    "3": ("11110", "00001", "00001", "01110", "00001", "00001", "11110"),
+    "4": ("10001", "10001", "10001", "11111", "00001", "00001", "00001"),
+    "5": ("11111", "10000", "10000", "11110", "00001", "00001", "11110"),
+    "6": ("01111", "10000", "10000", "11110", "10001", "10001", "01110"),
+    "7": ("11111", "00001", "00010", "00100", "01000", "01000", "01000"),
+    "8": ("01110", "10001", "10001", "01110", "10001", "10001", "01110"),
+    "9": ("01110", "10001", "10001", "01111", "00001", "00001", "11110"),
+    "A": ("01110", "10001", "10001", "11111", "10001", "10001", "10001"),
+    "B": ("11110", "10001", "10001", "11110", "10001", "10001", "11110"),
+    "C": ("01111", "10000", "10000", "10000", "10000", "10000", "01111"),
+    "D": ("11110", "10001", "10001", "10001", "10001", "10001", "11110"),
+    "E": ("11111", "10000", "10000", "11110", "10000", "10000", "11111"),
+    "F": ("11111", "10000", "10000", "11110", "10000", "10000", "10000"),
+    "G": ("01111", "10000", "10000", "10011", "10001", "10001", "01111"),
+    "H": ("10001", "10001", "10001", "11111", "10001", "10001", "10001"),
+    "J": ("00111", "00010", "00010", "00010", "10010", "10010", "01100"),
+    "K": ("10001", "10010", "10100", "11000", "10100", "10010", "10001"),
+    "L": ("10000", "10000", "10000", "10000", "10000", "10000", "11111"),
+    "M": ("10001", "11011", "10101", "10101", "10001", "10001", "10001"),
+    "N": ("10001", "11001", "10101", "10011", "10001", "10001", "10001"),
+    "P": ("11110", "10001", "10001", "11110", "10000", "10000", "10000"),
+    "Q": ("01110", "10001", "10001", "10001", "10101", "10010", "01101"),
+    "R": ("11110", "10001", "10001", "11110", "10100", "10010", "10001"),
+    "S": ("01111", "10000", "10000", "01110", "00001", "00001", "11110"),
+    "T": ("11111", "00100", "00100", "00100", "00100", "00100", "00100"),
+    "U": ("10001", "10001", "10001", "10001", "10001", "10001", "01110"),
+    "V": ("10001", "10001", "10001", "10001", "01010", "01010", "00100"),
+    "W": ("10001", "10001", "10001", "10101", "10101", "11011", "10001"),
+    "X": ("10001", "01010", "00100", "00100", "00100", "01010", "10001"),
+    "Y": ("10001", "01010", "00100", "00100", "00100", "00100", "00100"),
+    "Z": ("11111", "00001", "00010", "00100", "01000", "10000", "11111"),
+}
+
+
+def _captcha_png_base64(value: str) -> str:
+    width = 140
+    height = 44
+    pixels = bytearray([248, 250, 252] * width * height)
+
+    for _ in range(6):
+        _draw_line(
+            pixels,
+            width,
+            height,
+            secrets.randbelow(width),
+            secrets.randbelow(height),
+            secrets.randbelow(width),
+            secrets.randbelow(height),
+            (148, 163, 184),
+        )
+
+    for index, char in enumerate(value):
+        _draw_glyph(
+            pixels,
+            width,
+            height,
+            char,
+            18 + index * 28 + secrets.randbelow(3),
+            8 + secrets.randbelow(4),
+            4,
+            (15, 23, 42),
+        )
+
+    raw = b"".join(
+        b"\x00" + bytes(pixels[row * width * 3 : (row + 1) * width * 3])
+        for row in range(height)
+    )
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + _png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+        + _png_chunk(b"IDAT", zlib.compress(raw, 9))
+        + _png_chunk(b"IEND", b"")
+    )
+    return base64.b64encode(png).decode("ascii")
+
+
+def _draw_glyph(
+    pixels: bytearray,
+    width: int,
+    height: int,
+    char: str,
+    x: int,
+    y: int,
+    scale: int,
+    color: tuple[int, int, int],
+) -> None:
+    glyph = CAPTCHA_GLYPHS.get(char)
+    if not glyph:
+        return
+    for row_index, row in enumerate(glyph):
+        for column_index, enabled in enumerate(row):
+            if enabled != "1":
+                continue
+            for dy in range(scale):
+                for dx in range(scale):
+                    _set_pixel(
+                        pixels,
+                        width,
+                        height,
+                        x + column_index * scale + dx,
+                        y + row_index * scale + dy,
+                        color,
+                    )
+
+
+def _draw_line(
+    pixels: bytearray,
+    width: int,
+    height: int,
+    x1: int,
+    y1: int,
+    x2: int,
+    y2: int,
+    color: tuple[int, int, int],
+) -> None:
+    dx = abs(x2 - x1)
+    dy = -abs(y2 - y1)
+    sx = 1 if x1 < x2 else -1
+    sy = 1 if y1 < y2 else -1
+    error = dx + dy
+    while True:
+        _set_pixel(pixels, width, height, x1, y1, color)
+        if x1 == x2 and y1 == y2:
+            break
+        e2 = 2 * error
+        if e2 >= dy:
+            error += dy
+            x1 += sx
+        if e2 <= dx:
+            error += dx
+            y1 += sy
+
+
+def _set_pixel(
+    pixels: bytearray,
+    width: int,
+    height: int,
+    x: int,
+    y: int,
+    color: tuple[int, int, int],
+) -> None:
+    if x < 0 or x >= width or y < 0 or y >= height:
+        return
+    offset = (y * width + x) * 3
+    pixels[offset : offset + 3] = bytes(color)
+
+
+def _png_chunk(chunk_type: bytes, data: bytes) -> bytes:
+    return (
+        struct.pack(">I", len(data))
+        + chunk_type
+        + data
+        + struct.pack(">I", zlib.crc32(chunk_type + data) & 0xFFFFFFFF)
+    )
 
 
 def _required_redis(message: str):

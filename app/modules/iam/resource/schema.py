@@ -78,6 +78,17 @@ class SysResourceSchema(ApiSchema):
     updated_by: str | None = None
 
 
+class CurrentResourceModuleSchema(ApiSchema):
+    id: str
+    name: str
+    code: str
+    client: ResourceModuleClient
+    icon: str | None = None
+    color: str | None = None
+    sort: int
+    resources: list[SysResourceSchema] = Field(default_factory=list)
+
+
 class ResourcePermissionBindRequest(ApiSchema):
     resource_id: str
     permission_key: str

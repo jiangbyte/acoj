@@ -20,11 +20,25 @@ async def test_captcha_returns_base64_and_is_single_use(monkeypatch):
     captcha = await create_captcha()
 
     assert captcha.captcha_id
+    assert captcha.image_type == "image/svg+xml"
     assert "<svg" in base64.b64decode(captcha.image_base64).decode("utf-8")
 
     await verify_captcha(captcha.captcha_id, "aaaa")
     with pytest.raises(BusinessError):
         await verify_captcha(captcha.captcha_id, "aaaa")
+
+
+async def test_captcha_can_return_png_for_mini_program(monkeypatch):
+    monkeypatch.setattr("app.core.security.transport.secrets.choice", lambda alphabet: "A")
+    monkeypatch.setattr("app.core.security.transport.secrets.randbelow", lambda maximum: 0)
+
+    captcha = await create_captcha("png")
+
+    assert captcha.captcha_id
+    assert captcha.image_type == "image/png"
+    assert base64.b64decode(captcha.image_base64).startswith(b"\x89PNG\r\n\x1a\n")
+
+    await verify_captcha(captcha.captcha_id, "aaaa")
 
 
 async def test_password_key_decrypts_rsa_oaep_ciphertext():

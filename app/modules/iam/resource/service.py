@@ -9,9 +9,10 @@ from app.core.security.session import SessionPayload
 from app.modules.iam.enums import ResourceModuleClient, ResourceType
 from app.modules.iam.relation.repository import IamRelationRepository
 from app.modules.iam.permission.service import ensure_registered_permission
-from app.modules.iam.resource.model import SysResource
+from app.modules.iam.resource.model import SysResource, SysResourceModule
 from app.modules.iam.resource.repository import ResourceModuleRepository, ResourceRepository
 from app.modules.iam.resource.schema import (
+    CurrentResourceModuleSchema,
     ResourceAdminPageQuery,
     ResourceButtonCreateRequest,
     ResourceButtonPageQuery,
@@ -147,9 +148,27 @@ class ResourceService:
         )
         return await self._build_resource_schemas(resources)
 
+    async def list_current_resource_modules(
+        self,
+        session: SessionPayload,
+        module_client: ResourceModuleClient,
+    ) -> list[CurrentResourceModuleSchema]:
+        resources = await self._list_visible_resources(
+            session,
+            module_client=module_client,
+        )
+        return await self._build_current_resource_modules(resources, module_client)
+
     async def list_public_portal_resources(self) -> list[SysResourceSchema]:
         resources = await self.repo.list_resources(module_client=ResourceModuleClient.PORTAL)
         return await self._build_resource_schemas(resources)
+
+    async def list_public_portal_resource_modules(self) -> list[CurrentResourceModuleSchema]:
+        resources = await self.repo.list_resources(module_client=ResourceModuleClient.PORTAL)
+        return await self._build_current_resource_modules(
+            resources,
+            ResourceModuleClient.PORTAL,
+        )
 
     async def _list_visible_resources(
         self,
@@ -191,6 +210,47 @@ class ResourceService:
             schema.module_id_name = module_name
             schema.module_client = module_client
         return schemas
+
+    async def _build_current_resource_modules(
+        self,
+        resources: list[SysResource],
+        module_client: ResourceModuleClient,
+    ) -> list[CurrentResourceModuleSchema]:
+        modules = await ResourceModuleRepository(self.db).list_enabled_modules(module_client)
+        module_map = {module.id: module for module in modules}
+        grouped_resources = [
+            resource
+            for resource in resources
+            if resource.module_id and resource.module_id in module_map
+        ]
+        resource_schemas = await self._build_resource_schemas(grouped_resources)
+        resource_map: dict[str, list[SysResourceSchema]] = {}
+        for resource in resource_schemas:
+            if not resource.module_id:
+                continue
+            resource_map.setdefault(resource.module_id, []).append(resource)
+
+        return [
+            self._build_current_resource_module_schema(module, resource_map[module.id])
+            for module in modules
+            if module.id in resource_map
+        ]
+
+    @staticmethod
+    def _build_current_resource_module_schema(
+        module: SysResourceModule,
+        resources: list[SysResourceSchema],
+    ) -> CurrentResourceModuleSchema:
+        return CurrentResourceModuleSchema(
+            id=module.id,
+            name=module.name,
+            code=module.code,
+            client=module.client,
+            icon=module.icon,
+            color=module.color,
+            sort=module.sort,
+            resources=resources,
+        )
 
     async def _build_button_schemas(
         self,

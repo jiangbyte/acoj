@@ -17,13 +17,19 @@ interface RouteState {
   // 侧边栏菜单数据，由 SysResource 资源列表转换而来。
   menus: AppRoute.MenuOption[]
 
+  // 后端按资源模块分组返回的当前可访问资源。
+  resourceModules: AppRoute.ResourceModule[]
+
   // 原始资源列表，字段与后端 SysResource 保持一致。
   rowRoutes: AppRoute.RowRoute[]
+
+  // 当前侧边栏展示的资源模块 ID。
+  activeModuleId: string | null
 
   // 当前需要高亮的菜单路径。隐藏页面会回退到最近的可见父级菜单。
   currentMenuPath: string | null
 
-  // keep-alive include 列表，值为 route.name；当前使用资源 code 作为 route.name。
+  // keep-alive include 列表，值为 route.name；当前使用 module_id + code 作为 route.name。
   cacheRoutes: string[]
 }
 
@@ -40,8 +46,14 @@ interface RouteActions {
   // 根据当前访问路径计算侧边菜单高亮路径。
   setCurrentMenuPath: (path: string) => void
 
+  // 切换当前侧边栏资源模块。
+  setActiveModule: (moduleId: string | null) => void
+
+  // 根据路由路径同步当前侧边栏资源模块。
+  syncActiveModuleByPath: (path: string) => void
+
   // 加载授权资源。static 模式返回本地静态资源，dynamic 模式后续接后端接口。
-  initRouteInfo: () => Promise<AppRoute.RowRoute[]>
+  initRouteInfo: () => Promise<AppRoute.ResourceModule[]>
 
   // 初始化授权路由、菜单和缓存路由列表。
   initAuthRoute: () => Promise<void>
@@ -59,7 +71,9 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
     state: (): RouteState => ({
       isInitAuthRoute: false,
       menus: [],
+      resourceModules: [],
       rowRoutes: [],
+      activeModuleId: null,
       currentMenuPath: null,
       cacheRoutes: [],
     }),
@@ -92,6 +106,13 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
        */
       setCurrentMenuPath(path: string) {
         this.currentMenuPath = getActiveMenuPath(this.rowRoutes, path)
+        this.syncActiveModuleByPath(path)
+      },
+
+      setActiveModule(moduleId: string | null) {
+        const resourceModule = this.resourceModules.find((item) => item.id === moduleId)
+        this.activeModuleId = resourceModule?.id ?? null
+        this.menus = resourceModule ? createMenus(resourceModule.resources) : []
       },
 
       /**
@@ -104,7 +125,16 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
           return fetchUserRoutes()
         }
 
-        return staticRoutes
+        return [
+          {
+            id: 'static',
+            name: 'Static',
+            code: 'STATIC',
+            client: 'ADMIN',
+            sort: 0,
+            resources: staticRoutes,
+          },
+        ]
       },
 
       /**
@@ -119,7 +149,9 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
       async initAuthRoute() {
         this.isInitAuthRoute = false
 
-        const rowRoutes = await this.initRouteInfo()
+        const resourceModules = await this.initRouteInfo()
+        this.resourceModules = resourceModules
+        const rowRoutes = resourceModules.flatMap((item) => item.resources)
         this.rowRoutes = rowRoutes
 
         if (router.hasRoute('appRoot')) {
@@ -127,9 +159,24 @@ export const useRouteStore = defineStore<'route-store', RouteState, RouteGetters
         }
 
         router.addRoute(createRoutes(rowRoutes))
-        this.menus = createMenus(rowRoutes)
+        this.setActiveModule(resourceModules[0]?.id ?? null)
         this.cacheRoutes = generateCacheRoutes(rowRoutes)
         this.isInitAuthRoute = true
+      },
+
+      syncActiveModuleByPath(path: string) {
+        const activePath = this.currentMenuPath ?? path
+        const resource =
+          this.rowRoutes.find((item) => item.path === path) ??
+          this.rowRoutes.find((item) => item.path === activePath)
+
+        if (
+          resource?.module_id &&
+          resource.module_id !== this.activeModuleId &&
+          this.resourceModules.some((item) => item.id === resource.module_id)
+        ) {
+          this.setActiveModule(resource.module_id)
+        }
       },
     },
   },
@@ -151,7 +198,7 @@ export function getRouteTitle(route: {
 }
 
 // 动态路由接口占位。当前没有接入后端资源接口，所以仍返回静态资源数据。
-async function fetchUserRoutes(): Promise<AppRoute.RowRoute[]> {
+async function fetchUserRoutes(): Promise<AppRoute.ResourceModule[]> {
   const response = await resourceApi.current()
   return response.data ?? []
 }

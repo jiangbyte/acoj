@@ -140,5 +140,6 @@ VITE_ROUTE_LOAD_MODE="dynamic"
 ```
 
 公开路由由 `VITE_PUBLIC_ROUTE_PATHS` 控制。登录后，前端会结合内置静态路由和
-`/api/v1/portal/sys/resources/current` 返回的资源生成导航。用户中心和我的空间属于内置路由，通过头像
-下拉菜单进入，不应手动拼入主导航菜单。
+`/api/v1/portal/sys/resources/current` 返回的资源生成动态路由。头部动态导航只展示资源模块编码为
+`HEADER` 的菜单资源；硬编码 `Home` 会始终保留。用户中心和我的空间属于内置路由，通过头像下拉菜单
+进入，不应手动拼入主导航菜单。

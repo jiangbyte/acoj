@@ -14,7 +14,7 @@ declare module 'vue-router' {
     // 父资源 ID，用于菜单树和隐藏页面高亮回溯。
     parent_id?: string | null
 
-    // 资源编码。前端使用 code 作为 route.name 和 keep-alive include 标识。
+    // 资源编码。同一资源模块内唯一；动态 route.name 使用 module_id + code。
     code?: string
 
     // 资源名称，用于菜单、面包屑、标签页、文档标题等展示文本。
@@ -104,10 +104,21 @@ declare global {
       description?: string | null
     }
 
+    interface ResourceModule {
+      id: string
+      name: string
+      code: string
+      client: 'ADMIN' | 'PORTAL'
+      icon?: string | null
+      color?: string | null
+      sort: number
+      resources: RowRoute[]
+    }
+
     /**
      * 前端内部路由节点。
      *
-     * 它由 RowRoute 标准化而来：route.name 使用资源 code，meta 保存完整资源字段。
+     * 它由 RowRoute 标准化而来：route.name 使用 module_id + code，meta 保存完整资源字段。
      */
     interface Route extends Omit<RowRoute, 'name' | 'path' | 'component' | 'redirect'> {
       name: string

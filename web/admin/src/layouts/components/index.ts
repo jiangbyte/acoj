@@ -4,6 +4,7 @@ import MobileDrawer from './common/MobileDrawer.vue'
 import Breadcrumb from './header/Breadcrumb.vue'
 import CollapaseButton from './header/CollapaseButton.vue'
 import FullScreen from './header/FullScreen.vue'
+import ModuleSwitch from './header/ModuleSwitch.vue'
 import Notices from './header/Notices.vue'
 import Search from './header/Search.vue'
 import UserCenter from './header/UserCenter.vue'
@@ -16,6 +17,7 @@ export {
   FullScreen,
   Logo,
   MobileDrawer,
+  ModuleSwitch,
   Notices,
   Search,
   TabBar,

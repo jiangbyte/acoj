@@ -457,7 +457,7 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False, comment='更新时间'),
     sa.Column('updated_by', sa.String(length=64), nullable=True, comment='更新人'),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_sys_resource')),
-    sa.UniqueConstraint('code', name='uq_sys_resource_code')
+    sa.UniqueConstraint('module_id', 'code', name='uq_sys_resource_module_id_code')
     )
     op.create_table('sys_resource_module',
     sa.Column('id', sa.String(length=64), nullable=False, comment='主键'),

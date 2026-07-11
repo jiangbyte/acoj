@@ -73,7 +73,7 @@ export function isClickableResource(resourceType?: AppRoute.ResourceType) {
 /**
  * 标准化资源为内部路由节点。
  *
- * route.name 使用资源 code，meta 保留完整 SysResource 字段，避免旧字段和资源字段混用。
+ * route.name 使用 module_id + code，meta 保留完整 SysResource 字段，避免跨模块同 code 冲突。
  */
 function standardizedRoutes(resources: AppRoute.RowRoute[]) {
   return resources.filter(isRouteResource).map((resource) => {
@@ -81,7 +81,7 @@ function standardizedRoutes(resources: AppRoute.RowRoute[]) {
       id: resource.id,
       parent_id: resource.parent_id,
       code: resource.code,
-      name: resource.code,
+      name: createRouteName(resource),
       resource_type: resource.resource_type,
       module_id: resource.module_id,
       module_id_name: resource.module_id_name,
@@ -100,6 +100,10 @@ function standardizedRoutes(resources: AppRoute.RowRoute[]) {
 
     return route
   })
+}
+
+function createRouteName(resource: AppRoute.RowRoute) {
+  return resource.module_id ? `${resource.module_id}:${resource.code}` : resource.code
 }
 
 /**

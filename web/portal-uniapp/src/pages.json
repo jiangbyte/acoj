@@ -1,0 +1,102 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^u-(.*)": "uview-pro/components/u-$1/u-$1.vue"
+    }
+  },
+  "pages": [
+    {
+      "path": "pages/home/index",
+      "style": {
+        "navigationBarTitleText": "首页",
+        "enablePullDownRefresh": true,
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/messages/index",
+      "style": {
+        "navigationBarTitleText": "消息",
+        "enablePullDownRefresh": true,
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/space/index",
+      "style": {
+        "navigationBarTitleText": "空间",
+        "enablePullDownRefresh": true,
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/usercenter/index",
+      "style": {
+        "navigationBarTitleText": "我的",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/auth/login",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/auth/register",
+      "style": {
+        "navigationBarTitleText": "注册",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/usercenter/profile",
+      "style": {
+        "navigationBarTitleText": "个人资料",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/usercenter/security",
+      "style": {
+        "navigationBarTitleText": "账号安全",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/messages/detail",
+      "style": {
+        "navigationBarTitleText": "消息详情",
+        "navigationStyle": "custom"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "HEI Portal",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#2979ff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/messages/index",
+        "text": "消息"
+      },
+      {
+        "pagePath": "pages/usercenter/index",
+        "text": "我的"
+      }
+    ]
+  }
+}
