@@ -555,4 +555,76 @@ app/modules/example/
 
 ## 参考项目
 
-- [snowy](https://gitee.com/xiaonuobase/snowy)
+- [snowy](https://gitee.com/xiaonuobase/snowy) — 国内首个国密前后分离快速开发平台
+
+## 贡献指南
+
+欢迎任何形式的贡献 — 提交 Issue、完善文档、修复 Bug、新增功能都行。
+
+### 工作流程
+
+1. **Fork 本仓库** — 在 [GitHub](https://github.com) 上 fork 到自己的账号下。
+2. **克隆到本地**
+
+```bash
+git clone https://github.com/jiangbyte/hei-fastapi.git
+cd hei-fastapi
+```
+
+3. **创建功能分支**
+
+```bash
+git checkout -b feat/your-feature-name
+```
+
+4. **开发与自测**
+
+- 后端代码风格使用 Ruff（`ruff check app tests`）。
+- 确保单元测试通过（`pytest tests -q`）。
+- 如果涉及数据库变更，需生成对应的 Alembic 迁移。
+
+5. **提交代码**
+
+```bash
+git add .
+git commit -m "feat(scope): 简要描述改动"  # 推荐 Conventional Commits 风格
+```
+
+6. **推送并创建 Pull Request**
+
+```bash
+git push origin feat/your-feature-name
+```
+
+然后在 GitHub 上创建 Pull Request，目标分支为 `main`。PR 标题和描述请说明改动的动机和主要内容。
+
+### 同步上游
+
+开发过程中上游可能有新提交，建议定期同步：
+
+```bash
+git remote add upstream https://github.com/jiangbyte/hei-fastapi.git
+git fetch upstream
+git rebase upstream/main
+```
+
+### 说明
+
+- Gitee、CodeUp 仅作为代码同步平台，所有贡献最终会合并到同一份代码中。
+- 提交前请确保不与现有功能冲突，且通过基础 lint 和测试。
+- 如有较大改动，建议先提交 Issue 讨论方向，避免重复劳动。
+
+## License
+
+本项目基于 **MIT License** 发布。关于 MIT 许可证的副本，请参见 [LICENSE](LICENSE)。
+
+简单来说，你可以自由地：
+
+- **学习交流** — 阅读、运行、修改源码，用于个人技术学习。
+- **商用部署** — 在个人或企业内部用于生产环境，集成到商业产品中。
+- **毕业设计** — 直接作为毕设项目或在其基础上扩展。
+- **接单开发** — 作为自有脚手架用于外包项目、定制开发或二次开发交付。
+- **教育培训** — 在教学场景中使用，或作为培训项目案例。
+- **二次分发** — 分发修改版或衍生版，但需保留原始版权声明和许可证文本。
+
+唯一的要求是保留原始的版权声明和许可证文本。作者不对本软件的适用性提供任何明示或暗示的担保。
