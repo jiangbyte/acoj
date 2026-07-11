@@ -1,0 +1,146 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^u-(.*)": "uview-pro/components/u-$1/u-$1.vue"
+    }
+  },
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "首页",
+        "enablePullDownRefresh": true,
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/auth/login/login",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom",
+        "animationType": "slide-in-right",
+        "animationDuration": 300
+      }
+    },
+    {
+      "path": "pages/auth/register/register",
+      "style": {
+        "navigationBarTitleText": "注册",
+        "navigationStyle": "custom",
+        "animationType": "slide-in-right",
+        "animationDuration": 300
+      }
+    },
+    {
+      "path": "pages/publish/publish",
+      "style": {
+        "navigationBarTitleText": "发布",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/mine/mine",
+      "style": {
+        "navigationBarTitleText": "我的",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/address/address",
+      "style": {
+        "navigationBarTitleText": "收货地址",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/history/history",
+      "style": {
+        "navigationBarTitleText": "浏览记录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/help/help",
+      "style": {
+        "navigationBarTitleText": "帮助中心",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/contact/contact",
+      "style": {
+        "navigationBarTitleText": "联系我们",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/setting/setting",
+      "style": {
+        "navigationBarTitleText": "设置",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/wallet/balance",
+      "style": {
+        "navigationBarTitleText": "我的余额",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/wallet/coupon",
+      "style": {
+        "navigationBarTitleText": "优惠券",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/wallet/points",
+      "style": {
+        "navigationBarTitleText": "我的积分",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/wallet/redpacket",
+      "style": {
+        "navigationBarTitleText": "我的红包",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/product/detail",
+      "style": {
+        "navigationBarTitleText": "商品详情",
+        "navigationStyle": "custom"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "uni-app",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#2979ff",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "custom": true,
+    "height": "0",
+    "fontSize": "0",
+    "list": [
+      {
+        "pagePath": "pages/index/index"
+      },
+      {
+        "pagePath": "pages/publish/publish"
+      },
+      {
+        "pagePath": "pages/mine/mine"
+      }
+    ]
+  }
+}
