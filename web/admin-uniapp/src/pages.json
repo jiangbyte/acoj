@@ -18,7 +18,6 @@
       "path": "pages/workbench/index",
       "style": {
         "navigationBarTitleText": "工作台",
-        "enablePullDownRefresh": true,
         "navigationStyle": "custom"
       }
     },
@@ -51,40 +50,64 @@
       }
     },
     {
-      "path": "pages/resource/list/index",
-      "style": {
-        "navigationBarTitleText": "管理列表",
-        "navigationStyle": "custom",
-        "enablePullDownRefresh": true
-      }
+      "path": "pages/iam/account/index",
+      "style": { "navigationBarTitleText": "账号管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
-      "path": "pages/resource/form/index",
-      "style": {
-        "navigationBarTitleText": "编辑",
-        "navigationStyle": "custom"
-      }
+      "path": "pages/iam/role/index",
+      "style": { "navigationBarTitleText": "角色管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
-      "path": "pages/resource/detail/index",
-      "style": {
-        "navigationBarTitleText": "详情",
-        "navigationStyle": "custom"
-      }
+      "path": "pages/iam/dept/index",
+      "style": { "navigationBarTitleText": "部门管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
-      "path": "pages/resource/grant/index",
-      "style": {
-        "navigationBarTitleText": "授权",
-        "navigationStyle": "custom"
-      }
+      "path": "pages/iam/group/index",
+      "style": { "navigationBarTitleText": "用户组管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
     },
     {
-      "path": "pages/resource/buttons/index",
-      "style": {
-        "navigationBarTitleText": "按钮权限",
-        "navigationStyle": "custom"
-      }
+      "path": "pages/iam/position/index",
+      "style": { "navigationBarTitleText": "岗位管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/iam/resource/index",
+      "style": { "navigationBarTitleText": "资源管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/iam/resourceModule/index",
+      "style": { "navigationBarTitleText": "资源模块", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/sys/dict/index",
+      "style": { "navigationBarTitleText": "字典管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/sys/banner/index",
+      "style": { "navigationBarTitleText": "Banner管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/sys/file/index",
+      "style": { "navigationBarTitleText": "文件管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/security/session/index",
+      "style": { "navigationBarTitleText": "会话管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/message/notification/index",
+      "style": { "navigationBarTitleText": "通知管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/message/messageThread/index",
+      "style": { "navigationBarTitleText": "站内信", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/message/messageGroup/index",
+      "style": { "navigationBarTitleText": "消息组", "navigationStyle": "custom", "enablePullDownRefresh": true }
+    },
+    {
+      "path": "pages/message/todo/index",
+      "style": { "navigationBarTitleText": "待办管理", "navigationStyle": "custom", "enablePullDownRefresh": true }
     }
   ],
   "globalStyle": {

@@ -1,12 +1,5 @@
 <template>
   <Layout :title="config.title" back>
-    <template #right>
-      <view class="nav-actions">
-        <u-icon name="search" @click="filterVisible = true"></u-icon>
-        <u-icon name="reload" @click="refresh"></u-icon>
-      </view>
-    </template>
-
     <view>
       <u-card :show-head="false">
         <template #body>
@@ -310,11 +303,6 @@ async function runStateAction(item: any, action: any) {
 </script>
 
 <style lang="scss" scoped>
-.nav-actions {
-  display: flex;
-  gap: 12px;
-}
-
 .toolbar {
   display: grid;
   grid-template-columns: 1fr auto;

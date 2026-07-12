@@ -1,37 +1,43 @@
 <template>
   <Layout title="工作台">
-    <view>
-      <u-card v-if="moduleTabs.length > 1" :show-head="false">
-        <template #body>
-          <u-tabs
-            :list="moduleTabs"
-            :current="activeModuleIndex"
-            @change="handleModuleChange"
-          ></u-tabs>
-        </template>
-      </u-card>
+    <view class="flex flex-col">
+      <view v-if="moduleTabs.length > 1" class="bg-white">
+        <u-tabs
+          :list="moduleTabs"
+          :current="activeModuleIndex"
+          @change="handleModuleChange"
+        />
+      </view>
 
-      <u-card v-for="card in catalogCards" :key="card.id" :title="card.name">
-        <template #body>
-          <u-grid :col="3" :border="false">
-            <u-grid-item
-              v-for="item in card.entries"
-              :key="item.id"
-              @click="routeStore.openResource(item)"
-            >
-              <view class="entry__icon">
-                <u-icon :name="iconName(item.icon)"></u-icon>
-              </view>
-              <text class="entry__text">{{ item.name }}</text>
-            </u-grid-item>
-          </u-grid>
-        </template>
-      </u-card>
-      <u-empty
+      <view
+        v-for="card in catalogCards"
+        :key="card.id"
+        class="mx-4 mt-3 bg-white rounded-lg"
+      >
+        <text class="block px-4 py-3 text-base font-bold text-gray-900">
+          {{ card.name }}
+        </text>
+        <u-grid :col="3" :border="false">
+          <u-grid-item
+            v-for="item in card.entries"
+            :key="item.id"
+            @click="routeStore.openResource(item)"
+          >
+            <view class="flex flex-col items-center gap-1 py-3">
+              <u-icon :name="iconName(item.icon)" />
+              <text class="text-xs text-gray-700 truncate">{{ item.name }}</text>
+            </view>
+          </u-grid-item>
+        </u-grid>
+      </view>
+
+      <view
         v-if="!catalogCards.length"
-        mode="list"
-        text="暂无可用菜单"
-      ></u-empty>
+        class="flex justify-center items-center"
+        style="height: calc(100vh - 200px);"
+      >
+        <u-empty mode="list" text="暂无可用菜单" />
+      </view>
     </view>
   </Layout>
 </template>
@@ -57,43 +63,35 @@ const routeStore = useRouteStore()
 const dictStore = useDictStore()
 
 const moduleTabs = computed(() =>
-  routeStore.modules.map((module) => ({ name: module.name, id: module.id }))
+  routeStore.modules.map((mod) => ({ name: mod.name }))
 )
 
 const activeModuleIndex = computed(() => {
-  const index = routeStore.modules.findIndex(
-    (module) => module.id === routeStore.activeModuleId
+  const idx = routeStore.modules.findIndex(
+    (m) => m.id === routeStore.activeModuleId
   )
-  return index >= 0 ? index : 0
+  return idx >= 0 ? idx : 0
 })
 
 const catalogCards = computed<CatalogCard[]>(() => {
   const cards: CatalogCard[] = []
-  const module = routeStore.activeModule
-  if (!module) {
-    return cards
-  }
+  const mod = routeStore.activeModule
+  if (!mod) return cards
 
-  const visibleResources = module.resources
-    .filter((item) => item.status === 'ENABLED' && item.is_visible !== false)
-    .sort((a, b) => (a.sort ?? 99) - (b.sort ?? 99))
-  const tree = arrayToTree(visibleResources.map((item) => ({ ...item })))
+  const visibleResources = (mod.resources ?? [])
+    .filter((item: any) => item.status === 'ENABLED' && item.is_visible !== false)
+    .sort((a: any, b: any) => (a.sort ?? 99) - (b.sort ?? 99))
+  const tree = arrayToTree(visibleResources.map((item: any) => ({ ...item })))
   const rootEntries: ResourceItem[] = []
 
-  tree.forEach((node) => {
+  tree.forEach((node: any) => {
     if (node.resource_type === 'CATALOG') {
       const entries = flattenTree(node.children ?? []).filter(isMenuEntry)
       if (entries.length) {
-        cards.push({
-          id: node.id,
-          name: node.name,
-          icon: node.icon,
-          entries,
-        })
+        cards.push({ id: node.id, name: node.name, icon: node.icon, entries })
       }
       return
     }
-
     if (isMenuEntry(node)) {
       rootEntries.push(node)
     }
@@ -101,9 +99,9 @@ const catalogCards = computed<CatalogCard[]>(() => {
 
   if (rootEntries.length) {
     cards.unshift({
-      id: `${module.id}:root`,
+      id: `${mod.id}:root`,
       name: '常用功能',
-      icon: module.icon,
+      icon: mod.icon,
       entries: rootEntries,
     })
   }
@@ -138,28 +136,12 @@ async function refreshMenus() {
 }
 
 function iconName(icon?: string | null) {
-  if (!icon) {
-    return 'grid'
-  }
-  if (icon.includes('analysis')) {
-    return 'home'
-  }
-  if (icon.includes('message')) {
-    return 'chat'
-  }
-  if (
-    icon.includes('user') ||
-    icon.includes('account') ||
-    icon.includes('people')
-  ) {
-    return 'account'
-  }
-  if (icon.includes('lock')) {
-    return 'lock'
-  }
-  if (icon.includes('setting')) {
-    return 'setting'
-  }
+  if (!icon) return 'grid'
+  if (icon.includes('analysis')) return 'home'
+  if (icon.includes('message')) return 'chat'
+  if (icon.includes('user') || icon.includes('account') || icon.includes('people')) return 'account'
+  if (icon.includes('lock')) return 'lock'
+  if (icon.includes('setting')) return 'setting'
   return 'grid'
 }
 
@@ -172,23 +154,9 @@ function isMenuEntry(resource: ResourceItem) {
 
 function handleModuleChange(event: any) {
   const index = typeof event === 'number' ? event : event.index
-  const module = routeStore.modules[index]
-  if (module) {
-    routeStore.setActiveModule(module.id)
+  const mod = routeStore.modules[index]
+  if (mod) {
+    routeStore.setActiveModule(mod.id)
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.entry__icon {
-  display: flex;
-  justify-content: center;
-}
-
-.entry__text {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-</style>

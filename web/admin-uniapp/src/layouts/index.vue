@@ -1,5 +1,5 @@
 <template>
-  <view class="admin-page">
+  <view >
     <u-navbar :title="title" :is-back="back" :placeholder="true" :border="true">
       <template #right>
         <slot name="right"></slot>
@@ -23,7 +23,5 @@ defineProps({
 </script>
 
 <style lang="scss" scoped>
-.admin-page {
-  min-height: 100vh;
-}
+
 </style>

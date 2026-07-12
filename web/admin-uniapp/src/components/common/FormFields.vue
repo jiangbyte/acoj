@@ -12,7 +12,7 @@
         :type="field.type === 'password' ? 'password' : 'text'"
         :placeholder="field.placeholder || `请输入${field.label}`"
         :disabled="field.readonly"
-        border="surround"
+        border="none"
       ></u-input>
 
       <u-textarea
@@ -20,7 +20,7 @@
         v-model="localModel[field.prop]"
         :placeholder="field.placeholder || `请输入${field.label}`"
         :disabled="field.readonly"
-        border="surround"
+        border="none"
       ></u-textarea>
 
       <u-number-box
@@ -43,7 +43,7 @@
           :value="selectedText(field)"
           :placeholder="`请选择${field.label}`"
           disabled
-          border="surround"
+          border="none"
         ></u-input>
       </view>
 
@@ -61,7 +61,7 @@
         v-model="localModel[field.prop]"
         :placeholder="field.placeholder || 'YYYY-MM-DD HH:mm:ss'"
         :disabled="field.readonly"
-        border="surround"
+        border="none"
       ></u-input>
     </u-form-item>
 

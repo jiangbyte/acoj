@@ -1,89 +1,90 @@
 <template>
   <Layout title="首页">
-    <view>
-      <u-card>
-        <template #head>
-          <CardHead
-            :title="`你好，${displayName}`"
-            sub-title="管理端数据总览"
+    <view class="flex flex-col ">
+      <view class="flex items-center gap-3 mx-4 p-4 rounded-md text-white bg-gradient-to-r from-blue-600 to-blue-400">
+        <u-avatar
+          :src="authStore.userInfo?.avatar || ''"
+          size="48"
+          icon="account-fill"
+        />
+        <view class="flex flex-col gap-1 flex-1">
+          <text class="text-2xl font-bold">你好，{{ displayName }}</text>
+          <text class="text-sm opacity-85">管理端数据总览</text>
+          <view class="flex flex-wrap gap-1 mt-1">
+            <u-tag
+              v-for="role in roleNames"
+              :key="role.id"
+              :text="role.name"
+              type="primary"
+              plain
+              size="mini"
+            />
+            <u-tag
+              v-for="dept in deptNames"
+              :key="dept.id"
+              :text="dept.name"
+              type="success"
+              plain
+              size="mini"
+            />
+          </view>
+        </view>
+      </view>
+
+      <view class="mx-4 mt-3 bg-white rounded-lg overflow-hidden">
+        <text class="block px-4 py-3 text-base font-bold text-gray-900">核心指标</text>
+        <view class="flex flex-nowrap">
+          <view class="flex flex-col items-center gap-1 py-2 px-1 flex-1" v-for="metric in metricsFirstRow" :key="metric.key">
+            <u-icon :name="metricIcon(metric.key)" size="28" color="#2563eb" />
+            <text class="text-xs text-gray-500">{{ metric.key }}</text>
+            <text class="text-lg font-bold text-gray-900">{{ metric.value }}</text>
+            <text class="text-xs" :class="trendClass(metric.trend_value)">{{ trendText(metric.trend_value) }}</text>
+          </view>
+        </view>
+        <view class="flex flex-nowrap justify-center pb-3">
+          <view class="flex flex-col items-center gap-1 py-2 px-1 flex-1" v-for="metric in metricsSecondRow" :key="metric.key">
+            <u-icon :name="metricIcon(metric.key)" size="28" color="#2563eb" />
+            <text class="text-xs text-gray-500">{{ metric.key }}</text>
+            <text class="text-lg font-bold text-gray-900">{{ metric.value }}</text>
+            <text class="text-xs" :class="trendClass(metric.trend_value)">{{ trendText(metric.trend_value) }}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="mx-4 mt-3 bg-white rounded-lg overflow-hidden">
+        <text class="block px-4 py-3 text-base font-bold text-gray-900">账号趋势</text>
+        <view v-if="accountTrend.length" class="w-full h-64">
+          <canvas
+            id="trendCanvas"
+            canvas-id="trendCanvas"
+            type="2d"
+            class="w-full h-64"
           />
-        </template>
-        <template #body>
-          <u-cell-item
-            title="账号"
-            :value="authStore.userInfo?.account || '-'"
-            :arrow="false"
-          ></u-cell-item>
-        </template>
-      </u-card>
+        </view>
+        <u-empty v-else mode="list" text="暂无趋势数据" />
+      </view>
 
-      <u-card title="核心指标">
-        <template #body>
-          <u-grid :col="2" :border="false">
-            <u-grid-item v-for="metric in metrics" :key="metric.key">
-              <text>{{ metric.key }}</text>
-              <text>{{ metric.value }}</text>
-              <text>趋势 {{ metric.trend_value ?? 0 }}</text>
-            </u-grid-item>
-          </u-grid>
-        </template>
-      </u-card>
-      <u-card title="账号趋势">
-        <template #body>
-          <u-cell-group :border="false">
-            <u-cell-item
-              v-for="item in accountTrend"
-              :key="`${item.date}-${item.type}`"
-              :title="item.date"
-              :value="String(item.value)"
-              :arrow="false"
-            >
-              <u-line-progress
-                :percent="percent(item.value, maxTrendValue)"
-                :show-percent="false"
-              ></u-line-progress>
-            </u-cell-item>
-          </u-cell-group>
-        </template>
-        <u-empty
-          v-if="!accountTrend.length"
-          mode="list"
-          text="暂无趋势数据"
-        ></u-empty>
-      </u-card>
-
-      <u-card title="文件类型分布">
-        <template #body>
-          <u-cell-group :border="false">
-            <u-cell-item
-              v-for="item in fileTypeShare"
-              :key="item.name"
-              :title="item.name"
-              :value="String(item.value)"
-              :arrow="false"
-            >
-              <u-line-progress
-                :percent="percent(item.value, maxFileValue)"
-                :show-percent="false"
-              ></u-line-progress>
-            </u-cell-item>
-          </u-cell-group>
-        </template>
-        <u-empty
-          v-if="!fileTypeShare.length"
-          mode="list"
-          text="暂无文件数据"
-        ></u-empty>
-      </u-card>
+      <view class="mx-4 mt-3 bg-white rounded-lg overflow-hidden">
+        <text class="block px-4 py-3 text-base font-bold text-gray-900">文件类型分布</text>
+        <view v-if="fileTypeShare.length" class="w-full h-64">
+          <canvas
+            id="fileCanvas"
+            canvas-id="fileCanvas"
+            type="2d"
+            class="w-full h-64"
+          />
+        </view>
+        <u-empty v-else mode="list" text="暂无文件数据" />
+      </view>
     </view>
   </Layout>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, getCurrentInstance, nextTick, onUnmounted, ref, watch } from 'vue'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import uCharts from '@qiun/ucharts'
 import Layout from '@/layouts/index.vue'
-import CardHead from '@/components/common/CardHead.vue'
 import { dashboardApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { useDictStore } from '@/stores/dict'
@@ -92,6 +93,7 @@ import { useRouteStore } from '@/stores/route'
 const authStore = useAuthStore()
 const dictStore = useDictStore()
 const routeStore = useRouteStore()
+const instance = getCurrentInstance()
 const metrics = ref<any[]>([])
 const accountTrend = ref<any[]>([])
 const fileTypeShare = ref<any[]>([])
@@ -104,12 +106,159 @@ const displayName = computed(
     '管理员'
 )
 
-const maxTrendValue = computed(() =>
-  Math.max(...accountTrend.value.map((item) => Number(item.value) || 0), 1)
-)
-const maxFileValue = computed(() =>
-  Math.max(...fileTypeShare.value.map((item) => Number(item.value) || 0), 1)
-)
+const metricsFirstRow = computed(() => metrics.value.slice(0, 3))
+const metricsSecondRow = computed(() => metrics.value.slice(3, 5))
+const roleNames = computed(() => authStore.userInfo?.roleIdNames ?? [])
+const deptNames = computed(() => authStore.userInfo?.deptIdNames ?? [])
+
+let trendChart: any = null
+let fileChart: any = null
+
+function getCanvasInfo(canvasId: string): Promise<{ node: any; width: number } | null> {
+  return new Promise((resolve) => {
+    const query = uni.createSelectorQuery().in(instance?.proxy)
+    query
+      .select(`#${canvasId}`)
+      .fields({ node: true, size: true })
+      .exec((res: any) => {
+        const info = res?.[0]
+        if (!info?.node) return resolve(null)
+        resolve({ node: info.node, width: info.width || 300 })
+      })
+  })
+}
+
+function buildTrendChartData() {
+  const dates = [...new Set(accountTrend.value.map((item: any) => item.date))]
+  const types = [...new Set(accountTrend.value.map((item: any) => item.type))]
+  const series = types.map((type: any) => ({
+    name: type,
+    data: dates.map((date: any) => {
+      const found = accountTrend.value.find(
+        (i: any) => i.date === date && i.type === type
+      )
+      return found ? Number(found.value) : 0
+    }),
+  }))
+  return { categories: dates, series }
+}
+
+function buildFileChartData() {
+  const categories = fileTypeShare.value.map((item: any) => item.name)
+  return {
+    categories,
+    series: [
+      {
+        name: '文件数量',
+        data: fileTypeShare.value.map((item: any) => Number(item.value)),
+      },
+    ],
+  }
+}
+
+
+async function renderTrendChart() {
+  if (!accountTrend.value.length) return
+  await nextTick()
+  const info = await getCanvasInfo('trendCanvas')
+  if (!info) return
+  const ctx = info.node.getContext('2d')
+  const data = buildTrendChartData()
+  const w = info.width
+  if (trendChart) {
+    trendChart.updateData({ categories: data.categories, series: data.series })
+    return
+  }
+  trendChart = new uCharts({
+    type: 'line',
+    context: ctx,
+    canvasId: 'trendCanvas',
+    categories: data.categories,
+    series: data.series,
+    animation: true,
+    background: '#ffffff',
+    color: ['#2563eb', '#16a34a', '#d97706'],
+    legend: { show: false },
+    xAxis: { disableGrid: true, fontColor: '#6b7280', fontSize: 10, rotateLabel: true },
+    yAxis: { disabled: false, fontColor: '#6b7280', fontSize: 10 },
+    extra: { line: { type: 'straight', width: 2 } },
+    width: w,
+    height: 260,
+    pixelRatio: 1,
+  })
+}
+
+async function renderFileChart() {
+  if (!fileTypeShare.value.length) return
+  await nextTick()
+  const info = await getCanvasInfo('fileCanvas')
+  if (!info) return
+  const ctx = info.node.getContext('2d')
+  const data = buildFileChartData()
+  const w = info.width
+  if (fileChart) {
+    fileChart.updateData({ categories: data.categories, series: data.series })
+    return
+  }
+  fileChart = new uCharts({
+    type: 'column',
+    context: ctx,
+    canvasId: 'fileCanvas',
+    categories: data.categories,
+    series: data.series,
+    animation: true,
+    background: '#ffffff',
+    color: ['#2563eb'],
+    legend: { show: false },
+    xAxis: { disableGrid: true, fontColor: '#6b7280', fontSize: 10, rotateLabel: true },
+    yAxis: { disabled: false, fontColor: '#6b7280', fontSize: 10 },
+    extra: { column: { width: 20 } },
+    width: w,
+    height: 260,
+    pixelRatio: 1,
+  })
+}
+
+async function renderAllCharts() {
+  await nextTick()
+  renderTrendChart()
+  renderFileChart()
+}
+
+watch(accountTrend, () => renderTrendChart())
+watch(fileTypeShare, () => renderFileChart())
+
+onUnmounted(() => {
+  trendChart = null
+  fileChart = null
+})
+
+const iconMap: Record<string, string> = {
+  Accounts: 'account',
+  'Online Devices': 'wifi',
+  Files: 'file-text',
+  Banners: 'photo',
+  'Published Notices': 'volume',
+}
+
+function metricIcon(key: string): string {
+  const k = (key || '').toLowerCase()
+  for (const [mapKey, icon] of Object.entries(iconMap)) {
+    if (mapKey.toLowerCase() === k) return icon
+  }
+  return 'grid'
+}
+
+function trendClass(value: number | null | undefined): string {
+  if (value == null || value === 0) return 'text-gray-400'
+  return value > 0 ? 'text-green-600' : 'text-red-600'
+}
+
+function trendText(value: number | null | undefined): string {
+  if (value == null) return '-'
+  if (value === 0) return '→ 0%'
+  return `${value > 0 ? '↑' : '↓'} ${Math.abs(value)}%`
+}
 
 onShow(async () => {
   if (!authStore.isLogin) {
@@ -143,10 +292,9 @@ async function refresh() {
   metrics.value = overview.metrics ?? []
   accountTrend.value = overview.account_trend ?? []
   fileTypeShare.value = overview.file_type_share ?? []
-}
-
-function percent(value: number | string, max: number) {
-  const ratio = Math.max(0, Math.min(100, (Number(value) / max) * 100))
-  return Math.round(ratio)
+  await renderAllCharts()
 }
 </script>
+
+
+

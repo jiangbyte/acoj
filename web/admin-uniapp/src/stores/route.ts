@@ -104,7 +104,25 @@ export const useRouteStore = defineStore('route', () => {
       uni.showToast({ title: '小程序端暂未配置该菜单', icon: 'none' })
       return
     }
-    uni.navigateTo({ url: `/pages/resource/list/index?resource=${key}` })
+    const pageMap: Record<string, string> = {
+      account: '/pages/iam/account/index',
+      role: '/pages/iam/role/index',
+      dept: '/pages/iam/dept/index',
+      group: '/pages/iam/group/index',
+      position: '/pages/iam/position/index',
+      resource: '/pages/iam/resource/index',
+      resourceModule: '/pages/iam/resourceModule/index',
+      dict: '/pages/sys/dict/index',
+      banner: '/pages/sys/banner/index',
+      file: '/pages/sys/file/index',
+      session: '/pages/security/session/index',
+      notification: '/pages/message/notification/index',
+      messageThread: '/pages/message/messageThread/index',
+      messageGroup: '/pages/message/messageGroup/index',
+      todo: '/pages/message/todo/index',
+    }
+    const path = pageMap[key] || `/pages/resource/list/index?resource=${key}`
+    uni.navigateTo({ url: path })
   }
 
   function resetRouteStore() {
